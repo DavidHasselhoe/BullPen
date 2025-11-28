@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BullPen Details</title>
+  <link rel="icon" href="/bullpen.png" type="image/png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <a href="/" class="back-link">← Back to Portfolio</a>
+    
+    <div id="stock-header">
+      <h1 id="stock-name">Loading...</h1>
+      <p id="stock-symbol"></p>
+    </div>
+
+    <div id="quote-section">
+      <h2>Current Price</h2>
+      <div id="quote-data" class="quote-grid">
+        <p>Loading quote data...</p>
+      </div>
+      <p id="quote-timestamp" class="timestamp"></p>
+    </div>
+
+    <div id="position-section">
+      <h2>Your Position</h2>
+      <div id="position-data" class="info-grid">
+        <p>Loading position data...</p>
+      </div>
+    </div>
+
+    <div id="news-section">
+      <h2>Latest News</h2>
+      <div id="news-data">
+        <p>Loading news...</p>
+      </div>
+    </div>
+
+    <div id="error-message" class="error-message" style="display: none;"></div>
+  </div>
+
+  <script src="detail.js"></script>
+</body>
+</html>

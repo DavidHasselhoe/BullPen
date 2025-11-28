@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>BullPen</title>
+    <link rel="icon" href="/bullpen.png" type="image/png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h1 style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <img
+            src="/bullpen.png"
+            alt="BullPen Logo"
+            style="
+              width: 64px;
+              height: 64px;
+            "
+          />
+          <span id="dashboard-title">BullPen - Dashboard</span>
+        </div>
+        <div id="market-status" style="display: flex; gap: 12px; align-items: center;"></div>
+      </h1>
+
+      <div class="controls">
+        <label>Session ID:</label>
+        <input
+          id="session"
+          type="text"
+          placeholder="Paste NNX_SESSION_ID here"
+        />
+        <button id="fetch-accounts-btn">Load Accounts</button>
+      </div>
+
+      <div id="status"></div>
+
+      <div id="accounts"></div>
+
+      <!-- Placeholders for positions and account info -->
+      <div id="accinfo" style="display: none"></div>
+      <div id="positions"></div>
+    </div>
+
+    <script type="module" src="/main-new.js"></script>
+  </body>
+</html>
