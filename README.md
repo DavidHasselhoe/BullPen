@@ -21,7 +21,7 @@ A modern, real-time portfolio dashboard for Nordnet accounts.
 
 1. Clone the repository:
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/DavidHasselhoe/BullPen.git
 cd project-nordnetAPI
 ```
 
