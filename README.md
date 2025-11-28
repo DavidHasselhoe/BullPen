@@ -1,6 +1,6 @@
-# Nordnet Portfolio Dashboard
+# BullPen
 
-A modern, real-time portfolio dashboard for Nordnet accounts with market status indicators and exchange rate tracking.
+A modern, real-time portfolio dashboard for Nordnet accounts.
 
 ## Features
 
