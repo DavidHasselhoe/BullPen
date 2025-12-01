@@ -27,10 +27,33 @@
       <p id="quote-timestamp" class="timestamp"></p>
     </div>
 
-    <div id="position-section">
-      <h2>Your Position</h2>
-      <div id="position-data" class="info-grid">
-        <p>Loading position data...</p>
+    <div id="combined-section">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px;">
+        <div>
+          <h2 style="margin: 0 0 20px 0;">Your Position</h2>
+          <div id="position-data" class="info-grid">
+            <p>Loading position data...</p>
+          </div>
+        </div>
+
+        <div>
+          <h2 style="margin: 0 0 20px 0;">Key Metrics</h2>
+          <div id="financials-data" class="info-grid">
+            <p>Loading financials...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="earnings-section" class="card">
+      <h2>Historical EPS Surprises</h2>
+      <div id="earnings-chart">
+        <p>Loading earnings data...</p>
+      </div>
+      
+      <h2 style="margin-top: 40px;">Earnings Estimates</h2>
+      <div id="estimates-section">
+        <p>Loading estimates...</p>
       </div>
     </div>
 
