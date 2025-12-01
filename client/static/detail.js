@@ -24,10 +24,6 @@ let previousDetailPrice = null; // Track previous price for flash effect
 let nordnetPollTimer = null;
 const POLL_INTERVAL = 1000; // 1 second
 
-// Timer for "X seconds ago" display
-let lastUpdateTime = null;
-let updateTimerInterval = null;
-
 if (!symbol) {
   showError('No stock symbol provided');
 } else {
@@ -61,6 +57,13 @@ async function loadStockDetail() {
   
   // Fetch news for the stock
   fetchStockNews();
+  
+  // Fetch financials for US stocks
+  if (isUSStock) {
+    fetchFinancials();
+    fetchEarnings();
+    fetchEstimates();
+  }
 }
 
 async function startNordnetPolling() {
@@ -140,7 +143,7 @@ async function startNordnetPolling() {
               previousDetailPrice = currentPrice;
               
               // Update timestamp
-              startUpdateTimer();
+              showLiveMessage();
             }
             
             // Update position display
@@ -357,7 +360,7 @@ function updateRealTimePrice(trade) {
   // Update position data with new price
   updatePositionWithNewPrice(price, currency);
   
-  startUpdateTimer();
+  showLiveMessage();
 }
 
 function updatePositionWithNewPrice(newPrice, currency) {
@@ -480,7 +483,7 @@ function displayFinnhubQuote(quote) {
     </div>
   `;
   
-  startUpdateTimer();
+  showLiveMessage();
 }
 
 // Cleanup WebSocket and polling on page unload
@@ -491,39 +494,14 @@ window.addEventListener('beforeunload', () => {
   if (nordnetPollTimer) {
     clearInterval(nordnetPollTimer);
   }
-  if (updateTimerInterval) {
-    clearInterval(updateTimerInterval);
-  }
 });
 
-// Function to start/reset the "X seconds ago" timer
-function startUpdateTimer() {
-  lastUpdateTime = Date.now();
-  
-  // Clear existing interval if any
-  if (updateTimerInterval) {
-    clearInterval(updateTimerInterval);
-  }
-  
-  // Update the display immediately
-  updateTimestampDisplay();
-  
-  // Then update every second
-  updateTimerInterval = setInterval(updateTimestampDisplay, 1000);
-}
-
-function updateTimestampDisplay() {
+// Display static live message
+function showLiveMessage() {
   const timestampDiv = $('quote-timestamp');
-  if (!timestampDiv || !lastUpdateTime) return;
-  
-  const secondsAgo = Math.floor((Date.now() - lastUpdateTime) / 1000);
-  
-  if (secondsAgo === 0) {
-    timestampDiv.textContent = 'Updated just now';
-  } else if (secondsAgo === 1) {
-    timestampDiv.textContent = 'Updated 1 second ago';
-  } else {
-    timestampDiv.textContent = `Updated ${secondsAgo} seconds ago`;
+  if (timestampDiv) {
+    timestampDiv.textContent = '🟢 Prices are live';
+    timestampDiv.style.color = '#10b981';
   }
 }
 
@@ -591,7 +569,7 @@ function displayNordnetQuote() {
     </div>
   `;
   
-  startUpdateTimer();
+  showLiveMessage();
 }
 
 function displayPositionInfo() {
@@ -763,7 +741,7 @@ async function fetchRealTimeQuote() {
       </div>
     `;
     
-    startUpdateTimer();
+    showLiveMessage();
     
   } catch (err) {
     showError(`Error loading quote: ${err.message}`);
@@ -781,20 +759,17 @@ async function fetchStockNews() {
   const newsDiv = $('news-data');
   
   try {
-    const response = await fetch(`/api/news?ticker=${encodeURIComponent(symbol)}&limit=10`);
+    const response = await fetch(`/api/news?ticker=${encodeURIComponent(symbol)}&limit=5`);
     const body = await response.json();
     
     if (!body.success) {
       newsDiv.innerHTML = `<p class="error-text">${body.error || 'Unable to load news'}</p>`;
       return;
     }
-      newsDiv.innerHTML = `<p class="error-text">Unable to load news: ${body.error || 'Unknown error'}</p>`;
-      return;
-    }
     
-    const news = body.data.feed;
+    const news = (body.data.feed || []).slice(0, 5);
     
-    if (!news || news.length === 0) {
+    if (news.length === 0) {
       // Check if this is a US stock
       const isUSStock = !symbol.includes('.') && !symbol.includes(':') && /^[A-Z]+$/.test(symbol);
       if (isUSStock) {
@@ -861,4 +836,290 @@ async function fetchStockNews() {
   } catch (error) {
     newsDiv.innerHTML = '<p class="error-text">Failed to load news.</p>';
   }
+}
+
+async function fetchFinancials() {
+  const financialsDiv = $('financials-data');
+  
+  try {
+    const response = await fetch(`/api/financials?symbol=${encodeURIComponent(symbol)}`);
+    const body = await response.json();
+    
+    if (!body.success || !body.data.metric) {
+      financialsDiv.innerHTML = '<p>Financials not available.</p>';
+      return;
+    }
+    
+    const m = body.data.metric;
+    
+    // Format large numbers
+    const formatNumber = (num) => {
+      if (num === null || num === undefined) return 'N/A';
+      if (num >= 1e9) return (num / 1e9).toFixed(2) + 'B';
+      if (num >= 1e6) return (num / 1e6).toFixed(2) + 'M';
+      return num.toFixed(2);
+    };
+    
+    // Format percentage
+    const formatPercent = (num) => {
+      if (num === null || num === undefined) return 'N/A';
+      return num.toFixed(2) + '%';
+    };
+    
+    const financialsHTML = `
+      <div class="info-item">
+        <span class="info-label">Market Cap</span>
+        <span class="info-value" style="font-weight: 600; color: #93c5fd;">${formatNumber(m.marketCapitalization)}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">P/E Ratio</span>
+        <span class="info-value" style="font-weight: 600; color: #93c5fd;">${m.peBasicExclExtraTTM ? m.peBasicExclExtraTTM.toFixed(2) : 'N/A'}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">52W High</span>
+        <span class="info-value" style="font-weight: 600; color: #93c5fd;">$${m['52WeekHigh'] ? m['52WeekHigh'].toFixed(2) : 'N/A'}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">52W Low</span>
+        <span class="info-value" style="font-weight: 600; color: #93c5fd;">$${m['52WeekLow'] ? m['52WeekLow'].toFixed(2) : 'N/A'}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Beta</span>
+        <span class="info-value" style="font-weight: 600; color: #93c5fd;">${m.beta ? m.beta.toFixed(2) : 'N/A'}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Avg Volume (10D)</span>
+        <span class="info-value" style="font-weight: 600; color: #93c5fd;">${formatNumber(m['10DayAverageTradingVolume'])}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">EPS (TTM)</span>
+        <span class="info-value" style="font-weight: 600; color: #93c5fd;">$${m.epsBasicExclExtraItemsTTM ? m.epsBasicExclExtraItemsTTM.toFixed(2) : 'N/A'}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Dividend Yield</span>
+        <span class="info-value" style="font-weight: 600; color: #93c5fd;">${formatPercent(m.dividendYieldIndicatedAnnual)}</span>
+      </div>
+    `;
+    
+    financialsDiv.innerHTML = financialsHTML;
+    
+  } catch (error) {
+    console.error('Error fetching financials:', error);
+    financialsDiv.innerHTML = '<p class="error-text">Failed to load financials.</p>';
+  }
+}
+
+async function fetchEarnings() {
+  const earningsDiv = $('earnings-chart');
+  
+  try {
+    const response = await fetch(`/api/earnings?symbol=${encodeURIComponent(symbol)}`);
+    const body = await response.json();
+    
+    if (!body.success || !body.data || body.data.length === 0) {
+      earningsDiv.innerHTML = '<p>EPS data not available.</p>';
+      return;
+    }
+    
+    const earnings = body.data;
+    
+    // Create the chart
+    renderEarningsChart(earnings);
+    
+  } catch (error) {
+    console.error('Error fetching earnings:', error);
+    earningsDiv.innerHTML = '<p class="error-text">Failed to load earnings data.</p>';
+  }
+}
+
+function renderEarningsChart(earnings) {
+  const earningsDiv = $('earnings-chart');
+  
+  // Find max value for scaling
+  const allValues = earnings.flatMap(e => [Math.abs(e.actual), Math.abs(e.estimate)]);
+  const maxValue = Math.max(...allValues);
+  const scale = maxValue * 1.2; // Add 20% padding
+  
+  // Create chart HTML
+  let chartHTML = '<div class="earnings-legend">';
+  chartHTML += '<div class="legend-item"><span class="legend-dot actual"></span>Actual</div>';
+  chartHTML += '<div class="legend-item"><span class="legend-dot estimate"></span>Estimate</div>';
+  chartHTML += '</div>';
+  
+  chartHTML += '<div class="earnings-chart-container">';
+  
+  earnings.forEach((earning, index) => {
+    const actualHeight = (Math.abs(earning.actual) / scale) * 100;
+    const estimateHeight = (Math.abs(earning.estimate) / scale) * 100;
+    const isBeat = earning.actual >= earning.estimate;
+    const surpriseClass = isBeat ? 'beat' : 'miss';
+    
+    // Use fiscal quarter and year from API if available, otherwise calculate
+    let quarter, fiscalYear;
+    if (earning.fiscalQuarter && earning.fiscalYear) {
+      quarter = earning.fiscalQuarter;
+      fiscalYear = earning.fiscalYear;
+    } else {
+      // Fallback calculation for fiscal quarters
+      const periodDate = new Date(earning.period);
+      const month = periodDate.getMonth();
+      const year = periodDate.getFullYear();
+      
+      if (month >= 0 && month <= 2) { // Jan-Mar = Q4
+        quarter = 4;
+        fiscalYear = year;
+      } else if (month >= 3 && month <= 5) { // Apr-Jun = Q1
+        quarter = 1;
+        fiscalYear = year + 1;
+      } else if (month >= 6 && month <= 8) { // Jul-Sep = Q2
+        quarter = 2;
+        fiscalYear = year + 1;
+      } else { // Oct-Dec = Q3
+        quarter = 3;
+        fiscalYear = year + 1;
+      }
+    }
+    
+    chartHTML += `
+      <div class="earnings-quarter">
+        <div class="bars-container">
+          <div class="bar estimate" style="height: ${estimateHeight}%">
+            <span class="bar-value">${earning.estimate.toFixed(2)}</span>
+          </div>
+          <div class="bar actual ${surpriseClass}" style="height: ${actualHeight}%">
+            <span class="bar-value">${earning.actual.toFixed(2)}</span>
+          </div>
+        </div>
+        <div class="quarter-label">
+          <div class="quarter-date">${earning.period}</div>
+          <div class="quarter-info">Q${quarter} FY${fiscalYear}</div>
+          <div class="surprise ${surpriseClass}">
+            ${isBeat ? 'Beat' : 'Missed'}: ${earning.surprise >= 0 ? '+' : ''}${earning.surprise.toFixed(2)}
+          </div>
+        </div>
+      </div>
+    `;
+  });
+  
+  chartHTML += '</div>';
+  
+  earningsDiv.innerHTML = chartHTML;
+}
+
+async function fetchEstimates() {
+  const estimatesDiv = $('estimates-section');
+  
+  try {
+    const response = await fetch(`/api/earnings-estimates?symbol=${encodeURIComponent(symbol)}`);
+    const body = await response.json();
+    
+    if (!body.success || !body.data) {
+      estimatesDiv.innerHTML = '<p>Estimates data not available.</p>';
+      return;
+    }
+    
+    const { quarterly, annual } = body.data;
+    
+    // Create the estimates display
+    renderEstimates(quarterly, annual);
+    
+  } catch (error) {
+    console.error('Error fetching estimates:', error);
+    estimatesDiv.innerHTML = '<p class="error-text">Failed to load estimates data.</p>';
+  }
+}
+
+function renderEstimates(quarterly, annual) {
+  const estimatesDiv = $('estimates-section');
+  
+  let html = '<div class="estimates-container">';
+  
+  // Quarterly Estimates
+  if (quarterly && quarterly.length > 0) {
+    html += '<div class="estimates-group">';
+    html += '<h3 class="estimates-title">Quarterly Estimates</h3>';
+    html += '<div class="estimates-grid">';
+    
+    quarterly.forEach(q => {
+      // Handle different field names from Alpha Vantage
+      const period = q.fiscalDateEnding || q.reportedDate || 'N/A';
+      const epsEstimate = q.estimatedEPS || q.estimatedEPSAvg || q.estimate || 'N/A';
+      const revenueEstimate = q.estimatedRevenue || q.estimatedRevenueAvg || null;
+      const analystCount = q.numberOfAnalysts || q.numberAnalystEstimatedRevenueAvg || 
+                          q.numberAnalystEstimatedEPS || 'N/A';
+      
+      html += `
+        <div class="estimate-card">
+          <div class="estimate-period">${period}</div>
+          <div class="estimate-metrics">
+            <div class="estimate-metric">
+              <span class="metric-label">EPS Estimate</span>
+              <span class="metric-value">${epsEstimate !== 'N/A' ? '$' + epsEstimate : 'N/A'}</span>
+            </div>
+            <div class="estimate-metric">
+              <span class="metric-label">Revenue Estimate</span>
+              <span class="metric-value">${formatRevenue(revenueEstimate)}</span>
+            </div>
+            <div class="estimate-metric">
+              <span class="metric-label">Analyst Count</span>
+              <span class="metric-value">${analystCount}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+    
+    html += '</div></div>';
+  }
+  
+  // Annual Estimates
+  if (annual && annual.length > 0) {
+    html += '<div class="estimates-group">';
+    html += '<h3 class="estimates-title">Annual Estimates</h3>';
+    html += '<div class="estimates-grid">';
+    
+    annual.forEach(a => {
+      // Handle different field names from Alpha Vantage
+      const period = a.fiscalDateEnding || a.reportedDate || 'N/A';
+      const epsEstimate = a.estimatedEPS || a.estimatedEPSAvg || a.estimate || 'N/A';
+      const revenueEstimate = a.estimatedRevenue || a.estimatedRevenueAvg || null;
+      const analystCount = a.numberOfAnalysts || a.numberAnalystEstimatedRevenueAvg || 
+                          a.numberAnalystEstimatedEPS || 'N/A';
+      
+      html += `
+        <div class="estimate-card">
+          <div class="estimate-period">${period}</div>
+          <div class="estimate-metrics">
+            <div class="estimate-metric">
+              <span class="metric-label">EPS Estimate</span>
+              <span class="metric-value">${epsEstimate !== 'N/A' ? '$' + epsEstimate : 'N/A'}</span>
+            </div>
+            <div class="estimate-metric">
+              <span class="metric-label">Revenue Estimate</span>
+              <span class="metric-value">${formatRevenue(revenueEstimate)}</span>
+            </div>
+            <div class="estimate-metric">
+              <span class="metric-label">Analyst Count</span>
+              <span class="metric-value">${analystCount}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+    
+    html += '</div></div>';
+  }
+  
+  html += '</div>';
+  
+  estimatesDiv.innerHTML = html;
+}
+
+function formatRevenue(rev) {
+  if (!rev || rev === 'N/A') return 'N/A';
+  const num = parseFloat(rev);
+  if (isNaN(num)) return 'N/A';
+  if (num >= 1e9) return `$${(num / 1e9).toFixed(2)}B`;
+  if (num >= 1e6) return `$${(num / 1e6).toFixed(2)}M`;
+  return `$${num.toFixed(2)}`;
 }
