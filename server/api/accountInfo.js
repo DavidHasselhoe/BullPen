@@ -23,7 +23,6 @@ module.exports = async (req, res) => {
       }
     );
     
-    console.log('Account info response:', JSON.stringify(response.data, null, 2));
     res.json(response.data);
   } catch (error) {
     console.error('Error fetching account info:', error.response?.data || error.message);

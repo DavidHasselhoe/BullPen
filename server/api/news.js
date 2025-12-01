@@ -23,7 +23,6 @@ async function getNewsSentiment(req, res) {
   const cached = newsCache.get(cacheKey);
   
   if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-    console.log(`Returning cached news for ${ticker} (age: ${Math.floor((Date.now() - cached.timestamp) / 1000 / 60)}min)`);
     return res.json(cached.data);
   }
   
@@ -94,12 +93,10 @@ async function getNewsSentiment(req, res) {
     };
     
     // Cache the response
-    newsCache.set(cacheKey, {
+    newsCache.set(ticker, {
       timestamp: Date.now(),
       data: responseData
     });
-    
-    console.log(`Cached news for ${ticker} (${formattedNews.length} items)`);
     
     res.json(responseData);
     

@@ -19,6 +19,8 @@ router.get('/', async (req, res) => {
     const usTimeInMinutes = usHour * 60 + usMinute;
     const isUSOpen = usDay >= 1 && usDay <= 5 && usTimeInMinutes >= 930 && usTimeInMinutes < 1320; // 15:30 = 930min, 22:00 = 1320min
 
+    //Would be nice to implement an API for checking holidays
+
     res.json({
       '🇺🇸': {
         isOpen: isUSOpen,
