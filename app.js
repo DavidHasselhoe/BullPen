@@ -26,6 +26,8 @@ const exchangeRatesRouter = require('./server/api/exchangeRates');
 const previousClosesRouter = require('./server/api/previousCloses');
 const newsRouter = require('./server/api/news');
 const marketStatusRouter = require('./server/api/marketStatus');
+const financialsRouter = require('./server/api/financials');
+const earningsRouter = require('./server/api/earnings');
 
 app.use('/api/accounts', accountsRouter);
 app.use('/api/account-info', accountInfoRouter);
@@ -37,6 +39,10 @@ app.use('/api/exchangeRates', exchangeRatesRouter);
 app.use('/api/previous-closes', previousClosesRouter);
 app.use('/api/market-status', marketStatusRouter);
 app.get('/api/news', newsRouter.getNewsSentiment);
+app.get('/api/financials', financialsRouter.getBasicFinancials);
+app.get('/api/earnings', earningsRouter.getEarningsSurprises);
+app.get('/api/earnings-estimates', earningsRouter.getEarningsEstimates);
+app.get('/api/earnings-clear-cache', earningsRouter.clearCache);
 
 app.get('/', (req, res) => {
   const indexPath = path.join(staticDir, 'index.html');
