@@ -1,25 +1,25 @@
-// Alpha Vantage News Sentiment API with caching
+// Finnhub Company News API with caching
 const axios = require('axios');
 
-const ALPHA_VANTAGE_KEY = process.env.ALPHA_VANTAGE_API_KEY;
+const FINNHUB_API_KEY = process.env.FINNHUB_API_KEY;
 
 // In-memory cache for news data
 const newsCache = new Map();
-const CACHE_DURATION = 60 * 60 * 1000; // 1 hour in milliseconds
+const CACHE_DURATION = 6 * 60 * 60 * 1000; // 6 hours
 
 async function getNewsSentiment(req, res) {
-  const { ticker, limit = 10, topics, sort = 'LATEST' } = req.query;
+  const { ticker, limit = 10 } = req.query;
   
   if (!ticker) {
     return res.json({ success: false, error: 'ticker parameter is required' });
   }
   
-  if (!ALPHA_VANTAGE_KEY) {
-    return res.json({ success: false, error: 'Alpha Vantage API key not configured' });
+  if (!FINNHUB_API_KEY) {
+    return res.json({ success: false, error: 'Finnhub API key not configured' });
   }
   
   // Check cache first
-  const cacheKey = `${ticker}_${limit}_${topics || ''}_${sort}`;
+  const cacheKey = `${ticker}_${limit}`;
   const cached = newsCache.get(cacheKey);
   
   if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
@@ -27,73 +27,66 @@ async function getNewsSentiment(req, res) {
   }
   
   try {
-    let url = `https://www.alphavantage.co/query?function=NEWS_SENTIMENT&tickers=${ticker}&limit=${limit}&sort=${sort}&apikey=${ALPHA_VANTAGE_KEY}`;
+    // Get news from last 30 days
+    const toDate = new Date();
+    const fromDate = new Date();
+    fromDate.setDate(fromDate.getDate() - 30);
     
-    if (topics) {
-      url += `&topics=${topics}`;
-    }
+    const from = fromDate.toISOString().split('T')[0]; // YYYY-MM-DD
+    const to = toDate.toISOString().split('T')[0];
     
-    console.log('Fetching news from Alpha Vantage for:', ticker);
-    const response = await axios.get(url);
+    console.log('Fetching news from Finnhub for:', ticker);
+    const response = await axios.get(`https://finnhub.io/api/v1/company-news`, {
+      params: {
+        symbol: ticker,
+        from: from,
+        to: to,
+        token: FINNHUB_API_KEY
+      },
+      timeout: 10000
+    });
     
-    // Alpha Vantage returns 200 even for errors, check for error messages
-    if (response.data.Note || response.data['Error Message'] || response.data.Information) {
-      const errorMsg = response.data.Note || response.data['Error Message'] || response.data.Information;
-      console.error('Alpha Vantage error:', errorMsg);
-      
+    const newsItems = response.data || [];
+    
+    if (!Array.isArray(newsItems) || newsItems.length === 0) {
       // If we have cached data (even if expired), return it instead of error
       if (cached) {
-        console.log(`Rate limit hit, returning stale cache for ${ticker}`);
+        console.log(`No news found, returning stale cache for ${ticker}`);
         return res.json(cached.data);
       }
       
       return res.json({ 
-        success: false, 
-        error: errorMsg
+        success: true, 
+        data: { feed: [] }
       });
     }
     
-    // Extract and format the feed
-    const feed = response.data.feed || [];
-    
-    // Format and filter the news items for easier frontend consumption
-    // Only include articles with high relevance to the ticker (>= 0.3)
-    const formattedNews = feed
-      .map(item => {
-        const tickerSentiment = item.ticker_sentiment?.find(t => t.ticker === ticker);
-        const relevanceScore = tickerSentiment ? parseFloat(tickerSentiment.relevance_score) : 0;
-        
-        return {
-          title: item.title,
-          url: item.url,
-          timePublished: item.time_published,
-          authors: item.authors,
-          summary: item.summary,
-          source: item.source,
-          sourceUrl: item.source_domain,
-          bannerImage: item.banner_image,
-          sentiment: item.overall_sentiment_score,
-          sentimentLabel: item.overall_sentiment_label,
-          topics: item.topics?.map(t => t.topic) || [],
-          tickerSentiment: tickerSentiment,
-          relevanceScore: relevanceScore
-        };
-      })
-      .filter(item => item.relevanceScore >= 0.1) // Filter for relevance >= 0.1
-      .sort((a, b) => b.relevanceScore - a.relevanceScore); // Sort by relevance
+    // Format news items for frontend
+    const formattedNews = newsItems
+      .filter(item => item.headline && item.url) // Only include items with headline and URL
+      .map(item => ({
+        title: item.headline,
+        url: item.url,
+        timePublished: new Date(item.datetime * 1000).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z', // Convert UNIX to YYYYMMDDTHHMMSSZ format
+        source: item.source,
+        summary: item.summary || '',
+        bannerImage: item.image || null,
+        category: item.category || 'company news',
+        related: item.related || ticker,
+        id: item.id
+      }))
+      .sort((a, b) => b.timePublished.localeCompare(a.timePublished)) // Sort by most recent
+      .slice(0, parseInt(limit)); // Limit results
     
     const responseData = { 
       success: true, 
       data: {
-        items: response.data.items || '0',
-        sentiment_score_definition: response.data.sentiment_score_definition,
-        relevance_score_definition: response.data.relevance_score_definition,
         feed: formattedNews
       }
     };
     
     // Cache the response
-    newsCache.set(ticker, {
+    newsCache.set(cacheKey, {
       timestamp: Date.now(),
       data: responseData
     });
@@ -101,10 +94,16 @@ async function getNewsSentiment(req, res) {
     res.json(responseData);
     
   } catch (error) {
-    console.error('Alpha Vantage News API error:', error.message);
+    console.error('Finnhub News API error:', error.message);
+    
+    // Try stale cache on error
+    if (cached) {
+      return res.json(cached.data);
+    }
+    
     res.json({ 
       success: false, 
-      error: error.response?.data?.Note || error.message 
+      error: error.response?.data?.error || error.message 
     });
   }
 }

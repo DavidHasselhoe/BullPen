@@ -28,6 +28,11 @@ const newsRouter = require('./server/api/news');
 const marketStatusRouter = require('./server/api/marketStatus');
 const financialsRouter = require('./server/api/financials');
 const earningsRouter = require('./server/api/earnings');
+const yahooChartRouter = require('./server/api/yahooChart');
+const yahooEarningsRouter = require('./server/api/yahooEarnings');
+const recommendationsRouter = require('./server/api/recommendations');
+const searchRouter = require('./server/api/search');
+const aiSummaryRouter = require('./server/api/aiSummary');
 
 app.use('/api/accounts', accountsRouter);
 app.use('/api/account-info', accountInfoRouter);
@@ -43,6 +48,12 @@ app.get('/api/financials', financialsRouter.getBasicFinancials);
 app.get('/api/earnings', earningsRouter.getEarningsSurprises);
 app.get('/api/earnings-estimates', earningsRouter.getEarningsEstimates);
 app.get('/api/earnings-clear-cache', earningsRouter.clearCache);
+app.get('/api/yahoo-earnings', yahooEarningsRouter.getEarningsData);
+app.get('/api/yahoo-earnings-clear-cache', yahooEarningsRouter.clearCache);
+app.get('/api/chart', yahooChartRouter.getChartData);
+app.get('/api/recommendations', recommendationsRouter.getRecommendations);
+app.get('/api/search', searchRouter.searchStocks);
+app.get('/api/ai-summary', aiSummaryRouter.generateCompanySummary);
 
 app.get('/', (req, res) => {
   const indexPath = path.join(staticDir, 'index.html');
@@ -53,4 +64,12 @@ app.get('/', (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server listening on port http://localhost:${PORT}/`);
+  console.log('\n📊 API Cache Configuration (Alpha Vantage 25 calls/day limit):');
+  console.log('  ✓ Earnings: 24 hours (updates quarterly anyway)');
+  console.log('  ✓ Earnings Estimates: 24 hours');
+  console.log('  ✓ News: 6 hours (reduced API calls by 4x)');
+  console.log('  ✓ Financials: 24 hours');
+  console.log('  ✓ Company Profiles: 24 hours');
+  console.log('  ✓ Exchange Rates: 5 minutes\n');
+  console.log('💡 Clear cache: GET /api/earnings-clear-cache?symbol=TICKER\n');
 });

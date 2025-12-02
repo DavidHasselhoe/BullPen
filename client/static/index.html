@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" />
     <title>BullPen</title>
     <link rel="icon" href="/bullpen.png" type="image/png" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -23,6 +23,23 @@
             "
           />
           <span id="dashboard-title">BullPen - Dashboard</span>
+        </div>
+        <div style="display: flex; gap: 16px; align-items: center; flex: 1; justify-content: center;">
+          <!-- Search Bar -->
+          <div id="search-container" class="search-container">
+            <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="m21 21-4.35-4.35"></path>
+            </svg>
+            <input 
+              type="text" 
+              id="search-input" 
+              class="search-input" 
+              placeholder="Search stocks..."
+              autocomplete="off"
+            />
+            <div id="search-results" class="search-results"></div>
+          </div>
         </div>
         <div id="market-status" style="display: flex; gap: 12px; align-items: center;"></div>
       </h1>
@@ -47,5 +64,6 @@
     </div>
 
     <script type="module" src="/main-new.js"></script>
+    <script src="/search.js"></script>
   </body>
 </html>

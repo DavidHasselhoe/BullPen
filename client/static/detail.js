@@ -61,8 +61,8 @@ async function loadStockDetail() {
   // Fetch financials for US stocks
   if (isUSStock) {
     fetchFinancials();
-    fetchEarnings();
-    fetchEstimates();
+    fetchEarnings(); // Now uses Yahoo Finance
+    fetchRecommendations();
   }
 }
 
@@ -168,10 +168,75 @@ async function fetchCompanyProfile() {
       const profile = await response.json();
       if (profile && profile.name) {
         displayCompanyProfile(profile);
+        // Fetch AI summary with company context
+        fetchAISummary(profile);
       }
     }
   } catch (error) {
     console.error('Failed to fetch company profile:', error);
+  }
+}
+
+async function fetchAISummary(profile) {
+  const summarySection = $('ai-summary-section');
+  const summaryContent = $('ai-summary-content');
+  
+  // Show the section
+  summarySection.style.display = 'block';
+  summaryContent.classList.add('loading');
+  
+  try {
+    const params = new URLSearchParams({
+      symbol: symbol,
+      companyName: profile.name || symbol,
+      industry: profile.finnhubIndustry || '',
+      sector: profile.sector || ''
+    });
+    
+    const response = await fetch(`/api/ai-summary?${params}`);
+    const body = await response.json();
+    
+    if (body.success && body.data) {
+      summaryContent.classList.remove('loading');
+      summaryContent.classList.add('loaded');
+      
+      // Add a slight delay for smooth transition
+      setTimeout(() => {
+        const metaInfo = body.cached 
+          ? '<div class="ai-meta">✓ Cached</div>' 
+          : body.data.fallback 
+          ? '<div class="ai-meta" style="color: #f59e0b;">⚠️ AI unavailable - showing basic info</div>'
+          : '';
+        
+        summaryContent.innerHTML = `
+          <p>${body.data.summary}</p>
+          ${metaInfo}
+        `;
+      }, 100);
+    } else if (body.quotaError) {
+      summaryContent.classList.remove('loading');
+      summaryContent.classList.add('loaded');
+      setTimeout(() => {
+        summaryContent.innerHTML = `
+          <div class="ai-warning">
+            <p style="margin: 0 0 12px 0;">⚠️ AI summary is temporarily unavailable due to API quota limits.</p>
+            <p style="margin: 0; font-size: 13px; line-height: 1.6;">
+              Please add credits to your OpenAI account at 
+              <a href="https://platform.openai.com/settings/organization/billing" target="_blank">platform.openai.com/billing</a>
+            </p>
+          </div>
+        `;
+      }, 100);
+    } else {
+      throw new Error('Failed to generate summary');
+    }
+  } catch (error) {
+    console.error('Failed to fetch AI summary:', error);
+    summaryContent.classList.remove('loading');
+    summaryContent.classList.add('error', 'loaded');
+    setTimeout(() => {
+      summaryContent.innerHTML = '<p>Unable to generate AI summary at this time.</p>';
+    }, 100);
   }
 }
 
@@ -456,11 +521,12 @@ function displayFinnhubQuote(quote) {
   
   quoteDiv.innerHTML = `
     <div class="quote-main">
-      <div class="quote-price-large">${currencySymbol}${currentPrice.toFixed(2)}</div>
-      <div class="quote-change ${changeClass}">
-        ${changeSign}${change.toFixed(2)} (${changeSign}${changePercent.toFixed(2)}%)
+      <div class="quote-price-row">
+        <div class="quote-price-large">${currencySymbol}${currentPrice.toFixed(2)}</div>
+        <div class="quote-change ${changeClass}">
+          ${changeSign}${change.toFixed(2)} (${changeSign}${changePercent.toFixed(2)}%)
+        </div>
       </div>
-      ${!isMarketLikelyClosed ? '<div class="streaming-indicator">🔴 Live</div>' : ''}
     </div>
     
     <div class="quote-details">
@@ -546,12 +612,14 @@ function displayNordnetQuote() {
   
   quoteDiv.innerHTML = `
     <div class="quote-main">
-      <div class="quote-price-large">${lastPrice.toFixed(2)} ${currencySymbol}</div>
-      ${morningPrice ? `
-        <div class="quote-change ${changeClass}">
-          ${changeSign}${dayChange.toFixed(2)} (${changeSign}${dayChangePercent.toFixed(2)}%)
-        </div>
-      ` : ''}
+      <div class="quote-price-row">
+        <div class="quote-price-large">${lastPrice.toFixed(2)} ${currencySymbol}</div>
+        ${morningPrice ? `
+          <div class="quote-change ${changeClass}">
+            ${changeSign}${dayChange.toFixed(2)} (${changeSign}${dayChangePercent.toFixed(2)}%)
+          </div>
+        ` : ''}
+      </div>
     </div>
     
     <div class="quote-details">
@@ -592,6 +660,22 @@ function displayPositionInfo() {
     if (typeof val !== 'number') val = Number(val);
     if (isNaN(val)) return '-';
     return val.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+  }
+  
+  function formatLargeNumber(val) {
+    if (typeof val !== 'number') val = Number(val);
+    if (isNaN(val) || val === null || val === undefined) return 'N/A';
+    
+    if (val >= 1e12) {
+      return `$${(val / 1e12).toFixed(2)}T`;
+    } else if (val >= 1e9) {
+      return `$${(val / 1e9).toFixed(2)}B`;
+    } else if (val >= 1e6) {
+      return `$${(val / 1e6).toFixed(2)}M`;
+    } else if (val >= 1e3) {
+      return `$${(val / 1e3).toFixed(2)}K`;
+    }
+    return `$${val.toFixed(2)}`;
   }
   
   // Extract values from objects if needed
@@ -711,9 +795,11 @@ async function fetchRealTimeQuote() {
     
     quoteDiv.innerHTML = `
       <div class="quote-main">
-        <div class="quote-price-large">${currencySymbol}${formatPrice(price)}</div>
-        <div class="quote-change ${changeClass}">
-          ${changeSign}${formatPrice(change)} (${changeSign}${changePct.toFixed(2)}%)
+        <div class="quote-price-row">
+          <div class="quote-price-large">${currencySymbol}${formatPrice(price)}</div>
+          <div class="quote-change ${changeClass}">
+            ${changeSign}${formatPrice(change)} (${changeSign}${changePct.toFixed(2)}%)
+          </div>
         </div>
       </div>
       
@@ -755,21 +841,35 @@ function showError(message) {
   errorDiv.style.display = 'block';
 }
 
+// News pagination state
+let allNewsItems = [];
+let visibleNewsCount = 5;
+
 async function fetchStockNews() {
   const newsDiv = $('news-data');
+  const showMoreContainer = $('news-show-more-container');
+  const showMoreBtn = $('news-show-more-btn');
   
   try {
-    const response = await fetch(`/api/news?ticker=${encodeURIComponent(symbol)}&limit=5`);
+    const response = await fetch(`/api/news?ticker=${encodeURIComponent(symbol)}`);
     const body = await response.json();
     
     if (!body.success) {
       newsDiv.innerHTML = `<p class="error-text">${body.error || 'Unable to load news'}</p>`;
+      showMoreContainer.style.display = 'none';
       return;
     }
     
-    const news = (body.data.feed || []).slice(0, 5);
+    allNewsItems = (body.data.feed || []);
     
-    if (news.length === 0) {
+    // Sort news by timePublished (most recent first)
+    allNewsItems.sort((a, b) => {
+      const timeA = a.timePublished || '0';
+      const timeB = b.timePublished || '0';
+      return timeB.localeCompare(timeA); // Descending order (newest first)
+    });
+    
+    if (allNewsItems.length === 0) {
       // Check if this is a US stock
       const isUSStock = !symbol.includes('.') && !symbol.includes(':') && /^[A-Z]+$/.test(symbol);
       if (isUSStock) {
@@ -777,64 +877,99 @@ async function fetchStockNews() {
       } else {
         newsDiv.innerHTML = '<p>News is only available for US stocks.</p>';
       }
+      showMoreContainer.style.display = 'none';
       return;
     }
     
-    // Function to format the time
-    const formatTime = (timeStr) => {
-      // Format: YYYYMMDDTHHMMSS
-      const year = timeStr.substring(0, 4);
-      const month = timeStr.substring(4, 6);
-      const day = timeStr.substring(6, 8);
-      const hour = timeStr.substring(9, 11);
-      const minute = timeStr.substring(11, 13);
-      
-      const date = new Date(`${year}-${month}-${day}T${hour}:${minute}:00Z`);
-      const now = new Date();
-      const diffHours = Math.floor((now - date) / (1000 * 60 * 60));
-      const diffDays = Math.floor(diffHours / 24);
-      
-      if (diffHours < 1) return 'Just now';
-      if (diffHours < 24) return `${diffHours}h ago`;
-      if (diffDays < 7) return `${diffDays}d ago`;
-      return date.toLocaleDateString();
-    };
+    // Initial render
+    visibleNewsCount = 5;
+    renderNews();
     
-    // Function to get sentiment badge
-    const getSentimentBadge = (score, label) => {
-      if (!score) return '';
-      const color = score > 0.15 ? '#10b981' : score < -0.15 ? '#ef4444' : '#6b7280';
-      return `<span style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; background: ${color}20; color: ${color};">${label || 'Neutral'}</span>`;
-    };
-    
-    // Render news items
-    const newsHTML = news.map(item => `
-      <div class="news-item">
-        <div class="news-header">
-          <div>
-            <a href="${item.url}" target="_blank" class="news-title">${item.title}</a>
-            <div class="news-meta">
-              <span class="news-source">${item.source}</span>
-              <span class="news-time">${formatTime(item.timePublished)}</span>
-              ${getSentimentBadge(item.sentiment, item.sentimentLabel)}
-            </div>
-          </div>
-          ${item.bannerImage ? `<img src="${item.bannerImage}" alt="" class="news-image">` : ''}
-        </div>
-        <p class="news-summary">${item.summary}</p>
-        ${item.tickerSentiment ? `
-          <div class="news-ticker-sentiment">
-            Relevance: ${(item.tickerSentiment.relevance_score * 100).toFixed(0)}% • 
-            Sentiment: ${item.tickerSentiment.ticker_sentiment_label}
-          </div>
-        ` : ''}
-      </div>
-    `).join('');
-    
-    newsDiv.innerHTML = newsHTML;
+    // Setup Show More button
+    if (allNewsItems.length > visibleNewsCount) {
+      showMoreContainer.style.display = 'block';
+      showMoreBtn.onclick = () => {
+        visibleNewsCount += 5;
+        renderNews();
+      };
+    } else {
+      showMoreContainer.style.display = 'none';
+    }
     
   } catch (error) {
     newsDiv.innerHTML = '<p class="error-text">Failed to load news.</p>';
+    showMoreContainer.style.display = 'none';
+  }
+}
+
+function renderNews() {
+  const newsDiv = $('news-data');
+  const showMoreContainer = $('news-show-more-container');
+  const showMoreBtn = $('news-show-more-btn');
+  
+  // Function to format the time
+  const formatTime = (timeStr) => {
+    // Format: YYYYMMDDTHHMMSS
+    const year = timeStr.substring(0, 4);
+    const month = timeStr.substring(4, 6);
+    const day = timeStr.substring(6, 8);
+    const hour = timeStr.substring(9, 11);
+    const minute = timeStr.substring(11, 13);
+    
+    const date = new Date(`${year}-${month}-${day}T${hour}:${minute}:00Z`);
+    const now = new Date();
+    const diffHours = Math.floor((now - date) / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffHours / 24);
+    
+    if (diffHours < 1) return 'Just now';
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString();
+  };
+  
+  // Function to get sentiment badge
+  const getSentimentBadge = (score, label) => {
+    if (!score) return '';
+    const color = score > 0.15 ? '#10b981' : score < -0.15 ? '#ef4444' : '#6b7280';
+    return `<span style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; background: ${color}20; color: ${color};">${label || 'Neutral'}</span>`;
+  };
+  
+  // Get visible news items
+  const visibleNews = allNewsItems.slice(0, visibleNewsCount);
+  
+  // Render news items
+  const newsHTML = visibleNews.map(item => `
+    <div class="news-item">
+      <div class="news-header">
+        <div>
+          <a href="${item.url}" target="_blank" class="news-title">${item.title}</a>
+          <div class="news-meta">
+            <span class="news-source">${item.source}</span>
+            <span class="news-time">${formatTime(item.timePublished)}</span>
+            ${getSentimentBadge(item.sentiment, item.sentimentLabel)}
+          </div>
+        </div>
+        ${item.bannerImage ? `<img src="${item.bannerImage}" alt="" class="news-image">` : ''}
+      </div>
+      <p class="news-summary">${item.summary}</p>
+      ${item.tickerSentiment ? `
+        <div class="news-ticker-sentiment">
+          Relevance: ${(item.tickerSentiment.relevance_score * 100).toFixed(0)}% • 
+          Sentiment: ${item.tickerSentiment.ticker_sentiment_label}
+        </div>
+      ` : ''}
+    </div>
+  `).join('');
+  
+  newsDiv.innerHTML = newsHTML;
+  
+  // Update Show More button
+  if (visibleNewsCount >= allNewsItems.length) {
+    showMoreContainer.style.display = 'none';
+  } else {
+    showMoreContainer.style.display = 'block';
+    const remaining = allNewsItems.length - visibleNewsCount;
+    showMoreBtn.textContent = `Show More (${remaining} remaining)`;
   }
 }
 
@@ -860,6 +995,23 @@ async function fetchFinancials() {
       return num.toFixed(2);
     };
     
+    // Format large numbers with proper T/B/M/K suffixes
+    const formatLargeNumber = (val) => {
+      if (typeof val !== 'number') val = Number(val);
+      if (isNaN(val) || val === null || val === undefined) return 'N/A';
+      
+      if (val >= 1e12) {
+        return `$${(val / 1e12).toFixed(2)}T`;
+      } else if (val >= 1e9) {
+        return `$${(val / 1e9).toFixed(2)}B`;
+      } else if (val >= 1e6) {
+        return `$${(val / 1e6).toFixed(2)}M`;
+      } else if (val >= 1e3) {
+        return `$${(val / 1e3).toFixed(2)}K`;
+      }
+      return `$${val.toFixed(2)}`;
+    };
+    
     // Format percentage
     const formatPercent = (num) => {
       if (num === null || num === undefined) return 'N/A';
@@ -869,7 +1021,7 @@ async function fetchFinancials() {
     const financialsHTML = `
       <div class="info-item">
         <span class="info-label">Market Cap</span>
-        <span class="info-value" style="font-weight: 600; color: #93c5fd;">${formatNumber(m.marketCapitalization)}</span>
+        <span class="info-value" style="font-weight: 600; color: #93c5fd;">${formatLargeNumber(m.marketCapitalization)}</span>
       </div>
       <div class="info-item">
         <span class="info-label">P/E Ratio</span>
@@ -889,7 +1041,7 @@ async function fetchFinancials() {
       </div>
       <div class="info-item">
         <span class="info-label">Avg Volume (10D)</span>
-        <span class="info-value" style="font-weight: 600; color: #93c5fd;">${formatNumber(m['10DayAverageTradingVolume'])}</span>
+        <span class="info-value" style="font-weight: 600; color: #93c5fd;">${formatLargeNumber(m['10DayAverageTradingVolume']).replace('$', '')}</span>
       </div>
       <div class="info-item">
         <span class="info-label">EPS (TTM)</span>
@@ -911,33 +1063,54 @@ async function fetchFinancials() {
 
 async function fetchEarnings() {
   const earningsDiv = $('earnings-chart');
+  const estimatesDiv = $('estimates-section');
   
   try {
-    const response = await fetch(`/api/earnings?symbol=${encodeURIComponent(symbol)}`);
+    const response = await fetch(`/api/yahoo-earnings?symbol=${encodeURIComponent(symbol)}`);
     const body = await response.json();
     
-    if (!body.success || !body.data || body.data.length === 0) {
+    if (!body.success || !body.data) {
       earningsDiv.innerHTML = '<p>EPS data not available.</p>';
+      estimatesDiv.innerHTML = '<p>Estimates data not available.</p>';
       return;
     }
     
     const earnings = body.data;
     
-    // Create the chart
-    renderEarningsChart(earnings);
+    // Render historical earnings chart
+    if (earnings.history && earnings.history.length > 0) {
+      renderEarningsChart(earnings.history);
+    } else {
+      earningsDiv.innerHTML = '<p>EPS history not available.</p>';
+    }
+    
+    // Render estimates
+    if (earnings.estimates && earnings.estimates.length > 0) {
+      renderEstimates(earnings.estimates, earnings.nextEarningsDate);
+    } else {
+      estimatesDiv.innerHTML = '<p>Estimates data not available.</p>';
+    }
     
   } catch (error) {
     console.error('Error fetching earnings:', error);
     earningsDiv.innerHTML = '<p class="error-text">Failed to load earnings data.</p>';
+    estimatesDiv.innerHTML = '<p class="error-text">Failed to load estimates data.</p>';
   }
 }
 
-function renderEarningsChart(earnings) {
+function renderEarningsChart(history) {
   const earningsDiv = $('earnings-chart');
   
+  // Take last 8 quarters for display
+  const displayData = history.slice(-8);
+  
   // Find max value for scaling
-  const allValues = earnings.flatMap(e => [Math.abs(e.actual), Math.abs(e.estimate)]);
-  const maxValue = Math.max(...allValues);
+  const allValues = displayData.flatMap(e => [
+    Math.abs(e.epsActual || 0), 
+    Math.abs(e.epsEstimate || 0)
+  ]).filter(v => v > 0);
+  
+  const maxValue = allValues.length > 0 ? Math.max(...allValues) : 1;
   const scale = maxValue * 1.2; // Add 20% padding
   
   // Create chart HTML
@@ -948,53 +1121,30 @@ function renderEarningsChart(earnings) {
   
   chartHTML += '<div class="earnings-chart-container">';
   
-  earnings.forEach((earning, index) => {
-    const actualHeight = (Math.abs(earning.actual) / scale) * 100;
-    const estimateHeight = (Math.abs(earning.estimate) / scale) * 100;
-    const isBeat = earning.actual >= earning.estimate;
+  displayData.forEach((earning, index) => {
+    const actual = earning.epsActual || 0;
+    const estimate = earning.epsEstimate || 0;
+    const actualHeight = (Math.abs(actual) / scale) * 100;
+    const estimateHeight = (Math.abs(estimate) / scale) * 100;
+    const isBeat = actual >= estimate;
     const surpriseClass = isBeat ? 'beat' : 'miss';
-    
-    // Use fiscal quarter and year from API if available, otherwise calculate
-    let quarter, fiscalYear;
-    if (earning.fiscalQuarter && earning.fiscalYear) {
-      quarter = earning.fiscalQuarter;
-      fiscalYear = earning.fiscalYear;
-    } else {
-      // Fallback calculation for fiscal quarters
-      const periodDate = new Date(earning.period);
-      const month = periodDate.getMonth();
-      const year = periodDate.getFullYear();
-      
-      if (month >= 0 && month <= 2) { // Jan-Mar = Q4
-        quarter = 4;
-        fiscalYear = year;
-      } else if (month >= 3 && month <= 5) { // Apr-Jun = Q1
-        quarter = 1;
-        fiscalYear = year + 1;
-      } else if (month >= 6 && month <= 8) { // Jul-Sep = Q2
-        quarter = 2;
-        fiscalYear = year + 1;
-      } else { // Oct-Dec = Q3
-        quarter = 3;
-        fiscalYear = year + 1;
-      }
-    }
+    const surprise = earning.epsSurprise || 0;
+    const surprisePercent = earning.surprisePercent || 0;
     
     chartHTML += `
       <div class="earnings-quarter">
         <div class="bars-container">
           <div class="bar estimate" style="height: ${estimateHeight}%">
-            <span class="bar-value">${earning.estimate.toFixed(2)}</span>
+            <span class="bar-value">${estimate.toFixed(2)}</span>
           </div>
           <div class="bar actual ${surpriseClass}" style="height: ${actualHeight}%">
-            <span class="bar-value">${earning.actual.toFixed(2)}</span>
+            <span class="bar-value">${actual.toFixed(2)}</span>
           </div>
         </div>
         <div class="quarter-label">
-          <div class="quarter-date">${earning.period}</div>
-          <div class="quarter-info">Q${quarter} FY${fiscalYear}</div>
+          <div class="quarter-date">${earning.quarter}</div>
           <div class="surprise ${surpriseClass}">
-            ${isBeat ? 'Beat' : 'Missed'}: ${earning.surprise >= 0 ? '+' : ''}${earning.surprise.toFixed(2)}
+            ${isBeat ? 'Beat' : 'Miss'}: ${surprise >= 0 ? '+' : ''}${surprise.toFixed(2)} (${surprisePercent >= 0 ? '+' : ''}${surprisePercent.toFixed(1)}%)
           </div>
         </div>
       </div>
@@ -1006,64 +1156,60 @@ function renderEarningsChart(earnings) {
   earningsDiv.innerHTML = chartHTML;
 }
 
-async function fetchEstimates() {
-  const estimatesDiv = $('estimates-section');
-  
-  try {
-    const response = await fetch(`/api/earnings-estimates?symbol=${encodeURIComponent(symbol)}`);
-    const body = await response.json();
-    
-    if (!body.success || !body.data) {
-      estimatesDiv.innerHTML = '<p>Estimates data not available.</p>';
-      return;
-    }
-    
-    const { quarterly, annual } = body.data;
-    
-    // Create the estimates display
-    renderEstimates(quarterly, annual);
-    
-  } catch (error) {
-    console.error('Error fetching estimates:', error);
-    estimatesDiv.innerHTML = '<p class="error-text">Failed to load estimates data.</p>';
-  }
-}
-
-function renderEstimates(quarterly, annual) {
+function renderEstimates(estimates, nextEarningsDate) {
   const estimatesDiv = $('estimates-section');
   
   let html = '<div class="estimates-container">';
   
-  // Quarterly Estimates
-  if (quarterly && quarterly.length > 0) {
+  // Next Earnings Date
+  if (nextEarningsDate) {
+    html += `<div class="next-earnings-date">Next Earnings: <strong>${nextEarningsDate}</strong></div>`;
+  }
+  
+  // Filter for upcoming quarters and current year
+  const upcomingQuarters = estimates.filter(e => 
+    e.period && (e.period.includes('q') || e.period.includes('Q'))
+  ).slice(0, 4);
+  
+  if (upcomingQuarters.length > 0) {
     html += '<div class="estimates-group">';
-    html += '<h3 class="estimates-title">Quarterly Estimates</h3>';
+    html += '<h3 class="estimates-title">Upcoming Quarter Estimates</h3>';
     html += '<div class="estimates-grid">';
     
-    quarterly.forEach(q => {
-      // Handle different field names from Alpha Vantage
-      const period = q.fiscalDateEnding || q.reportedDate || 'N/A';
-      const epsEstimate = q.estimatedEPS || q.estimatedEPSAvg || q.estimate || 'N/A';
-      const revenueEstimate = q.estimatedRevenue || q.estimatedRevenueAvg || null;
-      const analystCount = q.numberOfAnalysts || q.numberAnalystEstimatedRevenueAvg || 
-                          q.numberAnalystEstimatedEPS || 'N/A';
+    upcomingQuarters.forEach(est => {
+      const period = est.period.toUpperCase();
+      const epsAvg = est.earningsEstimate.avg;
+      const epsLow = est.earningsEstimate.low;
+      const epsHigh = est.earningsEstimate.high;
+      const numAnalysts = est.earningsEstimate.numberOfAnalysts;
+      const growth = est.growth;
       
       html += `
         <div class="estimate-card">
           <div class="estimate-period">${period}</div>
           <div class="estimate-metrics">
             <div class="estimate-metric">
-              <span class="metric-label">EPS Estimate</span>
-              <span class="metric-value">${epsEstimate !== 'N/A' ? '$' + epsEstimate : 'N/A'}</span>
+              <span class="metric-label">EPS Estimate (Avg)</span>
+              <span class="metric-value">${epsAvg !== null ? '$' + epsAvg.toFixed(2) : 'N/A'}</span>
             </div>
+            ${epsLow !== null && epsHigh !== null ? `
             <div class="estimate-metric">
-              <span class="metric-label">Revenue Estimate</span>
-              <span class="metric-value">${formatRevenue(revenueEstimate)}</span>
+              <span class="metric-label">Range</span>
+              <span class="metric-value">$${epsLow.toFixed(2)} - $${epsHigh.toFixed(2)}</span>
             </div>
+            ` : ''}
+            ${numAnalysts ? `
             <div class="estimate-metric">
-              <span class="metric-label">Analyst Count</span>
-              <span class="metric-value">${analystCount}</span>
+              <span class="metric-label">Analysts</span>
+              <span class="metric-value">${numAnalysts}</span>
             </div>
+            ` : ''}
+            ${growth !== null ? `
+            <div class="estimate-metric">
+              <span class="metric-label">Growth Est.</span>
+              <span class="metric-value ${growth >= 0 ? 'positive' : 'negative'}">${growth >= 0 ? '+' : ''}${(growth * 100).toFixed(1)}%</span>
+            </div>
+            ` : ''}
           </div>
         </div>
       `;
@@ -1072,36 +1218,44 @@ function renderEstimates(quarterly, annual) {
     html += '</div></div>';
   }
   
-  // Annual Estimates
-  if (annual && annual.length > 0) {
+  // Annual estimates
+  const annualEstimates = estimates.filter(e => 
+    e.period && e.period.match(/^\d+y$/)
+  ).slice(0, 2);
+  
+  if (annualEstimates.length > 0) {
     html += '<div class="estimates-group">';
     html += '<h3 class="estimates-title">Annual Estimates</h3>';
     html += '<div class="estimates-grid">';
     
-    annual.forEach(a => {
-      // Handle different field names from Alpha Vantage
-      const period = a.fiscalDateEnding || a.reportedDate || 'N/A';
-      const epsEstimate = a.estimatedEPS || a.estimatedEPSAvg || a.estimate || 'N/A';
-      const revenueEstimate = a.estimatedRevenue || a.estimatedRevenueAvg || null;
-      const analystCount = a.numberOfAnalysts || a.numberAnalystEstimatedRevenueAvg || 
-                          a.numberAnalystEstimatedEPS || 'N/A';
+    annualEstimates.forEach(est => {
+      const year = est.endDate ? new Date(est.endDate).getFullYear() : est.period;
+      const epsAvg = est.earningsEstimate.avg;
+      const revenueAvg = est.revenueEstimate.avg;
+      const growth = est.growth;
       
       html += `
         <div class="estimate-card">
-          <div class="estimate-period">${period}</div>
+          <div class="estimate-period">FY ${year}</div>
           <div class="estimate-metrics">
+            ${epsAvg !== null ? `
             <div class="estimate-metric">
               <span class="metric-label">EPS Estimate</span>
-              <span class="metric-value">${epsEstimate !== 'N/A' ? '$' + epsEstimate : 'N/A'}</span>
+              <span class="metric-value">$${epsAvg.toFixed(2)}</span>
             </div>
+            ` : ''}
+            ${revenueAvg !== null ? `
             <div class="estimate-metric">
-              <span class="metric-label">Revenue Estimate</span>
-              <span class="metric-value">${formatRevenue(revenueEstimate)}</span>
+              <span class="metric-label">Revenue Est.</span>
+              <span class="metric-value">$${(revenueAvg / 1e9).toFixed(2)}B</span>
             </div>
+            ` : ''}
+            ${growth !== null ? `
             <div class="estimate-metric">
-              <span class="metric-label">Analyst Count</span>
-              <span class="metric-value">${analystCount}</span>
+              <span class="metric-label">Growth Est.</span>
+              <span class="metric-value ${growth >= 0 ? 'positive' : 'negative'}">${growth >= 0 ? '+' : ''}${(growth * 100).toFixed(1)}%</span>
             </div>
+            ` : ''}
           </div>
         </div>
       `;
@@ -1115,11 +1269,405 @@ function renderEstimates(quarterly, annual) {
   estimatesDiv.innerHTML = html;
 }
 
-function formatRevenue(rev) {
-  if (!rev || rev === 'N/A') return 'N/A';
-  const num = parseFloat(rev);
-  if (isNaN(num)) return 'N/A';
-  if (num >= 1e9) return `$${(num / 1e9).toFixed(2)}B`;
-  if (num >= 1e6) return `$${(num / 1e6).toFixed(2)}M`;
-  return `$${num.toFixed(2)}`;
+// ============================================
+// PRICE CHART FUNCTIONALITY
+// ============================================
+
+let currentChart = null;
+let currentRange = '1d';
+let currentInterval = '5m';
+
+// Initialize chart on page load
+document.addEventListener('DOMContentLoaded', () => {
+  setupChartControls();
+  loadChart(currentRange, currentInterval);
+});
+
+function setupChartControls() {
+  const buttons = document.querySelectorAll('.chart-btn');
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      // Remove active class from all buttons
+      buttons.forEach(b => b.classList.remove('active'));
+      // Add active class to clicked button
+      btn.classList.add('active');
+      
+      const range = btn.dataset.range;
+      const interval = btn.dataset.interval;
+      loadChart(range, interval);
+    });
+  });
 }
+
+async function loadChart(range, interval) {
+  currentRange = range;
+  currentInterval = interval;
+  
+  const canvas = $('price-chart');
+  const loading = $('chart-loading');
+  
+  if (!canvas) return;
+  
+  loading.style.display = 'block';
+  canvas.style.display = 'none';
+  
+  try {
+    const response = await fetch(`/api/chart?symbol=${encodeURIComponent(symbol)}&range=${range}&interval=${interval}`);
+    
+    // Check if response is OK
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    // Check content type
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await response.text();
+      console.error('Non-JSON response:', text.substring(0, 200));
+      throw new Error('Server returned non-JSON response');
+    }
+    
+    const body = await response.json();
+    
+    if (!body.success || !body.data || !body.data.prices) {
+      throw new Error(body.error || 'Failed to load chart data');
+    }
+    
+    renderChart(body.data);
+    loading.style.display = 'none';
+    canvas.style.display = 'block';
+    
+  } catch (error) {
+    console.error('Error loading chart:', error);
+    loading.innerHTML = '<p class="error-text">Failed to load chart</p>';
+  }
+}
+
+function renderChart(data) {
+  const canvas = $('price-chart');
+  if (!canvas) return;
+  
+  const ctx = canvas.getContext('2d');
+  const prices = data.prices;
+  
+  if (prices.length === 0) {
+    return;
+  }
+  
+  // Destroy existing chart
+  if (currentChart) {
+    currentChart.destroy();
+  }
+  
+  // Set canvas size based on container
+  const container = canvas.parentElement;
+  const containerRect = container.getBoundingClientRect();
+  
+  // Get device pixel ratio for crisp rendering
+  const dpr = window.devicePixelRatio || 1;
+  
+  // Use full container width
+  const displayWidth = containerRect.width;
+  const displayHeight = 300;
+  
+  // Set actual canvas size (accounting for DPI)
+  canvas.width = displayWidth * dpr;
+  canvas.height = displayHeight * dpr;
+  
+  // Set display size (CSS pixels)
+  canvas.style.width = `${displayWidth}px`;
+  canvas.style.height = `${displayHeight}px`;
+  
+  // Scale context for DPI
+  ctx.scale(dpr, dpr);
+  
+  // Use display dimensions for all calculations
+  const canvasWidth = displayWidth;
+  const canvasHeight = displayHeight;
+  
+  // Calculate price range
+  const closePrices = prices.map(p => p.close).filter(p => p !== null);
+  const minPrice = Math.min(...closePrices);
+  const maxPrice = Math.max(...closePrices);
+  const priceRange = maxPrice - minPrice;
+  const padding = priceRange * 0.1;
+  
+  // Determine if price is up or down
+  const firstPrice = closePrices[0];
+  const lastPrice = closePrices[closePrices.length - 1];
+  const priceChange = lastPrice - firstPrice;
+  const percentChange = ((priceChange / firstPrice) * 100);
+  const isPositive = lastPrice >= firstPrice;
+  
+  // Colors matching your design
+  const lineColor = isPositive ? '#00ff88' : '#ff4757';
+  const gradientStartColor = isPositive ? 'rgba(0, 255, 136, 0.3)' : 'rgba(255, 71, 87, 0.3)';
+  const gradientEndColor = isPositive ? 'rgba(0, 255, 136, 0.0)' : 'rgba(255, 71, 87, 0.0)';
+  
+  // Function to redraw the chart
+  const drawChart = (hoverX = null) => {
+    // Clear canvas (use logical dimensions)
+    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+    
+    // Create gradient
+    const gradient = ctx.createLinearGradient(0, 0, 0, canvasHeight);
+    gradient.addColorStop(0, gradientStartColor);
+    gradient.addColorStop(1, gradientEndColor);
+    
+    // Draw filled area
+    ctx.beginPath();
+    ctx.moveTo(0, canvasHeight);
+    
+    prices.forEach((point, index) => {
+      if (point.close === null) return;
+      
+      const x = (index / (prices.length - 1)) * canvasWidth;
+      const y = canvasHeight - ((point.close - minPrice + padding) / (priceRange + padding * 2)) * canvasHeight;
+      
+      if (index === 0) {
+        ctx.lineTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+      }
+    });
+    
+    ctx.lineTo(canvasWidth, canvasHeight);
+    ctx.closePath();
+    ctx.fillStyle = gradient;
+    ctx.fill();
+    
+    // Draw line
+    ctx.beginPath();
+    prices.forEach((point, index) => {
+      if (point.close === null) return;
+      
+      const x = (index / (prices.length - 1)) * canvasWidth;
+      const y = canvasHeight - ((point.close - minPrice + padding) / (priceRange + padding * 2)) * canvasHeight;
+      
+      if (index === 0) {
+        ctx.moveTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+      }
+    });
+    
+    ctx.strokeStyle = lineColor;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    
+    // Draw crosshair if hovering
+    if (hoverX !== null) {
+      // Vertical line
+      ctx.beginPath();
+      ctx.moveTo(hoverX, 0);
+      ctx.lineTo(hoverX, canvasHeight);
+      ctx.strokeStyle = 'rgba(148, 163, 184, 0.5)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([5, 5]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      
+      // Draw dot at intersection
+      const index = Math.round((hoverX / canvasWidth) * (prices.length - 1));
+      if (index >= 0 && index < prices.length && prices[index].close !== null) {
+        const point = prices[index];
+        const y = canvasHeight - ((point.close - minPrice + padding) / (priceRange + padding * 2)) * canvasHeight;
+        
+        ctx.beginPath();
+        ctx.arc(hoverX, y, 5, 0, 2 * Math.PI);
+        ctx.fillStyle = lineColor;
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(15, 23, 42, 0.8)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+    }
+  };
+  
+  // Initial draw
+  drawChart();
+  
+  // Add percentage indicator
+  const percentIndicator = document.createElement('div');
+  percentIndicator.className = 'chart-percent-indicator';
+  percentIndicator.innerHTML = `
+    <span style="color: ${isPositive ? '#00ff88' : '#ff4757'}">
+      ${isPositive ? '+' : ''}${percentChange.toFixed(2)}%
+    </span>
+    <span style="color: #94a3b8; font-size: 0.9em; margin-left: 8px;">
+      ${currentRange.toUpperCase()}
+    </span>
+  `;
+  percentIndicator.style.display = 'block';
+  
+  // Remove old indicator if exists
+  const oldIndicator = canvas.parentElement.querySelector('.chart-percent-indicator');
+  if (oldIndicator) oldIndicator.remove();
+  
+  canvas.parentElement.insertBefore(percentIndicator, canvas);
+  
+  // Add hover interaction
+  const tooltip = document.createElement('div');
+  tooltip.className = 'chart-tooltip';
+  tooltip.style.display = 'none';
+  canvas.parentElement.appendChild(tooltip);
+  
+  canvas.addEventListener('mousemove', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    
+    // Clamp x to canvas bounds to ensure we can reach the edges
+    const clampedX = Math.max(0, Math.min(x, canvasWidth));
+    const index = Math.round((clampedX / canvasWidth) * (prices.length - 1));
+    
+    // Redraw chart with crosshair at clamped position
+    drawChart(clampedX);
+    
+    if (index >= 0 && index < prices.length && prices[index].close !== null) {
+      const point = prices[index];
+      const date = new Date(point.timestamp);
+      const dateStr = currentRange === '1d' ? 
+        date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) :
+        date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      
+      // Calculate change from first price
+      const changeFromStart = point.close - firstPrice;
+      const percentFromStart = ((changeFromStart / firstPrice) * 100);
+      const changeColor = changeFromStart >= 0 ? '#00ff88' : '#ff4757';
+      
+      tooltip.innerHTML = `
+        <div style="font-weight: 600; margin-bottom: 6px;">${dateStr}</div>
+        <div style="margin-bottom: 4px;">Price: <span style="font-weight: 600;">$${point.close.toFixed(2)}</span></div>
+        <div style="color: ${changeColor}; font-size: 0.9em; margin-bottom: 4px;">
+          ${changeFromStart >= 0 ? '+' : ''}$${changeFromStart.toFixed(2)} (${percentFromStart >= 0 ? '+' : ''}${percentFromStart.toFixed(2)}%)
+        </div>
+        ${point.volume ? `<div style="font-size: 0.85em; color: rgba(255,255,255,0.6);">Vol: ${formatVolume(point.volume)}</div>` : ''}
+      `;
+      
+      tooltip.style.display = 'block';
+      
+      // Position tooltip intelligently based on cursor position
+      const tooltipWidth = 180; // Approximate tooltip width
+      const tooltipHeight = 100; // Approximate tooltip height
+      
+      // If cursor is in the right half, show tooltip on the left
+      let tooltipX = x + 10;
+      if (x > canvasWidth / 2) {
+        tooltipX = x - tooltipWidth - 10;
+      }
+      
+      // Clamp tooltip position to stay within bounds
+      tooltipX = Math.max(5, Math.min(tooltipX, canvasWidth - tooltipWidth - 5));
+      
+      // Vertical positioning
+      let tooltipY = e.clientY - rect.top - 10;
+      if (tooltipY < 0) tooltipY = 10;
+      if (tooltipY + tooltipHeight > canvasHeight) tooltipY = canvasHeight - tooltipHeight - 10;
+      
+      tooltip.style.left = `${tooltipX}px`;
+      tooltip.style.top = `${tooltipY}px`;
+    }
+  });
+  
+  canvas.addEventListener('mouseleave', () => {
+    tooltip.style.display = 'none';
+    drawChart(); // Redraw without crosshair
+  });
+  
+  // Store chart reference
+  currentChart = { 
+    destroy: () => {
+      tooltip.remove();
+      percentIndicator.remove();
+    }
+  };
+}
+
+function formatVolume(vol) {
+  if (vol >= 1e9) return `${(vol / 1e9).toFixed(2)}B`;
+  if (vol >= 1e6) return `${(vol / 1e6).toFixed(2)}M`;
+  if (vol >= 1e3) return `${(vol / 1e3).toFixed(2)}K`;
+  return vol.toString();
+}
+
+// ============================================
+// ANALYST RECOMMENDATIONS
+// ============================================
+
+async function fetchRecommendations() {
+  const recDiv = $('recommendations-chart');
+  
+  try {
+    const response = await fetch(`/api/recommendations?symbol=${encodeURIComponent(symbol)}`);
+    const body = await response.json();
+    
+    if (!body.success || !body.data || body.data.length === 0) {
+      recDiv.innerHTML = '<p>Analyst recommendations not available.</p>';
+      return;
+    }
+    
+    renderRecommendations(body.data);
+    
+  } catch (error) {
+    console.error('Error fetching recommendations:', error);
+    recDiv.innerHTML = '<p class="error-text">Failed to load recommendations.</p>';
+  }
+}
+
+function renderRecommendations(data) {
+  const recDiv = $('recommendations-chart');
+  
+  // Sort by period descending (most recent first)
+  const sortedData = data.sort((a, b) => b.period.localeCompare(a.period));
+  
+  // Calculate max total for scaling
+  const maxTotal = Math.max(...sortedData.map(d => 
+    d.strongBuy + d.buy + d.hold + d.sell + d.strongSell
+  ));
+  
+  // Create chart HTML
+  let html = '<div class="recommendations-container">';
+  
+  sortedData.forEach(item => {
+    const total = item.strongBuy + item.buy + item.hold + item.sell + item.strongSell;
+    const date = new Date(item.period);
+    const monthYear = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    
+    // Calculate percentages for stacked bar
+    const strongBuyPct = (item.strongBuy / total) * 100;
+    const buyPct = (item.buy / total) * 100;
+    const holdPct = (item.hold / total) * 100;
+    const sellPct = (item.sell / total) * 100;
+    const strongSellPct = (item.strongSell / total) * 100;
+    
+    html += `
+      <div class="rec-bar-wrapper">
+        <div class="rec-period">${monthYear}</div>
+        <div class="rec-bar">
+          ${item.strongBuy > 0 ? `<div class="rec-segment rec-strong-buy" style="width: ${strongBuyPct}%" title="Strong Buy: ${item.strongBuy}"><span>${item.strongBuy}</span></div>` : ''}
+          ${item.buy > 0 ? `<div class="rec-segment rec-buy" style="width: ${buyPct}%" title="Buy: ${item.buy}"><span>${item.buy}</span></div>` : ''}
+          ${item.hold > 0 ? `<div class="rec-segment rec-hold" style="width: ${holdPct}%" title="Hold: ${item.hold}"><span>${item.hold}</span></div>` : ''}
+          ${item.sell > 0 ? `<div class="rec-segment rec-sell" style="width: ${sellPct}%" title="Sell: ${item.sell}"><span>${item.sell}</span></div>` : ''}
+          ${item.strongSell > 0 ? `<div class="rec-segment rec-strong-sell" style="width: ${strongSellPct}%" title="Strong Sell: ${item.strongSell}"><span>${item.strongSell}</span></div>` : ''}
+        </div>
+        <div class="rec-total">${total}</div>
+      </div>
+    `;
+  });
+  
+  html += '</div>';
+  
+  // Add legend
+  html += `
+    <div class="rec-legend">
+      <div class="rec-legend-item"><span class="rec-legend-color rec-strong-buy"></span> Strong Buy</div>
+      <div class="rec-legend-item"><span class="rec-legend-color rec-buy"></span> Buy</div>
+      <div class="rec-legend-item"><span class="rec-legend-color rec-hold"></span> Hold</div>
+      <div class="rec-legend-item"><span class="rec-legend-color rec-sell"></span> Sell</div>
+      <div class="rec-legend-item"><span class="rec-legend-color rec-strong-sell"></span> Strong Sell</div>
+    </div>
+  `;
+  
+  recDiv.innerHTML = html;
+}
+

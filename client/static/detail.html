@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5, user-scalable=yes">
   <title>BullPen Details</title>
   <link rel="icon" href="/bullpen.png" type="image/png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,7 +12,29 @@
 </head>
 <body>
   <div class="container">
-    <a href="/" class="back-link">← Back to Portfolio</a>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <a href="/" class="back-link">← Back to Portfolio</a>
+      
+      <div style="flex: 1; display: flex; justify-content: center;">
+        <!-- Search Bar -->
+        <div id="search-container" class="search-container">
+          <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.35-4.35"></path>
+          </svg>
+          <input 
+            type="text" 
+            id="search-input" 
+            class="search-input" 
+            placeholder="Search stocks..."
+            autocomplete="off"
+          />
+          <div id="search-results" class="search-results"></div>
+        </div>
+      </div>
+      
+      <div style="width: 150px;"></div>
+    </div>
     
     <div id="stock-header">
       <h1 id="stock-name">Loading...</h1>
@@ -20,11 +42,30 @@
     </div>
 
     <div id="quote-section">
-      <h2>Current Price</h2>
-      <div id="quote-data" class="quote-grid">
-        <p>Loading quote data...</p>
+      <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 32px; align-items: start;">
+        <div style="min-height: 200px;">
+          <h2>Current Price</h2>
+          <div id="quote-data" class="quote-grid">
+            <p>Loading quote data...</p>
+          </div>
+          <p id="quote-timestamp" class="timestamp"></p>
+        </div>
+        
+        <div id="chart-container">
+          <div id="chart-controls">
+            <button class="chart-btn active" data-range="1d" data-interval="5m">1D</button>
+            <button class="chart-btn" data-range="5d" data-interval="15m">1W</button>
+            <button class="chart-btn" data-range="1mo" data-interval="1h">1M</button>
+            <button class="chart-btn" data-range="3mo" data-interval="1d">3M</button>
+            <button class="chart-btn" data-range="ytd" data-interval="1d">YTD</button>
+            <button class="chart-btn" data-range="1y" data-interval="1d">1Y</button>
+            <button class="chart-btn" data-range="3y" data-interval="1wk">3Y</button>
+            <button class="chart-btn" data-range="max" data-interval="1mo">MAX</button>
+          </div>
+          <canvas id="price-chart"></canvas>
+          <div id="chart-loading">Loading chart...</div>
+        </div>
       </div>
-      <p id="quote-timestamp" class="timestamp"></p>
     </div>
 
     <div id="combined-section">
@@ -42,6 +83,29 @@
             <p>Loading financials...</p>
           </div>
         </div>
+      </div>
+      
+      <div id="ai-summary-section" style="display: none; margin-top: 32px;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+          <h2 style="margin: 0;">Company Overview</h2>
+          <svg class="ai-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+            <path d="M2 17l10 5 10-5"></path>
+            <path d="M2 12l10 5 10-5"></path>
+          </svg>
+          <span class="ai-badge">AI</span>
+        </div>
+        <div id="ai-summary-content" class="ai-summary-box">
+          <div class="ai-loading-shimmer"></div>
+          <p style="color: #cbd5e1; line-height: 1.8; margin: 0; opacity: 0;">Loading AI summary...</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="recommendations-section" class="card">
+      <h2>Analyst Recommendations</h2>
+      <div id="recommendations-chart">
+        <p>Loading analyst recommendations...</p>
       </div>
     </div>
 
@@ -62,11 +126,15 @@
       <div id="news-data">
         <p>Loading news...</p>
       </div>
+      <div id="news-show-more-container" style="display: none; text-align: center; margin-top: 20px;">
+        <button id="news-show-more-btn" class="show-more-btn">Show More</button>
+      </div>
     </div>
 
     <div id="error-message" class="error-message" style="display: none;"></div>
   </div>
 
   <script src="detail.js"></script>
+  <script src="search.js"></script>
 </body>
 </html>

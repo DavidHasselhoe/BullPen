@@ -5,10 +5,10 @@ const axios = require('axios');
 const ALPHA_VANTAGE_API_KEY = process.env.ALPHA_VANTAGE_API_KEY;
 const MASSIVE_API_KEY = process.env.MASSIVE_API_KEY;
 
-// In-memory cache for earnings data
+// In-memory cache for earnings data (aggressive caching for limited Alpha Vantage API calls)
 const earningsCache = new Map();
 const estimatesCache = new Map();
-const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours - earnings only update quarterly
 
 function fetchJson(url) {
   return new Promise((resolve, reject) => {
@@ -73,8 +73,8 @@ async function getEarningsSurprises(req, res) {
     return res.json({ success: false, error: 'symbol parameter is required' });
   }
   
-  if (!MASSIVE_API_KEY) {
-    return res.json({ success: false, error: 'Massive API key not configured' });
+  if (!ALPHA_VANTAGE_API_KEY) {
+    return res.json({ success: false, error: 'Alpha Vantage API key not configured' });
   }
   
   // Check cache first
@@ -168,15 +168,15 @@ async function getEarningsSurprises(req, res) {
     res.json(responseData);
     
   } catch (error) {
-    console.error('Massive API earnings error:', error.message);
+    console.error('Alpha Vantage earnings error:', error.message);
     if (error.response) {
       console.error('Error response status:', error.response.status);
       console.error('Error response data:', JSON.stringify(error.response.data).substring(0, 200));
     }
     
-    // Return cached data if available
+    // Return stale cached data if available (important for API rate limits)
     if (cached) {
-      console.log('Returning cached data due to error');
+      console.log('Returning stale cached data due to API error/rate limit');
       return res.json(cached.data);
     }
     
@@ -206,7 +206,9 @@ async function getEarningsEstimates(req, res) {
   }
   
   try {
-    const url = `https://www.alphavantage.co/query?function=EARNINGS_ESTIMATES&symbol=${encodeURIComponent(symbol)}&apikey=${ALPHA_VANTAGE_API_KEY}`;
+    // Alpha Vantage doesn't have a separate EARNINGS_ESTIMATES function
+    // We need to extract estimates from the EARNINGS call which we already cache
+    const url = `https://www.alphavantage.co/query?function=EARNINGS&symbol=${encodeURIComponent(symbol)}&apikey=${ALPHA_VANTAGE_API_KEY}`;
     
     const data = await fetchJson(url);
     
@@ -222,11 +224,29 @@ async function getEarningsEstimates(req, res) {
       });
     }
     
-    // Alpha Vantage uses different field names
-    const quarterlyData = data.quarterlyEarnings || data.quarterlyEstimates || [];
-    const annualData = data.annualEarnings || data.annualEstimates || [];
+    // Extract upcoming quarters (those with estimates but no reported EPS yet)
+    const quarterlyEarnings = data.quarterlyEarnings || [];
+    const annualEarnings = data.annualEarnings || [];
     
-    if (quarterlyData.length === 0 && annualData.length === 0) {
+    // Get future quarters (where reportedEPS might be "None" or null) or recent quarters with estimates
+    const quarterlyEstimates = quarterlyEarnings
+      .filter(q => q.estimatedEPS && q.estimatedEPS !== 'None')
+      .slice(0, 4)
+      .map(q => ({
+        fiscalDateEnding: q.fiscalDateEnding,
+        estimatedEPS: q.estimatedEPS,
+        reportedEPS: q.reportedEPS
+      }));
+    
+    // Get annual estimates
+    const annualEstimates = annualEarnings
+      .slice(0, 3)
+      .map(a => ({
+        fiscalDateEnding: a.fiscalDateEnding,
+        reportedEPS: a.reportedEPS
+      }));
+    
+    if (quarterlyEstimates.length === 0 && annualEstimates.length === 0) {
       return res.json({ 
         success: false, 
         error: 'No estimates data available for this symbol'
@@ -236,8 +256,8 @@ async function getEarningsEstimates(req, res) {
     const responseData = {
       success: true,
       data: {
-        quarterly: quarterlyData.slice(0, 4),
-        annual: annualData.slice(0, 3)
+        quarterly: quarterlyEstimates,
+        annual: annualEstimates
       }
     };
     
