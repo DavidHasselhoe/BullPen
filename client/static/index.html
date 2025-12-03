@@ -56,14 +56,32 @@
 
       <div id="status"></div>
 
-      <div id="accounts"></div>
+      <!-- Tab Navigation -->
+      <div class="tab-container">
+        <button class="tab-button active" data-tab="stocks">
+          Stocks
+        </button>
+        <button class="tab-button" data-tab="crypto">
+          Crypto
+        </button>
+      </div>
 
-      <!-- Placeholders for positions and account info -->
-      <div id="accinfo" style="display: none"></div>
-      <div id="positions"></div>
+      <!-- Stocks Content -->
+      <div id="stocks-content" class="tab-content active">
+        <div id="accounts"></div>
+        <div id="accinfo" style="display: none"></div>
+        <div id="positions"></div>
+      </div>
+
+      <!-- Crypto Content -->
+      <div id="crypto-content" class="tab-content">
+        <div id="firi-balances-wrapper"></div>
+      </div>
     </div>
 
     <script type="module" src="/main-new.js"></script>
     <script src="/search.js"></script>
+    <script src="/firi.js"></script>
   </body>
 </html>
+
