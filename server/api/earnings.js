@@ -38,7 +38,6 @@ function fetchJsonWithHeaders(url, options = {}) {
     };
     
     const req = https.get(requestOptions, (res) => {
-      console.log(`Response status: ${res.statusCode}`);
       
       let data = '';
       res.on('data', (chunk) => data += chunk);
@@ -88,20 +87,14 @@ async function getEarningsSurprises(req, res) {
     // Try Alpha Vantage EARNINGS API as it's more reliable
     const url = `https://www.alphavantage.co/query?function=EARNINGS&symbol=${encodeURIComponent(symbol)}&apikey=${ALPHA_VANTAGE_API_KEY}`;
     
-    console.log(`Fetching earnings for ${symbol} from Alpha Vantage`);
-    
     const response = await axios.get(url, {
       timeout: 10000 // 10 seconds
     });
     
-    console.log(`Response status: ${response.status}`);
     const data = response.data;
     
-    console.log(`Alpha Vantage response keys:`, Object.keys(data));
-    
-    // Check for errors
+    // Check for API errors
     if (data.Note || data.Information || data['Error Message']) {
-      console.log(`API Error for ${symbol}:`, data.Note || data.Information || data['Error Message']);
       // Return stale cache if available
       if (cached) {
         return res.json(cached.data);
@@ -115,7 +108,6 @@ async function getEarningsSurprises(req, res) {
     const quarterlyEarnings = data.quarterlyEarnings || [];
     
     if (quarterlyEarnings.length === 0) {
-      console.log(`No earnings data for ${symbol}`);
       if (cached) {
         return res.json(cached.data);
       }
@@ -124,8 +116,6 @@ async function getEarningsSurprises(req, res) {
         error: 'No earnings data available'
       });
     }
-    
-    console.log(`${symbol} - Found ${quarterlyEarnings.length} quarterly earnings records`);
     
     // Format the data for our chart - Alpha Vantage provides reportedEPS and estimatedEPS
     const formattedEarnings = quarterlyEarnings.slice(0, 4).map(q => {
@@ -146,13 +136,6 @@ async function getEarningsSurprises(req, res) {
         reportedDate: q.reportedDate
       };
     }).reverse(); // Reverse to show oldest to newest (left to right)
-    
-    console.log(`${symbol} - Most recent quarter:`, {
-      period: formattedEarnings[formattedEarnings.length - 1].period,
-      actual: formattedEarnings[formattedEarnings.length - 1].actual,
-      estimate: formattedEarnings[formattedEarnings.length - 1].estimate,
-      surprise: formattedEarnings[formattedEarnings.length - 1].surprise
-    });
     
     const responseData = {
       success: true,
@@ -176,7 +159,6 @@ async function getEarningsSurprises(req, res) {
     
     // Return stale cached data if available (important for API rate limits)
     if (cached) {
-      console.log('Returning stale cached data due to API error/rate limit');
       return res.json(cached.data);
     }
     

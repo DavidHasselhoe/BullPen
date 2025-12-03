@@ -35,7 +35,6 @@ async function getNewsSentiment(req, res) {
     const from = fromDate.toISOString().split('T')[0]; // YYYY-MM-DD
     const to = toDate.toISOString().split('T')[0];
     
-    console.log('Fetching news from Finnhub for:', ticker);
     const response = await axios.get(`https://finnhub.io/api/v1/company-news`, {
       params: {
         symbol: ticker,
@@ -51,7 +50,6 @@ async function getNewsSentiment(req, res) {
     if (!Array.isArray(newsItems) || newsItems.length === 0) {
       // If we have cached data (even if expired), return it instead of error
       if (cached) {
-        console.log(`No news found, returning stale cache for ${ticker}`);
         return res.json(cached.data);
       }
       

@@ -23,8 +23,6 @@ async function getChartData(req, res) {
   try {
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=${range}&interval=${interval}`;
     
-    console.log(`Fetching chart data for ${symbol}, range: ${range}, interval: ${interval}`);
-    
     const response = await axios.get(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
@@ -34,8 +32,6 @@ async function getChartData(req, res) {
     });
     
     const data = response.data;
-    
-    console.log('Yahoo Finance response received');
     
     // Check for errors
     if (!data || !data.chart) {
@@ -124,7 +120,6 @@ async function getChartData(req, res) {
     
     // Return cached data if available
     if (cached) {
-      console.log('Returning stale cached chart data');
       return res.json(cached.data);
     }
     
