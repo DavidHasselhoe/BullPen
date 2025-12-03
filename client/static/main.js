@@ -50,7 +50,6 @@ async function fetchExchangeRates() {
     const result = await response.json();
     if (result.success && result.data) {
       exchangeRates = result.data;
-      console.log('Exchange rates updated:', exchangeRates);
     }
   } catch (error) {
     console.error('Failed to fetch exchange rates, using fallback:', error);
@@ -69,7 +68,6 @@ async function fetchPreviousCloses(symbols) {
       Object.entries(result.data).forEach(([symbol, prevClose]) => {
         previousCloses.set(symbol, prevClose);
       });
-      console.log('Previous closes updated:', result.data);
     }
   } catch (error) {
     console.error('Failed to fetch previous closes:', error);
