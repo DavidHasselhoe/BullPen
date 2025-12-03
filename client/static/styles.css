@@ -2089,3 +2089,496 @@ table.holdings-table tbody tr:hover {
     height: 130px;
   }
 }
+
+/* Firi Crypto Balances Styles */
+.firi-container {
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 24px;
+  margin: 20px 0;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.firi-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.firi-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #e1e8f0;
+}
+
+.firi-summary-cards {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.firi-summary-card {
+  background: rgba(30, 41, 59, 0.5);
+  padding: 16px 24px;
+  border-radius: 10px;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), inset 0 0 20px rgba(59, 130, 246, 0.05);
+  transition: all 0.3s ease;
+  min-width: 180px;
+}
+
+.firi-summary-card:hover {
+  border-color: rgba(59, 130, 246, 0.6);
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.2), inset 0 0 30px rgba(59, 130, 246, 0.1);
+  transform: translateY(-2px);
+}
+
+.firi-card-label {
+  font-size: 12px;
+  color: #cbd5e1;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.firi-card-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #60a5fa;
+  font-variant-numeric: tabular-nums;
+}
+
+.firi-total {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.firi-total-label {
+  font-size: 12px;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.firi-total-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #60a5fa;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 20px rgba(96, 165, 250, 0.4);
+}
+
+.firi-table-container {
+  overflow-x: hidden;
+}
+
+.firi-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.firi-table thead {
+  background: rgba(30, 41, 59, 0.5);
+}
+
+.firi-table th {
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #94a3b8;
+  border-bottom: 2px solid rgba(59, 130, 246, 0.2);
+}
+
+.firi-table tbody tr {
+  border-bottom: 1px solid rgba(30, 41, 59, 0.5);
+  transition: background-color 0.15s;
+}
+
+.firi-table tbody tr:hover {
+  background-color: rgba(30, 41, 59, 0.3);
+}
+
+.firi-table td {
+  padding: 16px;
+  font-size: 14px;
+  color: #e1e8f0;
+  font-variant-numeric: tabular-nums;
+}
+
+.crypto-currency {
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.crypto-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: contain;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 4px;
+}
+
+.crypto-icon-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.15));
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 50%;
+  font-size: 18px;
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.2);
+}
+
+.crypto-symbol {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  background: rgba(59, 130, 246, 0.8);
+  color: white;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+}
+
+.crypto-balance {
+  font-weight: 500;
+  color: #cbd5e1;
+}
+
+.crypto-price-positive {
+  color: #e1e8f0;
+  font-weight: 500;
+}
+
+.crypto-market-value {
+  color: #60a5fa;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.crypto-price {
+  transition: all 0.3s ease;
+}
+
+.crypto-market-value {
+  transition: all 0.3s ease;
+}
+
+/* Crypto price flash animations */
+.crypto-price.price-flash-up {
+  animation: flashGreen 1s ease-out;
+}
+
+.crypto-price.price-flash-down {
+  animation: flashRed 1s ease-out;
+}
+
+.firi-empty {
+  text-align: center;
+  padding: 40px;
+  color: #64748b;
+  font-size: 14px;
+}
+
+/* Firi Login Styles */
+.firi-login-container {
+  margin-top: 24px;
+}
+
+.firi-login-prompt {
+  text-align: center;
+  padding: 60px 40px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(51, 65, 85, 0.5);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+}
+
+.firi-login-prompt p {
+  color: #94a3b8;
+  font-size: 16px;
+  margin-bottom: 24px;
+}
+
+.firi-credentials-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 500px;
+  margin: 0 auto 16px;
+}
+
+.firi-api-key-input {
+  display: flex;
+  gap: 12px;
+  max-width: 500px;
+  margin: 0 auto 16px;
+  align-items: stretch;
+}
+
+.api-key-field {
+  flex: 1;
+  padding: 14px 16px;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(51, 65, 85, 0.8);
+  border-radius: 8px;
+  color: #e1e8f0;
+  font-size: 14px;
+  font-family: 'Courier New', monospace;
+  transition: all 0.3s ease;
+}
+
+.api-key-field:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.api-key-field::placeholder {
+  color: #64748b;
+}
+
+.firi-login-btn {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  border: none;
+  padding: 14px 32px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  white-space: nowrap;
+}
+
+.firi-login-btn:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+}
+
+.firi-login-btn:active {
+  transform: translateY(0);
+}
+
+.firi-help-text {
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 16px;
+}
+
+.firi-help-text a {
+  color: #3b82f6;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.firi-help-text a:hover {
+  color: #60a5fa;
+  text-decoration: underline;
+}
+
+/* Tab Navigation Styles */
+.tab-container {
+  display: flex;
+  gap: 12px;
+  margin: 24px 0;
+  position: relative;
+  z-index: 1;
+}
+
+.tab-button {
+  flex: 1;
+  padding: 14px 24px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #94a3b8;
+  background: rgba(15, 23, 42, 0.4);
+  border: 1px solid rgba(59, 130, 246, 0.15);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(8px);
+  position: relative;
+  overflow: hidden;
+}
+
+.tab-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(96, 165, 250, 0.05));
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.tab-button:hover:not(.active) {
+  background: rgba(15, 23, 42, 0.6);
+  border-color: rgba(59, 130, 246, 0.3);
+  color: #bfdbfe;
+  transform: translateY(-2px);
+}
+
+.tab-button:hover:not(.active)::before {
+  opacity: 1;
+}
+
+.tab-button.active {
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  color: #60a5fa;
+  box-shadow: 0 0 25px rgba(59, 130, 246, 0.3),
+              inset 0 0 20px rgba(59, 130, 246, 0.1);
+}
+
+.tab-button.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #3b82f6, transparent);
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.8);
+}
+
+.tab-content {
+  display: none;
+  animation: fadeIn 0.4s ease-in-out;
+  position: relative;
+  z-index: 1;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Mobile responsive for tabs */
+@media (max-width: 768px) {
+  .tab-button {
+    padding: 12px 16px;
+    font-size: 14px;
+  }
+}
+
+/* Mobile responsive for Firi */
+@media (max-width: 768px) {
+  .firi-container {
+    padding: 16px;
+    margin: 16px 0;
+  }
+  
+  .firi-header h2 {
+    font-size: 18px;
+  }
+  
+  .firi-summary-cards {
+    width: 100%;
+  }
+  
+  .firi-summary-card {
+    flex: 1 1 auto;
+    min-width: 140px;
+  }
+  
+  .firi-card-value {
+    font-size: 20px;
+  }
+  
+  .firi-total-value {
+    font-size: 20px;
+  }
+  
+  .firi-table th,
+  .firi-table td {
+    padding: 10px 8px;
+    font-size: 12px;
+  }
+  
+  .crypto-symbol {
+    font-size: 11px;
+    padding: 3px 8px;
+  }
+  
+  .crypto-market-value {
+    font-size: 13px;
+  }
+}
+
+/* Crypto detail page styles */
+.crypto-row {
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.crypto-row:hover {
+  background-color: rgba(59, 130, 246, 0.08) !important;
+  transform: scale(1.01);
+}
+
+.description-box {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid #1e293b;
+  border-radius: 12px;
+  padding: 20px;
+  color: #cbd5e1;
+  line-height: 1.8;
+  white-space: pre-wrap;
+}
+
+.external-link {
+  display: inline-block;
+  padding: 10px 16px;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 8px;
+  color: #60a5fa;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+.external-link:hover {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+}
+
+
