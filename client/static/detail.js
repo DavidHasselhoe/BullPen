@@ -291,19 +291,16 @@ async function initFinnhubWebSocket() {
     finnhubSocket = new WebSocket(`wss://ws.finnhub.io?token=${apiKey}`);
     
     finnhubSocket.addEventListener('open', function (event) {
-      console.log('Finnhub WebSocket connected');
       // Subscribe to symbol
       finnhubSocket.send(JSON.stringify({'type': 'subscribe', 'symbol': symbol}));
     });
     
     finnhubSocket.addEventListener('message', function (event) {
       const message = JSON.parse(event.data);
-      console.log('WebSocket message received:', message);
       
       if (message.type === 'trade' && message.data && message.data.length > 0) {
         // Get the latest trade
         const trade = message.data[message.data.length - 1];
-        console.log('Trade data:', trade);
         updateRealTimePrice(trade);
       }
     });
@@ -314,7 +311,6 @@ async function initFinnhubWebSocket() {
     });
     
     finnhubSocket.addEventListener('close', function (event) {
-      console.log('WebSocket closed');
       timestampDiv.textContent = 'Connection closed';
     });
     
