@@ -6,7 +6,6 @@ export async function fetchExchangeRates() {
     const response = await fetch('/api/exchangeRates');
     const result = await response.json();
     if (result.success && result.data) {
-      console.log('Exchange rates updated:', result.data);
       return result.data;
     }
   } catch (error) {
@@ -30,7 +29,6 @@ export async function fetchPreviousCloses(symbols) {
     const response = await fetch(`/api/previous-closes?symbols=${symbolsParam}`);
     const result = await response.json();
     if (result.success && result.data) {
-      console.log('Previous closes updated:', result.data);
       return result.data;
     }
   } catch (error) {
