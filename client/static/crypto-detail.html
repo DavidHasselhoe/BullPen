@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5, user-scalable=yes">
+  <title>BullPen Crypto Details</title>
+  <link rel="icon" href="/bullpen.png" type="image/png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <a href="/" class="back-link">← Back to Portfolio</a>
+      
+      <div style="flex: 1; display: flex; justify-content: center;">
+        <!-- Placeholder for future search -->
+        <div style="width: 400px;"></div>
+      </div>
+      
+      <div style="width: 150px;"></div>
+    </div>
+    
+    <div id="crypto-header">
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <img id="coin-image" src="" alt="" style="width: 64px; height: 64px; border-radius: 50%; display: none;">
+        <div>
+          <h1 id="coin-name" style="margin: 0;">Loading...</h1>
+          <div id="coin-meta" style="color: #94a3b8; font-size: 16px; margin-top: 6px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="quote-section">
+      <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 32px; align-items: start;">
+        <div style="min-height: 200px;">
+          <h2>Current Price</h2>
+          <div id="quote-data" class="quote-grid">
+            <p>Loading price data...</p>
+          </div>
+          <p id="quote-timestamp" class="timestamp"></p>
+        </div>
+        
+        <div id="chart-container">
+          <div id="chart-controls">
+            <button class="chart-btn active" data-days="1" data-interval="hourly">1D</button>
+            <button class="chart-btn" data-days="7" data-interval="hourly">1W</button>
+            <button class="chart-btn" data-days="30" data-interval="hourly">1M</button>
+            <button class="chart-btn" data-days="90" data-interval="daily">3M</button>
+            <button class="chart-btn" data-days="365" data-interval="daily">1Y</button>
+            <button class="chart-btn" data-days="max" data-interval="daily">MAX</button>
+          </div>
+          <canvas id="price-chart"></canvas>
+          <div id="chart-loading">Loading chart...</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="combined-section">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px;">
+        <div>
+          <h2 style="margin: 0 0 20px 0;">Your Position</h2>
+          <div id="position-data" class="info-grid">
+            <p>Loading position data...</p>
+          </div>
+        </div>
+
+        <div>
+          <h2 style="margin: 0 0 20px 0;">Key Metrics</h2>
+          <div id="coin-metrics" class="info-grid">
+            <p>Loading coin metrics...</p>
+          </div>
+        </div>
+      </div>
+      
+      <div id="description-section" style="display: none; margin-top: 32px;">
+        <h2 style="margin: 0 0 16px 0;">About <span id="about-coin-name"></span></h2>
+        <div id="coin-description" class="description-box">
+          <p>Loading description...</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="error-message" class="error-message" style="display: none;"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="crypto-detail.js"></script>
+</body>
+</html>
