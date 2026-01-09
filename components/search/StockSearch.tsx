@@ -231,6 +231,10 @@ export function StockSearch() {
       {/* Ingestion Loading Dialog */}
       <Dialog open={isIngesting}>
         <DialogContent className="sm:max-w-md">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Analyzing Company</DialogTitle>
+            <DialogDescription>Processing SEC filings and generating insights</DialogDescription>
+          </DialogHeader>
           <div className="flex flex-col items-center justify-center gap-4 py-6">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
             <p className="text-sm text-muted-foreground text-center">{ingestionProgress}</p>
