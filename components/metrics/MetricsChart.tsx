@@ -9,6 +9,9 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  Area,
+  AreaChart,
+  ReferenceLine,
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { MetricTimeSeries } from '@/lib/metrics/metrics-ui';
@@ -114,6 +117,64 @@ export function MetricsChart({ timeSeries }: MetricsChartProps) {
   // Determine if we have enough points for a line (need at least 2)
   const hasMultiplePoints = chartData.length >= 2;
 
+  // Calculate trend direction (positive or negative overall)
+  // Compare first and last values to determine overall trend
+  let trendDirection: 'positive' | 'negative' | 'neutral' = 'neutral';
+  let gradientStart = 0;
+  let gradientEnd = 0;
+
+  if (chartData.length >= 2) {
+    const firstValue = chartData[0].value;
+    const lastValue = chartData[chartData.length - 1].value;
+    const diff = lastValue - firstValue;
+    
+    if (diff > 0) {
+      trendDirection = 'positive';
+    } else if (diff < 0) {
+      trendDirection = 'negative';
+    }
+
+    // Find min and max values for gradient positioning
+    const values = chartData.map(d => d.value);
+    const minValue = Math.min(...values);
+    const maxValue = Math.max(...values);
+    
+    // Set gradient based on whether values are above or below zero (if applicable)
+    // For most metrics, we want to fill to zero or minimum
+    if (minValue >= 0) {
+      // All positive values - fill to bottom (zero line)
+      gradientStart = 0;
+      gradientEnd = 0;
+    } else if (maxValue <= 0) {
+      // All negative values - fill to top (zero line)
+      gradientStart = 0;
+      gradientEnd = 0;
+    } else {
+      // Mixed positive and negative - use zero as reference
+      gradientStart = 0;
+      gradientEnd = 0;
+    }
+  }
+
+  // Define gradient colors based on trend
+  const gradientId = `gradient-${trendDirection}`;
+  const areaColor = trendDirection === 'positive' 
+    ? 'hsl(142, 76%, 36%)' // Green
+    : trendDirection === 'negative'
+    ? 'hsl(0, 84%, 60%)' // Red
+    : 'hsl(var(--muted))'; // Neutral/muted
+
+  const lineColor = trendDirection === 'positive'
+    ? 'hsl(142, 76%, 46%)' // Brighter green
+    : trendDirection === 'negative'
+    ? 'hsl(0, 84%, 70%)' // Brighter red
+    : strokeColor; // Use theme-aware color for neutral
+
+  // Find the baseline (zero or minimum positive value) for area fill
+  const baseline = chartData.length > 0 
+    ? Math.min(0, Math.min(...chartData.map(d => d.value)) * 0.95)
+    : 0;
+
   return (
     <Card>
       <CardHeader>
@@ -121,16 +182,32 @@ export function MetricsChart({ timeSeries }: MetricsChartProps) {
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={400}>
-          <LineChart
+          <AreaChart
             data={chartData}
             margin={{ top: 5, right: 20, left: 10, bottom: 40 }}
           >
             <defs>
+              {/* Green gradient for positive trend */}
+              <linearGradient id="gradient-positive" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="hsl(142, 76%, 36%)" stopOpacity={0.3} />
+                <stop offset="100%" stopColor="hsl(142, 76%, 36%)" stopOpacity={0.05} />
+              </linearGradient>
+              {/* Red gradient for negative trend */}
+              <linearGradient id="gradient-negative" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="hsl(0, 84%, 60%)" stopOpacity={0.3} />
+                <stop offset="100%" stopColor="hsl(0, 84%, 60%)" stopOpacity={0.05} />
+              </linearGradient>
+              {/* Neutral gradient */}
+              <linearGradient id="gradient-neutral" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="hsl(var(--muted))" stopOpacity={0.2} />
+                <stop offset="100%" stopColor="hsl(var(--muted))" stopOpacity={0.02} />
+              </linearGradient>
               <style>{`
                 .recharts-cartesian-grid-horizontal line,
                 .recharts-cartesian-grid-vertical line {
                   stroke: hsl(var(--border));
-                  opacity: 0.3;
+                  opacity: 0.4;
+                  stroke-width: 1px;
                 }
                 .recharts-xAxis .recharts-cartesian-axis-tick text,
                 .recharts-yAxis .recharts-cartesian-axis-tick text {
@@ -147,7 +224,7 @@ export function MetricsChart({ timeSeries }: MetricsChartProps) {
                 }
               `}</style>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+            <CartesianGrid strokeDasharray="3 3" opacity={0.4} />
             <XAxis
               dataKey="date"
               tick={{ fontSize: 11 }}
@@ -162,20 +239,33 @@ export function MetricsChart({ timeSeries }: MetricsChartProps) {
               width={80}
             />
             <Tooltip content={<CustomTooltip />} />
+            {/* Area fill beneath the line */}
+            <Area
+              type="monotone"
+              dataKey="value"
+              stroke="none"
+              fill={`url(#gradient-${trendDirection})`}
+              fillOpacity={1}
+              connectNulls={false}
+              animationDuration={300}
+              isAnimationActive={true}
+              baseLine={baseline}
+            />
+            {/* Line on top of the area */}
             <Line
               type="monotone"
               dataKey="value"
-              stroke={strokeColor}
+              stroke={lineColor}
               strokeWidth={3}
               dot={{
-                fill: strokeColor,
+                fill: lineColor,
                 r: 5,
                 strokeWidth: 2,
                 stroke: 'hsl(var(--card))',
               }}
               activeDot={{
                 r: 8,
-                stroke: strokeColor,
+                stroke: lineColor,
                 strokeWidth: 3,
                 fill: 'hsl(var(--card))',
               }}
@@ -183,7 +273,7 @@ export function MetricsChart({ timeSeries }: MetricsChartProps) {
               animationDuration={300}
               isAnimationActive={true}
             />
-          </LineChart>
+          </AreaChart>
         </ResponsiveContainer>
       </CardContent>
     </Card>

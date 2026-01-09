@@ -13,6 +13,7 @@ import { TrendIndicator } from '@/components/metrics/TrendIndicator';
 import { CompositeScoreCard } from '@/components/metrics/CompositeScoreCard';
 import { IngestionProgressBar } from '@/components/stock/IngestionProgressBar';
 import { CompanyOverview } from '@/components/stock/CompanyOverview';
+import { StockSearch } from '@/components/search/StockSearch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -268,14 +269,19 @@ export default function StockDetailPage() {
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        {/* Back Button */}
-        <button
-          onClick={() => router.back()}
-          className="mb-6 flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back
-        </button>
+        {/* Header with Back Button and Search */}
+        <div className="mb-6 flex items-center justify-between gap-4">
+          <button
+            onClick={() => router.back()}
+            className="flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back
+          </button>
+          <div className="flex-shrink-0">
+            <StockSearch />
+          </div>
+        </div>
 
         {/* Company Header */}
         {company && (
