@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { useCompany, useMetricsTimeSeries } from '@/hooks/use-metrics';
+import { useStockStatus } from '@/hooks/use-stock-status';
 import { MetricSelector } from '@/components/metrics/MetricSelector';
 import { PeriodToggle } from '@/components/metrics/PeriodToggle';
 import { DeltaCards } from '@/components/metrics/DeltaCards';
@@ -14,8 +15,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Building2 } from 'lucide-react';
-import { IngestionProgress } from '@/components/search/IngestionProgress';
+import { Progress } from '@/components/ui/progress';
+import { ArrowLeft, Building2, Loader2 } from 'lucide-react';
 import type { MetricType, PeriodType, Company } from '@/lib/types/database';
 import type { DeltaCard } from '@/lib/metrics/metrics-ui';
 
@@ -116,9 +117,45 @@ export default function StockDetailPage() {
   const ticker = (params.ticker as string)?.toUpperCase() || '';
   const [selectedMetric, setSelectedMetric] = useState<MetricType>('revenue');
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>('annual');
+  const [hasTriggeredIngestion, setHasTriggeredIngestion] = useState(false);
 
-  // Fetch full company info
-  const { data: company, isLoading: companyInfoLoading, error: companyInfoError } = useQuery({
+  // Check ingestion status (polls every 3s if data is missing)
+  const { data: stockStatus, isLoading: statusLoading } = useStockStatus(ticker, !!ticker);
+
+  // Trigger ingestion if company doesn't exist or has no data
+  const ingestionMutation = useMutation({
+    mutationFn: async (ticker: string) => {
+      const response = await fetch('/api/ingest/lazy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticker }),
+      });
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error(data.error || 'Ingestion failed');
+      }
+      return data;
+    },
+  });
+
+  // Trigger ingestion once when page loads if needed
+  useEffect(() => {
+    if (
+      !hasTriggeredIngestion &&
+      stockStatus &&
+      (!stockStatus.companyExists || !stockStatus.hasAnyData)
+    ) {
+      setHasTriggeredIngestion(true);
+      ingestionMutation.mutate(ticker, {
+        onError: (error) => {
+          console.error('Background ingestion error:', error);
+        },
+      });
+    }
+  }, [ticker, stockStatus, hasTriggeredIngestion, ingestionMutation]);
+
+  // Fetch full company info (refetch when status changes)
+  const { data: company, isLoading: companyInfoLoading, error: companyInfoError, refetch: refetchCompany } = useQuery({
     queryKey: ['company-info', ticker],
     queryFn: async (): Promise<Company | null> => {
       const response = await fetch(`/api/stock/${ticker}`);
@@ -130,16 +167,45 @@ export default function StockDetailPage() {
       return null;
     },
     enabled: !!ticker,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 1000, // Allow quick refetching
   });
 
-  // TanStack Query hooks for metrics
-  const { data: companyId, isLoading: companyLoading, error: companyError } = useCompany(ticker);
+  // Refetch company when status shows it exists
+  useEffect(() => {
+    if (stockStatus?.companyExists && !company) {
+      refetchCompany();
+    }
+  }, [stockStatus?.companyExists, company, refetchCompany]);
+
+  // TanStack Query hooks for metrics (only enabled when company exists)
+  const { 
+    data: companyId, 
+    isLoading: companyLoading, 
+    error: companyError,
+    refetch: refetchCompanyId 
+  } = useCompany(ticker);
+  
   const {
     data: timeSeries,
     isLoading: metricsLoading,
     error: metricsError,
+    refetch: refetchMetrics,
   } = useMetricsTimeSeries(companyId || null, selectedMetric, selectedPeriod);
+
+  // Refetch metrics when status updates (as data becomes available)
+  useEffect(() => {
+    if (stockStatus?.hasAnyData && companyId && !timeSeries) {
+      // Data is available, refetch metrics
+      refetchMetrics();
+    }
+  }, [stockStatus?.hasAnyData, companyId, timeSeries, refetchMetrics]);
+
+  // Refetch company ID when company becomes available
+  useEffect(() => {
+    if (stockStatus?.companyExists && !companyId) {
+      refetchCompanyId();
+    }
+  }, [stockStatus?.companyExists, companyId, refetchCompanyId]);
 
   // Calculate deltas from time-series data
   const qoqDelta = timeSeries && timeSeries.periodType === 'quarterly'
@@ -224,20 +290,58 @@ export default function StockDetailPage() {
           </Card>
         )}
 
-        {/* Company Not Found - Show Progress Indicator */}
+        {/* Company Not Found / Loading - Show Progressive Loading State */}
         {!companyInfoLoading && !company && !error && (
-          <div className="mb-6">
-            <IngestionProgress 
-              ticker={ticker}
-              onComplete={() => {
-                // Refetch company data after completion
-                window.location.reload();
-              }}
-              onError={(error) => {
-                console.error('Ingestion error:', error);
-              }}
-            />
-          </div>
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                Analyzing {ticker}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Fetching and processing SEC filings. Data will appear as it becomes available.
+              </p>
+              
+              {stockStatus && (
+                <div className="space-y-3">
+                  {/* Progress indicators for each data type */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Company profile</span>
+                      {stockStatus.companyExists ? (
+                        <Badge variant="outline" className="text-xs bg-green-500/10 text-green-700 dark:text-green-400">
+                          Ready
+                        </Badge>
+                      ) : (
+                        <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                      )}
+                    </div>
+                    
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Filings processed</span>
+                      <span className="font-medium">{stockStatus.filingsCount} filing{stockStatus.filingsCount !== 1 ? 's' : ''}</span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Financial metrics</span>
+                      <span className="font-medium">{stockStatus.metricsCount} metric{stockStatus.metricsCount !== 1 ? 's' : ''}</span>
+                    </div>
+                    
+                    {stockStatus.filingsCount > 0 && (
+                      <div className="mt-2">
+                        <Progress 
+                          value={Math.min((stockStatus.metricsCount / (stockStatus.filingsCount * 7)) * 100, 100)} 
+                          className="h-1.5" 
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         )}
 
         {/* Metrics Section */}
@@ -302,13 +406,33 @@ export default function StockDetailPage() {
               </div>
             )}
 
-            {/* No Metrics Data State */}
+            {/* No Metrics Data State - Show Progressive Loading */}
             {!isLoading && !error && !timeSeries && companyId && (
               <Card>
                 <CardContent className="pt-6">
-                  <p className="text-center text-sm text-muted-foreground">
-                    No metrics found for {company.name}. Data may still be processing.
-                  </p>
+                  <div className="space-y-3">
+                    <p className="text-center text-sm text-muted-foreground">
+                      {stockStatus && stockStatus.filingsCount > 0 
+                        ? `Processing ${stockStatus.filingsCount} filing${stockStatus.filingsCount !== 1 ? 's' : ''}... Metrics will appear as they're extracted.`
+                        : 'Waiting for filings to be processed. Metrics will appear shortly.'
+                      }
+                    </p>
+                    {stockStatus && stockStatus.filingsCount > 0 && (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>Processing filings</span>
+                          <span>{stockStatus.metricsCount} metrics extracted</span>
+                        </div>
+                        <Progress 
+                          value={stockStatus.filingsCount > 0 
+                            ? Math.min((stockStatus.metricsCount / (stockStatus.filingsCount * 7)) * 100, 95)
+                            : 0
+                          } 
+                          className="h-2" 
+                        />
+                      </div>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             )}

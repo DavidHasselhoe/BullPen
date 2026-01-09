@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import {
@@ -13,9 +13,7 @@ import {
 } from '@/components/ui/command';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Progress } from '@/components/ui/progress';
 import { CheckCircle2, Clock } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { useDebounce } from '@/hooks/use-debounce';
 
 interface SearchResult {
@@ -46,11 +44,7 @@ interface LazyIngestionResponse {
 export function StockSearch() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [isIngesting, setIsIngesting] = useState(false);
-  const [ingestionProgress, setIngestionProgress] = useState<string>('');
-  const [ingestionProgressPercent, setIngestionProgressPercent] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
-  const eventSourceRef = useRef<EventSource | null>(null);
 
   const debouncedQuery = useDebounce(searchQuery, 300);
 
@@ -91,7 +85,7 @@ export function StockSearch() {
     retry: false, // Don't retry failed searches
   });
 
-  // Lazy ingestion mutation
+  // Lazy ingestion mutation (for background async ingestion)
   const ingestionMutation = useMutation({
     mutationFn: async (ticker: string): Promise<LazyIngestionResponse> => {
       const response = await fetch('/api/ingest/lazy', {
@@ -119,144 +113,21 @@ export function StockSearch() {
         // Navigate directly if data exists
         router.push(`/stock/${result.ticker}`);
       } else {
-        // Trigger lazy ingestion with SSE progress tracking
-        setIsIngesting(true);
-        setIngestionProgress('Initializing...');
-        setIngestionProgressPercent(0);
-
-        // Close any existing EventSource
-        if (eventSourceRef.current) {
-          eventSourceRef.current.close();
-        }
-
-        // Create EventSource for progress tracking
-        const eventSource = new EventSource(`/api/ingest/lazy/progress?ticker=${encodeURIComponent(result.ticker)}`);
-        eventSourceRef.current = eventSource;
-
-        // Track if we've received any messages to avoid false error handling
-        let hasReceivedMessage = false;
-
-        const STEP_WEIGHTS: Record<string, number> = {
-          'Looking up company information': 5,
-          'Company found': 10,
-          'Setting up company profile': 15,
-          'Fetching annual report': 25,
-          'Fetching quarterly reports': 45,
-          'Downloading reports': 50,
-          'Processing documents': 55,
-          'Extracting financial metrics': 70,
-          'Analyzing with AI': 80,
-          'Generating insights': 85,
-          'Detecting trends': 90,
-          'Calculating scores': 95,
-          'Finalizing': 100,
-        };
-
-        const simplifyStepName = (step: string): string => {
-          const stepLower = step.toLowerCase();
-          if (stepLower.includes('looking up') || stepLower.includes('company information')) return 'Looking up company information';
-          if (stepLower.includes('company found')) return 'Company found';
-          if (stepLower.includes('creating company') || stepLower.includes('company record')) return 'Setting up company profile';
-          if (stepLower.includes('ingesting') && stepLower.includes('10-k')) return 'Fetching annual report';
-          if (stepLower.includes('ingesting') && stepLower.includes('10-q')) return 'Fetching quarterly reports';
-          if (stepLower.includes('fetching') || stepLower.includes('downloading')) return 'Downloading reports';
-          if (stepLower.includes('parsing') || stepLower.includes('extracting')) return 'Processing documents';
-          if (stepLower.includes('extract') && stepLower.includes('metric')) return 'Extracting financial metrics';
-          if (stepLower.includes('ai analysis') || stepLower.includes('analyzing')) return 'Analyzing with AI';
-          if (stepLower.includes('generating signals') || stepLower.includes('signals')) return 'Generating insights';
-          if (stepLower.includes('trend') || stepLower.includes('analyzing trends')) return 'Detecting trends';
-          if (stepLower.includes('composite score') || stepLower.includes('calculating')) return 'Calculating scores';
-          if (stepLower.includes('marking') || stepLower.includes('completed')) return 'Finalizing';
-          return step.split(':')[0].trim();
-        };
-
-        eventSource.onmessage = (event) => {
-          try {
-            hasReceivedMessage = true; // Mark that we've received at least one message
-            const data = JSON.parse(event.data);
-            
-            // Handle connection confirmation
-            if (data.type === 'connected') {
-              return; // Just a connection confirmation, continue
-            }
-            
-            if (data.type === 'progress' && data.step) {
-              const simplifiedStep = simplifyStepName(data.step);
-              setIngestionProgress(simplifiedStep);
-              const stepProgress = STEP_WEIGHTS[simplifiedStep] || 0;
-              setIngestionProgressPercent((prev) => Math.max(prev, stepProgress));
-            } else if (data.type === 'complete') {
-              setIngestionProgress('Analysis complete!');
-              setIngestionProgressPercent(100);
-              eventSource.close();
-              
-              // Small delay before navigation for UX
-              setTimeout(() => {
-                router.push(`/stock/${result.ticker}`);
-                setIsIngesting(false);
-                setIngestionProgress('');
-                setIngestionProgressPercent(0);
-              }, 500);
-            } else if (data.type === 'error') {
-              setIngestionProgress(`Error: ${data.error || 'Unknown error'}`);
-              eventSource.close();
-              setTimeout(() => {
-                setIsIngesting(false);
-                setIngestionProgress('');
-                setIngestionProgressPercent(0);
-              }, 3000);
-            }
-          } catch (err) {
-            console.error('Error parsing SSE message:', err);
-          }
-        };
-
-        eventSource.onerror = () => {
-          // EventSource.onerror fires for various reasons, not just actual errors
-          // Check readyState to determine if it's a real error or just connection issues
-          if (eventSource.readyState === EventSource.CLOSED) {
-            // Stream was closed - might be complete or error
-            // If we haven't received any messages and stream is closed, fallback
-            if (!hasReceivedMessage) {
-              console.warn('SSE stream closed without messages, falling back to mutation');
-              eventSource.close();
-              // Fallback to mutation-based approach only if we never got any updates
-              ingestionMutation.mutateAsync(result.ticker)
-                .then(() => {
-                  setIngestionProgress('Complete! Redirecting…');
-                  setIngestionProgressPercent(100);
-                  setTimeout(() => {
-                    router.push(`/stock/${result.ticker}`);
-                    setIsIngesting(false);
-                    setIngestionProgress('');
-                    setIngestionProgressPercent(0);
-                  }, 500);
-                })
-                .catch((error) => {
-                  setIngestionProgress(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-                  setTimeout(() => {
-                    setIsIngesting(false);
-                    setIngestionProgress('');
-                    setIngestionProgressPercent(0);
-                  }, 3000);
-                });
-            }
-          }
-          // If still CONNECTING or OPEN, let it continue - might be temporary network hiccup
-        };
+        // Navigate immediately and trigger ingestion in background
+        router.push(`/stock/${result.ticker}`);
+        
+        // Trigger lazy ingestion asynchronously (fire and forget)
+        // The stock page will show progressive loading states
+        ingestionMutation.mutate(result.ticker, {
+          onError: (error) => {
+            console.error('Background ingestion error:', error);
+            // Error will be handled on the stock detail page
+          },
+        });
       }
     },
     [router, ingestionMutation]
   );
-
-  // Cleanup EventSource on unmount
-  useEffect(() => {
-    return () => {
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
-      }
-    };
-  }, []);
 
   return (
     <>
@@ -342,24 +213,6 @@ export function StockSearch() {
         </svg>
         Search companies...
       </button>
-
-      {/* Ingestion Loading Dialog */}
-      <Dialog open={isIngesting}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader className="sr-only">
-            <DialogTitle>Analyzing Company</DialogTitle>
-            <DialogDescription>Processing SEC filings and generating insights</DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col items-center justify-center gap-4 py-6">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-            <div className="w-full space-y-2">
-              <Progress value={ingestionProgressPercent} className="h-2" />
-              <p className="text-sm text-muted-foreground text-center">{ingestionProgress}</p>
-              <p className="text-xs text-muted-foreground text-center">{ingestionProgressPercent}%</p>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }
