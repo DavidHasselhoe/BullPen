@@ -5,6 +5,11 @@
  * Safe to run multiple times (idempotent)
  */
 
+import { config } from 'dotenv';
+import { resolve } from 'path';
+// Load .env.local for environment variables
+config({ path: resolve(process.cwd(), '.env.local') });
+
 import { createServerClient } from '../lib/supabase/client';
 
 interface SECCompanyTicker {
@@ -63,6 +68,7 @@ async function fetchSECCompanyTickers(): Promise<SECCompanyTickers> {
 
 /**
  * Inserts or updates company index entries
+ * Handles duplicates by deduplicating by ticker (one ticker per entry)
  */
 async function upsertCompanyIndex(entries: Array<{
   ticker: string;
@@ -73,20 +79,65 @@ async function upsertCompanyIndex(entries: Array<{
 }>) {
   const supabase = createServerClient();
   
-  console.log(`Upserting ${entries.length} company index entries...`);
+  // Deduplicate entries by ticker (if same ticker appears multiple times, keep first)
+  const tickerMap = new Map<string, typeof entries[0]>();
+  entries.forEach((entry) => {
+    if (!tickerMap.has(entry.ticker)) {
+      tickerMap.set(entry.ticker, entry);
+    }
+  });
   
-  const { error } = await supabase
-    .from('company_index')
-    .upsert(entries, {
-      onConflict: 'ticker',
-      ignoreDuplicates: false,
-    });
+  const uniqueEntries = Array.from(tickerMap.values());
+  
+  // Further deduplicate by CIK - if same CIK has multiple tickers, keep the first ticker
+  const cikMap = new Map<string, typeof entries[0]>();
+  uniqueEntries.forEach((entry) => {
+    if (!cikMap.has(entry.cik)) {
+      cikMap.set(entry.cik, entry);
+    }
+  });
+  
+  const finalEntries = Array.from(cikMap.values());
+  
+  console.log(`Upserting ${finalEntries.length} unique company index entries (from ${entries.length} raw entries)...`);
+  
+  // Process in smaller batches to avoid timeout
+  const batchSize = 500;
+  for (let i = 0; i < finalEntries.length; i += batchSize) {
+    const batch = finalEntries.slice(i, i + batchSize);
+    
+    const { error } = await supabase
+      .from('company_index')
+      .upsert(batch, {
+        onConflict: 'ticker',
+        ignoreDuplicates: false,
+      });
 
-  if (error) {
-    throw new Error(`Failed to upsert company index: ${error.message}`);
+    if (error) {
+      // If CIK conflict, try upserting one by one with onConflict for CIK
+      console.warn(`Batch upsert failed (likely CIK conflict), falling back to individual inserts for batch ${i / batchSize + 1}...`);
+      
+      // Insert individually, skipping conflicts
+      for (const entry of batch) {
+        const { error: insertError } = await supabase
+          .from('company_index')
+          .upsert(entry, {
+            onConflict: 'ticker',
+            ignoreDuplicates: false,
+          });
+        
+        // If CIK conflict, try updating by ticker instead
+        if (insertError && insertError.message.includes('unique_cik')) {
+          // Skip this entry - CIK already exists with different ticker
+          continue;
+        } else if (insertError) {
+          console.warn(`Failed to upsert ${entry.ticker}: ${insertError.message}`);
+        }
+      }
+    }
   }
 
-  console.log(`Successfully upserted ${entries.length} entries`);
+  console.log(`Successfully processed ${finalEntries.length} entries`);
 }
 
 /**

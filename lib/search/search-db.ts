@@ -37,35 +37,46 @@ export async function searchCompanies(
   try {
     // Search on normalized ticker (prefix match) and normalized name (fuzzy match)
     // Use separate queries and combine for better reliability
-    const tickerQuery = supabase
+    const { data: tickerData, error: tickerError } = await supabase
       .from('company_index')
       .select('ticker, name, cik, has_data')
       .ilike('normalized_ticker', normalizedQueryPattern)
       .limit(limit);
 
-    const nameQuery = supabase
+    const { data: nameData, error: nameError } = await supabase
       .from('company_index')
       .select('ticker, name, cik, has_data')
       .ilike('normalized_name', `%${normalizedQuery}%`)
       .limit(limit);
 
-    const [tickerResults, nameResults] = await Promise.all([
-      tickerQuery,
-      nameQuery,
-    ]);
-
-    if (tickerResults.error) {
-      return { success: false, error: tickerResults.error.message };
+    if (tickerError) {
+      // Check if table doesn't exist
+      const errorMsg = tickerError.message || '';
+      if (errorMsg.includes('does not exist') || tickerError.code === '42P01' || tickerError.code === 'PGRST204') {
+        return { 
+          success: false, 
+          error: 'company_index table does not exist. Please run: supabase db push (to apply migration) then npm run bootstrap-company-index (to populate data)' 
+        };
+      }
+      return { success: false, error: tickerError.message || 'Search failed' };
     }
 
-    if (nameResults.error) {
-      return { success: false, error: nameResults.error.message };
+    if (nameError) {
+      // Check if table doesn't exist
+      const errorMsg = nameError.message || '';
+      if (errorMsg.includes('does not exist') || nameError.code === '42P01' || nameError.code === 'PGRST204') {
+        return { 
+          success: false, 
+          error: 'company_index table does not exist. Please run: supabase db push (to apply migration) then npm run bootstrap-company-index (to populate data)' 
+        };
+      }
+      return { success: false, error: nameError.message || 'Search failed' };
     }
 
     // Combine and deduplicate results
     const combined = [
-      ...(tickerResults.data || []),
-      ...(nameResults.data || []),
+      ...(tickerData || []),
+      ...(nameData || []),
     ];
 
     // Deduplicate by ticker

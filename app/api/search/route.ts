@@ -18,8 +18,15 @@ export async function GET(request: NextRequest) {
     const result = await searchCompanies(q, limit);
 
     if (!result.success) {
+      console.error('Search error:', result.error);
       return NextResponse.json(
-        { success: false, error: result.error || 'Search failed' },
+        { 
+          success: false, 
+          error: result.error || 'Search failed',
+          hint: result.error?.includes('does not exist') 
+            ? 'Please run: supabase db push && npm run bootstrap-company-index' 
+            : undefined
+        },
         { status: 500 }
       );
     }
@@ -30,8 +37,15 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error searching companies:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
     return NextResponse.json(
-      { success: false, error: 'Internal server error' },
+      { 
+        success: false, 
+        error: errorMessage,
+        hint: errorMessage.includes('does not exist') 
+          ? 'Please run: supabase db push && npm run bootstrap-company-index' 
+          : undefined
+      },
       { status: 500 }
     );
   }
