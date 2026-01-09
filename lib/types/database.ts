@@ -198,6 +198,19 @@ export interface AIInsightWithContext extends AIInsight {
   section?: FilingSection | null;
 }
 
+export interface CompanyIndex {
+  id: string;
+  ticker: string;
+  name: string;
+  cik: string;
+  normalized_ticker: string;
+  normalized_name: string;
+  has_data: boolean;
+  last_ingested_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // =====================================================
 // INSERT TYPES (OMIT AUTO-GENERATED FIELDS)
 // =====================================================

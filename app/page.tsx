@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
+import { StockSearch } from '@/components/search/StockSearch';
 import { FundamentalChangeCard } from '@/components/discover/FundamentalChangeCard';
 import { RecentFilingsList } from '@/components/discover/RecentFilingsList';
 import { CompaniesToWatchList } from '@/components/discover/CompaniesToWatchList';
@@ -33,10 +34,17 @@ export default function DiscoverPage() {
       <main className="container mx-auto max-w-6xl py-8 px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Discover</h1>
-          <p className="mt-2 text-muted-foreground">
-            Fundamental changes detected from SEC filings.
-          </p>
+          <div className="flex items-start justify-between gap-4 mb-6">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight text-foreground">Discover</h1>
+              <p className="mt-2 text-muted-foreground">
+                Fundamental changes detected from SEC filings.
+              </p>
+            </div>
+            <div className="flex-shrink-0">
+              <StockSearch />
+            </div>
+          </div>
         </div>
 
         <div className="space-y-8">
