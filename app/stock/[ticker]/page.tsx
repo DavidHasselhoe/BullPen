@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCompany, useMetricsTimeSeries } from '@/hooks/use-metrics';
 import { useStockStatus } from '@/hooks/use-stock-status';
 import { MetricSelector } from '@/components/metrics/MetricSelector';
@@ -11,6 +11,7 @@ import { PeriodToggle } from '@/components/metrics/PeriodToggle';
 import { DeltaCards } from '@/components/metrics/DeltaCards';
 import { TrendIndicator } from '@/components/metrics/TrendIndicator';
 import { CompositeScoreCard } from '@/components/metrics/CompositeScoreCard';
+import { IngestionProgressBar } from '@/components/stock/IngestionProgressBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -114,10 +115,12 @@ function formatDeltaValue(value: number, unit: string): string {
 export default function StockDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const ticker = (params.ticker as string)?.toUpperCase() || '';
   const [selectedMetric, setSelectedMetric] = useState<MetricType>('revenue');
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>('annual');
   const [hasTriggeredIngestion, setHasTriggeredIngestion] = useState(false);
+  const [showProgressBar, setShowProgressBar] = useState(false);
 
   // Check ingestion status (polls every 3s if data is missing)
   const { data: stockStatus, isLoading: statusLoading } = useStockStatus(ticker, !!ticker);
@@ -146,13 +149,54 @@ export default function StockDetailPage() {
       (!stockStatus.companyExists || !stockStatus.hasAnyData)
     ) {
       setHasTriggeredIngestion(true);
+      setShowProgressBar(true);
+      
+      // Trigger ingestion via SSE progress endpoint (don't use mutation - we'll use SSE)
+      // The mutation is fire-and-forget, but we'll track via SSE
       ingestionMutation.mutate(ticker, {
         onError: (error) => {
           console.error('Background ingestion error:', error);
+          setShowProgressBar(false);
         },
       });
     }
   }, [ticker, stockStatus, hasTriggeredIngestion, ingestionMutation]);
+
+  // Auto-refresh queries when status changes
+  useEffect(() => {
+    if (!stockStatus) return;
+
+    // If company just became available, invalidate and refetch company queries
+    if (stockStatus.companyExists) {
+      queryClient.invalidateQueries({ queryKey: ['company-info', ticker] });
+      queryClient.invalidateQueries({ queryKey: ['company', ticker] });
+    }
+
+    // If data just became available, invalidate and refetch metrics
+    if (stockStatus.hasAnyData && stockStatus.metricsCount > 0) {
+      queryClient.invalidateQueries({ queryKey: ['metrics'] });
+      queryClient.invalidateQueries({ queryKey: ['stock-status', ticker] });
+    }
+  }, [stockStatus, queryClient, ticker]);
+
+  // Handle progress completion - refresh all data
+  const handleProgressComplete = () => {
+    setShowProgressBar(false);
+    // Invalidate all related queries to force refresh
+    queryClient.invalidateQueries({ queryKey: ['stock-status', ticker] });
+    queryClient.invalidateQueries({ queryKey: ['company-info', ticker] });
+    queryClient.invalidateQueries({ queryKey: ['company', ticker] });
+    queryClient.invalidateQueries({ queryKey: ['metrics'] });
+    
+    // Small delay then refetch
+    setTimeout(() => {
+      refetchCompany();
+      if (companyId) {
+        refetchCompanyId();
+        refetchMetrics();
+      }
+    }, 500);
+  };
 
   // Fetch full company info (refetch when status changes)
   const { data: company, isLoading: companyInfoLoading, error: companyInfoError, refetch: refetchCompany } = useQuery({
@@ -290,8 +334,20 @@ export default function StockDetailPage() {
           </Card>
         )}
 
-        {/* Company Not Found / Loading - Show Progressive Loading State */}
-        {!companyInfoLoading && !company && !error && (
+        {/* Show detailed progress bar if ingestion is in progress */}
+        {showProgressBar && (
+          <IngestionProgressBar
+            ticker={ticker}
+            onComplete={handleProgressComplete}
+            onError={(error) => {
+              console.error('Ingestion error:', error);
+              setShowProgressBar(false);
+            }}
+          />
+        )}
+
+        {/* Company Not Found / Loading - Show Status if no progress bar */}
+        {!companyInfoLoading && !company && !error && !showProgressBar && (
           <Card className="mb-6">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
