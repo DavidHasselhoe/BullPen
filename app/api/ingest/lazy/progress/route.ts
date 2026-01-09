@@ -17,52 +17,130 @@ export async function GET(request: NextRequest) {
 
   // Create a readable stream for SSE
   const encoder = new TextEncoder();
+  let streamClosed = false;
+  
   const stream = new ReadableStream({
     async start(controller) {
+      // Track seen objects for circular reference detection
+      const seen = new WeakSet();
+      
       // Send initial connection message to verify stream is working
-      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'connected', timestamp: new Date().toISOString() })}\n\n`));
+      try {
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'connected', timestamp: new Date().toISOString() })}\n\n`));
+      } catch (err) {
+        console.error('Error sending initial connection message:', err);
+      }
 
       const sendProgress = (step: string, details?: any) => {
+        if (streamClosed) {
+          return; // Don't try to send if stream is closed
+        }
+        
         try {
+          // Sanitize details to avoid circular references or non-serializable data
+          let sanitizedDetails: any = undefined;
+          if (details) {
+            try {
+              // Create a new WeakSet for this serialization to avoid cross-call issues
+              const localSeen = new WeakSet();
+              // Try to serialize and parse to ensure it's valid JSON
+              sanitizedDetails = JSON.parse(JSON.stringify(details, (key, value) => {
+                // Remove functions, undefined, and symbols
+                if (typeof value === 'function' || value === undefined || typeof value === 'symbol') {
+                  return null;
+                }
+                // Handle circular references
+                if (typeof value === 'object' && value !== null) {
+                  if (localSeen.has(value)) {
+                    return '[Circular]';
+                  }
+                  localSeen.add(value);
+                }
+                return value;
+              }));
+            } catch {
+              // If details can't be serialized, just use a simple message
+              sanitizedDetails = { message: 'Processing...' };
+            }
+          }
+          
           const message = JSON.stringify({
             type: 'progress',
             step: simplifyStepName(step),
-            details,
+            details: sanitizedDetails,
             timestamp: new Date().toISOString(),
           });
+          
           controller.enqueue(encoder.encode(`data: ${message}\n\n`));
         } catch (err) {
-          console.error('Error sending progress:', err);
+          // Silently fail - don't spam console with errors during normal operation
+          // Only log if it's a critical error
+          if (err instanceof Error && !err.message.includes('stream')) {
+            console.error('Error sending progress:', err.message);
+          }
         }
       };
 
       const sendComplete = (result: any) => {
+        if (streamClosed) {
+          return;
+        }
+        
         try {
+          // Sanitize result to avoid serialization issues
+          let sanitizedResult: any = null;
+          if (result) {
+            try {
+              sanitizedResult = JSON.parse(JSON.stringify(result, (key, value) => {
+                if (typeof value === 'function' || value === undefined || typeof value === 'symbol') {
+                  return null;
+                }
+                return value;
+              }));
+            } catch {
+              sanitizedResult = { success: result.success || false };
+            }
+          }
+          
           const message = JSON.stringify({
             type: 'complete',
-            result,
+            result: sanitizedResult,
             timestamp: new Date().toISOString(),
           });
           controller.enqueue(encoder.encode(`data: ${message}\n\n`));
         } catch (err) {
           console.error('Error sending complete:', err);
         } finally {
-          controller.close();
+          streamClosed = true;
+          try {
+            controller.close();
+          } catch {
+            // Stream might already be closed
+          }
         }
       };
 
       const sendError = (error: string) => {
+        if (streamClosed) {
+          return;
+        }
+        
         try {
           const message = JSON.stringify({
             type: 'error',
-            error,
+            error: error || 'Unknown error',
             timestamp: new Date().toISOString(),
           });
           controller.enqueue(encoder.encode(`data: ${message}\n\n`));
         } catch (err) {
           console.error('Error sending error:', err);
         } finally {
-          controller.close();
+          streamClosed = true;
+          try {
+            controller.close();
+          } catch {
+            // Stream might already be closed
+          }
         }
       };
 
@@ -81,7 +159,7 @@ export async function GET(request: NextRequest) {
     },
     cancel() {
       // Handle stream cancellation
-      console.log('SSE stream cancelled');
+      streamClosed = true;
     },
   });
 
