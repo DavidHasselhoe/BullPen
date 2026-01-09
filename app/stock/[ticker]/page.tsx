@@ -12,6 +12,7 @@ import { DeltaCards } from '@/components/metrics/DeltaCards';
 import { TrendIndicator } from '@/components/metrics/TrendIndicator';
 import { CompositeScoreCard } from '@/components/metrics/CompositeScoreCard';
 import { IngestionProgressBar } from '@/components/stock/IngestionProgressBar';
+import { CompanyOverview } from '@/components/stock/CompanyOverview';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -316,6 +317,9 @@ export default function StockDetailPage() {
             )}
           </Card>
         )}
+
+        {/* Company Overview - AI-generated summary */}
+        {companyId && <CompanyOverview companyId={companyId} />}
 
         {/* Loading State for Company Info */}
         {companyInfoLoading && !company && (
