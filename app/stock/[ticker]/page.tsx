@@ -15,6 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, Building2 } from 'lucide-react';
+import { IngestionProgress } from '@/components/search/IngestionProgress';
 import type { MetricType, PeriodType, Company } from '@/lib/types/database';
 import type { DeltaCard } from '@/lib/metrics/metrics-ui';
 
@@ -223,15 +224,20 @@ export default function StockDetailPage() {
           </Card>
         )}
 
-        {/* Company Not Found */}
+        {/* Company Not Found - Show Progress Indicator */}
         {!companyInfoLoading && !company && !error && (
-          <Card className="mb-6">
-            <CardContent className="pt-6">
-              <p className="text-center text-sm text-muted-foreground">
-                Company {ticker} not found. Data may still be ingesting.
-              </p>
-            </CardContent>
-          </Card>
+          <div className="mb-6">
+            <IngestionProgress 
+              ticker={ticker}
+              onComplete={() => {
+                // Refetch company data after completion
+                window.location.reload();
+              }}
+              onError={(error) => {
+                console.error('Ingestion error:', error);
+              }}
+            />
+          </div>
         )}
 
         {/* Metrics Section */}

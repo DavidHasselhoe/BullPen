@@ -4,11 +4,11 @@ import type { Company } from '@/lib/types/database';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ ticker: string }> | { ticker: string } }
+  context: { params: Promise<{ ticker: string }> }
 ) {
-  // Handle both sync and async params (Next.js 15+ uses Promise)
-  const resolvedParams = params instanceof Promise ? await params : params;
-  const ticker = resolvedParams.ticker?.toUpperCase();
+  // Next.js 15+ requires await for params
+  const params = await context.params;
+  const ticker = params.ticker?.toUpperCase();
 
   if (!ticker) {
     return NextResponse.json(
