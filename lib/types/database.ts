@@ -1,0 +1,257 @@
+// BullPen Database Types
+// Auto-generated types matching Supabase schema
+// Keep in sync with migrations in supabase/migrations/
+
+export type FilingType = '10-K' | '10-Q' | '8-K' | 'S-1' | 'DEF 14A' | 'OTHER';
+export type ProcessingStatus = 'pending' | 'processing' | 'completed' | 'failed';
+export type SectionType = 
+  | 'business_overview'
+  | 'risk_factors'
+  | 'legal_proceedings'
+  | 'management_discussion_analysis'
+  | 'financial_statements'
+  | 'notes_to_financials'
+  | 'controls_procedures'
+  | 'other';
+
+export type MetricType = 
+  | 'revenue'
+  | 'cost_of_revenue'
+  | 'gross_profit'
+  | 'operating_income'
+  | 'net_income'
+  | 'eps_basic'
+  | 'eps_diluted'
+  | 'total_assets'
+  | 'total_liabilities'
+  | 'shareholders_equity'
+  | 'operating_cash_flow'
+  | 'free_cash_flow'
+  | 'shares_outstanding'
+  | 'other';
+
+export type PeriodType = 'annual' | 'quarterly' | 'ttm' | 'ytd';
+
+export type InsightType = 
+  | 'executive_summary'
+  | 'risk_analysis'
+  | 'sentiment_analysis'
+  | 'key_changes'
+  | 'competitive_analysis'
+  | 'guidance_extraction'
+  | 'other';
+
+export type SignalDirection = 'bullish' | 'bearish' | 'neutral';
+export type SignalType = 
+  | 'earnings_surprise'
+  | 'guidance_change'
+  | 'risk_alert'
+  | 'unusual_disclosure'
+  | 'management_change'
+  | 'legal_event'
+  | 'competitive_threat'
+  | 'growth_opportunity'
+  | 'other';
+
+export type TrendType =
+  | 'sustained_growth'
+  | 'sustained_decline'
+  | 'acceleration'
+  | 'deceleration'
+  | 'volatility_increase'
+  | 'divergence';
+
+export type TrendDirection = 'positive' | 'negative' | 'neutral';
+
+// =====================================================
+// TABLE TYPES
+// =====================================================
+
+export interface Company {
+  id: string;
+  ticker: string;
+  name: string;
+  cik: string;
+  sector: string | null;
+  industry: string | null;
+  description: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Filing {
+  id: string;
+  company_id: string;
+  filing_type: FilingType;
+  accession_number: string;
+  filing_date: string;
+  period_end_date: string | null;
+  fiscal_year: number | null;
+  fiscal_quarter: number | null;
+  source_url: string;
+  document_url: string | null;
+  processing_status: ProcessingStatus;
+  processing_error: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface FilingSection {
+  id: string;
+  filing_id: string;
+  section_type: SectionType;
+  section_name: string | null;
+  content: string;
+  content_length: number;
+  section_order: number | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface FinancialMetric {
+  id: string;
+  filing_id: string;
+  company_id: string;
+  metric_type: MetricType;
+  value: number;
+  unit: string;
+  period_type: PeriodType;
+  period_start_date: string | null;
+  period_end_date: string;
+  is_restated: boolean;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AIInsight {
+  id: string;
+  filing_id: string;
+  company_id: string;
+  section_id: string | null;
+  insight_type: InsightType;
+  title: string;
+  content: Record<string, unknown>;
+  summary: string | null;
+  confidence_score: number | null;
+  model_version: string;
+  model_parameters: Record<string, unknown> | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Signal {
+  id: string;
+  company_id: string;
+  filing_id: string | null;
+  signal_type: SignalType;
+  direction: SignalDirection;
+  strength: number;
+  title: string;
+  description: string;
+  evidence: Record<string, unknown>;
+  metadata: Record<string, unknown>;
+  expires_at: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// =====================================================
+// RELATION TYPES (WITH JOINS)
+// =====================================================
+
+export interface FilingWithCompany extends Filing {
+  company: Company;
+}
+
+export interface FinancialMetricWithFiling extends FinancialMetric {
+  filing: Filing;
+}
+
+export interface SignalWithDetails extends Signal {
+  company: Company;
+  filing?: Filing | null;
+}
+
+export interface Trend {
+  id: string;
+  company_id: string;
+  metric_type: string;
+  period_type: PeriodType;
+  trend_type: TrendType;
+  direction: TrendDirection;
+  strength: number;
+  explanation: string;
+  periods_analyzed: number;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AIInsightWithContext extends AIInsight {
+  company: Company;
+  filing: Filing;
+  section?: FilingSection | null;
+}
+
+// =====================================================
+// INSERT TYPES (OMIT AUTO-GENERATED FIELDS)
+// =====================================================
+
+export type InsertCompany = Omit<Company, 'id' | 'created_at' | 'updated_at'> & {
+  id?: string;
+  metadata?: Record<string, unknown>;
+};
+
+export type InsertFiling = Omit<Filing, 'id' | 'created_at' | 'updated_at'> & {
+  id?: string;
+  processing_status?: ProcessingStatus;
+  metadata?: Record<string, unknown>;
+};
+
+export type InsertFilingSection = Omit<FilingSection, 'id' | 'created_at' | 'updated_at'> & {
+  id?: string;
+  metadata?: Record<string, unknown>;
+};
+
+export type InsertFinancialMetric = Omit<FinancialMetric, 'id' | 'created_at' | 'updated_at'> & {
+  id?: string;
+  unit?: string;
+  is_restated?: boolean;
+  metadata?: Record<string, unknown>;
+};
+
+export type InsertAIInsight = Omit<AIInsight, 'id' | 'created_at' | 'updated_at'> & {
+  id?: string;
+};
+
+export type InsertSignal = Omit<Signal, 'id' | 'created_at' | 'updated_at'> & {
+  id?: string;
+  is_active?: boolean;
+  metadata?: Record<string, unknown>;
+};
+
+export type InsertTrend = Omit<Trend, 'id' | 'created_at' | 'updated_at'> & {
+  id?: string;
+  metadata?: Record<string, unknown>;
+};
+
+// =====================================================
+// UPDATE TYPES (ALL FIELDS OPTIONAL EXCEPT ID)
+// =====================================================
+
+export type UpdateCompany = Partial<Omit<Company, 'id' | 'created_at' | 'updated_at'>> & {
+  id: string;
+};
+
+export type UpdateFiling = Partial<Omit<Filing, 'id' | 'created_at' | 'updated_at'>> & {
+  id: string;
+};
+
+export type UpdateSignal = Partial<Omit<Signal, 'id' | 'created_at' | 'updated_at'>> & {
+  id: string;
+};
