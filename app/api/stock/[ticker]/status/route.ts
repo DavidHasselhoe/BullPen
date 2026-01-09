@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/client';
+import type { Company } from '@/lib/types/database';
 
 export async function GET(
   request: NextRequest,
@@ -38,24 +39,26 @@ export async function GET(
       });
     }
 
+    const companyData = company as Company;
+
     // Count filings
     const { count: filingsCount } = await supabase
       .from('filings')
       .select('*', { count: 'exact', head: true })
-      .eq('company_id', company.id)
+      .eq('company_id', companyData.id)
       .eq('processing_status', 'completed');
 
     // Count metrics
     const { count: metricsCount } = await supabase
       .from('financial_metrics')
       .select('*', { count: 'exact', head: true })
-      .eq('company_id', company.id);
+      .eq('company_id', companyData.id);
 
     // Count trends
     const { count: trendsCount } = await supabase
       .from('trends')
       .select('*', { count: 'exact', head: true })
-      .eq('company_id', company.id);
+      .eq('company_id', companyData.id);
 
     const hasAnyData = (filingsCount || 0) > 0;
 

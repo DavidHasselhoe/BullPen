@@ -8,7 +8,7 @@ import { lazyIngestCompany } from '@/lib/search/lazy-ingestion';
  * This allows the frontend to display real-time progress updates
  */
 export async function GET(request: NextRequest) {
-  const searchParams = request.searchParams;
+  const searchParams = request.nextUrl.searchParams;
   const ticker = searchParams.get('ticker');
 
   if (!ticker) {

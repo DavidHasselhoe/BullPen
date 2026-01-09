@@ -31,8 +31,9 @@ export function useStockStatus(ticker: string, enabled: boolean = true) {
       return null;
     },
     enabled: enabled && !!ticker,
-    refetchInterval: (data) => {
+    refetchInterval: (query) => {
       // Poll every 3 seconds if company doesn't exist or has no data yet
+      const data = query.state.data;
       if (!data || !data.companyExists || !data.hasAnyData) {
         return 3000; // 3 seconds
       }
