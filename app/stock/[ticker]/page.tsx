@@ -258,7 +258,16 @@ export default function StockDetailPage() {
   const yoyDelta = timeSeries ? calculateYoYChange(timeSeries.data, timeSeries.periodType) : null;
 
   const isLoading = companyInfoLoading || companyLoading || metricsLoading;
-  const error = companyInfoError || companyError || metricsError;
+  
+  // Don't show error if ingestion is in progress (metrics aren't expected yet)
+  // Check if we're still waiting for data - either progress bar is showing or status indicates no data yet
+  const isIngesting = showProgressBar || (stockStatus && !stockStatus.hasAnyData);
+  
+  // Suppress metrics errors during ingestion - they're expected
+  let error = companyInfoError || companyError;
+  if (!isIngesting && metricsError) {
+    error = metricsError;
+  }
 
   return (
     <div className="min-h-screen bg-background">
