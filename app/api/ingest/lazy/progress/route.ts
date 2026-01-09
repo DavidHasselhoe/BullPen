@@ -19,34 +19,51 @@ export async function GET(request: NextRequest) {
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     async start(controller) {
+      // Send initial connection message to verify stream is working
+      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'connected', timestamp: new Date().toISOString() })}\n\n`));
+
       const sendProgress = (step: string, details?: any) => {
-        const message = JSON.stringify({
-          type: 'progress',
-          step: simplifyStepName(step),
-          details,
-          timestamp: new Date().toISOString(),
-        });
-        controller.enqueue(encoder.encode(`data: ${message}\n\n`));
+        try {
+          const message = JSON.stringify({
+            type: 'progress',
+            step: simplifyStepName(step),
+            details,
+            timestamp: new Date().toISOString(),
+          });
+          controller.enqueue(encoder.encode(`data: ${message}\n\n`));
+        } catch (err) {
+          console.error('Error sending progress:', err);
+        }
       };
 
       const sendComplete = (result: any) => {
-        const message = JSON.stringify({
-          type: 'complete',
-          result,
-          timestamp: new Date().toISOString(),
-        });
-        controller.enqueue(encoder.encode(`data: ${message}\n\n`));
-        controller.close();
+        try {
+          const message = JSON.stringify({
+            type: 'complete',
+            result,
+            timestamp: new Date().toISOString(),
+          });
+          controller.enqueue(encoder.encode(`data: ${message}\n\n`));
+        } catch (err) {
+          console.error('Error sending complete:', err);
+        } finally {
+          controller.close();
+        }
       };
 
       const sendError = (error: string) => {
-        const message = JSON.stringify({
-          type: 'error',
-          error,
-          timestamp: new Date().toISOString(),
-        });
-        controller.enqueue(encoder.encode(`data: ${message}\n\n`));
-        controller.close();
+        try {
+          const message = JSON.stringify({
+            type: 'error',
+            error,
+            timestamp: new Date().toISOString(),
+          });
+          controller.enqueue(encoder.encode(`data: ${message}\n\n`));
+        } catch (err) {
+          console.error('Error sending error:', err);
+        } finally {
+          controller.close();
+        }
       };
 
       try {
@@ -61,6 +78,10 @@ export async function GET(request: NextRequest) {
       } catch (error) {
         sendError(error instanceof Error ? error.message : 'Unknown error');
       }
+    },
+    cancel() {
+      // Handle stream cancellation
+      console.log('SSE stream cancelled');
     },
   });
 

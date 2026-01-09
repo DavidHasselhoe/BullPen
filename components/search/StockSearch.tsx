@@ -202,35 +202,37 @@ export function StockSearch() {
         };
 
         eventSource.onerror = () => {
-          console.error('SSE error');
-          eventSource.close();
-          // Fallback to mutation-based approach
-          try {
-            ingestionMutation.mutateAsync(result.ticker).then(() => {
-              setIngestionProgress('Complete! Redirecting…');
-              setIngestionProgressPercent(100);
-              setTimeout(() => {
-                router.push(`/stock/${result.ticker}`);
-                setIsIngesting(false);
-                setIngestionProgress('');
-                setIngestionProgressPercent(0);
-              }, 500);
-            }).catch((error) => {
-              setIngestionProgress(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-              setTimeout(() => {
-                setIsIngesting(false);
-                setIngestionProgress('');
-                setIngestionProgressPercent(0);
-              }, 3000);
-            });
-          } catch (error) {
-            setIngestionProgress(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-            setTimeout(() => {
-              setIsIngesting(false);
-              setIngestionProgress('');
-              setIngestionProgressPercent(0);
-            }, 3000);
+          // EventSource.onerror fires for various reasons, not just actual errors
+          // Check readyState to determine if it's a real error or just connection issues
+          if (eventSource.readyState === EventSource.CLOSED) {
+            // Stream was closed - might be complete or error
+            // If we haven't received any messages and stream is closed, fallback
+            if (!hasReceivedMessage) {
+              console.warn('SSE stream closed without messages, falling back to mutation');
+              eventSource.close();
+              // Fallback to mutation-based approach only if we never got any updates
+              ingestionMutation.mutateAsync(result.ticker)
+                .then(() => {
+                  setIngestionProgress('Complete! Redirecting…');
+                  setIngestionProgressPercent(100);
+                  setTimeout(() => {
+                    router.push(`/stock/${result.ticker}`);
+                    setIsIngesting(false);
+                    setIngestionProgress('');
+                    setIngestionProgressPercent(0);
+                  }, 500);
+                })
+                .catch((error) => {
+                  setIngestionProgress(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                  setTimeout(() => {
+                    setIsIngesting(false);
+                    setIngestionProgress('');
+                    setIngestionProgressPercent(0);
+                  }, 3000);
+                });
+            }
           }
+          // If still CONNECTING or OPEN, let it continue - might be temporary network hiccup
         };
       }
     },
