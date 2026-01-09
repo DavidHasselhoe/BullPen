@@ -133,6 +133,9 @@ export function StockSearch() {
         const eventSource = new EventSource(`/api/ingest/lazy/progress?ticker=${encodeURIComponent(result.ticker)}`);
         eventSourceRef.current = eventSource;
 
+        // Track if we've received any messages to avoid false error handling
+        let hasReceivedMessage = false;
+
         const STEP_WEIGHTS: Record<string, number> = {
           'Looking up company information': 5,
           'Company found': 10,
@@ -169,7 +172,14 @@ export function StockSearch() {
 
         eventSource.onmessage = (event) => {
           try {
+            hasReceivedMessage = true; // Mark that we've received at least one message
             const data = JSON.parse(event.data);
+            
+            // Handle connection confirmation
+            if (data.type === 'connected') {
+              return; // Just a connection confirmation, continue
+            }
+            
             if (data.type === 'progress' && data.step) {
               const simplifiedStep = simplifyStepName(data.step);
               setIngestionProgress(simplifiedStep);
