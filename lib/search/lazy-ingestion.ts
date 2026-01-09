@@ -100,36 +100,38 @@ export async function lazyIngestCompany(
 
     const filings: Array<{ filingType: string; filingId: string; success: boolean; error?: string }> = [];
 
-    // Step 3: Ingest latest 10-K
-    onProgress?.('Ingesting latest 10-K');
-    const k10Result = await ingestLatestFiling(cik, '10-K', (step, details) => {
+    // Step 3: Ingest last 3 years of 10-Ks (annual reports)
+    // This gives us 3 years of annual data for better trend analysis
+    onProgress?.('Ingesting annual reports (last 3 years)');
+    const k10Results = await ingestRecentFilings(cik, '10-K', 3, (step, details) => {
       onProgress?.(`10-K: ${step}`, details);
     });
 
-    if (k10Result.success && k10Result.filingId) {
-      filings.push({
-        filingType: '10-K',
-        filingId: k10Result.filingId,
-        success: true,
-      });
-      onProgress?.('10-K ingested successfully', { filingId: k10Result.filingId });
-    } else {
-      filings.push({
-        filingType: '10-K',
-        filingId: '',
-        success: false,
-        error: k10Result.error || 'Unknown error',
-      });
-      onProgress?.('10-K ingestion failed', { error: k10Result.error });
-    }
+    k10Results.forEach((result) => {
+      if (result.success && result.filingId) {
+        filings.push({
+          filingType: '10-K',
+          filingId: result.filingId,
+          success: true,
+        });
+      } else {
+        filings.push({
+          filingType: '10-K',
+          filingId: '',
+          success: false,
+          error: result.error || 'Unknown error',
+        });
+      }
+    });
 
-    // Step 4: Ingest last 4 10-Qs
-    onProgress?.('Ingesting last 4 quarterly filings (10-Q)');
-    const q10Results = await ingestRecentFilings(cik, '10-Q', 4, (step, details) => {
+    // Step 4: Ingest last 10 10-Qs (quarterly reports)
+    // This gives us ~2.5 years of quarterly data for better trend analysis
+    onProgress?.('Ingesting quarterly reports (last 2.5 years)');
+    const q10Results = await ingestRecentFilings(cik, '10-Q', 10, (step, details) => {
       onProgress?.(`10-Q: ${step}`, details);
     });
 
-    q10Results.forEach((result, index) => {
+    q10Results.forEach((result) => {
       if (result.success && result.filingId) {
         filings.push({
           filingType: '10-Q',
@@ -164,43 +166,62 @@ export async function lazyIngestCompany(
     }
 
     // Step 5: Process each successful filing through full pipeline
-    for (const filing of successfulFilings) {
-      onProgress?.(`Processing ${filing.filingType} through full pipeline`, {
-        filingId: filing.filingId,
-      });
+    // Optimize: Process filings in parallel batches, but pipeline steps sequentially per filing
+    // to avoid overwhelming the database/AI APIs
+    const batchSize = 2; // Process 2 filings at a time
+    for (let i = 0; i < successfulFilings.length; i += batchSize) {
+      const batch = successfulFilings.slice(i, i + batchSize);
+      
+      // Process batch in parallel
+      await Promise.all(
+        batch.map(async (filing) => {
+          onProgress?.(`Processing ${filing.filingType} through full pipeline`, {
+            filingId: filing.filingId,
+            batch: `${Math.floor(i / batchSize) + 1}/${Math.ceil(successfulFilings.length / batchSize)}`,
+          });
 
-      // 5a: Extract metrics
-      onProgress?.(`Extracting metrics for ${filing.filingType}`);
-      await extractMetricsForFiling(filing.filingId, {
-        onProgress: (step, details) => {
-          onProgress?.(`${filing.filingType} Metrics: ${step}`, details);
-        },
-      });
+          // Pipeline steps run sequentially per filing (they depend on each other)
+          // But multiple filings can be processed in parallel
+          try {
+            // 5a: Extract metrics
+            onProgress?.(`Extracting metrics for ${filing.filingType}`);
+            await extractMetricsForFiling(filing.filingId, {
+              onProgress: (step, details) => {
+                onProgress?.(`${filing.filingType} Metrics: ${step}`, details);
+              },
+            });
 
-      // 5b: AI Analysis
-      onProgress?.(`Running AI analysis for ${filing.filingType}`);
-      await analyzeFilingSections(filing.filingId, {
-        onProgress: (step, details) => {
-          onProgress?.(`${filing.filingType} AI: ${step}`, details);
-        },
-      });
+            // 5b: AI Analysis (can run in parallel with signals/score, but keeping sequential for now)
+            onProgress?.(`Running AI analysis for ${filing.filingType}`);
+            await analyzeFilingSections(filing.filingId, {
+              onProgress: (step, details) => {
+                onProgress?.(`${filing.filingType} AI: ${step}`, details);
+              },
+            });
 
-      // 5c: Generate signals
-      onProgress?.(`Generating signals for ${filing.filingType}`);
-      await generateSignalsForFiling(filing.filingId, {
-        onProgress: (step, details) => {
-          onProgress?.(`${filing.filingType} Signals: ${step}`, details);
-        },
-      });
-
-      // 5d: Calculate composite score
-      onProgress?.(`Calculating composite score for ${filing.filingType}`);
-      await calculateFilingCompositeScore(filing.filingId, {
-        storeResult: true,
-        onProgress: (step, details) => {
-          onProgress?.(`${filing.filingType} Score: ${step}`, details);
-        },
-      });
+            // 5c & 5d: Generate signals and calculate score in parallel (they're independent)
+            onProgress?.(`Generating insights for ${filing.filingType}`);
+            await Promise.all([
+              generateSignalsForFiling(filing.filingId, {
+                onProgress: (step, details) => {
+                  onProgress?.(`${filing.filingType} Signals: ${step}`, details);
+                },
+              }),
+              calculateFilingCompositeScore(filing.filingId, {
+                storeResult: true,
+                onProgress: (step, details) => {
+                  onProgress?.(`${filing.filingType} Score: ${step}`, details);
+                },
+              }),
+            ]);
+          } catch (error) {
+            console.error(`Error processing filing ${filing.filingId}:`, error);
+            onProgress?.(`Error processing ${filing.filingType}`, {
+              error: error instanceof Error ? error.message : 'Unknown error',
+            });
+          }
+        })
+      );
     }
 
     // Step 6: Generate trends for company (based on all metrics)
