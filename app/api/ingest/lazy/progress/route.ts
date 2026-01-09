@@ -174,51 +174,59 @@ export async function GET(request: NextRequest) {
 
 /**
  * Simplifies progress step names for user-friendly display
+ * Removes repetitive details and shortens messages
  */
 function simplifyStepName(step: string): string {
   const stepLower = step.toLowerCase();
   
-  // Map technical steps to user-friendly messages
-  if (stepLower.includes('looking up') || stepLower.includes('company information')) {
-    return 'Looking up company information';
+  // Remove prefixes like "10-K:", "10-Q:", etc. for cleaner display
+  let cleaned = step.split(':').pop()?.trim() || step;
+  const cleanedLower = cleaned.toLowerCase();
+  
+  // Map technical steps to concise user-friendly messages
+  if (cleanedLower.includes('looking up') || cleanedLower.includes('company information')) {
+    return 'Looking up company';
   }
-  if (stepLower.includes('company found')) {
+  if (cleanedLower.includes('company found')) {
     return 'Company found';
   }
-  if (stepLower.includes('creating company') || stepLower.includes('company record')) {
-    return 'Setting up company profile';
+  if (cleanedLower.includes('creating company') || cleanedLower.includes('company record') || cleanedLower.includes('using existing company')) {
+    return 'Setting up profile';
   }
-  if (stepLower.includes('ingesting') && stepLower.includes('10-k')) {
-    return 'Fetching annual report';
+  if (cleanedLower.includes('ingesting') && (cleanedLower.includes('10-k') || cleanedLower.includes('10-q') || cleanedLower.includes('annual') || cleanedLower.includes('quarterly'))) {
+    return 'Fetching reports';
   }
-  if (stepLower.includes('ingesting') && stepLower.includes('10-q')) {
-    return 'Fetching quarterly reports';
-  }
-  if (stepLower.includes('fetching') || stepLower.includes('downloading')) {
+  if (cleanedLower.includes('fetching') || cleanedLower.includes('downloading')) {
     return 'Downloading reports';
   }
-  if (stepLower.includes('parsing') || stepLower.includes('extracting')) {
+  if (cleanedLower.includes('parsing') || cleanedLower.includes('processing documents')) {
     return 'Processing documents';
   }
-  if (stepLower.includes('extract') && stepLower.includes('metric')) {
-    return 'Extracting financial metrics';
+  if (cleanedLower.includes('extract') && cleanedLower.includes('metric')) {
+    return 'Extracting metrics';
   }
-  if (stepLower.includes('ai analysis') || stepLower.includes('analyzing')) {
+  if (cleanedLower.includes('ai analysis') || cleanedLower.includes('analyzing with ai') || cleanedLower.includes('running ai')) {
     return 'Analyzing with AI';
   }
-  if (stepLower.includes('generating signals') || stepLower.includes('signals')) {
+  if (cleanedLower.includes('generating signals') || cleanedLower.includes('signals') || cleanedLower.includes('generating insights')) {
     return 'Generating insights';
   }
-  if (stepLower.includes('trend') || stepLower.includes('analyzing trends')) {
+  if (cleanedLower.includes('trend') || cleanedLower.includes('analyzing trends') || cleanedLower.includes('detecting trends')) {
     return 'Detecting trends';
   }
-  if (stepLower.includes('composite score') || stepLower.includes('calculating')) {
+  if (cleanedLower.includes('composite score') || (cleanedLower.includes('calculating') && cleanedLower.includes('score'))) {
     return 'Calculating scores';
   }
-  if (stepLower.includes('marking') || stepLower.includes('completed')) {
+  if (cleanedLower.includes('marking') || cleanedLower.includes('completed') || cleanedLower.includes('finalizing')) {
     return 'Finalizing';
   }
+  if (cleanedLower.includes('using existing filings') || cleanedLower.includes('using existing data')) {
+    return 'Using existing data';
+  }
+  if (cleanedLower.includes('filings ready') || cleanedLower.includes('filings ingested')) {
+    return 'Preparing files';
+  }
   
-  // Default: return simplified version
-  return step.split(':')[0].trim();
+  // Default: return cleaned version without prefixes
+  return cleaned;
 }

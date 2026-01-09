@@ -102,9 +102,13 @@ export async function lazyIngestCompany(
 
     // Step 3: Ingest last 3 years of 10-Ks (annual reports)
     // This gives us 3 years of annual data for better trend analysis
-    onProgress?.('Ingesting annual reports (last 3 years)');
+    onProgress?.('Fetching reports');
     const k10Results = await ingestRecentFilings(cik, '10-K', 3, (step, details) => {
-      onProgress?.(`10-K: ${step}`, details);
+      // Don't send individual filing progress - too repetitive
+      // Only send significant milestones
+      if (step.includes('Filing content retrieved') || step.includes('Filing saved')) {
+        onProgress?.(step, details);
+      }
     });
 
     // Track successful new ingestions and filings that already exist
@@ -147,9 +151,13 @@ export async function lazyIngestCompany(
 
     // Step 4: Ingest last 10 10-Qs (quarterly reports)
     // This gives us ~2.5 years of quarterly data for better trend analysis
-    onProgress?.('Ingesting quarterly reports (last 2.5 years)');
+    onProgress?.('Downloading reports');
     const q10Results = await ingestRecentFilings(cik, '10-Q', 10, (step, details) => {
-      onProgress?.(`10-Q: ${step}`, details);
+      // Don't send individual filing progress - too repetitive
+      // Only send significant milestones
+      if (step.includes('Filing content retrieved') || step.includes('Filing saved')) {
+        onProgress?.(step, details);
+      }
     });
 
     q10Results.forEach((result) => {
@@ -230,11 +238,8 @@ export async function lazyIngestCompany(
       }
     }
 
-    onProgress?.('Filings ready for processing', {
-      totalAttempted: filings.length,
-      newFilings: successfulNewFilings.length,
-      existingFilings: successfulFilings.length - successfulNewFilings.length,
-      totalAvailable: successfulFilings.length,
+    onProgress?.('Processing documents', {
+      total: successfulFilings.length,
     });
 
     if (successfulFilings.length === 0) {
@@ -259,50 +264,45 @@ export async function lazyIngestCompany(
       // Process batch in parallel
       await Promise.all(
         batch.map(async (filing) => {
-          onProgress?.(`Processing ${filing.filingType} through full pipeline`, {
-            filingId: filing.filingId,
-            batch: `${Math.floor(i / batchSize) + 1}/${Math.ceil(successfulFilings.length / batchSize)}`,
-          });
+          // Don't send per-filing progress - too repetitive
 
           // Pipeline steps run sequentially per filing (they depend on each other)
           // But multiple filings can be processed in parallel
+          // Suppress per-filing progress messages to avoid repetition
           try {
             // 5a: Extract metrics
-            onProgress?.(`Extracting metrics for ${filing.filingType}`);
+            if (i === 0) {
+              // Only show progress for first filing in batch
+              onProgress?.('Extracting metrics');
+            }
             await extractMetricsForFiling(filing.filingId, {
-              onProgress: (step, details) => {
-                onProgress?.(`${filing.filingType} Metrics: ${step}`, details);
-              },
+              // Suppress individual step progress - too repetitive
             });
 
-            // 5b: AI Analysis (can run in parallel with signals/score, but keeping sequential for now)
-            onProgress?.(`Running AI analysis for ${filing.filingType}`);
+            // 5b: AI Analysis
+            if (i === 0) {
+              onProgress?.('Analyzing with AI');
+            }
             await analyzeFilingSections(filing.filingId, {
-              onProgress: (step, details) => {
-                onProgress?.(`${filing.filingType} AI: ${step}`, details);
-              },
+              // Suppress individual step progress
             });
 
-            // 5c & 5d: Generate signals and calculate score in parallel (they're independent)
-            onProgress?.(`Generating insights for ${filing.filingType}`);
+            // 5c & 5d: Generate signals and calculate score in parallel
+            if (i === 0) {
+              onProgress?.('Generating insights');
+            }
             await Promise.all([
               generateSignalsForFiling(filing.filingId, {
-                onProgress: (step, details) => {
-                  onProgress?.(`${filing.filingType} Signals: ${step}`, details);
-                },
+                // Suppress individual step progress
               }),
               calculateFilingCompositeScore(filing.filingId, {
                 storeResult: true,
-                onProgress: (step, details) => {
-                  onProgress?.(`${filing.filingType} Score: ${step}`, details);
-                },
+                // Suppress individual step progress
               }),
             ]);
           } catch (error) {
             console.error(`Error processing filing ${filing.filingId}:`, error);
-            onProgress?.(`Error processing ${filing.filingType}`, {
-              error: error instanceof Error ? error.message : 'Unknown error',
-            });
+            // Don't show per-filing errors - log only
           }
         })
       );
