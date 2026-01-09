@@ -142,6 +142,8 @@ export default function StockDetailPage() {
   });
 
   // Trigger ingestion once when page loads if needed
+  // The IngestionProgressBar component handles ingestion via SSE endpoint
+  // We just need to show it when ingestion is needed
   useEffect(() => {
     if (
       !hasTriggeredIngestion &&
@@ -150,17 +152,10 @@ export default function StockDetailPage() {
     ) {
       setHasTriggeredIngestion(true);
       setShowProgressBar(true);
-      
-      // Trigger ingestion via SSE progress endpoint (don't use mutation - we'll use SSE)
-      // The mutation is fire-and-forget, but we'll track via SSE
-      ingestionMutation.mutate(ticker, {
-        onError: (error) => {
-          console.error('Background ingestion error:', error);
-          setShowProgressBar(false);
-        },
-      });
+      // Note: Ingestion is triggered by the IngestionProgressBar component
+      // which connects to /api/ingest/lazy/progress - that endpoint handles ingestion internally
     }
-  }, [ticker, stockStatus, hasTriggeredIngestion, ingestionMutation]);
+  }, [ticker, stockStatus, hasTriggeredIngestion]);
 
   // Auto-refresh queries when status changes
   useEffect(() => {

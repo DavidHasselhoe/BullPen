@@ -107,12 +107,33 @@ export async function lazyIngestCompany(
       onProgress?.(`10-K: ${step}`, details);
     });
 
+    // Track successful new ingestions and filings that already exist
+    const successfulNewFilings: Array<{ filingType: string; filingId: string; success: boolean }> = [];
+    const existingFilingAccessions = new Set<string>();
+
     k10Results.forEach((result) => {
       if (result.success && result.filingId) {
+        // Newly ingested filing
+        successfulNewFilings.push({
+          filingType: '10-K',
+          filingId: result.filingId,
+          success: true,
+        });
         filings.push({
           filingType: '10-K',
           filingId: result.filingId,
           success: true,
+        });
+      } else if (result.error?.includes('already exists')) {
+        // Filing already exists - we'll fetch it from DB
+        if (result.details?.accessionNumber) {
+          existingFilingAccessions.add(result.details.accessionNumber);
+        }
+        filings.push({
+          filingType: '10-K',
+          filingId: '',
+          success: false,
+          error: 'Already exists',
         });
       } else {
         filings.push({
@@ -133,10 +154,27 @@ export async function lazyIngestCompany(
 
     q10Results.forEach((result) => {
       if (result.success && result.filingId) {
+        // Newly ingested filing
+        successfulNewFilings.push({
+          filingType: '10-Q',
+          filingId: result.filingId,
+          success: true,
+        });
         filings.push({
           filingType: '10-Q',
           filingId: result.filingId,
           success: true,
+        });
+      } else if (result.error?.includes('already exists')) {
+        // Filing already exists - we'll fetch it from DB
+        if (result.details?.accessionNumber) {
+          existingFilingAccessions.add(result.details.accessionNumber);
+        }
+        filings.push({
+          filingType: '10-Q',
+          filingId: '',
+          success: false,
+          error: 'Already exists',
         });
       } else {
         filings.push({
@@ -148,19 +186,65 @@ export async function lazyIngestCompany(
       }
     });
 
-    const successfulFilings = filings.filter((f) => f.success);
-    onProgress?.('Filings ingested', {
-      total: filings.length,
-      successful: successfulFilings.length,
+    // Fetch existing filings if we have their accession numbers, or get recent completed filings
+    let successfulFilings = successfulNewFilings;
+    
+    if (existingFilingAccessions.size > 0) {
+      // Fetch filings by accession number
+      const { data: existingFilings } = await supabase
+        .from('filings')
+        .select('id, filing_type')
+        .eq('company_id', company.id)
+        .in('accession_number', Array.from(existingFilingAccessions))
+        .eq('processing_status', 'completed');
+
+      if (existingFilings && existingFilings.length > 0) {
+        const existingFilingIds = existingFilings.map(f => ({
+          filingType: f.filing_type || '10-K',
+          filingId: f.id,
+          success: true,
+        }));
+        successfulFilings = [...successfulFilings, ...existingFilingIds];
+      }
+    }
+
+    // If we still have no filings, check for any existing completed filings
+    if (successfulFilings.length === 0) {
+      const { data: existingCompletedFilings } = await supabase
+        .from('filings')
+        .select('id, filing_type')
+        .eq('company_id', company.id)
+        .eq('processing_status', 'completed')
+        .order('filing_date', { ascending: false })
+        .limit(13); // Get up to 13 filings (3 10-Ks + 10 10-Qs)
+
+      if (existingCompletedFilings && existingCompletedFilings.length > 0) {
+        successfulFilings = existingCompletedFilings.map(f => ({
+          filingType: f.filing_type || '10-K',
+          filingId: f.id,
+          success: true,
+        }));
+        onProgress?.('Using existing filings', {
+          count: successfulFilings.length,
+        });
+      }
+    }
+
+    onProgress?.('Filings ready for processing', {
+      totalAttempted: filings.length,
+      newFilings: successfulNewFilings.length,
+      existingFilings: successfulFilings.length - successfulNewFilings.length,
+      totalAvailable: successfulFilings.length,
     });
 
     if (successfulFilings.length === 0) {
       return {
         success: false,
-        error: 'No filings were successfully ingested',
+        error: 'No filings were available. This may be due to network issues, SEC server problems, or the company may not have recent filings.',
         details: {
           companyName: companyIndex.name,
           filings,
+          suggestion: 'Please try again later or check if the company has recent filings available on SEC.gov',
         },
       };
     }
