@@ -244,9 +244,16 @@ async function extractEmployeeCount(companyId: string): Promise<{ count: number 
     for (const { pattern, isEstimated } of patterns) {
       const match = content.match(pattern);
       if (match && match[1]) {
-        // Parse number, removing commas and handling decimals
-        const countStr = match[1].replace(/,/g, '').replace(/\./g, '');
-        const count = parseInt(countStr, 10);
+        // Parse number, removing commas but preserving decimal separator
+        // For employee counts, we round to nearest integer
+        const countStr = match[1].replace(/,/g, ''); // Remove thousands separators
+        const countFloat = parseFloat(countStr);
+        
+        if (isNaN(countFloat)) {
+          continue;
+        }
+        
+        const count = Math.round(countFloat); // Round to nearest integer
         
         // Sanity check: employee count should be reasonable (100 - 10 million)
         if (count >= 100 && count <= 10000000) {
