@@ -24,6 +24,7 @@ interface CompanyProfileResponse {
     shares_outstanding: number | null;
   };
   extracting?: boolean; // Flag indicating extraction is in progress
+  startedAt?: number; // Timestamp when extraction started
   error?: string;
 }
 
@@ -84,14 +85,18 @@ function formatEmployeeCount(count: number | null, isEstimated: boolean): string
  * Displays company identity, scale, and structure information
  */
 export function CompanyProfile({ companyId }: CompanyProfileProps) {
-  const { data, isLoading, error, refetch } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ['company-profile', companyId],
     queryFn: async () => {
       const response = await fetch(`/api/company/${companyId}/profile`);
       const result: CompanyProfileResponse = await response.json();
 
       if (result.success && result.profile) {
-        return { profile: result.profile, extracting: result.extracting || false };
+        return { 
+          profile: result.profile, 
+          extracting: result.extracting || false,
+          startedAt: result.startedAt,
+        };
       }
 
       return null;
@@ -99,10 +104,16 @@ export function CompanyProfile({ companyId }: CompanyProfileProps) {
     enabled: !!companyId,
     staleTime: 1000 * 60 * 60, // Cache for 1 hour (profile data changes slowly)
     refetchInterval: (query) => {
-      // If extraction is in progress, poll every 3 seconds
-      const data = query.state.data as { profile: any; extracting: boolean } | null;
-      if (data?.extracting) {
-        return 3000; // Poll every 3 seconds while extracting
+      // Only poll if extraction is in progress, with a max timeout
+      const queryData = query.state.data as { profile: any; extracting: boolean; startedAt?: number } | null;
+      if (queryData?.extracting) {
+        // Stop polling after 60 seconds (extraction should complete by then)
+        const startedAt = queryData.startedAt || Date.now();
+        const elapsed = Date.now() - startedAt;
+        if (elapsed > 60000) {
+          return false; // Stop polling after 60 seconds
+        }
+        return 5000; // Poll every 5 seconds while extracting
       }
       return false; // Don't poll if not extracting
     },
@@ -111,18 +122,6 @@ export function CompanyProfile({ companyId }: CompanyProfileProps) {
   // Extract profile and extracting flag from query data
   const profile = data?.profile || null;
   const isExtracting = data?.extracting || false;
-
-  // If extraction is in progress, poll periodically until it completes
-  useEffect(() => {
-    if (isExtracting) {
-      // Poll every 4 seconds while extracting
-      const interval = setInterval(() => {
-        refetch();
-      }, 4000);
-
-      return () => clearInterval(interval);
-    }
-  }, [isExtracting, refetch]);
 
   // Show nothing if error
   if (error) {
