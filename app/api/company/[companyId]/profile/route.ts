@@ -27,14 +27,16 @@ export async function GET(
     const existingProfile = await getCompanyProfile(companyId);
 
     if (existingProfile.success && existingProfile.profile) {
-      // Check if profile is complete (has at least some data)
-      const hasAnyData = 
+      // Check if profile is complete (has at least some key data)
+      const hasKeyData = 
         existingProfile.profile.sic_code ||
         existingProfile.profile.sector ||
         existingProfile.profile.incorporation_location ||
-        existingProfile.profile.fiscal_year_end;
+        existingProfile.profile.fiscal_year_end ||
+        existingProfile.profile.employee_count ||
+        existingProfile.profile.shares_outstanding;
 
-      if (hasAnyData) {
+      if (hasKeyData) {
         // Return cached profile
         return NextResponse.json({
           success: true,
@@ -43,7 +45,8 @@ export async function GET(
       }
     }
 
-    // Profile doesn't exist or is incomplete - extract it
+    // Profile doesn't exist or is incomplete - extract it in background
+    // Return immediately with empty profile, extraction happens async
     const supabase = createServerClient();
     const { data: company, error: companyError } = await supabase
       .from('companies')
@@ -58,23 +61,32 @@ export async function GET(
       );
     }
 
-    // Extract profile data
+    // Trigger extraction in background (fire and forget)
     const typedCompany = company as { id: string; cik: string };
-    const profileData = await extractCompanyProfile(typedCompany.cik, companyId);
+    extractCompanyProfile(typedCompany.cik, companyId)
+      .then((profileData) => {
+        updateCompanyProfile(companyId, profileData).catch((err) => {
+          console.error(`Error updating company profile for ${companyId}:`, err);
+        });
+      })
+      .catch((err) => {
+        console.error(`Error extracting company profile for ${companyId}:`, err);
+      });
 
-    // Update database with profile data
-    const updateResult = await updateCompanyProfile(companyId, profileData);
-
-    if (!updateResult.success) {
-      return NextResponse.json(
-        { success: false, error: updateResult.error || 'Failed to update profile' },
-        { status: 500 }
-      );
-    }
-
+    // Return empty profile immediately (will be populated by background extraction)
     return NextResponse.json({
       success: true,
-      profile: profileData,
+      profile: {
+        sic_code: null,
+        sector: null,
+        industry: null,
+        incorporation_location: null,
+        fiscal_year_end: null,
+        employee_count: null,
+        employee_count_is_estimated: false,
+        shares_outstanding: null,
+      },
+      extracting: true, // Flag to indicate extraction is in progress
     });
   } catch (error) {
     console.error('Error getting company profile:', error);

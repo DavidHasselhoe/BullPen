@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
@@ -22,6 +23,7 @@ interface CompanyProfileResponse {
     employee_count_is_estimated: boolean;
     shares_outstanding: number | null;
   };
+  extracting?: boolean; // Flag indicating extraction is in progress
   error?: string;
 }
 
@@ -82,77 +84,107 @@ function formatEmployeeCount(count: number | null, isEstimated: boolean): string
  * Displays company identity, scale, and structure information
  */
 export function CompanyProfile({ companyId }: CompanyProfileProps) {
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['company-profile', companyId],
     queryFn: async () => {
       const response = await fetch(`/api/company/${companyId}/profile`);
       const result: CompanyProfileResponse = await response.json();
 
       if (result.success && result.profile) {
-        return result.profile;
+        return { profile: result.profile, extracting: result.extracting || false };
       }
 
       return null;
     },
     enabled: !!companyId,
     staleTime: 1000 * 60 * 60, // Cache for 1 hour (profile data changes slowly)
+    refetchInterval: (query) => {
+      // If extraction is in progress, poll every 3 seconds
+      const data = query.state.data as { profile: any; extracting: boolean } | null;
+      if (data?.extracting) {
+        return 3000; // Poll every 3 seconds while extracting
+      }
+      return false; // Don't poll if not extracting
+    },
   });
 
-  // Show nothing if error or no data
-  if (error || (!isLoading && !data)) {
+  // Extract profile and extracting flag from query data
+  const profile = data?.profile || null;
+  const isExtracting = data?.extracting || false;
+
+  // If extraction is in progress, poll periodically until it completes
+  useEffect(() => {
+    if (isExtracting) {
+      // Poll every 4 seconds while extracting
+      const interval = setInterval(() => {
+        refetch();
+      }, 4000);
+
+      return () => clearInterval(interval);
+    }
+  }, [isExtracting, refetch]);
+
+  // Show nothing if error
+  if (error) {
     return null;
   }
 
+  // Show loading state or extracting state
+  if (isLoading || (isExtracting && !profile)) {
+    // Show skeleton while loading or extracting
+  }
+
   // Check if we have any profile data to show
-  const hasData = data && (
-    data.sector ||
-    data.industry ||
-    data.incorporation_location ||
-    data.fiscal_year_end ||
-    data.employee_count ||
-    data.shares_outstanding
+  const hasData = profile && (
+    profile.sector ||
+    profile.industry ||
+    profile.incorporation_location ||
+    profile.fiscal_year_end ||
+    profile.employee_count ||
+    profile.shares_outstanding
   );
 
-  if (!isLoading && !hasData) {
-    return null; // Don't show empty profile
+  // Don't show empty profile unless we're still extracting
+  if (!isLoading && !hasData && !isExtracting) {
+    return null;
   }
 
   const profileFields = [
     {
       label: 'Sector',
-      value: data?.sector || '—',
+      value: profile?.sector || '—',
       icon: Tag,
-      show: !!data?.sector,
+      show: !!profile?.sector,
     },
     {
       label: 'Industry',
-      value: data?.industry || '—',
+      value: profile?.industry || '—',
       icon: Building2,
-      show: !!data?.industry,
+      show: !!profile?.industry,
     },
     {
       label: 'Employees',
-      value: formatEmployeeCount(data?.employee_count || null, data?.employee_count_is_estimated || false),
+      value: formatEmployeeCount(profile?.employee_count || null, profile?.employee_count_is_estimated || false),
       icon: Users,
-      show: !!data?.employee_count,
+      show: !!profile?.employee_count,
     },
     {
       label: 'Shares Outstanding',
-      value: formatSharesOutstanding(data?.shares_outstanding || null),
+      value: formatSharesOutstanding(profile?.shares_outstanding || null),
       icon: Share2,
-      show: !!data?.shares_outstanding,
+      show: !!profile?.shares_outstanding,
     },
     {
       label: 'Fiscal Year End',
-      value: formatFiscalYearEnd(data?.fiscal_year_end || null),
+      value: formatFiscalYearEnd(profile?.fiscal_year_end || null),
       icon: Calendar,
-      show: !!data?.fiscal_year_end,
+      show: !!profile?.fiscal_year_end,
     },
     {
       label: 'Incorporation',
-      value: data?.incorporation_location || '—',
+      value: profile?.incorporation_location || '—',
       icon: MapPin,
-      show: !!data?.incorporation_location,
+      show: !!profile?.incorporation_location,
     },
   ].filter((field) => field.show); // Only show fields with data
 
@@ -165,6 +197,11 @@ export function CompanyProfile({ companyId }: CompanyProfileProps) {
       <CardHeader>
         <CardTitle className="text-lg font-semibold text-foreground">
           Company Profile
+          {isExtracting && (
+            <span className="ml-2 text-xs font-normal text-muted-foreground">
+              (updating...)
+            </span>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent>
