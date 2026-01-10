@@ -12,9 +12,11 @@ export async function GET(
   request: NextRequest,
   context: { params: Promise<{ companyId: string }> }
 ) {
+  let companyId: string | undefined;
+  
   try {
     const params = await context.params;
-    const companyId = params.companyId;
+    companyId = params.companyId;
 
     if (!companyId) {
       return NextResponse.json(
@@ -96,15 +98,35 @@ export async function GET(
     // Trigger extraction in background (fire and forget) only if not recently updated
     if (!justUpdated) {
       const typedCompany = company as { id: string; cik: string };
+      console.log(`[Profile API] Starting extraction for company ${companyId} (CIK: ${typedCompany.cik})`);
+      
       extractCompanyProfile(typedCompany.cik, companyId)
         .then((profileData) => {
-          updateCompanyProfile(companyId, profileData).catch((err) => {
-            console.error(`Error updating company profile for ${companyId}:`, err);
+          console.log(`[Profile API] Extraction completed for ${companyId}:`, {
+            hasSic: !!profileData.sic_code,
+            hasSector: !!profileData.sector,
+            hasIndustry: !!profileData.industry,
+            hasLocation: !!profileData.incorporation_location,
+            hasFye: !!profileData.fiscal_year_end,
+            hasEmployees: !!profileData.employee_count,
+            hasShares: !!profileData.shares_outstanding,
           });
+          
+          return updateCompanyProfile(companyId, profileData);
+        })
+        .then((updateResult) => {
+          if (updateResult.success) {
+            console.log(`[Profile API] Profile updated successfully for ${companyId}`);
+          } else {
+            console.error(`[Profile API] Failed to update profile for ${companyId}:`, updateResult.error);
+          }
         })
         .catch((err) => {
-          console.error(`Error extracting company profile for ${companyId}:`, err);
+          console.error(`[Profile API] Error extracting company profile for ${companyId}:`, err);
+          console.error(`[Profile API] Error stack:`, err instanceof Error ? err.stack : 'No stack trace');
         });
+    } else {
+      console.log(`[Profile API] Skipping extraction for ${companyId} - recently updated`);
     }
 
     // Return empty profile immediately (will be populated by background extraction)
@@ -124,7 +146,12 @@ export async function GET(
       startedAt: Date.now(), // Track when extraction started
     });
   } catch (error) {
-    console.error('Error getting company profile:', error);
+    console.error('[Profile API] Error in GET handler:', error);
+    console.error('[Profile API] Error details:', {
+      companyId: companyId ?? 'unknown',
+      errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      errorStack: error instanceof Error ? error.stack : 'No stack trace',
+    });
     return NextResponse.json(
       {
         success: false,

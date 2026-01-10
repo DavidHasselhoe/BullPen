@@ -85,21 +85,63 @@ function formatEmployeeCount(count: number | null, isEstimated: boolean): string
  * Displays company identity, scale, and structure information
  */
 export function CompanyProfile({ companyId }: CompanyProfileProps) {
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, isError } = useQuery({
     queryKey: ['company-profile', companyId],
     queryFn: async () => {
-      const response = await fetch(`/api/company/${companyId}/profile`);
-      const result: CompanyProfileResponse = await response.json();
+      try {
+        console.log(`[CompanyProfile] Fetching profile for ${companyId}`);
+        const response = await fetch(`/api/company/${companyId}/profile`);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`[CompanyProfile] API error (${response.status}):`, errorText);
+          throw new Error(`Failed to fetch profile: ${response.status} ${response.statusText}`);
+        }
+        
+        const result: CompanyProfileResponse = await response.json();
+        console.log(`[CompanyProfile] API response:`, {
+          success: result.success,
+          hasProfile: !!result.profile,
+          extracting: result.extracting,
+          hasError: !!result.error,
+        });
 
-      if (result.success && result.profile) {
-        return { 
-          profile: result.profile, 
-          extracting: result.extracting || false,
-          startedAt: result.startedAt,
-        };
+        if (result.error) {
+          console.error(`[CompanyProfile] API returned error:`, result.error);
+        }
+
+        if (result.success && result.profile) {
+          const hasData = 
+            result.profile.sic_code ||
+            result.profile.sector ||
+            result.profile.industry ||
+            result.profile.incorporation_location ||
+            result.profile.fiscal_year_end ||
+            result.profile.employee_count ||
+            result.profile.shares_outstanding;
+          
+          console.log(`[CompanyProfile] Profile data check:`, {
+            hasData,
+            extracting: result.extracting || false,
+          });
+
+          return { 
+            profile: result.profile, 
+            extracting: result.extracting || false,
+            startedAt: result.startedAt,
+          };
+        }
+
+        if (!result.success) {
+          console.error(`[CompanyProfile] API returned unsuccessful:`, result);
+          throw new Error(result.error || 'Failed to fetch profile');
+        }
+
+        return null;
+      } catch (err) {
+        console.error(`[CompanyProfile] Error in queryFn:`, err);
+        throw err;
       }
-
-      return null;
     },
     enabled: !!companyId,
     staleTime: 1000 * 60 * 60, // Cache for 1 hour (profile data changes slowly)
@@ -110,22 +152,45 @@ export function CompanyProfile({ companyId }: CompanyProfileProps) {
         // Stop polling after 60 seconds (extraction should complete by then)
         const startedAt = queryData.startedAt || Date.now();
         const elapsed = Date.now() - startedAt;
+        
         if (elapsed > 60000) {
+          console.warn(`[CompanyProfile] Stopping polling after 60 seconds for ${companyId}`);
           return false; // Stop polling after 60 seconds
         }
+        
+        console.log(`[CompanyProfile] Polling (${Math.round(elapsed / 1000)}s elapsed) for ${companyId}`);
         return 5000; // Poll every 5 seconds while extracting
       }
       return false; // Don't poll if not extracting
     },
+    retry: 2, // Retry failed requests twice
+    retryDelay: 1000, // Wait 1 second between retries
   });
 
   // Extract profile and extracting flag from query data
   const profile = data?.profile || null;
   const isExtracting = data?.extracting || false;
 
-  // Show nothing if error
-  if (error) {
-    return null;
+  // Show error state (for debugging)
+  if (isError || error) {
+    console.error(`[CompanyProfile] Error state:`, { isError, error });
+    return (
+      <Card className="mb-8 border-destructive/50">
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold text-destructive">
+            Company Profile (Error)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-destructive">
+            {error instanceof Error ? error.message : 'Failed to load company profile'}
+          </p>
+          <p className="text-xs text-muted-foreground mt-2">
+            Check console for details (Company ID: {companyId})
+          </p>
+        </CardContent>
+      </Card>
+    );
   }
 
   // Check if we have any profile data to show
