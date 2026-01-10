@@ -96,13 +96,14 @@ export async function GET(
       (Date.now() - new Date((recentUpdate as { updated_at: string }).updated_at).getTime()) < 30000; // Within 30 seconds
 
     // Trigger extraction in background (fire and forget) only if not recently updated
-    if (!justUpdated) {
+    if (!justUpdated && companyId) {
       const typedCompany = company as { id: string; cik: string };
-      console.log(`[Profile API] Starting extraction for company ${companyId} (CIK: ${typedCompany.cik})`);
+      const currentCompanyId = companyId; // Capture in closure
+      console.log(`[Profile API] Starting extraction for company ${currentCompanyId} (CIK: ${typedCompany.cik})`);
       
-      extractCompanyProfile(typedCompany.cik, companyId)
+      extractCompanyProfile(typedCompany.cik, currentCompanyId)
         .then((profileData) => {
-          console.log(`[Profile API] Extraction completed for ${companyId}:`, {
+          console.log(`[Profile API] Extraction completed for ${currentCompanyId}:`, {
             hasSic: !!profileData.sic_code,
             hasSector: !!profileData.sector,
             hasIndustry: !!profileData.industry,
@@ -112,20 +113,20 @@ export async function GET(
             hasShares: !!profileData.shares_outstanding,
           });
           
-          return updateCompanyProfile(companyId, profileData);
+          return updateCompanyProfile(currentCompanyId, profileData);
         })
         .then((updateResult) => {
           if (updateResult.success) {
-            console.log(`[Profile API] Profile updated successfully for ${companyId}`);
+            console.log(`[Profile API] Profile updated successfully for ${currentCompanyId}`);
           } else {
-            console.error(`[Profile API] Failed to update profile for ${companyId}:`, updateResult.error);
+            console.error(`[Profile API] Failed to update profile for ${currentCompanyId}:`, updateResult.error);
           }
         })
         .catch((err) => {
-          console.error(`[Profile API] Error extracting company profile for ${companyId}:`, err);
+          console.error(`[Profile API] Error extracting company profile for ${currentCompanyId}:`, err);
           console.error(`[Profile API] Error stack:`, err instanceof Error ? err.stack : 'No stack trace');
         });
-    } else {
+    } else if (companyId) {
       console.log(`[Profile API] Skipping extraction for ${companyId} - recently updated`);
     }
 
