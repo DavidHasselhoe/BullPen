@@ -13,6 +13,7 @@ import { TrendIndicator } from '@/components/metrics/TrendIndicator';
 import { CompositeScoreCard } from '@/components/metrics/CompositeScoreCard';
 import { IngestionProgressBar } from '@/components/stock/IngestionProgressBar';
 import { CompanyOverview } from '@/components/stock/CompanyOverview';
+import { CompanyProfile } from '@/components/stock/CompanyProfile';
 import { StockSearch } from '@/components/search/StockSearch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -326,6 +327,9 @@ export default function StockDetailPage() {
 
         {/* Company Overview - AI-generated summary */}
         {companyId && <CompanyOverview companyId={companyId} />}
+
+        {/* Company Profile - Identity, scale, structure */}
+        {companyId && <CompanyProfile companyId={companyId} />}
 
         {/* Loading State for Company Info */}
         {companyInfoLoading && !company && (

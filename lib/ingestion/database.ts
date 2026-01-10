@@ -66,6 +66,21 @@ export async function getOrCreateCompany(params: {
       return { success: false, error: createError.message };
     }
 
+    // Extract and update company profile data asynchronously (don't block creation)
+    // Profile extraction can happen in background after company is created
+    if (newCompany) {
+      // Extract profile data in background (fire and forget)
+      extractCompanyProfile(params.cik, newCompany.id)
+        .then((profileData) => {
+          updateCompanyProfile(newCompany.id, profileData).catch((err) => {
+            console.error(`Error updating company profile for ${params.ticker}:`, err);
+          });
+        })
+        .catch((err) => {
+          console.error(`Error extracting company profile for ${params.ticker}:`, err);
+        });
+    }
+
     return { success: true, data: newCompany };
   } catch (error) {
     return {

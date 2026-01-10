@@ -75,6 +75,12 @@ export interface Company {
   sector: string | null;
   industry: string | null;
   description: string | null;
+  sic_code: string | null;
+  incorporation_location: string | null;
+  fiscal_year_end: string | null;
+  employee_count: number | null;
+  employee_count_is_estimated: boolean | null;
+  shares_outstanding: number | null;
   metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;
