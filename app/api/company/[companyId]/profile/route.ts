@@ -25,6 +25,8 @@ export async function GET(
       );
     }
 
+    const supabase = createServerClient();
+
     // Check if profile data exists in database
     const existingProfile = await getCompanyProfile(companyId);
 
@@ -46,9 +48,8 @@ export async function GET(
         });
       }
 
-      // Profile exists but has no data - extraction may have completed with no data
+      // Profile exists but has no data - might need to extract
       // Check if we've already tried extraction (by checking if all fields are explicitly null)
-      // If so, don't extract again - just return the empty profile
       const allNull = 
         existingProfile.profile.sic_code === null &&
         existingProfile.profile.sector === null &&
@@ -57,9 +58,24 @@ export async function GET(
         existingProfile.profile.employee_count === null &&
         existingProfile.profile.shares_outstanding === null;
 
-      // If profile record exists with all nulls, extraction likely already completed
-      // Return empty profile without extracting flag to stop polling
-      if (allNull) {
+      // If all fields are null, try extracting again (could be from before migration)
+      // Only skip if we recently updated (within last 2 minutes)
+      const { data: recentUpdateCheckForNull } = await supabase
+        .from('companies')
+        .select('updated_at')
+        .eq('id', companyId)
+        .single();
+
+      const recentlyUpdated = recentUpdateCheckForNull && typeof recentUpdateCheckForNull === 'object' && 'updated_at' in recentUpdateCheckForNull &&
+        (Date.now() - new Date((recentUpdateCheckForNull as { updated_at: string }).updated_at).getTime()) < 120000; // Within 2 minutes
+
+      // If all null but not recently updated, extract again
+      if (allNull && !recentlyUpdated) {
+        console.log(`[Profile API] Profile exists but all fields are null for ${companyId}, triggering extraction`);
+        // Continue to extraction logic below
+      } else if (allNull && recentlyUpdated) {
+        // Extraction just ran but found no data - return empty profile
+        console.log(`[Profile API] Profile recently updated but still empty for ${companyId}`);
         return NextResponse.json({
           success: true,
           profile: existingProfile.profile,
@@ -70,7 +86,6 @@ export async function GET(
 
     // Profile doesn't exist or is incomplete - extract it in background
     // Return immediately with empty profile, extraction happens async
-    const supabase = createServerClient();
     const { data: company, error: companyError } = await supabase
       .from('companies')
       .select('id, cik')

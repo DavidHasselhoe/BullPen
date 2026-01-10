@@ -248,9 +248,25 @@ export function CompanyProfile({ companyId }: CompanyProfileProps) {
   }
 
   // Don't show empty profile unless we're still extracting or loading
+  // But show skeleton if we just loaded and have no data (extraction might be starting)
   if (!isLoading && !hasData && !isExtracting) {
     console.log(`[CompanyProfile] Hiding profile - no data and not extracting for ${companyId}`);
-    return null;
+    // If we just finished loading with no data, give extraction a moment
+    // Return skeleton for a short time in case extraction is starting
+    return (
+      <Card className="mb-8 opacity-50">
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold text-muted-foreground">
+            Company Profile
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            Profile data is being extracted. Please refresh in a moment.
+          </p>
+        </CardContent>
+      </Card>
+    );
   }
 
   const profileFields = [
