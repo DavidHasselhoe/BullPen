@@ -200,8 +200,24 @@ export function CompanyProfile({ companyId }: CompanyProfileProps) {
     profile.incorporation_location ||
     profile.fiscal_year_end ||
     profile.employee_count ||
-    profile.shares_outstanding
+    profile.shares_outstanding ||
+    profile.sic_code
   );
+  
+  // Debug logging
+  if (profile && !isLoading) {
+    console.log(`[CompanyProfile] Profile data check for ${companyId}:`, {
+      hasData,
+      sector: profile.sector,
+      industry: profile.industry,
+      location: profile.incorporation_location,
+      fye: profile.fiscal_year_end,
+      employees: profile.employee_count,
+      shares: profile.shares_outstanding,
+      sic: profile.sic_code,
+      isExtracting,
+    });
+  }
 
   // Show skeleton while loading or if extracting and no data yet
   if (isLoading || (isExtracting && !hasData)) {
@@ -231,8 +247,9 @@ export function CompanyProfile({ companyId }: CompanyProfileProps) {
     );
   }
 
-  // Don't show empty profile unless we're still extracting
-  if (!hasData && !isExtracting) {
+  // Don't show empty profile unless we're still extracting or loading
+  if (!isLoading && !hasData && !isExtracting) {
+    console.log(`[CompanyProfile] Hiding profile - no data and not extracting for ${companyId}`);
     return null;
   }
 
