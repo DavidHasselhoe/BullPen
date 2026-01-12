@@ -8,6 +8,8 @@ import {
   getFilingDocumentUrl,
   getFilingViewerUrl,
   isValidFilingContent,
+  getEarningsExhibits,
+  findExhibitsInFiling,
 } from './sec-edgar';
 import { parseFiling, validateParsedSections, getSectionStats } from './filing-parser';
 import {
@@ -18,6 +20,13 @@ import {
   updateFilingStatus,
   getCompanyByCIK,
 } from './database';
+import {
+  classifyFiling,
+  mapFormTypeToFilingType,
+  mapReportTypeToPeriodType,
+  shouldIngestFiling,
+  CLASSIFICATION_CONFIG,
+} from './filing-classifier';
 import type { FilingType } from '../types/database';
 
 /**
@@ -94,7 +103,7 @@ export async function ingestFiling(
 
     // Step 4: Fetch filing content from SEC
     onProgress?.('Fetching filing content from SEC EDGAR');
-    const rawContent = await getFilingContent(accessionNumber, cik);
+    let rawContent = await getFilingContent(accessionNumber, cik);
     onProgress?.('Filing content retrieved', {
       contentLength: rawContent.length,
     });
@@ -110,17 +119,85 @@ export async function ingestFiling(
     // Step 6: Determine filing type from content
     // Look for form type in SEC header
     const filingTypeMatch = rawContent.match(/CONFORMED SUBMISSION TYPE:\s+([^\n]+)/i);
-    const filingType = (filingTypeMatch?.[1]?.trim() || '10-K') as FilingType;
-    onProgress?.('Filing type identified', { filingType });
+    const originalFormType = filingTypeMatch?.[1]?.trim() || '10-K';
+    const filingType = mapFormTypeToFilingType(originalFormType) as FilingType;
+    onProgress?.('Filing type identified', { filingType, originalFormType });
 
-    // Step 7: Extract filing date and period
+    // Step 6.5: Extract filing date first (needed for 6-K classification)
     const filingDateMatch = rawContent.match(/FILED AS OF DATE:\s+(\d{8})/i);
-    const periodMatch = rawContent.match(/CONFORMED PERIOD OF REPORT:\s+(\d{8})/i);
-    
     const filingDate = filingDateMatch
       ? formatSECDate(filingDateMatch[1])
       : new Date().toISOString().split('T')[0];
-    const periodEndDate = periodMatch ? formatSECDate(periodMatch[1]) : undefined;
+    const filingDateForClassification = filingDateMatch?.[1] || undefined; // Pass raw YYYYMMDD format for classification
+    
+    // Step 6.6: Classify filing (NEW - determines annual/quarterly with confidence)
+    onProgress?.('Classifying filing', { filingType, originalFormType });
+    const classification = classifyFiling(
+      originalFormType,
+      rawContent,
+      {
+        filingDate: filingDateForClassification, // Pass YYYYMMDD format for month checking
+        reportDate: undefined,
+        periodEndDate: undefined,
+      }
+    );
+    
+    onProgress?.('Filing classified', {
+      reportType: classification.reportType,
+      confidence: classification.confidenceScore,
+      signals: classification.signals.length,
+    });
+
+    // Step 6.6: Skip if classification confidence is too low or not annual/quarterly
+    // Use original form type to determine appropriate threshold (6-K gets lower threshold)
+    const normalizedForm = originalFormType.toUpperCase().trim();
+    const is6K = normalizedForm === '6-K';
+    const threshold = is6K 
+      ? CLASSIFICATION_CONFIG.minConfidenceThreshold6K 
+      : CLASSIFICATION_CONFIG.minConfidenceThreshold;
+    
+    if (!shouldIngestFiling(classification, originalFormType)) {
+      return {
+        success: false,
+        error: `Filing classified as ${classification.reportType} with low confidence (${classification.confidenceScore.toFixed(2)} < ${threshold}). Skipping ingestion.`,
+        details: {
+          ticker: company.ticker,
+          companyName: company.name,
+          filingType: originalFormType,
+          accessionNumber,
+          classification,
+          threshold,
+        },
+      };
+    }
+
+    // Step 7: Extract period (filing date already extracted above)
+    const periodMatch = rawContent.match(/CONFORMED PERIOD OF REPORT:\s+(\d{8})/i);
+    const periodEndDate = classification.periodEndDate || (periodMatch ? formatSECDate(periodMatch[1]) : undefined);
+    const periodType = mapReportTypeToPeriodType(classification.reportType);
+
+    // Step 7.5: For 6-K filings, fetch earnings exhibits (if present)
+    let exhibitContents: Array<{ exhibitNumber: string; content: string }> = [];
+    if (filingType === '6-K' && classification.reportType === 'quarterly') {
+      onProgress?.('Fetching earnings exhibits for 6-K', { filingType });
+      try {
+        exhibitContents = await getEarningsExhibits(accessionNumber, cik, rawContent);
+        if (exhibitContents.length > 0) {
+          onProgress?.('Earnings exhibits fetched', {
+            count: exhibitContents.length,
+            exhibits: exhibitContents.map(e => e.exhibitNumber),
+          });
+          // Append exhibit content to raw content for parsing (6-K earnings are often in exhibits)
+          rawContent += '\n\n--- EXHIBITS ---\n\n';
+          for (const exhibit of exhibitContents) {
+            rawContent += `\n\n=== EXHIBIT ${exhibit.exhibitNumber} ===\n\n${exhibit.content}\n\n`;
+          }
+        }
+      } catch (error) {
+        // Non-fatal: Continue without exhibits
+        console.warn(`Failed to fetch exhibits for 6-K ${accessionNumber}:`, error);
+      }
+    }
 
     // Step 8: Create filing record
     onProgress?.('Creating filing record in database');
@@ -129,9 +206,19 @@ export async function ingestFiling(
       filingType,
       accessionNumber,
       filingDate,
-      periodEndDate,
+      periodEndDate: periodEndDate || classification.periodEndDate,
+      periodType,
+      fiscalYear: classification.fiscalYear,
+      fiscalQuarter: classification.fiscalQuarter,
       sourceUrl: getFilingViewerUrl(accessionNumber, cik),
       documentUrl: getFilingDocumentUrl(accessionNumber, cik),
+      metadata: {
+        original_form_type: originalFormType,
+        classification_confidence: classification.confidenceScore,
+        classification_signals: classification.signals,
+        exhibit_numbers: exhibitContents.map(e => e.exhibitNumber),
+        period_type_source: 'classifier',
+      },
     });
 
     if (!filingResult.success || !filingResult.data) {

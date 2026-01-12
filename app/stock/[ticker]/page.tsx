@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -20,7 +20,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, Building2, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
+import { CompanyLogo } from '@/components/company/CompanyLogo';
+import AnimatedContent from '@/components/ui/AnimatedContent';
+import { useBackground } from '@/hooks/use-background';
+import { StockQuoteCard } from '@/components/stock/StockQuoteCard';
 import type { MetricType, PeriodType, Company } from '@/lib/types/database';
 import type { DeltaCard } from '@/lib/metrics/metrics-ui';
 
@@ -124,6 +128,7 @@ export default function StockDetailPage() {
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>('annual');
   const [hasTriggeredIngestion, setHasTriggeredIngestion] = useState(false);
   const [showProgressBar, setShowProgressBar] = useState(false);
+  const { hasAnimatedBackground } = useBackground();
 
   // Check ingestion status (polls every 3s if data is missing)
   const { data: stockStatus, isLoading: statusLoading } = useStockStatus(ticker, !!ticker);
@@ -160,6 +165,141 @@ export default function StockDetailPage() {
     }
   }, [ticker, stockStatus, hasTriggeredIngestion]);
 
+  // TanStack Query hooks for metrics (only enabled when company exists)
+  const { 
+    data: companyId, 
+    isLoading: companyLoading, 
+    error: companyError,
+    refetch: refetchCompanyId 
+  } = useCompany(ticker);
+  
+  const {
+    data: timeSeries,
+    isLoading: metricsLoading,
+    error: metricsError,
+    refetch: refetchMetrics,
+  } = useMetricsTimeSeries(companyId || null, selectedMetric, selectedPeriod);
+
+  // Handle progress completion - refresh only relevant sections
+  // Invalidate queries based on what data was ingested (granular updates)
+  const handleProgressComplete = useCallback(() => {
+    console.log('[StockDetail] Ingestion complete, refreshing relevant data sections...');
+    
+    // Hide progress bar
+    setShowProgressBar(false);
+    
+    // Always refresh stock status to get latest counts
+    queryClient.invalidateQueries({ queryKey: ['stock-status', ticker] });
+    
+    // Refresh company info (logo might have been fetched)
+    queryClient.invalidateQueries({ queryKey: ['company-info', ticker] });
+    
+    // Refresh company profile (might have been updated)
+    if (companyId) {
+      queryClient.invalidateQueries({ queryKey: ['company-profile', companyId] });
+    }
+    
+    // Refresh metrics and chart (new reports were ingested)
+    queryClient.invalidateQueries({ queryKey: ['metrics'] });
+    queryClient.invalidateQueries({ queryKey: ['metrics-time-series'] });
+    
+    // Refresh trends and scores (based on new metrics)
+    if (companyId) {
+      queryClient.invalidateQueries({ queryKey: ['trend', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['composite-score', companyId] });
+    }
+    
+    // Refetch stock status immediately to trigger other refetches
+    setTimeout(() => {
+      queryClient.refetchQueries({ queryKey: ['stock-status', ticker] });
+    }, 100);
+  }, [ticker, companyId, queryClient]);
+
+  // Check for missing reports every time the page is loaded/refreshed
+  // This ensures ingestion pipeline stays up to date even for already-ingested companies
+  // Runs every time to catch newly missing reports (e.g., new fiscal year filings)
+  useEffect(() => {
+    if (!stockStatus || !stockStatus.companyExists || !ticker) {
+      return;
+    }
+
+    // Check if company is missing expected reports (runs every time, not cached)
+    const checkMissingReports = async () => {
+      try {
+        console.log(`[StockDetail] Checking for missing reports for ${ticker}...`);
+        
+        // Use API endpoint to check for missing reports (server-side database access)
+        const response = await fetch(`/api/stock/${ticker}/missing-reports`);
+        const data = await response.json();
+        
+        if (data.success && data.hasMissingReports) {
+          console.log(`[StockDetail] Missing reports detected for ${ticker}:`, {
+            missing10K: data.missing10K,
+            missing10Q: data.missing10Q,
+            missing10KYears: data.missing10KYears,
+            missing10QPeriods: data.missing10QPeriods,
+          });
+          
+          // Trigger ingestion in background (fire and forget)
+          // The lazy ingestion endpoint will automatically check and ingest missing reports
+          fetch('/api/ingest/lazy', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ticker }),
+          })
+            .then((response) => response.json())
+            .then((result) => {
+              if (result.success) {
+                console.log(`[StockDetail] Background ingestion triggered for ${ticker}. Missing reports will be fetched.`);
+                
+                // Refresh status periodically to pick up new reports as they're ingested
+                // This will automatically update the chart as new data becomes available
+                let refreshCount = 0;
+                const maxRefreshes = 20; // Check for 100 seconds (20 * 5s) to allow time for ingestion
+                const refreshInterval = setInterval(() => {
+                  refreshCount++;
+                  
+                  // Only log every 5th refresh to reduce console spam
+                  if (refreshCount % 5 === 0) {
+                    console.log(`[StockDetail] Refreshing data for ${ticker} (${refreshCount}/${maxRefreshes})...`);
+                  }
+                  
+                  // Invalidate queries - TanStack Query will handle refetching intelligently
+                  // Don't force refetch - this causes unnecessary API calls when data doesn't exist yet
+                  queryClient.invalidateQueries({ queryKey: ['stock-status', ticker] });
+                  queryClient.invalidateQueries({ queryKey: ['company-info', ticker] });
+                  // Only invalidate metrics if we expect them to exist (company has data)
+                  queryClient.invalidateQueries({ queryKey: ['metrics-time-series'] });
+                  
+                  if (refreshCount >= maxRefreshes) {
+                    clearInterval(refreshInterval);
+                    console.log(`[StockDetail] Stopped refreshing data for ${ticker} after ${maxRefreshes} attempts`);
+                  }
+                }, 5000);
+              } else {
+                console.warn(`[StockDetail] Failed to trigger ingestion for ${ticker}:`, result.error);
+              }
+            })
+            .catch((err) => {
+              console.warn(`[StockDetail] Failed to trigger missing reports ingestion for ${ticker}:`, err);
+            });
+        } else if (data.success) {
+          console.log(`[StockDetail] No missing reports for ${ticker}. All reports up to date.`);
+        } else {
+          console.warn(`[StockDetail] Failed to check missing reports for ${ticker}:`, data.error);
+        }
+      } catch (err) {
+        // Log error but don't fail silently - helps with debugging
+        console.error(`[StockDetail] Error checking missing reports for ${ticker}:`, err);
+      }
+    };
+
+    // Check after initial load, delay slightly to avoid race conditions
+    // Remove sessionStorage check - always run on page load/refresh
+    const timeoutId = setTimeout(checkMissingReports, 2000);
+    return () => clearTimeout(timeoutId);
+  }, [ticker, stockStatus, queryClient]);
+
   // Auto-refresh queries when status changes
   useEffect(() => {
     if (!stockStatus) return;
@@ -176,25 +316,6 @@ export default function StockDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['stock-status', ticker] });
     }
   }, [stockStatus, queryClient, ticker]);
-
-  // Handle progress completion - refresh all data
-  const handleProgressComplete = () => {
-    setShowProgressBar(false);
-    // Invalidate all related queries to force refresh
-    queryClient.invalidateQueries({ queryKey: ['stock-status', ticker] });
-    queryClient.invalidateQueries({ queryKey: ['company-info', ticker] });
-    queryClient.invalidateQueries({ queryKey: ['company', ticker] });
-    queryClient.invalidateQueries({ queryKey: ['metrics'] });
-    
-    // Small delay then refetch
-    setTimeout(() => {
-      refetchCompany();
-      if (companyId) {
-        refetchCompanyId();
-        refetchMetrics();
-      }
-    }, 500);
-  };
 
   // Fetch full company info (refetch when status changes)
   const { data: company, isLoading: companyInfoLoading, error: companyInfoError, refetch: refetchCompany } = useQuery({
@@ -219,21 +340,6 @@ export default function StockDetailPage() {
     }
   }, [stockStatus?.companyExists, company, refetchCompany]);
 
-  // TanStack Query hooks for metrics (only enabled when company exists)
-  const { 
-    data: companyId, 
-    isLoading: companyLoading, 
-    error: companyError,
-    refetch: refetchCompanyId 
-  } = useCompany(ticker);
-  
-  const {
-    data: timeSeries,
-    isLoading: metricsLoading,
-    error: metricsError,
-    refetch: refetchMetrics,
-  } = useMetricsTimeSeries(companyId || null, selectedMetric, selectedPeriod);
-
   // Refetch metrics when status updates (as data becomes available)
   useEffect(() => {
     if (stockStatus?.hasAnyData && companyId && !timeSeries) {
@@ -248,6 +354,56 @@ export default function StockDetailPage() {
       refetchCompanyId();
     }
   }, [stockStatus?.companyExists, companyId, refetchCompanyId]);
+
+  // Check and fetch logo if missing (on page load for existing companies)
+  useEffect(() => {
+    if (!company || !ticker) {
+      return;
+    }
+
+    // If logo is missing, fetch it
+    if (!company.logo_url) {
+      console.log(`[StockDetail] Logo missing for ${ticker}, fetching...`);
+      fetch(`/api/stock/${ticker}/logo`, {
+        method: 'POST',
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.success && data.logoUrl) {
+            console.log(`[StockDetail] Logo fetched for ${ticker}, refreshing company data...`);
+            // Invalidate company query to refresh logo
+            queryClient.invalidateQueries({ queryKey: ['company-info', ticker] });
+          } else {
+            console.log(`[StockDetail] Failed to fetch logo for ${ticker}:`, data.error);
+          }
+        })
+        .catch((err) => {
+          console.warn(`[StockDetail] Error fetching logo for ${ticker}:`, err);
+        });
+    }
+  }, [company, ticker, queryClient]);
+
+  // Auto-refetch metrics periodically when company has data
+  // This ensures the chart updates live as new reports are ingested
+  // Only refresh metrics/chart queries, not all queries
+  useEffect(() => {
+    if (!companyId || !stockStatus?.hasAnyData) {
+      return;
+    }
+
+    // Refetch metrics every 10 seconds to catch new reports as they're ingested
+    // This ensures charts update automatically without page refresh
+    // Only refetch if we already have metrics (don't spam 404s when metrics don't exist yet)
+    const metricsRefreshInterval = setInterval(() => {
+      // Only invalidate if we have existing metrics to avoid spamming 404s
+      if (timeSeries && timeSeries.data && timeSeries.data.length > 0) {
+        // Silently invalidate - TanStack Query will handle the refetch intelligently
+        queryClient.invalidateQueries({ queryKey: ['metrics-time-series'] });
+      }
+    }, 10000); // Refresh every 10 seconds (less aggressive to reduce API calls)
+
+    return () => clearInterval(metricsRefreshInterval);
+  }, [companyId, stockStatus?.hasAnyData, timeSeries, queryClient]);
 
   // Calculate deltas from time-series data
   const qoqDelta = timeSeries && timeSeries.periodType === 'quarterly'
@@ -268,7 +424,7 @@ export default function StockDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className={`min-h-screen ${hasAnimatedBackground ? '' : 'bg-background'}`}>
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Header with Back Button and Search */}
         <div className="mb-6 flex items-center justify-between gap-4">
@@ -286,50 +442,72 @@ export default function StockDetailPage() {
 
         {/* Company Header */}
         {company && (
-          <Card className="mb-8">
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
-                      <Building2 className="h-6 w-6 text-primary" />
-                    </div>
-                    <div>
-                      <h1 className="text-3xl font-semibold text-foreground">
-                        {company.name}
-                      </h1>
-                      <div className="mt-1 flex items-center gap-2">
-                        <Badge variant="outline" className="font-mono text-sm">
-                          {company.ticker}
-                        </Badge>
-                        {company.sector && (
-                          <span className="text-sm text-muted-foreground">
-                            {company.sector}
-                            {company.industry && ` • ${company.industry}`}
-                          </span>
-                        )}
+          <AnimatedContent reverse={true}>
+            <Card className="mb-8">
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3">
+                      <CompanyLogo
+                        name={company.name}
+                        ticker={company.ticker}
+                        logoUrl={company.logo_url}
+                        size={64}
+                      />
+                      <div>
+                        <h1 className="text-3xl font-semibold text-foreground">
+                          {company.name}
+                        </h1>
+                        <div className="mt-1 flex items-center gap-2">
+                          <Badge variant="outline" className="font-mono text-sm">
+                            {company.ticker}
+                          </Badge>
+                          {company.sector && (
+                            <span className="text-sm text-muted-foreground">
+                              {company.sector}
+                              {company.industry && ` • ${company.industry}`}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </CardHeader>
-            {company.description && (
-              <CardContent>
-                <Separator className="mb-4" />
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {company.description}
-                </p>
-              </CardContent>
-            )}
-          </Card>
+              </CardHeader>
+              {company.description && (
+                <CardContent>
+                  <Separator className="mb-4" />
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {company.description}
+                  </p>
+                </CardContent>
+              )}
+            </Card>
+          </AnimatedContent>
         )}
 
         {/* Company Overview - AI-generated summary */}
-        {companyId && <CompanyOverview companyId={companyId} />}
+        {companyId && (
+          <AnimatedContent reverse={true} delay={0.1}>
+            <CompanyOverview companyId={companyId} />
+          </AnimatedContent>
+        )}
 
         {/* Company Profile - Identity, scale, structure */}
-        {companyId && <CompanyProfile companyId={companyId} />}
+        {companyId && (
+          <AnimatedContent reverse={true} delay={0.2}>
+            <CompanyProfile companyId={companyId} />
+          </AnimatedContent>
+        )}
+
+        {/* Stock Quote */}
+        {company && (
+          <AnimatedContent reverse={true} delay={0.15}>
+            <div className="mb-8">
+              <StockQuoteCard ticker={ticker} />
+            </div>
+          </AnimatedContent>
+        )}
 
         {/* Loading State for Company Info */}
         {companyInfoLoading && !company && (
@@ -461,22 +639,32 @@ export default function StockDetailPage() {
             {!isLoading && !error && timeSeries && (
               <div className="space-y-6">
                 {/* Delta Cards */}
-                <DeltaCards qoq={qoqDelta} yoy={yoyDelta} />
+                <AnimatedContent reverse={true} delay={0.1}>
+                  <DeltaCards qoq={qoqDelta} yoy={yoyDelta} />
+                </AnimatedContent>
 
                 {/* Trend Indicator - Contextual insight for selected metric/period */}
                 {companyId && (
-                  <TrendIndicator
-                    companyId={companyId}
-                    metricType={selectedMetric}
-                    periodType={selectedPeriod}
-                  />
+                  <AnimatedContent reverse={true} delay={0.2}>
+                    <TrendIndicator
+                      companyId={companyId}
+                      metricType={selectedMetric}
+                      periodType={selectedPeriod}
+                    />
+                  </AnimatedContent>
                 )}
 
                 {/* Chart */}
-                <MetricsChart timeSeries={timeSeries} />
+                <AnimatedContent reverse={true} delay={0.3}>
+                  <MetricsChart timeSeries={timeSeries} />
+                </AnimatedContent>
 
                 {/* Composite Score */}
-                {companyId && <CompositeScoreCard companyId={companyId} />}
+                {companyId && (
+                  <AnimatedContent reverse={true} delay={0.4}>
+                    <CompositeScoreCard companyId={companyId} />
+                  </AnimatedContent>
+                )}
               </div>
             )}
 

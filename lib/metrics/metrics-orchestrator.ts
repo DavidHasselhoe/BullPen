@@ -69,14 +69,15 @@ export async function extractMetricsForFiling(
   const supabase = createServerClient();
 
   try {
-    // Step 1: Fetch filing with company info
+    // Step 1: Fetch filing with company info and sections
     onProgress?.('Fetching filing and company information');
     
     const { data: filing, error: filingError } = await supabase
       .from('filings')
       .select(`
         *,
-        company:companies(*)
+        company:companies(*),
+        sections:filing_sections(*)
       `)
       .eq('id', filingId)
       .single();
@@ -90,8 +91,9 @@ export async function extractMetricsForFiling(
 
     const company = (filing as any).company;
 
-    // Only process 10-K and 10-Q filings
-    if (filing.filing_type !== '10-K' && filing.filing_type !== '10-Q') {
+    // Process 10-K, 10-Q, 20-F, and 6-K filings
+    // Note: 6-K filings may not have XBRL data and may need text parsing
+    if (filing.filing_type !== '10-K' && filing.filing_type !== '10-Q' && filing.filing_type !== '20-F' && filing.filing_type !== '6-K') {
       return {
         success: false,
         errors: [`Filing type ${filing.filing_type} not supported for metrics extraction`],
@@ -104,8 +106,14 @@ export async function extractMetricsForFiling(
       accessionNumber: filing.accession_number,
     });
 
-    // Step 2: Extract metrics from XBRL
-    onProgress?.('Extracting metrics from SEC XBRL data');
+    // Step 2: Extract metrics from XBRL (or text parsing for 6-K if XBRL unavailable)
+    // 6-K filings often don't have XBRL - they're text-based earnings releases
+    // We'll try XBRL first, then fall back to text parsing if needed
+    if (filing.filing_type === '6-K') {
+      onProgress?.('Extracting metrics from 6-K filing (trying XBRL first, then text parsing)');
+    } else {
+      onProgress?.('Extracting metrics from SEC XBRL data');
+    }
     
     const extractedMetrics: Array<{
       metricType: MetricType;
@@ -133,7 +141,7 @@ export async function extractMetricsForFiling(
           company.cik,
           metricType,
           periodEndDate,
-          filing.filing_type as '10-K' | '10-Q',
+          filing.filing_type as '10-K' | '10-Q' | '20-F' | '6-K',
           filing.accession_number,
           requireExactPeriod
         );
@@ -142,11 +150,14 @@ export async function extractMetricsForFiling(
           // Validate revenue period alignment with filing
           if (metricType === 'revenue') {
             if (metric.periodEnd !== periodEndDate) {
+              const periodType = (filing.filing_type === '10-K' || filing.filing_type === '20-F') 
+                ? 'annual' 
+                : 'quarterly';
               extractedMetrics.push({
                 metricType,
                 value: 0,
                 unit: '',
-                periodType: filing.filing_type === '10-K' ? 'annual' : 'quarterly',
+                periodType: periodType,
                 periodEndDate: periodEndDate,
                 success: false,
                 error: `Revenue period (${metric.periodEnd}) does not match filing period (${periodEndDate})`,
@@ -169,15 +180,31 @@ export async function extractMetricsForFiling(
             periodEnd: metric.periodEnd,
           });
         } else {
+          // For 6-K filings, XBRL data often doesn't exist - they're text-based earnings releases
+          // We would need text parsing as a fallback, but that's complex and not implemented yet
+          // For now, log that XBRL extraction failed and we'd need text parsing
+          const periodType = (filing.filing_type === '10-K' || filing.filing_type === '20-F') 
+            ? 'annual' 
+            : 'quarterly';
+          
+          // For 6-K filings, note that text parsing would be needed
+          const errorMessage = filing.filing_type === '6-K' 
+            ? 'Metric not found in XBRL data (6-K filings typically use text-based earnings releases in exhibits - text parsing not yet implemented)'
+            : 'Metric not found in XBRL data';
+          
           extractedMetrics.push({
             metricType,
             value: 0,
             unit: '',
-            periodType: filing.filing_type === '10-K' ? 'annual' : 'quarterly',
+            periodType: periodType,
             periodEndDate: periodEndDate,
             success: false,
-            error: 'Metric not found in XBRL data',
+            error: errorMessage,
           });
+          
+          if (filing.filing_type === '6-K') {
+            onProgress?.(`Note: 6-K filings often don't have XBRL data. Text parsing from exhibits would be needed for ${metricType}.`);
+          }
         }
       } catch (error) {
         extractedMetrics.push({

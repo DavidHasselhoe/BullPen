@@ -27,13 +27,13 @@ async function main() {
 
   console.log(`Found: ${company.name} (${company.ticker})\n`);
 
-  // Get all completed 10-K and 10-Q filings, ordered by date (most recent first)
+  // Get all completed filings (10-K, 10-Q, 20-F, 6-K), ordered by date (most recent first)
   const { data: filings } = await supabase
     .from('filings')
     .select('id, filing_type, filing_date, period_end_date, accession_number')
     .eq('company_id', company.id)
     .eq('processing_status', 'completed')
-    .in('filing_type', ['10-K', '10-Q'])
+    .in('filing_type', ['10-K', '10-Q', '20-F', '6-K'])
     .order('filing_date', { ascending: false });
 
   if (!filings || filings.length === 0) {

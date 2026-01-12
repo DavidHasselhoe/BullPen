@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { CompanyLogo } from '@/components/company/CompanyLogo';
 import type { FundamentalChange } from '@/hooks/use-discover';
 
 interface FundamentalChangeCardProps {
@@ -50,9 +51,17 @@ export function FundamentalChangeCard({ change }: FundamentalChangeCardProps) {
           <div className="space-y-3">
             {/* Company Header */}
             <div className="flex items-start justify-between gap-2">
-              <div>
-                <h3 className="font-semibold text-foreground">{change.company.name}</h3>
-                <p className="text-sm text-muted-foreground">{change.company.ticker}</p>
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <CompanyLogo
+                  name={change.company.name}
+                  ticker={change.company.ticker}
+                  logoUrl={change.company.logo_url || null}
+                  size={40}
+                />
+                <div>
+                  <h3 className="font-semibold text-foreground">{change.company.name}</h3>
+                  <p className="text-sm text-muted-foreground">{change.company.ticker}</p>
+                </div>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
                 <Icon className={cn('h-4 w-4', config.iconClassName)} />

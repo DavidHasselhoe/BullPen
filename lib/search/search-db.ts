@@ -9,6 +9,7 @@ export interface SearchResult {
   name: string;
   cik: string;
   has_data: boolean;
+  logo_url?: string | null;
 }
 
 export interface SearchDBResult<T> {
@@ -81,8 +82,11 @@ export async function searchCompanies(
 
     // Deduplicate by ticker
     const uniqueMap = new Map<string, SearchResult>();
+    const tickersWithData = new Set<string>();
+    
     combined.forEach((item) => {
       if (!uniqueMap.has(item.ticker)) {
+        if (item.has_data) tickersWithData.add(item.ticker);
         uniqueMap.set(item.ticker, {
           ticker: item.ticker,
           name: item.name,
@@ -93,6 +97,26 @@ export async function searchCompanies(
     });
 
     const results = Array.from(uniqueMap.values());
+
+    // Fetch logo URLs for companies with data
+    if (tickersWithData.size > 0) {
+      const { data: companiesData } = await supabase
+        .from('companies')
+        .select('ticker, logo_url')
+        .in('ticker', Array.from(tickersWithData));
+
+      if (companiesData) {
+        const logoMap = new Map<string, string | null>();
+        for (const company of companiesData) {
+          logoMap.set(company.ticker, company.logo_url);
+        }
+
+        // Add logo URLs to results
+        for (const result of results) {
+          result.logo_url = logoMap.get(result.ticker) || null;
+        }
+      }
+    }
 
     // Sort: exact ticker match first, then prefix ticker matches, then name matches
     const sortedResults = results.sort((a, b) => {

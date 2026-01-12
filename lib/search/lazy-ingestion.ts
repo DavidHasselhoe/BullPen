@@ -100,13 +100,37 @@ export async function lazyIngestCompany(
 
     const filings: Array<{ filingType: string; filingId: string; success: boolean; error?: string }> = [];
 
-    // Step 3: Ingest last 3 years of 10-Ks (annual reports)
-    // This gives us 3 years of annual data for better trend analysis
-    onProgress?.('Fetching reports');
-    const k10Results = await ingestRecentFilings(cik, '10-K', 3, (step, details) => {
+    // Step 3: Detect if company is foreign private issuer
+    // Check SEC submissions for foreign issuer forms (20-F, 6-K)
+    onProgress?.('Detecting issuer type', { ticker });
+    
+    // Fetch company submissions to check for foreign issuer forms
+    let isForeignIssuer = false;
+    try {
+      const { getRecentFilings } = await import('../ingestion/sec-edgar');
+      // Check for 20-F or 6-K filings (foreign issuer forms)
+      const foreignFilings20F = await getRecentFilings(cik, '20-F', 1);
+      const foreignFilings6K = await getRecentFilings(cik, '6-K', 1);
+      
+      if (foreignFilings20F.length > 0 || foreignFilings6K.length > 0) {
+        isForeignIssuer = true;
+        onProgress?.('Foreign private issuer detected', {
+          has20F: foreignFilings20F.length > 0,
+          has6K: foreignFilings6K.length > 0,
+        });
+      }
+    } catch (error) {
+      console.warn(`Failed to detect issuer type for ${ticker}:`, error);
+      // Continue assuming US issuer if detection fails
+    }
+
+    // Step 3a/3b: Ingest annual reports (10-K for US, 20-F for foreign)
+    const annualFormType = isForeignIssuer ? '20-F' : '10-K';
+    onProgress?.('Downloading reports', { formType: annualFormType });
+    const annualResults = await ingestRecentFilings(cik, annualFormType, 3, (step, details) => {
       // Don't send individual filing progress - too repetitive
       // Only send significant milestones
-      if (step.includes('Filing content retrieved') || step.includes('Filing saved')) {
+      if (step.includes('Filing content retrieved') || step.includes('Filing saved') || step.includes('Filing classified')) {
         onProgress?.(step, details);
       }
     });
@@ -115,16 +139,16 @@ export async function lazyIngestCompany(
     const successfulNewFilings: Array<{ filingType: string; filingId: string; success: boolean }> = [];
     const existingFilingAccessions = new Set<string>();
 
-    k10Results.forEach((result) => {
+    annualResults.forEach((result) => {
       if (result.success && result.filingId) {
         // Newly ingested filing
         successfulNewFilings.push({
-          filingType: '10-K',
+          filingType: annualFormType,
           filingId: result.filingId,
           success: true,
         });
         filings.push({
-          filingType: '10-K',
+          filingType: annualFormType,
           filingId: result.filingId,
           success: true,
         });
@@ -134,14 +158,14 @@ export async function lazyIngestCompany(
           existingFilingAccessions.add(result.details.accessionNumber);
         }
         filings.push({
-          filingType: '10-K',
+          filingType: annualFormType,
           filingId: '',
           success: false,
           error: 'Already exists',
         });
       } else {
         filings.push({
-          filingType: '10-K',
+          filingType: annualFormType,
           filingId: '',
           success: false,
           error: result.error || 'Unknown error',
@@ -149,27 +173,33 @@ export async function lazyIngestCompany(
       }
     });
 
-    // Step 4: Ingest last 10 10-Qs (quarterly reports)
-    // This gives us ~2.5 years of quarterly data for better trend analysis
-    onProgress?.('Downloading reports');
-    const q10Results = await ingestRecentFilings(cik, '10-Q', 10, (step, details) => {
+    // Step 4: Ingest quarterly reports
+    // For US issuers: 10-Q (last 10 quarterly)
+    // For foreign issuers: 6-K (earnings-related, last 15 to account for non-earnings 6-Ks)
+    const quarterlyFormType = isForeignIssuer ? '6-K' : '10-Q';
+    const quarterlyLimit = isForeignIssuer ? 15 : 10; // More 6-Ks to filter through for foreign issuers
+    
+    onProgress?.('Downloading quarterly reports', { formType: quarterlyFormType, limit: quarterlyLimit });
+    const quarterlyResults = await ingestRecentFilings(cik, quarterlyFormType, quarterlyLimit, (step, details) => {
       // Don't send individual filing progress - too repetitive
       // Only send significant milestones
-      if (step.includes('Filing content retrieved') || step.includes('Filing saved')) {
+      if (step.includes('Filing content retrieved') || step.includes('Filing saved') || step.includes('Filing classified') || step.includes('Earnings exhibits')) {
         onProgress?.(step, details);
       }
     });
 
-    q10Results.forEach((result) => {
+    quarterlyResults.forEach((result) => {
+      // For 6-K filings, only include if classification succeeded (earnings-related)
+      // The classifier will filter out non-earnings 6-Ks during ingestion
       if (result.success && result.filingId) {
         // Newly ingested filing
         successfulNewFilings.push({
-          filingType: '10-Q',
+          filingType: quarterlyFormType,
           filingId: result.filingId,
           success: true,
         });
         filings.push({
-          filingType: '10-Q',
+          filingType: quarterlyFormType,
           filingId: result.filingId,
           success: true,
         });
@@ -179,14 +209,17 @@ export async function lazyIngestCompany(
           existingFilingAccessions.add(result.details.accessionNumber);
         }
         filings.push({
-          filingType: '10-Q',
+          filingType: quarterlyFormType,
           filingId: '',
           success: false,
           error: 'Already exists',
         });
+      } else if (result.error?.includes('Skipping ingestion') || result.error?.includes('low confidence')) {
+        // 6-K filing was classified as non-earnings - skip it (not an error)
+        // Don't add to filings list as it was intentionally skipped
       } else {
         filings.push({
-          filingType: '10-Q',
+          filingType: quarterlyFormType,
           filingId: '',
           success: false,
           error: result.error || 'Unknown error',
@@ -319,6 +352,53 @@ export async function lazyIngestCompany(
     // Step 7: Mark company index as ingested
     onProgress?.('Marking company as analyzed');
     await markCompanyIndexAsIngested(ticker);
+
+    // Step 8: Check for and ingest missing reports
+    onProgress?.('Checking for missing reports');
+    try {
+      const { detectAndIngestMissingReports } = await import('../ingestion/missing-reports');
+      const missingReportsResult = await detectAndIngestMissingReports(
+        company.id,
+        cik,
+        company.ticker,
+        (step, details) => {
+          onProgress?.(step, details);
+        }
+      );
+      
+      if (missingReportsResult.success) {
+        if (missingReportsResult.ingested10Ks && missingReportsResult.ingested10Ks > 0) {
+          onProgress?.('Missing 10-K reports ingested', {
+            count: missingReportsResult.ingested10Ks,
+          });
+        }
+        if (missingReportsResult.ingested10Qs && missingReportsResult.ingested10Qs > 0) {
+          onProgress?.('Missing 10-Q reports ingested', {
+            count: missingReportsResult.ingested10Qs,
+          });
+        }
+      }
+    } catch (err) {
+      // Missing reports ingestion is optional, don't fail the whole pipeline
+      console.warn(`Failed to check for missing reports for ${ticker}:`, err);
+    }
+
+    // Step 9: Fetch and store logo in background (non-blocking, fire and forget)
+    try {
+      const { ingestCompanyLogo } = await import('../logos/logos-orchestrator');
+      ingestCompanyLogo(company.ticker, company.name, company.id, (step) => {
+        // Only log completion, not every step
+        if (step.includes('completed') || step.includes('failed')) {
+          onProgress?.(`Logo: ${step}`);
+        }
+      }).catch((err) => {
+        // Logo failure is non-fatal, just log it
+        console.warn(`Logo ingestion failed for ${ticker}:`, err);
+      });
+    } catch (err) {
+      // Logo ingestion is optional, don't fail the whole pipeline
+      console.warn(`Failed to import logo orchestrator for ${ticker}:`, err);
+    }
 
     onProgress?.('Lazy ingestion completed successfully');
 

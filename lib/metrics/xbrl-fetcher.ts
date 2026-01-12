@@ -242,7 +242,7 @@ function isConsolidatedEntry(entry: any): boolean {
 export function extractMetricForPeriod(
   conceptData: SECConceptData,
   periodEndDate: string,
-  filingType: '10-K' | '10-Q',
+  filingType: '10-K' | '10-Q' | '20-F' | '6-K',
   requireExactPeriod: boolean = true
 ): ExtractedMetric | null {
   if (!conceptData || !conceptData.units) {
@@ -261,9 +261,30 @@ export function extractMetricForPeriod(
   }
 
   // Filter by filing type and consolidated only
+  // XBRL data from SEC Company Facts API uses 10-K/10-Q for both US and foreign issuers
+  // For foreign issuers, 20-F filings are often stored as 10-K in XBRL
+  // 6-K filings typically don't have XBRL data at all (they're text-based)
   const filtered = units.filter((u: any) => {
-    const form = u.form || '';
-    const matchesType = filingType === '10-K' ? form === '10-K' : form === '10-Q';
+    const form = (u.form || '').toUpperCase().trim();
+    let matchesType = false;
+    
+    // Match form type:
+    // - 10-K: matches only 10-K
+    // - 20-F (annual): matches 10-K, 20-F, 20F, or 20-F* (SEC often uses 10-K for 20-F in XBRL)
+    // - 10-Q: matches only 10-Q
+    // - 6-K (quarterly): matches 10-Q or 6-K (SEC may use 10-Q for 6-K in XBRL, but 6-K usually has no XBRL)
+    if (filingType === '10-K') {
+      matchesType = form === '10-K';
+    } else if (filingType === '20-F') {
+      // 20-F filings are often stored as 10-K in XBRL, so match both
+      matchesType = form === '10-K' || form === '20-F' || form === '20F' || form.startsWith('20-F');
+    } else if (filingType === '10-Q') {
+      matchesType = form === '10-Q';
+    } else if (filingType === '6-K') {
+      // 6-K filings rarely have XBRL, but if they do, they might be stored as 10-Q
+      matchesType = form === '10-Q' || form === '6-K' || form === '6K' || form.startsWith('6-K');
+    }
+    
     const isConsolidated = isConsolidatedEntry(u);
     return matchesType && isConsolidated;
   });
@@ -294,7 +315,7 @@ export function extractMetricForPeriod(
           : mostRecent.val;
           
         const periodEnd = mostRecent.end || mostRecent.instant || periodEndDate;
-        const periodType = mostRecent.fp === 'FY' || filingType === '10-K' 
+        const periodType = mostRecent.fp === 'FY' || filingType === '10-K' || filingType === '20-F'
           ? 'annual' as const 
           : 'quarterly' as const;
 
@@ -316,7 +337,7 @@ export function extractMetricForPeriod(
     : exactMatch.val;
     
   const periodEnd = exactMatch.end || exactMatch.instant || periodEndDate;
-  const periodType = exactMatch.fp === 'FY' || filingType === '10-K' 
+  const periodType = exactMatch.fp === 'FY' || filingType === '10-K' || filingType === '20-F'
     ? 'annual' as const 
     : 'quarterly' as const;
 
@@ -340,7 +361,7 @@ export async function getMetricForFiling(
   cik: string,
   metricType: string,
   periodEndDate: string,
-  filingType: '10-K' | '10-Q',
+  filingType: '10-K' | '10-Q' | '20-F' | '6-K',
   accessionNumber?: string,
   requireExactPeriod: boolean = true
 ): Promise<ExtractedMetric | null> {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import {
@@ -11,9 +11,8 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command';
-import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { CheckCircle2, Clock } from 'lucide-react';
+import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { useDebounce } from '@/hooks/use-debounce';
 
 interface SearchResult {
@@ -21,6 +20,7 @@ interface SearchResult {
   name: string;
   cik: string;
   has_data: boolean;
+  logo_url?: string | null;
 }
 
 interface SearchResponse {
@@ -104,10 +104,24 @@ export function StockSearch() {
     },
   });
 
+  // Track search click mutation
+  const trackSearchMutation = useMutation({
+    mutationFn: async (ticker: string) => {
+      await fetch('/api/search/metrics', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticker }),
+      });
+    },
+  });
+
   const handleSelect = useCallback(
     async (result: SearchResult) => {
       setOpen(false);
       setSearchQuery('');
+
+      // Track the search click
+      trackSearchMutation.mutate(result.ticker);
 
       if (result.has_data) {
         // Navigate directly if data exists
@@ -126,7 +140,18 @@ export function StockSearch() {
         });
       }
     },
-    [router, ingestionMutation]
+    [router, ingestionMutation, trackSearchMutation]
+  );
+
+  // Handle Enter key to select first result
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter' && searchResults && searchResults.length > 0) {
+        e.preventDefault();
+        handleSelect(searchResults[0]);
+      }
+    },
+    [searchResults, handleSelect]
   );
 
   return (
@@ -142,19 +167,31 @@ export function StockSearch() {
               placeholder="Search companies by ticker or name..."
               value={searchQuery}
               onValueChange={setSearchQuery}
+              onKeyDown={handleKeyDown}
             />
             <CommandList>
-              <CommandEmpty>
-                {isSearching ? (
-                  'Searching...'
-                ) : searchError ? (
-                  `Error: ${searchError instanceof Error ? searchError.message : 'Search failed'}`
-                ) : debouncedQuery.trim().length < 2 ? (
-                  'Type at least 2 characters...'
-                ) : (
-                  'No companies found.'
-                )}
-              </CommandEmpty>
+              {debouncedQuery.trim().length < 2 ? (
+                // Show nothing when query is too short - cleaner UI
+                <div className="py-8" />
+              ) : (
+                <CommandEmpty>
+                  {isSearching ? (
+                    <div className="py-6 text-center">
+                      <div className="text-sm text-muted-foreground">Searching...</div>
+                    </div>
+                  ) : searchError ? (
+                    <div className="py-6 text-center">
+                      <div className="text-sm text-muted-foreground">
+                        {searchError instanceof Error ? searchError.message : 'Search failed'}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="py-6 text-center">
+                      <div className="text-sm text-muted-foreground">No companies found.</div>
+                    </div>
+                  )}
+                </CommandEmpty>
+              )}
               {searchResults && searchResults.length > 0 && (
                 <CommandGroup heading="Companies">
                   {searchResults.map((result) => (
@@ -164,24 +201,19 @@ export function StockSearch() {
                       onSelect={() => handleSelect(result)}
                       className="flex items-center justify-between gap-2"
                     >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{result.name}</span>
-                          <span className="text-sm text-muted-foreground">({result.ticker})</span>
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <CompanyLogo
+                          name={result.name}
+                          ticker={result.ticker}
+                          logoUrl={result.logo_url}
+                          size={40}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{result.name}</span>
+                            <span className="text-sm text-muted-foreground">({result.ticker})</span>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        {result.has_data ? (
-                          <Badge variant="outline" className="text-xs bg-green-500/10 text-green-700 border-green-500/30 dark:bg-green-500/15 dark:text-green-400 dark:border-green-500/40">
-                            <CheckCircle2 className="mr-1 h-3 w-3" />
-                            Analyzed
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-xs bg-muted text-muted-foreground">
-                            <Clock className="mr-1 h-3 w-3" />
-                            Analyze on demand
-                          </Badge>
-                        )}
                       </div>
                     </CommandItem>
                   ))}

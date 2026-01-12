@@ -45,6 +45,15 @@ export function IngestionProgressBar({ ticker, onComplete, onError }: IngestionP
   const [showCompletionAnimation, setShowCompletionAnimation] = useState(false);
   const eventSourceRef = useRef<EventSource | null>(null);
   const hasReceivedMessageRef = useRef(false);
+  // Store callbacks in refs to avoid recreating EventSource when they change
+  const onCompleteRef = useRef(onComplete);
+  const onErrorRef = useRef(onError);
+  
+  // Update refs when callbacks change
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+    onErrorRef.current = onError;
+  }, [onComplete, onError]);
 
   useEffect(() => {
     // Create EventSource for progress tracking
@@ -113,17 +122,16 @@ export function IngestionProgressBar({ ticker, onComplete, onError }: IngestionP
           
           eventSource.close();
           
-          // Call onComplete after animation delay
+          // Call onComplete immediately to trigger refresh
+          // Small delay for animation, but don't wait too long
           setTimeout(() => {
-            onComplete?.();
-          }, 1500);
+            onCompleteRef.current?.();
+          }, 500);
         } else if (data.type === 'error') {
           setHasError(true);
           setCurrentStep(`Error: ${data.error || 'Unknown error'}`);
           eventSource.close();
-          if (onError) {
-            onError(new Error(data.error || 'Unknown error'));
-          }
+          onErrorRef.current?.(new Error(data.error || 'Unknown error'));
         }
       } catch (err) {
         console.error('Error parsing SSE message:', err);
@@ -147,7 +155,9 @@ export function IngestionProgressBar({ ticker, onComplete, onError }: IngestionP
         eventSourceRef.current.close();
       }
     };
-  }, [ticker, onComplete, onError, isComplete, hasError]);
+    // Only depend on ticker - don't recreate EventSource when callbacks or state change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ticker]);
 
   const getStepIcon = (step: string) => {
     const stepLower = step.toLowerCase();

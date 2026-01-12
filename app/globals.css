@@ -123,6 +123,26 @@
   }
 }
 
+/* Make body and page-level containers transparent when animated background is active - outside layers for maximum priority */
+html.animated-background-active body {
+  background-color: transparent !important;
+  background: transparent !important;
+}
+
+html.animated-background-active .min-h-screen.bg-background,
+html.animated-background-active div.min-h-screen.bg-background,
+html.animated-background-active div.bg-background.min-h-screen {
+  background-color: transparent !important;
+  background: transparent !important;
+  --background: transparent !important;
+}
+
+/* Exclude dialogs and modals from transparency - restore default background */
+html.animated-background-active [data-slot="dialog-content"] {
+  background-color: oklch(0.205 0 0) !important;
+  background: oklch(0.205 0 0) !important;
+}
+
 @layer utilities {
   /* Custom animations for completion */
   @keyframes scaleIn {
@@ -153,5 +173,20 @@
   
   .animate-fade-in-up {
     animation: fadeInUp 0.5s ease-out forwards;
+  }
+  
+  @keyframes slideInFromBottom4 {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .slide-in-from-bottom-4 {
+    animation: slideInFromBottom4 0.4s ease-out forwards;
   }
 }

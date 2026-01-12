@@ -34,7 +34,7 @@ export async function getRecentFundamentalChanges(
       .from('trends')
       .select(`
         *,
-        company:companies(id, name, ticker)
+        company:companies(id, name, ticker, logo_url)
       `)
       .order('strength', { ascending: false })
       .order('created_at', { ascending: false })
@@ -49,7 +49,7 @@ export async function getRecentFundamentalChanges(
       .from('signals')
       .select(`
         *,
-        company:companies(id, name, ticker)
+        company:companies(id, name, ticker, logo_url)
       `)
       .eq('is_active', true)
       .order('strength', { ascending: false })
@@ -181,7 +181,7 @@ export async function getRecentFilings(
       .from('filings')
       .select(`
         *,
-        company:companies(id, name, ticker)
+        company:companies(id, name, ticker, logo_url)
       `)
       .eq('processing_status', 'completed')
       .in('filing_type', ['10-K', '10-Q'])
@@ -272,7 +272,7 @@ export async function getCompaniesToWatch(
     // Get all companies
     const { data: companies, error: companiesError } = await supabase
       .from('companies')
-      .select('*')
+      .select('id, ticker, name, logo_url')
       .limit(100); // Reasonable limit for initial query
 
     if (companiesError) {

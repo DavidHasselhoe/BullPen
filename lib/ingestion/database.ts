@@ -79,6 +79,17 @@ export async function getOrCreateCompany(params: {
         .catch((err) => {
           console.error(`Error extracting company profile for ${params.ticker}:`, err);
         });
+
+      // Fetch and store logo in background (fire and forget)
+      import('../logos/logos-orchestrator')
+        .then(({ ingestCompanyLogo }) => {
+          ingestCompanyLogo(params.ticker, params.name, newCompany.id).catch((err) => {
+            console.error(`Error ingesting logo for ${params.ticker}:`, err);
+          });
+        })
+        .catch((err) => {
+          console.error(`Error loading logo orchestrator for ${params.ticker}:`, err);
+        });
     }
 
     return { success: true, data: newCompany };
@@ -114,10 +125,12 @@ export async function createFiling(params: {
   accessionNumber: string;
   filingDate: string;
   periodEndDate?: string;
+  periodType?: 'annual' | 'quarterly' | 'ttm' | 'ytd' | null;
   fiscalYear?: number;
   fiscalQuarter?: number;
   sourceUrl: string;
   documentUrl?: string;
+  metadata?: Record<string, unknown>;
 }): Promise<DatabaseResult<Filing>> {
   const supabase = createServerClient();
 
@@ -128,13 +141,14 @@ export async function createFiling(params: {
       accession_number: params.accessionNumber,
       filing_date: params.filingDate,
       period_end_date: params.periodEndDate || null,
+      period_type: params.periodType || null,
       fiscal_year: params.fiscalYear || null,
       fiscal_quarter: params.fiscalQuarter || null,
       source_url: params.sourceUrl,
       document_url: params.documentUrl || null,
       processing_status: 'processing',
       processing_error: null,
-      metadata: {},
+      metadata: params.metadata || {},
     };
 
     const { data, error } = await supabase

@@ -102,6 +102,7 @@ function formatDeltaValue(value: number, unit: string): string {
 
 export default function MetricsPage() {
   const [ticker] = useState(DEFAULT_TICKER);
+  const { hasAnimatedBackground } = useBackground();
   const [selectedMetric, setSelectedMetric] = useState<MetricType>('revenue');
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>('annual');
 
@@ -123,7 +124,7 @@ export default function MetricsPage() {
   const error = companyError || metricsError;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className={`min-h-screen ${hasAnimatedBackground ? '' : 'bg-background'}`}>
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">

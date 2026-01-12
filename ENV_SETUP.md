@@ -26,9 +26,26 @@ SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 # OpenAI Configuration (required for AI analysis)
 OPENAI_API_KEY=sk-...your-openai-api-key
+
+# Finnhub Configuration (required for market data)
+FINNHUB_API_KEY=your-finnhub-api-key
 ```
 
-### Step 3: Get OpenAI API Key (for AI Analysis)
+### Step 3: Get Finnhub API Key (for Market Data)
+
+1. Go to [Finnhub](https://finnhub.io)
+2. Sign up for a free account
+3. Go to **Dashboard** → **API Key**
+4. Copy your API key
+5. Add it to `.env.local` as `FINNHUB_API_KEY`
+
+**Note**: The free tier includes:
+- 60 API calls per minute
+- Market news
+- Stock quotes
+- Company news
+
+### Step 4: Get OpenAI API Key (for AI Analysis)
 
 1. Go to [OpenAI Platform](https://platform.openai.com)
 2. Sign up or log in
@@ -36,12 +53,13 @@ OPENAI_API_KEY=sk-...your-openai-api-key
 4. Copy the key (starts with `sk-...`)
 5. **Important**: Store it securely - you won't be able to see it again
 
-### Step 4: Replace Placeholder Values
+### Step 5: Replace Placeholder Values
 
 - Replace `https://your-project-ref.supabase.co` with your **Project URL**
 - Replace the first `eyJ...` with your **anon** key
 - Replace the second `eyJ...` with your **service_role** key
 - Replace `sk-...your-openai-api-key` with your **OpenAI API key**
+- Replace `your-finnhub-api-key` with your **Finnhub API key**
 
 ### Windows PowerShell Method
 

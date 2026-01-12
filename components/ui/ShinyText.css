@@ -1,0 +1,23 @@
+.shiny-text {
+  position: relative;
+  display: inline-block;
+}
+
+.shiny-text__base {
+  position: relative;
+  display: inline-block;
+}
+
+.shiny-text__shine {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: inline-block;
+  pointer-events: none;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  mix-blend-mode: screen;
+}

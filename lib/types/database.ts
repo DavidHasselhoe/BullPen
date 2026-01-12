@@ -217,6 +217,39 @@ export interface CompanyIndex {
   updated_at: string;
 }
 
+export interface Exchange {
+  code: string;
+  name: string;
+  country: string;
+  timezone: string;
+  open_time: string;
+  close_time: string;
+  created_at: string;
+}
+
+export interface ExchangeHoliday {
+  id: string;
+  exchange_code: string;
+  date: string;
+  type: 'closed' | 'early_close';
+  early_close_time: string | null;
+  description: string | null;
+  created_at: string;
+}
+
+export interface MarketStatus {
+  exchange: Exchange;
+  isOpen: boolean;
+  nextOpenTime: Date | null;
+  nextCloseTime: Date | null;
+  timeUntilOpen: number | null; // milliseconds
+  timeUntilClose: number | null; // milliseconds
+  currentTime: Date;
+  isHoliday: boolean;
+  isEarlyClose: boolean;
+  earlyCloseTime: Date | null;
+}
+
 // =====================================================
 // INSERT TYPES (OMIT AUTO-GENERATED FIELDS)
 // =====================================================

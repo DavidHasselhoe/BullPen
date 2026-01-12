@@ -43,7 +43,7 @@ export function useMetricsTimeSeries(
   periodType: PeriodType
 ) {
   return useQuery({
-    queryKey: ['metrics', companyId, metricType, periodType],
+    queryKey: ['metrics-time-series', companyId, metricType, periodType],
     queryFn: async (): Promise<MetricTimeSeries> => {
       if (!companyId) {
         throw new Error('Company ID is required');
@@ -57,10 +57,16 @@ export function useMetricsTimeSeries(
       if (data.success && data.timeSeries) {
         return data.timeSeries;
       }
-      throw new Error(data.error || 'No metrics found');
+      // Return a throw for 404 - this is expected when no metrics exist yet
+      if (response.status === 404) {
+        throw new Error('No metrics found'); // TanStack Query will handle this gracefully
+      }
+      throw new Error(data.error || 'Failed to fetch metrics');
     },
     enabled: !!companyId,
-    staleTime: 60 * 1000, // 1 minute - metrics update when new filings are ingested
+    staleTime: 5 * 1000, // 5 seconds - metrics update quickly when new filings are ingested
+    refetchInterval: false, // Don't auto-refetch by default (will be triggered manually)
+    retry: false, // Don't retry on 404 - this is expected when no metrics exist
   });
 }
 

@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { CompanyLogo } from '@/components/company/CompanyLogo';
 import type { CompanyToWatch } from '@/hooks/use-discover';
 
 interface CompaniesToWatchListProps {
@@ -79,16 +80,24 @@ export function CompaniesToWatchList({ companies, isLoading }: CompaniesToWatchL
               href={stockUrl}
               className="flex items-center justify-between gap-4 py-2 transition-opacity hover:opacity-70 group"
             >
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-medium text-foreground group-hover:underline">
-                    {item.company.name}
-                  </span>
-                  <span className="text-sm text-muted-foreground">({item.company.ticker})</span>
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <CompanyLogo
+                  name={item.company.name}
+                  ticker={item.company.ticker}
+                  logoUrl={item.company.logo_url || null}
+                  size={36}
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-medium text-foreground group-hover:underline">
+                      {item.company.name}
+                    </span>
+                    <span className="text-sm text-muted-foreground">({item.company.ticker})</span>
+                  </div>
+                  {item.supportingLabel && (
+                    <p className="text-sm text-muted-foreground">{item.supportingLabel}</p>
+                  )}
                 </div>
-                {item.supportingLabel && (
-                  <p className="text-sm text-muted-foreground">{item.supportingLabel}</p>
-                )}
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
                 <Badge variant="outline" className={cn('text-xs', badgeConfig.className)}>
