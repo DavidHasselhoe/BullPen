@@ -28,6 +28,11 @@ import {
   CLASSIFICATION_CONFIG,
 } from './filing-classifier';
 import type { FilingType } from '../types/database';
+import { parse8KItems, type Parsed8KItems } from './form8k-parser';
+import { detectStockSplitFrom8K } from './form8k-split-detection';
+import { createStockSplit } from '../metrics/splits-db';
+import { createCorporateEvent, createCorporateEvents } from './corporate-events-db';
+import type { CorporateEventType } from '../types/database';
 
 /**
  * Ingestion progress callback
@@ -129,6 +134,51 @@ export async function ingestFiling(
       ? formatSECDate(filingDateMatch[1])
       : new Date().toISOString().split('T')[0];
     const filingDateForClassification = filingDateMatch?.[1] || undefined; // Pass raw YYYYMMDD format for classification
+    
+    // ============================================================
+    // FORM 8-K PHASE A: EVENTS-ONLY INGESTION
+    // ============================================================
+    // Phase A is events-only. Metrics MUST NEVER be created from 8-K here.
+    // This branch executes BEFORE classification, fiscal inference, or metrics orchestration.
+    // If any code path attempts to create metrics for filing_type === '8-K' outside this branch,
+    // it is a bug and must be rejected.
+    // ============================================================
+    if (filingType === '8-K') {
+      onProgress?.('Handling 8-K filing (Phase A - Events Only)');
+      const phaseAResult = await handle8KPhaseA({
+        company,
+        accessionNumber,
+        rawContent,
+        filingDate,
+        onProgress,
+      });
+      
+      if (!phaseAResult.success) {
+        return {
+          success: false,
+          error: phaseAResult.error || '8-K Phase A ingestion failed',
+          details: {
+            ticker: company.ticker,
+            companyName: company.name,
+            filingType: '8-K',
+            accessionNumber,
+          },
+        };
+      }
+
+      // Phase A complete - return success (no metrics, no fiscal fields)
+      return {
+        success: true,
+        filingId: phaseAResult.filingId,
+        companyId: company.id,
+        details: {
+          ticker: company.ticker,
+          companyName: company.name,
+          filingType: '8-K',
+          accessionNumber,
+        },
+      };
+    }
     
     // Step 6.6: Classify filing (NEW - determines annual/quarterly with confidence)
     onProgress?.('Classifying filing', { filingType, originalFormType });
@@ -409,4 +459,233 @@ export function isValidCIK(cik: string): boolean {
  */
 export function isValidAccessionNumber(accessionNumber: string): boolean {
   return /^\d{10}-\d{2}-\d{6}$/.test(accessionNumber);
+}
+
+/**
+ * Maps 8-K item numbers to corporate event types
+ */
+function map8KItemToEventType(item: string): CorporateEventType | null {
+  const itemMap: Record<string, CorporateEventType> = {
+    '1.01': 'material_agreement',
+    '3.01': 'delisting',
+    '3.02': 'other', // Equity issuance - using 'other' since 'equity_issuance' doesn't exist in enum
+    '5.02': 'executive_change',
+    '7.01': 'other', // Regulation FD - using 'other'
+    '8.01': 'other',
+  };
+  return itemMap[item] || null;
+}
+
+/**
+ * Handles Form 8-K Phase A ingestion (Events Only)
+ * 
+ * Core Invariant: This function MUST NEVER create financial metrics.
+ * It only handles:
+ * - Item parsing
+ * - Accepted date extraction
+ * - Filing persistence (no fiscal fields)
+ * - Stock split detection
+ * - Corporate event creation
+ * 
+ * @param params - Phase A handler parameters
+ * @returns Ingestion result with filingId (no metrics)
+ */
+async function handle8KPhaseA(params: {
+  company: any; // Company from database
+  accessionNumber: string;
+  rawContent: string;
+  filingDate: string;
+  onProgress?: IngestionProgressCallback;
+}): Promise<IngestionResult> {
+  const { company, accessionNumber, rawContent, filingDate, onProgress } = params;
+
+  try {
+    // A. Parse Filing Metadata
+    onProgress?.('Parsing 8-K items');
+    const parsed8K = parse8KItems(rawContent);
+    
+    if (parsed8K.items.length === 0) {
+      return {
+        success: false,
+        error: 'No valid 8-K items found in filing',
+      };
+    }
+
+    onProgress?.('8-K items parsed', { items: parsed8K.items });
+
+    // Extract ACCEPTANCE-DATETIME from SEC header
+    // Format: ACCEPTANCE-DATETIME: YYYYMMDDHHMMSS
+    const acceptedDateTimeMatch = rawContent.match(/ACCEPTANCE-DATETIME:\s+(\d{14})/i);
+    let acceptedDate: string | null = null;
+    
+    if (acceptedDateTimeMatch) {
+      const dateTimeStr = acceptedDateTimeMatch[1];
+      // Extract date portion (YYYYMMDD) and convert to ISO format
+      const year = dateTimeStr.slice(0, 4);
+      const month = dateTimeStr.slice(4, 6);
+      const day = dateTimeStr.slice(6, 8);
+      acceptedDate = `${year}-${month}-${day}`;
+    } else {
+      // Fallback to filing date if ACCEPTANCE-DATETIME not found
+      acceptedDate = filingDate;
+    }
+
+    onProgress?.('Accepted date extracted', { acceptedDate });
+
+    // B. Persist Filing (NO fiscal fields, NO period classification)
+    onProgress?.('Persisting 8-K filing record');
+    const filingResult = await createFiling({
+      companyId: company.id,
+      filingType: '8-K',
+      accessionNumber,
+      filingDate,
+      acceptedDate,
+      // Explicitly NO fiscal fields:
+      // periodEndDate: undefined
+      // periodType: undefined
+      // fiscalYear: undefined
+      // fiscalQuarter: undefined
+      items: parsed8K.items,
+      sourceUrl: getFilingViewerUrl(accessionNumber, company.cik),
+      documentUrl: getFilingDocumentUrl(accessionNumber, company.cik),
+      metadata: {
+        phase: 'A',
+        items: parsed8K.items,
+        has_item_2_02: parsed8K.items.includes('2.02'),
+      },
+    });
+
+    if (!filingResult.success || !filingResult.data) {
+      return {
+        success: false,
+        error: `Failed to create 8-K filing record: ${filingResult.error}`,
+      };
+    }
+
+    const filing = filingResult.data;
+    onProgress?.('8-K filing record created', { filingId: filing.id });
+
+    // C. Stock Split Detection (Primary Purpose)
+    // Only check items 3.02 and 8.01 for stock splits
+    const splitDetectionItems = parsed8K.items.filter(item => item === '3.02' || item === '8.01');
+    
+    if (splitDetectionItems.length > 0) {
+      onProgress?.('Detecting stock splits', { items: splitDetectionItems });
+      
+      for (const item of splitDetectionItems) {
+        const itemContent = parsed8K.itemContents[item];
+        if (!itemContent) continue;
+
+        const detectedSplit = detectStockSplitFrom8K(itemContent, acceptedDate || filingDate);
+        
+        if (detectedSplit) {
+          onProgress?.('Stock split detected', {
+            item,
+            ratio: detectedSplit.splitRatio,
+            effectiveDate: detectedSplit.effectiveDate,
+          });
+
+          // Persist to stock_splits table
+          const splitResult = await createStockSplit({
+            company_id: company.id,
+            split_ratio: detectedSplit.splitRatio,
+            effective_date: detectedSplit.effectiveDate,
+            source: '8-K',
+            source_reference: accessionNumber,
+            description: detectedSplit.description,
+            metadata: {
+              item,
+              filing_id: filing.id,
+            },
+          });
+
+          if (!splitResult.success) {
+            // Log but don't fail - split detection is best effort
+            console.warn(`Failed to persist stock split for ${company.ticker}: ${splitResult.error}`);
+          } else {
+            onProgress?.('Stock split persisted', {
+              splitId: splitResult.data?.id,
+            });
+          }
+        }
+      }
+    }
+
+    // D. Corporate Event Creation
+    // Create events for non-metric items (exclude 2.02 - that's for Phase B)
+    const eventItems = parsed8K.items.filter(item => item !== '2.02');
+    
+    if (eventItems.length > 0) {
+      onProgress?.('Creating corporate events', { items: eventItems });
+      
+      const eventsToCreate = [];
+      
+      for (const item of eventItems) {
+        const eventType = map8KItemToEventType(item);
+        if (!eventType) {
+          // Skip items that don't map to event types
+          continue;
+        }
+
+        const itemContent = parsed8K.itemContents[item];
+        const title = `Item ${item}`;
+        const description = itemContent ? itemContent.substring(0, 500) : null; // Truncate for description
+
+        eventsToCreate.push({
+          company_id: company.id,
+          filing_id: filing.id,
+          event_type: eventType,
+          event_date: acceptedDate || filingDate,
+          title,
+          description,
+          metadata: {
+            item,
+            accession_number: accessionNumber,
+          },
+        });
+      }
+
+      if (eventsToCreate.length > 0) {
+        const eventsResult = await createCorporateEvents(eventsToCreate);
+        
+        if (!eventsResult.success) {
+          // Log but don't fail - event creation is best effort
+          console.warn(`Failed to create corporate events for ${company.ticker}: ${eventsResult.error}`);
+        } else {
+          onProgress?.('Corporate events created', {
+            count: eventsResult.data?.length || 0,
+          });
+        }
+      }
+    }
+
+    // Handle Item 2.02 detection (if present)
+    // Phase A: Detect it, store metadata, do nothing else
+    if (parsed8K.items.includes('2.02')) {
+      onProgress?.('Item 2.02 detected (Phase B will handle earnings extraction)');
+      // Item 2.02 metadata is already stored in filing.metadata.has_item_2_02
+      // Phase B will handle earnings extraction later
+    }
+
+    // Update filing status to completed
+    await updateFilingStatus(filing.id, 'completed');
+
+    onProgress?.('8-K Phase A ingestion completed successfully');
+    return {
+      success: true,
+      filingId: filing.id,
+      companyId: company.id,
+      details: {
+        ticker: company.ticker,
+        companyName: company.name,
+        filingType: '8-K',
+        accessionNumber,
+      },
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error in 8-K Phase A handler',
+    };
+  }
 }
