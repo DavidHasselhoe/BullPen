@@ -49,43 +49,48 @@ Phase A is locked with explicit guardrails:
 3. **No fiscal fields**: Filing records for 8-K have no fiscal year, quarter, or period end date
 4. **Test coverage**: Phase A tests validate no metrics are created
 
-## Phase B: Item 2.02 Earnings Extraction (Not Implemented)
+## Phase B: Item 2.02 Earnings Extraction (Implemented)
 
-Phase B would handle Item 2.02 earnings releases with conservative, fail-closed extraction logic.
+Phase B handles Item 2.02 earnings releases with conservative, fail-closed extraction logic.
 
-### Planned Behavior (When Implemented)
+### Behavior
 
-- Execute **only after Phase A completes**
-- Extract quarterly EPS and revenue from Item 2.02 content
-- Require explicit "Quarter Ended" language
-- Resolve fiscal period using company fiscal year-end
-- Check for 10-Q precedence (10-Q is authoritative)
-- Apply stock splits to EPS values
-- Validate EPS invariants (upper bound, split-adjusted)
-- Reject if any ambiguity exists
+- Executes **only after Phase A completes**
+- Extracts quarterly EPS and revenue from Item 2.02 content
+- Requires explicit "Quarter Ended" language
+- Resolves fiscal period using company fiscal year-end
+- Checks for 10-Q precedence (10-Q is authoritative)
+- Applies stock splits to EPS values
+- Validates EPS invariants (upper bound, split-adjusted)
+- Rejects if any ambiguity exists
 
-### Rejection Criteria (When Implemented)
+### Rejection Criteria
 
-Phase B would reject extraction if:
+Phase B rejects extraction if:
 - Item 2.02 parsing fails
 - Period cannot be resolved to fiscal quarter
 - Non-GAAP or adjusted language present
 - YTD or combined periods mentioned
-- 10-Q exists for same fiscal period
+- 10-Q exists for same fiscal period (10-Q is authoritative)
 - EPS validation fails
+- Fiscal year end not found on company record
 
 ## File Structure
 
 ```
 lib/ingestion/
-├── filing-ingestion.ts          # Main orchestrator (8-K Phase A branch)
+├── filing-ingestion.ts          # Main orchestrator (8-K Phase A & B)
 ├── form8k-parser.ts             # 8-K item parsing
+├── form8k-item202-parser.ts     # Item 2.02 earnings parser (Phase B)
 ├── form8k-split-detection.ts    # Stock split detection
 ├── corporate-events-db.ts       # Corporate events database operations
 └── FORM_8K_ARCHITECTURE.md      # This file
 
 lib/metrics/
-└── splits-db.ts                 # Stock splits database operations
+├── splits-db.ts                 # Stock splits database operations
+├── stock-splits.ts              # Stock split adjustment logic
+├── fiscal-calendar.ts           # Fiscal period resolution
+└── eps-invariants.ts            # EPS validation rules
 ```
 
 ## Database Schema
@@ -127,18 +132,30 @@ Location: `scripts/test-8k-phase-a.ts`
 Test cases:
 - Stock split detection (NVIDIA 10-for-1 split)
 - Corporate events (Apple 5.02 executive change)
-- Item 2.02 safety (Tesla - must NOT produce metrics)
+- Item 2.02 safety (Tesla - must NOT produce metrics in Phase A)
 - Re-ingestion determinism
 
-### Required Test Assertions
+### Required Phase A Test Assertions
 
 All Phase A tests must assert:
-- ✅ No metrics created (`financial_metrics` count unchanged)
+- ✅ No metrics created by Phase A (`financial_metrics` count unchanged before Phase B)
 - ✅ No fiscal fields on filing (`fiscal_year`, `fiscal_quarter`, `period_end_date` are NULL)
 - ✅ Items array populated correctly
 - ✅ Stock splits persisted (if detected)
 - ✅ Corporate events created (if applicable)
 - ✅ Re-ingestion is idempotent (no duplicates)
+
+### Phase B Tests
+
+Phase B integration is tested via real filings with Item 2.02.
+
+Required Phase B test assertions:
+- ✅ Metrics created only when all criteria met (explicit "Quarter Ended", valid fiscal period, no 10-Q precedence)
+- ✅ EPS values are split-adjusted and validated
+- ✅ Metrics have `source = '8-K'` and `source_item = '2.02'` in metadata
+- ✅ Rejection when 10-Q exists for same fiscal period
+- ✅ Rejection when non-GAAP or YTD language present
+- ✅ Rejection when fiscal period cannot be resolved
 
 ## Integration Points
 
@@ -202,10 +219,12 @@ The following are explicitly **out of scope** for current implementation:
 - ✅ Tested with real filings
 - ✅ Locked with guardrails
 
-**Phase B (Future):**
-- ❌ Not implemented
-- ⏳ Conservative Item 2.02 extraction (when implemented)
-- ⏳ Fail-closed rejection logic (when implemented)
+**Phase B (Current State):**
+- ✅ Fully implemented
+- ✅ Conservative Item 2.02 extraction (fail-closed)
+- ✅ 10-Q precedence checking
+- ✅ Stock split adjustment
+- ✅ EPS validation
 
 **Key Principle:**
 Coverage is intentionally limited. Correctness is mandatory.

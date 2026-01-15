@@ -33,6 +33,12 @@ import { detectStockSplitFrom8K } from './form8k-split-detection';
 import { createStockSplit } from '../metrics/splits-db';
 import { createCorporateEvent, createCorporateEvents } from './corporate-events-db';
 import type { CorporateEventType } from '../types/database';
+import { parseItem202Earnings } from './form8k-item202-parser';
+import { getFiscalPeriod, parseFiscalYearEnd, type FiscalYearEnd } from '../metrics/fiscal-calendar';
+import { createFinancialMetric } from '../metrics/metrics-db';
+import { fetchStockSplits, applyAllSplits } from '../metrics/stock-splits';
+import { validateQuarterlyEPS } from '../metrics/eps-invariants';
+import { createServerClient } from '../supabase/client';
 
 /**
  * Ingestion progress callback
@@ -166,7 +172,39 @@ export async function ingestFiling(
         };
       }
 
-      // Phase A complete - return success (no metrics, no fiscal fields)
+      // Phase A complete - check if Phase B (Item 2.02 earnings) should run
+      if (phaseAResult.success && phaseAResult.filingId) {
+        // Check if filing has Item 2.02 (Phase B will handle earnings extraction)
+        const parsed8K = parse8KItems(rawContent);
+        
+        if (parsed8K.items.includes('2.02')) {
+          onProgress?.('Handling 8-K filing (Phase B - Item 2.02 Earnings)');
+          
+          // Phase B: Extract earnings from Item 2.02 (conservative, fail-closed)
+          const phaseBResult = await handle8KEarningsPhaseB({
+            filingId: phaseAResult.filingId,
+            company,
+            accessionNumber,
+            rawContent,
+            onProgress,
+          });
+
+          if (!phaseBResult.success) {
+            // Phase B rejection is not a failure - log it and continue
+            onProgress?.('Phase B: Earnings extraction rejected', {
+              reason: phaseBResult.rejectionReason,
+              error: phaseBResult.error,
+            });
+            // Continue - Phase A succeeded, Phase B rejection is acceptable
+          } else {
+            onProgress?.('Phase B: Earnings extraction completed', {
+              metricsCreated: phaseBResult.metricsCreated,
+            });
+          }
+        }
+      }
+
+      // Phase A complete - return success (Phase B metrics may have been created, but that's separate)
       return {
         success: true,
         filingId: phaseAResult.filingId,
@@ -473,7 +511,327 @@ function map8KItemToEventType(item: string): CorporateEventType | null {
     '7.01': 'other', // Regulation FD - using 'other'
     '8.01': 'other',
   };
-  return itemMap[item] || null;
+    return itemMap[item] || null;
+}
+
+/**
+ * Checks if a 10-Q filing exists for the same fiscal period
+ * Phase B: 10-Q is authoritative, so reject 8-K Item 2.02 if 10-Q exists
+ */
+async function check10QPrecedence(
+  companyId: string,
+  fiscalYear: number,
+  fiscalQuarter: number
+): Promise<boolean> {
+  const supabase = createServerClient();
+
+  const { data, error } = await supabase
+    .from('filings')
+    .select('id')
+    .eq('company_id', companyId)
+    .eq('filing_type', '10-Q')
+    .eq('fiscal_year', fiscalYear)
+    .eq('fiscal_quarter', fiscalQuarter)
+    .eq('processing_status', 'completed')
+    .limit(1)
+    .single();
+
+  // If we found a 10-Q, it has precedence
+  return !error && data !== null;
+}
+
+/**
+ * Handles Form 8-K Phase B ingestion (Item 2.02 Earnings Extraction)
+ * 
+ * Phase B: Conservative, fail-closed extraction of quarterly earnings from Item 2.02
+ * 
+ * Rejects extraction if:
+ * - Item 2.02 parsing fails
+ * - Period cannot be resolved to fiscal quarter
+ * - Non-GAAP or adjusted language present
+ * - YTD or combined periods mentioned
+ * - 10-Q exists for same fiscal period (10-Q is authoritative)
+ * - EPS validation fails
+ * 
+ * @param params - Phase B handler parameters
+ * @returns Metrics extraction result (success only if unambiguous)
+ */
+async function handle8KEarningsPhaseB(params: {
+  filingId: string;
+  company: any; // Company from database
+  accessionNumber: string;
+  rawContent: string;
+  onProgress?: IngestionProgressCallback;
+}): Promise<{ success: boolean; metricsCreated?: number; error?: string; rejectionReason?: string }> {
+  const { filingId, company, accessionNumber, rawContent, onProgress } = params;
+
+  try {
+    // Step 1: Parse Item 2.02 content
+    onProgress?.('Phase B: Parsing Item 2.02 earnings');
+    const parsed8K = parse8KItems(rawContent);
+
+    if (!parsed8K.items.includes('2.02')) {
+      return {
+        success: false,
+        error: 'Item 2.02 not found in 8-K filing',
+        rejectionReason: 'item_2_02_not_found',
+      };
+    }
+
+    const item202Content = parsed8K.itemContents['2.02'];
+    if (!item202Content) {
+      return {
+        success: false,
+        error: 'Item 2.02 content not found',
+        rejectionReason: 'item_2_02_content_missing',
+      };
+    }
+
+    // Step 2: Parse earnings data from Item 2.02
+    const parseResult = parseItem202Earnings(item202Content);
+
+    if (!parseResult.success || !parseResult.data) {
+      return {
+        success: false,
+        error: parseResult.error || 'Failed to parse Item 2.02 earnings',
+        rejectionReason: parseResult.rejectionReason || 'parsing_failed',
+      };
+    }
+
+    const earningsData = parseResult.data;
+    onProgress?.('Phase B: Earnings data parsed', {
+      periodEndDate: earningsData.periodEndDate,
+      hasEPS: !!(earningsData.epsDiluted || earningsData.epsBasic),
+      hasRevenue: !!earningsData.revenue,
+    });
+
+    // Step 3: Resolve fiscal period
+    onProgress?.('Phase B: Resolving fiscal period');
+    let fiscalYearEnd: FiscalYearEnd | null = null;
+
+    // Get fiscal year end from company record
+    if (company.fiscal_year_end_month && company.fiscal_year_end_day) {
+      fiscalYearEnd = {
+        month: company.fiscal_year_end_month,
+        day: company.fiscal_year_end_day,
+      };
+    } else if (company.fiscal_year_end) {
+      fiscalYearEnd = parseFiscalYearEnd(company.fiscal_year_end);
+    }
+
+    if (!fiscalYearEnd) {
+      return {
+        success: false,
+        error: 'Fiscal year end not found. Cannot resolve fiscal period.',
+        rejectionReason: 'fiscal_year_end_missing',
+      };
+    }
+
+    // Calculate fiscal period
+    const periodEndDateObj = new Date(earningsData.periodEndDate);
+    if (isNaN(periodEndDateObj.getTime())) {
+      return {
+        success: false,
+        error: 'Invalid period end date',
+        rejectionReason: 'invalid_period_end_date',
+      };
+    }
+
+    const fiscalPeriod = getFiscalPeriod(periodEndDateObj, fiscalYearEnd, 'quarterly');
+
+    if (!fiscalPeriod || !fiscalPeriod.fiscalQuarter) {
+      return {
+        success: false,
+        error: 'Cannot resolve fiscal quarter from period end date',
+        rejectionReason: 'fiscal_quarter_resolution_failed',
+      };
+    }
+
+    onProgress?.('Phase B: Fiscal period resolved', {
+      fiscalYear: fiscalPeriod.fiscalYear,
+      fiscalQuarter: fiscalPeriod.fiscalQuarter,
+    });
+
+    // Step 4: Check for 10-Q precedence
+    onProgress?.('Phase B: Checking 10-Q precedence');
+    const has10Q = await check10QPrecedence(
+      company.id,
+      fiscalPeriod.fiscalYear,
+      fiscalPeriod.fiscalQuarter
+    );
+
+    if (has10Q) {
+      return {
+        success: false,
+        error: `10-Q filing exists for Q${fiscalPeriod.fiscalQuarter} FY${fiscalPeriod.fiscalYear}. 10-Q is authoritative, rejecting 8-K Item 2.02.`,
+        rejectionReason: '10q_precedence',
+      };
+    }
+
+    // Step 5: Fetch stock splits for EPS adjustment
+    onProgress?.('Phase B: Fetching stock splits');
+    const stockSplits = await fetchStockSplits(company.id, company.ticker);
+
+    // Step 6: Extract and adjust metrics
+    const metricsToCreate = [];
+    const periodEndDateStr = earningsData.periodEndDate;
+
+    // Extract EPS (diluted preferred, basic fallback)
+    if (earningsData.epsDiluted !== undefined) {
+      const { adjustedValue, splitAdjusted } = applyAllSplits(
+        earningsData.epsDiluted,
+        'eps_diluted',
+        periodEndDateStr,
+        stockSplits
+      );
+
+      // Validate EPS
+      const epsValidation = validateQuarterlyEPS(
+        'eps_diluted',
+        adjustedValue,
+        'quarterly',
+        splitAdjusted
+      );
+
+      if (!epsValidation.valid) {
+        return {
+          success: false,
+          error: `EPS validation failed: ${epsValidation.error}`,
+          rejectionReason: 'eps_validation_failed',
+        };
+      }
+
+      metricsToCreate.push({
+        filingId,
+        companyId: company.id,
+        metricType: 'eps_diluted' as const,
+        value: adjustedValue,
+        unit: 'USD/shares',
+        periodType: 'quarterly' as const,
+        periodEndDate: periodEndDateStr,
+        fiscalYear: fiscalPeriod.fiscalYear,
+        fiscalQuarter: fiscalPeriod.fiscalQuarter,
+        splitAdjusted,
+        metadata: {
+          source: '8-K',
+          source_item: '2.02',
+          accession_number: accessionNumber,
+          original_value: earningsData.epsDiluted,
+        },
+      });
+    } else if (earningsData.epsBasic !== undefined) {
+      const { adjustedValue, splitAdjusted } = applyAllSplits(
+        earningsData.epsBasic,
+        'eps_basic',
+        periodEndDateStr,
+        stockSplits
+      );
+
+      // Validate EPS
+      const epsValidation = validateQuarterlyEPS(
+        'eps_basic',
+        adjustedValue,
+        'quarterly',
+        splitAdjusted
+      );
+
+      if (!epsValidation.valid) {
+        return {
+          success: false,
+          error: `EPS validation failed: ${epsValidation.error}`,
+          rejectionReason: 'eps_validation_failed',
+        };
+      }
+
+      metricsToCreate.push({
+        filingId,
+        companyId: company.id,
+        metricType: 'eps_basic' as const,
+        value: adjustedValue,
+        unit: 'USD/shares',
+        periodType: 'quarterly' as const,
+        periodEndDate: periodEndDateStr,
+        fiscalYear: fiscalPeriod.fiscalYear,
+        fiscalQuarter: fiscalPeriod.fiscalQuarter,
+        splitAdjusted,
+        metadata: {
+          source: '8-K',
+          source_item: '2.02',
+          accession_number: accessionNumber,
+          original_value: earningsData.epsBasic,
+        },
+      });
+    }
+
+    // Extract revenue (optional)
+    if (earningsData.revenue !== undefined) {
+      metricsToCreate.push({
+        filingId,
+        companyId: company.id,
+        metricType: 'revenue' as const,
+        value: earningsData.revenue,
+        unit: 'USD',
+        periodType: 'quarterly' as const,
+        periodEndDate: periodEndDateStr,
+        fiscalYear: fiscalPeriod.fiscalYear,
+        fiscalQuarter: fiscalPeriod.fiscalQuarter,
+        currency: earningsData.currency || 'USD',
+        splitAdjusted: false, // Revenue is not split-adjusted
+        metadata: {
+          source: '8-K',
+          source_item: '2.02',
+          accession_number: accessionNumber,
+        },
+      });
+    }
+
+    // Step 7: Create metrics (at least one EPS required)
+    if (metricsToCreate.length === 0) {
+      return {
+        success: false,
+        error: 'No valid metrics extracted from Item 2.02',
+        rejectionReason: 'no_metrics_extracted',
+      };
+    }
+
+    onProgress?.('Phase B: Creating financial metrics', {
+      count: metricsToCreate.length,
+    });
+
+    let metricsCreated = 0;
+    for (const metric of metricsToCreate) {
+      const result = await createFinancialMetric(metric);
+      if (result.success) {
+        metricsCreated++;
+      } else {
+        // Log but continue - individual metric failures shouldn't fail entire Phase B
+        console.warn(`Failed to create metric ${metric.metricType}: ${result.error}`);
+      }
+    }
+
+    if (metricsCreated === 0) {
+      return {
+        success: false,
+        error: 'Failed to create any metrics from Item 2.02',
+        rejectionReason: 'metric_creation_failed',
+      };
+    }
+
+    onProgress?.('Phase B: Earnings extraction completed', {
+      metricsCreated,
+    });
+
+    return {
+      success: true,
+      metricsCreated,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error in Phase B handler',
+      rejectionReason: 'unexpected_error',
+    };
+  }
 }
 
 /**
