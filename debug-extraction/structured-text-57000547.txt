@@ -1,0 +1,63 @@
+=== STRUCTURED TEXT (1218 chars) ===
+[ROW]
+
+[/ROW]
+
+[ROW]
+[COL]&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Oct 26, 2025[/COL][COL]Oct 27, 2024[/COL]
+[/ROW]
+
+[ROW]
+
+[/ROW]
+
+[ROW]
+[COL]&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Numerator:[/COL]
+[/ROW]
+
+[ROW]
+[COL]Net income[/COL][COL][COL]$[/COL][COL]19,309&#160;[/COL][COL][COL]$[/COL][COL]77,107&#160;[/COL][COL][COL]$[/COL][COL]50,789&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Denominator:[/COL]
+[/ROW]
+
+[ROW]
+[COL]Basic weighted average shares[/COL][COL][COL]24,378&#160;[/COL][COL][COL]24,577&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Dilutive impact of outstanding equity awards[/COL][COL][COL]164&#160;[/COL][COL][COL]260&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Diluted weighted average shares[/COL][COL][COL]24,542&#160;[/COL][COL][COL]24,837&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Net income per share:[/COL]
+[/ROW]
+
+[ROW]
+[COL]Basic (1)[/COL][COL][COL]$[/COL][COL]0.79&#160;[/COL][COL][COL]$[/COL][COL]3.16&#160;[/COL][COL][COL]$[/COL][COL]2.07&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Diluted (2)[/COL][COL][COL]$[/COL][COL]0.78&#160;[/COL][COL][COL]$[/COL][COL]3.14&#160;[/COL][COL][COL]$[/COL][COL]2.04&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Anti-dilutive equity awards excluded from diluted net income per share[/COL][COL][COL]20&#160;[/COL][COL][COL]72&#160;[/COL]
+[/ROW]
+
+=== RAW AI OUTPUT ===
+{ "metrics": [] }

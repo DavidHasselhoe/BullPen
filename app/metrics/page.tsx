@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { useCompany, useMetricsTimeSeries } from '@/hooks/use-metrics';
 import { MetricSelector } from '@/components/metrics/MetricSelector';
 import { PeriodToggle } from '@/components/metrics/PeriodToggle';
+import { Input } from '@/components/ui/input';
 import { DeltaCards } from '@/components/metrics/DeltaCards';
 import { TrendIndicator } from '@/components/metrics/TrendIndicator';
 import { CompositeScoreCard } from '@/components/metrics/CompositeScoreCard';
@@ -12,6 +13,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { MetricType, PeriodType } from '@/lib/types/database';
 import type { DeltaCard } from '@/lib/metrics/metrics-ui';
+import { useBackground } from '@/hooks/use-background';
 
 // Dynamically import chart to avoid SSR issues with Recharts
 const MetricsChart = dynamic(
@@ -30,7 +32,7 @@ const MetricsChart = dynamic(
   }
 );
 
-const DEFAULT_TICKER = 'AAPL';
+const DEFAULT_TICKER = 'NVDA'; // Default to NVDA - has ingested EPS data from pipeline
 
 // Client-side deterministic delta calculations
 function calculateQoQChange(data: Array<{ value: number; unit: string; periodEndDate: string }>): DeltaCard | null {
@@ -101,10 +103,25 @@ function formatDeltaValue(value: number, unit: string): string {
 }
 
 export default function MetricsPage() {
-  const [ticker] = useState(DEFAULT_TICKER);
+  const [ticker, setTicker] = useState(DEFAULT_TICKER);
   const { hasAnimatedBackground } = useBackground();
-  const [selectedMetric, setSelectedMetric] = useState<MetricType>('revenue');
-  const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>('annual');
+  // Default to EPS (Diluted) + Quarterly - matches what our pipeline extracts from 10-Qs
+  const [selectedMetric, setSelectedMetric] = useState<MetricType>('eps_diluted');
+  const getDefaultPeriod = (metric: MetricType): PeriodType => {
+    if (metric === 'eps_basic' || metric === 'eps_diluted') {
+      return 'quarterly';
+    }
+    return 'annual';
+  };
+  const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>('quarterly');
+  
+  // Auto-switch to quarterly when EPS is selected
+  const handleMetricChange = (metric: MetricType) => {
+    setSelectedMetric(metric);
+    if (metric === 'eps_basic' || metric === 'eps_diluted') {
+      setSelectedPeriod('quarterly');
+    }
+  };
 
   // TanStack Query hooks
   const { data: companyId, isLoading: companyLoading, error: companyError } = useCompany(ticker);
@@ -134,11 +151,20 @@ export default function MetricsPage() {
           <p className="mt-2 text-sm text-muted-foreground">
             View time-series financial data extracted from SEC filings
           </p>
+          <div className="mt-4 flex items-center gap-2">
+            <label className="text-sm text-muted-foreground whitespace-nowrap">Ticker:</label>
+            <Input
+              value={ticker}
+              onChange={(e) => setTicker(e.target.value.toUpperCase())}
+              placeholder="e.g. NVDA, AAPL"
+              className="w-32"
+            />
+          </div>
         </div>
 
         {/* Controls */}
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <MetricSelector selected={selectedMetric} onChange={setSelectedMetric} />
+          <MetricSelector selected={selectedMetric} onChange={handleMetricChange} />
           <PeriodToggle selected={selectedPeriod} onChange={setSelectedPeriod} />
         </div>
 

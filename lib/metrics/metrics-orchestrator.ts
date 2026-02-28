@@ -1,20 +1,24 @@
-// Financial Metrics Orchestrator
-// Extracts and stores XBRL financial metrics from SEC filings
+/**
+ * Financial Metrics Orchestrator (XBRL-First)
+ *
+ * This module is now a thin adapter that triggers XBRL metric extraction for
+ * individual filings when needed (e.g. after a new filing appears outside the
+ * main lazy-ingestion pipeline).
+ *
+ * The AI table-reading pipeline (filing-first-pipeline.ts / executeCanonicalPipeline)
+ * has been removed from the main path. All structured financial metrics are now
+ * extracted via the SEC Company Facts XBRL API in xbrl-company-facts.ts.
+ *
+ * This file is kept for backward compatibility with any code that calls
+ * extractMetricsForFiling() directly.
+ */
 
 import { createServerClient } from '../supabase/client';
-import { getMetricForFiling } from './xbrl-fetcher';
-import { createFinancialMetrics, enforceHistoryPolicy } from './metrics-db';
-import type { MetricType, PeriodType } from '../types/database';
-import type { ExtractedMetric } from './xbrl-fetcher';
+import { fetchAndExtractCompanyMetrics } from '../ingestion/xbrl-company-facts';
+import type { MetricType } from '../types/database';
 
-/**
- * Progress callback for metrics extraction
- */
 export type MetricsProgressCallback = (step: string, details?: any) => void;
 
-/**
- * Result of metrics extraction
- */
 export interface MetricsExtractionResult {
   success: boolean;
   filingId?: string;
@@ -35,355 +39,101 @@ export interface MetricsExtractionResult {
 }
 
 /**
- * Metrics to extract (v1)
- * Note: free_cash_flow will be calculated from operating_cash_flow - capital_expenditures
- */
-const METRICS_TO_EXTRACT: MetricType[] = [
-  'revenue',
-  'net_income',
-  'operating_income',
-  'eps_basic',
-  'eps_diluted',
-  'operating_cash_flow',
-  'free_cash_flow', // Will be calculated
-];
-
-/**
- * Metrics that require exact period matching (no fallback)
- */
-const METRICS_REQUIRE_EXACT_PERIOD: MetricType[] = [
-  'revenue', // Must match filing's fiscal year exactly
-];
-
-/**
- * Extracts financial metrics from XBRL for a filing
+ * Extracts financial metrics for a single filing by running the full company-level
+ * XBRL extraction. Because the SEC Company Facts API returns all historical periods
+ * in one call, calling this for a single filing still fetches and stores all metrics
+ * for the company — which is by design (it's idempotent via upsert).
+ *
+ * If you need to extract metrics for all filings at once, call
+ * `fetchAndExtractCompanyMetrics` directly from xbrl-company-facts.ts.
  */
 export async function extractMetricsForFiling(
   filingId: string,
   options: {
     enforceHistory?: boolean;
     onProgress?: MetricsProgressCallback;
-  } = {}
+  } = {},
 ): Promise<MetricsExtractionResult> {
-  const { enforceHistory = true, onProgress } = options;
+  const { onProgress } = options;
   const supabase = createServerClient();
 
   try {
-    // Step 1: Fetch filing with company info and sections
+    // Resolve filing → company → CIK
     onProgress?.('Fetching filing and company information');
-    
-    const { data: filing, error: filingError } = await supabase
+    const { data: filingRaw, error: filingError } = await supabase
       .from('filings')
-      .select(`
-        *,
-        company:companies(*),
-        sections:filing_sections(*)
-      `)
+      .select('*, company:companies(*)')
       .eq('id', filingId)
       .single();
 
-    if (filingError || !filing) {
+    if (filingError || !filingRaw) {
       return {
         success: false,
         errors: [`Failed to fetch filing: ${filingError?.message || 'Not found'}`],
       };
     }
 
-    const company = (filing as any).company;
-
-    // Process 10-K, 10-Q, 20-F, and 6-K filings
-    // Note: 6-K filings may not have XBRL data and may need text parsing
-    if (filing.filing_type !== '10-K' && filing.filing_type !== '10-Q' && filing.filing_type !== '20-F' && filing.filing_type !== '6-K') {
-      return {
-        success: false,
-        errors: [`Filing type ${filing.filing_type} not supported for metrics extraction`],
-      };
+    const filing = filingRaw as any;
+    const company = filing.company;
+    if (!company?.cik) {
+      return { success: false, errors: ['Company CIK not found'] };
     }
 
-    onProgress?.('Filing loaded', {
-      companyName: company.name,
-      filingType: filing.filing_type,
-      accessionNumber: filing.accession_number,
-    });
+    // Build a minimal filingIdMap so the XBRL extractor can link this filing's facts
+    // For on-demand extraction we also fetch all other filings for this company to
+    // build the full map — this way all historical XBRL facts get linked correctly.
+    onProgress?.('Building filing index');
+    const { data: allFilingsRaw } = await supabase
+      .from('filings')
+      .select('id, accession_number, filing_type, period_end_date, fiscal_year, fiscal_quarter')
+      .eq('company_id', company.id);
 
-    // Step 2: Extract metrics from XBRL (or text parsing for 6-K if XBRL unavailable)
-    // 6-K filings often don't have XBRL - they're text-based earnings releases
-    // We'll try XBRL first, then fall back to text parsing if needed
-    if (filing.filing_type === '6-K') {
-      onProgress?.('Extracting metrics from 6-K filing (trying XBRL first, then text parsing)');
-    } else {
-      onProgress?.('Extracting metrics from SEC XBRL data');
-    }
-    
-    const extractedMetrics: Array<{
-      metricType: MetricType;
-      value: number;
-      unit: string;
-      periodType: PeriodType;
-      periodEndDate: string;
-      success: boolean;
-      error?: string;
-    }> = [];
+    const allFilings = (allFilingsRaw || []) as Array<{
+      id: string;
+      accession_number: string;
+      filing_type: string;
+      period_end_date: string | null;
+      fiscal_year: number | null;
+      fiscal_quarter: number | null;
+    }>;
 
-    const periodEndDate = filing.period_end_date || filing.filing_date;
-    
-    // Extract base metrics (excluding free_cash_flow which will be calculated)
-    const baseMetrics = METRICS_TO_EXTRACT.filter(m => m !== 'free_cash_flow');
-    
-    for (const metricType of baseMetrics) {
-      onProgress?.(`Extracting ${metricType}`, { metricType });
-      
-      try {
-        // Revenue requires exact period match, others can fallback
-        const requireExactPeriod = METRICS_REQUIRE_EXACT_PERIOD.includes(metricType);
-        
-        const metric = await getMetricForFiling(
-          company.cik,
-          metricType,
-          periodEndDate,
-          filing.filing_type as '10-K' | '10-Q' | '20-F' | '6-K',
-          filing.accession_number,
-          requireExactPeriod
-        );
-
-        if (metric) {
-          // Validate revenue period alignment with filing
-          if (metricType === 'revenue') {
-            if (metric.periodEnd !== periodEndDate) {
-              const periodType = (filing.filing_type === '10-K' || filing.filing_type === '20-F') 
-                ? 'annual' 
-                : 'quarterly';
-              extractedMetrics.push({
-                metricType,
-                value: 0,
-                unit: '',
-                periodType: periodType,
-                periodEndDate: periodEndDate,
-                success: false,
-                error: `Revenue period (${metric.periodEnd}) does not match filing period (${periodEndDate})`,
-              });
-              continue;
-            }
-          }
-          
-          extractedMetrics.push({
-            metricType,
-            value: metric.value,
-            unit: metric.unit,
-            periodType: metric.periodType,
-            periodEndDate: metric.periodEnd,
-            success: true,
-          });
-          onProgress?.(`Extracted ${metricType}`, {
-            value: metric.value,
-            unit: metric.unit,
-            periodEnd: metric.periodEnd,
-          });
-        } else {
-          // For 6-K filings, XBRL data often doesn't exist - they're text-based earnings releases
-          // We would need text parsing as a fallback, but that's complex and not implemented yet
-          // For now, log that XBRL extraction failed and we'd need text parsing
-          const periodType = (filing.filing_type === '10-K' || filing.filing_type === '20-F') 
-            ? 'annual' 
-            : 'quarterly';
-          
-          // For 6-K filings, note that text parsing would be needed
-          const errorMessage = filing.filing_type === '6-K' 
-            ? 'Metric not found in XBRL data (6-K filings typically use text-based earnings releases in exhibits - text parsing not yet implemented)'
-            : 'Metric not found in XBRL data';
-          
-          extractedMetrics.push({
-            metricType,
-            value: 0,
-            unit: '',
-            periodType: periodType,
-            periodEndDate: periodEndDate,
-            success: false,
-            error: errorMessage,
-          });
-          
-          if (filing.filing_type === '6-K') {
-            onProgress?.(`Note: 6-K filings often don't have XBRL data. Text parsing from exhibits would be needed for ${metricType}.`);
-          }
-        }
-      } catch (error) {
-        extractedMetrics.push({
-          metricType,
-          value: 0,
-          unit: '',
-          periodType: filing.filing_type === '10-K' ? 'annual' : 'quarterly',
-          periodEndDate: periodEndDate,
-          success: false,
-          error: error instanceof Error ? error.message : 'Unknown error',
-        });
-      }
-    }
-
-    // Calculate Free Cash Flow: operating_cash_flow - capital_expenditures
-    onProgress?.('Calculating free_cash_flow', { metricType: 'free_cash_flow' });
-    
-    const operatingCashFlow = extractedMetrics.find(m => m.metricType === 'operating_cash_flow' && m.success);
-    const capitalExpendituresMetric = await getMetricForFiling(
-      company.cik,
-      'capital_expenditures',
-      periodEndDate,
-      filing.filing_type as '10-K' | '10-Q',
-      filing.accession_number,
-      true // Require exact period for CapEx
+    const filingIdMap = new Map(
+      allFilings.map((f) => [
+        f.accession_number,
+        {
+          filingId:      f.id,
+          filingType:    f.filing_type,
+          periodEndDate: f.period_end_date,
+          fiscalYear:    f.fiscal_year,
+          fiscalQuarter: f.fiscal_quarter,
+        },
+      ]),
     );
 
-    let freeCashFlowMetadata: Record<string, unknown> | undefined;
-    
-    if (operatingCashFlow && capitalExpendituresMetric) {
-      const freeCashFlow = operatingCashFlow.value - capitalExpendituresMetric.value;
-      
-      freeCashFlowMetadata = {
-        calculation_method: 'derived',
-        formula: 'operating_cash_flow - capital_expenditures',
-        sources: {
-          operating_cash_flow: operatingCashFlow.value,
-          capital_expenditures: capitalExpendituresMetric.value,
-        },
-      };
-      
-      extractedMetrics.push({
-        metricType: 'free_cash_flow',
-        value: freeCashFlow,
-        unit: operatingCashFlow.unit, // Should be USD
-        periodType: operatingCashFlow.periodType,
-        periodEndDate: operatingCashFlow.periodEndDate,
-        success: true,
-      });
-      
-      onProgress?.('Calculated free_cash_flow', {
-        value: freeCashFlow,
-        unit: operatingCashFlow.unit,
-        periodEnd: operatingCashFlow.periodEndDate,
-        calculation: `${operatingCashFlow.value} - ${capitalExpendituresMetric.value}`,
-      });
-    } else {
-      // Try to find pre-calculated FCF in XBRL
-      const preCalculatedFCF = await getMetricForFiling(
-        company.cik,
-        'free_cash_flow',
-        periodEndDate,
-        filing.filing_type as '10-K' | '10-Q',
-        filing.accession_number,
-        true
-      );
-      
-      if (preCalculatedFCF) {
-        freeCashFlowMetadata = {
-          calculation_method: 'extracted',
-          source: 'XBRL',
-        };
-        
-        extractedMetrics.push({
-          metricType: 'free_cash_flow',
-          value: preCalculatedFCF.value,
-          unit: preCalculatedFCF.unit,
-          periodType: preCalculatedFCF.periodType,
-          periodEndDate: preCalculatedFCF.periodEnd,
-          success: true,
-        });
-        onProgress?.('Extracted free_cash_flow from XBRL', {
-          value: preCalculatedFCF.value,
-          unit: preCalculatedFCF.unit,
-          periodEnd: preCalculatedFCF.periodEnd,
-        });
-      } else {
-        extractedMetrics.push({
-          metricType: 'free_cash_flow',
-          value: 0,
-          unit: '',
-          periodType: filing.filing_type === '10-K' ? 'annual' : 'quarterly',
-          periodEndDate: periodEndDate,
-          success: false,
-          error: operatingCashFlow 
-            ? 'Capital expenditures not found' 
-            : 'Operating cash flow not found',
-        });
-      }
-    }
-
-    // Step 3: Store successful metrics
-    const successfulMetrics = extractedMetrics.filter(m => m.success);
-    
-    if (successfulMetrics.length === 0) {
-      return {
-        success: false,
-        errors: ['No metrics could be extracted from XBRL data'],
-        filingId: filing.id,
-        companyId: company.id,
-      };
-    }
-
-    onProgress?.('Storing metrics in database', {
-      count: successfulMetrics.length,
-    });
-
-    const metricsToStore = successfulMetrics.map(m => {
-      const base = {
-        filingId: filing.id,
-        companyId: company.id,
-        metricType: m.metricType,
-        value: m.value,
-        unit: m.unit,
-        periodType: m.periodType,
-        periodEndDate: m.periodEndDate,
-      };
-      
-      // Add metadata for free_cash_flow if it was calculated
-      if (m.metricType === 'free_cash_flow' && freeCashFlowMetadata) {
-        return {
-          ...base,
-          metadata: freeCashFlowMetadata,
-        };
-      }
-      
-      return base;
-    });
-
-    const storeResult = await createFinancialMetrics(metricsToStore);
-
-    if (!storeResult.success) {
-      return {
-        success: false,
-        errors: [`Failed to store metrics: ${storeResult.error}`],
-        filingId: filing.id,
-        companyId: company.id,
-      };
-    }
-
-    onProgress?.('Metrics stored successfully');
-
-    // Step 4: Enforce history policy
-    if (enforceHistory) {
-      onProgress?.('Enforcing history policy');
-      await enforceHistoryPolicy(company.id, filing.filing_type as '10-K' | '10-Q');
-    }
+    // Run company-level XBRL extraction (idempotent — upserts metrics)
+    onProgress?.('Extracting metrics via XBRL');
+    const result = await fetchAndExtractCompanyMetrics(
+      company.cik,
+      company.id,
+      filingIdMap,
+      onProgress,
+    );
 
     return {
-      success: true,
-      filingId: filing.id,
+      success: result.metricsStored > 0 || result.metricsExtracted > 0,
+      filingId,
       companyId: company.id,
-      metricsExtracted: successfulMetrics.length,
+      metricsExtracted: result.metricsStored,
+      errors: result.errors.length > 0 ? result.errors : undefined,
       details: {
         companyName: company.name,
-        filingType: filing.filing_type,
-        metrics: extractedMetrics.map(m => ({
-          metricType: m.metricType,
-          value: m.value,
-          unit: m.unit,
-          success: m.success,
-          error: m.error,
-        })),
+        filingType:  filing.filing_type,
       },
     };
-  } catch (error) {
+  } catch (err) {
     return {
       success: false,
-      errors: [error instanceof Error ? error.message : 'Unknown error occurred'],
+      errors: [err instanceof Error ? err.message : 'Unknown error occurred'],
     };
   }
 }

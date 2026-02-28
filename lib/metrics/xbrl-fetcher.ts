@@ -1,6 +1,9 @@
 // SEC XBRL Data Fetcher
 // Fetches structured financial data from SEC XBRL JSON endpoints
 
+import { detectPeriodScope, scopeToPeriodType, calculatePeriodLengthMonths } from './period-classification';
+import type { FiscalYearEnd } from './fiscal-calendar';
+
 /**
  * SEC XBRL concept to BullPen metric mapping
  * Maps SEC standard concept names to our metric types
@@ -34,6 +37,11 @@ export const XBRL_CONCEPT_MAP: Record<string, {
   // Operating Cash Flow
   'NetCashProvidedByUsedInOperatingActivities': { metricType: 'operating_cash_flow', priority: 1 },
   
+  // Capital Expenditures
+  'PaymentsToAcquirePropertyPlantAndEquipment': { metricType: 'capital_expenditures', priority: 1 },
+  'CapitalExpenditures': { metricType: 'capital_expenditures', priority: 2 },
+  'PaymentsForPropertyPlantAndEquipment': { metricType: 'capital_expenditures', priority: 3 },
+  
   // Free Cash Flow
   'FreeCashFlow': { metricType: 'free_cash_flow', priority: 1 },
 };
@@ -49,7 +57,13 @@ export const METRIC_TO_CONCEPTS: Record<string, string[]> = {
   eps_basic: ['EarningsPerShareBasic'],
   eps_diluted: ['EarningsPerShareDiluted'],
   operating_cash_flow: ['NetCashProvidedByUsedInOperatingActivities'],
-  capital_expenditures: ['PaymentsToAcquirePropertyPlantAndEquipment', 'CapitalExpenditures'],
+  capital_expenditures: [
+    'PaymentsToAcquirePropertyPlantAndEquipment',
+    'CapitalExpenditures',
+    'PaymentsForPropertyPlantAndEquipment',
+    'PurchasesOfPropertyPlantAndEquipment',
+    'PaymentsToAcquireAssets',
+  ],
   free_cash_flow: ['FreeCashFlow'], // Will be calculated if not available
 };
 
@@ -76,13 +90,27 @@ export interface SECConceptData {
 }
 
 /**
+ * Explicit period classification for financial metrics
+ * Q = Single fiscal quarter (3 months)
+ * YTD = Year-to-date (cumulative)
+ * TTM = Trailing twelve months
+ * FY = Full fiscal year
+ */
+export type PeriodScope = 'Q' | 'YTD' | 'TTM' | 'FY';
+
+/**
  * Extracted metric value with period information
  */
 export interface ExtractedMetric {
   value: number;
   unit: string;
   periodEnd: string;
-  periodType: 'annual' | 'quarterly';
+  periodStart?: string; // Period start date (for range periods)
+  periodType: 'annual' | 'quarterly' | 'ttm' | 'ytd'; // Database period_type
+  periodScope: PeriodScope; // Explicit period scope (Q/YTD/TTM/FY)
+  fiscalYear?: number;
+  fiscalQuarter?: number | null;
+  periodLengthMonths?: number; // Period length in months (3, 9, 12, etc.)
   filingForm: string;
   accessionNumber?: string;
 }
@@ -243,7 +271,8 @@ export function extractMetricForPeriod(
   conceptData: SECConceptData,
   periodEndDate: string,
   filingType: '10-K' | '10-Q' | '20-F' | '6-K',
-  requireExactPeriod: boolean = true
+  requireExactPeriod: boolean = true,
+  fiscalYearEnd?: FiscalYearEnd | null
 ): ExtractedMetric | null {
   if (!conceptData || !conceptData.units) {
     return null;
@@ -293,11 +322,34 @@ export function extractMetricForPeriod(
     return null;
   }
 
-  // Require exact period match (no fallback for hardened extraction)
-  const exactMatch = filtered.find((u: any) => {
+  // For 10-Q filings, prioritize quarterly (Q) entries over YTD entries
+  // Multiple entries may exist for the same periodEndDate (one Q, one YTD)
+  const exactMatches = filtered.filter((u: any) => {
     const periodEnd = u.end || u.instant || '';
     return periodEnd === periodEndDate;
   });
+
+  // If multiple matches, prefer quarterly (Q) over YTD/TTM
+  let exactMatch = exactMatches.find((u: any) => {
+    const fp = (u.fp || '').toUpperCase().trim();
+    const frame = (u.frame || '').toUpperCase();
+    // Prioritize explicit Q1-Q4 entries
+    if (fp === 'Q1' || fp === 'Q2' || fp === 'Q3' || fp === 'Q4') {
+      // But exclude if frame indicates YTD/Nine Months
+      if (!frame.includes('NINEMONTHS') && 
+          !frame.includes('NINE MONTHS') && 
+          !frame.includes('YTD') && 
+          !frame.includes('YEAR-TO-DATE')) {
+        return true;
+      }
+    }
+    return false;
+  });
+
+  // Fallback to first exact match if no quarterly found
+  if (!exactMatch && exactMatches.length > 0) {
+    exactMatch = exactMatches[0];
+  }
 
   if (!exactMatch) {
     // If requireExactPeriod is false, use most recent consolidated entry
@@ -315,15 +367,31 @@ export function extractMetricForPeriod(
           : mostRecent.val;
           
         const periodEnd = mostRecent.end || mostRecent.instant || periodEndDate;
-        const periodType = mostRecent.fp === 'FY' || filingType === '10-K' || filingType === '20-F'
-          ? 'annual' as const 
-          : 'quarterly' as const;
+        const periodStart = mostRecent.start || undefined;
+        
+        // Detect period scope (Q/YTD/TTM/FY) from XBRL data
+        const periodScope = detectPeriodScope(
+          mostRecent.fp,
+          mostRecent.frame,
+          periodStart,
+          periodEnd,
+          fiscalYearEnd ?? null
+        );
+        
+        // Map scope to database period_type
+        const periodType = scopeToPeriodType(periodScope);
+        
+        // Calculate period length
+        const periodLengthMonths = calculatePeriodLengthMonths(periodStart, periodEnd);
 
         return {
           value,
           unit: unitKey,
           periodEnd,
+          periodStart,
           periodType,
+          periodScope,
+          periodLengthMonths,
           filingForm: mostRecent.form || filingType,
           accessionNumber: mostRecent.accn,
         };
@@ -337,15 +405,46 @@ export function extractMetricForPeriod(
     : exactMatch.val;
     
   const periodEnd = exactMatch.end || exactMatch.instant || periodEndDate;
-  const periodType = exactMatch.fp === 'FY' || filingType === '10-K' || filingType === '20-F'
-    ? 'annual' as const 
-    : 'quarterly' as const;
+  const periodStart = exactMatch.start || undefined; // Period start date (for range periods)
+  
+  // Detect period scope (Q/YTD/TTM/FY) from XBRL data
+  // This is the authoritative classification - never infer from filing type alone
+  const periodScope = detectPeriodScope(
+    exactMatch.fp,
+    exactMatch.frame,
+    periodStart,
+    periodEnd,
+    fiscalYearEnd ?? null
+  );
+  
+  // Map scope to database period_type
+  const periodType = scopeToPeriodType(periodScope);
+  
+  // Calculate period length
+  const periodLengthMonths = calculatePeriodLengthMonths(periodStart, periodEnd);
+  
+  // Extract fiscal year and quarter if available
+  let fiscalYear: number | undefined;
+  let fiscalQuarter: number | null = null;
+  
+  if (exactMatch.fy) {
+    fiscalYear = parseInt(exactMatch.fy, 10);
+  }
+  
+  if (exactMatch.fp && (exactMatch.fp === 'Q1' || exactMatch.fp === 'Q2' || exactMatch.fp === 'Q3' || exactMatch.fp === 'Q4')) {
+    fiscalQuarter = parseInt(exactMatch.fp.slice(1), 10);
+  }
 
   return {
     value,
     unit: unitKey,
     periodEnd,
+    periodStart,
     periodType,
+    periodScope,
+    fiscalYear,
+    fiscalQuarter,
+    periodLengthMonths,
     filingForm: exactMatch.form || filingType,
     accessionNumber: exactMatch.accn,
   };
@@ -363,59 +462,86 @@ export async function getMetricForFiling(
   periodEndDate: string,
   filingType: '10-K' | '10-Q' | '20-F' | '6-K',
   accessionNumber?: string,
-  requireExactPeriod: boolean = true
+  requireExactPeriod: boolean = true,
+  fiscalYearEnd?: FiscalYearEnd | null,
+  onProgress?: (message: string, details?: any) => void
 ): Promise<ExtractedMetric | null> {
   const concepts = METRIC_TO_CONCEPTS[metricType];
   
   if (!concepts) {
+    onProgress?.(`No concepts mapped for ${metricType}`);
     return null;
   }
 
   // Strategy 1: Try filing-specific XBRL data (most accurate, has latest data)
   if (accessionNumber) {
     try {
+      onProgress?.(`Trying filing-specific XBRL for ${metricType}`, { accessionNumber });
       const filingXBRL = await fetchFilingXBRLData(accessionNumber, cik);
       
       if (filingXBRL && filingXBRL.facts && filingXBRL.facts['us-gaap']) {
+        onProgress?.(`Filing-specific XBRL data found for ${metricType}`);
         // Extract concept from filing-specific data
         for (const concept of concepts) {
           const conceptData = extractConceptFromFacts(filingXBRL, concept);
           
           if (conceptData) {
+            onProgress?.(`Found concept ${concept} in filing XBRL for ${metricType}`);
             const metric = extractMetricForPeriod(
               conceptData, 
               periodEndDate, 
               filingType, 
-              requireExactPeriod
+              requireExactPeriod,
+              fiscalYearEnd
             );
             if (metric) {
+              onProgress?.(`Extracted ${metricType} from filing XBRL`, { value: metric.value, periodEnd: metric.periodEnd, periodScope: metric.periodScope });
               return metric;
+            } else {
+              onProgress?.(`Concept ${concept} found but no matching period`, { periodEndDate, requireExactPeriod });
             }
+          } else {
+            onProgress?.(`Concept ${concept} not found in filing XBRL`);
           }
         }
+      } else {
+        onProgress?.(`Filing-specific XBRL data not available or missing us-gaap facts`);
       }
     } catch (error) {
       // Filing-specific fetch failed, continue to fallback
-      console.warn(`Filing-specific XBRL fetch failed: ${error}`);
+      onProgress?.(`Filing-specific XBRL fetch failed for ${metricType}`, { error: error instanceof Error ? error.message : String(error) });
     }
   }
 
   // Strategy 2: Fallback to Company Facts API (aggregated, may be stale)
+  onProgress?.(`Falling back to Company Facts API for ${metricType}`);
   for (const concept of concepts) {
-    const conceptData = await fetchConceptFromSEC(cik, concept);
-    
-    if (conceptData) {
-      const metric = extractMetricForPeriod(
-        conceptData, 
-        periodEndDate, 
-        filingType, 
-        requireExactPeriod
-      );
-      if (metric) {
-        return metric;
+    try {
+      const conceptData = await fetchConceptFromSEC(cik, concept);
+      
+      if (conceptData) {
+        onProgress?.(`Found concept ${concept} in Company Facts for ${metricType}`);
+        const metric = extractMetricForPeriod(
+          conceptData, 
+          periodEndDate, 
+          filingType, 
+          requireExactPeriod,
+          fiscalYearEnd
+        );
+        if (metric) {
+          onProgress?.(`Extracted ${metricType} from Company Facts`, { value: metric.value, periodEnd: metric.periodEnd, periodScope: metric.periodScope });
+          return metric;
+        } else {
+          onProgress?.(`Concept ${concept} found in Company Facts but no matching period`, { periodEndDate, requireExactPeriod });
+        }
+      } else {
+        onProgress?.(`Concept ${concept} not found in Company Facts`);
       }
+    } catch (error) {
+      onProgress?.(`Error fetching concept ${concept} from Company Facts`, { error: error instanceof Error ? error.message : String(error) });
     }
   }
 
+  onProgress?.(`Failed to extract ${metricType} - tried all concepts and strategies`);
   return null;
 }

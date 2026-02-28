@@ -11,6 +11,12 @@ export interface AuthUser {
   full_name: string | null;
   avatar_url: string | null;
   role: string;
+  bio: string | null;
+  experience_level: 'beginner' | 'intermediate' | 'advanced' | null;
+  market_focus: 'US' | 'EU' | 'BOTH' | null;
+  risk_profile: 'conservative' | 'moderate' | 'aggressive' | null;
+  account_tier: 'free' | 'pro' | 'enterprise' | null;
+  settings: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
   last_login_at: string | null;
@@ -48,17 +54,14 @@ export async function signUp(params: SignUpParams): Promise<AuthResult> {
     });
 
     if (authError) {
-      return {
-        success: false,
-        error: authError.message,
-      };
+      const msg = /fetch|network|timeout/i.test(authError.message)
+        ? 'Connection failed. Please check your network and try again.'
+        : authError.message;
+      return { success: false, error: msg };
     }
 
     if (!authData.user) {
-      return {
-        success: false,
-        error: 'Failed to create user',
-      };
+      return { success: false, error: 'Failed to create user' };
     }
 
     // Step 2: Check if session is available
@@ -137,7 +140,6 @@ export async function signUp(params: SignUpParams): Promise<AuthResult> {
         .single();
 
       if (insertError) {
-        console.error('Failed to create user profile:', insertError);
         // Provide a more helpful error message
         let errorMessage = 'Failed to create user profile. Please try signing in.';
         
@@ -152,8 +154,6 @@ export async function signUp(params: SignUpParams): Promise<AuthResult> {
         } else if (insertError.code) {
           errorMessage = `Database error: ${insertError.code}`;
         } else {
-          // Log full error object for debugging
-          console.error('Full insert error:', JSON.stringify(insertError, null, 2));
           errorMessage = 'Failed to create user profile. Please try signing in instead.';
         }
         
@@ -171,10 +171,11 @@ export async function signUp(params: SignUpParams): Promise<AuthResult> {
       user: userProfile as AuthUser,
     };
   } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    };
+    const msg = error instanceof Error ? error.message : 'Unknown error';
+    const friendly = /fetch|network|timeout|abort/i.test(msg)
+      ? 'Connection failed. Please check your network and try again.'
+      : msg;
+    return { success: false, error: friendly };
   }
 }
 
@@ -192,17 +193,14 @@ export async function signIn(params: SignInParams): Promise<AuthResult> {
     });
 
     if (authError) {
-      return {
-        success: false,
-        error: authError.message,
-      };
+      const msg = /fetch|network|timeout/i.test(authError.message)
+        ? 'Connection failed. Please check your network and try again.'
+        : authError.message;
+      return { success: false, error: msg };
     }
 
     if (!authData.user) {
-      return {
-        success: false,
-        error: 'Failed to sign in',
-      };
+      return { success: false, error: 'Failed to sign in' };
     }
 
     // Update last_login_at
@@ -230,10 +228,11 @@ export async function signIn(params: SignInParams): Promise<AuthResult> {
       user: userProfile as AuthUser,
     };
   } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    };
+    const msg = error instanceof Error ? error.message : 'Unknown error';
+    const friendly = /fetch|network|timeout|abort/i.test(msg)
+      ? 'Connection failed. Please check your network and try again.'
+      : msg;
+    return { success: false, error: friendly };
   }
 }
 
@@ -286,8 +285,7 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
     }
 
     return userProfile as AuthUser;
-  } catch (error) {
-    console.error('Error getting current user:', error);
+  } catch {
     return null;
   }
 }
@@ -298,4 +296,36 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
 export async function getSession() {
   const supabase = createBrowserClient();
   return await supabase.auth.getSession();
+}
+
+/**
+ * Signs in with Google OAuth
+ * According to Supabase docs: https://supabase.com/docs/guides/auth/social-login/auth-google
+ */
+export async function signInWithGoogle(): Promise<{ success: boolean; error?: string }> {
+  const supabase = createBrowserClient();
+
+  try {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+
+    if (error) {
+      const msg = /fetch|network|timeout|522/i.test(error.message)
+        ? 'Connection failed. Please check your network and try again.'
+        : error.message;
+      return { success: false, error: msg };
+    }
+
+    return { success: true };
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Unknown error';
+    const friendly = /fetch|network|timeout|abort/i.test(msg)
+      ? 'Connection failed. Please check your network and try again.'
+      : msg;
+    return { success: false, error: friendly };
+  }
 }

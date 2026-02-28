@@ -2,12 +2,6 @@
 
 import { useEffect, useRef, ReactNode } from 'react';
 import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-
-// Register ScrollTrigger plugin
-if (typeof window !== 'undefined') {
-  gsap.registerPlugin(ScrollTrigger);
-}
 
 interface AnimatedContentProps {
   children: ReactNode;
@@ -32,7 +26,6 @@ interface AnimatedContentProps {
 
 export default function AnimatedContent({
   children,
-  container = null,
   distance = 100,
   direction = 'vertical',
   reverse = false,
@@ -41,7 +34,6 @@ export default function AnimatedContent({
   initialOpacity = 0,
   animateOpacity = true,
   scale = 1,
-  threshold = 0.1,
   delay = 0,
   onComplete,
   dissappearAfter = 0,
@@ -56,31 +48,22 @@ export default function AnimatedContent({
     if (!elementRef.current || typeof window === 'undefined') return;
 
     const element = elementRef.current;
-    
-    // Set initial state
+
     const isVertical = direction === 'vertical';
     const translateProperty = isVertical ? 'y' : 'x';
     const translateValue = reverse ? distance : -distance;
-    
+
     gsap.set(element, {
       [translateProperty]: translateValue,
       opacity: animateOpacity ? initialOpacity : 1,
       scale: scale
     });
 
-    // Create animation timeline with ScrollTrigger
     const tl = gsap.timeline({
-      scrollTrigger: {
-        trigger: element,
-        start: 'top 85%',
-        toggleActions: 'play none none none',
-        containerAnimation: container ? undefined : undefined
-      },
       delay: delay,
       onComplete: onComplete
     });
 
-    // Animate in
     tl.to(element, {
       [translateProperty]: 0,
       opacity: animateOpacity ? 1 : initialOpacity,
@@ -89,7 +72,6 @@ export default function AnimatedContent({
       ease: ease
     });
 
-    // Handle disappearance
     if (dissappearAfter > 0) {
       tl.to(element, {
         [translateProperty]: reverse ? -distance : distance,
@@ -102,13 +84,9 @@ export default function AnimatedContent({
     }
 
     return () => {
-      if (tl.scrollTrigger) {
-        tl.scrollTrigger.kill();
-      }
       tl.kill();
     };
   }, [
-    container,
     distance,
     direction,
     reverse,
@@ -117,7 +95,6 @@ export default function AnimatedContent({
     initialOpacity,
     animateOpacity,
     scale,
-    threshold,
     delay,
     onComplete,
     dissappearAfter,

@@ -11,9 +11,14 @@ import { PeriodToggle } from '@/components/metrics/PeriodToggle';
 import { DeltaCards } from '@/components/metrics/DeltaCards';
 import { TrendIndicator } from '@/components/metrics/TrendIndicator';
 import { CompositeScoreCard } from '@/components/metrics/CompositeScoreCard';
+import { EPSEstimatesChart } from '@/components/stock/EPSEstimatesChart';
 import { IngestionProgressBar } from '@/components/stock/IngestionProgressBar';
 import { CompanyOverview } from '@/components/stock/CompanyOverview';
 import { CompanyProfile } from '@/components/stock/CompanyProfile';
+import { CompanyNews } from '@/components/stock/CompanyNews';
+import { SankeyDiagram } from '@/components/stock/SankeyDiagram';
+import { EarningsCalendar } from '@/components/stock/EarningsCalendar';
+import { RecommendationTrends } from '@/components/stock/RecommendationTrends';
 import { StockSearch } from '@/components/search/StockSearch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -124,8 +129,9 @@ export default function StockDetailPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const ticker = (params.ticker as string)?.toUpperCase() || '';
-  const [selectedMetric, setSelectedMetric] = useState<MetricType>('revenue');
-  const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>('annual');
+  // Default to EPS (Diluted) + Quarterly - matches what our 10-Q pipeline extracts
+  const [selectedMetric, setSelectedMetric] = useState<MetricType>('eps_diluted');
+  const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>('quarterly');
   const [hasTriggeredIngestion, setHasTriggeredIngestion] = useState(false);
   const [showProgressBar, setShowProgressBar] = useState(false);
   const { hasAnimatedBackground } = useBackground();
@@ -149,9 +155,8 @@ export default function StockDetailPage() {
     },
   });
 
-  // Trigger ingestion once when page loads if needed
-  // The IngestionProgressBar component handles ingestion via SSE endpoint
-  // We just need to show it when ingestion is needed
+  // Trigger ingestion when page loads if company has no data
+  // IngestionProgressBar connects to SSE and runs the pipeline when mounted
   useEffect(() => {
     if (
       !hasTriggeredIngestion &&
@@ -160,10 +165,9 @@ export default function StockDetailPage() {
     ) {
       setHasTriggeredIngestion(true);
       setShowProgressBar(true);
-      // Note: Ingestion is triggered by the IngestionProgressBar component
-      // which connects to /api/ingest/lazy/progress - that endpoint handles ingestion internally
     }
   }, [ticker, stockStatus, hasTriggeredIngestion]);
+
 
   // TanStack Query hooks for metrics (only enabled when company exists)
   const { 
@@ -253,29 +257,24 @@ export default function StockDetailPage() {
                 console.log(`[StockDetail] Background ingestion triggered for ${ticker}. Missing reports will be fetched.`);
                 
                 // Refresh status periodically to pick up new reports as they're ingested
-                // This will automatically update the chart as new data becomes available
                 let refreshCount = 0;
-                const maxRefreshes = 20; // Check for 100 seconds (20 * 5s) to allow time for ingestion
+                const maxRefreshes = 10; // 10 * 10s = 100 seconds - less frequent to reduce Supabase load
                 const refreshInterval = setInterval(() => {
                   refreshCount++;
                   
-                  // Only log every 5th refresh to reduce console spam
-                  if (refreshCount % 5 === 0) {
+                  if (refreshCount % 3 === 0) {
                     console.log(`[StockDetail] Refreshing data for ${ticker} (${refreshCount}/${maxRefreshes})...`);
                   }
                   
-                  // Invalidate queries - TanStack Query will handle refetching intelligently
-                  // Don't force refetch - this causes unnecessary API calls when data doesn't exist yet
                   queryClient.invalidateQueries({ queryKey: ['stock-status', ticker] });
                   queryClient.invalidateQueries({ queryKey: ['company-info', ticker] });
-                  // Only invalidate metrics if we expect them to exist (company has data)
                   queryClient.invalidateQueries({ queryKey: ['metrics-time-series'] });
                   
                   if (refreshCount >= maxRefreshes) {
                     clearInterval(refreshInterval);
                     console.log(`[StockDetail] Stopped refreshing data for ${ticker} after ${maxRefreshes} attempts`);
                   }
-                }, 5000);
+                }, 10000); // 10 seconds - reduced from 5s to lower database load
               } else {
                 console.warn(`[StockDetail] Failed to trigger ingestion for ${ticker}:`, result.error);
               }
@@ -330,7 +329,7 @@ export default function StockDetailPage() {
       return null;
     },
     enabled: !!ticker,
-    staleTime: 1000, // Allow quick refetching
+    staleTime: 30 * 1000, // 30 seconds - reduce refetches to lower Supabase load
   });
 
   // Refetch company when status shows it exists
@@ -391,16 +390,12 @@ export default function StockDetailPage() {
       return;
     }
 
-    // Refetch metrics every 10 seconds to catch new reports as they're ingested
-    // This ensures charts update automatically without page refresh
-    // Only refetch if we already have metrics (don't spam 404s when metrics don't exist yet)
+    // Refetch metrics every 60 seconds - reduced from 10s to lower Supabase CPU load
     const metricsRefreshInterval = setInterval(() => {
-      // Only invalidate if we have existing metrics to avoid spamming 404s
       if (timeSeries && timeSeries.data && timeSeries.data.length > 0) {
-        // Silently invalidate - TanStack Query will handle the refetch intelligently
         queryClient.invalidateQueries({ queryKey: ['metrics-time-series'] });
       }
-    }, 10000); // Refresh every 10 seconds (less aggressive to reduce API calls)
+    }, 60000); // 60 seconds - charts don't need real-time updates during ingestion
 
     return () => clearInterval(metricsRefreshInterval);
   }, [companyId, stockStatus?.hasAnyData, timeSeries, queryClient]);
@@ -426,8 +421,8 @@ export default function StockDetailPage() {
   return (
     <div className={`min-h-screen ${hasAnimatedBackground ? '' : 'bg-background'}`}>
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        {/* Header with Back Button and Search */}
-        <div className="mb-6 flex items-center justify-between gap-4">
+        {/* Header with Back Button */}
+        <div className="mb-6">
           <button
             onClick={() => router.back()}
             className="flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
@@ -435,9 +430,6 @@ export default function StockDetailPage() {
             <ArrowLeft className="h-4 w-4" />
             Back
           </button>
-          <div className="flex-shrink-0">
-            <StockSearch />
-          </div>
         </div>
 
         {/* Company Header */}
@@ -500,6 +492,16 @@ export default function StockDetailPage() {
           </AnimatedContent>
         )}
 
+        {/* Sankey Diagram - Revenue Flow Visualization */}
+        {ticker && (
+          <AnimatedContent reverse={true} delay={0.25}>
+            <SankeyDiagram 
+              ticker={ticker} 
+              isDataLoading={stockStatus ? (!stockStatus.hasAnyData || stockStatus.metricsCount === 0) : false}
+            />
+          </AnimatedContent>
+        )}
+
         {/* Stock Quote */}
         {company && (
           <AnimatedContent reverse={true} delay={0.15}>
@@ -508,6 +510,16 @@ export default function StockDetailPage() {
             </div>
           </AnimatedContent>
         )}
+
+        {/* Earnings Calendar & Recommendations Grid */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 mb-8">
+          <AnimatedContent reverse={true} delay={0.25}>
+            <EarningsCalendar ticker={ticker} />
+          </AnimatedContent>
+          <AnimatedContent reverse={true} delay={0.3}>
+            <RecommendationTrends ticker={ticker} />
+          </AnimatedContent>
+        </div>
 
         {/* Loading State for Company Info */}
         {companyInfoLoading && !company && (
@@ -530,14 +542,14 @@ export default function StockDetailPage() {
           </Card>
         )}
 
-        {/* Show detailed progress bar if ingestion is in progress */}
+        {/* Ingestion progress bar — shown automatically when company has no data */}
         {showProgressBar && (
           <IngestionProgressBar
             ticker={ticker}
             onComplete={handleProgressComplete}
             onError={(error) => {
+              // Log only — don't hide the bar so the user can retry inline
               console.error('Ingestion error:', error);
-              setShowProgressBar(false);
             }}
           />
         )}
@@ -665,34 +677,51 @@ export default function StockDetailPage() {
                     <CompositeScoreCard companyId={companyId} />
                   </AnimatedContent>
                 )}
+
+                {/* EPS Estimates Chart */}
+                <AnimatedContent reverse={true} delay={0.45}>
+                  <EPSEstimatesChart ticker={ticker} />
+                </AnimatedContent>
               </div>
             )}
 
-            {/* No Metrics Data State - Show Progressive Loading */}
+            {/* No Metrics Data State - Detect when data is missing and prompt user */}
             {!isLoading && !error && !timeSeries && companyId && (
               <Card>
                 <CardContent className="pt-6">
                   <div className="space-y-3">
-                    <p className="text-center text-sm text-muted-foreground">
-                      {stockStatus && stockStatus.filingsCount > 0 
-                        ? `Processing ${stockStatus.filingsCount} filing${stockStatus.filingsCount !== 1 ? 's' : ''}... Metrics will appear as they're extracted.`
-                        : 'Waiting for filings to be processed. Metrics will appear shortly.'
-                      }
-                    </p>
-                    {stockStatus && stockStatus.filingsCount > 0 && (
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span>Processing filings</span>
-                          <span>{stockStatus.metricsCount} metrics extracted</span>
-                        </div>
-                        <Progress 
-                          value={stockStatus.filingsCount > 0 
-                            ? Math.min((stockStatus.metricsCount / (stockStatus.filingsCount * 7)) * 100, 95)
-                            : 0
-                          } 
-                          className="h-2" 
-                        />
+                    {stockStatus && stockStatus.metricsCount === 0 ? (
+                      /* No metrics at all - ingestion hasn't run or failed */
+                      <div className="space-y-3">
+                        <p className="text-center text-sm text-muted-foreground">
+                          {showProgressBar
+                            ? 'Loading SEC filings and extracting financial data...'
+                            : stockStatus.filingsCount > 0
+                              ? 'No financial metrics extracted yet. The pipeline may not have completed—try loading SEC filings again.'
+                              : 'No financial metrics yet. Load SEC filings above to extract data from 10-K and 10-Q reports.'
+                          }
+                        </p>
+                        {showProgressBar && stockStatus.filingsCount > 0 && (
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between text-xs text-muted-foreground">
+                              <span>Processing filings</span>
+                              <span>{stockStatus.metricsCount} metrics extracted</span>
+                            </div>
+                            <Progress 
+                              value={Math.min((stockStatus.metricsCount / (stockStatus.filingsCount * 7)) * 100, 95)}
+                              className="h-2" 
+                            />
+                          </div>
+                        )}
                       </div>
+                    ) : (
+                      /* Has some metrics but no timeSeries for this metric/period - loading or no data for selection */
+                      <p className="text-center text-sm text-muted-foreground">
+                        {stockStatus && stockStatus.filingsCount > 0 
+                          ? `Processing ${stockStatus.filingsCount} filing${stockStatus.filingsCount !== 1 ? 's' : ''}... Metrics will appear as they're extracted.`
+                          : 'Waiting for filings to be processed. Metrics will appear shortly.'
+                        }
+                      </p>
                     )}
                   </div>
                 </CardContent>
@@ -700,6 +729,11 @@ export default function StockDetailPage() {
             )}
           </>
         )}
+
+        {/* Company News - At the bottom */}
+        <AnimatedContent reverse={true} delay={0.5}>
+          <CompanyNews ticker={ticker} />
+        </AnimatedContent>
       </div>
     </div>
   );

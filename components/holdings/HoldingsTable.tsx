@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { useHoldings, useRemoveHolding } from '@/hooks/use-holdings';
+import { useAuth } from '@/hooks/use-auth';
 import { Trash2, Edit2, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { useQuery } from '@tanstack/react-query';
@@ -14,15 +15,7 @@ import { EditHoldingModal } from './EditHoldingModal';
 import { DeleteHoldingDialog } from './DeleteHoldingDialog';
 import type { HoldingWithPrice } from './types';
 import type { UserHolding } from '@/lib/types/database';
-
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
-}
+import { getExchangeRates, convertCurrency, formatCurrency as formatCurrencyValue, type CurrencyCode } from '@/lib/currency/currency-conversion';
 
 function formatPercent(value: number): string {
   const sign = value >= 0 ? '+' : '';
@@ -38,6 +31,7 @@ function formatNumber(value: number): string {
 
 export function HoldingsTable() {
   const { data: holdings, isLoading } = useHoldings();
+  const { user } = useAuth();
   const removeHolding = useRemoveHolding();
   const [sortBy, setSortBy] = useState<'marketValue' | 'symbol' | 'allocation'>('marketValue');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
@@ -45,6 +39,25 @@ export function HoldingsTable() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [deletingHolding, setDeletingHolding] = useState<{ id: string; symbol: string; companyName: string } | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  // Get user's currency preference
+  const userCurrency = useMemo((): CurrencyCode | null => {
+    if (!user?.settings) return null;
+    const settings = user.settings as any;
+    const currency = settings.default_currency;
+    // null or 'exchange' means "Based on exchange" (show USD for US stocks)
+    if (!currency || currency === 'exchange') return null;
+    return currency as CurrencyCode;
+  }, [user]);
+
+  // Fetch exchange rates if user selected a specific currency
+  const exchangeRates = useQuery({
+    queryKey: ['exchange-rates', userCurrency],
+    queryFn: () => getExchangeRates('USD'),
+    enabled: !!userCurrency,
+    staleTime: 60 * 60 * 1000, // 1 hour - rates update daily at 1600 CET
+    gcTime: 24 * 60 * 60 * 1000, // 24 hours
+  });
 
   // Fetch quotes for all holdings in parallel
   const quotes = useQuery({
@@ -122,6 +135,9 @@ export function HoldingsTable() {
     
     const quotesMap = quotes.data?.quotes || {};
     const logosMap = quotes.data?.logos || {};
+    const rates = exchangeRates.data;
+    
+    // Calculate total market value (in USD)
     const totalMarketValue = holdings.reduce((sum, holding) => {
       const quote = quotesMap[holding.symbol];
       if (quote && holding.quantity) {
@@ -134,25 +150,41 @@ export function HoldingsTable() {
       const quote = quotesMap[holding.symbol];
       const logoUrl = logosMap[holding.symbol] || null;
       
-      const currentPrice = quote?.price;
-      const dayChange = quote?.change;
+      // All values are in USD initially
+      const currentPriceUSD = quote?.price;
+      const dayChangeUSD = quote?.change;
       const dayChangePercent = quote?.changePercent;
       
-      const marketValue = currentPrice && holding.quantity
-        ? currentPrice * holding.quantity
+      const marketValueUSD = currentPriceUSD && holding.quantity
+        ? currentPriceUSD * holding.quantity
         : undefined;
       
-      const unrealizedPL = currentPrice && holding.avg_price && holding.quantity
-        ? (currentPrice - holding.avg_price) * holding.quantity
+      const unrealizedPLUSD = currentPriceUSD && holding.avg_price && holding.quantity
+        ? (currentPriceUSD - holding.avg_price) * holding.quantity
         : undefined;
       
-      const unrealizedPLPercent = currentPrice && holding.avg_price
-        ? ((currentPrice - holding.avg_price) / holding.avg_price) * 100
+      const unrealizedPLPercent = currentPriceUSD && holding.avg_price
+        ? ((currentPriceUSD - holding.avg_price) / holding.avg_price) * 100
         : undefined;
       
-      const allocation = marketValue && totalMarketValue > 0
-        ? (marketValue / totalMarketValue) * 100
+      const allocation = marketValueUSD && totalMarketValue > 0
+        ? (marketValueUSD / totalMarketValue) * 100
         : undefined;
+
+      // Convert to user's preferred currency if specified
+      let currentPrice: number | undefined = currentPriceUSD;
+      let dayChange: number | undefined = dayChangeUSD;
+      let marketValue: number | undefined = marketValueUSD;
+      let unrealizedPL: number | undefined = unrealizedPLUSD;
+      let avg_price: number | null = holding.avg_price;
+      
+      if (userCurrency && rates) {
+        currentPrice = currentPriceUSD ? convertCurrency(currentPriceUSD, 'USD', userCurrency, rates) : undefined;
+        dayChange = dayChangeUSD ? convertCurrency(dayChangeUSD, 'USD', userCurrency, rates) : undefined;
+        marketValue = marketValueUSD ? convertCurrency(marketValueUSD, 'USD', userCurrency, rates) : undefined;
+        unrealizedPL = unrealizedPLUSD ? convertCurrency(unrealizedPLUSD, 'USD', userCurrency, rates) : undefined;
+        avg_price = holding.avg_price !== null ? convertCurrency(holding.avg_price, 'USD', userCurrency, rates) : null;
+      }
 
       return {
         ...holding,
@@ -164,9 +196,10 @@ export function HoldingsTable() {
         unrealizedPLPercent,
         allocation,
         logoUrl,
+        avg_price, // Override with converted value
       };
     });
-  }, [holdings, quotes.data]);
+  }, [holdings, quotes.data, exchangeRates.data, userCurrency]);
 
   // Sort holdings
   const sortedHoldings = useMemo(() => {
@@ -363,10 +396,14 @@ export function HoldingsTable() {
                       {holding.quantity !== null ? formatNumber(holding.quantity) : '—'}
                     </td>
                     <td className="py-4 px-4 text-sm text-foreground">
-                      {holding.avg_price !== null ? formatCurrency(holding.avg_price) : '—'}
+                      {holding.avg_price !== null && holding.avg_price !== undefined 
+                        ? formatCurrencyValue(holding.avg_price, userCurrency || 'USD') 
+                        : '—'}
                     </td>
                     <td className="py-4 px-4 text-sm font-medium text-foreground">
-                      {holding.currentPrice ? formatCurrency(holding.currentPrice) : '—'}
+                      {holding.currentPrice !== undefined 
+                        ? formatCurrencyValue(holding.currentPrice, userCurrency || 'USD') 
+                        : '—'}
                     </td>
                     <td className="py-4 px-4">
                       {holding.dayChangePercent !== undefined ? (
@@ -385,13 +422,15 @@ export function HoldingsTable() {
                       )}
                     </td>
                     <td className="py-4 px-4 text-sm font-medium text-foreground">
-                      {holding.marketValue ? formatCurrency(holding.marketValue) : '—'}
+                      {holding.marketValue !== undefined 
+                        ? formatCurrencyValue(holding.marketValue, userCurrency || 'USD') 
+                        : '—'}
                     </td>
                     <td className="py-4 px-4">
                       {holding.unrealizedPL !== undefined ? (
                         <div className={`${plColor}`}>
                           <div className="text-sm font-medium">
-                            {formatCurrency(holding.unrealizedPL)}
+                            {formatCurrencyValue(holding.unrealizedPL, userCurrency || 'USD')}
                           </div>
                           {holding.unrealizedPLPercent !== undefined && (
                             <div className="text-xs">

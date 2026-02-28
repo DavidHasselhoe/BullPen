@@ -15,16 +15,15 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { User, LogOut, Settings, Loader2 } from 'lucide-react';
+import { User, LogOut, Loader2 } from 'lucide-react';
 import { ProfileModal } from '@/components/user/ProfileModal';
-import { SettingsModal } from '@/components/user/SettingsModal';
+import { ProfileAvatar } from '@/components/user/ProfileAvatar';
 
 export function UserMenu() {
   const { user, isLoading, isAuthenticated } = useAuth();
   const router = useRouter();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const handleSignOut = async () => {
     setIsSigningOut(true);
@@ -90,14 +89,18 @@ export function UserMenu() {
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          className="relative h-9 w-9 rounded-full transition-all hover:scale-105 focus:ring-2 focus:ring-ring"
+          className="relative h-9 w-9 rounded-full transition-all hover:scale-105 focus:ring-2 focus:ring-ring p-0"
         >
-          <Avatar className="h-9 w-9">
-            <AvatarImage src={user.avatar_url || undefined} alt={displayName} />
-            <AvatarFallback className="bg-primary/10 text-primary">
-              {getInitials()}
-            </AvatarFallback>
-          </Avatar>
+          <ProfileAvatar
+            avatarUrl={user.avatar_url}
+            displayName={displayName}
+            fallback={getInitials()}
+            tier={user.account_tier ? parseInt(user.account_tier.toString()) : 1}
+            size="md"
+            showTooltip={false}
+            showCrown={false}
+            className="h-9 w-9"
+          />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
@@ -123,15 +126,6 @@ export function UserMenu() {
           <User className="mr-2 h-4 w-4" />
           <span>Profile</span>
         </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() => {
-            setSettingsOpen(true);
-          }}
-          className="cursor-pointer transition-all hover:translate-x-1"
-        >
-          <Settings className="mr-2 h-4 w-4" />
-          <span>Settings</span>
-        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={handleSignOut}
@@ -148,7 +142,6 @@ export function UserMenu() {
         </DropdownMenuItem>
       </DropdownMenuContent>
       <ProfileModal open={profileOpen} onOpenChange={setProfileOpen} />
-      <SettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />
     </DropdownMenu>
   );
 }

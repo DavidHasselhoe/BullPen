@@ -1,0 +1,47 @@
+=== STRUCTURED TEXT (1052 chars) ===
+[ROW]
+
+[/ROW]
+
+[ROW]
+[COL]&#160;[/COL][COL]Three Months Ended[/COL][COL]Nine Months Ended[/COL]
+[/ROW]
+
+[ROW]
+[COL]&#160;[/COL][COL]Oct 27, 2024[/COL][COL]Oct 29, 2023[/COL][COL]Oct 27, 2024[/COL][COL]Oct 29, 2023[/COL]
+[/ROW]
+
+[ROW]
+
+[/ROW]
+
+[ROW]
+[COL]&#160;[/COL][COL]($ in millions)[/COL]
+[/ROW]
+
+[ROW]
+[COL]Research and development expenses[/COL][COL]$[/COL][COL]3,390&#160;[/COL][COL][COL]$[/COL][COL]1,096&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]% of net revenue[/COL][COL]9.7&#160;[/COL][COL]%[/COL][COL][COL][COL]10.1&#160;[/COL][COL]%[/COL]
+[/ROW]
+
+[ROW]
+[COL]Sales, general and administrative expenses[/COL][COL]897&#160;[/COL][COL][COL]689&#160;[/COL][COL]%[/COL][COL]2,516&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]% of net revenue[/COL][COL]2.6&#160;[/COL][COL]%[/COL][COL][COL][COL]2.8&#160;[/COL][COL]%[/COL]
+[/ROW]
+
+[ROW]
+[COL]Total operating expenses[/COL][COL]$[/COL][COL]4,287&#160;[/COL][COL][COL]$[/COL][COL]1,304&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]% of net revenue[/COL][COL]12.3&#160;[/COL][COL]%[/COL][COL][COL][COL]12.9&#160;[/COL][COL]%[/COL]
+[/ROW]
+
+=== RAW AI OUTPUT ===
+{ "metrics": [] }

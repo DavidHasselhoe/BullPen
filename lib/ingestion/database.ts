@@ -124,10 +124,12 @@ export async function createFiling(params: {
   filingType: FilingType;
   accessionNumber: string;
   filingDate: string;
+  acceptedDate?: string | null;
   periodEndDate?: string;
   periodType?: 'annual' | 'quarterly' | 'ttm' | 'ytd' | null;
   fiscalYear?: number;
   fiscalQuarter?: number;
+  items?: string[];
   sourceUrl: string;
   documentUrl?: string;
   metadata?: Record<string, unknown>;
@@ -140,10 +142,12 @@ export async function createFiling(params: {
       filing_type: params.filingType,
       accession_number: params.accessionNumber,
       filing_date: params.filingDate,
+      accepted_date: params.acceptedDate || null,
       period_end_date: params.periodEndDate || null,
       period_type: params.periodType || null,
       fiscal_year: params.fiscalYear || null,
       fiscal_quarter: params.fiscalQuarter || null,
+      items: params.items || [],
       source_url: params.sourceUrl,
       document_url: params.documentUrl || null,
       processing_status: 'processing',
@@ -346,6 +350,45 @@ export async function getFilingWithSections(
     }
 
     return { success: true, data: data as any };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+/**
+ * Gets filings for a company by fiscal period
+ * Used for 10-Q precedence checking in Phase B
+ */
+export async function getCompanyFilingsByPeriod(
+  companyId: string,
+  filingType: FilingType,
+  fiscalYear: number,
+  fiscalQuarter: number | null
+): Promise<DatabaseResult<Filing[]>> {
+  const supabase = createServerClient();
+
+  try {
+    let query = supabase
+      .from('filings')
+      .select('*')
+      .eq('company_id', companyId)
+      .eq('filing_type', filingType)
+      .eq('fiscal_year', fiscalYear);
+
+    if (fiscalQuarter !== null) {
+      query = query.eq('fiscal_quarter', fiscalQuarter);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data: data || [] };
   } catch (error) {
     return {
       success: false,

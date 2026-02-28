@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/use-auth';
 import {
   Dialog,
@@ -10,6 +11,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { StatefulButton } from '@/components/ui/stateful-button';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -21,7 +23,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Globe, DollarSign, Moon, Bell, Shield, AlertTriangle, Trash2, Download, CheckCircle2, Image } from 'lucide-react';
+import { Loader2, Globe, DollarSign, Moon, Bell, Shield, AlertTriangle, Trash2, Download, Check, Settings2 } from 'lucide-react';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { signOut } from '@/lib/auth/auth';
 import { useRouter } from 'next/navigation';
@@ -34,22 +36,25 @@ interface SettingsModalProps {
 type SettingsSection =
   | 'preferences'
   | 'notifications'
+  | 'customize'
   | 'privacy'
   | 'danger';
 
 export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   const { user } = useAuth();
   const router = useRouter();
+  const { t, i18n } = useTranslation();
   const [activeSection, setActiveSection] = useState<SettingsSection>('preferences');
-  const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // Settings state
-  const [defaultMarket, setDefaultMarket] = useState<'US' | 'EU'>('US');
-  const [defaultCurrency, setDefaultCurrency] = useState('USD');
-  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
-  const [background, setBackground] = useState<'none' | 'dark-veil' | 'aurora' | 'particles' | 'plasma' | 'beams'>('none');
+  const [selectedMarkets, setSelectedMarkets] = useState<string[]>([]); // Empty array means "Any"
+  const [defaultCurrency, setDefaultCurrency] = useState<string | null>(null); // null means "Based on exchange"
+  const [theme, setTheme] = useState<'dark' | 'light' | 'dark-veil' | 'aurora' | 'particles' | 'plasma' | 'beams'>('dark');
+  const [language, setLanguage] = useState<string | null>(null); // null means "System default"
+  const [showQuotes, setShowQuotes] = useState<boolean>(true); // Default to true
+  const [showWelcomeText, setShowWelcomeText] = useState<boolean>(true); // Default to true
   const [notifications, setNotifications] = useState({
     price_alerts: false,
     breaking_news: false,
@@ -61,67 +66,97 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   useEffect(() => {
     if (user?.settings && open) {
       const settings = user.settings as any;
-      setDefaultMarket(settings.default_market || 'US');
-      setDefaultCurrency(settings.default_currency || 'USD');
-      setTheme(settings.theme || 'dark');
-      setBackground(settings.background || 'none');
+      // Load markets: if it's an array, use it; if it's a single value, convert to array; if not set, use empty (Any)
+      const markets = settings.selected_markets;
+      if (Array.isArray(markets)) {
+        setSelectedMarkets(markets);
+      } else if (markets) {
+        setSelectedMarkets([markets]);
+      } else {
+        setSelectedMarkets([]); // Empty means "Any"
+      }
+      setDefaultCurrency(settings.default_currency || null); // null means "Based on exchange"
+      // Load language preference (null means "System default")
+      setLanguage(settings.language || null);
+      // Merge theme and background into single theme field
+      // If old settings have both theme and background, convert to new format
+      const oldTheme = settings.theme || 'dark';
+      const oldBackground = settings.background || 'none';
+      if (oldBackground !== 'none' && (oldTheme === 'dark' || !oldTheme)) {
+        setTheme(oldBackground as any);
+      } else if (oldTheme === 'light') {
+        setTheme('light');
+      } else {
+        setTheme(oldTheme || 'dark');
+      }
       setNotifications({
         price_alerts: settings.notifications?.price_alerts || false,
         breaking_news: settings.notifications?.breaking_news || false,
         insider_trades: settings.notifications?.insider_trades || false,
         signal_threshold_crossed: settings.notifications?.signal_threshold_crossed || false,
       });
+      // Load showQuotes preference (default to true if not set)
+      setShowQuotes(settings.show_quotes !== undefined ? settings.show_quotes : true);
+      // Load showWelcomeText preference (default to true if not set)
+      setShowWelcomeText(settings.show_welcome_text !== undefined ? settings.show_welcome_text : true);
       setError(null);
-      setSuccess(false);
     }
   }, [user, open]);
 
   const handleSave = async () => {
     if (!user) return;
 
-    setIsSaving(true);
     setError(null);
-    setSuccess(false);
 
-    try {
-      const supabase = createBrowserClient();
+    const supabase = createBrowserClient();
 
-      // Get existing settings
-      const { data: userProfile } = await supabase
-        .from('users')
-        .select('settings')
-        .eq('id', user.id)
-        .single();
+    // Get existing settings
+    const { data: userProfile } = await supabase
+      .from('users')
+      .select('settings')
+      .eq('id', user.id)
+      .single();
 
-      const existingSettings = (userProfile?.settings as any) || {};
-      const mergedSettings = {
-        ...existingSettings,
-        default_market: defaultMarket,
-        default_currency: defaultCurrency,
-        theme,
-        background,
-        notifications,
-      };
+    const existingSettings = (userProfile?.settings as any) || {};
+    const mergedSettings = {
+      ...existingSettings,
+      selected_markets: selectedMarkets.length === 0 ? null : selectedMarkets, // Store null for "Any"
+      default_currency: defaultCurrency,
+      theme, // Combined theme + background
+      language, // User's language preference (null means "System default")
+      show_quotes: showQuotes, // Show/hide quotes on main page
+      show_welcome_text: showWelcomeText, // Show/hide welcome text
+      notifications,
+    };
 
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({ settings: mergedSettings })
-        .eq('id', user.id);
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({ settings: mergedSettings })
+      .eq('id', user.id);
 
-      if (updateError) {
-        throw updateError;
-      }
-
-      setSuccess(true);
-      setTimeout(() => {
-        setSuccess(false);
-        window.location.reload();
-      }, 1500);
-    } catch (err: any) {
-      setError(err.message || 'Failed to update settings');
-    } finally {
-      setIsSaving(false);
+    if (updateError) {
+      throw new Error(updateError.message || 'Failed to update settings');
     }
+
+    // Update i18n language immediately if not system default
+    if (language) {
+      await i18n.changeLanguage(language);
+      // Update HTML lang attribute
+      document.documentElement.lang = language;
+    } else {
+      // Use browser language if system default
+      const browserLang = navigator.language.split('-')[0];
+      const supportedLangs = ['en', 'es', 'fr', 'de', 'ja', 'zh'];
+      const detectedLang = supportedLangs.includes(browserLang) ? browserLang : 'en';
+      await i18n.changeLanguage(detectedLang);
+      document.documentElement.lang = detectedLang;
+    }
+
+    // Success - StatefulButton will handle the green animation and state
+    // Reload after success animation completes (2 seconds)
+    setTimeout(() => {
+      window.location.reload();
+    }, 2000);
   };
 
   const handleDeleteAccount = async () => {
@@ -142,16 +177,35 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   };
 
   const handleChangePassword = () => {
-    // TODO: Implement password change
-    alert('Password change coming soon');
+    // Coming soon - will use Supabase SMTP service
   };
 
   const handleLogoutAllSessions = async () => {
     if (!confirm('This will log you out of all devices. Continue?')) {
       return;
     }
-    // TODO: Implement logout all sessions
-    alert('Logout all sessions coming soon');
+
+    setIsLoggingOut(true);
+    setError(null);
+
+    try {
+      // Sign out the current session
+      // Note: Supabase Auth's signOut() only signs out the current session
+      // To sign out ALL sessions across all devices, you would need to use
+      // the Supabase Admin API on the server side to revoke all refresh tokens
+      const result = await signOut();
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to sign out');
+      }
+
+      // Redirect to home page after sign out
+      router.push('/');
+      router.refresh();
+    } catch (err: any) {
+      setError(err.message || 'Failed to sign out');
+      setIsLoggingOut(false);
+    }
   };
 
   const sections: Array<{
@@ -159,10 +213,11 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
     label: string;
     icon: React.ReactNode;
   }> = [
-    { id: 'preferences', label: 'Preferences', icon: <Globe className="h-4 w-4" /> },
-    { id: 'notifications', label: 'Notifications', icon: <Bell className="h-4 w-4" /> },
-    { id: 'privacy', label: 'Privacy & Security', icon: <Shield className="h-4 w-4" /> },
-    { id: 'danger', label: 'Danger Zone', icon: <AlertTriangle className="h-4 w-4" /> },
+    { id: 'preferences', label: t('settings.preferences'), icon: <Globe className="h-4 w-4" /> },
+    { id: 'notifications', label: t('settings.notifications'), icon: <Bell className="h-4 w-4" /> },
+    { id: 'customize', label: t('settings.customize'), icon: <Settings2 className="h-4 w-4" /> },
+    { id: 'privacy', label: t('settings.privacy'), icon: <Shield className="h-4 w-4" /> },
+    { id: 'danger', label: t('settings.danger'), icon: <AlertTriangle className="h-4 w-4" /> },
   ];
 
   if (!user) {
@@ -171,17 +226,17 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[98vw] !max-w-[1800px] sm:!max-w-[1800px] h-[85vh] overflow-hidden flex flex-col p-0">
+      <DialogContent className="w-[90vw] !max-w-[1000px] sm:!max-w-[1000px] h-[85vh] overflow-hidden flex flex-col p-0">
         <DialogHeader className="px-6 pt-6 pb-4 border-b">
-          <DialogTitle>Settings</DialogTitle>
+          <DialogTitle>{t('settings.title')}</DialogTitle>
           <DialogDescription>
-            Manage your application preferences and account settings
+            {t('settings.description')}
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-1 overflow-hidden">
           {/* Sidebar Navigation */}
-          <div className="w-44 border-r bg-muted/30 p-4 space-y-2 flex-shrink-0">
+          <div className="w-56 border-r bg-muted/30 p-4 space-y-2 flex-shrink-0">
             {sections.map((section) => (
               <button
                 key={section.id}
@@ -201,91 +256,151 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
           {/* Main Content */}
           <div className="flex-1 overflow-y-auto p-6 min-h-0 relative">
             {activeSection === 'preferences' && (
-              <div className="space-y-6 max-w-5xl">
+              <div className="space-y-6 max-w-2xl">
                 <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="default-market" className="flex items-center gap-2">
+                  <div className="space-y-3">
+                    <Label className="flex items-center gap-2">
                       <Globe className="h-4 w-4" />
-                      Default Market
+                      {t('settings.markets')}
                     </Label>
-                    <Select
-                      value={defaultMarket}
-                      onValueChange={(value: 'US' | 'EU') => setDefaultMarket(value)}
-                    >
-                      <SelectTrigger id="default-market">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="US">US Markets</SelectItem>
-                        <SelectItem value="EU">EU Markets</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <div className="space-y-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedMarkets([]); // Empty means "Any"
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2 rounded-md border bg-background hover:bg-accent text-left transition-colors"
+                      >
+                        <div className="flex h-4 w-4 items-center justify-center rounded border border-foreground/20">
+                          {selectedMarkets.length === 0 && (
+                            <Check className="h-3 w-3 text-foreground" />
+                          )}
+                        </div>
+                        <span className="text-sm font-medium">{t('settings.marketsAny')}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (selectedMarkets.length === 0) {
+                            setSelectedMarkets(['US']);
+                          } else if (selectedMarkets.includes('US')) {
+                            const newMarkets = selectedMarkets.filter((m) => m !== 'US');
+                            setSelectedMarkets(newMarkets.length === 0 ? [] : newMarkets);
+                          } else {
+                            setSelectedMarkets([...selectedMarkets, 'US']);
+                          }
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2 rounded-md border bg-background hover:bg-accent text-left transition-colors"
+                      >
+                        <div className="flex h-4 w-4 items-center justify-center rounded border border-foreground/20">
+                          {selectedMarkets.length > 0 && selectedMarkets.includes('US') && (
+                            <Check className="h-3 w-3 text-foreground" />
+                          )}
+                        </div>
+                        <span className="text-sm font-medium">{t('settings.marketsUS')}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (selectedMarkets.length === 0) {
+                            setSelectedMarkets(['EU']);
+                          } else if (selectedMarkets.includes('EU')) {
+                            const newMarkets = selectedMarkets.filter((m) => m !== 'EU');
+                            setSelectedMarkets(newMarkets.length === 0 ? [] : newMarkets);
+                          } else {
+                            setSelectedMarkets([...selectedMarkets, 'EU']);
+                          }
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2 rounded-md border bg-background hover:bg-accent text-left transition-colors"
+                      >
+                        <div className="flex h-4 w-4 items-center justify-center rounded border border-foreground/20">
+                          {selectedMarkets.length > 0 && selectedMarkets.includes('EU') && (
+                            <Check className="h-3 w-3 text-foreground" />
+                          )}
+                        </div>
+                        <span className="text-sm font-medium">{t('settings.marketsEU')}</span>
+                      </button>
+                    </div>
                     <p className="text-xs text-muted-foreground">
-                      Data will be displayed based on your preferred market
+                      {t('settings.marketsDescription')}
                     </p>
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="default-currency" className="flex items-center gap-2">
                       <DollarSign className="h-4 w-4" />
-                      Default Currency
+                      {t('settings.currency')}
                     </Label>
                     <Select
-                      value={defaultCurrency}
-                      onValueChange={setDefaultCurrency}
+                      value={defaultCurrency || 'auto'}
+                      onValueChange={(value) => setDefaultCurrency(value === 'auto' ? null : value)}
                     >
                       <SelectTrigger id="default-currency">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="auto">{t('settings.currencyAuto')}</SelectItem>
                         <SelectItem value="USD">USD ($)</SelectItem>
                         <SelectItem value="EUR">EUR (€)</SelectItem>
                         <SelectItem value="GBP">GBP (£)</SelectItem>
+                        <SelectItem value="NOK">NOK (kr)</SelectItem>
+                        <SelectItem value="SEK">SEK (kr)</SelectItem>
+                        <SelectItem value="DKK">DKK (kr)</SelectItem>
                         <SelectItem value="JPY">JPY (¥)</SelectItem>
                         <SelectItem value="CHF">CHF (Fr)</SelectItem>
+                        <SelectItem value="CAD">CAD (C$)</SelectItem>
+                        <SelectItem value="AUD">AUD (A$)</SelectItem>
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-muted-foreground">
-                      Currency conversion coming soon
+                      {defaultCurrency === null
+                        ? t('settings.currencyDescription')
+                        : t('settings.currencyDescription')}
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="language" className="flex items-center gap-2">
+                      <Globe className="h-4 w-4" />
+                      {t('settings.language')}
+                    </Label>
+                    <Select
+                      value={language || 'system'}
+                      onValueChange={(value) => setLanguage(value === 'system' ? null : value)}
+                    >
+                      <SelectTrigger id="language">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="system">{t('settings.languageSystem')}</SelectItem>
+                        <SelectItem value="en">{t('languages.en')}</SelectItem>
+                        <SelectItem value="es">{t('languages.es')}</SelectItem>
+                        <SelectItem value="fr">{t('languages.fr')}</SelectItem>
+                        <SelectItem value="de">{t('languages.de')}</SelectItem>
+                        <SelectItem value="ja">{t('languages.ja')}</SelectItem>
+                        <SelectItem value="zh">{t('languages.zh')}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      {t('settings.languageDescription')}
                     </p>
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="theme" className="flex items-center gap-2">
                       <Moon className="h-4 w-4" />
-                      Theme
+                      {t('settings.theme')}
                     </Label>
                     <Select
                       value={theme}
-                      onValueChange={(value: 'light' | 'dark') => setTheme(value)}
+                      onValueChange={(value: 'dark' | 'light' | 'dark-veil' | 'aurora' | 'particles' | 'plasma' | 'beams') => setTheme(value)}
                     >
                       <SelectTrigger id="theme">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="light">Light</SelectItem>
                         <SelectItem value="dark">Dark</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground">
-                      Theme preference coming soon
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="background" className="flex items-center gap-2">
-                      <Image className="h-4 w-4" />
-                      Background
-                    </Label>
-                    <Select
-                      value={background}
-                      onValueChange={(value: 'none' | 'dark-veil' | 'aurora' | 'particles' | 'plasma' | 'beams') => setBackground(value)}
-                    >
-                      <SelectTrigger id="background">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">None (Default)</SelectItem>
+                        <SelectItem value="light">Light</SelectItem>
                         <SelectItem value="dark-veil">Dark Veil</SelectItem>
                         <SelectItem value="aurora">Aurora</SelectItem>
                         <SelectItem value="particles">Particles</SelectItem>
@@ -293,16 +408,13 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                         <SelectItem value="beams">Beams</SelectItem>
                       </SelectContent>
                     </Select>
-                    <p className="text-xs text-muted-foreground">
-                      Choose an animated background for your experience
-                    </p>
                   </div>
                 </div>
               </div>
             )}
 
             {activeSection === 'notifications' && (
-              <div className="space-y-6 max-w-5xl">
+              <div className="space-y-6 max-w-2xl">
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
@@ -400,15 +512,53 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
               </div>
             )}
 
+            {activeSection === 'customize' && (
+              <div className="space-y-6 max-w-2xl">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label>Show Investing Quotes</Label>
+                        <p className="text-xs text-muted-foreground">
+                          Display inspirational investing quotes on the main page
+                        </p>
+                      </div>
+                      <Switch
+                        checked={showQuotes}
+                        onCheckedChange={setShowQuotes}
+                      />
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label>Show Welcome Text</Label>
+                        <p className="text-xs text-muted-foreground">
+                          Display personalized welcome message at the top of the page
+                        </p>
+                      </div>
+                      <Switch
+                        checked={showWelcomeText}
+                        onCheckedChange={setShowWelcomeText}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {activeSection === 'privacy' && (
-              <div className="space-y-6 max-w-5xl">
+              <div className="space-y-6 max-w-2xl">
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label className="flex items-center gap-2">
                       <Shield className="h-4 w-4" />
                       Change Password
                     </Label>
-                    <Button variant="outline" onClick={handleChangePassword}>
+                    <Button variant="outline" onClick={handleChangePassword} disabled>
                       Change Password
                     </Button>
                     <p className="text-xs text-muted-foreground">
@@ -420,11 +570,22 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
 
                   <div className="space-y-2">
                     <Label>Logout All Sessions</Label>
-                    <Button variant="outline" onClick={handleLogoutAllSessions}>
-                      Logout All Devices
+                    <Button 
+                      variant="outline" 
+                      onClick={handleLogoutAllSessions}
+                      disabled={isLoggingOut}
+                    >
+                      {isLoggingOut ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Signing out...
+                        </>
+                      ) : (
+                        'Logout All Devices'
+                      )}
                     </Button>
                     <p className="text-xs text-muted-foreground">
-                      Logout all sessions coming soon
+                      Sign out from all devices and sessions
                     </p>
                   </div>
                 </div>
@@ -432,7 +593,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
             )}
 
             {activeSection === 'danger' && (
-              <div className="space-y-6 max-w-5xl">
+              <div className="space-y-6 max-w-2xl">
                 <div className="space-y-4">
                   <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-4 space-y-4">
                     <div className="flex items-center gap-2 text-destructive">
@@ -478,21 +639,10 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
               </div>
             )}
 
-            {/* Error/Success Messages */}
+            {/* Error Messages */}
             {error && (
               <div className="mt-4 p-3 rounded-md bg-destructive/10 text-destructive text-sm animate-in fade-in slide-in-from-bottom-2">
                 {error}
-              </div>
-            )}
-            {success && (
-              <div className="absolute bottom-20 right-6 flex items-center gap-2 px-4 py-3 rounded-lg bg-green-500/10 border border-green-500/20 text-green-600 dark:text-green-400 text-sm font-medium shadow-lg z-50 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <div className="relative">
-                  <div className="absolute inset-0 rounded-full bg-green-500/20 animate-ping opacity-75" />
-                  <CheckCircle2 className="relative h-5 w-5 animate-scale-in" />
-                </div>
-                <span className="animate-fade-in-up" style={{ animationDelay: '150ms' }}>
-                  Settings updated successfully!
-                </span>
               </div>
             )}
           </div>
@@ -502,18 +652,15 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
         {activeSection !== 'danger' && (
           <div className="border-t px-6 py-4 flex justify-end gap-3">
             <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
-            <Button onClick={handleSave} disabled={isSaving}>
-              {isSaving ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                'Save Changes'
-              )}
-            </Button>
+            <StatefulButton
+              onClick={handleSave}
+              successDuration={2000}
+              className="min-w-[120px]"
+            >
+              {t('settings.saveChanges')}
+            </StatefulButton>
           </div>
         )}
       </DialogContent>

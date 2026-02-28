@@ -1,0 +1,63 @@
+=== STRUCTURED TEXT (1777 chars) ===
+[ROW]
+[COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]&#160;[/COL][COL]Nine Months Ended[/COL]
+[/ROW]
+
+[ROW]
+[COL][/COL][COL]October 30,[/COL][COL][/COL][COL]October 29,[/COL][COL][/COL][COL]October 30,[/COL]
+[/ROW]
+
+[ROW]
+[COL]&#160;[/COL][COL]2022[/COL][COL][/COL][COL]2023[/COL][COL][/COL][COL]2022[/COL]
+[/ROW]
+
+[ROW]
+[COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Revenue:[/COL][COL]&#160;[/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]United States[/COL][COL][/COL][COL][/COL][COL]$[/COL][COL]2,148&#160;[/COL][COL][/COL][COL][/COL][COL]$[/COL][COL]14,730&#160;[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Taiwan[/COL][COL][/COL][COL]1,153&#160;[/COL][COL][/COL][COL][/COL][COL]8,968&#160;[/COL][COL][/COL][COL][/COL][COL]5,134&#160;[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]China (including Hong Kong)[/COL][COL][/COL][COL]1,148&#160;[/COL][COL][/COL][COL][/COL][COL]8,360&#160;[/COL][COL][/COL][COL][/COL][COL]4,831&#160;[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Singapore[/COL][COL][/COL][COL]536&#160;[/COL][COL][/COL][COL][/COL][COL]4,506&#160;[/COL][COL][/COL][COL][/COL][COL]1,963&#160;[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Other countries[/COL][COL][/COL][COL]946&#160;[/COL][COL][/COL][COL][/COL][COL]2,255&#160;[/COL][COL][/COL][COL][/COL][COL]2,926&#160;[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Total revenue[/COL][COL][/COL][COL][/COL][COL]$[/COL][COL]5,931&#160;[/COL][COL][/COL][COL][/COL][COL]$[/COL][COL]38,819&#160;[/COL][COL][/COL]
+[/ROW]
+
+=== RAW AI OUTPUT ===
+{ "metrics": [] }

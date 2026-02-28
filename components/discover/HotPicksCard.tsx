@@ -6,6 +6,7 @@ import { CompanyLogo } from '@/components/company/CompanyLogo';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { Flame } from 'lucide-react';
+import { fetchWithTimeout } from '@/lib/utils';
 
 interface HotPick {
   ticker: string;
@@ -29,12 +30,14 @@ export function HotPicksCard() {
   const { data: hotPicks, isLoading } = useQuery<HotPick[]>({
     queryKey: ['hot-picks'],
     queryFn: async () => {
-      const response = await fetch('/api/search/metrics?hours=168&limit=8'); // Last 7 days, top 8
-      const data: HotPicksResponse = await response.json();
-
-      if (!data.success || !data.data) {
-        return [];
-      }
+      try {
+        const response = await fetchWithTimeout(
+          '/api/search/metrics?hours=168&limit=8',
+          {},
+          10000
+        ); // Last 7 days, top 8
+        const data: HotPicksResponse = await response.json();
+        if (!data.success || !data.data) return [];
 
       // Fetch company names and logos for the hot picks
       // Use the first ticker as a search query to get company data
@@ -50,8 +53,8 @@ export function HotPicksCard() {
             const company = result.results[0];
             return { ticker, name: company.name, logo_url: company.logo_url };
           }
-        } catch (error) {
-          console.error(`Error fetching company data for ${ticker}:`, error);
+        } catch {
+          /* ignore */
         }
         return { ticker, name: null, logo_url: null };
       });
@@ -61,13 +64,19 @@ export function HotPicksCard() {
         companyData.map((c) => [c.ticker, { name: c.name, logo_url: c.logo_url }])
       );
 
-      return data.data.map((pick) => ({
-        ...pick,
-        name: companyMap.get(pick.ticker)?.name || pick.ticker,
-        logo_url: companyMap.get(pick.ticker)?.logo_url || null,
-      }));
+        return data.data.map((pick) => ({
+          ...pick,
+          name: companyMap.get(pick.ticker)?.name || pick.ticker,
+          logo_url: companyMap.get(pick.ticker)?.logo_url || null,
+        }));
+      } catch (e) {
+        const err = e as Error;
+        if (err?.name === 'AbortError' || err?.message === 'Failed to fetch') return [];
+        throw e;
+      }
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 1,
     gcTime: 30 * 60 * 1000, // 30 minutes
   });
 

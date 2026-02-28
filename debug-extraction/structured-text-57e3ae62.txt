@@ -1,0 +1,55 @@
+=== STRUCTURED TEXT (910 chars) ===
+[ROW]
+[COL][/COL][COL][/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]&#160;[/COL][COL]Year Ended[/COL]
+[/ROW]
+
+[ROW]
+[COL]&#160;[/COL][COL]January 29,2023[/COL][COL]January 30,2022[/COL]
+[/ROW]
+
+[ROW]
+[COL][/COL][COL][/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]&#160;[/COL][COL]($ in millions)[/COL]
+[/ROW]
+
+[ROW]
+[COL]Research and development expenses[/COL][COL]$[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]% of revenue[/COL][COL]27.2&#160;[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Sales, general and administrative expenses[/COL][COL]2,440&#160;[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]% of revenue[/COL][COL]9.1&#160;[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Acquisition termination cost[/COL][COL]1,353&#160;[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]% of revenue[/COL][COL]5.0&#160;[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Total operating expenses[/COL][COL]$[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]% of revenue[/COL][COL]41.3&#160;[/COL][COL][/COL]
+[/ROW]
+
+=== RAW AI OUTPUT ===
+{ "metrics": [] }

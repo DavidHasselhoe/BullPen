@@ -2,7 +2,7 @@
 // Auto-generated types matching Supabase schema
 // Keep in sync with migrations in supabase/migrations/
 
-export type FilingType = '10-K' | '10-Q' | '8-K' | 'S-1' | 'DEF 14A' | 'OTHER';
+export type FilingType = '10-K' | '10-Q' | '8-K' | '20-F' | '6-K' | 'S-1' | 'DEF 14A' | 'OTHER';
 export type ProcessingStatus = 'pending' | 'processing' | 'completed' | 'failed';
 export type SectionType = 
   | 'business_overview'
@@ -27,6 +27,7 @@ export type MetricType =
   | 'shareholders_equity'
   | 'operating_cash_flow'
   | 'free_cash_flow'
+  | 'capital_expenditures'
   | 'shares_outstanding'
   | 'other';
 
@@ -63,6 +64,15 @@ export type TrendType =
 
 export type TrendDirection = 'positive' | 'negative' | 'neutral';
 
+export type CorporateEventType = 
+  | 'stock_split'
+  | 'stock_dividend'
+  | 'merger_acquisition'
+  | 'executive_change'
+  | 'delisting'
+  | 'material_agreement'
+  | 'other';
+
 // =====================================================
 // TABLE TYPES
 // =====================================================
@@ -78,13 +88,53 @@ export interface Company {
   sic_code: string | null;
   incorporation_location: string | null;
   fiscal_year_end: string | null;
+  fiscal_year_end_month: number | null;
+  fiscal_year_end_day: number | null;
   employee_count: number | null;
   employee_count_is_estimated: boolean | null;
   shares_outstanding: number | null;
+  logo_url: string | null;
   metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;
 }
+
+export interface User {
+  id: string;
+  email: string;
+  username: string | null;
+  full_name: string | null;
+  avatar_url: string | null;
+  role: string;
+  bio: string | null;
+  experience_level: 'beginner' | 'intermediate' | 'advanced' | null;
+  market_focus: 'US' | 'EU' | 'BOTH' | null;
+  risk_profile: 'conservative' | 'moderate' | 'aggressive' | null;
+  account_tier: 'free' | 'pro' | 'enterprise' | null;
+  settings: Record<string, unknown> | null;
+  created_at: string;
+  updated_at: string;
+  last_login_at: string | null;
+}
+
+export interface UserHolding {
+  id: string;
+  user_id: string;
+  symbol: string;
+  company_name: string;
+  quantity: number | null;
+  avg_price: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type InsertUserHolding = Omit<UserHolding, 'id' | 'created_at' | 'updated_at'> & {
+  id?: string;
+};
+
+export type UpdateUserHolding = Partial<Omit<UserHolding, 'id' | 'created_at' | 'updated_at'>> & {
+  id?: string;
+};
 
 export interface Filing {
   id: string;
@@ -92,9 +142,12 @@ export interface Filing {
   filing_type: FilingType;
   accession_number: string;
   filing_date: string;
+  accepted_date: string | null;
   period_end_date: string | null;
+  period_type: PeriodType | null;
   fiscal_year: number | null;
   fiscal_quarter: number | null;
+  items: string[];
   source_url: string;
   document_url: string | null;
   processing_status: ProcessingStatus;
@@ -127,7 +180,13 @@ export interface FinancialMetric {
   period_type: PeriodType;
   period_start_date: string | null;
   period_end_date: string;
+  fiscal_year: number | null;
+  fiscal_quarter: number | null;
+  accounting_basis: string;
+  currency: string;
+  split_adjusted: boolean;
   is_restated: boolean;
+  ingested_at: string;
   metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;
@@ -193,6 +252,19 @@ export interface Trend {
   strength: number;
   explanation: string;
   periods_analyzed: number;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CorporateEvent {
+  id: string;
+  company_id: string;
+  filing_id: string;
+  event_type: CorporateEventType;
+  event_date: string;
+  title: string;
+  description: string | null;
   metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;
@@ -288,6 +360,11 @@ export type InsertSignal = Omit<Signal, 'id' | 'created_at' | 'updated_at'> & {
 };
 
 export type InsertTrend = Omit<Trend, 'id' | 'created_at' | 'updated_at'> & {
+  id?: string;
+  metadata?: Record<string, unknown>;
+};
+
+export type InsertCorporateEvent = Omit<CorporateEvent, 'id' | 'created_at' | 'updated_at'> & {
   id?: string;
   metadata?: Record<string, unknown>;
 };

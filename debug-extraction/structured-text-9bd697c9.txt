@@ -1,0 +1,79 @@
+=== STRUCTURED TEXT (3181 chars) ===
+[ROW]
+[COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]&#160;[/COL][COL]Nine Months Ended[/COL]
+[/ROW]
+
+[ROW]
+[COL]&#160;[/COL][COL]October 30,2022[/COL][COL][/COL][COL]October 29,2023[/COL][COL][/COL][COL]October 30,2022[/COL]
+[/ROW]
+
+[ROW]
+[COL]Revenue[/COL][COL][/COL][COL]100.0&#160;[/COL][COL]%[/COL][COL][/COL][COL]100.0&#160;[/COL][COL]%[/COL][COL][/COL][COL]100.0&#160;[/COL][COL]%[/COL]
+[/ROW]
+
+[ROW]
+[COL]&#160;&#160;&#160;&#160;&#160;Cost of revenue[/COL][COL][/COL][COL]46.4&#160;[/COL][COL][/COL][COL][/COL][COL]29.1&#160;[/COL][COL][/COL][COL][/COL][COL]44.9&#160;[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Gross profit[/COL][COL][/COL][COL]53.6&#160;[/COL][COL][/COL][COL][/COL][COL]70.9&#160;[/COL][COL][/COL][COL][/COL][COL]55.1&#160;[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Operating expenses[/COL][COL][/COL][COL][/COL][COL]&#160;[/COL][COL][/COL][COL]&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]&#160;&#160;&#160;&#160;&#160;Research and development[/COL][COL][/COL][COL]32.8&#160;[/COL][COL][/COL][COL][/COL][COL]16.0&#160;[/COL][COL][/COL][COL][/COL][COL]25.7&#160;[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]&#160;&#160;&#160;&#160;&#160;Sales, general and administrative[/COL][COL][/COL][COL]10.6&#160;[/COL][COL][/COL][COL][/COL][COL]5.0&#160;[/COL][COL][/COL][COL][/COL][COL]8.7&#160;[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Acquisition termination cost[/COL][COL][/COL][COL]&#8212;&#160;[/COL][COL][/COL][COL][/COL][COL]&#8212;&#160;[/COL][COL][/COL][COL][/COL][COL]6.5&#160;[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Total operating expenses[/COL][COL][/COL][COL]43.4&#160;[/COL][COL][/COL][COL][/COL][COL]21.0&#160;[/COL][COL][/COL][COL][/COL][COL]40.9&#160;[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Operating income[/COL][COL][/COL][COL]10.2&#160;[/COL][COL][/COL][COL][/COL][COL]49.9&#160;[/COL][COL][/COL][COL][/COL][COL]14.2&#160;[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]&#160;&#160;&#160;&#160;&#160;Interest income[/COL][COL][/COL][COL]1.5&#160;[/COL][COL][/COL][COL][/COL][COL]1.5&#160;[/COL][COL][/COL][COL][/COL][COL]0.7&#160;[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]&#160;&#160;&#160;&#160;&#160;Interest expense[/COL][COL][/COL][COL](1.1)[/COL][COL][/COL][COL][/COL][COL](0.5)[/COL][COL][/COL][COL][/COL][COL](0.9)[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]&#160;&#160;&#160;&#160;&#160;Other, net[/COL][COL][/COL][COL](0.2)[/COL][COL][/COL][COL][/COL][COL](0.1)[/COL][COL][/COL][COL][/COL][COL](0.1)[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Other income (expense), net[/COL][COL][/COL][COL]0.2&#160;[/COL][COL][/COL][COL][/COL][COL]0.9&#160;[/COL][COL][/COL][COL][/COL][COL](0.3)[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Income before income tax[/COL][COL][/COL][COL]10.4&#160;[/COL][COL][/COL][COL][/COL][COL]50.8&#160;[/COL][COL][/COL][COL][/COL][COL]13.9&#160;[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Income tax expense (benefit)[/COL][COL][/COL][COL](1.1)[/COL][COL][/COL][COL][/COL][COL]5.8&#160;[/COL][COL][/COL][COL][/COL][COL](0.3)[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Net income[/COL][COL][/COL][COL]11.5&#160;[/COL][COL]%[/COL][COL][/COL][COL]45.0&#160;[/COL][COL]%[/COL][COL][/COL][COL]14.2&#160;[/COL][COL]%[/COL]
+[/ROW]
+
+=== RAW AI OUTPUT ===
+{ "metrics": [] }

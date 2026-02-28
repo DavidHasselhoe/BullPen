@@ -1,0 +1,59 @@
+=== STRUCTURED TEXT (1089 chars) ===
+[ROW]
+
+[/ROW]
+
+[ROW]
+[COL]&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]&#160;[/COL][COL]Oct 26, 2025[/COL][COL]Oct 27, 2024[/COL]
+[/ROW]
+
+[ROW]
+
+[/ROW]
+
+[ROW]
+[COL]&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Revenue by End Market:[/COL]
+[/ROW]
+
+[ROW]
+[COL]Data Center[/COL][COL][COL]$[/COL][COL]30,771&#160;[/COL][COL][COL]$[/COL][COL]131,423&#160;[/COL][COL][COL]$[/COL][COL]79,606&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Compute[/COL][COL][COL]111,027&#160;[/COL][COL][COL]69,640&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Networking[/COL][COL][COL]20,396&#160;[/COL][COL][COL]9,966&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Gaming[/COL][COL][COL]12,315&#160;[/COL][COL][COL]8,806&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Professional Visualization[/COL][COL][COL]1,870&#160;[/COL][COL][COL]1,367&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Automotive[/COL][COL][COL]1,745&#160;[/COL][COL][COL]1,124&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]OEM and Other[/COL][COL][COL]458&#160;[/COL][COL][COL]263&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Total revenue[/COL][COL][COL]$[/COL][COL]35,082&#160;[/COL][COL][COL]$[/COL][COL]147,811&#160;[/COL][COL][COL]$[/COL][COL]91,166&#160;[/COL]
+[/ROW]
+
+=== RAW AI OUTPUT ===
+{ "metrics": [] }

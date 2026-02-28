@@ -1,0 +1,51 @@
+=== STRUCTURED TEXT (2950 chars) ===
+[ROW]
+[COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]&#160;[/COL][COL]Nine Months Ended[/COL]
+[/ROW]
+
+[ROW]
+[COL]&#160;[/COL][COL]October 31,2021[/COL][COL][/COL][COL]$Change[/COL][COL][/COL][COL]%Change[/COL][COL][/COL][COL]October 30,2022[/COL][COL][/COL][COL]October 31,2021[/COL][COL][/COL][COL]$Change[/COL][COL][/COL][COL]%Change[/COL]
+[/ROW]
+
+[ROW]
+[COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Research and development expenses[/COL][COL][/COL][COL][/COL][COL]$[/COL][COL]1,403&#160;[/COL][COL][/COL][COL][/COL][COL]$[/COL][COL]542&#160;[/COL][COL][/COL][COL][/COL][COL]39&#160;[/COL][COL]%[/COL][COL][/COL][COL]$[/COL][COL]5,387&#160;[/COL][COL][/COL][COL][/COL][COL]$[/COL][COL]3,802&#160;[/COL][COL][/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]% of net revenue[/COL][COL][/COL][COL]20&#160;[/COL][COL]%[/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL]26&#160;[/COL][COL]%[/COL][COL][/COL][COL]20&#160;[/COL][COL]%[/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Sales, general and administrative expenses[/COL][COL][/COL][COL]557&#160;[/COL][COL][/COL][COL][/COL][COL]74&#160;[/COL][COL][/COL][COL][/COL][COL]13&#160;[/COL][COL]%[/COL][COL][/COL][COL]1,815&#160;[/COL][COL][/COL][COL][/COL][COL]1,603&#160;[/COL][COL][/COL][COL][/COL][COL]212&#160;[/COL][COL][/COL][COL][/COL][COL]13&#160;[/COL][COL]%[/COL]
+[/ROW]
+
+[ROW]
+[COL]% of net revenue[/COL][COL][/COL][COL]8&#160;[/COL][COL]%[/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL]9&#160;[/COL][COL]%[/COL][COL][/COL][COL]8&#160;[/COL][COL]%[/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Acquisition termination cost[/COL][COL][/COL][COL]&#8212;&#160;[/COL][COL][/COL][COL][/COL][COL]&#8212;&#160;[/COL][COL][/COL][COL][/COL][COL]&#8212;&#160;[/COL][COL]%[/COL][COL][/COL][COL]1,353&#160;[/COL][COL][/COL][COL][/COL][COL]&#8212;&#160;[/COL][COL][/COL][COL][/COL][COL]1,353&#160;[/COL][COL][/COL][COL][/COL][COL](100)[/COL][COL]%[/COL]
+[/ROW]
+
+[ROW]
+[COL]% of net revenue[/COL][COL][/COL][COL]&#8212;&#160;[/COL][COL]%[/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL]6&#160;[/COL][COL]%[/COL][COL][/COL][COL]&#8212;&#160;[/COL][COL]%[/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Total operating expenses[/COL][COL][/COL][COL][/COL][COL]$[/COL][COL]1,960&#160;[/COL][COL][/COL][COL][/COL][COL]$[/COL][COL]616&#160;[/COL][COL][/COL][COL][/COL][COL]31&#160;[/COL][COL]%[/COL][COL][/COL][COL]$[/COL][COL]8,555&#160;[/COL][COL][/COL][COL][/COL][COL]$[/COL][COL]5,405&#160;[/COL][COL][/COL][COL][/COL]
+[/ROW]
+
+=== RAW AI OUTPUT ===
+{ "metrics": [] }

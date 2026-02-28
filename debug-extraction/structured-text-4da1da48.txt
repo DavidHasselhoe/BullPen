@@ -1,0 +1,39 @@
+=== STRUCTURED TEXT (1096 chars) ===
+[ROW]
+[COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]&#160;[/COL][COL]Nine Months Ended[/COL]
+[/ROW]
+
+[ROW]
+[COL]&#160;[/COL][COL]October 31,2021[/COL][COL][/COL][COL]October 30,2022[/COL][COL][/COL][COL]October 31,2021[/COL]
+[/ROW]
+
+[ROW]
+[COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Cost of revenue[/COL][COL][/COL][COL][/COL][COL]$[/COL][COL]44&#160;[/COL][COL][/COL][COL][/COL][COL]$[/COL][COL]108&#160;[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Research and development[/COL][COL][/COL][COL]363&#160;[/COL][COL][/COL][COL][/COL][COL]1,365&#160;[/COL][COL][/COL][COL][/COL][COL]935&#160;[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Sales, general and administrative[/COL][COL][/COL][COL]152&#160;[/COL][COL][/COL][COL][/COL][COL]498&#160;[/COL][COL][/COL][COL][/COL][COL]416&#160;[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Total[/COL][COL][/COL][COL][/COL][COL]$[/COL][COL]559&#160;[/COL][COL][/COL][COL][/COL][COL]$[/COL][COL]1,971&#160;[/COL][COL][/COL]
+[/ROW]
+
+=== RAW AI OUTPUT ===
+{ "metrics": [] }

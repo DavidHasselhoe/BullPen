@@ -140,6 +140,44 @@ export async function ingestFiling(
       ? formatSECDate(filingDateMatch[1])
       : new Date().toISOString().split('T')[0];
     const filingDateForClassification = filingDateMatch?.[1] || undefined; // Pass raw YYYYMMDD format for classification
+
+    // Step 6.6: Extract fiscal year end from filing header (if not already set on company)
+    // Fiscal year end appears in SEC header as "FISCAL YEAR END: 1231" (MMDD format)
+    if (!company.fiscal_year_end && !company.fiscal_year_end_month) {
+      const fiscalYearEndMatch = rawContent.match(/FISCAL\s+YEAR\s+END[:\s]+(\d{4})/i);
+      if (fiscalYearEndMatch && fiscalYearEndMatch[1]) {
+        const fyeDigits = fiscalYearEndMatch[1].replace(/[^\d]/g, '');
+        if (fyeDigits.length === 4) {
+          const month = parseInt(fyeDigits.substring(0, 2), 10);
+          const day = parseInt(fyeDigits.substring(2, 4), 10);
+          
+          // Validate month and day
+          if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+            const fiscalYearEndStr = `${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+            
+            // Update company record with fiscal year end
+            const supabase = createServerClient();
+            await supabase
+              .from('companies')
+              .update({
+                fiscal_year_end: fiscalYearEndStr,
+                fiscal_year_end_month: month,
+                fiscal_year_end_day: day,
+              })
+              .eq('id', company.id);
+            
+            // Update local company object (type assertion needed as TypeScript interface may not have these fields yet)
+            (company as any).fiscal_year_end = fiscalYearEndStr;
+            (company as any).fiscal_year_end_month = month;
+            (company as any).fiscal_year_end_day = day;
+            
+            onProgress?.('Fiscal year end extracted from filing', {
+              fiscalYearEnd: fiscalYearEndStr,
+            });
+          }
+        }
+      }
+    }
     
     // ============================================================
     // FORM 8-K PHASE A: EVENTS-ONLY INGESTION

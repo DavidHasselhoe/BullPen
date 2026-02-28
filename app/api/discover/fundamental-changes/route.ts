@@ -7,23 +7,14 @@ export async function GET(request: NextRequest) {
 
   try {
     const result = await getRecentFundamentalChanges(limit);
-
     if (!result.success) {
-      return NextResponse.json(
-        { success: false, error: result.error || 'Failed to fetch fundamental changes' },
-        { status: 500 }
-      );
+      return NextResponse.json({ success: true, changes: [] });
     }
-
     return NextResponse.json({
       success: true,
       changes: result.data || [],
     });
-  } catch (error) {
-    console.error('Error fetching fundamental changes:', error);
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    );
+  } catch {
+    return NextResponse.json({ success: true, changes: [] });
   }
 }

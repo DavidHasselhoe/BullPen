@@ -7,6 +7,9 @@ import type { Database } from './types';
 // Singleton browser client instance
 let browserClient: SupabaseClient<Database> | null = null;
 
+// Singleton server client instance (service role — no session, no auth refresh)
+let serverClient: SupabaseClient<Database> | null = null;
+
 // Client-side Supabase client (uses anon key)
 // Returns a singleton instance to ensure session consistency
 export function createBrowserClient(): SupabaseClient<Database> {
@@ -22,7 +25,6 @@ export function createBrowserClient(): SupabaseClient<Database> {
     throw new Error('Missing Supabase environment variables');
   }
 
-  // Create client with proper session persistence and token refresh
   browserClient = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     auth: {
       autoRefreshToken: true,
@@ -35,7 +37,10 @@ export function createBrowserClient(): SupabaseClient<Database> {
 }
 
 // Server-side Supabase client (uses service role for admin operations)
-export function createServerClient() {
+// Returns a singleton to avoid spawning a new connection on every API call.
+export function createServerClient(): SupabaseClient<Database> {
+  if (serverClient) return serverClient;
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -43,10 +48,12 @@ export function createServerClient() {
     throw new Error('Missing Supabase service role environment variables');
   }
 
-  return createClient<Database>(supabaseUrl, supabaseServiceRoleKey, {
+  serverClient = createClient<Database>(supabaseUrl, supabaseServiceRoleKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
     },
   });
+
+  return serverClient;
 }

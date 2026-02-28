@@ -20,6 +20,8 @@ import { MarketNewsCard } from '@/components/market/MarketNewsCard';
 import { MarketHoursCard } from '@/components/market/MarketHoursCard';
 import { useTopMovers, useMarketNews } from '@/hooks/use-market-data';
 import { HotPicksCard } from '@/components/discover/HotPicksCard';
+import { QuoteDisplay } from '@/components/ui/QuoteDisplay';
+import { useUserSettings } from '@/hooks/use-user-settings';
 
 export default function DiscoverPage() {
   const {
@@ -48,32 +50,38 @@ export default function DiscoverPage() {
   } = useMarketNews('general', 5);
 
   const { hasAnimatedBackground } = useBackground();
+  const { showQuotes, showWelcomeText } = useUserSettings();
 
   return (
     <div className={`min-h-screen ${hasAnimatedBackground ? '' : 'bg-background'}`}>
       <main className="container mx-auto max-w-6xl py-8 px-4 sm:px-6 lg:px-8">
-        {/* Header */}
+        {/* Header (scrolls normally) */}
         <div className="mb-8">
-          <div className="flex items-start justify-between gap-4 mb-6">
-            <div>
-              <WelcomeMessage />
-              <h1 className="text-3xl font-bold tracking-tight text-foreground">Discover</h1>
-              <p className="mt-2 text-muted-foreground">
-                Fundamental changes detected from SEC filings.
-              </p>
-            </div>
-            <div className="flex-shrink-0">
-              <StockSearch />
-            </div>
+          <div className="mb-6">
+            {showWelcomeText && <WelcomeMessage />}
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">Discover</h1>
+            <p className="mt-2 text-muted-foreground">
+              Fundamental changes detected from SEC filings.
+            </p>
           </div>
         </div>
 
         <div className="space-y-8">
+          {/* Investing Quote */}
+          {showQuotes && (
+            <section>
+              <AnimatedContent reverse={true}>
+                <QuoteDisplay enabled={showQuotes} />
+              </AnimatedContent>
+            </section>
+          )}
+
+          <Separator />
           {/* Market Hours, Movers and News */}
           <section>
             <div className="grid gap-4 lg:grid-cols-3">
               <AnimatedContent reverse={true}>
-                <MarketHoursCard exchangeCodes={['NYSE', 'NASDAQ', 'LSE']} />
+                <MarketHoursCard exchangeCodes={['NYSE', 'NASDAQ', 'LSE', 'OSE', 'XETRA', 'STO']} />
               </AnimatedContent>
               <AnimatedContent reverse={true} delay={0.1}>
                 <TopMoversCard

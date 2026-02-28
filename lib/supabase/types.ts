@@ -9,6 +9,7 @@ import type {
   AIInsight,
   Signal,
   User,
+  UserHolding,
   Exchange,
   ExchangeHoliday,
 } from '../types/database';
@@ -77,9 +78,59 @@ export interface Database {
         };
         Update: Partial<Omit<ExchangeHoliday, 'id' | 'created_at'>>;
       };
+      user_holdings: {
+        Row: UserHolding;
+        Insert: Omit<UserHolding, 'id' | 'created_at' | 'updated_at'> & { id?: string };
+        Update: Partial<Omit<UserHolding, 'id' | 'created_at' | 'updated_at'>>;
+      };
+      currency_exchange_rates: {
+        Row: {
+          id: string;
+          base_currency: string;
+          target_currency: string;
+          rate: number;
+          date: string;
+          created_at: string;
+        };
+        Insert: {
+          base_currency: string;
+          target_currency: string;
+          rate: number;
+          date: string;
+          id?: string;
+        };
+        Update: Partial<{
+          base_currency: string;
+          target_currency: string;
+          rate: number;
+          date: string;
+        }>;
+      };
+      search_metrics: {
+        Row: {
+          id: string;
+          ticker: string;
+          user_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          ticker: string;
+          user_id?: string | null;
+          id?: string;
+        };
+        Update: Partial<{
+          ticker: string;
+          user_id: string | null;
+        }>;
+      };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      get_hot_picks: {
+        Args: { time_period_hours: number; limit_count: number };
+        Returns: Array<{ ticker: string; search_count: number }>;
+      };
+    };
     Enums: Record<string, never>;
   };
 }

@@ -18,11 +18,17 @@ export async function GET(request: NextRequest) {
   try {
     const timeSeries = await getMetricsTimeSeries(companyId, metricType, periodType);
 
-    if (!timeSeries) {
-      return NextResponse.json(
-        { success: false, error: 'No metrics found for the selected filters' },
-        { status: 404 }
-      );
+    // Return 200 with empty data instead of 404 - frontend can show "no data" state
+    if (!timeSeries || !timeSeries.data || timeSeries.data.length === 0) {
+      return NextResponse.json({
+        success: true,
+        timeSeries: {
+          metricType,
+          periodType,
+          unit: metricType === 'eps_diluted' || metricType === 'eps_basic' ? 'USD/shares' : 'USD',
+          data: [],
+        },
+      });
     }
 
     return NextResponse.json({

@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import Link from 'next/link';
+import { CompanyLogo } from '@/components/company/CompanyLogo';
 import type { MarketMover } from '@/lib/finnhub/finnhub-client';
 
 interface TopMoversCardProps {
@@ -15,10 +16,7 @@ interface TopMoversCardProps {
 function MoverItem({ mover, isGainer }: { mover: MarketMover; isGainer: boolean }) {
   const Icon = isGainer ? ArrowUpRight : ArrowDownRight;
   const textColor = isGainer ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
-  const bgColor = isGainer 
-    ? 'bg-green-50 dark:bg-green-950/20' 
-    : 'bg-red-50 dark:bg-red-950/20';
-  
+
   return (
     <Link 
       href={`/stock/${mover.symbol}`}
@@ -26,9 +24,12 @@ function MoverItem({ mover, isGainer }: { mover: MarketMover; isGainer: boolean 
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div className={`p-1.5 rounded ${bgColor}`}>
-            <Icon className={`h-4 w-4 ${textColor}`} />
-          </div>
+          <CompanyLogo
+            name={mover.symbol}
+            ticker={mover.symbol}
+            size={36}
+            className="rounded overflow-hidden"
+          />
           <div className="flex-1 min-w-0">
             <div className="font-semibold text-foreground truncate">{mover.symbol}</div>
             <div className="text-sm text-muted-foreground">
@@ -36,12 +37,15 @@ function MoverItem({ mover, isGainer }: { mover: MarketMover; isGainer: boolean 
             </div>
           </div>
         </div>
-        <div className="text-right">
-          <div className={`font-semibold ${textColor}`}>
-            {isGainer ? '+' : ''}{mover.changePercent.toFixed(2)}%
-          </div>
-          <div className={`text-xs ${textColor}`}>
-            {isGainer ? '+' : ''}${mover.change.toFixed(2)}
+        <div className="flex items-center gap-1.5 text-right shrink-0">
+          <Icon className={`h-4 w-4 ${textColor}`} aria-hidden />
+          <div>
+            <div className={`font-semibold ${textColor}`}>
+              {isGainer ? '+' : ''}{mover.changePercent.toFixed(2)}%
+            </div>
+            <div className={`text-xs ${textColor}`}>
+              {isGainer ? '+' : ''}${mover.change.toFixed(2)}
+            </div>
           </div>
         </div>
       </div>

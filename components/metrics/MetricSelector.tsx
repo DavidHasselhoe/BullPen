@@ -4,14 +4,16 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { MetricType } from '@/lib/types/database';
 
+// Metrics explicitly stated in SEC filings only (no computed/derived metrics like FCF)
 const METRICS: Array<{ value: MetricType; label: string }> = [
   { value: 'revenue', label: 'Revenue' },
-  { value: 'net_income', label: 'Net Income' },
+  { value: 'cost_of_revenue', label: 'Cost of Revenue' },
+  { value: 'gross_profit', label: 'Gross Profit' },
   { value: 'operating_income', label: 'Operating Income' },
+  { value: 'net_income', label: 'Net Income' },
   { value: 'eps_basic', label: 'EPS (Basic)' },
   { value: 'eps_diluted', label: 'EPS (Diluted)' },
   { value: 'operating_cash_flow', label: 'Operating Cash Flow' },
-  { value: 'free_cash_flow', label: 'Free Cash Flow' },
 ];
 
 interface MetricSelectorProps {

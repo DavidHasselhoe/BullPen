@@ -27,6 +27,10 @@ export function useCompany(ticker: string) {
       if (data.success && data.companyId) {
         return data.companyId;
       }
+      // 404 is expected when company hasn't been ingested yet - return null, don't throw
+      if (response.status === 404) {
+        return null;
+      }
       throw new Error(data.error || 'Company not found');
     },
     enabled: !!ticker,

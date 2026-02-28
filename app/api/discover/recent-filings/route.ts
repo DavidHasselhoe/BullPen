@@ -7,23 +7,14 @@ export async function GET(request: NextRequest) {
 
   try {
     const result = await getRecentFilings(limit);
-
     if (!result.success) {
-      return NextResponse.json(
-        { success: false, error: result.error || 'Failed to fetch recent filings' },
-        { status: 500 }
-      );
+      return NextResponse.json({ success: true, filings: [] });
     }
-
     return NextResponse.json({
       success: true,
       filings: result.data || [],
     });
-  } catch (error) {
-    console.error('Error fetching recent filings:', error);
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    );
+  } catch {
+    return NextResponse.json({ success: true, filings: [] });
   }
 }

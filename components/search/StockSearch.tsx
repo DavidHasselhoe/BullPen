@@ -14,6 +14,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { useDebounce } from '@/hooks/use-debounce';
+import { fetchWithTimeout } from '@/lib/utils';
 
 interface SearchResult {
   ticker: string;
@@ -60,7 +61,11 @@ export function StockSearch() {
         return [];
       }
 
-      const response = await fetch(`/api/search?q=${encodeURIComponent(debouncedQuery)}`);
+      const response = await fetchWithTimeout(
+        `/api/search?q=${encodeURIComponent(debouncedQuery)}`,
+        {},
+        8000
+      );
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -97,6 +102,27 @@ export function StockSearch() {
       const data: LazyIngestionResponse = await response.json();
 
       if (!data.success) {
+        // Handle rate limit with better error message
+        if (response.status === 429) {
+          const retryAfter = response.headers.get('Retry-After');
+          const resetTime = response.headers.get('X-RateLimit-Reset');
+          
+          let errorMessage = 'Rate limit exceeded. Please try again later.';
+          if (retryAfter) {
+            const seconds = parseInt(retryAfter, 10);
+            const minutes = Math.ceil(seconds / 60);
+            errorMessage = `Rate limit exceeded. Please try again in ${minutes} minute${minutes > 1 ? 's' : ''}.`;
+          } else if (resetTime) {
+            const resetDate = new Date(resetTime);
+            const now = new Date();
+            const minutesUntilReset = Math.ceil((resetDate.getTime() - now.getTime()) / 60000);
+            if (minutesUntilReset > 0) {
+              errorMessage = `Rate limit exceeded. Please try again in ${minutesUntilReset} minute${minutesUntilReset > 1 ? 's' : ''}.`;
+            }
+          }
+          throw new Error(errorMessage);
+        }
+        
         throw new Error(data.error || 'Ingestion failed');
       }
 
@@ -224,17 +250,20 @@ export function StockSearch() {
         </DialogContent>
       </Dialog>
 
-      {/* Search Trigger Button */}
+      {/* Search Trigger Button - icon only on mobile, full on desktop */}
       <button
+        type="button"
         onClick={() => setOpen(true)}
-        className="flex items-center gap-2 rounded-lg border border-border bg-background px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+        className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 md:px-4 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+        aria-label="Search companies"
       >
         <svg
-          className="h-4 w-4"
+          className="h-4 w-4 shrink-0"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
           xmlns="http://www.w3.org/2000/svg"
+          aria-hidden
         >
           <path
             strokeLinecap="round"
@@ -243,7 +272,7 @@ export function StockSearch() {
             d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
           />
         </svg>
-        Search companies...
+        <span className="hidden md:inline">Search companies...</span>
       </button>
     </>
   );

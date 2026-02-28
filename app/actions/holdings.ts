@@ -27,25 +27,7 @@ async function getCurrentUserId(): Promise<string | null> {
     // Create a client with cookies for Server Actions
     const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
       auth: {
-        getSession: async () => {
-          const accessToken = cookieStore.get('sb-access-token')?.value;
-          const refreshToken = cookieStore.get('sb-refresh-token')?.value;
-          
-          if (!accessToken) {
-            return { data: { session: null }, error: null };
-          }
-
-          // For Server Actions, we need to construct the session from cookies
-          // Supabase stores session in cookies with specific names
-          // This is a simplified approach - in production, you might want to use
-          // the Supabase Auth Helper library for Next.js
-          try {
-            const { data: { session } } = await supabase.auth.getSession();
-            return { data: { session }, error: null };
-          } catch (error) {
-            return { data: { session: null }, error: error as Error };
-          }
-        },
+        persistSession: false,
       },
     });
 

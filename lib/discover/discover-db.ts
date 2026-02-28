@@ -29,35 +29,51 @@ export async function getRecentFundamentalChanges(
   const supabase = createServerClient();
 
   try {
-    // Get recent trends with company info
-    const { data: trendsData, error: trendsError } = await supabase
-      .from('trends')
-      .select(`
-        *,
-        company:companies(id, name, ticker, logo_url)
-      `)
-      .order('strength', { ascending: false })
-      .order('created_at', { ascending: false })
-      .limit(limit);
+    // Add timeout wrapper for queries
+    const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> => {
+      return Promise.race([
+        promise,
+        new Promise<T>((_, reject) => 
+          setTimeout(() => reject(new Error(`Query timeout after ${ms}ms`)), ms)
+        ),
+      ]);
+    };
+
+    // Get recent trends with company info (10 second timeout)
+    const { data: trendsData, error: trendsError } = await withTimeout(
+      supabase
+        .from('trends')
+        .select(`
+          *,
+          company:companies(id, name, ticker, logo_url)
+        `)
+        .order('strength', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(limit),
+      10000 // 10 second timeout
+    );
 
     if (trendsError) {
-      return { success: false, error: trendsError.message };
+      return { success: false, error: 'Database unavailable' };
     }
 
-    // Get recent active signals with company info
-    const { data: signalsData, error: signalsError } = await supabase
-      .from('signals')
-      .select(`
-        *,
-        company:companies(id, name, ticker, logo_url)
-      `)
-      .eq('is_active', true)
-      .order('strength', { ascending: false })
-      .order('created_at', { ascending: false })
-      .limit(limit);
+    // Get recent active signals with company info (10 second timeout)
+    const { data: signalsData, error: signalsError } = await withTimeout(
+      supabase
+        .from('signals')
+        .select(`
+          *,
+          company:companies(id, name, ticker, logo_url)
+        `)
+        .eq('is_active', true)
+        .order('strength', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(limit),
+      10000 // 10 second timeout
+    );
 
     if (signalsError) {
-      return { success: false, error: signalsError.message };
+      return { success: false, error: 'Database unavailable' };
     }
 
     // Cast to proper types
@@ -177,19 +193,32 @@ export async function getRecentFilings(
   const supabase = createServerClient();
 
   try {
-    const { data: filings, error: filingsError } = await supabase
-      .from('filings')
-      .select(`
-        *,
-        company:companies(id, name, ticker, logo_url)
-      `)
-      .eq('processing_status', 'completed')
-      .in('filing_type', ['10-K', '10-Q'])
-      .order('filing_date', { ascending: false })
-      .limit(limit);
+    // Add timeout wrapper for queries
+    const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> => {
+      return Promise.race([
+        promise,
+        new Promise<T>((_, reject) => 
+          setTimeout(() => reject(new Error(`Query timeout after ${ms}ms`)), ms)
+        ),
+      ]);
+    };
+
+    const { data: filings, error: filingsError } = await withTimeout(
+      supabase
+        .from('filings')
+        .select(`
+          *,
+          company:companies(id, name, ticker, logo_url)
+        `)
+        .eq('processing_status', 'completed')
+        .in('filing_type', ['10-K', '10-Q'])
+        .order('filing_date', { ascending: false })
+        .limit(limit),
+      10000 // 10 second timeout
+    );
 
     if (filingsError) {
-      return { success: false, error: filingsError.message };
+      return { success: false, error: 'Database unavailable' };
     }
 
     if (!filings || filings.length === 0) {
@@ -199,12 +228,17 @@ export async function getRecentFilings(
     // Cast to proper types
     const filingsWithCompany = (filings || []) as Array<Filing & { company?: Company }>;
 
-    // Get insight counts for each filing
+    // Get insight counts for each filing (with timeout).
+    // Capped at 500 rows — used only for counting, not displaying full content.
     const filingIds = filingsWithCompany.map((f) => f.id);
-    const { data: insightsData } = await supabase
-      .from('ai_insights')
-      .select('filing_id')
-      .in('filing_id', filingIds);
+    const { data: insightsData } = await withTimeout(
+      supabase
+        .from('ai_insights')
+        .select('filing_id')
+        .in('filing_id', filingIds)
+        .limit(500),
+      10000 // 10 second timeout
+    );
 
     // Count insights per filing
     const insights = (insightsData || []) as Array<{ filing_id: string }>;
@@ -269,14 +303,27 @@ export async function getCompaniesToWatch(
   const supabase = createServerClient();
 
   try {
-    // Get all companies
-    const { data: companies, error: companiesError } = await supabase
-      .from('companies')
-      .select('id, ticker, name, logo_url')
-      .limit(100); // Reasonable limit for initial query
+    // Add timeout wrapper for queries
+    const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> => {
+      return Promise.race([
+        promise,
+        new Promise<T>((_, reject) => 
+          setTimeout(() => reject(new Error(`Query timeout after ${ms}ms`)), ms)
+        ),
+      ]);
+    };
+
+    // Get all companies (with timeout)
+    const { data: companies, error: companiesError } = await withTimeout(
+      supabase
+        .from('companies')
+        .select('id, ticker, name, logo_url')
+        .limit(100), // Reasonable limit for initial query
+      10000 // 10 second timeout
+    );
 
     if (companiesError) {
-      return { success: false, error: companiesError.message };
+      return { success: false, error: 'Database unavailable' };
     }
 
     if (!companies || companies.length === 0) {
@@ -286,13 +333,31 @@ export async function getCompaniesToWatch(
     const companiesList = (companies || []) as Company[];
     const companyIds = companiesList.map((c) => c.id);
 
-    // Get composite scores from latest filings (stored in filings.metadata)
-    const { data: filingsData } = await supabase
-      .from('filings')
-      .select('id, company_id, filing_date, metadata')
-      .eq('processing_status', 'completed')
-      .in('company_id', companyIds)
-      .order('filing_date', { ascending: false });
+    // Fetch filings (for composite scores) and trends in parallel — they are independent
+    const [filingsResult, trendsResult] = await Promise.all([
+      withTimeout(
+        supabase
+          .from('filings')
+          .select('id, company_id, filing_date, metadata')
+          .eq('processing_status', 'completed')
+          .in('company_id', companyIds)
+          .order('filing_date', { ascending: false })
+          .limit(100), // at most 1 per company × 100 companies
+        10000
+      ),
+      withTimeout(
+        supabase
+          .from('trends')
+          .select('company_id, trend_type, strength, direction')
+          .in('company_id', companyIds)
+          .order('strength', { ascending: false })
+          .limit(200),
+        10000
+      ),
+    ]);
+
+    const { data: filingsData } = filingsResult;
+    const { data: trendsData } = trendsResult;
 
     // Extract composite scores from metadata for latest filing per company
     const filings = (filingsData || []) as Array<{ id: string; company_id: string; filing_date: string; metadata: unknown }>;
@@ -319,13 +384,6 @@ export async function getCompaniesToWatch(
         }
       }
     });
-
-    // Get strongest trends per company
-    const { data: trendsData } = await supabase
-      .from('trends')
-      .select('*')
-      .in('company_id', companyIds)
-      .order('strength', { ascending: false });
 
     const trends = (trendsData || []) as Trend[];
     const trendMap = new Map<

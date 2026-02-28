@@ -1,0 +1,131 @@
+=== STRUCTURED TEXT (4441 chars) ===
+[ROW]
+[COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]&#160;[/COL][COL]Nine Months Ended[/COL]
+[/ROW]
+
+[ROW]
+[COL]&#160;[/COL][COL]October 31,[/COL][COL][/COL][COL]October 30,[/COL][COL][/COL][COL]October 31,[/COL]
+[/ROW]
+
+[ROW]
+[COL][/COL][COL]2021[/COL][COL][/COL][COL]2022[/COL][COL][/COL][COL]2021[/COL]
+[/ROW]
+
+[ROW]
+[COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Revenue[/COL][COL][/COL][COL][/COL][COL]$[/COL][COL]7,103&#160;[/COL][COL][/COL][COL][/COL][COL]$[/COL][COL]20,923&#160;[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Cost of revenue[/COL][COL][/COL][COL]2,472&#160;[/COL][COL][/COL][COL][/COL][COL]9,400&#160;[/COL][COL][/COL][COL][/COL][COL]6,795&#160;[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Gross profit[/COL][COL][/COL][COL]4,631&#160;[/COL][COL][/COL][COL][/COL][COL]11,523&#160;[/COL][COL][/COL][COL][/COL][COL]12,476&#160;[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Operating expenses[/COL][COL]&#160;[/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Research and development[/COL][COL][/COL][COL]1,403&#160;[/COL][COL][/COL][COL][/COL][COL]5,387&#160;[/COL][COL][/COL][COL][/COL][COL]3,802&#160;[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Sales, general and administrative[/COL][COL][/COL][COL]557&#160;[/COL][COL][/COL][COL][/COL][COL]1,815&#160;[/COL][COL][/COL][COL][/COL][COL]1,603&#160;[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Acquisition termination cost[/COL][COL][/COL][COL]&#8212;&#160;[/COL][COL][/COL][COL][/COL][COL]1,353&#160;[/COL][COL][/COL][COL][/COL][COL]&#8212;&#160;[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Total operating expenses[/COL][COL][/COL][COL]1,960&#160;[/COL][COL][/COL][COL][/COL][COL]8,555&#160;[/COL][COL][/COL][COL][/COL][COL]5,405&#160;[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Income from operations[/COL][COL][/COL][COL]2,671&#160;[/COL][COL][/COL][COL][/COL][COL]2,968&#160;[/COL][COL][/COL][COL][/COL][COL]7,071&#160;[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Interest income[/COL][COL][/COL][COL]7&#160;[/COL][COL][/COL][COL][/COL][COL]152&#160;[/COL][COL][/COL][COL][/COL][COL]20&#160;[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Interest expense[/COL][COL][/COL][COL](62)[/COL][COL][/COL][COL][/COL][COL](198)[/COL][COL][/COL][COL][/COL][COL](175)[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Other, net[/COL][COL][/COL][COL]22&#160;[/COL][COL][/COL][COL][/COL][COL](29)[/COL][COL][/COL][COL][/COL][COL]160&#160;[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Other income (expense), net[/COL][COL][/COL][COL](33)[/COL][COL][/COL][COL][/COL][COL](75)[/COL][COL][/COL][COL][/COL][COL]5&#160;[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Income before income tax[/COL][COL][/COL][COL]2,638&#160;[/COL][COL][/COL][COL][/COL][COL]2,893&#160;[/COL][COL][/COL][COL][/COL][COL]7,076&#160;[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Income tax expense (benefit)[/COL][COL][/COL][COL]174&#160;[/COL][COL][/COL][COL][/COL][COL](61)[/COL][COL][/COL][COL][/COL][COL]327&#160;[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Net income[/COL][COL][/COL][COL][/COL][COL]$[/COL][COL]2,464&#160;[/COL][COL][/COL][COL][/COL][COL]$[/COL][COL]2,954&#160;[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Net income per share:[/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Basic[/COL][COL][/COL][COL][/COL][COL]$[/COL][COL]0.99&#160;[/COL][COL][/COL][COL][/COL][COL]$[/COL][COL]1.18&#160;[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Diluted[/COL][COL][/COL][COL][/COL][COL]$[/COL][COL]0.97&#160;[/COL][COL][/COL][COL][/COL][COL]$[/COL][COL]1.17&#160;[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Weighted average shares used in per share computation:[/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Basic[/COL][COL][/COL][COL]2,499&#160;[/COL][COL][/COL][COL][/COL][COL]2,495&#160;[/COL][COL][/COL][COL][/COL][COL]2,493&#160;[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Diluted[/COL][COL][/COL][COL]2,538&#160;[/COL][COL][/COL][COL][/COL][COL]2,517&#160;[/COL][COL][/COL][COL][/COL][COL]2,532&#160;[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL]
+[/ROW]
+
+=== RAW AI OUTPUT ===
+{ "metrics": [] }

@@ -1,5 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
+import { fetchWithTimeout } from '@/lib/utils';
 import type { Company, Trend, Signal } from '@/lib/types/database';
+
+const FETCH_TIMEOUT_MS = 10000;
 
 export interface FundamentalChange {
   type: 'trend' | 'signal';
@@ -60,15 +63,23 @@ export function useFundamentalChanges(limit: number = 6) {
   return useQuery({
     queryKey: ['discover', 'fundamental-changes', limit],
     queryFn: async (): Promise<FundamentalChange[]> => {
-      const response = await fetch(`/api/discover/fundamental-changes?limit=${limit}`);
-      const data: FundamentalChangesResponse = await response.json();
-
-      if (data.success && data.changes) {
-        return data.changes;
+      try {
+        const response = await fetchWithTimeout(
+          `/api/discover/fundamental-changes?limit=${limit}`,
+          {},
+          FETCH_TIMEOUT_MS
+        );
+        const data: FundamentalChangesResponse = await response.json();
+        if (data.success && data.changes) return data.changes;
+        return [];
+      } catch (e) {
+        const err = e as Error;
+        if (err?.name === 'AbortError' || err?.message === 'Failed to fetch') return [];
+        throw e;
       }
-      throw new Error(data.error || 'Failed to fetch fundamental changes');
     },
     staleTime: 60 * 1000, // 1 minute
+    retry: 1,
   });
 }
 
@@ -79,15 +90,23 @@ export function useRecentFilings(limit: number = 10) {
   return useQuery({
     queryKey: ['discover', 'recent-filings', limit],
     queryFn: async (): Promise<RecentFiling[]> => {
-      const response = await fetch(`/api/discover/recent-filings?limit=${limit}`);
-      const data: RecentFilingsResponse = await response.json();
-
-      if (data.success && data.filings) {
-        return data.filings;
+      try {
+        const response = await fetchWithTimeout(
+          `/api/discover/recent-filings?limit=${limit}`,
+          {},
+          FETCH_TIMEOUT_MS
+        );
+        const data: RecentFilingsResponse = await response.json();
+        if (data.success && data.filings) return data.filings;
+        return [];
+      } catch (e) {
+        const err = e as Error;
+        if (err?.name === 'AbortError' || err?.message === 'Failed to fetch') return [];
+        throw e;
       }
-      throw new Error(data.error || 'Failed to fetch recent filings');
     },
     staleTime: 60 * 1000, // 1 minute
+    retry: 1,
   });
 }
 
@@ -98,14 +117,22 @@ export function useCompaniesToWatch(limit: number = 10) {
   return useQuery({
     queryKey: ['discover', 'companies-to-watch', limit],
     queryFn: async (): Promise<CompanyToWatch[]> => {
-      const response = await fetch(`/api/discover/companies-to-watch?limit=${limit}`);
-      const data: CompaniesToWatchResponse = await response.json();
-
-      if (data.success && data.companies) {
-        return data.companies;
+      try {
+        const response = await fetchWithTimeout(
+          `/api/discover/companies-to-watch?limit=${limit}`,
+          {},
+          FETCH_TIMEOUT_MS
+        );
+        const data: CompaniesToWatchResponse = await response.json();
+        if (data.success && data.companies) return data.companies;
+        return [];
+      } catch (e) {
+        const err = e as Error;
+        if (err?.name === 'AbortError' || err?.message === 'Failed to fetch') return [];
+        throw e;
       }
-      throw new Error(data.error || 'Failed to fetch companies to watch');
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 1,
   });
 }

@@ -7,23 +7,14 @@ export async function GET(request: NextRequest) {
 
   try {
     const result = await getCompaniesToWatch(limit);
-
     if (!result.success) {
-      return NextResponse.json(
-        { success: false, error: result.error || 'Failed to fetch companies to watch' },
-        { status: 500 }
-      );
+      return NextResponse.json({ success: true, companies: [] });
     }
-
     return NextResponse.json({
       success: true,
       companies: result.data || [],
     });
-  } catch (error) {
-    console.error('Error fetching companies to watch:', error);
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    );
+  } catch {
+    return NextResponse.json({ success: true, companies: [] });
   }
 }

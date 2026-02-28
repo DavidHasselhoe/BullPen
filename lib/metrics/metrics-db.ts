@@ -25,21 +25,51 @@ export async function createFinancialMetric(params: {
   periodType: PeriodType;
   periodStartDate?: string;
   periodEndDate: string;
+  fiscalYear: number;
+  fiscalQuarter: number | null;
+  accountingBasis?: string;
+  currency?: string;
+  splitAdjusted?: boolean;
   metadata?: Record<string, unknown>;
 }): Promise<MetricDBResult<FinancialMetric>> {
   const supabase = createServerClient();
 
+  const isEPS = params.metricType === 'eps_basic' || params.metricType === 'eps_diluted';
+  const debugMetrics = process.env.DEBUG_METRICS === '1';
+  if (debugMetrics && isEPS) {
+    console.log(`[createFinancialMetric] ${params.metricType}:`, {
+      value: params.value,
+      periodType: params.periodType,
+      periodEndDate: params.periodEndDate,
+      fiscalYear: params.fiscalYear,
+      fiscalQuarter: params.fiscalQuarter,
+      splitAdjusted: params.splitAdjusted,
+      filingId: params.filingId,
+    });
+  }
+
   try {
     // Check if metric already exists (idempotent)
-    const { data: existing } = await supabase
+    const { data: existing, error: existingError } = await supabase
       .from('financial_metrics')
       .select('id')
       .eq('filing_id', params.filingId)
       .eq('metric_type', params.metricType)
       .eq('period_end_date', params.periodEndDate)
-      .single();
+      .maybeSingle();
+
+    if (existingError && existingError.code !== 'PGRST116') {
+      if (debugMetrics && isEPS) {
+        console.log(`[createFinancialMetric] Error checking existing:`, existingError);
+      }
+      return { success: false, error: existingError.message };
+    }
 
     if (existing) {
+      if (debugMetrics && isEPS) {
+        console.log(`[createFinancialMetric] Updating existing:`, existing.id);
+      }
+      
       // Update existing metric
       const { data, error } = await supabase
         .from('financial_metrics')
@@ -48,15 +78,26 @@ export async function createFinancialMetric(params: {
           unit: params.unit,
           period_type: params.periodType,
           period_start_date: params.periodStartDate || null,
+          fiscal_year: params.fiscalYear,
+          fiscal_quarter: params.fiscalQuarter,
+          accounting_basis: params.accountingBasis || 'gaap',
+          currency: params.currency || 'USD',
+          split_adjusted: params.splitAdjusted || false,
         })
         .eq('id', existing.id)
         .select()
         .single();
 
       if (error) {
+        if (debugMetrics && isEPS) {
+          console.log(`[createFinancialMetric] Update error:`, error);
+        }
         return { success: false, error: error.message };
       }
 
+      if (debugMetrics && isEPS) {
+        console.log(`[createFinancialMetric] Updated:`, data.id);
+      }
       return { success: true, data };
     }
 
@@ -70,9 +111,23 @@ export async function createFinancialMetric(params: {
       period_type: params.periodType,
       period_start_date: params.periodStartDate || null,
       period_end_date: params.periodEndDate,
+      fiscal_year: params.fiscalYear,
+      fiscal_quarter: params.fiscalQuarter,
+      accounting_basis: params.accountingBasis || 'gaap',
+      currency: params.currency || 'USD',
+      split_adjusted: params.splitAdjusted || false,
       is_restated: false,
       metadata: params.metadata || {},
     };
+
+    if (debugMetrics && isEPS) {
+      console.log(`[createFinancialMetric] Inserting:`, {
+        metricData: {
+          ...metricData,
+          value: metricData.value.toString(), // Convert to string for logging
+        },
+      });
+    }
 
     const { data, error } = await supabase
       .from('financial_metrics')
@@ -81,7 +136,23 @@ export async function createFinancialMetric(params: {
       .single();
 
     if (error) {
+      if (debugMetrics && isEPS) {
+        console.log(`[createFinancialMetric] Insert error:`, {
+          error: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint,
+          metricData: {
+            ...metricData,
+            value: metricData.value.toString(),
+          },
+        });
+      }
       return { success: false, error: error.message };
+    }
+
+    if (debugMetrics && isEPS) {
+      console.log(`[createFinancialMetric] Inserted:`, data?.id);
     }
 
     return { success: true, data };
@@ -106,6 +177,11 @@ export async function createFinancialMetrics(
     periodType: PeriodType;
     periodStartDate?: string;
     periodEndDate: string;
+    fiscalYear: number;
+    fiscalQuarter: number | null;
+    accountingBasis?: string;
+    currency?: string;
+    splitAdjusted?: boolean;
     metadata?: Record<string, unknown>;
   }>
 ): Promise<MetricDBResult<FinancialMetric[]>> {

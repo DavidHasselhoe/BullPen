@@ -1,0 +1,77 @@
+=== STRUCTURED TEXT (1436 chars) ===
+[ROW]
+
+[/ROW]
+
+[ROW]
+[COL]&#160;&#160;[/COL][COL]Year Ended[/COL]
+[/ROW]
+
+[ROW]
+[COL]&#160;[/COL][COL]Jan 26, 2025[/COL][COL]Jan 28, 2024[/COL]
+[/ROW]
+
+[ROW]
+[COL]Revenue[/COL][COL]100.0&#160;[/COL][COL]%[/COL]
+[/ROW]
+
+[ROW]
+[COL]Cost of revenue[/COL][COL]25.0&#160;[/COL][COL][COL]27.3&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Gross profit[/COL][COL]75.0&#160;[/COL][COL][COL]72.7&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Operating expenses[/COL][COL]&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Research and development[/COL][COL]9.9&#160;[/COL][COL][COL]14.2&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Sales, general and administrative[/COL][COL]2.7&#160;[/COL][COL][COL]4.4&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Total operating expenses[/COL][COL]12.6&#160;[/COL][COL][COL]18.6&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Operating income[/COL][COL]62.4&#160;[/COL][COL][COL]54.1&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Interest income[/COL][COL]1.4&#160;[/COL][COL][COL]1.4&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Interest expense[/COL][COL](0.2)[/COL][COL][COL](0.4)[/COL]
+[/ROW]
+
+[ROW]
+[COL]Other, net[/COL][COL]0.8&#160;[/COL][COL][COL]0.4&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Other income (expense), net[/COL][COL]2.0&#160;[/COL][COL][COL]1.4&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Income before income tax[/COL][COL]64.4&#160;[/COL][COL][COL]55.5&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Income tax expense[/COL][COL]8.6&#160;[/COL][COL][COL]6.6&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Net income[/COL][COL]55.8&#160;[/COL][COL]%[/COL]
+[/ROW]
+
+=== RAW AI OUTPUT ===
+{
+  "metrics": []
+}

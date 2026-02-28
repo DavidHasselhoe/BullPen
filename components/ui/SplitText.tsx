@@ -57,7 +57,7 @@ export function SplitText({
         transition: {
           delay: delay + i * stagger,
           duration,
-          ease: [0.25, 0.46, 0.45, 0.94], // easeOutQuart
+          ease: [0.25, 0.46, 0.45, 0.94] as any, // easeOutQuart
         },
       }),
     };

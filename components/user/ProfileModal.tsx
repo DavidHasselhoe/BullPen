@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import {
   Dialog,
@@ -23,8 +23,11 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { ProfileAvatar } from '@/components/user/ProfileAvatar';
 import { Loader2, Upload, User, Briefcase, Target, TrendingUp, Crown, Calendar, CheckCircle2 } from 'lucide-react';
 import { createBrowserClient } from '@/lib/supabase/client';
+import { uploadAvatarToStorage } from '@/lib/storage/avatar-upload';
+import { cn } from '@/lib/utils';
 
 interface ProfileModalProps {
   open: boolean;
@@ -39,6 +42,7 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
   // Form state
   const [fullName, setFullName] = useState('');
@@ -48,6 +52,7 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
   const [marketFocus, setMarketFocus] = useState<'US' | 'EU' | 'BOTH' | ''>('');
   const [riskProfile, setRiskProfile] = useState<'conservative' | 'balanced' | 'aggressive' | ''>('');
   const [avatarUrl, setAvatarUrl] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load user data
   useEffect(() => {
@@ -64,6 +69,34 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
     }
   }, [user, open]);
 
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    setIsUploadingAvatar(true);
+    setError(null);
+
+    try {
+      const uploadResult = await uploadAvatarToStorage(user.id, file);
+
+      if (!uploadResult.success || !uploadResult.publicUrl) {
+        throw new Error(uploadResult.error || 'Upload failed');
+      }
+
+      // Update avatar URL in state
+      setAvatarUrl(uploadResult.publicUrl);
+
+      // Optionally auto-save
+      // For now, user needs to click "Save Changes" to persist
+    } catch (err: any) {
+      setError(err.message || 'Failed to upload avatar');
+    } finally {
+      setIsUploadingAvatar(false);
+      // Reset input so same file can be selected again
+      event.target.value = '';
+    }
+  };
+
   const handleSave = async () => {
     if (!user) return;
 
@@ -74,27 +107,42 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
     try {
       const supabase = createBrowserClient();
 
-      const { error: updateError } = await supabase
+      const updateData = {
+        full_name: fullName.trim() || null,
+        username: username.trim() || null,
+        bio: bio.trim() || null,
+        experience_level: experienceLevel || null,
+        market_focus: marketFocus || null,
+        risk_profile: riskProfile || null,
+        avatar_url: avatarUrl.trim() || null,
+      };
+
+      const { data: updatedData, error: updateError } = await supabase
         .from('users')
-        .update({
-          full_name: fullName || null,
-          username: username || null,
-          bio: bio || null,
-          experience_level: experienceLevel || null,
-          market_focus: marketFocus || null,
-          risk_profile: riskProfile || null,
-          avatar_url: avatarUrl || null,
-        })
-        .eq('id', user.id);
+        .update(updateData as any)
+        .eq('id', user.id)
+        .select('id, email, username, full_name, avatar_url, role, bio, experience_level, market_focus, risk_profile, created_at, updated_at, last_login_at')
+        .single();
 
       if (updateError) {
-        throw updateError;
+        console.error('[ProfileModal] Database update error:', updateError);
+        throw new Error(updateError.message || 'Failed to update profile in database');
+      }
+
+      if (!updatedData) {
+        throw new Error('Update succeeded but no data returned');
       }
 
       setSuccess(true);
-      setTimeout(() => {
+      
+      // Refresh user data via router instead of full page reload
+      setTimeout(async () => {
         setSuccess(false);
-        // Refresh page to update user data
+        // Trigger a refresh of the auth hook
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('auth:refresh'));
+        }
+        // Also reload to ensure UI is fully updated
         window.location.reload();
       }, 1500);
     } catch (err: any) {
@@ -135,7 +183,7 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[98vw] !max-w-[1800px] sm:!max-w-[1800px] h-[85vh] overflow-hidden flex flex-col p-0">
+      <DialogContent className="w-[90vw] !max-w-[1000px] sm:!max-w-[1000px] h-[85vh] overflow-hidden flex flex-col p-0">
         <DialogHeader className="px-6 pt-6 pb-4 border-b">
           <DialogTitle>Profile Settings</DialogTitle>
           <DialogDescription>
@@ -145,7 +193,7 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
 
         <div className="flex flex-1 overflow-hidden">
           {/* Sidebar Navigation */}
-          <div className="w-44 border-r bg-muted/30 p-4 space-y-2 flex-shrink-0">
+          <div className="w-56 border-r bg-muted/30 p-4 space-y-2 flex-shrink-0">
             {sections.map((section) => (
               <button
                 key={section.id}
@@ -166,8 +214,14 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
                 <Crown className="h-3 w-3" />
                 <span className="font-medium">Account Tier</span>
               </div>
-              <Badge variant="secondary" className="w-full justify-center">
-                {user.account_tier || 'free'}
+              <Badge 
+                variant="secondary" 
+                className={cn(
+                  "w-full justify-center",
+                  user.account_tier === 3 && "border-2 border-[#FFD700] text-[#FFD700]"
+                )}
+              >
+                {user.account_tier === 3 ? 'Gold' : 'Normal'}
               </Badge>
             </div>
             <div className="px-3 py-2 space-y-1">
@@ -182,30 +236,45 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
           {/* Main Content */}
           <div className="flex-1 overflow-y-auto p-6 min-h-0 relative">
             {activeSection === 'basic' && (
-              <div className="space-y-6 max-w-5xl">
+              <div className="space-y-6 max-w-2xl">
                 {/* Avatar Section */}
                 <div className="flex items-center gap-6">
-                  <Avatar className="h-24 w-24">
-                    <AvatarImage src={avatarUrl || undefined} alt={displayName} />
-                    <AvatarFallback className="bg-primary/10 text-primary text-2xl">
-                      {getInitials()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 space-y-2">
-                    <Label htmlFor="avatar-url">Profile Picture URL</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        id="avatar-url"
-                        placeholder="https://example.com/avatar.jpg"
-                        value={avatarUrl}
-                        onChange={(e) => setAvatarUrl(e.target.value)}
+                  <ProfileAvatar
+                    avatarUrl={avatarUrl}
+                    displayName={displayName}
+                    fallback={getInitials()}
+                    tier={user?.account_tier ? parseInt(user.account_tier.toString()) : 1}
+                    size="xl"
+                    showTooltip={true}
+                  />
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center gap-3">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/jpeg,image/jpg,image/png,image/webp"
+                        onChange={handleAvatarUpload}
+                        className="hidden"
+                        disabled={isUploadingAvatar}
                       />
-                      <Button variant="outline" size="icon" disabled>
-                        <Upload className="h-4 w-4" />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        disabled={isUploadingAvatar}
+                        onClick={() => fileInputRef.current?.click()}
+                        className="cursor-pointer"
+                      >
+                        {isUploadingAvatar ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Upload className="h-4 w-4" />
+                        )}
                       </Button>
+                      <span className="text-sm text-muted-foreground">Upload profile picture</span>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Upload functionality coming soon
+                      JPEG, PNG, or WebP image (max 5 MB)
                     </p>
                   </div>
                 </div>
@@ -248,12 +317,42 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
                       {bio.length}/500 characters
                     </p>
                   </div>
+
+                  {/* Profile Badges */}
+                  {(experienceLevel || marketFocus || riskProfile) && (
+                    <>
+                      <Separator />
+                      <div className="space-y-3">
+                        <Label className="text-sm font-medium">Profile Badges</Label>
+                        <div className="flex flex-wrap gap-2">
+                          {experienceLevel && (
+                            <Badge variant="secondary" className="capitalize">
+                              {experienceLevel}
+                            </Badge>
+                          )}
+                          {marketFocus && (
+                            <Badge variant="secondary">
+                              {marketFocus === 'US' ? 'US Markets' : marketFocus === 'EU' ? 'EU Markets' : 'US & EU Markets'}
+                            </Badge>
+                          )}
+                          {riskProfile && (
+                            <Badge variant="secondary" className="capitalize">
+                              {riskProfile}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Your profile badges are displayed based on your preferences
+                        </p>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             )}
 
             {activeSection === 'preferences' && (
-              <div className="space-y-6 max-w-5xl">
+              <div className="space-y-6 max-w-2xl">
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="experience-level" className="flex items-center gap-2">
@@ -278,6 +377,13 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
                     <p className="text-xs text-muted-foreground">
                       We'll customize data display based on your experience level
                     </p>
+                    {experienceLevel && (
+                      <div className="mt-2">
+                        <Badge variant="secondary" className="capitalize">
+                          {experienceLevel}
+                        </Badge>
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -298,6 +404,13 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
                         <SelectItem value="BOTH">Both US & EU</SelectItem>
                       </SelectContent>
                     </Select>
+                    {marketFocus && (
+                      <div className="mt-2">
+                        <Badge variant="outline">
+                          {marketFocus === 'US' ? 'US Markets' : marketFocus === 'EU' ? 'EU Markets' : 'US & EU Markets'}
+                        </Badge>
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -320,6 +433,13 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
                         <SelectItem value="aggressive">Aggressive</SelectItem>
                       </SelectContent>
                     </Select>
+                    {riskProfile && (
+                      <div className="mt-2">
+                        <Badge variant="secondary" className="capitalize">
+                          {riskProfile}
+                        </Badge>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

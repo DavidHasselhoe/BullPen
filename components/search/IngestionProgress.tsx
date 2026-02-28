@@ -91,12 +91,13 @@ export function IngestionProgress({ ticker, onComplete, onError }: IngestionProg
           eventSource.close();
         }
       } catch (err) {
-        console.error('Error parsing SSE message:', err);
+        // SSE parsing error - silently handle
+        // Errors will be shown via error state
       }
     };
 
-    eventSource.onerror = (err) => {
-      console.error('SSE error:', err);
+    eventSource.onerror = () => {
+      // SSE connection error - will be handled by error state
       // Don't set error immediately - might be connection issue
       // Only close if already complete or after timeout
       if (eventSource.readyState === EventSource.CLOSED) {

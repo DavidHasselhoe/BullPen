@@ -1,14 +1,21 @@
 // Server actions for Metrics UI
 // Read-only queries for frontend display
+// Phase 1: Gates charts behind re-ingested data only
 
 import { createServerClient } from '../supabase/client';
 import type { MetricType, PeriodType } from '../types/database';
+import { FISCAL_REFACTOR_RELEASE_DATE } from './ingestion-constants';
 
 export interface MetricDataPoint {
   periodEndDate: string;
   value: number;
   unit: string;
   filingId: string;
+  fiscalYear?: number | null;
+  fiscalQuarter?: number | null;
+  accountingBasis?: string;
+  /** When set, indicates YTD (e.g. 9 = nine months) - computed from quarters when no 10-K for current year */
+  ytdMonths?: number;
 }
 
 export interface MetricTimeSeries {
@@ -26,8 +33,20 @@ export interface DeltaCard {
   isPositive: boolean;
 }
 
+/** Metrics that can be summed for YTD (additive); EPS and balance-sheet items are excluded */
+const YTD_SUMMABLE_METRICS: MetricType[] = [
+  'revenue',
+  'cost_of_revenue',
+  'gross_profit',
+  'operating_income',
+  'net_income',
+  'operating_cash_flow',
+];
+
 /**
- * Gets time-series metrics for a company, filtered by period type
+ * Gets time-series metrics for a company, filtered by period type.
+ * - Annual: ONLY 10-K/20-F data for completed years; current fiscal year YTD (9/6mo) if no 10-K yet.
+ * - Quarterly: quarterly metrics only.
  */
 export async function getMetricsTimeSeries(
   companyId: string,
@@ -37,16 +56,113 @@ export async function getMetricsTimeSeries(
   const supabase = createServerClient();
 
   try {
-    const { data, error } = await supabase
-      .from('financial_metrics')
-      .select('period_end_date, value, unit, filing_id')
-      .eq('company_id', companyId)
-      .eq('metric_type', metricType)
-      .eq('period_type', periodType)
-      .order('period_end_date', { ascending: true });
+    // Phase 1: Gate charts behind re-ingested data only
+    const baseFilter = (q: ReturnType<typeof supabase.from>) =>
+      q
+        .eq('company_id', companyId)
+        .eq('metric_type', metricType)
+        .gte('ingested_at', FISCAL_REFACTOR_RELEASE_DATE.toISOString());
 
-    if (error) {
-      console.error('Error fetching metrics:', error);
+    let data: Array<{
+      period_end_date: string;
+      value: number;
+      unit: string;
+      filing_id: string;
+      fiscal_year: number | null;
+      fiscal_quarter: number | null;
+      accounting_basis: string | null;
+      period_type: string;
+    }>;
+    let unit = 'USD';
+
+    if (periodType === 'quarterly') {
+      // CRITICAL: Quarterly = only period_type='quarterly' from any filing
+      let query = baseFilter(
+        supabase
+          .from('financial_metrics')
+          .select('period_end_date, value, unit, filing_id, fiscal_year, fiscal_quarter, accounting_basis, period_type')
+          .eq('period_type', 'quarterly')
+      );
+      if (metricType === 'eps_basic' || metricType === 'eps_diluted') {
+        query = query.eq('split_adjusted', true);
+      }
+      const { data: qData, error } = await query.order('period_end_date', { ascending: true });
+      if (error) {
+        console.error('Error fetching quarterly metrics:', error);
+        return null;
+      }
+      if (!qData || qData.length === 0) return null;
+      data = qData;
+      unit = data[0].unit;
+    } else if (periodType === 'annual') {
+      // Annual: ONLY 10-K/20-F filings for completed years
+      const { data: annualFilings } = await supabase
+        .from('filings')
+        .select('id')
+        .eq('company_id', companyId)
+        .in('filing_type', ['10-K', '20-F']);
+
+      const filingIds = annualFilings?.map((f) => f.id) ?? [];
+      if (filingIds.length === 0) {
+        // No 10-K/20-F at all - try YTD for current year only
+        data = [];
+      } else {
+        const query = baseFilter(
+          supabase
+            .from('financial_metrics')
+            .select('period_end_date, value, unit, filing_id, fiscal_year, fiscal_quarter, accounting_basis, period_type')
+            .eq('period_type', 'annual')
+            .in('filing_id', filingIds)
+        );
+        const { data: aData, error } = await query.order('period_end_date', { ascending: true });
+        if (error) {
+          console.error('Error fetching annual metrics:', error);
+          return null;
+        }
+        data = aData ?? [];
+        unit = data[0]?.unit ?? 'USD';
+      }
+
+      // Current fiscal year YTD: if no 10-K for latest FY, add 9mo or 6mo from quarters
+      const canSumYTD = YTD_SUMMABLE_METRICS.includes(metricType);
+      if (canSumYTD && data) {
+        const annualFiscalYears = new Set((data || []).map((d) => d.fiscal_year).filter(Boolean) as number[]);
+        const { data: qData } = await supabase
+          .from('financial_metrics')
+          .select('period_end_date, value, unit, fiscal_year, fiscal_quarter')
+          .eq('company_id', companyId)
+          .eq('metric_type', metricType)
+          .eq('period_type', 'quarterly')
+          .gte('ingested_at', FISCAL_REFACTOR_RELEASE_DATE.toISOString())
+          .order('period_end_date', { ascending: true });
+        const quarters = qData ?? [];
+        if (quarters.length > 0) {
+          const maxQtr = quarters[quarters.length - 1];
+          const currentFY = maxQtr.fiscal_year ?? new Date(maxQtr.period_end_date).getFullYear();
+          if (!annualFiscalYears.has(currentFY)) {
+            const fyQuarters = quarters.filter((q) => (q.fiscal_year ?? new Date(q.period_end_date).getFullYear()) === currentFY);
+            if (fyQuarters.length > 0) {
+              const sum = fyQuarters.reduce((s, q) => s + (typeof q.value === 'number' ? q.value : parseFloat(String(q.value)) || 0), 0);
+              const lastQ = fyQuarters[fyQuarters.length - 1];
+              const monthsMap: Record<number, number> = { 1: 3, 2: 6, 3: 9, 4: 12 };
+              const ytdMonths = monthsMap[lastQ.fiscal_quarter ?? 3] ?? 9;
+              const ytdPoint = {
+                period_end_date: lastQ.period_end_date,
+                value: sum,
+                unit: lastQ.unit ?? unit,
+                filing_id: 'ytd-computed',
+                fiscal_year: currentFY,
+                fiscal_quarter: null,
+                accounting_basis: null,
+                period_type: 'annual',
+                _ytdMonths: ytdMonths,
+              };
+              data = [...data, ytdPoint];
+            }
+          }
+        }
+      }
+    } else {
       return null;
     }
 
@@ -54,19 +170,34 @@ export async function getMetricsTimeSeries(
       return null;
     }
 
-    // Use the unit from the first record (should be consistent)
-    const unit = data[0].unit;
+    const invalidPeriodTypes = data.filter((d) => d.period_type !== periodType);
+    let validData = data;
+    if (invalidPeriodTypes.length > 0) {
+      validData = data.filter((d) => d.period_type === periodType);
+      if (validData.length === 0) return null;
+    }
+
+    // Sort by period_end_date; YTD point may be out of order
+    validData = [...validData].sort((a, b) => new Date(a.period_end_date).getTime() - new Date(b.period_end_date).getTime());
 
     return {
       metricType,
       periodType,
-      unit,
-      data: data.map(d => ({
-        periodEndDate: d.period_end_date,
-        value: typeof d.value === 'number' ? d.value : parseFloat(String(d.value)),
-        unit: d.unit,
-        filingId: d.filing_id,
-      })),
+      unit: validData[0].unit ?? unit,
+      data: validData.map((d) => {
+        const pt: MetricDataPoint = {
+          periodEndDate: d.period_end_date,
+          value: typeof d.value === 'number' ? d.value : parseFloat(String(d.value)),
+          unit: d.unit ?? unit,
+          filingId: d.filing_id,
+          fiscalYear: d.fiscal_year,
+          fiscalQuarter: d.fiscal_quarter,
+          accountingBasis: d.accounting_basis,
+        };
+        const ytd = (d as { _ytdMonths?: number })._ytdMonths;
+        if (ytd != null) pt.ytdMonths = ytd;
+        return pt;
+      }),
     };
   } catch (error) {
     console.error('Error in getMetricsTimeSeries:', error);

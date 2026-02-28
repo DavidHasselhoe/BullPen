@@ -29,7 +29,7 @@ export interface SECCompanyInfo {
  */
 const SEC_CONFIG = {
   baseUrl: 'https://data.sec.gov',
-  userAgent: 'BullPen Analytics contact@bullpen.example.com', // Update with real contact
+  userAgent: 'david@hasselo.no', 
   rateLimit: 10, // SEC allows 10 requests per second
 };
 
@@ -316,4 +316,81 @@ export async function getEarningsExhibits(
  */
 export function isValidFilingContent(content: string): boolean {
   return content.length > 1000 && content.includes('SECURITIES AND EXCHANGE COMMISSION');
+}
+
+/**
+ * Full SEC Submissions API response structure.
+ * The `filings.recent` object uses parallel arrays indexed by filing position.
+ */
+export interface SECSubmissions {
+  cik: string;
+  name: string;
+  tickers: string[];
+  exchanges: string[];
+  sic: string;
+  sicDescription: string;
+  fiscalYearEnd: string; // MMDD format e.g. "0930" = September 30
+  stateOfIncorporation: string;
+  filings: {
+    recent: {
+      accessionNumber: string[];
+      filingDate: string[];
+      reportDate: string[];
+      form: string[];
+      primaryDocument: string[];
+      primaryDocDescription: string[];
+      items: string[];
+      size: number[];
+      isXBRL: number[];
+      isInlineXBRL: number[];
+      acceptanceDateTime: string[];
+    };
+    files: Array<{
+      name: string;
+      filingCount: number;
+      filingFrom: string;
+      filingTo: string;
+    }>;
+  };
+}
+
+/**
+ * Fetches the full submission history for a company from the SEC Submissions API.
+ * For companies with more than ~1000 filings, paginates through additional JSON files.
+ */
+export async function getCompanySubmissions(cik: string): Promise<SECSubmissions> {
+  const formattedCik = formatCIK(cik);
+  const url = `${SEC_CONFIG.baseUrl}/submissions/CIK${formattedCik}.json`;
+
+  const response = await fetchFromSEC(url);
+  const data: SECSubmissions = await response.json();
+
+  // Large companies (e.g. Apple, Microsoft) have additional paginated filing files
+  const additionalFiles = data.filings?.files || [];
+  if (additionalFiles.length > 0) {
+    const recentFields = [
+      'accessionNumber', 'filingDate', 'reportDate', 'form',
+      'primaryDocument', 'primaryDocDescription', 'items',
+      'size', 'isXBRL', 'isInlineXBRL', 'acceptanceDateTime',
+    ] as const;
+
+    for (const file of additionalFiles) {
+      try {
+        const additionalUrl = `${SEC_CONFIG.baseUrl}/submissions/${file.name}`;
+        const additionalResponse = await fetchFromSEC(additionalUrl);
+        const additionalData = await additionalResponse.json();
+
+        // The additional file uses the same parallel-array format
+        for (const field of recentFields) {
+          if (Array.isArray(additionalData[field]) && Array.isArray(data.filings.recent[field])) {
+            (data.filings.recent[field] as any[]).push(...additionalData[field]);
+          }
+        }
+      } catch {
+        // Non-fatal: continue with what we have if a pagination file fails
+      }
+    }
+  }
+
+  return data;
 }

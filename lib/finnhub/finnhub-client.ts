@@ -164,3 +164,265 @@ export async function getTopMovers(limit: number = 5): Promise<TopMovers> {
     losers,
   };
 }
+
+/**
+ * Company News Article
+ */
+export interface CompanyNews {
+  category: string;
+  datetime: number;
+  headline: string;
+  id: number;
+  image: string;
+  related: string;
+  source: string;
+  summary: string;
+  url: string;
+}
+
+/**
+ * Fetch company news
+ * @param symbol Stock symbol
+ * @param from Start date (YYYY-MM-DD)
+ * @param to End date (YYYY-MM-DD)
+ */
+export async function getCompanyNews(symbol: string, from: string, to: string): Promise<CompanyNews[]> {
+  const apiKey = getApiKey();
+  const url = `${FINNHUB_BASE_URL}/company-news?symbol=${symbol}&from=${from}&to=${to}&token=${apiKey}`;
+
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Finnhub API error: ${response.status} - ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  
+  // Check for error response
+  if (data.error) {
+    throw new Error(`Finnhub API error: ${data.error}`);
+  }
+
+  return data as CompanyNews[];
+}
+
+/**
+ * Earnings Calendar Event
+ */
+export interface EarningsCalendar {
+  date: string;
+  epsActual: number | null;
+  epsEstimate: number | null;
+  hour: string;
+  quarter: number | null;
+  revenueActual: number | null;
+  revenueEstimate: number | null;
+  symbol: string;
+  year: number | null;
+}
+
+/**
+ * Fetch earnings calendar
+ * @param from Start date (YYYY-MM-DD)
+ * @param to End date (YYYY-MM-DD)
+ * @param symbol Optional stock symbol to filter
+ */
+export async function getEarningsCalendar(from: string, to: string, symbol?: string): Promise<EarningsCalendar[]> {
+  const apiKey = getApiKey();
+  let url = `${FINNHUB_BASE_URL}/calendar/earnings?from=${from}&to=${to}&token=${apiKey}`;
+  
+  if (symbol) {
+    url += `&symbol=${symbol}`;
+  }
+
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Finnhub API error: ${response.status} - ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  
+  // Check for error response
+  if (data.error) {
+    throw new Error(`Finnhub API error: ${data.error}`);
+  }
+
+  return (data.earningsCalendar || []) as EarningsCalendar[];
+}
+
+/**
+ * Company Earnings (EPS Surprises)
+ */
+export interface CompanyEarnings {
+  actual: number | null;
+  estimate: number | null;
+  period: string;
+  surprise: number | null;
+  surprisePercent: number | null;
+  symbol: string;
+  year: number;
+}
+
+/**
+ * Fetch company earnings (EPS surprises)
+ * @param symbol Stock symbol
+ * @param limit Limit number of results (default: 4)
+ */
+export async function getCompanyEarnings(symbol: string, limit: number = 4): Promise<CompanyEarnings[]> {
+  const apiKey = getApiKey();
+  const url = `${FINNHUB_BASE_URL}/stock/earnings?symbol=${symbol}&token=${apiKey}`;
+
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Finnhub API error: ${response.status} - ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  
+  // Check for error response
+  if (data.error) {
+    throw new Error(`Finnhub API error: ${data.error}`);
+  }
+
+  const earnings = (data || []) as CompanyEarnings[];
+  return earnings.slice(0, limit);
+}
+
+/**
+ * Recommendation Trend Data
+ */
+export interface RecommendationTrend {
+  buy: number;
+  hold: number;
+  period: string;
+  sell: number;
+  strongBuy: number;
+  strongSell: number;
+  symbol: string;
+}
+
+/**
+ * Fetch recommendation trends
+ * @param symbol Stock symbol
+ */
+export async function getRecommendationTrends(symbol: string): Promise<RecommendationTrend[]> {
+  const apiKey = getApiKey();
+  const url = `${FINNHUB_BASE_URL}/stock/recommendation?symbol=${symbol}&token=${apiKey}`;
+
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Finnhub API error: ${response.status} - ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  
+  // Check for error response
+  if (data.error) {
+    throw new Error(`Finnhub API error: ${data.error}`);
+  }
+
+  return (data || []) as RecommendationTrend[];
+}
+
+/**
+ * Stock Candles (OHLC) Response
+ * Finnhub returns arrays aligned by index
+ */
+export interface StockCandles {
+  c: number[]; // Close prices
+  h: number[]; // High prices
+  l: number[]; // Low prices
+  o: number[]; // Open prices
+  s: string;  // Status: "ok" | "no_data"
+  t: number[]; // Unix timestamps
+  v: number[]; // Volume
+}
+
+/**
+ * Fetch historical stock candles (OHLC)
+ * Daily resolution (D) limited to ~1 year per request; we chunk for longer ranges
+ * @param symbol Stock symbol (e.g. AAPL, SPY)
+ * @param from Unix timestamp (seconds)
+ * @param to Unix timestamp (seconds)
+ * @param resolution 1, 5, 15, 30, 60 (minutes) or D, W, M for daily/weekly/monthly
+ */
+export async function getStockCandles(
+  symbol: string,
+  from: number,
+  to: number,
+  resolution: 'D' | 'W' | 'M' | '1' | '5' | '15' | '30' | '60' = 'D'
+): Promise<StockCandles> {
+  const apiKey = getApiKey();
+  const url = `${FINNHUB_BASE_URL}/stock/candle?symbol=${symbol}&resolution=${resolution}&from=${from}&to=${to}&token=${apiKey}`;
+
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Finnhub API error: ${response.status} - ${response.statusText}`);
+  }
+
+  const data = await response.json();
+
+  if (data.s === 'no_data' || !data.t || data.t.length === 0) {
+    return {
+      c: [],
+      h: [],
+      l: [],
+      o: [],
+      s: 'no_data',
+      t: [],
+      v: [],
+    };
+  }
+
+  return data as StockCandles;
+}
+
+/**
+ * Fetch historical candles for long date ranges by chunking into 1-year requests
+ */
+export async function getStockCandlesLongRange(
+  symbol: string,
+  fromDate: Date,
+  toDate: Date
+): Promise<StockCandles> {
+  const ONE_YEAR_SEC = 365 * 24 * 60 * 60;
+  const fromSec = Math.floor(fromDate.getTime() / 1000);
+  const toSec = Math.floor(toDate.getTime() / 1000);
+  const span = toSec - fromSec;
+
+  if (span <= ONE_YEAR_SEC) {
+    return getStockCandles(symbol, fromSec, toSec, 'D');
+  }
+
+  // Chunk into 1-year requests
+  const allT: number[] = [];
+  const allO: number[] = [];
+  const allH: number[] = [];
+  const allL: number[] = [];
+  const allC: number[] = [];
+  const allV: number[] = [];
+
+  let currentFrom = fromSec;
+  while (currentFrom < toSec) {
+    const currentTo = Math.min(currentFrom + ONE_YEAR_SEC, toSec);
+    const chunk = await getStockCandles(symbol, currentFrom, currentTo, 'D');
+    if (chunk.t.length > 0) {
+      allT.push(...chunk.t);
+      allO.push(...chunk.o);
+      allH.push(...chunk.h);
+      allL.push(...chunk.l);
+      allC.push(...chunk.c);
+      allV.push(...chunk.v);
+    }
+    currentFrom = currentTo;
+  }
+
+  return {
+    c: allC,
+    h: allH,
+    l: allL,
+    o: allO,
+    s: allT.length > 0 ? 'ok' : 'no_data',
+    t: allT,
+    v: allV,
+  };
+}

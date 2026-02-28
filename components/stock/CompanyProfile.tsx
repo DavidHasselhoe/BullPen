@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import { useQuery } from '@tanstack/react-query';
-import { Building2, Users, Share2, Calendar, MapPin, Tag } from 'lucide-react';
+import { Building2, Users, Share2, Calendar, MapPin, Tag, Loader2 } from 'lucide-react';
 
 interface CompanyProfileProps {
   companyId: string;
@@ -133,13 +133,12 @@ export function CompanyProfile({ companyId }: CompanyProfileProps) {
         }
 
         if (!result.success) {
-          console.error(`[CompanyProfile] API returned unsuccessful:`, result);
           throw new Error(result.error || 'Failed to fetch profile');
         }
 
         return null;
       } catch (err) {
-        console.error(`[CompanyProfile] Error in queryFn:`, err);
+        // Error will be handled by React Query
         throw err;
       }
     },
@@ -154,11 +153,9 @@ export function CompanyProfile({ companyId }: CompanyProfileProps) {
         const elapsed = Date.now() - startedAt;
         
         if (elapsed > 60000) {
-          console.warn(`[CompanyProfile] Stopping polling after 60 seconds for ${companyId}`);
           return false; // Stop polling after 60 seconds
         }
         
-        console.log(`[CompanyProfile] Polling (${Math.round(elapsed / 1000)}s elapsed) for ${companyId}`);
         return 5000; // Poll every 5 seconds while extracting
       }
       return false; // Don't poll if not extracting
@@ -254,16 +251,24 @@ export function CompanyProfile({ companyId }: CompanyProfileProps) {
     // If we just finished loading with no data, give extraction a moment
     // Return skeleton for a short time in case extraction is starting
     return (
-      <Card className="mb-8 opacity-50">
+      <Card className="mb-8">
         <CardHeader>
-          <CardTitle className="text-lg font-semibold text-muted-foreground">
+          <CardTitle className="text-lg font-semibold text-foreground">
             Company Profile
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Profile data is being extracted. Please refresh in a moment.
-          </p>
+          <div className="flex items-center gap-3 py-4">
+            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-foreground">
+                Extracting profile data...
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                This may take a few moments. Data will appear automatically.
+              </p>
+            </div>
+          </div>
         </CardContent>
       </Card>
     );

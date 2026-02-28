@@ -41,26 +41,30 @@ export async function GET(
 
     const companyData = company as Company;
 
-    // Count filings
-    const { count: filingsCount } = await supabase
-      .from('filings')
-      .select('*', { count: 'exact', head: true })
-      .eq('company_id', companyData.id)
-      .eq('processing_status', 'completed');
+    // Run all three count queries in parallel — they are independent
+    const [filingsRes, metricsRes, trendsRes] = await Promise.all([
+      supabase
+        .from('filings')
+        .select('*', { count: 'exact', head: true })
+        .eq('company_id', companyData.id)
+        .eq('processing_status', 'completed'),
+      supabase
+        .from('financial_metrics')
+        .select('*', { count: 'exact', head: true })
+        .eq('company_id', companyData.id),
+      supabase
+        .from('trends')
+        .select('*', { count: 'exact', head: true })
+        .eq('company_id', companyData.id),
+    ]);
 
-    // Count metrics
-    const { count: metricsCount } = await supabase
-      .from('financial_metrics')
-      .select('*', { count: 'exact', head: true })
-      .eq('company_id', companyData.id);
+    const filingsCount = filingsRes.count;
+    const metricsCount = metricsRes.count;
+    const trendsCount = trendsRes.count;
 
-    // Count trends
-    const { count: trendsCount } = await supabase
-      .from('trends')
-      .select('*', { count: 'exact', head: true })
-      .eq('company_id', companyData.id);
-
-    const hasAnyData = (filingsCount || 0) > 0;
+    // hasAnyData = we have financial metrics to display (not just filings)
+    // A company can have filings but 0 metrics if ingestion failed or didn't complete
+    const hasAnyData = (metricsCount || 0) > 0;
 
     return NextResponse.json({
       success: true,

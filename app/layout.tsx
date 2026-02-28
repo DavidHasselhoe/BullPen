@@ -5,6 +5,8 @@ import { Providers } from "./providers";
 import { Navigation } from "@/components/navigation/Navigation";
 import { AuthNavigation } from "@/components/navigation/AuthNavigation";
 import { BackgroundProvider } from "@/components/backgrounds/BackgroundProvider";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
+import { ChatWidget } from "@/components/ai/ChatWidget";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,9 +34,12 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <Providers>
-          <BackgroundProvider />
-          <AuthNavigation />
-          {children}
+          <ThemeProvider>
+            <BackgroundProvider />
+            <AuthNavigation />
+            {children}
+            <ChatWidget />
+          </ThemeProvider>
         </Providers>
       </body>
     </html>

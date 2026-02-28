@@ -1,0 +1,95 @@
+=== STRUCTURED TEXT (886 chars) ===
+[ROW]
+[COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Three Months Ended October&#160;29, 2023[/COL]
+[/ROW]
+
+[ROW]
+[COL]Revenue[/COL]
+[/ROW]
+
+[ROW]
+[COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Operating income (loss)[/COL]
+[/ROW]
+
+[ROW]
+[COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Three Months Ended October&#160;30, 2022[/COL]
+[/ROW]
+
+[ROW]
+[COL]Revenue[/COL]
+[/ROW]
+
+[ROW]
+[COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Operating income (loss)[/COL]
+[/ROW]
+
+[ROW]
+[COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Nine Months Ended October&#160;29, 2023[/COL]
+[/ROW]
+
+[ROW]
+[COL]Revenue[/COL]
+[/ROW]
+
+[ROW]
+[COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Operating income (loss)[/COL]
+[/ROW]
+
+[ROW]
+[COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Nine Months Ended October&#160;30, 2022[/COL]
+[/ROW]
+
+[ROW]
+[COL]Revenue[/COL]
+[/ROW]
+
+[ROW]
+[COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Operating income (loss)[/COL]
+[/ROW]
+
+=== RAW AI OUTPUT ===
+{ "metrics": [] }

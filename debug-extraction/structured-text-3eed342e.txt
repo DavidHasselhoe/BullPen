@@ -1,0 +1,51 @@
+=== STRUCTURED TEXT (577 chars) ===
+[ROW]
+
+[/ROW]
+
+[ROW]
+[COL]Three Months Ended[/COL]
+[/ROW]
+
+[ROW]
+[COL]Apr 27, 2025[/COL][COL]Apr 28, 2024[/COL]
+[/ROW]
+
+[ROW]
+
+[/ROW]
+
+[ROW]
+[COL](In millions)[/COL]
+[/ROW]
+
+[ROW]
+[COL]&#160;[/COL][COL]&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]$[/COL][COL]20,739&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]9,017&#160;[/COL][COL][COL]4,037&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]7,158&#160;[/COL][COL][COL]4,373&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]5,522&#160;[/COL][COL][COL]2,491&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]1,626&#160;[/COL][COL][COL]1,647&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]$[/COL][COL]44,062&#160;[/COL]
+[/ROW]
+
+=== RAW AI OUTPUT ===
+{ "metrics": [] }

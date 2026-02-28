@@ -16,7 +16,7 @@ interface StockStatusResponse {
 
 /**
  * TanStack Query hook to check stock ingestion status
- * Polls every 3 seconds if data is missing
+ * Polls every 8 seconds if data is missing (reduced from 3s to lower Supabase load)
  */
 export function useStockStatus(ticker: string, enabled: boolean = true) {
   return useQuery({
@@ -32,14 +32,13 @@ export function useStockStatus(ticker: string, enabled: boolean = true) {
     },
     enabled: enabled && !!ticker,
     refetchInterval: (query) => {
-      // Poll every 3 seconds if company doesn't exist or has no data yet
+      // Poll every 8 seconds if company doesn't exist or has no data yet
       const data = query.state.data;
       if (!data || !data.companyExists || !data.hasAnyData) {
-        return 3000; // 3 seconds
+        return 8000; // 8 seconds - balance UX with Supabase CPU load
       }
-      // Stop polling once we have data
       return false;
     },
-    staleTime: 1000, // 1 second - allow refetching quickly
+    staleTime: 5000, // 5 seconds - reduce unnecessary refetches
   });
 }

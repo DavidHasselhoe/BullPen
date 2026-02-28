@@ -1,0 +1,121 @@
+=== STRUCTURED TEXT (2316 chars) ===
+[ROW]
+
+[/ROW]
+
+[ROW]
+[COL]&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]&#160;[/COL][COL]Jul 28, 2024[/COL][COL]Jul 30, 2023[/COL]
+[/ROW]
+
+[ROW]
+
+[/ROW]
+
+[ROW]
+[COL]Revenue[/COL][COL][COL]$[/COL][COL]13,507&#160;[/COL][COL][COL]$[/COL][COL]56,084&#160;[/COL][COL][COL]$[/COL][COL]20,699&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Cost of revenue[/COL][COL][COL]13,105&#160;[/COL][COL][COL]6,589&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Gross profit[/COL][COL][COL]42,979&#160;[/COL][COL][COL]14,110&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Operating expenses[/COL]
+[/ROW]
+
+[ROW]
+[COL]Research and development[/COL][COL][COL]5,810&#160;[/COL][COL][COL]3,916&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Sales, general and administrative[/COL][COL][COL]1,618&#160;[/COL][COL][COL]1,253&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Total operating expenses[/COL][COL][COL]7,428&#160;[/COL][COL][COL]5,169&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Operating income[/COL][COL][COL]35,551&#160;[/COL][COL][COL]8,941&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Interest income[/COL][COL][COL]803&#160;[/COL][COL][COL]338&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Interest expense[/COL][COL][COL](125)[/COL][COL][COL](131)[/COL]
+[/ROW]
+
+[ROW]
+[COL]Other, net[/COL][COL][COL]264&#160;[/COL][COL][COL]42&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Other income (expense), net[/COL][COL][COL]942&#160;[/COL][COL][COL]249&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Income before income tax[/COL][COL][COL]36,493&#160;[/COL][COL][COL]9,190&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Income tax expense[/COL][COL][COL]5,013&#160;[/COL][COL][COL]958&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Net income[/COL][COL][COL]$[/COL][COL]6,188&#160;[/COL][COL][COL]$[/COL][COL]31,480&#160;[/COL][COL][COL]$[/COL][COL]8,232&#160;[/COL]
+[/ROW]
+
+[ROW]
+
+[/ROW]
+
+[ROW]
+[COL]Net income per share:[/COL]
+[/ROW]
+
+[ROW]
+[COL]Basic[/COL][COL][COL]$[/COL][COL]0.25&#160;[/COL][COL][COL]$[/COL][COL]1.28&#160;[/COL][COL][COL]$[/COL][COL]0.33&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Diluted[/COL][COL][COL]$[/COL][COL]0.25&#160;[/COL][COL][COL]$[/COL][COL]1.27&#160;[/COL][COL][COL]$[/COL][COL]0.33&#160;[/COL]
+[/ROW]
+
+[ROW]
+
+[/ROW]
+
+[ROW]
+[COL]Weighted average shares used in per share computation:[/COL]
+[/ROW]
+
+[ROW]
+[COL]Basic[/COL][COL][COL]24,599&#160;[/COL][COL][COL]24,716&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Diluted[/COL][COL][COL]24,869&#160;[/COL][COL][COL]24,948&#160;[/COL]
+[/ROW]
+
+[ROW]
+
+[/ROW]
+
+[ROW]
+
+[/ROW]
+
+=== RAW AI OUTPUT ===
+{
+  "metrics": []
+}

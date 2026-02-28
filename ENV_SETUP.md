@@ -29,6 +29,10 @@ OPENAI_API_KEY=sk-...your-openai-api-key
 
 # Finnhub Configuration (required for market data)
 FINNHUB_API_KEY=your-finnhub-api-key
+
+# Cron Job Secret (required for autonomous filing updates)
+# Generate with: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+CRON_SECRET=your-random-secret-here
 ```
 
 ### Step 3: Get Finnhub API Key (for Market Data)
@@ -136,6 +140,47 @@ Test-Path .env.local
 ls -la .env.local
 # Should show the file
 ```
+
+## Autonomous Filing Updates (Cron Job)
+
+BullPen includes a Vercel Cron Job that automatically re-ingests company data whenever the SEC publishes a new quarterly or annual report.
+
+### How it works
+
+- `vercel.json` schedules `/api/cron/update-stale-companies` to run **daily at 08:00 UTC**
+- Each run checks the 10 most-stale tracked companies for new 10-K / 10-Q / 20-F filings
+- If a new filing is detected, the XBRL pipeline re-runs automatically (15–30 seconds per company)
+- Upgrade to Vercel Pro to run the cron **hourly** by changing the schedule in `vercel.json` to `0 * * * *`
+
+### Setting up CRON_SECRET
+
+`CRON_SECRET` protects the cron endpoint from being called by anyone other than Vercel.
+
+**Generate a secret:**
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+**Add to local `.env.local`:**
+```env
+CRON_SECRET=your-64-char-hex-string
+```
+
+**Add to Vercel:**
+1. Go to your Vercel project → **Settings** → **Environment Variables**
+2. Add `CRON_SECRET` with the same value
+3. Vercel will automatically send `Authorization: Bearer <CRON_SECRET>` when invoking cron jobs
+
+### Manual trigger (development)
+
+You can test the cron locally by calling it with the secret:
+```bash
+curl -H "Authorization: Bearer your-secret" http://localhost:3000/api/cron/update-stale-companies
+```
+
+### Staleness threshold
+
+Companies are also auto-refreshed on the **next user page visit** if their data is older than **45 days**, regardless of whether the cron job has run. This ensures users always see current data even if the cron has not yet processed their company.
 
 ## Next Steps
 

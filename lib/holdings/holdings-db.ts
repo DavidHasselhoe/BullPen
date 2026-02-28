@@ -36,7 +36,7 @@ export async function getHoldings(userId: string): Promise<GetHoldingsResult> {
 
     const { data: holdings, error } = await supabase
       .from('user_holdings')
-      .select('*')
+      .select('id, user_id, symbol, company_name, quantity, avg_price, created_at, updated_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 

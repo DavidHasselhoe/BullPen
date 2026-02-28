@@ -146,7 +146,7 @@ export async function GET(request: NextRequest) {
 
       try {
         // Start lazy ingestion with progress callback
-        const result = await lazyIngestCompany(ticker.toUpperCase(), sendProgress);
+        const result = await lazyIngestCompany(ticker.toUpperCase(), undefined, sendProgress);
 
         if (result.success) {
           sendComplete(result);

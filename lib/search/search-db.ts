@@ -36,22 +36,24 @@ export async function searchCompanies(
   const normalizedQueryPattern = `${normalizedQuery}%`;
 
   try {
-    // Search on normalized ticker (prefix match) and normalized name (fuzzy match)
-    // Use separate queries and combine for better reliability
-    const { data: tickerData, error: tickerError } = await supabase
-      .from('company_index')
-      .select('ticker, name, cik, has_data')
-      .ilike('normalized_ticker', normalizedQueryPattern)
-      .limit(limit);
+    // Run ticker prefix match and name fuzzy match in parallel — they are independent
+    const [tickerResult, nameResult] = await Promise.all([
+      supabase
+        .from('company_index')
+        .select('ticker, name, cik, has_data')
+        .ilike('normalized_ticker', normalizedQueryPattern)
+        .limit(limit),
+      supabase
+        .from('company_index')
+        .select('ticker, name, cik, has_data')
+        .ilike('normalized_name', `%${normalizedQuery}%`)
+        .limit(limit),
+    ]);
 
-    const { data: nameData, error: nameError } = await supabase
-      .from('company_index')
-      .select('ticker, name, cik, has_data')
-      .ilike('normalized_name', `%${normalizedQuery}%`)
-      .limit(limit);
+    const { data: tickerData, error: tickerError } = tickerResult;
+    const { data: nameData, error: nameError } = nameResult;
 
     if (tickerError) {
-      // Check if table doesn't exist
       const errorMsg = tickerError.message || '';
       if (errorMsg.includes('does not exist') || tickerError.code === '42P01' || tickerError.code === 'PGRST204') {
         return { 
@@ -63,7 +65,6 @@ export async function searchCompanies(
     }
 
     if (nameError) {
-      // Check if table doesn't exist
       const errorMsg = nameError.message || '';
       if (errorMsg.includes('does not exist') || nameError.code === '42P01' || nameError.code === 'PGRST204') {
         return { 
@@ -98,12 +99,13 @@ export async function searchCompanies(
 
     const results = Array.from(uniqueMap.values());
 
-    // Fetch logo URLs for companies with data
-    if (tickersWithData.size > 0) {
+    // Fetch logo URLs for all result tickers (companies table may have logos even without has_data)
+    const allTickers = results.map((r) => r.ticker);
+    if (allTickers.length > 0) {
       const { data: companiesData } = await supabase
         .from('companies')
         .select('ticker, logo_url')
-        .in('ticker', Array.from(tickersWithData));
+        .in('ticker', allTickers);
 
       if (companiesData) {
         const logoMap = new Map<string, string | null>();
@@ -111,7 +113,6 @@ export async function searchCompanies(
           logoMap.set(company.ticker, company.logo_url);
         }
 
-        // Add logo URLs to results
         for (const result of results) {
           result.logo_url = logoMap.get(result.ticker) || null;
         }
@@ -164,7 +165,7 @@ export async function getCompanyIndexByTicker(
   try {
     const { data, error } = await supabase
       .from('company_index')
-      .select('*')
+      .select('ticker, name, cik, has_data, normalized_ticker, normalized_name, last_ingested_at')
       .eq('ticker', ticker.toUpperCase())
       .single();
 

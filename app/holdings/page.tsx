@@ -28,49 +28,54 @@ export default function HoldingsPage() {
       const supabase = createBrowserClient();
       const quoteMap: Record<string, { price: number; change: number; changePercent: number }> = {};
       const logoMap: Record<string, string | null> = {};
-      
-      // Fetch company info for logos and quotes in parallel
-      const promises = holdings.map(async (holding) => {
-        const [companyResult, quoteResult] = await Promise.all([
-          supabase
-            .from('companies')
-            .select('logo_url')
-            .eq('ticker', holding.symbol)
-            .maybeSingle(),
-          fetch(`/api/stock/${holding.symbol}/quote`)
-            .then((res) => res.json())
-            .catch(() => ({ success: false })),
-        ]);
 
-        let logoUrl = companyResult.data?.logo_url || null;
-        
-        // If no logo_url in DB or it's null/empty, try to construct URL from storage bucket
-        // Try jpg first as it's the most common format in the bucket
-        if (!logoUrl) {
+      const tickers = holdings.map((h) => h.symbol);
+
+      // Single batched logo query for ALL holdings — replaces N individual queries
+      const { data: companiesData } = await supabase
+        .from('companies')
+        .select('ticker, logo_url')
+        .in('ticker', tickers);
+
+      const dbLogoMap = new Map<string, string | null>(
+        (companiesData || []).map((c) => [c.ticker, c.logo_url])
+      );
+
+      // Pre-fill logoMap; fall back to storage bucket URL where DB has no entry
+      for (const ticker of tickers) {
+        const dbLogo = dbLogoMap.get(ticker) ?? null;
+        if (dbLogo) {
+          logoMap[ticker] = dbLogo;
+        } else {
           const { data: urlData } = supabase.storage
             .from('company-logos')
-            .getPublicUrl(`${holding.symbol.toLowerCase()}.jpg`);
-          logoUrl = urlData?.publicUrl || null;
+            .getPublicUrl(`${ticker.toLowerCase()}.jpg`);
+          logoMap[ticker] = urlData?.publicUrl || null;
         }
-        
-        logoMap[holding.symbol] = logoUrl;
+      }
 
-        if (quoteResult.success && quoteResult.quote && quoteResult.quote.c > 0) {
-          quoteMap[holding.symbol] = {
-            price: quoteResult.quote.c,
-            change: quoteResult.quote.d,
-            changePercent: quoteResult.quote.dp,
-          };
-        }
-      });
+      // Fetch live quotes in parallel (external API — not Supabase)
+      await Promise.all(
+        holdings.map(async (holding) => {
+          const quoteResult = await fetch(`/api/stock/${holding.symbol}/quote`)
+            .then((res) => res.json())
+            .catch(() => ({ success: false }));
 
-      await Promise.all(promises);
+          if (quoteResult.success && quoteResult.quote && quoteResult.quote.c > 0) {
+            quoteMap[holding.symbol] = {
+              price: quoteResult.quote.c,
+              change: quoteResult.quote.d,
+              changePercent: quoteResult.quote.dp,
+            };
+          }
+        })
+      );
       
       return { quotes: quoteMap, logos: logoMap };
     },
     enabled: !!holdings && holdings.length > 0,
-    staleTime: 2 * 60 * 1000, // 2 minutes - quotes don't change that frequently
-    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 10 * 60 * 1000,
   });
 
   // Combine holdings with quotes and calculate derived values

@@ -83,10 +83,22 @@ export function MetricsChart({ timeSeries }: MetricsChartProps) {
         : 'annual';
       
       return {
-        date: formatChartDate(point.periodEndDate, periodType),
+        date: formatChartDate(
+          point.periodEndDate,
+          periodType,
+          point.fiscalYear,
+          point.fiscalQuarter,
+          point.ytdMonths
+        ),
         value,
         fullDate: point.periodEndDate,
-        periodLabel: formatPeriodLabel(point.periodEndDate, periodType),
+        periodLabel: formatPeriodLabel(
+          point.periodEndDate,
+          periodType,
+          point.fiscalYear,
+          point.fiscalQuarter,
+          point.ytdMonths
+        ),
         unit: point.unit || timeSeries.unit,
       };
     });

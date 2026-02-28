@@ -22,48 +22,81 @@ export function formatMetricValue(value: number, unit: string): string {
 }
 
 /**
- * Gets the quarter number (1-4) from a date
+ * Formats a date string for chart display using fiscal periods
+ * For quarterly: "Q{fiscal_quarter} FY{fiscal_year}" (e.g., "Q1 FY2025")
+ * For annual: "FY{fiscal_year}" (e.g., "FY2025") or "FY2025 (9mo)" when YTD
+ * 
+ * NEVER uses calendar months or calendar quarters
  */
-function getQuarterFromDate(date: Date): number {
-  const month = date.getMonth(); // 0-11
-  return Math.floor(month / 3) + 1;
-}
+export function formatChartDate(
+  dateString: string,
+  periodType?: 'annual' | 'quarterly',
+  fiscalYear?: number | null,
+  fiscalQuarter?: number | null,
+  ytdMonths?: number
+): string {
+  // If fiscal period is provided, use it (authoritative)
+  if (fiscalYear !== null && fiscalYear !== undefined) {
+    if (periodType === 'quarterly' && fiscalQuarter !== null && fiscalQuarter !== undefined) {
+      return `Q${fiscalQuarter} FY${fiscalYear}`;
+    }
+    if (ytdMonths != null) {
+      return `FY${fiscalYear} (${ytdMonths}mo)`;
+    }
+    return `FY${fiscalYear}`;
+  }
 
-/**
- * Formats a date string for chart display based on period type
- * For quarterly: "Q1 2022", "Q2 2022", etc.
- * For annual: "FY 2022" or "2022"
- */
-export function formatChartDate(dateString: string, periodType?: 'annual' | 'quarterly'): string {
+  // Fallback: use date (for existing data that hasn't been backfilled yet)
   const date = new Date(dateString);
   const year = date.getFullYear();
   
   if (periodType === 'quarterly') {
-    const quarter = getQuarterFromDate(date);
-    return `Q${quarter} ${year}`;
+    // For quarterly data without fiscal quarter, show just the year
+    // This happens for existing data that hasn't been backfilled yet
+    return `FY${year}`;
   } else if (periodType === 'annual') {
-    return `FY ${year}`;
+    return `FY${year}`;
   }
   
-  // Default: show month and year
+  // Default: show month and year (only for non-period data)
   const month = date.toLocaleDateString('en-US', { month: 'short' });
   return `${month} ${year}`;
 }
 
 /**
  * Formats a period label for tooltips and detailed display
- * Shows both the date and period info (e.g., "Sep 2022 (Q3 2022)")
+ * Uses fiscal periods: "Q{fiscal_quarter} FY{fiscal_year}" or "FY{fiscal_year}" or "FY2025 (9mo)" for YTD
+ * 
+ * NEVER shows calendar months unless explicitly requested
  */
-export function formatPeriodLabel(dateString: string, periodType: 'annual' | 'quarterly'): string {
+export function formatPeriodLabel(
+  dateString: string,
+  periodType: 'annual' | 'quarterly',
+  fiscalYear?: number | null,
+  fiscalQuarter?: number | null,
+  ytdMonths?: number
+): string {
+  // If fiscal period is provided, use it (authoritative)
+  if (fiscalYear !== null && fiscalYear !== undefined) {
+    if (periodType === 'quarterly' && fiscalQuarter !== null && fiscalQuarter !== undefined) {
+      return `Q${fiscalQuarter} FY${fiscalYear}`;
+    }
+    if (ytdMonths != null) {
+      return `FY${fiscalYear} (${ytdMonths} months YTD)`;
+    }
+    return `FY${fiscalYear}`;
+  }
+
+  // Fallback: use date (for existing data that hasn't been backfilled yet)
   const date = new Date(dateString);
   const year = date.getFullYear();
-  const month = date.toLocaleDateString('en-US', { month: 'short' });
   
   if (periodType === 'quarterly') {
-    const quarter = getQuarterFromDate(date);
-    return `${month} ${year} (Q${quarter} ${year})`;
+    // For quarterly data without fiscal quarter, show just the year
+    // This happens for existing data that hasn't been backfilled yet
+    return `FY${year}`;
   } else {
-    return `${month} ${year} (FY ${year})`;
+    return `FY${year}`;
   }
 }
 
@@ -73,6 +106,8 @@ export function formatPeriodLabel(dateString: string, periodType: 'annual' | 'qu
 export function getMetricLabel(metricType: string): string {
   const labels: Record<string, string> = {
     revenue: 'Revenue',
+    cost_of_revenue: 'Cost of Revenue',
+    gross_profit: 'Gross Profit',
     net_income: 'Net Income',
     operating_income: 'Operating Income',
     eps_basic: 'EPS (Basic)',

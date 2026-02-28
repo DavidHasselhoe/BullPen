@@ -1,0 +1,51 @@
+=== STRUCTURED TEXT (944 chars) ===
+[ROW]
+
+[/ROW]
+
+[ROW]
+[COL]&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]&#160;[/COL][COL]Jul 27, 2025[/COL][COL]Jul 28, 2024[/COL]
+[/ROW]
+
+[ROW]
+
+[/ROW]
+
+[ROW]
+[COL]&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Geographic Revenue based upon Customer Billing Location:[/COL]
+[/ROW]
+
+[ROW]
+[COL]United States[/COL][COL][COL]$[/COL][COL]13,022&#160;[/COL][COL][COL]$[/COL][COL]44,209&#160;[/COL][COL][COL]$[/COL][COL]26,518&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Singapore (1)[/COL][COL][COL]19,173&#160;[/COL][COL][COL]9,659&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Taiwan[/COL][COL][COL]15,687&#160;[/COL][COL][COL]10,113&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]China (including Hong Kong)[/COL][COL][COL]8,291&#160;[/COL][COL][COL]6,158&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Other[/COL][COL][COL]3,445&#160;[/COL][COL][COL]3,636&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Total revenue[/COL][COL][COL]$[/COL][COL]30,040&#160;[/COL][COL][COL]$[/COL][COL]90,805&#160;[/COL][COL][COL]$[/COL][COL]56,084&#160;[/COL]
+[/ROW]
+
+=== RAW AI OUTPUT ===
+{ "metrics": [] }

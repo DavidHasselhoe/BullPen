@@ -1,0 +1,61 @@
+=== STRUCTURED TEXT (1159 chars) ===
+[ROW]
+
+[/ROW]
+
+[ROW]
+[COL]Three Months Ended[/COL][COL]Six Months Ended[/COL]
+[/ROW]
+
+[ROW]
+[COL]Jul 28, 2024[/COL][COL]Jul 30, 2023[/COL][COL]Jul 28, 2024[/COL][COL]Jul 30, 2023[/COL]
+[/ROW]
+
+[ROW]
+
+[/ROW]
+
+[ROW]
+[COL](In millions)[/COL]
+[/ROW]
+
+[ROW]
+[COL]&#160;[/COL][COL]&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]$[/COL][COL]26,272&#160;[/COL][COL][COL]$[/COL][COL]10,323&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]22,604&#160;[/COL][COL][COL]8,612&#160;[/COL][COL][COL]41,996&#160;[/COL][COL][COL]11,969&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]3,668&#160;[/COL][COL][COL]1,711&#160;[/COL][COL][COL]6,839&#160;[/COL][COL][COL]2,638&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]2,880&#160;[/COL][COL][COL]2,486&#160;[/COL][COL][COL]5,527&#160;[/COL][COL][COL]4,726&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]454&#160;[/COL][COL][COL]379&#160;[/COL][COL][COL]881&#160;[/COL][COL][COL]674&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]346&#160;[/COL][COL][COL]253&#160;[/COL][COL][COL]675&#160;[/COL][COL][COL]549&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]88&#160;[/COL][COL][COL]66&#160;[/COL][COL][COL]166&#160;[/COL][COL][COL]143&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]$[/COL][COL]30,040&#160;[/COL][COL][COL]$[/COL][COL]13,507&#160;[/COL]
+[/ROW]
+
+=== RAW AI OUTPUT ===
+{
+  "metrics": []
+}

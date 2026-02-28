@@ -1,0 +1,55 @@
+=== STRUCTURED TEXT (1601 chars) ===
+[ROW]
+[COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]&#160;[/COL][COL]Nine Months Ended[/COL]
+[/ROW]
+
+[ROW]
+[COL][/COL][COL]October 31,[/COL][COL][/COL][COL]October 30,[/COL][COL][/COL][COL]October 31,[/COL]
+[/ROW]
+
+[ROW]
+[COL]&#160;[/COL][COL]2021[/COL][COL][/COL][COL]2022[/COL][COL][/COL][COL]2021[/COL]
+[/ROW]
+
+[ROW]
+[COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Revenue:[/COL][COL]&#160;[/COL][COL][/COL][COL][/COL][COL][/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Data Center[/COL][COL][/COL][COL][/COL][COL]$[/COL][COL]2,936&#160;[/COL][COL][/COL][COL][/COL][COL]$[/COL][COL]11,389&#160;[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Gaming[/COL][COL][/COL][COL]3,221&#160;[/COL][COL][/COL][COL][/COL][COL]7,236&#160;[/COL][COL][/COL][COL][/COL][COL]9,042&#160;[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Professional Visualization[/COL][COL][/COL][COL]577&#160;[/COL][COL][/COL][COL][/COL][COL]1,318&#160;[/COL][COL][/COL][COL][/COL][COL]1,468&#160;[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Automotive[/COL][COL][/COL][COL]135&#160;[/COL][COL][/COL][COL][/COL][COL]609&#160;[/COL][COL][/COL][COL][/COL][COL]441&#160;[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]OEM and Other[/COL][COL][/COL][COL]234&#160;[/COL][COL][/COL][COL][/COL][COL]371&#160;[/COL][COL][/COL][COL][/COL][COL]970&#160;[/COL][COL][/COL]
+[/ROW]
+
+[ROW]
+[COL]Total revenue[/COL][COL][/COL][COL][/COL][COL]$[/COL][COL]7,103&#160;[/COL][COL][/COL][COL][/COL][COL]$[/COL][COL]20,923&#160;[/COL][COL][/COL]
+[/ROW]
+
+=== RAW AI OUTPUT ===
+{ "metrics": [] }

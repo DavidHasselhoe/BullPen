@@ -1,0 +1,51 @@
+=== STRUCTURED TEXT (881 chars) ===
+[ROW]
+
+[/ROW]
+
+[ROW]
+[COL]&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]&#160;[/COL][COL]Oct 26, 2025[/COL][COL]Oct 27, 2024[/COL]
+[/ROW]
+
+[ROW]
+
+[/ROW]
+
+[ROW]
+[COL]&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Geographic Revenue based upon Customer Headquarters Location (1):[/COL]
+[/ROW]
+
+[ROW]
+[COL]United States[/COL][COL][COL]$[/COL][COL]19,620&#160;[/COL][COL][COL]$[/COL][COL]97,759&#160;[/COL][COL][COL]$[/COL][COL]53,873&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Taiwan (2)[/COL][COL][COL]30,301&#160;[/COL][COL][COL]17,364&#160;[/COL]
+[/ROW]
+
+[ROW]
+
+[/ROW]
+
+[ROW]
+[COL]China (including Hong Kong)[/COL][COL][COL]16,617&#160;[/COL][COL][COL]17,230&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Other[/COL][COL][COL]3,134&#160;[/COL][COL][COL]2,699&#160;[/COL]
+[/ROW]
+
+[ROW]
+[COL]Total revenue[/COL][COL][COL]$[/COL][COL]35,082&#160;[/COL][COL][COL]$[/COL][COL]147,811&#160;[/COL][COL][COL]$[/COL][COL]91,166&#160;[/COL]
+[/ROW]
+
+=== RAW AI OUTPUT ===
+{ "metrics": [] }

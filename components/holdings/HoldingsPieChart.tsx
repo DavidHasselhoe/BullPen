@@ -26,6 +26,7 @@ interface ChartData {
   name: string;
   value: number;
   allocation: number;
+  [key: string]: unknown;
 }
 
 export function HoldingsPieChart({ holdings }: HoldingsPieChartProps) {
@@ -112,7 +113,7 @@ export function HoldingsPieChart({ holdings }: HoldingsPieChartProps) {
               cx="50%"
               cy="50%"
               labelLine={false}
-              label={({ name, allocation }) => `${name} (${allocation.toFixed(1)}%)`}
+              label={({ name, allocation }: any) => `${name} (${(allocation as number).toFixed(1)}%)`}
               outerRadius={100}
               fill="#8884d8"
               dataKey="value"
