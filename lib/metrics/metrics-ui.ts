@@ -44,6 +44,104 @@ const YTD_SUMMABLE_METRICS: MetricType[] = [
 ];
 
 /**
+ * Income statement / cash flow metrics for which Q4 can be derived by:
+ *   Q4 = Annual − (Q1 + Q2 + Q3)
+ *
+ * Balance-sheet (instantaneous) metrics are excluded because the annual
+ * period-end value IS Q4 — there's nothing to derive.
+ */
+const Q4_DERIVABLE_METRICS: Set<MetricType> = new Set([
+  'revenue',
+  'cost_of_revenue',
+  'gross_profit',
+  'operating_income',
+  'net_income',
+  'eps_diluted',
+  'eps_basic',
+  'operating_cash_flow',
+  'capital_expenditures',
+  'free_cash_flow',
+]);
+
+interface RawMetricRow {
+  period_end_date: string;
+  value: number;
+  unit: string;
+  filing_id: string;
+  fiscal_year: number | null;
+  fiscal_quarter: number | null;
+  accounting_basis: string | null;
+  period_type: string;
+  _ytdMonths?: number;
+}
+
+/**
+ * Companies that file annual reports (10-K) report Q4 implicitly:
+ *   Q4 = Annual − Q1 − Q2 − Q3
+ * The SEC does not require a standalone Q4 10-Q, so XBRL data never
+ * contains an explicit Q4 fact.  This function injects synthetic Q4
+ * data points so charts show a complete quarterly history.
+ */
+function deriveQ4Points(
+  quarterlyRows: RawMetricRow[],
+  annualRows: RawMetricRow[],
+  metricType: MetricType,
+): RawMetricRow[] {
+  if (!Q4_DERIVABLE_METRICS.has(metricType)) return [];
+
+  // Index annual metrics by fiscal_year
+  const annualByFY = new Map<number, RawMetricRow>();
+  for (const a of annualRows) {
+    if (a.fiscal_year != null) annualByFY.set(a.fiscal_year, a);
+  }
+  if (annualByFY.size === 0) return [];
+
+  // Index quarterly metrics by fiscal_year → quarter number
+  const quartersByFY = new Map<number, Map<number, RawMetricRow>>();
+  for (const q of quarterlyRows) {
+    if (q.fiscal_year == null || q.fiscal_quarter == null) continue;
+    if (!quartersByFY.has(q.fiscal_year)) quartersByFY.set(q.fiscal_year, new Map());
+    quartersByFY.get(q.fiscal_year)!.set(q.fiscal_quarter, q);
+  }
+
+  const derived: RawMetricRow[] = [];
+
+  for (const [fy, annual] of annualByFY) {
+    const quarters = quartersByFY.get(fy);
+    if (!quarters) continue;
+
+    const q1 = quarters.get(1);
+    const q2 = quarters.get(2);
+    const q3 = quarters.get(3);
+    const q4Exists = quarters.has(4);
+
+    // Only derive if we have exactly Q1, Q2, Q3 and Q4 is absent
+    if (!q1 || !q2 || !q3 || q4Exists) continue;
+
+    const annualVal = typeof annual.value === 'number' ? annual.value : parseFloat(String(annual.value));
+    const sumQ123 =
+      (typeof q1.value === 'number' ? q1.value : parseFloat(String(q1.value))) +
+      (typeof q2.value === 'number' ? q2.value : parseFloat(String(q2.value))) +
+      (typeof q3.value === 'number' ? q3.value : parseFloat(String(q3.value)));
+
+    const q4Value = parseFloat((annualVal - sumQ123).toFixed(4));
+
+    derived.push({
+      period_end_date: annual.period_end_date,
+      value: q4Value,
+      unit: q3.unit,
+      filing_id: 'q4-computed',
+      fiscal_year: fy,
+      fiscal_quarter: 4,
+      accounting_basis: q3.accounting_basis,
+      period_type: 'quarterly',
+    });
+  }
+
+  return derived;
+}
+
+/**
  * Gets time-series metrics for a company, filtered by period type.
  * - Annual: ONLY 10-K/20-F data for completed years; current fiscal year YTD (9/6mo) if no 10-K yet.
  * - Quarterly: quarterly metrics only.
@@ -63,17 +161,8 @@ export async function getMetricsTimeSeries(
         .eq('metric_type', metricType)
         .gte('ingested_at', FISCAL_REFACTOR_RELEASE_DATE.toISOString());
 
-    let data: Array<{
-      period_end_date: string;
-      value: number;
-      unit: string;
-      filing_id: string;
-      fiscal_year: number | null;
-      fiscal_quarter: number | null;
-      accounting_basis: string | null;
-      period_type: string;
-    }>;
-    let unit = 'USD';
+  let data: RawMetricRow[];
+  let unit = 'USD';
 
     if (periodType === 'quarterly') {
       // CRITICAL: Quarterly = only period_type='quarterly' from any filing
@@ -92,8 +181,29 @@ export async function getMetricsTimeSeries(
         return null;
       }
       if (!qData || qData.length === 0) return null;
-      data = qData;
+      data = qData as RawMetricRow[];
       unit = data[0].unit;
+
+      // Derive missing Q4 data points (Annual − Q1 − Q2 − Q3)
+      // Q4 is never filed as a standalone 10-Q; it must be inferred from the 10-K annual figure.
+      if (Q4_DERIVABLE_METRICS.has(metricType)) {
+        let annualQuery = baseFilter(
+          supabase
+            .from('financial_metrics')
+            .select('period_end_date, value, unit, filing_id, fiscal_year, fiscal_quarter, accounting_basis, period_type')
+            .eq('period_type', 'annual')
+        );
+        if (metricType === 'eps_basic' || metricType === 'eps_diluted') {
+          annualQuery = annualQuery.eq('split_adjusted', true);
+        }
+        const { data: aData } = await annualQuery.order('period_end_date', { ascending: true });
+        if (aData && aData.length > 0) {
+          const q4Points = deriveQ4Points(data, aData as RawMetricRow[], metricType);
+          if (q4Points.length > 0) {
+            data = [...data, ...q4Points];
+          }
+        }
+      }
     } else if (periodType === 'annual') {
       // Annual: ONLY 10-K/20-F filings for completed years
       const { data: annualFilings } = await supabase
@@ -119,7 +229,7 @@ export async function getMetricsTimeSeries(
           console.error('Error fetching annual metrics:', error);
           return null;
         }
-        data = aData ?? [];
+        data = (aData ?? []) as RawMetricRow[];
         unit = data[0]?.unit ?? 'USD';
       }
 
