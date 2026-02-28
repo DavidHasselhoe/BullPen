@@ -27,6 +27,7 @@ import { fetchAndExtractCompanyMetrics } from '../ingestion/xbrl-company-facts';
 import { parseFiling } from '../ingestion/filing-parser';
 import { createFilingSections } from '../ingestion/database';
 import { createLazyIngestionTracker } from './progress-tracker';
+import { checkForNewFilings } from '../ingestion/filing-freshness';
 import type { Company } from '../types/database';
 import type { FilingIndexEntry } from '../ingestion/xbrl-company-facts';
 
@@ -59,13 +60,6 @@ export interface LazyIngestionOptions {
   forceRefresh?: boolean;
 }
 
-/** Number of days after which existing data is considered stale */
-const STALENESS_DAYS = 45;
-
-function daysSince(isoTimestamp: string): number {
-  const ms = Date.now() - new Date(isoTimestamp).getTime();
-  return ms / (1000 * 60 * 60 * 24);
-}
 
 // ============================================================
 // HELPERS
@@ -184,23 +178,31 @@ export async function lazyIngestCompany(
         .eq('company_id', existingCompany.id);
 
       const hasMetrics = count !== null && count > 10;
-      const isStale =
-        !companyIndex.last_ingested_at ||
-        daysSince(companyIndex.last_ingested_at) > STALENESS_DAYS;
 
-      if (hasMetrics && !isStale) {
-        onProgress?.('Company data is current — skipping ingestion (5%)');
-        return {
-          success: true,
-          companyId: existingCompany.id,
-          ticker: existingCompany.ticker,
-          filingsIngested: 0,
-          details: { companyName: existingCompany.name, skipped: true, reason: 'Data is current (ingested within 45 days)' },
-        };
-      }
-
-      if (hasMetrics && isStale) {
-        onProgress?.(`Data is stale (last ingested ${companyIndex.last_ingested_at ? Math.round(daysSince(companyIndex.last_ingested_at)) : '?'} days ago) — refreshing (5%)`);
+      if (hasMetrics) {
+        // Do a lightweight SEC check — one API call to see if there's a newer filing
+        onProgress?.('Checking SEC for new filings… (3%)');
+        try {
+          const freshness = await checkForNewFilings(cik, companyIndex.last_ingested_at);
+          if (!freshness.hasNewFilings) {
+            onProgress?.('No new SEC filings — data is current (5%)');
+            return {
+              success: true,
+              companyId: existingCompany.id,
+              ticker: existingCompany.ticker,
+              filingsIngested: 0,
+              details: {
+                companyName: existingCompany.name,
+                skipped: true,
+                reason: `No new filings since last ingest (latest: ${freshness.latestFilingDate ?? 'unknown'})`,
+              },
+            };
+          }
+          onProgress?.(`New filing detected (${freshness.latestFilingDate}) — refreshing (5%)`);
+        } catch {
+          // If the SEC check fails, fall through and re-ingest anyway
+          onProgress?.('SEC freshness check failed — re-ingesting to be safe (5%)');
+        }
       }
     }
 
