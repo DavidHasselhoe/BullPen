@@ -29,9 +29,7 @@ export function createBrowserClient(): SupabaseClient<Database> {
     auth: {
       autoRefreshToken: true,
       persistSession: true,
-      // Disabled: we explicitly call exchangeCodeForSession in /auth/callback.
-      // Auto-detection can race and trigger "signal is aborted" in production.
-      detectSessionInUrl: false,
+      detectSessionInUrl: true,
       flowType: 'pkce',
     },
   });
