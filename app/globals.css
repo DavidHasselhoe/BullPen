@@ -123,10 +123,10 @@
   }
 }
 
-/* Make body and page-level containers transparent when animated background is active - outside layers for maximum priority */
+/* When animated background is active: use a dark base so transparent WebGL pixels show dark, not white */
 html.animated-background-active body {
-  background-color: transparent !important;
-  background: transparent !important;
+  background-color: #050508 !important;
+  background: #050508 !important;
 }
 
 html.animated-background-active .min-h-screen.bg-background,

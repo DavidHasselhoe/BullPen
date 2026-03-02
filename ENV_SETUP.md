@@ -33,6 +33,16 @@ FINNHUB_API_KEY=your-finnhub-api-key
 # Cron Job Secret (required for autonomous filing updates)
 # Generate with: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 CRON_SECRET=your-random-secret-here
+
+# Resend (required for sending emails)
+# Get your API key at https://resend.com/api-keys
+RESEND_API_KEY=re_your_key_here
+
+# Optional: override default sender (default: BullPen <hello@updates.bullpen.no>)
+# RESEND_FROM_EMAIL=BullPen <noreply@updates.bullpen.no>
+
+# Optional: app URL for email links (default: https://bullpen.no)
+# NEXT_PUBLIC_APP_URL=https://bullpen.no
 ```
 
 ### Step 3: Get Finnhub API Key (for Market Data)
@@ -64,6 +74,7 @@ CRON_SECRET=your-random-secret-here
 - Replace the second `eyJ...` with your **service_role** key
 - Replace `sk-...your-openai-api-key` with your **OpenAI API key**
 - Replace `your-finnhub-api-key` with your **Finnhub API key**
+- Replace `re_xxxxxxxxx` with your **Resend API key** (get it at [resend.com/api-keys](https://resend.com/api-keys))
 
 ### Windows PowerShell Method
 

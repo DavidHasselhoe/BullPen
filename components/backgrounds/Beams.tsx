@@ -1,5 +1,6 @@
 import { forwardRef, useImperativeHandle, useEffect, useRef, useMemo, FC, ReactNode } from 'react';
 import * as THREE from 'three';
+import { useShouldAnimateBackground } from '@/hooks/use-reduce-motion';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { PerspectiveCamera } from '@react-three/drei';
 import { MathUtils } from 'three';
@@ -75,8 +76,12 @@ function extendMaterial<T extends THREE.Material = THREE.Material>(
   return mat;
 }
 
-const CanvasWrapper: FC<{ children: ReactNode }> = ({ children }) => (
-  <Canvas dpr={[1, 2]} frameloop="always" className="w-full h-full relative">
+const CanvasWrapper: FC<{ children: ReactNode; paused?: boolean }> = ({ children, paused }) => (
+  <Canvas
+    dpr={[1, 2]}
+    frameloop={paused ? 'never' : 'always'}
+    className="w-full h-full relative"
+  >
     {children}
   </Canvas>
 );
@@ -187,6 +192,7 @@ function Beams({
   scale = 0.2,
   rotation = 0
 }: BeamsProps) {
+  const shouldAnimate = useShouldAnimateBackground();
   const meshRef = useRef<THREE.Mesh<THREE.BufferGeometry, THREE.ShaderMaterial>>(null!);
 
   const beamMaterial = useMemo(
@@ -248,7 +254,7 @@ function Beams({
 
   return (
     <div className="fixed inset-0 -z-10 w-full h-full">
-      <CanvasWrapper>
+      <CanvasWrapper paused={!shouldAnimate}>
         <group rotation={[0, 0, degToRad(rotation)]}>
           <PlaneNoise ref={meshRef} material={beamMaterial} count={beamNumber} width={beamWidth} height={beamHeight} />
           <DirLight color={lightColor} position={[0, 3, 10]} />

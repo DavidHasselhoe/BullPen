@@ -10,6 +10,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { StatefulButton } from '@/components/ui/stateful-button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -24,7 +25,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { ProfileAvatar } from '@/components/user/ProfileAvatar';
-import { Loader2, Upload, User, Briefcase, Target, TrendingUp, Crown, Calendar, CheckCircle2 } from 'lucide-react';
+import { Loader2, Upload, User, Briefcase, Target, TrendingUp, Crown, Calendar } from 'lucide-react';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { uploadAvatarToStorage } from '@/lib/storage/avatar-upload';
 import { cn } from '@/lib/utils';
@@ -39,9 +40,7 @@ type ProfileSection = 'basic' | 'preferences';
 export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
   const { user, isLoading: authLoading } = useAuth();
   const [activeSection, setActiveSection] = useState<ProfileSection>('basic');
-  const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
   // Form state
@@ -65,7 +64,6 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
       setRiskProfile(user.risk_profile || '');
       setAvatarUrl(user.avatar_url || '');
       setError(null);
-      setSuccess(false);
     }
   }, [user, open]);
 
@@ -100,9 +98,7 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
   const handleSave = async () => {
     if (!user) return;
 
-    setIsSaving(true);
     setError(null);
-    setSuccess(false);
 
     try {
       const supabase = createBrowserClient();
@@ -117,38 +113,21 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
         avatar_url: avatarUrl.trim() || null,
       };
 
-      const { data: updatedData, error: updateError } = await supabase
+      const { error: updateError } = await supabase
         .from('users')
         .update(updateData as any)
-        .eq('id', user.id)
-        .select('id, email, username, full_name, avatar_url, role, bio, experience_level, market_focus, risk_profile, created_at, updated_at, last_login_at')
-        .single();
+        .eq('id', user.id);
 
       if (updateError) {
         console.error('[ProfileModal] Database update error:', updateError);
         throw new Error(updateError.message || 'Failed to update profile in database');
       }
 
-      if (!updatedData) {
-        throw new Error('Update succeeded but no data returned');
-      }
-
-      setSuccess(true);
-      
-      // Refresh user data via router instead of full page reload
-      setTimeout(async () => {
-        setSuccess(false);
-        // Trigger a refresh of the auth hook
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new Event('auth:refresh'));
-        }
-        // Also reload to ensure UI is fully updated
-        window.location.reload();
-      }, 1500);
+      // Refresh auth state without full page reload
+      window.dispatchEvent(new Event('auth:refresh'));
     } catch (err: any) {
       setError(err.message || 'Failed to update profile');
-    } finally {
-      setIsSaving(false);
+      throw err;
     }
   };
 
@@ -451,17 +430,6 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
                 {error}
               </div>
             )}
-            {success && (
-              <div className="absolute bottom-20 right-6 flex items-center gap-2 px-4 py-3 rounded-lg bg-green-500/10 border border-green-500/20 text-green-600 dark:text-green-400 text-sm font-medium shadow-lg z-50 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <div className="relative">
-                  <div className="absolute inset-0 rounded-full bg-green-500/20 animate-ping opacity-75" />
-                  <CheckCircle2 className="relative h-5 w-5 animate-scale-in" />
-                </div>
-                <span className="animate-fade-in-up" style={{ animationDelay: '150ms' }}>
-                  Profile updated successfully!
-                </span>
-              </div>
-            )}
           </div>
         </div>
 
@@ -470,16 +438,9 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={isSaving}>
-            {isSaving ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              'Save Changes'
-            )}
-          </Button>
+          <StatefulButton onClick={handleSave} successDuration={2000} className="min-w-[120px]">
+            Save Changes
+          </StatefulButton>
         </div>
       </DialogContent>
     </Dialog>

@@ -21,6 +21,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/client';
 import { checkForNewFilings } from '@/lib/ingestion/filing-freshness';
 import { lazyIngestCompany } from '@/lib/search/lazy-ingestion';
+import { sendEarningsAlerts } from '@/lib/email/earnings-alert';
 
 // Tell Vercel this function may run up to 300 seconds (Pro plan)
 export const maxDuration = 300;
@@ -38,8 +39,10 @@ interface CronSummary {
     hadNewFilings: boolean;
     reingested:    boolean;
     latestFilingDate: string | null;
+    emailsSent?: number;
     error?: string;
   }>;
+  emailErrors?: string[];
 }
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
@@ -65,7 +68,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     // ── 1. Fetch the stalest tracked companies ────────────────────────────
     const { data: stalestRaw, error: fetchErr } = await supabase
       .from('company_index')
-      .select('ticker, cik, last_ingested_at')
+      .select('ticker, name, cik, last_ingested_at')
       .eq('has_data', true)
       .order('last_ingested_at', { ascending: true, nullsFirst: true })
       .limit(BATCH_SIZE);
@@ -79,6 +82,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     const companies = (stalestRaw || []) as Array<{
       ticker: string;
+      name: string;
       cik: string;
       last_ingested_at: string | null;
     }>;
@@ -121,6 +125,18 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         if (result.success) {
           companyEntry.reingested = true;
           summary.reingested++;
+
+          // Notify holders who opted in
+          const formType = freshness.latestFormType || 'earnings report';
+          const emailResult = await sendEarningsAlerts(
+            company.ticker,
+            company.name,
+            formType,
+          );
+          companyEntry.emailsSent = emailResult.sent;
+          if (emailResult.errors.length) {
+            summary.emailErrors = [...(summary.emailErrors || []), ...emailResult.errors];
+          }
         } else {
           companyEntry.error = result.error;
           summary.errors.push(`${company.ticker}: ${result.error}`);

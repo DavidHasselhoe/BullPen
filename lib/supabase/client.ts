@@ -30,6 +30,9 @@ export function createBrowserClient(): SupabaseClient<Database> {
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: true,
+      // PKCE uses a ?code= query param instead of a URL hash fragment,
+      // which prevents the trailing # left by the implicit flow.
+      flowType: 'pkce',
     },
   });
 

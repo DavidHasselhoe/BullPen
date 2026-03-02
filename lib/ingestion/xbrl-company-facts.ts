@@ -212,18 +212,23 @@ function extractFactsFromTaxonomy(
   tagMap: TagMapping[],
   filingIdMap: Map<string, FilingIndexEntry>,
   companyId: string,
-  existingPeriodKeys: Set<string>, // Already covered by a previous taxonomy call
-): InsertFinancialMetric[] {
+  existingPeriodKeys: Set<string>,
+): Array<InsertFinancialMetric & { _filed: string }> {
   /**
-   * We iterate tags in priority order. `coveredPeriodKeys` ensures a lower-priority
-   * tag cannot overwrite data already obtained from a higher-priority tag.
+   * Tags are processed in priority order.  `coveredPeriodKeys` prevents a
+   * lower-priority tag from overwriting data already captured by a higher one.
    *
-   * Within the same tag, if a period appears in multiple accession numbers (amendments),
-   * we keep the one most recently filed.
+   * Within the same tag, a period may appear in many filings (original 10-Q,
+   * comparative in next year's 10-Q, restated in 10-K, etc.).  We keep the
+   * **most recently filed** value so that stock-split restatements and
+   * amendment corrections are automatically preferred.
+   *
+   * IMPORTANT: `coveredPeriodKeys` is populated only AFTER all facts for a
+   * tag are processed, so that within-tag dedup can compare originals against
+   * restatements without premature blocking.
    */
   const coveredPeriodKeys = new Set<string>(existingPeriodKeys);
 
-  // tag+period → best metric so far (to deduplicate amendments within the same tag)
   const candidateByTagPeriod = new Map<string, InsertFinancialMetric & { _filed: string }>();
 
   for (const { tag, metricType } of tagMap) {
@@ -231,6 +236,7 @@ function extractFactsFromTaxonomy(
     if (!conceptData?.units) continue;
 
     const isInstant = INSTANT_METRICS.has(metricType);
+    const newPeriodKeys = new Set<string>();
 
     for (const [unit, facts] of Object.entries(conceptData.units)) {
       if (!isUnitRelevantForMetric(unit, metricType)) continue;
@@ -240,12 +246,10 @@ function extractFactsFromTaxonomy(
 
         const accn = normalizeAccessionNumber(fact.accn);
 
-        // Only keep forms we care about
         const form = (fact.form || '').toUpperCase().trim();
         const baseForm = form.replace('/A', '');
         if (!ACCEPTED_FORMS.has(form) && !ACCEPTED_FORMS.has(baseForm)) continue;
 
-        // Determine period type from the XBRL fiscal period indicator
         const fp = (fact.fp || '').toUpperCase().trim();
         const isAnnual = fp === 'FY';
         const isQuarterly = fp === 'Q1' || fp === 'Q2' || fp === 'Q3' || fp === 'Q4';
@@ -253,37 +257,40 @@ function extractFactsFromTaxonomy(
 
         const periodType: 'annual' | 'quarterly' = isAnnual ? 'annual' : 'quarterly';
 
-        // Period-length filter for income statement / cash flow facts (duration, have start date)
         if (!isInstant) {
           if (fact.start) {
             const months = monthsBetween(fact.start, fact.end);
-            if (isAnnual   && (months < 10 || months > 14)) continue; // ~12 months
-            if (isQuarterly && (months < 2  || months > 4))  continue; // ~3 months
+            if (isAnnual   && (months < 10 || months > 14)) continue;
+            if (isQuarterly && (months < 2  || months > 4))  continue;
           } else {
-            // Duration fact without a start date — cannot validate, skip unless it's EPS
-            // (some older filings omit start for EPS; we accept based on fp alone)
             if (!EPS_METRICS.has(metricType)) continue;
           }
         }
 
-        // The canonical deduplication key shared across all tags for this metric+period
         const periodKey = `${metricType}:${fact.end}:${periodType}`;
-        if (coveredPeriodKeys.has(periodKey)) continue; // Higher-priority tag already won
+        if (coveredPeriodKeys.has(periodKey)) continue;
 
-        // Within the same tag: deduplicate by period — keep most recently filed
         const tagPeriodKey = `${tag}:${periodKey}`;
         const existing = candidateByTagPeriod.get(tagPeriodKey);
         if (existing && (fact.filed || '') <= existing._filed) continue;
 
-        // Link to our DB filing record via accession number
         const filingEntry = filingIdMap.get(accn);
-        if (!filingEntry) continue; // We don't have this filing stored — skip
+        if (!filingEntry) continue;
 
         const rawValue = typeof fact.val === 'string' ? parseFloat(fact.val) : fact.val;
         if (!isFinite(rawValue)) continue;
 
-        const fiscalYear = fact.fy != null ? parseInt(String(fact.fy)) : (filingEntry.fiscalYear ?? null);
+        let fiscalYear = fact.fy != null ? parseInt(String(fact.fy)) : (filingEntry.fiscalYear ?? null);
         const fiscalQuarter = isQuarterly ? parseInt(fp[1]) : null;
+
+        // When a restated value replaces an original, the XBRL fact carries the
+        // REPORTING filing's FY (e.g. fy=2026 for a Q1 FY2025 comparative restated
+        // in the FY2026 10-Q).  The correct FY for the data is the lower value.
+        if (existing?.fiscal_year != null && fiscalYear != null) {
+          fiscalYear = Math.min(existing.fiscal_year, fiscalYear);
+        } else if (existing?.fiscal_year != null) {
+          fiscalYear = existing.fiscal_year;
+        }
 
         const metric: InsertFinancialMetric & { _filed: string } = {
           filing_id:        filingEntry.filingId,
@@ -298,7 +305,6 @@ function extractFactsFromTaxonomy(
           fiscal_quarter:   fiscalQuarter,
           accounting_basis: 'gaap',
           currency:         getCurrencyFromUnit(unit, metricType),
-          // XBRL EPS values are always reported on a split-adjusted basis
           split_adjusted:   EPS_METRICS.has(metricType),
           is_restated:      form.includes('/A'),
           ingested_at:      new Date().toISOString(),
@@ -307,14 +313,150 @@ function extractFactsFromTaxonomy(
         };
 
         candidateByTagPeriod.set(tagPeriodKey, metric);
-        // Mark this period as covered so lower-priority tags in the same taxonomy skip it
-        coveredPeriodKeys.add(periodKey);
+        newPeriodKeys.add(periodKey);
+      }
+    }
+
+    // Only after ALL facts for this tag are processed do we block lower-priority
+    // tags from providing data for the same periods.
+    for (const pk of newPeriodKeys) coveredPeriodKeys.add(pk);
+  }
+
+  return Array.from(candidateByTagPeriod.values());
+}
+
+// ============================================================
+// STOCK SPLIT DETECTION & ADJUSTMENT
+// ============================================================
+
+interface StockSplitEvent {
+  ratio: number;
+  /** Approximate effective date — values filed before this need adjustment */
+  effectiveDate: string;
+}
+
+/**
+ * Detects stock splits from the SEC Company Facts JSON.
+ *
+ * Primary: reads the `StockholdersEquityNoteStockSplitConversionRatio1` tag
+ * which explicitly reports the split ratio and effective date.
+ *
+ * Fallback: compares original vs. restated quarterly EPS values for the same
+ * period end date.  If the ratio is a clean integer >= 2, a split is inferred.
+ */
+function detectStockSplits(
+  facts: Record<string, any>,
+): StockSplitEvent[] {
+  const splits: StockSplitEvent[] = [];
+  const seenRatios = new Set<number>();
+
+  // ── Primary: explicit split tag ──────────────────────────────────────
+  const splitTag = facts?.['us-gaap']?.StockholdersEquityNoteStockSplitConversionRatio1;
+  if (splitTag?.units?.pure) {
+    const byRatio = new Map<number, string>(); // ratio → earliest effective date
+    for (const fact of splitTag.units.pure as XBRLFact[]) {
+      const ratio = typeof fact.val === 'string' ? parseFloat(fact.val) : fact.val;
+      if (!isFinite(ratio) || ratio < 2) continue;
+      const roundedRatio = Math.round(ratio);
+      if (Math.abs(ratio - roundedRatio) > 0.5) continue;
+
+      const effectiveDate = fact.end || fact.filed || '';
+      if (!effectiveDate) continue;
+
+      const existing = byRatio.get(roundedRatio);
+      if (!existing || effectiveDate < existing) {
+        byRatio.set(roundedRatio, effectiveDate);
+      }
+    }
+
+    for (const [ratio, effectiveDate] of byRatio) {
+      splits.push({ ratio, effectiveDate });
+      seenRatios.add(ratio);
+    }
+  }
+
+  // ── Fallback: detect from EPS value ratios across restatements ───────
+  if (splits.length === 0) {
+    const epsTag = facts?.['us-gaap']?.EarningsPerShareDiluted;
+    const epsFacts: XBRLFact[] = epsTag?.units?.['USD/shares'] || [];
+
+    // Group quarterly facts by period end date
+    const byEnd = new Map<string, Array<{ val: number; filed: string }>>();
+    for (const fact of epsFacts) {
+      if (!fact.end || fact.val == null || !fact.filed) continue;
+      const fp = (fact.fp || '').toUpperCase();
+      if (fp !== 'Q1' && fp !== 'Q2' && fp !== 'Q3' && fp !== 'Q4') continue;
+      if (fact.start) {
+        const months = monthsBetween(fact.start, fact.end);
+        if (months < 2 || months > 4) continue;
+      }
+      const val = typeof fact.val === 'string' ? parseFloat(fact.val) : fact.val;
+      if (!isFinite(val) || Math.abs(val) < 0.001) continue;
+      if (!byEnd.has(fact.end)) byEnd.set(fact.end, []);
+      byEnd.get(fact.end)!.push({ val, filed: fact.filed });
+    }
+
+    const candidateRatios = new Map<number, string>(); // ratio → latest pre-split filed
+    for (const [, group] of byEnd) {
+      if (group.length < 2) continue;
+      group.sort((a, b) => a.filed.localeCompare(b.filed));
+      const earliest = group[0];
+      const latest = group[group.length - 1];
+      if (Math.abs(latest.val) < 0.001) continue;
+      const ratio = earliest.val / latest.val;
+      if (ratio < 1.5) continue;
+      const roundedRatio = Math.round(ratio);
+      if (Math.abs(ratio - roundedRatio) / roundedRatio > 0.15) continue;
+      const existing = candidateRatios.get(roundedRatio);
+      if (!existing || earliest.filed > existing) {
+        candidateRatios.set(roundedRatio, earliest.filed);
+      }
+    }
+
+    for (const [ratio, effectiveAfter] of candidateRatios) {
+      if (!seenRatios.has(ratio)) {
+        splits.push({ ratio, effectiveDate: effectiveAfter });
       }
     }
   }
 
-  // Strip the internal _filed tracking field before returning
-  return Array.from(candidateByTagPeriod.values()).map(({ _filed, ...metric }) => metric);
+  // Sort most-recent split first so adjustments compound correctly
+  splits.sort((a, b) => b.effectiveDate.localeCompare(a.effectiveDate));
+  return splits;
+}
+
+/** Per-share metrics where values need to be DIVIDED by split ratio */
+const PER_SHARE_METRICS = new Set<MetricType>(['eps_diluted', 'eps_basic']);
+
+/** Share-count metrics where values need to be MULTIPLIED by split ratio */
+const SHARE_COUNT_METRICS = new Set<MetricType>(['shares_outstanding']);
+
+/**
+ * Adjusts pre-split metric values so all data is on the same post-split basis.
+ *
+ * After `extractFactsFromTaxonomy` picks the most-recently-filed value for
+ * each period, some older periods may still carry pre-split values because
+ * the SEC only restates ~1 year of comparatives.  This function divides
+ * per-share metrics (EPS) by the split ratio and multiplies share counts.
+ */
+function applySplitAdjustments(
+  metrics: Array<InsertFinancialMetric & { _filed: string }>,
+  splits: StockSplitEvent[],
+): void {
+  if (splits.length === 0) return;
+
+  for (const split of splits) {
+    for (const metric of metrics) {
+      if (metric._filed >= split.effectiveDate) continue;
+
+      const mt = metric.metric_type as MetricType;
+      if (PER_SHARE_METRICS.has(mt)) {
+        metric.value = parseFloat((metric.value / split.ratio).toFixed(4));
+      } else if (SHARE_COUNT_METRICS.has(mt)) {
+        metric.value = Math.round(metric.value * split.ratio);
+      }
+    }
+  }
 }
 
 // ============================================================
@@ -458,12 +600,18 @@ export async function fetchAndExtractCompanyMetrics(
     const companyFacts = await response.json();
     const facts = companyFacts.facts || {};
 
+    // 0. Detect stock splits before extracting metrics
+    const splits = detectStockSplits(facts);
+    if (splits.length > 0) {
+      onProgress?.(`Detected ${splits.length} stock split(s): ${splits.map((s) => `${s.ratio}:1`).join(', ')}`);
+    }
+
     onProgress?.('Mapping XBRL tags to metrics');
 
-    let allMetrics: InsertFinancialMetric[] = [];
+    // _filed is preserved through extraction so split adjustment can use it
+    type MetricWithFiled = InsertFinancialMetric & { _filed: string };
+    let allMetrics: MetricWithFiled[] = [];
 
-    // Track which (metric, period) keys have been covered across taxonomies
-    // so that higher-quality US-GAAP data is not overwritten by IFRS fallbacks
     const coveredKeys = new Set<string>();
 
     // 1. US-GAAP (domestic filers — most companies)
@@ -489,18 +637,35 @@ export async function fetchAndExtractCompanyMetrics(
     const metricsExtracted = allMetrics.length;
     onProgress?.(`Extracted ${metricsExtracted} data points from XBRL`);
 
-    // 4. Calculate Free Cash Flow from OCF + CapEx pairs
-    const fcfMetrics = calculateFreeCashFlow(allMetrics);
-    allMetrics.push(...fcfMetrics);
+    // 3.5 Apply stock split adjustments to per-share metrics filed pre-split
+    if (splits.length > 0) {
+      applySplitAdjustments(allMetrics, splits);
+      onProgress?.('Applied stock split adjustments to pre-split values');
+    }
+
+    // 4. Calculate Free Cash Flow from OCF + CapEx pairs (strip _filed first)
+    const cleanMetrics: InsertFinancialMetric[] = allMetrics.map(({ _filed, ...rest }) => rest);
+    const fcfMetrics = calculateFreeCashFlow(cleanMetrics);
+    let finalMetrics: InsertFinancialMetric[] = [...cleanMetrics, ...fcfMetrics];
     onProgress?.(`Calculated ${fcfMetrics.length} free cash flow periods`);
 
     // 5. Apply history policy (keep last 5 annual, 12 quarterly per metric)
-    allMetrics = applyHistoryPolicy(allMetrics);
-    onProgress?.(`After history policy: ${allMetrics.length} metrics to store`);
+    finalMetrics = applyHistoryPolicy(finalMetrics);
+    onProgress?.(`After history policy: ${finalMetrics.length} metrics to store`);
 
-    // 6. Bulk upsert to database
+    // 6. Delete existing metrics for this company so stale rows with old
+    //    filing_ids (from pre-split ingestions) don't persist alongside new ones
+    const { error: deleteErr } = await supabase
+      .from('financial_metrics')
+      .delete()
+      .eq('company_id', companyId);
+    if (deleteErr) {
+      onProgress?.(`Warning: could not clear old metrics — ${deleteErr.message}`);
+    }
+
+    // 7. Bulk upsert fresh metrics
     onProgress?.('Writing metrics to database');
-    const { stored, errors: upsertErrors } = await bulkUpsertMetrics(allMetrics, supabase);
+    const { stored, errors: upsertErrors } = await bulkUpsertMetrics(finalMetrics, supabase);
     errors.push(...upsertErrors);
 
     onProgress?.(`Stored ${stored} metrics`);

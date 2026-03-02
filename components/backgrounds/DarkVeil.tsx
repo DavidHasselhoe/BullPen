@@ -1,5 +1,6 @@
 import { useRef, useEffect } from 'react';
 import { Renderer, Program, Mesh, Triangle, Vec2 } from 'ogl';
+import { useShouldAnimateBackground } from '@/hooks/use-reduce-motion';
 
 const vertex = `
 attribute vec2 position;
@@ -93,6 +94,9 @@ export function DarkVeil({
   resolutionScale = 1
 }: Props) {
   const ref = useRef<HTMLCanvasElement>(null);
+  const shouldAnimate = useShouldAnimateBackground();
+  const shouldAnimateRef = useRef(shouldAnimate);
+  shouldAnimateRef.current = shouldAnimate;
   useEffect(() => {
     const canvas = ref.current as HTMLCanvasElement;
     if (!canvas) return;
@@ -146,6 +150,7 @@ export function DarkVeil({
 
       const loop = () => {
         if (!renderer) return;
+        if (!shouldAnimateRef.current) { frame = requestAnimationFrame(loop); return; }
         program.uniforms.uTime.value = ((performance.now() - start) / 1000) * speed;
         program.uniforms.uHueShift.value = hueShift;
         program.uniforms.uNoise.value = noiseIntensity;

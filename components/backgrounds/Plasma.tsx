@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import { Renderer, Program, Mesh, Triangle } from 'ogl';
+import { useShouldAnimateBackground } from '@/hooks/use-reduce-motion';
 
 interface PlasmaProps {
   color?: string;
@@ -100,6 +101,9 @@ export function Plasma({
 }: PlasmaProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mousePos = useRef({ x: 0, y: 0 });
+  const shouldAnimate = useShouldAnimateBackground();
+  const shouldAnimateRef = useRef(shouldAnimate);
+  shouldAnimateRef.current = shouldAnimate;
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -178,6 +182,8 @@ export function Plasma({
     let raf = 0;
     const t0 = performance.now();
     const loop = (t: number) => {
+      raf = requestAnimationFrame(loop);
+      if (!shouldAnimateRef.current) return;
       let timeValue = (t - t0) * 0.001;
       if (direction === 'pingpong') {
         const pingpongDuration = 10;
@@ -192,7 +198,6 @@ export function Plasma({
         (program.uniforms.iTime as any).value = timeValue;
       }
       renderer.render({ scene: mesh });
-      raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
 

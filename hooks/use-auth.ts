@@ -32,7 +32,7 @@ export function useAuth() {
       try {
         const { data: userProfile, error: profileError } = await supabase
           .from('users')
-          .select('id, email, username, full_name, avatar_url, role, created_at, updated_at, last_login_at')
+          .select('id, email, username, full_name, avatar_url, role, bio, experience_level, market_focus, risk_profile, account_tier, created_at, updated_at, last_login_at, settings')
           .eq('id', userId)
           .single();
 
@@ -162,9 +162,24 @@ export function useAuth() {
       }
     });
 
+    // Listen for manual refresh (e.g. after profile/settings save) — avoids full page reload
+    const handleAuthRefresh = async () => {
+      if (!mounted) return;
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          const userProfile = await fetchUserProfile(session.user.id);
+          if (mounted) setUser(userProfile);
+        }
+      } catch {
+        // Ignore refresh errors
+      }
+    };
+    window.addEventListener('auth:refresh', handleAuthRefresh);
     return () => {
       mounted = false;
       subscription.unsubscribe();
+      window.removeEventListener('auth:refresh', handleAuthRefresh);
     };
   }, [supabase]);
 

@@ -6,6 +6,7 @@ import {
   Gauge,
   Grid3X3,
   MessageSquare,
+  Filter,
 } from 'lucide-react';
 
 export interface ToolConfig {
@@ -24,6 +25,14 @@ export const TOOLS: ToolConfig[] = [
     description: 'Investment research assistant. Ask about SEC filings, financial metrics, and concepts.',
     href: '/tools/ai-chat',
     icon: MessageSquare,
+    status: 'available',
+  },
+  {
+    id: 'screener',
+    name: 'Stock Screener',
+    description: 'Filter companies by revenue, margins, EPS, cash flow, debt-to-equity, and more.',
+    href: '/tools/screener',
+    icon: Filter,
     status: 'available',
   },
   {

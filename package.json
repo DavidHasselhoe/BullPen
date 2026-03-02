@@ -22,7 +22,10 @@
     "test-8k-phase-a": "tsx scripts/test-8k-phase-a.ts",
     "bootstrap-company-index": "tsx scripts/bootstrap-company-index.ts",
     "set-gold-tier": "tsx scripts/set-user-gold-tier.ts",
-    "populate-quotes": "tsx scripts/populate-investing-quotes.ts"
+    "populate-quotes": "tsx scripts/populate-investing-quotes.ts",
+    "test-resend": "tsx scripts/test-resend.ts",
+    "trigger-cron": "tsx scripts/trigger-cron.ts",
+    "test-earnings-email": "tsx scripts/test-earnings-email.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.33",
@@ -59,6 +62,7 @@
     "react-dom": "19.2.3",
     "react-i18next": "^16.5.3",
     "recharts": "^3.6.0",
+    "resend": "^6.9.3",
     "tailwind-merge": "^3.4.0",
     "three": "^0.182.0",
     "viem": "^2.44.4",

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import { Renderer, Camera, Geometry, Program, Mesh } from 'ogl';
+import { useShouldAnimateBackground } from '@/hooks/use-reduce-motion';
 
 interface ParticlesProps {
   particleCount?: number;
@@ -119,6 +120,9 @@ export function Particles({
 }: ParticlesProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mouseRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const shouldAnimate = useShouldAnimateBackground();
+  const shouldAnimateRef = useRef(shouldAnimate);
+  shouldAnimateRef.current = shouldAnimate;
 
   useEffect(() => {
     const container = containerRef.current;
@@ -201,6 +205,7 @@ export function Particles({
 
     const update = (t: number) => {
       animationFrameId = requestAnimationFrame(update);
+      if (!shouldAnimateRef.current) return;
       const delta = t - lastTime;
       lastTime = t;
       elapsed += delta * speed;

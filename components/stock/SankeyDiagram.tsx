@@ -395,21 +395,10 @@ export function SankeyDiagram({ ticker, isDataLoading = false }: SankeyDiagramPr
     );
   }
 
-  if (hasRealError || (data?.success === false && data?.error && !isDataStillLoading)) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold">Income Statement Flow</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex h-[400px] items-center justify-center text-sm text-muted-foreground">
-            {error instanceof Error && error.message !== 'DATA_LOADING'
-              ? 'Unable to load financial flow diagram'
-              : data?.error || 'No financial data available for this period'}
-          </div>
-        </CardContent>
-      </Card>
-    );
+  // When there's no data available (API error, unsupported company, etc.)
+  // hide the component entirely rather than showing an error card
+  if (hasRealError || (data?.success === false && !isDataStillLoading)) {
+    return null;
   }
 
   const sankeyData = data?.data;

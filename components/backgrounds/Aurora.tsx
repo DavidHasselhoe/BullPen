@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Renderer, Program, Mesh, Color, Triangle } from 'ogl';
+import { useShouldAnimateBackground } from '@/hooks/use-reduce-motion';
 
 const VERT = `#version 300 es
 in vec2 position;
@@ -119,6 +120,9 @@ export function Aurora(props: AuroraProps = {}) {
   const { colorStops = ['#5227FF', '#7cff67', '#5227FF'], amplitude = 1.0, blend = 0.5 } = props;
   const propsRef = useRef<AuroraProps>(props);
   propsRef.current = props;
+  const shouldAnimate = useShouldAnimateBackground();
+  const shouldAnimateRef = useRef(shouldAnimate);
+  shouldAnimateRef.current = shouldAnimate;
 
   const ctnDom = useRef<HTMLDivElement>(null);
 
@@ -178,6 +182,7 @@ export function Aurora(props: AuroraProps = {}) {
     let animateId = 0;
     const update = (t: number) => {
       animateId = requestAnimationFrame(update);
+      if (!shouldAnimateRef.current) return; // Pause when tab hidden or reduced motion
       const { time = t * 0.01, speed = 1.0 } = propsRef.current;
       if (program) {
         program.uniforms.uTime.value = time * speed * 0.1;
