@@ -210,6 +210,25 @@ export async function updateUserProfileFromOAuth(
 }
 
 /**
+ * Ensures a row exists in public.users (fallback if trigger missed).
+ * Must be called after auth session is established.
+ */
+export async function ensureUserProfileExists(
+  userId: string,
+  email: string | undefined
+): Promise<{ success: boolean }> {
+  if (!email) return { success: false };
+  const supabase = createBrowserClient();
+  const { error } = await supabase
+    .from('users')
+    .upsert(
+      { id: userId, email, updated_at: new Date().toISOString() },
+      { onConflict: 'id', ignoreDuplicates: true }
+    );
+  return { success: !error };
+}
+
+/**
  * Processes OAuth login and updates profile automatically
  * Should be called after successful OAuth authentication
  * 
@@ -220,6 +239,9 @@ export async function processOAuthProfile(
   user: SupabaseUser,
   saveAvatarToBucket: boolean = false
 ): Promise<{ success: boolean; error?: string }> {
+  const email = user.email ?? user.user_metadata?.email ?? null;
+  await ensureUserProfileExists(user.id, email ?? undefined);
+
   // Determine provider from user metadata
   const provider = user.app_metadata?.provider || user.user_metadata?.provider || 'unknown';
 

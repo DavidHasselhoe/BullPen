@@ -179,6 +179,55 @@ export async function signUp(params: SignUpParams): Promise<AuthResult> {
   }
 }
 
+/** Ensures a row exists in public.users (fallback if trigger missed). No-op if row exists. */
+async function ensureUserProfileExists(
+  supabase: ReturnType<typeof createBrowserClient>,
+  userId: string,
+  email: string
+): Promise<void> {
+  await supabase
+    .from('users')
+    .upsert(
+      { id: userId, email, updated_at: new Date().toISOString() },
+      { onConflict: 'id', ignoreDuplicates: true }
+    );
+}
+
+/** Fetch user profile with retry on abort (handles production fetch cancellation). */
+async function fetchUserProfileWithRetry(
+  supabase: ReturnType<typeof createBrowserClient>,
+  userId: string,
+  maxRetries = 2
+): Promise<{ data: AuthUser | null; error: string | null }> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (!error && data) return { data: data as AuthUser, error: null };
+      const msg = error?.message ?? '';
+      const isAbort = /abort|signal/i.test(msg);
+      if (isAbort && attempt < maxRetries) {
+        await new Promise((r) => setTimeout(r, 200 * (attempt + 1)));
+        continue;
+      }
+      return { data: null, error: msg || 'Profile not found' };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      const isAbort = /abort|signal/i.test(msg);
+      if (isAbort && attempt < maxRetries) {
+        await new Promise((r) => setTimeout(r, 200 * (attempt + 1)));
+        continue;
+      }
+      return { data: null, error: msg };
+    }
+  }
+  return { data: null, error: 'Failed to fetch user profile' };
+}
+
 /**
  * Signs in a user with email and password
  * Updates last_login_at on success
@@ -193,7 +242,7 @@ export async function signIn(params: SignInParams): Promise<AuthResult> {
     });
 
     if (authError) {
-      const msg = /fetch|network|timeout/i.test(authError.message)
+      const msg = /fetch|network|timeout|abort|signal/i.test(authError.message)
         ? 'Connection failed. Please check your network and try again.'
         : authError.message;
       return { success: false, error: msg };
@@ -203,33 +252,29 @@ export async function signIn(params: SignInParams): Promise<AuthResult> {
       return { success: false, error: 'Failed to sign in' };
     }
 
-    // Update last_login_at
-    await supabase
-      .from('users')
-      .update({ last_login_at: new Date().toISOString() })
-      .eq('id', authData.user.id);
+    const userId = authData.user.id;
+    const email = authData.user.email ?? params.email;
 
-    // Fetch user profile
-    const { data: userProfile, error: profileError } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', authData.user.id)
-      .single();
+    // Ensure users row exists (fallback if DB trigger missed)
+    await ensureUserProfileExists(supabase, userId, email);
+
+    // Update last_login_at
+    await supabase.from('users').update({ last_login_at: new Date().toISOString() }).eq('id', userId);
+
+    // Fetch user profile (with retry on abort)
+    const { data: userProfile, error: profileError } = await fetchUserProfileWithRetry(supabase, userId);
 
     if (profileError || !userProfile) {
-      return {
-        success: false,
-        error: 'Failed to fetch user profile',
-      };
+      const errMsg = /abort|signal|fetch|network/i.test(profileError ?? '')
+        ? 'Connection was interrupted. Please try again.'
+        : 'Failed to fetch user profile. Please try again.';
+      return { success: false, error: errMsg };
     }
 
-    return {
-      success: true,
-      user: userProfile as AuthUser,
-    };
+    return { success: true, user: userProfile };
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Unknown error';
-    const friendly = /fetch|network|timeout|abort/i.test(msg)
+    const friendly = /fetch|network|timeout|abort|signal/i.test(msg)
       ? 'Connection failed. Please check your network and try again.'
       : msg;
     return { success: false, error: friendly };

@@ -48,6 +48,7 @@ function AuthCallbackContent() {
       setTimeout(() => router.replace(`/login?error=${encodeURIComponent(msg)}`), 1500);
     };
 
+    const MAX_RETRIES = 3;
     const doExchange = (retryCount = 0) => {
       if (!code) return;
       supabase.auth
@@ -55,10 +56,9 @@ function AuthCallbackContent() {
         .then(({ error: exchangeError }) => {
           if (exchangeError) {
             const msg = exchangeError.message;
-            // Retry once on abort (React Strict Mode double-mount can abort the first request)
             const isAbort = /abort|signal/i.test(msg);
-            if (isAbort && retryCount < 1) {
-              setTimeout(() => doExchange(retryCount + 1), 150);
+            if (isAbort && retryCount < MAX_RETRIES) {
+              setTimeout(() => doExchange(retryCount + 1), 250 * (retryCount + 1));
               return;
             }
             handleError(msg);
@@ -69,8 +69,8 @@ function AuthCallbackContent() {
         .catch((err) => {
           const msg = err?.message ?? 'Sign-in failed';
           const isAbort = /abort|signal/i.test(msg);
-          if (isAbort && retryCount < 1) {
-            setTimeout(() => doExchange(retryCount + 1), 150);
+          if (isAbort && retryCount < MAX_RETRIES) {
+            setTimeout(() => doExchange(retryCount + 1), 250 * (retryCount + 1));
             return;
           }
           handleError(msg);
