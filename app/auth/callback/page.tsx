@@ -43,25 +43,42 @@ function AuthCallbackContent() {
       }
     };
 
-    // Explicitly exchange the code instead of waiting for detectSessionInUrl.
-    // This starts the exchange immediately and redirects as soon as it completes.
-    if (code) {
+    const handleError = (msg: string) => {
+      setAuthError(msg);
+      setTimeout(() => router.replace(`/login?error=${encodeURIComponent(msg)}`), 1500);
+    };
+
+    const doExchange = (retryCount = 0) => {
+      if (!code) return;
       supabase.auth
         .exchangeCodeForSession(code)
         .then(({ error: exchangeError }) => {
           if (exchangeError) {
             const msg = exchangeError.message;
-            setAuthError(msg);
-            setTimeout(() => router.replace(`/login?error=${encodeURIComponent(msg)}`), 1500);
+            // Retry once on abort (React Strict Mode double-mount can abort the first request)
+            const isAbort = /abort|signal/i.test(msg);
+            if (isAbort && retryCount < 1) {
+              setTimeout(() => doExchange(retryCount + 1), 150);
+              return;
+            }
+            handleError(msg);
             return;
           }
           goHome();
         })
         .catch((err) => {
           const msg = err?.message ?? 'Sign-in failed';
-          setAuthError(msg);
-          setTimeout(() => router.replace(`/login?error=${encodeURIComponent(msg)}`), 1500);
+          const isAbort = /abort|signal/i.test(msg);
+          if (isAbort && retryCount < 1) {
+            setTimeout(() => doExchange(retryCount + 1), 150);
+            return;
+          }
+          handleError(msg);
         });
+    };
+
+    if (code) {
+      doExchange();
       return;
     }
 
