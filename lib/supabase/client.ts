@@ -29,9 +29,9 @@ export function createBrowserClient(): SupabaseClient<Database> {
     auth: {
       autoRefreshToken: true,
       persistSession: true,
-      detectSessionInUrl: true,
-      // PKCE uses a ?code= query param instead of a URL hash fragment,
-      // which prevents the trailing # left by the implicit flow.
+      // Disabled: we explicitly call exchangeCodeForSession in /auth/callback.
+      // Auto-detection can race and trigger "signal is aborted" in production.
+      detectSessionInUrl: false,
       flowType: 'pkce',
     },
   });
