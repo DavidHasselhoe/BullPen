@@ -39,15 +39,37 @@ function AuthCallbackContent() {
       }
     };
 
+    const checkSession = () =>
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session) goHome();
+        return !!session;
+      });
+
+    // Event may fire before we register (client created in layout). Poll as fallback.
+    const POLL_MS = 200;
+    const POLL_MAX_MS = 15_000;
+    let elapsed = 0;
+    const pollId = setInterval(async () => {
+      if (redirected) return;
+      const hasSession = await checkSession();
+      if (hasSession) {
+        clearInterval(pollId);
+        return;
+      }
+      elapsed += POLL_MS;
+      if (elapsed >= POLL_MAX_MS) clearInterval(pollId);
+    }, POLL_MS);
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) goHome();
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) goHome();
-    });
+    checkSession();
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearInterval(pollId);
+      subscription.unsubscribe();
+    };
   }, [router, searchParams]);
 
   if (authError) {

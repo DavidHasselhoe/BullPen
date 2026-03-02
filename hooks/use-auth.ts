@@ -82,7 +82,12 @@ export function useAuth() {
           }
         }
 
-        const userProfile = await fetchUserProfile(session.user.id);
+        let userProfile = await fetchUserProfile(session.user.id);
+        // Retry once after 500ms if profile missing (handles OAuth race where users row is created async)
+        if (!userProfile && mounted) {
+          await new Promise((r) => setTimeout(r, 500));
+          userProfile = await fetchUserProfile(session.user.id);
+        }
         if (mounted) {
           setUser(userProfile);
           setIsLoading(false);
@@ -125,8 +130,12 @@ export function useAuth() {
               }
             }
 
-            // Fetch updated user profile
-            const userProfile = await fetchUserProfile(session.user.id);
+            // Fetch updated user profile (retry once - OAuth users row may be created async)
+            let userProfile = await fetchUserProfile(session.user.id);
+            if (!userProfile && mounted) {
+              await new Promise((r) => setTimeout(r, 500));
+              userProfile = await fetchUserProfile(session.user.id);
+            }
             if (mounted) {
               setUser(userProfile);
               setIsLoading(false);
