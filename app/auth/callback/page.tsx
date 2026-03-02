@@ -4,9 +4,9 @@
  * OAuth Callback Page (PKCE flow)
  *
  * Supabase redirects here after Google (or any provider) login with a ?code=
- * query param.  The Supabase browser client automatically exchanges that code
- * for a session (using the PKCE verifier stored in sessionStorage).  We then
- * do a clean router.replace('/') so the final URL has no hash or stale params.
+ * query param. We explicitly call exchangeCodeForSession(code) to exchange it
+ * immediately for a session (using the PKCE verifier in sessionStorage), then
+ * redirect to / so the URL has no hash or stale params.
  */
 
 import { Suspense, useEffect, useState } from 'react';
@@ -33,29 +33,45 @@ function AuthCallbackContent() {
     }
 
     const supabase = createBrowserClient();
+    const code = searchParams.get('code');
     let redirected = false;
 
     const goHome = () => {
       if (!redirected) {
         redirected = true;
-        // replace instead of push so the callback URL is removed from history
         router.replace('/');
       }
     };
 
-    // Supabase fires SIGNED_IN once the code exchange completes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) {
-        goHome();
-      }
-    });
+    // Explicitly exchange the code instead of waiting for detectSessionInUrl.
+    // This starts the exchange immediately and redirects as soon as it completes.
+    if (code) {
+      supabase.auth
+        .exchangeCodeForSession(code)
+        .then(({ error: exchangeError }) => {
+          if (exchangeError) {
+            const msg = exchangeError.message;
+            setAuthError(msg);
+            setTimeout(() => router.replace(`/login?error=${encodeURIComponent(msg)}`), 1500);
+            return;
+          }
+          goHome();
+        })
+        .catch((err) => {
+          const msg = err?.message ?? 'Sign-in failed';
+          setAuthError(msg);
+          setTimeout(() => router.replace(`/login?error=${encodeURIComponent(msg)}`), 1500);
+        });
+      return;
+    }
 
-    // Guard against race condition: if the exchange already finished before
-    // the subscription was registered, getSession() will catch it
+    // Fallback if no code (shouldn't happen in normal flow): wait for session.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) goHome();
+    });
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) goHome();
     });
-
     return () => subscription.unsubscribe();
   }, [router, searchParams]);
 
