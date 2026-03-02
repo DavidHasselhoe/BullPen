@@ -32,10 +32,12 @@ function AuthCallbackContent() {
     const supabase = createBrowserClient();
     let redirected = false;
 
+    // Full page reload ensures useAuth re-initializes with session from localStorage.
+    // Client-side router.replace kept showing logged-out until tab close/reopen.
     const goHome = () => {
       if (!redirected) {
         redirected = true;
-        router.replace('/');
+        window.location.replace('/');
       }
     };
 
