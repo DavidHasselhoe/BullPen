@@ -4,10 +4,12 @@
  * Each tool runs server-side only. The AI decides which tool(s) to call
  * based on the user's question, executes them, then uses the results to
  * compose its final answer.
+ *
+ * Uses jsonSchema() instead of Zod to avoid schema conversion bugs
+ * (e.g. type: "None" with Zod v4).
  */
 
-import { tool } from 'ai';
-import { z } from 'zod';
+import { tool, jsonSchema } from 'ai';
 import { createServerClient } from '@/lib/supabase/client';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -42,7 +44,8 @@ async function resolveCompanyId(ticker: string): Promise<{ companyId: string; na
     .eq('ticker', ticker.toUpperCase())
     .maybeSingle();
   if (!data) return null;
-  return { companyId: data.id, name: data.name };
+  const d = data as { id: string; name: string };
+  return { companyId: d.id, name: d.name };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -65,27 +68,38 @@ const METRIC_LABELS: Record<string, string> = {
   shares_outstanding: 'Shares Outstanding',
 };
 
+const METRIC_VALUES = [
+  'revenue', 'gross_profit', 'operating_income', 'net_income',
+  'eps_diluted', 'eps_basic', 'operating_cash_flow', 'free_cash_flow',
+  'capital_expenditures', 'total_assets', 'total_liabilities',
+  'shareholders_equity', 'shares_outstanding',
+] as const;
+
 export const getCompanyMetrics = tool({
   description:
     'Fetch historical financial metrics for a specific company from the BullPen database. ' +
     'Use this when the user asks about a company\'s revenue, earnings, EPS, margins, cash flow, ' +
     'balance sheet items, or any other financial data. Returns up to 8 periods.',
-  parameters: z.object({
-    ticker: z.string().describe('The stock ticker symbol, e.g. "NVDA", "AAPL", "MSFT"'),
-    metric: z
-      .enum([
-        'revenue', 'gross_profit', 'operating_income', 'net_income',
-        'eps_diluted', 'eps_basic', 'operating_cash_flow', 'free_cash_flow',
-        'capital_expenditures', 'total_assets', 'total_liabilities',
-        'shareholders_equity', 'shares_outstanding',
-      ])
-      .describe('The financial metric to retrieve'),
-    period: z
-      .enum(['annual', 'quarterly'])
-      .default('annual')
-      .describe('Whether to return annual or quarterly data'),
+  inputSchema: jsonSchema<{ ticker: string; metric: typeof METRIC_VALUES[number]; period: 'annual' | 'quarterly' }>({
+    type: 'object',
+    properties: {
+      ticker: { type: 'string', description: 'The stock ticker symbol, e.g. "NVDA", "AAPL", "MSFT"' },
+      metric: {
+        type: 'string',
+        enum: [...METRIC_VALUES],
+        description: 'The financial metric to retrieve',
+      },
+      period: {
+        type: 'string',
+        enum: ['annual', 'quarterly'],
+        default: 'annual',
+        description: 'Whether to return annual or quarterly data',
+      },
+    },
+    required: ['ticker', 'metric'],
+    additionalProperties: false,
   }),
-  execute: async ({ ticker, metric, period }) => {
+  execute: async ({ ticker, metric, period = 'annual' }) => {
     const company = await resolveCompanyId(ticker);
     if (!company) {
       return { error: `Company with ticker "${ticker}" not found in the database.` };
@@ -113,8 +127,10 @@ export const getCompanyMetrics = tool({
       };
     }
 
+    type MetricRow = { value: number | null; period_end_date: string; fiscal_year: number; fiscal_quarter: number };
+    const metrics = data as MetricRow[];
     const isMonetary = !['eps_diluted', 'eps_basic', 'shares_outstanding'].includes(metric);
-    const rows = data.map((r) => {
+    const rows = metrics.map((r) => {
       const label =
         period === 'annual'
           ? `FY${r.fiscal_year}`
@@ -145,8 +161,13 @@ export const getCompanyProfile = tool({
   description:
     'Fetch the company profile including sector, industry, description, employee count, ' +
     'and fiscal year end. Use this when the user asks general questions about a company.',
-  parameters: z.object({
-    ticker: z.string().describe('The stock ticker symbol'),
+  inputSchema: jsonSchema<{ ticker: string }>({
+    type: 'object',
+    properties: {
+      ticker: { type: 'string', description: 'The stock ticker symbol' },
+    },
+    required: ['ticker'],
+    additionalProperties: false,
   }),
   execute: async ({ ticker }) => {
     const db = supabase();
@@ -171,8 +192,13 @@ export const searchCompanies = tool({
   description:
     'Search for companies by name or ticker. Use this when the user refers to a company ' +
     'by name (e.g. "Apple", "the chip maker") rather than a ticker, or when disambiguating.',
-  parameters: z.object({
-    query: z.string().describe('Company name or partial ticker to search for'),
+  inputSchema: jsonSchema<{ query: string }>({
+    type: 'object',
+    properties: {
+      query: { type: 'string', description: 'Company name or partial ticker to search for' },
+    },
+    required: ['query'],
+    additionalProperties: false,
   }),
   execute: async ({ query }) => {
     const db = supabase();
@@ -199,20 +225,34 @@ export const screenCompanies = tool({
     'Find companies that match financial criteria. Use this when the user asks to find, ' +
     'list, or compare companies based on metrics like revenue size, margins, EPS, ' +
     'cash flow, or sector. Returns the top 10 matches sorted by revenue.',
-  parameters: z.object({
-    sector: z.string().optional().describe('Filter by sector, e.g. "Technology", "Healthcare"'),
-    revenueMinB: z.number().optional().describe('Minimum annual revenue in billions'),
-    revenueMaxB: z.number().optional().describe('Maximum annual revenue in billions'),
-    grossMarginMin: z.number().optional().describe('Minimum gross margin as a percentage, e.g. 50 means 50%'),
-    netMarginMin: z.number().optional().describe('Minimum net margin as a percentage'),
-    epsDilutedMin: z.number().optional().describe('Minimum diluted EPS in dollars'),
-    fcfMinB: z.number().optional().describe('Minimum free cash flow in billions'),
-    revenueGrowthMin: z.number().optional().describe('Minimum YoY revenue growth as a percentage'),
-    limit: z.number().int().min(1).max(20).default(10).describe('Number of results to return'),
+  inputSchema: jsonSchema<{
+    sector?: string;
+    revenueMinB?: number;
+    revenueMaxB?: number;
+    grossMarginMin?: number;
+    netMarginMin?: number;
+    epsDilutedMin?: number;
+    fcfMinB?: number;
+    revenueGrowthMin?: number;
+    limit?: number;
+  }>({
+    type: 'object',
+    properties: {
+      sector: { type: 'string', description: 'Filter by sector, e.g. "Technology", "Healthcare"' },
+      revenueMinB: { type: 'number', description: 'Minimum annual revenue in billions' },
+      revenueMaxB: { type: 'number', description: 'Maximum annual revenue in billions' },
+      grossMarginMin: { type: 'number', description: 'Minimum gross margin as a percentage, e.g. 50 means 50%' },
+      netMarginMin: { type: 'number', description: 'Minimum net margin as a percentage' },
+      epsDilutedMin: { type: 'number', description: 'Minimum diluted EPS in dollars' },
+      fcfMinB: { type: 'number', description: 'Minimum free cash flow in billions' },
+      revenueGrowthMin: { type: 'number', description: 'Minimum YoY revenue growth as a percentage' },
+      limit: { type: 'number', minimum: 1, maximum: 20, default: 10, description: 'Number of results to return' },
+    },
+    additionalProperties: false,
   }),
   execute: async ({
     sector, revenueMinB, revenueMaxB, grossMarginMin, netMarginMin,
-    epsDilutedMin, fcfMinB, revenueGrowthMin, limit,
+    epsDilutedMin, fcfMinB, revenueGrowthMin, limit = 10,
   }) => {
     const db = supabase();
     const { data, error } = await db.rpc('get_screener_data');
@@ -282,22 +322,45 @@ export const screenCompanies = tool({
 // Tool: Compare Companies
 // ─────────────────────────────────────────────────────────────────────────────
 
+const COMPARE_METRIC_VALUES = [
+  'revenue', 'gross_profit', 'operating_income', 'net_income',
+  'eps_diluted', 'free_cash_flow', 'total_assets', 'shareholders_equity',
+] as const;
+
 export const compareCompanies = tool({
   description:
     'Compare multiple companies side-by-side on key financial metrics. ' +
     'Use when the user asks to compare two or more companies.',
-  parameters: z.object({
-    tickers: z.array(z.string()).min(2).max(5).describe('List of ticker symbols to compare'),
-    metric: z
-      .enum([
-        'revenue', 'gross_profit', 'operating_income', 'net_income',
-        'eps_diluted', 'free_cash_flow', 'total_assets', 'shareholders_equity',
-      ])
-      .default('revenue')
-      .describe('The metric to compare across companies'),
-    period: z.enum(['annual', 'quarterly']).default('annual'),
+  inputSchema: jsonSchema<{
+    tickers: string[];
+    metric?: typeof COMPARE_METRIC_VALUES[number];
+    period?: 'annual' | 'quarterly';
+  }>({
+    type: 'object',
+    properties: {
+      tickers: {
+        type: 'array',
+        items: { type: 'string' },
+        minItems: 2,
+        maxItems: 5,
+        description: 'List of ticker symbols to compare',
+      },
+      metric: {
+        type: 'string',
+        enum: [...COMPARE_METRIC_VALUES],
+        default: 'revenue',
+        description: 'The metric to compare across companies',
+      },
+      period: {
+        type: 'string',
+        enum: ['annual', 'quarterly'],
+        default: 'annual',
+      },
+    },
+    required: ['tickers'],
+    additionalProperties: false,
   }),
-  execute: async ({ tickers, metric, period }) => {
+  execute: async ({ tickers, metric = 'revenue', period = 'annual' }) => {
     const db = supabase();
 
     const results = await Promise.all(
@@ -305,7 +368,7 @@ export const compareCompanies = tool({
         const company = await resolveCompanyId(ticker);
         if (!company) return { ticker, error: 'Not found' };
 
-        const { data } = await db
+        const { data: fmData } = await db
           .from('financial_metrics')
           .select('value, period_end_date, fiscal_year, fiscal_quarter')
           .eq('company_id', company.companyId)
@@ -314,13 +377,14 @@ export const compareCompanies = tool({
           .order('period_end_date', { ascending: false })
           .limit(4);
 
+        type FmRow = { value: number | null; period_end_date: string; fiscal_year: number; fiscal_quarter: number };
         const isMonetary = !['eps_diluted', 'eps_basic', 'shares_outstanding'].includes(metric);
         return {
           ticker: ticker.toUpperCase(),
           company: company.name,
           metric: METRIC_LABELS[metric] ?? metric,
           period,
-          data: (data ?? []).map((r) => ({
+          data: ((fmData ?? []) as FmRow[]).map((r) => ({
             period: period === 'annual' ? `FY${r.fiscal_year}` : `Q${r.fiscal_quarter} FY${r.fiscal_year}`,
             value: r.value,
             formatted: isMonetary ? fmt(r.value) : `$${Number(r.value).toFixed(4)}`,

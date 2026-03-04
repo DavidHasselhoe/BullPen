@@ -1,16 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getTopMovers } from '@/lib/finnhub/finnhub-client';
+import { getStorageLogoUrl } from '@/lib/logos/logos-storage';
 
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const limit = parseInt(searchParams.get('limit') || '5', 10);
 
-    const movers = await getTopMovers(limit);
+    const { gainers, losers } = await getTopMovers(limit);
+
+    const enrichWithLogo = (m: { symbol: string }) => ({
+      ...m,
+      logoUrl: getStorageLogoUrl(m.symbol),
+    });
 
     return NextResponse.json({
       success: true,
-      movers,
+      movers: {
+        gainers: gainers.map(enrichWithLogo),
+        losers: losers.map(enrichWithLogo),
+      },
     });
   } catch (error) {
     console.error('Error fetching top movers:', error);

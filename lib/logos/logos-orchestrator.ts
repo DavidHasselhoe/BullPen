@@ -4,6 +4,7 @@
 import { fetchLogoFromLogoDev } from './logo-fetcher';
 import { uploadLogoToStorage } from './logos-storage';
 import { updateCompanyLogo } from './logos-db';
+import { logoExistsInStorage, getStorageLogoUrl } from './logos-storage';
 
 export interface LogoIngestionResult {
   success: boolean;
@@ -115,6 +116,49 @@ export async function ingestCompanyLogo(
       success: false,
       logoUrl: null,
       source: null,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+/**
+ * Ensures a logo exists in storage for the given ticker.
+ * If missing: fetches from Logo.dev, uploads to Supabase. No DB update, no company required.
+ * Returns the storage URL for display.
+ */
+export async function ensureLogoForTicker(ticker: string): Promise<{ success: boolean; logoUrl?: string; error?: string }> {
+  try {
+    const normalizedTicker = ticker?.trim().toUpperCase();
+    if (!normalizedTicker) {
+      return { success: false, error: 'Missing ticker' };
+    }
+
+    // Already in storage - return URL
+    const exists = await logoExistsInStorage(normalizedTicker);
+    if (exists) {
+      return { success: true, logoUrl: getStorageLogoUrl(normalizedTicker) };
+    }
+
+    // Fetch from Logo.dev and upload
+    const fetchResult = await fetchLogoFromLogoDev(normalizedTicker);
+    if (!fetchResult.success || !fetchResult.imageBuffer || !fetchResult.mimeType) {
+      return { success: false, error: fetchResult.error || 'Logo not found' };
+    }
+
+    const uploadResult = await uploadLogoToStorage(
+      normalizedTicker,
+      fetchResult.imageBuffer,
+      fetchResult.mimeType
+    );
+
+    if (!uploadResult.success || !uploadResult.publicUrl) {
+      return { success: false, error: uploadResult.error || 'Upload failed' };
+    }
+
+    return { success: true, logoUrl: uploadResult.publicUrl };
+  } catch (error) {
+    return {
+      success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
     };
   }

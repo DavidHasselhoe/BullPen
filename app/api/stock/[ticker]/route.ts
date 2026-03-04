@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCompanyByTicker } from '@/lib/ingestion/database';
+import { getStorageLogoUrl } from '@/lib/logos/logos-storage';
 import { withRateLimit, addSecurityHeaders, validateTickerParam } from '@/lib/security/api-security';
 import { logger } from '@/lib/utils/logger';
 import type { Company } from '@/lib/types/database';
@@ -34,10 +35,15 @@ async function handler(
       );
     }
 
+    const company = result.data as Company;
+    const enriched = {
+      ...company,
+      logo_url: company.logo_url || getStorageLogoUrl(company.ticker),
+    };
     return addSecurityHeaders(
       NextResponse.json({
         success: true,
-        company: result.data as Company,
+        company: enriched,
       })
     );
   } catch (error) {

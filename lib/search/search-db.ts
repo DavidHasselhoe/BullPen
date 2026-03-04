@@ -2,6 +2,7 @@
 // Handles company search and autocomplete
 
 import { createServerClient } from '../supabase/client';
+import { getStorageLogoUrl } from '../logos/logos-storage';
 import type { CompanyIndex } from '../types/database';
 
 export interface SearchResult {
@@ -107,15 +108,14 @@ export async function searchCompanies(
         .select('ticker, logo_url')
         .in('ticker', allTickers);
 
+      const logoMap = new Map<string, string | null>();
       if (companiesData) {
-        const logoMap = new Map<string, string | null>();
         for (const company of companiesData) {
           logoMap.set(company.ticker, company.logo_url);
         }
-
-        for (const result of results) {
-          result.logo_url = logoMap.get(result.ticker) || null;
-        }
+      }
+      for (const result of results) {
+        result.logo_url = logoMap.get(result.ticker) ?? getStorageLogoUrl(result.ticker);
       }
     }
 

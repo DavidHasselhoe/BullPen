@@ -126,6 +126,7 @@ export interface MarketMover {
   change: number;
   changePercent: number;
   previousClose: number;
+  logoUrl?: string;
 }
 
 export interface TopMovers {

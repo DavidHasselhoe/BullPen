@@ -2,7 +2,12 @@
 // Read-only queries for the Discover/Home page
 
 import { createServerClient } from '../supabase/client';
+import { getStorageLogoUrl } from '../logos/logos-storage';
 import type { Trend, Signal, Filing, Company } from '../types/database';
+
+function enrichCompanyLogo<T extends { ticker: string; logo_url?: string | null }>(company: T): T {
+  return { ...company, logo_url: company.logo_url || getStorageLogoUrl(company.ticker) };
+}
 
 export interface DiscoverDBResult<T> {
   success: boolean;
@@ -105,7 +110,7 @@ export async function getRecentFundamentalChanges(
 
       changes.push({
         type: 'trend',
-        company,
+        company: enrichCompanyLogo(company),
         trend: {
           id: trend.id,
           company_id: trend.company_id,
@@ -252,6 +257,7 @@ export async function getRecentFilings(
       .filter((f) => f.company)
       .map((f) => {
         const company = f.company!;
+        const enriched = enrichCompanyLogo(company);
         return {
           filing: {
             id: f.id,
@@ -270,7 +276,7 @@ export async function getRecentFilings(
             created_at: f.created_at,
             updated_at: f.updated_at,
           },
-          company,
+          company: enriched,
           insightsCount: insightsCountMap.get(f.id) || 0,
         };
       });
@@ -401,8 +407,9 @@ export async function getCompaniesToWatch(
       }
     });
 
-    // Combine and rank companies
+    // Combine and rank companies (enrich logo from storage when DB has none)
     const ranked = companiesList.map((company) => {
+      const enriched = enrichCompanyLogo(company);
       const latestFilingId = latestFilingIds.get(company.id);
       const composite = latestFilingId ? scoreMap.get(latestFilingId) : null;
       const trend = trendMap.get(company.id) || null;
@@ -420,7 +427,7 @@ export async function getCompaniesToWatch(
       }
 
       return {
-        company,
+        company: enriched,
         compositeScore: composite?.score || null,
         compositeDirection: composite?.direction || null,
         strongestTrend: trend,

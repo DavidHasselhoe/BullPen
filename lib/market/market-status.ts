@@ -293,6 +293,18 @@ export function formatTimeUntil(milliseconds: number): string {
 }
 
 /**
+ * Formats time until event as "Xh Ym" or "Xm" for display
+ */
+export function formatTimeUntilShort(milliseconds: number): string {
+  if (milliseconds <= 0) return '0m';
+  const totalMinutes = Math.ceil(milliseconds / 60000);
+  if (totalMinutes < 60) return `${totalMinutes}m`;
+  const hours = Math.floor(totalMinutes / 60);
+  const mins = totalMinutes % 60;
+  return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+}
+
+/**
  * Converts a time string (HH:MM) from exchange timezone to user's local timezone
  * Uses a binary search approach to find the UTC time that corresponds to the target time in exchange timezone
  */

@@ -13,6 +13,19 @@ export interface StorageUploadResult {
 const LOGO_BUCKET = 'company-logos';
 
 /**
+ * Returns the public URL for a company logo in storage.
+ * Logos are stored as {ticker}.jpg (lowercase). Used when companies table
+ * has no logo_url (e.g. company only in company_index). Caller should handle
+ * 404 via CompanyLogo onError fallback.
+ */
+export function getStorageLogoUrl(ticker: string): string {
+  const supabase = createServerClient();
+  const fileName = `${ticker.toLowerCase()}.jpg`;
+  const { data } = supabase.storage.from(LOGO_BUCKET).getPublicUrl(fileName);
+  return data.publicUrl;
+}
+
+/**
  * Uploads logo image to Supabase Storage
  * Supports PNG, JPG, and SVG formats
  */
