@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
-import { Navigation } from "@/components/navigation/Navigation";
 import { AuthNavigation } from "@/components/navigation/AuthNavigation";
 import { BackgroundProvider } from "@/components/backgrounds/BackgroundProvider";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
-import { ChatWidget } from "@/components/ai/ChatWidget";
+import { AIPanelProvider } from "@/components/ai/AIPanelProvider";
+import { AIPanelToggle } from "@/components/ai/AIPanelToggle";
+import { CommandPaletteProvider } from "@/components/command-palette/CommandPaletteProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,10 +36,14 @@ export default function RootLayout({
       >
         <Providers>
           <ThemeProvider>
-            <BackgroundProvider />
-            <AuthNavigation />
-            {children}
-            <ChatWidget />
+            <AIPanelProvider>
+              <CommandPaletteProvider>
+                <BackgroundProvider />
+                <AuthNavigation />
+                {children}
+                <AIPanelToggle />
+              </CommandPaletteProvider>
+            </AIPanelProvider>
           </ThemeProvider>
         </Providers>
       </body>

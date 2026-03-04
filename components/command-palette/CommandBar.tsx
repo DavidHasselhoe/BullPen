@@ -1,0 +1,28 @@
+'use client';
+
+import { useCommandPalette } from './CommandPaletteProvider';
+import { Search } from 'lucide-react';
+
+/**
+ * Hero command bar - primary action at top of dashboard.
+ * Clicking opens the command palette (same as Ctrl+⌘K).
+ */
+export function CommandBar() {
+  const { open } = useCommandPalette();
+
+  return (
+    <button
+      type="button"
+      onClick={open}
+      className="group w-full flex items-center gap-3 rounded-xl border-2 border-border/70 bg-card/60 px-5 py-4 text-left transition-all hover:border-primary/40 hover:bg-card focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-2 focus:ring-offset-background"
+    >
+      <Search className="h-5 w-5 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
+      <span className="flex-1 text-base text-muted-foreground group-hover:text-foreground transition-colors">
+        Search companies, filings, metrics, or ask BullPen AI
+      </span>
+      <kbd className="hidden sm:inline-flex h-7 items-center gap-0.5 rounded border bg-muted/80 px-2 text-xs font-medium text-muted-foreground">
+        ⌘K / Ctrl+K
+      </kbd>
+    </button>
+  );
+}

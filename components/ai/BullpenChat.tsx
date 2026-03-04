@@ -9,14 +9,22 @@ import { Send, Square, Bot, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AuthUser } from '@/lib/auth/auth';
 
+const DEFAULT_STARTER_PROMPTS = [
+  'What is EBITDA?',
+  'Explain P/E ratio',
+  'What are 10-K filings?',
+];
+
 interface BullpenChatProps {
   /** Compact mode trims padding/header for use inside the floating widget */
   compact?: boolean;
   /** Authenticated user — used to show profile avatar on user messages */
   user?: AuthUser | null;
+  /** Custom starter prompts when there are no messages */
+  starterPrompts?: string[];
 }
 
-export function BullpenChat({ compact = false, user }: BullpenChatProps) {
+export function BullpenChat({ compact = false, user, starterPrompts = DEFAULT_STARTER_PROMPTS }: BullpenChatProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const inputRef = useRef('');
@@ -67,6 +75,14 @@ export function BullpenChat({ compact = false, user }: BullpenChatProps) {
     e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
   };
 
+  const handleFormClick = (e: React.MouseEvent<HTMLFormElement>) => {
+    // Focus textarea when clicking form area (except the send button)
+    const target = e.target as HTMLElement;
+    if (!target.closest('button')) {
+      textareaRef.current?.focus();
+    }
+  };
+
   return (
     <div className={cn('flex flex-col h-full', compact ? '' : 'min-h-[460px]')}>
       {/* Messages */}
@@ -83,11 +99,7 @@ export function BullpenChat({ compact = false, user }: BullpenChatProps) {
               </p>
             </div>
             <div className="flex flex-wrap gap-2 justify-center mt-1">
-              {[
-                'What is EBITDA?',
-                'Explain P/E ratio',
-                'What are 10-K filings?',
-              ].map((suggestion) => (
+              {starterPrompts.map((suggestion) => (
                 <button
                   key={suggestion}
                   onClick={() => {
@@ -183,10 +195,11 @@ export function BullpenChat({ compact = false, user }: BullpenChatProps) {
         </div>
       )}
 
-      {/* Input */}
+      {/* Input - click-to-focus on form padding ensures input is focusable */}
       <form
         onSubmit={handleSubmit}
-        className="shrink-0 border-t border-border/50 p-3 flex items-end gap-2"
+        onClick={handleFormClick}
+        className="shrink-0 border-t border-border/50 p-3 flex items-end gap-2 pointer-events-auto relative z-10"
       >
         <textarea
           ref={textareaRef}
@@ -195,7 +208,9 @@ export function BullpenChat({ compact = false, user }: BullpenChatProps) {
           onKeyDown={handleKeyDown}
           placeholder="Ask anything…"
           disabled={isStreaming}
-          className="flex-1 resize-none rounded-xl border border-input bg-background px-3.5 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 max-h-[120px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+          tabIndex={0}
+          aria-label="Message input"
+          className="flex-1 resize-none rounded-xl border border-input bg-background px-3.5 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 max-h-[120px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] pointer-events-auto"
           style={{ height: 'auto' }}
         />
         {isStreaming ? (

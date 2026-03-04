@@ -1,8 +1,14 @@
 'use client';
 
 import { BullpenChat } from '@/components/ai/BullpenChat';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MessageSquare } from 'lucide-react';
+
+const STARTER_PROMPTS = [
+  'What is EBITDA?',
+  'Explain the P/E ratio',
+  'What are 10-K filings?',
+  'Compare NVIDIA and AMD',
+];
 
 export default function AIChatClientPage() {
   return (
@@ -16,7 +22,7 @@ export default function AIChatClientPage() {
           Investment research assistant — ask about SEC filings, metrics, or concepts
         </p>
       </div>
-      <BullpenChat />
+      <BullpenChat starterPrompts={STARTER_PROMPTS} />
     </div>
   );
 }
