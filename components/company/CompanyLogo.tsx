@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
@@ -10,6 +10,8 @@ export interface CompanyLogoProps {
   logoUrl?: string | null;
   size?: number;
   className?: string;
+  /** If true, on image error will call logo ensure API to fetch and save logo */
+  ensureOnError?: boolean;
 }
 
 /**
@@ -42,10 +44,42 @@ function getInitialsColor(ticker: string): string {
  * Company Logo Component
  * Renders company logo if available, otherwise shows initials in square badge
  */
-export function CompanyLogo({ name, ticker, logoUrl, size = 40, className }: CompanyLogoProps) {
+export function CompanyLogo({
+  name,
+  ticker,
+  logoUrl,
+  size = 40,
+  className,
+  ensureOnError = true,
+}: CompanyLogoProps) {
   const [imageError, setImageError] = useState(false);
+  const [ensuredUrl, setEnsuredUrl] = useState<string | null>(null);
+  const ensureInProgress = useRef(false);
+
   const displayText = useMemo(() => getDisplayText(name, ticker), [name, ticker]);
   const initialsColor = useMemo(() => getInitialsColor(ticker), [ticker]);
+
+  const handleImageError = useCallback(() => {
+    if (!ensureOnError || !ticker || ensureInProgress.current) {
+      setImageError(true);
+      return;
+    }
+    ensureInProgress.current = true;
+    fetch(`/api/logo/${encodeURIComponent(ticker)}`)
+      .then((res) => res.json())
+      .then((data: { success?: boolean; logoUrl?: string }) => {
+        if (data.success && data.logoUrl) {
+          setEnsuredUrl(`${data.logoUrl}?t=${Date.now()}`);
+          setImageError(false);
+        } else {
+          setImageError(true);
+        }
+      })
+      .catch(() => setImageError(true))
+      .finally(() => {
+        ensureInProgress.current = false;
+      });
+  }, [ensureOnError, ticker]);
   
   // Calculate font size based on ticker length to fit in square
   // Larger base size for better readability, especially for 4-letter tickers like NVDA
@@ -62,7 +96,8 @@ export function CompanyLogo({ name, ticker, logoUrl, size = 40, className }: Com
     return baseSize;
   }, [size, displayText.length]);
 
-  const showFallback = !logoUrl || imageError;
+  const effectiveLogoUrl = ensuredUrl || logoUrl;
+  const showFallback = !effectiveLogoUrl || imageError;
 
   return (
     <div
@@ -77,18 +112,15 @@ export function CompanyLogo({ name, ticker, logoUrl, size = 40, className }: Com
         minHeight: size,
       }}
     >
-      {logoUrl && !imageError ? (
+      {effectiveLogoUrl && !imageError ? (
         // Render logo image using Next.js Image component
         <Image
-          src={logoUrl}
+          src={effectiveLogoUrl}
           alt={`${name} logo`}
           width={size}
           height={size}
           className="w-full h-full object-contain"
-          onError={() => {
-            // If logo fails to load, show initials fallback
-            setImageError(true);
-          }}
+          onError={handleImageError}
           style={{
             maxWidth: '100%',
             maxHeight: '100%',

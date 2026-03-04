@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { useHoldings, useRemoveHolding } from '@/hooks/use-holdings';
 import { useAuth } from '@/hooks/use-auth';
-import { Trash2, Edit2, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { Trash2, Edit2, ArrowUpRight, ArrowDownRight, Plus } from 'lucide-react';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { EditHoldingModal } from './EditHoldingModal';
@@ -29,7 +29,11 @@ function formatNumber(value: number): string {
   }).format(value);
 }
 
-export function HoldingsTable() {
+interface HoldingsTableProps {
+  onAddClick?: () => void;
+}
+
+export function HoldingsTable({ onAddClick }: HoldingsTableProps) {
   const { data: holdings, isLoading } = useHoldings();
   const { user } = useAuth();
   const removeHolding = useRemoveHolding();
@@ -59,7 +63,7 @@ export function HoldingsTable() {
     gcTime: 24 * 60 * 60 * 1000, // 24 hours
   });
 
-  // Fetch quotes for all holdings in parallel
+  // Fetch quotes and logos (batched: 1 DB query for all logos + N quote fetches in parallel)
   const quotes = useQuery({
     queryKey: ['holdings-quotes', holdings?.map((h) => h.symbol)],
     queryFn: async () => {
@@ -67,61 +71,45 @@ export function HoldingsTable() {
       
       const supabase = createBrowserClient();
       const quoteMap: Record<string, { price: number; change: number; changePercent: number }> = {};
-      
-      // Fetch company info for logos from storage bucket
-      const companyPromises = holdings.map(async (holding) => {
-        // Try to get logo from companies table first
-        const { data: company } = await supabase
-          .from('companies')
-          .select('logo_url')
-          .eq('ticker', holding.symbol)
-          .maybeSingle();
-        
-        let logoUrl = company?.logo_url || null;
-        
-        // If no logo_url in DB or it's null/empty, try to construct URL from storage bucket
-        // Try multiple extensions since logos might be .png, .jpg, or .svg
-        if (!logoUrl) {
-          const extensions = ['jpg', 'png', 'svg'];
-          for (const ext of extensions) {
-            const { data: urlData } = supabase.storage
-              .from('company-logos')
-              .getPublicUrl(`${holding.symbol.toLowerCase()}.${ext}`);
-            // getPublicUrl always returns a URL, but we'll use it anyway
-            // The image component will handle 404s gracefully
-            logoUrl = urlData?.publicUrl || null;
-            if (logoUrl) break;
-          }
-        }
-        
-        return { symbol: holding.symbol, logoUrl };
-      });
-      
-      const companies = await Promise.all(companyPromises);
+      const tickers = holdings.map((h) => h.symbol);
+
+      // Single batched logo query instead of N individual queries
+      const { data: companiesData } = await supabase
+        .from('companies')
+        .select('ticker, logo_url')
+        .in('ticker', tickers);
+
+      const dbLogoMap = new Map<string, string | null>(
+        (companiesData || []).map((c) => [c.ticker, c.logo_url])
+      );
+
       const logoMap: Record<string, string | null> = {};
-      companies.forEach((c) => {
-        logoMap[c.symbol] = c.logoUrl;
-      });
+      for (const ticker of tickers) {
+        const dbLogo = dbLogoMap.get(ticker) ?? null;
+        logoMap[ticker] = dbLogo ?? supabase.storage
+          .from('company-logos')
+          .getPublicUrl(`${ticker.toLowerCase()}.jpg`).data.publicUrl ?? null;
+      }
 
-      // Fetch quotes
-      const quotePromises = holdings.map(async (holding) => {
-        try {
-          const response = await fetch(`/api/stock/${holding.symbol}/quote`);
-          const data = await response.json();
-          if (data.success && data.quote && data.quote.c > 0) {
-            quoteMap[holding.symbol] = {
-              price: data.quote.c,
-              change: data.quote.d,
-              changePercent: data.quote.dp,
-            };
+      // Fetch quotes in parallel
+      await Promise.all(
+        holdings.map(async (holding) => {
+          try {
+            const response = await fetch(`/api/stock/${holding.symbol}/quote`);
+            const data = await response.json();
+            if (data.success && data.quote && data.quote.c > 0) {
+              quoteMap[holding.symbol] = {
+                price: data.quote.c,
+                change: data.quote.d,
+                changePercent: data.quote.dp,
+              };
+            }
+          } catch (error) {
+            console.error(`Error fetching quote for ${holding.symbol}:`, error);
           }
-        } catch (error) {
-          console.error(`Error fetching quote for ${holding.symbol}:`, error);
-        }
-      });
+        })
+      );
 
-      await Promise.all(quotePromises);
-      
       return { quotes: quoteMap, logos: logoMap };
     },
     enabled: !!holdings && holdings.length > 0,
@@ -293,9 +281,20 @@ export function HoldingsTable() {
           <CardTitle>My Holdings</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground text-center py-8">
+          <p className="text-sm text-muted-foreground text-center py-6">
             No holdings yet. Add your first stock to get started.
           </p>
+          {onAddClick && (
+            <button
+              onClick={onAddClick}
+              className="w-full flex items-center justify-center gap-2 py-5 rounded-lg border border-dashed border-border/60 hover:border-primary/50 hover:bg-muted/20 text-muted-foreground hover:text-primary transition-colors group"
+            >
+              <span className="flex items-center justify-center h-8 w-8 rounded-full border border-dashed border-border/60 group-hover:border-primary/50 group-hover:bg-primary/5 transition-colors">
+                <Plus className="h-4 w-4" />
+              </span>
+              <span className="text-sm font-medium">Add holding</span>
+            </button>
+          )}
         </CardContent>
       </Card>
     );
@@ -470,6 +469,21 @@ export function HoldingsTable() {
                   </tr>
                 );
               })}
+              {onAddClick && (
+                <tr>
+                  <td colSpan={9} className="p-0 align-middle">
+                    <button
+                      onClick={onAddClick}
+                      className="w-full flex items-center justify-center gap-2 py-5 text-muted-foreground hover:text-primary hover:bg-muted/20 transition-colors group"
+                    >
+                      <span className="flex items-center justify-center h-8 w-8 rounded-full border border-dashed border-border/60 group-hover:border-primary/50 group-hover:bg-primary/5 transition-colors">
+                        <Plus className="h-4 w-4" />
+                      </span>
+                      <span className="text-sm font-medium">Add holding</span>
+                    </button>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

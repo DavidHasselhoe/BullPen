@@ -1,8 +1,6 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Quote } from 'lucide-react';
 
 interface QuoteResponse {
@@ -29,58 +27,47 @@ interface QuoteDisplayProps {
   enabled?: boolean;
 }
 
+/**
+ * Compact footer strip for motivational quotes (Market Wisdom).
+ * Keeps information density high while offering optional inspiration.
+ */
 export function QuoteDisplay({ enabled = true }: QuoteDisplayProps) {
   const { data: quote, isLoading, error } = useQuery({
     queryKey: ['random-quote'],
     queryFn: fetchRandomQuote,
     enabled,
     staleTime: 1000 * 60 * 60 * 12, // Cache for 12 hours
-    refetchInterval: 1000 * 60 * 60 * 12, // Auto-refresh every 12 hours (43,200,000 ms)
+    refetchInterval: 1000 * 60 * 60 * 12,
     refetchOnWindowFocus: false,
-    refetchOnMount: false, // Don't refetch on mount if data is still fresh
-    refetchIntervalInBackground: false, // Only refetch when tab is active
+    refetchOnMount: false,
+    refetchIntervalInBackground: false,
   });
 
   if (!enabled) {
     return null;
   }
 
-  if (error) {
+  if (error || !quote) {
     return null; // Fail silently
   }
 
   if (isLoading) {
     return (
-      <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
-        <CardContent className="p-6">
-          <div className="space-y-3">
-            <Skeleton className="h-6 w-full max-w-md" />
-            <Skeleton className="h-4 w-32" />
-          </div>
-        </CardContent>
-      </Card>
+      <div className="py-3 border-t border-border/40">
+        <div className="h-4 w-64 animate-pulse rounded bg-muted/50" />
+      </div>
     );
   }
 
-  if (!quote) {
-    return null;
-  }
-
   return (
-    <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
-      <CardContent className="p-6">
-        <div className="flex items-start gap-4">
-          <Quote className="h-5 w-5 text-muted-foreground mt-1 flex-shrink-0" />
-          <div className="flex-1 space-y-2">
-            <blockquote className="text-lg font-serif italic text-foreground leading-relaxed">
-              "{quote.quote_text}"
-            </blockquote>
-            <p className="text-sm text-muted-foreground font-medium">
-              — {quote.author}
-            </p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="py-3 border-t border-border/40">
+      <div className="flex items-center gap-2 text-sm">
+        <Quote className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
+        <span className="text-muted-foreground italic">
+          "{quote.quote_text}"
+        </span>
+        <span className="text-muted-foreground/70">— {quote.author}</span>
+      </div>
+    </div>
   );
 }

@@ -34,9 +34,9 @@ export function RecentFilingsList({ filings, isLoading }: RecentFilingsListProps
     );
   }
 
-  const formatDate = (dateString: string) => {
+  const formatDateShort = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
   return (
@@ -46,23 +46,21 @@ export function RecentFilingsList({ filings, isLoading }: RecentFilingsListProps
 
         return (
           <div key={item.filing.id}>
-            {index > 0 && <Separator className="my-3" />}
+            {index > 0 && <Separator className="my-3 opacity-50" />}
             <Link
               href={stockUrl}
-              className="flex items-center justify-between gap-4 py-2 transition-opacity hover:opacity-70 group"
+              className="flex cursor-pointer items-center justify-between gap-4 py-3 transition-colors hover:bg-accent/30 -mx-2 px-2 rounded-md group"
             >
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-medium text-foreground group-hover:underline">
-                    {item.company.name}
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className="font-bold text-foreground tabular-nums group-hover:underline">
+                    {item.company.ticker}
                   </span>
-                  <span className="text-sm text-muted-foreground">({item.company.ticker})</span>
+                  <span className="text-xs text-muted-foreground truncate">{item.company.name}</span>
                 </div>
-                <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                  <span>{item.filing.filing_type}</span>
-                  <span>•</span>
-                  <span>{formatDate(item.filing.filing_date)}</span>
-                </div>
+                <span className="text-xs text-muted-foreground font-medium">
+                  {item.filing.filing_type} • {formatDateShort(item.filing.filing_date)}
+                </span>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
                 {item.insightsCount > 0 && (

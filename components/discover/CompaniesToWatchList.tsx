@@ -20,7 +20,7 @@ export function CompaniesToWatchList({ companies, isLoading }: CompaniesToWatchL
   ) => {
     if (score === null) {
       return {
-        label: 'N/A',
+        label: 'No recent signals',
         className: 'bg-muted text-muted-foreground border-border',
       };
     }
@@ -75,12 +75,12 @@ export function CompaniesToWatchList({ companies, isLoading }: CompaniesToWatchL
 
         return (
           <div key={item.company.id}>
-            {index > 0 && <Separator className="my-3" />}
+            {index > 0 && <Separator className="my-3 opacity-50" />}
             <Link
               href={stockUrl}
-              className="flex items-center justify-between gap-4 py-2 transition-opacity hover:opacity-70 group"
+              className="flex cursor-pointer items-center justify-between gap-4 py-3 transition-colors hover:bg-accent/30 -mx-2 px-2 rounded-md group"
             >
-              <div className="flex items-center gap-2 flex-1 min-w-0">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
                 <CompanyLogo
                   name={item.company.name}
                   ticker={item.company.ticker}
@@ -88,11 +88,11 @@ export function CompaniesToWatchList({ companies, isLoading }: CompaniesToWatchL
                   size={36}
                 />
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-medium text-foreground group-hover:underline">
-                      {item.company.name}
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="font-bold text-foreground tabular-nums group-hover:underline">
+                      {item.company.ticker}
                     </span>
-                    <span className="text-sm text-muted-foreground">({item.company.ticker})</span>
+                    <span className="text-xs text-muted-foreground truncate">{item.company.name}</span>
                   </div>
                   {item.supportingLabel && (
                     <p className="text-sm text-muted-foreground">{item.supportingLabel}</p>

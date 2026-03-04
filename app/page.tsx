@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
-import { StockSearch } from '@/components/search/StockSearch';
+import { CommandBar } from '@/components/command-palette/CommandBar';
 import { FundamentalChangeCard } from '@/components/discover/FundamentalChangeCard';
 import { RecentFilingsList } from '@/components/discover/RecentFilingsList';
 import { CompaniesToWatchList } from '@/components/discover/CompaniesToWatchList';
@@ -55,30 +55,22 @@ export default function DiscoverPage() {
   return (
     <div className={`min-h-screen ${hasAnimatedBackground ? '' : 'bg-background'}`}>
       <main className="container mx-auto max-w-6xl py-8 px-4 sm:px-6 lg:px-8">
-        {/* Header (scrolls normally) */}
+        {/* Hero: Command bar + contextual greeting */}
         <div className="mb-8">
-          <div className="mb-6">
+          <div className="flex flex-col gap-4">
             {showWelcomeText && <WelcomeMessage />}
-            <h1 className="text-3xl font-bold tracking-tight text-foreground">Discover</h1>
-            <p className="mt-2 text-muted-foreground">
-              Fundamental changes detected from SEC filings.
-            </p>
+            <AnimatedContent reverse={true}>
+              <CommandBar />
+            </AnimatedContent>
           </div>
         </div>
 
-        <div className="space-y-8">
-          {/* Investing Quote */}
-          {showQuotes && (
-            <section>
-              <AnimatedContent reverse={true}>
-                <QuoteDisplay enabled={showQuotes} />
-              </AnimatedContent>
-            </section>
-          )}
-
-          <Separator />
-          {/* Market Hours, Movers and News */}
-          <section>
+        <div className="space-y-10">
+          {/* Market Hours, Movers and News - primary signals */}
+          <section className="space-y-5">
+            <h2 className="text-base font-semibold uppercase tracking-wider text-foreground/90">
+              What moved today?
+            </h2>
             <div className="grid gap-4 lg:grid-cols-3">
               <AnimatedContent reverse={true}>
                 <MarketHoursCard exchangeCodes={['NYSE', 'NASDAQ', 'LSE', 'OSE', 'XETRA', 'STO']} />
@@ -100,7 +92,7 @@ export default function DiscoverPage() {
             </div>
           </section>
 
-          <Separator />
+          <Separator className="my-10 opacity-60" />
 
           {/* Hot Picks */}
           <section>
@@ -109,12 +101,12 @@ export default function DiscoverPage() {
             </AnimatedContent>
           </section>
 
-          <Separator />
+          <Separator className="my-10 opacity-60" />
 
-          {/* Recent Fundamental Changes */}
+          {/* AI Filing Signals */}
           <section>
-            <h2 className="mb-4 text-xl font-semibold text-foreground">
-              Recent Fundamental Changes
+            <h2 className="mb-5 text-base font-semibold uppercase tracking-wider text-foreground/90">
+              What fundamentally changed?
             </h2>
             {isLoadingChanges ? (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -135,7 +127,7 @@ export default function DiscoverPage() {
               <Card className="border-border/50">
                 <CardContent className="py-8 text-center">
                   <p className="text-sm text-muted-foreground">
-                    No fundamental changes detected at this time.
+                    No recent signals. New filings will appear as they are analyzed.
                   </p>
                 </CardContent>
               </Card>
@@ -154,12 +146,12 @@ export default function DiscoverPage() {
             )}
           </section>
 
-          <Separator />
+          <Separator className="my-10 opacity-60" />
 
           {/* Recently Analyzed Filings */}
           <section>
-            <h2 className="mb-4 text-xl font-semibold text-foreground">
-              Recently Analyzed Filings
+            <h2 className="mb-5 text-base font-semibold uppercase tracking-wider text-foreground/90">
+              What companies filed new reports?
             </h2>
             {!isLoadingFilings && recentFilings && recentFilings.length > 0 ? (
               <AnimatedContent reverse={true}>
@@ -184,11 +176,13 @@ export default function DiscoverPage() {
             )}
           </section>
 
-          <Separator />
+          <Separator className="my-10 opacity-60" />
 
           {/* Companies to Watch */}
           <section>
-            <h2 className="mb-4 text-xl font-semibold text-foreground">Companies to Watch</h2>
+            <h2 className="mb-5 text-base font-semibold uppercase tracking-wider text-foreground/90">
+              What should I monitor?
+            </h2>
             {!isLoadingCompanies && companiesToWatch && companiesToWatch.length > 0 ? (
               <AnimatedContent reverse={true}>
                 <Card className="border-border/50">
@@ -211,6 +205,12 @@ export default function DiscoverPage() {
               </Card>
             )}
           </section>
+
+          {showQuotes && (
+            <footer className="pt-4">
+              <QuoteDisplay enabled={showQuotes} />
+            </footer>
+          )}
         </div>
       </main>
     </div>

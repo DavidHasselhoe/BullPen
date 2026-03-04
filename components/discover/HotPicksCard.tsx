@@ -39,29 +39,19 @@ export function HotPicksCard() {
         const data: HotPicksResponse = await response.json();
         if (!data.success || !data.data) return [];
 
-      // Fetch company names and logos for the hot picks
-      // Use the first ticker as a search query to get company data
-      // We'll fetch them individually to get proper results
+      // Single batch request for company names/logos (replaces N individual /api/search calls)
       const tickers = data.data.map((pick) => pick.ticker);
-      
-      // Fetch company data from companies table via multiple requests
-      const companyPromises = tickers.map(async (ticker) => {
-        try {
-          const response = await fetch(`/api/search?q=${ticker}&limit=1`);
-          const result = await response.json();
-          if (result.success && result.results && result.results.length > 0) {
-            const company = result.results[0];
-            return { ticker, name: company.name, logo_url: company.logo_url };
-          }
-        } catch {
-          /* ignore */
-        }
-        return { ticker, name: null, logo_url: null };
+      const batchRes = await fetch('/api/companies/batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tickers }),
       });
-
-      const companyData = await Promise.all(companyPromises);
+      const batchData = batchRes.ok ? await batchRes.json() : { data: [] };
       const companyMap = new Map(
-        companyData.map((c) => [c.ticker, { name: c.name, logo_url: c.logo_url }])
+        (batchData.data || []).map((c: { ticker: string; name: string; logo_url: string | null }) => [
+          c.ticker,
+          { name: c.name, logo_url: c.logo_url },
+        ])
       );
 
         return data.data.map((pick) => ({
@@ -82,7 +72,7 @@ export function HotPicksCard() {
 
   if (isLoading) {
     return (
-      <Card>
+      <Card className="border-border/50">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Flame className="h-5 w-5 text-orange-500" />
@@ -111,7 +101,7 @@ export function HotPicksCard() {
   }
 
   return (
-    <Card>
+    <Card className="border-border/50">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Flame className="h-5 w-5 text-orange-500" />
@@ -119,27 +109,27 @@ export function HotPicksCard() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-3">
+        <div className="space-y-1">
           {hotPicks.map((pick, index) => (
             <Link
               key={pick.ticker}
               href={`/stock/${pick.ticker}`}
-              className="flex items-center gap-3 p-2 rounded-lg transition-colors hover:bg-accent group"
+              className="flex cursor-pointer items-center gap-3 p-2 -mx-2 rounded-md transition-colors hover:bg-accent/50 group"
             >
-              <div className="flex items-center justify-center w-8 text-sm font-bold text-muted-foreground">
+              <div className="flex items-center justify-center w-7 text-xs font-bold text-muted-foreground tabular-nums">
                 {index + 1}
               </div>
               <CompanyLogo
                 name={pick.name || pick.ticker}
                 ticker={pick.ticker}
                 logoUrl={pick.logo_url || null}
-                size={40}
+                size={36}
               />
               <div className="flex-1 min-w-0">
-                <div className="font-medium text-foreground group-hover:underline">
-                  {pick.name || pick.ticker}
+                <div className="font-bold text-foreground text-sm tabular-nums group-hover:underline">
+                  {pick.ticker}
                 </div>
-                <div className="text-sm text-muted-foreground">{pick.ticker}</div>
+                <div className="text-xs text-muted-foreground truncate">{pick.name || pick.ticker}</div>
               </div>
               <div className="text-xs text-muted-foreground">
                 {pick.click_count} {pick.click_count === 1 ? 'search' : 'searches'}

@@ -2,8 +2,6 @@
 
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
 import { HoldingsTable } from '@/components/holdings/HoldingsTable';
 import { AddHoldingModal } from '@/components/holdings/AddHoldingModal';
 import { HoldingsPieChart } from '@/components/holdings/HoldingsPieChart';
@@ -150,17 +148,11 @@ export default function HoldingsPage() {
   return (
     <div className="container mx-auto py-8 space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">My Holdings</h1>
-          <p className="text-muted-foreground mt-1">
-            Track your stock portfolio and performance
-          </p>
-        </div>
-        <Button onClick={() => setIsAddModalOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Holding
-        </Button>
+      <div>
+        <h1 className="text-3xl font-bold">My Holdings</h1>
+        <p className="text-muted-foreground mt-1">
+          Track your stock portfolio and performance
+        </p>
       </div>
 
       {/* Chart */}
@@ -169,7 +161,7 @@ export default function HoldingsPage() {
       )}
 
       {/* Table */}
-      <HoldingsTable />
+      <HoldingsTable onAddClick={() => setIsAddModalOpen(true)} />
 
       {/* Add Modal */}
       <AddHoldingModal open={isAddModalOpen} onOpenChange={setIsAddModalOpen} />
