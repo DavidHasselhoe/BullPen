@@ -7,6 +7,7 @@ import { AuthNavigation } from "@/components/navigation/AuthNavigation";
 import { BackgroundProvider } from "@/components/backgrounds/BackgroundProvider";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { ChatWidget } from "@/components/ai/ChatWidget";
+import { Analytics } from "@vercel/analytics/next";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -41,6 +42,7 @@ export default function RootLayout({
             <ChatWidget />
           </ThemeProvider>
         </Providers>
+        <Analytics />
       </body>
     </html>
   );
