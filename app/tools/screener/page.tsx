@@ -50,11 +50,23 @@ function buildQueryString(filters: ScreenerFilterValues): string {
 function ScreenerContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const tickersParam = searchParams.get('tickers');
+  const compareTickers = tickersParam
+    ? tickersParam.split(',').map((t) => t.trim().toUpperCase()).filter(Boolean)
+    : [];
   const [filters, setFilters] = useState<ScreenerFilterValues>(() =>
     filtersFromParams(searchParams),
   );
 
-  const qs = useMemo(() => buildQueryString(filters), [filters]);
+  const qs = useMemo(() => {
+    const params = buildQueryString(filters);
+    if (compareTickers.length > 0) {
+      const sp = new URLSearchParams(params);
+      sp.set('tickers', compareTickers.join(','));
+      return sp.toString();
+    }
+    return params;
+  }, [filters, compareTickers.join(',')]);
 
   const { data, isLoading } = useQuery<{
     success: boolean;
@@ -75,8 +87,9 @@ function ScreenerContent() {
   const handleChange = useCallback(
     (next: ScreenerFilterValues) => {
       setFilters(next);
-      // Sync URL without reloading the page
+      // Sync URL without reloading the page (preserve tickers for comparison mode)
       const params = new URLSearchParams();
+      if (compareTickers.length > 0) params.set('tickers', compareTickers.join(','));
       for (const key of FILTER_KEYS) {
         if (next[key]) params.set(key, next[key]);
       }
@@ -85,7 +98,7 @@ function ScreenerContent() {
         : window.location.pathname;
       router.replace(newUrl, { scroll: false });
     },
-    [router],
+    [router, compareTickers],
   );
 
   const handleReset = useCallback(() => {
@@ -101,7 +114,11 @@ function ScreenerContent() {
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-1">
           <Filter className="h-5 w-5 text-primary" />
-          <h1 className="text-xl font-semibold">Stock Screener</h1>
+          <h1 className="text-xl font-semibold">
+            {compareTickers.length > 0
+              ? `Comparing ${compareTickers.join(' vs ')}`
+              : 'Stock Screener'}
+          </h1>
           {!isLoading && (
             <Badge variant="secondary" className="text-xs">
               {data?.total ?? 0} result{(data?.total ?? 0) !== 1 ? 's' : ''}
@@ -109,7 +126,9 @@ function ScreenerContent() {
           )}
         </div>
         <p className="text-sm text-muted-foreground">
-          Filter companies by fundamentals from SEC filings.
+          {compareTickers.length > 0
+            ? 'Side-by-side comparison of key financial metrics from SEC filings.'
+            : 'Filter companies by fundamentals from SEC filings.'}
         </p>
       </div>
 

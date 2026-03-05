@@ -155,6 +155,19 @@ export default function StockDetailPage() {
     },
   });
 
+  // Scroll to hash anchor when navigating with #earnings or #news (e.g. from AI "open earnings")
+  useEffect(() => {
+    const hash = typeof window !== 'undefined' ? window.location.hash.slice(1) : '';
+    if (!hash) return;
+    const scroll = () => {
+      const el = document.getElementById(hash);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+    // Brief delay so layout is complete before scrolling
+    const t = setTimeout(scroll, 100);
+    return () => clearTimeout(t);
+  }, [ticker]);
+
   // Trigger ingestion when page loads if company has no data
   // IngestionProgressBar connects to SSE and runs the pipeline when mounted
   useEffect(() => {
@@ -512,7 +525,7 @@ export default function StockDetailPage() {
         )}
 
         {/* Earnings Calendar & Recommendations Grid */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 mb-8">
+        <div id="earnings" className="grid grid-cols-1 gap-6 lg:grid-cols-2 mb-8 scroll-mt-6">
           <AnimatedContent reverse={true} delay={0.25}>
             <EarningsCalendar ticker={ticker} />
           </AnimatedContent>
@@ -732,7 +745,9 @@ export default function StockDetailPage() {
 
         {/* Company News - At the bottom */}
         <AnimatedContent reverse={true} delay={0.5}>
-          <CompanyNews ticker={ticker} />
+          <div id="news" className="scroll-mt-6">
+            <CompanyNews ticker={ticker} />
+          </div>
         </AnimatedContent>
       </div>
     </div>

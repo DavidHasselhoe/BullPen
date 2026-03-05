@@ -398,6 +398,137 @@ export const compareCompanies = tool({
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Client action tools — return __clientAction for the frontend to execute
+// These trigger navigation/UI actions in the browser
+// ─────────────────────────────────────────────────────────────────────────────
+
+const CLIENT_ACTION = '__clientAction';
+
+function clientAction<T extends Record<string, unknown>>(action: T) {
+  return { [CLIENT_ACTION]: action } as { __clientAction: T };
+}
+
+export const openCompanyPage = tool({
+  description:
+    'Open a company\'s stock page in BullPen. Use when the user asks to open, view, go to, or show a company\'s page. ' +
+    'Examples: "open NVIDIA", "show me Apple\'s page", "go to NVDA", "take me to Microsoft".',
+  inputSchema: jsonSchema<{ ticker: string }>({
+    type: 'object',
+    properties: { ticker: { type: 'string', description: 'Stock ticker symbol, e.g. NVDA, AAPL' } },
+    required: ['ticker'],
+    additionalProperties: false,
+  }),
+  execute: async ({ ticker }) => {
+    const company = await resolveCompanyId(ticker);
+    if (!company) return { error: `Company "${ticker}" not found.` };
+    return { ...clientAction({ type: 'navigate', path: `/stock/${ticker.toUpperCase()}` }), opened: company.name };
+  },
+});
+
+export const openComparison = tool({
+  description:
+    'Open the stock screener or comparison view. Use when the user asks to compare companies, ' +
+    'e.g. "compare NVIDIA and AMD", "show me NVDA vs AMD", "compare these companies".',
+  inputSchema: jsonSchema<{ tickers: string[] }>({
+    type: 'object',
+    properties: {
+      tickers: {
+        type: 'array',
+        items: { type: 'string' },
+        minItems: 2,
+        maxItems: 5,
+        description: 'Ticker symbols to compare',
+      },
+    },
+    required: ['tickers'],
+    additionalProperties: false,
+  }),
+  execute: async ({ tickers }) => {
+    const normalized = tickers.slice(0, 5).map((t) => t.toUpperCase());
+    const params = new URLSearchParams({ tickers: normalized.join(',') });
+    return clientAction({ type: 'navigate', path: `/tools/compare?${params.toString()}` });
+  },
+});
+
+export const openScreener = tool({
+  description:
+    'Open the stock screener. Use when the user asks to find, screen, or filter companies by criteria. ' +
+    'Examples: "show companies with high revenue growth", "find tech companies", "open the screener".',
+  inputSchema: jsonSchema<Record<string, never>>({
+    type: 'object',
+    properties: {},
+    additionalProperties: false,
+  }),
+  execute: async () => clientAction({ type: 'navigate', path: '/tools/screener' }),
+});
+
+export const openHoldings = tool({
+  description:
+    'Open the user\'s holdings page. Use when the user asks to view holdings, portfolio, or my positions.',
+  inputSchema: jsonSchema<Record<string, never>>({
+    type: 'object',
+    properties: {},
+    additionalProperties: false,
+  }),
+  execute: async () => clientAction({ type: 'navigate', path: '/holdings' }),
+});
+
+export const openDiscover = tool({
+  description:
+    'Open the Discover / home page. Use when the user asks to go home, see the dashboard, or discover page.',
+  inputSchema: jsonSchema<Record<string, never>>({
+    type: 'object',
+    properties: {},
+    additionalProperties: false,
+  }),
+  execute: async () => clientAction({ type: 'navigate', path: '/' }),
+});
+
+export const openTools = tool({
+  description:
+    'Open the BullPen tools hub. Use when the user asks for tools, utilities, screeners, or the tools page.',
+  inputSchema: jsonSchema<Record<string, never>>({
+    type: 'object',
+    properties: {},
+    additionalProperties: false,
+  }),
+  execute: async () => clientAction({ type: 'navigate', path: '/tools' }),
+});
+
+export const openCompanyEarnings = tool({
+  description:
+    'Open a company\'s stock page and scroll to the earnings calendar. Use when the user asks about earnings dates, ' +
+    'next earnings, when a company reports, or to see the earnings calendar.',
+  inputSchema: jsonSchema<{ ticker: string }>({
+    type: 'object',
+    properties: { ticker: { type: 'string', description: 'Stock ticker symbol' } },
+    required: ['ticker'],
+    additionalProperties: false,
+  }),
+  execute: async ({ ticker }) => {
+    const company = await resolveCompanyId(ticker);
+    if (!company) return { error: `Company "${ticker}" not found.` };
+    return { ...clientAction({ type: 'navigate', path: `/stock/${ticker.toUpperCase()}#earnings` }), opened: company.name };
+  },
+});
+
+export const openCompanyNews = tool({
+  description:
+    'Open a company\'s stock page and scroll to the news section. Use when the user asks for news, headlines, or recent updates about a company.',
+  inputSchema: jsonSchema<{ ticker: string }>({
+    type: 'object',
+    properties: { ticker: { type: 'string', description: 'Stock ticker symbol' } },
+    required: ['ticker'],
+    additionalProperties: false,
+  }),
+  execute: async ({ ticker }) => {
+    const company = await resolveCompanyId(ticker);
+    if (!company) return { error: `Company "${ticker}" not found.` };
+    return { ...clientAction({ type: 'navigate', path: `/stock/${ticker.toUpperCase()}#news` }), opened: company.name };
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Exported tool map (passed directly to streamText)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -407,4 +538,14 @@ export const BULLPEN_TOOLS = {
   searchCompanies,
   screenCompanies,
   compareCompanies,
+  openCompanyPage,
+  openComparison,
+  openScreener,
+  openHoldings,
+  openDiscover,
+  openTools,
+  openCompanyEarnings,
+  openCompanyNews,
 };
+
+export const CLIENT_ACTION_KEY = '__clientAction';

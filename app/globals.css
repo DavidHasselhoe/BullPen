@@ -244,4 +244,15 @@ html.animated-background-active [data-slot="dialog-content"] {
   .animate-pop-scale {
     animation: popScale 0.3s ease-out forwards;
   }
+
+  /* Hide scrollbar while keeping scroll functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none !important;
+    scrollbar-width: none !important;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
 }

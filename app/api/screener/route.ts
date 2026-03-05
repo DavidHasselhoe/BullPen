@@ -94,6 +94,10 @@ export async function GET(request: NextRequest) {
     }
 
     const sp = request.nextUrl.searchParams;
+    const tickersParam = sp.get('tickers');
+    const tickers = tickersParam
+      ? tickersParam.split(',').map((t) => t.trim().toUpperCase()).filter(Boolean)
+      : undefined;
     const sector = sp.get('sector') || undefined;
     const revenueMin = parseNum(sp.get('revenueMin'));
     const revenueMax = parseNum(sp.get('revenueMax'));
@@ -116,6 +120,13 @@ export async function GET(request: NextRequest) {
 
     if (sector) {
       results = results.filter((r) => r.sector === sector);
+    }
+
+    // When tickers specified (e.g. from "compare NVDA and AMD"), show only those companies in order
+    if (tickers && tickers.length > 0) {
+      const tickerSet = new Set(tickers);
+      results = results.filter((r) => tickerSet.has(r.ticker));
+      results.sort((a, b) => tickers.indexOf(a.ticker) - tickers.indexOf(b.ticker));
     }
 
     results = results.filter((r) => {

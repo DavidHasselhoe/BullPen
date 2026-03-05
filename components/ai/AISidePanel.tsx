@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { useEffect } from 'react';
 import Image from 'next/image';
 import { Bot, X } from 'lucide-react';
 import Link from 'next/link';
@@ -55,9 +54,6 @@ function AuthGate() {
 
 export function AISidePanel({ open, onClose }: AISidePanelProps) {
   const { user, isLoading, isAuthenticated } = useAuth();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => setMounted(true), []);
 
   // Close on Escape
   useEffect(() => {
@@ -68,19 +64,17 @@ export function AISidePanel({ open, onClose }: AISidePanelProps) {
     return () => window.removeEventListener('keydown', handler);
   }, [onClose]);
 
-  const panel = (
+  return (
     <aside
       aria-hidden={!open}
       className={cn(
-        'fixed top-0 right-0 z-[60] h-full w-full max-w-md',
-        'bg-background border-l border-border/60 shadow-2xl shadow-black/20',
-        'flex flex-col transition-transform duration-300 ease-out',
-        'isolate', // create stacking context so children receive pointer events correctly
-        open ? 'translate-x-0' : 'translate-x-full'
+        'flex h-full flex-col shrink-0 overflow-hidden transition-[width] duration-300 ease-out',
+        'bg-background border-l border-border/60',
+        open ? 'w-[480px] sm:w-[520px]' : 'w-0 min-w-0 border-0'
       )}
     >
-        {/* Header */}
-        <div className="flex shrink-0 items-center justify-between px-4 py-3 border-b border-border/50 bg-muted/30">
+        {/* Header - h-16 to align with main nav */}
+        <div className="flex h-16 shrink-0 items-center justify-between px-4 border-b border-border/50 bg-muted/30">
           <div className="flex items-center gap-2.5">
             <div className="rounded-full bg-primary/15 p-1.5">
               <Bot className="h-4 w-4 text-primary" />
@@ -119,7 +113,7 @@ export function AISidePanel({ open, onClose }: AISidePanelProps) {
         </div>
 
         {/* Body */}
-        <div className="flex flex-1 min-h-0 flex flex-col">
+        <div className="flex flex-1 min-h-0 flex flex-col overflow-hidden scrollbar-hide">
           {isLoading ? (
             <div className="flex flex-1 items-center justify-center">
               <span className="h-5 w-5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
@@ -130,9 +124,6 @@ export function AISidePanel({ open, onClose }: AISidePanelProps) {
             <BullpenChat compact user={user} starterPrompts={STARTER_PROMPTS} />
           )}
         </div>
-      </aside>
+    </aside>
   );
-
-  if (!mounted) return null;
-  return createPortal(panel, document.body);
 }

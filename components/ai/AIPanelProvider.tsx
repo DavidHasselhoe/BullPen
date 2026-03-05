@@ -33,8 +33,12 @@ export function AIPanelProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AIPanelContext.Provider value={{ isOpen, open, close, toggle }}>
-      {children}
-      <AISidePanel open={isOpen} onClose={close} />
+      <div className="flex h-screen min-h-full w-full overflow-x-hidden">
+        <div className="flex-1 min-w-0 flex flex-col min-h-0 overflow-auto overflow-x-hidden scrollbar-hide">
+          {children}
+        </div>
+        <AISidePanel open={isOpen} onClose={close} />
+      </div>
     </AIPanelContext.Provider>
   );
 }

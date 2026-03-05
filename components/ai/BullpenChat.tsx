@@ -2,6 +2,7 @@
 
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
+import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -24,7 +25,22 @@ interface BullpenChatProps {
   starterPrompts?: string[];
 }
 
+function extractClientActions(message: { parts?: Array<{ type?: string; state?: string; output?: unknown; result?: unknown }> }): Array<{ type: string; path?: string }> {
+  const actions: Array<{ type: string; path?: string }> = [];
+  for (const part of message.parts ?? []) {
+    if (!part.type?.startsWith('tool-')) continue;
+    const p = part as { state?: string; output?: unknown; result?: unknown };
+    // Support output (AI SDK) or result (some SDK variants)
+    const raw = p.output ?? p.result;
+    if (!raw || typeof raw !== 'object') continue;
+    const out = raw as { __clientAction?: { type: string; path?: string } };
+    if (out.__clientAction) actions.push(out.__clientAction);
+  }
+  return actions;
+}
+
 export function BullpenChat({ compact = false, user, starterPrompts = DEFAULT_STARTER_PROMPTS }: BullpenChatProps) {
+  const router = useRouter();
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const inputRef = useRef('');
@@ -38,6 +54,13 @@ export function BullpenChat({ compact = false, user, starterPrompts = DEFAULT_ST
     clearError,
   } = useChat({
     transport: new DefaultChatTransport({ api: '/api/ai/chat' }),
+    onFinish: ({ message }) => {
+      for (const action of extractClientActions(message)) {
+        if (action.type === 'navigate' && action.path) {
+          router.push(action.path);
+        }
+      }
+    },
   });
 
   const isStreaming = status === 'streaming' || status === 'submitted';
@@ -86,7 +109,7 @@ export function BullpenChat({ compact = false, user, starterPrompts = DEFAULT_ST
   return (
     <div className={cn('flex flex-col h-full', compact ? '' : 'min-h-[460px]')}>
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 scrollbar-hide [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-3 space-y-3 scrollbar-hide">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full gap-3 py-8 text-center">
             <div className="rounded-full bg-primary/10 p-3">

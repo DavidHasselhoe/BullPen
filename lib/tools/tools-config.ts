@@ -7,6 +7,7 @@ import {
   Grid3X3,
   MessageSquare,
   Filter,
+  Scale,
 } from 'lucide-react';
 
 export interface ToolConfig {
@@ -33,6 +34,14 @@ export const TOOLS: ToolConfig[] = [
     description: 'Filter companies by revenue, margins, EPS, cash flow, debt-to-equity, and more.',
     href: '/tools/screener',
     icon: Filter,
+    status: 'available',
+  },
+  {
+    id: 'compare',
+    name: 'Company Compare',
+    description: 'Side-by-side comparison of business profile, key metrics, and financial history for 2–5 companies.',
+    href: '/tools/compare',
+    icon: Scale,
     status: 'available',
   },
   {
