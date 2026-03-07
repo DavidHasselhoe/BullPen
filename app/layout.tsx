@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
+// Note: If you see "Failed to load script from /_vercel/insights/script.js", enable Web Analytics
+// in Vercel Dashboard: Project → Analytics → Enable. The script is only served after enabling.
 import "./globals.css";
 import { Providers } from "./providers";
 import { AuthNavigation } from "@/components/navigation/AuthNavigation";
@@ -43,7 +45,7 @@ export default function RootLayout({
                 <AuthNavigation />
                 {children}
                 <AIPanelToggle />
-                <Analytics />
+                {process.env.VERCEL === '1' && <Analytics />}
               </CommandPaletteProvider>
             </AIPanelProvider>
           </ThemeProvider>

@@ -37,7 +37,8 @@ function AuthCallbackContent() {
     const goHome = () => {
       if (!redirected) {
         redirected = true;
-        window.location.replace('/');
+        // Brief delay ensures session is fully persisted before full-page reload
+        setTimeout(() => window.location.replace('/'), 150);
       }
     };
 

@@ -294,6 +294,8 @@ function buildTrendSummary(companies: CompareCompany[]): string[] {
   return lines;
 }
 
+type MetricSort = 'default' | 'diff' | string;
+
 function CompareContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -308,6 +310,12 @@ function CompareContent() {
   const [pickerSlot, setPickerSlot] = useState<number>(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
+  // All hooks must be at top level (before any conditional returns) to avoid React #310
+  const [metricSort, setMetricSort] = useState<MetricSort>('default');
+  const [expandedMetricKey, setExpandedMetricKey] = useState<string | null>(null);
+  const [aiExplainLoading, setAiExplainLoading] = useState(false);
+  const [aiExplainError, setAiExplainError] = useState<string | null>(null);
+  const [aiExplanation, setAiExplanation] = useState<string | null>(null);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQuery(searchQuery), 300);
@@ -517,13 +525,6 @@ function CompareContent() {
 
   const companies = data?.companies ?? [];
   const colCount = Math.min(companies.length, 5);
-
-  type MetricSort = 'default' | 'diff' | string;
-  const [metricSort, setMetricSort] = useState<MetricSort>('default');
-  const [expandedMetricKey, setExpandedMetricKey] = useState<string | null>(null);
-  const [aiExplainLoading, setAiExplainLoading] = useState(false);
-  const [aiExplainError, setAiExplainError] = useState<string | null>(null);
-  const [aiExplanation, setAiExplanation] = useState<string | null>(null);
 
   const sortOptions: { value: MetricSort; label: string }[] = [
     { value: 'default', label: 'By category' },

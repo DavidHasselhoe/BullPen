@@ -4,13 +4,29 @@
 import type { Exchange, ExchangeHoliday, MarketStatus } from '@/lib/types/database';
 
 /**
+ * Gets the date string (YYYY-MM-DD) in a given timezone
+ */
+function getDateInTimezone(date: Date, timezone: string): string {
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+  return formatter.format(date); // YYYY-MM-DD
+}
+
+/**
  * Determines if a date is a holiday for an exchange
+ * Uses the exchange's local date (not UTC) for correct holiday matching
  */
 export function isHoliday(
   date: Date,
-  holidays: ExchangeHoliday[]
+  holidays: ExchangeHoliday[],
+  timezone?: string
 ): { isHoliday: boolean; holiday: ExchangeHoliday | null } {
-  const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD
+  // When timezone provided, use exchange-local date (fixes US market hours near midnight UTC)
+  const dateStr = timezone ? getDateInTimezone(date, timezone) : date.toISOString().split('T')[0];
   
   const holiday = holidays.find((h) => h.date === dateStr);
   
@@ -155,7 +171,7 @@ export function calculateMarketStatus(
   holidays: ExchangeHoliday[],
   currentTime: Date = new Date()
 ): MarketStatus {
-  const { isHoliday: isHolidayToday, holiday } = isHoliday(currentTime, holidays);
+  const { isHoliday: isHolidayToday, holiday } = isHoliday(currentTime, holidays, exchange.timezone);
   
   // Get current time in exchange timezone
   const exchangeTime = getTimeInTimezone(currentTime, exchange.timezone);

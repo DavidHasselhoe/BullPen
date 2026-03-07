@@ -46,6 +46,7 @@ export function AuthFormLogin({ onSuccess, onError, onForgotPassword, redirectTo
         return;
       }
 
+      setIsLoading(false);
       onSuccess?.();
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'An unexpected error occurred';
