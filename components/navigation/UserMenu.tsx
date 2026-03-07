@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { signOut } from '@/lib/auth/auth';
 import {
@@ -19,6 +20,7 @@ import { ProfileModal } from '@/components/user/ProfileModal';
 import { ProfileAvatar } from '@/components/user/ProfileAvatar';
 
 export function UserMenu() {
+  const router = useRouter();
   const { user, isLoading, isAuthenticated } = useAuth();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
