@@ -36,33 +36,25 @@ export function UserMenu() {
     setIsSigningOut(false);
   };
 
-  if (isLoading) {
+  // Show Sign In/Sign Up when loading or logged out (optimistic: most visitors are logged out)
+  if (isLoading || !isAuthenticated || !user) {
     return (
       <div className="flex items-center gap-2">
-        <Skeleton className="h-9 w-24" />
-        <Skeleton className="h-9 w-20" />
-      </div>
-    );
-  }
-
-  if (!isAuthenticated || !user) {
-    return (
-      <div className="flex items-center gap-2 animate-fade-in-up">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.push('/login')}
-            className="transition-all hover:scale-105 hover:bg-accent/50"
-          >
-            Sign In
-          </Button>
-          <Button
-            size="sm"
-            onClick={() => router.push('/register')}
-            className="transition-all hover:scale-105 active:scale-95"
-          >
-            Sign Up
-          </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => router.push('/login')}
+          className="transition-all hover:scale-105 hover:bg-accent/50"
+        >
+          Sign In
+        </Button>
+        <Button
+          size="sm"
+          onClick={() => router.push('/register')}
+          className="transition-all hover:scale-105 active:scale-95"
+        >
+          Sign Up
+        </Button>
       </div>
     );
   }

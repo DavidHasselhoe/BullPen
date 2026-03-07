@@ -282,9 +282,34 @@ export async function signIn(params: SignInParams): Promise<AuthResult> {
 }
 
 /**
+ * Clears Supabase auth session from localStorage.
+ * Used when logout API returns 403 (session_not_found) - the server has no session,
+ * but the client may still have a stale one. Clearing ensures the user appears logged out after reload.
+ */
+function clearSupabaseAuthStorage(): void {
+  if (typeof window === 'undefined') return;
+
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!url) return;
+
+  const match = url.match(/https:\/\/([^.]+)\.supabase\.co/);
+  const projectRef = match?.[1];
+  if (!projectRef) return;
+
+  const prefix = `sb-${projectRef}-`;
+  const keysToRemove: string[] = [];
+  for (let i = 0; i < window.localStorage.length; i++) {
+    const key = window.localStorage.key(i);
+    if (key?.startsWith(prefix)) keysToRemove.push(key);
+  }
+  keysToRemove.forEach((k) => window.localStorage.removeItem(k));
+}
+
+/**
  * Signs out the current user
  * Uses scope: 'local' to avoid 403 from Supabase global logout (common after deploy or with stale sessions).
  * Local scope clears the session in this browser without invalidating other devices.
+ * When the API returns 403 (session_not_found), we manually clear localStorage since Supabase may not.
  */
 export async function signOut(): Promise<{ success: boolean; error?: string }> {
   const supabase = createBrowserClient();
@@ -293,8 +318,16 @@ export async function signOut(): Promise<{ success: boolean; error?: string }> {
     const { error } = await supabase.auth.signOut({ scope: 'local' });
 
     if (error) {
-      // 403 is common when session is stale (e.g. after deploy) - treat as success, session is cleared locally
-      if (error.message?.includes('403') || error.message?.toLowerCase().includes('forbidden')) {
+      // 403/session_not_found: server has no session, but client may have stale one in localStorage.
+      // Supabase does not clear storage on API failure - we must do it so reload shows logged-out state.
+      const status = (error as { status?: number }).status;
+      const is403 =
+        status === 403 ||
+        error.message?.includes('403') ||
+        error.message?.toLowerCase().includes('forbidden') ||
+        /session_not_found/i.test(error.message ?? '');
+      if (is403) {
+        clearSupabaseAuthStorage();
         return { success: true };
       }
       return {
@@ -303,11 +336,14 @@ export async function signOut(): Promise<{ success: boolean; error?: string }> {
       };
     }
 
+    // API succeeded - Supabase clears storage, but we clear too as a safety measure
+    clearSupabaseAuthStorage();
     return { success: true };
   } catch (error) {
-    // Network/403 errors - still treat as success so user can continue (full reload will show logged-out state)
+    // Network/403 errors - still treat as success; clear storage so reload shows logged-out state
     const msg = error instanceof Error ? error.message : 'Unknown error';
-    if (/403|forbidden|fetch|network/i.test(msg)) {
+    if (/403|forbidden|fetch|network|session_not_found/i.test(msg)) {
+      clearSupabaseAuthStorage();
       return { success: true };
     }
     return {
