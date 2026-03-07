@@ -84,61 +84,87 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
-    let unsub: (() => void) | null = null;
 
     // Subscribe first so we never miss auth events
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-        async (event, session) => {
-          if (!mounted) return;
+      async (event, session) => {
+        if (!mounted) return;
 
-          if (event === 'SIGNED_OUT') {
+        if (event === 'SIGNED_OUT') {
+          setUser(null);
+          setIsLoading(false);
+          return;
+        }
+
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          if (!session?.user) {
             setUser(null);
             setIsLoading(false);
             return;
           }
-
-          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-            if (!session?.user) {
+          try {
+            if (event === 'SIGNED_IN') {
+              const { processOAuthProfile } = await import('@/lib/auth/oauth-profile');
+              await processOAuthProfile(session.user).catch(() => {
+                lastErrorRef.current = Date.now();
+              });
+            }
+            let profile = await fetchUserProfile(supabase, session.user.id, lastErrorRef);
+            if (!profile && mounted) {
+              await new Promise((r) => setTimeout(r, 500));
+              profile = await fetchUserProfile(supabase, session.user.id, lastErrorRef);
+            }
+            if (mounted) {
+              setUser(profile);
+              setIsLoading(false);
+            }
+          } catch {
+            if (mounted) {
               setUser(null);
               setIsLoading(false);
-              return;
-            }
-            try {
-              if (event === 'SIGNED_IN') {
-                const { processOAuthProfile } = await import('@/lib/auth/oauth-profile');
-                await processOAuthProfile(session.user).catch(() => {
-                  lastErrorRef.current = Date.now();
-                });
-              }
-              let profile = await fetchUserProfile(supabase, session.user.id, lastErrorRef);
-              if (!profile && mounted) {
-                await new Promise((r) => setTimeout(r, 500));
-                profile = await fetchUserProfile(supabase, session.user.id, lastErrorRef);
-              }
-              if (mounted) {
-                setUser(profile);
-                setIsLoading(false);
-              }
-            } catch {
-              if (mounted) {
-                setUser(null);
-                setIsLoading(false);
-              }
             }
           }
         }
-      );
+      }
+    );
 
-      return () => {
-        mounted = false;
-        subscription.unsubscribe();
-      };
+    // Initial session check
+    const init = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (!mounted) return;
+        if (error || !session?.user) {
+          setUser(null);
+          setIsLoading(false);
+          return;
+        }
+        try {
+          const { processOAuthProfile } = await import('@/lib/auth/oauth-profile');
+          await processOAuthProfile(session.user);
+        } catch {
+          lastErrorRef.current = Date.now();
+        }
+        let profile = await fetchUserProfile(supabase, session.user.id, lastErrorRef);
+        if (!profile && mounted) {
+          await new Promise((r) => setTimeout(r, 500));
+          profile = await fetchUserProfile(supabase, session.user.id, lastErrorRef);
+        }
+        if (mounted) {
+          setUser(profile);
+          setIsLoading(false);
+        }
+      } catch {
+        if (mounted) {
+          setUser(null);
+          setIsLoading(false);
+        }
+      }
     };
+    init();
 
-    const cleanup = initAndSubscribe();
     return () => {
       mounted = false;
-      cleanup?.then((fn) => fn?.());
+      subscription.unsubscribe();
     };
   }, [supabase]);
 
