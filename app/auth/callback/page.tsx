@@ -38,7 +38,7 @@ function AuthCallbackContent() {
       if (!redirected) {
         redirected = true;
         // Brief delay ensures session is fully persisted before full-page reload
-        setTimeout(() => window.location.replace('/'), 150);
+        setTimeout(() => window.location.replace('/'), 300);
       }
     };
 

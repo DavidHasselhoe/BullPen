@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { signOut } from '@/lib/auth/auth';
 import {
@@ -21,7 +20,6 @@ import { ProfileAvatar } from '@/components/user/ProfileAvatar';
 
 export function UserMenu() {
   const { user, isLoading, isAuthenticated } = useAuth();
-  const router = useRouter();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
 
@@ -29,8 +27,9 @@ export function UserMenu() {
     setIsSigningOut(true);
     const result = await signOut();
     if (result.success) {
-      router.push('/');
-      router.refresh();
+      // Full page reload guarantees UI reflects logged-out state
+      window.location.href = '/';
+      return;
     }
     setIsSigningOut(false);
   };

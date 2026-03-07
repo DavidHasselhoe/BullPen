@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
@@ -22,7 +21,6 @@ interface AuthModalProps {
 }
 
 export function AuthModal({ open, onOpenChange, initialMode = 'login', redirectTo }: AuthModalProps) {
-  const router = useRouter();
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState('');
@@ -53,12 +51,8 @@ export function AuthModal({ open, onOpenChange, initialMode = 'login', redirectT
 
   const handleSuccess = () => {
     onOpenChange(false);
-    if (redirectTo) {
-      router.push(redirectTo);
-    } else {
-      router.push('/');
-    }
-    router.refresh();
+    // Full page reload guarantees fresh auth state (fixes login UI not updating)
+    window.location.href = redirectTo || '/';
   };
 
   const handleModeChange = (newMode: AuthMode) => {

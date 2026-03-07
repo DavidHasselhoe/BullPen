@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
-// Note: If you see "Failed to load script from /_vercel/insights/script.js", enable Web Analytics
-// in Vercel Dashboard: Project → Analytics → Enable. The script is only served after enabling.
+// Analytics: ERR_BLOCKED_BY_CLIENT = ad blocker (uBlock, etc.). Harmless - analytics won't run for those users.
+// Enable Web Analytics in Vercel Dashboard: Project → Analytics → Enable, then redeploy.
 import "./globals.css";
 import { Providers } from "./providers";
 import { AuthNavigation } from "@/components/navigation/AuthNavigation";

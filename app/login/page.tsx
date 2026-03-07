@@ -2,7 +2,7 @@
 
 import { Suspense } from 'react';
 import { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { signInWithGoogle } from '@/lib/auth/auth';
 import { AuthOAuthButtons } from '@/components/auth/AuthOAuthButtons';
 import { AuthFormLogin } from '@/components/auth/AuthFormLogin';
@@ -10,7 +10,6 @@ import { Separator } from '@/components/ui/separator';
 import { motion } from 'framer-motion';
 
 function LoginContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState('');
@@ -34,8 +33,8 @@ function LoginContent() {
   };
 
   const handleSuccess = () => {
-    router.push(redirectTo);
-    router.refresh();
+    // Full page reload guarantees fresh auth state (fixes "close tab and reopen" workaround)
+    window.location.href = redirectTo;
   };
 
   return (
