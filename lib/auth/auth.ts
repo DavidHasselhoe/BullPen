@@ -283,14 +283,20 @@ export async function signIn(params: SignInParams): Promise<AuthResult> {
 
 /**
  * Signs out the current user
+ * Uses scope: 'local' to avoid 403 from Supabase global logout (common after deploy or with stale sessions).
+ * Local scope clears the session in this browser without invalidating other devices.
  */
 export async function signOut(): Promise<{ success: boolean; error?: string }> {
   const supabase = createBrowserClient();
 
   try {
-    const { error } = await supabase.auth.signOut();
+    const { error } = await supabase.auth.signOut({ scope: 'local' });
 
     if (error) {
+      // 403 is common when session is stale (e.g. after deploy) - treat as success, session is cleared locally
+      if (error.message?.includes('403') || error.message?.toLowerCase().includes('forbidden')) {
+        return { success: true };
+      }
       return {
         success: false,
         error: error.message,
@@ -299,9 +305,14 @@ export async function signOut(): Promise<{ success: boolean; error?: string }> {
 
     return { success: true };
   } catch (error) {
+    // Network/403 errors - still treat as success so user can continue (full reload will show logged-out state)
+    const msg = error instanceof Error ? error.message : 'Unknown error';
+    if (/403|forbidden|fetch|network/i.test(msg)) {
+      return { success: true };
+    }
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: msg,
     };
   }
 }
