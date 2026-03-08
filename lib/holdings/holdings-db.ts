@@ -129,6 +129,75 @@ export async function addHolding(
 }
 
 /**
+ * Add or update a holding — if the symbol already exists, adds to quantity (and optionally
+ * updates avg_price with weighted average). Use for "add 5 more shares" semantics.
+ */
+export async function addOrUpdateHolding(
+  userId: string,
+  holding: Omit<InsertUserHolding, 'user_id'>
+): Promise<AddHoldingResult> {
+  try {
+    const supabase = createServerClient();
+
+    if (!holding.symbol || !holding.company_name) {
+      return {
+        success: false,
+        error: 'Symbol and company name are required',
+      };
+    }
+
+    const { data: existing } = await supabase
+      .from('user_holdings')
+      .select('id, quantity, avg_price')
+      .eq('user_id', userId)
+      .eq('symbol', holding.symbol.toUpperCase())
+      .maybeSingle();
+
+    if (existing) {
+      const existingQty = existing.quantity ?? 0;
+      const addQty = holding.quantity ?? 0;
+      const newQuantity = existingQty + addQty;
+
+      let newAvgPrice: number | null = existing.avg_price ?? null;
+      if (holding.avg_price != null && holding.avg_price > 0 && addQty > 0) {
+        if (existingQty > 0 && existing.avg_price != null) {
+          newAvgPrice =
+            (existingQty * existing.avg_price + addQty * holding.avg_price) / newQuantity;
+        } else {
+          newAvgPrice = holding.avg_price;
+        }
+      }
+
+      const { data: updated, error } = await supabase
+        .from('user_holdings')
+        .update({
+          quantity: newQuantity,
+          avg_price: newAvgPrice,
+          company_name: holding.company_name,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', existing.id)
+        .eq('user_id', userId)
+        .select()
+        .single();
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+      return { success: true, holding: updated as UserHolding };
+    }
+
+    return addHolding(userId, holding);
+  } catch (error) {
+    console.error('Error in addOrUpdateHolding:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Internal server error',
+    };
+  }
+}
+
+/**
  * Update an existing holding
  */
 export async function updateHolding(

@@ -2,15 +2,24 @@
 
 import { useEffect } from 'react';
 import Image from 'next/image';
-import { Bot, X } from 'lucide-react';
+import { Bot, X, PanelRightClose } from 'lucide-react';
 import Link from 'next/link';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { BullpenChat } from './BullpenChat';
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
+import type { AIContext } from './AIPanelProvider';
 
 interface AISidePanelProps {
   open: boolean;
   onClose: () => void;
+  initialQuery?: string | null;
+  aiContext?: AIContext | null;
+  onConsumedQuery?: () => void;
 }
 
 const STARTER_PROMPTS = [
@@ -52,7 +61,7 @@ function AuthGate() {
   );
 }
 
-export function AISidePanel({ open, onClose }: AISidePanelProps) {
+export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumedQuery }: AISidePanelProps) {
   const { user, isLoading, isAuthenticated } = useAuth();
 
   // Close on Escape
@@ -68,20 +77,45 @@ export function AISidePanel({ open, onClose }: AISidePanelProps) {
     <aside
       aria-hidden={!open}
       className={cn(
-        'flex h-full flex-col shrink-0 overflow-hidden transition-[width] duration-300 ease-out',
+        'flex h-full flex-col shrink-0 overflow-visible transition-[width] duration-300 ease-out relative',
         'bg-background border-l border-border/60',
         open ? 'w-[480px] sm:w-[520px]' : 'w-0 min-w-0 border-0'
       )}
     >
+        {/* Collapse tab - easy-to-reach on inner edge */}
+        {open && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={onClose}
+                aria-label="Close AI panel"
+                className={cn(
+                  'absolute left-0 top-1/2 -translate-y-1/2 -translate-x-full z-10',
+                  'flex items-center justify-center',
+                  'w-8 h-16 -ml-px',
+                  'rounded-l-md border border-r-0 border-border/60 bg-muted/80 hover:bg-muted',
+                  'text-muted-foreground hover:text-foreground',
+                  'transition-colors shadow-sm'
+                )}
+              >
+                <PanelRightClose className="h-5 w-5" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="left">Close AI panel</TooltipContent>
+          </Tooltip>
+        )}
+
         {/* Header - h-16 to align with main nav */}
         <div className="flex h-16 shrink-0 items-center justify-between px-4 border-b border-border/50 bg-muted/30">
-          <div className="flex items-center gap-2.5">
-            <div className="rounded-full bg-primary/15 p-1.5">
+          <div className="flex items-center gap-2.5 flex-1 min-w-0">
+            <div className="rounded-full bg-primary/15 p-1.5 shrink-0">
               <Bot className="h-4 w-4 text-primary" />
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-sm font-semibold leading-none">AI Assistant</p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">BullPen AI</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
+                {aiContext?.label ?? 'BullPen AI'}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -121,7 +155,15 @@ export function AISidePanel({ open, onClose }: AISidePanelProps) {
           ) : !isAuthenticated ? (
             <AuthGate />
           ) : (
-            <BullpenChat compact user={user} starterPrompts={STARTER_PROMPTS} />
+            <BullpenChat
+              compact
+              user={user}
+              starterPrompts={STARTER_PROMPTS}
+              open={open}
+              initialQuery={initialQuery ?? undefined}
+              aiContext={aiContext ?? undefined}
+              onConsumedQuery={onConsumedQuery}
+            />
           )}
         </div>
     </aside>

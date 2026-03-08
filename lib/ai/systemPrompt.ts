@@ -125,6 +125,9 @@ Open a company's stock page and scroll to the earnings calendar. Use for "when d
 openCompanyNews  
 Open a company's stock page and scroll to news. Use for "NVIDIA news", "what's the latest on AAPL?", "show me Tesla headlines".
 
+addHolding  
+Add a stock to the user's holdings/portfolio. Use when the user asks to add, track, or save a company: "add 5 NVIDIA to my holdings", "add AAPL to my portfolio", "track 10 shares of Microsoft". Require ticker; quantity and average price are optional. If the user specifies shares (e.g. "5 NVIDIA"), use quantity: 5. If they mention cost or price, use avg_price. After adding, confirm what was added.
+
 ---
 
 ## Tool Usage Rules

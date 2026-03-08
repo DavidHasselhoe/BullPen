@@ -25,7 +25,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, MessageSquare } from 'lucide-react';
+import { useRecentlyViewed } from '@/hooks/use-recently-viewed';
+import { useAIPanel } from '@/components/ai/AIPanelProvider';
+import { Button } from '@/components/ui/button';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import AnimatedContent from '@/components/ui/AnimatedContent';
 import { useBackground } from '@/hooks/use-background';
@@ -135,6 +138,8 @@ export default function StockDetailPage() {
   const [hasTriggeredIngestion, setHasTriggeredIngestion] = useState(false);
   const [showProgressBar, setShowProgressBar] = useState(false);
   const { hasAnimatedBackground } = useBackground();
+  const { add: addRecentlyViewed } = useRecentlyViewed();
+  const { open: openAIPanel, setAIContext } = useAIPanel();
 
   // Check ingestion status (polls every 3s if data is missing)
   const { data: stockStatus, isLoading: statusLoading } = useStockStatus(ticker, !!ticker);
@@ -345,6 +350,19 @@ export default function StockDetailPage() {
     staleTime: 30 * 1000, // 30 seconds - reduce refetches to lower Supabase load
   });
 
+  // Track recently viewed and set AI context when company loads
+  useEffect(() => {
+    if (!ticker) return;
+    setAIContext({ tickers: [ticker], label: company?.name ?? ticker });
+    return () => setAIContext(null);
+  }, [ticker, company?.name, setAIContext]);
+
+  useEffect(() => {
+    if (company?.ticker && company?.name) {
+      addRecentlyViewed(company.ticker, company.name, company.logo_url);
+    }
+  }, [company?.ticker, company?.name, company?.logo_url, addRecentlyViewed]);
+
   // Refetch company when status shows it exists
   useEffect(() => {
     if (stockStatus?.companyExists && !company) {
@@ -450,7 +468,7 @@ export default function StockDetailPage() {
           <AnimatedContent reverse={true}>
             <Card className="mb-8">
               <CardHeader>
-                <div className="flex items-start justify-between">
+                <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-3">
                       <CompanyLogo
@@ -477,6 +495,15 @@ export default function StockDetailPage() {
                       </div>
                     </div>
                   </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openAIPanel()}
+                    className="shrink-0 gap-2"
+                  >
+                    <MessageSquare className="h-4 w-4" />
+                    Ask AI
+                  </Button>
                 </div>
               </CardHeader>
               {company.description && (

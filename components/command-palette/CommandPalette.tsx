@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { useDebounce } from '@/hooks/use-debounce';
 import { fetchWithTimeout } from '@/lib/utils';
-import { MessageSquare, Briefcase, Filter, TrendingUp } from 'lucide-react';
+import { MessageSquare, Briefcase, Filter, TrendingUp, ExternalLink, Scale, FileText } from 'lucide-react';
 
 interface SearchResult {
   ticker: string;
@@ -130,6 +130,47 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     [router, onOpenChange, openAIPanel]
   );
 
+  const handleAskAI = useCallback(
+    (query?: string) => {
+      onOpenChange(false);
+      const q = (query || searchQuery).trim();
+      openAIPanel({ query: q || undefined });
+      setSearchQuery('');
+    },
+    [onOpenChange, searchQuery, openAIPanel]
+  );
+
+  const handleOpenCompany = useCallback(
+    (result: SearchResult) => {
+      handleSelectCompany(result);
+    },
+    [handleSelectCompany]
+  );
+
+  const handleCompareWith = useCallback(
+    (ticker: string, otherTickers: string[]) => {
+      onOpenChange(false);
+      setSearchQuery('');
+      const all = [ticker, ...otherTickers].slice(0, 5);
+      const params = new URLSearchParams({ tickers: all.join(',') });
+      router.push(`/tools/compare?${params.toString()}`);
+    },
+    [router, onOpenChange]
+  );
+
+  const handleOpenFilings = useCallback(
+    (result: SearchResult) => {
+      onOpenChange(false);
+      setSearchQuery('');
+      trackSearchMutation.mutate(result.ticker);
+      router.push(`/stock/${result.ticker}#earnings`);
+      if (!result.has_data) {
+        ingestionMutation.mutate(result.ticker, { onError: () => {} });
+      }
+    },
+    [router, onOpenChange, trackSearchMutation, ingestionMutation]
+  );
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="overflow-hidden p-0 sm:max-w-xl" showCloseButton={true}>
@@ -173,35 +214,71 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
               </>
             ) : (
               <>
-                {searchResults && searchResults.length > 0 ? (
-                  <CommandGroup heading="Companies">
-                    {searchResults.map((result) => (
-                      <CommandItem
-                        key={`${result.ticker}-${result.cik}`}
-                        value={`${result.ticker} ${result.name}`}
-                        onSelect={() => handleSelectCompany(result)}
-                      >
-                        <CompanyLogo
-                          name={result.name}
-                          ticker={result.ticker}
-                          logoUrl={result.logo_url}
-                          size={32}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <span className="font-medium">{result.ticker}</span>
-                          <span className="text-muted-foreground ml-2 truncate">{result.name}</span>
-                        </div>
-                      </CommandItem>
-                    ))}
+                {searchQuery.trim().length >= 2 && (
+                  <CommandGroup heading="Ask AI">
+                    <CommandItem value="ask-ai" onSelect={() => handleAskAI()}>
+                      <MessageSquare className="h-4 w-4" />
+                      Ask BullPen AI: &quot;{searchQuery}&quot;
+                    </CommandItem>
                   </CommandGroup>
-                ) : (
+                )}
+                {searchResults && searchResults.length > 0 ? (
+                  <>
+                    <CommandGroup heading="Companies">
+                      {searchResults.map((result) => (
+                        <CommandItem
+                          key={`${result.ticker}-${result.cik}`}
+                          value={`${result.ticker} ${result.name}`}
+                          onSelect={() => handleSelectCompany(result)}
+                        >
+                          <CompanyLogo
+                            name={result.name}
+                            ticker={result.ticker}
+                            logoUrl={result.logo_url}
+                            size={32}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <span className="font-medium">{result.ticker}</span>
+                            <span className="text-muted-foreground ml-2 truncate">{result.name}</span>
+                          </div>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                    <CommandGroup heading="Quick actions">
+                      <CommandItem value="open-first" onSelect={() => searchResults && handleSelectCompany(searchResults[0])}>
+                        <ExternalLink className="h-4 w-4" />
+                        Open {searchResults[0]?.ticker} page
+                      </CommandItem>
+                      <CommandItem value="filings-first" onSelect={() => searchResults && handleOpenFilings(searchResults[0])}>
+                        <FileText className="h-4 w-4" />
+                        Open {searchResults[0]?.ticker} filings
+                      </CommandItem>
+                      <CommandItem value="ask-about-first" onSelect={() => searchResults && handleAskAI(`Tell me about ${searchResults[0]?.ticker}`)}>
+                        <MessageSquare className="h-4 w-4" />
+                        Ask AI about {searchResults[0]?.ticker}
+                      </CommandItem>
+                      {searchResults.length >= 2 && (
+                        <CommandItem
+                          value="compare-first-two"
+                          onSelect={() => handleCompareWith(searchResults[0]!.ticker, [searchResults[1]!.ticker])}
+                        >
+                          <Scale className="h-4 w-4" />
+                          Compare {searchResults[0]?.ticker} vs {searchResults[1]?.ticker}
+                        </CommandItem>
+                      )}
+                    </CommandGroup>
+                  </>
+                ) : null}
+                {(!searchResults || searchResults.length === 0) && (
                   <CommandEmpty>
                     {isSearching ? (
                       <div className="py-8 text-center text-sm text-muted-foreground">Searching...</div>
                     ) : searchError ? (
                       <div className="py-8 text-center text-sm text-muted-foreground">Search failed</div>
                     ) : (
-                      <div className="py-8 text-center text-sm text-muted-foreground">No companies found</div>
+                      <div className="py-6 text-center text-sm text-muted-foreground">
+                        No companies found. Try &quot;Ask BullPen AI&quot; above for natural language queries.
+                      </div>
                     )}
                   </CommandEmpty>
                 )}

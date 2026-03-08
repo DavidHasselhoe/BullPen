@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
@@ -36,8 +36,9 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
-import { ArrowLeft, Scale, Building2, BarChart3, TrendingUp, Plus, X, Info, ArrowUpDown, ChevronDown, ChevronRight, Sparkles } from 'lucide-react';
+import { ArrowLeft, Scale, Building2, BarChart3, TrendingUp, Plus, X, Info, ArrowUpDown, ChevronDown, ChevronRight, Sparkles, MessageSquare } from 'lucide-react';
 import type { CompareCompany } from '@/app/api/compare/route';
+import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import { Suspense, Fragment } from 'react';
 
 interface SearchResult {
@@ -317,6 +318,47 @@ function CompareContent() {
   const [aiExplainError, setAiExplainError] = useState<string | null>(null);
   const [aiExplanation, setAiExplanation] = useState<string | null>(null);
 
+  // When arriving with tickers in URL (e.g. from Compare quick action), fetch company info and prefill slots
+  const { data: urlCompaniesData } = useQuery({
+    queryKey: ['companies-batch', tickersFromUrl.join(',')],
+    queryFn: async (): Promise<SearchResult[]> => {
+      if (tickersFromUrl.length === 0) return [];
+      const res = await fetch('/api/companies/batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tickers: tickersFromUrl }),
+      });
+      const json = await res.json();
+      if (!json.success || !json.data) return [];
+      return json.data.map((c: { ticker: string; name: string; logo_url?: string | null }) => ({
+        ticker: c.ticker,
+        name: c.name,
+        cik: '',
+        has_data: true,
+        logo_url: c.logo_url ?? null,
+      }));
+    },
+    enabled: tickersFromUrl.length >= 1 && tickersFromUrl.length < 2,
+    staleTime: 60_000,
+  });
+
+  const hasInitializedFromUrl = useRef(false);
+  useEffect(() => {
+    if (
+      urlCompaniesData &&
+      urlCompaniesData.length > 0 &&
+      tickersFromUrl.length >= 1 &&
+      tickersFromUrl.length < 2 &&
+      !hasInitializedFromUrl.current
+    ) {
+      setSelectedCompanies(urlCompaniesData);
+      hasInitializedFromUrl.current = true;
+    }
+  }, [urlCompaniesData, tickersFromUrl.length]);
+  useEffect(() => {
+    hasInitializedFromUrl.current = false;
+  }, [tickersFromUrl.join(',')]);
+
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQuery(searchQuery), 300);
     return () => clearTimeout(t);
@@ -361,6 +403,8 @@ function CompareContent() {
     }
   }, [selectedCompanies, router]);
 
+  const { open: openAIPanel, setAIContext } = useAIPanel();
+
   const { data, isLoading, error } = useQuery({
     queryKey: ['compare', tickers.join(',')],
     queryFn: async () => {
@@ -371,6 +415,13 @@ function CompareContent() {
     },
     enabled: tickers.length >= 2,
   });
+
+  useEffect(() => {
+    if (tickers.length >= 2) {
+      setAIContext({ tickers, label: `${tickers.join(' vs ')}` });
+    }
+    return () => setAIContext(null);
+  }, [tickers.join(','), setAIContext]);
 
   if (tickers.length < 2) {
     const slots = Math.min(MAX_SLOTS, Math.max(MIN_SLOTS, selectedCompanies.length + 1));
@@ -582,11 +633,22 @@ function CompareContent() {
       ) : (
         <>
           <div className="mb-8">
-            <div className="flex items-center gap-3 mb-1">
-              <Scale className="h-6 w-6 text-primary" />
-              <h1 className="text-2xl font-semibold">
-                Comparing {companies.map((c) => c.name).join(' vs ')}
-              </h1>
+            <div className="flex items-center justify-between gap-4 mb-1">
+              <div className="flex items-center gap-3">
+                <Scale className="h-6 w-6 text-primary" />
+                <h1 className="text-2xl font-semibold">
+                  Comparing {companies.map((c) => c.name).join(' vs ')}
+                </h1>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => openAIPanel()}
+                className="shrink-0 gap-2"
+              >
+                <MessageSquare className="h-4 w-4" />
+                Ask AI
+              </Button>
             </div>
             <p className="text-sm text-muted-foreground mb-6">
               Side-by-side comparison of business profile, key metrics, and financial history from SEC filings.

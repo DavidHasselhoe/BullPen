@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/use-auth';
 import {
   getMyHoldings,
   addHoldingAction,
+  addOrUpdateHoldingAction,
   updateHoldingAction,
   removeHoldingAction,
   type AddHoldingInput,
@@ -58,9 +59,30 @@ export function useAddHolding() {
       throw new Error(result.error || 'Failed to add holding');
     },
     onSuccess: () => {
-      // Invalidate holdings query to refetch
       queryClient.invalidateQueries({ queryKey: ['holdings', user?.id] });
-      // Also invalidate quotes query so new holdings get their quotes fetched
+      queryClient.invalidateQueries({ queryKey: ['holdings-quotes'] });
+    },
+  });
+}
+
+/**
+ * Add or update a holding — adds to existing quantity if symbol already in portfolio.
+ * Use for AI-driven add (e.g. "add 5 NVIDIA" when user may already have it).
+ */
+export function useAddOrUpdateHolding() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: AddHoldingInput): Promise<UserHolding> => {
+      if (!user?.id) throw new Error('Authentication required');
+
+      const result = await addOrUpdateHoldingAction(user.id, input);
+      if (result.success && result.holding) return result.holding;
+      throw new Error(result.error || 'Failed to add holding');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['holdings', user?.id] });
       queryClient.invalidateQueries({ queryKey: ['holdings-quotes'] });
     },
   });

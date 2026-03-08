@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
+import { CompanyRowActions } from '@/components/discover/CompanyRowActions';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { Flame } from 'lucide-react';
@@ -72,7 +73,7 @@ export function HotPicksCard() {
 
   if (isLoading) {
     return (
-      <Card className="border-border/50">
+      <Card className="border-border/50 min-w-0 overflow-hidden">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Flame className="h-5 w-5 text-orange-500" />
@@ -101,7 +102,7 @@ export function HotPicksCard() {
   }
 
   return (
-    <Card className="border-border/50">
+    <Card className="border-border/50 min-w-0 overflow-hidden">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Flame className="h-5 w-5 text-orange-500" />
@@ -111,30 +112,35 @@ export function HotPicksCard() {
       <CardContent>
         <div className="space-y-1">
           {hotPicks.map((pick, index) => (
-            <Link
+            <div
               key={pick.ticker}
-              href={`/stock/${pick.ticker}`}
-              className="flex cursor-pointer items-center gap-3 p-2 -mx-2 rounded-md transition-colors hover:bg-accent/50 group"
+              className="group flex cursor-pointer items-center gap-3 p-2.5 -mx-2 rounded-lg transition-all duration-200 hover:bg-accent/50 hover:shadow-sm border border-transparent hover:border-border/50"
             >
-              <div className="flex items-center justify-center w-7 text-xs font-bold text-muted-foreground tabular-nums">
-                {index + 1}
-              </div>
-              <CompanyLogo
-                name={pick.name || pick.ticker}
-                ticker={pick.ticker}
-                logoUrl={pick.logo_url || null}
-                size={36}
-              />
-              <div className="flex-1 min-w-0">
-                <div className="font-bold text-foreground text-sm tabular-nums group-hover:underline">
-                  {pick.ticker}
+              <Link
+                href={`/stock/${pick.ticker}`}
+                className="flex flex-1 min-w-0 items-center gap-3"
+              >
+                <div className="flex items-center justify-center w-7 text-xs font-bold text-muted-foreground tabular-nums shrink-0">
+                  {index + 1}
                 </div>
-                <div className="text-xs text-muted-foreground truncate">{pick.name || pick.ticker}</div>
-              </div>
-              <div className="text-xs text-muted-foreground">
-                {pick.click_count} {pick.click_count === 1 ? 'search' : 'searches'}
-              </div>
-            </Link>
+                <CompanyLogo
+                  name={pick.name || pick.ticker}
+                  ticker={pick.ticker}
+                  logoUrl={pick.logo_url || null}
+                  size={36}
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="font-extrabold text-foreground text-sm tabular-nums group-hover:underline">
+                    {pick.ticker}
+                  </div>
+                  <div className="text-xs text-muted-foreground truncate">{pick.name || pick.ticker}</div>
+                </div>
+                <div className="text-xs text-muted-foreground shrink-0">
+                  {pick.click_count} {pick.click_count === 1 ? 'search' : 'searches'}
+                </div>
+              </Link>
+              <CompanyRowActions ticker={pick.ticker} name={pick.name || pick.ticker} className="shrink-0" />
+            </div>
           ))}
         </div>
       </CardContent>

@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import type { FundamentalChange } from '@/hooks/use-discover';
@@ -28,9 +27,15 @@ const SIGNAL_TYPE_LABELS: Record<string, string> = {
 
 function getSignalLabel(change: FundamentalChange): string {
   const type = change.trend?.trend_type || change.signal?.signal_type;
-  const label = type ? SIGNAL_TYPE_LABELS[type] || type.replace(/_/g, ' ') : null;
+  const label = type ? SIGNAL_TYPE_LABELS[type] || type.replace(/_/g, ' ') : 'Signal';
   const sentiment = change.direction === 'positive' ? 'Positive' : change.direction === 'negative' ? 'Negative' : 'Neutral';
-  return label ? `${sentiment} • ${label}` : sentiment;
+  return `${sentiment} • ${label}`;
+}
+
+/** Truncate description for card consistency */
+function truncateDescription(text: string, maxLen = 80): string {
+  if (text.length <= maxLen) return text;
+  return text.slice(0, maxLen).trim() + '…';
 }
 
 interface FundamentalChangeCardProps {
@@ -42,29 +47,22 @@ export function FundamentalChangeCard({ change }: FundamentalChangeCardProps) {
     switch (direction) {
       case 'positive':
         return {
-          icon: TrendingUp,
           badgeClassName:
             'bg-green-500/10 text-green-700 border-green-500/30 dark:bg-green-500/15 dark:text-green-400 dark:border-green-500/40',
-          iconClassName: 'text-green-600 dark:text-green-400',
         };
       case 'negative':
         return {
-          icon: TrendingDown,
           badgeClassName:
             'bg-red-500/10 text-red-700 border-red-500/30 dark:bg-red-500/15 dark:text-red-400 dark:border-red-500/40',
-          iconClassName: 'text-red-600 dark:text-red-400',
         };
       default:
         return {
-          icon: Minus,
           badgeClassName: 'bg-muted text-muted-foreground border-border',
-          iconClassName: 'text-muted-foreground',
         };
     }
   };
 
   const config = getDirectionConfig(change.direction);
-  const Icon = config.icon;
 
   // Navigate to stock detail page (placeholder: /stock/[ticker])
   const stockUrl = `/stock/${change.company.ticker}`;
@@ -72,39 +70,41 @@ export function FundamentalChangeCard({ change }: FundamentalChangeCardProps) {
   const signalLabel = getSignalLabel(change);
 
   return (
-    <Link href={stockUrl} className="block cursor-pointer transition-opacity hover:opacity-95">
-      <Card className="h-full cursor-pointer border-border/50 transition-all duration-200 hover:border-primary/30 hover:shadow-md hover:shadow-black/5 dark:hover:shadow-black/20">
+    <Link href={stockUrl} className="block cursor-pointer h-full min-w-0">
+      <Card className="h-full cursor-pointer border-border/50 transition-all duration-200 hover:border-primary/40 hover:shadow-lg hover:shadow-black/10 dark:hover:shadow-black/25 hover:-translate-y-0.5 min-w-0 overflow-hidden">
         <CardContent className="p-4">
-          <div className="space-y-3">
-            {/* Company Header */}
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex items-center gap-3 flex-1 min-w-0">
+          <div className="space-y-2.5">
+            {/* Header: Ticker + Signal badge */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
                 <CompanyLogo
                   name={change.company.name}
                   ticker={change.company.ticker}
                   logoUrl={change.company.logo_url || null}
-                  size={40}
+                  size={36}
+                  className="shrink-0"
                 />
                 <div className="min-w-0">
-                  <h3 className="font-bold text-foreground tabular-nums tracking-tight">{change.company.ticker}</h3>
+                  <h3 className="font-extrabold text-foreground tabular-nums tracking-tight truncate">{change.company.ticker}</h3>
                   <p className="text-xs text-muted-foreground truncate">{change.company.name}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <Icon className={cn('h-4 w-4', config.iconClassName)} />
-                <Badge variant="outline" className={cn('text-xs', config.badgeClassName)}>
-                  {signalLabel}
-                </Badge>
-              </div>
+              <Badge variant="outline" className={cn('text-xs shrink-0', config.badgeClassName)}>
+                {signalLabel}
+              </Badge>
             </div>
 
-            {/* Change Description */}
+            {/* Short description */}
             <p className="text-sm leading-relaxed text-muted-foreground line-clamp-2">
-              {change.description}
+              {truncateDescription(change.description)}
             </p>
 
-            {/* Context Label */}
-            <p className="text-xs text-muted-foreground/70">{change.context}</p>
+            {/* Metric affected */}
+            {change.context && (
+              <p className="text-xs text-muted-foreground/70">
+                Metric: {change.context}
+              </p>
+            )}
           </div>
         </CardContent>
       </Card>

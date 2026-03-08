@@ -44,7 +44,7 @@ export function MarketHoursCard({ exchangeCodes, className }: MarketHoursCardPro
 
   if (isLoading) {
     return (
-      <Card className={cn('border-border/50', className)}>
+      <Card className={cn('border-border/50 min-w-0 overflow-hidden', className)}>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Clock className="h-5 w-5 text-primary" />
@@ -71,7 +71,7 @@ export function MarketHoursCard({ exchangeCodes, className }: MarketHoursCardPro
   }
 
   return (
-    <Card className={cn('border-border/50', className)}>
+    <Card className={cn('border-border/50 min-w-0 overflow-hidden', className)}>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Clock className="h-5 w-5 text-primary" />

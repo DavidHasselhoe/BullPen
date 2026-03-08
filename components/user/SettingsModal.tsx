@@ -23,7 +23,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Globe, DollarSign, Moon, Bell, Shield, AlertTriangle, Trash2, Download, Check, Settings2, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Globe, DollarSign, Moon, Bell, Shield, AlertTriangle, Trash2, Download, Check, Settings2, Eye, EyeOff, Home } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { signOut } from '@/lib/auth/auth';
@@ -64,6 +64,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   const [defaultCurrency, setDefaultCurrency] = useState<string | null>(null); // null means "Based on exchange"
   const [theme, setTheme] = useState<'dark' | 'light' | 'dark-veil' | 'aurora' | 'particles' | 'plasma' | 'beams' | 'gradient-purple' | 'gradient-blue' | 'gradient-midnight' | 'gradient-embers'>('dark');
   const [language, setLanguage] = useState<string | null>(null); // null means "System default"
+  const [defaultHomepage, setDefaultHomepage] = useState<string>('/'); // Path where user lands when opening site
   const [showQuotes, setShowQuotes] = useState<boolean>(true); // Default to true
   const [showWelcomeText, setShowWelcomeText] = useState<boolean>(true); // Default to true
   const [notifications, setNotifications] = useState({
@@ -108,6 +109,8 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
         insider_trades: settings.notifications?.insider_trades || false,
         signal_threshold_crossed: settings.notifications?.signal_threshold_crossed || false,
       });
+      // Load default homepage (default to / if not set)
+      setDefaultHomepage(settings.default_homepage || '/');
       // Load showQuotes preference (default to true if not set)
       setShowQuotes(settings.show_quotes !== undefined ? settings.show_quotes : true);
       // Load showWelcomeText preference (default to true if not set)
@@ -132,6 +135,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
         default_currency: defaultCurrency,
         theme, // Combined theme + background
         language, // User's language preference (null means "System default")
+        default_homepage: defaultHomepage,
         show_quotes: showQuotes, // Show/hide quotes on main page
         show_welcome_text: showWelcomeText, // Show/hide welcome text
         notifications,
@@ -468,6 +472,34 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                     </Select>
                     <p className="text-xs text-muted-foreground">
                       {t('settings.languageDescription')}
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="default-homepage" className="flex items-center gap-2">
+                      <Home className="h-4 w-4" />
+                      {t('settings.defaultHomepage')}
+                    </Label>
+                    <Select
+                      value={defaultHomepage}
+                      onValueChange={setDefaultHomepage}
+                    >
+                      <SelectTrigger id="default-homepage">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="/">{t('settings.homepageDiscover')}</SelectItem>
+                        <SelectItem value="/holdings">{t('settings.homepageHoldings')}</SelectItem>
+                        <SelectItem value="/tools">{t('settings.homepageTools')}</SelectItem>
+                        <SelectItem value="/tools/ai-chat">{t('settings.homepageAIChat')}</SelectItem>
+                        <SelectItem value="/tools/screener">{t('settings.homepageScreener')}</SelectItem>
+                        <SelectItem value="/tools/compare">{t('settings.homepageCompare')}</SelectItem>
+                        <SelectItem value="/tools/filings">{t('settings.homepageFilings')}</SelectItem>
+                        <SelectItem value="/tools/buy-here">{t('settings.homepageBuyHere')}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      {t('settings.defaultHomepageDescription')}
                     </p>
                   </div>
 

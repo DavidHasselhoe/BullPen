@@ -62,8 +62,8 @@ export function LiveClock({ className, format }: LiveClockProps) {
     // Update immediately
     updateTime();
 
-    // Update every second
-    const interval = setInterval(updateTime, 1000);
+    // Update every 5s - reduces header re-renders that cause navigation lag
+    const interval = setInterval(updateTime, 5000);
 
     return () => clearInterval(interval);
   }, [format]);

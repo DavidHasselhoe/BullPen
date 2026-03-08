@@ -29,7 +29,7 @@ export function MarketCountdown({ exchangeCode, showLabel = true, className }: M
     };
 
     updateCountdown();
-    const interval = setInterval(updateCountdown, 1000);
+    const interval = setInterval(updateCountdown, 5000);
 
     return () => clearInterval(interval);
   }, [status]);

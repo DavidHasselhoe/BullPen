@@ -77,7 +77,7 @@ export function ChatWidget() {
           ) : !isAuthenticated ? (
             <AuthGate />
           ) : (
-            <BullpenChat compact user={user} />
+            <BullpenChat compact user={user} open={isOpen} />
           )}
         </div>
       </div>

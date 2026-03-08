@@ -6,7 +6,7 @@
 import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/types';
-import { getHoldings, addHolding, updateHolding, removeHolding } from '@/lib/holdings/holdings-db';
+import { getHoldings, addHolding, addOrUpdateHolding, updateHolding, removeHolding } from '@/lib/holdings/holdings-db';
 import type { UserHolding } from '@/lib/types/database';
 
 /**
@@ -105,6 +105,33 @@ export async function addHoldingAction(
   }
 
   return await addHolding(userId, {
+    symbol: input.symbol,
+    company_name: input.company_name,
+    quantity: input.quantity ?? null,
+    avg_price: input.avg_price ?? null,
+  });
+}
+
+/**
+ * Server Action: Add or update a holding — adds to existing quantity if symbol already in portfolio.
+ * Use for AI-driven "add 5 NVIDIA" when user may already have NVIDIA.
+ */
+export async function addOrUpdateHoldingAction(
+  userId: string,
+  input: AddHoldingInput
+): Promise<{
+  success: boolean;
+  holding?: UserHolding;
+  error?: string;
+}> {
+  if (!userId) {
+    return { success: false, error: 'User ID is required' };
+  }
+  if (!input.symbol || !input.company_name) {
+    return { success: false, error: 'Symbol and company name are required' };
+  }
+
+  return await addOrUpdateHolding(userId, {
     symbol: input.symbol,
     company_name: input.company_name,
     quantity: input.quantity ?? null,

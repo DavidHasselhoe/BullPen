@@ -5,16 +5,24 @@ import { DefaultChatTransport } from 'ai';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import Image from 'next/image';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Button } from '@/components/ui/button';
 import { Send, Square, Bot, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AuthUser } from '@/lib/auth/auth';
+import { useAddOrUpdateHolding } from '@/hooks/use-holdings';
 
 const DEFAULT_STARTER_PROMPTS = [
   'What is EBITDA?',
   'Explain P/E ratio',
   'What are 10-K filings?',
 ];
+
+export interface AIContextProp {
+  tickers: string[];
+  label?: string;
+}
 
 interface BullpenChatProps {
   /** Compact mode trims padding/header for use inside the floating widget */
@@ -23,27 +31,42 @@ interface BullpenChatProps {
   user?: AuthUser | null;
   /** Custom starter prompts when there are no messages */
   starterPrompts?: string[];
+  /** When true, auto-focus the input (e.g. when panel opens). Omit for full-page chat (focus on mount). */
+  open?: boolean;
+  /** Initial query to send when opening (e.g. from command palette) */
+  initialQuery?: string;
+  /** Page context for context-aware prompts (e.g. NVDA vs AMD) */
+  aiContext?: AIContextProp;
+  /** Called after initial query has been sent */
+  onConsumedQuery?: () => void;
 }
 
-function extractClientActions(message: { parts?: Array<{ type?: string; state?: string; output?: unknown; result?: unknown }> }): Array<{ type: string; path?: string }> {
-  const actions: Array<{ type: string; path?: string }> = [];
+type ClientAction =
+  | { type: 'navigate'; path: string }
+  | { type: 'addHolding'; ticker: string; company_name: string; quantity?: number | null; avg_price?: number | null };
+
+function extractClientActions(message: { parts?: Array<{ type?: string; state?: string; output?: unknown; result?: unknown }> }): ClientAction[] {
+  const actions: ClientAction[] = [];
   for (const part of message.parts ?? []) {
     if (!part.type?.startsWith('tool-')) continue;
     const p = part as { state?: string; output?: unknown; result?: unknown };
-    // Support output (AI SDK) or result (some SDK variants)
     const raw = p.output ?? p.result;
     if (!raw || typeof raw !== 'object') continue;
-    const out = raw as { __clientAction?: { type: string; path?: string } };
-    if (out.__clientAction) actions.push(out.__clientAction);
+    const out = raw as { __clientAction?: Record<string, unknown> };
+    if (out.__clientAction && typeof (out.__clientAction as Record<string, unknown>).type === 'string') {
+      actions.push(out.__clientAction as ClientAction);
+    }
   }
   return actions;
 }
 
-export function BullpenChat({ compact = false, user, starterPrompts = DEFAULT_STARTER_PROMPTS }: BullpenChatProps) {
+export function BullpenChat({ compact = false, user, starterPrompts = DEFAULT_STARTER_PROMPTS, open, initialQuery, aiContext, onConsumedQuery }: BullpenChatProps) {
   const router = useRouter();
+  const addHoldingMutation = useAddOrUpdateHolding();
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const inputRef = useRef('');
+  const initialQuerySentRef = useRef(false);
 
   const {
     messages,
@@ -54,10 +77,21 @@ export function BullpenChat({ compact = false, user, starterPrompts = DEFAULT_ST
     clearError,
   } = useChat({
     transport: new DefaultChatTransport({ api: '/api/ai/chat' }),
-    onFinish: ({ message }) => {
+    onFinish: async ({ message }) => {
       for (const action of extractClientActions(message)) {
         if (action.type === 'navigate' && action.path) {
           router.push(action.path);
+        } else if (action.type === 'addHolding') {
+          try {
+            await addHoldingMutation.mutateAsync({
+              symbol: action.ticker,
+              company_name: action.company_name,
+              quantity: action.quantity ?? null,
+              avg_price: action.avg_price ?? null,
+            });
+          } catch {
+            // User may not be logged in, or holding may already exist — silently skip
+          }
         }
       }
     },
@@ -69,6 +103,39 @@ export function BullpenChat({ compact = false, user, starterPrompts = DEFAULT_ST
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Auto-focus input when assistant opens (widget/side panel) or on mount (full page)
+  useEffect(() => {
+    const shouldFocus = open === undefined ? true : open;
+    if (!shouldFocus) return;
+    // Defer so the panel is visible and focusable
+    const id = setTimeout(() => textareaRef.current?.focus(), 0);
+    return () => clearTimeout(id);
+  }, [open]);
+
+  // Send initial query when opened with one (e.g. from command palette)
+  useEffect(() => {
+    if (!initialQuery || initialQuerySentRef.current || !open) return;
+    initialQuerySentRef.current = true;
+    sendMessage({ parts: [{ type: 'text', text: initialQuery }] });
+    onConsumedQuery?.();
+  }, [initialQuery, open, sendMessage, onConsumedQuery]);
+
+  // Context-aware prompts when viewing a company or comparison
+  const contextPrompts = aiContext
+    ? aiContext.tickers.length >= 2
+      ? [
+          'Explain profitability differences',
+          'Which company has stronger margins?',
+          'Compare revenue growth',
+        ]
+      : [
+          `Summarize ${aiContext.tickers[0]} key metrics`,
+          `What are the main risks for ${aiContext.tickers[0]}?`,
+          `Recent filings for ${aiContext.tickers[0]}`,
+        ]
+    : [];
+  const displayPrompts = contextPrompts.length > 0 ? contextPrompts : starterPrompts;
 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -109,7 +176,7 @@ export function BullpenChat({ compact = false, user, starterPrompts = DEFAULT_ST
   return (
     <div className={cn('flex flex-col h-full', compact ? '' : 'min-h-[460px]')}>
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-3 space-y-3 scrollbar-hide">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-4 space-y-4 scrollbar-hide">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full gap-3 py-8 text-center">
             <div className="rounded-full bg-primary/10 p-3">
@@ -118,17 +185,19 @@ export function BullpenChat({ compact = false, user, starterPrompts = DEFAULT_ST
             <div>
               <p className="text-sm font-medium text-foreground">BullPen AI</p>
               <p className="text-xs text-muted-foreground mt-1 max-w-[220px]">
-                Ask about SEC filings, financial metrics, or investment concepts.
+                {aiContext?.label
+                  ? `Context: ${aiContext.label}`
+                  : 'Ask about SEC filings, financial metrics, or investment concepts.'}
               </p>
             </div>
-            <div className="flex flex-wrap gap-2 justify-center mt-1">
-              {starterPrompts.map((suggestion) => (
+            <div className="flex flex-wrap gap-2.5 justify-center mt-3">
+              {displayPrompts.map((suggestion) => (
                 <button
                   key={suggestion}
                   onClick={() => {
                     sendMessage({ parts: [{ type: 'text', text: suggestion }] });
                   }}
-                  className="text-xs px-3 py-1.5 rounded-full border border-border bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                  className="text-xs px-4 py-2 rounded-full border border-border bg-muted/40 hover:bg-muted/80 hover:border-primary/30 text-muted-foreground hover:text-foreground transition-all duration-200 hover:shadow-sm"
                 >
                   {suggestion}
                 </button>
@@ -157,14 +226,40 @@ export function BullpenChat({ compact = false, user, starterPrompts = DEFAULT_ST
                     : 'rounded-bl-sm bg-muted text-foreground'
                 )}
               >
-                <div className="whitespace-pre-wrap break-words">
-                  {message.parts.map((part, i) => {
-                    if (part.type === 'text') {
-                      return <span key={`${message.id}-${i}`}>{part.text}</span>;
-                    }
-                    return null;
-                  })}
-                </div>
+                {isUser ? (
+                  <div className="whitespace-pre-wrap break-words">
+                    {message.parts.map((part, i) => {
+                      if (part.type === 'text') {
+                        return <span key={`${message.id}-${i}`}>{part.text}</span>;
+                      }
+                      return null;
+                    })}
+                  </div>
+                ) : (
+                  <div
+                    className={cn(
+                      'break-words',
+                      '[&_h1]:text-base [&_h1]:font-bold [&_h1]:mt-2 [&_h1]:mb-1 [&_h1]:first:mt-0',
+                      '[&_h2]:text-sm [&_h2]:font-semibold [&_h2]:mt-2 [&_h2]:mb-1 [&_h2]:first:mt-0',
+                      '[&_h3]:text-sm [&_h3]:font-semibold [&_h3]:mt-1.5 [&_h3]:mb-0.5 [&_h3]:first:mt-0',
+                      '[&_p]:my-1 [&_p]:first:mt-0 [&_p]:last:mb-0',
+                      '[&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-4 [&_ul]:space-y-0.5',
+                      '[&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-4 [&_ol]:space-y-0.5',
+                      '[&_strong]:font-semibold',
+                      '[&_code]:bg-muted-foreground/20 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs',
+                      '[&_pre]:bg-muted-foreground/10 [&_pre]:p-2 [&_pre]:rounded-lg [&_pre]:overflow-x-auto [&_pre]:my-2',
+                      '[&_pre_code]:bg-transparent [&_pre_code]:p-0',
+                      '[&_a]:underline [&_a]:hover:opacity-80'
+                    )}
+                  >
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {message.parts
+                        .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
+                        .map((p) => p.text)
+                        .join('')}
+                    </ReactMarkdown>
+                  </div>
+                )}
               </div>
               {isUser && (
                 <div className="shrink-0 rounded-full overflow-hidden mb-0.5 h-7 w-7 ring-2 ring-primary/30">
@@ -222,7 +317,7 @@ export function BullpenChat({ compact = false, user, starterPrompts = DEFAULT_ST
       <form
         onSubmit={handleSubmit}
         onClick={handleFormClick}
-        className="shrink-0 border-t border-border/50 p-3 flex items-end gap-2 pointer-events-auto relative z-10"
+        className="shrink-0 sticky bottom-0 border-t border-border/50 bg-background/95 backdrop-blur-sm p-3 flex items-end gap-2 pointer-events-auto relative z-10"
       >
         <textarea
           ref={textareaRef}

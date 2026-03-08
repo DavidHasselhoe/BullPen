@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
@@ -54,16 +54,34 @@ export function CompanyLogo({
 }: CompanyLogoProps) {
   const [imageError, setImageError] = useState(false);
   const [ensuredUrl, setEnsuredUrl] = useState<string | null>(null);
+  const [fetchedUrl, setFetchedUrl] = useState<string | null>(null);
   const ensureInProgress = useRef(false);
+  const fetchInProgress = useRef(false);
+
+  // When logoUrl is null, fetch logo by ticker (e.g. for recently viewed items)
+  useEffect(() => {
+    if (logoUrl != null || !ticker || fetchInProgress.current) return;
+    fetchInProgress.current = true;
+    fetch(`/api/logo/${encodeURIComponent(ticker)}`)
+      .then((res) => res.json())
+      .then((data: { success?: boolean; logoUrl?: string }) => {
+        if (data.success && data.logoUrl) {
+          setFetchedUrl(data.logoUrl);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        fetchInProgress.current = false;
+      });
+  }, [ticker, logoUrl]);
 
   const displayText = useMemo(() => getDisplayText(name, ticker), [name, ticker]);
   const initialsColor = useMemo(() => getInitialsColor(ticker), [ticker]);
 
   const handleImageError = useCallback(() => {
-    if (!ensureOnError || !ticker || ensureInProgress.current) {
-      setImageError(true);
-      return;
-    }
+    // Show fallback immediately so we never show broken image
+    setImageError(true);
+    if (!ensureOnError || !ticker || ensureInProgress.current) return;
     ensureInProgress.current = true;
     fetch(`/api/logo/${encodeURIComponent(ticker)}`)
       .then((res) => res.json())
@@ -71,11 +89,9 @@ export function CompanyLogo({
         if (data.success && data.logoUrl) {
           setEnsuredUrl(`${data.logoUrl}?t=${Date.now()}`);
           setImageError(false);
-        } else {
-          setImageError(true);
         }
       })
-      .catch(() => setImageError(true))
+      .catch(() => {})
       .finally(() => {
         ensureInProgress.current = false;
       });
@@ -96,7 +112,7 @@ export function CompanyLogo({
     return baseSize;
   }, [size, displayText.length]);
 
-  const effectiveLogoUrl = ensuredUrl || logoUrl;
+  const effectiveLogoUrl = ensuredUrl || logoUrl || fetchedUrl;
   const showFallback = !effectiveLogoUrl || imageError;
 
   return (

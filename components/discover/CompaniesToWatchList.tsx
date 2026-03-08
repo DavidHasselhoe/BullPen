@@ -6,6 +6,7 @@ import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
+import { CompanyRowActions } from '@/components/discover/CompanyRowActions';
 import type { CompanyToWatch } from '@/hooks/use-discover';
 
 interface CompaniesToWatchListProps {
@@ -76,11 +77,8 @@ export function CompaniesToWatchList({ companies, isLoading }: CompaniesToWatchL
         return (
           <div key={item.company.id}>
             {index > 0 && <Separator className="my-3 opacity-50" />}
-            <Link
-              href={stockUrl}
-              className="flex cursor-pointer items-center justify-between gap-4 py-3 transition-colors hover:bg-accent/30 -mx-2 px-2 rounded-md group"
-            >
-              <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div className="group flex cursor-pointer items-center justify-between gap-4 py-3.5 transition-all duration-200 hover:bg-accent/50 -mx-2 px-3 rounded-lg border border-transparent hover:border-border/50">
+              <Link href={stockUrl} className="flex flex-1 min-w-0 items-center gap-3">
                 <CompanyLogo
                   name={item.company.name}
                   ticker={item.company.ticker}
@@ -89,7 +87,7 @@ export function CompaniesToWatchList({ companies, isLoading }: CompaniesToWatchL
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
-                    <span className="font-bold text-foreground tabular-nums group-hover:underline">
+                    <span className="font-extrabold text-foreground tabular-nums tracking-tight group-hover:text-primary transition-colors">
                       {item.company.ticker}
                     </span>
                     <span className="text-xs text-muted-foreground truncate">{item.company.name}</span>
@@ -98,18 +96,22 @@ export function CompaniesToWatchList({ companies, isLoading }: CompaniesToWatchL
                     <p className="text-sm text-muted-foreground">{item.supportingLabel}</p>
                   )}
                 </div>
-              </div>
+              </Link>
               <div className="flex items-center gap-2 flex-shrink-0">
                 <Badge variant="outline" className={cn('text-xs', badgeConfig.className)}>
                   {badgeConfig.label}
                 </Badge>
                 {item.compositeScore !== null && (
-                  <span className="text-xs text-muted-foreground w-10 text-right">
+                  <span className="text-xs text-muted-foreground w-10 text-right tabular-nums">
                     {item.compositeScore.toFixed(0)}
                   </span>
                 )}
+                <CompanyRowActions
+                  ticker={item.company.ticker}
+                  name={item.company.name}
+                />
               </div>
-            </Link>
+            </div>
           </div>
         );
       })}

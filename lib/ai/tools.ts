@@ -529,6 +529,45 @@ export const openCompanyNews = tool({
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Tool: Add Holding (client action — frontend executes with user context)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const addHolding = tool({
+  description:
+    'Add a stock to the user\'s holdings. Use when the user asks to add, track, or save a company to their portfolio. ' +
+    'Examples: "add 5 NVIDIA to my holdings", "add AAPL to my portfolio", "track 10 shares of Microsoft". ' +
+    'Requires ticker; quantity and average price are optional.',
+  inputSchema: jsonSchema<{
+    ticker: string;
+    quantity?: number;
+    avg_price?: number;
+  }>({
+    type: 'object',
+    properties: {
+      ticker: { type: 'string', description: 'Stock ticker symbol, e.g. NVDA, AAPL' },
+      quantity: { type: 'number', description: 'Number of shares (optional)' },
+      avg_price: { type: 'number', description: 'Average cost per share in USD (optional)' },
+    },
+    required: ['ticker'],
+    additionalProperties: false,
+  }),
+  execute: async ({ ticker, quantity, avg_price }) => {
+    const company = await resolveCompanyId(ticker);
+    if (!company) return { error: `Company "${ticker}" not found.` };
+    return {
+      ...clientAction({
+        type: 'addHolding',
+        ticker: ticker.toUpperCase(),
+        company_name: company.name,
+        quantity: quantity ?? null,
+        avg_price: avg_price ?? null,
+      }),
+      added: company.name,
+    };
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Exported tool map (passed directly to streamText)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -546,6 +585,7 @@ export const BULLPEN_TOOLS = {
   openTools,
   openCompanyEarnings,
   openCompanyNews,
+  addHolding,
 };
 
 export const CLIENT_ACTION_KEY = '__clientAction';

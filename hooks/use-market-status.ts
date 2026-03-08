@@ -55,8 +55,8 @@ export function useMarketStatus(exchangeCode: string | null) {
       return calculateMarketStatus(exchange, exchangeHolidays);
     },
     enabled: !!exchangeCode && !!data && !isLoading,
-    refetchInterval: 1000, // Update every second for real-time countdown
-    staleTime: 0, // Always refetch to get current time
+    refetchInterval: 5000, // Update every 5s - reduces lag; countdown stays reasonably fresh
+    staleTime: 0,
   });
 }
 
@@ -84,7 +84,7 @@ export function useMultipleMarketStatus(exchangeCodes: string[]) {
       return statusMap;
     },
     enabled: !!data && !isLoading && exchangeCodes.length > 0,
-    refetchInterval: 1000, // Update every second for real-time countdown
-    staleTime: 0, // Always refetch to get current time
+    refetchInterval: 5000, // Update every 5s - reduces lag from frequent re-renders
+    staleTime: 0,
   });
 }

@@ -8,6 +8,7 @@ import {
   MessageSquare,
   Filter,
   Scale,
+  FileText,
 } from 'lucide-react';
 
 export interface ToolConfig {
@@ -42,6 +43,14 @@ export const TOOLS: ToolConfig[] = [
     description: 'Side-by-side comparison of business profile, key metrics, and financial history for 2–5 companies.',
     href: '/tools/compare',
     icon: Scale,
+    status: 'available',
+  },
+  {
+    id: 'filings',
+    name: 'Filing Explorer',
+    description: 'Browse recently filed SEC reports (10-K, 10-Q, 20-F) across companies.',
+    href: '/tools/filings',
+    icon: FileText,
     status: 'available',
   },
   {
