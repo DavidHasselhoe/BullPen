@@ -25,7 +25,8 @@
     "populate-quotes": "tsx scripts/populate-investing-quotes.ts",
     "test-resend": "tsx scripts/test-resend.ts",
     "trigger-cron": "tsx scripts/trigger-cron.ts",
-    "test-earnings-email": "tsx scripts/test-earnings-email.ts"
+    "test-earnings-email": "tsx scripts/test-earnings-email.ts",
+    "rules": "tsx scripts/print-cursor-rules.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.33",

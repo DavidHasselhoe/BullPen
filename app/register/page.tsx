@@ -9,7 +9,6 @@ import { Separator } from '@/components/ui/separator';
 import { motion } from 'framer-motion';
 
 export default function RegisterPage() {
-  const router = useRouter();
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -31,8 +30,7 @@ export default function RegisterPage() {
   };
 
   const handleSuccess = () => {
-    router.push('/');
-    router.refresh();
+    router.replace('/');
   };
 
   return (

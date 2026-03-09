@@ -54,7 +54,7 @@ scripts/
 
 - **10-K** - Annual report
 - **10-Q** - Quarterly report
-- **8-K** - Current events (basic support)
+- **8-K** - Current events (earnings releases, stock splits, material corporate events). Full content ingestion via `ingestFiling`; integrated into lazy ingestion pipeline.
 
 ### 10-K Sections Extracted
 
@@ -269,8 +269,7 @@ Planned improvements (not yet implemented):
 
 - [ ] Background job queue (e.g., BullMQ, Inngest)
 - [ ] Batch ingestion for multiple companies
-- [ ] XBRL financial data extraction
-- [ ] 8-K event parsing
+- [x] 8-K event parsing (implemented — Phase A events, Phase B Item 2.02 earnings)
 - [ ] Incremental updates (only new filings)
 - [ ] Retry logic with exponential backoff
 - [ ] Webhook notifications on completion

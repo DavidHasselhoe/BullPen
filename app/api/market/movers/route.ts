@@ -1,13 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getTopMovers } from '@/lib/finnhub/finnhub-client';
+import { getTopMovers, getTopMoversForSymbols } from '@/lib/finnhub/finnhub-client';
 import { getStorageLogoUrl } from '@/lib/logos/logos-storage';
 
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const limit = parseInt(searchParams.get('limit') || '5', 10);
+    const symbolsParam = searchParams.get('symbols');
+    const symbols = symbolsParam
+      ? symbolsParam.split(',').map((s) => s.trim().toUpperCase()).filter(Boolean)
+      : null;
 
-    const { gainers, losers } = await getTopMovers(limit);
+    const { gainers, losers } = symbols && symbols.length > 0
+      ? await getTopMoversForSymbols(symbols, limit)
+      : await getTopMovers(limit);
 
     const enrichWithLogo = (m: { symbol: string }) => ({
       ...m,

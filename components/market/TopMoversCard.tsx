@@ -14,6 +14,7 @@ interface TopMoversCardProps {
   gainers: MarketMover[];
   losers: MarketMover[];
   isLoading?: boolean;
+  isHoldingsMode?: boolean;
 }
 
 /** Minimal SVG trend line (direction indicator; not real price data) */
@@ -111,7 +112,7 @@ function MoverItem({
   );
 }
 
-export function TopMoversCard({ gainers, losers, isLoading }: TopMoversCardProps) {
+export function TopMoversCard({ gainers, losers, isLoading, isHoldingsMode }: TopMoversCardProps) {
   const allTickers = [...(gainers || []), ...(losers || [])].map((m) => m.symbol);
   const { data: companyBatch } = useQuery({
     queryKey: ['companies-batch', allTickers],
@@ -170,7 +171,12 @@ export function TopMoversCard({ gainers, losers, isLoading }: TopMoversCardProps
   return (
     <Card className="border-border/50 min-w-0 overflow-hidden">
       <CardHeader>
-        <CardTitle>Top Market Movers</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          Top Market Movers
+          {isHoldingsMode && (
+            <span className="text-xs font-normal text-muted-foreground">(from your portfolio)</span>
+          )}
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Top Gainers */}

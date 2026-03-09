@@ -17,12 +17,15 @@ import type { SECSubmissions } from './sec-edgar';
 // CONSTANTS
 // ============================================================
 
-/** Form types we store in our filings table */
+/**
+ * Form types we store in our filings table.
+ * Note: 8-K is excluded — it is ingested only via full content pipeline (ingestFiling)
+ * to ensure events, splits, and Item 2.02 earnings are properly parsed.
+ */
 const FORMS_TO_STORE = new Set([
   '10-K', '10-K/A',
   '10-Q', '10-Q/A',
   '20-F', '20-F/A',
-  '8-K',
   '6-K',
 ]);
 

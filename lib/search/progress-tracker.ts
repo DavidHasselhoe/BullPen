@@ -157,7 +157,7 @@ export const LAZY_INGESTION_STEPS: ProgressStep[] = [
   { name: 'Extracting metrics', weight: 30 },
   { name: 'Analyzing with AI', weight: 20 },
   { name: 'Generating insights', weight: 15 },
-  { name: 'Analyzing trends', weight: 10 },
+  { name: 'Ingesting recent 8-Ks', weight: 5 },
   { name: 'Finalizing', weight: 8 },
 ];
 

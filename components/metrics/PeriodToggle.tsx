@@ -11,15 +11,15 @@ interface PeriodToggleProps {
 
 export function PeriodToggle({ selected, onChange }: PeriodToggleProps) {
   return (
-    <div className="inline-flex items-center gap-1 rounded-lg border bg-card p-1">
+    <div className="inline-flex items-center gap-1 rounded-lg border border-border bg-muted/50 p-1">
       <Button
         variant="ghost"
         size="sm"
         onClick={() => onChange('annual')}
         className={cn(
-          'h-8 px-3',
+          'h-8 px-3 text-foreground',
           selected === 'annual' &&
-            'bg-foreground text-background hover:bg-foreground/90'
+            'bg-primary text-primary-foreground hover:bg-primary/90'
         )}
       >
         Annual
@@ -29,9 +29,9 @@ export function PeriodToggle({ selected, onChange }: PeriodToggleProps) {
         size="sm"
         onClick={() => onChange('quarterly')}
         className={cn(
-          'h-8 px-3',
+          'h-8 px-3 text-foreground',
           selected === 'quarterly' &&
-            'bg-foreground text-background hover:bg-foreground/90'
+            'bg-primary text-primary-foreground hover:bg-primary/90'
         )}
       >
         Quarterly

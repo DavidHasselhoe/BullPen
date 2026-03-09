@@ -31,8 +31,9 @@ export function MetricSelector({ selected, onChange }: MetricSelectorProps) {
           size="sm"
           onClick={() => onChange(metric.value)}
           className={cn(
-            selected === metric.value &&
-              'bg-foreground text-background hover:bg-foreground/90'
+            selected === metric.value
+              ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+              : 'text-foreground'
           )}
         >
           {metric.label}

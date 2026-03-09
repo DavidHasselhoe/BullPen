@@ -9,6 +9,7 @@ interface MarketNewsCardProps {
   news: MarketNews[];
   isLoading?: boolean;
   limit?: number;
+  isHoldingsMode?: boolean;
 }
 
 function formatTimestamp(timestamp: number): string {
@@ -57,7 +58,7 @@ function NewsItem({ article }: { article: MarketNews }) {
   );
 }
 
-export function MarketNewsCard({ news, isLoading, limit = 5 }: MarketNewsCardProps) {
+export function MarketNewsCard({ news, isLoading, limit = 5, isHoldingsMode }: MarketNewsCardProps) {
   const displayNews = news.slice(0, limit);
 
   if (isLoading) {
@@ -82,7 +83,12 @@ export function MarketNewsCard({ news, isLoading, limit = 5 }: MarketNewsCardPro
   return (
     <Card className="border-border/50 min-w-0 overflow-hidden">
       <CardHeader>
-        <CardTitle>Market News</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          Market News
+          {isHoldingsMode && (
+            <span className="text-xs font-normal text-muted-foreground">(your portfolio)</span>
+          )}
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-1">
         {displayNews.length > 0 ? (

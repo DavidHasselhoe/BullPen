@@ -31,13 +31,11 @@ export async function GET(
       earnings,
     });
   } catch (error) {
-    console.error('Error fetching earnings calendar:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : 'Internal server error',
-      },
-      { status: 500 }
-    );
+    // Finnhub may fail (rate limit, etc.). Return empty so UI can still show SEC-reported dates.
+    console.warn(`[earnings-calendar] Finnhub failed for ${params?.ticker ?? 'unknown'}:`, error);
+    return NextResponse.json({
+      success: true,
+      earnings: [],
+    });
   }
 }

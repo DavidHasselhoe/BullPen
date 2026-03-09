@@ -23,6 +23,7 @@ import { markCompanyIndexAsIngested, getCompanyIndexByTicker } from './search-db
 import { createServerClient } from '../supabase/client';
 import { getCompanySubmissions, getFilingContent } from '../ingestion/sec-edgar';
 import { processAndUpsertFilings, extractCompanyProfileFromSubmissions } from '../ingestion/submissions-processor';
+import { ingestRecentFilings } from '../ingestion/filing-ingestion';
 import { fetchAndExtractCompanyMetrics } from '../ingestion/xbrl-company-facts';
 import { parseFiling } from '../ingestion/filing-parser';
 import { createFilingSections } from '../ingestion/database';
@@ -353,6 +354,33 @@ export async function lazyIngestCompany(
     }
 
     tracker.completeStep('Generating insights');
+
+    // ── Step 6.5: Ingest recent 8-Ks ─────────────────────────────────── 88–95%
+    // 8-K filings (earnings releases, stock splits, material events) are not in XBRL.
+    // We ingest them via full content pipeline for corporate events and Item 2.02 earnings.
+    const RECENT_8K_LIMIT = 5;
+    tracker.startStep('Ingesting recent 8-Ks');
+    try {
+      const eightKResults = await ingestRecentFilings(
+        cik,
+        '8-K',
+        RECENT_8K_LIMIT,
+        (msg) => tracker.update(msg),
+      );
+      const ingested = eightKResults.filter((r) => r.success).length;
+      const skipped = eightKResults.filter((r) => r.error?.includes('already exists')).length;
+      if (ingested > 0) {
+        tracker.update(`Ingested ${ingested} 8-K filing(s)`);
+      }
+      if (skipped > 0) {
+        tracker.update(`${skipped} 8-K(s) already in database`);
+      }
+    } catch (err) {
+      // Non-fatal: 8-K ingest failures (rate limit, parse errors) shouldn't fail the whole pipeline
+      console.warn(`[LazyIngestion] 8-K ingestion failed for ${ticker}:`, err);
+      tracker.update('8-K ingestion skipped (non-fatal)');
+    }
+    tracker.completeStep('Ingesting recent 8-Ks');
 
     // ── Step 7: Finalize ────────────────────────────────────────────── 95–100%
     tracker.startStep('Finalizing');

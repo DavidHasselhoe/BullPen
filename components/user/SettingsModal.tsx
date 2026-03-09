@@ -67,6 +67,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   const [defaultHomepage, setDefaultHomepage] = useState<string>('/'); // Path where user lands when opening site
   const [showQuotes, setShowQuotes] = useState<boolean>(true); // Default to true
   const [showWelcomeText, setShowWelcomeText] = useState<boolean>(true); // Default to true
+  const [marketContextMode, setMarketContextMode] = useState<'all' | 'holdings'>('all');
   const [notifications, setNotifications] = useState({
     holdings_earnings: true, // Notify when companies in your holdings file earnings
     price_alerts: false,
@@ -115,6 +116,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
       setShowQuotes(settings.show_quotes !== undefined ? settings.show_quotes : true);
       // Load showWelcomeText preference (default to true if not set)
       setShowWelcomeText(settings.show_welcome_text !== undefined ? settings.show_welcome_text : true);
+      setMarketContextMode(settings.market_context_mode === 'holdings' ? 'holdings' : 'all');
       setError(null);
     }
   }, [user, open]);
@@ -138,6 +140,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
         default_homepage: defaultHomepage,
         show_quotes: showQuotes, // Show/hide quotes on main page
         show_welcome_text: showWelcomeText, // Show/hide welcome text
+        market_context_mode: marketContextMode, // Market Context: all markets | my portfolio
         notifications,
       };
 
@@ -708,6 +711,30 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                         onCheckedChange={setShowWelcomeText}
                       />
                     </div>
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <Globe className="h-4 w-4" />
+                      {t('settings.marketContext')}
+                    </Label>
+                    <Select
+                      value={marketContextMode}
+                      onValueChange={(v) => setMarketContextMode(v as 'all' | 'holdings')}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{t('settings.marketContextAll')}</SelectItem>
+                        <SelectItem value="holdings">{t('settings.marketContextHoldings')}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      {t('settings.marketContextDescription')}
+                    </p>
                   </div>
                 </div>
               </div>

@@ -16,10 +16,7 @@ import {
 import { WelcomeMessage } from '@/components/ui/WelcomeMessage';
 import AnimatedContent from '@/components/ui/AnimatedContent';
 import { useBackground } from '@/hooks/use-background';
-import { TopMoversCard } from '@/components/market/TopMoversCard';
-import { MarketNewsCard } from '@/components/market/MarketNewsCard';
-import { MarketHoursCard } from '@/components/market/MarketHoursCard';
-import { useTopMovers, useMarketNews } from '@/hooks/use-market-data';
+import { MarketContextSection } from '@/components/market/MarketContextSection';
 import { HotPicksCard } from '@/components/discover/HotPicksCard';
 import { RecentlyViewedInline } from '@/components/discover/RecentlyViewedInline';
 import { KeyInsightsRow } from '@/components/discover/KeyInsightsRow';
@@ -42,16 +39,6 @@ export default function DiscoverPage() {
     isLoading: isLoadingCompanies,
   } = useCompaniesToWatch(10);
 
-  const {
-    data: topMovers,
-    isLoading: isLoadingMovers,
-  } = useTopMovers(5);
-
-  const {
-    data: marketNews,
-    isLoading: isLoadingNews,
-  } = useMarketNews('general', 5);
-
   const { hasAnimatedBackground } = useBackground();
   const { showQuotes, showWelcomeText } = useUserSettings();
 
@@ -72,33 +59,7 @@ export default function DiscoverPage() {
 
         <div className="space-y-16">
           {/* SECTION 1: Market Context - Hours, movers, news */}
-          <section className="space-y-4 min-w-0 overflow-hidden">
-            <h2 className="text-base font-bold uppercase tracking-wider text-foreground">
-              Market Context
-            </h2>
-            <p className="text-sm text-muted-foreground max-w-2xl">
-              Market hours, top movers, and recent news.
-            </p>
-            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 min-w-0">
-              <AnimatedContent reverse={true} className="min-w-0">
-                <MarketHoursCard exchangeCodes={['NYSE', 'NASDAQ', 'LSE', 'OSE', 'XETRA', 'STO']} />
-              </AnimatedContent>
-              <AnimatedContent reverse={true} delay={0.05} className="min-w-0">
-                <TopMoversCard
-                  gainers={topMovers?.gainers || []}
-                  losers={topMovers?.losers || []}
-                  isLoading={isLoadingMovers}
-                />
-              </AnimatedContent>
-              <AnimatedContent reverse={true} delay={0.1} className="min-w-0">
-                <MarketNewsCard
-                  news={marketNews || []}
-                  isLoading={isLoadingNews}
-                  limit={5}
-                />
-              </AnimatedContent>
-            </div>
-          </section>
+          <MarketContextSection />
 
           <Separator className="opacity-60" />
 

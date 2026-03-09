@@ -4,8 +4,9 @@
  * OAuth Callback Page (PKCE flow)
  *
  * Supabase redirects here after Google (or any provider) login with a ?code=
- * query param. With detectSessionInUrl: true, the Supabase client automatically
- * exchanges the code for a session. We listen for SIGNED_IN and redirect.
+ * query param. We await exchangeCodeForSession() so the session is persisted.
+ * AuthProvider receives SIGNED_IN via onAuthStateChange and updates state.
+ * We use router.replace() — no full reload needed.
  */
 
 import { Suspense, useEffect, useState } from 'react';
@@ -21,6 +22,7 @@ function AuthCallbackContent() {
   useEffect(() => {
     const error = searchParams.get('error');
     const errorDescription = searchParams.get('error_description');
+    const code = searchParams.get('code');
 
     if (error) {
       const msg = errorDescription || error;
@@ -31,48 +33,48 @@ function AuthCallbackContent() {
 
     const supabase = createBrowserClient();
     let redirected = false;
+    const DEBUG = false; // Set true to log callback flow
 
-    // Full page reload ensures useAuth re-initializes with session from localStorage.
-    // Client-side router.replace kept showing logged-out until tab close/reopen.
-    const goHome = () => {
+    const redirectHome = () => {
       if (!redirected) {
         redirected = true;
-        // Brief delay ensures session is fully persisted before full-page reload
-        setTimeout(() => window.location.replace('/'), 300);
+        router.replace('/');
       }
+    };
+
+    const runExchange = async () => {
+      if (redirected || !code) return;
+      if (DEBUG) console.log('[Auth Callback] exchanging code...');
+
+      const { data, error: exErr } = await supabase.auth.exchangeCodeForSession(code);
+
+      if (DEBUG) console.log('[Auth Callback] exchange result', exErr ? exErr.message : 'ok');
+      if (exErr) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) redirectHome();
+        return;
+      }
+
+      if (data.session) redirectHome();
     };
 
     const checkSession = () =>
       supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session) goHome();
+        if (session) redirectHome();
         return !!session;
       });
 
-    // Event may fire before we register (client created in layout). Poll as fallback.
-    const POLL_MS = 200;
-    const POLL_MAX_MS = 15_000;
-    let elapsed = 0;
-    const pollId = setInterval(async () => {
-      if (redirected) return;
-      const hasSession = await checkSession();
-      if (hasSession) {
-        clearInterval(pollId);
-        return;
-      }
-      elapsed += POLL_MS;
-      if (elapsed >= POLL_MAX_MS) clearInterval(pollId);
-    }, POLL_MS);
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) goHome();
+      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) redirectHome();
     });
 
-    checkSession();
+    if (code) {
+      void runExchange();
+    } else {
+      checkSession();
+    }
 
-    return () => {
-      clearInterval(pollId);
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, [router, searchParams]);
 
   if (authError) {

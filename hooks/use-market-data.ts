@@ -14,13 +14,21 @@ interface TopMoversResponse {
 }
 
 /**
- * TanStack Query hook to fetch market news
+ * TanStack Query hook to fetch market news.
+ * When symbols provided, fetches company news for those tickers and merges.
  */
-export function useMarketNews(category: string = 'general', limit: number = 10) {
+export function useMarketNews(
+  category: string = 'general',
+  limit: number = 10,
+  symbols?: string[] | null
+) {
+  const symbolsKey = symbols && symbols.length > 0 ? symbols.sort().join(',') : '';
   return useQuery({
-    queryKey: ['market', 'news', category, limit],
+    queryKey: ['market', 'news', category, limit, symbolsKey],
     queryFn: async (): Promise<MarketNews[]> => {
-      const response = await fetch(`/api/market/news?category=${category}`);
+      const params = new URLSearchParams({ category });
+      if (symbolsKey) params.set('symbols', symbolsKey);
+      const response = await fetch(`/api/market/news?${params}`);
       const data: MarketNewsResponse = await response.json();
 
       if (data.success && data.news) {
@@ -28,20 +36,25 @@ export function useMarketNews(category: string = 'general', limit: number = 10) 
       }
       throw new Error(data.error || 'Failed to fetch market news');
     },
-    staleTime: 10 * 60 * 1000, // 10 minutes - news doesn't change frequently
-    gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
-    refetchInterval: false, // Disable automatic refetching - rely on staleTime
+    enabled: !symbols || symbols.length > 0,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchInterval: false,
   });
 }
 
 /**
- * TanStack Query hook to fetch top market movers (gainers/losers)
+ * TanStack Query hook to fetch top market movers (gainers/losers).
+ * When symbols provided, fetches movers from those tickers only (e.g. user holdings).
  */
-export function useTopMovers(limit: number = 5) {
+export function useTopMovers(limit: number = 5, symbols?: string[] | null) {
+  const symbolsKey = symbols && symbols.length > 0 ? symbols.sort().join(',') : '';
   return useQuery({
-    queryKey: ['market', 'movers', limit],
+    queryKey: ['market', 'movers', limit, symbolsKey],
     queryFn: async (): Promise<TopMovers> => {
-      const response = await fetch(`/api/market/movers?limit=${limit}`);
+      const params = new URLSearchParams({ limit: String(limit) });
+      if (symbolsKey) params.set('symbols', symbolsKey);
+      const response = await fetch(`/api/market/movers?${params}`);
       const data: TopMoversResponse = await response.json();
 
       if (data.success && data.movers) {
@@ -49,8 +62,9 @@ export function useTopMovers(limit: number = 5) {
       }
       throw new Error(data.error || 'Failed to fetch top movers');
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes - market movers don't change that frequently
-    gcTime: 15 * 60 * 1000, // Keep in cache for 15 minutes
-    refetchInterval: false, // Disable automatic refetching - rely on staleTime
+    enabled: !symbols || symbols.length > 0, // If symbols provided but empty, skip
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
+    refetchInterval: false,
   });
 }

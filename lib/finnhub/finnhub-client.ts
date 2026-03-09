@@ -135,10 +135,21 @@ export interface TopMovers {
 }
 
 export async function getTopMovers(limit: number = 5): Promise<TopMovers> {
-  const quotes = await getStockQuotes(POPULAR_STOCKS);
-  
+  return getTopMoversForSymbols(POPULAR_STOCKS, limit);
+}
+
+/**
+ * Get top gainers and losers from a specific set of symbols (e.g. user holdings)
+ */
+export async function getTopMoversForSymbols(
+  symbols: string[],
+  limit: number = 5
+): Promise<TopMovers> {
+  if (symbols.length === 0) return { gainers: [], losers: [] };
+
+  const quotes = await getStockQuotes(symbols);
   const movers: MarketMover[] = Array.from(quotes.entries())
-    .filter(([_, quote]) => quote.c > 0 && quote.pc > 0) // Filter out invalid quotes
+    .filter(([_, quote]) => quote.c > 0 && quote.pc > 0)
     .map(([symbol, quote]) => ({
       symbol,
       price: quote.c,
@@ -146,24 +157,16 @@ export async function getTopMovers(limit: number = 5): Promise<TopMovers> {
       changePercent: quote.dp,
       previousClose: quote.pc,
     }))
-    .filter(mover => !isNaN(mover.changePercent)); // Filter out NaN values
+    .filter(mover => !isNaN(mover.changePercent));
 
-  // Sort by change percent
   const sorted = movers.sort((a, b) => b.changePercent - a.changePercent);
-
-  // Get top gainers (highest positive change)
   const gainers = sorted.filter(m => m.changePercent > 0).slice(0, limit);
-  
-  // Get top losers (most negative change)
   const losers = sorted
     .filter(m => m.changePercent < 0)
-    .sort((a, b) => a.changePercent - b.changePercent) // Sort ascending (most negative first)
+    .sort((a, b) => a.changePercent - b.changePercent)
     .slice(0, limit);
 
-  return {
-    gainers,
-    losers,
-  };
+  return { gainers, losers };
 }
 
 /**
@@ -197,13 +200,49 @@ export async function getCompanyNews(symbol: string, from: string, to: string): 
   }
 
   const data = await response.json();
-  
-  // Check for error response
   if (data.error) {
     throw new Error(`Finnhub API error: ${data.error}`);
   }
 
   return data as CompanyNews[];
+}
+
+/**
+ * Fetch and merge company news from multiple symbols. Results sorted by datetime desc.
+ */
+export async function getMergedCompanyNews(
+  symbols: string[],
+  limit: number = 15
+): Promise<MarketNews[]> {
+  if (symbols.length === 0) return [];
+
+  const to = new Date();
+  const from = new Date();
+  from.setDate(from.getDate() - 14); // 2 weeks
+  const fromStr = from.toISOString().split('T')[0];
+  const toStr = to.toISOString().split('T')[0];
+
+  const results = await Promise.allSettled(
+    symbols.slice(0, 8).map((s) => getCompanyNews(s, fromStr, toStr))
+  );
+
+  const seen = new Set<number>();
+  const merged: MarketNews[] = [];
+
+  for (const result of results) {
+    if (result.status !== 'fulfilled') continue;
+    for (const article of result.value) {
+      if (seen.has(article.id)) continue;
+      seen.add(article.id);
+      merged.push({
+        ...article,
+        category: article.category || 'company',
+      });
+    }
+  }
+
+  merged.sort((a, b) => b.datetime - a.datetime);
+  return merged.slice(0, limit);
 }
 
 /**

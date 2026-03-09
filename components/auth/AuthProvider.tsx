@@ -1,14 +1,13 @@
 'use client';
 
 /**
- * AuthProvider - Single source of truth for auth state
+ * AuthProvider - Event-driven auth state
  *
- * Uses React Context so all consumers share the same state. This fixes the issue
- * where login/logout would succeed (session in localStorage) but the UI wouldn't
- * update because multiple useAuth instances had stale state.
- *
- * After auth changes, we use full page reload (window.location) to guarantee
- * a fresh load with correct session state - same as "close tab and reopen".
+ * Relies entirely on supabase.auth.onAuthStateChange(). No timing workarounds.
+ * - INITIAL_SESSION: load existing session from storage
+ * - SIGNED_IN: set session, ensure profile, load user
+ * - TOKEN_REFRESHED: update session
+ * - SIGNED_OUT: clear state
  */
 
 import {
@@ -20,6 +19,7 @@ import {
   useRef,
   useCallback,
 } from 'react';
+import type { Session } from '@supabase/supabase-js';
 import { createBrowserClient } from '@/lib/supabase/client';
 import type { AuthUser } from '@/lib/auth/auth';
 
@@ -33,6 +33,7 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 const USERS_FETCH_COOLDOWN_MS = 30_000;
+const DEBUG_AUTH = false; // Set true to log auth events during development
 
 async function fetchUserProfile(
   supabase: ReturnType<typeof createBrowserClient>,
@@ -40,9 +41,7 @@ async function fetchUserProfile(
   lastErrorRef: React.MutableRefObject<number>
 ): Promise<AuthUser | null> {
   const now = Date.now();
-  if (now - lastErrorRef.current < USERS_FETCH_COOLDOWN_MS) {
-    return null;
-  }
+  if (now - lastErrorRef.current < USERS_FETCH_COOLDOWN_MS) return null;
 
   try {
     const { data, error } = await supabase
@@ -60,6 +59,25 @@ async function fetchUserProfile(
     lastErrorRef.current = Date.now();
     return null;
   }
+}
+
+async function loadUserFromSession(
+  supabase: ReturnType<typeof createBrowserClient>,
+  session: Session,
+  lastErrorRef: React.MutableRefObject<number>,
+  isNewSignIn: boolean
+): Promise<AuthUser | null> {
+  if (isNewSignIn) {
+    try {
+      const { processOAuthProfile } = await import('@/lib/auth/oauth-profile');
+      await processOAuthProfile(session.user).catch(() => {
+        lastErrorRef.current = Date.now();
+      });
+    } catch {
+      lastErrorRef.current = Date.now();
+    }
+  }
+  return fetchUserProfile(supabase, session.user.id, lastErrorRef);
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -85,82 +103,56 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    // Subscribe first so we never miss auth events
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (!mounted) return;
-
-        if (event === 'SIGNED_OUT') {
-          setUser(null);
-          setIsLoading(false);
-          return;
-        }
-
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          if (!session?.user) {
-            setUser(null);
-            setIsLoading(false);
-            return;
-          }
-          try {
-            if (event === 'SIGNED_IN') {
-              const { processOAuthProfile } = await import('@/lib/auth/oauth-profile');
-              await processOAuthProfile(session.user).catch(() => {
-                lastErrorRef.current = Date.now();
-              });
-            }
-            let profile = await fetchUserProfile(supabase, session.user.id, lastErrorRef);
-            if (!profile && mounted) {
-              await new Promise((r) => setTimeout(r, 500));
-              profile = await fetchUserProfile(supabase, session.user.id, lastErrorRef);
-            }
-            if (mounted) {
-              setUser(profile);
-              setIsLoading(false);
-            }
-          } catch {
-            if (mounted) {
-              setUser(null);
-              setIsLoading(false);
-            }
-          }
-        }
+    const handleAuthChange = async (
+      event: 'INITIAL_SESSION' | 'SIGNED_IN' | 'SIGNED_OUT' | 'TOKEN_REFRESHED',
+      session: Session | null
+    ) => {
+      if (DEBUG_AUTH) {
+        console.log('[Auth]', event, session?.user?.id ?? 'no session');
       }
-    );
+      if (!mounted) return;
 
-    // Initial session check
-    const init = async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (!mounted) return;
-        if (error || !session?.user) {
-          setUser(null);
-          setIsLoading(false);
-          return;
-        }
+      if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setIsLoading(false);
+        return;
+      }
+
+      if ((event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
+        const isNewSignIn = event === 'SIGNED_IN';
         try {
-          const { processOAuthProfile } = await import('@/lib/auth/oauth-profile');
-          await processOAuthProfile(session.user);
+          const profile = await loadUserFromSession(
+            supabase,
+            session,
+            lastErrorRef,
+            isNewSignIn
+          );
+          if (mounted) setUser(profile);
         } catch {
-          lastErrorRef.current = Date.now();
-        }
-        let profile = await fetchUserProfile(supabase, session.user.id, lastErrorRef);
-        if (!profile && mounted) {
-          await new Promise((r) => setTimeout(r, 500));
-          profile = await fetchUserProfile(supabase, session.user.id, lastErrorRef);
+          if (mounted) setUser(null);
         }
         if (mounted) {
-          setUser(profile);
           setIsLoading(false);
-        }
-      } catch {
-        if (mounted) {
-          setUser(null);
-          setIsLoading(false);
+          if (DEBUG_AUTH) console.log('[Auth] profile loaded for', session.user.id);
         }
       }
     };
-    init();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      void handleAuthChange(
+        event as 'INITIAL_SESSION' | 'SIGNED_IN' | 'SIGNED_OUT' | 'TOKEN_REFRESHED',
+        session
+      );
+    });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!mounted) return;
+      if (session?.user) {
+        handleAuthChange('INITIAL_SESSION', session);
+      } else {
+        setIsLoading(false);
+      }
+    });
 
     return () => {
       mounted = false;
@@ -168,7 +160,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [supabase]);
 
-  // Manual refresh listener (e.g. after profile update)
   useEffect(() => {
     const handler = () => refresh();
     window.addEventListener('auth:refresh', handler);
@@ -190,8 +181,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);
-  if (!ctx) {
-    throw new Error('useAuth must be used within AuthProvider');
-  }
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
   return ctx;
 }

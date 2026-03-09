@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getMarketNews } from '@/lib/finnhub/finnhub-client';
+import { getMarketNews, getMergedCompanyNews } from '@/lib/finnhub/finnhub-client';
 
 export async function GET(request: NextRequest) {
   try {
@@ -7,8 +7,15 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get('category') || 'general';
     const minIdParam = searchParams.get('minId');
     const minId = minIdParam ? parseInt(minIdParam, 10) : undefined;
+    const symbolsParam = searchParams.get('symbols');
+    const symbols = symbolsParam
+      ? symbolsParam.split(',').map((s) => s.trim().toUpperCase()).filter(Boolean)
+      : null;
 
-    const news = await getMarketNews(category, minId);
+    const news =
+      symbols && symbols.length > 0
+        ? await getMergedCompanyNews(symbols, 15)
+        : await getMarketNews(category, minId);
 
     return NextResponse.json({
       success: true,

@@ -160,6 +160,13 @@ export async function GET() {
           filingType: '10-Q',
         },
       },
+      {
+        description: 'Ingest latest 8-K (earnings releases, stock splits, material events)',
+        body: {
+          cik: '0000320193',
+          filingType: '8-K',
+        },
+      },
     ],
   });
 }

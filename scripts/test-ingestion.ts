@@ -10,6 +10,7 @@ config({ path: resolve(process.cwd(), '.env.local') });
 import {
   ingestLatestFiling,
   ingestFiling,
+  ingestRecentFilings,
 } from '../lib/ingestion/filing-ingestion';
 import { getCompanyInfo, getRecentFilings } from '../lib/ingestion/sec-edgar';
 
@@ -61,6 +62,14 @@ async function main() {
           process.exit(1);
         }
         await testIngestSpecific(param1, param2);
+        break;
+
+      case 'ingest-recent':
+        await testIngestRecent(
+          param1 || TEST_COMPANIES.AAPL,
+          param2 || '8-K',
+          args[3] ? parseInt(args[3], 10) : 3
+        );
         break;
 
       default:
@@ -152,6 +161,36 @@ async function testIngestLatest(cik: string, filingType: string) {
 }
 
 /**
+ * Test: Ingest recent filings (e.g. last N 8-Ks)
+ */
+async function testIngestRecent(cik: string, filingType: string, count: number) {
+  console.log(`🔄 Ingesting last ${count} ${filingType} filing(s) for CIK: ${cik}\n`);
+
+  const results = await ingestRecentFilings(cik, filingType, count, (step, details) => {
+    console.log(`  → ${step}`, details ? `(${JSON.stringify(details)})` : '');
+  });
+
+  console.log('\n' + '='.repeat(60));
+
+  const succeeded = results.filter((r) => r.success).length;
+  const failed = results.filter((r) => !r.success);
+  const alreadyExists = failed.filter((r) => r.error?.includes('already exists')).length;
+
+  console.log(`\nResults: ${succeeded} ingested, ${alreadyExists} already in DB, ${failed.length - alreadyExists} errors`);
+  if (failed.length > 0 && alreadyExists < failed.length) {
+    failed.forEach((r, i) => {
+      if (!r.error?.includes('already exists')) {
+        console.log(`  ❌ ${i + 1}. ${r.error}`);
+      }
+    });
+    if (failed.some((r) => !r.error?.includes('already exists'))) {
+      process.exit(1);
+    }
+  }
+  console.log('✅ Ingest recent completed');
+}
+
+/**
  * Test: Ingest specific filing
  */
 async function testIngestSpecific(cik: string, accessionNumber: string) {
@@ -185,11 +224,13 @@ function printUsage() {
   console.log('  info [CIK]                      - Fetch company information');
   console.log('  list [CIK] [FILING_TYPE]        - List recent filings');
   console.log('  ingest-latest [CIK] [FILING_TYPE] - Ingest latest filing');
+  console.log('  ingest-recent [CIK] [FILING_TYPE] [COUNT] - Ingest last N filings (default: 3)');
   console.log('  ingest <CIK> <ACCESSION_NUMBER> - Ingest specific filing');
   console.log('\nExamples:');
   console.log('  npx tsx scripts/test-ingestion.ts info 0000320193');
-  console.log('  npx tsx scripts/test-ingestion.ts list 0000320193 10-K');
-  console.log('  npx tsx scripts/test-ingestion.ts ingest-latest 0000320193 10-K');
+  console.log('  npx tsx scripts/test-ingestion.ts list 0000320193 8-K');
+  console.log('  npx tsx scripts/test-ingestion.ts ingest-latest 0000320193 8-K');
+  console.log('  npx tsx scripts/test-ingestion.ts ingest-recent 0000320193 8-K 5');
   console.log('  npx tsx scripts/test-ingestion.ts ingest 0000320193 0000320193-23-000077');
   console.log('\nTest Companies:');
   Object.entries(TEST_COMPANIES).forEach(([ticker, cik]) => {

@@ -18,7 +18,6 @@ import { CompanyProfile } from '@/components/stock/CompanyProfile';
 import { CompanyNews } from '@/components/stock/CompanyNews';
 import { SankeyDiagram } from '@/components/stock/SankeyDiagram';
 import { EarningsCalendar } from '@/components/stock/EarningsCalendar';
-import { RecommendationTrends } from '@/components/stock/RecommendationTrends';
 import { StockSearch } from '@/components/search/StockSearch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -551,13 +550,10 @@ export default function StockDetailPage() {
           </AnimatedContent>
         )}
 
-        {/* Earnings Calendar & Recommendations Grid */}
-        <div id="earnings" className="grid grid-cols-1 gap-6 lg:grid-cols-2 mb-8 scroll-mt-6">
+        {/* Earnings */}
+        <div id="earnings" className="mb-8 scroll-mt-6">
           <AnimatedContent reverse={true} delay={0.25}>
             <EarningsCalendar ticker={ticker} />
-          </AnimatedContent>
-          <AnimatedContent reverse={true} delay={0.3}>
-            <RecommendationTrends ticker={ticker} />
           </AnimatedContent>
         </div>
 
