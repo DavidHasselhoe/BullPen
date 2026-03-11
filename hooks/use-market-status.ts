@@ -37,6 +37,22 @@ export function useExchanges() {
   });
 }
 
+const THIRTY_MINUTES_MS = 30 * 60 * 1000;
+const ONE_HOUR_MS = 60 * 60 * 1000;
+
+/**
+ * Returns the appropriate refetch interval based on how close a market state change is.
+ * Under 30 min → 5s (live countdown feel)
+ * 30 min – 1 hr → 30s (moderate updates)
+ * Over 1 hr → 60s (infrequent, saves re-renders)
+ */
+function getRefetchInterval(timeUntilMs: number | null): number {
+  if (timeUntilMs === null) return ONE_HOUR_MS;
+  if (timeUntilMs <= THIRTY_MINUTES_MS) return 5_000;
+  if (timeUntilMs <= ONE_HOUR_MS) return 30_000;
+  return 60_000;
+}
+
 /**
  * Calculates market status for a specific exchange
  */
@@ -55,7 +71,12 @@ export function useMarketStatus(exchangeCode: string | null) {
       return calculateMarketStatus(exchange, exchangeHolidays);
     },
     enabled: !!exchangeCode && !!data && !isLoading,
-    refetchInterval: 5000, // Update every 5s - reduces lag; countdown stays reasonably fresh
+    refetchInterval: (query) => {
+      const status = query.state.data;
+      if (!status) return 5_000;
+      const timeUntil = status.isOpen ? status.timeUntilClose : status.timeUntilOpen;
+      return getRefetchInterval(timeUntil);
+    },
     staleTime: 0,
   });
 }
@@ -84,7 +105,16 @@ export function useMultipleMarketStatus(exchangeCodes: string[]) {
       return statusMap;
     },
     enabled: !!data && !isLoading && exchangeCodes.length > 0,
-    refetchInterval: 5000, // Update every 5s - reduces lag from frequent re-renders
+    refetchInterval: (query) => {
+      const statuses = query.state.data;
+      if (!statuses || Object.keys(statuses).length === 0) return 5_000;
+      // Use the smallest time-until-change across all tracked exchanges
+      const times = Object.values(statuses)
+        .map((s) => (s.isOpen ? s.timeUntilClose : s.timeUntilOpen))
+        .filter((t): t is number => t !== null);
+      const minTime = times.length > 0 ? Math.min(...times) : null;
+      return getRefetchInterval(minTime);
+    },
     staleTime: 0,
   });
 }

@@ -8,6 +8,8 @@ import {
   addOrUpdateHoldingAction,
   updateHoldingAction,
   removeHoldingAction,
+  updateHoldingBySymbolAction,
+  removeHoldingBySymbolAction,
   type AddHoldingInput,
   type UpdateHoldingInput,
 } from '@/app/actions/holdings';
@@ -118,6 +120,57 @@ export function useUpdateHolding() {
       // Invalidate holdings query to refetch
       queryClient.invalidateQueries({ queryKey: ['holdings', user?.id] });
       // Also invalidate quotes query
+      queryClient.invalidateQueries({ queryKey: ['holdings-quotes'] });
+    },
+  });
+}
+
+/**
+ * Update a holding by ticker symbol — for AI agent use.
+ * Looks up the holding by symbol (user-scoped) then applies the update.
+ */
+export function useUpdateHoldingBySymbol() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      symbol,
+      quantity,
+      avg_price,
+    }: {
+      symbol: string;
+      quantity?: number | null;
+      avg_price?: number | null;
+    }): Promise<UserHolding> => {
+      if (!user?.id) throw new Error('Authentication required');
+      const result = await updateHoldingBySymbolAction(user.id, symbol, { quantity, avg_price });
+      if (result.success && result.holding) return result.holding;
+      throw new Error(result.error || 'Failed to update holding');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['holdings', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['holdings-quotes'] });
+    },
+  });
+}
+
+/**
+ * Remove a holding by ticker symbol — for AI agent use.
+ * Verifies ownership server-side before deleting.
+ */
+export function useRemoveHoldingBySymbol() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (symbol: string): Promise<void> => {
+      if (!user?.id) throw new Error('Authentication required');
+      const result = await removeHoldingBySymbolAction(user.id, symbol);
+      if (!result.success) throw new Error(result.error || 'Failed to remove holding');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['holdings', user?.id] });
       queryClient.invalidateQueries({ queryKey: ['holdings-quotes'] });
     },
   });

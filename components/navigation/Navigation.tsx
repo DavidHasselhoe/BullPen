@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { UserMenu } from './UserMenu';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Home, TrendingUp, Briefcase, Settings, Wrench, ChevronDown } from 'lucide-react';
+import { Home, Briefcase, Settings, Wrench, ChevronDown } from 'lucide-react';
 import { LiveClock } from '@/components/ui/LiveClock';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { SettingsModal } from '@/components/user/SettingsModal';
@@ -31,7 +31,26 @@ export function Navigation() {
   const queryClient = useQueryClient();
   const { open: openCommandPalette = () => {} } = useCommandPalette();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(false);
+  const toolsCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isToolsActive = pathname?.startsWith('/tools');
+
+  const clearToolsCloseTimer = useCallback(() => {
+    if (toolsCloseTimerRef.current) {
+      clearTimeout(toolsCloseTimerRef.current);
+      toolsCloseTimerRef.current = null;
+    }
+  }, []);
+
+  const scheduleToolsClose = useCallback(() => {
+    clearToolsCloseTimer();
+    toolsCloseTimerRef.current = setTimeout(() => setToolsOpen(false), 200);
+  }, [clearToolsCloseTimer]);
+
+  const handleToolsOpen = useCallback(() => {
+    clearToolsCloseTimer();
+    setToolsOpen(true);
+  }, [clearToolsCloseTimer]);
 
   const prefetchDiscover = useCallback(() => {
     queryClient.prefetchQuery({ queryKey: ['discover', 'fundamental-changes', 6] });
@@ -51,16 +70,8 @@ export function Navigation() {
             <LiveClock className="hidden sm:flex" />
           </div>
 
-          {/* Logo & Navigation - Centered */}
-          <div className="flex items-center gap-8">
-            <Link
-              href="/"
-              className="flex items-center gap-2 font-semibold transition-all hover:scale-105 active:scale-95"
-            >
-              <TrendingUp className="h-6 w-6 text-primary transition-transform hover:rotate-12" />
-              <span className="hidden sm:inline-block">BullPen</span>
-            </Link>
-
+          {/* Navigation - Centered */}
+          <div className="flex items-center">
             {/* Navigation Links */}
             <nav className="hidden items-center gap-2 md:flex">
               {navigation.map((item) => {
@@ -85,8 +96,9 @@ export function Navigation() {
                 );
               })}
 
-              {/* Tools Dropdown */}
-              <DropdownMenu>
+              {/* Tools Dropdown — hover region wraps trigger + content so there's no gap */}
+              <div onPointerEnter={handleToolsOpen} onPointerLeave={scheduleToolsClose}>
+                <DropdownMenu open={toolsOpen} onOpenChange={setToolsOpen} modal={false}>
                 <DropdownMenuTrigger asChild>
                   <button
                     className={cn(
@@ -101,7 +113,11 @@ export function Navigation() {
                     <ChevronDown className="h-3.5 w-3.5 opacity-70" />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="center" className="min-w-[220px]">
+                <DropdownMenuContent
+                  align="center"
+                  sideOffset={4}
+                  className="min-w-[220px]"
+                >
                   {TOOLS.map((tool) => {
                     const Icon = tool.icon;
                     return (
@@ -123,11 +139,12 @@ export function Navigation() {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
                     <Link href="/tools" className="flex items-center gap-3 cursor-pointer font-medium">
-                      View all tools →
+                      View all tools
                     </Link>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+              </div>
             </nav>
           </div>
 

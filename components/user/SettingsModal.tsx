@@ -829,10 +829,16 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
 
                   <Separator />
 
-                  <div className="space-y-2">
-                    <Label>Logout All Sessions</Label>
-                    <Button 
-                      variant="outline" 
+                  <div className="space-y-3">
+                    <Label className="flex items-center gap-2">
+                      <Shield className="h-4 w-4" />
+                      Logout All Sessions
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Sign out from all devices and sessions
+                    </p>
+                    <Button
+                      variant="outline"
                       onClick={handleLogoutAllSessions}
                       disabled={isLoggingOut}
                     >
@@ -845,9 +851,6 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                         'Logout All Devices'
                       )}
                     </Button>
-                    <p className="text-xs text-muted-foreground">
-                      Sign out from all devices and sessions
-                    </p>
                   </div>
                 </div>
               </div>
@@ -934,7 +937,11 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
               {t('common.cancel')}
             </Button>
             <StatefulButton
-              onClick={handleSave}
+              onClick={async () => {
+                await handleSave();
+                // Close modal after success animation finishes
+                setTimeout(() => onOpenChange(false), 2000);
+              }}
               successDuration={2000}
               className="min-w-[120px]"
             >

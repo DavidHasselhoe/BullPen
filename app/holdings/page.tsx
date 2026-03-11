@@ -1,21 +1,44 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { HoldingsTable } from '@/components/holdings/HoldingsTable';
 import { AddHoldingModal } from '@/components/holdings/AddHoldingModal';
 import { HoldingsPieChart } from '@/components/holdings/HoldingsPieChart';
+import { PortfolioDashboard } from '@/components/holdings/PortfolioDashboard';
+import { PortfolioRiskAnalysis } from '@/components/holdings/PortfolioRiskAnalysis';
 import { useHoldings } from '@/hooks/use-holdings';
 import { useAuth } from '@/hooks/use-auth';
-import { useMemo } from 'react';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import type { HoldingWithPrice } from '@/components/holdings/types';
+import {
+  getExchangeRates,
+  convertCurrency,
+  type CurrencyCode,
+} from '@/lib/currency/currency-conversion';
 
 export default function HoldingsPage() {
   const { user, isAuthenticated } = useAuth();
   const { data: holdings, isLoading } = useHoldings();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
+  // Resolve the user's preferred display currency
+  const userCurrency = useMemo((): CurrencyCode => {
+    const settings = (user?.settings as any) ?? {};
+    const c = settings.default_currency;
+    if (!c || c === 'exchange') return 'USD';
+    return c as CurrencyCode;
+  }, [user]);
+
+  // Exchange rates — only fetched when the user wants a non-USD currency
+  const exchangeRates = useQuery({
+    queryKey: ['exchange-rates', userCurrency],
+    queryFn: () => getExchangeRates('USD'),
+    enabled: userCurrency !== 'USD',
+    staleTime: 60 * 60 * 1000,  // rates update once daily
+    gcTime: 24 * 60 * 60 * 1000,
+  });
 
   // Fetch quotes and logos for all holdings
   const quotesData = useQuery({
@@ -76,57 +99,62 @@ export default function HoldingsPage() {
     gcTime: 10 * 60 * 1000,
   });
 
-  // Combine holdings with quotes and calculate derived values
+  // Combine holdings with quotes, apply currency conversion, and calculate derived values
   const holdingsWithPrices = useMemo((): HoldingWithPrice[] => {
     if (!holdings) return [];
-    
+
     const quotesMap = quotesData.data?.quotes || {};
     const logosMap = quotesData.data?.logos || {};
-    const totalMarketValue = holdings.reduce((sum, holding) => {
+    const rates = exchangeRates.data ?? null;
+
+    // Allocation is calculated from raw USD values so the ratio is unaffected by conversion
+    const totalMarketValueUSD = holdings.reduce((sum, holding) => {
       const quote = quotesMap[holding.symbol];
-      if (quote && holding.quantity) {
-        return sum + quote.price * holding.quantity;
-      }
-      return sum;
+      return quote && holding.quantity ? sum + quote.price * holding.quantity : sum;
     }, 0);
+
+    const conv = (usd: number) =>
+      userCurrency === 'USD' ? usd : convertCurrency(usd, 'USD', userCurrency, rates);
 
     return holdings.map((holding) => {
       const quote = quotesMap[holding.symbol];
       const logoUrl = logosMap[holding.symbol] || null;
-      
-      const currentPrice = quote?.price;
-      const dayChange = quote?.change;
+
+      const currentPriceUSD = quote?.price;
+      const dayChangeUSD = quote?.change;
       const dayChangePercent = quote?.changePercent;
-      
-      const marketValue = currentPrice && holding.quantity
-        ? currentPrice * holding.quantity
-        : undefined;
-      
-      const unrealizedPL = currentPrice && holding.avg_price && holding.quantity
-        ? (currentPrice - holding.avg_price) * holding.quantity
-        : undefined;
-      
-      const unrealizedPLPercent = currentPrice && holding.avg_price
-        ? ((currentPrice - holding.avg_price) / holding.avg_price) * 100
-        : undefined;
-      
-      const allocation = marketValue && totalMarketValue > 0
-        ? (marketValue / totalMarketValue) * 100
-        : undefined;
+
+      const marketValueUSD =
+        currentPriceUSD && holding.quantity ? currentPriceUSD * holding.quantity : undefined;
+
+      const unrealizedPLUSD =
+        currentPriceUSD && holding.avg_price && holding.quantity
+          ? (currentPriceUSD - holding.avg_price) * holding.quantity
+          : undefined;
+
+      const unrealizedPLPercent =
+        currentPriceUSD && holding.avg_price
+          ? ((currentPriceUSD - holding.avg_price) / holding.avg_price) * 100
+          : undefined;
+
+      const allocation =
+        marketValueUSD && totalMarketValueUSD > 0
+          ? (marketValueUSD / totalMarketValueUSD) * 100
+          : undefined;
 
       return {
         ...holding,
-        currentPrice,
-        dayChange,
+        currentPrice: currentPriceUSD !== undefined ? conv(currentPriceUSD) : undefined,
+        dayChange: dayChangeUSD !== undefined ? conv(dayChangeUSD) : undefined,
         dayChangePercent,
-        marketValue,
-        unrealizedPL,
+        marketValue: marketValueUSD !== undefined ? conv(marketValueUSD) : undefined,
+        unrealizedPL: unrealizedPLUSD !== undefined ? conv(unrealizedPLUSD) : undefined,
         unrealizedPLPercent,
         allocation,
         logoUrl,
       };
     });
-  }, [holdings, quotesData.data]);
+  }, [holdings, quotesData.data, exchangeRates.data, userCurrency]);
 
   if (!isAuthenticated) {
     return (
@@ -155,13 +183,23 @@ export default function HoldingsPage() {
         </p>
       </div>
 
-      {/* Chart */}
+      {/* Today's performance dashboard */}
       {holdingsWithPrices.length > 0 && (
-        <HoldingsPieChart holdings={holdingsWithPrices} />
+        <PortfolioDashboard holdings={holdingsWithPrices} currency={userCurrency} />
       )}
 
-      {/* Table */}
+      {/* Sector allocation donut */}
+      {holdingsWithPrices.length > 0 && (
+        <HoldingsPieChart holdings={holdingsWithPrices} currency={userCurrency} />
+      )}
+
+      {/* Holdings table (with search) */}
       <HoldingsTable onAddClick={() => setIsAddModalOpen(true)} />
+
+      {/* AI risk analysis — deeper insight, lives below the core data */}
+      {holdingsWithPrices.length > 0 && (
+        <PortfolioRiskAnalysis holdings={holdingsWithPrices} />
+      )}
 
       {/* Add Modal */}
       <AddHoldingModal open={isAddModalOpen} onOpenChange={setIsAddModalOpen} />

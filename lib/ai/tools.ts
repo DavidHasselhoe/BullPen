@@ -568,6 +568,79 @@ export const addHolding = tool({
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Tool: Update Holding (client action)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const updateHolding = tool({
+  description:
+    'Update an existing holding in the user\'s portfolio. Use when the user asks to change, modify, or update a position. ' +
+    'Examples: "update my NVDA position to 20 shares", "change my Apple avg price to $185", ' +
+    '"set MSFT quantity to 30 shares at $420". ' +
+    'Requires ticker; supply only the fields to change (quantity and/or avg_price).',
+  inputSchema: jsonSchema<{
+    ticker: string;
+    quantity?: number;
+    avg_price?: number;
+  }>({
+    type: 'object',
+    properties: {
+      ticker: { type: 'string', description: 'Stock ticker symbol of the holding to update, e.g. NVDA, AAPL' },
+      quantity: { type: 'number', minimum: 0, description: 'New total number of shares (replaces current quantity)' },
+      avg_price: { type: 'number', minimum: 0, description: 'New average cost per share in USD (replaces current avg price)' },
+    },
+    required: ['ticker'],
+    additionalProperties: false,
+  }),
+  execute: async ({ ticker, quantity, avg_price }) => {
+    if (quantity === undefined && avg_price === undefined) {
+      return { error: 'Specify at least one field to update: quantity or avg_price.' };
+    }
+    const company = await resolveCompanyId(ticker);
+    // Company lookup is informational — proceed even if not in DB (user might track OTC stocks)
+    return {
+      ...clientAction({
+        type: 'updateHolding',
+        ticker: ticker.toUpperCase(),
+        quantity: quantity ?? null,
+        avg_price: avg_price ?? null,
+      }),
+      updating: ticker.toUpperCase(),
+      ...(company ? { company: company.name } : {}),
+    };
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tool: Remove Holding (client action)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const removeHolding = tool({
+  description:
+    'Remove a stock from the user\'s holdings entirely. Use when the user asks to delete, remove, or sell out of a position. ' +
+    'Examples: "remove NVDA from my portfolio", "delete my Apple holding", "I sold all my Tesla, remove it". ' +
+    'This removes the full position — to reduce shares use updateHolding instead.',
+  inputSchema: jsonSchema<{ ticker: string }>({
+    type: 'object',
+    properties: {
+      ticker: { type: 'string', description: 'Stock ticker symbol of the holding to remove, e.g. NVDA, AAPL' },
+    },
+    required: ['ticker'],
+    additionalProperties: false,
+  }),
+  execute: async ({ ticker }) => {
+    const company = await resolveCompanyId(ticker);
+    return {
+      ...clientAction({
+        type: 'removeHolding',
+        ticker: ticker.toUpperCase(),
+      }),
+      removing: ticker.toUpperCase(),
+      ...(company ? { company: company.name } : {}),
+    };
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Exported tool map (passed directly to streamText)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -586,6 +659,8 @@ export const BULLPEN_TOOLS = {
   openCompanyEarnings,
   openCompanyNews,
   addHolding,
+  updateHolding,
+  removeHolding,
 };
 
 export const CLIENT_ACTION_KEY = '__clientAction';

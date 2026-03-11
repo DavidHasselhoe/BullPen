@@ -7,7 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Clock } from 'lucide-react';
 import { useMultipleMarketStatus } from '@/hooks/use-market-status';
-import { formatTimeUntil, convertTimeToLocal } from '@/lib/market/market-status';
+import { formatTimeUntil, formatTimeUntilShort, convertTimeToLocal } from '@/lib/market/market-status';
 import { getCountryName } from '@/lib/market/country-flags';
 import { cn } from '@/lib/utils';
 
@@ -80,11 +80,17 @@ export function MarketHoursCard({ exchangeCodes, className }: MarketHoursCardPro
       </CardHeader>
       <CardContent className="space-y-3">
         {countryGroups.map(({ countryCode, status }) => {
-          // When market is open, show countdown to close. When closed, show countdown to open
+          // When market is open, show countdown to close. When closed, show countdown to open.
+          // Under 30 min: show precise HH:MM:SS; otherwise show "Xh Ym" to match lower update frequency.
           const timeUntil = status.isOpen
             ? status.timeUntilClose
             : status.timeUntilOpen;
-          const countdown = timeUntil ? formatTimeUntil(timeUntil) : null;
+          const THIRTY_MIN_MS = 30 * 60 * 1000;
+          const countdown = timeUntil
+            ? timeUntil <= THIRTY_MIN_MS
+              ? formatTimeUntil(timeUntil)
+              : formatTimeUntilShort(timeUntil)
+            : null;
           const countryName = getCountryName(countryCode);
           const flagUrl = `https://flagcdn.com/w20/${countryCode.toLowerCase()}.png`;
 

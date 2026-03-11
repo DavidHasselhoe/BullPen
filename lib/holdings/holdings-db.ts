@@ -261,6 +261,90 @@ export async function updateHolding(
 }
 
 /**
+ * Update a holding identified by ticker symbol.
+ * Always scoped to the given userId — ownership is enforced at query level.
+ */
+export async function updateHoldingBySymbol(
+  userId: string,
+  symbol: string,
+  updates: { quantity?: number | null; avg_price?: number | null }
+): Promise<UpdateHoldingResult> {
+  try {
+    const supabase = createServerClient();
+    const upperSymbol = symbol.toUpperCase();
+
+    const { data: existing, error: lookupErr } = await supabase
+      .from('user_holdings')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('symbol', upperSymbol)
+      .maybeSingle();
+
+    if (lookupErr || !existing) {
+      return { success: false, error: `No holding found for ${upperSymbol}` };
+    }
+
+    const updateData: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (updates.quantity !== undefined) updateData.quantity = updates.quantity;
+    if (updates.avg_price !== undefined) updateData.avg_price = updates.avg_price;
+
+    const { data: updated, error: updateErr } = await supabase
+      .from('user_holdings')
+      .update(updateData)
+      .eq('id', existing.id)
+      .eq('user_id', userId) // second ownership check
+      .select()
+      .single();
+
+    if (updateErr) {
+      return { success: false, error: updateErr.message };
+    }
+    return { success: true, holding: updated as UserHolding };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Internal server error' };
+  }
+}
+
+/**
+ * Remove a holding identified by ticker symbol.
+ * Always scoped to the given userId — ownership is enforced at query level.
+ */
+export async function removeHoldingBySymbol(
+  userId: string,
+  symbol: string
+): Promise<RemoveHoldingResult> {
+  try {
+    const supabase = createServerClient();
+    const upperSymbol = symbol.toUpperCase();
+
+    // Verify the holding belongs to this user before deleting
+    const { data: existing, error: lookupErr } = await supabase
+      .from('user_holdings')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('symbol', upperSymbol)
+      .maybeSingle();
+
+    if (lookupErr || !existing) {
+      return { success: false, error: `No holding found for ${upperSymbol}` };
+    }
+
+    const { error: deleteErr } = await supabase
+      .from('user_holdings')
+      .delete()
+      .eq('id', existing.id)
+      .eq('user_id', userId); // enforces ownership
+
+    if (deleteErr) {
+      return { success: false, error: deleteErr.message };
+    }
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Internal server error' };
+  }
+}
+
+/**
  * Remove a holding
  */
 export async function removeHolding(

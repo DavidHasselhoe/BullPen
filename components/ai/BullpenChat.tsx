@@ -3,7 +3,7 @@
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -11,7 +11,8 @@ import { Button } from '@/components/ui/button';
 import { Send, Square, Bot, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AuthUser } from '@/lib/auth/auth';
-import { useAddOrUpdateHolding } from '@/hooks/use-holdings';
+import { useAddOrUpdateHolding, useUpdateHoldingBySymbol, useRemoveHoldingBySymbol } from '@/hooks/use-holdings';
+import { useTypingEffect } from '@/hooks/use-typing-effect';
 
 const DEFAULT_STARTER_PROMPTS = [
   'What is EBITDA?',
@@ -43,7 +44,9 @@ interface BullpenChatProps {
 
 type ClientAction =
   | { type: 'navigate'; path: string }
-  | { type: 'addHolding'; ticker: string; company_name: string; quantity?: number | null; avg_price?: number | null };
+  | { type: 'addHolding'; ticker: string; company_name: string; quantity?: number | null; avg_price?: number | null }
+  | { type: 'updateHolding'; ticker: string; quantity?: number | null; avg_price?: number | null }
+  | { type: 'removeHolding'; ticker: string };
 
 function extractClientActions(message: { parts?: Array<{ type?: string; state?: string; output?: unknown; result?: unknown }> }): ClientAction[] {
   const actions: ClientAction[] = [];
@@ -60,13 +63,65 @@ function extractClientActions(message: { parts?: Array<{ type?: string; state?: 
   return actions;
 }
 
-export function BullpenChat({ compact = false, user, starterPrompts = DEFAULT_STARTER_PROMPTS, open, initialQuery, aiContext, onConsumedQuery }: BullpenChatProps) {
+/** Renders AI message text with a typewriter animation while streaming. */
+function AssistantMessageContent({
+  text,
+  isStreaming,
+}: {
+  text: string;
+  isStreaming: boolean;
+}) {
+  const displayed = useTypingEffect(text, isStreaming);
+  const showCursor = isStreaming && displayed.length < text.length;
+
+  return (
+    <div
+      className={cn(
+        'break-words',
+        '[&_h1]:text-base [&_h1]:font-bold [&_h1]:mt-2 [&_h1]:mb-1 [&_h1]:first:mt-0',
+        '[&_h2]:text-sm [&_h2]:font-semibold [&_h2]:mt-2 [&_h2]:mb-1 [&_h2]:first:mt-0',
+        '[&_h3]:text-sm [&_h3]:font-semibold [&_h3]:mt-1.5 [&_h3]:mb-0.5 [&_h3]:first:mt-0',
+        '[&_p]:my-1 [&_p]:first:mt-0 [&_p]:last:mb-0',
+        '[&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-4 [&_ul]:space-y-0.5',
+        '[&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-4 [&_ol]:space-y-0.5',
+        '[&_strong]:font-semibold',
+        '[&_code]:bg-muted-foreground/20 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs',
+        '[&_pre]:bg-muted-foreground/10 [&_pre]:p-2 [&_pre]:rounded-lg [&_pre]:overflow-x-auto [&_pre]:my-2',
+        '[&_pre_code]:bg-transparent [&_pre_code]:p-0',
+        '[&_a]:underline [&_a]:hover:opacity-80'
+      )}
+    >
+      <ReactMarkdown remarkPlugins={[remarkGfm]}>{displayed}</ReactMarkdown>
+      {showCursor && (
+        <span
+          className="inline-block w-[2px] h-[1em] bg-current opacity-80 ml-0.5 align-middle animate-[blink_1s_step-end_infinite]"
+          aria-hidden
+        />
+      )}
+    </div>
+  );
+}
+
+export interface BullpenChatHandle {
+  focusInput: () => void;
+}
+
+export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(function BullpenChat(
+  { compact = false, user, starterPrompts = DEFAULT_STARTER_PROMPTS, open, initialQuery, aiContext, onConsumedQuery },
+  ref
+) {
   const router = useRouter();
   const addHoldingMutation = useAddOrUpdateHolding();
+  const updateHoldingMutation = useUpdateHoldingBySymbol();
+  const removeHoldingMutation = useRemoveHoldingBySymbol();
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const inputRef = useRef('');
   const initialQuerySentRef = useRef(false);
+
+  useImperativeHandle(ref, () => ({
+    focusInput: () => textareaRef.current?.focus(),
+  }));
 
   const {
     messages,
@@ -90,7 +145,23 @@ export function BullpenChat({ compact = false, user, starterPrompts = DEFAULT_ST
               avg_price: action.avg_price ?? null,
             });
           } catch {
-            // User may not be logged in, or holding may already exist — silently skip
+            // Silently skip — user may not be logged in or holding already exists
+          }
+        } else if (action.type === 'updateHolding') {
+          try {
+            await updateHoldingMutation.mutateAsync({
+              symbol: action.ticker,
+              quantity: action.quantity ?? undefined,
+              avg_price: action.avg_price ?? undefined,
+            });
+          } catch {
+            // Silently skip — holding may not exist
+          }
+        } else if (action.type === 'removeHolding') {
+          try {
+            await removeHoldingMutation.mutateAsync(action.ticker);
+          } catch {
+            // Silently skip — holding may not exist
           }
         }
       }
@@ -104,14 +175,13 @@ export function BullpenChat({ compact = false, user, starterPrompts = DEFAULT_ST
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Auto-focus input when assistant opens (widget/side panel) or on mount (full page)
+  // Auto-focus on mount for full-page chat (open === undefined).
+  // Side-panel focus is driven externally via the focusInput ref handle.
   useEffect(() => {
-    const shouldFocus = open === undefined ? true : open;
-    if (!shouldFocus) return;
-    // Defer so the panel is visible and focusable
+    if (open !== undefined) return;
     const id = setTimeout(() => textareaRef.current?.focus(), 0);
     return () => clearTimeout(id);
-  }, [open]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Send initial query when opened with one (e.g. from command palette)
   useEffect(() => {
@@ -236,29 +306,16 @@ export function BullpenChat({ compact = false, user, starterPrompts = DEFAULT_ST
                     })}
                   </div>
                 ) : (
-                  <div
-                    className={cn(
-                      'break-words',
-                      '[&_h1]:text-base [&_h1]:font-bold [&_h1]:mt-2 [&_h1]:mb-1 [&_h1]:first:mt-0',
-                      '[&_h2]:text-sm [&_h2]:font-semibold [&_h2]:mt-2 [&_h2]:mb-1 [&_h2]:first:mt-0',
-                      '[&_h3]:text-sm [&_h3]:font-semibold [&_h3]:mt-1.5 [&_h3]:mb-0.5 [&_h3]:first:mt-0',
-                      '[&_p]:my-1 [&_p]:first:mt-0 [&_p]:last:mb-0',
-                      '[&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-4 [&_ul]:space-y-0.5',
-                      '[&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-4 [&_ol]:space-y-0.5',
-                      '[&_strong]:font-semibold',
-                      '[&_code]:bg-muted-foreground/20 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs',
-                      '[&_pre]:bg-muted-foreground/10 [&_pre]:p-2 [&_pre]:rounded-lg [&_pre]:overflow-x-auto [&_pre]:my-2',
-                      '[&_pre_code]:bg-transparent [&_pre_code]:p-0',
-                      '[&_a]:underline [&_a]:hover:opacity-80'
-                    )}
-                  >
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {message.parts
-                        .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
-                        .map((p) => p.text)
-                        .join('')}
-                    </ReactMarkdown>
-                  </div>
+                  <AssistantMessageContent
+                    text={message.parts
+                      .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
+                      .map((p) => p.text)
+                      .join('')}
+                    isStreaming={
+                      isStreaming &&
+                      message.id === messages[messages.length - 1]?.id
+                    }
+                  />
                 )}
               </div>
               {isUser && (
@@ -355,4 +412,4 @@ export function BullpenChat({ compact = false, user, starterPrompts = DEFAULT_ST
       </form>
     </div>
   );
-}
+});

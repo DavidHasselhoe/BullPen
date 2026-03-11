@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import { Bot, X, PanelRightClose } from 'lucide-react';
 import Link from 'next/link';
@@ -9,7 +9,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { BullpenChat } from './BullpenChat';
+import { BullpenChat, type BullpenChatHandle } from './BullpenChat';
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
 import type { AIContext } from './AIPanelProvider';
@@ -30,6 +30,10 @@ const STARTER_PROMPTS = [
   'Open NVIDIA filings',
   'Companies with accelerating revenue',
 ];
+
+// Animation timings (ms)
+const FADE_MS = 120;   // content fade in/out
+const SLIDE_MS = 160;  // panel width expand/collapse
 
 function AuthGate() {
   return (
@@ -63,49 +67,98 @@ function AuthGate() {
 
 export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumedQuery }: AISidePanelProps) {
   const { user, isLoading, isAuthenticated } = useAuth();
+  // panelExpanded controls the aside width (may lag behind `open` during close fade)
+  const [panelExpanded, setPanelExpanded] = useState(false);
+  // contentVisible controls the opacity fade
+  const [contentVisible, setContentVisible] = useState(false);
+  const chatRef = useRef<BullpenChatHandle>(null);
+  const closingRef = useRef(false);
 
-  // Close on Escape
+  const handleClose = useCallback(() => {
+    if (closingRef.current) return;
+    closingRef.current = true;
+    // Step 1: fade content out
+    setContentVisible(false);
+    // Step 2: after fade completes, collapse the panel width then notify parent
+    const t = setTimeout(() => {
+      setPanelExpanded(false);
+      onClose();
+      closingRef.current = false;
+    }, FADE_MS);
+    return () => clearTimeout(t);
+  }, [onClose]);
+
+  // React to external open changes
+  useEffect(() => {
+    if (open) {
+      // Cancel any in-progress close
+      closingRef.current = false;
+      // Step 1: expand panel width
+      setPanelExpanded(true);
+      setContentVisible(false);
+      // Step 2: after width settles, fade content in and focus
+      const t = setTimeout(() => {
+        setContentVisible(true);
+        chatRef.current?.focusInput?.();
+      }, SLIDE_MS);
+      return () => clearTimeout(t);
+    } else if (!closingRef.current) {
+      // External close (not via handleClose) — instant
+      setContentVisible(false);
+      setPanelExpanded(false);
+    }
+  }, [open]);
+
+  // Escape to close
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') handleClose();
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [onClose]);
+  }, [handleClose]);
 
   return (
     <aside
-      aria-hidden={!open}
+      aria-hidden={!panelExpanded}
+      style={{ transitionDuration: `${SLIDE_MS}ms` }}
       className={cn(
-        'flex h-full flex-col shrink-0 overflow-visible transition-[width] duration-300 ease-out relative',
+        'flex h-full flex-col shrink-0 overflow-visible relative',
         'bg-background border-l border-border/60',
-        open ? 'w-[480px] sm:w-[520px]' : 'w-0 min-w-0 border-0'
+        'transition-[width] ease-out',
+        panelExpanded ? 'w-[480px] sm:w-[520px]' : 'w-0 min-w-0 border-0'
       )}
     >
-        {/* Collapse tab - easy-to-reach on inner edge */}
-        {open && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={onClose}
-                aria-label="Close AI panel"
-                className={cn(
-                  'absolute left-0 top-1/2 -translate-y-1/2 -translate-x-full z-10',
-                  'flex items-center justify-center',
-                  'w-8 h-16 -ml-px',
-                  'rounded-l-md border border-r-0 border-border/60 bg-muted/80 hover:bg-muted',
-                  'text-muted-foreground hover:text-foreground',
-                  'transition-colors shadow-sm'
-                )}
-              >
-                <PanelRightClose className="h-5 w-5" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="left">Close AI panel</TooltipContent>
-          </Tooltip>
+      {/* Content — opacity-controlled, no overflow-hidden so it never "compresses" */}
+      <div
+        style={{ transitionDuration: `${FADE_MS}ms` }}
+        className={cn(
+          'flex flex-1 flex-col min-h-0 transition-opacity ease-in-out',
+          contentVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
         )}
+      >
+        {/* Collapse tab on inner edge */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={handleClose}
+              aria-label="Close AI panel"
+              className={cn(
+                'absolute left-0 top-1/2 -translate-y-1/2 -translate-x-full z-10',
+                'flex items-center justify-center',
+                'w-8 h-16 -ml-px',
+                'rounded-l-md border border-r-0 border-border/60 bg-muted/80 hover:bg-muted',
+                'text-muted-foreground hover:text-foreground',
+                'transition-colors shadow-sm'
+              )}
+            >
+              <PanelRightClose className="h-5 w-5" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="left">Close AI panel</TooltipContent>
+        </Tooltip>
 
-        {/* Header - h-16 to align with main nav */}
+        {/* Header */}
         <div className="flex h-16 shrink-0 items-center justify-between px-4 border-b border-border/50 bg-muted/30">
           <div className="flex items-center gap-2.5 flex-1 min-w-0">
             <div className="rounded-full bg-primary/15 p-1.5 shrink-0">
@@ -137,7 +190,7 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
               </div>
             )}
             <button
-              onClick={onClose}
+              onClick={handleClose}
               aria-label="Close AI panel"
               className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
             >
@@ -147,7 +200,7 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
         </div>
 
         {/* Body */}
-        <div className="flex flex-1 min-h-0 flex flex-col overflow-hidden scrollbar-hide">
+        <div className="flex flex-1 min-h-0 flex-col overflow-hidden scrollbar-hide">
           {isLoading ? (
             <div className="flex flex-1 items-center justify-center">
               <span className="h-5 w-5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
@@ -156,6 +209,7 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
             <AuthGate />
           ) : (
             <BullpenChat
+              ref={chatRef}
               compact
               user={user}
               starterPrompts={STARTER_PROMPTS}
@@ -166,6 +220,7 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
             />
           )}
         </div>
+      </div>
     </aside>
   );
 }

@@ -6,7 +6,7 @@
 import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/types';
-import { getHoldings, addHolding, addOrUpdateHolding, updateHolding, removeHolding } from '@/lib/holdings/holdings-db';
+import { getHoldings, addHolding, addOrUpdateHolding, updateHolding, removeHolding, updateHoldingBySymbol, removeHoldingBySymbol } from '@/lib/holdings/holdings-db';
 import type { UserHolding } from '@/lib/types/database';
 
 /**
@@ -167,6 +167,46 @@ export async function updateHoldingAction(
   }
 
   return await updateHolding(userId, holdingId, updates);
+}
+
+/**
+ * Server Action: Update a holding by ticker symbol.
+ * Ownership is enforced inside updateHoldingBySymbol via user_id filter.
+ */
+export async function updateHoldingBySymbolAction(
+  userId: string,
+  symbol: string,
+  updates: { quantity?: number | null; avg_price?: number | null }
+): Promise<{
+  success: boolean;
+  holding?: UserHolding;
+  error?: string;
+}> {
+  if (!userId) return { success: false, error: 'Authentication required' };
+  if (!symbol) return { success: false, error: 'Symbol is required' };
+  if (updates.quantity !== undefined && updates.quantity !== null && updates.quantity < 0) {
+    return { success: false, error: 'Quantity cannot be negative' };
+  }
+  if (updates.avg_price !== undefined && updates.avg_price !== null && updates.avg_price < 0) {
+    return { success: false, error: 'Average price cannot be negative' };
+  }
+  return updateHoldingBySymbol(userId, symbol, updates);
+}
+
+/**
+ * Server Action: Remove a holding by ticker symbol.
+ * Ownership is enforced inside removeHoldingBySymbol via user_id filter.
+ */
+export async function removeHoldingBySymbolAction(
+  userId: string,
+  symbol: string
+): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  if (!userId) return { success: false, error: 'Authentication required' };
+  if (!symbol) return { success: false, error: 'Symbol is required' };
+  return removeHoldingBySymbol(userId, symbol);
 }
 
 /**

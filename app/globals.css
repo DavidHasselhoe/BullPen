@@ -260,6 +260,12 @@ html.animated-background-active [data-slot="dialog-content"] {
     animation: cardHoverLift 0.2s ease-out forwards;
   }
 
+  /* Blinking cursor for AI typewriter effect */
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
   /* Hide scrollbar while keeping scroll functionality */
   .scrollbar-hide {
     -ms-overflow-style: none !important;

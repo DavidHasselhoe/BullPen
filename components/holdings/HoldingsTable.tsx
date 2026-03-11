@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { useHoldings, useRemoveHolding } from '@/hooks/use-holdings';
 import { useAuth } from '@/hooks/use-auth';
-import { Trash2, Edit2, ArrowUpRight, ArrowDownRight, Plus } from 'lucide-react';
+import { Trash2, Edit2, ArrowUpRight, ArrowDownRight, Plus, Search, X } from 'lucide-react';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { EditHoldingModal } from './EditHoldingModal';
@@ -37,6 +37,7 @@ export function HoldingsTable({ onAddClick }: HoldingsTableProps) {
   const { data: holdings, isLoading } = useHoldings();
   const { user } = useAuth();
   const removeHolding = useRemoveHolding();
+  const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<'marketValue' | 'symbol' | 'allocation'>('marketValue');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [editingHolding, setEditingHolding] = useState<UserHolding | null>(null);
@@ -214,6 +215,17 @@ export function HoldingsTable({ onAddClick }: HoldingsTableProps) {
     return sorted;
   }, [holdingsWithPrices, sortBy, sortOrder]);
 
+  // Apply search filter after sorting
+  const filteredHoldings = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return sortedHoldings;
+    return sortedHoldings.filter(
+      (h) =>
+        h.symbol.toLowerCase().includes(q) ||
+        h.company_name.toLowerCase().includes(q)
+    );
+  }, [sortedHoldings, search]);
+
   const handleSort = (column: typeof sortBy) => {
     if (sortBy === column) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -303,7 +315,33 @@ export function HoldingsTable({ onAddClick }: HoldingsTableProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>My Holdings</CardTitle>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <CardTitle>My Holdings</CardTitle>
+          {/* Search */}
+          <div className="relative w-full sm:w-56">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search holdings…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full h-8 pl-8 pr-7 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring placeholder:text-muted-foreground"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
+        {search && (
+          <p className="text-xs text-muted-foreground mt-1">
+            Showing {filteredHoldings.length} of {sortedHoldings.length} holding{sortedHoldings.length !== 1 ? 's' : ''}
+          </p>
+        )}
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
@@ -355,7 +393,14 @@ export function HoldingsTable({ onAddClick }: HoldingsTableProps) {
               </tr>
             </thead>
             <tbody>
-              {sortedHoldings.map((holding) => {
+              {filteredHoldings.length === 0 && search && (
+                <tr>
+                  <td colSpan={9} className="py-8 text-center text-sm text-muted-foreground">
+                    No holdings match &ldquo;{search}&rdquo;
+                  </td>
+                </tr>
+              )}
+              {filteredHoldings.map((holding) => {
                 const isPositive = (holding.dayChangePercent ?? 0) >= 0;
                 const plIsPositive = (holding.unrealizedPLPercent ?? 0) >= 0;
                 const dayChangeColor = isPositive
