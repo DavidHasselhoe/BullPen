@@ -34,20 +34,6 @@ export async function createFinancialMetric(params: {
 }): Promise<MetricDBResult<FinancialMetric>> {
   const supabase = createServerClient();
 
-  const isEPS = params.metricType === 'eps_basic' || params.metricType === 'eps_diluted';
-  const debugMetrics = process.env.DEBUG_METRICS === '1';
-  if (debugMetrics && isEPS) {
-    console.log(`[createFinancialMetric] ${params.metricType}:`, {
-      value: params.value,
-      periodType: params.periodType,
-      periodEndDate: params.periodEndDate,
-      fiscalYear: params.fiscalYear,
-      fiscalQuarter: params.fiscalQuarter,
-      splitAdjusted: params.splitAdjusted,
-      filingId: params.filingId,
-    });
-  }
-
   try {
     // Check if metric already exists (idempotent)
     const { data: existing, error: existingError } = await supabase
@@ -59,16 +45,10 @@ export async function createFinancialMetric(params: {
       .maybeSingle();
 
     if (existingError && existingError.code !== 'PGRST116') {
-      if (debugMetrics && isEPS) {
-        console.log(`[createFinancialMetric] Error checking existing:`, existingError);
-      }
       return { success: false, error: existingError.message };
     }
 
     if (existing) {
-      if (debugMetrics && isEPS) {
-        console.log(`[createFinancialMetric] Updating existing:`, existing.id);
-      }
       
       // Update existing metric
       const { data, error } = await supabase
@@ -89,15 +69,9 @@ export async function createFinancialMetric(params: {
         .single();
 
       if (error) {
-        if (debugMetrics && isEPS) {
-          console.log(`[createFinancialMetric] Update error:`, error);
-        }
         return { success: false, error: error.message };
       }
 
-      if (debugMetrics && isEPS) {
-        console.log(`[createFinancialMetric] Updated:`, data.id);
-      }
       return { success: true, data };
     }
 
@@ -120,15 +94,6 @@ export async function createFinancialMetric(params: {
       metadata: params.metadata || {},
     };
 
-    if (debugMetrics && isEPS) {
-      console.log(`[createFinancialMetric] Inserting:`, {
-        metricData: {
-          ...metricData,
-          value: metricData.value.toString(), // Convert to string for logging
-        },
-      });
-    }
-
     const { data, error } = await supabase
       .from('financial_metrics')
       .insert(metricData)
@@ -136,23 +101,7 @@ export async function createFinancialMetric(params: {
       .single();
 
     if (error) {
-      if (debugMetrics && isEPS) {
-        console.log(`[createFinancialMetric] Insert error:`, {
-          error: error.message,
-          code: error.code,
-          details: error.details,
-          hint: error.hint,
-          metricData: {
-            ...metricData,
-            value: metricData.value.toString(),
-          },
-        });
-      }
       return { success: false, error: error.message };
-    }
-
-    if (debugMetrics && isEPS) {
-      console.log(`[createFinancialMetric] Inserted:`, data?.id);
     }
 
     return { success: true, data };

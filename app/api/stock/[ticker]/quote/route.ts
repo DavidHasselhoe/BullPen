@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getStockQuote } from '@/lib/finnhub/finnhub-client';
+import { logger } from '@/lib/utils/logger';
 
 export async function GET(
   request: NextRequest,
@@ -23,7 +24,7 @@ export async function GET(
       quote,
     });
   } catch (error) {
-    console.error('Error fetching stock quote:', error);
+    logger.error('Error fetching stock quote', error);
     return NextResponse.json(
       {
         success: false,

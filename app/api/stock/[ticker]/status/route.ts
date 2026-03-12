@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/client';
 import type { Company } from '@/lib/types/database';
+import { logger } from '@/lib/utils/logger';
 
 export async function GET(
   request: NextRequest,
@@ -77,7 +78,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error('Error checking stock status:', error);
+    logger.error('Error checking stock status', error);
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

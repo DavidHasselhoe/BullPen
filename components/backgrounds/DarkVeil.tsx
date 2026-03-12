@@ -1,6 +1,7 @@
 import { useRef, useEffect } from 'react';
 import { Renderer, Program, Mesh, Triangle, Vec2 } from 'ogl';
 import { useShouldAnimateBackground } from '@/hooks/use-reduce-motion';
+import { logger } from '@/lib/utils/logger';
 
 const vertex = `
 attribute vec2 position;
@@ -113,7 +114,7 @@ export function DarkVeil({
 
       const gl = renderer.gl;
       if (!gl) {
-        console.error('WebGL not supported');
+        logger.warn('WebGL not supported');
         return;
       }
 
@@ -163,7 +164,7 @@ export function DarkVeil({
 
       loop();
     } catch (error) {
-      console.error('Error initializing DarkVeil:', error);
+      logger.error('Error initializing DarkVeil', error);
     }
 
     return () => {

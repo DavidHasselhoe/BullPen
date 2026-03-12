@@ -48,7 +48,6 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   const { t, i18n } = useTranslation();
   const [activeSection, setActiveSection] = useState<SettingsSection>('preferences');
   const [error, setError] = useState<string | null>(null);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [isExportingData, setIsExportingData] = useState(false);
   const [showPasswordForm, setShowPasswordForm] = useState(false);
@@ -186,7 +185,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
     setError(null);
 
     try {
-      const result = await deleteAccount(user.id);
+      const result = await deleteAccount();
       if (!result.success) {
         setError(result.error || 'Failed to delete account');
         setIsDeletingAccount(false);
@@ -209,7 +208,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
     setError(null);
 
     try {
-      const result = await exportUserData(user.id);
+      const result = await exportUserData();
       if (!result.success || !result.data) {
         setError(result.error || 'Failed to export data');
         return;
@@ -269,34 +268,6 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
       setError(err.message || 'Failed to update password.');
     } finally {
       setIsChangingPassword(false);
-    }
-  };
-
-  const handleLogoutAllSessions = async () => {
-    if (!confirm('This will log you out of all devices. Continue?')) {
-      return;
-    }
-
-    setIsLoggingOut(true);
-    setError(null);
-
-    try {
-      // Sign out the current session
-      // Note: Supabase Auth's signOut() only signs out the current session
-      // To sign out ALL sessions across all devices, you would need to use
-      // the Supabase Admin API on the server side to revoke all refresh tokens
-      const result = await signOut();
-
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to sign out');
-      }
-
-      // Redirect to home page after sign out
-      router.push('/');
-      router.refresh();
-    } catch (err: any) {
-      setError(err.message || 'Failed to sign out');
-      setIsLoggingOut(false);
     }
   };
 
@@ -827,31 +798,6 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                     )}
                   </div>
 
-                  <Separator />
-
-                  <div className="space-y-3">
-                    <Label className="flex items-center gap-2">
-                      <Shield className="h-4 w-4" />
-                      Logout All Sessions
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      Sign out from all devices and sessions
-                    </p>
-                    <Button
-                      variant="outline"
-                      onClick={handleLogoutAllSessions}
-                      disabled={isLoggingOut}
-                    >
-                      {isLoggingOut ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Signing out...
-                        </>
-                      ) : (
-                        'Logout All Devices'
-                      )}
-                    </Button>
-                  </div>
                 </div>
               </div>
             )}

@@ -27,6 +27,7 @@ import { Badge } from '@/components/ui/badge';
 import { ProfileAvatar } from '@/components/user/ProfileAvatar';
 import { Loader2, Upload, User, Briefcase, Target, TrendingUp, Crown, Calendar } from 'lucide-react';
 import { createBrowserClient } from '@/lib/supabase/client';
+import { logger } from '@/lib/utils/logger';
 import { uploadAvatarToStorage } from '@/lib/storage/avatar-upload';
 import { cn } from '@/lib/utils';
 
@@ -119,7 +120,7 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
         .eq('id', user.id);
 
       if (updateError) {
-        console.error('[ProfileModal] Database update error:', updateError);
+        logger.error('[ProfileModal] Database update error', updateError);
         throw new Error(updateError.message || 'Failed to update profile in database');
       }
 

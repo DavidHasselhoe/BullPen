@@ -2,6 +2,7 @@
 // Type-safe operations for inserting filings and sections
 
 import { createServerClient } from '../supabase/client';
+import { logger } from '../utils/logger';
 import type {
   Company,
   Filing,
@@ -73,22 +74,22 @@ export async function getOrCreateCompany(params: {
       extractCompanyProfile(params.cik, newCompany.id)
         .then((profileData) => {
           updateCompanyProfile(newCompany.id, profileData).catch((err) => {
-            console.error(`Error updating company profile for ${params.ticker}:`, err);
+            logger.error(`Error updating company profile for ${params.ticker}`, err);
           });
         })
         .catch((err) => {
-          console.error(`Error extracting company profile for ${params.ticker}:`, err);
+          logger.error(`Error extracting company profile for ${params.ticker}`, err);
         });
 
       // Fetch and store logo in background (fire and forget)
       import('../logos/logos-orchestrator')
         .then(({ ingestCompanyLogo }) => {
           ingestCompanyLogo(params.ticker, params.name, newCompany.id).catch((err) => {
-            console.error(`Error ingesting logo for ${params.ticker}:`, err);
+            logger.error(`Error ingesting logo for ${params.ticker}`, err);
           });
         })
         .catch((err) => {
-          console.error(`Error loading logo orchestrator for ${params.ticker}:`, err);
+          logger.error(`Error loading logo orchestrator for ${params.ticker}`, err);
         });
     }
 

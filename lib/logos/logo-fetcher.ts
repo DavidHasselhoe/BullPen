@@ -2,6 +2,8 @@
 // Fetches company logos from img.logo.dev API
 // Deterministic, cached, legal
 
+import { logger } from '@/lib/utils/logger';
+
 /**
  * Fetches logo image from img.logo.dev API
  */
@@ -25,8 +27,6 @@ export async function fetchLogoFromLogoDev(ticker: string): Promise<LogoFetchRes
     // The endpoint format is: https://img.logo.dev/ticker/{TICKER}?token={TOKEN}
     const logoUrl = `https://img.logo.dev/ticker/${ticker.toUpperCase()}?token=${LOGO_DEV_PUBLIC_KEY}`;
     
-    console.log(`[Logo Fetcher] Fetching logo for ${ticker} from: ${logoUrl.replace(LOGO_DEV_PUBLIC_KEY, '***')}`);
-    
     // Fetch the logo image
     const response = await fetch(logoUrl, {
       headers: {
@@ -38,7 +38,7 @@ export async function fetchLogoFromLogoDev(ticker: string): Promise<LogoFetchRes
     if (!response.ok) {
       // Log detailed error
       const errorText = await response.text().catch(() => 'Unable to read error response');
-      console.error(`[Logo Fetcher] Fetch failed for ${ticker}:`, {
+      logger.error(`[Logo Fetcher] Fetch failed for ${ticker}`, null, {
         status: response.status,
         statusText: response.statusText,
         url: logoUrl.replace(LOGO_DEV_PUBLIC_KEY, '***'),
@@ -85,11 +85,6 @@ export async function fetchLogoFromLogoDev(ticker: string): Promise<LogoFetchRes
     // Get content type from response
     const contentType = response.headers.get('content-type') || 'image/png';
     
-    console.log(`[Logo Fetcher] Successfully fetched logo for ${ticker}:`, {
-      size: imageBuffer.length,
-      contentType,
-    });
-    
     // Validate that we got an image
     if (!contentType.startsWith('image/')) {
       return {
@@ -115,7 +110,7 @@ export async function fetchLogoFromLogoDev(ticker: string): Promise<LogoFetchRes
       source: 'logo.dev',
     };
   } catch (error) {
-    console.error(`[Logo Fetcher] Exception fetching logo for ${ticker}:`, error);
+    logger.error(`[Logo Fetcher] Exception fetching logo for ${ticker}`, error);
     return {
       success: false,
       source: null,

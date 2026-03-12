@@ -285,7 +285,7 @@ export async function lazyIngestCompany(
     );
 
     if (metricsResult.errors.length > 0) {
-      console.warn(`[LazyIngestion] XBRL warnings for ${ticker}:`, metricsResult.errors);
+      logger.warn(`[LazyIngestion] XBRL warnings for ${ticker}`, { errors: metricsResult.errors });
     }
 
     tracker.update(`Stored ${metricsResult.metricsStored} metrics (${metricsResult.fcfCalculated} FCF periods)`);
@@ -325,7 +325,7 @@ export async function lazyIngestCompany(
         await analyzeFilingSections(filingId, {});
       } catch (err) {
         // Non-fatal: AI may fail due to rate limits; log and continue
-        console.warn(`[LazyIngestion] AI analysis failed for ${accn}:`, err);
+        logger.warn(`[LazyIngestion] AI analysis failed for ${accn}`, err);
       }
     }
 
@@ -342,7 +342,7 @@ export async function lazyIngestCompany(
           calculateFilingCompositeScore(entry.filingId, { storeResult: true }),
         ]);
       } catch (err) {
-        console.warn(`[LazyIngestion] Signals/score failed for ${accn}:`, err);
+        logger.warn(`[LazyIngestion] Signals/score failed for ${accn}`, err);
       }
     }
 
@@ -350,7 +350,7 @@ export async function lazyIngestCompany(
     try {
       await analyzeTrendsForCompany(company.id, { onProgress: () => {} });
     } catch (err) {
-      console.warn(`[LazyIngestion] Trend analysis failed for ${ticker}:`, err);
+      logger.warn(`[LazyIngestion] Trend analysis failed for ${ticker}`, err);
     }
 
     tracker.completeStep('Generating insights');
@@ -377,7 +377,7 @@ export async function lazyIngestCompany(
       }
     } catch (err) {
       // Non-fatal: 8-K ingest failures (rate limit, parse errors) shouldn't fail the whole pipeline
-      console.warn(`[LazyIngestion] 8-K ingestion failed for ${ticker}:`, err);
+      logger.warn(`[LazyIngestion] 8-K ingestion failed for ${ticker}`, err);
       tracker.update('8-K ingestion skipped (non-fatal)');
     }
     tracker.completeStep('Ingesting recent 8-Ks');

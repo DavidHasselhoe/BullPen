@@ -1,17 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { answerFinancialQuestion, RAGError } from '@/lib/rag/rag-assistant';
 import { createServerClient } from '@/lib/supabase/client';
-import { addSecurityHeaders } from '@/lib/security/api-security';
+import { addSecurityHeaders, withRateLimit } from '@/lib/security/api-security';
 
 /**
  * POST /api/rag/answer
- * 
- * RAG assistant endpoint for answering financial questions
- * 
+ *
+ * RAG assistant endpoint for answering financial questions.
+ * Rate limited to prevent abuse (20 requests per minute).
+ *
  * Request body:
  * - question: string (required) - The financial question to answer
  * - companyId: string (required) - UUID of the company
- * 
+ *
  * Response:
  * {
  *   success: boolean
@@ -23,7 +24,7 @@ import { addSecurityHeaders } from '@/lib/security/api-security';
  *   error?: string
  * }
  */
-export async function POST(request: NextRequest) {
+async function handler(request: NextRequest) {
   try {
     const body = await request.json().catch(() => null);
     

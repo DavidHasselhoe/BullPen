@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useQuery } from '@tanstack/react-query';
+import { logger } from '@/lib/utils/logger';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import type { CompanyEarnings } from '@/lib/finnhub/finnhub-client';
 
@@ -71,7 +72,7 @@ export function EPSEstimatesChart({ ticker }: EPSEstimatesChartProps) {
         const response = await fetch(`/api/stock/${ticker}/earnings`);
         
         if (!response.ok) {
-          console.error(`[EPSEstimatesChart] API error (${response.status}) for ${ticker}`);
+          logger.error(`[EPSEstimatesChart] API error (${response.status}) for ${ticker}`);
           return [];
         }
         
@@ -82,12 +83,12 @@ export function EPSEstimatesChart({ ticker }: EPSEstimatesChartProps) {
         }
 
         if (result.error) {
-          console.error(`[EPSEstimatesChart] API returned error for ${ticker}:`, result.error);
+          logger.error(`[EPSEstimatesChart] API returned error for ${ticker}`, null, { error: result.error });
         }
 
         return [];
       } catch (err) {
-        console.error(`[EPSEstimatesChart] Error fetching earnings for ${ticker}:`, err);
+        logger.error(`[EPSEstimatesChart] Error fetching earnings for ${ticker}`, err);
         return [];
       }
     },

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/client';
+import { logger } from '@/lib/utils/logger';
 
 /**
  * GET /api/currency/rates
@@ -67,7 +68,7 @@ export async function GET(request: NextRequest) {
       });
     
     if (insertError) {
-      console.error('Error caching exchange rates:', insertError);
+      logger.error('Error caching exchange rates', insertError);
       // Continue even if caching fails
     }
     
@@ -79,7 +80,7 @@ export async function GET(request: NextRequest) {
       cached: false,
     });
   } catch (error) {
-    console.error('Error fetching exchange rates:', error);
+    logger.error('Error fetching exchange rates', error);
     return NextResponse.json(
       { success: false, error: error instanceof Error ? error.message : 'Internal server error' },
       { status: 500 }

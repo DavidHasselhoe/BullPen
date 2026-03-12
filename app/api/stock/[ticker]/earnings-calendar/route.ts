@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getEarningsCalendar } from '@/lib/finnhub/finnhub-client';
+import { logger } from '@/lib/utils/logger';
+import { logger } from '@/lib/utils/logger';
 
 export async function GET(
   request: NextRequest,
@@ -32,7 +34,7 @@ export async function GET(
     });
   } catch (error) {
     // Finnhub may fail (rate limit, etc.). Return empty so UI can still show SEC-reported dates.
-    console.warn(`[earnings-calendar] Finnhub failed for ${params?.ticker ?? 'unknown'}:`, error);
+    logger.warn(`[earnings-calendar] Finnhub failed for ${params?.ticker ?? 'unknown'}`, { error });
     return NextResponse.json({
       success: true,
       earnings: [],

@@ -3,6 +3,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Renderer, Program, Mesh, Triangle } from 'ogl';
 import { useShouldAnimateBackground } from '@/hooks/use-reduce-motion';
+import { logger } from '@/lib/utils/logger';
 
 interface PlasmaProps {
   color?: string;
@@ -121,7 +122,7 @@ export function Plasma({
     });
     const gl = renderer.gl;
     if (!gl) {
-      console.error('WebGL not supported');
+      logger.warn('WebGL not supported');
       return;
     }
     const canvas = gl.canvas as HTMLCanvasElement;

@@ -34,6 +34,7 @@ import { useBackground } from '@/hooks/use-background';
 import { StockQuoteCard } from '@/components/stock/StockQuoteCard';
 import type { MetricType, PeriodType, Company } from '@/lib/types/database';
 import type { DeltaCard } from '@/lib/metrics/metrics-ui';
+import { logger } from '@/lib/utils/logger';
 
 // Dynamically import chart to avoid SSR issues with Recharts
 const MetricsChart = dynamic(
@@ -204,7 +205,6 @@ export default function StockDetailPage() {
   // Handle progress completion - refresh only relevant sections
   // Invalidate queries based on what data was ingested (granular updates)
   const handleProgressComplete = useCallback(() => {
-    console.log('[StockDetail] Ingestion complete, refreshing relevant data sections...');
     
     // Hide progress bar
     setShowProgressBar(false);
@@ -247,19 +247,12 @@ export default function StockDetailPage() {
     // Check if company is missing expected reports (runs every time, not cached)
     const checkMissingReports = async () => {
       try {
-        console.log(`[StockDetail] Checking for missing reports for ${ticker}...`);
         
         // Use API endpoint to check for missing reports (server-side database access)
         const response = await fetch(`/api/stock/${ticker}/missing-reports`);
         const data = await response.json();
         
         if (data.success && data.hasMissingReports) {
-          console.log(`[StockDetail] Missing reports detected for ${ticker}:`, {
-            missing10K: data.missing10K,
-            missing10Q: data.missing10Q,
-            missing10KYears: data.missing10KYears,
-            missing10QPeriods: data.missing10QPeriods,
-          });
           
           // Trigger ingestion in background (fire and forget)
           // The lazy ingestion endpoint will automatically check and ingest missing reports
@@ -271,7 +264,6 @@ export default function StockDetailPage() {
             .then((response) => response.json())
             .then((result) => {
               if (result.success) {
-                console.log(`[StockDetail] Background ingestion triggered for ${ticker}. Missing reports will be fetched.`);
                 
                 // Refresh status periodically to pick up new reports as they're ingested
                 let refreshCount = 0;
@@ -280,7 +272,7 @@ export default function StockDetailPage() {
                   refreshCount++;
                   
                   if (refreshCount % 3 === 0) {
-                    console.log(`[StockDetail] Refreshing data for ${ticker} (${refreshCount}/${maxRefreshes})...`);
+                    // Silent refresh - no user-facing logs
                   }
                   
                   queryClient.invalidateQueries({ queryKey: ['stock-status', ticker] });
@@ -289,24 +281,22 @@ export default function StockDetailPage() {
                   
                   if (refreshCount >= maxRefreshes) {
                     clearInterval(refreshInterval);
-                    console.log(`[StockDetail] Stopped refreshing data for ${ticker} after ${maxRefreshes} attempts`);
                   }
                 }, 10000); // 10 seconds - reduced from 5s to lower database load
               } else {
-                console.warn(`[StockDetail] Failed to trigger ingestion for ${ticker}:`, result.error);
+                logger.warn(`[StockDetail] Failed to trigger ingestion for ${ticker}`, { error: result.error });
               }
             })
             .catch((err) => {
-              console.warn(`[StockDetail] Failed to trigger missing reports ingestion for ${ticker}:`, err);
+              logger.warn(`[StockDetail] Failed to trigger missing reports ingestion for ${ticker}`, { error: err });
             });
         } else if (data.success) {
-          console.log(`[StockDetail] No missing reports for ${ticker}. All reports up to date.`);
+          // All reports up to date
         } else {
-          console.warn(`[StockDetail] Failed to check missing reports for ${ticker}:`, data.error);
+          logger.warn(`[StockDetail] Failed to check missing reports for ${ticker}`, { error: data.error });
         }
       } catch (err) {
-        // Log error but don't fail silently - helps with debugging
-        console.error(`[StockDetail] Error checking missing reports for ${ticker}:`, err);
+        logger.error(`[StockDetail] Error checking missing reports for ${ticker}`, err);
       }
     };
 
@@ -392,22 +382,17 @@ export default function StockDetailPage() {
 
     // If logo is missing, fetch it
     if (!company.logo_url) {
-      console.log(`[StockDetail] Logo missing for ${ticker}, fetching...`);
       fetch(`/api/stock/${ticker}/logo`, {
         method: 'POST',
       })
         .then((response) => response.json())
         .then((data) => {
           if (data.success && data.logoUrl) {
-            console.log(`[StockDetail] Logo fetched for ${ticker}, refreshing company data...`);
-            // Invalidate company query to refresh logo
             queryClient.invalidateQueries({ queryKey: ['company-info', ticker] });
-          } else {
-            console.log(`[StockDetail] Failed to fetch logo for ${ticker}:`, data.error);
           }
         })
         .catch((err) => {
-          console.warn(`[StockDetail] Error fetching logo for ${ticker}:`, err);
+          logger.warn(`[StockDetail] Error fetching logo for ${ticker}`, { error: err });
         });
     }
   }, [company, ticker, queryClient]);
@@ -584,8 +569,7 @@ export default function StockDetailPage() {
             ticker={ticker}
             onComplete={handleProgressComplete}
             onError={(error) => {
-              // Log only — don't hide the bar so the user can retry inline
-              console.error('Ingestion error:', error);
+              logger.error('Ingestion error', error);
             }}
           />
         )}

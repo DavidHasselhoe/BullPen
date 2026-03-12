@@ -40,7 +40,7 @@ export default function HoldingsPage() {
     gcTime: 24 * 60 * 60 * 1000,
   });
 
-  // Fetch quotes and logos for all holdings
+  // Fetch quotes and logos for all holdings (shared cache with HoldingsTable)
   const quotesData = useQuery({
     queryKey: ['holdings-quotes', holdings?.map((h) => h.symbol)],
     queryFn: async () => {
@@ -95,7 +95,7 @@ export default function HoldingsPage() {
       return { quotes: quoteMap, logos: logoMap };
     },
     enabled: !!holdings && holdings.length > 0,
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    staleTime: 3 * 60 * 1000, // 3 minutes (shared cache with HoldingsTable)
     gcTime: 10 * 60 * 1000,
   });
 

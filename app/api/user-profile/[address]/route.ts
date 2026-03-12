@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logger } from "@/lib/utils/logger";
 
 const ABSTRACT_PORTAL_API_URL = "https://backend.portal.abs.xyz/api";
 
@@ -55,7 +56,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error("Error fetching user profile:", error);
+    logger.error("Error fetching user profile", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

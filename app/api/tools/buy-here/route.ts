@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/utils/logger';
 import { getStockCandlesLongRange } from '@/lib/finnhub/finnhub-client';
 import { getCompanyIndexByTicker } from '@/lib/search/search-db';
 
@@ -148,7 +149,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error('Buy-here calculator error:', error);
+    logger.error('Buy-here calculator error', error);
     const msg = error instanceof Error ? error.message : 'Internal server error';
     const is403 = msg.includes('403') || msg.includes('Forbidden');
     return NextResponse.json(

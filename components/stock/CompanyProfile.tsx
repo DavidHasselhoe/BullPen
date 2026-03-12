@@ -6,6 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import { useQuery } from '@tanstack/react-query';
 import { Building2, Users, Share2, Calendar, MapPin, Tag, Loader2 } from 'lucide-react';
+import { logger } from '@/lib/utils/logger';
 
 interface CompanyProfileProps {
   companyId: string;
@@ -89,42 +90,21 @@ export function CompanyProfile({ companyId }: CompanyProfileProps) {
     queryKey: ['company-profile', companyId],
     queryFn: async () => {
       try {
-        console.log(`[CompanyProfile] Fetching profile for ${companyId}`);
         const response = await fetch(`/api/company/${companyId}/profile`);
         
         if (!response.ok) {
           const errorText = await response.text();
-          console.error(`[CompanyProfile] API error (${response.status}):`, errorText);
+          logger.error('[CompanyProfile] API error', new Error(errorText), { status: response.status });
           throw new Error(`Failed to fetch profile: ${response.status} ${response.statusText}`);
         }
         
         const result: CompanyProfileResponse = await response.json();
-        console.log(`[CompanyProfile] API response:`, {
-          success: result.success,
-          hasProfile: !!result.profile,
-          extracting: result.extracting,
-          hasError: !!result.error,
-        });
 
         if (result.error) {
-          console.error(`[CompanyProfile] API returned error:`, result.error);
+          logger.error('[CompanyProfile] API returned error', new Error(result.error));
         }
 
         if (result.success && result.profile) {
-          const hasData = 
-            result.profile.sic_code ||
-            result.profile.sector ||
-            result.profile.industry ||
-            result.profile.incorporation_location ||
-            result.profile.fiscal_year_end ||
-            result.profile.employee_count ||
-            result.profile.shares_outstanding;
-          
-          console.log(`[CompanyProfile] Profile data check:`, {
-            hasData,
-            extracting: result.extracting || false,
-          });
-
           return { 
             profile: result.profile, 
             extracting: result.extracting || false,
@@ -168,9 +148,9 @@ export function CompanyProfile({ companyId }: CompanyProfileProps) {
   const profile = data?.profile || null;
   const isExtracting = data?.extracting || false;
 
-  // Show error state (for debugging)
+  // Show error state
   if (isError || error) {
-    console.error(`[CompanyProfile] Error state:`, { isError, error });
+    logger.error('[CompanyProfile] Error state', error instanceof Error ? error : new Error(String(error)));
     return (
       <Card className="mb-8 border-destructive/50">
         <CardHeader>
@@ -201,21 +181,6 @@ export function CompanyProfile({ companyId }: CompanyProfileProps) {
     profile.sic_code
   );
   
-  // Debug logging
-  if (profile && !isLoading) {
-    console.log(`[CompanyProfile] Profile data check for ${companyId}:`, {
-      hasData,
-      sector: profile.sector,
-      industry: profile.industry,
-      location: profile.incorporation_location,
-      fye: profile.fiscal_year_end,
-      employees: profile.employee_count,
-      shares: profile.shares_outstanding,
-      sic: profile.sic_code,
-      isExtracting,
-    });
-  }
-
   // Show skeleton while loading or if extracting and no data yet
   if (isLoading || (isExtracting && !hasData)) {
     return (
@@ -247,7 +212,6 @@ export function CompanyProfile({ companyId }: CompanyProfileProps) {
   // Don't show empty profile unless we're still extracting or loading
   // But show skeleton if we just loaded and have no data (extraction might be starting)
   if (!isLoading && !hasData && !isExtracting) {
-    console.log(`[CompanyProfile] Hiding profile - no data and not extracting for ${companyId}`);
     // If we just finished loading with no data, give extraction a moment
     // Return skeleton for a short time in case extraction is starting
     return (

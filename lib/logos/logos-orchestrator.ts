@@ -3,6 +3,7 @@
 
 import { fetchLogoFromLogoDev } from './logo-fetcher';
 import { uploadLogoToStorage } from './logos-storage';
+import { logger } from '@/lib/utils/logger';
 import { updateCompanyLogo } from './logos-db';
 import { logoExistsInStorage, getStorageLogoUrl } from './logos-storage';
 
@@ -61,8 +62,7 @@ export async function ingestCompanyLogo(
     );
 
     if (!uploadResult.success || !uploadResult.publicUrl) {
-      // Log detailed error for debugging
-      console.error(`[Logo Orchestrator] Upload failed for ${ticker}:`, {
+      logger.error(`[Logo Orchestrator] Upload failed for ${ticker}`, null, {
         error: uploadResult.error,
         ticker,
         bufferSize: fetchResult.imageBuffer.length,

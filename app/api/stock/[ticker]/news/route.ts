@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/utils/logger';
 import { getCompanyNews } from '@/lib/finnhub/finnhub-client';
 
 export async function GET(
@@ -31,7 +32,7 @@ export async function GET(
       news: news.slice(0, 20), // Limit to 20 most recent
     });
   } catch (error) {
-    console.error('Error fetching company news:', error);
+    logger.error('Error fetching company news', error);
     return NextResponse.json(
       {
         success: false,

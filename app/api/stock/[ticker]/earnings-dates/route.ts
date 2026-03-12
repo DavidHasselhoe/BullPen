@@ -8,6 +8,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/client';
+import { logger } from '@/lib/utils/logger';
 
 export interface ReportedEarningsDate {
   /** Date when earnings were announced (8-K filing date) */
@@ -61,7 +62,7 @@ export async function GET(
       .limit(12);
 
     if (filingsErr) {
-      console.error('[earnings-dates] Query error:', filingsErr);
+      logger.error('[earnings-dates] Query error', filingsErr);
       return NextResponse.json({
         success: false,
         error: filingsErr.message,
@@ -80,7 +81,7 @@ export async function GET(
       earnings,
     });
   } catch (error) {
-    console.error('[earnings-dates] Error:', error);
+    logger.error('[earnings-dates] Error', error);
     return NextResponse.json(
       {
         success: false,

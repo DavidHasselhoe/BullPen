@@ -2,6 +2,7 @@
 // Combines structured financial metrics and semantic document search to answer questions
 
 import { createServerClient } from '../supabase/client';
+import { logger } from '../utils/logger';
 import type { Company, FinancialMetric, Filing, FilingSection } from '../types/database';
 
 /**
@@ -176,7 +177,7 @@ async function searchDocumentEmbeddings(
     if (error) {
       // If RPC function doesn't exist, fall back to empty results
       // This allows the system to work even if embeddings aren't set up yet
-      console.warn('[RAG] Vector search failed, continuing without document excerpts:', error.message);
+      logger.warn('[RAG] Vector search failed, continuing without document excerpts', { message: error.message });
       return [];
     }
     
@@ -212,7 +213,7 @@ async function searchDocumentEmbeddings(
     });
   } catch (error) {
     // If vector search fails (e.g., embeddings table doesn't exist), continue without excerpts
-    console.warn('[RAG] Vector search error, continuing without document excerpts:', error);
+    logger.warn('[RAG] Vector search error, continuing without document excerpts', { error });
     return [];
   }
 }

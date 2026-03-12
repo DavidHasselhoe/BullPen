@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getMetricsTimeSeries } from '@/lib/metrics/metrics-ui';
 import type { MetricType, PeriodType } from '@/lib/types/database';
+import { logger } from '@/lib/utils/logger';
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -36,7 +37,7 @@ export async function GET(request: NextRequest) {
       timeSeries,
     });
   } catch (error) {
-    console.error('Error fetching time series:', error);
+    logger.error('Error fetching time series', error);
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

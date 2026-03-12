@@ -64,7 +64,6 @@ export function FundamentalChangeCard({ change }: FundamentalChangeCardProps) {
 
   const config = getDirectionConfig(change.direction);
 
-  // Navigate to stock detail page (placeholder: /stock/[ticker])
   const stockUrl = `/stock/${change.company.ticker}`;
 
   const signalLabel = getSignalLabel(change);

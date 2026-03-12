@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ensureLogoForTicker } from '@/lib/logos/logos-orchestrator';
+import { logger } from '@/lib/utils/logger';
 
 /**
  * GET /api/logo/[ticker]
@@ -35,7 +36,7 @@ export async function GET(
       logoUrl: result.logoUrl,
     });
   } catch (error) {
-    console.error('[Logo API] Error ensuring logo:', error);
+    logger.error('[Logo API] Error ensuring logo', error);
     return NextResponse.json(
       {
         success: false,

@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/client';
-import { cookies } from 'next/headers';
+import { logger } from '@/lib/utils/logger';
 
 /**
  * POST /api/search/metrics
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (error) {
-      console.error('Error inserting search metric:', error);
+      logger.error('Error inserting search metric', error);
       return NextResponse.json(
         { success: false, error: 'Failed to track search metric' },
         { status: 500 }
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error in search metrics POST:', error);
+    logger.error('Error in search metrics POST', error);
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

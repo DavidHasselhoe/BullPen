@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { useUpdateHolding } from '@/hooks/use-holdings';
 import type { UserHolding } from '@/lib/types/database';
 import type { UpdateHoldingInput } from '@/app/actions/holdings';
+import { logger } from '@/lib/utils/logger';
 
 interface EditHoldingModalProps {
   open: boolean;
@@ -58,7 +59,7 @@ export function EditHoldingModal({ open, onOpenChange, holding }: EditHoldingMod
       setAvgPrice('');
       onOpenChange(false);
     } catch (error) {
-      console.error('Error updating holding:', error);
+      logger.error('Error updating holding', error);
       // Error is handled by the mutation
     }
   };

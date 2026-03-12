@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCompanyMetricTrends } from '@/lib/trends/trends-db';
+import { logger } from '@/lib/utils/logger';
+import { logger } from '@/lib/utils/logger';
 import type { MetricType, PeriodType } from '@/lib/types/database';
 
 export async function GET(request: NextRequest) {
@@ -45,7 +47,7 @@ export async function GET(request: NextRequest) {
       trend: strongestTrend,
     });
   } catch (error) {
-    console.error('Error fetching trends:', error);
+    logger.error('Error fetching trends', error);
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

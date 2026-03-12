@@ -33,7 +33,6 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 const USERS_FETCH_COOLDOWN_MS = 30_000;
-const DEBUG_AUTH = false; // Set true to log auth events during development
 
 async function fetchUserProfile(
   supabase: ReturnType<typeof createBrowserClient>,
@@ -107,9 +106,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       event: 'INITIAL_SESSION' | 'SIGNED_IN' | 'SIGNED_OUT' | 'TOKEN_REFRESHED',
       session: Session | null
     ) => {
-      if (DEBUG_AUTH) {
-        console.log('[Auth]', event, session?.user?.id ?? 'no session');
-      }
       if (!mounted) return;
 
       if (event === 'SIGNED_OUT') {
@@ -133,7 +129,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         if (mounted) {
           setIsLoading(false);
-          if (DEBUG_AUTH) console.log('[Auth] profile loaded for', session.user.id);
         }
       }
     };

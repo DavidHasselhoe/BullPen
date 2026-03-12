@@ -3,6 +3,7 @@
 // Phase 1: Gates charts behind re-ingested data only
 
 import { createServerClient } from '../supabase/client';
+import { logger } from '../utils/logger';
 import type { MetricType, PeriodType } from '../types/database';
 import { FISCAL_REFACTOR_RELEASE_DATE } from './ingestion-constants';
 
@@ -177,7 +178,7 @@ export async function getMetricsTimeSeries(
       }
       const { data: qData, error } = await query.order('period_end_date', { ascending: true });
       if (error) {
-        console.error('Error fetching quarterly metrics:', error);
+        logger.error('Error fetching quarterly metrics', error);
         return null;
       }
       if (!qData || qData.length === 0) return null;
@@ -226,7 +227,7 @@ export async function getMetricsTimeSeries(
         );
         const { data: aData, error } = await query.order('period_end_date', { ascending: true });
         if (error) {
-          console.error('Error fetching annual metrics:', error);
+          logger.error('Error fetching annual metrics', error);
           return null;
         }
         data = (aData ?? []) as RawMetricRow[];
@@ -310,7 +311,7 @@ export async function getMetricsTimeSeries(
       }),
     };
   } catch (error) {
-    console.error('Error in getMetricsTimeSeries:', error);
+    logger.error('Error in getMetricsTimeSeries', error);
     return null;
   }
 }
@@ -468,7 +469,7 @@ export async function getCompanyByTicker(ticker: string): Promise<{ id: string; 
       ticker: data.ticker,
     };
   } catch (error) {
-    console.error('Error fetching company:', error);
+    logger.error('Error fetching company', error);
     return null;
   }
 }

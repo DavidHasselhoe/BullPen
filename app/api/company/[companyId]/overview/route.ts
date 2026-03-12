@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCompanyOverview } from '@/lib/company/company-overview';
+import { logger } from '@/lib/utils/logger';
 
 /**
  * GET /api/company/[companyId]/overview
@@ -36,7 +37,7 @@ export async function GET(
       overview: result.overview,
     });
   } catch (error) {
-    console.error('Error getting company overview:', error);
+    logger.error('Error getting company overview', error);
     return NextResponse.json(
       {
         success: false,

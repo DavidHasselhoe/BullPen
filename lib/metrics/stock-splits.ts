@@ -3,6 +3,8 @@
 // All split adjustments happen before persistence
 
 import { getStockSplits, type StockSplitRecord } from './splits-db';
+import { logger } from '../utils/logger';
+import { logger } from '@/lib/utils/logger';
 
 /**
  * Stock split information
@@ -132,7 +134,7 @@ export async function fetchStockSplits(
       description: record.description || undefined,
     }));
   } catch (error) {
-    console.error('Error fetching stock splits:', error);
+    logger.error('Error fetching stock splits', error);
     return [];
   }
 }

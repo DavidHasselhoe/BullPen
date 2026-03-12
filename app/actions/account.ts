@@ -2,13 +2,20 @@
 
 import { createServerClient } from '@/lib/supabase/client';
 import { createClient } from '@supabase/supabase-js';
+import { getCurrentUserId } from '@/lib/auth/server-session';
 
 /**
  * Deletes all user data from Supabase and then removes the auth user.
  * Must run server-side because deleting auth users requires the service role key.
+ * Resolves the user from the session — never trusts client-provided userId.
  */
-export async function deleteAccount(userId: string): Promise<{ success: boolean; error?: string }> {
+export async function deleteAccount(): Promise<{ success: boolean; error?: string }> {
   try {
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
     const supabase = createServerClient();
 
     // Delete user data (cascade handles related rows if FK is set up, but be explicit)
@@ -58,14 +65,20 @@ export async function deleteAccount(userId: string): Promise<{ success: boolean;
 }
 
 /**
- * Fetches all exportable data for a user and returns it as a plain object.
+ * Fetches all exportable data for the current user and returns it as a plain object.
+ * Resolves the user from the session — never trusts client-provided userId.
  */
-export async function exportUserData(userId: string): Promise<{
+export async function exportUserData(): Promise<{
   success: boolean;
   data?: object;
   error?: string;
 }> {
   try {
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
     const supabase = createServerClient();
 
     const [profileResult, holdingsResult] = await Promise.all([

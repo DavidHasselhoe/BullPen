@@ -2,11 +2,13 @@
 // Common security middleware and utilities for API routes
 
 import { NextRequest, NextResponse } from 'next/server';
-import { rateLimit, getClientIdentifier } from './rate-limiter';
+import { checkRateLimit, getClientIdentifier } from './rate-limiter';
 import { validateTicker, validateSearchQuery, validateUUID } from './input-validation';
 
 /**
- * Rate limiting middleware for API routes
+ * Rate limiting middleware for API routes.
+ * Uses Upstash Redis when UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN are set;
+ * otherwise falls back to in-memory (per-instance on serverless).
  */
 export function withRateLimit(
   handler: (request: NextRequest, context?: any) => Promise<NextResponse>,
@@ -14,7 +16,7 @@ export function withRateLimit(
 ) {
   return async (request: NextRequest, context?: any): Promise<NextResponse> => {
     const identifier = getClientIdentifier(request);
-    const limit = rateLimit(identifier, {
+    const limit = await checkRateLimit(identifier, {
       windowMs: options.windowMs || 60 * 1000, // 1 minute default
       maxRequests: options.maxRequests || 60, // 60 requests per minute default
     });

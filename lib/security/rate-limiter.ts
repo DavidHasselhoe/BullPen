@@ -1,65 +1,58 @@
 // Rate Limiting Utility
-// Prevents API abuse and DDoS attacks
-// Uses in-memory store (consider Redis for production scaling)
+// Uses Upstash Redis when configured; falls back to in-memory store for dev.
+// In-memory store does NOT share state across serverless instances — configure
+// UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN for production.
 
 import type { NextRequest } from 'next/server';
 
-interface RateLimitStore {
-  [key: string]: {
-    count: number;
-    resetTime: number;
-  };
+export interface RateLimitOptions {
+  windowMs: number;
+  maxRequests: number;
 }
 
-const store: RateLimitStore = {};
-
-interface RateLimitOptions {
-  windowMs: number; // Time window in milliseconds
-  maxRequests: number; // Maximum requests per window
-}
-
-interface RateLimitResult {
+export interface RateLimitResult {
   allowed: boolean;
   remaining: number;
   resetTime: number;
 }
 
-/**
- * Simple in-memory rate limiter
- * For production, consider using Redis or Upstash
- */
-export function rateLimit(
+// ── In-memory fallback (per-instance, not shared across serverless) ─────────
+
+interface MemoryRecord {
+  count: number;
+  resetTime: number;
+}
+
+const memoryStore: Record<string, MemoryRecord> = {};
+
+function rateLimitMemory(
   identifier: string,
-  options: RateLimitOptions = { windowMs: 60 * 1000, maxRequests: 60 }
+  options: RateLimitOptions
 ): RateLimitResult {
   const now = Date.now();
-  const key = identifier;
+  const { windowMs, maxRequests } = options;
 
-  // Clean up expired entries periodically (every 10% of checks)
   if (Math.random() < 0.1) {
-    Object.keys(store).forEach((k) => {
-      if (store[k].resetTime < now) {
-        delete store[k];
-      }
+    Object.keys(memoryStore).forEach((k) => {
+      if (memoryStore[k].resetTime < now) delete memoryStore[k];
     });
   }
 
-  const record = store[key];
+  const record = memoryStore[identifier];
 
   if (!record || record.resetTime < now) {
-    // New window or expired, reset
-    store[key] = {
+    memoryStore[identifier] = {
       count: 1,
-      resetTime: now + options.windowMs,
+      resetTime: now + windowMs,
     };
     return {
       allowed: true,
-      remaining: options.maxRequests - 1,
-      resetTime: now + options.windowMs,
+      remaining: maxRequests - 1,
+      resetTime: now + windowMs,
     };
   }
 
-  if (record.count >= options.maxRequests) {
+  if (record.count >= maxRequests) {
     return {
       allowed: false,
       remaining: 0,
@@ -70,22 +63,77 @@ export function rateLimit(
   record.count++;
   return {
     allowed: true,
-    remaining: options.maxRequests - record.count,
+    remaining: maxRequests - record.count,
     resetTime: record.resetTime,
   };
+}
+
+// ── Upstash (shared across all serverless instances) ─────────────────────────
+
+function checkRateLimitUpstash(
+  identifier: string,
+  options: RateLimitOptions
+): Promise<RateLimitResult> | null {
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!url || !token) return null;
+
+  try {
+    const { Ratelimit } = require('@upstash/ratelimit');
+    const { Redis } = require('@upstash/redis');
+
+    const windowSeconds = Math.max(1, Math.ceil(options.windowMs / 1000));
+    const limiter = new Ratelimit({
+      redis: Redis.fromEnv(),
+      limiter: Ratelimit.fixedWindow(options.maxRequests, `${windowSeconds} s`),
+    });
+
+    return (async () => {
+      const result = await limiter.limit(identifier);
+      await result.pending; // Ensure Redis write completes (Edge-safe)
+      return {
+        allowed: result.success,
+        remaining: result.remaining,
+        resetTime: result.reset * 1000,
+      };
+    })();
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Check rate limit (async). Uses Upstash when UPSTASH_REDIS_REST_URL and
+ * UPSTASH_REDIS_REST_TOKEN are set; otherwise in-memory (not shared).
+ */
+export async function checkRateLimit(
+  identifier: string,
+  options: RateLimitOptions = { windowMs: 60 * 1000, maxRequests: 60 }
+): Promise<RateLimitResult> {
+  const upstashResult = checkRateLimitUpstash(identifier, options);
+  if (upstashResult) {
+    return upstashResult;
+  }
+  return rateLimitMemory(identifier, options);
+}
+
+/**
+ * Sync in-memory rate limit (for backward compatibility).
+ * Prefer checkRateLimit for production — it uses Upstash when configured.
+ */
+export function rateLimit(
+  identifier: string,
+  options: RateLimitOptions = { windowMs: 60 * 1000, maxRequests: 60 }
+): RateLimitResult {
+  return rateLimitMemory(identifier, options);
 }
 
 /**
  * Get client identifier from request (IP address)
  */
 export function getClientIdentifier(request: NextRequest): string {
-  // Try to get real IP from headers (if behind proxy)
   const forwarded = request.headers.get('x-forwarded-for');
   const realIp = request.headers.get('x-real-ip');
-  const cfConnectingIp = request.headers.get('cf-connecting-ip'); // Cloudflare
-
-  const ip = forwarded?.split(',')[0] || realIp || cfConnectingIp || 'unknown';
-  
-  // For anonymous users, use IP. For authenticated, could use user ID
-  return ip;
+  const cfConnectingIp = request.headers.get('cf-connecting-ip');
+  return forwarded?.split(',')[0]?.trim() || realIp || cfConnectingIp || 'unknown';
 }

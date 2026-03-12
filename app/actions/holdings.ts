@@ -8,6 +8,7 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/types';
 import { getHoldings, addHolding, addOrUpdateHolding, updateHolding, removeHolding, updateHoldingBySymbol, removeHoldingBySymbol } from '@/lib/holdings/holdings-db';
 import type { UserHolding } from '@/lib/types/database';
+import { logger } from '@/lib/utils/logger';
 
 /**
  * Get authenticated user ID from Supabase session in Server Actions
@@ -20,7 +21,7 @@ async function getCurrentUserId(): Promise<string | null> {
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
     if (!supabaseUrl || !supabaseAnonKey) {
-      console.error('Missing Supabase environment variables');
+      logger.error('Missing Supabase environment variables');
       return null;
     }
 
@@ -39,7 +40,7 @@ async function getCurrentUserId(): Promise<string | null> {
     
     return session.user.id;
   } catch (error) {
-    console.error('Error getting current user:', error);
+    logger.error('Error getting current user', error);
     return null;
   }
 }

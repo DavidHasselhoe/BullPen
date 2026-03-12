@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/client';
 import { ingestCompanyLogo } from '@/lib/logos/logos-orchestrator';
+import { logger } from '@/lib/utils/logger';
 
 /**
  * POST /api/stock/[ticker]/logo
@@ -51,14 +52,11 @@ export async function POST(
     }
 
     // Logo doesn't exist, fetch it
-    console.log(`[Logo API] Fetching logo for ${ticker}...`);
     const result = await ingestCompanyLogo(
       company.ticker,
       company.name,
       company.id,
-      (step, details) => {
-        console.log(`[Logo API] ${step}:`, details);
-      }
+      () => {}
     );
 
     if (result.success && result.logoUrl) {
@@ -75,7 +73,7 @@ export async function POST(
       logoUrl: null,
     });
   } catch (error) {
-    console.error('Error checking/fetching logo:', error);
+    logger.error('Error checking/fetching logo', error);
     return NextResponse.json(
       {
         success: false,

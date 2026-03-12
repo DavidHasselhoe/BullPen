@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/client';
+import { logger } from '@/lib/utils/logger';
+import { logger } from '@/lib/utils/logger';
 import { checkCompanyReports, calculateExpectedReports } from '@/lib/ingestion/missing-reports';
 
 /**
@@ -86,7 +88,7 @@ export async function GET(
       hasMissingReports: missing10K > 0 || missing10Q > 0,
     });
   } catch (error) {
-    console.error('Error checking missing reports:', error);
+    logger.error('Error checking missing reports', error);
     return NextResponse.json(
       {
         success: false,

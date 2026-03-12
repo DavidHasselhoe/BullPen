@@ -6,6 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Loader2, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { logger } from '@/lib/utils/logger';
 
 interface IngestionProgressBarProps {
   ticker: string;
@@ -108,7 +109,7 @@ export function IngestionProgressBar({ ticker, onComplete, onError }: IngestionP
           onErrorRef.current?.(new Error(data.error || 'Unknown error'));
         }
       } catch (err) {
-        console.error('Error parsing SSE message:', err);
+        logger.error('Error parsing SSE message', err);
       }
     };
 
