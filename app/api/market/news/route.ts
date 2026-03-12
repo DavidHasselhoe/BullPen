@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getMarketNews, getMergedCompanyNews } from '@/lib/finnhub/finnhub-client';
+import { logger } from '@/lib/utils/logger';
+import { withRateLimit } from '@/lib/security/api-security';
 
-export async function GET(request: NextRequest) {
+async function handler(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const category = searchParams.get('category') || 'general';
@@ -22,7 +24,7 @@ export async function GET(request: NextRequest) {
       news,
     });
   } catch (error) {
-    console.error('Error fetching market news:', error);
+    logger.error('Error fetching market news', error);
     return NextResponse.json(
       {
         success: false,
@@ -32,3 +34,6 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+// 30 req/min (Finnhub free tier; protects against abuse)
+export const GET = withRateLimit(handler, { windowMs: 60 * 1000, maxRequests: 30 });

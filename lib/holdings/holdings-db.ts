@@ -3,6 +3,7 @@
 
 import { createServerClient } from '@/lib/supabase/client';
 import type { UserHolding, InsertUserHolding, UpdateUserHolding } from '@/lib/types/database';
+import { logger } from '@/lib/utils/logger';
 
 export interface GetHoldingsResult {
   success: boolean;
@@ -41,7 +42,7 @@ export async function getHoldings(userId: string): Promise<GetHoldingsResult> {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching holdings:', error);
+      logger.error('Error fetching holdings:', error);
       return {
         success: false,
         error: error.message || 'Failed to fetch holdings',
@@ -53,7 +54,7 @@ export async function getHoldings(userId: string): Promise<GetHoldingsResult> {
       holdings: holdings as UserHolding[],
     };
   } catch (error) {
-    console.error('Error in getHoldings:', error);
+    logger.error('Error in getHoldings:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Internal server error',
@@ -108,7 +109,7 @@ export async function addHolding(
       .single();
 
     if (insertError) {
-      console.error('Error adding holding:', insertError);
+      logger.error('Error adding holding:', insertError);
       return {
         success: false,
         error: insertError.message || 'Failed to add holding',
@@ -120,7 +121,7 @@ export async function addHolding(
       holding: newHolding as UserHolding,
     };
   } catch (error) {
-    console.error('Error in addHolding:', error);
+    logger.error('Error in addHolding:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Internal server error',
@@ -189,7 +190,7 @@ export async function addOrUpdateHolding(
 
     return addHolding(userId, holding);
   } catch (error) {
-    console.error('Error in addOrUpdateHolding:', error);
+    logger.error('Error in addOrUpdateHolding:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Internal server error',
@@ -240,7 +241,7 @@ export async function updateHolding(
       .single();
 
     if (updateError) {
-      console.error('Error updating holding:', updateError);
+      logger.error('Error updating holding:', updateError);
       return {
         success: false,
         error: updateError.message || 'Failed to update holding',
@@ -252,7 +253,7 @@ export async function updateHolding(
       holding: updated as UserHolding,
     };
   } catch (error) {
-    console.error('Error in updateHolding:', error);
+    logger.error('Error in updateHolding:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Internal server error',
@@ -362,7 +363,7 @@ export async function removeHolding(
       .eq('user_id', userId); // RLS will ensure user can only delete their own
 
     if (deleteError) {
-      console.error('Error removing holding:', deleteError);
+      logger.error('Error removing holding:', deleteError);
       return {
         success: false,
         error: deleteError.message || 'Failed to remove holding',
@@ -373,7 +374,7 @@ export async function removeHolding(
       success: true,
     };
   } catch (error) {
-    console.error('Error in removeHolding:', error);
+    logger.error('Error in removeHolding:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Internal server error',

@@ -20,6 +20,7 @@ import { MarketContextSection } from '@/components/market/MarketContextSection';
 import { HotPicksCard } from '@/components/discover/HotPicksCard';
 import { RecentlyViewedInline } from '@/components/discover/RecentlyViewedInline';
 import { KeyInsightsRow } from '@/components/discover/KeyInsightsRow';
+import { PortfolioSummaryWidget } from '@/components/discover/PortfolioSummaryWidget';
 import { QuoteDisplay } from '@/components/ui/QuoteDisplay';
 import { useUserSettings } from '@/hooks/use-user-settings';
 
@@ -50,9 +51,16 @@ export default function DiscoverPage() {
         <section className="mb-10">
           <div className="flex flex-col gap-4">
             {showWelcomeText && <WelcomeMessage />}
-            <AnimatedContent reverse={true}>
-              <CommandBar />
-            </AnimatedContent>
+            <div className="flex flex-col sm:flex-row gap-4 items-stretch">
+              <div className="flex-1 min-w-0">
+                <AnimatedContent reverse={true}>
+                  <CommandBar />
+                </AnimatedContent>
+              </div>
+              <div className="sm:w-72 shrink-0">
+                <PortfolioSummaryWidget />
+              </div>
+            </div>
             <RecentlyViewedInline />
           </div>
         </section>

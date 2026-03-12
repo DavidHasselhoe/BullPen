@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/client';
+import { withRateLimit } from '@/lib/security/api-security';
 
 export const dynamic = 'force-dynamic';
 
@@ -84,7 +85,7 @@ function inRange(
   return true;
 }
 
-export async function GET(request: NextRequest) {
+async function handler(request: NextRequest) {
   try {
     const supabase = createServerClient();
     const { data, error } = await supabase.rpc('get_screener_data');
@@ -161,3 +162,6 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+// 20 req/min (heavier DB query; stricter limit)
+export const GET = withRateLimit(handler, { windowMs: 60 * 1000, maxRequests: 20 });

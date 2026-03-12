@@ -36,7 +36,8 @@ export function useHoldings() {
       throw new Error(result.error || 'Failed to fetch holdings');
     },
     enabled: isAuthenticated && !!user,
-    staleTime: 30 * 1000, // 30 seconds
+    staleTime: 60 * 1000, // 1 minute — holdings change infrequently
+    gcTime: 5 * 60 * 1000, // 5 minutes cache retention
   });
 }
 

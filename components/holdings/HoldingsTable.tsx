@@ -11,6 +11,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { Trash2, Edit2, ArrowUpRight, ArrowDownRight, Plus, Search, X } from 'lucide-react';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { useQuery } from '@tanstack/react-query';
+import { logger } from '@/lib/utils/logger';
 import { EditHoldingModal } from './EditHoldingModal';
 import { DeleteHoldingDialog } from './DeleteHoldingDialog';
 import type { HoldingWithPrice } from './types';
@@ -106,7 +107,7 @@ export function HoldingsTable({ onAddClick }: HoldingsTableProps) {
               };
             }
           } catch (error) {
-            console.error(`Error fetching quote for ${holding.symbol}:`, error);
+            logger.error(`Error fetching quote for ${holding.symbol}`, error);
           }
         })
       );
@@ -114,8 +115,8 @@ export function HoldingsTable({ onAddClick }: HoldingsTableProps) {
       return { quotes: quoteMap, logos: logoMap };
     },
     enabled: !!holdings && holdings.length > 0,
-    staleTime: 2 * 60 * 1000, // 2 minutes - quotes don't change that frequently
-    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
+    staleTime: 3 * 60 * 1000, // 3 minutes — reduces quote API load
+    gcTime: 15 * 60 * 1000, // 15 minutes cache retention
   });
 
   // Combine holdings with quotes and calculate derived values
@@ -250,7 +251,7 @@ export function HoldingsTable({ onAddClick }: HoldingsTableProps) {
     try {
       await removeHolding.mutateAsync(deletingHolding.id);
     } catch (error) {
-      console.error('Error removing holding:', error);
+      logger.error('Error removing holding', error);
     } finally {
       setDeletingHolding(null);
     }
@@ -292,19 +293,25 @@ export function HoldingsTable({ onAddClick }: HoldingsTableProps) {
         <CardHeader>
           <CardTitle>My Holdings</CardTitle>
         </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground text-center py-6">
-            No holdings yet. Add your first stock to get started.
-          </p>
+        <CardContent className="space-y-6">
+          <div className="flex flex-col items-center text-center py-4">
+            <div className="flex items-center justify-center h-16 w-16 rounded-full bg-muted/50 mb-4">
+              <Plus className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h3 className="font-semibold text-foreground">No holdings yet</h3>
+            <p className="text-sm text-muted-foreground mt-1 max-w-sm">
+              Add stocks to track your portfolio, see performance, and get AI-powered insights.
+            </p>
+          </div>
           {onAddClick && (
             <button
               onClick={onAddClick}
-              className="w-full flex items-center justify-center gap-2 py-5 rounded-lg border border-dashed border-border/60 hover:border-primary/50 hover:bg-muted/20 text-muted-foreground hover:text-primary transition-colors group"
+              className="w-full flex items-center justify-center gap-2 py-5 rounded-lg border-2 border-dashed border-border/60 hover:border-primary/50 hover:bg-primary/5 text-muted-foreground hover:text-primary transition-colors group"
             >
-              <span className="flex items-center justify-center h-8 w-8 rounded-full border border-dashed border-border/60 group-hover:border-primary/50 group-hover:bg-primary/5 transition-colors">
+              <span className="flex items-center justify-center h-8 w-8 rounded-full border-2 border-dashed border-border/60 group-hover:border-primary/50 transition-colors">
                 <Plus className="h-4 w-4" />
               </span>
-              <span className="text-sm font-medium">Add holding</span>
+              <span className="text-sm font-medium">Add your first holding</span>
             </button>
           )}
         </CardContent>

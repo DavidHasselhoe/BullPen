@@ -202,16 +202,10 @@ export function calculateMarketStatus(
   
   // If it's a holiday (full closure), market is closed
   if (isHolidayToday && holiday?.type === 'closed') {
-    // Calculate next open time (tomorrow at open_time)
-    const nextOpen = new Date(currentTime);
-    nextOpen.setDate(nextOpen.getDate() + 1);
-    nextOpen.setHours(0, 0, 0, 0);
-    
-    const nextOpenExchangeTime = getTimeInTimezone(nextOpen, exchange.timezone);
-    const [openHours, openMinutes] = exchange.open_time.split(':').map(Number);
-    
-    // Set to exchange open time
-    nextOpen.setHours(openHours - (exchangeTime.hours - nextOpenExchangeTime.hours), openMinutes, 0, 0);
+    // Calculate next open time (tomorrow at open_time in exchange timezone)
+    const tomorrow = new Date(currentTime);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const nextOpen = createDateInTimezone(tomorrow, exchange.open_time, exchange.timezone);
     
     return {
       exchange,
@@ -255,27 +249,25 @@ export function calculateMarketStatus(
       timeUntilClose = Math.max(0, closeDate.getTime() - currentTime.getTime());
     }
   } else {
-    // Market is closed, calculate time until open
-    const openDate = new Date(currentTime);
-    const [openHours, openMinutes] = exchange.open_time.split(':').map(Number);
-    openDate.setHours(openHours - (exchangeTime.hours - getTimeInTimezone(openDate, exchange.timezone).hours), openMinutes, 0, 0);
-    
+    // Market is closed, calculate time until open (use exchange timezone, not local)
+    let openDate = createDateInTimezone(currentTime, exchange.open_time, exchange.timezone);
     if (openDate <= currentTime) {
-      openDate.setDate(openDate.getDate() + 1);
+      const tomorrow = new Date(currentTime);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      openDate = createDateInTimezone(tomorrow, exchange.open_time, exchange.timezone);
     }
-    
     nextOpenTime = openDate;
     timeUntilOpen = Math.max(0, openDate.getTime() - currentTime.getTime());
   }
   
-  // Calculate early close time if applicable
+  // Calculate early close time if applicable (use exchange timezone, not local)
   let earlyCloseTime: Date | null = null;
   if (isEarlyClose && holiday?.early_close_time) {
-    const earlyCloseDate = new Date(currentTime);
-    const [earlyHours, earlyMinutes] = holiday.early_close_time.split(':').map(Number);
-    earlyCloseDate.setHours(earlyHours - (exchangeTime.hours - getTimeInTimezone(earlyCloseDate, exchange.timezone).hours), earlyMinutes, 0, 0);
+    let earlyCloseDate = createDateInTimezone(currentTime, holiday.early_close_time, exchange.timezone);
     if (earlyCloseDate <= currentTime) {
-      earlyCloseDate.setDate(earlyCloseDate.getDate() + 1);
+      const tomorrow = new Date(currentTime);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      earlyCloseDate = createDateInTimezone(tomorrow, holiday.early_close_time, exchange.timezone);
     }
     earlyCloseTime = earlyCloseDate;
   }
