@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCompanyMetricTrends } from '@/lib/trends/trends-db';
 import { logger } from '@/lib/utils/logger';
-import { logger } from '@/lib/utils/logger';
 import type { MetricType, PeriodType } from '@/lib/types/database';
 
 export async function GET(request: NextRequest) {

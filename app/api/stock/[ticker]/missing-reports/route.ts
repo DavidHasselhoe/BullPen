@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/client';
 import { logger } from '@/lib/utils/logger';
-import { logger } from '@/lib/utils/logger';
 import { checkCompanyReports, calculateExpectedReports } from '@/lib/ingestion/missing-reports';
 
 /**

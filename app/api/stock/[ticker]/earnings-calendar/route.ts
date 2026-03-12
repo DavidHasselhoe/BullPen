@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getEarningsCalendar } from '@/lib/finnhub/finnhub-client';
 import { logger } from '@/lib/utils/logger';
-import { logger } from '@/lib/utils/logger';
 
 export async function GET(
   request: NextRequest,
