@@ -3,47 +3,9 @@
 // Server Actions for Holdings
 // Server-side mutations for user holdings with authentication
 
-import { cookies } from 'next/headers';
-import { createClient } from '@supabase/supabase-js';
-import type { Database } from '@/lib/supabase/types';
+import { getCurrentUserId } from '@/lib/auth/server-session';
 import { getHoldings, addHolding, addOrUpdateHolding, updateHolding, removeHolding, updateHoldingBySymbol, removeHoldingBySymbol } from '@/lib/holdings/holdings-db';
 import type { UserHolding } from '@/lib/types/database';
-import { logger } from '@/lib/utils/logger';
-
-/**
- * Get authenticated user ID from Supabase session in Server Actions
- * Uses cookies to access the session
- */
-async function getCurrentUserId(): Promise<string | null> {
-  try {
-    const cookieStore = await cookies();
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-    if (!supabaseUrl || !supabaseAnonKey) {
-      logger.error('Missing Supabase environment variables');
-      return null;
-    }
-
-    // Create a client with cookies for Server Actions
-    const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        persistSession: false,
-      },
-    });
-
-    const { data: { session }, error } = await supabase.auth.getSession();
-    
-    if (error || !session?.user) {
-      return null;
-    }
-    
-    return session.user.id;
-  } catch (error) {
-    logger.error('Error getting current user', error);
-    return null;
-  }
-}
 
 export interface AddHoldingInput {
   symbol: string;
