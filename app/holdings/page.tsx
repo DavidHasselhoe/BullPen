@@ -75,23 +75,20 @@ export default function HoldingsPage() {
         }
       }
 
-      // Fetch live quotes in parallel (external API — not Supabase)
-      await Promise.all(
-        holdings.map(async (holding) => {
-          const quoteResult = await fetch(`/api/stock/${holding.symbol}/quote`)
-            .then((res) => res.json())
-            .catch(() => ({ success: false }));
+      // Batch quotes (throttled server-side to avoid Twelve Data rate limits)
+      const batchRes = await fetch('/api/quotes/batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ symbols: tickers }),
+      });
+      const batchData = await batchRes.json();
+      if (batchRes.status === 429) {
+        throw new Error(batchData.error || 'Market data rate limit exceeded. Please try again in a minute.');
+      }
+      if (batchData.success && batchData.quotes) {
+        Object.assign(quoteMap, batchData.quotes);
+      }
 
-          if (quoteResult.success && quoteResult.quote && quoteResult.quote.c > 0) {
-            quoteMap[holding.symbol] = {
-              price: quoteResult.quote.c,
-              change: quoteResult.quote.d,
-              changePercent: quoteResult.quote.dp,
-            };
-          }
-        })
-      );
-      
       return { quotes: quoteMap, logos: logoMap };
     },
     enabled: !!holdings && holdings.length > 0,

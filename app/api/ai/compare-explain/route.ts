@@ -8,10 +8,11 @@ import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/utils/logger';
+import { withAuth, withRateLimit } from '@/lib/security/api-security';
 
 const EXPLAIN_SYSTEM = `You are BullPen AI, a financial research analyst. The user has compared companies using SEC filing data. Your task is to provide a concise, interpretive summary of the key differences—focus on what the numbers mean for business quality and competitive positioning. Do NOT simply repeat numbers. Offer insight: pricing power, margin structure, growth trajectory, capital efficiency, scale advantages. Write 2-4 short paragraphs. Be professional and specific.`;
 
-export async function POST(req: NextRequest) {
+async function handler(req: NextRequest, _context: unknown, _session: { userId: string }) {
   try {
     const body = await req.json();
     const { context } = body as { context: string };
@@ -39,3 +40,6 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+/** Auth required; rate limited to 15/min to protect OpenAI usage */
+export const POST = withRateLimit(withAuth(handler), { windowMs: 60 * 1000, maxRequests: 15 });

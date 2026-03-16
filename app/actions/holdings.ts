@@ -60,42 +60,33 @@ export interface UpdateHoldingInput {
 }
 
 /**
- * Server Action: Get all holdings for a user
- * Note: userId must be passed from authenticated client session
+ * Server Action: Get all holdings for a user.
+ * userId from session only — never trust client-provided userId.
  */
 export async function getMyHoldings(userId: string): Promise<{
   success: boolean;
   holdings?: UserHolding[];
   error?: string;
 }> {
-  if (!userId) {
-    return {
-      success: false,
-      error: 'User ID is required',
-    };
-  }
-
-  return await getHoldings(userId);
+  const uid = await getCurrentUserId();
+  if (!uid) return { success: false, error: 'Authentication required' };
+  return await getHoldings(uid);
 }
 
 /**
- * Server Action: Add a new holding
- * Note: userId must be passed from authenticated client session
+ * Server Action: Add a new holding.
+ * UserId is derived from session — never trusted from client.
  */
 export async function addHoldingAction(
-  userId: string,
+  _userId: string,
   input: AddHoldingInput
 ): Promise<{
   success: boolean;
   holding?: UserHolding;
   error?: string;
 }> {
-  if (!userId) {
-    return {
-      success: false,
-      error: 'User ID is required',
-    };
-  }
+  const userId = await getCurrentUserId();
+  if (!userId) return { success: false, error: 'Authentication required' };
 
   // Validate input
   if (!input.symbol || !input.company_name) {
@@ -115,24 +106,23 @@ export async function addHoldingAction(
 
 /**
  * Server Action: Add or update a holding — adds to existing quantity if symbol already in portfolio.
- * Use for AI-driven "add 5 NVIDIA" when user may already have NVIDIA.
+ * userId from session only — never trust client-provided userId.
  */
 export async function addOrUpdateHoldingAction(
-  userId: string,
+  _userId: string,
   input: AddHoldingInput
 ): Promise<{
   success: boolean;
   holding?: UserHolding;
   error?: string;
 }> {
-  if (!userId) {
-    return { success: false, error: 'User ID is required' };
-  }
+  const uid = await getCurrentUserId();
+  if (!uid) return { success: false, error: 'Authentication required' };
   if (!input.symbol || !input.company_name) {
     return { success: false, error: 'Symbol and company name are required' };
   }
 
-  return await addOrUpdateHolding(userId, {
+  return await addOrUpdateHolding(uid, {
     symbol: input.symbol,
     company_name: input.company_name,
     quantity: input.quantity ?? null,
@@ -141,11 +131,11 @@ export async function addOrUpdateHoldingAction(
 }
 
 /**
- * Server Action: Update an existing holding
- * Note: userId must be passed from authenticated client session
+ * Server Action: Update an existing holding.
+ * userId from session only — never trust client-provided userId.
  */
 export async function updateHoldingAction(
-  userId: string,
+  _userId: string,
   holdingId: string,
   updates: UpdateHoldingInput
 ): Promise<{
@@ -153,12 +143,8 @@ export async function updateHoldingAction(
   holding?: UserHolding;
   error?: string;
 }> {
-  if (!userId) {
-    return {
-      success: false,
-      error: 'User ID is required',
-    };
-  }
+  const uid = await getCurrentUserId();
+  if (!uid) return { success: false, error: 'User ID is required' };
 
   if (!holdingId) {
     return {
@@ -167,15 +153,15 @@ export async function updateHoldingAction(
     };
   }
 
-  return await updateHolding(userId, holdingId, updates);
+  return await updateHolding(uid, holdingId, updates);
 }
 
 /**
  * Server Action: Update a holding by ticker symbol.
- * Ownership is enforced inside updateHoldingBySymbol via user_id filter.
+ * userId from session only — never trust client-provided userId.
  */
 export async function updateHoldingBySymbolAction(
-  userId: string,
+  _userId: string,
   symbol: string,
   updates: { quantity?: number | null; avg_price?: number | null }
 ): Promise<{
@@ -183,7 +169,8 @@ export async function updateHoldingBySymbolAction(
   holding?: UserHolding;
   error?: string;
 }> {
-  if (!userId) return { success: false, error: 'Authentication required' };
+  const uid = await getCurrentUserId();
+  if (!uid) return { success: false, error: 'Authentication required' };
   if (!symbol) return { success: false, error: 'Symbol is required' };
   if (updates.quantity !== undefined && updates.quantity !== null && updates.quantity < 0) {
     return { success: false, error: 'Quantity cannot be negative' };
@@ -191,43 +178,39 @@ export async function updateHoldingBySymbolAction(
   if (updates.avg_price !== undefined && updates.avg_price !== null && updates.avg_price < 0) {
     return { success: false, error: 'Average price cannot be negative' };
   }
-  return updateHoldingBySymbol(userId, symbol, updates);
+  return updateHoldingBySymbol(uid, symbol, updates);
 }
 
 /**
  * Server Action: Remove a holding by ticker symbol.
- * Ownership is enforced inside removeHoldingBySymbol via user_id filter.
+ * userId from session only — never trust client-provided userId.
  */
 export async function removeHoldingBySymbolAction(
-  userId: string,
+  _userId: string,
   symbol: string
 ): Promise<{
   success: boolean;
   error?: string;
 }> {
-  if (!userId) return { success: false, error: 'Authentication required' };
+  const uid = await getCurrentUserId();
+  if (!uid) return { success: false, error: 'Authentication required' };
   if (!symbol) return { success: false, error: 'Symbol is required' };
-  return removeHoldingBySymbol(userId, symbol);
+  return removeHoldingBySymbol(uid, symbol);
 }
 
 /**
- * Server Action: Remove a holding
- * Note: userId must be passed from authenticated client session
+ * Server Action: Remove a holding.
+ * UserId is derived from session — never trusted from client.
  */
 export async function removeHoldingAction(
-  userId: string,
+  _userId: string,
   holdingId: string
 ): Promise<{
   success: boolean;
   error?: string;
 }> {
-  if (!userId) {
-    return {
-      success: false,
-      error: 'User ID is required',
-    };
-  }
-
+  const userId = await getCurrentUserId();
+  if (!userId) return { success: false, error: 'Authentication required' };
   if (!holdingId) {
     return {
       success: false,

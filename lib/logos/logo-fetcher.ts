@@ -15,7 +15,18 @@ export interface LogoFetchResult {
   error?: string;
 }
 
-const LOGO_DEV_PUBLIC_KEY = process.env.NEXT_PUBLIC_LOGO_DEV_KEY || 'pk_ZiqsbaxuRVGfEM3UKuw8oQ';
+/**
+ * Logo.dev API key. Server-only (LOGO_DEV_KEY). No fallback — never hardcode or use NEXT_PUBLIC_.
+ */
+function getLogoDevKey(): string {
+  const key = process.env.LOGO_DEV_KEY;
+  if (!key?.trim()) {
+    throw new Error(
+      'LOGO_DEV_KEY environment variable is required for logo fetching. Set it in .env.local.'
+    );
+  }
+  return key.trim();
+}
 
 /**
  * Fetches company logo from img.logo.dev API
@@ -25,7 +36,8 @@ export async function fetchLogoFromLogoDev(ticker: string): Promise<LogoFetchRes
   try {
     // According to Logo.dev documentation: https://docs.logo.dev/logo-images/stock-tickers
     // The endpoint format is: https://img.logo.dev/ticker/{TICKER}?token={TOKEN}
-    const logoUrl = `https://img.logo.dev/ticker/${ticker.toUpperCase()}?token=${LOGO_DEV_PUBLIC_KEY}`;
+    const apiKey = getLogoDevKey();
+    const logoUrl = `https://img.logo.dev/ticker/${ticker.toUpperCase()}?token=${apiKey}`;
     
     // Fetch the logo image
     const response = await fetch(logoUrl, {
@@ -41,7 +53,7 @@ export async function fetchLogoFromLogoDev(ticker: string): Promise<LogoFetchRes
       logger.error(`[Logo Fetcher] Fetch failed for ${ticker}`, null, {
         status: response.status,
         statusText: response.statusText,
-        url: logoUrl.replace(LOGO_DEV_PUBLIC_KEY, '***'),
+        url: logoUrl.replace(apiKey, '***'),
         errorText: errorText.substring(0, 200),
       });
       
@@ -59,7 +71,7 @@ export async function fetchLogoFromLogoDev(ticker: string): Promise<LogoFetchRes
         return {
           success: false,
           source: null,
-          error: `Authentication failed. Please check your Logo.dev API key (NEXT_PUBLIC_LOGO_DEV_KEY).`,
+          error: `Authentication failed. Please check your Logo.dev API key (LOGO_DEV_KEY).`,
         };
       }
       

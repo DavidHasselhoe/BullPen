@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/utils/logger';
-import { getStockCandlesLongRange } from '@/lib/finnhub/finnhub-client';
+import { getStockCandlesLongRange, TwelveDataRateLimitError } from '@/lib/market-data';
 import { getCompanyIndexByTicker } from '@/lib/search/search-db';
+import { withRateLimit } from '@/lib/security/api-security';
 
 export interface BuyHereRequest {
   ticker: string;
@@ -37,7 +38,7 @@ export interface BuyHereResult {
   }>;
 }
 
-export async function POST(request: NextRequest) {
+async function buyHereHandler(request: NextRequest) {
   try {
     const body: BuyHereRequest = await request.json();
     const { ticker, amount, from, compareSpy = true } = body;
@@ -149,6 +150,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
+    if (error instanceof TwelveDataRateLimitError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: 429, headers: { 'Retry-After': '60' } }
+      );
+    }
     logger.error('Buy-here calculator error', error);
     const msg = error instanceof Error ? error.message : 'Internal server error';
     const is403 = msg.includes('403') || msg.includes('Forbidden');
@@ -163,3 +170,6 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+/** Rate limited: 10/min to protect Twelve Data API usage */
+export const POST = withRateLimit(buyHereHandler, { windowMs: 60 * 1000, maxRequests: 10 });

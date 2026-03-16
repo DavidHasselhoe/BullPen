@@ -3,7 +3,7 @@
 import { useAuth } from '@/hooks/use-auth';
 import { useHoldings } from '@/hooks/use-holdings';
 import { useUserSettings } from '@/hooks/use-user-settings';
-import { useTopMovers, useMarketNews } from '@/hooks/use-market-data';
+import { useTopMoversWithStream, useMarketNews } from '@/hooks/use-market-data';
 import { getExchangesForTickers } from '@/lib/market/ticker-exchange-map';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -44,7 +44,7 @@ export function MarketContextSection() {
   const {
     data: topMovers,
     isLoading: isLoadingMovers,
-  } = useTopMovers(5, moversSymbols);
+  } = useTopMoversWithStream(5, moversSymbols);
 
   const {
     data: marketNews,

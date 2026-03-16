@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getStockQuote } from '@/lib/finnhub/finnhub-client';
+import { getStockQuote, TwelveDataRateLimitError } from '@/lib/market-data';
 import { logger } from '@/lib/utils/logger';
 
 export async function GET(
@@ -24,6 +24,12 @@ export async function GET(
       quote,
     });
   } catch (error) {
+    if (error instanceof TwelveDataRateLimitError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: 429, headers: { 'Retry-After': '60' } }
+      );
+    }
     logger.error('Error fetching stock quote', error);
     return NextResponse.json(
       {

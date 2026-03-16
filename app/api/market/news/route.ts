@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getMarketNews, getMergedCompanyNews } from '@/lib/finnhub/finnhub-client';
+import { getMarketNews, getMergedCompanyNews } from '@/lib/market-data';
 import { logger } from '@/lib/utils/logger';
 import { withRateLimit } from '@/lib/security/api-security';
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getRecommendationTrends } from '@/lib/finnhub/finnhub-client';
+import { getRecommendationTrends, TwelveDataRateLimitError } from '@/lib/market-data';
 
 export async function GET(
   request: NextRequest,
@@ -23,6 +23,12 @@ export async function GET(
       trends,
     });
   } catch (error) {
+    if (error instanceof TwelveDataRateLimitError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: 429, headers: { 'Retry-After': '60' } }
+      );
+    }
     console.error('Error fetching recommendation trends:', error);
     return NextResponse.json(
       {

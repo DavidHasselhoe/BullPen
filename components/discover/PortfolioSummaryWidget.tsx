@@ -2,18 +2,16 @@
 
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
-import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { useHoldings } from '@/hooks/use-holdings';
 import { useAuth } from '@/hooks/use-auth';
-import { createBrowserClient } from '@/lib/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { getExchangeRates, convertCurrency, formatCurrency, type CurrencyCode } from '@/lib/currency/currency-conversion';
+import { useUserSettings } from '@/hooks/use-user-settings';
 import { Briefcase, ArrowUpRight, ArrowDownRight, ChevronRight } from 'lucide-react';
-
-const DISPLAY_COUNT = 3;
 
 export function PortfolioSummaryWidget() {
   const { user, isAuthenticated } = useAuth();
+  const { roundNumbers } = useUserSettings();
   const { data: holdings, isLoading } = useHoldings();
 
   const userCurrency: CurrencyCode = (() => {
@@ -35,20 +33,19 @@ export function PortfolioSummaryWidget() {
     queryKey: ['holdings-quotes', holdings?.map((h) => h.symbol)],
     queryFn: async () => {
       if (!holdings || holdings.length === 0) return { quotes: {} };
-      const quoteMap: Record<string, { price: number; change: number; changePercent: number }> = {};
-      await Promise.all(
-        holdings.map(async (holding) => {
-          const res = await fetch(`/api/stock/${holding.symbol}/quote`).then((r) => r.json());
-          if (res.success && res.quote?.c > 0) {
-            quoteMap[holding.symbol] = {
-              price: res.quote.c,
-              change: res.quote.d,
-              changePercent: res.quote.dp,
-            };
-          }
-        })
-      );
-      return { quotes: quoteMap };
+      const tickers = holdings.map((h) => h.symbol);
+      const batchRes = await fetch('/api/quotes/batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ symbols: tickers }),
+      });
+      const batchData = await batchRes.json();
+      if (batchRes.status === 429) {
+        throw new Error(batchData.error || 'Market data rate limit exceeded. Please try again in a minute.');
+      }
+      return {
+        quotes: (batchData.success && batchData.quotes) ? batchData.quotes : {},
+      };
     },
     enabled: isAuthenticated && !!holdings && holdings.length > 0,
     staleTime: 3 * 60 * 1000,
@@ -83,13 +80,7 @@ export function PortfolioSummaryWidget() {
     const totalValue = conv(totalValueUSD);
     const totalDayChange = conv(totalDayChangeUSD);
 
-    const sorted = [...withPrices].sort((a, b) => b.marketValue - a.marketValue);
-    const top = sorted.slice(0, DISPLAY_COUNT).map((x) => ({
-      ...x,
-      displayValue: conv(x.marketValue),
-    }));
-
-    return { totalValue, totalDayChange, dayChangePercent, top };
+    return { totalValue, totalDayChange, dayChangePercent };
   })();
 
   if (!isAuthenticated || !holdings || holdings.length === 0) {
@@ -132,7 +123,7 @@ export function PortfolioSummaryWidget() {
                   Portfolio
                 </p>
                 <p className="text-lg font-bold tabular-nums text-foreground truncate">
-                  {formatCurrency(summary.totalValue, userCurrency)}
+                  {formatCurrency(summary.totalValue, userCurrency, roundNumbers ? { round: true } : undefined)}
                 </p>
                 <p
                   className={`text-xs font-medium tabular-nums flex items-center gap-0.5 ${
@@ -145,38 +136,15 @@ export function PortfolioSummaryWidget() {
                     <ArrowDownRight className="h-3 w-3" />
                   )}
                   {summary.dayChangePercent >= 0 ? '+' : ''}
-                  {summary.dayChangePercent.toFixed(2)}% today
+                  {formatCurrency(summary.totalDayChange, userCurrency, roundNumbers ? { round: true } : undefined)}
+                  {' '}
+                  ({summary.dayChangePercent >= 0 ? '+' : ''}
+                  {summary.dayChangePercent.toFixed(roundNumbers ? 1 : 2)}%) today
                 </p>
               </div>
             </div>
             <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
           </div>
-
-          {summary.top.length > 0 && (
-            <div className="mt-3 flex gap-2 overflow-x-auto pb-1 -mx-1">
-              {summary.top.map(({ holding, displayValue }) => (
-                <div
-                  key={holding.id}
-                  className="flex shrink-0 items-center gap-2 rounded-lg bg-muted/50 px-2.5 py-1.5"
-                >
-                  <CompanyLogo
-                    name={holding.company_name}
-                    ticker={holding.symbol}
-                    logoUrl={null}
-                    size={24}
-                  />
-                  <div className="min-w-0">
-                    <p className="text-xs font-semibold text-foreground truncate max-w-[4rem]">
-                      {holding.symbol}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground tabular-nums">
-                      {formatCurrency(displayValue, userCurrency)}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </CardContent>
       </Card>
     </Link>

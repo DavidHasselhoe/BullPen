@@ -1,14 +1,16 @@
 'use client';
 
 import { useCommandPalette } from './CommandPaletteProvider';
+import { useSearchShortcut } from '@/hooks/use-search-shortcut';
 import { Search } from 'lucide-react';
 
 /**
  * Hero command bar - primary action at top of dashboard.
- * Clicking opens the command palette (same as Ctrl+⌘K).
+ * Clicking opens the command palette (Ctrl+K on Windows, ⌘K on Mac).
  */
 export function CommandBar() {
   const { open } = useCommandPalette();
+  const searchShortcut = useSearchShortcut();
 
   return (
     <button
@@ -21,7 +23,7 @@ export function CommandBar() {
         Search companies, filings, metrics, or ask BullPen AI
       </span>
       <kbd className="hidden sm:inline-flex h-7 items-center gap-0.5 rounded border bg-muted/80 px-2 text-xs font-medium text-muted-foreground">
-        ⌘K / Ctrl+K
+        {searchShortcut}
       </kbd>
     </button>
   );

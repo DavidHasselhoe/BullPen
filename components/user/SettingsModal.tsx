@@ -23,7 +23,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Globe, DollarSign, Moon, Bell, Shield, AlertTriangle, Trash2, Download, Check, Settings2, Eye, EyeOff, Home } from 'lucide-react';
+import { Loader2, Globe, DollarSign, Moon, Bell, Shield, AlertTriangle, Trash2, Download, Check, Settings2, Eye, EyeOff, Home, Hash } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { signOut } from '@/lib/auth/auth';
@@ -66,6 +66,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   const [defaultHomepage, setDefaultHomepage] = useState<string>('/'); // Path where user lands when opening site
   const [showQuotes, setShowQuotes] = useState<boolean>(true); // Default to true
   const [showWelcomeText, setShowWelcomeText] = useState<boolean>(true); // Default to true
+  const [roundNumbers, setRoundNumbers] = useState<boolean>(false); // Default to false - show decimals
   const [marketContextMode, setMarketContextMode] = useState<'all' | 'holdings'>('all');
   const [notifications, setNotifications] = useState({
     holdings_earnings: true, // Notify when companies in your holdings file earnings
@@ -115,6 +116,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
       setShowQuotes(settings.show_quotes !== undefined ? settings.show_quotes : true);
       // Load showWelcomeText preference (default to true if not set)
       setShowWelcomeText(settings.show_welcome_text !== undefined ? settings.show_welcome_text : true);
+      setRoundNumbers(settings.round_numbers === true);
       setMarketContextMode(settings.market_context_mode === 'holdings' ? 'holdings' : 'all');
       setError(null);
     }
@@ -139,6 +141,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
         default_homepage: defaultHomepage,
         show_quotes: showQuotes, // Show/hide quotes on main page
         show_welcome_text: showWelcomeText, // Show/hide welcome text
+        round_numbers: roundNumbers, // Round numbers to whole values (holdings, portfolio, etc.)
         market_context_mode: marketContextMode, // Market Context: all markets | my portfolio
         notifications,
       };
@@ -680,6 +683,26 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                       <Switch
                         checked={showWelcomeText}
                         onCheckedChange={setShowWelcomeText}
+                      />
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label className="flex items-center gap-2">
+                          <Hash className="h-4 w-4" />
+                          {t('settings.roundNumbers')}
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          {t('settings.roundNumbersDescription')}
+                        </p>
+                      </div>
+                      <Switch
+                        checked={roundNumbers}
+                        onCheckedChange={setRoundNumbers}
                       />
                     </div>
                   </div>

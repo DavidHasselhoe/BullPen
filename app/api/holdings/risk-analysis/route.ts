@@ -9,6 +9,7 @@
 import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { NextRequest, NextResponse } from 'next/server';
+import { withAuth, withRateLimit } from '@/lib/security/api-security';
 
 const RISK_ANALYST_SYSTEM_PROMPT = `You are a senior portfolio risk analyst at a top-tier institutional investment firm. Your task is to produce a rigorous, structured risk assessment of a retail investor's stock portfolio.
 
@@ -57,7 +58,7 @@ interface HoldingInput {
   unrealizedPLPercent?: number;
 }
 
-export async function POST(req: NextRequest) {
+async function handler(req: NextRequest, _context: unknown, session: { userId: string }) {
   try {
     const body = await req.json();
     const holdings: HoldingInput[] = body.holdings;
@@ -104,3 +105,6 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+/** Auth required; rate limited to 10/min to protect OpenAI usage */
+export const POST = withRateLimit(withAuth(handler), { windowMs: 60 * 1000, maxRequests: 10 });

@@ -1,22 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getEarningsCalendar } from '@/lib/finnhub/finnhub-client';
+import { getEarningsCalendar, TwelveDataRateLimitError } from '@/lib/market-data';
 import { logger } from '@/lib/utils/logger';
 
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ ticker: string }> }
 ) {
+  const params = await context.params;
+  const ticker = params.ticker?.toUpperCase();
+
+  if (!ticker) {
+    return NextResponse.json(
+      { success: false, error: 'Ticker parameter required' },
+      { status: 400 }
+    );
+  }
+
   try {
-    const params = await context.params;
-    const ticker = params.ticker?.toUpperCase();
-
-    if (!ticker) {
-      return NextResponse.json(
-        { success: false, error: 'Ticker parameter required' },
-        { status: 400 }
-      );
-    }
-
     // Get date range (next 90 days)
     const from = new Date();
     const to = new Date();
@@ -32,11 +32,14 @@ export async function GET(
       earnings,
     });
   } catch (error) {
-    // Finnhub may fail (rate limit, etc.). Return empty so UI can still show SEC-reported dates.
-    logger.warn(`[earnings-calendar] Finnhub failed for ${params?.ticker ?? 'unknown'}`, { error });
-    return NextResponse.json({
-      success: true,
-      earnings: [],
-    });
+    if (error instanceof TwelveDataRateLimitError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: 429, headers: { 'Retry-After': '60' } }
+      );
+    }
+    // Other provider failures: return empty so UI can still show SEC-reported dates
+    logger.warn(`[earnings-calendar] Failed for ${ticker}`, { error });
+    return NextResponse.json({ success: true, earnings: [] });
   }
 }

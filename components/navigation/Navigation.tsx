@@ -12,6 +12,7 @@ import { LiveClock } from '@/components/ui/LiveClock';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { SettingsModal } from '@/components/user/SettingsModal';
 import { useCommandPalette } from '@/components/command-palette/CommandPaletteProvider';
+import { useSearchShortcut } from '@/hooks/use-search-shortcut';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,6 +31,7 @@ export function Navigation() {
   const pathname = usePathname();
   const queryClient = useQueryClient();
   const { open: openCommandPalette = () => {} } = useCommandPalette();
+  const searchShortcut = useSearchShortcut();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
   const toolsCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -154,13 +156,13 @@ export function Navigation() {
               type="button"
               onClick={() => openCommandPalette()}
               className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 md:px-4 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-              aria-label="Search (⌘K)"
+              aria-label={`Search (${searchShortcut})`}
             >
               <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
               <span className="hidden md:inline">Search...</span>
-              <kbd className="hidden lg:inline-flex h-5 items-center rounded border px-1.5 text-[10px]">⌘K</kbd>
+              <kbd className="hidden lg:inline-flex h-5 items-center rounded border px-1.5 text-[10px]">{searchShortcut}</kbd>
             </button>
             <Button
               variant="ghost"

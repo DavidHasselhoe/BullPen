@@ -27,8 +27,11 @@ SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 # OpenAI Configuration (required for AI analysis)
 OPENAI_API_KEY=sk-...your-openai-api-key
 
-# Finnhub Configuration (required for market data)
-FINNHUB_API_KEY=your-finnhub-api-key
+# Market Data: use either Twelve Data or Finnhub
+# When TWELVE_DATA_API_KEY is set, Twelve Data is used for quotes, candles, movers, earnings.
+# When not set, Finnhub is used. News always uses Finnhub (Twelve Data has no news).
+TWELVE_DATA_API_KEY=                    # Optional: Twelve Data API key (twelvedata.com) — enables full historical charts
+FINNHUB_API_KEY=your-finnhub-api-key    # Required for news; also fallback for price data when Twelve Data key is not set
 
 # Cron Job Secret (required for autonomous filing updates)
 # Generate with: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
@@ -38,6 +41,10 @@ CRON_SECRET=your-random-secret-here
 # Get your API key at https://resend.com/api-keys
 RESEND_API_KEY=re_your_key_here
 
+# Logo.dev (required for company logo fetching) — server-only, never use NEXT_PUBLIC_
+# Get your API key at https://logo.dev
+LOGO_DEV_KEY=your-logo-dev-key
+
 # Optional: override default sender (default: BullPen <hello@updates.bullpen.no>)
 # RESEND_FROM_EMAIL=BullPen <noreply@updates.bullpen.no>
 
@@ -45,19 +52,21 @@ RESEND_API_KEY=re_your_key_here
 # NEXT_PUBLIC_APP_URL=https://bullpen.no
 ```
 
-### Step 3: Get Finnhub API Key (for Market Data)
+### Step 3: Get Market Data API Key(s)
 
+**Option A: Twelve Data (recommended for full historical charts)**  
+1. Go to [Twelve Data](https://twelvedata.com)
+2. Sign up (free Basic tier: 8 req/min for testing)
+3. Get your API key from the dashboard
+4. Add `TWELVE_DATA_API_KEY=your-key` to `.env.local`  
+When set, Twelve Data is used for quotes, candles, movers, earnings, recommendations. Full historical data (40+ years daily).
+
+**Option B: Finnhub (required for news; fallback when Twelve Data key not set)**  
 1. Go to [Finnhub](https://finnhub.io)
 2. Sign up for a free account
 3. Go to **Dashboard** → **API Key**
-4. Copy your API key
-5. Add it to `.env.local` as `FINNHUB_API_KEY`
-
-**Note**: The free tier includes:
-- 60 API calls per minute
-- Market news
-- Stock quotes
-- Company news
+4. Add `FINNHUB_API_KEY=your-key` to `.env.local`  
+Used for: market news, company news. Also powers price data when `TWELVE_DATA_API_KEY` is not set.
 
 ### Step 4: Get OpenAI API Key (for AI Analysis)
 

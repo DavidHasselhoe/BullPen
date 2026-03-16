@@ -10,7 +10,7 @@ A financial analysis platform that ingests SEC filings (10-K, 10-Q, 8-K), extrac
 - **Composite Scores** – Bullish/bearish signals with strength scoring
 - **Time-Series Charts** – Quarterly and annual financial metrics visualization
 - **Company Profiles** – Sector, industry, fiscal year end, employee count
-- **Earnings Calendar** – SEC-reported and Finnhub earnings dates
+- **Earnings Calendar** – SEC-reported and API earnings dates (Twelve Data or Finnhub)
 - **User Holdings** – Portfolio tracking with live quotes
 
 ## Tech Stack
@@ -42,7 +42,8 @@ Create `.env.local` in the project root. See [ENV_SETUP.md](./ENV_SETUP.md) for 
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` – Supabase anon key
 - `SUPABASE_SERVICE_ROLE_KEY` – Supabase service role key
 - `OPENAI_API_KEY` – OpenAI API key
-- `FINNHUB_API_KEY` – Finnhub API key
+- `FINNHUB_API_KEY` – Finnhub API key (required for news)
+- `TWELVE_DATA_API_KEY` – Twelve Data API key (optional; enables full historical charts, better quotes)
 - `CRON_SECRET` – Secret for cron/auth endpoints
 - `RESEND_API_KEY` – Resend for emails
 

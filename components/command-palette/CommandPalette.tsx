@@ -15,6 +15,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { useDebounce } from '@/hooks/use-debounce';
+import { useSearchShortcut } from '@/hooks/use-search-shortcut';
 import { fetchWithTimeout } from '@/lib/utils';
 import { MessageSquare, Briefcase, Filter, TrendingUp, ExternalLink, Scale, FileText } from 'lucide-react';
 
@@ -55,6 +56,7 @@ interface CommandPaletteProps {
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const router = useRouter();
   const { open: openAIPanel } = useAIPanel();
+  const searchShortcut = useSearchShortcut();
   const [searchQuery, setSearchQuery] = useState('');
 
   const debouncedQuery = useDebounce(searchQuery, 300);
@@ -209,7 +211,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                   })}
                 </CommandGroup>
                 <div className="py-4 px-3 text-xs text-muted-foreground">
-                  <kbd className="rounded border bg-muted px-1.5 py-0.5 font-mono">⌘K</kbd> or <kbd className="rounded border bg-muted px-1.5 py-0.5 font-mono">Ctrl+K</kbd> to open from anywhere
+                  <kbd className="rounded border bg-muted px-1.5 py-0.5 font-mono">{searchShortcut}</kbd> to open from anywhere
                 </div>
               </>
             ) : (

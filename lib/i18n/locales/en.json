@@ -48,6 +48,8 @@
     "homepageFilings": "Filing Explorer",
     "homepageBuyHere": "If You Bought Here",
     "theme": "Theme",
+    "roundNumbers": "Round numbers",
+    "roundNumbersDescription": "Display whole numbers instead of decimals in holdings, portfolio values, and similar places",
     "marketContext": "Market Context",
     "marketContextDescription": "Default view for market hours, movers, and news on Discover",
     "marketContextAll": "All markets",

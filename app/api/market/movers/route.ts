@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getTopMovers, getTopMoversForSymbols } from '@/lib/finnhub/finnhub-client';
+import { getTopMovers, getTopMoversForSymbols, TwelveDataRateLimitError } from '@/lib/market-data';
 import { getStorageLogoUrl } from '@/lib/logos/logos-storage';
 import { withRateLimit } from '@/lib/security/api-security';
 import { logger } from '@/lib/utils/logger';
@@ -30,6 +30,12 @@ async function handler(request: NextRequest) {
       },
     });
   } catch (error) {
+    if (error instanceof TwelveDataRateLimitError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: 429, headers: { 'Retry-After': '60' } }
+      );
+    }
     logger.error('Error fetching top movers', error);
     return NextResponse.json(
       {
@@ -43,3 +49,6 @@ async function handler(request: NextRequest) {
 
 // 30 req/min (Finnhub free tier is 60/min; this protects against abuse)
 export const GET = withRateLimit(handler, { windowMs: 60 * 1000, maxRequests: 30 });
+
+// When Twelve Data + holdings mode: getStockQuotes throttles, so response can take ~8s per symbol
+export const maxDuration = 120;

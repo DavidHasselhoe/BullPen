@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCompanyEarnings } from '@/lib/finnhub/finnhub-client';
+import { getCompanyEarnings, TwelveDataRateLimitError } from '@/lib/market-data';
 
 export async function GET(
   request: NextRequest,
@@ -23,6 +23,12 @@ export async function GET(
       earnings,
     });
   } catch (error) {
+    if (error instanceof TwelveDataRateLimitError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: 429, headers: { 'Retry-After': '60' } }
+      );
+    }
     console.error('Error fetching company earnings:', error);
     return NextResponse.json(
       {

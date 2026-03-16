@@ -1,4 +1,7 @@
+'use client';
+
 import { useQuery } from '@tanstack/react-query';
+import { useMoversStream } from '@/hooks/use-movers-stream';
 import type { MarketNews, TopMovers } from '@/lib/finnhub/finnhub-client';
 
 interface MarketNewsResponse {
@@ -67,4 +70,44 @@ export function useTopMovers(limit: number = 5, symbols?: string[] | null) {
     gcTime: 15 * 60 * 1000,
     refetchInterval: false,
   });
+}
+
+/**
+ * Fetches top movers with WebSocket stream when in "All markets" mode (no symbols).
+ * Uses Twelve Data WebSocket credits instead of API credits.
+ * Falls back to REST when stream returns 503 or on error.
+ */
+export function useTopMoversWithStream(limit: number = 5, symbols?: string[] | null) {
+  const isAllMarkets = !symbols || symbols.length === 0;
+  const stream = useMoversStream(limit);
+  const symbolsKey = symbols && symbols.length > 0 ? symbols.sort().join(',') : '';
+  const rest = useQuery({
+    queryKey: ['market', 'movers', 'rest', limit, symbolsKey],
+    queryFn: async (): Promise<TopMovers> => {
+      const params = new URLSearchParams({ limit: String(limit) });
+      if (symbolsKey) params.set('symbols', symbolsKey);
+      const response = await fetch(`/api/market/movers?${params}`);
+      const data: TopMoversResponse = await response.json();
+      if (data.success && data.movers) return data.movers;
+      throw new Error(data.error || 'Failed to fetch top movers');
+    },
+    enabled: !isAllMarkets || !!stream.error,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
+  });
+
+  if (isAllMarkets && stream.data) {
+    return {
+      data: stream.data,
+      isLoading: stream.isLoading,
+      error: stream.error,
+      isStreaming: stream.isStreaming,
+    };
+  }
+  return {
+    data: rest.data,
+    isLoading: rest.isLoading,
+    error: rest.error,
+    isStreaming: false,
+  };
 }

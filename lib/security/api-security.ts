@@ -76,6 +76,20 @@ export function validateCompanyIdParam(companyId: string | undefined): { valid: 
 }
 
 /**
+ * Get session for API routes. Returns userId if authenticated, null otherwise.
+ * Use in Route Handlers; never trust client-provided userId.
+ */
+export async function getSessionForApiRoute(): Promise<{ userId: string } | null> {
+  try {
+    const { getCurrentUserId } = await import('@/lib/auth/server-session');
+    const userId = await getCurrentUserId();
+    return userId ? { userId } : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Validates search query from request
  */
 export function validateSearchQueryParam(query: string | null): { valid: boolean; sanitized?: string; error?: string } {
@@ -84,6 +98,42 @@ export function validateSearchQueryParam(query: string | null): { valid: boolean
   }
 
   return validateSearchQuery(query);
+}
+
+/**
+ * Requires authentication. Returns { userId } or 401 Response.
+ * Use at the start of handlers that perform costly operations.
+ */
+export async function requireAuth(): Promise<{ userId: string } | NextResponse> {
+  const session = await getSessionForApiRoute();
+  if (!session) {
+    return NextResponse.json(
+      { success: false, error: 'Authentication required' },
+      { status: 401 }
+    );
+  }
+  return session;
+}
+
+/**
+ * Wraps a handler to require authentication. Returns 401 if not authenticated.
+ * Use for costly/protected endpoints (AI, paid APIs). Combine with withRateLimit.
+ */
+export function withAuth(
+  handler: (request: NextRequest, context: any, session: { userId: string }) => Promise<NextResponse>,
+  options: { rateLimit?: { windowMs?: number; maxRequests?: number } } = {}
+) {
+  const base = async (request: NextRequest, context?: any): Promise<NextResponse> => {
+    const session = await getSessionForApiRoute();
+    if (!session) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+    return handler(request, context ?? {}, session);
+  };
+  return options.rateLimit ? withRateLimit(base, options.rateLimit) : base;
 }
 
 /**

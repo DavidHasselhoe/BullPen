@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/utils/logger';
-import { getCompanyNews } from '@/lib/finnhub/finnhub-client';
+import { getCompanyNews } from '@/lib/market-data';
 
 export async function GET(
   request: NextRequest,

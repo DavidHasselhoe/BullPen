@@ -16,19 +16,8 @@ import { EditHoldingModal } from './EditHoldingModal';
 import { DeleteHoldingDialog } from './DeleteHoldingDialog';
 import type { HoldingWithPrice } from './types';
 import type { UserHolding } from '@/lib/types/database';
-import { getExchangeRates, convertCurrency, formatCurrency as formatCurrencyValue, type CurrencyCode } from '@/lib/currency/currency-conversion';
-
-function formatPercent(value: number): string {
-  const sign = value >= 0 ? '+' : '';
-  return `${sign}${value.toFixed(2)}%`;
-}
-
-function formatNumber(value: number): string {
-  return new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(value);
-}
+import { getExchangeRates, convertCurrency, formatCurrency as formatCurrencyValue, formatNumber as formatNumberUtil, formatPercent as formatPercentUtil, type CurrencyCode } from '@/lib/currency/currency-conversion';
+import { useUserSettings } from '@/hooks/use-user-settings';
 
 interface HoldingsTableProps {
   onAddClick?: () => void;
@@ -37,6 +26,7 @@ interface HoldingsTableProps {
 export function HoldingsTable({ onAddClick }: HoldingsTableProps) {
   const { data: holdings, isLoading } = useHoldings();
   const { user } = useAuth();
+  const { roundNumbers } = useUserSettings();
   const removeHolding = useRemoveHolding();
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<'marketValue' | 'symbol' | 'allocation'>('marketValue');
@@ -93,24 +83,19 @@ export function HoldingsTable({ onAddClick }: HoldingsTableProps) {
           .getPublicUrl(`${ticker.toLowerCase()}.jpg`).data.publicUrl ?? null;
       }
 
-      // Fetch quotes in parallel
-      await Promise.all(
-        holdings.map(async (holding) => {
-          try {
-            const response = await fetch(`/api/stock/${holding.symbol}/quote`);
-            const data = await response.json();
-            if (data.success && data.quote && data.quote.c > 0) {
-              quoteMap[holding.symbol] = {
-                price: data.quote.c,
-                change: data.quote.d,
-                changePercent: data.quote.dp,
-              };
-            }
-          } catch (error) {
-            logger.error(`Error fetching quote for ${holding.symbol}`, error);
-          }
-        })
-      );
+      // Batch quotes (throttled server-side to avoid Twelve Data rate limits)
+      const batchRes = await fetch('/api/quotes/batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ symbols: tickers }),
+      });
+      const batchData = await batchRes.json();
+      if (batchRes.status === 429) {
+        throw new Error(batchData.error || 'Market data rate limit exceeded. Please try again in a minute.');
+      }
+      if (batchData.success && batchData.quotes) {
+        Object.assign(quoteMap, batchData.quotes);
+      }
 
       return { quotes: quoteMap, logos: logoMap };
     },
@@ -444,16 +429,16 @@ export function HoldingsTable({ onAddClick }: HoldingsTableProps) {
                       </Link>
                     </td>
                     <td className="py-4 px-4 text-sm text-foreground">
-                      {holding.quantity !== null ? formatNumber(holding.quantity) : '—'}
+                      {holding.quantity !== null ? formatNumberUtil(holding.quantity, roundNumbers) : '—'}
                     </td>
                     <td className="py-4 px-4 text-sm text-foreground">
                       {holding.avg_price !== null && holding.avg_price !== undefined 
-                        ? formatCurrencyValue(holding.avg_price, userCurrency || 'USD') 
+                        ? formatCurrencyValue(holding.avg_price, userCurrency || 'USD', roundNumbers ? { round: true } : undefined) 
                         : '—'}
                     </td>
                     <td className="py-4 px-4 text-sm font-medium text-foreground">
                       {holding.currentPrice !== undefined 
-                        ? formatCurrencyValue(holding.currentPrice, userCurrency || 'USD') 
+                        ? formatCurrencyValue(holding.currentPrice, userCurrency || 'USD', roundNumbers ? { round: true } : undefined) 
                         : '—'}
                     </td>
                     <td className="py-4 px-4">
@@ -465,7 +450,7 @@ export function HoldingsTable({ onAddClick }: HoldingsTableProps) {
                             <ArrowDownRight className="h-3 w-3" />
                           )}
                           <span className="text-sm font-medium">
-                            {formatPercent(holding.dayChangePercent)}
+                            {formatPercentUtil(holding.dayChangePercent, roundNumbers)}
                           </span>
                         </div>
                       ) : (
@@ -474,18 +459,18 @@ export function HoldingsTable({ onAddClick }: HoldingsTableProps) {
                     </td>
                     <td className="py-4 px-4 text-sm font-medium text-foreground">
                       {holding.marketValue !== undefined 
-                        ? formatCurrencyValue(holding.marketValue, userCurrency || 'USD') 
+                        ? formatCurrencyValue(holding.marketValue, userCurrency || 'USD', roundNumbers ? { round: true } : undefined) 
                         : '—'}
                     </td>
                     <td className="py-4 px-4">
                       {holding.unrealizedPL !== undefined ? (
                         <div className={`${plColor}`}>
                           <div className="text-sm font-medium">
-                            {formatCurrencyValue(holding.unrealizedPL, userCurrency || 'USD')}
+                            {formatCurrencyValue(holding.unrealizedPL, userCurrency || 'USD', roundNumbers ? { round: true } : undefined)}
                           </div>
                           {holding.unrealizedPLPercent !== undefined && (
                             <div className="text-xs">
-                              {formatPercent(holding.unrealizedPLPercent)}
+                              {formatPercentUtil(holding.unrealizedPLPercent, roundNumbers)}
                             </div>
                           )}
                         </div>
@@ -495,7 +480,7 @@ export function HoldingsTable({ onAddClick }: HoldingsTableProps) {
                     </td>
                     <td className="py-4 px-4 text-sm text-foreground">
                       {holding.allocation !== undefined
-                        ? `${holding.allocation.toFixed(1)}%`
+                        ? `${holding.allocation.toFixed(roundNumbers ? 0 : 1)}%`
                         : '—'}
                     </td>
                     <td className="py-4 px-4">

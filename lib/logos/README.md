@@ -21,7 +21,7 @@ Fetches, stores, and serves company logos using the img.logo.dev API.
 
 ## Configuration
 
-- API Key: `NEXT_PUBLIC_LOGO_DEV_KEY` (from `.env.local`)
+- API Key: `LOGO_DEV_KEY` (server-only, from `.env.local`)
 - Storage Bucket: `company-logos` (must be created in Supabase Dashboard)
 - File Naming: `{ticker}.{extension}` (e.g., `nvda.png`)
 

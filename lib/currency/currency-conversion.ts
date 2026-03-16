@@ -97,13 +97,44 @@ export function convertCurrency(
 }
 
 /**
+ * Options for currency formatting
+ */
+export interface FormatCurrencyOptions {
+  /** When true, display whole numbers (no decimals) */
+  round?: boolean;
+}
+
+/**
+ * Formats a number with optional rounding (for quantities, shares, etc.)
+ */
+export function formatNumber(value: number, round = false): string {
+  return new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: round ? 0 : 2,
+  }).format(value);
+}
+
+/**
+ * Formats a percentage with optional rounding
+ */
+export function formatPercent(value: number, round = false): string {
+  const sign = value >= 0 ? '+' : '';
+  const formatted = round ? value.toFixed(1) : value.toFixed(2);
+  return `${sign}${formatted}%`;
+}
+
+/**
  * Formats a currency value with proper symbol and locale
  */
 export function formatCurrency(
   value: number,
   currency: CurrencyCode,
-  locale: string = 'en-US'
+  localeOrOptions: string | FormatCurrencyOptions = 'en-US'
 ): string {
+  const locale = typeof localeOrOptions === 'string' ? localeOrOptions : 'en-US';
+  const options = typeof localeOrOptions === 'object' ? localeOrOptions : {};
+  const fractionDigits = options.round ? { minimumFractionDigits: 0, maximumFractionDigits: 0 } : { minimumFractionDigits: 2, maximumFractionDigits: 2 };
+
   const currencyMap: Record<CurrencyCode, string> = {
     USD: 'USD',
     EUR: 'EUR',
@@ -129,13 +160,13 @@ export function formatCurrency(
     return new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: currencyMap[currency] || 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
+      ...fractionDigits,
     }).format(value);
   } catch (error) {
     // Fallback to simple formatting
     const symbol = getCurrencySymbol(currency);
-    return `${symbol}${value.toFixed(2)}`;
+    const digits = options.round ? 0 : 2;
+    return `${symbol}${value.toFixed(digits)}`;
   }
 }
 

@@ -1,24 +1,35 @@
 /**
  * Search Metrics API Route
- * Tracks search interactions and provides hot picks data
+ * Tracks search interactions and provides hot picks data.
+ * Rate limited and validated to prevent abuse.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/client';
 import { logger } from '@/lib/utils/logger';
+import { withRateLimit } from '@/lib/security/api-security';
+import { validateTicker } from '@/lib/security/input-validation';
 
 /**
  * POST /api/search/metrics
  * Track a search click/interaction
  */
-export async function POST(request: NextRequest) {
+async function postHandler(request: NextRequest) {
   try {
     const body = await request.json();
     const { ticker } = body;
 
-    if (!ticker || typeof ticker !== 'string' || ticker.trim().length === 0) {
+    if (!ticker || typeof ticker !== 'string') {
       return NextResponse.json(
         { success: false, error: 'Ticker is required' },
+        { status: 400 }
+      );
+    }
+
+    const { valid, normalized, error: validateError } = validateTicker(ticker);
+    if (!valid || !normalized) {
+      return NextResponse.json(
+        { success: false, error: validateError || 'Invalid ticker format' },
         { status: 400 }
       );
     }
@@ -30,9 +41,9 @@ export async function POST(request: NextRequest) {
       data: { session },
     } = await supabase.auth.getSession();
 
-    // Insert search metric
+    // Insert search metric (validated ticker)
     const { error } = await supabase.from('search_metrics').insert({
-      ticker: ticker.trim().toUpperCase(),
+      ticker: normalized,
       user_id: session?.user?.id || null,
     });
 
@@ -54,11 +65,10 @@ export async function POST(request: NextRequest) {
   }
 }
 
-/**
- * GET /api/search/metrics
- * Get hot picks (most searched stocks)
- */
-export async function GET(request: NextRequest) {
+/** POST: rate limited to 60/min to prevent search_metrics flooding */
+export const POST = withRateLimit(postHandler, { windowMs: 60 * 1000, maxRequests: 60 });
+
+async function getHandler(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const hours = parseInt(searchParams.get('hours') || '168', 10); // Default: 7 days
@@ -84,3 +94,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: true, data: [] });
   }
 }
+
+/** GET: rate limited to 30/min */
+export const GET = withRateLimit(getHandler, { windowMs: 60 * 1000, maxRequests: 30 });

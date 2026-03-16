@@ -1,0 +1,67 @@
+---
+description: TypeScript and React patterns for BullPen
+globs: **/*.{ts,tsx}
+alwaysApply: false
+---
+
+# TypeScript & React Patterns
+
+## TypeScript
+
+```typescript
+// ✅ Prefer explicit return types for exported functions
+export async function fetchUser(id: string): Promise<User | null> {
+  const { data } = await supabase.from('users').select('*').eq('id', id).single();
+  return data as User | null;
+}
+
+// ✅ Use type imports for types only
+import type { AuthUser } from '@/lib/auth/auth';
+
+// ❌ Avoid any; use unknown + type guard if needed
+// BAD: (value: any) => ...
+// GOOD: (value: unknown) => value is User ? ...
+```
+
+## React Components
+
+```tsx
+// ✅ Functional component with typed props
+interface CardProps {
+  title: string;
+  children: React.ReactNode;
+  className?: string;
+}
+export function Card({ title, children, className }: CardProps) {
+  return <div className={cn('rounded-lg', className)}>...</div>;
+}
+
+// ✅ Client component: 'use client' at top
+'use client';
+import { useState } from 'react';
+```
+
+## Hooks
+
+```typescript
+// ✅ Custom hook returns typed object
+export function useAuth() {
+  const { user, isLoading } = useContext(AuthContext);
+  return { user, isLoading, isAuthenticated: !!user };
+}
+
+// ✅ Memoize callbacks passed to children
+const handleClick = useCallback(() => { ... }, [dep]);
+```
+
+## Error Handling
+
+```typescript
+// ✅ Typed error handling
+try {
+  await operation();
+} catch (err) {
+  const message = err instanceof Error ? err.message : 'Unknown error';
+  console.error('[Component] Operation failed:', message);
+}
+```

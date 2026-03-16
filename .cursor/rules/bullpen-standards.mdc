@@ -1,0 +1,68 @@
+---
+description: BullPen project coding standards and best practices
+alwaysApply: true
+---
+
+# BullPen Coding Standards
+
+## Tech Stack
+
+- **Framework**: Next.js 16 (App Router), React 19
+- **Language**: TypeScript (strict mode)
+- **Styling**: Tailwind CSS 4
+- **Data**: Supabase (auth, Postgres), TanStack Query
+- **UI**: Radix UI, Framer Motion, Lucide icons
+- **Charts**: D3, Recharts
+- **Validation**: Zod
+
+## General Best Practices
+
+- **Imports**: Use `@/` path alias for project imports (e.g. `@/components/ui/button`)
+- **Client components**: Add `'use client'` at top of file when using hooks, browser APIs, or event handlers
+- **Server by default**: Prefer server components; use client only when necessary
+- **Type safety**: Avoid `any`; use proper types from `@/lib/types` or database types
+- **Error handling**: Surface user-friendly messages; log details server-side
+
+## React & Next.js
+
+- Use functional components and hooks
+- Colocate data fetching with components via `useQuery` or server components
+- Use `<Suspense>` for async boundaries; provide meaningful fallbacks
+- Prefer `router.replace()` over `window.location` for client-side navigation
+- Metadata in layout/page for SEO
+
+## File Conventions
+
+- **Components**: `components/<domain>/<Name>.tsx` (PascalCase)
+- **Hooks**: `hooks/use-<name>.ts` (kebab-case)
+- **Lib/utils**: `lib/<domain>/<name>.ts`
+- **API routes**: `app/api/<route>/route.ts`
+- **Pages**: `app/<path>/page.tsx`
+
+## Supabase & Auth
+
+- Use `createBrowserClient()` for client; `createServerClient()` for server/API
+- Auth state is event-driven via `onAuthStateChange`; avoid timing workarounds
+- RLS policies protect data; never bypass with service role in client code
+- Profile loading only after session exists
+
+## Styling (Tailwind)
+
+- Use Tailwind utility classes; avoid inline styles unless dynamic
+- Prefer `cn()` or `clsx` for conditional classes
+- Dark mode by default; use `text-foreground`, `bg-background`
+- Keep responsive classes: `sm:`, `md:`, `lg:` where layout differs
+
+## Data & API
+
+- Validate inputs with Zod before DB operations
+- Use TanStack Query for client caching; `staleTime` for infrequent data
+- API routes: return `{ success, data?, error? }` consistently
+- Handle loading and error states in UI
+
+## Code Quality
+
+- Prefer early returns over deep nesting
+- Extract reusable logic into hooks or lib functions
+- Keep components under ~200 lines; split when larger
+- Use meaningful variable names; avoid abbreviations except `id`, `url`, `ctx`

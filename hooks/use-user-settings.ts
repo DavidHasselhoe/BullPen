@@ -16,6 +16,9 @@ export function useUserSettings() {
   const showWelcomeText =
     settings.show_welcome_text !== undefined ? settings.show_welcome_text : true;
 
+  // round_numbers: show whole numbers (no decimals) where it makes sense - default false
+  const roundNumbers = settings.round_numbers === true;
+
   // market_context_mode: 'all' | 'holdings' — default 'all'
   const marketContextMode: MarketContextMode =
     settings.market_context_mode === 'holdings' ? 'holdings' : 'all';
@@ -35,6 +38,7 @@ export function useUserSettings() {
   return {
     showQuotes,
     showWelcomeText,
+    roundNumbers,
     marketContextMode,
     updateMarketContextMode,
   };

@@ -3,7 +3,8 @@
 import { useMemo } from 'react';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { formatCurrency, type CurrencyCode } from '@/lib/currency/currency-conversion';
+import { formatCurrency, formatPercent, type CurrencyCode } from '@/lib/currency/currency-conversion';
+import { useUserSettings } from '@/hooks/use-user-settings';
 import type { HoldingWithPrice } from './types';
 
 interface PortfolioDashboardProps {
@@ -11,13 +12,10 @@ interface PortfolioDashboardProps {
   currency?: CurrencyCode;
 }
 
-function fmtPct(value: number): string {
-  const sign = value >= 0 ? '+' : '';
-  return `${sign}${value.toFixed(2)}%`;
-}
-
 export function PortfolioDashboard({ holdings, currency = 'USD' }: PortfolioDashboardProps) {
-  const fmt = (value: number) => formatCurrency(value, currency);
+  const { roundNumbers } = useUserSettings();
+  const fmt = (value: number) =>
+    formatCurrency(value, currency, roundNumbers ? { round: true } : undefined);
   const stats = useMemo(() => {
     let totalValue = 0;
     let todayDollar = 0;
@@ -109,7 +107,7 @@ export function PortfolioDashboard({ holdings, currency = 'USD' }: PortfolioDash
                 : 'text-red-600 dark:text-red-400'
             )}
           >
-            {fmtPct(stats.todayPct)}
+            {formatPercent(stats.todayPct, roundNumbers)}
           </span>
           <span className="text-xs text-muted-foreground">vs yesterday</span>
         </div>
