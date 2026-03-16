@@ -99,6 +99,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [supabase]);
 
+  // One-time migration: sync session from localStorage to cookies (required for Server Actions)
+  // Old client stored in localStorage; new @supabase/ssr client uses cookies.
+  useEffect(() => {
+    void (async () => {
+      const STORAGE_KEY_PREFIX = 'sb-';
+      const STORAGE_KEY_SUFFIX = '-auth-token';
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!key?.startsWith(STORAGE_KEY_PREFIX) || !key.endsWith(STORAGE_KEY_SUFFIX)) continue;
+        try {
+          const raw = localStorage.getItem(key);
+          if (!raw) continue;
+          const data = JSON.parse(raw) as { access_token?: string; refresh_token?: string };
+          if (data?.access_token && data?.refresh_token) {
+            await supabase.auth.setSession({
+              access_token: data.access_token,
+              refresh_token: data.refresh_token,
+            });
+            localStorage.removeItem(key);
+            break; // Migrated one, done
+          }
+        } catch {
+          // Ignore parse errors
+        }
+      }
+    })();
+  }, [supabase]);
+
   useEffect(() => {
     let mounted = true;
 

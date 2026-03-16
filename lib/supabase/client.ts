@@ -2,6 +2,7 @@
 // Type-safe database access for BullPen
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createBrowserClient as createSSRBrowserClient } from '@supabase/ssr';
 import type { Database } from './types';
 
 // Singleton browser client instance
@@ -11,12 +12,10 @@ let browserClient: SupabaseClient<Database> | null = null;
 let serverClient: SupabaseClient<Database> | null = null;
 
 // Client-side Supabase client (uses anon key)
-// Returns a singleton instance to ensure session consistency
+// Uses @supabase/ssr so session is stored in cookies — required for Server Actions to read auth.
+// In the browser, createBrowserClient from @supabase/ssr uses document.cookie by default.
 export function createBrowserClient(): SupabaseClient<Database> {
-  // Return existing instance if available
-  if (browserClient) {
-    return browserClient;
-  }
+  if (browserClient) return browserClient;
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -25,15 +24,7 @@ export function createBrowserClient(): SupabaseClient<Database> {
     throw new Error('Missing Supabase environment variables');
   }
 
-  browserClient = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: true,
-      flowType: 'pkce',
-    },
-  });
-
+  browserClient = createSSRBrowserClient<Database>(supabaseUrl, supabaseAnonKey);
   return browserClient;
 }
 
