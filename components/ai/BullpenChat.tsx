@@ -207,6 +207,13 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
     : [];
   const displayPrompts = contextPrompts.length > 0 ? contextPrompts : starterPrompts;
 
+  const refocusInput = () => {
+    // After submit, React may re-render; run after paint so focus isn’t stolen by disabled state (we avoid disabling while streaming).
+    requestAnimationFrame(() => {
+      textareaRef.current?.focus({ preventScroll: true });
+    });
+  };
+
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     const text = inputRef.current.trim();
@@ -219,6 +226,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
       textareaRef.current.value = '';
       textareaRef.current.style.height = 'auto';
     }
+    refocusInput();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -266,6 +274,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
                   key={suggestion}
                   onClick={() => {
                     sendMessage({ parts: [{ type: 'text', text: suggestion }] });
+                    refocusInput();
                   }}
                   className="text-xs px-4 py-2 rounded-full border border-border bg-muted/40 hover:bg-muted/80 hover:border-primary/30 text-muted-foreground hover:text-foreground transition-all duration-200 hover:shadow-sm"
                 >
@@ -382,7 +391,6 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
           onChange={handleInput}
           onKeyDown={handleKeyDown}
           placeholder="Ask anything…"
-          disabled={isStreaming}
           tabIndex={0}
           aria-label="Message input"
           className="flex-1 resize-none rounded-xl border border-input bg-background px-3.5 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 max-h-[120px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] pointer-events-auto"
@@ -393,7 +401,11 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
             type="button"
             size="icon"
             variant="outline"
-            onClick={stop}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => {
+              stop();
+              refocusInput();
+            }}
             className="shrink-0 h-10 w-10 rounded-xl"
             title="Stop generating"
           >
@@ -403,6 +415,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
           <Button
             type="submit"
             size="icon"
+            onMouseDown={(e) => e.preventDefault()}
             className="shrink-0 h-10 w-10 rounded-xl"
             title="Send message"
           >

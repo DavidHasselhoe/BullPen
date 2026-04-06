@@ -68,6 +68,9 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   const [showWelcomeText, setShowWelcomeText] = useState<boolean>(true); // Default to true
   const [roundNumbers, setRoundNumbers] = useState<boolean>(false); // Default to false - show decimals
   const [marketContextMode, setMarketContextMode] = useState<'all' | 'holdings'>('all');
+  // Privacy settings
+  const [profilePublic, setProfilePublic] = useState<boolean>(true);
+  const [holdingsPublic, setHoldingsPublic] = useState<boolean>(true);
   const [notifications, setNotifications] = useState({
     holdings_earnings: true, // Notify when companies in your holdings file earnings
     price_alerts: false,
@@ -118,6 +121,9 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
       setShowWelcomeText(settings.show_welcome_text !== undefined ? settings.show_welcome_text : true);
       setRoundNumbers(settings.round_numbers === true);
       setMarketContextMode(settings.market_context_mode === 'holdings' ? 'holdings' : 'all');
+      // Privacy: default public (true) when key is absent
+      setProfilePublic(settings.profile_public !== false);
+      setHoldingsPublic(settings.holdings_public !== false);
       setError(null);
     }
   }, [user, open]);
@@ -144,6 +150,9 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
         round_numbers: roundNumbers, // Round numbers to whole values (holdings, portfolio, etc.)
         market_context_mode: marketContextMode, // Market Context: all markets | my portfolio
         notifications,
+        // Privacy
+        profile_public: profilePublic,
+        holdings_public: holdingsPublic,
       };
 
       const { error: updateError } = await supabase
@@ -737,6 +746,45 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
             {activeSection === 'privacy' && (
               <div className="space-y-6 max-w-2xl">
                 <div className="space-y-4">
+
+                  {/* Profile visibility */}
+                  <div className="space-y-3">
+                    <Label className="flex items-center gap-2">
+                      <Shield className="h-4 w-4" />
+                      Profile Visibility
+                    </Label>
+                    <div className="rounded-lg border bg-muted/30 p-4 space-y-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="text-sm font-medium">Public profile</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            Allow other BullPen members to find and view your profile page.
+                          </p>
+                        </div>
+                        <Switch
+                          checked={profilePublic}
+                          onCheckedChange={setProfilePublic}
+                        />
+                      </div>
+                      <Separator />
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="text-sm font-medium">Show portfolio</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            Show your portfolio stocks (ticker and company name only — no quantities or prices) on your public profile.
+                          </p>
+                        </div>
+                        <Switch
+                          checked={holdingsPublic}
+                          onCheckedChange={setHoldingsPublic}
+                          disabled={!profilePublic}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <Separator />
+
                   <div className="space-y-3">
                     <Label className="flex items-center gap-2">
                       <Shield className="h-4 w-4" />

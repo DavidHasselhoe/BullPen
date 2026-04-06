@@ -1,20 +1,16 @@
 /**
- * Batch quotes API - fetches multiple symbols in a single request.
- * When Twelve Data is used: throttles to 8 requests/min (Basic tier) by spacing calls 8s apart.
- * When Finnhub is used: fetches in parallel (higher limit).
- * Rate limited and validated to prevent Twelve Data/Finnhub abuse.
+ * Batch quotes API — fetches multiple symbols in a single TwelveData /batch POST.
+ * One round-trip regardless of how many symbols are requested (up to 20).
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getStockQuote, TwelveDataRateLimitError } from '@/lib/market-data';
+import { getStockQuotes, TwelveDataRateLimitError } from '@/lib/market-data';
+import { getStockQuote } from '@/lib/market-data';
 import { logger } from '@/lib/utils/logger';
 import { withRateLimit } from '@/lib/security/api-security';
 import { validateTicker } from '@/lib/security/input-validation';
 
-const MIN_INTERVAL_MS = 8000; // 8 seconds between calls = 7.5/min, under Twelve Data Basic 8/min
-
-// Allow up to 2 minutes when throttling (many symbols = long wait)
-export const maxDuration = 120;
+export const maxDuration = 30;
 
 async function handler(request: NextRequest) {
   try {
@@ -28,7 +24,7 @@ async function handler(request: NextRequest) {
       );
     }
 
-    // Validate and filter symbols (max 20 to limit API usage)
+    // Validate and deduplicate (max 20)
     const unique: string[] = [];
     for (const s of [...new Set(symbols)]) {
       if (typeof s !== 'string' || !s.trim()) continue;
@@ -37,27 +33,19 @@ async function handler(request: NextRequest) {
     }
     const capped = unique.slice(0, 20);
 
-    const useTwelveData = !!process.env.TWELVE_DATA_API_KEY;
     const quotes: Record<string, { price: number; change: number; changePercent: number }> = {};
 
+    const useTwelveData = !!process.env.TWELVE_DATA_API_KEY;
     if (useTwelveData) {
-      // Throttle for Twelve Data Basic (8/min)
-      for (let i = 0; i < capped.length; i++) {
-        try {
-          const q = await getStockQuote(capped[i]);
-          if (q.c > 0) {
-            quotes[capped[i]] = { price: q.c, change: q.d, changePercent: q.dp };
-          }
-        } catch (err) {
-          if (err instanceof TwelveDataRateLimitError) throw err;
-          logger.warn(`[quotes-batch] Failed for ${capped[i]}`, { error: err });
-        }
-        if (i < capped.length - 1) {
-          await new Promise((r) => setTimeout(r, MIN_INTERVAL_MS));
+      // Single batch POST — no throttling needed
+      const quoteMap = await getStockQuotes(capped);
+      for (const [symbol, q] of quoteMap.entries()) {
+        if (q.c > 0) {
+          quotes[symbol] = { price: q.c, change: q.d, changePercent: q.dp };
         }
       }
     } else {
-      // Finnhub: fetch in parallel (60/min limit)
+      // Finnhub: parallel individual calls
       await Promise.all(
         capped.map(async (symbol) => {
           try {
@@ -91,5 +79,4 @@ async function handler(request: NextRequest) {
   }
 }
 
-/** Rate limited: 10 requests/min to protect Twelve Data/Finnhub quota */
 export const POST = withRateLimit(handler, { windowMs: 60 * 1000, maxRequests: 10 });

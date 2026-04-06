@@ -4,68 +4,32 @@ import { withRateLimit } from '@/lib/security/api-security';
 
 export const dynamic = 'force-dynamic';
 
-interface RawRow {
-  id: string;
-  ticker: string;
-  name: string;
-  sector: string | null;
-  industry: string | null;
-  logo_url: string | null;
-  revenue: number | null;
-  gross_profit: number | null;
-  operating_income: number | null;
-  net_income: number | null;
-  eps_diluted: number | null;
-  total_assets: number | null;
-  total_liabilities: number | null;
-  shareholders_equity: number | null;
-  free_cash_flow: number | null;
-  prev_revenue: number | null;
-}
-
 export interface ScreenerRow {
-  id: string;
   ticker: string;
   name: string;
   sector: string | null;
   industry: string | null;
   logo_url: string | null;
-  revenue: number | null;
-  grossMargin: number | null;
-  operatingMargin: number | null;
-  netMargin: number | null;
-  epsDiluted: number | null;
-  freeCashFlow: number | null;
-  revenueGrowth: number | null;
-  debtToEquity: number | null;
-}
-
-function deriveMetrics(row: RawRow): ScreenerRow {
-  const rev = row.revenue;
-  return {
-    id: row.id,
-    ticker: row.ticker,
-    name: row.name,
-    sector: row.sector,
-    industry: row.industry,
-    logo_url: row.logo_url,
-    revenue: rev,
-    grossMargin: rev && row.gross_profit != null ? (row.gross_profit / rev) * 100 : null,
-    operatingMargin: rev && row.operating_income != null ? (row.operating_income / rev) * 100 : null,
-    netMargin: rev && row.net_income != null ? (row.net_income / rev) * 100 : null,
-    epsDiluted: row.eps_diluted,
-    freeCashFlow: row.free_cash_flow,
-    revenueGrowth:
-      rev != null && row.prev_revenue != null && row.prev_revenue !== 0
-        ? ((rev - row.prev_revenue) / Math.abs(row.prev_revenue)) * 100
-        : null,
-    debtToEquity:
-      row.total_liabilities != null &&
-      row.shareholders_equity != null &&
-      row.shareholders_equity !== 0
-        ? row.total_liabilities / row.shareholders_equity
-        : null,
-  };
+  exchange: string | null;
+  market_cap: number | null;
+  pe_ratio: number | null;
+  forward_pe: number | null;
+  pb_ratio: number | null;
+  ps_ratio: number | null;
+  ev_to_ebitda: number | null;
+  eps_ttm: number | null;
+  revenue_ttm: number | null;
+  profit_margin: number | null;
+  revenue_growth_yoy: number | null;
+  earnings_growth_yoy: number | null;
+  beta: number | null;
+  dividend_yield: number | null;
+  payout_ratio: number | null;
+  week52_high: number | null;
+  week52_low: number | null;
+  day50_ma: number | null;
+  day200_ma: number | null;
+  updated_at: string;
 }
 
 function parseNum(val: string | null): number | undefined {
@@ -74,11 +38,7 @@ function parseNum(val: string | null): number | undefined {
   return isFinite(n) ? n : undefined;
 }
 
-function inRange(
-  value: number | null,
-  min: number | undefined,
-  max: number | undefined,
-): boolean {
+function inRange(value: number | null, min: number | undefined, max: number | undefined): boolean {
   if (value == null) return min == null && max == null;
   if (min != null && value < min) return false;
   if (max != null && value > max) return false;
@@ -86,82 +46,81 @@ function inRange(
 }
 
 async function handler(request: NextRequest) {
-  try {
-    const supabase = createServerClient();
-    const { data, error } = await supabase.rpc('get_screener_data');
+  const supabase = createServerClient();
+  const sp = request.nextUrl.searchParams;
 
-    if (error) {
-      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
-    }
+  // --- Parse filter params ---
+  const sector = sp.get('sector') || undefined;
+  const marketCapMin = parseNum(sp.get('marketCapMin'));  // in billions on client, raw here
+  const marketCapMax = parseNum(sp.get('marketCapMax'));
+  const peMin = parseNum(sp.get('peMin'));
+  const peMax = parseNum(sp.get('peMax'));
+  const pbMin = parseNum(sp.get('pbMin'));
+  const pbMax = parseNum(sp.get('pbMax'));
+  const betaMin = parseNum(sp.get('betaMin'));
+  const betaMax = parseNum(sp.get('betaMax'));
+  const divYieldMin = parseNum(sp.get('divYieldMin'));
+  const divYieldMax = parseNum(sp.get('divYieldMax'));
+  const profitMarginMin = parseNum(sp.get('profitMarginMin'));
+  const profitMarginMax = parseNum(sp.get('profitMarginMax'));
+  const revenueGrowthMin = parseNum(sp.get('revenueGrowthMin'));
+  const revenueGrowthMax = parseNum(sp.get('revenueGrowthMax'));
+  const week52ChangeMin = parseNum(sp.get('week52ChangeMin'));
+  const week52ChangeMax = parseNum(sp.get('week52ChangeMax'));
 
-    const sp = request.nextUrl.searchParams;
-    const tickersParam = sp.get('tickers');
-    const tickers = tickersParam
-      ? tickersParam.split(',').map((t) => t.trim().toUpperCase()).filter(Boolean)
-      : undefined;
-    const sector = sp.get('sector') || undefined;
-    const revenueMin = parseNum(sp.get('revenueMin'));
-    const revenueMax = parseNum(sp.get('revenueMax'));
-    const grossMarginMin = parseNum(sp.get('grossMarginMin'));
-    const grossMarginMax = parseNum(sp.get('grossMarginMax'));
-    const operatingMarginMin = parseNum(sp.get('operatingMarginMin'));
-    const operatingMarginMax = parseNum(sp.get('operatingMarginMax'));
-    const netMarginMin = parseNum(sp.get('netMarginMin'));
-    const netMarginMax = parseNum(sp.get('netMarginMax'));
-    const epsMin = parseNum(sp.get('epsMin'));
-    const epsMax = parseNum(sp.get('epsMax'));
-    const fcfMin = parseNum(sp.get('fcfMin'));
-    const fcfMax = parseNum(sp.get('fcfMax'));
-    const revenueGrowthMin = parseNum(sp.get('revenueGrowthMin'));
-    const revenueGrowthMax = parseNum(sp.get('revenueGrowthMax'));
-    const deMin = parseNum(sp.get('deMin'));
-    const deMax = parseNum(sp.get('deMax'));
+  // Fetch all cached stats
+  const { data, error } = await supabase
+    .from('screener_stats')
+    .select('*')
+    .order('market_cap', { ascending: false, nullsFirst: false });
 
-    let results: ScreenerRow[] = ((data as RawRow[]) || []).map(deriveMetrics);
-
-    if (sector) {
-      results = results.filter((r) => r.sector === sector);
-    }
-
-    // When tickers specified (e.g. from "compare NVDA and AMD"), show only those companies in order
-    if (tickers && tickers.length > 0) {
-      const tickerSet = new Set(tickers);
-      results = results.filter((r) => tickerSet.has(r.ticker));
-      results.sort((a, b) => tickers.indexOf(a.ticker) - tickers.indexOf(b.ticker));
-    }
-
-    results = results.filter((r) => {
-      if (!inRange(r.revenue, revenueMin, revenueMax)) return false;
-      if (!inRange(r.grossMargin, grossMarginMin, grossMarginMax)) return false;
-      if (!inRange(r.operatingMargin, operatingMarginMin, operatingMarginMax)) return false;
-      if (!inRange(r.netMargin, netMarginMin, netMarginMax)) return false;
-      if (!inRange(r.epsDiluted, epsMin, epsMax)) return false;
-      if (!inRange(r.freeCashFlow, fcfMin, fcfMax)) return false;
-      if (!inRange(r.revenueGrowth, revenueGrowthMin, revenueGrowthMax)) return false;
-      if (!inRange(r.debtToEquity, deMin, deMax)) return false;
-      return true;
-    });
-
-    // Default sort: revenue descending
-    results.sort((a, b) => (b.revenue ?? 0) - (a.revenue ?? 0));
-
-    // Collect unique sectors for filter dropdown
-    const sectors = [
-      ...new Set(
-        ((data as RawRow[]) || []).map((r) => r.sector).filter(Boolean) as string[],
-      ),
-    ].sort();
-
-    const response = NextResponse.json({ success: true, results, sectors, total: results.length });
-    response.headers.set('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=600');
-    return response;
-  } catch (err) {
-    return NextResponse.json(
-      { success: false, error: err instanceof Error ? err.message : 'Unknown error' },
-      { status: 500 },
-    );
+  if (error) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
+
+  let results: ScreenerRow[] = (data ?? []) as ScreenerRow[];
+
+  // --- Apply filters ---
+  results = results.filter((r) => {
+    if (sector && r.sector !== sector) return false;
+
+    // Market cap: client sends billions, DB stores raw (e.g. 3e12 for $3T)
+    if (!inRange(r.market_cap, marketCapMin, marketCapMax)) return false;
+    if (!inRange(r.pe_ratio, peMin, peMax)) return false;
+    if (!inRange(r.pb_ratio, pbMin, pbMax)) return false;
+    if (!inRange(r.beta, betaMin, betaMax)) return false;
+    if (!inRange(r.dividend_yield, divYieldMin, divYieldMax)) return false;
+
+    // Profit margin stored as 0..1, filter in percent (0..100)
+    const profitMarginPct = r.profit_margin != null ? r.profit_margin * 100 : null;
+    if (!inRange(profitMarginPct, profitMarginMin, profitMarginMax)) return false;
+
+    if (!inRange(r.revenue_growth_yoy, revenueGrowthMin, revenueGrowthMax)) return false;
+
+    // 52-week range relative to 52w high (how far below high, as %)
+    if ((week52ChangeMin != null || week52ChangeMax != null) && r.week52_high && r.week52_low) {
+      const range52Pct = ((r.week52_high - r.week52_low) / r.week52_high) * 100;
+      if (!inRange(range52Pct, week52ChangeMin, week52ChangeMax)) return false;
+    }
+
+    return true;
+  });
+
+  // Collect unique sectors for filter dropdown
+  const sectors = [...new Set(
+    (data ?? []).map((r) => (r as ScreenerRow).sector).filter(Boolean) as string[]
+  )].sort();
+
+  const response = NextResponse.json({
+    success: true,
+    results,
+    sectors,
+    total: results.length,
+    stale: (data ?? []).length === 0,
+  });
+  response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60');
+  return response;
 }
 
-// 20 req/min (heavier DB query; stricter limit)
-export const GET = withRateLimit(handler, { windowMs: 60 * 1000, maxRequests: 20 });
+// 30 req/min
+export const GET = withRateLimit(handler, { windowMs: 60_000, maxRequests: 30 });

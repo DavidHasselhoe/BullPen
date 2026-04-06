@@ -101,16 +101,6 @@ export interface CompanyEarnings {
   year: number;
 }
 
-export interface RecommendationTrend {
-  buy: number;
-  hold: number;
-  period: string;
-  sell: number;
-  strongBuy: number;
-  strongSell: number;
-  symbol: string;
-}
-
 export const POPULAR_STOCKS = [
   'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'META', 'TSLA', 'NFLX',
   'JPM', 'V', 'JNJ', 'WMT', 'PG', 'MA', 'UNH', 'HD', 'DIS', 'VZ',
@@ -178,19 +168,68 @@ export async function getStockQuote(symbol: string): Promise<StockQuote> {
   return parseQuoteResponse(data, symbol);
 }
 
-const QUOTE_MIN_INTERVAL_MS = 8000; // 8s = 7.5/min, under Basic tier 8/min
+// -------- Batch helper --------
+
+interface BatchResult<T> {
+  response: T;
+  status: 'success' | 'error';
+}
+
+interface BatchResponse<T> {
+  code: number;
+  status: string;
+  data: Record<string, BatchResult<T>>;
+}
+
+/**
+ * POST /batch — send multiple API requests in a single round-trip.
+ * Keys are arbitrary request IDs; values map directly to TwelveData responses.
+ * Credits consumed = sum of individual endpoint costs.
+ */
+export async function batchFetch<T>(
+  requests: Record<string, string>
+): Promise<Record<string, T>> {
+  const apiKey = getApiKey();
+  const body = Object.fromEntries(
+    Object.entries(requests).map(([id, url]) => [id, { url }])
+  );
+  logUsage('batch', `${Object.keys(requests).length} requests`);
+  const res = await fetch(`${TWELVE_DATA_BASE_URL}/batch`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `apikey ${apiKey}`,
+    },
+    body: JSON.stringify(body),
+  });
+  const data = (await res.json()) as BatchResponse<T>;
+  if (!res.ok || data.status === 'error') {
+    throw new Error(`Twelve Data batch error: ${res.status}`);
+  }
+  const out: Record<string, T> = {};
+  for (const [id, result] of Object.entries(data.data ?? {})) {
+    if (result.status === 'success') out[id] = result.response;
+  }
+  return out;
+}
 
 export async function getStockQuotes(symbols: string[]): Promise<Map<string, StockQuote>> {
+  if (symbols.length === 0) return new Map();
+  const apiKey = getApiKey();
+
+  // Build one batch request — all quotes in a single POST instead of N sequential GETs
+  const requests: Record<string, string> = {};
+  for (const sym of symbols) {
+    requests[sym] = `/quote?symbol=${encodeURIComponent(sym.toUpperCase())}&apikey=${apiKey}`;
+  }
+
+  const raw = await batchFetch<TwelveDataQuoteResponse>(requests);
   const quotes = new Map<string, StockQuote>();
-  for (let i = 0; i < symbols.length; i++) {
+  for (const [sym, data] of Object.entries(raw)) {
     try {
-      const quote = await getStockQuote(symbols[i]);
-      quotes.set(symbols[i], quote);
-    } catch (err) {
-      console.error(`Error fetching Twelve Data quote for ${symbols[i]}:`, err);
-    }
-    if (i < symbols.length - 1) {
-      await new Promise((r) => setTimeout(r, QUOTE_MIN_INTERVAL_MS));
+      quotes.set(sym, parseQuoteResponse(data, sym));
+    } catch {
+      // Individual symbol errors don't abort the whole batch
     }
   }
   return quotes;
@@ -399,51 +438,42 @@ interface TwelveDataEarningsCalendarResponse {
 }
 
 export async function getEarningsCalendar(
-  from: string,
-  to: string,
+  _from: string,
+  _to: string,
   symbol?: string
 ): Promise<EarningsCalendar[]> {
-  const params: Record<string, string | number> = {
-    start_date: from,
-    end_date: to,
-  };
-  if (symbol) params.symbol = symbol.toUpperCase();
+  if (!symbol) return [];
 
-  const url = buildUrl('/earnings_calendar', params);
+  // Use /earnings (per-symbol, 20 credits) — returns past + upcoming events in one call.
+  // /earnings_calendar is a global date-range endpoint with a completely different response shape.
+  const url = buildUrl('/earnings', { symbol: symbol.toUpperCase(), outputsize: 8 });
   const response = await fetch(url);
-  const data = (await response.json()) as TwelveDataEarningsCalendarResponse;
-  logUsage('earnings_calendar', symbol ?? undefined);
+  logUsage('earnings', symbol);
 
-  if (!response.ok) {
-    const msg = data.message || `Twelve Data API error: ${response.status}`;
-    if (response.status === 429 || data.code === 429 || /rate.?limit|credits? exceeded/i.test(msg)) {
-      throw new TwelveDataRateLimitError(msg);
-    }
-    throw new Error(msg);
-  }
-  if (data.code || data.status === 'error') {
-    const msg = data.message || `Twelve Data API error`;
-    if (data.code === 429 || /rate.?limit|credits? exceeded/i.test(msg)) {
-      throw new TwelveDataRateLimitError(msg);
-    }
+  interface EarningsApiItem { date: string; time?: string; eps_estimate?: number | null; eps_actual?: number | null; }
+  interface EarningsApiResponse { earnings?: EarningsApiItem[]; status?: string; code?: number; message?: string; }
+  const data = (await response.json()) as EarningsApiResponse;
+
+  if (!response.ok || data.code || data.status === 'error') {
+    const msg = data.message || `Twelve Data earnings error for ${symbol}`;
+    if (data.code === 429 || /rate.?limit|credits? exceeded/i.test(msg)) throw new TwelveDataRateLimitError(msg);
     throw new Error(msg);
   }
 
-  const items = data.earnings_calendar ?? data.data ?? [];
-  return items.map((item) => {
+  return (data.earnings ?? []).map((item) => {
     const [yearStr, monthStr] = item.date.split('-');
     const year = parseInt(yearStr || '0', 10);
     const month = parseInt(monthStr || '0', 10);
-    const quarter = month >= 1 && month <= 3 ? 1 : month <= 6 ? 2 : month <= 9 ? 3 : 4;
+    const quarter = month <= 3 ? 1 : month <= 6 ? 2 : month <= 9 ? 3 : 4;
     return {
       date: item.date,
       epsActual: item.eps_actual ?? null,
       epsEstimate: item.eps_estimate ?? null,
       hour: item.time ?? '',
       quarter,
-      revenueActual: item.revenue_actual ?? null,
-      revenueEstimate: item.revenue_estimate ?? null,
-      symbol: item.symbol ?? symbol ?? '',
+      revenueActual: null,
+      revenueEstimate: null,
+      symbol: symbol.toUpperCase(),
       year,
     };
   });
@@ -506,61 +536,518 @@ export async function getCompanyEarnings(
   });
 }
 
-// -------- Recommendation trends --------
+// -------- Statistics --------
 
-interface TwelveDataTrendMonth {
-  strong_buy: number;
-  buy: number;
-  hold: number;
-  sell: number;
-  strong_sell: number;
+export interface CompanyStatistics {
+  symbol: string;
+  marketCap: number | null;
+  enterpriseValue: number | null;
+  peRatioTTM: number | null;
+  peRatioForward: number | null;
+  pbRatio: number | null;
+  evToEbitda: number | null;
+  beta: number | null;
+  week52High: number | null;
+  week52Low: number | null;
+  avgVolume: number | null;
+  sharesFloat: number | null;
+  shortRatio: number | null;
+  dividendYield: number | null;
+  profitMargin: number | null;
+  revenueGrowthTTM: number | null;
+  epsGrowthTTM: number | null;
 }
 
-interface TwelveDataRecommendationsResponse {
-  trends?: Record<string, TwelveDataTrendMonth>;
+interface TwelveDataStatisticsResponse {
+  statistics?: {
+    valuations_metrics?: {
+      market_capitalization?: number | null;
+      enterprise_value?: number | null;
+      trailing_pe?: number | null;
+      forward_pe?: number | null;
+      price_to_book_mrq?: number | null;
+      enterprise_to_ebitda?: number | null;
+    };
+    stock_statistics?: {
+      avg_10_volume?: number | null;
+      avg_90_volume?: number | null;
+      float_shares?: number | null;
+      short_ratio?: number | null;
+    };
+    stock_price_summary?: {
+      beta?: number | null;
+      fifty_two_week_high?: number | null;
+      fifty_two_week_low?: number | null;
+    };
+    dividends_and_splits?: {
+      forward_annual_dividend_yield?: number | null;
+    };
+    financials?: {
+      profit_margin?: number | null;
+      income_statement?: {
+        quarterly_revenue_growth?: number | null;
+        quarterly_earnings_growth_yoy?: number | null;
+      };
+    };
+  };
   status?: string;
   code?: number;
   message?: string;
 }
 
-const PERIOD_NAMES: Record<string, string> = {
-  current_month: '0 months ago',
-  previous_month: '1 month ago',
-  '2_months_ago': '2 months ago',
-  '3_months_ago': '3 months ago',
-  '4_months_ago': '4 months ago',
-  '5_months_ago': '5 months ago',
-};
-
-export async function getRecommendationTrends(symbol: string): Promise<RecommendationTrend[]> {
-  const url = buildUrl('/recommendations', { symbol: symbol.toUpperCase() });
+export async function getStatistics(symbol: string): Promise<CompanyStatistics> {
+  logUsage('statistics', symbol);
+  const url = buildUrl('/statistics', { symbol: symbol.toUpperCase() });
   const response = await fetch(url);
-  const data = (await response.json()) as TwelveDataRecommendationsResponse;
-  logUsage('recommendations', symbol);
+  const data = (await response.json()) as TwelveDataStatisticsResponse;
 
-  if (!response.ok) {
-    const msg = data.message || `Twelve Data API error: ${response.status}`;
-    if (response.status === 429 || data.code === 429 || /rate.?limit|credits? exceeded/i.test(msg)) {
-      throw new TwelveDataRateLimitError(msg);
-    }
-    throw new Error(msg);
-  }
-  if (data.code || data.status === 'error') {
-    const msg = data.message || `Twelve Data API error`;
-    if (data.code === 429 || /rate.?limit|credits? exceeded/i.test(msg)) {
-      throw new TwelveDataRateLimitError(msg);
-    }
+  if (!response.ok || data.code || data.status === 'error') {
+    const msg = data.message || `Twelve Data statistics error for ${symbol}`;
+    const isRateLimit = data.code === 429 || /rate.?limit|credits? exceeded/i.test(msg);
+    if (isRateLimit) throw new TwelveDataRateLimitError(msg);
     throw new Error(msg);
   }
 
-  const trends = data.trends ?? {};
-  return Object.entries(trends).map(([key, t]) => ({
-    buy: t.buy,
-    hold: t.hold,
-    period: PERIOD_NAMES[key] ?? key.replace(/_/g, ' '),
-    sell: t.sell,
-    strongBuy: t.strong_buy,
-    strongSell: t.strong_sell,
+  const stats = data.statistics ?? {};
+  const v = stats.valuations_metrics ?? {};
+  const s = stats.stock_statistics ?? {};
+  const sp = stats.stock_price_summary ?? {};
+  const d = stats.dividends_and_splits ?? {};
+  const f = stats.financials ?? {};
+  const fi = f.income_statement ?? {};
+
+  return {
     symbol,
+    marketCap: v.market_capitalization ?? null,
+    enterpriseValue: v.enterprise_value ?? null,
+    peRatioTTM: v.trailing_pe ?? null,
+    peRatioForward: v.forward_pe ?? null,
+    pbRatio: v.price_to_book_mrq ?? null,
+    evToEbitda: v.enterprise_to_ebitda ?? null,
+    beta: sp.beta ?? null,
+    week52High: sp.fifty_two_week_high ?? null,
+    week52Low: sp.fifty_two_week_low ?? null,
+    avgVolume: s.avg_90_volume ?? null,
+    sharesFloat: s.float_shares ?? null,
+    shortRatio: s.short_ratio ?? null,
+    dividendYield: d.forward_annual_dividend_yield ?? null,
+    profitMargin: f.profit_margin ?? null,
+    revenueGrowthTTM: fi.quarterly_revenue_growth ?? null,
+    epsGrowthTTM: fi.quarterly_earnings_growth_yoy ?? null,
+  };
+}
+
+// -------- Income Statement --------
+
+export interface IncomeStatementPeriod {
+  fiscal_date: string;
+  revenue: number | null;
+  gross_profit: number | null;
+  operating_income: number | null;
+  net_income: number | null;
+  ebitda: number | null;
+  eps_basic: number | null;
+  eps_diluted: number | null;
+  r_and_d_expenses: number | null;
+  selling_general_administrative_expenses: number | null;
+  interest_expense: number | null;
+  income_tax_expense: number | null;
+}
+
+interface TwelveDataIncomeItem {
+  fiscal_date?: string;
+  sales?: number | null;
+  gross_profit?: number | null;
+  operating_income?: number | null;
+  net_income?: number | null;
+  ebitda?: number | null;
+  eps_basic?: number | null;
+  eps_diluted?: number | null;
+  operating_expense?: {
+    research_and_development?: number | null;
+    selling_general_and_administrative?: number | null;
+  };
+  non_operating_interest?: {
+    expense?: number | null;
+  };
+  income_tax?: number | null;
+}
+
+interface TwelveDataIncomeResponse {
+  income_statement?: TwelveDataIncomeItem[];
+  status?: string;
+  code?: number;
+  message?: string;
+}
+
+export async function getIncomeStatement(
+  symbol: string,
+  period: 'quarterly' | 'annual' = 'quarterly'
+): Promise<IncomeStatementPeriod[]> {
+  logUsage('income_statement', symbol);
+  const url = buildUrl('/income_statement', {
+    symbol: symbol.toUpperCase(),
+    period,
+    outputsize: 4,
+  });
+  const response = await fetch(url);
+  const data = (await response.json()) as TwelveDataIncomeResponse;
+
+  if (!response.ok || data.code || data.status === 'error') {
+    const msg = data.message || `Twelve Data income statement error for ${symbol}`;
+    if (data.code === 429 || /rate.?limit|credits? exceeded/i.test(msg)) throw new TwelveDataRateLimitError(msg);
+    throw new Error(msg);
+  }
+
+  return (data.income_statement ?? []).map((item) => ({
+    fiscal_date: item.fiscal_date ?? '',
+    revenue: item.sales ?? null,
+    gross_profit: item.gross_profit ?? null,
+    operating_income: item.operating_income ?? null,
+    net_income: item.net_income ?? null,
+    ebitda: item.ebitda ?? null,
+    eps_basic: item.eps_basic ?? null,
+    eps_diluted: item.eps_diluted ?? null,
+    r_and_d_expenses: item.operating_expense?.research_and_development ?? null,
+    selling_general_administrative_expenses: item.operating_expense?.selling_general_and_administrative ?? null,
+    interest_expense: item.non_operating_interest?.expense ?? null,
+    income_tax_expense: item.income_tax ?? null,
   }));
 }
+
+// -------- Balance Sheet --------
+
+export interface BalanceSheetPeriod {
+  fiscal_date: string;
+  total_assets: number | null;
+  total_current_assets: number | null;
+  cash_and_equivalents: number | null;
+  total_liabilities: number | null;
+  total_current_liabilities: number | null;
+  long_term_debt: number | null;
+  total_stockholders_equity: number | null;
+  retained_earnings: number | null;
+  goodwill_and_intangible_assets: number | null;
+}
+
+interface TwelveDataBalanceItem {
+  fiscal_date?: string;
+  assets?: {
+    current_assets?: {
+      cash_and_cash_equivalents?: number | null;
+      total_current_assets?: number | null;
+    };
+    non_current_assets?: {
+      goodwill?: number | null;
+      intangible_assets?: number | null;
+    };
+    total_assets?: number | null;
+  };
+  liabilities?: {
+    current_liabilities?: {
+      total_current_liabilities?: number | null;
+    };
+    non_current_liabilities?: {
+      long_term_debt?: number | null;
+    };
+    total_liabilities?: number | null;
+  };
+  shareholders_equity?: {
+    total_shareholders_equity?: number | null;
+    retained_earnings?: number | null;
+  };
+}
+
+interface TwelveDataBalanceResponse {
+  balance_sheet?: TwelveDataBalanceItem[];
+  status?: string;
+  code?: number;
+  message?: string;
+}
+
+export async function getBalanceSheet(
+  symbol: string,
+  period: 'quarterly' | 'annual' = 'quarterly'
+): Promise<BalanceSheetPeriod[]> {
+  logUsage('balance_sheet', symbol);
+  const url = buildUrl('/balance_sheet', {
+    symbol: symbol.toUpperCase(),
+    period,
+    outputsize: 4,
+  });
+  const response = await fetch(url);
+  const data = (await response.json()) as TwelveDataBalanceResponse;
+
+  if (!response.ok || data.code || data.status === 'error') {
+    const msg = data.message || `Twelve Data balance sheet error for ${symbol}`;
+    if (data.code === 429 || /rate.?limit|credits? exceeded/i.test(msg)) throw new TwelveDataRateLimitError(msg);
+    throw new Error(msg);
+  }
+
+  return (data.balance_sheet ?? []).map((item) => ({
+    fiscal_date: item.fiscal_date ?? '',
+    total_assets: item.assets?.total_assets ?? null,
+    total_current_assets: item.assets?.current_assets?.total_current_assets ?? null,
+    cash_and_equivalents: item.assets?.current_assets?.cash_and_cash_equivalents ?? null,
+    total_liabilities: item.liabilities?.total_liabilities ?? null,
+    total_current_liabilities: item.liabilities?.current_liabilities?.total_current_liabilities ?? null,
+    long_term_debt: item.liabilities?.non_current_liabilities?.long_term_debt ?? null,
+    total_stockholders_equity: item.shareholders_equity?.total_shareholders_equity ?? null,
+    retained_earnings: item.shareholders_equity?.retained_earnings ?? null,
+    goodwill_and_intangible_assets:
+      (item.assets?.non_current_assets?.goodwill ?? 0) +
+      (item.assets?.non_current_assets?.intangible_assets ?? 0) || null,
+  }));
+}
+
+// -------- Cash Flow --------
+
+export interface CashFlowPeriod {
+  fiscal_date: string;
+  net_income: number | null;
+  depreciation_and_amortization: number | null;
+  operating_cash_flow: number | null;
+  capital_expenditures: number | null;
+  free_cash_flow: number | null;
+  investing_activities_cash_flow: number | null;
+  financing_activities_cash_flow: number | null;
+  dividends_paid: number | null;
+}
+
+interface TwelveDataCashFlowItem {
+  fiscal_date?: string;
+  free_cash_flow?: number | null;
+  operating_activities?: {
+    net_income?: number | null;
+    depreciation?: number | null;
+    operating_cash_flow?: number | null;
+  };
+  investing_activities?: {
+    capital_expenditures?: number | null;
+    investing_cash_flow?: number | null;
+  };
+  financing_activities?: {
+    common_dividends?: number | null;
+    financing_cash_flow?: number | null;
+  };
+}
+
+interface TwelveDataCashFlowResponse {
+  cash_flow?: TwelveDataCashFlowItem[];
+  status?: string;
+  code?: number;
+  message?: string;
+}
+
+export async function getCashFlow(
+  symbol: string,
+  period: 'quarterly' | 'annual' = 'quarterly'
+): Promise<CashFlowPeriod[]> {
+  logUsage('cash_flow', symbol);
+  const url = buildUrl('/cash_flow', {
+    symbol: symbol.toUpperCase(),
+    period,
+    outputsize: 4,
+  });
+  const response = await fetch(url);
+  const data = (await response.json()) as TwelveDataCashFlowResponse;
+
+  if (!response.ok || data.code || data.status === 'error') {
+    const msg = data.message || `Twelve Data cash flow error for ${symbol}`;
+    if (data.code === 429 || /rate.?limit|credits? exceeded/i.test(msg)) throw new TwelveDataRateLimitError(msg);
+    throw new Error(msg);
+  }
+
+  return (data.cash_flow ?? []).map((item) => ({
+    fiscal_date: item.fiscal_date ?? '',
+    net_income: item.operating_activities?.net_income ?? null,
+    depreciation_and_amortization: item.operating_activities?.depreciation ?? null,
+    operating_cash_flow: item.operating_activities?.operating_cash_flow ?? null,
+    capital_expenditures: item.investing_activities?.capital_expenditures ?? null,
+    free_cash_flow: item.free_cash_flow ?? null,
+    investing_activities_cash_flow: item.investing_activities?.investing_cash_flow ?? null,
+    financing_activities_cash_flow: item.financing_activities?.financing_cash_flow ?? null,
+    dividends_paid: item.financing_activities?.common_dividends ?? null,
+  }));
+}
+
+// -------- Dividends --------
+
+export interface DividendItem {
+  ex_dividend_date: string;
+  payment_date: string | null;
+  record_date: string | null;
+  declaration_date: string | null;
+  amount: number;
+  currency: string;
+}
+
+interface TwelveDataDividendItem {
+  ex_dividend_date?: string;
+  payment_date?: string | null;
+  record_date?: string | null;
+  declaration_date?: string | null;
+  amount?: number;
+  currency?: string;
+}
+
+interface TwelveDataDividendsResponse {
+  dividends?: TwelveDataDividendItem[];
+  status?: string;
+  code?: number;
+  message?: string;
+}
+
+export async function getDividends(symbol: string): Promise<DividendItem[]> {
+  logUsage('dividends', symbol);
+  const url = buildUrl('/dividends', { symbol: symbol.toUpperCase(), outputsize: 20 });
+  const response = await fetch(url);
+  const data = (await response.json()) as TwelveDataDividendsResponse;
+
+  if (!response.ok || data.code || data.status === 'error') {
+    const msg = data.message || `Twelve Data dividends error for ${symbol}`;
+    if (data.code === 429 || /rate.?limit|credits? exceeded/i.test(msg)) throw new TwelveDataRateLimitError(msg);
+    throw new Error(msg);
+  }
+
+  return (data.dividends ?? []).map((item) => ({
+    ex_dividend_date: item.ex_dividend_date ?? '',
+    payment_date: item.payment_date ?? null,
+    record_date: item.record_date ?? null,
+    declaration_date: item.declaration_date ?? null,
+    amount: item.amount ?? 0,
+    currency: item.currency ?? 'USD',
+  }));
+}
+
+// -------- Company Profile --------
+
+export interface CompanyProfile {
+  symbol: string;
+  name: string;
+  exchange: string;
+  currency: string;
+  sector: string | null;
+  industry: string | null;
+  description: string | null;
+  ceo: string | null;
+  website: string | null;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  country: string | null;
+  zip: string | null;
+  employees: number | null;
+  ipo_date: string | null;
+  type: string | null;
+  logo: string | null;
+}
+
+interface TwelveDataProfileResponse {
+  symbol?: string;
+  name?: string;
+  exchange?: string;
+  currency?: string;
+  sector?: string;
+  industry?: string;
+  description?: string;
+  CEO?: string;
+  website?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  zip?: string;
+  employees?: number | string;
+  IPO_date?: string;
+  type?: string;
+  logo?: string;
+  status?: string;
+  code?: number;
+  message?: string;
+}
+
+export async function getCompanyProfile(symbol: string): Promise<CompanyProfile> {
+  logUsage('profile', symbol);
+  const url = buildUrl('/profile', { symbol: symbol.toUpperCase() });
+  const response = await fetch(url);
+  const data = (await response.json()) as TwelveDataProfileResponse;
+
+  if (!response.ok || data.code || data.status === 'error') {
+    const msg = data.message || `Twelve Data profile error for ${symbol}`;
+    if (data.code === 429 || /rate.?limit|credits? exceeded/i.test(msg)) throw new TwelveDataRateLimitError(msg);
+    throw new Error(msg);
+  }
+
+  return {
+    symbol: data.symbol ?? symbol,
+    name: data.name ?? symbol,
+    exchange: data.exchange ?? '',
+    currency: data.currency ?? 'USD',
+    sector: data.sector ?? null,
+    industry: data.industry ?? null,
+    description: data.description ?? null,
+    ceo: data.CEO ?? null,
+    website: data.website ?? null,
+    address: data.address ?? null,
+    city: data.city ?? null,
+    state: data.state ?? null,
+    country: data.country ?? null,
+    zip: data.zip ?? null,
+    employees: data.employees ? Number(data.employees) : null,
+    ipo_date: data.IPO_date ?? null,
+    type: data.type ?? null,
+    logo: data.logo ?? null,
+  };
+}
+
+// -------- Key Executives --------
+
+export interface KeyExecutive {
+  name: string;
+  title: string;
+  age: number | null;
+  gender: string | null;
+  total_compensation: number | null;
+  currency: string;
+}
+
+interface TwelveDataExecutive {
+  name?: string;
+  title?: string;
+  age?: number | null;
+  gender?: string | null;
+  total_compensation?: number | null;
+  currency?: string;
+}
+
+interface TwelveDataExecutivesResponse {
+  symbol?: string;
+  executives?: TwelveDataExecutive[];
+  status?: string;
+  code?: number;
+  message?: string;
+}
+
+export async function getKeyExecutives(symbol: string): Promise<KeyExecutive[]> {
+  logUsage('key_executives', symbol);
+  const url = buildUrl('/key_executives', { symbol: symbol.toUpperCase() });
+  const response = await fetch(url);
+  const data = (await response.json()) as TwelveDataExecutivesResponse;
+
+  if (!response.ok || data.code || data.status === 'error') {
+    const msg = data.message || `Twelve Data executives error for ${symbol}`;
+    if (data.code === 429 || /rate.?limit|credits? exceeded/i.test(msg)) throw new TwelveDataRateLimitError(msg);
+    throw new Error(msg);
+  }
+
+  return (data.executives ?? []).map((e) => ({
+    name: e.name ?? '',
+    title: e.title ?? '',
+    age: e.age ?? null,
+    gender: e.gender ?? null,
+    total_compensation: e.total_compensation ?? null,
+    currency: e.currency ?? 'USD',
+  }));
+}
+

@@ -17,7 +17,8 @@ import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useSearchShortcut } from '@/hooks/use-search-shortcut';
 import { fetchWithTimeout } from '@/lib/utils';
-import { MessageSquare, Briefcase, Filter, TrendingUp, ExternalLink, Scale, FileText } from 'lucide-react';
+import { MessageSquare, Briefcase, Filter, TrendingUp, ExternalLink, Scale, FileText, Users } from 'lucide-react';
+import type { PublicUser } from '@/app/api/users/search/route';
 
 interface SearchResult {
   ticker: string;
@@ -46,6 +47,7 @@ const QUICK_ACTIONS = [
   { id: 'holdings', label: 'My Holdings', href: '/holdings', icon: Briefcase },
   { id: 'screener', label: 'Stock Screener', href: '/tools/screener', icon: Filter },
   { id: 'discover', label: 'Discover', href: '/', icon: TrendingUp },
+  { id: 'members', label: 'Browse Members', href: '/users', icon: Users },
 ];
 
 interface CommandPaletteProps {
@@ -61,6 +63,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 
   const debouncedQuery = useDebounce(searchQuery, 300);
 
+  // Company search
   const {
     data: searchResults,
     isLoading: isSearching,
@@ -78,6 +81,24 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       const data: SearchResponse = await response.json();
       if (data.success && data.results) return data.results;
       return [];
+    },
+    enabled: debouncedQuery.trim().length >= 2,
+    staleTime: 30 * 1000,
+  });
+
+  // People search (parallel to company search)
+  const { data: peopleResults } = useQuery({
+    queryKey: ['command-palette-people', debouncedQuery],
+    queryFn: async (): Promise<PublicUser[]> => {
+      if (!debouncedQuery || debouncedQuery.trim().length < 2) return [];
+      const response = await fetchWithTimeout(
+        `/api/users/search?q=${encodeURIComponent(debouncedQuery)}&limit=4`,
+        {},
+        8000
+      );
+      if (!response.ok) return [];
+      const data: { success: boolean; results: PublicUser[] } = await response.json();
+      return data.results ?? [];
     },
     enabled: debouncedQuery.trim().length >= 2,
     staleTime: 30 * 1000,
@@ -271,6 +292,59 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                     </CommandGroup>
                   </>
                 ) : null}
+                {peopleResults && peopleResults.length > 0 && (
+                  <CommandGroup heading="People">
+                    {peopleResults.map((person) => {
+                      const displayName = person.full_name || person.username || 'Anonymous';
+                      const profileSlug = person.username ? encodeURIComponent(person.username) : person.id;
+                      const href = profileSlug ? `/users/${profileSlug}` : '#';
+                      const initials = displayName.slice(0, 2).toUpperCase();
+                      return (
+                        <CommandItem
+                          key={person.id}
+                          value={`person-${person.id}`}
+                          onSelect={() => {
+                            onOpenChange(false);
+                            setSearchQuery('');
+                            router.push(href);
+                          }}
+                        >
+                          <div className="flex items-center gap-2.5 w-full">
+                            {person.avatar_url ? (
+                              <img
+                                src={person.avatar_url}
+                                alt={displayName}
+                                className="h-7 w-7 rounded-full object-cover shrink-0"
+                              />
+                            ) : (
+                              <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                <span className="text-[10px] font-semibold text-primary">{initials}</span>
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <span className="font-medium text-sm">{displayName}</span>
+                              {person.username && (
+                                <span className="text-muted-foreground ml-1.5 text-xs">@{person.username}</span>
+                              )}
+                            </div>
+                            <Users className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                          </div>
+                        </CommandItem>
+                      );
+                    })}
+                    <CommandItem
+                      value="browse-all-people"
+                      onSelect={() => {
+                        onOpenChange(false);
+                        setSearchQuery('');
+                        router.push(`/users?q=${encodeURIComponent(debouncedQuery)}`);
+                      }}
+                    >
+                      <Users className="h-4 w-4" />
+                      Browse all members matching &quot;{debouncedQuery}&quot;
+                    </CommandItem>
+                  </CommandGroup>
+                )}
                 {(!searchResults || searchResults.length === 0) && (
                   <CommandEmpty>
                     {isSearching ? (

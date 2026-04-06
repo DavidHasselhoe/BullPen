@@ -16,7 +16,6 @@ export type {
   TopMovers,
   EarningsCalendar,
   CompanyEarnings,
-  RecommendationTrend,
   MarketNews,
   CompanyNews,
 } from '@/lib/finnhub/finnhub-client';
@@ -46,6 +45,3 @@ export const getEarningsCalendar = useTwelveData
 export const getCompanyEarnings = useTwelveData
   ? twelvedata.getCompanyEarnings
   : finnhub.getCompanyEarnings;
-export const getRecommendationTrends = useTwelveData
-  ? twelvedata.getRecommendationTrends
-  : finnhub.getRecommendationTrends;

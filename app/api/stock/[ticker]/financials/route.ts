@@ -1,0 +1,66 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { withRateLimit, withAuth, addSecurityHeaders } from '@/lib/security/api-security';
+import {
+  getIncomeStatement,
+  getBalanceSheet,
+  getCashFlow,
+  getDividends,
+  TwelveDataRateLimitError,
+} from '@/lib/twelvedata/twelvedata-client';
+
+type FinancialType = 'income' | 'balance' | 'cashflow' | 'dividends';
+type Period = 'quarterly' | 'annual';
+
+async function handler(
+  request: NextRequest,
+  context: { params: Promise<{ ticker: string }> },
+  _session: { userId: string }
+): Promise<NextResponse> {
+  const { ticker } = await context.params;
+  const symbol = ticker.toUpperCase();
+  const { searchParams } = new URL(request.url);
+  const type = (searchParams.get('type') ?? 'income') as FinancialType;
+  const period = (searchParams.get('period') ?? 'quarterly') as Period;
+
+  try {
+    let result;
+    switch (type) {
+      case 'income':
+        result = await getIncomeStatement(symbol, period);
+        break;
+      case 'balance':
+        result = await getBalanceSheet(symbol, period);
+        break;
+      case 'cashflow':
+        result = await getCashFlow(symbol, period);
+        break;
+      case 'dividends':
+        result = await getDividends(symbol);
+        break;
+      default:
+        return addSecurityHeaders(
+          NextResponse.json({ success: false, error: 'Invalid type' }, { status: 400 })
+        );
+    }
+
+    return addSecurityHeaders(NextResponse.json({ success: true, data: result, type, period }));
+  } catch (err) {
+    if (err instanceof TwelveDataRateLimitError) {
+      return addSecurityHeaders(
+        NextResponse.json({ success: false, error: 'Rate limit exceeded' }, { status: 429 })
+      );
+    }
+    const msg = err instanceof Error ? err.message : String(err);
+    if (/enterprise plan|higher plan|not available.*plan/i.test(msg)) {
+      return addSecurityHeaders(
+        NextResponse.json({ success: false, error: 'plan_restricted', type, period }, { status: 403 })
+      );
+    }
+    console.error(`[financials] Error for ${symbol} type=${type}:`, err);
+    return addSecurityHeaders(
+      NextResponse.json({ success: false, error: 'Failed to fetch financial data' }, { status: 500 })
+    );
+  }
+}
+
+export const GET = withRateLimit(withAuth(handler), { windowMs: 60 * 1000, maxRequests: 60 });

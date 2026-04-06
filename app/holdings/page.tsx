@@ -9,8 +9,10 @@ import { PortfolioDashboard } from '@/components/holdings/PortfolioDashboard';
 import { PortfolioRiskAnalysis } from '@/components/holdings/PortfolioRiskAnalysis';
 import { useHoldings } from '@/hooks/use-holdings';
 import { useAuth } from '@/hooks/use-auth';
+import { useLivePrices } from '@/hooks/use-live-prices';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { useQuery } from '@tanstack/react-query';
+import { Radio } from 'lucide-react';
 import type { HoldingWithPrice } from '@/components/holdings/types';
 import {
   getExchangeRates,
@@ -39,6 +41,10 @@ export default function HoldingsPage() {
     staleTime: 60 * 60 * 1000,  // rates update once daily
     gcTime: 24 * 60 * 60 * 1000,
   });
+
+  // Live price stream — updates prices in real time via WsManager SSE
+  const holdingSymbols = useMemo(() => (holdings ?? []).map((h) => h.symbol), [holdings]);
+  const livePrices = useLivePrices(holdingSymbols);
 
   // Fetch quotes and logos for all holdings (shared cache with HoldingsTable)
   const quotesData = useQuery({
@@ -114,7 +120,12 @@ export default function HoldingsPage() {
       userCurrency === 'USD' ? usd : convertCurrency(usd, 'USD', userCurrency, rates);
 
     return holdings.map((holding) => {
-      const quote = quotesMap[holding.symbol];
+      const liveQuote = livePrices.get(holding.symbol);
+      const batchQuote = quotesMap[holding.symbol];
+      // Prefer real-time tick; fall back to batch
+      const quote = liveQuote
+        ? { price: liveQuote.price, change: liveQuote.change, changePercent: liveQuote.changePercent }
+        : batchQuote;
       const logoUrl = logosMap[holding.symbol] || null;
 
       const currentPriceUSD = quote?.price;
@@ -151,7 +162,7 @@ export default function HoldingsPage() {
         logoUrl,
       };
     });
-  }, [holdings, quotesData.data, exchangeRates.data, userCurrency]);
+  }, [holdings, quotesData.data, exchangeRates.data, userCurrency, livePrices]);
 
   if (!isAuthenticated) {
     return (
@@ -174,7 +185,15 @@ export default function HoldingsPage() {
     <div className="container mx-auto py-8 space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold">My Holdings</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-3xl font-bold">My Holdings</h1>
+          {livePrices.size > 0 && (
+            <span className="flex items-center gap-1 text-sm text-emerald-500 font-medium">
+              <Radio className="h-3.5 w-3.5 animate-pulse" />
+              Live
+            </span>
+          )}
+        </div>
         <p className="text-muted-foreground mt-1">
           Track your stock portfolio and performance
         </p>

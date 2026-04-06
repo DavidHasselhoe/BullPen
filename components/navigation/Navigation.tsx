@@ -7,7 +7,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { UserMenu } from './UserMenu';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Home, Briefcase, Settings, Wrench, ChevronDown } from 'lucide-react';
+import { Home, Briefcase, Settings, Wrench, ChevronDown, Bookmark, Users, Rss, Trophy } from 'lucide-react';
 import { LiveClock } from '@/components/ui/LiveClock';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { SettingsModal } from '@/components/user/SettingsModal';
@@ -25,6 +25,13 @@ import { TOOLS } from '@/lib/tools/tools-config';
 const navigation = [
   { name: 'Discover', href: '/', icon: Home },
   { name: 'My Holdings', href: '/holdings', icon: Briefcase },
+  { name: 'Watchlist', href: '/watchlist', icon: Bookmark },
+];
+
+const COMMUNITY_LINKS = [
+  { id: 'feed', name: 'Feed', href: '/social', icon: Rss, description: 'Activity from investors you follow' },
+  { id: 'leaderboard', name: 'Leaderboard', href: '/leaderboard', icon: Trophy, description: 'Top portfolios by diversity' },
+  { id: 'members', name: 'Members', href: '/users', icon: Users, description: 'Browse investor profiles' },
 ];
 
 export function Navigation() {
@@ -34,8 +41,11 @@ export function Navigation() {
   const searchShortcut = useSearchShortcut();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
+  const [communityOpen, setCommunityOpen] = useState(false);
   const toolsCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const communityCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isToolsActive = pathname?.startsWith('/tools');
+  const isCommunityActive = ['/social', '/leaderboard', '/users'].some((p) => pathname?.startsWith(p));
 
   const clearToolsCloseTimer = useCallback(() => {
     if (toolsCloseTimerRef.current) {
@@ -53,6 +63,23 @@ export function Navigation() {
     clearToolsCloseTimer();
     setToolsOpen(true);
   }, [clearToolsCloseTimer]);
+
+  const clearCommunityCloseTimer = useCallback(() => {
+    if (communityCloseTimerRef.current) {
+      clearTimeout(communityCloseTimerRef.current);
+      communityCloseTimerRef.current = null;
+    }
+  }, []);
+
+  const scheduleCommunityClose = useCallback(() => {
+    clearCommunityCloseTimer();
+    communityCloseTimerRef.current = setTimeout(() => setCommunityOpen(false), 200);
+  }, [clearCommunityCloseTimer]);
+
+  const handleCommunityOpen = useCallback(() => {
+    clearCommunityCloseTimer();
+    setCommunityOpen(true);
+  }, [clearCommunityCloseTimer]);
 
   const prefetchDiscover = useCallback(() => {
     queryClient.prefetchQuery({ queryKey: ['discover', 'fundamental-changes', 6] });
@@ -97,6 +124,44 @@ export function Navigation() {
                   </Link>
                 );
               })}
+
+              {/* Community Dropdown */}
+              <div onPointerEnter={handleCommunityOpen} onPointerLeave={scheduleCommunityClose}>
+                <DropdownMenu open={communityOpen} onOpenChange={setCommunityOpen} modal={false}>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      className={cn(
+                        'flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium transition-all',
+                        isCommunityActive
+                          ? 'bg-primary/15 text-primary border border-primary/30 shadow-sm'
+                          : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground border border-transparent'
+                      )}
+                    >
+                      <Users className="h-4 w-4" />
+                      Community
+                      <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="center" sideOffset={4} className="min-w-[220px]">
+                    {COMMUNITY_LINKS.map((link) => {
+                      const Icon = link.icon;
+                      return (
+                        <DropdownMenuItem key={link.id} asChild>
+                          <Link href={link.href} className="flex items-center gap-3 cursor-pointer">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-muted">
+                              <Icon className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                            <div className="flex flex-col">
+                              <span>{link.name}</span>
+                              <span className="text-xs text-muted-foreground">{link.description}</span>
+                            </div>
+                          </Link>
+                        </DropdownMenuItem>
+                      );
+                    })}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
 
               {/* Tools Dropdown — hover region wraps trigger + content so there's no gap */}
               <div onPointerEnter={handleToolsOpen} onPointerLeave={scheduleToolsClose}>
