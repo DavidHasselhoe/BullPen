@@ -83,10 +83,18 @@ export function useTopMoversWithStream(limit: number = 5, symbols?: string[] | n
   const stream = useMoversStream(limit);
   const symbolsKey = symbols && symbols.length > 0 ? symbols.sort().join(',') : '';
 
+  // The stream only has *meaningful* data when it has accumulated enough ticks
+  // to produce at least one gainer or loser. An empty `{ gainers:[], losers:[] }`
+  // object is NOT meaningful — it just means the stream connected but hasn't
+  // seen enough price movement yet (common at open, pre-market, or market closed).
+  const streamHasMeaningfulData =
+    isAllMarkets &&
+    !!((stream.data?.gainers?.length ?? 0) > 0 || (stream.data?.losers?.length ?? 0) > 0);
+
   // REST runs whenever:
-  //  • we're in holdings mode (stream is always disabled for specific symbol sets)
-  //  • we're in all-markets mode but stream has no data yet (closed market / first load)
-  const restEnabled = !isAllMarkets || !stream.data;
+  //  • we're in holdings mode (stream is always disabled for specific symbol sets), OR
+  //  • we're in all-markets mode but stream hasn't produced real movers yet
+  const restEnabled = !isAllMarkets || !streamHasMeaningfulData;
 
   const rest = useQuery({
     queryKey: ['market', 'movers', 'rest', limit, symbolsKey],
@@ -101,15 +109,15 @@ export function useTopMoversWithStream(limit: number = 5, symbols?: string[] | n
     enabled: restEnabled,
     staleTime: 5 * 60 * 1000,
     gcTime: 15 * 60 * 1000,
-    // Re-poll every 3 min while REST is the active data source (stream inactive)
-    refetchInterval: isAllMarkets && !stream.data ? 3 * 60 * 1000 : false,
+    // Re-poll every 3 min while REST is the active data source (stream has no movers)
+    refetchInterval: restEnabled ? 3 * 60 * 1000 : false,
   });
 
-  // Prefer live stream data; fall back to REST snapshot
-  if (isAllMarkets && stream.data) {
+  // Prefer live stream data once it has real movers; fall back to REST snapshot
+  if (streamHasMeaningfulData) {
     return {
       data: stream.data,
-      isLoading: stream.isLoading,
+      isLoading: false,
       error: stream.error,
       isStreaming: stream.isStreaming,
     };
