@@ -75,12 +75,19 @@ export function useTopMovers(limit: number = 5, symbols?: string[] | null) {
 /**
  * Fetches top movers with WebSocket stream when in "All markets" mode (no symbols).
  * Uses Twelve Data WebSocket credits instead of API credits.
- * Falls back to REST when stream returns 503 or on error.
+ * Always runs REST in parallel as fallback — essential when the market is closed
+ * (no WS ticks arrive) or while the stream is warming up.
  */
 export function useTopMoversWithStream(limit: number = 5, symbols?: string[] | null) {
   const isAllMarkets = !symbols || symbols.length === 0;
   const stream = useMoversStream(limit);
   const symbolsKey = symbols && symbols.length > 0 ? symbols.sort().join(',') : '';
+
+  // REST runs whenever:
+  //  • we're in holdings mode (stream is always disabled for specific symbol sets)
+  //  • we're in all-markets mode but stream has no data yet (closed market / first load)
+  const restEnabled = !isAllMarkets || !stream.data;
+
   const rest = useQuery({
     queryKey: ['market', 'movers', 'rest', limit, symbolsKey],
     queryFn: async (): Promise<TopMovers> => {
@@ -91,11 +98,14 @@ export function useTopMoversWithStream(limit: number = 5, symbols?: string[] | n
       if (data.success && data.movers) return data.movers;
       throw new Error(data.error || 'Failed to fetch top movers');
     },
-    enabled: !isAllMarkets || !!stream.error,
+    enabled: restEnabled,
     staleTime: 5 * 60 * 1000,
     gcTime: 15 * 60 * 1000,
+    // Re-poll every 3 min while REST is the active data source (stream inactive)
+    refetchInterval: isAllMarkets && !stream.data ? 3 * 60 * 1000 : false,
   });
 
+  // Prefer live stream data; fall back to REST snapshot
   if (isAllMarkets && stream.data) {
     return {
       data: stream.data,

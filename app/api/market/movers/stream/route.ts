@@ -144,9 +144,9 @@ async function streamHandler(request: NextRequest) {
 
       request.signal.addEventListener('abort', cleanup);
 
-      // Safety valve: close this SSE stream after 55s to stay within serverless
-      // function timeouts. The browser will reconnect automatically (EventSource).
-      setTimeout(cleanup, 55_000);
+      // Safety valve: close this SSE stream after 4.5 min; browser auto-reconnects.
+      // 55s was too aggressive — caused constant WS reconnect noise in logs.
+      setTimeout(cleanup, 4.5 * 60 * 1000);
     },
   });
 

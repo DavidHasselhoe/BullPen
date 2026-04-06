@@ -69,17 +69,19 @@ export function useFundamentalChanges(limit: number = 6) {
           {},
           FETCH_TIMEOUT_MS
         );
+        // Route may not exist (e.g. after SEC pipeline removal) — return empty gracefully
+        if (!response.ok) return [];
         const data: FundamentalChangesResponse = await response.json();
         if (data.success && data.changes) return data.changes;
         return [];
       } catch (e) {
         const err = e as Error;
         if (err?.name === 'AbortError' || err?.message === 'Failed to fetch') return [];
-        throw e;
+        return []; // Never throw — empty state is fine
       }
     },
-    staleTime: 60 * 1000, // 1 minute
-    retry: 1,
+    staleTime: 60 * 1000,
+    retry: false, // Don't retry a deleted/broken endpoint
   });
 }
 
@@ -96,17 +98,16 @@ export function useRecentFilings(limit: number = 10) {
           {},
           FETCH_TIMEOUT_MS
         );
+        if (!response.ok) return [];
         const data: RecentFilingsResponse = await response.json();
         if (data.success && data.filings) return data.filings;
         return [];
-      } catch (e) {
-        const err = e as Error;
-        if (err?.name === 'AbortError' || err?.message === 'Failed to fetch') return [];
-        throw e;
+      } catch {
+        return [];
       }
     },
-    staleTime: 60 * 1000, // 1 minute
-    retry: 1,
+    staleTime: 60 * 1000,
+    retry: false,
   });
 }
 
@@ -123,16 +124,15 @@ export function useCompaniesToWatch(limit: number = 10) {
           {},
           FETCH_TIMEOUT_MS
         );
+        if (!response.ok) return [];
         const data: CompaniesToWatchResponse = await response.json();
         if (data.success && data.companies) return data.companies;
         return [];
-      } catch (e) {
-        const err = e as Error;
-        if (err?.name === 'AbortError' || err?.message === 'Failed to fetch') return [];
-        throw e;
+      } catch {
+        return [];
       }
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    retry: 1,
+    staleTime: 5 * 60 * 1000,
+    retry: false,
   });
 }
