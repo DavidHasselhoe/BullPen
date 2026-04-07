@@ -15,16 +15,15 @@ import { Button } from '@/components/ui/button';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import AnimatedContent from '@/components/ui/AnimatedContent';
 import { useBackground } from '@/hooks/use-background';
-import { StockQuoteCard } from '@/components/stock/StockQuoteCard';
 import { useIsWatched, useAddToWatchlist, useRemoveFromWatchlist } from '@/hooks/use-watchlist';
 import { ThesisSection } from '@/components/social/ThesisSection';
 import { useStockSnapshot } from '@/hooks/use-stock-snapshot';
 import dynamic from 'next/dynamic';
 import type { Company } from '@/lib/types/database';
 
-const PriceChart = dynamic(
-  () => import('@/components/stock/PriceChart').then((m) => ({ default: m.PriceChart })),
-  { ssr: false, loading: () => <div className="mb-8 h-[400px] animate-pulse rounded-xl bg-muted" /> }
+const StockPricePanel = dynamic(
+  () => import('@/components/stock/StockPricePanel').then((m) => ({ default: m.StockPricePanel })),
+  { ssr: false, loading: () => <div className="mb-8 h-[340px] animate-pulse rounded-2xl bg-muted" /> }
 );
 
 const StatisticsGrid = dynamic(
@@ -196,19 +195,10 @@ export default function StockDetailPage() {
           </AnimatedContent>
         )}
 
-        {/* Live quote */}
+        {/* Price panel: live price + chart combined */}
         {company && (
           <AnimatedContent reverse={true} delay={0.05}>
-            <div className="mb-8">
-              <StockQuoteCard ticker={ticker} />
-            </div>
-          </AnimatedContent>
-        )}
-
-        {/* Price chart */}
-        {company && (
-          <AnimatedContent reverse={true} delay={0.1}>
-            <PriceChart ticker={ticker} />
+            <StockPricePanel ticker={ticker} />
           </AnimatedContent>
         )}
 
