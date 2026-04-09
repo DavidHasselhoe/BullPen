@@ -17,6 +17,8 @@ import { cn } from '@/lib/utils';
 interface SearchResult {
   ticker: string;
   name: string;
+  exchange?: string;
+  instrument_type?: string;
   logo_url?: string | null;
 }
 

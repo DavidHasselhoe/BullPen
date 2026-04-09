@@ -10,6 +10,8 @@ import { cn } from '@/lib/utils';
 export interface SearchResult {
   ticker: string;
   name: string;
+  exchange?: string;
+  instrument_type?: string;
   cik: string;
   has_data: boolean;
   logo_url?: string | null;

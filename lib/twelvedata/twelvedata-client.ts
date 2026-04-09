@@ -1051,3 +1051,34 @@ export async function getKeyExecutives(symbol: string): Promise<KeyExecutive[]> 
   }));
 }
 
+// -------- Symbol Search --------
+
+export interface SymbolSearchResult {
+  symbol: string;
+  instrument_name: string;
+  exchange: string;
+  mic_code: string;
+  exchange_timezone: string;
+  instrument_type: string;
+  country: string;
+  currency: string;
+}
+
+/**
+ * Search for financial instruments by ticker or name.
+ * Endpoint: GET /symbol_search
+ * Cost: 1 API credit per request.
+ */
+export async function symbolSearch(
+  query: string,
+  outputsize = 20
+): Promise<SymbolSearchResult[]> {
+  logUsage('/symbol_search', query);
+  const url = buildUrl('/symbol_search', { symbol: query, outputsize });
+  const res = await fetch(url, { cache: 'no-store' });
+  if (!res.ok) throw new Error(`TwelveData symbol_search HTTP ${res.status}`);
+  const json = (await res.json()) as { data?: SymbolSearchResult[]; status?: string; message?: string };
+  if (json.status === 'error') throw new Error(json.message ?? 'TwelveData symbol_search error');
+  return json.data ?? [];
+}
+

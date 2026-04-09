@@ -23,6 +23,10 @@ import type { PublicUser } from '@/app/api/users/search/route';
 interface SearchResult {
   ticker: string;
   name: string;
+  exchange?: string;
+  country?: string;
+  currency?: string;
+  instrument_type?: string;
   cik: string;
   has_data: boolean;
   logo_url?: string | null;
@@ -34,13 +38,6 @@ interface SearchResponse {
   error?: string;
 }
 
-interface LazyIngestionResponse {
-  success: boolean;
-  companyId?: string;
-  ticker?: string;
-  filingsIngested?: number;
-  error?: string;
-}
 
 const QUICK_ACTIONS = [
   { id: 'ai', label: 'Ask BullPen AI', href: '/tools/ai-chat', icon: MessageSquare, opensAIPanel: true },
@@ -104,19 +101,6 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     staleTime: 30 * 1000,
   });
 
-  const ingestionMutation = useMutation({
-    mutationFn: async (ticker: string) => {
-      const response = await fetch('/api/ingest/lazy', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ticker }),
-      });
-      const data: LazyIngestionResponse = await response.json();
-      if (!data.success) throw new Error(data.error || 'Ingestion failed');
-      return data;
-    },
-  });
-
   const trackSearchMutation = useMutation({
     mutationFn: async (ticker: string) => {
       await fetch('/api/search/metrics', {
@@ -133,11 +117,8 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       setSearchQuery('');
       trackSearchMutation.mutate(result.ticker);
       router.push(`/stock/${result.ticker}`);
-      if (!result.has_data) {
-        ingestionMutation.mutate(result.ticker, { onError: () => {} });
-      }
     },
-    [router, onOpenChange, ingestionMutation, trackSearchMutation]
+    [router, onOpenChange, trackSearchMutation]
   );
 
   const handleQuickAction = useCallback(
@@ -187,11 +168,8 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       setSearchQuery('');
       trackSearchMutation.mutate(result.ticker);
       router.push(`/stock/${result.ticker}#earnings`);
-      if (!result.has_data) {
-        ingestionMutation.mutate(result.ticker, { onError: () => {} });
-      }
     },
-    [router, onOpenChange, trackSearchMutation, ingestionMutation]
+    [router, onOpenChange, trackSearchMutation]
   );
 
   return (
@@ -250,7 +228,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                     <CommandGroup heading="Companies">
                       {searchResults.map((result) => (
                         <CommandItem
-                          key={`${result.ticker}-${result.cik}`}
+                          key={`${result.ticker}-${result.exchange ?? ''}`}
                           value={`${result.ticker} ${result.name}`}
                           onSelect={() => handleSelectCompany(result)}
                         >
@@ -261,8 +239,20 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                             size={32}
                           />
                           <div className="flex-1 min-w-0">
-                            <span className="font-medium">{result.ticker}</span>
-                            <span className="text-muted-foreground ml-2 truncate">{result.name}</span>
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-medium">{result.ticker}</span>
+                              {result.exchange && (
+                                <span className="text-[10px] text-muted-foreground bg-muted rounded px-1 py-0.5 leading-none shrink-0">
+                                  {result.exchange}
+                                </span>
+                              )}
+                              {result.instrument_type && result.instrument_type !== 'Common Stock' && (
+                                <span className="text-[10px] text-muted-foreground bg-muted rounded px-1 py-0.5 leading-none shrink-0">
+                                  {result.instrument_type}
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-muted-foreground text-xs truncate block">{result.name}</span>
                           </div>
                         </CommandItem>
                       ))}
