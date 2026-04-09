@@ -1,5 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { symbolSearch } from '@/lib/twelvedata/twelvedata-client';
+import {
+  filterByQueryIntent,
+  isLikelyTickerQuery,
+  pickPrimaryListingPerSymbol,
+  pickPrimaryPerCompanyName,
+  symbolOrderFromResults,
+} from '@/lib/search/twelvedata-symbol-search-rank';
 import { withRateLimit, addSecurityHeaders, validateSearchQueryParam } from '@/lib/security/api-security';
 import { validateLimit } from '@/lib/security/input-validation';
 import { logger } from '@/lib/utils/logger';
@@ -37,15 +44,23 @@ async function handler(request: NextRequest) {
       return addSecurityHeaders(NextResponse.json({ success: true, results: [] }));
     }
 
-    // Request slightly more than needed so filtering doesn't leave too few results
-    const raw = await symbolSearch(queryValidation.sanitized.trim(), Math.min(limit * 3, 60));
+    const q = queryValidation.sanitized.trim();
 
-    // Filter to relevant instrument types, then cap at requested limit
-    const filtered = raw
-      .filter((r) => RELEVANT_TYPES.has(r.instrument_type))
-      .slice(0, limit);
+    // Fetch extra matches: TwelveData returns many cross-listings per company; we collapse to one primary per ticker.
+    const raw = await symbolSearch(q, Math.min(120, Math.max(limit * 4, 40)));
 
-    const results = filtered.map((r) => ({
+    let filtered = raw.filter((r) => RELEVANT_TYPES.has(r.instrument_type));
+    filtered = filterByQueryIntent(filtered, q);
+
+    // symbol_search has no request filter for exchange/country (docs: symbol, outputsize, show_plan only).
+    // Collapse cross-listings: name queries → one row per company (US/NASDAQ preferred); ticker queries → one per symbol.
+    const collapsed = isLikelyTickerQuery(q)
+      ? pickPrimaryListingPerSymbol(filtered, symbolOrderFromResults(filtered))
+      : pickPrimaryPerCompanyName(filtered);
+
+    const capped = collapsed.slice(0, limit);
+
+    const results = capped.map((r) => ({
       ticker:          r.symbol,
       name:            r.instrument_name,
       exchange:        r.exchange,
