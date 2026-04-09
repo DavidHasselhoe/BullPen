@@ -9,8 +9,14 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       {
+        // TwelveData logo CDN (replaces logo.dev)
         protocol: 'https',
-        hostname: 'img.logo.dev',
+        hostname: 'api.twelvedata.com',
+        pathname: '/logo/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'logo.twelvedata.com',
       },
       {
         protocol: 'https',

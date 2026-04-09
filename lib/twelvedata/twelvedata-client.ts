@@ -1051,6 +1051,32 @@ export async function getKeyExecutives(symbol: string): Promise<KeyExecutive[]> 
   }));
 }
 
+// -------- Logo --------
+
+export interface TwelveDataLogoResponse {
+  url?: string;         // Direct CDN URL to logo image (stocks)
+  logo_base?: string;   // For crypto/forex base currency
+  logo_quote?: string;  // For crypto/forex quote currency
+}
+
+/**
+ * Fetch the logo URL for a stock symbol.
+ * Endpoint: GET /logo
+ * Cost: 1 API credit per symbol.
+ * Returns the direct CDN URL (no API key required to load the image itself).
+ */
+export async function getLogoUrl(symbol: string): Promise<string | null> {
+  logUsage('/logo', symbol);
+  const url = buildUrl('/logo', { symbol: symbol.toUpperCase() });
+  const res = await fetch(url, {
+    next: { revalidate: 86400 }, // cache 24 h server-side
+  });
+  if (!res.ok) return null;
+  const json = (await res.json()) as TwelveDataLogoResponse & { status?: string };
+  if (json.status === 'error') return null;
+  return json.url ?? json.logo_base ?? null;
+}
+
 // -------- Symbol Search --------
 
 export interface SymbolSearchResult {

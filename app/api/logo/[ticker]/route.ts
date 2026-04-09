@@ -1,49 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ensureLogoForTicker } from '@/lib/logos/logos-orchestrator';
-import { logger } from '@/lib/utils/logger';
+import { getLogoUrl } from '@/lib/twelvedata/twelvedata-client';
+import { addSecurityHeaders } from '@/lib/security/api-security';
 
 /**
  * GET /api/logo/[ticker]
  *
- * Ensures logo exists in Supabase storage for the ticker.
- * If missing: fetches from Logo.dev API, saves to storage, returns URL.
- * No company record or ingestion pipeline required.
+ * Returns the logo URL for a ticker by calling TwelveData /logo.
+ * Response is cached for 24 hours server-side.
  */
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   context: { params: Promise<{ ticker: string }> }
 ) {
+  const { ticker } = await context.params;
+  if (!ticker) {
+    return NextResponse.json({ success: false, error: 'Missing ticker' }, { status: 400 });
+  }
+
+  const sym = ticker.trim().toUpperCase();
+
   try {
-    const { ticker } = await context.params;
-    if (!ticker) {
-      return NextResponse.json(
-        { success: false, error: 'Missing ticker' },
-        { status: 400 }
+    const logoUrl = await getLogoUrl(sym);
+
+    if (!logoUrl) {
+      return addSecurityHeaders(
+        NextResponse.json({ success: false, logoUrl: null, error: 'Logo not found' }, { status: 404 })
       );
     }
 
-    const result = await ensureLogoForTicker(ticker);
-
-    if (!result.success) {
-      return NextResponse.json(
-        { success: false, error: result.error || 'Logo not found', logoUrl: null },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      logoUrl: result.logoUrl,
-    });
-  } catch (error) {
-    logger.error('[Logo API] Error ensuring logo', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : 'Internal server error',
-        logoUrl: null,
-      },
-      { status: 500 }
+    return addSecurityHeaders(
+      NextResponse.json(
+        { success: true, logoUrl },
+        { headers: { 'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=3600' } }
+      )
+    );
+  } catch {
+    return addSecurityHeaders(
+      NextResponse.json({ success: false, logoUrl: null, error: 'Failed to fetch logo' }, { status: 500 })
     );
   }
 }

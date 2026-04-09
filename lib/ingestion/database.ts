@@ -81,16 +81,7 @@ export async function getOrCreateCompany(params: {
           logger.error(`Error extracting company profile for ${params.ticker}`, err);
         });
 
-      // Fetch and store logo in background (fire and forget)
-      import('../logos/logos-orchestrator')
-        .then(({ ingestCompanyLogo }) => {
-          ingestCompanyLogo(params.ticker, params.name, newCompany.id).catch((err) => {
-            logger.error(`Error ingesting logo for ${params.ticker}`, err);
-          });
-        })
-        .catch((err) => {
-          logger.error(`Error loading logo orchestrator for ${params.ticker}`, err);
-        });
+      // Logos are now fetched on-demand via TwelveData /logo endpoint (no ingestion needed)
     }
 
     return { success: true, data: newCompany };

@@ -387,12 +387,7 @@ export async function lazyIngestCompany(
 
     await markCompanyIndexAsIngested(ticker);
 
-    // Logo ingestion — fire and forget (non-blocking)
-    import('../logos/logos-orchestrator')
-      .then(({ ingestCompanyLogo }) =>
-        ingestCompanyLogo(company.ticker, company.name, company.id, () => {}).catch(() => {}),
-      )
-      .catch(() => {});
+    // Logos are now fetched on-demand via TwelveData /logo endpoint (no ingestion needed)
 
     tracker.completeStep('Finalizing');
     tracker.update('Ingestion complete');
