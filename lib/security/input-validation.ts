@@ -48,9 +48,9 @@ export function validateSearchQuery(query: string): { valid: boolean; sanitized?
 
   const trimmed = query.trim();
 
-  // Length limits
+  // Treat whitespace-only like an empty search (avoid 400 from bots / bad links)
   if (trimmed.length === 0) {
-    return { valid: false, error: 'Search query cannot be empty' };
+    return { valid: true, sanitized: '' };
   }
 
   if (trimmed.length > 100) {

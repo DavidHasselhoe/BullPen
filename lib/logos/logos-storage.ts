@@ -13,16 +13,16 @@ export interface StorageUploadResult {
 const LOGO_BUCKET = 'company-logos';
 
 /**
- * Returns the public URL for a company logo in storage.
- * Logos are stored as {ticker}.jpg (lowercase). Used when companies table
- * has no logo_url (e.g. company only in company_index). Caller should handle
- * 404 via CompanyLogo onError fallback.
+ * Returns the public URL for a company logo in Supabase Storage (read-only).
+ * Built from NEXT_PUBLIC_SUPABASE_URL only — does NOT use the service-role client,
+ * so market movers and other hot paths work when SUPABASE_SERVICE_ROLE_KEY is unset
+ * (e.g. misconfigured Vercel env). Matches getPublicUrl() shape from @supabase/supabase-js.
  */
 export function getStorageLogoUrl(ticker: string): string {
-  const supabase = createServerClient();
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, '') ?? '';
+  if (!base) return '';
   const fileName = `${ticker.toLowerCase()}.jpg`;
-  const { data } = supabase.storage.from(LOGO_BUCKET).getPublicUrl(fileName);
-  return data.publicUrl;
+  return `${base}/storage/v1/object/public/${LOGO_BUCKET}/${fileName}`;
 }
 
 /**
