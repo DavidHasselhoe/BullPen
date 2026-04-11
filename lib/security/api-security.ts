@@ -9,13 +9,18 @@ import { validateTicker, validateSearchQuery, validateUUID } from './input-valid
  * Rate limiting middleware for API routes.
  * Uses Upstash Redis when UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN are set;
  * otherwise falls back to in-memory (per-instance on serverless).
+ *
+ * The limit is scoped per route (IP + pathname) so one page load does not consume
+ * the budget for unrelated endpoints. Without this, a shared IP bucket caused429s
+ * when any "strict" route's max was exceeded by total traffic across all routes.
  */
 export function withRateLimit(
   handler: (request: NextRequest, context?: any) => Promise<NextResponse>,
-  options: { windowMs?: number; maxRequests?: number } = {}
+  options: { windowMs?: number; maxRequests?: number; scope?: string } = {}
 ) {
   return async (request: NextRequest, context?: any): Promise<NextResponse> => {
-    const identifier = getClientIdentifier(request);
+    const routeScope = options.scope ?? request.nextUrl?.pathname || 'api';
+    const identifier = `${getClientIdentifier(request)}:${routeScope}`;
     const limit = await checkRateLimit(identifier, {
       windowMs: options.windowMs || 60 * 1000, // 1 minute default
       maxRequests: options.maxRequests || 60, // 60 requests per minute default

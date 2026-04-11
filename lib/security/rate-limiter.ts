@@ -129,11 +129,15 @@ export function rateLimit(
 }
 
 /**
- * Get client identifier from request (IP address)
+ * Get client identifier from request (IP address).
+ * Tries several headers so Vercel / Cloudflare / proxies still identify the real client.
  */
 export function getClientIdentifier(request: NextRequest): string {
-  const forwarded = request.headers.get('x-forwarded-for');
-  const realIp = request.headers.get('x-real-ip');
-  const cfConnectingIp = request.headers.get('cf-connecting-ip');
-  return forwarded?.split(',')[0]?.trim() || realIp || cfConnectingIp || 'unknown';
+  const first = (h: string | null) => h?.split(',')[0]?.trim() || '';
+  const ip =
+    first(request.headers.get('x-forwarded-for')) ||
+    first(request.headers.get('x-vercel-forwarded-for')) ||
+    first(request.headers.get('cf-connecting-ip')) ||
+    first(request.headers.get('x-real-ip'));
+  return ip || 'unknown';
 }
