@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/client';
-import { getStorageLogoUrl } from '@/lib/logos/logos-storage';
 
 /**
  * Batch company metadata lookup (ticker -> name, logo_url).
@@ -42,11 +41,11 @@ export async function POST(request: NextRequest) {
     );
 
     const result = uniqueTickers.map((ticker) => {
-      const dbLogo = map.get(ticker)?.logo_url;
       return {
         ticker,
         name: map.get(ticker)?.name ?? ticker,
-        logo_url: dbLogo ?? getStorageLogoUrl(ticker),
+        // logo_url may be null — CompanyLogo will fall back to TwelveData /logo endpoint
+        logo_url: map.get(ticker)?.logo_url ?? null,
       };
     });
 

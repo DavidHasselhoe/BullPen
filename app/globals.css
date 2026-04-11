@@ -123,21 +123,18 @@
   }
 }
 
-/* When animated background is active: use a dark base so transparent WebGL pixels show dark, not white */
-html.animated-background-active body {
-  background-color: #050508 !important;
-  background: #050508 !important;
-}
-
+/* When a gradient background is active: gradient is painted on <html> itself (via JS style).
+   Make body + full-page wrappers transparent so the html gradient shows through.
+   Do NOT set --background as a CSS variable here — it cascades to children and breaks card backgrounds. */
+html.animated-background-active body,
 html.animated-background-active .min-h-screen.bg-background,
 html.animated-background-active div.min-h-screen.bg-background,
 html.animated-background-active div.bg-background.min-h-screen {
   background-color: transparent !important;
   background: transparent !important;
-  --background: transparent !important;
 }
 
-/* Exclude dialogs and modals from transparency - restore default background */
+/* Restore solid background for dialogs/modals */
 html.animated-background-active [data-slot="dialog-content"] {
   background-color: oklch(0.205 0 0) !important;
   background: oklch(0.205 0 0) !important;

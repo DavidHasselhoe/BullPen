@@ -131,7 +131,12 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
     error,
     clearError,
   } = useChat({
-    transport: new DefaultChatTransport({ api: '/api/ai/chat' }),
+    transport: new DefaultChatTransport({
+      api: '/api/ai/chat',
+      // Include the current page context (ticker + label) so the server-side agent
+      // knows which stock/comparison the user is viewing without requiring them to type it.
+      body: aiContext ? { context: aiContext } : {},
+    }),
     onFinish: async ({ message }) => {
       for (const action of extractClientActions(message)) {
         if (action.type === 'navigate' && action.path) {
@@ -182,6 +187,12 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
     const id = setTimeout(() => textareaRef.current?.focus(), 0);
     return () => clearTimeout(id);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Reset the sent-guard whenever a new initialQuery arrives so each distinct
+  // query (e.g. "Explain NVDA score" then "Explain AAPL score") is fired.
+  useEffect(() => {
+    initialQuerySentRef.current = false;
+  }, [initialQuery]);
 
   // Send initial query when opened with one (e.g. from command palette)
   useEffect(() => {
@@ -309,7 +320,11 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
                   <div className="whitespace-pre-wrap break-words">
                     {message.parts.map((part, i) => {
                       if (part.type === 'text') {
-                        return <span key={`${message.id}-${i}`}>{part.text}</span>;
+                        // Strip hidden [display:...] prefix — used to show a clean label
+                        // while the full prompt goes to the AI unchanged.
+                        const displayMatch = part.text.match(/^\[display:([^\]]+)\]/);
+                        const displayText = displayMatch ? displayMatch[1] : part.text;
+                        return <span key={`${message.id}-${i}`}>{displayText}</span>;
                       }
                       return null;
                     })}

@@ -10,8 +10,9 @@ import { withRateLimit } from '@/lib/security/api-security';
 async function handler(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const messages = body?.messages ?? [];
+  const context = body?.context ?? null;
 
-  const result = await runAgent(messages);
+  const result = await runAgent(messages, context);
   return result.toUIMessageStreamResponse();
 }
 

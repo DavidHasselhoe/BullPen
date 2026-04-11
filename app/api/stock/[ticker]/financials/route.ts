@@ -5,10 +5,11 @@ import {
   getBalanceSheet,
   getCashFlow,
   getDividends,
+  getSplits,
   TwelveDataRateLimitError,
 } from '@/lib/twelvedata/twelvedata-client';
 
-type FinancialType = 'income' | 'balance' | 'cashflow' | 'dividends';
+type FinancialType = 'income' | 'balance' | 'cashflow' | 'dividends' | 'splits';
 type Period = 'quarterly' | 'annual';
 
 async function handler(
@@ -36,6 +37,9 @@ async function handler(
         break;
       case 'dividends':
         result = await getDividends(symbol);
+        break;
+      case 'splits':
+        result = await getSplits(symbol);
         break;
       default:
         return addSecurityHeaders(

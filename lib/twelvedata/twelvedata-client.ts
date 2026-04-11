@@ -67,10 +67,12 @@ export interface StockCandles {
 
 export interface MarketMover {
   symbol: string;
+  name?: string;
   price: number;
   change: number;
   changePercent: number;
   previousClose: number;
+  volume?: number;
   logoUrl?: string;
 }
 
@@ -385,10 +387,105 @@ export async function getStockCandlesLongRange(
   };
 }
 
-// -------- Top movers (computed from quotes, same approach as Finnhub) --------
+// -------- Market Movers via /market_movers/stocks --------
+
+interface TwelveDataMoverItem {
+  symbol: string;
+  name?: string;
+  exchange?: string;
+  datetime?: string;
+  last?: string;
+  high?: string;
+  low?: string;
+  volume?: string;
+  change?: string;
+  percent_change?: string;
+}
+
+interface TwelveDataMarketMoversResponse {
+  values?: TwelveDataMoverItem[];
+  status?: string;
+  code?: number;
+  message?: string;
+}
+
+/**
+ * GET /market_movers/stocks — returns today's top gainers/losers from TwelveData.
+ * Cost: 100 credits per request. Available on Pro / Venture and above.
+ * Use for the REST fallback; WebSocket stream provides live updates.
+ */
+export async function getMarketMovers(
+  market: 'stocks' | 'etf' = 'stocks',
+  limit: number = 5
+): Promise<TopMovers> {
+  logUsage('/market_movers', market);
+  const url = buildUrl(`/market_movers/${market}`, { outputsize: 50 });
+  const res = await fetch(url, { next: { revalidate: 300 } }); // cache 5 min
+  const json = (await res.json()) as TwelveDataMarketMoversResponse;
+
+  if (!res.ok || json.code || json.status === 'error') {
+    const msg = json.message ?? `market_movers error: ${res.status}`;
+    if (/rate.?limit|too many|credits? exceeded/i.test(msg) || json.code === 429) {
+      throw new TwelveDataRateLimitError(msg);
+    }
+    throw new Error(msg);
+  }
+
+  // Major US exchanges only — filters out OTC/pink sheets where penny stocks live
+  const MAJOR_EXCHANGES = new Set(['NASDAQ', 'NYSE', 'NYSE ARCA', 'NYSE MKT', 'CBOE']);
+
+  // Build a lookup map so the filter step doesn't re-scan the array on each call
+  const rawBySymbol = new Map(
+    (json.values ?? []).map((v) => [v.symbol, v])
+  );
+
+  const items = (json.values ?? [])
+    .map((item): MarketMover & { dollarVolume: number } => {
+      const price = parseFloat(item.last ?? '0');
+      const change = parseFloat(item.change ?? '0');
+      const volume = item.volume ? parseInt(item.volume, 10) : 0;
+      return {
+        symbol: item.symbol,
+        name: item.name,
+        price,
+        change,
+        changePercent: parseFloat(item.percent_change ?? '0'),
+        previousClose: price - change,
+        volume,
+        dollarVolume: price * volume, // proxy for market weight / importance
+      };
+    })
+    .filter((m) => {
+      const exchange = rawBySymbol.get(m.symbol)?.exchange ?? '';
+      return (
+        !isNaN(m.changePercent) &&
+        m.price >= 10 &&                    // no cheap stocks
+        m.volume >= 1_000_000 &&            // meaningful share volume
+        m.dollarVolume >= 50_000_000 &&     // ≥$50M daily dollar volume — weeds out small caps
+        MAJOR_EXCHANGES.has(exchange)       // US major exchanges only
+      );
+    });
+
+  // Sort by dollar volume descending so the biggest market-cap movers appear first,
+  // not just whoever had the highest % swing on low volume.
+  const toMover = ({ dollarVolume: _, ...m }: (typeof items)[number]): MarketMover => m;
+
+  const gainers = items.filter((m) => m.changePercent > 0)
+    .sort((a, b) => b.dollarVolume - a.dollarVolume)
+    .slice(0, limit)
+    .map(toMover);
+  const losers = items.filter((m) => m.changePercent < 0)
+    .sort((a, b) => b.dollarVolume - a.dollarVolume)
+    .slice(0, limit)
+    .map(toMover);
+
+  return { gainers, losers };
+}
+
+// -------- Top movers (computed from quotes — used for holdings mode) --------
 
 export async function getTopMovers(limit: number = 5): Promise<TopMovers> {
-  return getTopMoversForSymbols(POPULAR_STOCKS, limit);
+  return getMarketMovers('stocks', limit);
 }
 
 export async function getTopMoversForSymbols(
@@ -1106,5 +1203,483 @@ export async function symbolSearch(
   const json = (await res.json()) as { data?: SymbolSearchResult[]; status?: string; message?: string };
   if (json.status === 'error') throw new Error(json.message ?? 'TwelveData symbol_search error');
   return json.data ?? [];
+}
+
+// -------- Press Releases --------
+
+export interface PressRelease {
+  title: string;
+  published_at: string;
+  url: string;
+  snippet?: string;
+}
+
+interface TwelveDataPressRelease {
+  title?: string;
+  published_at?: string;
+  url?: string;
+  snippet?: string;
+}
+
+interface TwelveDataPressReleasesResponse {
+  data?: TwelveDataPressRelease[];
+  status?: string;
+  code?: number;
+  message?: string;
+}
+
+/**
+ * GET /press_releases — official company press releases.
+ * Cost: 5 API credits per request. Available from Basic+ (Venture included).
+ */
+export async function getPressReleases(
+  symbol: string,
+  outputsize = 10
+): Promise<PressRelease[]> {
+  logUsage('/press_releases', symbol);
+  const url = buildUrl('/press_releases', { symbol: symbol.toUpperCase(), outputsize });
+  const res = await fetch(url, { next: { revalidate: 3600 } }); // cache 1 h
+  const json = (await res.json()) as TwelveDataPressReleasesResponse;
+  if (!res.ok || json.code || json.status === 'error') {
+    const msg = json.message ?? `press_releases error: ${res.status}`;
+    if (/rate.?limit|credits? exceeded/i.test(msg)) throw new TwelveDataRateLimitError(msg);
+    throw new Error(msg);
+  }
+  return (json.data ?? []).map((r) => ({
+    title: r.title ?? '',
+    published_at: r.published_at ?? '',
+    url: r.url ?? '',
+    snippet: r.snippet,
+  }));
+}
+
+// -------- Splits --------
+
+export interface SplitItem {
+  date: string;
+  ratio: string;
+  from_factor: number;
+  to_factor: number;
+}
+
+interface TwelveDataSplitItem {
+  date?: string;
+  ratio?: string;
+  from_factor?: number | string;
+  to_factor?: number | string;
+}
+
+interface TwelveDataSplitsResponse {
+  symbol?: string;
+  splits?: TwelveDataSplitItem[];
+  status?: string;
+  code?: number;
+  message?: string;
+}
+
+/**
+ * GET /splits — historical stock splits.
+ * Cost: 20 API credits per request. Available on Venture and above.
+ */
+export async function getSplits(symbol: string): Promise<SplitItem[]> {
+  logUsage('/splits', symbol);
+  const url = buildUrl('/splits', { symbol: symbol.toUpperCase() });
+  const res = await fetch(url, { next: { revalidate: 86400 } }); // cache 24 h
+  const json = (await res.json()) as TwelveDataSplitsResponse;
+  if (!res.ok || json.code || json.status === 'error') {
+    const msg = json.message ?? `splits error: ${res.status}`;
+    if (/rate.?limit|credits? exceeded/i.test(msg)) throw new TwelveDataRateLimitError(msg);
+    throw new Error(msg);
+  }
+  return (json.splits ?? []).map((s) => ({
+    date: s.date ?? '',
+    ratio: s.ratio ?? '',
+    from_factor: Number(s.from_factor ?? 0),
+    to_factor: Number(s.to_factor ?? 0),
+  }));
+}
+
+// -------- Technical Indicators --------
+
+export interface IndicatorValue {
+  datetime: string;
+  [key: string]: string | number;
+}
+
+interface TwelveDataIndicatorResponse {
+  values?: Array<Record<string, string>>;
+  status?: string;
+  code?: number;
+  message?: string;
+  meta?: Record<string, unknown>;
+}
+
+/**
+ * Generic technical indicator fetcher.
+ * Endpoint: GET /<indicator> (e.g. /sma, /ema, /rsi, /macd, /bbands)
+ * Cost: 1 credit per request.
+ */
+export async function getIndicator(
+  symbol: string,
+  indicator: string,
+  params: Record<string, string | number> = {}
+): Promise<{ values: IndicatorValue[]; meta: Record<string, unknown> }> {
+  logUsage(`/${indicator}`, symbol);
+  const url = buildUrl(`/${indicator}`, { symbol: symbol.toUpperCase(), ...params });
+  const res = await fetch(url, { next: { revalidate: 300 } }); // cache 5 min
+  const json = (await res.json()) as TwelveDataIndicatorResponse;
+  if (!res.ok || json.code || json.status === 'error') {
+    const msg = json.message ?? `${indicator} error: ${res.status}`;
+    if (/rate.?limit|credits? exceeded/i.test(msg)) throw new TwelveDataRateLimitError(msg);
+    throw new Error(msg);
+  }
+  const values = (json.values ?? []).map((v) => {
+    const entry: IndicatorValue = { datetime: v.datetime ?? '' };
+    for (const [k, val] of Object.entries(v)) {
+      if (k !== 'datetime') entry[k] = parseFloat(val) ?? val;
+    }
+    return entry;
+  });
+  return { values, meta: (json.meta as Record<string, unknown>) ?? {} };
+}
+
+// -------- Calendar endpoints (for Market Events Calendar page) --------
+
+export interface EarningsCalendarItem {
+  symbol: string;
+  name?: string;
+  date: string;
+  time?: string;
+  eps_estimate?: number | null;
+  eps_actual?: number | null;
+  revenue_estimate?: number | null;
+  revenue_actual?: number | null;
+  fiscal_quarter?: string;
+  surprise?: number | null;
+}
+
+interface TwelveDataEarningsCalItem {
+  symbol?: string;
+  name?: string;
+  date?: string;
+  time?: string;
+  eps_estimate?: string | number | null;
+  eps_actual?: string | number | null;
+  revenue_estimate?: string | number | null;
+  revenue_actual?: string | number | null;
+  fiscal_quarter?: string;
+  surprise?: string | number | null;
+}
+
+interface TwelveDataEarningsCalResponse {
+  earnings?: TwelveDataEarningsCalItem[];
+  status?: string;
+  code?: number;
+  message?: string;
+}
+
+/**
+ * GET /earnings_calendar — upcoming earnings announcements across all stocks.
+ * Cost: 40 credits per request. Available on Venture+.
+ */
+export async function getEarningsCalendarRange(
+  startDate: string,
+  endDate: string
+): Promise<EarningsCalendarItem[]> {
+  logUsage('/earnings_calendar', `${startDate}..${endDate}`);
+  const url = buildUrl('/earnings_calendar', { start_date: startDate, end_date: endDate });
+  const res = await fetch(url, { next: { revalidate: 3600 } });
+  const json = (await res.json()) as TwelveDataEarningsCalResponse;
+  if (!res.ok || json.code || json.status === 'error') {
+    const msg = json.message ?? `earnings_calendar error: ${res.status}`;
+    if (/rate.?limit|credits? exceeded/i.test(msg)) throw new TwelveDataRateLimitError(msg);
+    throw new Error(msg);
+  }
+  return (json.earnings ?? []).map((e) => ({
+    symbol: e.symbol ?? '',
+    name: e.name,
+    date: e.date ?? '',
+    time: e.time,
+    eps_estimate: e.eps_estimate != null ? Number(e.eps_estimate) : null,
+    eps_actual: e.eps_actual != null ? Number(e.eps_actual) : null,
+    revenue_estimate: e.revenue_estimate != null ? Number(e.revenue_estimate) : null,
+    revenue_actual: e.revenue_actual != null ? Number(e.revenue_actual) : null,
+    fiscal_quarter: e.fiscal_quarter,
+    surprise: e.surprise != null ? Number(e.surprise) : null,
+  }));
+}
+
+export interface DividendsCalendarItem {
+  symbol: string;
+  name?: string;
+  ex_dividend_date: string;
+  dividend_amount?: number | null;
+  payment_date?: string;
+  frequency?: string;
+}
+
+interface TwelveDataDivCalItem {
+  symbol?: string;
+  name?: string;
+  ex_dividend_date?: string;
+  dividend?: string | number | null;
+  payment_date?: string;
+  frequency?: string;
+}
+
+interface TwelveDataDivCalResponse {
+  dividends?: TwelveDataDivCalItem[];
+  status?: string;
+  code?: number;
+  message?: string;
+}
+
+/**
+ * GET /dividends_calendar — upcoming ex-dividend dates.
+ * Cost: 40 credits per request. Available on Venture+.
+ */
+export async function getDividendsCalendar(
+  startDate: string,
+  endDate: string
+): Promise<DividendsCalendarItem[]> {
+  logUsage('/dividends_calendar', `${startDate}..${endDate}`);
+  const url = buildUrl('/dividends_calendar', { start_date: startDate, end_date: endDate });
+  const res = await fetch(url, { next: { revalidate: 3600 } });
+  const json = (await res.json()) as TwelveDataDivCalResponse;
+  if (!res.ok || json.code || json.status === 'error') {
+    const msg = json.message ?? `dividends_calendar error: ${res.status}`;
+    if (/rate.?limit|credits? exceeded/i.test(msg)) throw new TwelveDataRateLimitError(msg);
+    throw new Error(msg);
+  }
+  return (json.dividends ?? []).map((d) => ({
+    symbol: d.symbol ?? '',
+    name: d.name,
+    ex_dividend_date: d.ex_dividend_date ?? '',
+    dividend_amount: d.dividend != null ? Number(d.dividend) : null,
+    payment_date: d.payment_date,
+    frequency: d.frequency,
+  }));
+}
+
+export interface SplitsCalendarItem {
+  symbol: string;
+  name?: string;
+  date: string;
+  ratio?: string;
+  from_factor?: number;
+  to_factor?: number;
+}
+
+interface TwelveDataSplitsCalResponse {
+  splits?: Array<{
+    symbol?: string;
+    name?: string;
+    date?: string;
+    ratio?: string;
+    from_factor?: number | string;
+    to_factor?: number | string;
+  }>;
+  status?: string;
+  code?: number;
+  message?: string;
+}
+
+/**
+ * GET /splits_calendar — upcoming stock splits.
+ * Cost: 40 credits per request. Available on Venture+.
+ */
+export async function getSplitsCalendar(
+  startDate: string,
+  endDate: string
+): Promise<SplitsCalendarItem[]> {
+  logUsage('/splits_calendar', `${startDate}..${endDate}`);
+  const url = buildUrl('/splits_calendar', { start_date: startDate, end_date: endDate });
+  const res = await fetch(url, { next: { revalidate: 3600 } });
+  const json = (await res.json()) as TwelveDataSplitsCalResponse;
+  if (!res.ok || json.code || json.status === 'error') {
+    const msg = json.message ?? `splits_calendar error: ${res.status}`;
+    if (/rate.?limit|credits? exceeded/i.test(msg)) throw new TwelveDataRateLimitError(msg);
+    throw new Error(msg);
+  }
+  return (json.splits ?? []).map((s) => ({
+    symbol: s.symbol ?? '',
+    name: s.name,
+    date: s.date ?? '',
+    ratio: s.ratio,
+    from_factor: s.from_factor != null ? Number(s.from_factor) : undefined,
+    to_factor: s.to_factor != null ? Number(s.to_factor) : undefined,
+  }));
+}
+
+export interface IPOCalendarItem {
+  symbol: string;
+  name?: string;
+  date: string;
+  exchange?: string;
+  price_from?: number | null;
+  price_to?: number | null;
+  shares?: number | null;
+  status?: string;
+}
+
+interface TwelveDataIPOCalResponse {
+  ipos?: Array<{
+    symbol?: string;
+    name?: string;
+    date?: string;
+    exchange?: string;
+    price_from?: string | number | null;
+    price_to?: string | number | null;
+    shares?: string | number | null;
+    status?: string;
+  }>;
+  status?: string;
+  code?: number;
+  message?: string;
+}
+
+/**
+ * GET /ipo_calendar — upcoming IPOs.
+ * Cost: 40 credits per request. Available on Venture+.
+ */
+export async function getIPOCalendar(
+  startDate: string,
+  endDate: string
+): Promise<IPOCalendarItem[]> {
+  logUsage('/ipo_calendar', `${startDate}..${endDate}`);
+  const url = buildUrl('/ipo_calendar', { start_date: startDate, end_date: endDate });
+  const res = await fetch(url, { next: { revalidate: 3600 } });
+  const json = (await res.json()) as TwelveDataIPOCalResponse;
+  if (!res.ok || json.code || json.status === 'error') {
+    const msg = json.message ?? `ipo_calendar error: ${res.status}`;
+    if (/rate.?limit|credits? exceeded/i.test(msg)) throw new TwelveDataRateLimitError(msg);
+    throw new Error(msg);
+  }
+  return (json.ipos ?? []).map((i) => ({
+    symbol: i.symbol ?? '',
+    name: i.name,
+    date: i.date ?? '',
+    exchange: i.exchange,
+    price_from: i.price_from != null ? Number(i.price_from) : null,
+    price_to: i.price_to != null ? Number(i.price_to) : null,
+    shares: i.shares != null ? Number(i.shares) : null,
+    status: i.status,
+  }));
+}
+
+// -------- Pre/After-Market Quotes --------
+
+export interface ExtendedHoursQuote {
+  symbol: string;
+  pre_or_post: 'pre' | 'post';
+  price: number;
+  change: number;
+  changePercent: number;
+  volume?: number;
+  timestamp?: number;
+}
+
+interface TwelveDataQuoteExtended extends TwelveDataQuoteResponse {
+  extended_change?: string;
+  extended_percent_change?: string;
+  extended_price?: string;
+  extended_timestamp?: number;
+  is_market_open?: boolean;
+}
+
+/**
+ * Fetch extended-hours (pre/after-market) quote data.
+ * Uses the standard /quote endpoint which returns extended_* fields.
+ * Extended fields are only populated outside regular market hours.
+ */
+export async function getExtendedHoursQuote(
+  symbol: string
+): Promise<ExtendedHoursQuote | null> {
+  logUsage('/quote (extended)', symbol);
+  const url = buildUrl('/quote', { symbol: symbol.toUpperCase() });
+  const res = await fetch(url);
+  if (!res.ok) return null;
+  const data = (await res.json()) as TwelveDataQuoteExtended;
+  if (data.status === 'error' || data.code) return null;
+
+  const extPrice = parseFloat(data.extended_price ?? '0');
+  if (!extPrice) return null;
+
+  const now = Date.now() / 1000;
+  const marketOpen = data.is_market_open ?? false;
+  const preOrPost = !marketOpen && now < 16 * 3600 ? 'pre' : 'post';
+
+  const extChange = parseFloat(data.extended_change ?? '0');
+  const extChangePct = parseFloat(data.extended_percent_change ?? '0');
+
+  return {
+    symbol,
+    pre_or_post: preOrPost,
+    price: extPrice,
+    change: extChange,
+    changePercent: extChangePct,
+    timestamp: data.extended_timestamp,
+  };
+}
+
+// -------- Insider Transactions --------
+
+export interface InsiderTransaction {
+  full_name: string;
+  position: string;
+  date_reported: string;
+  is_direct: boolean;
+  shares: number;
+  value: number;
+  description: string;
+  /** Derived: 'buy' | 'sell' | 'other' parsed from description */
+  transaction_type: 'buy' | 'sell' | 'other';
+}
+
+interface TwelveDataInsiderResponse {
+  meta?: { symbol: string; name?: string };
+  insider_transactions?: Array<{
+    full_name: string;
+    position: string;
+    date_reported: string;
+    is_direct: boolean;
+    shares: number;
+    value: number;
+    description: string;
+  }>;
+  status?: string;
+  code?: number;
+  message?: string;
+}
+
+function parseTransactionType(description: string): InsiderTransaction['transaction_type'] {
+  const lower = description.toLowerCase();
+  if (/sale|sold|disposition|dispose/i.test(lower)) return 'sell';
+  if (/purchase|bought|acquisition|acqui/i.test(lower)) return 'buy';
+  return 'other';
+}
+
+/**
+ * GET /insider_transactions — trades by company executives & directors.
+ * Cost: 200 credits per symbol. Available on Venture plan and above.
+ */
+export async function getInsiderTransactions(symbol: string): Promise<InsiderTransaction[]> {
+  logUsage('/insider_transactions', symbol);
+  const url = buildUrl('/insider_transactions', { symbol: symbol.toUpperCase() });
+  const res = await fetch(url, { next: { revalidate: 3600 } }); // cache 1 hour
+  const json = (await res.json()) as TwelveDataInsiderResponse;
+
+  if (!res.ok || json.code || json.status === 'error') {
+    const msg = json.message ?? `insider_transactions error: ${res.status}`;
+    if (/rate.?limit|too many|credits? exceeded/i.test(msg) || json.code === 429) {
+      throw new TwelveDataRateLimitError(msg);
+    }
+    throw new Error(msg);
+  }
+
+  return (json.insider_transactions ?? []).map((t) => ({
+    ...t,
+    transaction_type: parseTransactionType(t.description),
+  }));
 }
 

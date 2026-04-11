@@ -79,4 +79,4 @@ async function handler(request: NextRequest) {
   }
 }
 
-export const POST = withRateLimit(handler, { windowMs: 60 * 1000, maxRequests: 10 });
+export const POST = withRateLimit(handler, { windowMs: 60 * 1000, maxRequests: 60 });

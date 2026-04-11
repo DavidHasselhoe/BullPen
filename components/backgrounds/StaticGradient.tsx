@@ -37,7 +37,7 @@ export function StaticGradient({ variant = 'purple' }: StaticGradientProps) {
   const style = { background: GRADIENTS[variant] };
   return (
     <div
-      className="fixed inset-0 -z-10 w-full h-full"
+      className="fixed inset-0 w-full h-full pointer-events-none"
       style={style}
       aria-hidden
     />

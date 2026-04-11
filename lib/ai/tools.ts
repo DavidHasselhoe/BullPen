@@ -11,6 +11,15 @@
 
 import { tool, jsonSchema } from 'ai';
 import { createServerClient } from '@/lib/supabase/client';
+import {
+  getStockQuote,
+  getStatistics,
+  getCompanyEarnings,
+  getIncomeStatement,
+  getBalanceSheet,
+  getCashFlow,
+  TwelveDataRateLimitError,
+} from '@/lib/twelvedata/twelvedata-client';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -641,15 +650,198 @@ export const removeHolding = tool({
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// TwelveData live tools
+// ─────────────────────────────────────────────────────────────────────────────
+
+const getLiveQuote = tool({
+  description:
+    'Fetch the live (real-time) stock price and basic market data for a ticker. ' +
+    'Use this when the user asks what a stock is trading at, its daily change, volume, ' +
+    'or 52-week range. Costs ~1 API credit.',
+  inputSchema: jsonSchema<{ ticker: string }>({
+    type: 'object',
+    properties: {
+      ticker: { type: 'string', description: 'Stock ticker symbol, e.g. AAPL, NVDA, TSM' },
+    },
+    required: ['ticker'],
+  }),
+  execute: async ({ ticker }) => {
+    try {
+      const q = await getStockQuote(ticker.toUpperCase());
+      // StockQuote uses short Finnhub-style fields: c=close, d=change, dp=changePercent,
+      // h=high, l=low, o=open, pc=previousClose, t=timestamp
+      const changeSign = (q.d ?? 0) >= 0 ? '+' : '';
+      return {
+        ticker: ticker.toUpperCase(),
+        price: q.c != null ? `$${q.c.toFixed(2)}` : 'N/A',
+        change: q.d != null ? `${changeSign}${q.d.toFixed(2)}` : 'N/A',
+        changePercent: q.dp != null ? `${changeSign}${q.dp.toFixed(2)}%` : 'N/A',
+        open: q.o != null ? `$${q.o.toFixed(2)}` : 'N/A',
+        high: q.h != null ? `$${q.h.toFixed(2)}` : 'N/A',
+        low: q.l != null ? `$${q.l.toFixed(2)}` : 'N/A',
+        previousClose: q.pc != null ? `$${q.pc.toFixed(2)}` : 'N/A',
+      };
+    } catch (err) {
+      if (err instanceof TwelveDataRateLimitError) return { error: 'Rate limit reached. Try again shortly.' };
+      return { error: `Could not fetch quote for ${ticker}: ${(err as Error).message}` };
+    }
+  },
+});
+
+const getKeyStatistics = tool({
+  description:
+    'Fetch key valuation and financial statistics for a stock: P/E ratio (TTM and forward), ' +
+    'P/B ratio, EV/EBITDA, beta, market cap, dividend yield, profit margin, short ratio, and growth rates. ' +
+    'Use when the user asks whether a stock is expensive, its valuation multiples, or general financial health. ' +
+    'Costs ~200 API credits — use only when statistics are specifically needed.',
+  inputSchema: jsonSchema<{ ticker: string }>({
+    type: 'object',
+    properties: {
+      ticker: { type: 'string', description: 'Stock ticker symbol' },
+    },
+    required: ['ticker'],
+  }),
+  execute: async ({ ticker }) => {
+    try {
+      const s = await getStatistics(ticker.toUpperCase());
+      return {
+        ticker: s.symbol,
+        marketCap: fmt(s.marketCap),
+        peRatioTTM: s.peRatioTTM?.toFixed(2) ?? 'N/A',
+        peRatioForward: s.peRatioForward?.toFixed(2) ?? 'N/A',
+        pbRatio: s.pbRatio?.toFixed(2) ?? 'N/A',
+        evToEbitda: s.evToEbitda?.toFixed(2) ?? 'N/A',
+        beta: s.beta?.toFixed(2) ?? 'N/A',
+        dividendYield: fmtPct(s.dividendYield),
+        profitMargin: fmtPct(s.profitMargin),
+        shortRatio: s.shortRatio?.toFixed(2) ?? 'N/A',
+        week52High: s.week52High != null ? `$${s.week52High.toFixed(2)}` : 'N/A',
+        week52Low: s.week52Low != null ? `$${s.week52Low.toFixed(2)}` : 'N/A',
+        revenueGrowthTTM: fmtPct(s.revenueGrowthTTM),
+        epsGrowthTTM: fmtPct(s.epsGrowthTTM),
+      };
+    } catch (err) {
+      if (err instanceof TwelveDataRateLimitError) return { error: 'Rate limit reached. Try again shortly.' };
+      return { error: `Could not fetch statistics for ${ticker}: ${(err as Error).message}` };
+    }
+  },
+});
+
+const getCompanyFinancials = tool({
+  description:
+    'Fetch financial statement data (income statement, balance sheet, or cash flow) for any stock. ' +
+    'Works for any ticker globally, not just companies in the BullPen database. ' +
+    'Use when the user asks about revenue, profit, debt, free cash flow, or any line item from financial statements. ' +
+    'Costs ~30 API credits per call.',
+  inputSchema: jsonSchema<{ ticker: string; type: 'income' | 'balance' | 'cashflow'; period: 'annual' | 'quarterly' }>({
+    type: 'object',
+    properties: {
+      ticker: { type: 'string', description: 'Stock ticker symbol' },
+      type: {
+        type: 'string',
+        enum: ['income', 'balance', 'cashflow'],
+        description: '"income" for revenue/profit/EPS, "balance" for assets/debt/equity, "cashflow" for operating/free cash flow',
+      },
+      period: {
+        type: 'string',
+        enum: ['annual', 'quarterly'],
+        description: 'Reporting period. Default to "annual" unless user asks for quarterly.',
+      },
+    },
+    required: ['ticker', 'type', 'period'],
+  }),
+  execute: async ({ ticker, type, period }) => {
+    try {
+      const sym = ticker.toUpperCase();
+      if (type === 'income') {
+        const rows = await getIncomeStatement(sym, period);
+        return rows.slice(0, 4).map((r) => ({
+          period: r.fiscal_date,
+          revenue: fmt(r.revenue),
+          grossProfit: fmt(r.gross_profit),
+          operatingIncome: fmt(r.operating_income),
+          netIncome: fmt(r.net_income),
+          ebitda: fmt(r.ebitda),
+          epsBasic: r.eps_basic?.toFixed(2) ?? 'N/A',
+          epsDiluted: r.eps_diluted?.toFixed(2) ?? 'N/A',
+        }));
+      } else if (type === 'balance') {
+        const rows = await getBalanceSheet(sym, period);
+        return rows.slice(0, 4).map((r) => ({
+          period: r.fiscal_date,
+          totalAssets: fmt(r.total_assets),
+          totalCurrentAssets: fmt(r.total_current_assets),
+          cash: fmt(r.cash_and_equivalents),
+          totalLiabilities: fmt(r.total_liabilities),
+          longTermDebt: fmt(r.long_term_debt),
+          equity: fmt(r.total_stockholders_equity),
+          retainedEarnings: fmt(r.retained_earnings),
+        }));
+      } else {
+        const rows = await getCashFlow(sym, period);
+        return rows.slice(0, 4).map((r) => ({
+          period: r.fiscal_date,
+          operatingCashFlow: fmt(r.operating_cash_flow),
+          investingCashFlow: fmt(r.investing_activities_cash_flow),
+          financingCashFlow: fmt(r.financing_activities_cash_flow),
+          capitalExpenditures: fmt(r.capital_expenditures),
+          freeCashFlow: fmt(r.free_cash_flow),
+          dividendsPaid: fmt(r.dividends_paid),
+        }));
+      }
+    } catch (err) {
+      if (err instanceof TwelveDataRateLimitError) return { error: 'Rate limit reached. Try again shortly.' };
+      return { error: `Could not fetch ${type} statement for ${ticker}: ${(err as Error).message}` };
+    }
+  },
+});
+
+const getEarningsData = tool({
+  description:
+    'Fetch historical earnings data for a stock: EPS estimates vs actuals, beat/miss, and upcoming earnings dates. ' +
+    'Use when the user asks when a company next reports, whether it beat earnings, or its EPS history. ' +
+    'Costs ~20 API credits.',
+  inputSchema: jsonSchema<{ ticker: string }>({
+    type: 'object',
+    properties: {
+      ticker: { type: 'string', description: 'Stock ticker symbol' },
+    },
+    required: ['ticker'],
+  }),
+  execute: async ({ ticker }) => {
+    try {
+      const earnings = await getCompanyEarnings(ticker.toUpperCase(), 8);
+      return earnings.map((e) => {
+        const beat = e.actual != null && e.estimate != null
+          ? e.actual >= e.estimate ? 'Beat' : 'Missed'
+          : 'N/A';
+        return {
+          period: e.period,
+          epsActual: e.actual?.toFixed(2) ?? 'N/A',
+          epsEstimate: e.estimate?.toFixed(2) ?? 'N/A',
+          result: beat,
+          surprise: e.surprisePercent != null ? `${e.surprisePercent > 0 ? '+' : ''}${e.surprisePercent.toFixed(1)}%` : 'N/A',
+        };
+      });
+    } catch (err) {
+      if (err instanceof TwelveDataRateLimitError) return { error: 'Rate limit reached. Try again shortly.' };
+      return { error: `Could not fetch earnings for ${ticker}: ${(err as Error).message}` };
+    }
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Exported tool map (passed directly to streamText)
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const BULLPEN_TOOLS = {
+  // Supabase tools — fast, no API credits, limited to ingested companies
   getCompanyMetrics,
   getCompanyProfile,
   searchCompanies,
   screenCompanies,
   compareCompanies,
+  // Navigation
   openCompanyPage,
   openComparison,
   openScreener,
@@ -658,9 +850,15 @@ export const BULLPEN_TOOLS = {
   openTools,
   openCompanyEarnings,
   openCompanyNews,
+  // Portfolio management
   addHolding,
   updateHolding,
   removeHolding,
+  // TwelveData live tools — real-time data for any ticker globally
+  getLiveQuote,
+  getKeyStatistics,
+  getCompanyFinancials,
+  getEarningsData,
 };
 
 export const CLIENT_ACTION_KEY = '__clientAction';

@@ -62,7 +62,7 @@ export function CompanyLogo({ name, ticker, logoUrl, size = 40, className }: Com
 
   return (
     <div
-      className={cn('flex items-center justify-center shrink-0 relative', className)}
+      className={cn('flex items-center justify-center shrink-0 relative rounded-full overflow-hidden', className)}
       style={{ width: size, height: size, minWidth: size, minHeight: size }}
     >
       {effectiveUrl && !imageError && (
@@ -79,7 +79,7 @@ export function CompanyLogo({ name, ticker, logoUrl, size = 40, className }: Com
 
       {showFallback && (
         <div
-          className="flex items-center justify-center rounded w-full h-full absolute inset-0 font-semibold text-white"
+          className="flex items-center justify-center w-full h-full absolute inset-0 font-semibold text-white"
           style={{ backgroundColor: initialsColor, fontSize }}
         >
           {displayText}

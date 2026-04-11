@@ -12,12 +12,24 @@ import type { UIMessage } from 'ai';
 import { SYSTEM_PROMPT } from './systemPrompt';
 import { BULLPEN_TOOLS } from './tools';
 
-export async function runAgent(messages: UIMessage[]) {
+interface AIContext {
+  tickers: string[];
+  label?: string;
+}
+
+export async function runAgent(messages: UIMessage[], context?: AIContext | null) {
   const modelMessages = await convertToModelMessages(messages);
+
+  // Prepend a context block when the user is viewing a specific stock/comparison page.
+  // This tells the model what the user is currently looking at without modifying SYSTEM_PROMPT.
+  const contextLabel = context?.label ?? context?.tickers?.join(', ') ?? '';
+  const contextPrefix = context?.tickers?.length
+    ? `[Current page context: The user is viewing "${contextLabel}" (${context.tickers.join(', ')}). Unless the user specifies a different company, answer questions about ${context.tickers.join(' and ')} first.]\n\n`
+    : '';
 
   const result = streamText({
     model: openai('gpt-4o'),
-    system: SYSTEM_PROMPT,
+    system: contextPrefix + SYSTEM_PROMPT,
     messages: modelMessages,
     tools: BULLPEN_TOOLS,
     maxSteps: 5,

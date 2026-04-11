@@ -1,0 +1,228 @@
+/**
+ * Financial terms glossary.
+ *
+ * Every entry maps a technical label (as shown in Pro mode) to:
+ *   - plainLabel: plain-English label shown in Simple mode
+ *   - description: one or two sentence tooltip explanation for all users
+ *
+ * Add any new financial term here before using it in a component.
+ */
+
+export interface GlossaryEntry {
+  plainLabel: string;
+  description: string;
+}
+
+export const GLOSSARY: Record<string, GlossaryEntry> = {
+  // ── Statistics / Valuation ──────────────────────────────────────────────────
+
+  'Market Cap': {
+    plainLabel: 'Company Size',
+    description: 'Total value of all shares combined. Larger = bigger company. "Large-cap" usually means over $10 billion.',
+  },
+  'Enterprise Value': {
+    plainLabel: 'Total Company Price Tag',
+    description: 'What it would cost to buy the entire company including its debt. A more complete view of company value than Market Cap alone.',
+  },
+  'Beta': {
+    plainLabel: 'Volatility vs Market',
+    description: 'How much this stock moves compared to the overall market. Beta > 1 means it swings more than the market; < 1 means it\'s calmer.',
+  },
+  'Avg Volume': {
+    plainLabel: 'Daily Trading Activity',
+    description: 'Average number of shares traded per day. Higher volume means it\'s easier to buy and sell without affecting the price.',
+  },
+  'Shares Float': {
+    plainLabel: 'Shares Available to Trade',
+    description: 'The number of shares that can actually be bought and sold by the public. Low float = price can move more dramatically.',
+  },
+  'P/E (TTM)': {
+    plainLabel: 'Price vs Earnings',
+    description: 'How much investors pay per $1 of profit the company earned in the past 12 months. Lower often signals better value — but context matters.',
+  },
+  'Forward P/E': {
+    plainLabel: 'Price vs Expected Earnings',
+    description: 'Like P/E but uses analyst estimates for future earnings. Useful for fast-growing companies where future profits matter more than past ones.',
+  },
+  'P/B': {
+    plainLabel: 'Price vs Book Value',
+    description: 'Compares stock price to what the company\'s assets are worth on paper. Below 1 can indicate the stock is undervalued — or that something is wrong.',
+  },
+  'EV/EBITDA': {
+    plainLabel: 'Company Value vs Operating Profit',
+    description: 'Compares the total company price tag to its operating profit before taxes and non-cash costs. Used to compare companies across industries.',
+  },
+  'Short Ratio': {
+    plainLabel: 'Bearish Pressure Score',
+    description: 'How many days it would take all short-sellers (investors betting the price falls) to cover their positions. High values can signal extra selling pressure.',
+  },
+  '52W High': {
+    plainLabel: '52-Week High Price',
+    description: 'The highest price this stock has traded at in the past year. Useful for understanding how far it is from its recent best.',
+  },
+  '52W Low': {
+    plainLabel: '52-Week Low Price',
+    description: 'The lowest price this stock has traded at in the past year. Shows how far it could have fallen from its recent peak.',
+  },
+  'Dividend Yield': {
+    plainLabel: 'Annual Dividend %',
+    description: 'Annual dividend payments as a percentage of the stock price. A 3% yield means you\'d earn $3 per year for every $100 invested — if dividends stay the same.',
+  },
+  'Profit Margin': {
+    plainLabel: 'Profit per $1 of Revenue',
+    description: 'What percentage of revenue the company keeps as profit after all costs. A 20% margin means the company keeps $0.20 for every $1.00 it earns.',
+  },
+  'Rev Growth': {
+    plainLabel: 'Revenue Growth Rate',
+    description: 'How fast the company\'s total sales are growing year-over-year. Positive means the business is expanding.',
+  },
+
+  // ── Financials: Income Statement ───────────────────────────────────────────
+
+  'Revenue': {
+    plainLabel: 'Total Sales',
+    description: 'All money the company earned from selling products or services — before any costs are subtracted.',
+  },
+  'Gross Profit': {
+    plainLabel: 'Sales Profit (Before Expenses)',
+    description: 'Revenue minus the direct cost of making the product or service. Higher gross profit means more room to cover other expenses.',
+  },
+  'Operating Income': {
+    plainLabel: 'Profit from Core Business',
+    description: 'Profit after deducting operating expenses like salaries and rent — but before taxes and interest. Shows how well the core business runs.',
+  },
+  'EBITDA': {
+    plainLabel: 'Operating Cash Profit',
+    description: 'Earnings before interest, taxes, depreciation, and amortization. A common way to compare profitability across companies.',
+  },
+  'Net Income': {
+    plainLabel: 'Bottom-Line Profit',
+    description: 'The final profit after every cost — taxes, interest, and all other expenses — has been subtracted. The "bottom line."',
+  },
+  'EPS (Diluted)': {
+    plainLabel: 'Profit per Share',
+    description: 'Net income divided by the number of shares. Shows how much profit each share of stock represents.',
+  },
+  'EPS (Basic)': {
+    plainLabel: 'Profit per Share (Basic)',
+    description: 'Like EPS Diluted but only counts shares currently outstanding, not potential shares from options or conversions.',
+  },
+  'R&D Expenses': {
+    plainLabel: 'Research & Development Spend',
+    description: 'Money spent on building new products or technologies. High R&D often signals a company investing in future growth.',
+  },
+  'SG&A Expenses': {
+    plainLabel: 'Sales & Admin Costs',
+    description: 'Costs for running the business — marketing, sales staff, and office expenses. Does not include production costs.',
+  },
+  'Interest Expense': {
+    plainLabel: 'Debt Interest Paid',
+    description: 'How much the company paid in interest on its loans and bonds. High interest expense can eat into profits.',
+  },
+  'Income Tax': {
+    plainLabel: 'Taxes Paid',
+    description: 'Corporate taxes owed on profits for the period.',
+  },
+
+  // ── Financials: Balance Sheet ──────────────────────────────────────────────
+
+  'Total Assets': {
+    plainLabel: 'Everything the Company Owns',
+    description: 'The total value of everything the company owns — cash, buildings, equipment, intellectual property, and more.',
+  },
+  'Current Assets': {
+    plainLabel: 'Short-Term Assets',
+    description: 'Assets the company expects to convert to cash within a year — like inventory, receivables, and cash itself.',
+  },
+  'Cash & Equivalents': {
+    plainLabel: 'Cash on Hand',
+    description: 'Actual cash and anything easily convertible to cash (like short-term government bonds). More cash = more financial flexibility.',
+  },
+  'Goodwill & Intangibles': {
+    plainLabel: 'Acquired Value & Brand Worth',
+    description: 'Value of brand recognition, patents, customer relationships, and the premium paid when acquiring other companies.',
+  },
+  'Total Liabilities': {
+    plainLabel: 'Everything the Company Owes',
+    description: 'All money the company owes — short-term bills, long-term loans, and other obligations.',
+  },
+  'Current Liabilities': {
+    plainLabel: 'Bills Due Within a Year',
+    description: 'Obligations the company must pay within the next 12 months — including short-term debt and accounts payable.',
+  },
+  'Long-Term Debt': {
+    plainLabel: 'Long-Term Loans',
+    description: 'Debt that doesn\'t come due for more than a year. High long-term debt can be risky if interest rates rise or the business slows.',
+  },
+  "Stockholders' Equity": {
+    plainLabel: 'Net Worth of the Company',
+    description: 'What shareholders would receive if all assets were sold and all debts paid. Total Assets minus Total Liabilities.',
+  },
+  'Retained Earnings': {
+    plainLabel: 'Profits Reinvested in Business',
+    description: 'Cumulative profits the company has kept instead of paying out as dividends. Growing retained earnings usually means a healthy, profitable business.',
+  },
+
+  // ── Financials: Cash Flow ──────────────────────────────────────────────────
+
+  'Operating Cash Flow': {
+    plainLabel: 'Cash from Running the Business',
+    description: 'Actual cash generated by the company\'s core operations. Often considered more reliable than net income because it\'s harder to manipulate.',
+  },
+  'Capital Expenditures': {
+    plainLabel: 'Money Invested in Assets',
+    description: 'Cash spent on physical assets like equipment, factories, or property. Necessary for growth but reduces free cash flow.',
+  },
+  'Free Cash Flow': {
+    plainLabel: 'Cash Left After Investments',
+    description: 'Operating cash flow minus capital expenditures. Money the company can use to pay dividends, buy back shares, or pay down debt.',
+  },
+  'D&A': {
+    plainLabel: 'Depreciation & Amortization',
+    description: 'A non-cash accounting expense that spreads the cost of assets over their useful life. Added back to calculate operating cash flow.',
+  },
+  'Investing Activities': {
+    plainLabel: 'Cash Used for Investments',
+    description: 'Cash spent or received from buying/selling long-term assets and investments — like acquiring another company.',
+  },
+  'Financing Activities': {
+    plainLabel: 'Cash from Borrowing & Equity',
+    description: 'Cash raised from issuing stock or borrowing, minus repayments and dividends. Positive means the company raised more than it returned.',
+  },
+  'Dividends Paid': {
+    plainLabel: 'Cash Returned to Shareholders',
+    description: 'Total cash paid out to shareholders as dividends during the period.',
+  },
+
+  // ── Technical Indicators ───────────────────────────────────────────────────
+
+  'SMA 50': {
+    plainLabel: '50-Day Average Price',
+    description: 'The average closing price over the past 50 trading days. Traders watch when the price crosses above or below this line.',
+  },
+  'SMA 200': {
+    plainLabel: '200-Day Average Price',
+    description: 'The average closing price over the past 200 trading days. A long-term trend indicator — price above = bullish, below = bearish.',
+  },
+  'EMA 20': {
+    plainLabel: '20-Day Weighted Average',
+    description: 'Like a moving average but gives more weight to recent prices. Reacts faster to price changes than a simple moving average.',
+  },
+  'BB': {
+    plainLabel: 'Price Range Bands',
+    description: 'Bollinger Bands — upper and lower boundaries that show how far the price deviates from its recent average. Prices near the edges may signal reversal.',
+  },
+  'RSI': {
+    plainLabel: 'Momentum Meter',
+    description: 'Relative Strength Index — measures how fast the price is moving. Above 70 may mean overbought; below 30 may mean oversold.',
+  },
+  'MACD': {
+    plainLabel: 'Trend Momentum Signal',
+    description: 'Moving Average Convergence/Divergence — shows the relationship between two moving averages. Used to spot trend changes and momentum shifts.',
+  },
+};
+
+/** Look up a glossary entry, returning undefined if not found. */
+export function getGlossaryEntry(term: string): GlossaryEntry | undefined {
+  return GLOSSARY[term];
+}

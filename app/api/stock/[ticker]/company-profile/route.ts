@@ -12,10 +12,15 @@ async function handler(
   const sym = ticker.toUpperCase();
 
   try {
-    // Fetch profile and executives in parallel — both are low-credit endpoints
+    // Fetch profile and executives in parallel.
+    // /key_executives may be Ultra/Enterprise only on some plan configs — always degrade gracefully.
     const [profile, executives] = await Promise.all([
       getCompanyProfile(sym),
-      getKeyExecutives(sym).catch(() => []), // executives may 404 for some tickers
+      getKeyExecutives(sym).catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (/plan|enterprise|higher tier|not available|access/i.test(msg)) return [];
+        return [];
+      }),
     ]);
 
     return addSecurityHeaders(

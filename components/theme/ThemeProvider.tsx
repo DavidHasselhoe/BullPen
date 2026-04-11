@@ -6,8 +6,8 @@ import { useAuth } from '@/hooks/use-auth';
 /**
  * ThemeProvider
  * Applies the user's theme preference to the HTML element
- * Theme can be: 'dark', 'light', or a background name ('dark-veil', 'aurora', etc.)
- * Background names imply dark mode
+ * Theme can be: 'dark', 'light', or a gradient name ('gradient-blue', etc.)
+ * Gradient names imply dark mode
  */
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
@@ -18,7 +18,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const theme = settings?.theme || 'dark';
 
     // Apply theme to HTML element
-    // Background names (dark-veil, aurora, etc.) are dark mode
+    // Gradient names are dark mode
     const html = document.documentElement;
     if (theme === 'light') {
       html.classList.remove('dark');

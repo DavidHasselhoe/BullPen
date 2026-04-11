@@ -4,35 +4,28 @@ import { useAuth } from './use-auth';
 
 export type BackgroundType =
   | 'none'
-  | 'dark-veil'
-  | 'aurora'
-  | 'particles'
-  | 'plasma'
-  | 'beams'
   | 'gradient-purple'
   | 'gradient-blue'
   | 'gradient-midnight'
   | 'gradient-embers';
 
-const ANIMATED_BACKGROUNDS = ['dark-veil', 'aurora', 'particles', 'plasma', 'beams'] as const;
+const GRADIENT_VARIANTS: string[] = [
+  'gradient-purple',
+  'gradient-blue',
+  'gradient-midnight',
+  'gradient-embers',
+];
 
 export function useBackground() {
   const { user } = useAuth();
-
   const theme = ((user as any)?.settings as any)?.theme || 'dark';
 
-  const background: BackgroundType =
-    theme === 'dark-veil' || theme === 'aurora' || theme === 'particles' || theme === 'plasma' || theme === 'beams'
-      ? theme
-      : theme === 'gradient-purple' || theme === 'gradient-blue' || theme === 'gradient-midnight' || theme === 'gradient-embers'
-        ? theme
-        : 'none';
+  const background: BackgroundType = GRADIENT_VARIANTS.includes(theme)
+    ? (theme as BackgroundType)
+    : 'none';
 
-  const hasAnimatedBackground =
-    background !== 'none' && ANIMATED_BACKGROUNDS.includes(background as (typeof ANIMATED_BACKGROUNDS)[number]);
+  // True when a gradient is active — used by pages to omit bg-background on wrappers
+  const hasAnimatedBackground = background !== 'none';
 
-  return {
-    background,
-    hasAnimatedBackground,
-  };
+  return { background, hasAnimatedBackground };
 }

@@ -9,6 +9,7 @@ import {
   Filter,
   Scale,
   FileText,
+  CalendarDays,
 } from 'lucide-react';
 
 export interface ToolConfig {
@@ -51,6 +52,14 @@ export const TOOLS: ToolConfig[] = [
     description: 'Browse recently filed SEC reports (10-K, 10-Q, 20-F) across companies.',
     href: '/tools/filings',
     icon: FileText,
+    status: 'available',
+  },
+  {
+    id: 'calendar',
+    name: 'Market Events Calendar',
+    description: 'Upcoming earnings announcements, ex-dividend dates, stock splits, and IPOs in one view.',
+    href: '/tools/calendar',
+    icon: CalendarDays,
     status: 'available',
   },
   {

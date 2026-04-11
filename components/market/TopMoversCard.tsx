@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { CompanyRowActions } from '@/components/discover/CompanyRowActions';
 import { cn } from '@/lib/utils';
-import type { MarketMover } from '@/lib/finnhub/finnhub-client';
+import type { MarketMover } from '@/lib/twelvedata/twelvedata-client';
 
 interface TopMoversCardProps {
   gainers: MarketMover[];
@@ -61,7 +61,6 @@ function MoverItem({
             ticker={mover.symbol}
             logoUrl={mover.logoUrl}
             size={32}
-            className="rounded overflow-hidden shrink-0"
           />
           <MiniTrendLine isUp={isGainer} className="shrink-0 opacity-70 hidden sm:block" />
         </div>
@@ -130,9 +129,11 @@ export function TopMoversCard({ gainers, losers, isLoading, isHoldingsMode }: To
     staleTime: 5 * 60 * 1000,
   });
 
-  const companyNameMap = new Map(
-    (companyBatch || []).map((c) => [c.ticker, c.name])
-  );
+  // Prefer DB batch names; fall back to name returned directly by TwelveData movers endpoint
+  const companyNameMap = new Map([
+    ...[...gainers, ...losers].filter((m) => m.name).map((m): [string, string] => [m.symbol, m.name!]),
+    ...(companyBatch || []).map((c): [string, string] => [c.ticker, c.name]),
+  ]);
 
   if (isLoading) {
     return (

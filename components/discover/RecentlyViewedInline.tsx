@@ -34,7 +34,6 @@ export function RecentlyViewedInline() {
               ticker={item.ticker}
               logoUrl={item.logo_url ?? null}
               size={20}
-              className="shrink-0 rounded overflow-hidden"
             />
             <span className="font-semibold tabular-nums">{item.ticker}</span>
           </Link>

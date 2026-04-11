@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/use-auth';
 import {
@@ -11,7 +11,6 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { StatefulButton } from '@/components/ui/stateful-button';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -24,6 +23,7 @@ import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Globe, DollarSign, Moon, Bell, Shield, AlertTriangle, Trash2, Download, Check, Settings2, Eye, EyeOff, Home, Hash } from 'lucide-react';
+import { ExperienceLevelToggle } from '@/components/ui/ExperienceLevelToggle';
 import { Input } from '@/components/ui/input';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { signOut } from '@/lib/auth/auth';
@@ -42,6 +42,10 @@ type SettingsSection =
   | 'privacy'
   | 'danger';
 
+type ThemeValue = 'dark' | 'light' | 'gradient-purple' | 'gradient-blue' | 'gradient-midnight' | 'gradient-embers';
+
+const VALID_THEMES: ThemeValue[] = ['dark', 'light', 'gradient-purple', 'gradient-blue', 'gradient-midnight', 'gradient-embers'];
+
 export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   const { user } = useAuth();
   const router = useRouter();
@@ -57,55 +61,62 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [passwordSuccess, setPasswordSuccess] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
   // Settings state
-  const [selectedMarkets, setSelectedMarkets] = useState<string[]>([]); // Empty array means "Any"
-  const [defaultCurrency, setDefaultCurrency] = useState<string | null>(null); // null means "Based on exchange"
-  const [theme, setTheme] = useState<'dark' | 'light' | 'dark-veil' | 'aurora' | 'particles' | 'plasma' | 'beams' | 'gradient-purple' | 'gradient-blue' | 'gradient-midnight' | 'gradient-embers'>('dark');
-  const [language, setLanguage] = useState<string | null>(null); // null means "System default"
-  const [defaultHomepage, setDefaultHomepage] = useState<string>('/'); // Path where user lands when opening site
-  const [showQuotes, setShowQuotes] = useState<boolean>(true); // Default to true
-  const [showWelcomeText, setShowWelcomeText] = useState<boolean>(true); // Default to true
-  const [roundNumbers, setRoundNumbers] = useState<boolean>(false); // Default to false - show decimals
+  const [selectedMarkets, setSelectedMarkets] = useState<string[]>([]);
+  const [defaultCurrency, setDefaultCurrency] = useState<string | null>(null);
+  const [theme, setTheme] = useState<ThemeValue>('dark');
+  const [language, setLanguage] = useState<string | null>(null);
+  const [defaultHomepage, setDefaultHomepage] = useState<string>('/');
+  const [showQuotes, setShowQuotes] = useState<boolean>(true);
+  const [showWelcomeText, setShowWelcomeText] = useState<boolean>(true);
+  const [roundNumbers, setRoundNumbers] = useState<boolean>(false);
   const [marketContextMode, setMarketContextMode] = useState<'all' | 'holdings'>('all');
-  // Privacy settings
   const [profilePublic, setProfilePublic] = useState<boolean>(true);
   const [holdingsPublic, setHoldingsPublic] = useState<boolean>(true);
   const [notifications, setNotifications] = useState({
-    holdings_earnings: true, // Notify when companies in your holdings file earnings
+    holdings_earnings: true,
     price_alerts: false,
     breaking_news: false,
     insider_trades: false,
     signal_threshold_crossed: false,
   });
 
-  // Load settings
+  // Autosave refs
+  const isInitializedRef = useRef(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleSaveRef = useRef<() => Promise<void>>();
+
+  // Load settings when dialog opens
   useEffect(() => {
+    isInitializedRef.current = false;
     if (user?.settings && open) {
       const settings = user.settings as any;
-      // Load markets: if it's an array, use it; if it's a single value, convert to array; if not set, use empty (Any)
       const markets = settings.selected_markets;
       if (Array.isArray(markets)) {
         setSelectedMarkets(markets);
       } else if (markets) {
         setSelectedMarkets([markets]);
       } else {
-        setSelectedMarkets([]); // Empty means "Any"
+        setSelectedMarkets([]);
       }
-      setDefaultCurrency(settings.default_currency || null); // null means "Based on exchange"
-      // Load language preference (null means "System default")
+      setDefaultCurrency(settings.default_currency || null);
       setLanguage(settings.language || null);
-      // Merge theme and background into single theme field
-      // If old settings have both theme and background, convert to new format
+
+      // Sanitize theme — ignore any old animated themes (aurora, particles, etc.)
       const oldTheme = settings.theme || 'dark';
       const oldBackground = settings.background || 'none';
+      let resolvedTheme: ThemeValue = 'dark';
       if (oldBackground !== 'none' && (oldTheme === 'dark' || !oldTheme)) {
-        setTheme(oldBackground as any);
-      } else if (oldTheme === 'light') {
-        setTheme('light');
-      } else {
-        setTheme(oldTheme || 'dark');
+        resolvedTheme = VALID_THEMES.includes(oldBackground as ThemeValue)
+          ? (oldBackground as ThemeValue)
+          : 'dark';
+      } else if (VALID_THEMES.includes(oldTheme as ThemeValue)) {
+        resolvedTheme = oldTheme as ThemeValue;
       }
+      setTheme(resolvedTheme);
+
       setNotifications({
         holdings_earnings: settings.notifications?.holdings_earnings !== false,
         price_alerts: settings.notifications?.price_alerts || false,
@@ -113,44 +124,39 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
         insider_trades: settings.notifications?.insider_trades || false,
         signal_threshold_crossed: settings.notifications?.signal_threshold_crossed || false,
       });
-      // Load default homepage (default to / if not set)
       setDefaultHomepage(settings.default_homepage || '/');
-      // Load showQuotes preference (default to true if not set)
       setShowQuotes(settings.show_quotes !== undefined ? settings.show_quotes : true);
-      // Load showWelcomeText preference (default to true if not set)
       setShowWelcomeText(settings.show_welcome_text !== undefined ? settings.show_welcome_text : true);
       setRoundNumbers(settings.round_numbers === true);
       setMarketContextMode(settings.market_context_mode === 'holdings' ? 'holdings' : 'all');
-      // Privacy: default public (true) when key is absent
       setProfilePublic(settings.profile_public !== false);
       setHoldingsPublic(settings.holdings_public !== false);
       setError(null);
+
+      // Allow autosave after a short delay so the above setters don't trigger a spurious save
+      const t = setTimeout(() => { isInitializedRef.current = true; }, 400);
+      return () => clearTimeout(t);
     }
   }, [user, open]);
 
   const handleSave = async () => {
     if (!user) return;
-
     setError(null);
-
     try {
       const supabase = createBrowserClient();
-
-      // Use in-memory user.settings (no extra fetch)
       const existingSettings = ((user as any).settings as any) || {};
       const mergedSettings = {
         ...existingSettings,
-        selected_markets: selectedMarkets.length === 0 ? null : selectedMarkets, // Store null for "Any"
+        selected_markets: selectedMarkets.length === 0 ? null : selectedMarkets,
         default_currency: defaultCurrency,
-        theme, // Combined theme + background
-        language, // User's language preference (null means "System default")
+        theme,
+        language,
         default_homepage: defaultHomepage,
-        show_quotes: showQuotes, // Show/hide quotes on main page
-        show_welcome_text: showWelcomeText, // Show/hide welcome text
-        round_numbers: roundNumbers, // Round numbers to whole values (holdings, portfolio, etc.)
-        market_context_mode: marketContextMode, // Market Context: all markets | my portfolio
+        show_quotes: showQuotes,
+        show_welcome_text: showWelcomeText,
+        round_numbers: roundNumbers,
+        market_context_mode: marketContextMode,
         notifications,
-        // Privacy
         profile_public: profilePublic,
         holdings_public: holdingsPublic,
       };
@@ -164,7 +170,6 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
         throw new Error(updateError.message || 'Failed to update settings');
       }
 
-      // Update i18n language immediately if not system default
       if (language) {
         await i18n.changeLanguage(language);
         document.documentElement.lang = language;
@@ -176,13 +181,30 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
         document.documentElement.lang = detectedLang;
       }
 
-      // Refresh auth state so theme/settings propagate without full page reload
       window.dispatchEvent(new Event('auth:refresh'));
     } catch (err: any) {
       setError(err.message || 'Failed to update settings');
-      throw err;
     }
   };
+
+  // Keep the ref current so the debounced autosave always calls the latest closure
+  useEffect(() => { handleSaveRef.current = handleSave; });
+
+  // Autosave — debounced 500 ms after any settings change
+  useEffect(() => {
+    if (!isInitializedRef.current || !user) return;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      if (!handleSaveRef.current) return;
+      setSaveStatus('saving');
+      await handleSaveRef.current();
+      setSaveStatus('saved');
+      const t = setTimeout(() => setSaveStatus('idle'), 1500);
+      return () => clearTimeout(t);
+    }, 500);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMarkets, defaultCurrency, theme, language, defaultHomepage, showQuotes, showWelcomeText, roundNumbers, marketContextMode, notifications, profilePublic, holdingsPublic]);
 
   const handleDeleteAccount = async () => {
     if (!user) return;
@@ -203,7 +225,6 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
         setIsDeletingAccount(false);
         return;
       }
-      // Account deleted — sign out and redirect
       await signOut();
       router.push('/');
       router.refresh();
@@ -226,7 +247,6 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
         return;
       }
 
-      // Trigger a JSON file download in the browser
       const json = JSON.stringify(result.data, null, 2);
       const blob = new Blob([json], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -303,10 +323,29 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[90vw] !max-w-[1000px] sm:!max-w-[1000px] h-[85vh] overflow-hidden flex flex-col p-0">
         <DialogHeader className="px-6 pt-6 pb-4 border-b">
-          <DialogTitle>{t('settings.title')}</DialogTitle>
-          <DialogDescription>
-            {t('settings.description')}
-          </DialogDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <DialogTitle>{t('settings.title')}</DialogTitle>
+              <DialogDescription>
+                {t('settings.description')}
+              </DialogDescription>
+            </div>
+            {/* Autosave status indicator */}
+            <div className="mr-8 flex items-center gap-1.5 text-xs text-muted-foreground min-w-[60px] justify-end">
+              {saveStatus === 'saving' && (
+                <>
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  <span>Saving…</span>
+                </>
+              )}
+              {saveStatus === 'saved' && (
+                <>
+                  <Check className="h-3 w-3 text-emerald-500" />
+                  <span className="text-emerald-500">Saved</span>
+                </>
+              )}
+            </div>
+          </div>
         </DialogHeader>
 
         <div className="flex flex-1 overflow-hidden">
@@ -341,9 +380,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                     <div className="space-y-2">
                       <button
                         type="button"
-                        onClick={() => {
-                          setSelectedMarkets([]); // Empty means "Any"
-                        }}
+                        onClick={() => setSelectedMarkets([])}
                         className="w-full flex items-center gap-3 px-3 py-2 rounded-md border bg-background hover:bg-accent text-left transition-colors"
                       >
                         <div className="flex h-4 w-4 items-center justify-center rounded border border-foreground/20">
@@ -428,9 +465,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-muted-foreground">
-                      {defaultCurrency === null
-                        ? t('settings.currencyDescription')
-                        : t('settings.currencyDescription')}
+                      {t('settings.currencyDescription')}
                     </p>
                   </div>
 
@@ -496,7 +531,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                     </Label>
                     <Select
                       value={theme}
-                      onValueChange={(value: typeof theme) => setTheme(value)}
+                      onValueChange={(value: ThemeValue) => setTheme(value)}
                     >
                       <SelectTrigger id="theme">
                         <SelectValue />
@@ -508,36 +543,8 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                         <SelectItem value="gradient-blue">Gradient Blue</SelectItem>
                         <SelectItem value="gradient-midnight">Gradient Midnight</SelectItem>
                         <SelectItem value="gradient-embers">Gradient Embers</SelectItem>
-                        <SelectItem value="dark-veil">
-                          <span className="flex items-center gap-2">
-                            Dark Veil <span className="text-muted-foreground text-xs">(animated)</span>
-                          </span>
-                        </SelectItem>
-                        <SelectItem value="aurora">
-                          <span className="flex items-center gap-2">
-                            Aurora <span className="text-muted-foreground text-xs">(animated)</span>
-                          </span>
-                        </SelectItem>
-                        <SelectItem value="particles">
-                          <span className="flex items-center gap-2">
-                            Particles <span className="text-muted-foreground text-xs">(animated)</span>
-                          </span>
-                        </SelectItem>
-                        <SelectItem value="plasma">
-                          <span className="flex items-center gap-2">
-                            Plasma <span className="text-muted-foreground text-xs">(animated)</span>
-                          </span>
-                        </SelectItem>
-                        <SelectItem value="beams">
-                          <span className="flex items-center gap-2">
-                            Beams <span className="text-muted-foreground text-xs">(animated)</span>
-                          </span>
-                        </SelectItem>
                       </SelectContent>
                     </Select>
-                    <p className="text-xs text-muted-foreground">
-                      Use gradients for smoother performance; animated options may cause lag on some devices.
-                    </p>
                   </div>
                 </div>
               </div>
@@ -664,6 +671,13 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
             {activeSection === 'customize' && (
               <div className="space-y-6 max-w-2xl">
                 <div className="space-y-4">
+
+                  <div className="space-y-2">
+                    <ExperienceLevelToggle variant="full" />
+                  </div>
+
+                  <Separator />
+
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
@@ -747,7 +761,6 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
               <div className="space-y-6 max-w-2xl">
                 <div className="space-y-4">
 
-                  {/* Profile visibility */}
                   <div className="space-y-3">
                     <Label className="flex items-center gap-2">
                       <Shield className="h-4 w-4" />
@@ -790,7 +803,6 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                       <Shield className="h-4 w-4" />
                       Change Password
                     </Label>
-                    {/* OAuth users (Google etc.) don't have a password to change */}
                     {user.app_metadata?.provider === 'google' ? (
                       <p className="text-xs text-muted-foreground">
                         You signed in with Google. Password change is not available for OAuth accounts.
@@ -938,7 +950,6 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
               </div>
             )}
 
-            {/* Error Messages */}
             {error && (
               <div className="mt-4 p-3 rounded-md bg-destructive/10 text-destructive text-sm animate-in fade-in slide-in-from-bottom-2">
                 {error}
@@ -946,26 +957,6 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
             )}
           </div>
         </div>
-
-        {/* Footer */}
-        {activeSection !== 'danger' && (
-          <div className="border-t px-6 py-4 flex justify-end gap-3">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              {t('common.cancel')}
-            </Button>
-            <StatefulButton
-              onClick={async () => {
-                await handleSave();
-                // Close modal after success animation finishes
-                setTimeout(() => onOpenChange(false), 2000);
-              }}
-              successDuration={2000}
-              className="min-w-[120px]"
-            >
-              {t('settings.saveChanges')}
-            </StatefulButton>
-          </div>
-        )}
       </DialogContent>
     </Dialog>
   );
