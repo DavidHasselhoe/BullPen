@@ -84,6 +84,15 @@ export default function StockDetailPage() {
   // then seed each component's individual query cache so they skip extra requests.
   useStockSnapshot(ticker);
 
+  // Hot Picks: count a visit when this detail page is opened (not search-only clicks)
+  useEffect(() => {
+    if (!ticker) return;
+    void fetch(`/api/stock/${encodeURIComponent(ticker)}/visit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    }).catch(() => {});
+  }, [ticker]);
+
   const { data: company, isLoading: companyLoading } = useQuery({
     queryKey: ['company-info', ticker],
     queryFn: async (): Promise<Company | null> => {

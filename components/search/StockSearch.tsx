@@ -130,24 +130,10 @@ export function StockSearch() {
     },
   });
 
-  // Track search click mutation
-  const trackSearchMutation = useMutation({
-    mutationFn: async (ticker: string) => {
-      await fetch('/api/search/metrics', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ticker }),
-      });
-    },
-  });
-
   const handleSelect = useCallback(
     async (result: SearchResult) => {
       setOpen(false);
       setSearchQuery('');
-
-      // Track the search click
-      trackSearchMutation.mutate(result.ticker);
 
       if (result.has_data) {
         // Navigate directly if data exists
@@ -166,7 +152,7 @@ export function StockSearch() {
         });
       }
     },
-    [router, ingestionMutation, trackSearchMutation]
+    [router, ingestionMutation]
   );
 
   // Handle Enter key to select first result

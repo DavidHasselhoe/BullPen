@@ -3,7 +3,7 @@
 import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAIPanel } from '@/components/ai/AIPanelProvider';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import {
   Command,
   CommandEmpty,
@@ -101,24 +101,13 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     staleTime: 30 * 1000,
   });
 
-  const trackSearchMutation = useMutation({
-    mutationFn: async (ticker: string) => {
-      await fetch('/api/search/metrics', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ticker }),
-      });
-    },
-  });
-
   const handleSelectCompany = useCallback(
     async (result: SearchResult) => {
       onOpenChange(false);
       setSearchQuery('');
-      trackSearchMutation.mutate(result.ticker);
       router.push(`/stock/${result.ticker}`);
     },
-    [router, onOpenChange, trackSearchMutation]
+    [router, onOpenChange]
   );
 
   const handleQuickAction = useCallback(
@@ -166,10 +155,9 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     (result: SearchResult) => {
       onOpenChange(false);
       setSearchQuery('');
-      trackSearchMutation.mutate(result.ticker);
       router.push(`/stock/${result.ticker}#earnings`);
     },
-    [router, onOpenChange, trackSearchMutation]
+    [router, onOpenChange]
   );
 
   return (

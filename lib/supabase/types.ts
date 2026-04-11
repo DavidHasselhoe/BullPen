@@ -123,12 +123,35 @@ export interface Database {
           user_id: string | null;
         }>;
       };
+      stock_page_visits: {
+        Row: {
+          id: string;
+          ticker: string;
+          visited_at: string;
+          user_id: string | null;
+        };
+        Insert: {
+          ticker: string;
+          user_id?: string | null;
+          id?: string;
+          visited_at?: string;
+        };
+        Update: Partial<{
+          ticker: string;
+          user_id: string | null;
+          visited_at: string;
+        }>;
+      };
     };
     Views: Record<string, never>;
     Functions: {
       get_hot_picks: {
         Args: { time_period_hours: number; limit_count: number };
-        Returns: Array<{ ticker: string; search_count: number }>;
+        Returns: Array<{
+          ticker: string;
+          click_count: number;
+          last_clicked_at: string;
+        }>;
       };
     };
     Enums: Record<string, never>;

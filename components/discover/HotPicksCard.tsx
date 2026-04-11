@@ -24,8 +24,7 @@ interface HotPicksResponse {
 }
 
 /**
- * Hot Picks Card Component
- * Displays most searched stocks based on search metrics
+ * Hot Picks Card — tickers with the most stock detail page visits in the window.
  */
 export function HotPicksCard() {
   const { data: hotPicks, isLoading } = useQuery<HotPick[]>({
@@ -47,9 +46,13 @@ export function HotPicksCard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tickers }),
       });
-      const batchData = batchRes.ok ? await batchRes.json() : { data: [] };
+      const batchData = (batchRes.ok
+        ? await batchRes.json()
+        : { data: [] }) as {
+ data?: Array<{ ticker: string; name: string; logo_url: string | null }>;
+      };
       const companyMap = new Map(
-        (batchData.data || []).map((c: { ticker: string; name: string; logo_url: string | null }) => [
+        (batchData.data || []).map((c) => [
           c.ticker,
           { name: c.name, logo_url: c.logo_url },
         ])
@@ -136,7 +139,7 @@ export function HotPicksCard() {
                   <div className="text-xs text-muted-foreground truncate">{pick.name || pick.ticker}</div>
                 </div>
                 <div className="text-xs text-muted-foreground shrink-0">
-                  {pick.click_count} {pick.click_count === 1 ? 'search' : 'searches'}
+                  {pick.click_count} {pick.click_count === 1 ? 'visit' : 'visits'}
                 </div>
               </Link>
               <CompanyRowActions ticker={pick.ticker} name={pick.name || pick.ticker} className="shrink-0" />
