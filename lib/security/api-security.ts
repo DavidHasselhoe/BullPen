@@ -11,7 +11,7 @@ import { validateTicker, validateSearchQuery, validateUUID } from './input-valid
  * otherwise falls back to in-memory (per-instance on serverless).
  *
  * The limit is scoped per route (IP + pathname) so one page load does not consume
- * the budget for unrelated endpoints. Without this, a shared IP bucket caused429s
+ * the budget for unrelated endpoints. Without this, a shared IP bucket caused 429s
  * when any "strict" route's max was exceeded by total traffic across all routes.
  */
 export function withRateLimit(
@@ -19,7 +19,8 @@ export function withRateLimit(
   options: { windowMs?: number; maxRequests?: number; scope?: string } = {}
 ) {
   return async (request: NextRequest, context?: any): Promise<NextResponse> => {
-    const routeScope = options.scope ?? request.nextUrl?.pathname || 'api';
+    const routeScope =
+      options.scope != null && options.scope !== '' ? options.scope : (request.nextUrl?.pathname || 'api');
     const identifier = `${getClientIdentifier(request)}:${routeScope}`;
     const limit = await checkRateLimit(identifier, {
       windowMs: options.windowMs || 60 * 1000, // 1 minute default
