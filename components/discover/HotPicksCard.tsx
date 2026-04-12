@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { Flame } from 'lucide-react';
 import { fetchWithTimeout } from '@/lib/utils';
+import { HOT_PICKS_QUERY_KEY } from '@/lib/discover/hot-picks-query';
 
 interface HotPick {
   ticker: string;
@@ -28,7 +29,7 @@ interface HotPicksResponse {
  */
 export function HotPicksCard() {
   const { data: hotPicks, isLoading } = useQuery<HotPick[]>({
-    queryKey: ['hot-picks'],
+    queryKey: HOT_PICKS_QUERY_KEY,
     queryFn: async () => {
       try {
         const response = await fetchWithTimeout(
@@ -69,7 +70,8 @@ export function HotPicksCard() {
         throw e;
       }
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 30 * 1000, // refresh often; visits also invalidate from stock page
+    refetchOnWindowFocus: true,
     retry: 1,
     gcTime: 30 * 60 * 1000, // 30 minutes
   });

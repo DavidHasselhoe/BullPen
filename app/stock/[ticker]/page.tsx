@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { EarningsCalendar } from '@/components/stock/EarningsCalendar';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -23,6 +23,7 @@ import { useStockSnapshot } from '@/hooks/use-stock-snapshot';
 import dynamic from 'next/dynamic';
 import type { Company } from '@/lib/types/database';
 import type { SignalValue } from '@/lib/finance/health-score';
+import { HOT_PICKS_QUERY_KEY } from '@/lib/discover/hot-picks-query';
 
 const StockPricePanel = dynamic(
   () => import('@/components/stock/StockPricePanel').then((m) => ({ default: m.StockPricePanel })),
@@ -68,6 +69,7 @@ interface CompanyResponse {
 export default function StockDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const ticker = (params.ticker as string)?.toUpperCase() || '';
   const { hasAnimatedBackground } = useBackground();
   const { add: addRecentlyViewed } = useRecentlyViewed();
@@ -84,14 +86,27 @@ export default function StockDetailPage() {
   // then seed each component's individual query cache so they skip extra requests.
   useStockSnapshot(ticker);
 
-  // Hot Picks: count a visit when this detail page is opened (not search-only clicks)
+  // Hot Picks: record visit + invalidate list so Discover updates when you navigate back
   useEffect(() => {
     if (!ticker) return;
-    void fetch(`/api/stock/${encodeURIComponent(ticker)}/visit`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-    }).catch(() => {});
-  }, [ticker]);
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch(`/api/stock/${encodeURIComponent(ticker)}/visit`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        if (!cancelled && res.ok) {
+          await queryClient.invalidateQueries({ queryKey: HOT_PICKS_QUERY_KEY });
+        }
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [ticker, queryClient]);
 
   const { data: company, isLoading: companyLoading } = useQuery({
     queryKey: ['company-info', ticker],
