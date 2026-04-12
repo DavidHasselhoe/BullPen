@@ -1,6 +1,6 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { CompanyRowActions } from '@/components/discover/CompanyRowActions';
@@ -38,7 +38,7 @@ export function HotPicksCard() {
           10000
         ); // Last 7 days, top 8
         const data: HotPicksResponse = await response.json();
-        if (!data.success || !data.data) return [];
+        if (!data.success || !data.data?.length) return [];
 
       // Single batch request for company names/logos (replaces N individual /api/search calls)
       const tickers = data.data.map((pick) => pick.ticker);
@@ -102,9 +102,7 @@ export function HotPicksCard() {
     );
   }
 
-  if (!hotPicks || hotPicks.length === 0) {
-    return null; // Don't show card if no hot picks
-  }
+  const isEmpty = !hotPicks || hotPicks.length === 0;
 
   return (
     <Card className="border-border/50 min-w-0 overflow-hidden">
@@ -113,8 +111,16 @@ export function HotPicksCard() {
           <Flame className="h-5 w-5 text-orange-500" />
           Hot Picks
         </CardTitle>
+        <CardDescription>
+          Stocks others are opening most this week (by detail page visits).
+        </CardDescription>
       </CardHeader>
       <CardContent>
+        {isEmpty ? (
+          <p className="text-sm text-muted-foreground py-2">
+            Nothing here yet — open a few company pages and this list will fill up automatically.
+          </p>
+        ) : (
         <div className="space-y-1">
           {hotPicks.map((pick, index) => (
             <div
@@ -148,6 +154,7 @@ export function HotPicksCard() {
             </div>
           ))}
         </div>
+        )}
       </CardContent>
     </Card>
   );
