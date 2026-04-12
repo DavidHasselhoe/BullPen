@@ -116,9 +116,9 @@ function CategoryBar({ cat }: { cat: CategoryScore }) {
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between text-xs">
-        <span className="text-muted-foreground">{cat.name}</span>
-        <span className="tabular-nums text-muted-foreground/60 text-[11px]">
-          {cat.score}<span className="text-muted-foreground/30">/{cat.max}</span>
+        <span className="font-medium text-foreground">{cat.name}</span>
+        <span className="tabular-nums text-[11px] font-semibold text-muted-foreground">
+          {cat.score}<span className="font-medium text-muted-foreground/40">/{cat.max}</span>
         </span>
       </div>
       <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
@@ -331,25 +331,31 @@ export function HealthScoreCard({ ticker, onSignalsReady }: HealthScoreCardProps
             </div>
           )}
 
-          {/* Simplified mode: compact signal list */}
+          {/* Simplified mode: mini category cards with signal label + bar */}
           {isSimplified && (
-            <div className="flex-1 pt-2">
-              <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                {hs.categories.map((cat) => {
-                  const ratio = cat.score / cat.max;
-                  const sig = ratio >= 0.7 ? 'positive' : ratio >= 0.45 ? 'neutral' : 'negative';
-                  return (
-                    <div key={cat.name} className="flex items-center gap-2">
-                      <span className={cn('w-1.5 h-1.5 rounded-full shrink-0', {
-                        'bg-emerald-500': sig === 'positive',
-                        'bg-amber-400':   sig === 'neutral',
-                        'bg-red-500':     sig === 'negative',
-                      })} />
-                      <span className="text-xs text-muted-foreground truncate">{cat.name}</span>
+            <div className="flex-1 pt-1 grid grid-cols-1 gap-2 min-w-0">
+              {hs.categories.map((cat) => {
+                const ratio = cat.score / cat.max;
+                const pct = Math.round(ratio * 100);
+                const sig = ratio >= 0.7 ? 'positive' : ratio >= 0.45 ? 'neutral' : 'negative';
+                const sigLabel = sig === 'positive' ? 'Strong' : sig === 'neutral' ? 'Fair' : 'Weak';
+                const barColor = sig === 'positive' ? 'bg-emerald-500' : sig === 'neutral' ? 'bg-amber-400' : 'bg-red-500';
+                const textColor = sig === 'positive' ? 'text-emerald-500' : sig === 'neutral' ? 'text-amber-400' : 'text-red-500';
+                return (
+                  <div key={cat.name} className="space-y-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-medium text-foreground truncate">{cat.name}</span>
+                      <span className={cn('text-[10px] font-semibold shrink-0', textColor)}>{sigLabel}</span>
                     </div>
-                  );
-                })}
-              </div>
+                    <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                      <div
+                        className={cn('h-full rounded-full transition-all duration-700', barColor)}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

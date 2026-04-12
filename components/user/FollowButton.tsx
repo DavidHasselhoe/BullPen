@@ -13,12 +13,13 @@ interface FollowStats {
 }
 
 interface FollowButtonProps {
-  username: string;
+  /** URL segment from `/users/[username]`: actual username or user UUID (for users without a username). */
+  profileSlug: string;
   targetUserId: string;
   className?: string;
 }
 
-export function FollowButton({ username, targetUserId, className }: FollowButtonProps) {
+export function FollowButton({ profileSlug, targetUserId, className }: FollowButtonProps) {
   const { user, isAuthenticated } = useAuth();
   const [stats, setStats] = useState<FollowStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -27,14 +28,17 @@ export function FollowButton({ username, targetUserId, className }: FollowButton
   const isOwnProfile = user?.id === targetUserId;
 
   useEffect(() => {
-    if (!isAuthenticated || isOwnProfile) { setLoading(false); return; }
-    fetch(`/api/social/follow/${encodeURIComponent(username)}`)
+    if (!isAuthenticated || isOwnProfile || !profileSlug) {
+      setLoading(false);
+      return;
+    }
+    fetch(`/api/social/follow/${encodeURIComponent(profileSlug)}`)
       .then((r) => r.json())
       .then((d) => {
         if (d.success) setStats({ followers: d.followers, following: d.following, isFollowing: d.isFollowing });
       })
       .finally(() => setLoading(false));
-  }, [username, isAuthenticated, isOwnProfile]);
+  }, [profileSlug, isAuthenticated, isOwnProfile]);
 
   const handleToggle = async () => {
     if (!stats || pending) return;
@@ -43,7 +47,7 @@ export function FollowButton({ username, targetUserId, className }: FollowButton
     setStats(optimistic);
     try {
       const method = stats.isFollowing ? 'DELETE' : 'POST';
-      await fetch(`/api/social/follow/${encodeURIComponent(username)}`, { method });
+      await fetch(`/api/social/follow/${encodeURIComponent(profileSlug)}`, { method });
     } catch {
       setStats(stats); // revert on error
     } finally {
@@ -51,7 +55,7 @@ export function FollowButton({ username, targetUserId, className }: FollowButton
     }
   };
 
-  if (!isAuthenticated || isOwnProfile || loading) return null;
+  if (!isAuthenticated || isOwnProfile || loading || !profileSlug) return null;
 
   return (
     <div className={cn('flex items-center gap-3', className)}>

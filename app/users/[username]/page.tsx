@@ -180,7 +180,7 @@ export default function UserProfilePage() {
 
           {/* Follow button — shown to other authenticated users */}
           <FollowButton
-            username={profile.username ?? ''}
+            profileSlug={username}
             targetUserId={profile.id}
             className="shrink-0"
           />

@@ -1210,47 +1210,90 @@ export async function symbolSearch(
 export interface PressRelease {
   title: string;
   published_at: string;
-  url: string;
-  snippet?: string;
-}
-
-interface TwelveDataPressRelease {
-  title?: string;
-  published_at?: string;
+  /** Present when the provider returns a direct link; otherwise the card shows text only. */
   url?: string;
   snippet?: string;
 }
 
+interface TwelveDataPressRelease {
+  id?: string;
+  title?: string;
+  /** Current API field (ISO 8601) */
+  datetime?: string;
+  /** Legacy/alternate field name */
+  published_at?: string;
+  body?: string;
+  url?: string;
+  link?: string;
+  snippet?: string;
+}
+
 interface TwelveDataPressReleasesResponse {
+  /** Current Twelve Data shape (see /press_releases docs) */
+  press_releases?: TwelveDataPressRelease[];
+  /** Legacy shape — keep for compatibility */
   data?: TwelveDataPressRelease[];
   status?: string;
   code?: number;
   message?: string;
 }
 
+function pressReleasePlainSnippet(html: string | undefined, maxLen: number): string | undefined {
+  if (!html) return undefined;
+  const plain = html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ' ')
+    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!plain) return undefined;
+  return plain.length <= maxLen ? plain : `${plain.slice(0, maxLen - 1)}…`;
+}
+
+function isTwelveDataHttpError(json: TwelveDataPressReleasesResponse, res: Response): boolean {
+  if (!res.ok) return true;
+  if (json.status === 'error') return true;
+  if (typeof json.code === 'number' && json.code >= 400) return true;
+  return false;
+}
+
 /**
  * GET /press_releases — official company press releases.
- * Cost: 5 API credits per request. Available from Basic+ (Venture included).
+ * Cost: 1 API credit per request. Available from Basic+ (Venture included).
+ * Response uses `press_releases` (not `data`); items use `datetime` and HTML `body`.
  */
 export async function getPressReleases(
   symbol: string,
   outputsize = 10
 ): Promise<PressRelease[]> {
-  logUsage('/press_releases', symbol);
-  const url = buildUrl('/press_releases', { symbol: symbol.toUpperCase(), outputsize });
+  const sym = symbol.toUpperCase();
+  logUsage('/press_releases', sym);
+  const cappedSize = Math.min(Math.max(outputsize, 1), 10);
+  const url = buildUrl('/press_releases', { symbol: sym, outputsize: cappedSize });
   const res = await fetch(url, { next: { revalidate: 3600 } }); // cache 1 h
   const json = (await res.json()) as TwelveDataPressReleasesResponse;
-  if (!res.ok || json.code || json.status === 'error') {
+  if (isTwelveDataHttpError(json, res)) {
     const msg = json.message ?? `press_releases error: ${res.status}`;
-    if (/rate.?limit|credits? exceeded/i.test(msg)) throw new TwelveDataRateLimitError(msg);
+    if (/rate.?limit|credits? exceeded/i.test(msg) || json.code === 429) {
+      throw new TwelveDataRateLimitError(msg);
+    }
     throw new Error(msg);
   }
-  return (json.data ?? []).map((r) => ({
-    title: r.title ?? '',
-    published_at: r.published_at ?? '',
-    url: r.url ?? '',
-    snippet: r.snippet,
-  }));
+
+  const rows = json.press_releases ?? json.data ?? [];
+
+  return rows.map((r) => {
+    const title = r.title ?? '';
+    const published_at = r.datetime ?? r.published_at ?? '';
+    const snippet = r.snippet ?? pressReleasePlainSnippet(r.body, 220);
+    const urlField = (r.url ?? r.link ?? '').trim();
+    return {
+      title,
+      published_at,
+      ...(urlField ? { url: urlField } : {}),
+      snippet,
+    };
+  });
 }
 
 // -------- Splits --------
@@ -1328,15 +1371,27 @@ export async function getIndicator(
   const url = buildUrl(`/${indicator}`, { symbol: symbol.toUpperCase(), ...params });
   const res = await fetch(url, { next: { revalidate: 300 } }); // cache 5 min
   const json = (await res.json()) as TwelveDataIndicatorResponse;
-  if (!res.ok || json.code || json.status === 'error') {
+  const apiFailed =
+    !res.ok ||
+    json.status === 'error' ||
+    (typeof json.code === 'number' && json.code >= 400);
+  if (apiFailed) {
     const msg = json.message ?? `${indicator} error: ${res.status}`;
-    if (/rate.?limit|credits? exceeded/i.test(msg)) throw new TwelveDataRateLimitError(msg);
+    if (/rate.?limit|credits? exceeded/i.test(msg) || json.code === 429) {
+      throw new TwelveDataRateLimitError(msg);
+    }
     throw new Error(msg);
   }
   const values = (json.values ?? []).map((v) => {
     const entry: IndicatorValue = { datetime: v.datetime ?? '' };
     for (const [k, val] of Object.entries(v)) {
-      if (k !== 'datetime') entry[k] = parseFloat(val) ?? val;
+      if (k === 'datetime') continue;
+      if (typeof val === 'string') {
+        const n = parseFloat(val);
+        entry[k] = Number.isFinite(n) ? n : val;
+      } else if (typeof val === 'number') {
+        entry[k] = val;
+      }
     }
     return entry;
   });

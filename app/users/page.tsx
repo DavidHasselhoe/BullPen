@@ -15,9 +15,10 @@ interface SearchResponse {
   results: PublicUser[];
 }
 
-async function searchUsers(q: string): Promise<PublicUser[]> {
-  if (q.length < 2) return [];
-  const res = await fetchWithTimeout(`/api/users/search?q=${encodeURIComponent(q)}&limit=30`, {}, 8000);
+async function fetchMembers(q: string): Promise<PublicUser[]> {
+  const params = new URLSearchParams({ limit: '30' });
+  if (q.trim().length >= 2) params.set('q', q.trim());
+  const res = await fetchWithTimeout(`/api/users/search?${params.toString()}`, {}, 8000);
   if (!res.ok) return [];
   const data = (await res.json()) as SearchResponse;
   return data.results ?? [];
@@ -29,50 +30,37 @@ export default function UsersPage() {
 
   const { data: results, isLoading } = useQuery({
     queryKey: ['users-search', debouncedQuery],
-    queryFn: () => searchUsers(debouncedQuery),
-    enabled: debouncedQuery.length >= 2,
+    queryFn: () => fetchMembers(debouncedQuery),
     staleTime: 30_000,
     placeholderData: (prev) => prev,
   });
 
-  const showEmpty = debouncedQuery.length >= 2 && !isLoading && (results?.length ?? 0) === 0;
+  const isSearchMode = debouncedQuery.trim().length >= 2;
+  const showEmpty = isSearchMode && !isLoading && (results?.length ?? 0) === 0;
   const showResults = (results?.length ?? 0) > 0;
-  const showPrompt = debouncedQuery.length < 2 && !isLoading;
 
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-5xl mx-auto px-4 py-10 space-y-8">
-
-        {/* Header */}
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <Users className="h-5 w-5 text-primary" />
             <h1 className="text-2xl font-bold text-foreground">Browse Members</h1>
           </div>
           <p className="text-sm text-muted-foreground">
-            Search for other BullPen members by name or username.
+            Everyone listed here has a public profile. Use search to narrow by name or username.
           </p>
         </div>
 
-        {/* Search input */}
         <div className="relative max-w-lg">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
           <Input
-            autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search by name or username…"
             className="pl-9"
           />
         </div>
-
-        {/* Results */}
-        {showPrompt && (
-          <div className="flex flex-col items-center gap-3 py-16 text-center text-muted-foreground">
-            <Users className="h-10 w-10 opacity-30" />
-            <p className="text-sm">Type at least 2 characters to search.</p>
-          </div>
-        )}
 
         {isLoading && (
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
@@ -92,7 +80,15 @@ export default function UsersPage() {
         {showResults && !isLoading && (
           <>
             <p className="text-xs text-muted-foreground">
-              {results!.length} result{results!.length === 1 ? '' : 's'}
+              {isSearchMode ? (
+                <>
+                  {results!.length} result{results!.length === 1 ? '' : 's'} for &ldquo;{debouncedQuery}&rdquo;
+                </>
+              ) : (
+                <>
+                  {results!.length} public profile{results!.length === 1 ? '' : 's'}
+                </>
+              )}
             </p>
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
               {results!.map((user) => (
@@ -100,6 +96,13 @@ export default function UsersPage() {
               ))}
             </div>
           </>
+        )}
+
+        {!isLoading && !showResults && !showEmpty && (
+          <div className="flex flex-col items-center gap-3 py-16 text-center text-muted-foreground">
+            <Users className="h-10 w-10 opacity-30" />
+            <p className="text-sm">No public profiles yet.</p>
+          </div>
         )}
       </div>
     </div>

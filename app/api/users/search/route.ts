@@ -22,6 +22,46 @@ export interface PublicUser {
   holdings_count?: number;
 }
 
+function isProfilePublic(u: Record<string, unknown>): boolean {
+  const settings = u.settings as Record<string, unknown> | null;
+  return settings?.profile_public !== false;
+}
+
+function mapRowToPublicUser(u: Record<string, unknown>): PublicUser {
+  return {
+    id: u.id as string,
+    username: (u.username as string | null) ?? null,
+    full_name: (u.full_name as string | null) ?? null,
+    avatar_url: (u.avatar_url as string | null) ?? null,
+    bio: (u.bio as string | null) ?? null,
+    experience_level: (u.experience_level as PublicUser['experience_level']) ?? null,
+    market_focus: (u.market_focus as PublicUser['market_focus']) ?? null,
+    risk_profile: (u.risk_profile as PublicUser['risk_profile']) ?? null,
+    account_tier: (u.account_tier as number | null) ?? null,
+    created_at: u.created_at as string,
+  };
+}
+
+async function attachHoldingCounts(
+  supabase: ReturnType<typeof createServerClient>,
+  results: PublicUser[]
+): Promise<void> {
+  if (results.length === 0) return;
+  const userIds = results.map((r) => r.id);
+  const { data: holdingRows } = await supabase
+    .from('user_holdings')
+    .select('user_id')
+    .in('user_id', userIds);
+
+  const countMap = new Map<string, number>();
+  (holdingRows ?? []).forEach((h: { user_id: string }) => {
+    countMap.set(h.user_id, (countMap.get(h.user_id) ?? 0) + 1);
+  });
+  results.forEach((r) => {
+    r.holdings_count = countMap.get(r.id) ?? 0;
+  });
+}
+
 async function handler(
   request: NextRequest,
   _context: unknown,
@@ -30,12 +70,6 @@ async function handler(
   const q = request.nextUrl.searchParams.get('q')?.trim() ?? '';
   const limitParam = request.nextUrl.searchParams.get('limit');
   const limit = Math.min(Math.max(parseInt(limitParam ?? '20', 10) || 20, 1), 50);
-
-  if (q.length < 2) {
-    return addSecurityHeaders(
-      NextResponse.json({ success: true, results: [] })
-    );
-  }
 
   try {
     const cookieStore = await cookies();
@@ -56,13 +90,29 @@ async function handler(
       }
     );
 
-    const pattern = `%${q}%`;
+    let rows: Record<string, unknown>[] | null = null;
+    let error: { message: string } | null = null;
 
-    const { data: rows, error } = await supabase
-      .from('users')
-      .select(PUBLIC_PROFILE_COLUMNS)
-      .or(`username.ilike.${pattern},full_name.ilike.${pattern}`)
-      .limit(limit);
+    if (q.length >= 2) {
+      const pattern = `%${q}%`;
+      const res = await supabase
+        .from('users')
+        .select(PUBLIC_PROFILE_COLUMNS)
+        .or(`username.ilike.${pattern},full_name.ilike.${pattern}`)
+        .limit(Math.min(limit * 2, 80));
+      rows = res.data as Record<string, unknown>[] | null;
+      error = res.error;
+    } else {
+      // Browse: public profiles only (filtered below); over-fetch in case many are private
+      const res = await supabase
+        .from('users')
+        .select(PUBLIC_PROFILE_COLUMNS)
+        .order('username', { ascending: true, nullsFirst: false })
+        .order('full_name', { ascending: true, nullsFirst: false })
+        .limit(Math.min(limit * 6, 200));
+      rows = res.data as Record<string, unknown>[] | null;
+      error = res.error;
+    }
 
     if (error) {
       return addSecurityHeaders(
@@ -71,44 +121,13 @@ async function handler(
     }
 
     const results: PublicUser[] = (rows ?? [])
-      .filter((u: Record<string, unknown>) => {
-        // Respect profile_public setting (default: true when absent)
-        const settings = u.settings as Record<string, unknown> | null;
-        return settings?.profile_public !== false;
-      })
-      .map((u: Record<string, unknown>) => ({
-        id: u.id as string,
-        username: (u.username as string | null) ?? null,
-        full_name: (u.full_name as string | null) ?? null,
-        avatar_url: (u.avatar_url as string | null) ?? null,
-        bio: (u.bio as string | null) ?? null,
-        experience_level: (u.experience_level as PublicUser['experience_level']) ?? null,
-        market_focus: (u.market_focus as PublicUser['market_focus']) ?? null,
-        risk_profile: (u.risk_profile as PublicUser['risk_profile']) ?? null,
-        account_tier: (u.account_tier as number | null) ?? null,
-        created_at: u.created_at as string,
-      }));
+      .filter(isProfilePublic)
+      .slice(0, limit)
+      .map(mapRowToPublicUser);
 
-    // Fetch holdings counts for the returned user ids
-    if (results.length > 0) {
-      const userIds = results.map((r) => r.id);
-      const { data: holdingRows } = await supabase
-        .from('user_holdings')
-        .select('user_id')
-        .in('user_id', userIds);
+    await attachHoldingCounts(supabase, results);
 
-      const countMap = new Map<string, number>();
-      (holdingRows ?? []).forEach((h: { user_id: string }) => {
-        countMap.set(h.user_id, (countMap.get(h.user_id) ?? 0) + 1);
-      });
-      results.forEach((r) => {
-        r.holdings_count = countMap.get(r.id) ?? 0;
-      });
-    }
-
-    return addSecurityHeaders(
-      NextResponse.json({ success: true, results })
-    );
+    return addSecurityHeaders(NextResponse.json({ success: true, results }));
   } catch {
     return addSecurityHeaders(
       NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })

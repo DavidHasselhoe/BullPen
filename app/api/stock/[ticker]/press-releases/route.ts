@@ -10,7 +10,8 @@ async function handler(
   const { ticker } = await params;
   const symbol = ticker.toUpperCase();
   const limitParam = request.nextUrl.searchParams.get('limit') ?? '10';
-  const outputsize = validateLimit(limitParam, 20, 10);
+  // Twelve Data /press_releases: outputsize max 10
+  const outputsize = validateLimit(limitParam, 10, 10);
 
   try {
     const releases = await getPressReleases(symbol, outputsize);
