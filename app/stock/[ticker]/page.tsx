@@ -24,6 +24,7 @@ import dynamic from 'next/dynamic';
 import type { Company } from '@/lib/types/database';
 import type { SignalValue } from '@/lib/finance/health-score';
 import { HOT_PICKS_QUERY_KEY } from '@/lib/discover/hot-picks-query';
+import { postStockVisit } from '@/lib/discover/post-stock-visit';
 
 const StockPricePanel = dynamic(
   () => import('@/components/stock/StockPricePanel').then((m) => ({ default: m.StockPricePanel })),
@@ -92,10 +93,7 @@ export default function StockDetailPage() {
     let cancelled = false;
     void (async () => {
       try {
-        const res = await fetch(`/api/stock/${encodeURIComponent(ticker)}/visit`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-        });
+        const res = await postStockVisit(ticker);
         if (!cancelled && res.ok) {
           await queryClient.invalidateQueries({ queryKey: HOT_PICKS_QUERY_KEY });
         }
