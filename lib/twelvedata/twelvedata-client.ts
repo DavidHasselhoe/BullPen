@@ -1413,21 +1413,29 @@ export interface EarningsCalendarItem {
   surprise?: number | null;
 }
 
+/**
+ * Single entry inside a date bucket in the /earnings_calendar response.
+ * The API returns earnings as a map: { "2026-04-14": [item, ...], ... }
+ */
 interface TwelveDataEarningsCalItem {
   symbol?: string;
   name?: string;
-  date?: string;
+  currency?: string;
+  exchange?: string;
+  mic_code?: string;
+  country?: string;
   time?: string;
-  eps_estimate?: string | number | null;
-  eps_actual?: string | number | null;
-  revenue_estimate?: string | number | null;
-  revenue_actual?: string | number | null;
-  fiscal_quarter?: string;
-  surprise?: string | number | null;
+  eps_estimate?: number | null;
+  eps_actual?: number | null;
+  /** eps_actual − eps_estimate */
+  difference?: number | null;
+  /** Surprise as a percentage */
+  surprise_prc?: number | null;
 }
 
 interface TwelveDataEarningsCalResponse {
-  earnings?: TwelveDataEarningsCalItem[];
+  /** Map of date strings → array of earnings items */
+  earnings?: Record<string, TwelveDataEarningsCalItem[]>;
   status?: string;
   code?: number;
   message?: string;
@@ -1436,32 +1444,115 @@ interface TwelveDataEarningsCalResponse {
 /**
  * GET /earnings_calendar — upcoming earnings announcements across all stocks.
  * Cost: 40 credits per request. Available on Venture+.
+ * Response shape: { earnings: { "YYYY-MM-DD": [...items] }, status: "ok" }
  */
 export async function getEarningsCalendarRange(
   startDate: string,
-  endDate: string
+  endDate: string,
+  country = 'United States'
 ): Promise<EarningsCalendarItem[]> {
   logUsage('/earnings_calendar', `${startDate}..${endDate}`);
-  const url = buildUrl('/earnings_calendar', { start_date: startDate, end_date: endDate });
+  const url = buildUrl('/earnings_calendar', {
+    start_date: startDate,
+    end_date: endDate,
+    country,
+  });
   const res = await fetch(url, { next: { revalidate: 3600 } });
   const json = (await res.json()) as TwelveDataEarningsCalResponse;
-  if (!res.ok || json.code || json.status === 'error') {
+
+  const apiFailed =
+    !res.ok ||
+    json.status === 'error' ||
+    (typeof json.code === 'number' && json.code >= 400);
+  if (apiFailed) {
     const msg = json.message ?? `earnings_calendar error: ${res.status}`;
-    if (/rate.?limit|credits? exceeded/i.test(msg)) throw new TwelveDataRateLimitError(msg);
+    if (/rate.?limit|credits? exceeded/i.test(msg) || json.code === 429) {
+      throw new TwelveDataRateLimitError(msg);
+    }
     throw new Error(msg);
   }
-  return (json.earnings ?? []).map((e) => ({
-    symbol: e.symbol ?? '',
-    name: e.name,
-    date: e.date ?? '',
-    time: e.time,
-    eps_estimate: e.eps_estimate != null ? Number(e.eps_estimate) : null,
-    eps_actual: e.eps_actual != null ? Number(e.eps_actual) : null,
-    revenue_estimate: e.revenue_estimate != null ? Number(e.revenue_estimate) : null,
-    revenue_actual: e.revenue_actual != null ? Number(e.revenue_actual) : null,
-    fiscal_quarter: e.fiscal_quarter,
-    surprise: e.surprise != null ? Number(e.surprise) : null,
-  }));
+
+  // Flatten date-bucketed map → single sorted array
+  const earningsMap = json.earnings ?? {};
+  const raw: EarningsCalendarItem[] = [];
+
+  for (const [date, entries] of Object.entries(earningsMap)) {
+    if (!Array.isArray(entries)) continue;
+    for (const e of entries) {
+      raw.push({
+        symbol: e.symbol ?? '',
+        name: e.name,
+        date,
+        time: e.time,
+        eps_estimate: e.eps_estimate ?? null,
+        eps_actual: e.eps_actual ?? null,
+        revenue_estimate: null,
+        revenue_actual: null,
+        fiscal_quarter: undefined,
+        surprise: e.surprise_prc ?? null,
+      });
+    }
+  }
+
+  const items = deduplicateEarnings(raw);
+
+  // Sort chronologically then alphabetically by symbol
+  items.sort((a, b) => a.date.localeCompare(b.date) || a.symbol.localeCompare(b.symbol));
+  return items;
+}
+
+/**
+ * Strip market-specific suffixes from a company name so that duplicate
+ * listings of the same company can be identified.
+ * e.g. "Apple Inc. CEDEAR", "Apple Inc. BDR", "Apple Inc." → all map to "apple inc"
+ */
+function normalizeCompanyName(name: string | undefined): string {
+  if (!name) return '';
+  return name
+    .replace(/\s+(BDR|CEDEAR|ADR|ADS|GDR|ETF|FUND|REIT)\b.*/i, '')
+    .replace(/[.,]?\s*(Inc|Corp|Ltd|LLC|PLC|SA|AG|NV|SE|Co)\b\.?/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+
+/**
+ * Score a ticker to prefer the primary (US-exchange) listing.
+ * Higher = more preferred.
+ *   +20  purely alphabetic (no digits) — primary US listing
+ *   +10  has EPS estimate or actual data
+ *    -5  per digit in the symbol (BDR/CEDEAR tickers often end in "34", "3L" etc.)
+ *    -5  name contains BDR / CEDEAR / ADR suffix
+ *    -1  per extra character beyond 4 (penalises long regional variants)
+ */
+function tickerScore(item: EarningsCalendarItem): number {
+  let score = 0;
+  if (/^[A-Z]+$/.test(item.symbol)) score += 20;
+  if (item.eps_estimate != null || item.eps_actual != null) score += 10;
+  const digits = (item.symbol.match(/\d/g) ?? []).length;
+  score -= digits * 5;
+  if (/\b(BDR|CEDEAR)\b/i.test(item.name ?? '')) score -= 5;
+  score -= Math.max(0, item.symbol.length - 4);
+  return score;
+}
+
+/**
+ * For each (normalized company name + date) pair keep only the highest-scoring
+ * ticker, eliminating duplicate listings (BDR, CEDEAR, regional variants).
+ */
+function deduplicateEarnings(items: EarningsCalendarItem[]): EarningsCalendarItem[] {
+  // key = normalizedName + '|' + date
+  const best = new Map<string, EarningsCalendarItem>();
+
+  for (const item of items) {
+    const key = `${normalizeCompanyName(item.name)}|${item.date}`;
+    const current = best.get(key);
+    if (!current || tickerScore(item) > tickerScore(current)) {
+      best.set(key, item);
+    }
+  }
+
+  return Array.from(best.values());
 }
 
 export interface DividendsCalendarItem {
@@ -1501,9 +1592,10 @@ export async function getDividendsCalendar(
   const url = buildUrl('/dividends_calendar', { start_date: startDate, end_date: endDate });
   const res = await fetch(url, { next: { revalidate: 3600 } });
   const json = (await res.json()) as TwelveDataDivCalResponse;
-  if (!res.ok || json.code || json.status === 'error') {
+  const divFailed = !res.ok || json.status === 'error' || (typeof json.code === 'number' && json.code >= 400);
+  if (divFailed) {
     const msg = json.message ?? `dividends_calendar error: ${res.status}`;
-    if (/rate.?limit|credits? exceeded/i.test(msg)) throw new TwelveDataRateLimitError(msg);
+    if (/rate.?limit|credits? exceeded/i.test(msg) || json.code === 429) throw new TwelveDataRateLimitError(msg);
     throw new Error(msg);
   }
   return (json.dividends ?? []).map((d) => ({
@@ -1551,9 +1643,10 @@ export async function getSplitsCalendar(
   const url = buildUrl('/splits_calendar', { start_date: startDate, end_date: endDate });
   const res = await fetch(url, { next: { revalidate: 3600 } });
   const json = (await res.json()) as TwelveDataSplitsCalResponse;
-  if (!res.ok || json.code || json.status === 'error') {
+  const splitsFailed = !res.ok || json.status === 'error' || (typeof json.code === 'number' && json.code >= 400);
+  if (splitsFailed) {
     const msg = json.message ?? `splits_calendar error: ${res.status}`;
-    if (/rate.?limit|credits? exceeded/i.test(msg)) throw new TwelveDataRateLimitError(msg);
+    if (/rate.?limit|credits? exceeded/i.test(msg) || json.code === 429) throw new TwelveDataRateLimitError(msg);
     throw new Error(msg);
   }
   return (json.splits ?? []).map((s) => ({
@@ -1605,9 +1698,10 @@ export async function getIPOCalendar(
   const url = buildUrl('/ipo_calendar', { start_date: startDate, end_date: endDate });
   const res = await fetch(url, { next: { revalidate: 3600 } });
   const json = (await res.json()) as TwelveDataIPOCalResponse;
-  if (!res.ok || json.code || json.status === 'error') {
+  const ipoFailed = !res.ok || json.status === 'error' || (typeof json.code === 'number' && json.code >= 400);
+  if (ipoFailed) {
     const msg = json.message ?? `ipo_calendar error: ${res.status}`;
-    if (/rate.?limit|credits? exceeded/i.test(msg)) throw new TwelveDataRateLimitError(msg);
+    if (/rate.?limit|credits? exceeded/i.test(msg) || json.code === 429) throw new TwelveDataRateLimitError(msg);
     throw new Error(msg);
   }
   return (json.ipos ?? []).map((i) => ({

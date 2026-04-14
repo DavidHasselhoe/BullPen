@@ -21,9 +21,16 @@ import { useUserSettings } from '@/hooks/use-user-settings';
 
 interface HoldingsTableProps {
   onAddClick?: () => void;
+  /**
+   * Pre-computed holdings with live prices, passed down from the page.
+   * When provided, the table skips its own quote fetch and uses this data directly
+   * so all columns (price, market value, P/L, day change) stay in sync with the
+   * live WebSocket stream.
+   */
+  holdingsWithPrices?: HoldingWithPrice[];
 }
 
-export function HoldingsTable({ onAddClick }: HoldingsTableProps) {
+export function HoldingsTable({ onAddClick, holdingsWithPrices: externalHoldings }: HoldingsTableProps) {
   const { data: holdings, isLoading } = useHoldings();
   const { user } = useAuth();
   const { roundNumbers } = useUserSettings();
@@ -55,11 +62,12 @@ export function HoldingsTable({ onAddClick }: HoldingsTableProps) {
     gcTime: 24 * 60 * 60 * 1000, // 24 hours
   });
 
-  // Fetch quotes and logos (batched: 1 DB query for all logos + N quote fetches in parallel)
+  // Only run the internal quote fetch when no live data is provided from the parent page.
+  // When externalHoldings is present we skip this to avoid duplicate API calls.
   const quotes = useQuery({
     queryKey: ['holdings-quotes', holdings?.map((h) => h.symbol)],
     queryFn: async () => {
-      if (!holdings || holdings.length === 0) return {};
+      if (!holdings || holdings.length === 0) return { quotes: {}, logos: {} };
       
       const supabase = createBrowserClient();
       const quoteMap: Record<string, { price: number; change: number; changePercent: number }> = {};
@@ -99,13 +107,16 @@ export function HoldingsTable({ onAddClick }: HoldingsTableProps) {
 
       return { quotes: quoteMap, logos: logoMap };
     },
-    enabled: !!holdings && holdings.length > 0,
-    staleTime: 3 * 60 * 1000, // 3 minutes — reduces quote API load
-    gcTime: 15 * 60 * 1000, // 15 minutes cache retention
+    // Skip the internal fetch entirely when the parent already supplies live data.
+    enabled: !externalHoldings && !!holdings && holdings.length > 0,
+    staleTime: 3 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
   });
 
-  // Combine holdings with quotes and calculate derived values
-  const holdingsWithPrices = useMemo((): HoldingWithPrice[] => {
+  // Combine holdings with quotes and calculate derived values.
+  // Skipped when externalHoldings is provided — the parent already did this work.
+  const internalHoldingsWithPrices = useMemo((): HoldingWithPrice[] => {
+    if (externalHoldings) return externalHoldings;
     if (!holdings) return [];
     
     const quotesMap = quotes.data?.quotes || {};
@@ -171,10 +182,13 @@ export function HoldingsTable({ onAddClick }: HoldingsTableProps) {
         unrealizedPLPercent,
         allocation,
         logoUrl,
-        avg_price, // Override with converted value
+        avg_price,
       };
     });
-  }, [holdings, quotes.data, exchangeRates.data, userCurrency]);
+  }, [externalHoldings, holdings, quotes.data, exchangeRates.data, userCurrency]);
+
+  // Alias so the rest of the component is unchanged.
+  const holdingsWithPrices = internalHoldingsWithPrices;
 
   // Sort holdings
   const sortedHoldings = useMemo(() => {

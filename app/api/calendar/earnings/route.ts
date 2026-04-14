@@ -6,9 +6,10 @@ async function handler(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const from = searchParams.get('from') ?? new Date().toISOString().slice(0, 10);
   const to = searchParams.get('to') ?? from;
+  const country = searchParams.get('country') ?? 'United States';
 
   try {
-    const data = await getEarningsCalendarRange(from, to);
+    const data = await getEarningsCalendarRange(from, to, country);
     return addSecurityHeaders(
       NextResponse.json(
         { success: true, data },

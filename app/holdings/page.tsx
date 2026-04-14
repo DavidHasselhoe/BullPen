@@ -10,6 +10,7 @@ import { PortfolioRiskAnalysis } from '@/components/holdings/PortfolioRiskAnalys
 import { useHoldings } from '@/hooks/use-holdings';
 import { useAuth } from '@/hooks/use-auth';
 import { useLivePrices } from '@/hooks/use-live-prices';
+import { useThrottle } from '@/hooks/use-throttle';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Radio } from 'lucide-react';
@@ -110,10 +111,12 @@ export default function HoldingsPage() {
     const logosMap = quotesData.data?.logos || {};
     const rates = exchangeRates.data ?? null;
 
-    // Allocation is calculated from raw USD values so the ratio is unaffected by conversion
+    // Allocation — use live price where available so the percentages stay current.
     const totalMarketValueUSD = holdings.reduce((sum, holding) => {
-      const quote = quotesMap[holding.symbol];
-      return quote && holding.quantity ? sum + quote.price * holding.quantity : sum;
+      const lp = livePrices.get(holding.symbol);
+      const bq = quotesMap[holding.symbol];
+      const price = lp?.price ?? bq?.price;
+      return price && holding.quantity ? sum + price * holding.quantity : sum;
     }, 0);
 
     const conv = (usd: number) =>
@@ -122,15 +125,28 @@ export default function HoldingsPage() {
     return holdings.map((holding) => {
       const liveQuote = livePrices.get(holding.symbol);
       const batchQuote = quotesMap[holding.symbol];
-      // Prefer real-time tick; fall back to batch
-      const quote = liveQuote
-        ? { price: liveQuote.price, change: liveQuote.change, changePercent: liveQuote.changePercent }
-        : batchQuote;
       const logoUrl = logosMap[holding.symbol] || null;
 
-      const currentPriceUSD = quote?.price;
-      const dayChangeUSD = quote?.change;
-      const dayChangePercent = quote?.changePercent;
+      // The live WebSocket tick gives us the current price but not reliable change data.
+      // Derive previousClose from the batch REST quote (batchPrice − batchChange = previous_close)
+      // so we can recompute dayChange live as the price moves throughout the session.
+      const currentPriceUSD = liveQuote?.price ?? batchQuote?.price;
+
+      const previousCloseUSD =
+        batchQuote && batchQuote.price > 0
+          ? batchQuote.price - batchQuote.change
+          : undefined;
+
+      // Recompute change from live price whenever we have a previous close anchor.
+      const dayChangeUSD =
+        currentPriceUSD !== undefined && previousCloseUSD !== undefined
+          ? currentPriceUSD - previousCloseUSD
+          : batchQuote?.change;
+
+      const dayChangePercent =
+        currentPriceUSD !== undefined && previousCloseUSD && previousCloseUSD > 0
+          ? ((currentPriceUSD - previousCloseUSD) / previousCloseUSD) * 100
+          : batchQuote?.changePercent;
 
       const marketValueUSD =
         currentPriceUSD && holding.quantity ? currentPriceUSD * holding.quantity : undefined;
@@ -163,6 +179,11 @@ export default function HoldingsPage() {
       };
     });
   }, [holdings, quotesData.data, exchangeRates.data, userCurrency, livePrices]);
+
+  // Throttle at 3 s so live WebSocket ticks don't thrash the entire UI on every price event.
+  // The portfolio value widget updates instantly (it reads livePrices directly via the memo),
+  // but the table rows and dashboard stats re-render at most once every 3 seconds.
+  const throttledHoldings = useThrottle(holdingsWithPrices, 3000);
 
   if (!isAuthenticated) {
     return (
@@ -200,21 +221,26 @@ export default function HoldingsPage() {
       </div>
 
       {/* Today's performance dashboard */}
-      {holdingsWithPrices.length > 0 && (
-        <PortfolioDashboard holdings={holdingsWithPrices} currency={userCurrency} />
+      {throttledHoldings.length > 0 && (
+        <PortfolioDashboard holdings={throttledHoldings} currency={userCurrency} />
       )}
 
       {/* Sector allocation donut */}
-      {holdingsWithPrices.length > 0 && (
-        <HoldingsPieChart holdings={holdingsWithPrices} currency={userCurrency} />
+      {throttledHoldings.length > 0 && (
+        <HoldingsPieChart holdings={throttledHoldings} currency={userCurrency} />
       )}
 
-      {/* Holdings table (with search) */}
-      <HoldingsTable onAddClick={() => setIsAddModalOpen(true)} />
+      {/* Holdings table — receives unthrottled holdingsWithPrices so Current Price,
+          Market Value, and Unrealized P/L update immediately on every live tick.
+          Aggregate widgets above use throttledHoldings to avoid excessive re-renders. */}
+      <HoldingsTable
+        holdingsWithPrices={holdingsWithPrices}
+        onAddClick={() => setIsAddModalOpen(true)}
+      />
 
       {/* AI risk analysis — deeper insight, lives below the core data */}
-      {holdingsWithPrices.length > 0 && (
-        <PortfolioRiskAnalysis holdings={holdingsWithPrices} />
+      {throttledHoldings.length > 0 && (
+        <PortfolioRiskAnalysis holdings={throttledHoldings} />
       )}
 
       {/* Add Modal */}
