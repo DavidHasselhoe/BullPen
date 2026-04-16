@@ -8,6 +8,7 @@ import { HoldingsPieChart } from '@/components/holdings/HoldingsPieChart';
 import { PortfolioDashboard } from '@/components/holdings/PortfolioDashboard';
 import { PortfolioRiskAnalysis } from '@/components/holdings/PortfolioRiskAnalysis';
 import { PortfolioPerformanceChart } from '@/components/holdings/PortfolioPerformanceChart';
+import { BrokerageConnect } from '@/components/brokerage/BrokerageConnect';
 import { useHoldings } from '@/hooks/use-holdings';
 import { useAuth } from '@/hooks/use-auth';
 import { useLivePrices } from '@/hooks/use-live-prices';
@@ -235,6 +236,9 @@ export default function HoldingsPage() {
       {throttledHoldings.length > 0 && (
         <HoldingsPieChart holdings={throttledHoldings} currency={userCurrency} />
       )}
+
+      {/* Brokerage connection — visible even when holdings are empty */}
+      <BrokerageConnect />
 
       {/* Holdings table — receives unthrottled holdingsWithPrices so Current Price,
           Market Value, and Unrealized P/L update immediately on every live tick.

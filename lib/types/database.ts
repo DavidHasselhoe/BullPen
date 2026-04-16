@@ -125,8 +125,25 @@ export interface UserHolding {
   quantity: number | null;
   avg_price: number | null;
   date_purchased: string | null;
+  source: 'manual' | 'snaptrade';
+  brokerage_account_id: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface BrokerageConnection {
+  id: string;
+  user_id: string;
+  snaptrade_account_id: string;
+  authorization_id: string | null;
+  account_name: string | null;
+  brokerage_name: string | null;
+  brokerage_slug: string | null;
+  account_number: string | null;
+  account_type: string | null;
+  is_active: boolean;
+  last_synced_at: string | null;
+  created_at: string;
 }
 
 export type InsertUserHolding = Omit<UserHolding, 'id' | 'created_at' | 'updated_at'> & {
