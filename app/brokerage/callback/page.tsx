@@ -4,14 +4,15 @@
 // SnapTrade redirects here after the user connects (or cancels) a brokerage.
 // We auto-trigger a sync, show status, then redirect back to /holdings.
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CheckCircle2, XCircle, Loader2, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 type Status = 'syncing' | 'success' | 'error' | 'cancelled';
 
-export default function BrokerageCallbackPage() {
+// Inner component uses useSearchParams — must be inside <Suspense>
+function BrokerageCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<Status>('syncing');
@@ -132,5 +133,20 @@ export default function BrokerageCallbackPage() {
         )}
       </div>
     </div>
+  );
+}
+
+// Page export — wraps the content in Suspense so useSearchParams() is safe
+export default function BrokerageCallbackPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
+        </div>
+      }
+    >
+      <BrokerageCallbackContent />
+    </Suspense>
   );
 }
