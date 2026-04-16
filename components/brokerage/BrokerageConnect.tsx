@@ -8,10 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel,
-  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
-  AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
+  Dialog, DialogContent, DialogDescription,
+  DialogFooter, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
 import {
   Link2, RefreshCw, Unlink, CheckCircle2, Clock, AlertCircle,
   Building2, ChevronDown, ChevronUp,
@@ -53,6 +52,8 @@ function AccountCard({
   onDisconnect: () => void;
   syncing: boolean;
 }) {
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
   const lastSync = account.last_synced_at
     ? new Date(account.last_synced_at).toLocaleString('en-US', {
         month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
@@ -60,84 +61,93 @@ function AccountCard({
     : null;
 
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-border p-3">
-      <BrokerageIcon slug={account.brokerage_slug} name={account.brokerage_name} />
+    <>
+      <div className="flex items-center gap-3 rounded-lg border border-border p-3">
+        <BrokerageIcon slug={account.brokerage_slug} name={account.brokerage_name} />
 
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-medium text-sm truncate">
-            {account.brokerage_name ?? account.brokerage_slug ?? 'Brokerage'}
-          </span>
-          {account.account_type && (
-            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">
-              {account.account_type}
-            </Badge>
-          )}
-          {account.is_active ? (
-            <Badge className="text-[10px] px-1.5 py-0 h-4 bg-emerald-500/15 text-emerald-500 border-0">
-              Active
-            </Badge>
-          ) : (
-            <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-4">
-              Inactive
-            </Badge>
-          )}
-        </div>
-        <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground">
-          {account.account_name && <span>{account.account_name}</span>}
-          {account.account_number && <span>····{account.account_number.slice(-4)}</span>}
-          {lastSync && (
-            <span className="flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              Synced {lastSync}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-medium text-sm truncate">
+              {account.brokerage_name ?? account.brokerage_slug ?? 'Brokerage'}
             </span>
-          )}
+            {account.account_type && (
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">
+                {account.account_type}
+              </Badge>
+            )}
+            {account.is_active ? (
+              <Badge className="text-[10px] px-1.5 py-0 h-4 bg-emerald-500/15 text-emerald-500 border-0">
+                Active
+              </Badge>
+            ) : (
+              <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-4">
+                Inactive
+              </Badge>
+            )}
+          </div>
+          <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground">
+            {account.account_name && <span>{account.account_name}</span>}
+            {account.account_number && <span>····{account.account_number.slice(-4)}</span>}
+            {lastSync && (
+              <span className="flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                Synced {lastSync}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1.5 shrink-0">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs"
+            onClick={onSync}
+            disabled={syncing}
+          >
+            {syncing
+              ? <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+              : <RefreshCw className="h-3.5 w-3.5" />
+            }
+            <span className="ml-1 hidden sm:inline">{syncing ? 'Syncing…' : 'Sync'}</span>
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs text-red-500 hover:text-red-500"
+            onClick={() => setConfirmOpen(true)}
+          >
+            <Unlink className="h-3.5 w-3.5" />
+            <span className="ml-1 hidden sm:inline">Disconnect</span>
+          </Button>
         </div>
       </div>
 
-      <div className="flex items-center gap-1.5 shrink-0">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 px-2 text-xs"
-          onClick={onSync}
-          disabled={syncing}
-        >
-          {syncing
-            ? <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-            : <RefreshCw className="h-3.5 w-3.5" />
-          }
-          <span className="ml-1 hidden sm:inline">{syncing ? 'Syncing…' : 'Sync'}</span>
-        </Button>
-
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-red-500 hover:text-red-500">
-              <Unlink className="h-3.5 w-3.5" />
-              <span className="ml-1 hidden sm:inline">Disconnect</span>
+      {/* Disconnect confirmation dialog */}
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle>Disconnect {account.brokerage_name ?? 'brokerage'}?</DialogTitle>
+            <DialogDescription>
+              This removes the connection and stops syncing. Your existing imported holdings
+              will remain in your portfolio — you can delete them manually if needed.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setConfirmOpen(false)}>
+              Cancel
             </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Disconnect {account.brokerage_name ?? 'brokerage'}?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This removes the connection and stops syncing. Your existing imported holdings
-                will remain in your portfolio — you can delete them manually if needed.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                className="bg-red-600 hover:bg-red-700"
-                onClick={onDisconnect}
-              >
-                Disconnect
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
-    </div>
+            <Button
+              variant="destructive"
+              onClick={() => { setConfirmOpen(false); onDisconnect(); }}
+            >
+              Disconnect
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
