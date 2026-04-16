@@ -7,6 +7,7 @@ import { AddHoldingModal } from '@/components/holdings/AddHoldingModal';
 import { HoldingsPieChart } from '@/components/holdings/HoldingsPieChart';
 import { PortfolioDashboard } from '@/components/holdings/PortfolioDashboard';
 import { PortfolioRiskAnalysis } from '@/components/holdings/PortfolioRiskAnalysis';
+import { PortfolioPerformanceChart } from '@/components/holdings/PortfolioPerformanceChart';
 import { useHoldings } from '@/hooks/use-holdings';
 import { useAuth } from '@/hooks/use-auth';
 import { useLivePrices } from '@/hooks/use-live-prices';
@@ -223,6 +224,11 @@ export default function HoldingsPage() {
       {/* Today's performance dashboard */}
       {throttledHoldings.length > 0 && (
         <PortfolioDashboard holdings={throttledHoldings} currency={userCurrency} />
+      )}
+
+      {/* Unrealized P/L performance chart */}
+      {throttledHoldings.length > 0 && (
+        <PortfolioPerformanceChart holdings={throttledHoldings} currency={userCurrency} />
       )}
 
       {/* Sector allocation donut */}

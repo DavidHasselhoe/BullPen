@@ -26,6 +26,7 @@ interface EditHoldingModalProps {
 export function EditHoldingModal({ open, onOpenChange, holding }: EditHoldingModalProps) {
   const [quantity, setQuantity] = useState('');
   const [avgPrice, setAvgPrice] = useState('');
+  const [datePurchased, setDatePurchased] = useState('');
   const updateHolding = useUpdateHolding();
 
   // Populate form when holding changes
@@ -33,6 +34,7 @@ export function EditHoldingModal({ open, onOpenChange, holding }: EditHoldingMod
     if (holding) {
       setQuantity(holding.quantity?.toString() || '');
       setAvgPrice(holding.avg_price?.toString() || '');
+      setDatePurchased(holding.date_purchased ?? '');
     }
   }, [holding]);
 
@@ -47,6 +49,7 @@ export function EditHoldingModal({ open, onOpenChange, holding }: EditHoldingMod
       const updates: UpdateHoldingInput = {
         quantity: quantity ? parseFloat(quantity) : null,
         avg_price: avgPrice ? parseFloat(avgPrice) : null,
+        date_purchased: datePurchased || null,
       };
 
       await updateHolding.mutateAsync({
@@ -67,6 +70,7 @@ export function EditHoldingModal({ open, onOpenChange, holding }: EditHoldingMod
   const handleClose = () => {
     setQuantity('');
     setAvgPrice('');
+    setDatePurchased('');
     onOpenChange(false);
   };
 
@@ -111,6 +115,21 @@ export function EditHoldingModal({ open, onOpenChange, holding }: EditHoldingMod
               value={avgPrice}
               onChange={(e) => setAvgPrice(e.target.value)}
             />
+          </div>
+
+          {/* Date Purchased (Optional) */}
+          <div className="space-y-2">
+            <Label htmlFor="date-purchased">Date Purchased (Optional)</Label>
+            <Input
+              id="date-purchased"
+              type="date"
+              max={new Date().toISOString().slice(0, 10)}
+              value={datePurchased}
+              onChange={(e) => setDatePurchased(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Used to chart your P/L from the day you opened this position.
+            </p>
           </div>
 
           {/* Submit Button */}

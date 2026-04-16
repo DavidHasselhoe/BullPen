@@ -19,11 +19,10 @@ import type { IndicatorValue, ExtendedHoursQuote } from '@/lib/twelvedata/twelve
 type Range = '1W' | '1M' | '6M' | '1Y' | '3Y' | '5Y' | '10Y' | 'MAX';
 const RANGES: Range[] = ['1W', '1M', '6M', '1Y', '3Y', '5Y', '10Y', 'MAX'];
 
-type Indicator = 'none' | 'sma50' | 'sma200' | 'ema20' | 'bbands' | 'rsi' | 'macd';
+type Indicator = 'sma50' | 'sma200' | 'ema20' | 'bbands' | 'rsi' | 'macd';
 interface IndicatorOption { key: Indicator; label: string; type: string; params?: Record<string, number> }
 
 const INDICATORS: IndicatorOption[] = [
-  { key: 'none',   label: 'None',    type: '' },
   { key: 'sma50',  label: 'SMA 50',  type: 'sma',    params: { time_period: 50 } },
   { key: 'sma200', label: 'SMA 200', type: 'sma',    params: { time_period: 200 } },
   { key: 'ema20',  label: 'EMA 20',  type: 'ema',    params: { time_period: 20 } },
@@ -99,8 +98,16 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
   const [range, setRange] = useState<Range>('1Y');
-  const [activeIndicator, setActiveIndicator] = useState<Indicator>('none');
+  const [activeIndicators, setActiveIndicators] = useState<Set<Indicator>>(new Set());
   const { isSimplified } = useExperienceLevel();
+
+  function toggleIndicator(key: Indicator) {
+    setActiveIndicators((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  }
 
   // ── Data sources ─────────────────────────────────────────────────────────
   const livePrices = useLivePrices([ticker]);
@@ -146,27 +153,34 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
     staleTime: 5 * 60 * 1000,
   });
 
-  // ── Indicator data ────────────────────────────────────────────────────────
-  const indicatorOption = INDICATORS.find((i) => i.key === activeIndicator)!;
-  const needsIndicator = activeIndicator !== 'none';
-
-  const { data: indicatorData } = useQuery<IndicatorResponse>({
-    queryKey: ['indicator', ticker, activeIndicator, range],
-    queryFn: async () => {
-      const params = new URLSearchParams({ type: indicatorOption.type, range });
-      if (indicatorOption.params) {
-        for (const [k, v] of Object.entries(indicatorOption.params)) {
-          params.set(k, String(v));
-        }
+  // ── Indicator data — one named hook per indicator (fixed, safe) ──────────
+  function makeIndicatorQueryFn(opt: IndicatorOption) {
+    return async () => {
+      const params = new URLSearchParams({ type: opt.type, range });
+      if (opt.params) {
+        for (const [k, v] of Object.entries(opt.params)) params.set(k, String(v));
       }
       const res = await fetch(`/api/stock/${ticker}/indicator?${params}`);
-      return res.json();
-    },
-    enabled: needsIndicator && !!ticker,
-    staleTime: 5 * 60 * 1000,
-  });
+      return res.json() as Promise<IndicatorResponse>;
+    };
+  }
+  const sma50Query   = useQuery<IndicatorResponse>({ queryKey: ['indicator', ticker, 'sma50',  range], queryFn: makeIndicatorQueryFn(INDICATORS[0]), enabled: activeIndicators.has('sma50')  && !!ticker, staleTime: 5 * 60 * 1000 });
+  const sma200Query  = useQuery<IndicatorResponse>({ queryKey: ['indicator', ticker, 'sma200', range], queryFn: makeIndicatorQueryFn(INDICATORS[1]), enabled: activeIndicators.has('sma200') && !!ticker, staleTime: 5 * 60 * 1000 });
+  const ema20Query   = useQuery<IndicatorResponse>({ queryKey: ['indicator', ticker, 'ema20',  range], queryFn: makeIndicatorQueryFn(INDICATORS[2]), enabled: activeIndicators.has('ema20')  && !!ticker, staleTime: 5 * 60 * 1000 });
+  const bbandsQuery  = useQuery<IndicatorResponse>({ queryKey: ['indicator', ticker, 'bbands', range], queryFn: makeIndicatorQueryFn(INDICATORS[3]), enabled: activeIndicators.has('bbands') && !!ticker, staleTime: 5 * 60 * 1000 });
+  const rsiQuery     = useQuery<IndicatorResponse>({ queryKey: ['indicator', ticker, 'rsi',   range], queryFn: makeIndicatorQueryFn(INDICATORS[4]), enabled: activeIndicators.has('rsi')    && !!ticker, staleTime: 5 * 60 * 1000 });
+  const macdQuery    = useQuery<IndicatorResponse>({ queryKey: ['indicator', ticker, 'macd',  range], queryFn: makeIndicatorQueryFn(INDICATORS[5]), enabled: activeIndicators.has('macd')   && !!ticker, staleTime: 5 * 60 * 1000 });
 
-  // ── Merge candles + indicator ─────────────────────────────────────────────
+  const sma50Data  = sma50Query.data?.data;
+  const sma200Data = sma200Query.data?.data;
+  const ema20Data  = ema20Query.data?.data;
+  const bbandsData = bbandsQuery.data?.data;
+  const rsiData    = rsiQuery.data?.data;
+  const macdData   = macdQuery.data?.data;
+
+  // ── Merge candles + all active indicators ────────────────────────────────
+  // All 6 data arrays are explicit deps so the memo re-runs whenever any
+  // indicator's API response arrives, not just when the Set changes.
   const chartData = useMemo<ChartPoint[]>(() => {
     if (!candleData?.candles) return [];
     const { t, c, v } = candleData.candles;
@@ -174,37 +188,29 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
       time: ts, label: fmtLabel(ts, range), price: c[i], volume: v[i],
     }));
 
-    if (!indicatorData?.data?.length) return pts;
-    const indValues = indicatorData.data;
-
-    // Build a date→value map for fast lookup
-    const indMap = new Map<string, IndicatorValue>();
-    for (const iv of indValues) {
-      const key = iv.datetime.slice(0, 10);
-      indMap.set(key, iv);
-    }
-
-    for (const pt of pts) {
-      const key = new Date(pt.time * 1000).toISOString().slice(0, 10);
-      const iv = indMap.get(key);
-      if (!iv) continue;
-
-      if (activeIndicator === 'sma50' || activeIndicator === 'sma200') pt.sma = iv.sma as number;
-      if (activeIndicator === 'ema20') pt.ema = iv.ema as number;
-      if (activeIndicator === 'bbands') {
-        pt.upper = iv.upper_band as number;
-        pt.middle = iv.middle_band as number;
-        pt.lower = iv.lower_band as number;
-      }
-      if (activeIndicator === 'rsi') pt.rsi = iv.rsi as number;
-      if (activeIndicator === 'macd') {
-        pt.macd = iv.macd as number;
-        pt.signal = iv.macd_signal as number;
-        pt.hist = iv.macd_hist as number;
+    function applyIndicator(values: IndicatorValue[], key: Indicator) {
+      const map = new Map<string, IndicatorValue>();
+      for (const iv of values) map.set(iv.datetime.slice(0, 10), iv);
+      for (const pt of pts) {
+        const iv = map.get(new Date(pt.time * 1000).toISOString().slice(0, 10));
+        if (!iv) continue;
+        if (key === 'sma50' || key === 'sma200') pt.sma = iv.sma as number;
+        if (key === 'ema20') pt.ema = iv.ema as number;
+        if (key === 'bbands') { pt.upper = iv.upper_band as number; pt.middle = iv.middle_band as number; pt.lower = iv.lower_band as number; }
+        if (key === 'rsi') pt.rsi = iv.rsi as number;
+        if (key === 'macd') { pt.macd = iv.macd as number; pt.signal = iv.macd_signal as number; pt.hist = iv.macd_hist as number; }
       }
     }
+
+    if (sma50Data?.length)  applyIndicator(sma50Data,  'sma50');
+    if (sma200Data?.length) applyIndicator(sma200Data, 'sma200');
+    if (ema20Data?.length)  applyIndicator(ema20Data,  'ema20');
+    if (bbandsData?.length) applyIndicator(bbandsData, 'bbands');
+    if (rsiData?.length)    applyIndicator(rsiData,    'rsi');
+    if (macdData?.length)   applyIndicator(macdData,   'macd');
+
     return pts;
-  }, [candleData, range, indicatorData, activeIndicator]);
+  }, [candleData, range, sma50Data, sma200Data, ema20Data, bbandsData, rsiData, macdData]);
 
   const firstPrice   = chartData[0]?.price ?? 0;
   const chartLast    = chartData[chartData.length - 1]?.price ?? 0;
@@ -225,7 +231,8 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
 
   const isLoadingChart = (candleLoading || isFetching) && !candleData?.candles;
   const hasChart       = chartData.length > 0;
-  const showOscillator = hasChart && !isSimplified && OSCILLATOR_INDICATORS.has(activeIndicator);
+  const activeOscillators = [...activeIndicators].filter((i) => OSCILLATOR_INDICATORS.has(i));
+  const showOscillator = hasChart && !isSimplified && activeOscillators.length > 0;
 
   if (quoteLoading && !restQuote && !live) {
     return (
@@ -350,14 +357,14 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
       {/* ── Indicator selector — hidden in simple mode ───────────────────── */}
       {!isSimplified && (
         <div className="px-5 pb-3 flex items-center gap-1.5 flex-wrap">
-          <span className="text-xs text-muted-foreground mr-1">Indicator:</span>
+          <span className="text-xs text-muted-foreground mr-1">Indicators:</span>
           {INDICATORS.map(({ key, label }) => (
             <button
               key={key}
-              onClick={() => setActiveIndicator(key)}
+              onClick={() => toggleIndicator(key)}
               className={cn(
                 'rounded-full px-2.5 py-0.5 text-xs font-medium transition-all border',
-                activeIndicator === key
+                activeIndicators.has(key)
                   ? 'bg-primary text-primary-foreground border-primary'
                   : 'bg-transparent text-muted-foreground border-border hover:text-foreground hover:border-foreground/30'
               )}
@@ -365,6 +372,14 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
               {label}
             </button>
           ))}
+          {activeIndicators.size > 0 && (
+            <button
+              onClick={() => setActiveIndicators(new Set())}
+              className="rounded-full px-2.5 py-0.5 text-xs font-medium transition-all border border-border text-muted-foreground hover:text-foreground hover:border-foreground/30"
+            >
+              Clear
+            </button>
+          )}
         </div>
       )}
 
@@ -419,17 +434,17 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
               />
 
               {/* SMA overlay */}
-              {(activeIndicator === 'sma50' || activeIndicator === 'sma200') && (
+              {(activeIndicators.has('sma50') || activeIndicators.has('sma200')) && (
                 <Line type="monotone" dataKey="sma" stroke="#f59e0b" strokeWidth={1.5} dot={false} isAnimationActive={false} />
               )}
 
               {/* EMA overlay */}
-              {activeIndicator === 'ema20' && (
+              {activeIndicators.has('ema20') && (
                 <Line type="monotone" dataKey="ema" stroke="#a78bfa" strokeWidth={1.5} dot={false} isAnimationActive={false} />
               )}
 
               {/* Bollinger Bands overlay */}
-              {activeIndicator === 'bbands' && (
+              {activeIndicators.has('bbands') && (
                 <>
                   <Line type="monotone" dataKey="upper" stroke="#60a5fa" strokeWidth={1} dot={false} strokeDasharray="4 2" isAnimationActive={false} />
                   <Line type="monotone" dataKey="middle" stroke="#60a5fa" strokeWidth={1} dot={false} isAnimationActive={false} />
@@ -457,41 +472,45 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
         )}
       </div>
 
-      {/* ── Oscillator panel (RSI / MACD) ────────────────────────────────── */}
+      {/* ── Oscillator panels (RSI and/or MACD) ─────────────────────────── */}
       {showOscillator && (
         <div className="border-t border-border/30 mt-1">
-          <div className="px-5 pt-2 pb-1">
-            <span className="text-[10px] text-muted-foreground/60 font-medium uppercase tracking-widest">
-              {activeIndicator.toUpperCase()}
-            </span>
-          </div>
+          {activeOscillators.map((osc) => (
+            <div key={osc}>
+              <div className="px-5 pt-2 pb-1">
+                <span className="text-[10px] text-muted-foreground/60 font-medium uppercase tracking-widest">
+                  {osc.toUpperCase()}
+                </span>
+              </div>
 
-          {activeIndicator === 'rsi' && (
-            <ResponsiveContainer width="100%" height={90}>
-              <LineChart data={chartData} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
-                <XAxis dataKey="label" hide />
-                <YAxis domain={[0, 100]} hide ticks={[30, 50, 70]} />
-                <Tooltip formatter={(v: number) => v?.toFixed(1)} labelFormatter={() => ''} contentStyle={{ fontSize: 10 }} />
-                <ReferenceLine y={70} stroke="#ef4444" strokeOpacity={0.3} strokeDasharray="3 3" strokeWidth={1} />
-                <ReferenceLine y={30} stroke="#10b981" strokeOpacity={0.3} strokeDasharray="3 3" strokeWidth={1} />
-                <ReferenceLine y={50} stroke={textColor} strokeDasharray="2 4" strokeWidth={1} />
-                <Line type="monotone" dataKey="rsi" stroke="#f59e0b" strokeWidth={1.5} dot={false} isAnimationActive={false} />
-              </LineChart>
-            </ResponsiveContainer>
-          )}
+              {osc === 'rsi' && (
+                <ResponsiveContainer width="100%" height={90}>
+                  <LineChart data={chartData} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
+                    <XAxis dataKey="label" hide />
+                    <YAxis domain={[0, 100]} hide ticks={[30, 50, 70]} />
+                    <Tooltip formatter={(v: number) => v?.toFixed(1)} labelFormatter={() => ''} contentStyle={{ fontSize: 10 }} />
+                    <ReferenceLine y={70} stroke="#ef4444" strokeOpacity={0.3} strokeDasharray="3 3" strokeWidth={1} />
+                    <ReferenceLine y={30} stroke="#10b981" strokeOpacity={0.3} strokeDasharray="3 3" strokeWidth={1} />
+                    <ReferenceLine y={50} stroke={textColor} strokeDasharray="2 4" strokeWidth={1} />
+                    <Line type="monotone" dataKey="rsi" stroke="#f59e0b" strokeWidth={1.5} dot={false} isAnimationActive={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
 
-          {activeIndicator === 'macd' && (
-            <ResponsiveContainer width="100%" height={90}>
-              <LineChart data={chartData} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
-                <XAxis dataKey="label" hide />
-                <YAxis hide tickFormatter={(v) => v?.toFixed(1)} />
-                <Tooltip formatter={(v: number) => v?.toFixed(3)} labelFormatter={() => ''} contentStyle={{ fontSize: 10 }} />
-                <ReferenceLine y={0} stroke={textColor} strokeDasharray="2 4" strokeWidth={1} />
-                <Line type="monotone" dataKey="macd" stroke="#60a5fa" strokeWidth={1.5} dot={false} isAnimationActive={false} />
-                <Line type="monotone" dataKey="signal" stroke="#f59e0b" strokeWidth={1.5} dot={false} isAnimationActive={false} />
-              </LineChart>
-            </ResponsiveContainer>
-          )}
+              {osc === 'macd' && (
+                <ResponsiveContainer width="100%" height={90}>
+                  <LineChart data={chartData} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
+                    <XAxis dataKey="label" hide />
+                    <YAxis hide tickFormatter={(v) => v?.toFixed(1)} />
+                    <Tooltip formatter={(v: number) => v?.toFixed(3)} labelFormatter={() => ''} contentStyle={{ fontSize: 10 }} />
+                    <ReferenceLine y={0} stroke={textColor} strokeDasharray="2 4" strokeWidth={1} />
+                    <Line type="monotone" dataKey="macd" stroke="#60a5fa" strokeWidth={1.5} dot={false} isAnimationActive={false} />
+                    <Line type="monotone" dataKey="signal" stroke="#f59e0b" strokeWidth={1.5} dot={false} isAnimationActive={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          ))}
         </div>
       )}
     </div>

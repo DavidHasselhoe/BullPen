@@ -37,7 +37,7 @@ export async function getHoldings(userId: string): Promise<GetHoldingsResult> {
 
     const { data: holdings, error } = await supabase
       .from('user_holdings')
-      .select('id, user_id, symbol, company_name, quantity, avg_price, created_at, updated_at')
+      .select('id, user_id, symbol, company_name, quantity, avg_price, date_purchased, created_at, updated_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
@@ -104,6 +104,7 @@ export async function addHolding(
         company_name: holding.company_name,
         quantity: holding.quantity || null,
         avg_price: holding.avg_price || null,
+        date_purchased: (holding as { date_purchased?: string | null }).date_purchased ?? null,
       })
       .select()
       .single();
@@ -230,6 +231,7 @@ export async function updateHolding(
     if (updates.company_name !== undefined) updateData.company_name = updates.company_name;
     if (updates.quantity !== undefined) updateData.quantity = updates.quantity;
     if (updates.avg_price !== undefined) updateData.avg_price = updates.avg_price;
+    if ('date_purchased' in updates) updateData.date_purchased = (updates as { date_purchased?: string | null }).date_purchased ?? null;
 
     // Update holding
     const { data: updated, error: updateError } = await supabase

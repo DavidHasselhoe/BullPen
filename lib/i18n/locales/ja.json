@@ -46,6 +46,9 @@
     "homepageCompare": "企業比較",
     "homepageFilings": "提出書類エクスプローラー",
     "homepageBuyHere": "もしここで買っていたら",
+    "homepageStock": "特定の銘柄",
+    "homepageStockTickerLabel": "ティッカー",
+    "homepageStockTickerHint": "ディスカバリーで開いたときにその銘柄ページへ移動します（例: NVDA）。",
     "theme": "テーマ",
     "marketContext": "マーケットコンテキスト",
     "marketContextDescription": "Discoverの市場時間・騰落・ニュースのデフォルト表示",
@@ -70,7 +73,8 @@
     "deleteAccount": "アカウントを削除",
     "deleteAccountDescription": "アカウントとすべての関連データを永続的に削除します。この操作は元に戻せません。",
     "confirmDelete": "アカウントを削除してもよろしいですか？この操作は元に戻せません。",
-    "confirmDeleteFinal": "これによりすべてのデータが永続的に削除されます。確認するにはDELETEと入力してください。"
+    "confirmDeleteFinal": "これによりすべてのデータが永続的に削除されます。確認するにはDELETEと入力してください。",
+    "homepageStockSearchPlaceholder": "会社またはティッカーを検索…"
   },
   "languages": {
     "en": "英語",

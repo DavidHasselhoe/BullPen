@@ -124,6 +124,7 @@ export interface UserHolding {
   company_name: string;
   quantity: number | null;
   avg_price: number | null;
+  date_purchased: string | null;
   created_at: string;
   updated_at: string;
 }

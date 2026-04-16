@@ -261,14 +261,14 @@ export default function StockDetailPage() {
           <StockPricePanel ticker={ticker} />
         </AnimatedContent>
 
-        {/* Financial Health Score — signals are passed down to StatisticsGrid */}
+        {/* Company Profile (TwelveData: description, executives, facts) */}
         <AnimatedContent reverse={true} delay={0.08}>
-          <HealthScoreCard ticker={ticker} onSignalsReady={setMetricSignals} />
+          <CompanyProfileCard ticker={ticker} />
         </AnimatedContent>
 
-        {/* Company Profile (TwelveData: description, executives, facts) */}
+        {/* Financial Health Score — signals are passed down to StatisticsGrid */}
         <AnimatedContent reverse={true} delay={0.12}>
-          <CompanyProfileCard ticker={ticker} />
+          <HealthScoreCard ticker={ticker} onSignalsReady={setMetricSignals} />
         </AnimatedContent>
 
         {/* Statistics (TwelveData) — receives signals from HealthScoreCard */}

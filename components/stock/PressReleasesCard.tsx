@@ -25,13 +25,15 @@ interface Props {
 
 export function PressReleasesCard({ ticker }: Props) {
   const { data, isLoading, isError } = useQuery<PressReleasesResponse>({
-    queryKey: ['press-releases', ticker],
+    queryKey: ['press-releases', ticker, 8],
     queryFn: async () => {
       const res = await fetch(`/api/stock/${ticker}/press-releases?limit=8`);
       if (!res.ok) throw new Error('Failed to fetch press releases');
       return res.json();
     },
     staleTime: 60 * 60 * 1000, // 1 h
+    // Avoid hammering the API on 429 / transient errors (retries default to 3).
+    retry: false,
   });
 
   if (isLoading) {

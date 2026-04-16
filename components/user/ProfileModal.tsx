@@ -10,7 +10,6 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { StatefulButton } from '@/components/ui/stateful-button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -25,7 +24,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { ProfileAvatar } from '@/components/user/ProfileAvatar';
-import { Loader2, Upload, User, Briefcase, Target, TrendingUp, Crown, Calendar } from 'lucide-react';
+import { Loader2, Upload, User, Briefcase, Target, TrendingUp, Crown, Calendar, Check } from 'lucide-react';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { logger } from '@/lib/utils/logger';
 import { uploadAvatarToStorage } from '@/lib/storage/avatar-upload';
@@ -53,9 +52,14 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
   const [riskProfile, setRiskProfile] = useState<'conservative' | 'balanced' | 'aggressive' | ''>('');
   const [avatarUrl, setAvatarUrl] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const isInitializedRef = useRef(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const persistProfileRef = useRef<() => Promise<void>>();
 
   // Load user data
   useEffect(() => {
+    isInitializedRef.current = false;
     if (user && open) {
       setFullName(user.full_name || '');
       setUsername(user.username || '');
@@ -65,6 +69,10 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
       setRiskProfile(user.risk_profile || '');
       setAvatarUrl(user.avatar_url || '');
       setError(null);
+      const t = setTimeout(() => {
+        isInitializedRef.current = true;
+      }, 400);
+      return () => clearTimeout(t);
     }
   }, [user, open]);
 
@@ -96,7 +104,7 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
     }
   };
 
-  const handleSave = async () => {
+  const persistProfile = async () => {
     if (!user) return;
 
     setError(null);
@@ -124,13 +132,33 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
         throw new Error(updateError.message || 'Failed to update profile in database');
       }
 
-      // Refresh auth state without full page reload
       window.dispatchEvent(new Event('auth:refresh'));
-    } catch (err: any) {
-      setError(err.message || 'Failed to update profile');
-      throw err;
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to update profile';
+      setError(msg);
     }
   };
+
+  useEffect(() => {
+    persistProfileRef.current = persistProfile;
+  });
+
+  // Autosave — debounced 500 ms after any profile field change (same pattern as Settings)
+  useEffect(() => {
+    if (!isInitializedRef.current || !user) return;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      if (!persistProfileRef.current) return;
+      setSaveStatus('saving');
+      await persistProfileRef.current();
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 1500);
+    }, 500);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fullName, username, bio, experienceLevel, marketFocus, riskProfile, avatarUrl]);
 
   const getInitials = () => {
     if (fullName) {
@@ -165,10 +193,28 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[90vw] !max-w-[1000px] sm:!max-w-[1000px] h-[85vh] overflow-hidden flex flex-col p-0">
         <DialogHeader className="px-6 pt-6 pb-4 border-b">
-          <DialogTitle>Profile Settings</DialogTitle>
-          <DialogDescription>
-            Manage your profile information and preferences
-          </DialogDescription>
+          <div className="flex items-center justify-between gap-4 pr-2">
+            <div>
+              <DialogTitle>Profile Settings</DialogTitle>
+              <DialogDescription>
+                Manage your profile information and preferences
+              </DialogDescription>
+            </div>
+            <div className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground min-w-[72px] justify-end">
+              {saveStatus === 'saving' && (
+                <>
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  <span>Saving…</span>
+                </>
+              )}
+              {saveStatus === 'saved' && (
+                <>
+                  <Check className="h-3 w-3 text-emerald-500" />
+                  <span className="text-emerald-500">Saved</span>
+                </>
+              )}
+            </div>
+          </div>
         </DialogHeader>
 
         <div className="flex flex-1 overflow-hidden">
@@ -188,29 +234,6 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
                 {section.label}
               </button>
             ))}
-            <Separator className="my-4" />
-            <div className="px-3 py-2 space-y-1">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Crown className="h-3 w-3" />
-                <span className="font-medium">Account Tier</span>
-              </div>
-              <Badge 
-                variant="secondary" 
-                className={cn(
-                  "w-full justify-center",
-                  user.account_tier === 3 && "border-2 border-[#FFD700] text-[#FFD700]"
-                )}
-              >
-                {user.account_tier === 3 ? 'Gold' : 'Normal'}
-              </Badge>
-            </div>
-            <div className="px-3 py-2 space-y-1">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Calendar className="h-3 w-3" />
-                <span className="font-medium">Member Since</span>
-              </div>
-              <div className="text-sm font-medium">{memberSince}</div>
-            </div>
           </div>
 
           {/* Main Content */}
@@ -256,6 +279,33 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
                     <p className="text-xs text-muted-foreground">
                       JPEG, PNG, or WebP image (max 5 MB)
                     </p>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Account info — read-only */}
+                <div className="flex flex-wrap gap-4">
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                      <Crown className="h-3 w-3" />
+                      Account Tier
+                    </p>
+                    <Badge
+                      variant="secondary"
+                      className={cn(
+                        user.account_tier === 3 && 'border-2 border-[#FFD700] text-[#FFD700]'
+                      )}
+                    >
+                      {user.account_tier === 3 ? 'Gold' : 'Normal'}
+                    </Badge>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                      <Calendar className="h-3 w-3" />
+                      Member Since
+                    </p>
+                    <p className="text-sm font-medium">{memberSince}</p>
                   </div>
                 </div>
 
@@ -437,11 +487,8 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
         {/* Footer */}
         <div className="border-t px-6 py-4 flex justify-end gap-3">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            Close
           </Button>
-          <StatefulButton onClick={handleSave} successDuration={2000} className="min-w-[120px]">
-            Save Changes
-          </StatefulButton>
         </div>
       </DialogContent>
     </Dialog>

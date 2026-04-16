@@ -22,9 +22,10 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Globe, DollarSign, Moon, Bell, Shield, AlertTriangle, Trash2, Download, Check, Settings2, Eye, EyeOff, Home, Hash } from 'lucide-react';
+import { Loader2, Globe, DollarSign, Moon, Bell, Shield, AlertTriangle, Trash2, Download, Check, Settings2, Eye, EyeOff, Home, Hash, Search } from 'lucide-react';
 import { ExperienceLevelToggle } from '@/components/ui/ExperienceLevelToggle';
 import { Input } from '@/components/ui/input';
+import { TickerSelector, type SearchResult } from '@/components/tools/buy-here/TickerSelector';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { signOut } from '@/lib/auth/auth';
 import { useRouter } from 'next/navigation';
@@ -45,6 +46,14 @@ type SettingsSection =
 type ThemeValue = 'dark' | 'light' | 'gradient-purple' | 'gradient-blue' | 'gradient-midnight' | 'gradient-embers';
 
 const VALID_THEMES: ThemeValue[] = ['dark', 'light', 'gradient-purple', 'gradient-blue', 'gradient-midnight', 'gradient-embers'];
+
+/** Select sentinel — persisted value is `/stock/TICKER` */
+const HOMEPAGE_STOCK = '__stock__';
+
+function minimalStockPick(ticker: string): SearchResult {
+  const t = ticker.toUpperCase();
+  return { ticker: t, name: t, cik: '', has_data: false };
+}
 
 export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   const { user } = useAuth();
@@ -69,6 +78,8 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   const [theme, setTheme] = useState<ThemeValue>('dark');
   const [language, setLanguage] = useState<string | null>(null);
   const [defaultHomepage, setDefaultHomepage] = useState<string>('/');
+  /** Selected company when default homepage is a stock detail page (search UI) */
+  const [homepageStockPick, setHomepageStockPick] = useState<SearchResult | null>(null);
   const [showQuotes, setShowQuotes] = useState<boolean>(true);
   const [showWelcomeText, setShowWelcomeText] = useState<boolean>(true);
   const [roundNumbers, setRoundNumbers] = useState<boolean>(false);
@@ -124,7 +135,10 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
         insider_trades: settings.notifications?.insider_trades || false,
         signal_threshold_crossed: settings.notifications?.signal_threshold_crossed || false,
       });
-      setDefaultHomepage(settings.default_homepage || '/');
+      const dh = (settings.default_homepage as string) || '/';
+      setDefaultHomepage(dh);
+      const stockMatch = dh.match(/^\/stock\/([A-Za-z0-9.-]+)$/i);
+      setHomepageStockPick(stockMatch ? minimalStockPick(stockMatch[1]) : null);
       setShowQuotes(settings.show_quotes !== undefined ? settings.show_quotes : true);
       setShowWelcomeText(settings.show_welcome_text !== undefined ? settings.show_welcome_text : true);
       setRoundNumbers(settings.round_numbers === true);
@@ -502,8 +516,17 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                       {t('settings.defaultHomepage')}
                     </Label>
                     <Select
-                      value={defaultHomepage}
-                      onValueChange={setDefaultHomepage}
+                      value={/^\/stock\//i.test(defaultHomepage) ? HOMEPAGE_STOCK : defaultHomepage}
+                      onValueChange={(v) => {
+                        if (v === HOMEPAGE_STOCK) {
+                          const m = defaultHomepage.match(/^\/stock\/([A-Za-z0-9.-]+)$/i);
+                          const sym = ((m?.[1] ?? homepageStockPick?.ticker) || 'SPY').toUpperCase();
+                          setHomepageStockPick(minimalStockPick(sym));
+                          setDefaultHomepage(`/stock/${sym}`);
+                        } else {
+                          setDefaultHomepage(v);
+                        }
+                      }}
                     >
                       <SelectTrigger id="default-homepage">
                         <SelectValue />
@@ -517,8 +540,32 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                         <SelectItem value="/tools/compare">{t('settings.homepageCompare')}</SelectItem>
                         <SelectItem value="/tools/filings">{t('settings.homepageFilings')}</SelectItem>
                         <SelectItem value="/tools/buy-here">{t('settings.homepageBuyHere')}</SelectItem>
+                        <SelectItem value={HOMEPAGE_STOCK}>{t('settings.homepageStock')}</SelectItem>
                       </SelectContent>
                     </Select>
+                    {/^\/stock\//i.test(defaultHomepage) && (
+                      <div className="space-y-1.5 pt-1">
+                        <Label className="flex items-center gap-2 text-xs">
+                          <Search className="h-3.5 w-3.5" />
+                          {t('settings.homepageStockTickerLabel')}
+                        </Label>
+                        <TickerSelector
+                          value={homepageStockPick}
+                          onChange={(r) => {
+                            if (r) {
+                              setHomepageStockPick(r);
+                              setDefaultHomepage(`/stock/${r.ticker.toUpperCase()}`);
+                            } else {
+                              const fallback = minimalStockPick('SPY');
+                              setHomepageStockPick(fallback);
+                              setDefaultHomepage('/stock/SPY');
+                            }
+                          }}
+                          placeholder={t('settings.homepageStockSearchPlaceholder')}
+                        />
+                        <p className="text-xs text-muted-foreground">{t('settings.homepageStockTickerHint')}</p>
+                      </div>
+                    )}
                     <p className="text-xs text-muted-foreground">
                       {t('settings.defaultHomepageDescription')}
                     </p>

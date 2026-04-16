@@ -2,51 +2,58 @@
 -- Populated by /api/screener/refresh from TwelveData /statistics endpoint
 -- Acts as the data layer for the stock screener; avoids repeated expensive API calls.
 
-create table if not exists screener_stats (
-  ticker              text primary key,
-  name                text not null,
-  sector              text,
-  industry            text,
-  logo_url            text,
-  exchange            text,
-  currency            text default 'USD',
+CREATE TABLE IF NOT EXISTS screener_stats (
+  ticker              TEXT PRIMARY KEY,
+  name                TEXT NOT NULL,
+  sector              TEXT,
+  industry            TEXT,
+  logo_url            TEXT,
+  exchange            TEXT,
+  currency            TEXT DEFAULT 'USD',
 
   -- Valuation
-  market_cap          bigint,
-  pe_ratio            real,
-  forward_pe          real,
-  pb_ratio            real,
-  ps_ratio            real,
-  ev_to_ebitda        real,
+  market_cap          BIGINT,
+  pe_ratio            REAL,
+  forward_pe          REAL,
+  pb_ratio            REAL,
+  ps_ratio            REAL,
+  ev_to_ebitda        REAL,
 
   -- Growth & profitability
-  eps_ttm             real,
-  revenue_ttm         bigint,
-  profit_margin       real,      -- 0..1
-  revenue_growth_yoy  real,      -- percent
-  earnings_growth_yoy real,      -- percent
+  eps_ttm             REAL,
+  revenue_ttm         BIGINT,
+  profit_margin       REAL,
+  revenue_growth_yoy  REAL,
+  earnings_growth_yoy REAL,
 
   -- Risk & income
-  beta                real,
-  dividend_yield      real,      -- percent
-  payout_ratio        real,      -- percent
+  beta                REAL,
+  dividend_yield      REAL,
+  payout_ratio        REAL,
 
   -- Price
-  week52_high         real,
-  week52_low          real,
-  day50_ma            real,
-  day200_ma           real,
+  week52_high         REAL,
+  week52_low          REAL,
+  day50_ma            REAL,
+  day200_ma           REAL,
 
-  updated_at          timestamptz not null default now()
+  updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- Allow all authenticated users to read; only the service-role key (backend) can write
-alter table screener_stats enable row level security;
+ALTER TABLE screener_stats ENABLE ROW LEVEL SECURITY;
 
-create policy "screener_stats_read" on screener_stats
-  for select using (true);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'screener_stats' AND policyname = 'screener_stats_read'
+  ) THEN
+    CREATE POLICY "screener_stats_read" ON screener_stats
+      FOR SELECT USING (true);
+  END IF;
+END $$;
 
 -- Index for common filter patterns
-create index if not exists screener_stats_sector_idx   on screener_stats (sector);
-create index if not exists screener_stats_market_cap   on screener_stats (market_cap desc nulls last);
-create index if not exists screener_stats_updated_at   on screener_stats (updated_at);
+CREATE INDEX IF NOT EXISTS screener_stats_sector_idx ON screener_stats (sector);
+CREATE INDEX IF NOT EXISTS screener_stats_market_cap  ON screener_stats (market_cap DESC NULLS LAST);
+CREATE INDEX IF NOT EXISTS screener_stats_updated_at  ON screener_stats (updated_at);

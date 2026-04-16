@@ -6,6 +6,21 @@ import { validateLimit } from '@/lib/security/input-validation';
 
 const PRESS_RELEASES_TTL_SECONDS = 6 * 60 * 60;
 
+/** Coalesce concurrent cache-miss fetches for the same symbol (avoids burst TwelveData calls). */
+const inflightPressReleases = new Map<string, Promise<Awaited<ReturnType<typeof getPressReleases>>>>();
+
+function fetchPressReleasesCoalesced(symbol: string, outputsize: number) {
+  const key = `${symbol}:${outputsize}`;
+  let p = inflightPressReleases.get(key);
+  if (!p) {
+    p = getPressReleases(symbol, outputsize).finally(() => {
+      inflightPressReleases.delete(key);
+    });
+    inflightPressReleases.set(key, p);
+  }
+  return p;
+}
+
 async function handler(
   request: NextRequest,
   { params }: { params: Promise<{ ticker: string }> }
@@ -28,7 +43,7 @@ async function handler(
       );
     }
 
-    const releases = await getPressReleases(symbol, outputsize);
+    const releases = await fetchPressReleasesCoalesced(symbol, outputsize);
     await setCached(cacheKey, symbol, 'press_releases', releases, PRESS_RELEASES_TTL_SECONDS);
     return addSecurityHeaders(
       NextResponse.json(
@@ -38,8 +53,13 @@ async function handler(
     );
   } catch (err) {
     if (err instanceof TwelveDataRateLimitError) {
+      // Use 200 so TanStack Query does not retry and amplify TwelveData rate limits.
       return addSecurityHeaders(
-        NextResponse.json({ success: false, error: 'rate_limited' }, { status: 429 })
+        NextResponse.json({
+          success: true,
+          data: [] as Awaited<ReturnType<typeof getPressReleases>>,
+          upstream_rate_limited: true,
+        })
       );
     }
     const msg = err instanceof Error ? err.message : 'Unknown error';

@@ -51,6 +51,7 @@ export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
   const [selectedStock, setSelectedStock] = useState<SearchResult | null>(null);
   const [quantity, setQuantity] = useState('');
   const [avgPrice, setAvgPrice] = useState('');
+  const [datePurchased, setDatePurchased] = useState('');
 
   // Simple debounce implementation
   const [debouncedQuery, setDebouncedQuery] = useState('');
@@ -119,6 +120,7 @@ export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
         company_name: selectedStock.name,
         quantity: quantity ? parseFloat(quantity) : null,
         avg_price: avgPrice ? parseFloat(avgPrice) : null,
+        date_purchased: datePurchased || null,
       };
 
       await addHolding.mutateAsync(input);
@@ -128,6 +130,7 @@ export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
       setSearchQuery('');
       setQuantity('');
       setAvgPrice('');
+      setDatePurchased('');
       onOpenChange(false);
     } catch (error) {
       console.error('Error adding holding:', error);
@@ -140,6 +143,7 @@ export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
     setSearchQuery('');
     setQuantity('');
     setAvgPrice('');
+    setDatePurchased('');
     onOpenChange(false);
   };
 
@@ -239,6 +243,21 @@ export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
               value={avgPrice}
               onChange={(e) => setAvgPrice(e.target.value)}
             />
+          </div>
+
+          {/* Date Purchased (Optional) */}
+          <div className="space-y-2">
+            <Label htmlFor="date-purchased">Date Purchased (Optional)</Label>
+            <Input
+              id="date-purchased"
+              type="date"
+              max={new Date().toISOString().slice(0, 10)}
+              value={datePurchased}
+              onChange={(e) => setDatePurchased(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Used to chart your P/L from the day you opened this position.
+            </p>
           </div>
 
           {/* Submit Button */}

@@ -12,6 +12,7 @@ export interface AddHoldingInput {
   company_name: string;
   quantity?: number | null;
   avg_price?: number | null;
+  date_purchased?: string | null;
 }
 
 export interface UpdateHoldingInput {
@@ -19,6 +20,7 @@ export interface UpdateHoldingInput {
   company_name?: string;
   quantity?: number | null;
   avg_price?: number | null;
+  date_purchased?: string | null;
 }
 
 /**
@@ -63,7 +65,8 @@ export async function addHoldingAction(
     company_name: input.company_name,
     quantity: input.quantity ?? null,
     avg_price: input.avg_price ?? null,
-  });
+    date_purchased: input.date_purchased ?? null,
+  } as Parameters<typeof addHolding>[1]);
 }
 
 /**
@@ -89,7 +92,8 @@ export async function addOrUpdateHoldingAction(
     company_name: input.company_name,
     quantity: input.quantity ?? null,
     avg_price: input.avg_price ?? null,
-  });
+    date_purchased: input.date_purchased ?? null,
+  } as Parameters<typeof addOrUpdateHolding>[1]);
 }
 
 /**

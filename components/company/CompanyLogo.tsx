@@ -62,7 +62,10 @@ export function CompanyLogo({ name, ticker, logoUrl, size = 40, className }: Com
 
   return (
     <div
-      className={cn('flex items-center justify-center shrink-0 relative rounded-full overflow-hidden', className)}
+      className={cn(
+        'flex items-center justify-center shrink-0 relative rounded-full overflow-hidden',
+        className
+      )}
       style={{ width: size, height: size, minWidth: size, minHeight: size }}
     >
       {effectiveUrl && !imageError && (
@@ -71,9 +74,8 @@ export function CompanyLogo({ name, ticker, logoUrl, size = 40, className }: Com
           alt={`${name} logo`}
           width={size}
           height={size}
-          className="w-full h-full object-contain"
+          className="h-full w-full object-cover object-center"
           onError={handleImageError}
-          style={{ maxWidth: '100%', maxHeight: '100%' }}
         />
       )}
 

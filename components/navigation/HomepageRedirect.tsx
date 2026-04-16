@@ -15,6 +15,12 @@ const VALID_HOMEPAGES = [
   '/tools/buy-here',
 ];
 
+const STOCK_HOMEPAGE_RE = /^\/stock\/[A-Za-z0-9.-]{1,10}$/;
+
+function isAllowedDefaultHomepage(path: string): boolean {
+  return VALID_HOMEPAGES.includes(path) || STOCK_HOMEPAGE_RE.test(path);
+}
+
 /**
  * When the user visits / and has a default_homepage setting other than /,
  * redirects them to that page. Only runs on the root path.
@@ -32,7 +38,7 @@ export function HomepageRedirect({ children }: { children: React.ReactNode }) {
     if (!defaultHomepage || defaultHomepage === '/' || typeof defaultHomepage !== 'string') return;
 
     const target = defaultHomepage.startsWith('/') ? defaultHomepage : `/${defaultHomepage}`;
-    if (!VALID_HOMEPAGES.includes(target)) return;
+    if (!isAllowedDefaultHomepage(target)) return;
 
     router.replace(target);
   }, [pathname, isLoading, user, router]);
