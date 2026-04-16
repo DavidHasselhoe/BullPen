@@ -14,6 +14,8 @@ import type {
   ExchangeHoliday,
 } from '../types/database';
 
+type JsonValue = string | number | boolean | null | { [key: string]: JsonValue } | JsonValue[];
+
 export interface Database {
   public: {
     Tables: {
@@ -140,6 +142,31 @@ export interface Database {
           ticker: string;
           user_id: string | null;
           visited_at: string;
+        }>;
+      };
+      market_data_cache: {
+        Row: {
+          cache_key: string;
+          ticker: string;
+          data_type: string;
+          payload: JsonValue;
+          fetched_at: string;
+          expires_at: string;
+        };
+        Insert: {
+          cache_key: string;
+          ticker: string;
+          data_type: string;
+          payload: JsonValue;
+          fetched_at?: string;
+          expires_at: string;
+        };
+        Update: Partial<{
+          ticker: string;
+          data_type: string;
+          payload: JsonValue;
+          fetched_at: string;
+          expires_at: string;
         }>;
       };
     };

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getInsiderTransactions, TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
+import { getCached, setCached } from '@/lib/cache/market-data-cache';
 import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
+
+const INSIDER_TTL_SECONDS = 12 * 60 * 60;
 
 async function handler(
   _request: NextRequest,
@@ -8,9 +11,21 @@ async function handler(
 ) {
   const { ticker } = await params;
   const symbol = ticker.toUpperCase();
+  const cacheKey = `insider:${symbol}`;
 
   try {
+    const cached = await getCached<Awaited<ReturnType<typeof getInsiderTransactions>>>(cacheKey);
+    if (cached) {
+      return addSecurityHeaders(
+        NextResponse.json(
+          { success: true, data: cached },
+          { headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=600' } }
+        )
+      );
+    }
+
     const transactions = await getInsiderTransactions(symbol);
+    await setCached(cacheKey, symbol, 'insider_transactions', transactions, INSIDER_TTL_SECONDS);
     return addSecurityHeaders(
       NextResponse.json(
         { success: true, data: transactions },

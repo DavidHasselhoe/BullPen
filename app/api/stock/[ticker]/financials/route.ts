@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withRateLimit, withAuth, addSecurityHeaders } from '@/lib/security/api-security';
+import { getCached, setCached } from '@/lib/cache/market-data-cache';
 import {
   getIncomeStatement,
   getBalanceSheet,
@@ -11,6 +12,7 @@ import {
 
 type FinancialType = 'income' | 'balance' | 'cashflow' | 'dividends' | 'splits';
 type Period = 'quarterly' | 'annual';
+const FINANCIALS_TTL_SECONDS = 24 * 60 * 60;
 
 async function handler(
   request: NextRequest,
@@ -22,8 +24,14 @@ async function handler(
   const { searchParams } = new URL(request.url);
   const type = (searchParams.get('type') ?? 'income') as FinancialType;
   const period = (searchParams.get('period') ?? 'quarterly') as Period;
+  const cacheKey = `financials:${symbol}:${type}:${period}`;
 
   try {
+    const cached = await getCached<unknown>(cacheKey);
+    if (cached) {
+      return addSecurityHeaders(NextResponse.json({ success: true, data: cached, type, period }));
+    }
+
     let result;
     switch (type) {
       case 'income':
@@ -47,6 +55,7 @@ async function handler(
         );
     }
 
+    await setCached(cacheKey, symbol, 'financials', result, FINANCIALS_TTL_SECONDS);
     return addSecurityHeaders(NextResponse.json({ success: true, data: result, type, period }));
   } catch (err) {
     if (err instanceof TwelveDataRateLimitError) {
