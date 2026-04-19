@@ -135,7 +135,10 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
       api: '/api/ai/chat',
       // Include the current page context (ticker + label) so the server-side agent
       // knows which stock/comparison the user is viewing without requiring them to type it.
-      body: aiContext ? { context: aiContext } : {},
+      body: {
+        ...(aiContext ? { context: aiContext } : {}),
+        ...(user?.experience_level ? { experienceLevel: user.experience_level } : {}),
+      },
     }),
     onFinish: async ({ message }) => {
       for (const action of extractClientActions(message)) {

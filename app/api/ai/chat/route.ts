@@ -11,8 +11,9 @@ async function handler(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const messages = body?.messages ?? [];
   const context = body?.context ?? null;
+  const experienceLevel = (body?.experienceLevel as 'beginner' | 'intermediate' | 'advanced') ?? null;
 
-  const result = await runAgent(messages, context);
+  const result = await runAgent(messages, context, experienceLevel);
   return result.toUIMessageStreamResponse();
 }
 

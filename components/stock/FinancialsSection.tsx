@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TermTooltip } from '@/components/ui/TermTooltip';
 import { useExperienceLevel } from '@/hooks/use-experience-level';
+import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import type {
   IncomeStatementPeriod,
@@ -289,10 +290,14 @@ function KeyTakeawaysCard({
   rows,
   description,
   onShowMore,
+  ticker,
+  onAskAI,
 }: {
   rows: TakeawayRow[];
   description: string;
   onShowMore: () => void;
+  ticker?: string;
+  onAskAI?: (q: string) => void;
 }) {
   return (
     <div className="mb-4">
@@ -304,7 +309,7 @@ function KeyTakeawaysCard({
             className="flex items-center justify-between gap-4 rounded-lg bg-muted/30 px-3 py-2.5"
           >
             <span className="text-sm text-muted-foreground">
-              <TermTooltip term={r.term} />
+              <TermTooltip term={r.term} ticker={ticker} onAskAI={onAskAI} />
             </span>
             <span
               className={`text-sm font-semibold tabular-nums ${
@@ -346,6 +351,8 @@ export function FinancialsSection({ ticker }: { ticker: string }) {
   const [period, setPeriod] = useState<Period>('quarterly');
   const [showFullBreakdown, setShowFullBreakdown] = useState(false);
   const { isSimplified } = useExperienceLevel();
+  const { open: openAIPanel } = useAIPanel();
+  const handleAskAI = useCallback((q: string) => openAIPanel({ query: q }), [openAIPanel]);
 
   const { data, isLoading } = useQuery<FinancialsResponse>({
     queryKey: ['stock-financials', ticker, activeTab, (activeTab === 'dividends' || activeTab === 'splits') ? null : period],
@@ -438,6 +445,8 @@ export function FinancialsSection({ ticker }: { ticker: string }) {
                         { term: 'Net Income', value: fmtNum(latest.net_income), positive: (latest.net_income ?? 0) > 0 },
                       ]}
                       onShowMore={() => setShowFullBreakdown(true)}
+                      ticker={ticker}
+                      onAskAI={handleAskAI}
                     />
                   );
                 })()}
@@ -454,6 +463,8 @@ export function FinancialsSection({ ticker }: { ticker: string }) {
                         { term: "Stockholders' Equity", value: fmtNum(latest.total_stockholders_equity), positive: (latest.total_stockholders_equity ?? 0) > 0 },
                       ]}
                       onShowMore={() => setShowFullBreakdown(true)}
+                      ticker={ticker}
+                      onAskAI={handleAskAI}
                     />
                   );
                 })()}
@@ -470,6 +481,8 @@ export function FinancialsSection({ ticker }: { ticker: string }) {
                         { term: 'Free Cash Flow', value: fmtNum(latest.free_cash_flow), positive: (latest.free_cash_flow ?? 0) > 0 },
                       ]}
                       onShowMore={() => setShowFullBreakdown(true)}
+                      ticker={ticker}
+                      onAskAI={handleAskAI}
                     />
                   );
                 })()}

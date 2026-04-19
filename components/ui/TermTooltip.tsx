@@ -15,6 +15,10 @@ interface TermTooltipProps {
   term: string;
   /** Optional class on the wrapper span */
   className?: string;
+  /** When provided alongside onAskAI, adds an "Ask AI" button inside the tooltip */
+  ticker?: string;
+  /** Callback fired with a pre-built query string when the user clicks "Ask AI" */
+  onAskAI?: (query: string) => void;
 }
 
 /**
@@ -24,7 +28,7 @@ interface TermTooltipProps {
  *
  * Falls back to displaying the original term if no glossary entry exists.
  */
-export function TermTooltip({ term, className }: TermTooltipProps) {
+export function TermTooltip({ term, className, ticker, onAskAI }: TermTooltipProps) {
   const { isSimplified } = useExperienceLevel();
   const entry = getGlossaryEntry(term);
 
@@ -63,6 +67,20 @@ export function TermTooltip({ term, className }: TermTooltipProps) {
           <p className="font-medium text-xs mb-1 text-foreground/70">{entry.plainLabel}</p>
         )}
         <p className="text-xs">{entry.description}</p>
+        {onAskAI && (
+          <button
+            onMouseDown={(e) => {
+              e.stopPropagation();
+              onAskAI(
+                `[display:Explain ${term}]Explain the metric "${term}" as it applies to ${ticker ?? 'this company'}: ` +
+                `what does this number mean in plain English, and is the current value considered good, bad, or context-dependent?`
+              );
+            }}
+            className="mt-2 block w-full text-left text-xs text-primary hover:underline"
+          >
+            ✦ Ask AI about this
+          </button>
+        )}
       </TooltipContent>
     </Tooltip>
   );

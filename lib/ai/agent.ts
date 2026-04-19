@@ -17,8 +17,19 @@ interface AIContext {
   label?: string;
 }
 
-export async function runAgent(messages: UIMessage[], context?: AIContext | null) {
+export async function runAgent(
+  messages: UIMessage[],
+  context?: AIContext | null,
+  experienceLevel?: 'beginner' | 'intermediate' | 'advanced' | null,
+) {
   const modelMessages = await convertToModelMessages(messages);
+
+  // Prepend experience level so the model adapts its tone and vocabulary.
+  const experiencePrefix = experienceLevel === 'beginner'
+    ? `[User level: BEGINNER. Use plain everyday language. Avoid jargon — if you must use a financial term, define it immediately in parentheses. Short sentences. Explain like teaching a curious 16-year-old, not a Wall Street analyst.]\n\n`
+    : experienceLevel === 'advanced'
+    ? `[User level: ADVANCED. Use precise financial terminology freely. Skip basic definitions. Assume the user understands GAAP, DCF, multiple expansion, etc. Prioritise density and insight.]\n\n`
+    : '';
 
   // Prepend a context block when the user is viewing a specific stock/comparison page.
   // This tells the model what the user is currently looking at without modifying SYSTEM_PROMPT.
@@ -29,7 +40,7 @@ export async function runAgent(messages: UIMessage[], context?: AIContext | null
 
   const result = streamText({
     model: openai('gpt-4o'),
-    system: contextPrefix + SYSTEM_PROMPT,
+    system: experiencePrefix + contextPrefix + SYSTEM_PROMPT,
     messages: modelMessages,
     tools: BULLPEN_TOOLS,
     maxSteps: 5,

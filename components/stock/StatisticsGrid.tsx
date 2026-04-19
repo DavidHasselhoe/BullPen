@@ -1,10 +1,12 @@
 'use client';
 
+import { useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TermTooltip } from '@/components/ui/TermTooltip';
 import { useExperienceLevel } from '@/hooks/use-experience-level';
+import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import { cn } from '@/lib/utils';
 import type { CompanyStatistics } from '@/lib/twelvedata/twelvedata-client';
 import type { SignalValue } from '@/lib/finance/health-score';
@@ -72,11 +74,11 @@ function SignalDot({ signal }: { signal: SignalValue }) {
   );
 }
 
-function StatCell({ label, value, highlight, signal }: StatRow & { signal?: SignalValue }) {
+function StatCell({ label, value, highlight, signal, ticker, onAskAI }: StatRow & { signal?: SignalValue; ticker?: string; onAskAI?: (q: string) => void }) {
   return (
     <div className="flex items-center justify-between gap-2 py-2.5 border-b border-border/50 last:border-0">
       <span className={cn('text-xs', highlight ? 'text-foreground/70' : 'text-muted-foreground')}>
-        <TermTooltip term={label} />
+        <TermTooltip term={label} ticker={ticker} onAskAI={onAskAI} />
       </span>
       <span className={cn('flex items-center text-xs font-medium tabular-nums', highlight ? 'text-foreground' : 'text-foreground/80')}>
         {value}
@@ -94,6 +96,8 @@ export function StatisticsGrid({
   signals?: Record<string, SignalValue>;
 }) {
   const { isSimplified, setLevel } = useExperienceLevel();
+  const { open: openAIPanel } = useAIPanel();
+  const handleAskAI = useCallback((q: string) => openAIPanel({ query: q }), [openAIPanel]);
 
   const { data, isLoading } = useQuery<StatsResponse>({
     queryKey: ['stock-statistics', ticker],
@@ -209,14 +213,14 @@ export function StatisticsGrid({
       <CardContent className="pt-0">
         {isSimplified ? (
           <div className="grid grid-cols-1 gap-x-10 sm:grid-cols-2">
-            <div>{simpleCol1.map((r) => <StatCell key={r.label} {...r} signal={sig(r.label)} />)}</div>
-            <div>{simpleCol2.map((r) => <StatCell key={r.label} {...r} signal={sig(r.label)} />)}</div>
+            <div>{simpleCol1.map((r) => <StatCell key={r.label} {...r} signal={sig(r.label)} ticker={ticker} onAskAI={handleAskAI} />)}</div>
+            <div>{simpleCol2.map((r) => <StatCell key={r.label} {...r} signal={sig(r.label)} ticker={ticker} onAskAI={handleAskAI} />)}</div>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-x-10 sm:grid-cols-3">
-            <div>{col1.map((r) => <StatCell key={r.label} {...r} signal={sig(r.label)} />)}</div>
-            <div>{col2.map((r) => <StatCell key={r.label} {...r} signal={sig(r.label)} />)}</div>
-            <div>{col3.map((r) => <StatCell key={r.label} {...r} signal={sig(r.label)} />)}</div>
+            <div>{col1.map((r) => <StatCell key={r.label} {...r} signal={sig(r.label)} ticker={ticker} onAskAI={handleAskAI} />)}</div>
+            <div>{col2.map((r) => <StatCell key={r.label} {...r} signal={sig(r.label)} ticker={ticker} onAskAI={handleAskAI} />)}</div>
+            <div>{col3.map((r) => <StatCell key={r.label} {...r} signal={sig(r.label)} ticker={ticker} onAskAI={handleAskAI} />)}</div>
           </div>
         )}
       </CardContent>
