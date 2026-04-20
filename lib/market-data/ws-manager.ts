@@ -26,8 +26,8 @@ const RECONNECT_DELAY_MS = 3_000;
 export interface PriceTick {
   symbol: string;
   price: number;
-  change: number;
-  changePercent: number;
+  change?: number;
+  changePercent?: number;
   previousClose: number;
   dayVolume?: number;
 }
@@ -100,26 +100,39 @@ function parseTick(raw: TwelveDataPriceEvent, state: ManagerState): PriceTick | 
   if (!priceRaw || isNaN(priceRaw) || priceRaw <= 0) return null;
 
   let pc = parseFloat(raw.previous_close ?? '');
-  if (!pc || pc <= 0) {
-    pc = state.prevClose.get(raw.symbol) ?? priceRaw;
+  let hasPrevClose = pc > 0;
+  if (!hasPrevClose) {
+    const cached = state.prevClose.get(raw.symbol);
+    if (cached != null && cached > 0) {
+      pc = cached;
+      hasPrevClose = true;
+    } else {
+      pc = priceRaw;
+    }
   } else {
     state.prevClose.set(raw.symbol, pc);
   }
 
-  const change = raw.change != null ? parseFloat(raw.change) : priceRaw - pc;
+  const change =
+    raw.change != null
+      ? parseFloat(raw.change as string)
+      : hasPrevClose
+        ? priceRaw - pc
+        : undefined;
+
   const pct =
     raw.percent_change != null
-      ? parseFloat(raw.percent_change)
-      : pc > 0
+      ? parseFloat(raw.percent_change as string)
+      : hasPrevClose && pc > 0
         ? ((priceRaw - pc) / pc) * 100
-        : 0;
+        : undefined;
 
   return {
     symbol: raw.symbol,
     price: priceRaw,
     change,
     changePercent: pct,
-    previousClose: pc,
+    previousClose: hasPrevClose ? pc : 0,
     dayVolume: raw.day_volume,
   };
 }

@@ -129,10 +129,12 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
 
   const { data: restQuote, isLoading: quoteLoading } = useStockQuote(ticker);
 
-  const price       = live?.price        ?? restQuote?.c  ?? 0;
-  const change      = live?.change       ?? restQuote?.d  ?? 0;
-  const changePct   = live?.changePercent ?? restQuote?.dp ?? 0;
-  const prevClose   = live?.previousClose ?? restQuote?.pc ?? 0;
+  const price     = live?.price ?? restQuote?.c ?? 0;
+  const prevClose = restQuote?.pc ?? 0;
+  // TwelveData WebSocket ticks don't include change/percent_change, so recompute
+  // from live price vs the REST quote's previous close for accurate day change.
+  const change    = prevClose > 0 ? price - prevClose : restQuote?.d ?? 0;
+  const changePct = prevClose > 0 ? ((price - prevClose) / prevClose) * 100 : restQuote?.dp ?? 0;
   const dayHigh     = restQuote?.h ?? 0;
   const dayLow      = restQuote?.l ?? 0;
   const openPrice   = restQuote?.o ?? 0;

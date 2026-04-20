@@ -94,6 +94,8 @@ async function streamHandler(request: NextRequest) {
         onTick(tick: PriceTick) {
           if (closed) return;
 
+          if (tick.change == null || tick.changePercent == null) return;
+
           quoteMap.set(tick.symbol, {
             symbol: tick.symbol,
             price: tick.price,

@@ -186,7 +186,11 @@ export default function WatchlistPage() {
               const live = livePrices.get(item.symbol);
               const seed = seedQuotes?.[item.symbol];
               const quote = live
-                ? { price: live.price, change: live.change, changePercent: live.changePercent }
+                ? {
+                    price: live.price,
+                    change: live.change ?? seed?.change ?? 0,
+                    changePercent: live.changePercent ?? seed?.changePercent ?? 0,
+                  }
                 : seed ?? null;
               return (
                 <WatchlistCard

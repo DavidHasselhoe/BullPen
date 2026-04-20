@@ -214,7 +214,7 @@ export function ScreenerResults({ data, livePrices }: ScreenerResultsProps) {
                   live && isDown && 'text-red-500',
                 )}>
                   {live
-                    ? `${isUp ? '+' : ''}${live.changePercent.toFixed(2)}%`
+                    ? `${isUp ? '+' : ''}${(live.changePercent ?? 0).toFixed(2)}%`
                     : '—'
                   }
                 </TableCell>
