@@ -17,6 +17,7 @@ import { WsManager } from '@/lib/market-data/ws-manager';
 import { getStorageLogoUrl } from '@/lib/logos/logos-storage';
 import type { PriceTick } from '@/lib/market-data/ws-manager';
 import { SP500_TICKERS } from '@/lib/market-data/sp500';
+import { getMarketMovers } from '@/lib/twelvedata/twelvedata-client';
 
 // Per-client symbol cap for custom ?symbols= requests
 const MAX_CLIENT_SYMBOLS = 500;
@@ -30,6 +31,7 @@ interface MoverUpdate {
   change: number;
   changePercent: number;
   previousClose: number;
+  dayVolume: number;
   logoUrl?: string;
 }
 
@@ -76,6 +78,19 @@ async function streamHandler(request: NextRequest) {
         .slice(0, MAX_CLIENT_SYMBOLS)
     : DEFAULT_SYMBOLS;
 
+  // Seed WsManager prevClose before the WebSocket starts receiving ticks.
+  // TwelveData WS price events don't include prevClose/change, so without seeding,
+  // parseTick can't compute day change and the stream always shows nothing.
+  // getMarketMovers is cached (5 min), so this is nearly free on warm requests.
+  try {
+    const { gainers, losers } = await getMarketMovers('stocks', 50);
+    for (const m of [...gainers, ...losers]) {
+      WsManager.seedPrevClose(m.symbol, m.previousClose);
+    }
+  } catch {
+    // Non-critical — stream degrades gracefully, REST fallback still works
+  }
+
   if (symbols.length === 0) {
     return NextResponse.json({ error: 'No symbols provided' }, { status: 400 });
   }
@@ -93,26 +108,33 @@ async function streamHandler(request: NextRequest) {
         symbols: new Set(symbols),
         onTick(tick: PriceTick) {
           if (closed) return;
-
           if (tick.change == null || tick.changePercent == null) return;
 
+          const dayVolume = tick.dayVolume ?? 0;
           quoteMap.set(tick.symbol, {
             symbol: tick.symbol,
             price: tick.price,
             change: tick.change,
             changePercent: tick.changePercent,
             previousClose: tick.previousClose,
+            dayVolume,
             logoUrl: getStorageLogoUrl(tick.symbol),
           });
 
           const all = [...quoteMap.values()].filter((m) => !isNaN(m.changePercent));
+
+          // Sort by |changePercent| × dollarVolume so large-cap moderate movers
+          // rank above small-cap extreme movers (e.g. NVDA +3% > SMCI +50%).
+          const weight = (m: MoverUpdate) =>
+            Math.abs(m.changePercent) * (m.dayVolume > 0 ? m.price * m.dayVolume : 1);
+
           const gainers = all
             .filter((m) => m.changePercent > 0)
-            .sort((a, b) => b.changePercent - a.changePercent)
+            .sort((a, b) => weight(b) - weight(a))
             .slice(0, 5);
           const losers = all
             .filter((m) => m.changePercent < 0)
-            .sort((a, b) => a.changePercent - b.changePercent)
+            .sort((a, b) => weight(b) - weight(a))
             .slice(0, 5);
 
           safeEnqueue(

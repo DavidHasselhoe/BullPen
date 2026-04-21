@@ -316,4 +316,18 @@ export const WsManager = {
   get subscribedCount(): number {
     return getState().subscribed.size;
   },
+
+  /**
+   * Seed a previous-close price so parseTick can compute change/changePercent
+   * on the first WebSocket tick for this symbol (TwelveData WS never sends prevClose).
+   * Only sets the value if one isn't already cached.
+   */
+  seedPrevClose(symbol: string, prevClose: number): void {
+    if (prevClose > 0) {
+      const state = getState();
+      if (!state.prevClose.has(symbol)) {
+        state.prevClose.set(symbol, prevClose);
+      }
+    }
+  },
 };
