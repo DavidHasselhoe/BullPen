@@ -42,3 +42,7 @@ yarn-error.log*
 next-env.d.ts
 
 .vercel
+
+# Claude Code local config (not shared)
+.claude/settings.local.json
+.claude/auto-deploy.ps1
