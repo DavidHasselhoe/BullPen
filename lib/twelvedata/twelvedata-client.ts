@@ -1787,3 +1787,44 @@ export async function getInsiderTransactions(symbol: string): Promise<InsiderTra
   }));
 }
 
+// -------- Fundamentals Last Changes --------
+
+export interface FundamentalsLastChange {
+  profile?: { last_change: string | null };
+  statistics?: { last_change: string | null };
+  income_statement?: { last_change: string | null };
+  balance_sheet?: { last_change: string | null };
+  cash_flow?: { last_change: string | null };
+}
+
+/**
+ * Returns the date each fundamental data type was last updated by TwelveData.
+ * Use this to determine whether cached fundamental data is stale before spending
+ * credits on a full re-fetch.
+ *
+ * Endpoint: GET /fundamentals/last_changes
+ * Cost: 1 API credit per symbol.
+ */
+export async function getFundamentalsLastChange(symbol: string): Promise<FundamentalsLastChange> {
+  logUsage('/fundamentals/last_changes', symbol);
+  const url = buildUrl('/fundamentals/last_changes', { symbol: symbol.toUpperCase() });
+  const res = await fetch(url, { cache: 'no-store' }); // always need fresh timestamps
+  const json = (await res.json()) as FundamentalsLastChange & { code?: number; status?: string; message?: string };
+
+  if (!res.ok || json.code || json.status === 'error') {
+    const msg = json.message ?? `fundamentals/last_changes error: ${res.status}`;
+    if (/rate.?limit|too many|credits? exceeded/i.test(msg) || json.code === 429) {
+      throw new TwelveDataRateLimitError(msg);
+    }
+    throw new Error(msg);
+  }
+
+  return {
+    profile: json.profile,
+    statistics: json.statistics,
+    income_statement: json.income_statement,
+    balance_sheet: json.balance_sheet,
+    cash_flow: json.cash_flow,
+  };
+}
+

@@ -94,6 +94,10 @@ export interface Company {
   employee_count_is_estimated: boolean | null;
   shares_outstanding: number | null;
   logo_url: string | null;
+  logo_source: 'brand' | 'wikipedia' | 'manual' | null;
+  logo_updated_at: string | null;
+  fundamentals_last_change: string | null;
+  fundamentals_checked_at: string | null;
   metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;
