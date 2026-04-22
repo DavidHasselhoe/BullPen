@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
 import { createBrowserClient } from '@/lib/supabase/client';
@@ -12,6 +13,33 @@ import type { Notification } from '@/lib/notifications/notifications-db';
  */
 export function useNotifications(limit: number = 50) {
   const { user, isAuthenticated } = useAuth();
+  const queryClient = useQueryClient();
+
+  // Supabase Realtime: invalidate query the moment a new notification is inserted.
+  // This makes the unread badge update within ~1s of a cron job creating a notification,
+  // without waiting up to 5 minutes for the next polling cycle.
+  useEffect(() => {
+    if (!user?.id) return;
+    const supabase = createBrowserClient();
+    const channel = supabase
+      .channel(`notifications:${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['notifications', user.id] });
+        }
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, queryClient]);
 
   return useQuery({
     queryKey: ['notifications', user?.id, limit],
@@ -36,7 +64,7 @@ export function useNotifications(limit: number = 50) {
     },
     enabled: isAuthenticated && !!user,
     staleTime: 5 * 60 * 1000,      // 5 minutes
-    refetchInterval: 5 * 60 * 1000, // Poll every 5 minutes (was 60s)
+    refetchInterval: 5 * 60 * 1000, // Polling fallback (Realtime handles instant updates)
   });
 }
 

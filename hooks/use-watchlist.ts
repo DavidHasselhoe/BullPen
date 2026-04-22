@@ -7,6 +7,7 @@ export interface WatchlistItem {
   id: string;
   symbol: string;
   company_name: string;
+  alerts_enabled: boolean;
   added_at: string;
 }
 
@@ -51,9 +52,42 @@ export function useAddToWatchlist() {
       await queryClient.cancelQueries({ queryKey: ['watchlist'] });
       const previous = queryClient.getQueryData<WatchlistItem[]>(['watchlist']);
       queryClient.setQueryData<WatchlistItem[]>(['watchlist'], (old) => [
-        { id: `optimistic-${symbol}`, symbol: symbol.toUpperCase(), company_name, added_at: new Date().toISOString() },
+        { id: `optimistic-${symbol}`, symbol: symbol.toUpperCase(), company_name, alerts_enabled: true, added_at: new Date().toISOString() },
         ...(old ?? []),
       ]);
+      return { previous };
+    },
+    onError: (_err, _vars, ctx) => {
+      queryClient.setQueryData(['watchlist'], ctx?.previous);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['watchlist'] });
+    },
+  });
+}
+
+/** Toggle alerts_enabled for a symbol in the watchlist */
+export function useToggleWatchlistAlert() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ symbol, alerts_enabled }: { symbol: string; alerts_enabled: boolean }) => {
+      const res = await fetch('/api/watchlist', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ symbol, alerts_enabled }),
+      });
+      if (!res.ok) throw new Error('Failed to update alert setting');
+      return res.json();
+    },
+    onMutate: async ({ symbol, alerts_enabled }) => {
+      await queryClient.cancelQueries({ queryKey: ['watchlist'] });
+      const previous = queryClient.getQueryData<WatchlistItem[]>(['watchlist']);
+      queryClient.setQueryData<WatchlistItem[]>(['watchlist'], (old) =>
+        (old ?? []).map((item) =>
+          item.symbol === symbol.toUpperCase() ? { ...item, alerts_enabled } : item
+        )
+      );
       return { previous };
     },
     onError: (_err, _vars, ctx) => {

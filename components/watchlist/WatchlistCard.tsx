@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { X, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { X, TrendingUp, TrendingDown, Minus, Bell, BellOff } from 'lucide-react';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { cn } from '@/lib/utils';
 
@@ -15,34 +15,69 @@ interface WatchlistCardProps {
   symbol: string;
   company_name: string;
   quote?: Quote | null;
+  alerts_enabled?: boolean;
   onRemove: (symbol: string) => void;
+  onToggleAlert?: (symbol: string, enabled: boolean) => void;
   isRemoving?: boolean;
+  isTogglingAlert?: boolean;
 }
 
 function formatPrice(p: number) {
   return p.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-export function WatchlistCard({ symbol, company_name, quote, onRemove, isRemoving }: WatchlistCardProps) {
+export function WatchlistCard({
+  symbol,
+  company_name,
+  quote,
+  alerts_enabled = true,
+  onRemove,
+  onToggleAlert,
+  isRemoving,
+  isTogglingAlert,
+}: WatchlistCardProps) {
   const isUp = (quote?.changePercent ?? 0) > 0;
   const isDown = (quote?.changePercent ?? 0) < 0;
   const Icon = isUp ? TrendingUp : isDown ? TrendingDown : Minus;
 
   return (
     <div className="group relative rounded-xl border border-border bg-card transition-all duration-200 hover:border-primary/30 hover:shadow-md">
-      {/* Remove button */}
-      <button
-        onClick={(e) => { e.preventDefault(); onRemove(symbol); }}
-        disabled={isRemoving}
-        className={cn(
-          'absolute right-2 top-2 z-10 rounded-full p-1 opacity-0 group-hover:opacity-100',
-          'text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all',
-          isRemoving && 'opacity-50 cursor-not-allowed'
+      {/* Hover action buttons: remove + alert toggle */}
+      <div className="absolute right-2 top-2 z-10 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+        {onToggleAlert && (
+          <button
+            onClick={(e) => { e.preventDefault(); onToggleAlert(symbol, !alerts_enabled); }}
+            disabled={isTogglingAlert}
+            className={cn(
+              'rounded-full p-1 transition-all',
+              'text-muted-foreground hover:bg-accent',
+              alerts_enabled
+                ? 'hover:text-foreground'
+                : 'text-destructive/70 hover:text-destructive',
+              isTogglingAlert && 'opacity-50 cursor-not-allowed'
+            )}
+            title={alerts_enabled ? 'Disable price alerts for this stock' : 'Enable price alerts for this stock'}
+            aria-label={`${alerts_enabled ? 'Disable' : 'Enable'} alerts for ${symbol}`}
+          >
+            {alerts_enabled
+              ? <Bell className="h-3.5 w-3.5" />
+              : <BellOff className="h-3.5 w-3.5" />
+            }
+          </button>
         )}
-        aria-label={`Remove ${symbol} from watchlist`}
-      >
-        <X className="h-3.5 w-3.5" />
-      </button>
+        <button
+          onClick={(e) => { e.preventDefault(); onRemove(symbol); }}
+          disabled={isRemoving}
+          className={cn(
+            'rounded-full p-1 transition-all',
+            'text-muted-foreground hover:bg-destructive/10 hover:text-destructive',
+            isRemoving && 'opacity-50 cursor-not-allowed'
+          )}
+          aria-label={`Remove ${symbol} from watchlist`}
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </div>
 
       <Link href={`/stock/${symbol}`} className="flex flex-col gap-3 p-4">
         {/* Header */}
@@ -52,6 +87,10 @@ export function WatchlistCard({ symbol, company_name, quote, onRemove, isRemovin
             <p className="text-sm font-semibold text-foreground leading-none">{symbol}</p>
             <p className="text-xs text-muted-foreground truncate mt-0.5">{company_name}</p>
           </div>
+          {/* Alert-off indicator (always visible, subtle) */}
+          {!alerts_enabled && (
+            <BellOff className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
+          )}
         </div>
 
         {/* Price */}

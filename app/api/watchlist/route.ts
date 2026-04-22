@@ -29,7 +29,7 @@ async function getHandler(
 
   const { data, error } = await supabase
     .from('user_watchlist')
-    .select('id, symbol, company_name, added_at')
+    .select('id, symbol, company_name, alerts_enabled, added_at')
     .eq('user_id', session.userId)
     .order('added_at', { ascending: false });
 
@@ -110,6 +110,41 @@ async function deleteHandler(
   return addSecurityHeaders(NextResponse.json({ success: true }));
 }
 
+/** PATCH /api/watchlist — toggle alerts_enabled for a symbol */
+async function patchHandler(
+  req: NextRequest,
+  _ctx: unknown,
+  session: { userId: string }
+): Promise<NextResponse> {
+  const body = await req.json().catch(() => null);
+  const symbol = (body?.symbol as string | undefined)?.toUpperCase().trim();
+  const alerts_enabled = body?.alerts_enabled;
+
+  if (!symbol || typeof alerts_enabled !== 'boolean') {
+    return addSecurityHeaders(
+      NextResponse.json({ success: false, error: 'symbol and alerts_enabled are required' }, { status: 400 })
+    );
+  }
+
+  const cookieStore = await cookies();
+  const supabase = makeSupabase(cookieStore);
+
+  const { error } = await supabase
+    .from('user_watchlist')
+    .update({ alerts_enabled })
+    .eq('user_id', session.userId)
+    .eq('symbol', symbol);
+
+  if (error) {
+    return addSecurityHeaders(
+      NextResponse.json({ success: false, error: 'Failed to update alert setting' }, { status: 500 })
+    );
+  }
+
+  return addSecurityHeaders(NextResponse.json({ success: true, alerts_enabled }));
+}
+
 export const GET = withAuth(getHandler);
 export const POST = withAuth(postHandler);
+export const PATCH = withAuth(patchHandler);
 export const DELETE = withAuth(deleteHandler);

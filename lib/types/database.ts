@@ -131,8 +131,18 @@ export interface UserHolding {
   date_purchased: string | null;
   source: 'manual' | 'snaptrade';
   brokerage_account_id: string | null;
+  alerts_enabled: boolean;
   created_at: string;
   updated_at: string;
+}
+
+export interface WatchlistItem {
+  id: string;
+  user_id: string;
+  symbol: string;
+  company_name: string;
+  alerts_enabled: boolean;
+  added_at: string;
 }
 
 export interface BrokerageConnection {

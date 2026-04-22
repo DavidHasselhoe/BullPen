@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
-import { useWatchlist, useAddToWatchlist, useRemoveFromWatchlist } from '@/hooks/use-watchlist';
+import { useWatchlist, useAddToWatchlist, useRemoveFromWatchlist, useToggleWatchlistAlert } from '@/hooks/use-watchlist';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useLivePrices } from '@/hooks/use-live-prices';
 import { WatchlistCard } from '@/components/watchlist/WatchlistCard';
@@ -35,6 +35,7 @@ export default function WatchlistPage() {
   const { data: watchlist, isLoading: watchlistLoading } = useWatchlist();
   const addMutation = useAddToWatchlist();
   const removeMutation = useRemoveFromWatchlist();
+  const toggleAlertMutation = useToggleWatchlistAlert();
 
   // Company search for adding stocks
   const { data: searchResults } = useQuery({
@@ -198,8 +199,11 @@ export default function WatchlistPage() {
                   symbol={item.symbol}
                   company_name={item.company_name}
                   quote={quote}
+                  alerts_enabled={item.alerts_enabled}
                   onRemove={(sym) => removeMutation.mutate(sym)}
+                  onToggleAlert={(sym, enabled) => toggleAlertMutation.mutate({ symbol: sym, alerts_enabled: enabled })}
                   isRemoving={removeMutation.isPending && removeMutation.variables === item.symbol}
+                  isTogglingAlert={toggleAlertMutation.isPending && toggleAlertMutation.variables?.symbol === item.symbol}
                 />
               );
             })}

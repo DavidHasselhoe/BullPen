@@ -94,7 +94,8 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
   const [responseStyle, setResponseStyle] = useState<'concise' | 'balanced' | 'detailed' | null>(null);
   const [notifications, setNotifications] = useState({
     holdings_earnings: true,
-    price_alerts: false,
+    upcoming_earnings: true,
+    price_alerts: true,
     breaking_news: false,
     insider_trades: false,
     signal_threshold_crossed: false,
@@ -143,7 +144,8 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
 
       setNotifications({
         holdings_earnings: settings.notifications?.holdings_earnings !== false,
-        price_alerts: settings.notifications?.price_alerts || false,
+        upcoming_earnings: settings.notifications?.upcoming_earnings !== false,
+        price_alerts: settings.notifications?.price_alerts !== false,
         breaking_news: settings.notifications?.breaking_news || false,
         insider_trades: settings.notifications?.insider_trades || false,
         signal_threshold_crossed: settings.notifications?.signal_threshold_crossed || false,
@@ -643,9 +645,28 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
-                        <Label>Price Alerts</Label>
+                        <Label>Upcoming Earnings Reminders</Label>
                         <p className="text-xs text-muted-foreground">
-                          Get notified when stocks reach your target prices
+                          Get notified 7 days before a tracked stock reports earnings
+                        </p>
+                      </div>
+                      <Switch
+                        checked={notifications.upcoming_earnings}
+                        onCheckedChange={(checked) =>
+                          setNotifications({ ...notifications, upcoming_earnings: checked })
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label>Big Price Moves</Label>
+                        <p className="text-xs text-muted-foreground">
+                          Daily alert when a tracked stock moves 5% or more
                         </p>
                       </div>
                       <Switch
@@ -653,12 +674,8 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                         onCheckedChange={(checked) =>
                           setNotifications({ ...notifications, price_alerts: checked })
                         }
-                        disabled
                       />
                     </div>
-                    <Badge variant="secondary" className="text-xs">
-                      Coming soon
-                    </Badge>
                   </div>
 
                   <Separator />
