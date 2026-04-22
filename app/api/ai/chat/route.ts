@@ -12,7 +12,7 @@ async function handler(req: NextRequest) {
   const messages = body?.messages ?? [];
   const context = body?.context ?? null;
   const experienceLevel = (body?.experienceLevel as 'beginner' | 'intermediate' | 'advanced') ?? null;
-  const riskProfile = (body?.riskProfile as 'conservative' | 'moderate' | 'aggressive') ?? null;
+  const riskProfile = (body?.riskProfile as 'conservative' | 'balanced' | 'aggressive') ?? null;
   const investmentHorizon = (body?.investmentHorizon as 'short' | 'medium' | 'long') ?? null;
   const responseStyle = (body?.responseStyle as 'concise' | 'balanced' | 'detailed') ?? null;
 

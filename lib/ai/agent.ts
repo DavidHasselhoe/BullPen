@@ -21,7 +21,7 @@ export async function runAgent(
   messages: UIMessage[],
   context?: AIContext | null,
   experienceLevel?: 'beginner' | 'intermediate' | 'advanced' | null,
-  riskProfile?: 'conservative' | 'moderate' | 'aggressive' | null,
+  riskProfile?: 'conservative' | 'balanced' | 'aggressive' | null,
   investmentHorizon?: 'short' | 'medium' | 'long' | null,
   responseStyle?: 'concise' | 'balanced' | 'detailed' | null,
 ) {
@@ -38,7 +38,7 @@ export async function runAgent(
     ? `[User risk profile: CONSERVATIVE. Frame analysis with capital preservation in mind. Highlight downside risks, protective factors, and margin of safety. Flag leverage and liquidity risks prominently.]\n\n`
     : riskProfile === 'aggressive'
     ? `[User risk profile: AGGRESSIVE. The user is comfortable with higher risk in pursuit of higher returns. Lead with upside potential, growth catalysts, and total addressable market. Note associated risks but don't dwell on them.]\n\n`
-    : riskProfile === 'moderate'
+    : riskProfile === 'balanced'
     ? `[User risk profile: BALANCED. Present a balanced risk-reward view. Discuss both upside potential and downside scenarios with equal weight.]\n\n`
     : '';
 

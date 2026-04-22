@@ -89,7 +89,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
   const [profilePublic, setProfilePublic] = useState<boolean>(true);
   const [holdingsPublic, setHoldingsPublic] = useState<boolean>(true);
   // AI settings state
-  const [riskProfile, setRiskProfile] = useState<'conservative' | 'moderate' | 'aggressive' | null>(null);
+  const [riskProfile, setRiskProfile] = useState<'conservative' | 'balanced' | 'aggressive' | null>(null);
   const [investmentHorizon, setInvestmentHorizon] = useState<'short' | 'medium' | 'long' | null>(null);
   const [responseStyle, setResponseStyle] = useState<'concise' | 'balanced' | 'detailed' | null>(null);
   const [notifications, setNotifications] = useState({
@@ -978,7 +978,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                   <div className="flex gap-2">
                     {([
                       { value: 'conservative', label: 'Conservative', description: 'Capital preservation, downside risks' },
-                      { value: 'moderate', label: 'Balanced', description: 'Balanced risk-reward perspective' },
+                      { value: 'balanced', label: 'Balanced', description: 'Balanced risk-reward perspective' },
                       { value: 'aggressive', label: 'Aggressive', description: 'Growth focus, upside opportunity' },
                     ] as const).map(({ value, label, description }) => (
                       <button

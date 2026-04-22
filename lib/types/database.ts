@@ -113,7 +113,7 @@ export interface User {
   bio: string | null;
   experience_level: 'beginner' | 'intermediate' | 'advanced' | null;
   market_focus: 'US' | 'EU' | 'BOTH' | null;
-  risk_profile: 'conservative' | 'moderate' | 'aggressive' | null;
+  risk_profile: 'conservative' | 'balanced' | 'aggressive' | null;
   account_tier: 'free' | 'pro' | 'enterprise' | null;
   settings: Record<string, unknown> | null;
   created_at: string;
