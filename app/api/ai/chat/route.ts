@@ -12,8 +12,11 @@ async function handler(req: NextRequest) {
   const messages = body?.messages ?? [];
   const context = body?.context ?? null;
   const experienceLevel = (body?.experienceLevel as 'beginner' | 'intermediate' | 'advanced') ?? null;
+  const riskProfile = (body?.riskProfile as 'conservative' | 'moderate' | 'aggressive') ?? null;
+  const investmentHorizon = (body?.investmentHorizon as 'short' | 'medium' | 'long') ?? null;
+  const responseStyle = (body?.responseStyle as 'concise' | 'balanced' | 'detailed') ?? null;
 
-  const result = await runAgent(messages, context, experienceLevel);
+  const result = await runAgent(messages, context, experienceLevel, riskProfile, investmentHorizon, responseStyle);
   return result.toUIMessageStreamResponse();
 }
 

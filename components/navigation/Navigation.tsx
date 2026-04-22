@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
@@ -40,6 +40,17 @@ export function Navigation() {
   const { open: openCommandPalette = () => {} } = useCommandPalette();
   const searchShortcut = useSearchShortcut();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [activeSettingsTab, setActiveSettingsTab] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const tab = (e as CustomEvent).detail?.tab as string | undefined;
+      setActiveSettingsTab(tab);
+      setSettingsOpen(true);
+    };
+    window.addEventListener('settings:open', handler);
+    return () => window.removeEventListener('settings:open', handler);
+  }, []);
   const [toolsOpen, setToolsOpen] = useState(false);
   const [communityOpen, setCommunityOpen] = useState(false);
   const toolsCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -242,7 +253,14 @@ export function Navigation() {
           </div>
         </div>
       </header>
-      <SettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />
+      <SettingsModal
+        open={settingsOpen}
+        onOpenChange={(val) => {
+          setSettingsOpen(val);
+          if (!val) setActiveSettingsTab(undefined);
+        }}
+        initialTab={activeSettingsTab as any}
+      />
     </>
   );
 }

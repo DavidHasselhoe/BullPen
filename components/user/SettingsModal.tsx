@@ -22,7 +22,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Globe, DollarSign, Moon, Bell, Shield, AlertTriangle, Trash2, Download, Check, Settings2, Eye, EyeOff, Home, Hash, Search } from 'lucide-react';
+import { Loader2, Globe, DollarSign, Moon, Bell, Shield, AlertTriangle, Trash2, Download, Check, Settings2, Eye, EyeOff, Home, Hash, Search, Bot } from 'lucide-react';
 import { ExperienceLevelToggle } from '@/components/ui/ExperienceLevelToggle';
 import { Input } from '@/components/ui/input';
 import { TickerSelector, type SearchResult } from '@/components/tools/buy-here/TickerSelector';
@@ -34,6 +34,7 @@ import { deleteAccount, exportUserData } from '@/app/actions/account';
 interface SettingsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialTab?: SettingsSection;
 }
 
 type SettingsSection =
@@ -41,6 +42,7 @@ type SettingsSection =
   | 'notifications'
   | 'customize'
   | 'privacy'
+  | 'ai'
   | 'danger';
 
 type ThemeValue = 'dark' | 'light' | 'gradient-purple' | 'gradient-blue' | 'gradient-midnight' | 'gradient-embers';
@@ -55,11 +57,11 @@ function minimalStockPick(ticker: string): SearchResult {
   return { ticker: t, name: t, cik: '', has_data: false };
 }
 
-export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
+export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalProps) {
   const { user } = useAuth();
   const router = useRouter();
   const { t, i18n } = useTranslation();
-  const [activeSection, setActiveSection] = useState<SettingsSection>('preferences');
+  const [activeSection, setActiveSection] = useState<SettingsSection>(initialTab ?? 'preferences');
   const [error, setError] = useState<string | null>(null);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [isExportingData, setIsExportingData] = useState(false);
@@ -86,6 +88,10 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   const [marketContextMode, setMarketContextMode] = useState<'all' | 'holdings'>('all');
   const [profilePublic, setProfilePublic] = useState<boolean>(true);
   const [holdingsPublic, setHoldingsPublic] = useState<boolean>(true);
+  // AI settings state
+  const [riskProfile, setRiskProfile] = useState<'conservative' | 'moderate' | 'aggressive' | null>(null);
+  const [investmentHorizon, setInvestmentHorizon] = useState<'short' | 'medium' | 'long' | null>(null);
+  const [responseStyle, setResponseStyle] = useState<'concise' | 'balanced' | 'detailed' | null>(null);
   const [notifications, setNotifications] = useState({
     holdings_earnings: true,
     price_alerts: false,
@@ -93,6 +99,13 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
     insider_trades: false,
     signal_threshold_crossed: false,
   });
+
+  // Jump to initialTab when modal opens (e.g. from AI panel gear icon)
+  useEffect(() => {
+    if (open && initialTab) {
+      setActiveSection(initialTab);
+    }
+  }, [open, initialTab]);
 
   // Autosave refs
   const isInitializedRef = useRef(false);
@@ -145,6 +158,10 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
       setMarketContextMode(settings.market_context_mode === 'holdings' ? 'holdings' : 'all');
       setProfilePublic(settings.profile_public !== false);
       setHoldingsPublic(settings.holdings_public !== false);
+      // AI settings
+      setRiskProfile((user as any).risk_profile ?? null);
+      setInvestmentHorizon((settings.investment_horizon as 'short' | 'medium' | 'long') ?? null);
+      setResponseStyle((settings.response_style as 'concise' | 'balanced' | 'detailed') ?? null);
       setError(null);
 
       // Allow autosave after a short delay so the above setters don't trigger a spurious save
@@ -173,11 +190,14 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
         notifications,
         profile_public: profilePublic,
         holdings_public: holdingsPublic,
+        investment_horizon: investmentHorizon,
+        response_style: responseStyle,
       };
 
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({ settings: mergedSettings })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const usersTable = (supabase as any).from('users');
+      const { error: updateError } = await usersTable
+        .update({ settings: mergedSettings, risk_profile: riskProfile })
         .eq('id', user.id);
 
       if (updateError) {
@@ -218,7 +238,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
     }, 500);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedMarkets, defaultCurrency, theme, language, defaultHomepage, showQuotes, showWelcomeText, roundNumbers, marketContextMode, notifications, profilePublic, holdingsPublic]);
+  }, [selectedMarkets, defaultCurrency, theme, language, defaultHomepage, showQuotes, showWelcomeText, roundNumbers, marketContextMode, notifications, profilePublic, holdingsPublic, riskProfile, investmentHorizon, responseStyle]);
 
   const handleDeleteAccount = async () => {
     if (!user) return;
@@ -326,6 +346,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
     { id: 'notifications', label: t('settings.notifications'), icon: <Bell className="h-4 w-4" /> },
     { id: 'customize', label: t('settings.customize'), icon: <Settings2 className="h-4 w-4" /> },
     { id: 'privacy', label: t('settings.privacy'), icon: <Shield className="h-4 w-4" /> },
+    { id: 'ai', label: 'AI', icon: <Bot className="h-4 w-4" /> },
     { id: 'danger', label: t('settings.danger'), icon: <AlertTriangle className="h-4 w-4" /> },
   ];
 
@@ -928,6 +949,114 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                     )}
                   </div>
 
+                </div>
+              </div>
+            )}
+
+            {activeSection === 'ai' && (
+              <div className="space-y-6 max-w-2xl">
+                <div>
+                  <h3 className="text-sm font-semibold">AI Preferences</h3>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Customize how BullPen AI communicates and analyzes information for you.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <ExperienceLevelToggle variant="full" />
+                </div>
+
+                <Separator />
+
+                <div className="space-y-3">
+                  <div>
+                    <Label className="text-sm font-medium">Risk Profile</Label>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Shapes how the AI frames investment analysis and risk discussion.
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    {([
+                      { value: 'conservative', label: 'Conservative', description: 'Capital preservation, downside risks' },
+                      { value: 'moderate', label: 'Balanced', description: 'Balanced risk-reward perspective' },
+                      { value: 'aggressive', label: 'Aggressive', description: 'Growth focus, upside opportunity' },
+                    ] as const).map(({ value, label, description }) => (
+                      <button
+                        key={value}
+                        onClick={() => setRiskProfile(value)}
+                        className={`flex-1 flex flex-col gap-1 rounded-lg border px-3 py-2.5 text-left text-sm transition-all ${
+                          riskProfile === value
+                            ? 'border-primary bg-primary/10 text-primary'
+                            : 'border-border text-muted-foreground hover:border-foreground/20 hover:text-foreground'
+                        }`}
+                      >
+                        <span className="font-medium">{label}</span>
+                        <span className="text-xs opacity-70">{description}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-3">
+                  <div>
+                    <Label className="text-sm font-medium">Investment Time Horizon</Label>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Adjusts whether AI emphasizes near-term catalysts or long-term fundamentals.
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    {([
+                      { value: 'short', label: 'Short-term', description: '< 1 year' },
+                      { value: 'medium', label: 'Medium-term', description: '1 – 5 years' },
+                      { value: 'long', label: 'Long-term', description: '5+ years' },
+                    ] as const).map(({ value, label, description }) => (
+                      <button
+                        key={value}
+                        onClick={() => setInvestmentHorizon(value)}
+                        className={`flex-1 flex flex-col gap-1 rounded-lg border px-3 py-2.5 text-left text-sm transition-all ${
+                          investmentHorizon === value
+                            ? 'border-primary bg-primary/10 text-primary'
+                            : 'border-border text-muted-foreground hover:border-foreground/20 hover:text-foreground'
+                        }`}
+                      >
+                        <span className="font-medium">{label}</span>
+                        <span className="text-xs opacity-70">{description}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-3">
+                  <div>
+                    <Label className="text-sm font-medium">Response Style</Label>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Controls how long and structured AI responses are.
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    {([
+                      { value: 'concise', label: 'Concise', description: '1–2 paragraphs, bullets' },
+                      { value: 'balanced', label: 'Balanced', description: 'Standard analysis length' },
+                      { value: 'detailed', label: 'Detailed', description: 'Full sections, all data' },
+                    ] as const).map(({ value, label, description }) => (
+                      <button
+                        key={value}
+                        onClick={() => setResponseStyle(value)}
+                        className={`flex-1 flex flex-col gap-1 rounded-lg border px-3 py-2.5 text-left text-sm transition-all ${
+                          responseStyle === value
+                            ? 'border-primary bg-primary/10 text-primary'
+                            : 'border-border text-muted-foreground hover:border-foreground/20 hover:text-foreground'
+                        }`}
+                      >
+                        <span className="font-medium">{label}</span>
+                        <span className="text-xs opacity-70">{description}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
