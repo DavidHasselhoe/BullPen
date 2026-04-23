@@ -1,0 +1,47 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "$port = 3000; $inUse = netstat -an 2>$null | Select-String (\":$port\\s\"); if (-not $inUse) { Start-Process -NoNewWindow -FilePath 'npm' -ArgumentList 'run','dev' -WorkingDirectory 'C:\\bullpen' }",
+            "statusMessage": "Starting dev server...",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "$raw = [Console]::In.ReadToEnd(); $json = $raw | ConvertFrom-Json; $f = $json.tool_input.file_path; if ($f -match '\\.(ts|tsx|js|jsx)$') { $result = & npx eslint $f 2>&1; if ($result) { Write-Output $result } }; exit 0",
+            "statusMessage": "Linting...",
+            "timeout": 30,
+            "async": true
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(npx eslint *)",
+      "Bash(git status)",
+      "Bash(git log *)",
+      "Bash(git diff *)",
+      "Bash(git add *)",
+      "Bash(git branch *)",
+      "Bash(git stash *)"
+    ]
+  },
+  "worktree": {
+    "symlinkDirectories": ["node_modules", ".next"]
+  }
+}
