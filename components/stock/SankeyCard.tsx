@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useTheme } from 'next-themes';
 import { sankey, sankeyLinkHorizontal, sankeyLeft } from 'd3-sankey';
@@ -489,11 +490,11 @@ export function SankeyCard({ ticker }: { ticker: string }) {
         )}
       </div>
 
-      {/* ── Floating tooltip ──
-          Rendered OUTSIDE the card so backdrop-filter doesn't trap `position:fixed` */}
-      {tip && (
+      {/* ── Floating tooltip — portalled to document.body so no CSS transform
+          or backdrop-filter ancestor can trap the fixed position ── */}
+      {tip && mounted && createPortal(
         <div
-          className="pointer-events-none fixed z-[200] rounded-xl border shadow-2xl px-3 py-2.5 text-xs bg-popover border-border"
+          className="pointer-events-none fixed z-[9999] rounded-xl border shadow-2xl px-3 py-2.5 text-xs bg-popover border-border"
           style={{ left: tip.x + 10, top: tip.y - 40, minWidth: 160 }}
         >
           <p className="font-semibold text-foreground mb-1.5">{tip.id}</p>
@@ -507,7 +508,8 @@ export function SankeyCard({ ticker }: { ticker: string }) {
               <span className="font-medium tabular-nums text-foreground">{tip.pct}</span>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
