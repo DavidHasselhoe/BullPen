@@ -7,7 +7,7 @@ import { sankey, sankeyLinkHorizontal, sankeyLeft } from 'd3-sankey';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
-import { Network } from 'lucide-react';
+import { Network, Lock } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -23,13 +23,15 @@ interface IncomeStatementPeriod {
 
 interface FinancialsResponse {
   success: boolean;
+  error?: string;
   data: IncomeStatementPeriod[];
 }
 
 type Period = 'annual' | 'quarterly';
 type Confidence = 'high' | 'medium' | 'low';
 
-// ─── Colors ───────────────────────────────────────────────────────────────────
+// ─── Node color palette ───────────────────────────────────────────────────────
+// Two variants — used only for node rects and link gradients (not text labels)
 
 const NODE_PALETTE: Record<string, { light: string; dark: string }> = {
   'Total Revenue':    { light: '#6366f1', dark: '#818cf8' },
@@ -38,6 +40,8 @@ const NODE_PALETTE: Record<string, { light: string; dark: string }> = {
   'R&D':              { light: '#f59e0b', dark: '#fbbf24' },
   'SG&A':             { light: '#8b5cf6', dark: '#a78bfa' },
   'Other OpEx':       { light: '#64748b', dark: '#94a3b8' },
+  'Total Costs':      { light: '#ef4444', dark: '#f87171' },
+  'Costs & Tax':      { light: '#ef4444', dark: '#f87171' },
   'Operating Income': { light: '#22c55e', dark: '#4ade80' },
   'Tax & Other':      { light: '#f43f5e', dark: '#fb7185' },
   'Net Income':       { light: '#059669', dark: '#10b981' },
@@ -60,6 +64,7 @@ function fmtVal(n: number): string {
 }
 
 function fmtPct(val: number, total: number): string {
+  if (total === 0) return '—';
   return `${((val / total) * 100).toFixed(1)}%`;
 }
 
@@ -85,11 +90,6 @@ function buildGraph(row: IncomeStatementPeriod): { nodes: RawNode[]; links: RawL
   const rd  = row.r_and_d_expenses;
   const sga = row.selling_general_administrative_expenses;
 
-  const cogs      = gp  != null ? Math.max(0, rev - gp)           : null;
-  const opExTotal = gp  != null && oi != null ? Math.max(0, gp - oi)   : null;
-  const otherOpEx = opExTotal != null ? Math.max(0, opExTotal - (rd ?? 0) - (sga ?? 0)) : null;
-  const taxOther  = oi  != null && ni != null ? Math.max(0, oi - ni)    : null;
-
   const nodes: RawNode[] = [{ id: 'Total Revenue' }];
   const links: RawLink[] = [];
 
@@ -99,24 +99,48 @@ function buildGraph(row: IncomeStatementPeriod): { nodes: RawNode[]; links: RawL
     links.push({ source: src, target: tgt, value: val });
   };
 
-  // Revenue → Cost of Revenue + Gross Profit
-  if (cogs != null) push('Total Revenue', 'Cost of Revenue', cogs);
-  if (gp   != null) push('Total Revenue', 'Gross Profit', gp);
+  if (gp != null) {
+    // Revenue → Cost of Revenue + Gross Profit
+    const cogs = Math.max(0, rev - gp);
+    if (cogs > 0) push('Total Revenue', 'Cost of Revenue', cogs);
+    push('Total Revenue', 'Gross Profit', gp);
 
-  const mid = gp != null && gp > 0 ? 'Gross Profit' : 'Total Revenue';
+    const mid = 'Gross Profit';
 
-  // Gross Profit → OpEx detail + Operating Income
-  if (rd  != null)             push(mid, 'R&D', rd);
-  if (sga != null)             push(mid, 'SG&A', sga);
-  if (otherOpEx != null)       push(mid, 'Other OpEx', otherOpEx);
-  if (oi  != null && oi > 0)   push(mid, 'Operating Income', oi);
+    if (oi != null && oi > 0) {
+      // Gross Profit → OpEx detail + Operating Income
+      if (rd  != null && rd  > 0) push(mid, 'R&D', rd);
+      if (sga != null && sga > 0) push(mid, 'SG&A', sga);
+      const knownOpEx  = (rd ?? 0) + (sga ?? 0);
+      const opExTotal  = Math.max(0, gp - oi);
+      const otherOpEx  = Math.max(0, opExTotal - knownOpEx);
+      if (otherOpEx > 0) push(mid, 'Other OpEx', otherOpEx);
+      push(mid, 'Operating Income', oi);
 
-  // Operating Income → Tax & Net Income
-  if (oi != null && oi > 0) {
-    if (taxOther != null) push('Operating Income', 'Tax & Other', taxOther);
-    if (ni != null && ni > 0) push('Operating Income', 'Net Income', ni);
+      // Operating Income → Tax & Net Income
+      if (ni != null && ni > 0) {
+        const taxOther = Math.max(0, oi - ni);
+        if (taxOther > 0) push('Operating Income', 'Tax & Other', taxOther);
+        push('Operating Income', 'Net Income', ni);
+      }
+    } else if (ni != null && ni > 0) {
+      // No operating income — simplified: GP → costs + net income
+      if (rd  != null && rd  > 0) push(mid, 'R&D', rd);
+      if (sga != null && sga > 0) push(mid, 'SG&A', sga);
+      const knownOpEx = (rd ?? 0) + (sga ?? 0);
+      const otherCosts = Math.max(0, gp - ni - knownOpEx);
+      if (otherCosts > 0) push(mid, 'Other Costs', otherCosts);
+      push(mid, 'Net Income', ni);
+    } else {
+      // Only gross profit — show cost/GP split
+      if (rd  != null && rd  > 0) push(mid, 'R&D', rd);
+      if (sga != null && sga > 0) push(mid, 'SG&A', sga);
+    }
   } else if (ni != null && ni > 0) {
-    push(mid, 'Net Income', ni);
+    // Minimal: only revenue and net income
+    const totalCosts = Math.max(0, rev - ni);
+    if (totalCosts > 0) push('Total Revenue', 'Total Costs', totalCosts);
+    push('Total Revenue', 'Net Income', ni);
   }
 
   if (links.length === 0) return null;
@@ -124,10 +148,10 @@ function buildGraph(row: IncomeStatementPeriod): { nodes: RawNode[]; links: RawL
 }
 
 function deriveConfidence(row: IncomeStatementPeriod): Confidence {
-  const core = [row.gross_profit, row.operating_income, row.net_income].filter(v => v != null).length;
-  const detail = (row.r_and_d_expenses != null || row.selling_general_administrative_expenses != null);
+  const core   = [row.gross_profit, row.operating_income, row.net_income].filter(v => v != null).length;
+  const detail = row.r_and_d_expenses != null || row.selling_general_administrative_expenses != null;
   if (core === 3 && detail) return 'high';
-  if (core >= 2) return 'medium';
+  if (core >= 2)            return 'medium';
   return 'low';
 }
 
@@ -137,8 +161,8 @@ interface Tip { x: number; y: number; id: string; value: number; pct: string }
 
 // ─── Chart ───────────────────────────────────────────────────────────────────
 
-const CHART_H  = 420;
-const PAD = { top: 8, right: 168, bottom: 8, left: 6 };
+const CHART_H = 420;
+const PAD     = { top: 10, right: 172, bottom: 10, left: 6 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyNode = any;
@@ -163,8 +187,8 @@ function SankeyChart({ graph, width, revenue, isDark, ticker, onTip }: SankeyCha
     try {
       const gen = sankey<RawNode, RawLink>()
         .nodeId((d) => d.id)
-        .nodeWidth(18)
-        .nodePadding(14)
+        .nodeWidth(20)
+        .nodePadding(16)
         .nodeAlign(sankeyLeft)
         .extent([[0, 0], [innerW, innerH]]);
       return gen({
@@ -177,9 +201,6 @@ function SankeyChart({ graph, width, revenue, isDark, ticker, onTip }: SankeyCha
   }, [graph, innerW, innerH]);
 
   if (!layout) return null;
-
-  const tickColor  = isDark ? '#a1a1aa' : '#52525b';
-  const labelColor = isDark ? '#e4e4e7' : '#18181b';
 
   return (
     <motion.svg
@@ -205,8 +226,8 @@ function SankeyChart({ graph, width, revenue, isDark, ticker, onTip }: SankeyCha
               x2={(link.target as AnyNode).x0}
               y2={0}
             >
-              <stop offset="0%"   stopColor={srcColor} stopOpacity={0.55} />
-              <stop offset="100%" stopColor={tgtColor} stopOpacity={0.45} />
+              <stop offset="0%"   stopColor={srcColor} stopOpacity={0.65} />
+              <stop offset="100%" stopColor={tgtColor} stopOpacity={0.55} />
             </linearGradient>
           );
         })}
@@ -223,8 +244,8 @@ function SankeyChart({ graph, width, revenue, isDark, ticker, onTip }: SankeyCha
               d={path}
               fill="none"
               stroke={`url(#sk-${ticker}-${i})`}
-              strokeWidth={Math.max(1, link.width as number)}
-              strokeOpacity={0.45}
+              strokeWidth={Math.max(2, link.width as number)}
+              strokeOpacity={0.55}
             />
           );
         })}
@@ -236,10 +257,10 @@ function SankeyChart({ graph, width, revenue, isDark, ticker, onTip }: SankeyCha
           const midY   = ((node.y0 as number) + (node.y1 as number)) / 2;
           const midX   = ((node.x0 as number) + (node.x1 as number)) / 2;
           const isRight = midX > innerW * 0.55;
-          const lx     = isRight ? (node.x0 as number) - 8 : (node.x1 as number) + 8;
+          const lx     = isRight ? (node.x0 as number) - 10 : (node.x1 as number) + 10;
           const anchor = isRight ? 'end' : 'start';
-          const showSub = nodeH > 16;
-          const val    = (node.value as number) ?? 0;
+          const showSub = nodeH > 20;
+          const val     = (node.value as number) ?? 0;
 
           return (
             <g
@@ -253,39 +274,42 @@ function SankeyChart({ graph, width, revenue, isDark, ticker, onTip }: SankeyCha
               onMouseLeave={() => onTip(null)}
               style={{ cursor: 'default' }}
             >
+              {/* Node rect */}
               <rect
                 x={node.x0 as number} y={node.y0 as number}
                 width={(node.x1 as number) - (node.x0 as number)}
                 height={nodeH}
                 fill={color}
                 rx={3}
-                opacity={0.88}
+                opacity={0.9}
               />
+              {/* Primary label — uses CSS variable so it adapts to theme with no JS */}
               <text
                 x={lx}
-                y={midY - (showSub ? 7 : 0)}
+                y={midY - (showSub ? 8 : 0)}
                 textAnchor={anchor}
                 dominantBaseline="middle"
-                fontSize={11}
-                fontWeight={600}
+                fontSize={12}
+                fontWeight={700}
                 fontFamily="ui-sans-serif,system-ui,sans-serif"
-                fill={labelColor}
+                fill="var(--foreground)"
                 style={{ userSelect: 'none', pointerEvents: 'none' }}
               >
                 {node.id as string}
               </text>
+              {/* Sub-label: value + pct */}
               {showSub && (
                 <text
                   x={lx}
-                  y={midY + 7}
+                  y={midY + 8}
                   textAnchor={anchor}
                   dominantBaseline="middle"
-                  fontSize={10}
+                  fontSize={11}
                   fontFamily="ui-sans-serif,system-ui,sans-serif"
-                  fill={tickColor}
+                  fill="var(--muted-foreground)"
                   style={{ userSelect: 'none', pointerEvents: 'none' }}
                 >
-                  {fmtVal(val)}{revenue > 0 && ` · ${fmtPct(val, revenue)}`}
+                  {fmtVal(val)}{revenue > 0 ? ` · ${fmtPct(val, revenue)}` : ''}
                 </text>
               )}
             </g>
@@ -300,13 +324,16 @@ function SankeyChart({ graph, width, revenue, isDark, ticker, onTip }: SankeyCha
 
 export function SankeyCard({ ticker }: { ticker: string }) {
   const { resolvedTheme } = useTheme();
-  const isDark = resolvedTheme === 'dark';
+  // mounted guard prevents hydration mismatch — node colours flash on first render otherwise
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const isDark = mounted && resolvedTheme === 'dark';
 
-  const [period, setPeriod]           = useState<Period>('quarterly');
-  const [periodIdx, setPeriodIdx]     = useState(0);
-  const [chartWidth, setChartWidth]   = useState(0);
-  const [tip, setTip]                 = useState<Tip | null>(null);
-  const containerRef                  = useRef<HTMLDivElement>(null);
+  const [period, setPeriod]         = useState<Period>('quarterly');
+  const [periodIdx, setPeriodIdx]   = useState(0);
+  const [chartWidth, setChartWidth] = useState(0);
+  const [tip, setTip]               = useState<Tip | null>(null);
+  const containerRef                = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -327,135 +354,147 @@ export function SankeyCard({ ticker }: { ticker: string }) {
       fetch(`/api/stock/${ticker}/financials?type=income&period=${period}`).then(r => r.json()),
     enabled: !!ticker,
     staleTime: 24 * 60 * 60 * 1000,
+    retry: false,
   });
 
-  const rows = useMemo(() => (data?.data ?? []).slice(0, 5), [data]);
-  const row  = rows[periodIdx] ?? null;
-  const graph = useMemo(() => (row ? buildGraph(row) : null), [row]);
-  const conf  = useMemo(() => (row ? deriveConfidence(row) : null), [row]);
+  const rows    = useMemo(() => (data?.data ?? []).slice(0, 5), [data]);
+  const row     = rows[periodIdx] ?? null;
+  const graph   = useMemo(() => (row ? buildGraph(row) : null), [row]);
+  const conf    = useMemo(() => (row ? deriveConfidence(row) : null), [row]);
   const revenue = row?.revenue ?? 0;
 
-  const noData = !isLoading && (!data?.success || !graph);
-
-  const tooltipBg     = isDark ? 'rgba(9,9,11,0.94)'    : 'rgba(255,255,255,0.97)';
-  const tooltipBorder = isDark ? '#3f3f46'               : '#e4e4e7';
+  const isPlanRestricted = !isLoading && data?.error === 'plan_restricted';
+  const noData = !isLoading && !isPlanRestricted && (!data?.success || rows.length === 0 || !graph);
 
   return (
-    <div className="mb-8 rounded-2xl border border-border/50 bg-background/60 backdrop-blur-xl shadow-xl overflow-hidden">
-      {/* ── Header ── */}
-      <div className="flex items-center justify-between gap-4 px-6 pt-5 pb-4 flex-wrap border-b border-border/40">
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
-            <Network className="h-5 w-5 text-primary" />
-          </div>
-          <div>
-            <h2 className="text-base font-semibold leading-tight">Revenue Flow</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">How revenue becomes profit</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2.5 flex-wrap">
-          {/* Confidence dot */}
-          {conf && (
-            <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <span className={cn('h-2 w-2 rounded-full shrink-0', {
-                'bg-emerald-500': conf === 'high',
-                'bg-amber-400':   conf === 'medium',
-                'bg-slate-400':   conf === 'low',
-              })} />
-              {conf.charAt(0).toUpperCase() + conf.slice(1)} confidence
-            </span>
-          )}
-
-          {/* Annual / Quarterly toggle */}
-          <div className="flex items-center gap-0.5 rounded-lg border border-border bg-muted/50 p-0.5">
-            {(['annual', 'quarterly'] as Period[]).map((p) => (
-              <button
-                key={p}
-                onClick={() => setPeriod(p)}
-                className={cn('rounded-md px-2.5 py-1 text-xs font-medium transition-all', {
-                  'bg-background text-foreground shadow-sm': period === p,
-                  'text-muted-foreground hover:text-foreground': period !== p,
-                })}
-              >
-                {p === 'annual' ? 'Annual' : 'Quarterly'}
-              </button>
-            ))}
+    <>
+      <div className="mb-8 rounded-2xl border border-border/50 bg-card shadow-xl overflow-hidden">
+        {/* ── Header ── */}
+        <div className="flex items-center justify-between gap-4 px-6 pt-5 pb-4 flex-wrap border-b border-border/40">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+              <Network className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-base font-semibold leading-tight text-foreground">Revenue Flow</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">How revenue becomes profit</p>
+            </div>
           </div>
 
-          {/* Period picker */}
-          {rows.length > 1 && (
+          <div className="flex items-center gap-2.5 flex-wrap">
+            {/* Confidence dot */}
+            {conf && !noData && !isPlanRestricted && (
+              <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <span className={cn('h-2 w-2 rounded-full shrink-0', {
+                  'bg-emerald-500': conf === 'high',
+                  'bg-amber-400':   conf === 'medium',
+                  'bg-slate-400':   conf === 'low',
+                })} />
+                {conf.charAt(0).toUpperCase() + conf.slice(1)} confidence
+              </span>
+            )}
+
+            {/* Annual / Quarterly toggle */}
             <div className="flex items-center gap-0.5 rounded-lg border border-border bg-muted/50 p-0.5">
-              {rows.map((r, i) => (
+              {(['annual', 'quarterly'] as Period[]).map((p) => (
                 <button
-                  key={r.fiscal_date}
-                  onClick={() => setPeriodIdx(i)}
+                  key={p}
+                  onClick={() => setPeriod(p)}
                   className={cn('rounded-md px-2.5 py-1 text-xs font-medium transition-all', {
-                    'bg-background text-foreground shadow-sm': periodIdx === i,
-                    'text-muted-foreground hover:text-foreground': periodIdx !== i,
+                    'bg-background text-foreground shadow-sm': period === p,
+                    'text-muted-foreground hover:text-foreground': period !== p,
                   })}
                 >
-                  {fmtLabel(r.fiscal_date, period)}
+                  {p === 'annual' ? 'Annual' : 'Quarterly'}
                 </button>
               ))}
             </div>
+
+            {/* Period picker */}
+            {rows.length > 1 && !isPlanRestricted && (
+              <div className="flex items-center gap-0.5 rounded-lg border border-border bg-muted/50 p-0.5">
+                {rows.map((r, i) => (
+                  <button
+                    key={r.fiscal_date}
+                    onClick={() => setPeriodIdx(i)}
+                    className={cn('rounded-md px-2.5 py-1 text-xs font-medium transition-all', {
+                      'bg-background text-foreground shadow-sm': periodIdx === i,
+                      'text-muted-foreground hover:text-foreground': periodIdx !== i,
+                    })}
+                  >
+                    {fmtLabel(r.fiscal_date, period)}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ── Chart area ── */}
+        <div ref={containerRef} className="px-4 py-5">
+          {isLoading && (
+            <Skeleton className="w-full rounded-xl" style={{ height: CHART_H }} />
+          )}
+
+          {isPlanRestricted && (
+            <div
+              className="flex flex-col items-center justify-center gap-3 rounded-xl border border-border/40 bg-muted/20 text-sm"
+              style={{ height: CHART_H }}
+            >
+              <Lock className="h-6 w-6 text-muted-foreground" />
+              <p className="text-muted-foreground text-center max-w-xs">
+                {period === 'quarterly' ? 'Quarterly' : 'Annual'} income statement data requires a higher plan.
+                <br />
+                <span className="text-xs opacity-70">Try switching to Annual above.</span>
+              </p>
+            </div>
+          )}
+
+          {noData && (
+            <div
+              className="flex items-center justify-center rounded-xl border border-border/40 bg-muted/20 text-sm text-muted-foreground"
+              style={{ height: CHART_H }}
+            >
+              Financial flow data not available for this period
+            </div>
+          )}
+
+          {!isLoading && !noData && !isPlanRestricted && graph && chartWidth > 0 && (
+            <SankeyChart
+              graph={graph}
+              width={chartWidth}
+              revenue={revenue}
+              isDark={isDark}
+              ticker={ticker}
+              onTip={setTip}
+            />
           )}
         </div>
-      </div>
 
-      {/* ── Chart area ── */}
-      <div ref={containerRef} className="px-4 py-5">
-        {isLoading && (
-          <Skeleton className="w-full rounded-xl" style={{ height: CHART_H }} />
-        )}
-
-        {!isLoading && noData && (
-          <div
-            className="flex items-center justify-center rounded-xl border border-border/40 bg-muted/20 text-sm text-muted-foreground"
-            style={{ height: CHART_H }}
-          >
-            Financial flow data not available for this period
+        {/* ── Node colour legend ── */}
+        {!isLoading && !noData && !isPlanRestricted && (
+          <div className="flex flex-wrap gap-x-4 gap-y-1.5 px-6 pb-5 text-xs text-muted-foreground">
+            {Object.entries(NODE_PALETTE)
+              .filter(([id]) => graph?.nodes.some(n => n.id === id))
+              .map(([id, colors]) => (
+                <span key={id} className="flex items-center gap-1.5">
+                  <span
+                    className="h-2.5 w-2.5 rounded-sm shrink-0"
+                    style={{ background: colors[isDark ? 'dark' : 'light'] }}
+                  />
+                  {id}
+                </span>
+              ))}
           </div>
         )}
-
-        {!isLoading && !noData && graph && chartWidth > 0 && (
-          <SankeyChart
-            graph={graph}
-            width={chartWidth}
-            revenue={revenue}
-            isDark={isDark}
-            ticker={ticker}
-            onTip={setTip}
-          />
-        )}
       </div>
 
-      {/* ── Node color legend ── */}
-      {!isLoading && !noData && (
-        <div className="flex flex-wrap gap-x-4 gap-y-1.5 px-6 pb-5 text-xs text-muted-foreground">
-          {Object.entries(NODE_PALETTE).map(([id, colors]) => (
-            <span key={id} className="flex items-center gap-1.5">
-              <span
-                className="h-2.5 w-2.5 rounded-sm shrink-0"
-                style={{ background: colors[isDark ? 'dark' : 'light'] }}
-              />
-              {id}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {/* ── Floating tooltip ── */}
+      {/* ── Floating tooltip ──
+          Rendered OUTSIDE the card so backdrop-filter doesn't trap `position:fixed` */}
       {tip && (
         <div
-          className="pointer-events-none fixed z-50 rounded-xl border shadow-2xl px-3 py-2.5 text-xs"
-          style={{
-            left: tip.x + 14,
-            top: tip.y - 12,
-            background: tooltipBg,
-            borderColor: tooltipBorder,
-            minWidth: 156,
-          }}
+          className="pointer-events-none fixed z-[200] rounded-xl border shadow-2xl px-3 py-2.5 text-xs bg-popover border-border"
+          style={{ left: tip.x + 14, top: tip.y - 12, minWidth: 160 }}
         >
           <p className="font-semibold text-foreground mb-1.5">{tip.id}</p>
           <div className="space-y-1">
@@ -470,6 +509,6 @@ export function SankeyCard({ ticker }: { ticker: string }) {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
