@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
-import { useWatchlist, useAddToWatchlist, useRemoveFromWatchlist } from '@/hooks/use-watchlist';
+import { useWatchlist, useWatchlistLists, useWatchlistItems, useAddToWatchlist, useRemoveFromWatchlist } from '@/hooks/use-watchlist';
 import { useWatchlistEnhanced } from '@/hooks/use-watchlist-enhanced';
+import { WatchlistListTabs } from '@/components/watchlist/WatchlistListTabs';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useLivePrices } from '@/hooks/use-live-prices';
 import { WatchlistCard } from '@/components/watchlist/WatchlistCard';
@@ -48,9 +49,24 @@ export default function WatchlistPage() {
     localStorage.setItem('watchlist-view', mode);
   }
 
+  const [activeListId, setActiveListId] = useState<string | null>(null);
+
   const { data: watchlist, isLoading: watchlistLoading } = useWatchlist();
+  const { data: lists, isLoading: listsLoading } = useWatchlistLists();
+  const { data: listItems, isLoading: listItemsLoading } = useWatchlistItems(activeListId);
   const addMutation = useAddToWatchlist();
   const removeMutation = useRemoveFromWatchlist();
+
+  // Auto-select first list once lists load
+  useEffect(() => {
+    if (!activeListId && lists && lists.length > 0) {
+      setActiveListId(lists[0].id);
+    }
+  }, [lists, activeListId]);
+
+  // Items to display: per-list when a list is active, otherwise all
+  const displayItems = activeListId ? (listItems ?? []) : (watchlist ?? []);
+  const displayLoading = activeListId ? listItemsLoading : watchlistLoading;
 
   // Company search for adding stocks
   const { data: searchResults } = useQuery({
@@ -67,31 +83,31 @@ export default function WatchlistPage() {
   });
 
   // Live price stream for all watchlist symbols via WsManager SSE
-  const symbols = (watchlist ?? []).map((w) => w.symbol);
-  const livePrices = useLivePrices(symbols);
-  const { data: enhancedData } = useWatchlistEnhanced(symbols);
+  const allSymbols = (watchlist ?? []).map((w) => w.symbol);
+  const livePrices = useLivePrices(allSymbols);
+  const { data: enhancedData } = useWatchlistEnhanced(allSymbols);
 
-  // Fallback batch fetch (runs once on load, populates prices before WS ticks arrive)
+  // Fallback batch fetch for all symbols (runs once on load, populates prices before WS ticks arrive)
   const { data: seedQuotes } = useQuery({
-    queryKey: ['watchlist-seed-quotes', symbols.join(',')],
+    queryKey: ['watchlist-seed-quotes', allSymbols.join(',')],
     queryFn: async (): Promise<QuoteMap> => {
-      if (symbols.length === 0) return {};
+      if (allSymbols.length === 0) return {};
       const res = await fetch('/api/quotes/batch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ symbols }),
+        body: JSON.stringify({ symbols: allSymbols }),
       });
       if (!res.ok) return {};
       const data = await res.json();
       return data.quotes ?? {};
     },
-    enabled: symbols.length > 0,
+    enabled: allSymbols.length > 0,
     staleTime: 5 * 60_000,
     refetchInterval: false,
   });
 
   const handleAdd = (result: SearchResult) => {
-    addMutation.mutate({ symbol: result.ticker, company_name: result.name });
+    addMutation.mutate({ symbol: result.ticker, company_name: result.name, listId: activeListId ?? undefined });
     setSearchQuery('');
     setShowDropdown(false);
   };
@@ -132,8 +148,8 @@ export default function WatchlistPage() {
               )}
             </div>
             <p className="text-sm text-muted-foreground">
-              {(watchlist?.length ?? 0) > 0
-                ? `${watchlist!.length} stock${watchlist!.length === 1 ? '' : 's'} tracked`
+              {(displayItems.length) > 0
+                ? `${displayItems.length} stock${displayItems.length === 1 ? '' : 's'} tracked`
                 : 'Add stocks you want to keep an eye on.'}
             </p>
           </div>
@@ -204,14 +220,24 @@ export default function WatchlistPage() {
           </div>
         </div>
 
+        {/* List tabs */}
+        {!listsLoading && lists && lists.length > 0 && (
+          <WatchlistListTabs
+            lists={lists}
+            activeListId={activeListId}
+            onSelect={setActiveListId}
+            onListCreated={(id) => setActiveListId(id)}
+          />
+        )}
+
         {/* Content */}
-        {watchlistLoading ? (
+        {displayLoading ? (
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => (
               <Skeleton key={i} className="h-28 rounded-xl" />
             ))}
           </div>
-        ) : (watchlist?.length ?? 0) === 0 ? (
+        ) : displayItems.length === 0 ? (
           <div className="flex flex-col items-center gap-6 py-20 text-center">
             <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center">
               <Bookmark className="h-8 w-8 text-muted-foreground/50" />
@@ -255,9 +281,9 @@ export default function WatchlistPage() {
           </div>
         ) : viewMode === 'table' ? (
           <WatchlistTable
-            items={watchlist!}
+            items={displayItems}
             quotes={Object.fromEntries(
-              watchlist!.map((item) => {
+              displayItems.map((item) => {
                 const live = livePrices.get(item.symbol);
                 const seed = seedQuotes?.[item.symbol];
                 return [item.symbol, live
@@ -271,7 +297,7 @@ export default function WatchlistPage() {
           />
         ) : (
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {watchlist!.map((item) => {
+            {displayItems.map((item) => {
               const live = livePrices.get(item.symbol);
               const seed = seedQuotes?.[item.symbol];
               const quote = live
