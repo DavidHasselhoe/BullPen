@@ -18,40 +18,36 @@ function makeSupabase(cookieStore: Awaited<ReturnType<typeof cookies>>) {
   );
 }
 
-/** GET /api/watchlist — list current user's watchlist */
-async function getHandler(
-  _req: NextRequest,
-  _ctx: unknown,
-  session: { userId: string }
-): Promise<NextResponse> {
-  const cookieStore = await cookies();
-  const supabase = makeSupabase(cookieStore);
-
-  const { data, error } = await supabase
-    .from('user_watchlist')
-    .select('id, symbol, company_name, added_at')
-    .eq('user_id', session.userId)
-    .order('added_at', { ascending: false });
-
-  if (error) {
-    return addSecurityHeaders(
-      NextResponse.json({ success: false, error: 'Failed to fetch watchlist' }, { status: 500 })
-    );
-  }
-
-  return addSecurityHeaders(NextResponse.json({ success: true, watchlist: data ?? [] }));
+interface RouteContext {
+  params: Promise<{ listId: string }>;
 }
 
-/** POST /api/watchlist — add a symbol */
+/** Verify list belongs to user. Returns the list row or null. */
+async function verifyListOwnership(
+  supabase: ReturnType<typeof makeSupabase>,
+  listId: string,
+  userId: string
+) {
+  const { data } = await supabase
+    .from('watchlist_lists')
+    .select('id')
+    .eq('id', listId)
+    .eq('user_id', userId)
+    .maybeSingle();
+  return data;
+}
+
+/** POST /api/watchlist/lists/[listId]/items — add symbol to specific list */
 async function postHandler(
   req: NextRequest,
-  _ctx: unknown,
+  ctx: RouteContext,
   session: { userId: string }
 ): Promise<NextResponse> {
+  const { listId } = await ctx.params;
   const body = await req.json().catch(() => null);
+
   const symbol = (body?.symbol as string | undefined)?.toUpperCase().trim();
   const company_name = (body?.company_name as string | undefined)?.trim() || symbol;
-  const list_id = (body?.list_id as string | undefined) ?? null;
 
   if (!symbol || symbol.length > 12 || !/^[A-Z0-9.^-]+$/.test(symbol)) {
     return addSecurityHeaders(
@@ -62,25 +58,18 @@ async function postHandler(
   const cookieStore = await cookies();
   const supabase = makeSupabase(cookieStore);
 
-  // If a list_id was provided, verify it belongs to the calling user
-  if (list_id) {
-    const { data: listRow } = await supabase
-      .from('watchlist_lists')
-      .select('id')
-      .eq('id', list_id)
-      .eq('user_id', session.userId)
-      .maybeSingle();
-    if (!listRow) {
-      return addSecurityHeaders(
-        NextResponse.json({ success: false, error: 'List not found' }, { status: 404 })
-      );
-    }
+  const list = await verifyListOwnership(supabase, listId, session.userId);
+  if (!list) {
+    return addSecurityHeaders(
+      NextResponse.json({ success: false, error: 'List not found' }, { status: 404 })
+    );
   }
 
+  // Upsert with conflict on (user_id, symbol); update list_id to point to the new list
   const { data, error } = await supabase
     .from('user_watchlist')
     .upsert(
-      { user_id: session.userId, symbol, company_name, ...(list_id ? { list_id } : {}) },
+      { user_id: session.userId, symbol, company_name, list_id: listId },
       { onConflict: 'user_id,symbol', ignoreDuplicates: false }
     )
     .select()
@@ -88,52 +77,53 @@ async function postHandler(
 
   if (error) {
     return addSecurityHeaders(
-      NextResponse.json({ success: false, error: 'Failed to add to watchlist' }, { status: 500 })
+      NextResponse.json({ success: false, error: 'Failed to add item to list' }, { status: 500 })
     );
   }
 
-  return addSecurityHeaders(NextResponse.json({ success: true, item: data }));
+  return addSecurityHeaders(NextResponse.json({ success: true, item: data }, { status: 201 }));
 }
 
-/** DELETE /api/watchlist?symbol=AAPL[&list_id=uuid] — remove a symbol */
+/** DELETE /api/watchlist/lists/[listId]/items?symbol=AAPL — remove symbol from specific list */
 async function deleteHandler(
   req: NextRequest,
-  _ctx: unknown,
+  ctx: RouteContext,
   session: { userId: string }
 ): Promise<NextResponse> {
+  const { listId } = await ctx.params;
   const symbol = req.nextUrl.searchParams.get('symbol')?.toUpperCase().trim();
-  const list_id = req.nextUrl.searchParams.get('list_id') ?? null;
 
   if (!symbol) {
     return addSecurityHeaders(
-      NextResponse.json({ success: false, error: 'symbol is required' }, { status: 400 })
+      NextResponse.json({ success: false, error: 'symbol query param is required' }, { status: 400 })
     );
   }
 
   const cookieStore = await cookies();
   const supabase = makeSupabase(cookieStore);
 
-  let query = supabase
+  const list = await verifyListOwnership(supabase, listId, session.userId);
+  if (!list) {
+    return addSecurityHeaders(
+      NextResponse.json({ success: false, error: 'List not found' }, { status: 404 })
+    );
+  }
+
+  const { error } = await supabase
     .from('user_watchlist')
     .delete()
     .eq('user_id', session.userId)
-    .eq('symbol', symbol);
-
-  if (list_id) {
-    query = query.eq('list_id', list_id);
-  }
-
-  const { error } = await query;
+    .eq('symbol', symbol)
+    .eq('list_id', listId);
 
   if (error) {
     return addSecurityHeaders(
-      NextResponse.json({ success: false, error: 'Failed to remove from watchlist' }, { status: 500 })
+      NextResponse.json({ success: false, error: 'Failed to remove item from list' }, { status: 500 })
     );
   }
 
   return addSecurityHeaders(NextResponse.json({ success: true }));
 }
 
-export const GET = withAuth(getHandler);
 export const POST = withAuth(postHandler);
 export const DELETE = withAuth(deleteHandler);
