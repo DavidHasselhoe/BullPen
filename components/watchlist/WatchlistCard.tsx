@@ -11,25 +11,68 @@ interface Quote {
   changePercent: number;
 }
 
+interface HealthScore {
+  score: number;
+  grade: string;
+  label: string;
+}
+
 interface WatchlistCardProps {
   symbol: string;
   company_name: string;
   quote?: Quote | null;
   onRemove: (symbol: string) => void;
   isRemoving?: boolean;
+  healthScore?: HealthScore | null;
+  nextEarningsDate?: string | null;
+  daysToEarnings?: number | null;
+  thesisSentiment?: 'bull' | 'bear' | 'neutral' | null;
 }
 
 function formatPrice(p: number) {
   return p.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-export function WatchlistCard({ symbol, company_name, quote, onRemove, isRemoving }: WatchlistCardProps) {
+function gradeColor(grade: string) {
+  if (grade === 'A') return 'bg-emerald-500/15 text-emerald-500';
+  if (grade === 'B') return 'bg-green-500/15 text-green-600';
+  if (grade === 'C') return 'bg-amber-500/15 text-amber-500';
+  return 'bg-red-500/15 text-red-500';
+}
+
+function thesisColor(sentiment: 'bull' | 'bear' | 'neutral') {
+  if (sentiment === 'bull') return 'bg-emerald-500';
+  if (sentiment === 'bear') return 'bg-red-500';
+  return 'bg-muted-foreground';
+}
+
+export function WatchlistCard({
+  symbol,
+  company_name,
+  quote,
+  onRemove,
+  isRemoving,
+  healthScore,
+  nextEarningsDate: _nextEarningsDate,
+  daysToEarnings,
+  thesisSentiment,
+}: WatchlistCardProps) {
   const isUp = (quote?.changePercent ?? 0) > 0;
   const isDown = (quote?.changePercent ?? 0) < 0;
   const Icon = isUp ? TrendingUp : isDown ? TrendingDown : Minus;
 
+  const showEarnings = daysToEarnings !== null && daysToEarnings !== undefined && daysToEarnings <= 14;
+
   return (
     <div className="group relative rounded-xl border border-border bg-card transition-all duration-200 hover:border-primary/30 hover:shadow-md">
+      {/* Thesis dot */}
+      {thesisSentiment && (
+        <span
+          className={cn('absolute left-2 top-2 z-10 h-1.5 w-1.5 rounded-full', thesisColor(thesisSentiment))}
+          title={`Thesis: ${thesisSentiment}`}
+        />
+      )}
+
       {/* Remove button */}
       <button
         onClick={(e) => { e.preventDefault(); onRemove(symbol); }}
@@ -73,6 +116,26 @@ export function WatchlistCard({ symbol, company_name, quote, onRemove, isRemovin
         ) : (
           <div className="flex items-end justify-between">
             <span className="text-sm text-muted-foreground">Loading...</span>
+          </div>
+        )}
+
+        {/* Bottom row: health score + earnings countdown */}
+        {(healthScore || showEarnings) && (
+          <div className="flex items-center justify-between mt-0.5">
+            {healthScore ? (
+              <span className={cn('text-xs font-semibold px-1.5 py-0.5 rounded', gradeColor(healthScore.grade))}>
+                {healthScore.grade}
+              </span>
+            ) : <span />}
+
+            {showEarnings && daysToEarnings !== null && daysToEarnings !== undefined && (
+              <span className={cn(
+                'text-xs font-medium',
+                daysToEarnings === 0 ? 'text-red-500' : 'text-amber-500'
+              )}>
+                {daysToEarnings === 0 ? 'Earnings today' : `Earnings in ${daysToEarnings}d`}
+              </span>
+            )}
           </div>
         )}
       </Link>

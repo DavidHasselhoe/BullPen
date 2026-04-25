@@ -4,13 +4,15 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
 import { useWatchlist, useAddToWatchlist, useRemoveFromWatchlist } from '@/hooks/use-watchlist';
+import { useWatchlistEnhanced } from '@/hooks/use-watchlist-enhanced';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useLivePrices } from '@/hooks/use-live-prices';
 import { WatchlistCard } from '@/components/watchlist/WatchlistCard';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
-import { Bookmark, Search, Plus, Lock, Radio } from 'lucide-react';
+import Link from 'next/link';
+import { Bookmark, Search, Plus, Lock, Radio, TrendingUp } from 'lucide-react';
 import { fetchWithTimeout } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 
@@ -53,6 +55,7 @@ export default function WatchlistPage() {
   // Live price stream for all watchlist symbols via WsManager SSE
   const symbols = (watchlist ?? []).map((w) => w.symbol);
   const livePrices = useLivePrices(symbols);
+  const { data: enhancedData } = useWatchlistEnhanced(symbols);
 
   // Fallback batch fetch (runs once on load, populates prices before WS ticks arrive)
   const { data: seedQuotes } = useQuery({
@@ -168,16 +171,46 @@ export default function WatchlistPage() {
             ))}
           </div>
         ) : (watchlist?.length ?? 0) === 0 ? (
-          <div className="flex flex-col items-center gap-4 py-24 text-center">
+          <div className="flex flex-col items-center gap-6 py-20 text-center">
             <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center">
               <Bookmark className="h-8 w-8 text-muted-foreground/50" />
             </div>
             <div>
               <p className="text-base font-medium text-foreground">Nothing here yet</p>
               <p className="text-sm text-muted-foreground mt-1">
-                Use the search above to add stocks to your watchlist.
+                Search above to add any stock, or get started with a few popular ones:
               </p>
             </div>
+            {/* Quick-add suggestions */}
+            <div className="flex flex-wrap justify-center gap-2">
+              {[
+                { ticker: 'AAPL', name: 'Apple Inc.' },
+                { ticker: 'MSFT', name: 'Microsoft Corp.' },
+                { ticker: 'TSLA', name: 'Tesla Inc.' },
+                { ticker: 'NVDA', name: 'NVIDIA Corp.' },
+              ].map((s) => (
+                <button
+                  key={s.ticker}
+                  onMouseDown={() => !alreadyWatched.has(s.ticker) && handleAdd(s)}
+                  disabled={alreadyWatched.has(s.ticker) || addMutation.isPending}
+                  className={cn(
+                    'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
+                    'border-border bg-muted/50 hover:border-primary/50 hover:bg-primary/5 hover:text-primary',
+                    'disabled:opacity-40 disabled:cursor-not-allowed'
+                  )}
+                >
+                  <Plus className="h-3 w-3" />
+                  {s.ticker}
+                </button>
+              ))}
+            </div>
+            <Link
+              href="/"
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
+            >
+              <TrendingUp className="h-3.5 w-3.5" />
+              Browse Hot Picks on Discover
+            </Link>
           </div>
         ) : (
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -188,6 +221,7 @@ export default function WatchlistPage() {
               const quote = live
                 ? { price: live.price, change: live.change, changePercent: live.changePercent }
                 : seed ?? null;
+              const enhanced = enhancedData?.[item.symbol];
               return (
                 <WatchlistCard
                   key={item.symbol}
@@ -196,6 +230,10 @@ export default function WatchlistPage() {
                   quote={quote}
                   onRemove={(sym) => removeMutation.mutate(sym)}
                   isRemoving={removeMutation.isPending && removeMutation.variables === item.symbol}
+                  healthScore={enhanced?.healthScore}
+                  nextEarningsDate={enhanced?.nextEarningsDate}
+                  daysToEarnings={enhanced?.daysToEarnings}
+                  thesisSentiment={enhanced?.thesisSentiment}
                 />
               );
             })}
