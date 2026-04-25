@@ -311,6 +311,13 @@ export default function StockDetailPage() {
           </AnimatedContent>
         </StockSectionBoundary>
 
+        {/* Revenue Flow (Sankey) */}
+        <StockSectionBoundary>
+          <AnimatedContent reverse={true} delay={0.22}>
+            <SankeyCard ticker={ticker} />
+          </AnimatedContent>
+        </StockSectionBoundary>
+
         {/* Insider Transactions (TwelveData — Venture plan) */}
         <StockSectionBoundary>
           <AnimatedContent reverse={true} delay={0.24}>
