@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, MessageSquare, Bookmark, BookmarkCheck } from 'lucide-react';
+import { ArrowLeft, MessageSquare, SearchX } from 'lucide-react';
 import { ExperienceLevelToggle } from '@/components/ui/ExperienceLevelToggle';
 import { ExperienceOnboardingBanner } from '@/components/stock/ExperienceOnboardingBanner';
 import { useRecentlyViewed } from '@/hooks/use-recently-viewed';
@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import AnimatedContent from '@/components/ui/AnimatedContent';
 import { useBackground } from '@/hooks/use-background';
-import { useIsWatched, useAddToWatchlist, useRemoveFromWatchlist } from '@/hooks/use-watchlist';
+import { AddToListPicker } from '@/components/watchlist/AddToListPicker';
 import { ThesisSection } from '@/components/social/ThesisSection';
 import { useStockSnapshot } from '@/hooks/use-stock-snapshot';
 import dynamic from 'next/dynamic';
@@ -25,6 +25,7 @@ import type { Company } from '@/lib/types/database';
 import type { SignalValue } from '@/lib/finance/health-score';
 import { HOT_PICKS_QUERY_KEY } from '@/lib/discover/hot-picks-query';
 import { postStockVisit } from '@/lib/discover/post-stock-visit';
+import { StockSectionBoundary } from '@/components/stock/StockSectionBoundary';
 
 const StockPricePanel = dynamic(
   () => import('@/components/stock/StockPricePanel').then((m) => ({ default: m.StockPricePanel })),
@@ -61,6 +62,11 @@ const HealthScoreCard = dynamic(
   { ssr: false }
 );
 
+const SankeyCard = dynamic(
+  () => import('@/components/stock/SankeyCard').then((m) => ({ default: m.SankeyCard })),
+  { ssr: false }
+);
+
 interface CompanyResponse {
   success: boolean;
   company?: Company;
@@ -78,10 +84,6 @@ export default function StockDetailPage() {
 
   // Signals flow: HealthScoreCard → signals state → StatisticsGrid (no extra fetch needed)
   const [metricSignals, setMetricSignals] = useState<Record<string, SignalValue> | undefined>(undefined);
-
-  const isWatched = useIsWatched(ticker);
-  const addToWatchlist = useAddToWatchlist();
-  const removeFromWatchlist = useRemoveFromWatchlist();
 
   // Batch-fetch quote + statistics + earnings in one TwelveData /batch call,
   // then seed each component's individual query cache so they skip extra requests.
@@ -118,7 +120,7 @@ export default function StockDetailPage() {
   });
 
   // Fetch TwelveData profile for the short/common company name
-  const { data: profileData } = useQuery<{ success: boolean; profile?: { name: string } }>({
+  const { data: profileData, isLoading: profileLoading } = useQuery<{ success: boolean; profile?: { name: string } }>({
     queryKey: ['company-profile', ticker],
     queryFn: async () => {
       const res = await fetch(`/api/stock/${ticker}/company-profile`);
@@ -153,6 +155,45 @@ export default function StockDetailPage() {
       addRecentlyViewed(company.ticker, displayName, company.logo_url);
     }
   }, [company?.ticker, displayName, company?.logo_url, addRecentlyViewed]);
+
+  // Both data sources have settled and neither knows this ticker → show 404
+  const isNotFound =
+    !companyLoading && !profileLoading &&
+    company === null &&
+    profileData !== undefined &&
+    !profileData?.profile;
+
+  if (isNotFound) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+          <div className="mb-6">
+            <button
+              onClick={() => router.back()}
+              className="flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back
+            </button>
+          </div>
+          <div className="flex flex-col items-center justify-center py-24 text-center">
+            <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-muted">
+              <SearchX className="h-10 w-10 text-muted-foreground/40" />
+            </div>
+            <h1 className="text-2xl font-semibold mb-2">
+              &ldquo;{ticker}&rdquo; not found
+            </h1>
+            <p className="text-sm text-muted-foreground max-w-sm mt-1">
+              We couldn&apos;t find a stock with that symbol. Double-check the ticker or search for a company name.
+            </p>
+            <Button className="mt-6" onClick={() => router.push('/')}>
+              Back to Dashboard
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`min-h-screen ${hasAnimatedBackground ? '' : 'bg-background'}`}>
@@ -219,26 +260,7 @@ export default function StockDetailPage() {
                   </div>
                   <div className="flex shrink-0 items-center gap-2 flex-wrap justify-end">
                     <ExperienceLevelToggle />
-                    <Button
-                      variant={isWatched ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => {
-                        if (!ticker) return;
-                        if (isWatched) {
-                          removeFromWatchlist.mutate(ticker);
-                        } else {
-                          addToWatchlist.mutate({ symbol: ticker, company_name: displayName });
-                        }
-                      }}
-                      disabled={addToWatchlist.isPending || removeFromWatchlist.isPending}
-                      className="gap-2"
-                    >
-                      {isWatched ? (
-                        <><BookmarkCheck className="h-4 w-4" />Watching</>
-                      ) : (
-                        <><Bookmark className="h-4 w-4" />Watch</>
-                      )}
-                    </Button>
+                    <AddToListPicker symbol={ticker} companyName={displayName} />
                     <Button variant="outline" size="sm" onClick={() => openAIPanel()} className="gap-2">
                       <MessageSquare className="h-4 w-4" />
                       Ask AI
@@ -262,52 +284,68 @@ export default function StockDetailPage() {
         </AnimatedContent>
 
         {/* Company Profile (TwelveData: description, executives, facts) */}
-        <AnimatedContent reverse={true} delay={0.08}>
-          <CompanyProfileCard ticker={ticker} />
-        </AnimatedContent>
+        <StockSectionBoundary>
+          <AnimatedContent reverse={true} delay={0.08}>
+            <CompanyProfileCard ticker={ticker} />
+          </AnimatedContent>
+        </StockSectionBoundary>
 
         {/* Financial Health Score — signals are passed down to StatisticsGrid */}
-        <AnimatedContent reverse={true} delay={0.12}>
-          <HealthScoreCard ticker={ticker} onSignalsReady={setMetricSignals} />
-        </AnimatedContent>
+        <StockSectionBoundary>
+          <AnimatedContent reverse={true} delay={0.12}>
+            <HealthScoreCard ticker={ticker} onSignalsReady={setMetricSignals} />
+          </AnimatedContent>
+        </StockSectionBoundary>
 
         {/* Statistics (TwelveData) — receives signals from HealthScoreCard */}
-        <AnimatedContent reverse={true} delay={0.15}>
-          <StatisticsGrid ticker={ticker} signals={metricSignals} />
-        </AnimatedContent>
+        <StockSectionBoundary>
+          <AnimatedContent reverse={true} delay={0.15}>
+            <StatisticsGrid ticker={ticker} signals={metricSignals} />
+          </AnimatedContent>
+        </StockSectionBoundary>
 
         {/* Financials (TwelveData) */}
-        <AnimatedContent reverse={true} delay={0.2}>
-          <FinancialsSection ticker={ticker} />
-        </AnimatedContent>
+        <StockSectionBoundary>
+          <AnimatedContent reverse={true} delay={0.2}>
+            <FinancialsSection ticker={ticker} />
+          </AnimatedContent>
+        </StockSectionBoundary>
 
         {/* Insider Transactions (TwelveData — Venture plan) */}
-        <AnimatedContent reverse={true} delay={0.24}>
-          <InsiderTransactionsCard ticker={ticker} />
-        </AnimatedContent>
+        <StockSectionBoundary>
+          <AnimatedContent reverse={true} delay={0.24}>
+            <InsiderTransactionsCard ticker={ticker} />
+          </AnimatedContent>
+        </StockSectionBoundary>
 
         {/* Earnings calendar */}
         <div id="earnings" className="mb-8 scroll-mt-6">
-          <AnimatedContent reverse={true} delay={0.15}>
-            <EarningsCalendar ticker={ticker} />
-          </AnimatedContent>
+          <StockSectionBoundary>
+            <AnimatedContent reverse={true} delay={0.15}>
+              <EarningsCalendar ticker={ticker} />
+            </AnimatedContent>
+          </StockSectionBoundary>
         </div>
 
         {/* Press Releases (TwelveData) */}
-        <AnimatedContent reverse={true} delay={0.22}>
-          <div className="mb-8">
-            <PressReleasesCard ticker={ticker} />
-          </div>
-        </AnimatedContent>
+        <StockSectionBoundary>
+          <AnimatedContent reverse={true} delay={0.22}>
+            <div className="mb-8">
+              <PressReleasesCard ticker={ticker} />
+            </div>
+          </AnimatedContent>
+        </StockSectionBoundary>
 
         {/* Community theses */}
-        <AnimatedContent reverse={true} delay={0.3}>
-          <Card>
-            <CardContent className="pt-6">
-              <ThesisSection symbol={ticker} />
-            </CardContent>
-          </Card>
-        </AnimatedContent>
+        <StockSectionBoundary>
+          <AnimatedContent reverse={true} delay={0.3}>
+            <Card>
+              <CardContent className="pt-6">
+                <ThesisSection symbol={ticker} />
+              </CardContent>
+            </Card>
+          </AnimatedContent>
+        </StockSectionBoundary>
 
       </div>
     </div>
