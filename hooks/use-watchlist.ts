@@ -8,6 +8,16 @@ export interface WatchlistItem {
   symbol: string;
   company_name: string;
   added_at: string;
+  list_id?: string | null;
+}
+
+export interface WatchlistList {
+  id: string;
+  name: string;
+  color: string | null;
+  position: number;
+  created_at: string;
+  item_count: number;
 }
 
 /** Fetch the current user's watchlist */
@@ -33,13 +43,14 @@ export function useIsWatched(symbol: string) {
   return (data ?? []).some((item) => item.symbol === symbol.toUpperCase());
 }
 
-/** Add a symbol to the watchlist */
+/** Add a symbol to the watchlist (optionally scoped to a specific list) */
 export function useAddToWatchlist() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ symbol, company_name }: { symbol: string; company_name: string }) => {
-      const res = await fetch('/api/watchlist', {
+    mutationFn: async ({ symbol, company_name, listId }: { symbol: string; company_name: string; listId?: string }) => {
+      const url = listId ? `/api/watchlist/lists/${listId}/items` : '/api/watchlist';
+      const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ symbol, company_name }),
@@ -86,6 +97,97 @@ export function useRemoveFromWatchlist() {
       queryClient.setQueryData(['watchlist'], ctx?.previous);
     },
     onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['watchlist'] });
+    },
+  });
+}
+
+/** Fetch all watchlist lists for the current user */
+export function useWatchlistLists() {
+  const { isAuthenticated } = useAuth();
+
+  return useQuery({
+    queryKey: ['watchlist-lists'],
+    queryFn: async (): Promise<WatchlistList[]> => {
+      const res = await fetch('/api/watchlist/lists');
+      if (!res.ok) throw new Error('Failed to fetch watchlist lists');
+      const data = await res.json();
+      return data.lists ?? [];
+    },
+    enabled: isAuthenticated,
+    staleTime: 60 * 1000,
+  });
+}
+
+/** Fetch items in a specific watchlist list */
+export function useWatchlistItems(listId: string | null) {
+  const { isAuthenticated } = useAuth();
+
+  return useQuery({
+    queryKey: ['watchlist-items', listId],
+    queryFn: async (): Promise<WatchlistItem[]> => {
+      const res = await fetch(`/api/watchlist/lists/${listId}`);
+      if (!res.ok) throw new Error('Failed to fetch list items');
+      const data = await res.json();
+      return data.items ?? [];
+    },
+    enabled: isAuthenticated && !!listId,
+    staleTime: 60 * 1000,
+  });
+}
+
+/** Create a new watchlist list */
+export function useCreateWatchlistList() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ name, color }: { name: string; color?: string | null }) => {
+      const res = await fetch('/api/watchlist/lists', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, color }),
+      });
+      const data = await res.json();
+      if (!res.ok) return { success: false, error: data.error ?? 'Failed to create list', status: res.status };
+      return { success: true, list: data.list };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['watchlist-lists'] });
+    },
+  });
+}
+
+/** Rename or recolor a watchlist list */
+export function useUpdateWatchlistList() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ listId, name, color }: { listId: string; name?: string; color?: string | null }) => {
+      const res = await fetch(`/api/watchlist/lists/${listId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, color }),
+      });
+      if (!res.ok) throw new Error('Failed to update list');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['watchlist-lists'] });
+    },
+  });
+}
+
+/** Delete a watchlist list (cascades items) */
+export function useDeleteWatchlistList() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (listId: string) => {
+      const res = await fetch(`/api/watchlist/lists/${listId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete list');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['watchlist-lists'] });
       queryClient.invalidateQueries({ queryKey: ['watchlist'] });
     },
   });
