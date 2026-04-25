@@ -265,7 +265,7 @@ function SankeyChart({ graph, width, revenue, isDark, ticker, onTip }: SankeyCha
           return (
             <g
               key={node.id as string}
-              onMouseEnter={(e) => onTip({
+              onMouseMove={(e) => onTip({
                 x: e.clientX, y: e.clientY,
                 id: node.id as string,
                 value: val,
@@ -494,7 +494,7 @@ export function SankeyCard({ ticker }: { ticker: string }) {
       {tip && (
         <div
           className="pointer-events-none fixed z-[200] rounded-xl border shadow-2xl px-3 py-2.5 text-xs bg-popover border-border"
-          style={{ left: tip.x + 14, top: tip.y - 12, minWidth: 160 }}
+          style={{ left: tip.x + 10, top: tip.y - 40, minWidth: 160 }}
         >
           <p className="font-semibold text-foreground mb-1.5">{tip.id}</p>
           <div className="space-y-1">
