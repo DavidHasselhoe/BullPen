@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
 import { useWatchlist, useAddToWatchlist, useRemoveFromWatchlist } from '@/hooks/use-watchlist';
@@ -8,13 +8,16 @@ import { useWatchlistEnhanced } from '@/hooks/use-watchlist-enhanced';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useLivePrices } from '@/hooks/use-live-prices';
 import { WatchlistCard } from '@/components/watchlist/WatchlistCard';
+import { WatchlistTable } from '@/components/watchlist/WatchlistTable';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 import Link from 'next/link';
-import { Bookmark, Search, Plus, Lock, Radio, TrendingUp } from 'lucide-react';
+import { Bookmark, Search, Plus, Lock, Radio, TrendingUp, LayoutGrid, List } from 'lucide-react';
 import { fetchWithTimeout } from '@/lib/utils';
 import { cn } from '@/lib/utils';
+
+type ViewMode = 'grid' | 'table';
 
 interface SearchResult {
   ticker: string;
@@ -32,7 +35,18 @@ export default function WatchlistPage() {
   const { isAuthenticated } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const debouncedQuery = useDebounce(searchQuery, 280);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('watchlist-view') as ViewMode | null;
+    if (saved === 'grid' || saved === 'table') setViewMode(saved);
+  }, []);
+
+  function switchView(mode: ViewMode) {
+    setViewMode(mode);
+    localStorage.setItem('watchlist-view', mode);
+  }
 
   const { data: watchlist, isLoading: watchlistLoading } = useWatchlist();
   const addMutation = useAddToWatchlist();
@@ -124,6 +138,32 @@ export default function WatchlistPage() {
             </p>
           </div>
 
+          {/* Toolbar: view toggle + search */}
+          <div className="flex items-center gap-2">
+            {/* View toggle */}
+            <div className="flex rounded-lg border border-border overflow-hidden">
+              <button
+                onClick={() => switchView('grid')}
+                className={cn(
+                  'p-2 transition-colors',
+                  viewMode === 'grid' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'
+                )}
+                aria-label="Grid view"
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => switchView('table')}
+                className={cn(
+                  'p-2 transition-colors',
+                  viewMode === 'table' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'
+                )}
+                aria-label="Table view"
+              >
+                <List className="h-4 w-4" />
+              </button>
+            </div>
+
           {/* Search / Add */}
           <div className="relative w-72">
             <div className="relative">
@@ -161,9 +201,10 @@ export default function WatchlistPage() {
               </div>
             )}
           </div>
+          </div>
         </div>
 
-        {/* Grid */}
+        {/* Content */}
         {watchlistLoading ? (
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => (
@@ -212,10 +253,25 @@ export default function WatchlistPage() {
               Browse Hot Picks on Discover
             </Link>
           </div>
+        ) : viewMode === 'table' ? (
+          <WatchlistTable
+            items={watchlist!}
+            quotes={Object.fromEntries(
+              watchlist!.map((item) => {
+                const live = livePrices.get(item.symbol);
+                const seed = seedQuotes?.[item.symbol];
+                return [item.symbol, live
+                  ? { price: live.price, change: live.change, changePercent: live.changePercent }
+                  : seed ?? null];
+              })
+            )}
+            enhancedData={enhancedData}
+            onRemove={(sym) => removeMutation.mutate(sym)}
+            isRemoving={(sym) => removeMutation.isPending && removeMutation.variables === sym}
+          />
         ) : (
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {watchlist!.map((item) => {
-              // Prefer live tick; fall back to seed batch quote
               const live = livePrices.get(item.symbol);
               const seed = seedQuotes?.[item.symbol];
               const quote = live
