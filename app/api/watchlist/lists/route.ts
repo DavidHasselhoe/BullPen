@@ -125,7 +125,7 @@ async function postHandler(
   if (!canCreateWatchlist(count ?? 0, tier)) {
     return addSecurityHeaders(
       NextResponse.json(
-        { success: false, error: 'upgrade_required', limit: MAX_FREE_WATCHLISTS },
+        { error: 'upgrade_required' },
         { status: 403 }
       )
     );
