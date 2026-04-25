@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
-import { createServerClient } from '@/lib/supabase/server';
+import { createServerClient } from '@/lib/supabase/client';
 import { getCached } from '@/lib/cache/market-data-cache';
 import { computeHealthScore } from '@/lib/finance/health-score';
 import type {

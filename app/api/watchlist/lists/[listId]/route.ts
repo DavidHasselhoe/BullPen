@@ -1,30 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
-
-function makeSupabase(cookieStore: Awaited<ReturnType<typeof cookies>>) {
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll: () => cookieStore.getAll(),
-        setAll: (list) => {
-          try { list.forEach(({ name, value, options }) => cookieStore.set(name, value, options)); } catch {}
-        },
-      },
-    }
-  );
-}
+import { createServerClient } from '@/lib/supabase/client';
 
 interface RouteContext {
   params: Promise<{ listId: string }>;
 }
 
+type SupabaseClient = ReturnType<typeof createServerClient>;
+
 /** Verify list belongs to user. Returns the list row or null. */
 async function verifyListOwnership(
-  supabase: ReturnType<typeof makeSupabase>,
+  supabase: SupabaseClient,
   listId: string,
   userId: string
 ) {
@@ -45,8 +31,7 @@ async function getHandler(
 ): Promise<NextResponse> {
   const { listId } = await ctx.params;
 
-  const cookieStore = await cookies();
-  const supabase = makeSupabase(cookieStore);
+  const supabase = createServerClient();
 
   const list = await verifyListOwnership(supabase, listId, session.userId);
   if (!list) {
@@ -104,8 +89,7 @@ async function patchHandler(
     );
   }
 
-  const cookieStore = await cookies();
-  const supabase = makeSupabase(cookieStore);
+  const supabase = createServerClient();
 
   const list = await verifyListOwnership(supabase, listId, session.userId);
   if (!list) {
@@ -143,8 +127,7 @@ async function deleteHandler(
 ): Promise<NextResponse> {
   const { listId } = await ctx.params;
 
-  const cookieStore = await cookies();
-  const supabase = makeSupabase(cookieStore);
+  const supabase = createServerClient();
 
   const list = await verifyListOwnership(supabase, listId, session.userId);
   if (!list) {

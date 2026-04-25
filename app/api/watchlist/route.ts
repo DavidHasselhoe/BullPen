@@ -1,22 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
-
-function makeSupabase(cookieStore: Awaited<ReturnType<typeof cookies>>) {
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll: () => cookieStore.getAll(),
-        setAll: (list) => {
-          try { list.forEach(({ name, value, options }) => cookieStore.set(name, value, options)); } catch {}
-        },
-      },
-    }
-  );
-}
+import { createServerClient } from '@/lib/supabase/client';
 
 /** GET /api/watchlist — list current user's watchlist */
 async function getHandler(
@@ -24,8 +8,7 @@ async function getHandler(
   _ctx: unknown,
   session: { userId: string }
 ): Promise<NextResponse> {
-  const cookieStore = await cookies();
-  const supabase = makeSupabase(cookieStore);
+  const supabase = createServerClient();
 
   const { data, error } = await supabase
     .from('user_watchlist')
@@ -59,8 +42,7 @@ async function postHandler(
     );
   }
 
-  const cookieStore = await cookies();
-  const supabase = makeSupabase(cookieStore);
+  const supabase = createServerClient();
 
   // If a list_id was provided, verify it belongs to the calling user
   if (list_id) {
@@ -110,8 +92,7 @@ async function deleteHandler(
     );
   }
 
-  const cookieStore = await cookies();
-  const supabase = makeSupabase(cookieStore);
+  const supabase = createServerClient();
 
   let query = supabase
     .from('user_watchlist')
