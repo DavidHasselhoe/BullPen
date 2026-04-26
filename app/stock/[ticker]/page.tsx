@@ -67,8 +67,8 @@ const SankeyCard = dynamic(
   { ssr: false }
 );
 
-const CompetitorsCard = dynamic(
-  () => import('@/components/stock/CompetitorsCard').then((m) => ({ default: m.CompetitorsCard })),
+const CompetitorPills = dynamic(
+  () => import('@/components/stock/CompetitorsCard').then((m) => ({ default: m.CompetitorPills })),
   { ssr: false }
 );
 
@@ -260,6 +260,7 @@ export default function StockDetailPage() {
                             </span>
                           )}
                         </div>
+                        <CompetitorPills ticker={ticker} />
                       </div>
                     </div>
                   </div>
@@ -292,13 +293,6 @@ export default function StockDetailPage() {
         <StockSectionBoundary>
           <AnimatedContent reverse={true} delay={0.08}>
             <CompanyProfileCard ticker={ticker} />
-          </AnimatedContent>
-        </StockSectionBoundary>
-
-        {/* Competitors — AI-generated peers, cached 30 days */}
-        <StockSectionBoundary>
-          <AnimatedContent reverse={true} delay={0.10}>
-            <CompetitorsCard ticker={ticker} />
           </AnimatedContent>
         </StockSectionBoundary>
 

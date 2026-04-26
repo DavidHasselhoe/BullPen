@@ -16,7 +16,16 @@ export interface CompetitorEntry {
 const TTL_SECONDS = 30 * 24 * 60 * 60;
 const TICKER_RE   = /^[A-Z0-9]{1,7}$/;
 
+// Correct known rebrands the model may return with stale symbols
+const REBRAND_MAP: Record<string, string> = {
+  FB:   'META',
+  TWTR: 'X',
+  BABA: 'BABA', // stays but included for clarity
+  GOOG: 'GOOGL',
+};
+
 const SYSTEM_PROMPT = `You are a financial data API. Return ONLY a JSON array of exactly 5 ticker symbols for the most relevant publicly-traded competitors to the given company. Rules:
+- Use CURRENT ticker symbols as of 2025 (e.g. META not FB, GOOGL not GOOG)
 - Listed on NYSE or NASDAQ
 - Comparable market scale — no micro-caps for mega-caps
 - Do NOT include the input ticker itself
@@ -55,7 +64,7 @@ async function handler(
 
     const tickers: string[] = (parsed as unknown[])
       .filter((t): t is string => typeof t === 'string')
-      .map((t) => t.trim().toUpperCase())
+      .map((t) => REBRAND_MAP[t.trim().toUpperCase()] ?? t.trim().toUpperCase())
       .filter((t) => TICKER_RE.test(t) && t !== sym)
       .slice(0, 5);
 
