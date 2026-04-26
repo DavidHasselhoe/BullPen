@@ -58,7 +58,7 @@ export function CompetitorsCard({ ticker }: { ticker: string }) {
       <CardHeader className="pb-3">
         <CardTitle className="text-base font-semibold">Competitors</CardTitle>
       </CardHeader>
-      <CardContent className="divide-y divide-border -mx-6 px-0">
+      <CardContent className="divide-y divide-border p-0">
         {competitors.map((c) => {
           const live = livePrices.get(c.ticker);
           const up   = (live?.changePercent ?? 0) > 0;
