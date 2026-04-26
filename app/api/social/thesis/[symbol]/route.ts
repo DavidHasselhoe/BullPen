@@ -15,6 +15,7 @@ export interface Thesis {
   created_at: string;
   updated_at: string;
   is_own: boolean;
+  reply_count: number;
 }
 
 function makeSupabase(cookieStore: Awaited<ReturnType<typeof cookies>>) {
@@ -68,21 +69,28 @@ async function getHandler(
     return addSecurityHeaders(NextResponse.json({ success: true, theses: [] }));
   }
 
-  // Join with user profiles
+  // Join with user profiles + reply counts in parallel
+  const thesisIds = rows.map((r: { id: string }) => r.id);
   const userIds = [...new Set(rows.map((r: { user_id: string }) => r.user_id))];
-  const { data: profileRows } = await supabase
-    .from('users')
-    .select('id, username, full_name, avatar_url')
-    .in('id', userIds);
+
+  const [{ data: profileRows }, { data: replyCounts }] = await Promise.all([
+    supabase.from('users').select('id, username, full_name, avatar_url').in('id', userIds),
+    supabase.from('stock_thesis_replies').select('thesis_id').in('thesis_id', thesisIds),
+  ]);
 
   const profileMap = new Map<string, { username: string | null; full_name: string | null; avatar_url: string | null }>();
   (profileRows ?? []).forEach((p: { id: string; username: string | null; full_name: string | null; avatar_url: string | null }) => {
     profileMap.set(p.id, { username: p.username, full_name: p.full_name, avatar_url: p.avatar_url });
   });
 
+  const replyCountMap = new Map<string, number>();
+  (replyCounts ?? []).forEach((r: { thesis_id: string }) => {
+    replyCountMap.set(r.thesis_id, (replyCountMap.get(r.thesis_id) ?? 0) + 1);
+  });
+
   const theses: Thesis[] = rows.map((r: { id: string; user_id: string; symbol: string; content: string; sentiment: 'bull' | 'bear' | 'neutral'; created_at: string; updated_at: string }) => {
     const p = profileMap.get(r.user_id) ?? { username: null, full_name: null, avatar_url: null };
-    return { ...r, ...p, is_own: r.user_id === session.userId };
+    return { ...r, ...p, is_own: r.user_id === session.userId, reply_count: replyCountMap.get(r.id) ?? 0 };
   });
 
   return addSecurityHeaders(NextResponse.json({ success: true, theses }));

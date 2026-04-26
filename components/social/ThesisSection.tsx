@@ -8,10 +8,10 @@ import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
-import { TrendingUp, TrendingDown, Minus, Trash2, Pencil, Loader2, MessageCircle } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Trash2, Pencil, Loader2, MessageCircle, ChevronDown, ChevronUp, CornerDownRight } from 'lucide-react';
 import type { Thesis } from '@/app/api/social/thesis/[symbol]/route';
+import type { ThesisReply } from '@/app/api/social/thesis/[id]/replies/route';
 
 const SENTIMENTS = [
   { key: 'bull' as const, label: 'Bull', icon: TrendingUp, color: 'text-emerald-500', bg: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400' },
@@ -40,6 +40,177 @@ function timeAgo(dateStr: string): string {
   return `${Math.floor(h / 24)}d ago`;
 }
 
+function UserAvatar({ avatarUrl, displayName, size = 28 }: { avatarUrl: string | null; displayName: string; size?: number }) {
+  const initials = displayName.slice(0, 2).toUpperCase();
+  if (avatarUrl) {
+    return <Image src={avatarUrl} alt={displayName} width={size} height={size} className="rounded-full object-cover" style={{ width: size, height: size }} />;
+  }
+  return (
+    <div className="rounded-full bg-primary/10 flex items-center justify-center shrink-0" style={{ width: size, height: size }}>
+      <span className="font-semibold text-primary" style={{ fontSize: size * 0.36 }}>{initials}</span>
+    </div>
+  );
+}
+
+// ─── Reply thread ─────────────────────────────────────────────────────────────
+
+interface ThesisRepliesProps {
+  thesisId: string;
+  replyCount: number;
+  defaultOpen?: boolean;
+}
+
+function ThesisReplies({ thesisId, replyCount, defaultOpen = false }: ThesisRepliesProps) {
+  const [open, setOpen] = useState(defaultOpen);
+  const [showForm, setShowForm] = useState(defaultOpen);
+  const [content, setContent] = useState('');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+
+  const repliesKey = ['thesis-replies', thesisId];
+
+  const { data: replies, isLoading } = useQuery<ThesisReply[]>({
+    queryKey: repliesKey,
+    queryFn: async () => {
+      const res = await fetch(`/api/social/thesis/${thesisId}/replies`);
+      if (!res.ok) return [];
+      const d = await res.json();
+      return d.replies ?? [];
+    },
+    enabled: open,
+    staleTime: 30_000,
+  });
+
+  const postReply = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/social/thesis/${thesisId}/replies`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: content.trim() }),
+      });
+      if (!res.ok) throw new Error('Failed to post reply');
+    },
+    onSuccess: () => {
+      setContent('');
+      setShowForm(false);
+      queryClient.invalidateQueries({ queryKey: repliesKey });
+      // Bump reply count on parent
+      queryClient.invalidateQueries({ queryKey: ['theses'] });
+    },
+  });
+
+  const handleDelete = async (replyId: string) => {
+    setDeletingId(replyId);
+    try {
+      await fetch(`/api/social/thesis/reply/${replyId}`, { method: 'DELETE' });
+      queryClient.invalidateQueries({ queryKey: repliesKey });
+      queryClient.invalidateQueries({ queryKey: ['theses'] });
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const liveCount = replies?.length ?? replyCount;
+
+  return (
+    <div className="pl-[2.375rem]">
+      {/* Action row */}
+      <div className="flex items-center gap-3 mt-1">
+        <button
+          onClick={() => { setShowForm((v) => !v); if (!open) setOpen(true); }}
+          className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+        >
+          <CornerDownRight className="h-3 w-3" />
+          Reply
+        </button>
+        {liveCount > 0 && (
+          <button
+            onClick={() => setOpen((v) => !v)}
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+          >
+            {open ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+            {liveCount} {liveCount === 1 ? 'reply' : 'replies'}
+          </button>
+        )}
+      </div>
+
+      {/* Reply list */}
+      {open && (
+        <div className="mt-2 space-y-2 border-l-2 border-border/50 pl-3">
+          {isLoading ? (
+            <Skeleton className="h-12 rounded-lg" />
+          ) : (
+            (replies ?? []).map((reply) => {
+              const name = reply.full_name || reply.username || 'Anonymous';
+              const profileHref = reply.username ? `/users/${encodeURIComponent(reply.username)}` : '#';
+              return (
+                <div key={reply.id} className="group flex items-start gap-2">
+                  <Link href={profileHref} className="shrink-0 mt-0.5">
+                    <UserAvatar avatarUrl={reply.avatar_url} displayName={name} size={22} />
+                  </Link>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline gap-1.5 flex-wrap">
+                      <Link href={profileHref} className="text-xs font-semibold text-foreground hover:text-primary transition-colors">
+                        {name}
+                      </Link>
+                      <span className="text-[10px] text-muted-foreground">{timeAgo(reply.created_at)}</span>
+                    </div>
+                    <p className="text-xs text-foreground leading-relaxed mt-0.5">{reply.content}</p>
+                  </div>
+                  {reply.is_own && (
+                    <button
+                      onClick={() => handleDelete(reply.id)}
+                      disabled={deletingId === reply.id}
+                      className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-muted-foreground hover:text-destructive transition-all disabled:opacity-50 shrink-0"
+                      aria-label="Delete reply"
+                    >
+                      {deletingId === reply.id
+                        ? <Loader2 className="h-3 w-3 animate-spin" />
+                        : <Trash2 className="h-3 w-3" />}
+                    </button>
+                  )}
+                </div>
+              );
+            })
+          )}
+
+          {/* Reply form */}
+          {showForm && (
+            <div className="mt-2 space-y-1.5">
+              <Textarea
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="Write a reply…"
+                className="resize-none text-xs min-h-[60px]"
+                maxLength={280}
+                autoFocus
+              />
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-muted-foreground">{content.length}/280</span>
+                <div className="flex gap-1.5">
+                  <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => { setShowForm(false); setContent(''); }}>
+                    Cancel
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="h-7 text-xs"
+                    disabled={!content.trim() || postReply.isPending}
+                    onClick={() => postReply.mutate()}
+                  >
+                    {postReply.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Post'}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Thesis card ──────────────────────────────────────────────────────────────
+
 interface ThesisCardProps {
   thesis: Thesis;
   onDelete: (id: string) => void;
@@ -49,23 +220,16 @@ interface ThesisCardProps {
 
 function ThesisCard({ thesis, onDelete, onEdit, isDeleting }: ThesisCardProps) {
   const displayName = thesis.full_name || thesis.username || 'Anonymous';
-  const initials = displayName.slice(0, 2).toUpperCase();
   const profileHref = thesis.username ? `/users/${encodeURIComponent(thesis.username)}` : '#';
 
   return (
-    <div className={cn('rounded-xl border border-border bg-card px-4 py-3 space-y-2', thesis.is_own && 'border-primary/20 bg-primary/5')}>
+    <div className={cn('rounded-xl border border-border bg-card px-4 py-3 space-y-1', thesis.is_own && 'border-primary/20 bg-primary/5')}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <Link href={profileHref} className="shrink-0">
-            {thesis.avatar_url ? (
-              <Image src={thesis.avatar_url} alt={displayName} width={28} height={28} className="rounded-full object-cover" />
-            ) : (
-              <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center">
-                <span className="text-[10px] font-semibold text-primary">{initials}</span>
-              </div>
-            )}
+          <Link href={profileHref} className="shrink-0 hover:opacity-80 transition-opacity">
+            <UserAvatar avatarUrl={thesis.avatar_url} displayName={displayName} size={28} />
           </Link>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Link href={profileHref} className="text-sm font-semibold text-foreground hover:text-primary transition-colors">
               {displayName}
             </Link>
@@ -96,15 +260,15 @@ function ThesisCard({ thesis, onDelete, onEdit, isDeleting }: ThesisCardProps) {
       </div>
 
       <p className="text-sm text-foreground leading-relaxed pl-[2.375rem]">{thesis.content}</p>
+
+      <ThesisReplies thesisId={thesis.id} replyCount={thesis.reply_count} />
     </div>
   );
 }
 
-interface ThesisSectionProps {
-  symbol: string;
-}
+// ─── Main section ─────────────────────────────────────────────────────────────
 
-export function ThesisSection({ symbol }: ThesisSectionProps) {
+export function ThesisSection({ symbol }: { symbol: string }) {
   const { isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<'all' | 'bull' | 'bear' | 'neutral'>('all');
@@ -166,7 +330,6 @@ export function ThesisSection({ symbol }: ThesisSectionProps) {
   };
 
   const hasOwnThesis = (theses ?? []).some((t) => t.is_own);
-
   if (!isAuthenticated) return null;
 
   return (
@@ -181,8 +344,6 @@ export function ThesisSection({ symbol }: ThesisSectionProps) {
             )}
           </h2>
         </div>
-
-        {/* Filter pills */}
         <div className="flex items-center gap-1">
           {(['all', 'bull', 'neutral', 'bear'] as const).map((f) => (
             <button
@@ -201,7 +362,7 @@ export function ThesisSection({ symbol }: ThesisSectionProps) {
         </div>
       </div>
 
-      {/* Post/Edit form */}
+      {/* Post / Edit form */}
       {!hasOwnThesis && !showForm && (
         <button
           onClick={() => setShowForm(true)}
@@ -213,7 +374,6 @@ export function ThesisSection({ symbol }: ThesisSectionProps) {
 
       {showForm && (
         <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-          {/* Sentiment selector */}
           <div className="flex items-center gap-2">
             {SENTIMENTS.map((s) => {
               const Icon = s.icon;
@@ -232,7 +392,6 @@ export function ThesisSection({ symbol }: ThesisSectionProps) {
               );
             })}
           </div>
-
           <Textarea
             value={formContent}
             onChange={(e) => setFormContent(e.target.value)}
@@ -261,7 +420,7 @@ export function ThesisSection({ symbol }: ThesisSectionProps) {
       {/* List */}
       <div className="space-y-2">
         {isLoading ? (
-          Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-20 rounded-xl" />)
+          Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (theses?.length ?? 0) === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-6">
             No {filter === 'all' ? '' : filter} theses yet. Be the first.
