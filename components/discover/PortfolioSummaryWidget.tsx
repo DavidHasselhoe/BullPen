@@ -1,13 +1,93 @@
 'use client';
 
 import Link from 'next/link';
+import { useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useHoldings } from '@/hooks/use-holdings';
 import { useAuth } from '@/hooks/use-auth';
 import { useQuery } from '@tanstack/react-query';
+import { AreaChart, Area, ResponsiveContainer } from 'recharts';
 import { getExchangeRates, convertCurrency, formatCurrency, type CurrencyCode } from '@/lib/currency/currency-conversion';
 import { useUserSettings } from '@/hooks/use-user-settings';
-import { Briefcase, ArrowUpRight, ArrowDownRight, ChevronRight } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, ChevronRight } from 'lucide-react';
+import type { UserHolding } from '@/lib/types/database';
+
+// ─── Sparkline hook ────────────────────────────────────────────────────────────
+
+type CandleData = { t: number[]; c: number[] };
+
+function usePortfolioSparkline(holdings: UserHolding[]) {
+  const eligible = useMemo(
+    () => holdings.filter((h) => h.avg_price != null && h.quantity != null && h.quantity > 0),
+    [holdings]
+  );
+
+  const holdingsKey = useMemo(
+    () => eligible.map((h) => `${h.symbol}:${h.avg_price}:${h.quantity}`).join(','),
+    [eligible]
+  );
+
+  const totalCostBasis = useMemo(
+    () => eligible.reduce((sum, h) => sum + (h.avg_price! * h.quantity!), 0),
+    [eligible]
+  );
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['portfolio-sparkline', holdingsKey],
+    queryFn: async () => {
+      if (eligible.length === 0) return [];
+      return Promise.all(
+        eligible.map(async (h) => {
+          try {
+            const res = await fetch(`/api/stock/${encodeURIComponent(h.symbol)}/candles?range=1M`);
+            if (!res.ok) return { holding: h, candles: null };
+            const json = await res.json();
+            return { holding: h, candles: (json.candles ?? null) as CandleData | null };
+          } catch {
+            return { holding: h, candles: null };
+          }
+        })
+      );
+    },
+    enabled: eligible.length > 0,
+    staleTime: 10 * 60 * 1000,
+    retry: false,
+  });
+
+  const chartData = useMemo<{ pl: number }[]>(() => {
+    if (!data?.length) return [];
+
+    const plByTime = new Map<number, number>();
+    let periodBasis = 0;
+
+    for (const { holding, candles } of data) {
+      if (!candles || holding.avg_price == null || holding.quantity == null) continue;
+      const { t, c } = candles;
+      const periodStartMs = t.length > 0 ? t[0] * 1000 : 0;
+      const holdingStart = holding.date_purchased
+        ? new Date(holding.date_purchased).getTime()
+        : new Date(holding.created_at).getTime();
+      const boughtDuringPeriod = holdingStart > periodStartMs;
+      const basePrice = boughtDuringPeriod ? holding.avg_price : c[0];
+      periodBasis += basePrice * holding.quantity;
+      for (let i = 0; i < t.length; i++) {
+        if (t[i] * 1000 < holdingStart) continue;
+        plByTime.set(t[i], (plByTime.get(t[i]) ?? 0) + (c[i] - basePrice) * holding.quantity);
+      }
+    }
+
+    const basis = periodBasis > 0 ? periodBasis : totalCostBasis > 0 ? totalCostBasis : 1;
+
+    return Array.from(plByTime.entries())
+      .sort(([a], [b]) => a - b)
+      .map(([, pl]) => ({ pl: (pl / basis) * 100 }));
+  }, [data, totalCostBasis]);
+
+  const isPositive = (chartData[chartData.length - 1]?.pl ?? 0) >= 0;
+  return { chartData, isLoading, isPositive };
+}
+
+// ─── Widget ────────────────────────────────────────────────────────────────────
 
 export function PortfolioSummaryWidget() {
   const { user, isAuthenticated } = useAuth();
@@ -43,14 +123,14 @@ export function PortfolioSummaryWidget() {
       if (batchRes.status === 429) {
         throw new Error(batchData.error || 'Market data rate limit exceeded. Please try again in a minute.');
       }
-      return {
-        quotes: (batchData.success && batchData.quotes) ? batchData.quotes : {},
-      };
+      return { quotes: (batchData.success && batchData.quotes) ? batchData.quotes : {} };
     },
     enabled: isAuthenticated && !!holdings && holdings.length > 0,
     staleTime: 3 * 60 * 1000,
-    gcTime: 5 * 60 * 1000,  // price data; evict quickly so stale prices don't persist
+    gcTime: 5 * 60 * 1000,
   });
+
+  const { chartData, isLoading: sparklineLoading, isPositive: sparklinePositive } = usePortfolioSparkline(holdings ?? []);
 
   const summary = (() => {
     if (!holdings || holdings.length === 0) return null;
@@ -72,21 +152,25 @@ export function PortfolioSummaryWidget() {
         totalDayChangeUSD += dayChg;
         return { holding: h, quote: q, marketValue: mv, dayChange: dayChg };
       })
-      .filter(Boolean) as Array<{ holding: (typeof holdings)[0]; quote: { price: number; change: number; changePercent: number }; marketValue: number; dayChange: number }>;
+      .filter(Boolean) as Array<{
+        holding: (typeof holdings)[0];
+        quote: { price: number; change: number; changePercent: number };
+        marketValue: number;
+        dayChange: number;
+      }>;
 
     if (withPrices.length === 0) return null;
 
     const dayChangePercent = totalValueUSD > 0 ? (totalDayChangeUSD / totalValueUSD) * 100 : 0;
-    const totalValue = conv(totalValueUSD);
-    const totalDayChange = conv(totalDayChangeUSD);
-
-    return { totalValue, totalDayChange, dayChangePercent };
+    return {
+      totalValue: conv(totalValueUSD),
+      totalDayChange: conv(totalDayChangeUSD),
+      dayChangePercent,
+    };
   })();
 
   if (!isAuthenticated) return null;
 
-  // Skeleton placeholder — shown while holdings or quotes are fetching so the
-  // flex row (CommandBar + this widget) doesn't collapse and re-expand (layout shift).
   const showSkeleton =
     isLoading ||
     (!!holdings && holdings.length > 0 && !quotesData.data && quotesData.isLoading);
@@ -94,63 +178,75 @@ export function PortfolioSummaryWidget() {
   if (showSkeleton) {
     return (
       <Card className="border-border/50 overflow-hidden">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-muted animate-pulse" />
-            <div className="flex-1 space-y-2">
-              <div className="h-4 w-24 bg-muted animate-pulse rounded" />
-              <div className="h-3 w-16 bg-muted animate-pulse rounded" />
-            </div>
+        <CardContent className="p-0">
+          <div className="px-4 pt-4 pb-3 space-y-1.5">
+            <div className="h-3 w-14 bg-muted animate-pulse rounded" />
+            <div className="h-6 w-28 bg-muted animate-pulse rounded" />
+            <div className="h-3 w-24 bg-muted animate-pulse rounded" />
           </div>
+          <div className="h-[72px] bg-muted/30 animate-pulse" />
         </CardContent>
       </Card>
     );
   }
 
-  if (!holdings || holdings.length === 0) return null;
-
-  if (!summary) {
-    return null;
-  }
+  if (!holdings || holdings.length === 0 || !summary) return null;
 
   const isPositive = summary.dayChangePercent >= 0;
+  const chartColor = sparklinePositive ? '#10b981' : '#ef4444';
+  const gradientId = `sw-grad-${sparklinePositive ? 'pos' : 'neg'}`;
 
   return (
     <Link href="/holdings" className="block">
       <Card className="border-border/50 overflow-hidden transition-colors hover:border-primary/30 hover:bg-muted/20">
-        <CardContent className="p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                <Briefcase className="h-5 w-5 text-primary" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  Portfolio
-                </p>
-                <p className="text-lg font-bold tabular-nums text-foreground truncate">
-                  {formatCurrency(summary.totalValue, userCurrency, roundNumbers ? { round: true } : undefined)}
-                </p>
-                <p
-                  className={`text-xs font-medium tabular-nums flex items-center gap-0.5 ${
-                    isPositive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-                  }`}
-                >
-                  {isPositive ? (
-                    <ArrowUpRight className="h-3 w-3" />
-                  ) : (
-                    <ArrowDownRight className="h-3 w-3" />
-                  )}
-                  {summary.dayChangePercent >= 0 ? '+' : ''}
-                  {formatCurrency(summary.totalDayChange, userCurrency, roundNumbers ? { round: true } : undefined)}
-                  {' '}
-                  ({summary.dayChangePercent >= 0 ? '+' : ''}
-                  {summary.dayChangePercent.toFixed(roundNumbers ? 1 : 2)}%) today
-                </p>
-              </div>
+        <CardContent className="p-0">
+          {/* Stats row */}
+          <div className="flex items-start justify-between gap-3 px-4 pt-4 pb-3">
+            <div className="min-w-0">
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Portfolio
+              </p>
+              <p className="text-lg font-bold tabular-nums text-foreground truncate">
+                {formatCurrency(summary.totalValue, userCurrency, roundNumbers ? { round: true } : undefined)}
+              </p>
+              <p
+                className={`text-xs font-medium tabular-nums flex items-center gap-0.5 ${
+                  isPositive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                }`}
+              >
+                {isPositive ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+                {summary.dayChangePercent >= 0 ? '+' : ''}
+                {formatCurrency(summary.totalDayChange, userCurrency, roundNumbers ? { round: true } : undefined)}
+                {' '}({summary.dayChangePercent >= 0 ? '+' : ''}{summary.dayChangePercent.toFixed(roundNumbers ? 1 : 2)}%) today
+              </p>
             </div>
-            <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
+            <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground mt-1" />
           </div>
+
+          {/* Sparkline strip */}
+          {!sparklineLoading && chartData.length > 1 ? (
+            <ResponsiveContainer width="100%" height={72}>
+              <AreaChart data={chartData} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
+                <defs>
+                  <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={chartColor} stopOpacity={0.25} />
+                    <stop offset="100%" stopColor={chartColor} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <Area
+                  type="monotone"
+                  dataKey="pl"
+                  stroke={chartColor}
+                  strokeWidth={1.5}
+                  fill={`url(#${gradientId})`}
+                  dot={false}
+                  isAnimationActive={false}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className={`h-[72px]${sparklineLoading ? ' bg-muted/20 animate-pulse' : ''}`} />
+          )}
         </CardContent>
       </Card>
     </Link>
