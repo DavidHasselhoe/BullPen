@@ -22,6 +22,9 @@ export async function runAgent(
   context?: AIContext | null,
   experienceLevel?: 'beginner' | 'intermediate' | 'advanced' | null,
   language?: string | null,
+  riskProfile?: 'conservative' | 'balanced' | 'aggressive' | null,
+  investmentHorizon?: 'short' | 'medium' | 'long' | null,
+  responseStyle?: 'concise' | 'balanced' | 'detailed' | null,
 ) {
   const modelMessages = await convertToModelMessages(messages);
 
@@ -36,8 +39,29 @@ export async function runAgent(
     ? `[User level: ADVANCED. Use precise financial terminology freely. Skip basic definitions. Assume the user understands GAAP, DCF, multiple expansion, etc. Prioritise density and insight.]\n\n`
     : '';
 
+  const riskPrefix = riskProfile === 'conservative'
+    ? `[User risk profile: CONSERVATIVE. Frame analysis with capital preservation in mind. Highlight downside risks, protective factors, and margin of safety. Flag leverage and liquidity risks prominently.]\n\n`
+    : riskProfile === 'aggressive'
+    ? `[User risk profile: AGGRESSIVE. The user is comfortable with higher risk in pursuit of higher returns. Lead with upside potential, growth catalysts, and total addressable market. Note associated risks but don't dwell on them.]\n\n`
+    : riskProfile === 'balanced'
+    ? `[User risk profile: BALANCED. Present a balanced risk-reward view. Discuss both upside potential and downside scenarios with equal weight.]\n\n`
+    : '';
+
+  const horizonPrefix = investmentHorizon === 'short'
+    ? `[User investment horizon: SHORT-TERM (< 1 year). Prioritize near-term catalysts, earnings momentum, and macro/sector rotation. De-emphasize long-term fundamentals.]\n\n`
+    : investmentHorizon === 'long'
+    ? `[User investment horizon: LONG-TERM (5+ years). Focus on durable competitive advantages, compounding earnings power, balance sheet quality, and management track record. De-emphasize short-term price fluctuations.]\n\n`
+    : investmentHorizon === 'medium'
+    ? `[User investment horizon: MEDIUM-TERM (1–5 years). Balance near-term catalysts with fundamental quality. Consider both current valuation and 2–3 year earnings trajectory.]\n\n`
+    : '';
+
+  const stylePrefix = responseStyle === 'concise'
+    ? `[Response style: CONCISE. Limit responses to 1–2 short paragraphs or a tight bullet list. Omit explanatory background unless directly asked. Prioritize the key insight and one actionable takeaway.]\n\n`
+    : responseStyle === 'detailed'
+    ? `[Response style: DETAILED. Provide comprehensive analysis with all relevant sections: summary, key figures, trend analysis, risks, and takeaway. Do not truncate.]\n\n`
+    : '';
+
   // Prepend a context block when the user is viewing a specific stock/comparison page.
-  // This tells the model what the user is currently looking at without modifying SYSTEM_PROMPT.
   const contextLabel = context?.label ?? context?.tickers?.join(', ') ?? '';
   const contextPrefix = context?.tickers?.length
     ? `[Current page context: The user is viewing "${contextLabel}" (${context.tickers.join(', ')}). Unless the user specifies a different company, answer questions about ${context.tickers.join(' and ')} first.]\n\n`
@@ -45,7 +69,8 @@ export async function runAgent(
 
   const result = streamText({
     model: openai('gpt-4o'),
-    system: languagePrefix + experiencePrefix + contextPrefix + SYSTEM_PROMPT,
+<<<<<<< HEAD
+    system: languagePrefix + experiencePrefix + riskPrefix + horizonPrefix + stylePrefix + contextPrefix + SYSTEM_PROMPT,
     messages: modelMessages,
     tools: BULLPEN_TOOLS,
     maxSteps: 5,

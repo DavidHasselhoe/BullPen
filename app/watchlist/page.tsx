@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
-import { useWatchlist, useWatchlistLists, useWatchlistItems, useAddToWatchlist, useRemoveFromWatchlist } from '@/hooks/use-watchlist';
+import { useWatchlist, useWatchlistLists, useWatchlistItems, useAddToWatchlist, useRemoveFromWatchlist, useToggleWatchlistAlert } from '@/hooks/use-watchlist';
 import { useWatchlistEnhanced } from '@/hooks/use-watchlist-enhanced';
 import { WatchlistListTabs } from '@/components/watchlist/WatchlistListTabs';
 import { useDebounce } from '@/hooks/use-debounce';
@@ -56,6 +56,7 @@ export default function WatchlistPage() {
   const { data: listItems, isLoading: listItemsLoading } = useWatchlistItems(activeListId);
   const addMutation = useAddToWatchlist();
   const removeMutation = useRemoveFromWatchlist();
+  const toggleAlertMutation = useToggleWatchlistAlert();
 
   // Auto-select first list once lists load
   useEffect(() => {
@@ -301,7 +302,11 @@ export default function WatchlistPage() {
               const live = livePrices.get(item.symbol);
               const seed = seedQuotes?.[item.symbol];
               const quote = live
-                ? { price: live.price, change: live.change, changePercent: live.changePercent }
+                ? {
+                    price: live.price,
+                    change: live.change ?? seed?.change ?? 0,
+                    changePercent: live.changePercent ?? seed?.changePercent ?? 0,
+                  }
                 : seed ?? null;
               const enhanced = enhancedData?.[item.symbol];
               return (
@@ -310,8 +315,11 @@ export default function WatchlistPage() {
                   symbol={item.symbol}
                   company_name={item.company_name}
                   quote={quote}
+                  alerts_enabled={item.alerts_enabled}
                   onRemove={(sym) => removeMutation.mutate(sym)}
+                  onToggleAlert={(sym, enabled) => toggleAlertMutation.mutate({ symbol: sym, alerts_enabled: enabled })}
                   isRemoving={removeMutation.isPending && removeMutation.variables === item.symbol}
+                  isTogglingAlert={toggleAlertMutation.isPending && toggleAlertMutation.variables?.symbol === item.symbol}
                   healthScore={enhanced?.healthScore}
                   nextEarningsDate={enhanced?.nextEarningsDate}
                   daysToEarnings={enhanced?.daysToEarnings}

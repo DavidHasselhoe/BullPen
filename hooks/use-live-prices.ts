@@ -5,8 +5,8 @@ import { useEffect, useRef, useState } from 'react';
 export interface LivePrice {
   symbol: string;
   price: number;
-  change: number;
-  changePercent: number;
+  change?: number;
+  changePercent?: number;
   previousClose: number;
   dayVolume?: number;
 }

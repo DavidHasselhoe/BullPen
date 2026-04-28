@@ -3,6 +3,14 @@
     {
       "path": "/api/cron/update-stale-companies",
       "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/check-earnings-upcoming",
+      "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/check-price-moves",
+      "schedule": "30 21 * * 1-5"
     }
   ]
 }

@@ -6,8 +6,16 @@ import {
   getBalanceSheet,
   getCashFlow,
   TwelveDataRateLimitError,
+  type CompanyStatistics,
+  type IncomeStatementPeriod,
+  type BalanceSheetPeriod,
+  type CashFlowPeriod,
 } from '@/lib/twelvedata/twelvedata-client';
+import { getCached, setCached } from '@/lib/cache/market-data-cache';
 import { computeHealthScore } from '@/lib/finance/health-score';
+
+const STATS_TTL = 60 * 60;        // 1 hour — matches /statistics route
+const FINANCIALS_TTL = 24 * 60 * 60; // 24 hours — matches /financials route
 
 async function handler(
   _request: NextRequest,
@@ -18,15 +26,41 @@ async function handler(
   const symbol = ticker.toUpperCase();
 
   try {
-    // Fetch all required data in parallel — each function uses its own server cache
-    const [stats, income, balance, cashflow] = await Promise.all([
-      getStatistics(symbol),
-      getIncomeStatement(symbol, 'quarterly').catch(() => []),
-      getBalanceSheet(symbol, 'quarterly').catch(() => []),
-      getCashFlow(symbol, 'quarterly').catch(() => []),
-    ]);
+    // ── Statistics (50 credits if cold) — read cache seeded by snapshot route ──
+    let stats = await getCached<CompanyStatistics>(`stats:${symbol}`);
+    if (!stats) {
+      stats = await getStatistics(symbol);
+      await setCached(`stats:${symbol}`, symbol, 'statistics', stats, STATS_TTL).catch(() => {});
+    }
 
-    const healthScore = computeHealthScore(stats, income, balance, cashflow);
+    // ── Income statement (20 credits if cold) — shared cache key with /financials ──
+    let income = await getCached<IncomeStatementPeriod[]>(`financials:${symbol}:income:quarterly`);
+    if (!income) {
+      income = await getIncomeStatement(symbol, 'quarterly').catch(() => []);
+      if (income.length) {
+        await setCached(`financials:${symbol}:income:quarterly`, symbol, 'financials', income, FINANCIALS_TTL).catch(() => {});
+      }
+    }
+
+    // ── Balance sheet (15 credits if cold) — shared cache key with /financials ──
+    let balance = await getCached<BalanceSheetPeriod[]>(`financials:${symbol}:balance:quarterly`);
+    if (!balance) {
+      balance = await getBalanceSheet(symbol, 'quarterly').catch(() => []);
+      if (balance.length) {
+        await setCached(`financials:${symbol}:balance:quarterly`, symbol, 'financials', balance, FINANCIALS_TTL).catch(() => {});
+      }
+    }
+
+    // ── Cash flow (15 credits if cold) — shared cache key with /financials ──
+    let cashflow = await getCached<CashFlowPeriod[]>(`financials:${symbol}:cashflow:quarterly`);
+    if (!cashflow) {
+      cashflow = await getCashFlow(symbol, 'quarterly').catch(() => []);
+      if (cashflow.length) {
+        await setCached(`financials:${symbol}:cashflow:quarterly`, symbol, 'financials', cashflow, FINANCIALS_TTL).catch(() => {});
+      }
+    }
+
+    const healthScore = computeHealthScore(stats, income ?? [], balance ?? [], cashflow ?? []);
 
     return addSecurityHeaders(
       NextResponse.json(

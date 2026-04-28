@@ -165,6 +165,33 @@ export async function removeHoldingBySymbolAction(
 }
 
 /**
+ * Server Action: Toggle alert notifications for a specific holding.
+ * userId from session only — never trust client-provided userId.
+ */
+export async function toggleHoldingAlertAction(
+  symbol: string,
+  alerts_enabled: boolean
+): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  const uid = await getCurrentUserId();
+  if (!uid) return { success: false, error: 'Authentication required' };
+  if (!symbol) return { success: false, error: 'Symbol is required' };
+
+  const { createServerClient } = await import('@/lib/supabase/client');
+  const supabase = createServerClient();
+  const { error } = await (supabase as any)
+    .from('user_holdings')
+    .update({ alerts_enabled })
+    .eq('user_id', uid)
+    .eq('symbol', symbol.toUpperCase());
+
+  if (error) return { success: false, error: 'Failed to update alert setting' };
+  return { success: true };
+}
+
+/**
  * Server Action: Remove a holding.
  * UserId is derived from session — never trusted from client.
  */

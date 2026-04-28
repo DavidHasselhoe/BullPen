@@ -87,9 +87,13 @@ export function useTopMoversWithStream(limit: number = 5, symbols?: string[] | n
   // to produce at least one gainer or loser. An empty `{ gainers:[], losers:[] }`
   // object is NOT meaningful — it just means the stream connected but hasn't
   // seen enough price movement yet (common at open, pre-market, or market closed).
+  // Require both gainers AND losers to be non-empty before trusting stream data.
+  // A sparse list (e.g. only losers) means the stream just reconnected and hasn't
+  // accumulated enough ticks yet — in that case, keep showing REST data.
   const streamHasMeaningfulData =
     isAllMarkets &&
-    !!((stream.data?.gainers?.length ?? 0) > 0 || (stream.data?.losers?.length ?? 0) > 0);
+    (stream.data?.gainers?.length ?? 0) > 0 &&
+    (stream.data?.losers?.length ?? 0) > 0;
 
   // REST runs whenever:
   //  • we're in holdings mode (stream is always disabled for specific symbol sets), OR

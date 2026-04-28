@@ -18,6 +18,7 @@ import { getStorageLogoUrl } from '@/lib/logos/logos-storage';
 import { createServerClient } from '@/lib/supabase/client';
 import type { PriceTick } from '@/lib/market-data/ws-manager';
 import { SP500_TICKERS } from '@/lib/market-data/sp500';
+import { getMarketMovers } from '@/lib/twelvedata/twelvedata-client';
 
 // Per-client symbol cap for custom ?symbols= requests
 const MAX_CLIENT_SYMBOLS = 500;
@@ -49,6 +50,7 @@ interface MoverUpdate {
   change: number;
   changePercent: number;
   previousClose: number;
+  dayVolume: number;
   logoUrl?: string;
 }
 
@@ -95,6 +97,34 @@ async function streamHandler(request: NextRequest) {
         .slice(0, MAX_CLIENT_SYMBOLS)
     : DEFAULT_SYMBOLS;
 
+  // Seed WsManager prevClose, company names, and initial quote snapshot before
+  // the WebSocket starts receiving ticks. This ensures:
+  //   1. parseTick can compute day change from the very first WS event
+  //   2. The stream sends company names so clients don't need a separate batch fetch
+  //   3. quoteMap is pre-populated, preventing the sparse-list flash on reconnect
+  // getMarketMovers is cached (5 min), so this is nearly free on warm requests.
+  const nameMap = new Map<string, string>();
+  const initialQuotes = new Map<string, MoverUpdate>();
+  try {
+    const { gainers: seedGainers, losers: seedLosers } = await getMarketMovers('stocks', 50);
+    for (const m of [...seedGainers, ...seedLosers]) {
+      WsManager.seedPrevClose(m.symbol, m.previousClose);
+      if (m.name) nameMap.set(m.symbol, m.name);
+      initialQuotes.set(m.symbol, {
+        symbol: m.symbol,
+        name: m.name,
+        price: m.price,
+        change: m.change,
+        changePercent: m.changePercent,
+        previousClose: m.previousClose,
+        dayVolume: 0,
+        logoUrl: getStorageLogoUrl(m.symbol),
+      });
+    }
+  } catch {
+    // Non-critical — stream degrades gracefully, REST fallback still works
+  }
+
   if (symbols.length === 0) {
     return NextResponse.json({ error: 'No symbols provided' }, { status: 400 });
   }
@@ -104,16 +134,47 @@ async function streamHandler(request: NextRequest) {
   const encoder = new TextEncoder();
   const listenerId = crypto.randomUUID();
 
+  // Minimum interval between SSE emissions (5 s).
+  // WebSocket ticks can arrive many times per second; throttling prevents rapid
+  // re-renders on the client and reduces CPU usage for sorting large quote maps.
+  const EMIT_INTERVAL_MS = 5_000;
+
   const stream = new ReadableStream({
     start(controller) {
       let closed = false;
-      const quoteMap = new Map<string, MoverUpdate>();
+      // Pre-seed with REST snapshot so the first real WS tick produces full lists
+      const quoteMap = new Map<string, MoverUpdate>(initialQuotes);
+      let lastEmitAt = 0;
+
+      const weight = (m: MoverUpdate) =>
+        Math.abs(m.changePercent) * (m.dayVolume > 0 ? m.price * m.dayVolume : 1);
+
+      function emitSnapshot() {
+        if (closed) return;
+        const all = [...quoteMap.values()].filter((m) => !isNaN(m.changePercent));
+        const gainers = all
+          .filter((m) => m.changePercent > 0)
+          .sort((a, b) => weight(b) - weight(a))
+          .slice(0, 5);
+        const losers = all
+          .filter((m) => m.changePercent < 0)
+          .sort((a, b) => weight(b) - weight(a))
+          .slice(0, 5);
+        // Only emit when both lists are populated to prevent sparse-list flash
+        if (gainers.length === 0 || losers.length === 0) return;
+        safeEnqueue(
+          controller,
+          encoder.encode(`data: ${JSON.stringify({ gainers, losers })}\n\n`),
+          () => closed
+        );
+      }
 
       const listener = {
         id: listenerId,
         symbols: new Set(symbols),
         onTick(tick: PriceTick) {
           if (closed) return;
+          if (tick.change == null || tick.changePercent == null) return;
 
           quoteMap.set(tick.symbol, {
             symbol: tick.symbol,
@@ -122,24 +183,17 @@ async function streamHandler(request: NextRequest) {
             change: tick.change,
             changePercent: tick.changePercent,
             previousClose: tick.previousClose,
+            dayVolume: tick.dayVolume ?? 0,
             logoUrl: getStorageLogoUrl(tick.symbol),
           });
 
-          const all = [...quoteMap.values()].filter((m) => !isNaN(m.changePercent));
-          const gainers = all
-            .filter((m) => m.changePercent > 0)
-            .sort((a, b) => b.changePercent - a.changePercent)
-            .slice(0, 5);
-          const losers = all
-            .filter((m) => m.changePercent < 0)
-            .sort((a, b) => a.changePercent - b.changePercent)
-            .slice(0, 5);
-
-          safeEnqueue(
-            controller,
-            encoder.encode(`data: ${JSON.stringify({ gainers, losers })}\n\n`),
-            () => closed
-          );
+          // Throttle: emit at most once per EMIT_INTERVAL_MS (leading — first tick
+          // fires immediately so the client gets a quick initial update, subsequent
+          // ticks are rate-limited so the UI doesn't flash on every price change).
+          const now = Date.now();
+          if (now - lastEmitAt < EMIT_INTERVAL_MS) return;
+          lastEmitAt = now;
+          emitSnapshot();
         },
       };
 

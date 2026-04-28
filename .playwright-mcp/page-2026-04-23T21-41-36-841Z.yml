@@ -1,0 +1,84 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - banner [ref=e4]:
+        - generic [ref=e5]:
+          - img [ref=e8]
+          - navigation [ref=e12]:
+            - link "Discover" [ref=e13] [cursor=pointer]:
+              - /url: /
+              - img [ref=e14]
+              - text: Discover
+            - link "My Holdings" [ref=e17] [cursor=pointer]:
+              - /url: /holdings
+              - img [ref=e18]
+              - text: My Holdings
+            - link "Watchlist" [ref=e21] [cursor=pointer]:
+              - /url: /watchlist
+              - img [ref=e22]
+              - text: Watchlist
+            - button "Community" [ref=e25]:
+              - img [ref=e26]
+              - text: Community
+              - img [ref=e31]
+            - button "Tools" [ref=e34]:
+              - img [ref=e35]
+              - text: Tools
+              - img [ref=e37]
+          - generic [ref=e39]:
+            - button "Search (Ctrl+K)" [ref=e40]:
+              - img [ref=e41]
+              - generic [ref=e43]: Search...
+              - generic [ref=e44]: Ctrl+K
+            - button [ref=e45]:
+              - img
+            - button [ref=e47]:
+              - img
+            - generic [ref=e48]:
+              - button "Sign In" [ref=e49]
+              - button "Sign Up" [ref=e50]
+      - main [ref=e52]:
+        - button "Search companies, filings, metrics, or ask BullPen AI Ctrl+K" [ref=e58]:
+          - img [ref=e59]
+          - generic [ref=e62]: Search companies, filings, metrics, or ask BullPen AI
+          - generic [ref=e63]: Ctrl+K
+        - generic [ref=e65]:
+          - generic [ref=e66]:
+            - generic [ref=e68]:
+              - heading "Market Context" [level=2] [ref=e69]
+              - paragraph [ref=e70]: Market hours, top movers, and recent news.
+            - generic [ref=e71]:
+              - generic [ref=e74]:
+                - generic [ref=e76]: Top Market Movers
+                - generic [ref=e77]:
+                  - generic [ref=e79]:
+                    - img [ref=e80]
+                    - heading "Top Gainers" [level=3] [ref=e83]
+                  - generic [ref=e91]:
+                    - img [ref=e92]
+                    - heading "Top Losers" [level=3] [ref=e95]
+              - generic [ref=e105]: Market News
+          - generic [ref=e130]:
+            - generic [ref=e131]:
+              - generic [ref=e132]:
+                - img [ref=e133]
+                - text: Earnings This Week
+              - link "Full calendar →" [ref=e135] [cursor=pointer]:
+                - /url: /tools/calendar
+            - paragraph [ref=e136]: Major companies reporting in the next 7 days.
+          - generic [ref=e168]:
+            - img [ref=e169]
+            - text: Hot Picks
+      - button "Open AI Assistant" [ref=e214]:
+        - img [ref=e215]
+        - generic [ref=e218]: AI Assistant
+    - button:
+      - img
+    - generic:
+      - generic:
+        - img
+      - generic:
+        - button:
+          - img
+  - button "Open Next.js Dev Tools" [ref=e224] [cursor=pointer]:
+    - img [ref=e225]

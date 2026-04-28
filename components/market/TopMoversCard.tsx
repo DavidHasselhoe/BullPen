@@ -80,15 +80,17 @@ function MoverItem({
   companyName?: string;
 }) {
   const textColor = isGainer ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
-  const fullName = companyName || mover.symbol;
-  const hasFullName = !!companyName && companyName !== mover.symbol;
+  // Prefer DB batch name → stream name → ticker symbol (never blank)
+  const displayName = companyName || mover.name || mover.symbol;
+  // Only show ticker-on-hover animation when we actually have a distinct full name
+  const hasDistinctName = displayName !== mover.symbol;
 
   return (
     <div className="group grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-lg p-2.5 -mx-2 transition-all duration-200 hover:bg-accent/50 hover:shadow-sm border border-transparent hover:border-border/50">
       <Link href={`/stock/${mover.symbol}`} className="contents">
         <div className="flex items-center gap-2 shrink-0">
           <CompanyLogo
-            name={companyName || mover.symbol}
+            name={displayName}
             ticker={mover.symbol}
             logoUrl={mover.logoUrl}
             size={32}
@@ -101,19 +103,19 @@ function MoverItem({
             <span
               className={cn(
                 'block truncate transition-all duration-200 ease-out',
-                hasFullName
+                hasDistinctName
                   ? 'opacity-100 translate-x-0 group-hover:opacity-0 group-hover:-translate-x-1'
                   : ''
               )}
-              title={fullName}
+              title={displayName}
             >
-              {fullName}
+              {displayName}
             </span>
-            {/* Hover: ticker slides in from right, aligned with name position */}
-            {hasFullName && (
+            {/* Hover: ticker slides in, replacing the full name */}
+            {hasDistinctName && (
               <span
                 className="absolute left-0 top-0 opacity-0 translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200 ease-out tabular-nums"
-                title={fullName}
+                title={displayName}
               >
                 {mover.symbol}
               </span>

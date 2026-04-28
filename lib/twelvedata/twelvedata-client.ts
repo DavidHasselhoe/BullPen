@@ -387,102 +387,38 @@ export async function getStockCandlesLongRange(
   };
 }
 
-// -------- Market Movers via /market_movers/stocks --------
+// -------- Market Movers --------
 
-interface TwelveDataMoverItem {
-  symbol: string;
-  name?: string;
-  exchange?: string;
-  datetime?: string;
-  last?: string;
-  high?: string;
-  low?: string;
-  volume?: string;
-  change?: string;
-  percent_change?: string;
-}
-
-interface TwelveDataMarketMoversResponse {
-  values?: TwelveDataMoverItem[];
-  status?: string;
-  code?: number;
-  message?: string;
-}
+// Mega-cap stocks (~top 50 by market cap) — ensures movers are always large-cap.
+// A 3% move by NVDA is more important than a 50% move by a $500M-cap company.
+const MEGA_CAP_TICKERS = [
+  'NVDA', 'AAPL', 'MSFT', 'AMZN', 'GOOGL', 'GOOG', 'META', 'BRK.B',
+  'TSLA', 'AVGO', 'LLY', 'JPM', 'WMT', 'V', 'MA', 'UNH', 'XOM',
+  'COST', 'ORCL', 'HD', 'PG', 'JNJ', 'BAC', 'NFLX', 'ABBV',
+  'CRM', 'AMD', 'MRK', 'CVX', 'KO', 'CSCO', 'PEP', 'TMO', 'ADBE',
+  'ACN', 'LIN', 'MCD', 'ABT', 'NOW', 'PM', 'TXN', 'NEE', 'GS',
+  'IBM', 'RTX', 'ISRG', 'INTU', 'AMGN', 'CAT', 'SPGI',
+];
 
 /**
- * GET /market_movers/stocks — returns today's top gainers/losers from TwelveData.
- * Cost: 100 credits per request. Available on Pro / Venture and above.
- * Use for the REST fallback; WebSocket stream provides live updates.
+ * Returns today's top gainers/losers from the mega-cap universe.
+ *
+ * Uses batch quotes for MEGA_CAP_TICKERS instead of the /market_movers/stocks
+ * endpoint, which returns biggest % movers and tends to surface small-cap stocks
+ * with extreme moves. Fetching quotes for a curated large-cap list guarantees
+ * results are market-cap-significant (Nvidia at +3% beats a $500M company at +50%).
+ *
+ * Sort key: |changePercent| × dollarVolume — weights both the size of the move
+ * and the market importance of the company.
  */
 export async function getMarketMovers(
-  market: 'stocks' | 'etf' = 'stocks',
+  _market: 'stocks' | 'etf' = 'stocks',
   limit: number = 5
 ): Promise<TopMovers> {
-  logUsage('/market_movers', market);
-  const url = buildUrl(`/market_movers/${market}`, { outputsize: 50 });
-  const res = await fetch(url, { next: { revalidate: 300 } }); // cache 5 min
-  const json = (await res.json()) as TwelveDataMarketMoversResponse;
-
-  if (!res.ok || json.code || json.status === 'error') {
-    const msg = json.message ?? `market_movers error: ${res.status}`;
-    if (/rate.?limit|too many|credits? exceeded/i.test(msg) || json.code === 429) {
-      throw new TwelveDataRateLimitError(msg);
-    }
-    throw new Error(msg);
-  }
-
-  // Major US exchanges only — filters out OTC/pink sheets where penny stocks live
-  const MAJOR_EXCHANGES = new Set(['NASDAQ', 'NYSE', 'NYSE ARCA', 'NYSE MKT', 'CBOE']);
-
-  // Build a lookup map so the filter step doesn't re-scan the array on each call
-  const rawBySymbol = new Map(
-    (json.values ?? []).map((v) => [v.symbol, v])
-  );
-
-  const items = (json.values ?? [])
-    .map((item): MarketMover & { dollarVolume: number } => {
-      const price = parseFloat(item.last ?? '0');
-      const change = parseFloat(item.change ?? '0');
-      const volume = item.volume ? parseInt(item.volume, 10) : 0;
-      return {
-        symbol: item.symbol,
-        name: item.name,
-        price,
-        change,
-        changePercent: parseFloat(item.percent_change ?? '0'),
-        previousClose: price - change,
-        volume,
-        dollarVolume: price * volume, // proxy for market weight / importance
-      };
-    })
-    .filter((m) => {
-      const exchange = rawBySymbol.get(m.symbol)?.exchange ?? '';
-      return (
-        !isNaN(m.changePercent) &&
-        m.price >= 10 &&                    // no cheap stocks
-        m.volume >= 1_000_000 &&            // meaningful share volume
-        m.dollarVolume >= 50_000_000 &&     // ≥$50M daily dollar volume — weeds out small caps
-        MAJOR_EXCHANGES.has(exchange)       // US major exchanges only
-      );
-    });
-
-  // Sort by dollar volume descending so the biggest market-cap movers appear first,
-  // not just whoever had the highest % swing on low volume.
-  const toMover = ({ dollarVolume: _, ...m }: (typeof items)[number]): MarketMover => m;
-
-  const gainers = items.filter((m) => m.changePercent > 0)
-    .sort((a, b) => b.dollarVolume - a.dollarVolume)
-    .slice(0, limit)
-    .map(toMover);
-  const losers = items.filter((m) => m.changePercent < 0)
-    .sort((a, b) => b.dollarVolume - a.dollarVolume)
-    .slice(0, limit)
-    .map(toMover);
-
-  return { gainers, losers };
+  return getTopMoversForSymbols(MEGA_CAP_TICKERS, limit);
 }
 
-// -------- Top movers (computed from quotes — used for holdings mode) --------
+// -------- Top movers (computed from quotes) --------
 
 export async function getTopMovers(limit: number = 5): Promise<TopMovers> {
   return getMarketMovers('stocks', limit);
@@ -505,12 +441,31 @@ export async function getTopMoversForSymbols(
     }))
     .filter((m) => !isNaN(m.changePercent));
 
-  const sorted = movers.sort((a, b) => b.changePercent - a.changePercent);
-  const gainers = sorted.filter((m) => m.changePercent > 0).slice(0, limit);
-  const losers = sorted
+  // Seed WsManager prevClose so the WebSocket stream can compute change on first tick.
+  // Dynamic import keeps the ws package out of any client bundle.
+  if (typeof window === 'undefined') {
+    try {
+      const { WsManager } = await import('@/lib/market-data/ws-manager');
+      for (const m of movers) {
+        WsManager.seedPrevClose(m.symbol, m.previousClose);
+      }
+    } catch {
+      // Non-critical — stream will still show REST data as fallback
+    }
+  }
+
+  // Sort by |changePercent| descending within the (already large-cap) universe.
+  // When called with MEGA_CAP_TICKERS, any stock here is already market-significant,
+  // so pure % change is the right ranking criterion.
+  const gainers = movers
+    .filter((m) => m.changePercent > 0)
+    .sort((a, b) => b.changePercent - a.changePercent)
+    .slice(0, limit);
+  const losers = movers
     .filter((m) => m.changePercent < 0)
     .sort((a, b) => a.changePercent - b.changePercent)
     .slice(0, limit);
+
   return { gainers, losers };
 }
 
@@ -1830,5 +1785,46 @@ export async function getInsiderTransactions(symbol: string): Promise<InsiderTra
     ...t,
     transaction_type: parseTransactionType(t.description),
   }));
+}
+
+// -------- Fundamentals Last Changes --------
+
+export interface FundamentalsLastChange {
+  profile?: { last_change: string | null };
+  statistics?: { last_change: string | null };
+  income_statement?: { last_change: string | null };
+  balance_sheet?: { last_change: string | null };
+  cash_flow?: { last_change: string | null };
+}
+
+/**
+ * Returns the date each fundamental data type was last updated by TwelveData.
+ * Use this to determine whether cached fundamental data is stale before spending
+ * credits on a full re-fetch.
+ *
+ * Endpoint: GET /fundamentals/last_changes
+ * Cost: 1 API credit per symbol.
+ */
+export async function getFundamentalsLastChange(symbol: string): Promise<FundamentalsLastChange> {
+  logUsage('/fundamentals/last_changes', symbol);
+  const url = buildUrl('/fundamentals/last_changes', { symbol: symbol.toUpperCase() });
+  const res = await fetch(url, { cache: 'no-store' }); // always need fresh timestamps
+  const json = (await res.json()) as FundamentalsLastChange & { code?: number; status?: string; message?: string };
+
+  if (!res.ok || json.code || json.status === 'error') {
+    const msg = json.message ?? `fundamentals/last_changes error: ${res.status}`;
+    if (/rate.?limit|too many|credits? exceeded/i.test(msg) || json.code === 429) {
+      throw new TwelveDataRateLimitError(msg);
+    }
+    throw new Error(msg);
+  }
+
+  return {
+    profile: json.profile,
+    statistics: json.statistics,
+    income_statement: json.income_statement,
+    balance_sheet: json.balance_sheet,
+    cash_flow: json.cash_flow,
+  };
 }
 

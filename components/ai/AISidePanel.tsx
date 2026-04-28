@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
-import { Bot, X, PanelRightClose } from 'lucide-react';
+import { Bot, X, PanelRightClose, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
@@ -152,21 +152,35 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
           </div>
           <div className="flex items-center gap-2">
             {isAuthenticated && user && (
-              <div className="h-7 w-7 rounded-full overflow-hidden ring-2 ring-border">
-                {user.avatar_url ? (
-                  <Image
-                    src={user.avatar_url}
-                    alt={user.full_name ?? user.email}
-                    width={28}
-                    height={28}
-                    className="object-cover"
-                  />
-                ) : (
-                  <div className="h-full w-full flex items-center justify-center bg-primary text-primary-foreground text-xs font-semibold">
-                    {(user.full_name ?? user.email).charAt(0).toUpperCase()}
-                  </div>
-                )}
-              </div>
+              <>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { tab: 'ai' } }))}
+                      aria-label="AI settings"
+                      className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                    >
+                      <Settings className="h-4 w-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">AI settings</TooltipContent>
+                </Tooltip>
+                <div className="h-7 w-7 rounded-full overflow-hidden ring-2 ring-border">
+                  {user.avatar_url ? (
+                    <Image
+                      src={user.avatar_url}
+                      alt={user.full_name ?? user.email}
+                      width={28}
+                      height={28}
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div className="h-full w-full flex items-center justify-center bg-primary text-primary-foreground text-xs font-semibold">
+                      {(user.full_name ?? user.email).charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                </div>
+              </>
             )}
             <button
               onClick={handleClose}

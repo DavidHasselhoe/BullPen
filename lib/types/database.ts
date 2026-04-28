@@ -94,6 +94,10 @@ export interface Company {
   employee_count_is_estimated: boolean | null;
   shares_outstanding: number | null;
   logo_url: string | null;
+  logo_source: 'brand' | 'wikipedia' | 'manual' | null;
+  logo_updated_at: string | null;
+  fundamentals_last_change: string | null;
+  fundamentals_checked_at: string | null;
   metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;
@@ -109,7 +113,7 @@ export interface User {
   bio: string | null;
   experience_level: 'beginner' | 'intermediate' | 'advanced' | null;
   market_focus: 'US' | 'EU' | 'BOTH' | null;
-  risk_profile: 'conservative' | 'moderate' | 'aggressive' | null;
+  risk_profile: 'conservative' | 'balanced' | 'aggressive' | null;
   account_tier: 'free' | 'pro' | 'enterprise' | null;
   settings: Record<string, unknown> | null;
   created_at: string;
@@ -127,8 +131,18 @@ export interface UserHolding {
   date_purchased: string | null;
   source: 'manual' | 'snaptrade';
   brokerage_account_id: string | null;
+  alerts_enabled: boolean;
   created_at: string;
   updated_at: string;
+}
+
+export interface WatchlistItem {
+  id: string;
+  user_id: string;
+  symbol: string;
+  company_name: string;
+  alerts_enabled: boolean;
+  added_at: string;
 }
 
 export interface BrokerageConnection {

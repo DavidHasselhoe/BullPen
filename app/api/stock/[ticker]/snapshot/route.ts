@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { batchFetch, TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
 import { getCached, setCached } from '@/lib/cache/market-data-cache';
 import { withRateLimit, withAuth, addSecurityHeaders } from '@/lib/security/api-security';
+import { setCached } from '@/lib/cache/market-data-cache';
 
 const APIKEY = () => process.env.TWELVE_DATA_API_KEY ?? '';
 
@@ -153,6 +154,12 @@ async function handler(
           void setCached(`snap-earnings:${sym}`, sym, 'snap_earnings', earnings, earningsTtl(earnings));
         }
       }
+    }
+
+    // Seed the statistics cache so health-score and /statistics route get a free hit
+    // (same cache key as app/api/stock/[ticker]/statistics/route.ts)
+    if (statistics) {
+      setCached(`stats:${sym}`, sym, 'statistics', { symbol: sym, ...statistics }, 60 * 60).catch(() => {});
     }
 
     return addSecurityHeaders(

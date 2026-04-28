@@ -113,6 +113,14 @@ export default function StockDetailPage() {
     };
   }, [ticker, queryClient]);
 
+  // Fire-and-forget: check TwelveData last_changes (1 credit, throttled 1×/hr)
+  // to expire any cached fundamental data that has actually been updated.
+  // Runs after mount so it never blocks the initial render.
+  useEffect(() => {
+    if (!ticker) return;
+    fetch(`/api/stock/${ticker}/freshness`).catch(() => {});
+  }, [ticker]);
+
   const { data: company, isLoading: companyLoading } = useQuery({
     queryKey: ['company-info', ticker],
     queryFn: async (): Promise<Company | null> => {

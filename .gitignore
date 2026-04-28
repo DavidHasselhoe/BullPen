@@ -43,4 +43,6 @@ next-env.d.ts
 
 .vercel
 
-.vercel
+# Claude Code local config (not shared)
+.claude/settings.local.json
+.claude/auto-deploy.ps1
