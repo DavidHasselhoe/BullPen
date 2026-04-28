@@ -46,3 +46,6 @@ next-env.d.ts
 # Claude Code local config (not shared)
 .claude/settings.local.json
 .claude/auto-deploy.ps1
+.claude/worktrees/
+.playwright-mcp/
+skills-lock.json
