@@ -69,7 +69,6 @@ export async function runAgent(
 
   const result = streamText({
     model: openai('gpt-4o'),
-<<<<<<< HEAD
     system: languagePrefix + experiencePrefix + riskPrefix + horizonPrefix + stylePrefix + contextPrefix + SYSTEM_PROMPT,
     messages: modelMessages,
     tools: BULLPEN_TOOLS,

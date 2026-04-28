@@ -10,7 +10,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { batchFetch, TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
 import { getCached, setCached } from '@/lib/cache/market-data-cache';
 import { withRateLimit, withAuth, addSecurityHeaders } from '@/lib/security/api-security';
-import { setCached } from '@/lib/cache/market-data-cache';
 
 const APIKEY = () => process.env.TWELVE_DATA_API_KEY ?? '';
 

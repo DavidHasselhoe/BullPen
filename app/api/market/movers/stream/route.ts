@@ -103,13 +103,13 @@ async function streamHandler(request: NextRequest) {
   //   2. The stream sends company names so clients don't need a separate batch fetch
   //   3. quoteMap is pre-populated, preventing the sparse-list flash on reconnect
   // getMarketMovers is cached (5 min), so this is nearly free on warm requests.
-  const nameMap = new Map<string, string>();
+  const seedNameMap = new Map<string, string>();
   const initialQuotes = new Map<string, MoverUpdate>();
   try {
     const { gainers: seedGainers, losers: seedLosers } = await getMarketMovers('stocks', 50);
     for (const m of [...seedGainers, ...seedLosers]) {
       WsManager.seedPrevClose(m.symbol, m.previousClose);
-      if (m.name) nameMap.set(m.symbol, m.name);
+      if (m.name) seedNameMap.set(m.symbol, m.name);
       initialQuotes.set(m.symbol, {
         symbol: m.symbol,
         name: m.name,
