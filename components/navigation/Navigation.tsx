@@ -67,7 +67,7 @@ export function Navigation() {
 
   const scheduleToolsClose = useCallback(() => {
     clearToolsCloseTimer();
-    toolsCloseTimerRef.current = setTimeout(() => setToolsOpen(false), 200);
+    toolsCloseTimerRef.current = setTimeout(() => setToolsOpen(false), 80);
   }, [clearToolsCloseTimer]);
 
   const handleToolsOpen = useCallback(() => {
@@ -84,7 +84,7 @@ export function Navigation() {
 
   const scheduleCommunityClose = useCallback(() => {
     clearCommunityCloseTimer();
-    communityCloseTimerRef.current = setTimeout(() => setCommunityOpen(false), 200);
+    communityCloseTimerRef.current = setTimeout(() => setCommunityOpen(false), 80);
   }, [clearCommunityCloseTimer]);
 
   const handleCommunityOpen = useCallback(() => {
@@ -151,7 +151,13 @@ export function Navigation() {
                       <ChevronDown className="h-3.5 w-3.5 opacity-70" />
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="center" sideOffset={4} className="min-w-[220px]">
+                  <DropdownMenuContent
+                    align="center"
+                    sideOffset={4}
+                    className="min-w-[220px] [animation-duration:100ms]"
+                    onPointerEnter={clearCommunityCloseTimer}
+                    onPointerLeave={scheduleCommunityClose}
+                  >
                     {COMMUNITY_LINKS.map((link) => {
                       const Icon = link.icon;
                       return (
@@ -192,7 +198,9 @@ export function Navigation() {
                 <DropdownMenuContent
                   align="center"
                   sideOffset={4}
-                  className="min-w-[220px]"
+                  className="min-w-[220px] [animation-duration:100ms]"
+                  onPointerEnter={clearToolsCloseTimer}
+                  onPointerLeave={scheduleToolsClose}
                 >
                   {TOOLS.map((tool) => {
                     const Icon = tool.icon;
