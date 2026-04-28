@@ -41,23 +41,16 @@ export function useNotifications(limit: number = 50) {
 }
 
 /**
- * Derives unread count from the already-cached notifications query instead of
- * issuing a separate database round-trip every 60 seconds.
+ * Derives unread count from the already-cached notifications query.
+ * Returns a query-like object so callers don't need to change.
  */
 export function useUnreadCount() {
   const { user, isAuthenticated } = useAuth();
-  const { data: notifications } = useNotifications();
+  const { data: notifications, isLoading } = useNotifications();
 
-  return useQuery({
-    queryKey: ['notifications-unread-count', user?.id],
-    queryFn: async (): Promise<number> => {
-      // Count derived from the shared notifications cache — no extra DB call
-      return (notifications || []).filter((n) => !n.is_read).length;
-    },
-    enabled: isAuthenticated && !!user,
-    staleTime: 5 * 60 * 1000,
-    refetchInterval: 5 * 60 * 1000,
-  });
+  const data = (notifications || []).filter((n) => !n.is_read).length;
+
+  return { data, isLoading: isLoading && isAuthenticated && !!user };
 }
 
 /**

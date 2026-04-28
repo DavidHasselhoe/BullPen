@@ -1,6 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -58,10 +59,11 @@ function InfoRow({ icon: Icon, label, value }: { icon: React.ElementType; label:
 }
 
 export function CompanyProfileCard({ ticker }: { ticker: string }) {
+  const { i18n } = useTranslation();
   const { data, isLoading } = useQuery<ProfileResponse>({
-    queryKey: ['company-profile', ticker],
+    queryKey: ['company-profile', ticker, i18n.language],
     queryFn: async () => {
-      const res = await fetch(`/api/stock/${ticker}/company-profile`);
+      const res = await fetch(`/api/stock/${ticker}/company-profile?lang=${i18n.language}`);
       if (!res.ok) throw new Error('Failed to fetch profile');
       return res.json();
     },

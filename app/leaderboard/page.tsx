@@ -41,7 +41,9 @@ export default function LeaderboardPage() {
       return d.leaderboard ?? [];
     },
     enabled: isAuthenticated,
-    staleTime: 5 * 60_000,
+    staleTime: 2 * 60_000,
+    // Refresh rankings when user tabs back — leaderboard changes as others add holdings
+    refetchOnWindowFocus: 'always',
   });
 
   if (!isAuthenticated) {
@@ -132,8 +134,8 @@ export default function LeaderboardPage() {
                       )}
                     </div>
 
-                    {tier && (
-                      <span className={cn('hidden sm:inline-block text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0', tier.className)}>
+                    {tier && tier.label !== 'Member' && (
+                      <span className={cn('inline-block text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0', tier.className)}>
                         {tier.label}
                       </span>
                     )}

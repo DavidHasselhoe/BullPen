@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { useNotifications, useMarkNotificationRead, useMarkAllNotificationsRead } from '@/hooks/use-notifications';
 import { NotificationItem } from './NotificationItem';
 import { Button } from '@/components/ui/button';
@@ -64,6 +64,14 @@ export function NotificationCenter({ open, onOpenChange }: NotificationCenterPro
   };
 
   const unreadCount = notifications?.filter((n) => !n.is_read).length || 0;
+
+  // Mark all as read when the panel opens
+  useEffect(() => {
+    if (open && unreadCount > 0 && !markAllRead.isPending) {
+      markAllRead.mutate();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   if (!open) return null;
 

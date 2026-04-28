@@ -48,6 +48,9 @@ export default function HoldingsPage() {
   // Live price stream — updates prices in real time via WsManager SSE
   const holdingSymbols = useMemo(() => (holdings ?? []).map((h) => h.symbol), [holdings]);
   const livePrices = useLivePrices(holdingSymbols);
+  // Throttle the live price Map so the holdingsWithPrices memo (and every downstream
+  // component) re-renders at most once every 3 s instead of on every WS tick.
+  const throttledLivePrices = useThrottle(livePrices, 3000);
 
   // Fetch quotes and logos for all holdings (shared cache with HoldingsTable)
   const quotesData = useQuery({
@@ -102,7 +105,7 @@ export default function HoldingsPage() {
     },
     enabled: !!holdings && holdings.length > 0,
     staleTime: 3 * 60 * 1000, // 3 minutes (shared cache with HoldingsTable)
-    gcTime: 10 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,   // evict price data promptly; stale quotes reset on re-visit
   });
 
   // Combine holdings with quotes, apply currency conversion, and calculate derived values
@@ -115,7 +118,7 @@ export default function HoldingsPage() {
 
     // Allocation — use live price where available so the percentages stay current.
     const totalMarketValueUSD = holdings.reduce((sum, holding) => {
-      const lp = livePrices.get(holding.symbol);
+      const lp = throttledLivePrices.get(holding.symbol);
       const bq = quotesMap[holding.symbol];
       const price = lp?.price ?? bq?.price;
       return price && holding.quantity ? sum + price * holding.quantity : sum;
@@ -125,7 +128,7 @@ export default function HoldingsPage() {
       userCurrency === 'USD' ? usd : convertCurrency(usd, 'USD', userCurrency, rates);
 
     return holdings.map((holding) => {
-      const liveQuote = livePrices.get(holding.symbol);
+      const liveQuote = throttledLivePrices.get(holding.symbol);
       const batchQuote = quotesMap[holding.symbol];
       const logoUrl = logosMap[holding.symbol] || null;
 
@@ -180,7 +183,7 @@ export default function HoldingsPage() {
         logoUrl,
       };
     });
-  }, [holdings, quotesData.data, exchangeRates.data, userCurrency, livePrices]);
+  }, [holdings, quotesData.data, exchangeRates.data, userCurrency, throttledLivePrices]);
 
   // Throttle at 3 s so live WebSocket ticks don't thrash the entire UI on every price event.
   // The portfolio value widget updates instantly (it reads livePrices directly via the memo),
@@ -240,9 +243,9 @@ export default function HoldingsPage() {
       {/* Brokerage connection — visible even when holdings are empty */}
       <BrokerageConnect />
 
-      {/* Holdings table — receives unthrottled holdingsWithPrices so Current Price,
-          Market Value, and Unrealized P/L update immediately on every live tick.
-          Aggregate widgets above use throttledHoldings to avoid excessive re-renders. */}
+      {/* Holdings table — reads from holdingsWithPrices which is computed from
+          throttledLivePrices (3 s window), so live ticks don't re-run the full
+          holdings memo on every WebSocket event. */}
       <HoldingsTable
         holdingsWithPrices={holdingsWithPrices}
         onAddClick={() => setIsAddModalOpen(true)}

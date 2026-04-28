@@ -15,6 +15,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withRateLimit } from '@/lib/security/api-security';
 import { WsManager } from '@/lib/market-data/ws-manager';
 import { getStorageLogoUrl } from '@/lib/logos/logos-storage';
+import { createServerClient } from '@/lib/supabase/client';
 import type { PriceTick } from '@/lib/market-data/ws-manager';
 import { SP500_TICKERS } from '@/lib/market-data/sp500';
 
@@ -24,8 +25,26 @@ const MAX_CLIENT_SYMBOLS = 500;
 // Default: full S&P 500 — all stream on the one shared WS connection
 const DEFAULT_SYMBOLS = SP500_TICKERS;
 
+// Module-level name cache — populated once from Supabase, reused across SSE connections
+const _nameCache = new Map<string, string>();
+let _nameCacheReady = false;
+
+async function ensureNameCache(): Promise<Map<string, string>> {
+  if (_nameCacheReady) return _nameCache;
+  try {
+    const supabase = createServerClient();
+    const { data } = await supabase.from('companies').select('ticker, name').limit(5000);
+    (data ?? []).forEach((c: { ticker: string; name: string }) => _nameCache.set(c.ticker, c.name));
+    _nameCacheReady = true;
+  } catch {
+    // Non-fatal — stream still works, company names just won't appear for stream movers
+  }
+  return _nameCache;
+}
+
 interface MoverUpdate {
   symbol: string;
+  name?: string;
   price: number;
   change: number;
   changePercent: number;
@@ -80,6 +99,8 @@ async function streamHandler(request: NextRequest) {
     return NextResponse.json({ error: 'No symbols provided' }, { status: 400 });
   }
 
+  const nameMap = await ensureNameCache();
+
   const encoder = new TextEncoder();
   const listenerId = crypto.randomUUID();
 
@@ -96,6 +117,7 @@ async function streamHandler(request: NextRequest) {
 
           quoteMap.set(tick.symbol, {
             symbol: tick.symbol,
+            name: nameMap.get(tick.symbol),
             price: tick.price,
             change: tick.change,
             changePercent: tick.changePercent,

@@ -76,7 +76,7 @@ export const TOOLS: ToolConfig[] = [
     description: 'Annual income growth, reinvestment impact, and break-even year for dividend-paying stocks.',
     href: '/tools/dividend',
     icon: Wallet,
-    status: 'coming-soon',
+    status: 'available',
   },
   {
     id: 'portfolio',
@@ -100,6 +100,6 @@ export const TOOLS: ToolConfig[] = [
     description: 'Interactive heatmap by sector and stock. Size by market cap, color by performance.',
     href: '/tools/heatmap',
     icon: Grid3X3,
-    status: 'coming-soon',
+    status: 'available',
   },
 ];

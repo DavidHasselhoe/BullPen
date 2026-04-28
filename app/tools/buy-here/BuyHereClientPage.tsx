@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTheme } from 'next-themes';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Calculator, Loader2, AlertCircle } from 'lucide-react';
@@ -12,10 +13,8 @@ import {
   Area,
   XAxis,
   YAxis,
-  CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend,
 } from 'recharts';
 import { TickerSelector, type SearchResult } from '@/components/tools/buy-here/TickerSelector';
 import { TimeSelector, PRESETS } from '@/components/tools/buy-here/TimeSelector';
@@ -78,6 +77,132 @@ function formatAmountInput(value: string): string {
 
 function parseFormattedAmount(value: string): number {
   return parseFloat(value.replace(/,/g, '')) || 0;
+}
+
+// ─── Chart ───────────────────────────────────────────────────────────────────
+
+interface ChartTooltipProps {
+  active?: boolean;
+  payload?: Array<{ name: string; value: number; color: string }>;
+  label?: string;
+}
+
+function ChartTooltip({ active, payload, label }: ChartTooltipProps) {
+  if (!active || !payload?.length || !label) return null;
+  const date = new Date(label).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  return (
+    <div className="rounded-lg border border-border bg-background/95 px-3 py-2 shadow-lg backdrop-blur-sm text-xs min-w-[160px]">
+      <p className="text-muted-foreground mb-1.5">{date}</p>
+      {payload.map((entry) => (
+        <div key={entry.name} className="flex items-center justify-between gap-4">
+          <span className="flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full shrink-0" style={{ background: entry.color }} />
+            <span className="text-muted-foreground">{entry.name}</span>
+          </span>
+          <span className="font-semibold tabular-nums text-foreground">{formatCurrency(entry.value)}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function BuyHereChart({
+  data,
+  ticker,
+  stockReturn,
+  hasSpy,
+}: {
+  data: Array<{ date: string; stockValue: number; spyValue?: number }>;
+  ticker: string;
+  stockReturn: number;
+  hasSpy: boolean;
+}) {
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
+  const tickColor = isDark ? '#a1a1aa' : '#71717a';
+
+  const stockColor = stockReturn >= 0 ? '#22c55e' : '#ef4444';
+  const spyColor = '#818cf8';
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ delay: 0.1 }}
+      className="w-full"
+    >
+      {/* Legend */}
+      <div className="flex items-center gap-4 mb-3 text-xs text-muted-foreground">
+        <span className="flex items-center gap-1.5">
+          <span className="h-2.5 w-2.5 rounded-full" style={{ background: stockColor }} />
+          <span className="font-medium text-foreground">{ticker}</span>
+        </span>
+        {hasSpy && (
+          <span className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-full" style={{ background: spyColor }} />
+            <span>S&amp;P 500</span>
+          </span>
+        )}
+      </div>
+
+      <ResponsiveContainer width="100%" height={320}>
+        <AreaChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+          <defs>
+            <linearGradient id="stockGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor={stockColor} stopOpacity={0.18} />
+              <stop offset="95%" stopColor={stockColor} stopOpacity={0} />
+            </linearGradient>
+            <linearGradient id="spyGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor={spyColor} stopOpacity={0.12} />
+              <stop offset="95%" stopColor={spyColor} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <XAxis
+            dataKey="date"
+            tickFormatter={(v) => {
+              const d = new Date(v);
+              return d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+            }}
+            tick={{ fontSize: 11, fill: tickColor }}
+            axisLine={false}
+            tickLine={false}
+            interval="preserveStartEnd"
+            minTickGap={60}
+          />
+          <YAxis
+            tickFormatter={(v) => formatCurrency(v)}
+            tick={{ fontSize: 11, fill: tickColor }}
+            axisLine={false}
+            tickLine={false}
+            width={72}
+          />
+          <Tooltip content={<ChartTooltip />} />
+          <Area
+            type="monotone"
+            dataKey="stockValue"
+            name={ticker}
+            stroke={stockColor}
+            strokeWidth={2}
+            fill="url(#stockGrad)"
+            dot={false}
+            activeDot={{ r: 4, strokeWidth: 0 }}
+          />
+          {hasSpy && (
+            <Area
+              type="monotone"
+              dataKey="spyValue"
+              name="S&P 500"
+              stroke={spyColor}
+              strokeWidth={2}
+              fill="url(#spyGrad)"
+              dot={false}
+              activeDot={{ r: 4, strokeWidth: 0 }}
+            />
+          )}
+        </AreaChart>
+      </ResponsiveContainer>
+    </motion.div>
+  );
 }
 
 export default function BuyHereClientPage() {
@@ -397,54 +522,12 @@ export default function BuyHereClientPage() {
                   </div>
 
                   {result.chartData && result.chartData.length > 0 && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.1 }}
-                      className="h-80 w-full"
-                    >
-                      <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={result.chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                          <XAxis
-                            dataKey="date"
-                            tickFormatter={(v) => {
-                              const d = new Date(v);
-                              return `${d.getMonth() + 1}/${d.getFullYear()}`;
-                            }}
-                            className="text-xs"
-                          />
-                          <YAxis
-                            tickFormatter={(v) => formatCurrency(v)}
-                            className="text-xs"
-                            width={70}
-                          />
-                          <Tooltip
-                            formatter={(value: number | undefined) => value !== undefined ? formatCurrency(value) : ''}
-                            labelFormatter={(label) => new Date(label).toLocaleDateString()}
-                          />
-                          <Legend />
-                          <Area
-                            type="monotone"
-                            dataKey="stockValue"
-                            name={result.stock.ticker}
-                            stroke="hsl(var(--primary))"
-                            fill="hsl(var(--primary) / 0.2)"
-                            strokeWidth={2}
-                          />
-                          {result.spy && (
-                            <Area
-                              type="monotone"
-                              dataKey="spyValue"
-                              name="S&P 500"
-                              stroke="hsl(var(--chart-2))"
-                              fill="hsl(var(--chart-2) / 0.2)"
-                              strokeWidth={2}
-                            />
-                          )}
-                        </AreaChart>
-                      </ResponsiveContainer>
-                    </motion.div>
+                    <BuyHereChart
+                      data={result.chartData}
+                      ticker={result.stock.ticker}
+                      stockReturn={result.stock.returnPct}
+                      hasSpy={!!result.spy}
+                    />
                   )}
                 </div>
               ) : null}

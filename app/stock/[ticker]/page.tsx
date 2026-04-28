@@ -92,7 +92,7 @@ export default function StockDetailPage() {
 
   // Batch-fetch quote + statistics + earnings in one TwelveData /batch call,
   // then seed each component's individual query cache so they skip extra requests.
-  useStockSnapshot(ticker);
+  const snapshot = useStockSnapshot(ticker);
 
   // Hot Picks: record visit + invalidate list so Discover updates when you navigate back
   useEffect(() => {
@@ -161,12 +161,13 @@ export default function StockDetailPage() {
     }
   }, [company?.ticker, displayName, company?.logo_url, addRecentlyViewed]);
 
-  // Both data sources have settled and neither knows this ticker → show 404
+  // All three data sources have settled and none knows this ticker → show 404
   const isNotFound =
-    !companyLoading && !profileLoading &&
+    !companyLoading && !profileLoading && !snapshot.isLoading &&
     company === null &&
     profileData !== undefined &&
-    !profileData?.profile;
+    !profileData?.profile &&
+    !snapshot.data?.success;
 
   if (isNotFound) {
     return (

@@ -1,20 +1,44 @@
 /**
  * GET /api/stock/[ticker]/snapshot
  *
- * Fetches quote + statistics + earnings for a ticker in a single
- * TwelveData /batch POST instead of three separate round-trips.
- * Cost: 1 (quote) + 50 (statistics) + 20 (earnings) = 71 credits per call.
+ * Returns quote (always live) + statistics + earnings (both server-cached 24h).
+ * On a cache hit for stats+earnings, only /quote is fetched from TwelveData (1 credit).
+ * On a full cache miss, all three are batched (71 credits) and stats+earnings are stored.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { batchFetch, TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
+import { getCached, setCached } from '@/lib/cache/market-data-cache';
 import { withRateLimit, withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 
 const APIKEY = () => process.env.TWELVE_DATA_API_KEY ?? '';
 
+// Statistics update once daily after market close
+const STATS_TTL = 24 * 60 * 60;
+
+// Earnings TTL scales down as the next report date approaches so users see
+// fresh EPS actuals within minutes of a company reporting.
+function earningsTtl(earnings: EarningsItem[]): number {
+  const now = Date.now();
+  const nextDate = earnings
+    .filter((e) => e.epsActual === null)
+    .map((e) => Date.parse(e.date))
+    .filter((d) => d > now)
+    .sort((a, b) => a - b)[0];
+
+  if (nextDate === undefined) return 6 * 60 * 60;        // no upcoming — 6h
+  const daysUntil = (nextDate - now) / (1000 * 60 * 60 * 24);
+  if (daysUntil <= 1) return 10 * 60;                    // earnings day — 10 min
+  if (daysUntil <= 3) return 30 * 60;                    // 3-day window — 30 min
+  return 6 * 60 * 60;                                    // otherwise — 6h
+}
+
 function planRestricted(msg: string) {
   return /enterprise plan|higher plan|not available.*plan/i.test(msg);
 }
+
+type Statistics = Record<string, Record<string, unknown>>;
+type EarningsItem = { date: string; time: string; epsEstimate: number | null; epsActual: number | null; quarter: number; year: number };
 
 async function handler(
   _req: NextRequest,
@@ -26,13 +50,22 @@ async function handler(
   const key = APIKEY();
 
   try {
-    const raw = await batchFetch<Record<string, unknown>>({
-      quote: `/quote?symbol=${sym}&apikey=${key}`,
-      statistics: `/statistics?symbol=${sym}&apikey=${key}`,
-      earnings: `/earnings?symbol=${sym}&outputsize=8&apikey=${key}`,
-    });
+    // Check cache for the expensive endpoints (50 + 20 credits)
+    const [cachedStats, cachedEarnings] = await Promise.all([
+      getCached<Statistics>(`snap-stats:${sym}`),
+      getCached<EarningsItem[]>(`snap-earnings:${sym}`),
+    ]);
 
-    // ---- Quote ----
+    // Build batch — always include quote (real-time); skip cached endpoints
+    const requests: Record<string, string> = {
+      quote: `/quote?symbol=${sym}&apikey=${key}`,
+    };
+    if (!cachedStats) requests.statistics = `/statistics?symbol=${sym}&apikey=${key}`;
+    if (!cachedEarnings) requests.earnings = `/earnings?symbol=${sym}&outputsize=8&apikey=${key}`;
+
+    const raw = await batchFetch<Record<string, unknown>>(requests);
+
+    // ---- Quote (always fresh) ----
     let quote: {
       price: number; change: number; changePercent: number;
       high: number; low: number; open: number; previousClose: number;
@@ -54,63 +87,72 @@ async function handler(
       };
     }
 
-    // ---- Statistics ----
-    type Stats = Record<string, Record<string, unknown>>;
-    let statistics: Stats | null = null;
-    const statRaw = raw.statistics as { statistics?: Stats; code?: number; status?: string; message?: string } | undefined;
-    if (statRaw && !statRaw.code && statRaw.status !== 'error' && statRaw.statistics) {
-      const s = statRaw.statistics;
-      const v = (s.valuations_metrics as Record<string, number>) ?? {};
-      const sp = (s.stock_price_summary as Record<string, number>) ?? {};
-      const ss = (s.stock_statistics as Record<string, number>) ?? {};
-      const f = (s.financials as Record<string, unknown>) ?? {};
-      const fi = (f.income_statement as Record<string, number>) ?? {};
-      const d = (s.dividends_and_splits as Record<string, number>) ?? {};
-      statistics = {
-        marketCap: v.market_capitalization ?? null,
-        enterpriseValue: v.enterprise_value ?? null,
-        peRatioTTM: v.trailing_pe ?? null,
-        peRatioForward: v.forward_pe ?? null,
-        pbRatio: v.price_to_book_mrq ?? null,
-        evToEbitda: v.enterprise_to_ebitda ?? null,
-        beta: sp.beta ?? null,
-        week52High: sp.fifty_two_week_high ?? null,
-        week52Low: sp.fifty_two_week_low ?? null,
-        avgVolume: ss.avg_90_volume ?? null,
-        sharesFloat: ss.float_shares ?? null,
-        shortRatio: ss.short_ratio ?? null,
-        dividendYield: d.forward_annual_dividend_yield ?? null,
-        profitMargin: (f.profit_margin as number) ?? null,
-        revenueGrowthTTM: fi.quarterly_revenue_growth ?? null,
-        epsGrowthTTM: fi.quarterly_earnings_growth_yoy ?? null,
-      } as unknown as Stats;
-    } else if (statRaw?.message && planRestricted(statRaw.message)) {
-      statistics = null; // plan_restricted — UI handles it
+    // ---- Statistics (cached or freshly fetched) ----
+    let statistics: Statistics | null = cachedStats;
+
+    if (!cachedStats) {
+      const statRaw = raw.statistics as { statistics?: Statistics; code?: number; status?: string; message?: string } | undefined;
+      if (statRaw && !statRaw.code && statRaw.status !== 'error' && statRaw.statistics) {
+        const s = statRaw.statistics;
+        const v = (s.valuations_metrics as Record<string, number>) ?? {};
+        const sp = (s.stock_price_summary as Record<string, number>) ?? {};
+        const ss = (s.stock_statistics as Record<string, number>) ?? {};
+        const f = (s.financials as Record<string, unknown>) ?? {};
+        const fi = (f.income_statement as Record<string, number>) ?? {};
+        const d = (s.dividends_and_splits as Record<string, number>) ?? {};
+        statistics = {
+          marketCap: v.market_capitalization ?? null,
+          enterpriseValue: v.enterprise_value ?? null,
+          peRatioTTM: v.trailing_pe ?? null,
+          peRatioForward: v.forward_pe ?? null,
+          pbRatio: v.price_to_book_mrq ?? null,
+          evToEbitda: v.enterprise_to_ebitda ?? null,
+          beta: sp.beta ?? null,
+          week52High: sp.fifty_two_week_high ?? null,
+          week52Low: sp.fifty_two_week_low ?? null,
+          avgVolume: ss.avg_90_volume ?? null,
+          sharesFloat: ss.float_shares ?? null,
+          shortRatio: ss.short_ratio ?? null,
+          dividendYield: d.forward_annual_dividend_yield ?? null,
+          profitMargin: (f.profit_margin as number) ?? null,
+          revenueGrowthTTM: fi.quarterly_revenue_growth ?? null,
+          epsGrowthTTM: fi.quarterly_earnings_growth_yoy ?? null,
+        } as unknown as Statistics;
+
+        // Fire-and-forget cache write
+        void setCached(`snap-stats:${sym}`, sym, 'snap_statistics', statistics, STATS_TTL);
+      } else if (statRaw?.message && planRestricted(statRaw.message)) {
+        statistics = null;
+      }
     }
 
-    // ---- Earnings ----
-    interface EarningsItem { date: string; time?: string; eps_estimate?: number | null; eps_actual?: number | null; }
-    interface EarningsRaw { earnings?: EarningsItem[]; code?: number; status?: string; message?: string; }
-    const earningsRaw = raw.earnings as EarningsRaw | undefined;
-    let earnings: {
-      date: string; time: string; epsEstimate: number | null; epsActual: number | null;
-      quarter: number; year: number;
-    }[] = [];
-    if (earningsRaw && !earningsRaw.code && earningsRaw.status !== 'error') {
-      earnings = (earningsRaw.earnings ?? []).map((e) => {
-        const [yearStr, monthStr] = e.date.split('-');
-        const year = parseInt(yearStr ?? '0', 10);
-        const month = parseInt(monthStr ?? '0', 10);
-        const quarter = month <= 3 ? 1 : month <= 6 ? 2 : month <= 9 ? 3 : 4;
-        return {
-          date: e.date,
-          time: e.time ?? '',
-          epsEstimate: e.eps_estimate ?? null,
-          epsActual: e.eps_actual ?? null,
-          quarter,
-          year,
-        };
-      });
+    // ---- Earnings (cached or freshly fetched) ----
+    let earnings: EarningsItem[] = cachedEarnings ?? [];
+
+    if (!cachedEarnings) {
+      interface EarningsApiItem { date: string; time?: string; eps_estimate?: number | null; eps_actual?: number | null; }
+      interface EarningsRaw { earnings?: EarningsApiItem[]; code?: number; status?: string; }
+      const earningsRaw = raw.earnings as EarningsRaw | undefined;
+      if (earningsRaw && !earningsRaw.code && earningsRaw.status !== 'error') {
+        earnings = (earningsRaw.earnings ?? []).map((e) => {
+          const [yearStr, monthStr] = e.date.split('-');
+          const year = parseInt(yearStr ?? '0', 10);
+          const month = parseInt(monthStr ?? '0', 10);
+          const quarter = month <= 3 ? 1 : month <= 6 ? 2 : month <= 9 ? 3 : 4;
+          return {
+            date: e.date,
+            time: e.time ?? '',
+            epsEstimate: e.eps_estimate ?? null,
+            epsActual: e.eps_actual ?? null,
+            quarter,
+            year,
+          };
+        });
+
+        if (earnings.length > 0) {
+          void setCached(`snap-earnings:${sym}`, sym, 'snap_earnings', earnings, earningsTtl(earnings));
+        }
+      }
     }
 
     return addSecurityHeaders(

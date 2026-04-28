@@ -82,9 +82,7 @@ export function Navigation() {
   }, [clearCommunityCloseTimer]);
 
   const prefetchDiscover = useCallback(() => {
-    queryClient.prefetchQuery({ queryKey: ['discover', 'fundamental-changes', 6] });
     queryClient.prefetchQuery({ queryKey: ['discover', 'recent-filings', 10] });
-    queryClient.prefetchQuery({ queryKey: ['discover', 'companies-to-watch', 10] });
     queryClient.prefetchQuery({ queryKey: ['market', 'movers', 5] });
     queryClient.prefetchQuery({ queryKey: ['market', 'news', 'general', 5] });
     queryClient.prefetchQuery({ queryKey: ['hot-picks'] });

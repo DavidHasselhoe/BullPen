@@ -2,16 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCompanyProfile, getKeyExecutives, TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
 import { getCached, setCached } from '@/lib/cache/market-data-cache';
 import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
+import { translateText } from '@/lib/i18n/translate';
 
 export const dynamic = 'force-dynamic';
 const PROFILE_TTL_SECONDS = 7 * 24 * 60 * 60;
 
 async function handler(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ ticker: string }> },
 ) {
   const { ticker } = await params;
   const sym = ticker.toUpperCase();
+  const lang = (request.nextUrl.searchParams.get('lang') ?? 'en').toLowerCase();
   const cacheKey = `profile:${sym}`;
 
   try {
@@ -20,9 +22,13 @@ async function handler(
       executives: Awaited<ReturnType<typeof getKeyExecutives>>;
     }>(cacheKey);
     if (cached) {
+      const profile = { ...cached.profile };
+      if (profile.description) {
+        profile.description = await translateText(profile.description, lang);
+      }
       return addSecurityHeaders(
         NextResponse.json(
-          { success: true, symbol: sym, profile: cached.profile, executives: cached.executives },
+          { success: true, symbol: sym, profile, executives: cached.executives },
           { headers: { 'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=3600' } },
         ),
       );
@@ -41,9 +47,14 @@ async function handler(
 
     await setCached(cacheKey, sym, 'company_profile', { profile, executives }, PROFILE_TTL_SECONDS);
 
+    const translatedProfile = { ...profile };
+    if (translatedProfile.description) {
+      translatedProfile.description = await translateText(translatedProfile.description, lang);
+    }
+
     return addSecurityHeaders(
       NextResponse.json(
-        { success: true, symbol: sym, profile, executives },
+        { success: true, symbol: sym, profile: translatedProfile, executives },
         { headers: { 'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=3600' } },
       ),
     );

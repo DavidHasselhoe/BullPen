@@ -3,7 +3,7 @@ import { withRateLimit, withAuth, addSecurityHeaders } from '@/lib/security/api-
 import { getStatistics, TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
 import { getCached, setCached } from '@/lib/cache/market-data-cache';
 
-const STATS_TTL_SECONDS = 60 * 60;
+const STATS_TTL_SECONDS = 24 * 60 * 60;
 
 async function handler(
   _request: NextRequest,

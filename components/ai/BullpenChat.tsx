@@ -3,16 +3,17 @@
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useEffect, useRef, useState, forwardRef, useImperativeHandle, memo } from 'react';
 import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Send, Square, Bot, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AuthUser } from '@/lib/auth/auth';
 import { useAddOrUpdateHolding, useUpdateHoldingBySymbol, useRemoveHoldingBySymbol } from '@/hooks/use-holdings';
-import { useTypingEffect } from '@/hooks/use-typing-effect';
 
 const DEFAULT_STARTER_PROMPTS = [
   'What is EBITDA?',
@@ -63,44 +64,87 @@ function extractClientActions(message: { parts?: Array<{ type?: string; state?: 
   return actions;
 }
 
-/** Renders AI message text with a typewriter animation while streaming. */
-function AssistantMessageContent({
+const MARKDOWN_CLS = cn(
+  'break-words',
+  '[&_h1]:text-base [&_h1]:font-bold [&_h1]:mt-2 [&_h1]:mb-1 [&_h1]:first:mt-0',
+  '[&_h2]:text-sm [&_h2]:font-semibold [&_h2]:mt-2 [&_h2]:mb-1 [&_h2]:first:mt-0',
+  '[&_h3]:text-sm [&_h3]:font-semibold [&_h3]:mt-1.5 [&_h3]:mb-0.5 [&_h3]:first:mt-0',
+  '[&_p]:my-1 [&_p]:first:mt-0 [&_p]:last:mb-0',
+  '[&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-4 [&_ul]:space-y-0.5',
+  '[&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-4 [&_ol]:space-y-0.5',
+  '[&_strong]:font-semibold',
+  '[&_code]:bg-muted-foreground/20 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs',
+  '[&_pre]:bg-muted-foreground/10 [&_pre]:p-2 [&_pre]:rounded-lg [&_pre]:overflow-x-auto [&_pre]:my-2',
+  '[&_pre_code]:bg-transparent [&_pre_code]:p-0',
+  '[&_a]:underline [&_a]:hover:opacity-80'
+);
+
+/**
+ * Fades in only the text that has arrived since the last completed animation.
+ *
+ * `stable` = the portion already confirmed as fully visible (opacity 1).
+ * `fresh`  = everything since then — rendered in a motion.span that fades in.
+ *
+ * When the fade finishes, `stable` advances to the current full text so the
+ * next batch of tokens gets its own fresh fade. Fast streaming batches multiple
+ * tokens into one smooth reveal; slow streaming fades each token individually.
+ */
+function StreamingText({ text }: { text: string }) {
+  const [stable, setStable] = useState('');
+  const fresh = text.slice(stable.length);
+
+  return (
+    <>
+      {stable}
+      {fresh && (
+        <motion.span
+          key={stable.length}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.25, ease: 'easeOut' }}
+          onAnimationComplete={() => setStable(text)}
+        >
+          {fresh}
+        </motion.span>
+      )}
+    </>
+  );
+}
+
+/**
+ * During streaming: plain-text chunk-fade for smooth reveal.
+ * After streaming: full ReactMarkdown with formatting.
+ * Memoized so completed messages skip re-renders on every incoming token.
+ */
+const AssistantMessageContent = memo(function AssistantMessageContent({
   text,
   isStreaming,
 }: {
   text: string;
   isStreaming: boolean;
 }) {
-  const displayed = useTypingEffect(text, isStreaming);
-  const showCursor = isStreaming && displayed.length < text.length;
-
-  return (
-    <div
-      className={cn(
-        'break-words',
-        '[&_h1]:text-base [&_h1]:font-bold [&_h1]:mt-2 [&_h1]:mb-1 [&_h1]:first:mt-0',
-        '[&_h2]:text-sm [&_h2]:font-semibold [&_h2]:mt-2 [&_h2]:mb-1 [&_h2]:first:mt-0',
-        '[&_h3]:text-sm [&_h3]:font-semibold [&_h3]:mt-1.5 [&_h3]:mb-0.5 [&_h3]:first:mt-0',
-        '[&_p]:my-1 [&_p]:first:mt-0 [&_p]:last:mb-0',
-        '[&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-4 [&_ul]:space-y-0.5',
-        '[&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-4 [&_ol]:space-y-0.5',
-        '[&_strong]:font-semibold',
-        '[&_code]:bg-muted-foreground/20 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs',
-        '[&_pre]:bg-muted-foreground/10 [&_pre]:p-2 [&_pre]:rounded-lg [&_pre]:overflow-x-auto [&_pre]:my-2',
-        '[&_pre_code]:bg-transparent [&_pre_code]:p-0',
-        '[&_a]:underline [&_a]:hover:opacity-80'
-      )}
-    >
-      <ReactMarkdown remarkPlugins={[remarkGfm]}>{displayed}</ReactMarkdown>
-      {showCursor && (
-        <span
-          className="inline-block w-[2px] h-[1em] bg-current opacity-80 ml-0.5 align-middle animate-[blink_1s_step-end_infinite]"
+  if (isStreaming) {
+    return (
+      <div className={MARKDOWN_CLS}>
+        <span className="whitespace-pre-wrap text-sm leading-relaxed">
+          <StreamingText text={text} />
+        </span>
+        <motion.span
+          className="inline-block w-[2px] h-[1em] bg-current ml-0.5 align-middle rounded-full"
+          animate={{ opacity: [1, 0] }}
+          transition={{ duration: 0.6, repeat: Infinity, repeatType: 'reverse', ease: 'linear' }}
           aria-hidden
         />
-      )}
+      </div>
+    );
+  }
+
+  return (
+    <div className={MARKDOWN_CLS}>
+      <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
     </div>
   );
-}
+});
 
 export interface BullpenChatHandle {
   focusInput: () => void;
@@ -111,6 +155,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
   ref
 ) {
   const router = useRouter();
+  const { i18n } = useTranslation();
   const addHoldingMutation = useAddOrUpdateHolding();
   const updateHoldingMutation = useUpdateHoldingBySymbol();
   const removeHoldingMutation = useRemoveHoldingBySymbol();
@@ -138,6 +183,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
       body: {
         ...(aiContext ? { context: aiContext } : {}),
         ...(user?.experience_level ? { experienceLevel: user.experience_level } : {}),
+        language: i18n.language,
       },
     }),
     onFinish: async ({ message }) => {
@@ -282,10 +328,19 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
                   : 'Ask about SEC filings, financial metrics, or investment concepts.'}
               </p>
             </div>
-            <div className="flex flex-wrap gap-2.5 justify-center mt-3">
+            <motion.div
+              className="flex flex-wrap gap-2.5 justify-center mt-3"
+              initial="hidden"
+              animate="visible"
+              variants={{ visible: { transition: { staggerChildren: 0.06 } }, hidden: {} }}
+            >
               {displayPrompts.map((suggestion) => (
-                <button
+                <motion.button
                   key={suggestion}
+                  variants={{
+                    hidden: { opacity: 0, y: 8 },
+                    visible: { opacity: 1, y: 0, transition: { duration: 0.22, ease: 'easeOut' } },
+                  }}
                   onClick={() => {
                     sendMessage({ parts: [{ type: 'text', text: suggestion }] });
                     refocusInput();
@@ -293,17 +348,20 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
                   className="text-xs px-4 py-2 rounded-full border border-border bg-muted/40 hover:bg-muted/80 hover:border-primary/30 text-muted-foreground hover:text-foreground transition-all duration-200 hover:shadow-sm"
                 >
                   {suggestion}
-                </button>
+                </motion.button>
               ))}
-            </div>
+            </motion.div>
           </div>
         )}
 
         {messages.map((message) => {
           const isUser = message.role === 'user';
           return (
-            <div
+            <motion.div
               key={message.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
               className={cn('flex items-end gap-2', isUser ? 'justify-end' : 'justify-start')}
             >
               {!isUser && (
@@ -364,24 +422,34 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
                   )}
                 </div>
               )}
-            </div>
+            </motion.div>
           );
         })}
 
         {/* Thinking indicator */}
         {isStreaming && messages[messages.length - 1]?.role === 'user' && (
-          <div className="flex items-end gap-2 justify-start">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            className="flex items-end gap-2 justify-start"
+          >
             <div className="shrink-0 rounded-full bg-primary/10 p-1.5 mb-0.5">
               <Bot className="h-3.5 w-3.5 text-primary" />
             </div>
             <div className="bg-muted rounded-2xl rounded-bl-sm px-3.5 py-2.5">
-              <span className="flex gap-1 items-center">
-                <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60 animate-bounce [animation-delay:0ms]" />
-                <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60 animate-bounce [animation-delay:150ms]" />
-                <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60 animate-bounce [animation-delay:300ms]" />
+              <span className="flex gap-1.5 items-center">
+                {[0, 1, 2].map((i) => (
+                  <motion.span
+                    key={i}
+                    className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60"
+                    animate={{ scale: [1, 1.35, 1], opacity: [0.5, 1, 0.5] }}
+                    transition={{ duration: 1, repeat: Infinity, delay: i * 0.2, ease: 'easeInOut' }}
+                  />
+                ))}
               </span>
             </div>
-          </div>
+          </motion.div>
         )}
 
         <div ref={bottomRef} />
@@ -391,9 +459,26 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
       {error && (
         <div className="mx-3 mb-1 px-3 py-2 rounded-lg bg-destructive/10 text-destructive text-xs flex items-center justify-between gap-2">
           <span className="truncate">{error.message}</span>
-          <button onClick={clearError} className="shrink-0 underline">
-            Dismiss
-          </button>
+          <div className="flex items-center gap-3 shrink-0">
+            <button
+              onClick={() => {
+                const lastUser = [...messages].reverse().find((m) => m.role === 'user');
+                const lastText =
+                  (lastUser?.parts as Array<{ type: string; text?: string }>)
+                    ?.find((p) => p.type === 'text')?.text ?? '';
+                if (!lastText) return;
+                clearError();
+                sendMessage({ parts: [{ type: 'text', text: lastText }] });
+                refocusInput();
+              }}
+              className="shrink-0 underline"
+            >
+              Retry
+            </button>
+            <button onClick={clearError} className="shrink-0 underline">
+              Dismiss
+            </button>
+          </div>
         </div>
       )}
 

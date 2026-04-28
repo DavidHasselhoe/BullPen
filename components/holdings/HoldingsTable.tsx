@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { useHoldings, useRemoveHolding } from '@/hooks/use-holdings';
 import { useAuth } from '@/hooks/use-auth';
-import { Trash2, Edit2, ArrowUpRight, ArrowDownRight, Plus, Search, X } from 'lucide-react';
+import { Trash2, Edit2, ArrowUpRight, ArrowDownRight, Plus, Search, X, Loader2 } from 'lucide-react';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { logger } from '@/lib/utils/logger';
@@ -110,7 +110,9 @@ export function HoldingsTable({ onAddClick, holdingsWithPrices: externalHoldings
     // Skip the internal fetch entirely when the parent already supplies live data.
     enabled: !externalHoldings && !!holdings && holdings.length > 0,
     staleTime: 3 * 60 * 1000,
-    gcTime: 15 * 60 * 1000,
+    // Keep price cache for 5 min max — stale quotes older than this are garbage-
+    // collected so returning users always see a fresh fetch, not stale prices.
+    gcTime: 5 * 60 * 1000,
   });
 
   // Combine holdings with quotes and calculate derived values.
@@ -505,24 +507,37 @@ export function HoldingsTable({ onAddClick, holdingsWithPrices: externalHoldings
                         : '—'}
                     </td>
                     <td className="py-4 px-4">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEdit(holding)}
-                          disabled={removeHolding.isPending}
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRemoveClick(holding)}
-                          disabled={removeHolding.isPending}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      {(() => {
+                        const isDeleting =
+                          removeHolding.isPending && deletingHolding?.id === holding.id;
+                        const anyPending = removeHolding.isPending;
+                        return (
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEdit(holding)}
+                              disabled={anyPending || isEditModalOpen}
+                              title="Edit holding"
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveClick(holding)}
+                              disabled={anyPending}
+                              title={isDeleting ? 'Removing…' : 'Remove holding'}
+                            >
+                              {isDeleting ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </div>
+                        );
+                      })()}
                     </td>
                   </tr>
                 );

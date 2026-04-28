@@ -52,6 +52,8 @@ export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
   const [quantity, setQuantity] = useState('');
   const [avgPrice, setAvgPrice] = useState('');
   const [datePurchased, setDatePurchased] = useState('');
+  const [quantityError, setQuantityError] = useState('');
+  const [avgPriceError, setAvgPriceError] = useState('');
 
   // Simple debounce implementation
   const [debouncedQuery, setDebouncedQuery] = useState('');
@@ -107,12 +109,31 @@ export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
     []
   );
 
+  const validateQuantity = (val: string) => {
+    if (!val) return '';
+    const n = parseFloat(val);
+    if (isNaN(n) || n <= 0) return 'Quantity must be greater than 0';
+    return '';
+  };
+
+  const validateAvgPrice = (val: string) => {
+    if (!val) return '';
+    const n = parseFloat(val);
+    if (isNaN(n) || n <= 0) return 'Price must be greater than 0';
+    return '';
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!selectedStock) {
-      return;
-    }
+    if (!selectedStock) return;
+
+    // Run validation before submitting
+    const qErr = validateQuantity(quantity);
+    const pErr = validateAvgPrice(avgPrice);
+    setQuantityError(qErr);
+    setAvgPriceError(pErr);
+    if (qErr || pErr) return;
 
     try {
       const input: AddHoldingInput = {
@@ -144,6 +165,8 @@ export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
     setQuantity('');
     setAvgPrice('');
     setDatePurchased('');
+    setQuantityError('');
+    setAvgPriceError('');
     onOpenChange(false);
   };
 
@@ -224,11 +247,19 @@ export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
               id="quantity"
               type="number"
               step="0.01"
-              min="0"
               placeholder="e.g., 10"
               value={quantity}
-              onChange={(e) => setQuantity(e.target.value)}
+              onChange={(e) => {
+                setQuantity(e.target.value);
+                if (quantityError) setQuantityError(validateQuantity(e.target.value));
+              }}
+              onBlur={(e) => setQuantityError(validateQuantity(e.target.value))}
+              aria-invalid={!!quantityError}
+              className={quantityError ? 'border-destructive focus-visible:ring-destructive' : ''}
             />
+            {quantityError && (
+              <p className="text-xs text-destructive">{quantityError}</p>
+            )}
           </div>
 
           {/* Average Price (Optional) */}
@@ -238,11 +269,19 @@ export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
               id="avg-price"
               type="number"
               step="0.01"
-              min="0"
               placeholder="e.g., 150.00"
               value={avgPrice}
-              onChange={(e) => setAvgPrice(e.target.value)}
+              onChange={(e) => {
+                setAvgPrice(e.target.value);
+                if (avgPriceError) setAvgPriceError(validateAvgPrice(e.target.value));
+              }}
+              onBlur={(e) => setAvgPriceError(validateAvgPrice(e.target.value))}
+              aria-invalid={!!avgPriceError}
+              className={avgPriceError ? 'border-destructive focus-visible:ring-destructive' : ''}
             />
+            {avgPriceError && (
+              <p className="text-xs text-destructive">{avgPriceError}</p>
+            )}
           </div>
 
           {/* Date Purchased (Optional) */}

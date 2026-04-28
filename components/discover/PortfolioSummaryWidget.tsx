@@ -49,7 +49,7 @@ export function PortfolioSummaryWidget() {
     },
     enabled: isAuthenticated && !!holdings && holdings.length > 0,
     staleTime: 3 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,  // price data; evict quickly so stale prices don't persist
   });
 
   const summary = (() => {
@@ -83,11 +83,15 @@ export function PortfolioSummaryWidget() {
     return { totalValue, totalDayChange, dayChangePercent };
   })();
 
-  if (!isAuthenticated || !holdings || holdings.length === 0) {
-    return null;
-  }
+  if (!isAuthenticated) return null;
 
-  if (isLoading || (holdings.length > 0 && !quotesData.data && quotesData.isLoading)) {
+  // Skeleton placeholder — shown while holdings or quotes are fetching so the
+  // flex row (CommandBar + this widget) doesn't collapse and re-expand (layout shift).
+  const showSkeleton =
+    isLoading ||
+    (!!holdings && holdings.length > 0 && !quotesData.data && quotesData.isLoading);
+
+  if (showSkeleton) {
     return (
       <Card className="border-border/50 overflow-hidden">
         <CardContent className="p-4">
@@ -102,6 +106,8 @@ export function PortfolioSummaryWidget() {
       </Card>
     );
   }
+
+  if (!holdings || holdings.length === 0) return null;
 
   if (!summary) {
     return null;

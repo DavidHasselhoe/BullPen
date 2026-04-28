@@ -11,7 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { TrendingUp, TrendingDown, Minus, Trash2, Pencil, Loader2, MessageCircle, ChevronDown, ChevronUp, CornerDownRight } from 'lucide-react';
 import type { Thesis } from '@/app/api/social/thesis/[symbol]/route';
-import type { ThesisReply } from '@/app/api/social/thesis/[id]/replies/route';
+import type { ThesisReply } from '@/app/api/social/thesis/[symbol]/replies/route';
 
 const SENTIMENTS = [
   { key: 'bull' as const, label: 'Bull', icon: TrendingUp, color: 'text-emerald-500', bg: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400' },
@@ -142,7 +142,7 @@ function ThesisReplies({ thesisId, replyCount, defaultOpen = false }: ThesisRepl
           ) : (
             (replies ?? []).map((reply) => {
               const name = reply.full_name || reply.username || 'Anonymous';
-              const profileHref = reply.username ? `/users/${encodeURIComponent(reply.username)}` : '#';
+              const profileHref = `/users/${encodeURIComponent(reply.username ?? reply.user_id)}`;
               return (
                 <div key={reply.id} className="group flex items-start gap-2">
                   <Link href={profileHref} className="shrink-0 mt-0.5">
@@ -220,7 +220,7 @@ interface ThesisCardProps {
 
 function ThesisCard({ thesis, onDelete, onEdit, isDeleting }: ThesisCardProps) {
   const displayName = thesis.full_name || thesis.username || 'Anonymous';
-  const profileHref = thesis.username ? `/users/${encodeURIComponent(thesis.username)}` : '#';
+  const profileHref = `/users/${encodeURIComponent(thesis.username ?? thesis.user_id)}`;
 
   return (
     <div className={cn('rounded-xl border border-border bg-card px-4 py-3 space-y-1', thesis.is_own && 'border-primary/20 bg-primary/5')}>

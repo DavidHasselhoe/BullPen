@@ -44,16 +44,16 @@ export function TimeSelector({
             }}
             className={cn(
               'relative z-10 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200',
-              'hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background',
+              'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background',
               (value === i || (opt.years === null && value === null))
-                ? 'text-primary-foreground'
-                : 'text-muted-foreground hover:bg-background/50'
+                ? 'text-foreground'
+                : 'text-muted-foreground hover:text-foreground'
             )}
           >
             {value === i || (opt.years === null && value === null) ? (
               <motion.div
                 layoutId="time-selector-bg"
-                className="absolute inset-0 rounded-lg bg-primary"
+                className="absolute inset-0 rounded-lg bg-background shadow-sm"
                 transition={{ type: 'spring', bounce: 0.2, duration: 0.4 }}
                 style={{ zIndex: -1 }}
               />

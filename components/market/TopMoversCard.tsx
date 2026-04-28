@@ -10,6 +10,37 @@ import { CompanyRowActions } from '@/components/discover/CompanyRowActions';
 import { cn } from '@/lib/utils';
 import type { MarketMover } from '@/lib/twelvedata/twelvedata-client';
 
+/** Returns a human-readable label for when the movers data is from, using ET. */
+function useMoversDateLabel(): string {
+  const nowET = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  const day = nowET.getDay(); // 0=Sun 6=Sat
+  const h = nowET.getHours();
+  const m = nowET.getMinutes();
+
+  const fmt = (d: Date) =>
+    d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+  const prevWeekday = (d: Date) => {
+    const copy = new Date(d);
+    const wd = copy.getDay();
+    copy.setDate(copy.getDate() - (wd === 1 ? 3 : wd === 0 ? 2 : 1));
+    return copy;
+  };
+
+  if (day === 0 || day === 6) {
+    const lastFriday = new Date(nowET);
+    lastFriday.setDate(nowET.getDate() - (day === 0 ? 2 : 1));
+    return `${fmt(lastFriday)} · Market closed`;
+  }
+
+  const beforeOpen = h < 9 || (h === 9 && m < 30);
+  const afterClose = h >= 16;
+
+  if (beforeOpen) return `${fmt(prevWeekday(nowET))} · Pre-market`;
+  if (afterClose) return `${fmt(nowET)} · After close`;
+  return fmt(nowET);
+}
+
 interface TopMoversCardProps {
   gainers: MarketMover[];
   losers: MarketMover[];
@@ -112,6 +143,7 @@ function MoverItem({
 }
 
 export function TopMoversCard({ gainers, losers, isLoading, isHoldingsMode }: TopMoversCardProps) {
+  const dateLabel = useMoversDateLabel();
   const allTickers = [...(gainers || []), ...(losers || [])].map((m) => m.symbol);
   const { data: companyBatch } = useQuery({
     queryKey: ['companies-batch', allTickers],
@@ -129,10 +161,14 @@ export function TopMoversCard({ gainers, losers, isLoading, isHoldingsMode }: To
     staleTime: 5 * 60 * 1000,
   });
 
-  // Prefer DB batch names; fall back to name returned directly by TwelveData movers endpoint
-  const companyNameMap = new Map([
-    ...[...gainers, ...losers].filter((m) => m.name).map((m): [string, string] => [m.symbol, m.name!]),
-    ...(companyBatch || []).map((c): [string, string] => [c.ticker, c.name]),
+  // Build name map: TwelveData REST names first, then Supabase batch (only real names, not ticker-fallbacks)
+  const companyNameMap = new Map<string, string>([
+    ...[...gainers, ...losers]
+      .filter((m) => m.name && m.name !== m.symbol)
+      .map((m): [string, string] => [m.symbol, m.name!]),
+    ...(companyBatch || [])
+      .filter((c) => c.name && c.name !== c.ticker)
+      .map((c): [string, string] => [c.ticker, c.name]),
   ]);
 
   if (isLoading) {
@@ -140,6 +176,7 @@ export function TopMoversCard({ gainers, losers, isLoading, isHoldingsMode }: To
       <Card className="border-border/50 min-w-0 overflow-hidden">
         <CardHeader>
           <CardTitle>Top Market Movers</CardTitle>
+          <p className="text-xs text-muted-foreground">{dateLabel}</p>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
@@ -178,6 +215,7 @@ export function TopMoversCard({ gainers, losers, isLoading, isHoldingsMode }: To
             <span className="text-xs font-normal text-muted-foreground">(from your portfolio)</span>
           )}
         </CardTitle>
+        <p className="text-xs text-muted-foreground">{dateLabel}</p>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Top Gainers */}

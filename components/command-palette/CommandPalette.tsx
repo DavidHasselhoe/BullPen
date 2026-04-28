@@ -58,7 +58,8 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const searchShortcut = useSearchShortcut();
   const [searchQuery, setSearchQuery] = useState('');
 
-  const debouncedQuery = useDebounce(searchQuery, 300);
+  // 500 ms reduces intermediate API calls significantly for average typing speeds
+  const debouncedQuery = useDebounce(searchQuery, 500);
 
   // Company search
   const {
@@ -81,6 +82,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     },
     enabled: debouncedQuery.trim().length >= 2,
     staleTime: 30 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   // People search (parallel to company search)
@@ -99,6 +101,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     },
     enabled: debouncedQuery.trim().length >= 2,
     staleTime: 30 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   const handleSelectCompany = useCallback(

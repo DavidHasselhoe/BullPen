@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import { Bot, X, PanelRightClose } from 'lucide-react';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import {
   Tooltip,
   TooltipContent,
@@ -31,9 +32,10 @@ const STARTER_PROMPTS = [
   'Companies with accelerating revenue',
 ];
 
-// Animation timings (ms)
-const FADE_MS = 120;   // content fade in/out
-const SLIDE_MS = 160;  // panel width expand/collapse
+const PANEL_WIDTH = 480;
+
+// Spring: well-damped, natural drawer feel
+const spring = { type: 'spring' as const, stiffness: 280, damping: 28, restDelta: 0.5 };
 
 function AuthGate() {
   return (
@@ -67,46 +69,17 @@ function AuthGate() {
 
 export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumedQuery }: AISidePanelProps) {
   const { user, isLoading, isAuthenticated } = useAuth();
-  // panelExpanded controls the aside width (may lag behind `open` during close fade)
-  const [panelExpanded, setPanelExpanded] = useState(false);
-  // contentVisible controls the opacity fade
-  const [contentVisible, setContentVisible] = useState(false);
   const chatRef = useRef<BullpenChatHandle>(null);
-  const closingRef = useRef(false);
 
   const handleClose = useCallback(() => {
-    if (closingRef.current) return;
-    closingRef.current = true;
-    // Step 1: fade content out
-    setContentVisible(false);
-    // Step 2: after fade completes, collapse the panel width then notify parent
-    const t = setTimeout(() => {
-      setPanelExpanded(false);
-      onClose();
-      closingRef.current = false;
-    }, FADE_MS);
-    return () => clearTimeout(t);
+    onClose();
   }, [onClose]);
 
-  // React to external open changes
+  // Focus input after spring settles (~380ms for stiffness:280 damping:28)
   useEffect(() => {
-    if (open) {
-      // Cancel any in-progress close
-      closingRef.current = false;
-      // Step 1: expand panel width
-      setPanelExpanded(true);
-      setContentVisible(false);
-      // Step 2: after width settles, fade content in and focus
-      const t = setTimeout(() => {
-        setContentVisible(true);
-        chatRef.current?.focusInput?.();
-      }, SLIDE_MS);
-      return () => clearTimeout(t);
-    } else if (!closingRef.current) {
-      // External close (not via handleClose) — instant
-      setContentVisible(false);
-      setPanelExpanded(false);
-    }
+    if (!open) return;
+    const t = setTimeout(() => chatRef.current?.focusInput?.(), 380);
+    return () => clearTimeout(t);
   }, [open]);
 
   // Escape to close
@@ -119,32 +92,29 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
   }, [handleClose]);
 
   return (
-    <aside
-      aria-hidden={!panelExpanded}
-      style={{ transitionDuration: `${SLIDE_MS}ms` }}
-      className={cn(
-        'flex h-full flex-col shrink-0 overflow-visible relative',
-        'bg-background border-l border-border/60',
-        'transition-[width] ease-out',
-        panelExpanded ? 'w-[480px] sm:w-[520px]' : 'w-0 min-w-0 border-0'
-      )}
+    <motion.aside
+      aria-hidden={!open}
+      initial={false}
+      animate={{ width: open ? PANEL_WIDTH : 0 }}
+      // On close: content fades first (0.13s), then width collapses (delay 0.13s)
+      // On open: width springs first (no delay), then content fades in (delay 0.22s)
+      transition={open ? spring : { ...spring, delay: 0.13 }}
+      className="relative flex h-full flex-col shrink-0 overflow-visible"
     >
-      {/* Content — opacity-controlled, no overflow-hidden so it never "compresses" */}
-      <div
-        style={{ transitionDuration: `${FADE_MS}ms` }}
-        className={cn(
-          'flex flex-1 flex-col min-h-0 transition-opacity ease-in-out',
-          contentVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        )}
+      {/* Collapse tab — sibling to inner content so overflow-visible lets it escape */}
+      <motion.div
+        initial={false}
+        animate={{ opacity: open ? 1 : 0 }}
+        transition={open ? { duration: 0.18, delay: 0.22 } : { duration: 0.13 }}
+        style={{ pointerEvents: open ? 'auto' : 'none' }}
+        className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-full z-10"
       >
-        {/* Collapse tab on inner edge */}
         <Tooltip>
           <TooltipTrigger asChild>
             <button
               onClick={handleClose}
               aria-label="Close AI panel"
               className={cn(
-                'absolute left-0 top-1/2 -translate-y-1/2 -translate-x-full z-10',
                 'flex items-center justify-center',
                 'w-8 h-16 -ml-px',
                 'rounded-l-md border border-r-0 border-border/60 bg-muted/80 hover:bg-muted',
@@ -157,7 +127,16 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
           </TooltipTrigger>
           <TooltipContent side="left">Close AI panel</TooltipContent>
         </Tooltip>
+      </motion.div>
 
+      {/* Main content — absolute fill avoids squishing during width spring animation */}
+      <motion.div
+        initial={false}
+        animate={{ opacity: open ? 1 : 0 }}
+        transition={open ? { duration: 0.18, delay: 0.22 } : { duration: 0.13 }}
+        style={{ pointerEvents: open ? 'auto' : 'none' }}
+        className="absolute inset-0 flex flex-col bg-background border-l border-border/60 overflow-hidden"
+      >
         {/* Header */}
         <div className="flex h-16 shrink-0 items-center justify-between px-4 border-b border-border/50 bg-muted/30">
           <div className="flex items-center gap-2.5 flex-1 min-w-0">
@@ -220,7 +199,7 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
             />
           )}
         </div>
-      </div>
-    </aside>
+      </motion.div>
+    </motion.aside>
   );
 }

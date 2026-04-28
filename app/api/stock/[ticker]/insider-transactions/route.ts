@@ -3,7 +3,7 @@ import { getInsiderTransactions, TwelveDataRateLimitError } from '@/lib/twelveda
 import { getCached, setCached } from '@/lib/cache/market-data-cache';
 import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
 
-const INSIDER_TTL_SECONDS = 12 * 60 * 60;
+const INSIDER_TTL_SECONDS = 24 * 60 * 60;
 
 async function handler(
   _request: NextRequest,

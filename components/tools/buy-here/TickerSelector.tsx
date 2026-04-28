@@ -78,7 +78,7 @@ export function TickerSelector({
     setIsSearching(true);
   }, [onChange]);
 
-  const showDropdown = open && (isSearching || query.length >= 2 || (results && results.length > 0));
+  const showDropdown = open && query.length >= 2;
 
   return (
     <div ref={containerRef} className={cn('relative', className)}>
@@ -172,12 +172,8 @@ export function TickerSelector({
                 </button>
               ))}
             </div>
-          ) : query.length >= 2 ? (
-            <div className="py-8 text-center text-sm text-muted-foreground">No companies found</div>
           ) : (
-            <div className="py-6 text-center text-sm text-muted-foreground">
-              Type 2+ characters to search
-            </div>
+            <div className="py-8 text-center text-sm text-muted-foreground">No companies found</div>
           )}
         </div>
       )}

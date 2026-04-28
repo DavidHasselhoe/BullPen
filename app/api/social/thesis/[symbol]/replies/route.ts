@@ -30,20 +30,20 @@ function makeSupabase(cookieStore: Awaited<ReturnType<typeof cookies>>) {
   );
 }
 
-/** GET /api/social/thesis/[id]/replies */
+/** GET /api/social/thesis/[symbol]/replies */
 async function getHandler(
   _req: NextRequest,
-  context: { params: Promise<{ id: string }> },
+  context: { params: Promise<{ symbol: string }> },
   session: { userId: string },
 ): Promise<NextResponse> {
-  const { id } = await context.params;
+  const { symbol: thesisId } = await context.params;
   const cookieStore = await cookies();
   const supabase = makeSupabase(cookieStore);
 
   const { data: rows, error } = await supabase
     .from('stock_thesis_replies')
     .select('id, thesis_id, user_id, content, created_at')
-    .eq('thesis_id', id)
+    .eq('thesis_id', thesisId)
     .order('created_at', { ascending: true })
     .limit(100);
 
@@ -75,13 +75,13 @@ async function getHandler(
   return addSecurityHeaders(NextResponse.json({ success: true, replies }));
 }
 
-/** POST /api/social/thesis/[id]/replies */
+/** POST /api/social/thesis/[symbol]/replies */
 async function postHandler(
   req: NextRequest,
-  context: { params: Promise<{ id: string }> },
+  context: { params: Promise<{ symbol: string }> },
   session: { userId: string },
 ): Promise<NextResponse> {
-  const { id } = await context.params;
+  const { symbol: thesisId } = await context.params;
 
   const body = await req.json().catch(() => null);
   const content = (body?.content as string | undefined)?.trim();
@@ -99,7 +99,7 @@ async function postHandler(
   const { data: thesis } = await supabase
     .from('stock_theses')
     .select('id')
-    .eq('id', id)
+    .eq('id', thesisId)
     .single();
 
   if (!thesis) {
@@ -110,7 +110,7 @@ async function postHandler(
 
   const { data, error } = await supabase
     .from('stock_thesis_replies')
-    .insert({ thesis_id: id, user_id: session.userId, content })
+    .insert({ thesis_id: thesisId, user_id: session.userId, content })
     .select()
     .single();
 

@@ -21,8 +21,13 @@ export async function runAgent(
   messages: UIMessage[],
   context?: AIContext | null,
   experienceLevel?: 'beginner' | 'intermediate' | 'advanced' | null,
+  language?: string | null,
 ) {
   const modelMessages = await convertToModelMessages(messages);
+
+  const languagePrefix = language && language !== 'en'
+    ? `[Language: You MUST respond entirely in ${language}. Do not switch to English under any circumstance.]\n\n`
+    : '';
 
   // Prepend experience level so the model adapts its tone and vocabulary.
   const experiencePrefix = experienceLevel === 'beginner'
@@ -40,7 +45,7 @@ export async function runAgent(
 
   const result = streamText({
     model: openai('gpt-4o'),
-    system: experiencePrefix + contextPrefix + SYSTEM_PROMPT,
+    system: languagePrefix + experiencePrefix + contextPrefix + SYSTEM_PROMPT,
     messages: modelMessages,
     tools: BULLPEN_TOOLS,
     maxSteps: 5,

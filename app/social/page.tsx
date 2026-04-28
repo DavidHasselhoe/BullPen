@@ -69,7 +69,9 @@ export default function SocialFeedPage() {
       return d.feed ?? [];
     },
     enabled: isAuthenticated,
-    staleTime: 60_000,
+    staleTime: 30_000,
+    // Always refetch when the user tabs back so feed reflects activity while they were away
+    refetchOnWindowFocus: 'always',
   });
 
   if (!isAuthenticated) {

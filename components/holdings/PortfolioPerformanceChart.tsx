@@ -140,32 +140,52 @@ export function PortfolioPerformanceChart({ holdings, currency = 'USD' }: Props)
     retry: false,
   });
 
-  // Merge candle series → time-series of total unrealized P/L + P/L %
+  // Merge candle series → time-series of P/L.
+  // SINCE mode: P/L vs avg purchase price (total unrealized).
+  // Period modes (1W, 1M, …): P/L vs the holding's price at the period start,
+  // so the number reflects how much the portfolio moved within that window.
   const chartData = useMemo<ChartPoint[]>(() => {
     if (!candleResults?.length) return [];
 
     const plByTime = new Map<number, number>();
+    let periodBasis = 0;
 
     for (const { holding, candles } of candleResults) {
       if (!candles || holding.avg_price == null || holding.quantity == null) continue;
 
-      // Each holding only contributes data from its purchase/tracking start date
       const holdingStart = holding.date_purchased
         ? new Date(holding.date_purchased).getTime()
         : new Date(holding.created_at).getTime();
 
       const { t, c } = candles;
-      for (let i = 0; i < t.length; i++) {
-        // In "SINCE" mode filter each holding individually so early data points that
-        // pre-date the position are excluded, giving an accurate P/L from day one.
-        if (range === 'SINCE' && t[i] * 1000 < holdingStart) continue;
 
-        const pl = (c[i] - holding.avg_price) * holding.quantity;
-        plByTime.set(t[i], (plByTime.get(t[i]) ?? 0) + pl);
+      if (range === 'SINCE') {
+        for (let i = 0; i < t.length; i++) {
+          if (t[i] * 1000 < holdingStart) continue;
+          const pl = (c[i] - holding.avg_price) * holding.quantity;
+          plByTime.set(t[i], (plByTime.get(t[i]) ?? 0) + pl);
+        }
+      } else {
+        // For holdings purchased before the period start, baseline = first candle price.
+        // For holdings purchased during the period, baseline = avg_price (we didn't own
+        // it at period start so use cost basis, same logic as SINCE).
+        const periodStartMs = t.length > 0 ? t[0] * 1000 : 0;
+        const boughtDuringPeriod = holdingStart > periodStartMs;
+        const basePrice = boughtDuringPeriod ? holding.avg_price : c[0];
+
+        periodBasis += basePrice * holding.quantity;
+
+        for (let i = 0; i < t.length; i++) {
+          if (t[i] * 1000 < holdingStart) continue;
+          const pl = (c[i] - basePrice) * holding.quantity;
+          plByTime.set(t[i], (plByTime.get(t[i]) ?? 0) + pl);
+        }
       }
     }
 
-    const basis = totalCostBasis > 0 ? totalCostBasis : 1;
+    const basis = range === 'SINCE'
+      ? (totalCostBasis > 0 ? totalCostBasis : 1)
+      : (periodBasis > 0 ? periodBasis : 1);
 
     return Array.from(plByTime.entries())
       .sort(([a], [b]) => a - b)
@@ -224,7 +244,9 @@ export function PortfolioPerformanceChart({ holdings, currency = 'USD' }: Props)
             <span className={cn('text-sm font-semibold tabular-nums', isPositive ? 'text-emerald-500' : 'text-red-500')}>
               ({fmtPct(currentPlPct)})
             </span>
-            <span className="text-xs text-muted-foreground">unrealized P/L</span>
+            <span className="text-xs text-muted-foreground">
+              {range === 'SINCE' ? 'unrealized P/L' : 'period return'}
+            </span>
           </div>
         )}
       </CardHeader>
