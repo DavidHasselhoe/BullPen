@@ -3,8 +3,8 @@ import { withRateLimit, withAuth, addSecurityHeaders } from '@/lib/security/api-
 import { getStockCandles } from '@/lib/twelvedata/twelvedata-client';
 import { TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
 
-type Range = '1W' | '1M' | '6M' | '1Y' | '3Y' | '5Y' | '10Y' | 'MAX';
-type Interval = '15min' | '1h' | '4h' | '1day' | '1week';
+type Range = '1D' | '1W' | '1M' | '6M' | '1Y' | '3Y' | '5Y' | '10Y' | 'MAX';
+type Interval = '5min' | '15min' | '1h' | '4h' | '1day' | '1week';
 
 interface RangeConfig {
   interval: Interval;
@@ -12,6 +12,7 @@ interface RangeConfig {
 }
 
 const RANGE_CONFIG: Record<Range, RangeConfig> = {
+  '1D':  { interval: '5min',  daysBack: 1 },
   '1W':  { interval: '15min', daysBack: 7 },
   '1M':  { interval: '1h',    daysBack: 31 },
   '6M':  { interval: '1day',  daysBack: 183 },
@@ -23,7 +24,8 @@ const RANGE_CONFIG: Record<Range, RangeConfig> = {
 };
 
 // Map our interval strings to TwelveData resolution codes
-const INTERVAL_TO_RESOLUTION: Record<Interval, '1' | '15' | '60' | 'D' | 'W'> = {
+const INTERVAL_TO_RESOLUTION: Record<Interval, '1' | '5' | '15' | '60' | 'D' | 'W'> = {
+  '5min':  '5',
   '15min': '15',
   '1h':    '60',
   '4h':    '60', // fall back to 1h for 4h

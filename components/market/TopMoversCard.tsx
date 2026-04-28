@@ -9,6 +9,7 @@ import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { CompanyRowActions } from '@/components/discover/CompanyRowActions';
 import { cn } from '@/lib/utils';
 import type { MarketMover } from '@/lib/twelvedata/twelvedata-client';
+import { useAuth } from '@/hooks/use-auth';
 
 /** Returns a human-readable label for when the movers data is from, using ET. */
 function useMoversDateLabel(): string {
@@ -48,24 +49,70 @@ interface TopMoversCardProps {
   isHoldingsMode?: boolean;
 }
 
-/** Minimal SVG trend line (direction indicator; not real price data) */
-function MiniTrendLine({ isUp, className }: { isUp: boolean; className?: string }) {
-  const path = isUp
-    ? 'M 2 12 L 6 8 L 10 10 L 14 4'
-    : 'M 2 4 L 6 8 L 10 6 L 14 12';
-  const stroke = isUp ? 'rgb(34, 197, 94)' : 'rgb(239, 68, 68)'; // green-500 / red-500
+// ─── Intraday sparkline ───────────────────────────────────────────────────────
+
+function useMoversSparklines(symbols: string[], enabled: boolean) {
+  return useQuery({
+    queryKey: ['movers-sparklines-1d', symbols.slice().sort()],
+    queryFn: async (): Promise<Record<string, number[]>> => {
+      const results = await Promise.all(
+        symbols.map(async (sym) => {
+          try {
+            const res = await fetch(`/api/stock/${encodeURIComponent(sym)}/candles?range=1D`);
+            if (!res.ok) return [sym, [] as number[]] as const;
+            const json = await res.json();
+            const closes: number[] = json.candles?.c ?? [];
+            return [sym, closes] as const;
+          } catch {
+            return [sym, [] as number[]] as const;
+          }
+        })
+      );
+      return Object.fromEntries(results);
+    },
+    enabled,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
+    retry: false,
+  });
+}
+
+/** Renders a real intraday price sparkline, or falls back to a static direction arrow. */
+function MiniSparkline({ prices, isUp, className }: { prices: number[]; isUp: boolean; className?: string }) {
+  const stroke = isUp ? 'rgb(34, 197, 94)' : 'rgb(239, 68, 68)';
+
+  if (prices.length < 2) {
+    // Static fallback arrow
+    const path = isUp ? 'M 2 12 L 6 8 L 10 10 L 14 4' : 'M 2 4 L 6 8 L 10 6 L 14 12';
+    return (
+      <svg viewBox="0 0 16 16" className={className} width={40} height={24} fill="none"
+        strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+        <path d={path} stroke={stroke} />
+      </svg>
+    );
+  }
+
+  const W = 40, H = 22;
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+  const range = max - min || 1;
+  const pad = 2;
+
+  const pts = prices.map((p, i) => {
+    const x = (i / (prices.length - 1)) * W;
+    const y = H - pad - ((p - min) / range) * (H - pad * 2);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+
   return (
-    <svg
-      viewBox="0 0 16 16"
-      className={className}
-      width={32}
-      height={24}
-      fill="none"
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d={path} stroke={stroke} />
+    <svg viewBox={`0 0 ${W} ${H}`} className={className} width={40} height={24} fill="none">
+      <polyline
+        points={pts.join(' ')}
+        stroke={stroke}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
@@ -74,10 +121,12 @@ function MoverItem({
   mover,
   isGainer,
   companyName,
+  sparkPrices,
 }: {
   mover: MarketMover;
   isGainer: boolean;
   companyName?: string;
+  sparkPrices?: number[];
 }) {
   const textColor = isGainer ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
   // Prefer DB batch name → stream name → ticker symbol (never blank)
@@ -95,7 +144,7 @@ function MoverItem({
             logoUrl={mover.logoUrl}
             size={32}
           />
-          <MiniTrendLine isUp={isGainer} className="shrink-0 opacity-70 hidden sm:block" />
+          <MiniSparkline prices={sparkPrices ?? []} isUp={isGainer} className="shrink-0 opacity-80 hidden sm:block" />
         </div>
         <div className="min-w-0 overflow-hidden flex flex-col justify-center relative">
           {/* Default: full company name (uses all space when actions are collapsed) */}
@@ -146,7 +195,11 @@ function MoverItem({
 
 export function TopMoversCard({ gainers, losers, isLoading, isHoldingsMode }: TopMoversCardProps) {
   const dateLabel = useMoversDateLabel();
+  const { isAuthenticated } = useAuth();
   const allTickers = [...(gainers || []), ...(losers || [])].map((m) => m.symbol);
+
+  const { data: sparklines } = useMoversSparklines(allTickers, isAuthenticated && !isLoading && allTickers.length > 0);
+
   const { data: companyBatch } = useQuery({
     queryKey: ['companies-batch', allTickers],
     queryFn: async () => {
@@ -234,6 +287,7 @@ export function TopMoversCard({ gainers, losers, isLoading, isHoldingsMode }: To
                   mover={mover}
                   isGainer={true}
                   companyName={companyNameMap.get(mover.symbol)}
+                  sparkPrices={sparklines?.[mover.symbol]}
                 />
               ))
             ) : (
@@ -258,6 +312,7 @@ export function TopMoversCard({ gainers, losers, isLoading, isHoldingsMode }: To
                   mover={mover}
                   isGainer={false}
                   companyName={companyNameMap.get(mover.symbol)}
+                  sparkPrices={sparklines?.[mover.symbol]}
                 />
               ))
             ) : (
