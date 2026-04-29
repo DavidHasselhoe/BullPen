@@ -47,11 +47,6 @@ const CompanyProfileCard = dynamic(
   { ssr: false }
 );
 
-const PressReleasesCard = dynamic(
-  () => import('@/components/stock/PressReleasesCard').then((m) => ({ default: m.PressReleasesCard })),
-  { ssr: false }
-);
-
 const InsiderTransactionsCard = dynamic(
   () => import('@/components/stock/InsiderTransactionsCard').then((m) => ({ default: m.InsiderTransactionsCard })),
   { ssr: false }
@@ -348,15 +343,6 @@ export default function StockDetailPage() {
             </AnimatedContent>
           </StockSectionBoundary>
         </div>
-
-        {/* Press Releases (TwelveData) */}
-        <StockSectionBoundary>
-          <AnimatedContent reverse={true} delay={0.22}>
-            <div className="mb-8">
-              <PressReleasesCard ticker={ticker} />
-            </div>
-          </AnimatedContent>
-        </StockSectionBoundary>
 
         {/* Community theses */}
         <StockSectionBoundary>

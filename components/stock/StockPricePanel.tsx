@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  LineChart, Line, ReferenceLine,
+  LineChart, Line, ReferenceLine, ReferenceDot,
 } from 'recharts';
 import { useTheme } from 'next-themes';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -16,8 +16,8 @@ import type { IndicatorValue, ExtendedHoursQuote } from '@/lib/twelvedata/twelve
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Range = '1W' | '1M' | '6M' | '1Y' | '3Y' | '5Y' | '10Y' | 'MAX';
-const RANGES: Range[] = ['1W', '1M', '6M', '1Y', '3Y', '5Y', '10Y', 'MAX'];
+type Range = '1D' | '1W' | '1M' | '6M' | '1Y' | '3Y' | '5Y' | '10Y' | 'MAX';
+const RANGES: Range[] = ['1D', '1W', '1M', '6M', '1Y', '3Y', '5Y', '10Y', 'MAX'];
 
 type Indicator = 'sma50' | 'sma200' | 'ema20' | 'bbands' | 'rsi' | 'macd';
 interface IndicatorOption { key: Indicator; label: string; type: string; params?: Record<string, number> }
@@ -62,6 +62,7 @@ function fmtVol(v: number): string {
 }
 function fmtLabel(ts: number, range: Range): string {
   const d = new Date(ts * 1000);
+  if (range === '1D') return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
   if (range === '1W' || range === '1M') return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   if (range === '6M' || range === '1Y') return d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
   return d.getFullYear().toString();
@@ -97,7 +98,7 @@ function ChartTooltip({ active, payload, firstPrice }: {
 export function StockPricePanel({ ticker }: { ticker: string }) {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
-  const [range, setRange] = useState<Range>('1Y');
+  const [range, setRange] = useState<Range>('1D');
   const [activeIndicators, setActiveIndicators] = useState<Set<Indicator>>(new Set());
   const { isSimplified } = useExperienceLevel();
 
@@ -153,6 +154,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
     },
     enabled: !!ticker,
     staleTime: 5 * 60 * 1000,
+    refetchInterval: range === '1D' ? 5 * 60 * 1000 : false,
   });
 
   // ── Indicator data — one named hook per indicator (fixed, safe) ──────────
@@ -214,16 +216,35 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
     return pts;
   }, [candleData, range, sma50Data, sma200Data, ema20Data, bbandsData, rsiData, macdData]);
 
-  const firstPrice   = chartData[0]?.price ?? 0;
-  const chartLast    = chartData[chartData.length - 1]?.price ?? 0;
+  // When viewing 1D and the market is live, append the latest tick as the
+  // trailing point so the line always ends at the current price.
+  const displayData = useMemo<ChartPoint[]>(() => {
+    if (range !== '1D' || !isLive || !live || !chartData.length) return chartData;
+    const nowSec = Math.floor(Date.now() / 1000);
+    const last = chartData[chartData.length - 1];
+    // Skip if the last candle is within 2 min of now (already current)
+    if (Math.abs(last.time - nowSec) < 120) return chartData;
+    return [
+      ...chartData,
+      {
+        time: nowSec,
+        label: fmtLabel(nowSec, '1D'),
+        price: live.price,
+        volume: 0,
+      },
+    ];
+  }, [chartData, range, isLive, live]);
+
+  const firstPrice   = displayData[0]?.price ?? 0;
+  const chartLast    = displayData[displayData.length - 1]?.price ?? 0;
   const chartDiff    = chartLast - firstPrice;
   const chartPct     = firstPrice ? (chartDiff / firstPrice) * 100 : 0;
   const chartIsPos   = chartDiff >= 0;
   const lineColor    = chartIsPos ? '#10b981' : '#ef4444';
   const gradientId   = `pg-${ticker}`;
 
-  const priceMin = chartData.length ? Math.min(...chartData.map(d => d.price)) : 0;
-  const priceMax = chartData.length ? Math.max(...chartData.map(d => d.price)) : 0;
+  const priceMin = displayData.length ? Math.min(...displayData.map(d => d.price)) : 0;
+  const priceMax = displayData.length ? Math.max(...displayData.map(d => d.price)) : 0;
   const yPad     = (priceMax - priceMin) * 0.06;
 
   // Fewer labels = cleaner chart. 4 is enough for any range.
@@ -232,7 +253,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
   const textColor    = isDark ? '#3f3f46' : '#c4c4c8';
 
   const isLoadingChart = (candleLoading || isFetching) && !candleData?.candles;
-  const hasChart       = chartData.length > 0;
+  const hasChart       = displayData.length > 0;
   const activeOscillators = [...activeIndicators].filter((i) => OSCILLATOR_INDICATORS.has(i));
   const showOscillator = hasChart && !isSimplified && activeOscillators.length > 0;
 
@@ -329,11 +350,12 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
           isSimplified ? (
             <span className={cn('text-xs font-medium', chartIsPos ? 'text-emerald-500' : 'text-red-500')}>
               {chartIsPos ? '▲ Up' : '▼ Down'}{' '}
-              {Math.abs(chartPct).toFixed(1)}% over this {range === '1W' ? 'week' : range === '1M' ? 'month' : range === '6M' ? '6 months' : range === '1Y' ? 'year' : range}
+              {Math.abs(chartPct).toFixed(1)}%{' '}
+              {range === '1D' ? 'today' : `over this ${range === '1W' ? 'week' : range === '1M' ? 'month' : range === '6M' ? '6 months' : range === '1Y' ? 'year' : range}`}
             </span>
           ) : (
             <span className={cn('text-xs font-medium tabular-nums', chartIsPos ? 'text-emerald-500' : 'text-red-500')}>
-              {chartIsPos ? '+' : ''}{chartDiff.toFixed(2)} ({chartIsPos ? '+' : ''}{chartPct.toFixed(2)}%) {range}
+              {chartIsPos ? '+' : ''}{chartDiff.toFixed(2)} ({chartIsPos ? '+' : ''}{chartPct.toFixed(2)}%) {range === '1D' ? 'today' : range}
             </span>
           )
         )}
@@ -342,7 +364,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
           {RANGES.map((r) => (
             <button
               key={r}
-              onClick={() => setRange(r)}
+              onClick={() => { setRange(r); if (r === '1D') setActiveIndicators(new Set()); }}
               className={cn(
                 'rounded-md px-2.5 py-1 text-xs font-medium transition-all',
                 range === r
@@ -356,8 +378,8 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
         </div>
       </div>
 
-      {/* ── Indicator selector — hidden in simple mode ───────────────────── */}
-      {!isSimplified && (
+      {/* ── Indicator selector — hidden in simple mode and on 1D ──────── */}
+      {!isSimplified && range !== '1D' && (
         <div className="px-5 pb-3 flex items-center gap-1.5 flex-wrap">
           <span className="text-xs text-muted-foreground mr-1">Indicators:</span>
           {INDICATORS.map(({ key, label }) => (
@@ -397,7 +419,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
 
         {hasChart && (
           <ResponsiveContainer width="100%" height={280}>
-            <AreaChart data={chartData} margin={{ top: 8, right: 0, bottom: 0, left: 0 }}>
+            <AreaChart data={displayData} margin={{ top: 8, right: 0, bottom: 0, left: 0 }}>
               <defs>
                 <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%"   stopColor={lineColor} stopOpacity={0.2} />
@@ -434,6 +456,18 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
                 activeDot={{ r: 4, fill: lineColor, strokeWidth: 0 }}
                 isAnimationActive={false}
               />
+
+              {/* Live price dot — red circle at the trailing edge during market hours */}
+              {range === '1D' && isLive && displayData.length > 0 && (
+                <ReferenceDot
+                  x={displayData[displayData.length - 1].label}
+                  y={displayData[displayData.length - 1].price}
+                  r={5}
+                  fill="#ef4444"
+                  stroke="rgba(239,68,68,0.35)"
+                  strokeWidth={4}
+                />
+              )}
 
               {/* SMA overlay */}
               {(activeIndicators.has('sma50') || activeIndicators.has('sma200')) && (
@@ -487,7 +521,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
 
               {osc === 'rsi' && (
                 <ResponsiveContainer width="100%" height={90}>
-                  <LineChart data={chartData} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
+                  <LineChart data={displayData} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
                     <XAxis dataKey="label" hide />
                     <YAxis domain={[0, 100]} hide ticks={[30, 50, 70]} />
                     <Tooltip formatter={(v: number) => v?.toFixed(1)} labelFormatter={() => ''} contentStyle={{ fontSize: 10 }} />
@@ -501,7 +535,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
 
               {osc === 'macd' && (
                 <ResponsiveContainer width="100%" height={90}>
-                  <LineChart data={chartData} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
+                  <LineChart data={displayData} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
                     <XAxis dataKey="label" hide />
                     <YAxis hide tickFormatter={(v) => v?.toFixed(1)} />
                     <Tooltip formatter={(v: number) => v?.toFixed(3)} labelFormatter={() => ''} contentStyle={{ fontSize: 10 }} />
