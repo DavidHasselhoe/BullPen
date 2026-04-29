@@ -276,6 +276,37 @@ function classifyTradingSession(datetime: string): 'pre' | 'regular' | 'post' {
   return 'regular';
 }
 
+// Cache per date-string so we only call Intl once per trading day.
+const _etOffsetCache = new Map<string, number>();
+
+/**
+ * Convert a TwelveData datetime string ("YYYY-MM-DD HH:MM:SS", US Eastern Time)
+ * to a Unix timestamp (UTC seconds). Using new Date() directly would parse as
+ * server-local time (wrong on non-ET servers), so we resolve the ET→UTC offset
+ * via Intl and apply it explicitly.
+ */
+function etDatetimeToUnix(datetime: string): number {
+  const datePart = datetime.slice(0, 10);
+  let etOffsetH = _etOffsetCache.get(datePart);
+  if (etOffsetH === undefined) {
+    const [y, m, d] = datePart.split('-').map(Number);
+    // Format noon UTC as ET to determine whether EDT (-4) or EST (-5) is active
+    const noonUTC = Date.UTC(y, m - 1, d, 12, 0, 0);
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/New_York',
+      hour: '2-digit',
+      hour12: false,
+    }).formatToParts(new Date(noonUTC));
+    const etNoonH = parseInt(parts.find((p) => p.type === 'hour')?.value ?? '8');
+    etOffsetH = etNoonH - 12; // EDT → -4, EST → -5
+    _etOffsetCache.set(datePart, etOffsetH);
+  }
+  const [d, t] = datetime.split(' ');
+  const [year, month, day] = d.split('-').map(Number);
+  const [hour, minute, second] = (t ?? '00:00:00').split(':').map(Number);
+  return Math.floor(Date.UTC(year, month - 1, day, hour - etOffsetH, minute, second) / 1000);
+}
+
 export async function getStockCandles(
   symbol: string,
   from: number,
@@ -294,7 +325,7 @@ export async function getStockCandles(
     end_date: endDate,
     outputsize: 5000,
     order: 'asc',
-    extended_hours: options?.extendedHours ? '1' : undefined,
+    prepost: options?.extendedHours ? '1' : undefined, // TwelveData param for pre/post market
   });
 
   const response = await fetch(url);
@@ -329,8 +360,7 @@ export async function getStockCandles(
   const session: Array<'pre' | 'regular' | 'post'> = [];
 
   for (const vv of values) {
-    const ts = new Date(vv.datetime).getTime() / 1000;
-    t.push(Math.floor(ts));
+    t.push(etDatetimeToUnix(vv.datetime));
     o.push(parseFloat(vv.open));
     h.push(parseFloat(vv.high));
     l.push(parseFloat(vv.low));
