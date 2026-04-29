@@ -51,12 +51,14 @@ async function handler(
   // pre-market (4am–9:30am) and after-hours (4pm–8pm) candles are returned.
   // Using daysBack=1 would compute a UTC date which gives yesterday's data.
   const is1D = range === '1D';
-  const todayET = is1D
+  // TwelveData requires start_date != end_date for intraday intervals when using date-only strings.
+  // Use full datetime strings spanning 4am–11:59pm ET so the API returns the full session.
+  const todayDateET = is1D
     ? new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' }) // "YYYY-MM-DD"
     : undefined;
   const from = is1D ? now : now - config.daysBack * 24 * 60 * 60;
-  const candleOptions = is1D
-    ? { extendedHours: true, startDate: todayET, endDate: todayET }
+  const candleOptions = is1D && todayDateET
+    ? { extendedHours: true, startDate: `${todayDateET} 04:00:00`, endDate: `${todayDateET} 23:59:00` }
     : undefined;
 
   try {
