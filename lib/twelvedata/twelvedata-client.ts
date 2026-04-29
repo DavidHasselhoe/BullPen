@@ -63,6 +63,7 @@ export interface StockCandles {
   s: string;
   t: number[];
   v: number[];
+  session?: Array<'pre' | 'regular' | 'post'>;
 }
 
 export interface MarketMover {
@@ -267,15 +268,24 @@ const RESOLUTION_MAP = {
   '60': '1h',
 } as const;
 
+// TwelveData datetimes for US stocks are in ET ("2024-04-29 09:35:00")
+function classifyTradingSession(datetime: string): 'pre' | 'regular' | 'post' {
+  const hhmm = datetime.length >= 16 ? datetime.slice(11, 16) : '09:30';
+  if (hhmm < '09:30') return 'pre';
+  if (hhmm >= '16:00') return 'post';
+  return 'regular';
+}
+
 export async function getStockCandles(
   symbol: string,
   from: number,
   to: number,
-  resolution: 'D' | 'W' | 'M' | '1' | '5' | '15' | '30' | '60' = 'D'
+  resolution: 'D' | 'W' | 'M' | '1' | '5' | '15' | '30' | '60' = 'D',
+  options?: { extendedHours?: boolean; startDate?: string; endDate?: string }
 ): Promise<StockCandles> {
   const interval = RESOLUTION_MAP[resolution];
-  const startDate = new Date(from * 1000).toISOString().slice(0, 10);
-  const endDate = new Date(to * 1000).toISOString().slice(0, 10);
+  const startDate = options?.startDate ?? new Date(from * 1000).toISOString().slice(0, 10);
+  const endDate = options?.endDate ?? new Date(to * 1000).toISOString().slice(0, 10);
 
   const url = buildUrl('/time_series', {
     symbol: symbol.toUpperCase(),
@@ -284,6 +294,7 @@ export async function getStockCandles(
     end_date: endDate,
     outputsize: 5000,
     order: 'asc',
+    extended_hours: options?.extendedHours ? '1' : undefined,
   });
 
   const response = await fetch(url);
@@ -315,6 +326,7 @@ export async function getStockCandles(
   const l: number[] = [];
   const c: number[] = [];
   const v: number[] = [];
+  const session: Array<'pre' | 'regular' | 'post'> = [];
 
   for (const vv of values) {
     const ts = new Date(vv.datetime).getTime() / 1000;
@@ -324,6 +336,9 @@ export async function getStockCandles(
     l.push(parseFloat(vv.low));
     c.push(parseFloat(vv.close));
     v.push(parseFloat(vv.volume || '0'));
+    if (options?.extendedHours) {
+      session.push(classifyTradingSession(vv.datetime));
+    }
   }
 
   return {
@@ -334,6 +349,7 @@ export async function getStockCandles(
     s: 'ok',
     t,
     v,
+    ...(options?.extendedHours ? { session } : {}),
   };
 }
 

@@ -45,11 +45,22 @@ async function handler(
 
   const config = RANGE_CONFIG[range] ?? RANGE_CONFIG['1Y'];
   const now = Math.floor(Date.now() / 1000);
-  const from = now - config.daysBack * 24 * 60 * 60;
   const resolution = INTERVAL_TO_RESOLUTION[config.interval];
 
+  // For 1D: use today's actual ET calendar date and include extended hours so
+  // pre-market (4am–9:30am) and after-hours (4pm–8pm) candles are returned.
+  // Using daysBack=1 would compute a UTC date which gives yesterday's data.
+  const is1D = range === '1D';
+  const todayET = is1D
+    ? new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' }) // "YYYY-MM-DD"
+    : undefined;
+  const from = is1D ? now : now - config.daysBack * 24 * 60 * 60;
+  const candleOptions = is1D
+    ? { extendedHours: true, startDate: todayET, endDate: todayET }
+    : undefined;
+
   try {
-    const candles = await getStockCandles(symbol, from, now, resolution);
+    const candles = await getStockCandles(symbol, from, now, resolution, candleOptions);
 
     if (!candles || candles.s === 'no_data' || candles.t.length === 0) {
       return addSecurityHeaders(
@@ -67,6 +78,7 @@ async function handler(
           l: candles.l,
           c: candles.c,
           v: candles.v,
+          session: candles.session,
         },
         range,
         interval: config.interval,

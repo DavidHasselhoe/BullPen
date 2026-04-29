@@ -36,9 +36,12 @@ const OVERLAY_INDICATORS = new Set<Indicator>(['sma50', 'sma200', 'ema20', 'bban
 // Indicators rendered in a SEPARATE panel below
 const OSCILLATOR_INDICATORS = new Set<Indicator>(['rsi', 'macd']);
 
-interface CandleData { t: number[]; c: number[]; o: number[]; h: number[]; l: number[]; v: number[] }
+interface CandleData { t: number[]; c: number[]; o: number[]; h: number[]; l: number[]; v: number[]; session?: Array<'pre' | 'regular' | 'post'> }
 interface ChartPoint {
   time: number; label: string; price: number; volume: number;
+  session?: 'pre' | 'regular' | 'post';
+  regularPrice?: number;
+  extPrice?: number;
   sma?: number; ema?: number; upper?: number; lower?: number; middle?: number;
   rsi?: number; macd?: number; signal?: number; hist?: number;
 }
@@ -70,24 +73,32 @@ function fmtLabel(ts: number, range: Range): string {
 
 // ─── Tooltip ──────────────────────────────────────────────────────────────────
 
-function ChartTooltip({ active, payload, firstPrice }: {
+function ChartTooltip({ active, payload, firstPrice, range }: {
   active?: boolean;
   payload?: Array<{ payload: ChartPoint }>;
   firstPrice: number;
+  range: Range;
 }) {
   if (!active || !payload?.length) return null;
   const pt = payload[0].payload;
   const diff = pt.price - firstPrice;
   const pct = firstPrice ? (diff / firstPrice) * 100 : 0;
   const isPos = diff >= 0;
-  const date = new Date(pt.time * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const d = new Date(pt.time * 1000);
+  const dateStr = range === '1D'
+    ? d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })
+    : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const sessionLabel = range === '1D' && pt.session
+    ? pt.session === 'pre' ? 'Pre-market' : pt.session === 'post' ? 'After-hours' : null
+    : null;
   return (
     <div className="rounded-lg border border-border bg-background/95 px-3 py-2 shadow-lg backdrop-blur-sm text-xs space-y-0.5">
       <p className="font-semibold text-foreground tabular-nums">{fmtPrice(pt.price)}</p>
       <p className={cn('tabular-nums', isPos ? 'text-emerald-500' : 'text-red-500')}>
         {isPos ? '+' : ''}{diff.toFixed(2)} ({isPos ? '+' : ''}{pct.toFixed(2)}%)
       </p>
-      <p className="text-muted-foreground">{date}</p>
+      <p className="text-muted-foreground">{dateStr}</p>
+      {sessionLabel && <p className="text-muted-foreground/70 italic">{sessionLabel}</p>}
       {pt.volume > 0 && <p className="text-muted-foreground">Vol {fmtVol(pt.volume)}</p>}
     </div>
   );
@@ -187,10 +198,30 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
   // indicator's API response arrives, not just when the Set changes.
   const chartData = useMemo<ChartPoint[]>(() => {
     if (!candleData?.candles) return [];
-    const { t, c, v } = candleData.candles;
+    const { t, c, v, session } = candleData.candles;
     const pts: ChartPoint[] = t.map((ts, i) => ({
       time: ts, label: fmtLabel(ts, range), price: c[i], volume: v[i],
+      session: session?.[i],
     }));
+
+    // For 1D: split price into regularPrice (9:30–16:00) and extPrice (pre/after-hours)
+    // with overlap at session boundaries so lines visually connect.
+    if (range === '1D' && session?.length === pts.length) {
+      pts.forEach((pt, i) => {
+        const sess = session[i];
+        const prevSess = i > 0 ? session[i - 1] : null;
+        const nextSess = i < session.length - 1 ? session[i + 1] : null;
+        if (sess === 'regular') {
+          pt.regularPrice = pt.price;
+          if (prevSess === 'pre') pt.extPrice = pt.price;   // connect at open
+          if (nextSess === 'post') pt.extPrice = pt.price;  // connect at close
+        } else {
+          pt.extPrice = pt.price;
+          if (sess === 'pre' && nextSess === 'regular') pt.regularPrice = pt.price;   // connect at open
+          if (sess === 'post' && prevSess === 'regular') pt.regularPrice = pt.price;  // connect at close
+        }
+      });
+    }
 
     function applyIndicator(values: IndicatorValue[], key: Indicator) {
       const map = new Map<string, IndicatorValue>();
@@ -224,16 +255,46 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
     const last = chartData[chartData.length - 1];
     // Skip if the last candle is within 2 min of now (already current)
     if (Math.abs(last.time - nowSec) < 120) return chartData;
-    return [
-      ...chartData,
-      {
-        time: nowSec,
-        label: fmtLabel(nowSec, '1D'),
-        price: live.price,
-        volume: 0,
-      },
-    ];
+
+    // Determine session for the live tick based on current ET time
+    const etTimeStr = new Date().toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour12: false });
+    const [etHStr, etMStr] = etTimeStr.split(':');
+    const etMins = parseInt(etHStr) * 60 + parseInt(etMStr);
+    const liveSession: 'pre' | 'regular' | 'post' = etMins < 570 ? 'pre' : etMins >= 960 ? 'post' : 'regular';
+
+    const livePt: ChartPoint = {
+      time: nowSec,
+      label: fmtLabel(nowSec, '1D'),
+      price: live.price,
+      volume: 0,
+      session: liveSession,
+    };
+    if (chartData[0]?.session !== undefined) {
+      // Session-aware mode: populate the appropriate price key
+      if (liveSession === 'regular') {
+        livePt.regularPrice = live.price;
+      } else {
+        livePt.extPrice = live.price;
+      }
+    }
+    return [...chartData, livePt];
   }, [chartData, range, isLive, live]);
+
+  // Labels for session boundary ReferenceLine markers (1D only)
+  const sessionBoundaries = useMemo(() => {
+    if (range !== '1D') return { openLabel: undefined, closeLabel: undefined };
+    let openLabel: string | undefined;
+    let closeLabel: string | undefined;
+    for (let i = 1; i < chartData.length; i++) {
+      if (!openLabel && chartData[i].session === 'regular' && chartData[i - 1]?.session === 'pre') {
+        openLabel = chartData[i].label;
+      }
+      if (!closeLabel && chartData[i].session === 'post' && chartData[i - 1]?.session === 'regular') {
+        closeLabel = chartData[i].label;
+      }
+    }
+    return { openLabel, closeLabel };
+  }, [chartData, range]);
 
   const firstPrice   = displayData[0]?.price ?? 0;
   const chartLast    = displayData[displayData.length - 1]?.price ?? 0;
@@ -442,20 +503,72 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
               />
 
               <Tooltip
-                content={<ChartTooltip firstPrice={firstPrice} />}
+                content={<ChartTooltip firstPrice={firstPrice} range={range} />}
                 cursor={{ stroke: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)', strokeWidth: 1 }}
               />
 
-              <Area
-                type="monotone"
-                dataKey="price"
-                stroke={lineColor}
-                strokeWidth={2}
-                fill={`url(#${gradientId})`}
-                dot={false}
-                activeDot={{ r: 4, fill: lineColor, strokeWidth: 0 }}
-                isAnimationActive={false}
-              />
+              {range === '1D' && displayData[0]?.session !== undefined ? (
+                <>
+                  {/* Pre/after-hours: dashed gray, no fill */}
+                  <Area
+                    type="monotone"
+                    dataKey="extPrice"
+                    stroke="#6b7280"
+                    strokeWidth={1.5}
+                    strokeDasharray="4 3"
+                    strokeOpacity={0.65}
+                    fill="none"
+                    dot={false}
+                    activeDot={false}
+                    connectNulls={false}
+                    isAnimationActive={false}
+                  />
+                  {/* Regular session: colored with gradient fill */}
+                  <Area
+                    type="monotone"
+                    dataKey="regularPrice"
+                    stroke={lineColor}
+                    strokeWidth={2}
+                    fill={`url(#${gradientId})`}
+                    dot={false}
+                    activeDot={{ r: 4, fill: lineColor, strokeWidth: 0 }}
+                    connectNulls={false}
+                    isAnimationActive={false}
+                  />
+                  {/* Session open/close boundary markers */}
+                  {sessionBoundaries.openLabel && (
+                    <ReferenceLine
+                      x={sessionBoundaries.openLabel}
+                      stroke="#6b7280"
+                      strokeOpacity={0.25}
+                      strokeDasharray="2 4"
+                      strokeWidth={1}
+                      label={{ value: 'Open', position: 'insideTopRight', fontSize: 9, fill: '#9ca3af', dy: 2 }}
+                    />
+                  )}
+                  {sessionBoundaries.closeLabel && (
+                    <ReferenceLine
+                      x={sessionBoundaries.closeLabel}
+                      stroke="#6b7280"
+                      strokeOpacity={0.25}
+                      strokeDasharray="2 4"
+                      strokeWidth={1}
+                      label={{ value: 'Close', position: 'insideTopRight', fontSize: 9, fill: '#9ca3af', dy: 2 }}
+                    />
+                  )}
+                </>
+              ) : (
+                <Area
+                  type="monotone"
+                  dataKey="price"
+                  stroke={lineColor}
+                  strokeWidth={2}
+                  fill={`url(#${gradientId})`}
+                  dot={false}
+                  activeDot={{ r: 4, fill: lineColor, strokeWidth: 0 }}
+                  isAnimationActive={false}
+                />
+              )}
 
               {/* Live price dot — red circle at the trailing edge during market hours */}
               {range === '1D' && isLive && displayData.length > 0 && (
