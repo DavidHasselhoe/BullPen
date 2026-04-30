@@ -105,11 +105,15 @@ function checkRateLimitUpstash(
 /**
  * Check rate limit (async). Uses Upstash when UPSTASH_REDIS_REST_URL and
  * UPSTASH_REDIS_REST_TOKEN are set; otherwise in-memory (not shared).
+ * Rate limiting is skipped entirely in development — you're the only caller.
  */
 export async function checkRateLimit(
   identifier: string,
   options: RateLimitOptions = { windowMs: 60 * 1000, maxRequests: 60 }
 ): Promise<RateLimitResult> {
+  if (process.env.NODE_ENV === 'development') {
+    return { allowed: true, remaining: 9999, resetTime: Date.now() + options.windowMs };
+  }
   const upstashResult = checkRateLimitUpstash(identifier, options);
   if (upstashResult) {
     return upstashResult;
