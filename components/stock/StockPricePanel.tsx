@@ -73,16 +73,16 @@ function fmtLabel(ts: number, range: Range): string {
 
 // ─── Tooltip ──────────────────────────────────────────────────────────────────
 
-function ChartTooltip({ active, payload, firstPrice, range }: {
+function ChartTooltip({ active, payload, basePrice, range }: {
   active?: boolean;
   payload?: Array<{ payload: ChartPoint }>;
-  firstPrice: number;
+  basePrice: number;
   range: Range;
 }) {
   if (!active || !payload?.length) return null;
   const pt = payload[0].payload;
-  const diff = pt.price - firstPrice;
-  const pct = firstPrice ? (diff / firstPrice) * 100 : 0;
+  const diff = pt.price - basePrice;
+  const pct = basePrice ? (diff / basePrice) * 100 : 0;
   const isPos = diff >= 0;
   const d = new Date(pt.time * 1000);
   const dateStr = range === '1D'
@@ -298,8 +298,11 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
 
   const firstPrice   = displayData[0]?.price ?? 0;
   const chartLast    = displayData[displayData.length - 1]?.price ?? 0;
-  const chartDiff    = chartLast - firstPrice;
-  const chartPct     = firstPrice ? (chartDiff / firstPrice) * 100 : 0;
+  // For 1D, baseline against prevClose (same as the header) so both numbers agree.
+  // For other ranges, use the first candle in the fetched data.
+  const chartBase    = range === '1D' && prevClose > 0 ? prevClose : firstPrice;
+  const chartDiff    = chartLast - chartBase;
+  const chartPct     = chartBase ? (chartDiff / chartBase) * 100 : 0;
   const chartIsPos   = chartDiff >= 0;
   const lineColor    = chartIsPos ? '#10b981' : '#ef4444';
   const gradientId   = `pg-${ticker}`;
@@ -503,7 +506,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
               />
 
               <Tooltip
-                content={<ChartTooltip firstPrice={firstPrice} range={range} />}
+                content={<ChartTooltip basePrice={chartBase} range={range} />}
                 cursor={{ stroke: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)', strokeWidth: 1 }}
               />
 
