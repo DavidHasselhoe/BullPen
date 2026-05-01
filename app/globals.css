@@ -272,6 +272,39 @@ html.animated-background-active [data-slot="dialog-content"] {
     animation: slideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards;
   }
 
+  /* Brief section fade-in stagger */
+  @keyframes briefFadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .brief-section {
+    opacity: 0;
+    animation: briefFadeIn 0.25s ease-out forwards;
+  }
+
+  /* Minimal custom scrollbar for the brief drawer */
+  .brief-scroll {
+    scroll-behavior: smooth;
+  }
+  .brief-scroll::-webkit-scrollbar {
+    width: 3px;
+  }
+  .brief-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .brief-scroll::-webkit-scrollbar-thumb {
+    background: hsl(var(--border) / 0.5);
+    border-radius: 99px;
+  }
+  .brief-scroll::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--border) / 0.8);
+  }
+  /* Firefox */
+  .brief-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border) / 0.4) transparent;
+  }
+
   /* Hide scrollbar while keeping scroll functionality */
   .scrollbar-hide {
     -ms-overflow-style: none !important;
