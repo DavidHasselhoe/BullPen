@@ -144,6 +144,29 @@ export interface Database {
           visited_at: string;
         }>;
       };
+      daily_briefs: {
+        Row: {
+          id: string;
+          published_date: string;
+          title: string;
+          content: string;
+          featured_tickers: string[] | null;
+          generated_at: string;
+        };
+        Insert: {
+          published_date: string;
+          title: string;
+          content: string;
+          featured_tickers?: string[] | null;
+          id?: string;
+          generated_at?: string;
+        };
+        Update: Partial<{
+          title: string;
+          content: string;
+          featured_tickers: string[] | null;
+        }>;
+      };
       market_data_cache: {
         Row: {
           cache_key: string;
