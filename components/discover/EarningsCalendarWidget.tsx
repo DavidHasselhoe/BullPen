@@ -58,7 +58,9 @@ function fmtWeekRange(weekDates: string[]): string {
   return mo1 === mo2 ? `${mo1} ${d1} — ${d2}` : `${mo1} ${d1} — ${mo2} ${d2}`;
 }
 
-function timeTag(time?: string): string | null {
+type TimeTag = 'BMO' | 'AMC' | null;
+
+function timeTag(time?: string): TimeTag {
   if (time === 'BMO' || time === 'pre_market') return 'BMO';
   if (time === 'AMC' || time === 'after_close') return 'AMC';
   return null;
@@ -87,64 +89,74 @@ function DayColumn({
   return (
     <div
       className={cn(
-        'flex flex-col rounded-xl border p-3 min-w-0 transition-colors',
+        'flex flex-col rounded-xl border min-w-0 transition-colors overflow-hidden',
         isToday
-          ? 'border-primary/50 bg-primary/[0.04]'
+          ? 'border-border/60'
           : 'border-border/40 bg-card/50'
       )}
     >
-      {/* Day header */}
-      <div className="mb-3 select-none">
-        <p className={cn(
-          'text-[10px] font-semibold uppercase tracking-widest',
-          isToday ? 'text-primary' : 'text-muted-foreground'
-        )}>
-          {dayLabel}
-        </p>
-        <p className={cn(
-          'text-[26px] font-bold leading-none mt-0.5 tabular-nums',
-          isToday ? 'text-primary' : 'text-foreground'
-        )}>
-          {dayNum}
-        </p>
-      </div>
+      {/* Today accent bar */}
+      {isToday && <div className="h-0.5 w-full bg-primary shrink-0" />}
 
-      {/* Earnings list */}
-      <div className="space-y-1.5 flex-1">
-        {visible.length === 0 ? (
-          <p className="text-[11px] text-muted-foreground/30 pt-0.5 select-none">—</p>
-        ) : (
-          visible.map((row, i) => {
-            const tag = timeTag(row.time);
-            return (
-              <Link
-                key={`${row.symbol}-${i}`}
-                href={`/stock/${row.symbol}`}
-                className="group flex items-center justify-between gap-1 rounded-md bg-muted/40 px-2.5 py-[7px] hover:bg-accent/60 transition-colors"
-              >
-                <span className="text-[11px] font-bold text-foreground group-hover:text-primary transition-colors truncate leading-none">
-                  {row.symbol}
-                </span>
-                {tag && (
-                  <span className="text-[9px] font-medium text-muted-foreground/60 uppercase tracking-wide shrink-0 leading-none">
-                    {tag}
+      <div className="p-3 flex flex-col flex-1">
+        {/* Day header */}
+        <div className="mb-3 select-none">
+          <p className={cn(
+            'text-[10px] font-bold uppercase tracking-[0.12em]',
+            isToday ? 'text-primary' : 'text-muted-foreground/60'
+          )}>
+            {dayLabel}
+          </p>
+          <p className={cn(
+            'text-[26px] font-black leading-none mt-0.5 tabular-nums',
+            isToday ? 'text-primary' : 'text-foreground/80'
+          )}>
+            {dayNum}
+          </p>
+        </div>
+
+        {/* Earnings list */}
+        <div className="space-y-1.5 flex-1">
+          {visible.length === 0 ? (
+            <p className="text-[11px] text-muted-foreground/20 pt-0.5 select-none">—</p>
+          ) : (
+            visible.map((row, i) => {
+              const tag = timeTag(row.time);
+              return (
+                <Link
+                  key={`${row.symbol}-${i}`}
+                  href={`/stock/${row.symbol}`}
+                  className="group flex items-center justify-between gap-1 rounded-md bg-muted/40 px-2.5 py-[7px] hover:bg-accent/60 transition-colors"
+                >
+                  <span className="text-[11px] font-bold text-foreground group-hover:text-primary transition-colors truncate leading-none">
+                    {row.symbol}
                   </span>
-                )}
-              </Link>
-            );
-          })
+                  {tag && (
+                    <span className={cn(
+                      'text-[8px] font-bold px-1 py-0.5 rounded uppercase tracking-wide shrink-0 leading-none',
+                      tag === 'BMO'
+                        ? 'bg-sky-500/10 text-sky-500/70'
+                        : 'bg-amber-500/10 text-amber-500/70'
+                    )}>
+                      {tag}
+                    </span>
+                  )}
+                </Link>
+              );
+            })
+          )}
+        </div>
+
+        {/* Overflow link */}
+        {overflow > 0 && (
+          <Link
+            href="/tools/calendar"
+            className="mt-2 text-[10px] text-muted-foreground/40 hover:text-primary transition-colors"
+          >
+            +{overflow} more
+          </Link>
         )}
       </div>
-
-      {/* Overflow link */}
-      {overflow > 0 && (
-        <Link
-          href="/tools/calendar"
-          className="mt-2 text-[10px] text-muted-foreground/50 hover:text-primary transition-colors"
-        >
-          + {overflow} more
-        </Link>
-      )}
     </div>
   );
 }
@@ -248,29 +260,21 @@ export function EarningsCalendarWidget() {
 
   return (
     <div className="space-y-4 min-w-0">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h2 className="text-lg font-semibold text-foreground">
-            {isPortfolioMode ? 'Portfolio Earnings' : "This Week's Earnings"}
-          </h2>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {isPortfolioMode
-              ? 'Reports for companies you hold.'
-              : 'Major companies reporting this week.'}
-          </p>
-        </div>
-        <div className="flex items-center gap-3 shrink-0 pt-0.5">
-          <span className="text-xs font-mono text-muted-foreground/60 hidden sm:block tracking-wider">
-            {fmtWeekRange(weekDates)}
-          </span>
-          <Link
-            href="/tools/calendar"
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Full calendar →
-          </Link>
-        </div>
+      {/* Editorial section header */}
+      <div className="flex items-center gap-3">
+        <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/70 shrink-0">
+          {isPortfolioMode ? 'Portfolio earnings' : 'Earnings this week'}
+        </span>
+        <div className="flex-1 h-px bg-border/50" />
+        <span className="text-[10px] font-mono text-muted-foreground/40 hidden sm:block tracking-wider shrink-0">
+          {fmtWeekRange(weekDates)}
+        </span>
+        <Link
+          href="/tools/calendar"
+          className="text-[10px] font-mono text-muted-foreground/50 hover:text-foreground transition-colors uppercase tracking-wider shrink-0"
+        >
+          Full →
+        </Link>
       </div>
 
       {/* Calendar grid — horizontally scrollable on mobile */}

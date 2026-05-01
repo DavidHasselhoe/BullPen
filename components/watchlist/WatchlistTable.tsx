@@ -24,7 +24,7 @@ interface WatchlistTableProps {
   isRemoving?: (symbol: string) => boolean;
 }
 
-type SortKey = 'symbol' | 'price' | 'changePercent' | 'health' | 'earnings' | 'added_at';
+type SortKey = 'symbol' | 'price' | 'changePercent' | 'health' | 'earnings' | 'marketCap' | 'added_at';
 type SortDir = 'asc' | 'desc';
 
 function gradeToNum(grade: string | undefined): number {
@@ -36,6 +36,13 @@ function gradeColor(grade: string) {
   if (grade === 'B') return 'text-green-600';
   if (grade === 'C') return 'text-amber-500';
   return 'text-red-500';
+}
+
+function fmtMarketCap(n: number): string {
+  if (n >= 1e12) return `$${(n / 1e12).toFixed(1)}T`;
+  if (n >= 1e9) return `$${(n / 1e9).toFixed(1)}B`;
+  if (n >= 1e6) return `$${(n / 1e6).toFixed(0)}M`;
+  return `$${n.toLocaleString()}`;
 }
 
 function SortIcon({ col, sortKey, dir }: { col: SortKey; sortKey: SortKey; dir: SortDir }) {
@@ -76,6 +83,7 @@ export function WatchlistTable({ items, quotes, enhancedData, onRemove, isRemovi
         cmp = da - db;
         break;
       }
+      case 'marketCap': cmp = (ea?.marketCap ?? -Infinity) - (eb?.marketCap ?? -Infinity); break;
       case 'added_at': cmp = a.added_at.localeCompare(b.added_at); break;
     }
 
@@ -102,6 +110,8 @@ export function WatchlistTable({ items, quotes, enhancedData, onRemove, isRemovi
             <TableHead className="w-48"><Col label="Symbol" col="symbol" /></TableHead>
             <TableHead><Col label="Price" col="price" /></TableHead>
             <TableHead><Col label="Change" col="changePercent" /></TableHead>
+            <TableHead><Col label="Mkt Cap" col="marketCap" /></TableHead>
+            <TableHead className="text-xs font-medium text-muted-foreground">P/E</TableHead>
             <TableHead><Col label="Health" col="health" /></TableHead>
             <TableHead><Col label="Earnings" col="earnings" /></TableHead>
             <TableHead className="text-xs font-medium text-muted-foreground">Thesis</TableHead>
@@ -132,13 +142,30 @@ export function WatchlistTable({ items, quotes, enhancedData, onRemove, isRemovi
                   {q ? `$${q.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
                 </TableCell>
 
-                <TableCell className={cn(
-                  'tabular-nums text-sm font-medium',
-                  isUp && 'text-emerald-500',
-                  isDown && 'text-red-500',
-                  !isUp && !isDown && 'text-muted-foreground'
-                )}>
-                  {q ? `${isUp ? '+' : ''}${q.changePercent.toFixed(2)}%` : '—'}
+                <TableCell>
+                  {q ? (
+                    <div className={cn(
+                      'tabular-nums text-sm font-medium leading-tight',
+                      isUp && 'text-emerald-500',
+                      isDown && 'text-red-500',
+                      !isUp && !isDown && 'text-muted-foreground'
+                    )}>
+                      <div>{isUp ? '+' : ''}{(q.changePercent ?? 0).toFixed(2)}%</div>
+                      <div className="text-xs opacity-70">
+                        {isUp ? '+' : ''}{(q.change ?? 0) >= 0 && !isUp ? '' : ''}{(q.change ?? 0).toFixed(2)}
+                      </div>
+                    </div>
+                  ) : '—'}
+                </TableCell>
+
+                <TableCell className="tabular-nums text-sm text-muted-foreground">
+                  {enhanced?.marketCap != null ? fmtMarketCap(enhanced.marketCap) : '—'}
+                </TableCell>
+
+                <TableCell className="tabular-nums text-sm text-muted-foreground">
+                  {enhanced?.peRatio != null && enhanced.peRatio > 0
+                    ? enhanced.peRatio.toFixed(1)
+                    : '—'}
                 </TableCell>
 
                 <TableCell>

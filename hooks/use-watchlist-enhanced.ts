@@ -14,6 +14,10 @@ export interface EnhancedData {
   nextEarningsDate: string | null;
   daysToEarnings: number | null;
   thesisSentiment: 'bull' | 'bear' | 'neutral' | null;
+  marketCap: number | null;
+  peRatio: number | null;
+  week52High: number | null;
+  week52Low: number | null;
 }
 
 export type EnhancedDataMap = Record<string, EnhancedData>;

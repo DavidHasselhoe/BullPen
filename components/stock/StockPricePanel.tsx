@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { WhyTodayPanel } from './WhyTodayPanel';
 import { useQuery } from '@tanstack/react-query';
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -16,8 +17,18 @@ import type { IndicatorValue, ExtendedHoursQuote } from '@/lib/twelvedata/twelve
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Range = '1D' | '1W' | '1M' | '6M' | '1Y' | '3Y' | '5Y' | '10Y' | 'MAX';
-const RANGES: Range[] = ['1D', '1W', '1M', '6M', '1Y', '3Y', '5Y', '10Y', 'MAX'];
+type Range = '1D' | '1W' | '1M' | '6M' | '1Y' | 'YTD' | '5Y' | 'MAX';
+const RANGES: Range[] = ['1D', '1W', '1M', '6M', '1Y', 'YTD', '5Y', 'MAX'];
+
+// Display labels shown on buttons
+const RANGE_DISPLAY: Record<Range, string> = {
+  '1D': '1D', '1W': '5D', '1M': '1M', '6M': '6M', '1Y': '1Y', 'YTD': 'YTD', '5Y': '5Y', 'MAX': 'ALL',
+};
+// Human-readable label used in the performance banner
+const RANGE_LABEL: Record<Range, string> = {
+  '1D': 'today', '1W': 'this week', '1M': 'this month',
+  '6M': 'past 6 months', '1Y': 'past year', 'YTD': 'year to date', '5Y': 'past 5 years', 'MAX': 'all time',
+};
 
 type Indicator = 'sma50' | 'sma200' | 'ema20' | 'bbands' | 'rsi' | 'macd';
 interface IndicatorOption { key: Indicator; label: string; type: string; params?: Record<string, number> }
@@ -31,9 +42,6 @@ const INDICATORS: IndicatorOption[] = [
   { key: 'macd',   label: 'MACD',    type: 'macd' },
 ];
 
-// Indicators overlaid ON the price chart
-const OVERLAY_INDICATORS = new Set<Indicator>(['sma50', 'sma200', 'ema20', 'bbands']);
-// Indicators rendered in a SEPARATE panel below
 const OSCILLATOR_INDICATORS = new Set<Indicator>(['rsi', 'macd']);
 
 interface CandleData { t: number[]; c: number[]; o: number[]; h: number[]; l: number[]; v: number[]; session?: Array<'pre' | 'regular' | 'post'> }
@@ -94,12 +102,23 @@ function ChartTooltip({ active, payload, basePrice, range }: {
   return (
     <div className="rounded-lg border border-border bg-background/95 px-3 py-2 shadow-lg backdrop-blur-sm text-xs space-y-0.5">
       <p className="font-semibold text-foreground tabular-nums">{fmtPrice(pt.price)}</p>
-      <p className={cn('tabular-nums', isPos ? 'text-emerald-500' : 'text-red-500')}>
+      <p className={cn('tabular-nums', isPos ? 'text-emerald-400' : 'text-red-400')}>
         {isPos ? '+' : ''}{diff.toFixed(2)} ({isPos ? '+' : ''}{pct.toFixed(2)}%)
       </p>
       <p className="text-muted-foreground">{dateStr}</p>
       {sessionLabel && <p className="text-muted-foreground/70 italic">{sessionLabel}</p>}
       {pt.volume > 0 && <p className="text-muted-foreground">Vol {fmtVol(pt.volume)}</p>}
+    </div>
+  );
+}
+
+// ─── Stat item (bottom bar) ───────────────────────────────────────────────────
+
+function StatItem({ label, value, valueClass }: { label: string; value: string; valueClass?: string }) {
+  return (
+    <div className="flex items-center gap-1.5 min-w-0">
+      <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50 shrink-0">{label}</span>
+      <span className={cn('text-xs font-medium tabular-nums text-foreground truncate', valueClass)}>{value}</span>
     </div>
   );
 }
@@ -110,6 +129,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
   const [range, setRange] = useState<Range>('1D');
+  const [whyOpen, setWhyOpen] = useState(false);
   const [activeIndicators, setActiveIndicators] = useState<Set<Indicator>>(new Set());
   const { isSimplified } = useExperienceLevel();
 
@@ -126,7 +146,6 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
   const live = livePrices.get(ticker);
   const isLive = !!live;
 
-  // Extended hours (pre/after-market) — only show when market is closed
   const { data: extHoursData } = useQuery<{ success: boolean; data: ExtendedHoursQuote | null }>({
     queryKey: ['extended-hours', ticker],
     queryFn: async () => {
@@ -135,7 +154,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
     },
     enabled: !!ticker,
     staleTime: 60 * 1000,
-    refetchInterval: 2 * 60 * 1000, // refresh every 2 min
+    refetchInterval: 2 * 60 * 1000,
   });
   const extHours = extHoursData?.data ?? null;
 
@@ -143,16 +162,15 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
 
   const price     = live?.price ?? restQuote?.c ?? 0;
   const prevClose = restQuote?.pc ?? 0;
-  // TwelveData WebSocket ticks don't include change/percent_change, so recompute
-  // from live price vs the REST quote's previous close for accurate day change.
+  // TwelveData WebSocket ticks don't carry change fields — recompute vs REST prevClose.
   const change    = prevClose > 0 ? price - prevClose : restQuote?.d ?? 0;
   const changePct = prevClose > 0 ? ((price - prevClose) / prevClose) * 100 : restQuote?.dp ?? 0;
-  const dayHigh     = restQuote?.h ?? 0;
-  const dayLow      = restQuote?.l ?? 0;
-  const openPrice   = restQuote?.o ?? 0;
+  const dayHigh   = restQuote?.h ?? 0;
+  const dayLow    = restQuote?.l ?? 0;
+  const openPrice = restQuote?.o ?? 0;
 
   const isPositive = changePct >= 0;
-  const priceColor = isPositive ? 'text-emerald-500' : 'text-red-500';
+  const priceColor = isPositive ? 'text-emerald-400' : 'text-red-400';
 
   // ── Candle data ───────────────────────────────────────────────────────────
   const { data: candleData, isLoading: candleLoading, isFetching } = useQuery<{
@@ -168,7 +186,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
     refetchInterval: range === '1D' ? 5 * 60 * 1000 : false,
   });
 
-  // ── Indicator data — one named hook per indicator (fixed, safe) ──────────
+  // ── Indicator queries ─────────────────────────────────────────────────────
   function makeIndicatorQueryFn(opt: IndicatorOption) {
     return async () => {
       const params = new URLSearchParams({ type: opt.type, range });
@@ -179,12 +197,12 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
       return res.json() as Promise<IndicatorResponse>;
     };
   }
-  const sma50Query   = useQuery<IndicatorResponse>({ queryKey: ['indicator', ticker, 'sma50',  range], queryFn: makeIndicatorQueryFn(INDICATORS[0]), enabled: activeIndicators.has('sma50')  && !!ticker, staleTime: 5 * 60 * 1000 });
-  const sma200Query  = useQuery<IndicatorResponse>({ queryKey: ['indicator', ticker, 'sma200', range], queryFn: makeIndicatorQueryFn(INDICATORS[1]), enabled: activeIndicators.has('sma200') && !!ticker, staleTime: 5 * 60 * 1000 });
-  const ema20Query   = useQuery<IndicatorResponse>({ queryKey: ['indicator', ticker, 'ema20',  range], queryFn: makeIndicatorQueryFn(INDICATORS[2]), enabled: activeIndicators.has('ema20')  && !!ticker, staleTime: 5 * 60 * 1000 });
-  const bbandsQuery  = useQuery<IndicatorResponse>({ queryKey: ['indicator', ticker, 'bbands', range], queryFn: makeIndicatorQueryFn(INDICATORS[3]), enabled: activeIndicators.has('bbands') && !!ticker, staleTime: 5 * 60 * 1000 });
-  const rsiQuery     = useQuery<IndicatorResponse>({ queryKey: ['indicator', ticker, 'rsi',   range], queryFn: makeIndicatorQueryFn(INDICATORS[4]), enabled: activeIndicators.has('rsi')    && !!ticker, staleTime: 5 * 60 * 1000 });
-  const macdQuery    = useQuery<IndicatorResponse>({ queryKey: ['indicator', ticker, 'macd',  range], queryFn: makeIndicatorQueryFn(INDICATORS[5]), enabled: activeIndicators.has('macd')   && !!ticker, staleTime: 5 * 60 * 1000 });
+  const sma50Query  = useQuery<IndicatorResponse>({ queryKey: ['indicator', ticker, 'sma50',  range], queryFn: makeIndicatorQueryFn(INDICATORS[0]), enabled: activeIndicators.has('sma50')  && !!ticker, staleTime: 5 * 60 * 1000 });
+  const sma200Query = useQuery<IndicatorResponse>({ queryKey: ['indicator', ticker, 'sma200', range], queryFn: makeIndicatorQueryFn(INDICATORS[1]), enabled: activeIndicators.has('sma200') && !!ticker, staleTime: 5 * 60 * 1000 });
+  const ema20Query  = useQuery<IndicatorResponse>({ queryKey: ['indicator', ticker, 'ema20',  range], queryFn: makeIndicatorQueryFn(INDICATORS[2]), enabled: activeIndicators.has('ema20')  && !!ticker, staleTime: 5 * 60 * 1000 });
+  const bbandsQuery = useQuery<IndicatorResponse>({ queryKey: ['indicator', ticker, 'bbands', range], queryFn: makeIndicatorQueryFn(INDICATORS[3]), enabled: activeIndicators.has('bbands') && !!ticker, staleTime: 5 * 60 * 1000 });
+  const rsiQuery    = useQuery<IndicatorResponse>({ queryKey: ['indicator', ticker, 'rsi',   range], queryFn: makeIndicatorQueryFn(INDICATORS[4]), enabled: activeIndicators.has('rsi')    && !!ticker, staleTime: 5 * 60 * 1000 });
+  const macdQuery   = useQuery<IndicatorResponse>({ queryKey: ['indicator', ticker, 'macd',  range], queryFn: makeIndicatorQueryFn(INDICATORS[5]), enabled: activeIndicators.has('macd')   && !!ticker, staleTime: 5 * 60 * 1000 });
 
   const sma50Data  = sma50Query.data?.data;
   const sma200Data = sma200Query.data?.data;
@@ -193,9 +211,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
   const rsiData    = rsiQuery.data?.data;
   const macdData   = macdQuery.data?.data;
 
-  // ── Merge candles + all active indicators ────────────────────────────────
-  // All 6 data arrays are explicit deps so the memo re-runs whenever any
-  // indicator's API response arrives, not just when the Set changes.
+  // ── Chart data ────────────────────────────────────────────────────────────
   const chartData = useMemo<ChartPoint[]>(() => {
     if (!candleData?.candles) return [];
     const { t, c, v, session } = candleData.candles;
@@ -204,8 +220,6 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
       session: session?.[i],
     }));
 
-    // For 1D: split price into regularPrice (9:30–16:00) and extPrice (pre/after-hours)
-    // with overlap at session boundaries so lines visually connect.
     if (range === '1D' && session?.length === pts.length) {
       pts.forEach((pt, i) => {
         const sess = session[i];
@@ -213,12 +227,12 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
         const nextSess = i < session.length - 1 ? session[i + 1] : null;
         if (sess === 'regular') {
           pt.regularPrice = pt.price;
-          if (prevSess === 'pre') pt.extPrice = pt.price;   // connect at open
-          if (nextSess === 'post') pt.extPrice = pt.price;  // connect at close
+          if (prevSess === 'pre') pt.extPrice = pt.price;
+          if (nextSess === 'post') pt.extPrice = pt.price;
         } else {
           pt.extPrice = pt.price;
-          if (sess === 'pre' && nextSess === 'regular') pt.regularPrice = pt.price;   // connect at open
-          if (sess === 'post' && prevSess === 'regular') pt.regularPrice = pt.price;  // connect at close
+          if (sess === 'pre' && nextSess === 'regular') pt.regularPrice = pt.price;
+          if (sess === 'post' && prevSess === 'regular') pt.regularPrice = pt.price;
         }
       });
     }
@@ -247,88 +261,77 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
     return pts;
   }, [candleData, range, sma50Data, sma200Data, ema20Data, bbandsData, rsiData, macdData]);
 
-  // When viewing 1D and the market is live, append the latest tick as the
-  // trailing point so the line always ends at the current price.
+  // Append live tick so chart always ends at current price
   const displayData = useMemo<ChartPoint[]>(() => {
     if (range !== '1D' || !isLive || !live || !chartData.length) return chartData;
+    // eslint-disable-next-line react-hooks/purity
     const nowSec = Math.floor(Date.now() / 1000);
     const last = chartData[chartData.length - 1];
-    // Skip if the last candle is within 2 min of now (already current)
     if (Math.abs(last.time - nowSec) < 120) return chartData;
 
-    // Determine session for the live tick based on current ET time
     const etTimeStr = new Date().toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour12: false });
     const [etHStr, etMStr] = etTimeStr.split(':');
     const etMins = parseInt(etHStr) * 60 + parseInt(etMStr);
     const liveSession: 'pre' | 'regular' | 'post' = etMins < 570 ? 'pre' : etMins >= 960 ? 'post' : 'regular';
 
     const livePt: ChartPoint = {
-      time: nowSec,
-      label: fmtLabel(nowSec, '1D'),
-      price: live.price,
-      volume: 0,
-      session: liveSession,
+      time: nowSec, label: fmtLabel(nowSec, '1D'), price: live.price, volume: 0, session: liveSession,
     };
     if (chartData[0]?.session !== undefined) {
-      // Session-aware mode: populate the appropriate price key
-      if (liveSession === 'regular') {
-        livePt.regularPrice = live.price;
-      } else {
-        livePt.extPrice = live.price;
-      }
+      if (liveSession === 'regular') livePt.regularPrice = live.price;
+      else livePt.extPrice = live.price;
     }
     return [...chartData, livePt];
   }, [chartData, range, isLive, live]);
 
-  // Labels for session boundary ReferenceLine markers (1D only)
   const sessionBoundaries = useMemo(() => {
     if (range !== '1D') return { openLabel: undefined, closeLabel: undefined };
     let openLabel: string | undefined;
     let closeLabel: string | undefined;
     for (let i = 1; i < chartData.length; i++) {
-      if (!openLabel && chartData[i].session === 'regular' && chartData[i - 1]?.session === 'pre') {
-        openLabel = chartData[i].label;
-      }
-      if (!closeLabel && chartData[i].session === 'post' && chartData[i - 1]?.session === 'regular') {
-        closeLabel = chartData[i].label;
-      }
+      if (!openLabel && chartData[i].session === 'regular' && chartData[i - 1]?.session === 'pre') openLabel = chartData[i].label;
+      if (!closeLabel && chartData[i].session === 'post' && chartData[i - 1]?.session === 'regular') closeLabel = chartData[i].label;
     }
     return { openLabel, closeLabel };
   }, [chartData, range]);
 
-  const firstPrice   = displayData[0]?.price ?? 0;
-  const chartLast    = displayData[displayData.length - 1]?.price ?? 0;
-  // For 1D, baseline against prevClose (same as the header) so both numbers agree.
-  // For other ranges, use the first candle in the fetched data.
-  const chartBase    = range === '1D' && prevClose > 0 ? prevClose : firstPrice;
-  const chartDiff    = chartLast - chartBase;
-  const chartPct     = chartBase ? (chartDiff / chartBase) * 100 : 0;
-  const chartIsPos   = chartDiff >= 0;
-  const lineColor    = chartIsPos ? '#10b981' : '#ef4444';
-  const gradientId   = `pg-${ticker}`;
+  const firstPrice = displayData[0]?.price ?? 0;
+  const chartLast  = displayData[displayData.length - 1]?.price ?? 0;
+  const chartBase  = range === '1D' && prevClose > 0 ? prevClose : firstPrice;
+  const chartDiff  = chartLast - chartBase;
+  const chartPct   = chartBase ? (chartDiff / chartBase) * 100 : 0;
+  const chartIsPos = chartDiff >= 0;
+  // Brighter saturated green to match the reference design
+  const lineColor  = chartIsPos ? '#22c55e' : '#ef4444';
+  const gradientId = `pg-${ticker}`;
 
   const priceMin = displayData.length ? Math.min(...displayData.map(d => d.price)) : 0;
   const priceMax = displayData.length ? Math.max(...displayData.map(d => d.price)) : 0;
   const yPad     = (priceMax - priceMin) * 0.06;
 
-  // Fewer labels = cleaner chart. 4 is enough for any range.
   const tickCount    = 4;
   const tickInterval = chartData.length ? Math.max(1, Math.floor(chartData.length / tickCount)) : 1;
   const textColor    = isDark ? '#3f3f46' : '#c4c4c8';
 
-  const isLoadingChart = (candleLoading || isFetching) && !candleData?.candles;
-  const hasChart       = displayData.length > 0;
+  const isLoadingChart  = (candleLoading || isFetching) && !candleData?.candles;
+  const hasChart        = displayData.length > 0;
   const activeOscillators = [...activeIndicators].filter((i) => OSCILLATOR_INDICATORS.has(i));
-  const showOscillator = hasChart && !isSimplified && activeOscillators.length > 0;
+  const showOscillator  = hasChart && !isSimplified && activeOscillators.length > 0;
+
+  // ── For the range performance banner above the tabs ───────────────────────
+  // 1D: use live changePct (matches header exactly). Other ranges: use chart-derived value.
+  const perfIsPos = range === '1D' ? isPositive : chartIsPos;
+  const perfPct   = range === '1D' ? changePct  : chartPct;
+  const perfDiff  = range === '1D' ? change     : chartDiff;
 
   if (quoteLoading && !restQuote && !live) {
     return (
       <div className="mb-8 rounded-2xl border border-border bg-card p-6 space-y-4">
         <div className="space-y-2">
-          <Skeleton className="h-10 w-40" />
-          <Skeleton className="h-4 w-56" />
+          <Skeleton className="h-12 w-48" />
+          <Skeleton className="h-4 w-64" />
         </div>
-        <Skeleton className="h-[280px] w-full" />
+        <Skeleton className="h-[300px] w-full" />
       </div>
     );
   }
@@ -339,163 +342,156 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
     <div className="mb-8 rounded-2xl border border-border bg-card overflow-hidden">
 
       {/* ── Price header ─────────────────────────────────────────────────── */}
-      <div className="px-5 pt-5 pb-3">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div>
-            <div className="flex items-baseline gap-3">
-              <span className="text-4xl font-bold tracking-tight text-foreground tabular-nums">
-                {fmtPrice(price)}
-              </span>
-              <span className={cn('text-lg font-semibold tabular-nums', priceColor)}>
-                {isPositive ? '+' : ''}{changePct.toFixed(2)}%
-              </span>
+      <div className="px-5 pt-5 pb-4">
+        <div className="flex items-start justify-between gap-6 flex-wrap">
+
+          {/* Left: huge price + change row */}
+          <div className="min-w-0">
+            <div className="text-[52px] font-bold tracking-tight text-foreground tabular-nums leading-none">
+              {fmtPrice(price)}
             </div>
-            <div className={cn('flex items-center gap-2 mt-1 text-sm', priceColor)}>
-              <span className="tabular-nums">
-                {isPositive ? '+' : ''}{fmtPrice(change)} today
+
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-2.5">
+              <span className={cn('text-sm font-medium tabular-nums', priceColor)}>
+                {isPositive ? '+' : ''}{fmtPrice(change)} ({isPositive ? '+' : ''}{changePct.toFixed(2)}%) today
               </span>
+
+              {/* % WHY TODAY? — gradient-bordered pill */}
+              {range === '1D' && (
+                <button
+                  onClick={() => setWhyOpen((v) => !v)}
+                  className={cn(
+                    'inline-flex items-center gap-1 rounded-md px-2 py-0.5',
+                    'text-[10px] font-semibold uppercase tracking-wider border transition-colors',
+                    whyOpen
+                      ? 'border-primary/50 text-primary bg-primary/[0.06]'
+                      : 'border-border/50 text-muted-foreground hover:text-foreground hover:border-border'
+                  )}
+                >
+                  <span className={whyOpen ? 'text-primary' : 'text-primary/70'}>%</span> Why today?
+                </button>
+              )}
+
               {isLive && (
-                <span className="flex items-center gap-1 text-xs text-emerald-500 font-medium">
-                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="flex items-center gap-1 text-xs text-emerald-400 font-medium">
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                   Live
                 </span>
               )}
             </div>
 
-            {/* Extended hours (pre/after-market) */}
+            {/* Extended hours */}
             {extHours && (
               <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-                <span className="capitalize font-medium">
+                <span className="font-medium capitalize">
                   {extHours.pre_or_post === 'pre' ? 'Pre-market' : 'After-hours'}:
                 </span>
                 <span className="font-semibold text-foreground tabular-nums">{fmtPrice(extHours.price)}</span>
-                <span className={cn('tabular-nums', extHours.changePercent >= 0 ? 'text-emerald-500' : 'text-red-500')}>
+                <span className={cn('tabular-nums', extHours.changePercent >= 0 ? 'text-emerald-400' : 'text-red-400')}>
                   {extHours.changePercent >= 0 ? '+' : ''}{extHours.changePercent.toFixed(2)}%
                 </span>
               </div>
             )}
           </div>
 
-          {(dayHigh || prevClose) ? (
-            <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm shrink-0">
-              {prevClose > 0 && (
-                <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground text-xs">Prev close</span>
-                  <span className="font-medium tabular-nums">{fmtPrice(prevClose)}</span>
-                </div>
-              )}
-              {openPrice > 0 && (
-                <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground text-xs">Open</span>
-                  <span className="font-medium tabular-nums">{fmtPrice(openPrice)}</span>
-                </div>
-              )}
-              {dayHigh > 0 && (
-                <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground text-xs">High</span>
-                  <span className="font-medium tabular-nums text-emerald-500">{fmtPrice(dayHigh)}</span>
-                </div>
-              )}
-              {dayLow > 0 && (
-                <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground text-xs">Low</span>
-                  <span className="font-medium tabular-nums text-red-500">{fmtPrice(dayLow)}</span>
-                </div>
-              )}
+          {/* Right: performance banner + range tabs + indicators */}
+          <div className="flex flex-col items-end gap-2 shrink-0 pt-1">
+
+            {/* Period performance — shown above the tabs for any range */}
+            {hasChart && (
+              <div className={cn('text-right tabular-nums', perfIsPos ? 'text-emerald-400' : 'text-red-400')}>
+                <span className="text-sm font-semibold">
+                  {perfIsPos ? '+' : ''}{fmtPrice(perfDiff)}
+                  {' '}
+                  ({perfIsPos ? '+' : ''}{Math.abs(perfPct).toFixed(2)}%)
+                </span>
+                {' '}
+                <span className="text-xs font-normal text-muted-foreground">{RANGE_LABEL[range]}</span>
+              </div>
+            )}
+
+            {/* Range tabs */}
+            <div className="flex items-center gap-0.5">
+              {RANGES.map((r) => (
+                <button
+                  key={r}
+                  onClick={() => { setRange(r); if (r === '1D') setActiveIndicators(new Set()); }}
+                  className={cn(
+                    'rounded-md px-2.5 py-1 text-xs font-medium transition-all',
+                    range === r
+                      ? 'text-foreground font-semibold'
+                      : 'text-muted-foreground/50 hover:text-muted-foreground'
+                  )}
+                >
+                  {RANGE_DISPLAY[r]}
+                </button>
+              ))}
             </div>
-          ) : null}
+
+            {/* Indicators — advanced users, non-1D only */}
+            {!isSimplified && range !== '1D' && (
+              <div className="flex items-center gap-1 flex-wrap justify-end">
+                {INDICATORS.map(({ key, label }) => (
+                  <button
+                    key={key}
+                    onClick={() => toggleIndicator(key)}
+                    className={cn(
+                      'rounded-full px-2 py-0.5 text-[10px] font-medium transition-all border',
+                      activeIndicators.has(key)
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-transparent text-muted-foreground border-border hover:text-foreground hover:border-foreground/30'
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+                {activeIndicators.size > 0 && (
+                  <button
+                    onClick={() => setActiveIndicators(new Set())}
+                    className="rounded-full px-2 py-0.5 text-[10px] font-medium border border-border text-muted-foreground hover:text-foreground transition-all"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* ── Chart controls ───────────────────────────────────────────────── */}
-      <div className="px-5 pb-2 flex items-center justify-between gap-3 flex-wrap">
-        {/* Range performance — plain English in simple mode, numeric in pro mode */}
-        {hasChart && (
-          isSimplified ? (
-            <span className={cn('text-xs font-medium', chartIsPos ? 'text-emerald-500' : 'text-red-500')}>
-              {chartIsPos ? '▲ Up' : '▼ Down'}{' '}
-              {Math.abs(chartPct).toFixed(1)}%{' '}
-              {range === '1D' ? 'today' : `over this ${range === '1W' ? 'week' : range === '1M' ? 'month' : range === '6M' ? '6 months' : range === '1Y' ? 'year' : range}`}
-            </span>
-          ) : (
-            <span className={cn('text-xs font-medium tabular-nums', chartIsPos ? 'text-emerald-500' : 'text-red-500')}>
-              {chartIsPos ? '+' : ''}{chartDiff.toFixed(2)} ({chartIsPos ? '+' : ''}{chartPct.toFixed(2)}%) {range === '1D' ? 'today' : range}
-            </span>
-          )
-        )}
-        {/* Range tabs */}
-        <div className="flex items-center gap-0.5 rounded-lg border border-border bg-muted/40 p-0.5 ml-auto">
-          {RANGES.map((r) => (
-            <button
-              key={r}
-              onClick={() => { setRange(r); if (r === '1D') setActiveIndicators(new Set()); }}
-              className={cn(
-                'rounded-md px-2.5 py-1 text-xs font-medium transition-all',
-                range === r
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              {r}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* ── Indicator selector — hidden in simple mode and on 1D ──────── */}
-      {!isSimplified && range !== '1D' && (
-        <div className="px-5 pb-3 flex items-center gap-1.5 flex-wrap">
-          <span className="text-xs text-muted-foreground mr-1">Indicators:</span>
-          {INDICATORS.map(({ key, label }) => (
-            <button
-              key={key}
-              onClick={() => toggleIndicator(key)}
-              className={cn(
-                'rounded-full px-2.5 py-0.5 text-xs font-medium transition-all border',
-                activeIndicators.has(key)
-                  ? 'bg-primary text-primary-foreground border-primary'
-                  : 'bg-transparent text-muted-foreground border-border hover:text-foreground hover:border-foreground/30'
-              )}
-            >
-              {label}
-            </button>
-          ))}
-          {activeIndicators.size > 0 && (
-            <button
-              onClick={() => setActiveIndicators(new Set())}
-              className="rounded-full px-2.5 py-0.5 text-xs font-medium transition-all border border-border text-muted-foreground hover:text-foreground hover:border-foreground/30"
-            >
-              Clear
-            </button>
-          )}
-        </div>
-      )}
+      {/* ── Why Today panel ──────────────────────────────────────────────── */}
+      <WhyTodayPanel
+        ticker={ticker}
+        price={price}
+        change={change}
+        changePct={changePct}
+        open={whyOpen}
+        onClose={() => setWhyOpen(false)}
+      />
 
       {/* ── Price chart ──────────────────────────────────────────────────── */}
       <div className="relative">
-        {isLoadingChart && <Skeleton className="h-[280px] w-full" />}
+        {isLoadingChart && <Skeleton className="h-[300px] w-full" />}
 
         {!candleLoading && candleData?.candles === null && (
-          <div className="flex h-[280px] items-center justify-center text-sm text-muted-foreground">
+          <div className="flex h-[300px] items-center justify-center text-sm text-muted-foreground">
             No chart data available
           </div>
         )}
 
         {hasChart && (
-          <ResponsiveContainer width="100%" height={280}>
+          <ResponsiveContainer width="100%" height={300}>
             <AreaChart data={displayData} margin={{ top: 8, right: 0, bottom: 0, left: 0 }}>
               <defs>
                 <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%"   stopColor={lineColor} stopOpacity={0.2} />
-                  <stop offset="60%"  stopColor={lineColor} stopOpacity={0.05} />
+                  <stop offset="0%"   stopColor={lineColor} stopOpacity={0.25} />
+                  <stop offset="55%"  stopColor={lineColor} stopOpacity={0.06} />
                   <stop offset="100%" stopColor={lineColor} stopOpacity={0} />
                 </linearGradient>
               </defs>
 
-              {/* Hidden axis — only provides the Y domain, no labels rendered */}
               <YAxis domain={[priceMin - yPad, priceMax + yPad]} hide />
 
-              {/* Minimal date labels — ~4 across the full range, very subtle */}
               <XAxis
                 dataKey="label"
                 interval={tickInterval}
@@ -512,21 +508,19 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
 
               {range === '1D' && displayData[0]?.session !== undefined ? (
                 <>
-                  {/* Pre/after-hours: dashed gray, no fill */}
                   <Area
                     type="monotone"
                     dataKey="extPrice"
                     stroke="#6b7280"
                     strokeWidth={1.5}
                     strokeDasharray="4 3"
-                    strokeOpacity={0.65}
+                    strokeOpacity={0.55}
                     fill="none"
                     dot={false}
                     activeDot={false}
                     connectNulls={false}
                     isAnimationActive={false}
                   />
-                  {/* Regular session: colored with gradient fill */}
                   <Area
                     type="monotone"
                     dataKey="regularPrice"
@@ -538,12 +532,11 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
                     connectNulls={false}
                     isAnimationActive={false}
                   />
-                  {/* Session open/close boundary markers */}
                   {sessionBoundaries.openLabel && (
                     <ReferenceLine
                       x={sessionBoundaries.openLabel}
                       stroke="#6b7280"
-                      strokeOpacity={0.25}
+                      strokeOpacity={0.2}
                       strokeDasharray="2 4"
                       strokeWidth={1}
                       label={{ value: 'Open', position: 'insideTopRight', fontSize: 9, fill: '#9ca3af', dy: 2 }}
@@ -553,7 +546,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
                     <ReferenceLine
                       x={sessionBoundaries.closeLabel}
                       stroke="#6b7280"
-                      strokeOpacity={0.25}
+                      strokeOpacity={0.2}
                       strokeDasharray="2 4"
                       strokeWidth={1}
                       label={{ value: 'Close', position: 'insideTopRight', fontSize: 9, fill: '#9ca3af', dy: 2 }}
@@ -573,58 +566,49 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
                 />
               )}
 
-              {/* Live price dot — red circle at the trailing edge during market hours */}
+              {/* Live dot at trailing edge */}
               {range === '1D' && isLive && displayData.length > 0 && (
                 <ReferenceDot
                   x={displayData[displayData.length - 1].label}
                   y={displayData[displayData.length - 1].price}
                   r={5}
-                  fill="#ef4444"
-                  stroke="rgba(239,68,68,0.35)"
-                  strokeWidth={4}
+                  fill={lineColor}
+                  stroke={`${lineColor}55`}
+                  strokeWidth={5}
                 />
               )}
 
-              {/* SMA overlay */}
               {(activeIndicators.has('sma50') || activeIndicators.has('sma200')) && (
                 <Line type="monotone" dataKey="sma" stroke="#f59e0b" strokeWidth={1.5} dot={false} isAnimationActive={false} />
               )}
-
-              {/* EMA overlay */}
               {activeIndicators.has('ema20') && (
                 <Line type="monotone" dataKey="ema" stroke="#a78bfa" strokeWidth={1.5} dot={false} isAnimationActive={false} />
               )}
-
-              {/* Bollinger Bands overlay */}
               {activeIndicators.has('bbands') && (
                 <>
-                  <Line type="monotone" dataKey="upper" stroke="#60a5fa" strokeWidth={1} dot={false} strokeDasharray="4 2" isAnimationActive={false} />
+                  <Line type="monotone" dataKey="upper"  stroke="#60a5fa" strokeWidth={1} dot={false} strokeDasharray="4 2" isAnimationActive={false} />
                   <Line type="monotone" dataKey="middle" stroke="#60a5fa" strokeWidth={1} dot={false} isAnimationActive={false} />
-                  <Line type="monotone" dataKey="lower" stroke="#60a5fa" strokeWidth={1} dot={false} strokeDasharray="4 2" isAnimationActive={false} />
+                  <Line type="monotone" dataKey="lower"  stroke="#60a5fa" strokeWidth={1} dot={false} strokeDasharray="4 2" isAnimationActive={false} />
                 </>
               )}
             </AreaChart>
           </ResponsiveContainer>
         )}
 
-        {/* Floating min / max price labels — inside the chart, no axis clutter */}
+        {/* Floating high/low labels */}
         {hasChart && priceMax > 0 && (
           <div className="pointer-events-none absolute inset-x-3 top-2 flex justify-end">
-            <span className="text-[10px] tabular-nums text-muted-foreground/50 font-medium">
-              {fmtPrice(priceMax)}
-            </span>
+            <span className="text-[10px] tabular-nums text-muted-foreground/40 font-medium">{fmtPrice(priceMax)}</span>
           </div>
         )}
         {hasChart && priceMin > 0 && (
           <div className="pointer-events-none absolute inset-x-3 bottom-6 flex justify-end">
-            <span className="text-[10px] tabular-nums text-muted-foreground/50 font-medium">
-              {fmtPrice(priceMin)}
-            </span>
+            <span className="text-[10px] tabular-nums text-muted-foreground/40 font-medium">{fmtPrice(priceMin)}</span>
           </div>
         )}
       </div>
 
-      {/* ── Oscillator panels (RSI and/or MACD) ─────────────────────────── */}
+      {/* ── Oscillator panels (RSI / MACD) ───────────────────────────────── */}
       {showOscillator && (
         <div className="border-t border-border/30 mt-1">
           {activeOscillators.map((osc) => (
@@ -634,7 +618,6 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
                   {osc.toUpperCase()}
                 </span>
               </div>
-
               {osc === 'rsi' && (
                 <ResponsiveContainer width="100%" height={90}>
                   <LineChart data={displayData} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
@@ -642,13 +625,12 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
                     <YAxis domain={[0, 100]} hide ticks={[30, 50, 70]} />
                     <Tooltip formatter={(v: number) => v?.toFixed(1)} labelFormatter={() => ''} contentStyle={{ fontSize: 10 }} />
                     <ReferenceLine y={70} stroke="#ef4444" strokeOpacity={0.3} strokeDasharray="3 3" strokeWidth={1} />
-                    <ReferenceLine y={30} stroke="#10b981" strokeOpacity={0.3} strokeDasharray="3 3" strokeWidth={1} />
+                    <ReferenceLine y={30} stroke="#22c55e" strokeOpacity={0.3} strokeDasharray="3 3" strokeWidth={1} />
                     <ReferenceLine y={50} stroke={textColor} strokeDasharray="2 4" strokeWidth={1} />
                     <Line type="monotone" dataKey="rsi" stroke="#f59e0b" strokeWidth={1.5} dot={false} isAnimationActive={false} />
                   </LineChart>
                 </ResponsiveContainer>
               )}
-
               {osc === 'macd' && (
                 <ResponsiveContainer width="100%" height={90}>
                   <LineChart data={displayData} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
@@ -656,13 +638,23 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
                     <YAxis hide tickFormatter={(v) => v?.toFixed(1)} />
                     <Tooltip formatter={(v: number) => v?.toFixed(3)} labelFormatter={() => ''} contentStyle={{ fontSize: 10 }} />
                     <ReferenceLine y={0} stroke={textColor} strokeDasharray="2 4" strokeWidth={1} />
-                    <Line type="monotone" dataKey="macd" stroke="#60a5fa" strokeWidth={1.5} dot={false} isAnimationActive={false} />
+                    <Line type="monotone" dataKey="macd"   stroke="#60a5fa" strokeWidth={1.5} dot={false} isAnimationActive={false} />
                     <Line type="monotone" dataKey="signal" stroke="#f59e0b" strokeWidth={1.5} dot={false} isAnimationActive={false} />
                   </LineChart>
                 </ResponsiveContainer>
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* ── Stats bar ────────────────────────────────────────────────────── */}
+      {(openPrice > 0 || dayHigh > 0 || dayLow > 0 || prevClose > 0) && (
+        <div className="px-5 py-3 flex flex-wrap items-center gap-x-6 gap-y-1.5 border-t border-border/20">
+          {openPrice > 0  && <StatItem label="Open"       value={fmtPrice(openPrice)} />}
+          {dayHigh > 0    && <StatItem label="High"       value={fmtPrice(dayHigh)}   valueClass="text-emerald-400" />}
+          {dayLow > 0     && <StatItem label="Low"        value={fmtPrice(dayLow)}    valueClass="text-red-400" />}
+          {prevClose > 0  && <StatItem label="Prev Close" value={fmtPrice(prevClose)} />}
         </div>
       )}
     </div>

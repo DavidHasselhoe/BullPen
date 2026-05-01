@@ -30,6 +30,36 @@ interface WatchlistCardProps {
   nextEarningsDate?: string | null;
   daysToEarnings?: number | null;
   thesisSentiment?: 'bull' | 'bear' | 'neutral' | null;
+  sparkline?: number[];
+}
+
+function Sparkline({ data, isUp, symbol }: { data: number[]; isUp: boolean; symbol: string }) {
+  if (data.length < 2) return null;
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+  const W = 100;
+  const H = 36;
+  const pts = data.map((v, i) => [
+    (i / (data.length - 1)) * W,
+    H - ((v - min) / range) * (H * 0.85),
+  ]);
+  const linePath = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p[0].toFixed(2)},${p[1].toFixed(2)}`).join(' ');
+  const areaPath = `${linePath} L${W},${H} L0,${H} Z`;
+  const color = isUp ? '#22c55e' : '#ef4444';
+  const gradId = `spark-${symbol}`;
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="w-full h-9">
+      <defs>
+        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity={0.2} />
+          <stop offset="100%" stopColor={color} stopOpacity={0} />
+        </linearGradient>
+      </defs>
+      <path d={areaPath} fill={`url(#${gradId})`} />
+      <path d={linePath} stroke={color} strokeWidth={1.5} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
 }
 
 function formatPrice(p: number) {
@@ -63,6 +93,7 @@ export function WatchlistCard({
   nextEarningsDate: _nextEarningsDate,
   daysToEarnings,
   thesisSentiment,
+  sparkline,
 }: WatchlistCardProps) {
   const isUp = (quote?.changePercent ?? 0) > 0;
   const isDown = (quote?.changePercent ?? 0) < 0;
@@ -150,6 +181,13 @@ export function WatchlistCard({
         ) : (
           <div className="flex items-end justify-between">
             <span className="text-sm text-muted-foreground">Loading...</span>
+          </div>
+        )}
+
+        {/* Sparkline */}
+        {sparkline && sparkline.length > 1 && (
+          <div className="-mx-1 -mb-1">
+            <Sparkline data={sparkline} isUp={isUp} symbol={symbol} />
           </div>
         )}
 

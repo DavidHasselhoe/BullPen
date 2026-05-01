@@ -1,12 +1,9 @@
 'use client';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { CompanyRowActions } from '@/components/discover/CompanyRowActions';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { Flame } from 'lucide-react';
 import { fetchWithTimeout } from '@/lib/utils';
 import { HOT_PICKS_QUERY_KEY } from '@/lib/discover/hot-picks-query';
 
@@ -24,9 +21,22 @@ interface HotPicksResponse {
   error?: string;
 }
 
-/**
- * Hot Picks Card — tickers with the most stock detail page visits in the window.
- */
+function SkeletonRow({ rank }: { rank: number }) {
+  return (
+    <div className="flex items-center gap-4 py-3 px-1">
+      <span className="text-[32px] font-black tabular-nums text-foreground/[0.05] select-none w-10 text-right shrink-0 leading-none">
+        {rank}
+      </span>
+      <div className="h-8 w-8 rounded-lg bg-muted animate-pulse shrink-0" />
+      <div className="flex-1 space-y-1.5">
+        <div className="h-3 w-16 bg-muted animate-pulse rounded" />
+        <div className="h-2.5 w-24 bg-muted animate-pulse rounded" />
+      </div>
+      <div className="h-2.5 w-10 bg-muted animate-pulse rounded shrink-0" />
+    </div>
+  );
+}
+
 export function HotPicksCard() {
   const { data: hotPicks, isLoading } = useQuery<HotPick[]>({
     queryKey: HOT_PICKS_QUERY_KEY,
@@ -36,28 +46,27 @@ export function HotPicksCard() {
           '/api/search/metrics?hours=168&limit=8',
           {},
           10000
-        ); // Last 7 days, top 8
+        );
         const data: HotPicksResponse = await response.json();
         if (!data.success || !data.data?.length) return [];
 
-      // Single batch request for company names/logos (replaces N individual /api/search calls)
-      const tickers = data.data.map((pick) => pick.ticker);
-      const batchRes = await fetch('/api/companies/batch', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tickers }),
-      });
-      const batchData = (batchRes.ok
-        ? await batchRes.json()
-        : { data: [] }) as {
- data?: Array<{ ticker: string; name: string; logo_url: string | null }>;
-      };
-      const companyMap = new Map(
-        (batchData.data || []).map((c) => [
-          c.ticker,
-          { name: c.name, logo_url: c.logo_url },
-        ])
-      );
+        const tickers = data.data.map((pick) => pick.ticker);
+        const batchRes = await fetch('/api/companies/batch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tickers }),
+        });
+        const batchData = (batchRes.ok
+          ? await batchRes.json()
+          : { data: [] }) as {
+          data?: Array<{ ticker: string; name: string; logo_url: string | null }>;
+        };
+        const companyMap = new Map(
+          (batchData.data || []).map((c) => [
+            c.ticker,
+            { name: c.name, logo_url: c.logo_url },
+          ])
+        );
 
         return data.data.map((pick) => ({
           ...pick,
@@ -70,92 +79,85 @@ export function HotPicksCard() {
         throw e;
       }
     },
-    staleTime: 30 * 1000, // refresh often; visits also invalidate from stock page
+    staleTime: 30 * 1000,
     refetchOnWindowFocus: true,
     retry: 1,
-    gcTime: 30 * 60 * 1000, // 30 minutes
+    gcTime: 30 * 60 * 1000,
   });
-
-  if (isLoading) {
-    return (
-      <Card className="border-border/50 min-w-0 overflow-hidden">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Flame className="h-5 w-5 text-orange-500" />
-            Hot Picks
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-              <div key={i} className="flex items-center gap-3">
-                <Skeleton className="h-10 w-10 rounded" />
-                <div className="flex-1">
-                  <Skeleton className="h-4 w-24 mb-2" />
-                  <Skeleton className="h-3 w-16" />
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
 
   const isEmpty = !hotPicks || hotPicks.length === 0;
 
   return (
-    <Card className="border-border/50 min-w-0 overflow-hidden">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Flame className="h-5 w-5 text-orange-500" />
-          Hot Picks
-        </CardTitle>
-        <CardDescription>
-          Stocks others are opening most this week (by detail page visits).
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {isEmpty ? (
-          <p className="text-sm text-muted-foreground py-2">
-            Nothing here yet — open a few company pages and this list will fill up automatically.
-          </p>
-        ) : (
-        <div className="space-y-1">
+    <div className="min-w-0">
+      {/* Editorial section header */}
+      <div className="flex items-center gap-3 mb-4">
+        <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/70 shrink-0">
+          Trending this week
+        </span>
+        <div className="flex-1 h-px bg-border/50" />
+        <span className="text-[10px] font-mono text-muted-foreground/40 uppercase tracking-wider shrink-0">
+          by views
+        </span>
+      </div>
+
+      {isLoading ? (
+        <div className="divide-y divide-border/30">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+            <SkeletonRow key={i} rank={i} />
+          ))}
+        </div>
+      ) : isEmpty ? (
+        <p className="text-sm text-muted-foreground py-4">
+          Nothing here yet — open a few company pages and this list will fill up automatically.
+        </p>
+      ) : (
+        <div className="divide-y divide-border/30">
           {hotPicks.map((pick, index) => (
-            <div
-              key={pick.ticker}
-              className="group flex cursor-pointer items-center gap-3 p-2.5 -mx-2 rounded-lg transition-all duration-200 hover:bg-accent/50 hover:shadow-sm border border-transparent hover:border-border/50"
-            >
-              <Link
-                href={`/stock/${pick.ticker}`}
-                className="flex flex-1 min-w-0 items-center gap-3"
-              >
-                <div className="flex items-center justify-center w-7 text-xs font-bold text-muted-foreground tabular-nums shrink-0">
-                  {index + 1}
-                </div>
-                <CompanyLogo
-                  name={pick.name || pick.ticker}
-                  ticker={pick.ticker}
-                  logoUrl={pick.logo_url || null}
-                  size={36}
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="font-extrabold text-foreground text-sm tabular-nums group-hover:underline">
-                    {pick.ticker}
+            <div key={pick.ticker} className="group relative">
+              {/* Left accent bar on hover */}
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-0.5 bg-primary opacity-0 group-hover:opacity-100 transition-opacity rounded-full" />
+
+              <div className="flex items-center gap-4 py-3 px-1 -mx-1 rounded-lg hover:bg-accent/40 transition-colors">
+                <Link
+                  href={`/stock/${pick.ticker}`}
+                  className="flex flex-1 min-w-0 items-center gap-4"
+                >
+                  {/* Ghost rank number */}
+                  <span className="text-[32px] font-black tabular-nums text-foreground/[0.07] select-none w-10 text-right shrink-0 leading-none">
+                    {index + 1}
+                  </span>
+
+                  <CompanyLogo
+                    name={pick.name || pick.ticker}
+                    ticker={pick.ticker}
+                    logoUrl={pick.logo_url || null}
+                    size={32}
+                  />
+
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-foreground leading-none group-hover:text-primary transition-colors">
+                      {pick.ticker}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate mt-0.5">
+                      {pick.name || pick.ticker}
+                    </p>
                   </div>
-                  <div className="text-xs text-muted-foreground truncate">{pick.name || pick.ticker}</div>
-                </div>
-                <div className="text-xs text-muted-foreground shrink-0">
-                  {pick.click_count} {pick.click_count === 1 ? 'visit' : 'visits'}
-                </div>
-              </Link>
-              <CompanyRowActions ticker={pick.ticker} name={pick.name || pick.ticker} className="shrink-0" />
+
+                  <span className="text-[11px] tabular-nums text-muted-foreground/50 shrink-0 font-mono">
+                    {pick.click_count} {pick.click_count === 1 ? 'view' : 'views'}
+                  </span>
+                </Link>
+
+                <CompanyRowActions
+                  ticker={pick.ticker}
+                  name={pick.name || pick.ticker}
+                  className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                />
+              </div>
             </div>
           ))}
         </div>
-        )}
-      </CardContent>
-    </Card>
+      )}
+    </div>
   );
 }

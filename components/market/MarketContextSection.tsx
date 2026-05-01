@@ -6,7 +6,6 @@ import { useUserSettings } from '@/hooks/use-user-settings';
 import { useTopMoversWithStream, useMarketNews } from '@/hooks/use-market-data';
 import { getExchangesForTickers } from '@/lib/market/ticker-exchange-map';
 import { Card, CardContent } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
 import { MarketHoursCard } from './MarketHoursCard';
 import { TopMoversCard } from './TopMoversCard';
 import { MarketNewsCard } from './MarketNewsCard';
@@ -51,57 +50,43 @@ export function MarketContextSection() {
     isLoading: isLoadingNews,
   } = useMarketNews('general', 5, newsSymbols);
 
-  const isEmptyHoldings = effectiveHoldingsMode && tickers.length === 0;
-
   return (
     <section className="space-y-4 min-w-0 overflow-hidden">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h2 className="text-base font-bold uppercase tracking-wider text-foreground">
-            Market Context
-          </h2>
-          <p className="text-sm text-muted-foreground max-w-2xl">
-            {effectiveHoldingsMode
-              ? 'Market hours, movers, and news for your portfolio.'
-              : 'Market hours, top movers, and recent news.'}
-          </p>
-        </div>
+      {/* Editorial section header */}
+      <div className="flex items-center gap-3">
+        <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/70 shrink-0">
+          Market context
+        </span>
+        <div className="flex-1 h-px bg-border/50" />
         {isAuthenticated && (
-          <div className="flex items-center gap-2">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant={effectiveHoldingsMode ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() =>
-                      updateMarketContextMode(holdingsMode ? 'all' : 'holdings')
-                    }
-                    disabled={!hasHoldings}
-                  >
-                    {holdingsMode ? (
-                      <>
-                        <Briefcase className="mr-2 h-4 w-4" />
-                        My portfolio
-                      </>
-                    ) : (
-                      <>
-                        <Globe className="mr-2 h-4 w-4" />
-                        All markets
-                      </>
-                    )}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  {hasHoldings
-                    ? holdingsMode
-                      ? 'Showing data for your portfolio. Switch to see all markets.'
-                      : 'Switch to see only your portfolio: market hours for your exchanges, movers from your holdings, and news about your companies.'
-                    : 'Add stocks to your portfolio to personalize Market Context.'}
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() =>
+                    updateMarketContextMode(holdingsMode ? 'all' : 'holdings')
+                  }
+                  disabled={!hasHoldings}
+                  className="h-6 gap-1.5 px-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60 hover:text-foreground"
+                >
+                  {holdingsMode ? (
+                    <><Briefcase className="h-3 w-3" />My portfolio</>
+                  ) : (
+                    <><Globe className="h-3 w-3" />All markets</>
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {hasHoldings
+                  ? holdingsMode
+                    ? 'Showing data for your portfolio. Switch to see all markets.'
+                    : 'Switch to see only your portfolio: market hours for your exchanges, movers from your holdings, and news about your companies.'
+                  : 'Add stocks to your portfolio to personalize Market Context.'}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         )}
       </div>
 

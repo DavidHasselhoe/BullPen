@@ -88,6 +88,21 @@ export default function WatchlistPage() {
   const livePrices = useLivePrices(allSymbols);
   const { data: enhancedData } = useWatchlistEnhanced(allSymbols);
 
+  // Sparkline charts — today's 5min candles for every watched symbol
+  const { data: sparklinesData } = useQuery({
+    queryKey: ['watchlist-sparklines', allSymbols.join(',')],
+    queryFn: async (): Promise<Record<string, number[]>> => {
+      if (allSymbols.length === 0) return {};
+      const res = await fetch(`/api/watchlist/sparklines?symbols=${encodeURIComponent(allSymbols.join(','))}`);
+      if (!res.ok) return {};
+      const data = await res.json();
+      return data.sparklines ?? {};
+    },
+    enabled: allSymbols.length > 0,
+    staleTime: 2 * 60_000,
+    refetchInterval: 5 * 60_000,
+  });
+
   // Fallback batch fetch for all symbols (runs once on load, populates prices before WS ticks arrive)
   const { data: seedQuotes } = useQuery({
     queryKey: ['watchlist-seed-quotes', allSymbols.join(',')],
@@ -324,6 +339,7 @@ export default function WatchlistPage() {
                   nextEarningsDate={enhanced?.nextEarningsDate}
                   daysToEarnings={enhanced?.daysToEarnings}
                   thesisSentiment={enhanced?.thesisSentiment}
+                  sparkline={sparklinesData?.[item.symbol]}
                 />
               );
             })}

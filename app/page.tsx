@@ -10,6 +10,7 @@ import { HotPicksCard } from '@/components/discover/HotPicksCard';
 import { RecentlyViewedInline } from '@/components/discover/RecentlyViewedInline';
 import { PortfolioSummaryWidget } from '@/components/discover/PortfolioSummaryWidget';
 import { EarningsCalendarWidget } from '@/components/discover/EarningsCalendarWidget';
+import { DailyBriefWidget } from '@/components/discover/DailyBriefWidget';
 import { QuoteDisplay } from '@/components/ui/QuoteDisplay';
 import { useUserSettings } from '@/hooks/use-user-settings';
 
@@ -40,6 +41,13 @@ export default function DiscoverPage() {
         </section>
 
         <div className="space-y-16">
+          {/* Daily Brief — AI-generated daily market summary (pro users) */}
+          <section className="min-w-0 overflow-hidden">
+            <AnimatedContent reverse={true}>
+              <DailyBriefWidget />
+            </AnimatedContent>
+          </section>
+
           {/* SECTION 1: Market Context — live movers, hours, news */}
           <MarketContextSection />
 

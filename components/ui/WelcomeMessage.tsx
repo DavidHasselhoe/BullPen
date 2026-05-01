@@ -21,6 +21,7 @@ export function WelcomeMessage() {
 
   const displayName = user.full_name || user.username || user.email?.split('@')[0] || 'User';
   const greeting = getTimeGreeting();
+  const marketOpen = nyseStatus && !nyseStatus.isHoliday && nyseStatus.isOpen;
 
   const marketContext = nyseStatus && !nyseStatus.isHoliday
     ? nyseStatus.isOpen
@@ -29,14 +30,22 @@ export function WelcomeMessage() {
     : null;
 
   return (
-    <div className="space-y-1">
-      <p className="text-lg font-medium text-foreground">
-        {greeting}, {displayName}
-      </p>
+    <div className="flex items-baseline justify-between gap-4">
+      <h1 className="text-2xl font-bold tracking-tight text-foreground">
+        {greeting},{' '}
+        <span className="text-muted-foreground font-normal">{displayName}</span>
+      </h1>
       {marketContext && (
-        <p className="text-sm text-muted-foreground font-mono">
-          {marketContext}
-        </p>
+        <div className="flex items-center gap-2 shrink-0">
+          <span
+            className={`h-1.5 w-1.5 rounded-full shrink-0 ${
+              marketOpen ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400/80'
+            }`}
+          />
+          <span className="text-[11px] font-mono text-muted-foreground tracking-wide">
+            {marketContext}
+          </span>
+        </div>
       )}
     </div>
   );
