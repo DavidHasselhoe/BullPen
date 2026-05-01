@@ -263,6 +263,15 @@ html.animated-background-active [data-slot="dialog-content"] {
     50% { opacity: 0; }
   }
 
+  /* Daily Brief drawer slide-up animation */
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+  }
+  .animate-slide-up {
+    animation: slideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  }
+
   /* Hide scrollbar while keeping scroll functionality */
   .scrollbar-hide {
     -ms-overflow-style: none !important;
