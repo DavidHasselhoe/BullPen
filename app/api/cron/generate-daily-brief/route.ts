@@ -167,7 +167,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   // ── Parse title (first non-empty line) and body ───────────────────────────
   const lines = fullText.trim().split('\n');
-  const titleLine = lines[0].replace(/^#+\s*/, '').trim();
+  const titleLine = lines[0].replace(/^#+\s*/, '').replace(/\*\*/g, '').trim();
   const content = lines.slice(1).join('\n').trim();
 
   const featured = extractTickers(fullText);
