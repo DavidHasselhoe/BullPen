@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { fetchWithTimeout } from '@/lib/utils';
 import { HOT_PICKS_QUERY_KEY } from '@/lib/discover/hot-picks-query';
+import { slugToAssetPath } from '@/lib/assets/asset-type';
 
 interface HotPick {
   ticker: string;
@@ -119,7 +120,7 @@ export function HotPicksCard() {
 
               <div className="flex items-center gap-4 py-3 px-1 -mx-1 rounded-lg hover:bg-accent/40 transition-colors">
                 <Link
-                  href={`/stock/${pick.ticker}`}
+                  href={slugToAssetPath(pick.ticker)}
                   className="flex flex-1 min-w-0 items-center gap-4"
                 >
                   {/* Ghost rank number */}

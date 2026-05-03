@@ -13,6 +13,7 @@ export interface AddHoldingInput {
   quantity?: number | null;
   avg_price?: number | null;
   date_purchased?: string | null;
+  asset_type?: 'stock' | 'crypto' | 'commodity' | 'forex' | 'etf' | null;
 }
 
 export interface UpdateHoldingInput {
@@ -66,6 +67,7 @@ export async function addHoldingAction(
     quantity: input.quantity ?? null,
     avg_price: input.avg_price ?? null,
     date_purchased: input.date_purchased ?? null,
+    asset_type: input.asset_type ?? 'stock',
   } as Parameters<typeof addHolding>[1]);
 }
 
@@ -93,6 +95,7 @@ export async function addOrUpdateHoldingAction(
     quantity: input.quantity ?? null,
     avg_price: input.avg_price ?? null,
     date_purchased: input.date_purchased ?? null,
+    asset_type: input.asset_type ?? 'stock',
   } as Parameters<typeof addOrUpdateHolding>[1]);
 }
 

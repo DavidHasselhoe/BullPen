@@ -13,6 +13,7 @@ import { EarningsCalendarWidget } from '@/components/discover/EarningsCalendarWi
 import { DailyBriefWidget } from '@/components/discover/DailyBriefWidget';
 import { QuoteDisplay } from '@/components/ui/QuoteDisplay';
 import { useUserSettings } from '@/hooks/use-user-settings';
+import { CryptoMarketCard } from '@/components/asset/CryptoMarketCard';
 
 export default function DiscoverPage() {
   const { hasAnimatedBackground } = useBackground();
@@ -62,6 +63,13 @@ export default function DiscoverPage() {
           <section className="min-w-0 overflow-hidden">
             <AnimatedContent reverse={true}>
               <HotPicksCard />
+            </AnimatedContent>
+          </section>
+
+          {/* Crypto & Commodities market overview */}
+          <section className="min-w-0 overflow-hidden">
+            <AnimatedContent reverse={true}>
+              <CryptoMarketCard />
             </AnimatedContent>
           </section>
 

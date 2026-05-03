@@ -24,8 +24,12 @@ NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
-# OpenAI Configuration (required for AI analysis)
+# OpenAI Configuration (required for AI chat)
 OPENAI_API_KEY=sk-...your-openai-api-key
+
+# Anthropic Configuration (required for "Why Today?" feature — Claude + web search)
+# Get key at: https://console.anthropic.com → API keys
+ANTHROPIC_API_KEY=sk-ant-...your-anthropic-api-key
 
 # Market Data: use either Twelve Data or Finnhub
 # When TWELVE_DATA_API_KEY is set, Twelve Data is used for quotes, candles, movers, earnings.

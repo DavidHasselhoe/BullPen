@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { X, TrendingUp, TrendingDown, Minus, Bell, BellOff } from 'lucide-react';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { cn } from '@/lib/utils';
+import { slugToAssetPath } from '@/lib/assets/asset-type';
 
 interface Quote {
   price: number;
@@ -148,7 +149,7 @@ export function WatchlistCard({
         </button>
       </div>
 
-      <Link href={`/stock/${symbol}`} className="flex flex-col gap-3 p-4">
+      <Link href={slugToAssetPath(symbol)} className="flex flex-col gap-3 p-4">
         {/* Header */}
         <div className="flex items-center gap-3">
           <CompanyLogo name={company_name} ticker={symbol} logoUrl={null} size={36} />

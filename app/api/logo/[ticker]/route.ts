@@ -3,6 +3,7 @@ import { getLogoUrl } from '@/lib/twelvedata/twelvedata-client';
 import { uploadLogoToStorage } from '@/lib/logos/logos-storage';
 import { addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
+import { slugToSymbol } from '@/lib/assets/asset-type';
 
 /**
  * GET /api/logo/[ticker]
@@ -24,7 +25,7 @@ export async function GET(
     );
   }
 
-  const sym = ticker.trim().toUpperCase();
+  const sym = slugToSymbol(ticker.trim()).toUpperCase();
   const supabase = createServerClient();
 
   // ── Step 1: Return from DB if already cached ──────────────────────────────

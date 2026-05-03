@@ -1,13 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getExtendedHoursQuote, TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
 import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
+import { slugToSymbol, inferAssetType, has24hTrading } from '@/lib/assets/asset-type';
 
 async function handler(
   _request: NextRequest,
   { params }: { params: Promise<{ ticker: string }> }
 ) {
   const { ticker } = await params;
-  const symbol = ticker.toUpperCase();
+  const symbol = slugToSymbol(ticker).toUpperCase();
+
+  // Crypto trades 24/7 — no "extended hours" concept
+  if (has24hTrading(inferAssetType(symbol))) {
+    return addSecurityHeaders(
+      NextResponse.json(
+        { success: true, data: null, reason: 'not_applicable' },
+        { headers: { 'Cache-Control': 'public, s-maxage=3600' } }
+      )
+    );
+  }
 
   try {
     const data = await getExtendedHoursQuote(symbol);

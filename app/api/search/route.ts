@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { symbolSearch } from '@/lib/twelvedata/twelvedata-client';
 import {
   filterByQueryIntent,
+  filterNonUsWhenUsExists,
   isLikelyTickerQuery,
   pickPrimaryListingPerSymbol,
   pickPrimaryPerCompanyName,
@@ -11,7 +12,7 @@ import { withRateLimit, addSecurityHeaders, validateSearchQueryParam } from '@/l
 import { validateLimit } from '@/lib/security/input-validation';
 import { logger } from '@/lib/utils/logger';
 
-// Instrument types we consider relevant for a stock-focused app
+// Instrument types we consider relevant
 const RELEVANT_TYPES = new Set([
   'Common Stock',
   'ETF',
@@ -22,6 +23,11 @@ const RELEVANT_TYPES = new Set([
   'Closed-end Fund',
   'Exchange-Traded Note',
   'Unit',
+  // Crypto & commodity
+  'Digital Currency',
+  'Cryptocurrency',
+  'Commodity',
+  'Physical Currency',
 ]);
 
 async function handler(request: NextRequest) {
@@ -52,11 +58,26 @@ async function handler(request: NextRequest) {
     let filtered = raw.filter((r) => RELEVANT_TYPES.has(r.instrument_type));
     filtered = filterByQueryIntent(filtered, query);
 
+    const tickerQuery = isLikelyTickerQuery(query);
+
+    // Drop derivative/certificate symbols (4NVDA, 4ORCL, etc. on MTA) and numeric
+    // bond identifiers that TwelveData returns for company-name searches.
+    // Ticker-like queries (e.g. "4NVDA" typed explicitly) are left untouched.
+    if (!tickerQuery) {
+      filtered = filtered.filter((r) => !/^\d/.test(r.symbol));
+    }
+
     // symbol_search has no request filter for exchange/country (docs: symbol, outputsize, show_plan only).
     // Collapse cross-listings: name queries → one row per company (US/NASDAQ preferred); ticker queries → one per symbol.
-    const collapsed = isLikelyTickerQuery(query)
+    let collapsed = tickerQuery
       ? pickPrimaryListingPerSymbol(filtered, symbolOrderFromResults(filtered))
       : pickPrimaryPerCompanyName(filtered);
+
+    // For name queries, drop non-US common stocks when a US listing already exists.
+    // Keeps ADR/GDR/ETF/REIT regardless — those are US-tradeable foreign instruments.
+    if (!tickerQuery) {
+      collapsed = filterNonUsWhenUsExists(collapsed);
+    }
 
     const capped = collapsed.slice(0, limit);
 

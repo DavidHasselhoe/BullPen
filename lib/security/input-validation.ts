@@ -13,13 +13,20 @@ export function validateTicker(ticker: string): { valid: boolean; normalized?: s
   // Trim and uppercase
   const normalized = ticker.trim().toUpperCase();
 
-  // Check length (typical tickers are 1-5 chars, but some can be longer)
-  if (normalized.length === 0 || normalized.length > 10) {
+  if (normalized.length === 0) {
     return { valid: false, error: 'Ticker must be between 1 and 10 characters' };
   }
 
-  // Only allow alphanumeric characters and common symbols
-  if (!/^[A-Z0-9.-]+$/.test(normalized)) {
+  // Pair symbols like BTC/USD or XAU/USD (up to 10 chars total)
+  if (/^[A-Z0-9]{1,7}\/[A-Z]{2,4}$/.test(normalized)) {
+    return { valid: true, normalized };
+  }
+
+  // Plain tickers: AAPL, BRK.B, BTC-USD slugs (up to 10 chars)
+  if (normalized.length > 10) {
+    return { valid: false, error: 'Ticker must be between 1 and 10 characters' };
+  }
+  if (!/^[A-Z0-9.\-]+$/.test(normalized)) {
     return { valid: false, error: 'Ticker contains invalid characters' };
   }
 

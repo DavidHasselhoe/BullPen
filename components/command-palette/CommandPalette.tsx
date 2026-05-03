@@ -18,6 +18,7 @@ import { useDebounce } from '@/hooks/use-debounce';
 import { useSearchShortcut } from '@/hooks/use-search-shortcut';
 import { fetchWithTimeout } from '@/lib/utils';
 import { MessageSquare, Briefcase, Filter, TrendingUp, ExternalLink, Scale, FileText, Users } from 'lucide-react';
+import { slugToAssetPath, inferAssetType } from '@/lib/assets/asset-type';
 import type { PublicUser } from '@/app/api/users/search/route';
 
 interface SearchResult {
@@ -108,7 +109,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     async (result: SearchResult) => {
       onOpenChange(false);
       setSearchQuery('');
-      router.push(`/stock/${result.ticker}`);
+      router.push(slugToAssetPath(result.ticker));
     },
     [router, onOpenChange]
   );
@@ -158,7 +159,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     (result: SearchResult) => {
       onOpenChange(false);
       setSearchQuery('');
-      router.push(`/stock/${result.ticker}#earnings`);
+      router.push(`${slugToAssetPath(result.ticker)}#earnings`);
     },
     [router, onOpenChange]
   );
@@ -216,8 +217,14 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                 )}
                 {searchResults && searchResults.length > 0 ? (
                   <>
-                    <CommandGroup heading="Companies">
-                      {searchResults.map((result) => (
+                    {(() => {
+                      const CRYPTO_TYPES = new Set(['Digital Currency', 'Cryptocurrency']);
+                      const COMMODITY_TYPES = new Set(['Commodity', 'Physical Currency']);
+                      const stocks = searchResults.filter((r) => !CRYPTO_TYPES.has(r.instrument_type ?? '') && !COMMODITY_TYPES.has(r.instrument_type ?? ''));
+                      const crypto = searchResults.filter((r) => CRYPTO_TYPES.has(r.instrument_type ?? ''));
+                      const commodities = searchResults.filter((r) => COMMODITY_TYPES.has(r.instrument_type ?? ''));
+
+                      const renderItem = (result: SearchResult) => (
                         <CommandItem
                           key={`${result.ticker}-${result.exchange ?? ''}`}
                           value={`${result.ticker} ${result.name}`}
@@ -246,31 +253,61 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                             <span className="text-muted-foreground text-xs truncate block">{result.name}</span>
                           </div>
                         </CommandItem>
-                      ))}
-                    </CommandGroup>
-                    <CommandGroup heading="Quick actions">
-                      <CommandItem value="open-first" onSelect={() => searchResults && handleSelectCompany(searchResults[0])}>
-                        <ExternalLink className="h-4 w-4" />
-                        Open {searchResults[0]?.ticker} page
-                      </CommandItem>
-                      <CommandItem value="filings-first" onSelect={() => searchResults && handleOpenFilings(searchResults[0])}>
-                        <FileText className="h-4 w-4" />
-                        Open {searchResults[0]?.ticker} filings
-                      </CommandItem>
-                      <CommandItem value="ask-about-first" onSelect={() => searchResults && handleAskAI(`Tell me about ${searchResults[0]?.ticker}`)}>
-                        <MessageSquare className="h-4 w-4" />
-                        Ask AI about {searchResults[0]?.ticker}
-                      </CommandItem>
-                      {searchResults.length >= 2 && (
-                        <CommandItem
-                          value="compare-first-two"
-                          onSelect={() => handleCompareWith(searchResults[0]!.ticker, [searchResults[1]!.ticker])}
-                        >
-                          <Scale className="h-4 w-4" />
-                          Compare {searchResults[0]?.ticker} vs {searchResults[1]?.ticker}
-                        </CommandItem>
-                      )}
-                    </CommandGroup>
+                      );
+
+                      return (
+                        <>
+                          {crypto.length > 0 && (
+                            <CommandGroup heading="Crypto">
+                              {crypto.map(renderItem)}
+                            </CommandGroup>
+                          )}
+                          {commodities.length > 0 && (
+                            <CommandGroup heading="Commodities">
+                              {commodities.map(renderItem)}
+                            </CommandGroup>
+                          )}
+                          {stocks.length > 0 && (
+                            <CommandGroup heading="Stocks & ETFs">
+                              {stocks.map(renderItem)}
+                            </CommandGroup>
+                          )}
+                        </>
+                      );
+                    })()}
+                    {(() => {
+                      const first = searchResults[0];
+                      if (!first) return null;
+                      const firstType = inferAssetType(first.ticker, first.instrument_type);
+                      const isStock = firstType === 'stock' || firstType === 'etf';
+                      return (
+                        <CommandGroup heading="Quick actions">
+                          <CommandItem value="open-first" onSelect={() => handleSelectCompany(first)}>
+                            <ExternalLink className="h-4 w-4" />
+                            Open {first.ticker} page
+                          </CommandItem>
+                          {isStock && (
+                            <CommandItem value="filings-first" onSelect={() => handleOpenFilings(first)}>
+                              <FileText className="h-4 w-4" />
+                              Open {first.ticker} filings
+                            </CommandItem>
+                          )}
+                          <CommandItem value="ask-about-first" onSelect={() => handleAskAI(`Tell me about ${first.ticker}`)}>
+                            <MessageSquare className="h-4 w-4" />
+                            Ask AI about {first.ticker}
+                          </CommandItem>
+                          {isStock && searchResults.length >= 2 && (
+                            <CommandItem
+                              value="compare-first-two"
+                              onSelect={() => handleCompareWith(searchResults[0]!.ticker, [searchResults[1]!.ticker])}
+                            >
+                              <Scale className="h-4 w-4" />
+                              Compare {searchResults[0]?.ticker} vs {searchResults[1]?.ticker}
+                            </CommandItem>
+                          )}
+                        </CommandGroup>
+                      );
+                    })()}
                   </>
                 ) : null}
                 {peopleResults && peopleResults.length > 0 && (

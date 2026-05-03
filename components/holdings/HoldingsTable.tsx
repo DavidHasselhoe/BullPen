@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -10,8 +11,57 @@ import { useHoldings, useRemoveHolding } from '@/hooks/use-holdings';
 import { useAuth } from '@/hooks/use-auth';
 import { Trash2, Edit2, ArrowUpRight, ArrowDownRight, Plus, Search, X, Loader2 } from 'lucide-react';
 import { createBrowserClient } from '@/lib/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { logger } from '@/lib/utils/logger';
+import { slugToAssetPath } from '@/lib/assets/asset-type';
+
+// ─── Sparkline ────────────────────────────────────────────────────────────────
+
+function buildSparkPath(prices: number[], w: number, h: number): string {
+  if (prices.length < 2) return '';
+  const pad = 1.5;
+  const uw = w - pad * 2;
+  const uh = h - pad * 2;
+  const min = Math.min(...prices);
+  const range = Math.max(...prices) - min || 1;
+  return prices
+    .map((p, i) => {
+      const x = (pad + (i / (prices.length - 1)) * uw).toFixed(1);
+      const y = (pad + uh - ((p - min) / range) * uh).toFixed(1);
+      return `${i === 0 ? 'M' : 'L'}${x},${y}`;
+    })
+    .join(' ');
+}
+
+function SparklineCell({ ticker }: { ticker: string }) {
+  const { data } = useQuery({
+    queryKey: ['sparkline', ticker],
+    queryFn: async () => {
+      const res = await fetch(`/api/stock/${ticker}/candles?range=1M`);
+      const json = await res.json();
+      return (json.candles as { t: number[]; c: number[] } | null) ?? null;
+    },
+    staleTime: 20 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
+  });
+
+  if (!data || data.c.length < 2) return <div className="w-16 h-7" />;
+
+  // Downsample to at most 60 points for a clean line
+  const raw = data.c;
+  const step = Math.max(1, Math.floor(raw.length / 60));
+  const prices = raw.filter((_, i) => i % step === 0);
+
+  const isUp = prices[prices.length - 1] >= prices[0];
+  const color = isUp ? '#22c55e' : '#ef4444';
+  const path = buildSparkPath(prices, 64, 28);
+
+  return (
+    <svg width={64} height={28} className="overflow-visible">
+      <path d={path} fill="none" stroke={color} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 import { EditHoldingModal } from './EditHoldingModal';
 import { DeleteHoldingDialog } from './DeleteHoldingDialog';
 import type { HoldingWithPrice } from './types';
@@ -46,8 +96,8 @@ export function HoldingsTable({ onAddClick, holdingsWithPrices: externalHoldings
   // Get user's currency preference
   const userCurrency = useMemo((): CurrencyCode | null => {
     if (!user?.settings) return null;
-    const settings = user.settings as any;
-    const currency = settings.default_currency;
+    const settings = user.settings as Record<string, unknown>;
+    const currency = settings.default_currency as string | undefined;
     // null or 'exchange' means "Based on exchange" (show USD for US stocks)
     if (!currency || currency === 'exchange') return null;
     return currency as CurrencyCode;
@@ -191,6 +241,11 @@ export function HoldingsTable({ onAddClick, holdingsWithPrices: externalHoldings
 
   // Alias so the rest of the component is unchanged.
   const holdingsWithPrices = internalHoldingsWithPrices;
+
+  const maxAllocation = useMemo(
+    () => Math.max(...holdingsWithPrices.map((h) => h.allocation ?? 0), 1),
+    [holdingsWithPrices]
+  );
 
   // Sort holdings
   const sortedHoldings = useMemo(() => {
@@ -395,6 +450,7 @@ export function HoldingsTable({ onAddClick, holdingsWithPrices: externalHoldings
                     Allocation
                   </button>
                 </th>
+                <th className="py-3 px-4" />
                 <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">
                   Actions
                 </th>
@@ -403,7 +459,7 @@ export function HoldingsTable({ onAddClick, holdingsWithPrices: externalHoldings
             <tbody>
               {filteredHoldings.length === 0 && search && (
                 <tr>
-                  <td colSpan={9} className="py-8 text-center text-sm text-muted-foreground">
+                  <td colSpan={10} className="py-8 text-center text-sm text-muted-foreground">
                     No holdings match &ldquo;{search}&rdquo;
                   </td>
                 </tr>
@@ -425,7 +481,7 @@ export function HoldingsTable({ onAddClick, holdingsWithPrices: externalHoldings
                   >
                     <td className="py-4 px-4">
                       <Link
-                        href={`/stock/${holding.symbol}`}
+                        href={slugToAssetPath(holding.symbol)}
                         className="flex items-center gap-3 group"
                       >
                         <CompanyLogo
@@ -501,10 +557,28 @@ export function HoldingsTable({ onAddClick, holdingsWithPrices: externalHoldings
                         <span className="text-sm text-muted-foreground">—</span>
                       )}
                     </td>
-                    <td className="py-4 px-4 text-sm text-foreground">
-                      {holding.allocation !== undefined
-                        ? `${holding.allocation.toFixed(roundNumbers ? 0 : 1)}%`
-                        : '—'}
+                    <td className="py-4 px-4">
+                      {holding.allocation !== undefined ? (
+                        <div className="flex items-center gap-2.5 min-w-[100px]">
+                          <div className="w-14 h-1 rounded-full bg-muted/50 overflow-hidden shrink-0">
+                            <div
+                              className="h-full rounded-full transition-all duration-500"
+                              style={{
+                                width: `${(holding.allocation / maxAllocation) * 100}%`,
+                                backgroundColor: '#a855f7',
+                              }}
+                            />
+                          </div>
+                          <span className="text-sm tabular-nums text-foreground">
+                            {holding.allocation.toFixed(roundNumbers ? 0 : 1)}%
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">—</span>
+                      )}
+                    </td>
+                    <td className="py-4 px-3">
+                      <SparklineCell ticker={holding.symbol} />
                     </td>
                     <td className="py-4 px-4">
                       {(() => {
@@ -544,7 +618,7 @@ export function HoldingsTable({ onAddClick, holdingsWithPrices: externalHoldings
               })}
               {onAddClick && (
                 <tr>
-                  <td colSpan={9} className="p-0 align-middle">
+                  <td colSpan={10} className="p-0 align-middle">
                     <button
                       onClick={onAddClick}
                       className="w-full flex items-center justify-center gap-2 py-5 text-muted-foreground hover:text-primary hover:bg-muted/20 transition-colors group"

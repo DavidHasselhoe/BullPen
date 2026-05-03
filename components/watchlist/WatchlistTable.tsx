@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import type { WatchlistItem } from '@/hooks/use-watchlist';
+import { slugToAssetPath } from '@/lib/assets/asset-type';
 import type { EnhancedDataMap } from '@/hooks/use-watchlist-enhanced';
 
 interface Quote {
@@ -130,7 +131,7 @@ export function WatchlistTable({ items, quotes, enhancedData, onRemove, isRemovi
             return (
               <TableRow key={item.symbol} className={cn(removing && 'opacity-40')}>
                 <TableCell>
-                  <Link href={`/stock/${item.symbol}`} className="hover:underline">
+                  <Link href={slugToAssetPath(item.symbol)} className="hover:underline">
                     <span className="font-semibold text-foreground">{item.symbol}</span>
                     <span className="ml-2 text-xs text-muted-foreground truncate max-w-[140px] inline-block align-middle">
                       {item.company_name}

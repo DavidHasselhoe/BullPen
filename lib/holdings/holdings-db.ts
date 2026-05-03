@@ -37,7 +37,7 @@ export async function getHoldings(userId: string): Promise<GetHoldingsResult> {
 
     const { data: holdings, error } = await supabase
       .from('user_holdings')
-      .select('id, user_id, symbol, company_name, quantity, avg_price, date_purchased, created_at, updated_at')
+      .select('id, user_id, symbol, company_name, quantity, avg_price, date_purchased, asset_type, source, brokerage_account_id, alerts_enabled, created_at, updated_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
@@ -105,6 +105,7 @@ export async function addHolding(
         quantity: holding.quantity || null,
         avg_price: holding.avg_price || null,
         date_purchased: (holding as { date_purchased?: string | null }).date_purchased ?? null,
+        asset_type: (holding as { asset_type?: string | null }).asset_type ?? 'stock',
       })
       .select()
       .single();

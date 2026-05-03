@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getIndicator, TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
 import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
+import { slugToSymbol } from '@/lib/assets/asset-type';
 
 const ALLOWED_INDICATORS = new Set(['sma', 'ema', 'rsi', 'macd', 'bbands']);
 
@@ -21,7 +22,7 @@ async function handler(
   { params }: { params: Promise<{ ticker: string }> }
 ) {
   const { ticker } = await params;
-  const symbol = ticker.toUpperCase();
+  const symbol = slugToSymbol(ticker).toUpperCase();
   const { searchParams } = request.nextUrl;
 
   const type = (searchParams.get('type') ?? '').toLowerCase();

@@ -11,4 +11,5 @@ export interface HoldingWithPrice extends UserHolding {
   unrealizedPLPercent?: number;
   allocation?: number;
   logoUrl?: string | null;
+  sector?: string | null;
 }

@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withRateLimit, withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { getStockCandles } from '@/lib/twelvedata/twelvedata-client';
 import { TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
+import { slugToSymbol, inferAssetType, has24hTrading } from '@/lib/assets/asset-type';
 
-type Range = '1D' | '1W' | '1M' | '6M' | '1Y' | '3Y' | '5Y' | '10Y' | 'MAX';
+type Range = '1D' | '1W' | '1M' | '6M' | '1Y' | 'YTD' | '5Y' | 'MAX';
 type Interval = '5min' | '15min' | '1h' | '4h' | '1day' | '1week';
 
 interface RangeConfig {
@@ -11,15 +12,13 @@ interface RangeConfig {
   daysBack: number;
 }
 
-const RANGE_CONFIG: Record<Range, RangeConfig> = {
+const RANGE_CONFIG: Record<Exclude<Range, 'YTD'>, RangeConfig> = {
   '1D':  { interval: '5min',  daysBack: 1 },
   '1W':  { interval: '15min', daysBack: 7 },
   '1M':  { interval: '1h',    daysBack: 31 },
   '6M':  { interval: '1day',  daysBack: 183 },
   '1Y':  { interval: '1day',  daysBack: 365 },
-  '3Y':  { interval: '1week', daysBack: 365 * 3 },
   '5Y':  { interval: '1week', daysBack: 365 * 5 },
-  '10Y': { interval: '1week', daysBack: 365 * 10 },
   'MAX': { interval: '1week', daysBack: 365 * 20 },
 };
 
@@ -36,27 +35,34 @@ const INTERVAL_TO_RESOLUTION: Record<Interval, '1' | '5' | '15' | '60' | 'D' | '
 async function handler(
   request: NextRequest,
   context: { params: Promise<{ ticker: string }> },
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _session: { userId: string }
 ): Promise<NextResponse> {
   const { ticker } = await context.params;
-  const symbol = ticker.toUpperCase();
+  const symbol = slugToSymbol(ticker).toUpperCase();
+  const assetType = inferAssetType(symbol);
   const { searchParams } = new URL(request.url);
   const range = (searchParams.get('range') ?? '1Y') as Range;
 
-  const config = RANGE_CONFIG[range] ?? RANGE_CONFIG['1Y'];
   const now = Math.floor(Date.now() / 1000);
+  // YTD: from Jan 1 of the current year at midnight UTC
+  const ytdDaysBack = range === 'YTD'
+    ? Math.ceil((Date.now() - new Date(new Date().getUTCFullYear(), 0, 1).getTime()) / 86_400_000)
+    : 0;
+  const config: RangeConfig = range === 'YTD'
+    ? { interval: '1day', daysBack: ytdDaysBack }
+    : (RANGE_CONFIG[range as Exclude<Range, 'YTD'>] ?? RANGE_CONFIG['1Y']);
   const resolution = INTERVAL_TO_RESOLUTION[config.interval];
 
-  // For 1D: use today's actual ET calendar date and include extended hours so
+  // For 1D stocks: use today's actual ET calendar date and include extended hours so
   // pre-market (4am–9:30am) and after-hours (4pm–8pm) candles are returned.
-  // Using daysBack=1 would compute a UTC date which gives yesterday's data.
+  // For crypto (24h market): use a plain 24h unix window — no ET date math needed.
   const is1D = range === '1D';
-  // TwelveData requires start_date != end_date for intraday intervals when using date-only strings.
-  // Use full datetime strings spanning 4am–11:59pm ET so the API returns the full session.
-  const todayDateET = is1D
+  const isCrypto24h = has24hTrading(assetType);
+  const todayDateET = is1D && !isCrypto24h
     ? new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' }) // "YYYY-MM-DD"
     : undefined;
-  const from = is1D ? now : now - config.daysBack * 24 * 60 * 60;
+  const from = is1D ? now - 24 * 60 * 60 : now - config.daysBack * 24 * 60 * 60;
   const candleOptions = is1D && todayDateET
     ? { extendedHours: true, startDate: `${todayDateET} 04:00:00`, endDate: `${todayDateET} 23:59:00` }
     : undefined;

@@ -24,6 +24,7 @@ import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { useAddHolding } from '@/hooks/use-holdings';
 import { CheckCircle2 } from 'lucide-react';
 import type { AddHoldingInput } from '@/app/actions/holdings';
+import { inferAssetType } from '@/lib/assets/asset-type';
 
 interface SearchResult {
   ticker: string;
@@ -136,12 +137,14 @@ export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
     if (qErr || pErr) return;
 
     try {
+      const assetType = inferAssetType(selectedStock.ticker, selectedStock.instrument_type);
       const input: AddHoldingInput = {
         symbol: selectedStock.ticker,
         company_name: selectedStock.name,
         quantity: quantity ? parseFloat(quantity) : null,
         avg_price: avgPrice ? parseFloat(avgPrice) : null,
         date_purchased: datePurchased || null,
+        asset_type: assetType === 'unknown' ? 'stock' : assetType,
       };
 
       await addHolding.mutateAsync(input);

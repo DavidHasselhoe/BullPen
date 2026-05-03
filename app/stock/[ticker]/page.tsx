@@ -26,6 +26,7 @@ import type { SignalValue } from '@/lib/finance/health-score';
 import { HOT_PICKS_QUERY_KEY } from '@/lib/discover/hot-picks-query';
 import { postStockVisit } from '@/lib/discover/post-stock-visit';
 import { StockSectionBoundary } from '@/components/stock/StockSectionBoundary';
+import { slugToSymbol, inferAssetType } from '@/lib/assets/asset-type';
 
 const StockPricePanel = dynamic(
   () => import('@/components/stock/StockPricePanel').then((m) => ({ default: m.StockPricePanel })),
@@ -77,7 +78,18 @@ export default function StockDetailPage() {
   const params = useParams();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const ticker = (params.ticker as string)?.toUpperCase() || '';
+  const rawTicker = (params.ticker as string) ?? '';
+  const ticker = rawTicker.toUpperCase();
+
+  // Redirect crypto/commodity slugs to the universal asset page
+  useEffect(() => {
+    if (!rawTicker) return;
+    const sym = slugToSymbol(ticker);
+    const type = inferAssetType(sym);
+    if (type !== 'stock' && type !== 'etf' && type !== 'unknown') {
+      router.replace(`/asset/${ticker}`);
+    }
+  }, [rawTicker, ticker, router]);
   const { hasAnimatedBackground } = useBackground();
   const { add: addRecentlyViewed } = useRecentlyViewed();
   const { open: openAIPanel, setAIContext } = useAIPanel();

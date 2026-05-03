@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getStockQuote, TwelveDataRateLimitError } from '@/lib/market-data';
 import { logger } from '@/lib/utils/logger';
+import { slugToSymbol } from '@/lib/assets/asset-type';
 
 export async function GET(
   request: NextRequest,
@@ -8,7 +9,7 @@ export async function GET(
 ) {
   try {
     const params = await context.params;
-    const ticker = params.ticker?.toUpperCase();
+    const ticker = slugToSymbol(params.ticker ?? '').toUpperCase();
 
     if (!ticker) {
       return NextResponse.json(

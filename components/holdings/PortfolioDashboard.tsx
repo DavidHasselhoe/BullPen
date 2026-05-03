@@ -19,11 +19,8 @@ export function PortfolioDashboard({ holdings, currency = 'USD' }: PortfolioDash
   const stats = useMemo(() => {
     let totalValue = 0;
     let todayDollar = 0;
-    let up = 0;
-    let down = 0;
-    let flat = 0;
+    let totalPL = 0;
     let valuedPositions = 0;
-    let trackedPositions = 0;
 
     for (const h of holdings) {
       if (h.marketValue !== undefined && h.marketValue > 0) {
@@ -38,37 +35,36 @@ export function PortfolioDashboard({ holdings, currency = 'USD' }: PortfolioDash
       ) {
         todayDollar += h.dayChange * h.quantity;
       }
-      if (h.dayChangePercent !== undefined) {
-        trackedPositions++;
-        if (h.dayChangePercent > 0.01) up++;
-        else if (h.dayChangePercent < -0.01) down++;
-        else flat++;
+      if (h.unrealizedPL !== undefined) {
+        totalPL += h.unrealizedPL;
       }
     }
 
     const yesterdayValue = totalValue - todayDollar;
     const todayPct = yesterdayValue > 0 ? (todayDollar / yesterdayValue) * 100 : 0;
+    const costBasis = totalValue - totalPL;
+    const totalPLPct = costBasis > 0 ? (totalPL / costBasis) * 100 : 0;
 
-    return { totalValue, todayDollar, todayPct, up, down, flat, valuedPositions, trackedPositions };
+    return { totalValue, todayDollar, todayPct, totalPL, totalPLPct, costBasis, valuedPositions };
   }, [holdings]);
 
   if (stats.valuedPositions === 0) return null;
 
   const todayPositive = stats.todayDollar >= 0;
-  const total = stats.up + stats.down + stats.flat;
+  const plPositive = stats.totalPL >= 0;
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
       {/* Total Portfolio Value */}
       <div className="rounded-xl border border-border/50 bg-card p-5">
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-          Portfolio Value
+          Total Value
         </p>
         <p className="text-2xl font-bold text-foreground tabular-nums">
           {fmt(stats.totalValue)}
         </p>
         <p className="text-xs text-muted-foreground mt-1.5">
-          {stats.valuedPositions} valued position{stats.valuedPositions !== 1 ? 's' : ''}
+          across {stats.valuedPositions} position{stats.valuedPositions !== 1 ? 's' : ''}
         </p>
       </div>
 
@@ -80,7 +76,7 @@ export function PortfolioDashboard({ holdings, currency = 'USD' }: PortfolioDash
         )}
       >
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-          Today's Performance
+          Today
         </p>
         <p
           className={cn(
@@ -109,57 +105,53 @@ export function PortfolioDashboard({ holdings, currency = 'USD' }: PortfolioDash
           >
             {formatPercent(stats.todayPct, roundNumbers)}
           </span>
-          <span className="text-xs text-muted-foreground">vs yesterday</span>
         </div>
       </div>
 
-      {/* Positions breakdown */}
+      {/* Total P/L */}
+      <div
+        className={cn(
+          'rounded-xl border bg-card p-5',
+          plPositive ? 'border-green-500/20' : 'border-red-500/20'
+        )}
+      >
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+          Total P/L
+        </p>
+        <p
+          className={cn(
+            'text-2xl font-bold tabular-nums',
+            plPositive
+              ? 'text-green-600 dark:text-green-400'
+              : 'text-red-600 dark:text-red-400'
+          )}
+        >
+          {stats.totalPL >= 0 ? '+' : ''}
+          {fmt(stats.totalPL)}
+        </p>
+        <p
+          className={cn(
+            'text-xs font-semibold tabular-nums mt-1.5',
+            plPositive
+              ? 'text-green-600/70 dark:text-green-400/70'
+              : 'text-red-600/70 dark:text-red-400/70'
+          )}
+        >
+          {formatPercent(stats.totalPLPct, roundNumbers)} all time
+        </p>
+      </div>
+
+      {/* Cost Basis */}
       <div className="rounded-xl border border-border/50 bg-card p-5">
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-          Positions Today
+          Cost Basis
         </p>
-        <div className="flex items-end gap-4">
-          <div>
-            <p className="text-2xl font-bold text-green-600 dark:text-green-400 tabular-nums">
-              {stats.up}
-            </p>
-            <p className="text-xs text-muted-foreground">Up</p>
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-red-600 dark:text-red-400 tabular-nums">
-              {stats.down}
-            </p>
-            <p className="text-xs text-muted-foreground">Down</p>
-          </div>
-          {stats.flat > 0 && (
-            <div>
-              <p className="text-2xl font-bold text-muted-foreground tabular-nums">{stats.flat}</p>
-              <p className="text-xs text-muted-foreground">Flat</p>
-            </div>
-          )}
-        </div>
-        {total > 0 && (
-          <div className="flex h-1.5 rounded-full overflow-hidden mt-3 bg-muted gap-px">
-            {stats.up > 0 && (
-              <div
-                className="bg-green-500 rounded-full transition-all duration-700"
-                style={{ width: `${(stats.up / total) * 100}%` }}
-              />
-            )}
-            {stats.flat > 0 && (
-              <div
-                className="bg-muted-foreground/40 transition-all duration-700"
-                style={{ width: `${(stats.flat / total) * 100}%` }}
-              />
-            )}
-            {stats.down > 0 && (
-              <div
-                className="bg-red-500 rounded-full transition-all duration-700"
-                style={{ width: `${(stats.down / total) * 100}%` }}
-              />
-            )}
-          </div>
-        )}
+        <p className="text-2xl font-bold text-foreground tabular-nums">
+          {fmt(stats.costBasis)}
+        </p>
+        <p className="text-xs text-muted-foreground mt-1.5">
+          lifetime invested
+        </p>
       </div>
     </div>
   );

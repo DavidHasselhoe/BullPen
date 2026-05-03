@@ -132,6 +132,7 @@ export interface UserHolding {
   source: 'manual' | 'snaptrade';
   brokerage_account_id: string | null;
   alerts_enabled: boolean;
+  asset_type: 'stock' | 'crypto' | 'commodity' | 'forex' | 'etf' | null;
   created_at: string;
   updated_at: string;
 }

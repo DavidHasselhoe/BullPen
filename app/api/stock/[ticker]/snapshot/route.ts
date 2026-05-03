@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { batchFetch, TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
 import { getCached, setCached } from '@/lib/cache/market-data-cache';
 import { withRateLimit, withAuth, addSecurityHeaders } from '@/lib/security/api-security';
+import { slugToSymbol, inferAssetType, hasEarnings } from '@/lib/assets/asset-type';
 
 const APIKEY = () => process.env.TWELVE_DATA_API_KEY ?? '';
 
@@ -46,7 +47,8 @@ async function handler(
   _session: { userId: string }
 ): Promise<NextResponse> {
   const { ticker } = await context.params;
-  const sym = ticker.toUpperCase();
+  const sym = slugToSymbol(ticker).toUpperCase();
+  const assetType = inferAssetType(sym);
   const key = APIKEY();
 
   try {
@@ -61,7 +63,7 @@ async function handler(
       quote: `/quote?symbol=${sym}&apikey=${key}`,
     };
     if (!cachedStats) requests.statistics = `/statistics?symbol=${sym}&apikey=${key}`;
-    if (!cachedEarnings) requests.earnings = `/earnings?symbol=${sym}&outputsize=8&apikey=${key}`;
+    if (!cachedEarnings && hasEarnings(assetType)) requests.earnings = `/earnings?symbol=${sym}&outputsize=8&apikey=${key}`;
 
     const raw = await batchFetch<Record<string, unknown>>(requests);
 

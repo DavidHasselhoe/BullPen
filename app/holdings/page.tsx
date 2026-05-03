@@ -1,22 +1,22 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { HoldingsTable } from '@/components/holdings/HoldingsTable';
 import { AddHoldingModal } from '@/components/holdings/AddHoldingModal';
 import { HoldingsPieChart } from '@/components/holdings/HoldingsPieChart';
 import { PortfolioDashboard } from '@/components/holdings/PortfolioDashboard';
 import { PortfolioRiskAnalysis } from '@/components/holdings/PortfolioRiskAnalysis';
 import { PortfolioPerformanceChart } from '@/components/holdings/PortfolioPerformanceChart';
-import { BrokerageConnect } from '@/components/brokerage/BrokerageConnect';
 import { useHoldings } from '@/hooks/use-holdings';
 import { useAuth } from '@/hooks/use-auth';
 import { useLivePrices } from '@/hooks/use-live-prices';
 import { useThrottle } from '@/hooks/use-throttle';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { useQuery } from '@tanstack/react-query';
-import { Radio } from 'lucide-react';
+import { Radio, Link2, RefreshCw } from 'lucide-react';
 import type { HoldingWithPrice } from '@/components/holdings/types';
+import { useBrokerageAccounts, useBrokerageConnect } from '@/hooks/use-brokerage';
 import {
   getExchangeRates,
   convertCurrency,
@@ -27,6 +27,12 @@ export default function HoldingsPage() {
   const { user, isAuthenticated } = useAuth();
   const { data: holdings, isLoading } = useHoldings();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
+  // Brokerage connect — used for the compact header button
+  const { data: brokerageData } = useBrokerageAccounts();
+  const connectMutation = useBrokerageConnect();
+  const isBrokerageConnected = (brokerageData?.accounts ?? []).some((a) => a.is_active);
+  const brokerageConfigured = brokerageData?.configured !== false;
 
   // Resolve the user's preferred display currency
   const userCurrency = useMemo((): CurrencyCode => {
@@ -56,27 +62,50 @@ export default function HoldingsPage() {
   const quotesData = useQuery({
     queryKey: ['holdings-quotes', holdings?.map((h) => h.symbol)],
     queryFn: async () => {
-      if (!holdings || holdings.length === 0) return { quotes: {}, logos: {} };
-      
+      if (!holdings || holdings.length === 0) return { quotes: {}, logos: {}, sectors: {} };
+
       const supabase = createBrowserClient();
       const quoteMap: Record<string, { price: number; change: number; changePercent: number }> = {};
       const logoMap: Record<string, string | null> = {};
+      const sectorMap: Record<string, string | null> = {};
 
       const tickers = holdings.map((h) => h.symbol);
 
-      // Single batched logo query for ALL holdings — replaces N individual queries
+      // Single batched companies query — logo_url + sector in one round trip
       const { data: companiesData } = await supabase
         .from('companies')
-        .select('ticker, logo_url')
+        .select('ticker, logo_url, sector')
         .in('ticker', tickers);
 
-      const dbLogoMap = new Map<string, string | null>(
-        (companiesData || []).map((c) => [c.ticker, c.logo_url])
+      const dbCompanyMap = new Map(
+        (companiesData || []).map((c) => [c.ticker, c])
       );
 
-      // Pre-fill logoMap; fall back to storage bucket URL where DB has no entry
+      // Enrich any tickers with null sector from TwelveData (writes back to DB)
+      const nullSectorTickers = tickers.filter((t) => {
+        const c = dbCompanyMap.get(t);
+        return c !== undefined && !c.sector;
+      });
+      if (nullSectorTickers.length > 0) {
+        try {
+          const enrichRes = await fetch('/api/companies/enrich-sectors', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tickers: nullSectorTickers }),
+          });
+          if (enrichRes.ok) {
+            const enrichData = await enrichRes.json();
+            Object.assign(sectorMap, enrichData.sectors ?? {});
+          }
+        } catch {
+          // Non-critical — sectors will show as 'Other' this load and retry next time
+        }
+      }
+
       for (const ticker of tickers) {
-        const dbLogo = dbLogoMap.get(ticker) ?? null;
+        const company = dbCompanyMap.get(ticker);
+        if (!(ticker in sectorMap)) sectorMap[ticker] = company?.sector ?? null;
+        const dbLogo = company?.logo_url ?? null;
         if (dbLogo) {
           logoMap[ticker] = dbLogo;
         } else {
@@ -101,7 +130,7 @@ export default function HoldingsPage() {
         Object.assign(quoteMap, batchData.quotes);
       }
 
-      return { quotes: quoteMap, logos: logoMap };
+      return { quotes: quoteMap, logos: logoMap, sectors: sectorMap };
     },
     enabled: !!holdings && holdings.length > 0,
     staleTime: 3 * 60 * 1000, // 3 minutes (shared cache with HoldingsTable)
@@ -114,6 +143,7 @@ export default function HoldingsPage() {
 
     const quotesMap = quotesData.data?.quotes || {};
     const logosMap = quotesData.data?.logos || {};
+    const sectorsMap = quotesData.data?.sectors || {};
     const rates = exchangeRates.data ?? null;
 
     // Allocation — use live price where available so the percentages stay current.
@@ -131,6 +161,7 @@ export default function HoldingsPage() {
       const liveQuote = throttledLivePrices.get(holding.symbol);
       const batchQuote = quotesMap[holding.symbol];
       const logoUrl = logosMap[holding.symbol] || null;
+      const sector = sectorsMap[holding.symbol] ?? null;
 
       // The live WebSocket tick gives us the current price but not reliable change data.
       // Derive previousClose from the batch REST quote (batchPrice − batchChange = previous_close)
@@ -181,6 +212,7 @@ export default function HoldingsPage() {
         unrealizedPLPercent,
         allocation,
         logoUrl,
+        sector,
       };
     });
   }, [holdings, quotesData.data, exchangeRates.data, userCurrency, throttledLivePrices]);
@@ -210,48 +242,63 @@ export default function HoldingsPage() {
   return (
     <div className="container mx-auto py-8 space-y-8">
       {/* Header */}
-      <div>
-        <div className="flex items-center gap-3">
-          <h1 className="text-3xl font-bold">My Holdings</h1>
-          {livePrices.size > 0 && (
-            <span className="flex items-center gap-1 text-sm text-emerald-500 font-medium">
-              <Radio className="h-3.5 w-3.5 animate-pulse" />
-              Live
-            </span>
-          )}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold">My Holdings</h1>
+            {livePrices.size > 0 && (
+              <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-2.5 py-1">
+                <Radio className="h-3 w-3 animate-pulse" />
+                LIVE
+              </span>
+            )}
+          </div>
+          <p className="text-muted-foreground mt-1">
+            Track your positions, performance, and risk in real time.
+          </p>
         </div>
-        <p className="text-muted-foreground mt-1">
-          Track your stock portfolio and performance
-        </p>
+
+        {/* Compact brokerage connect button — only when configured and not yet connected */}
+        {brokerageConfigured && !isBrokerageConnected && (
+          <button
+            onClick={() => connectMutation.mutate()}
+            disabled={connectMutation.isPending}
+            className="shrink-0 flex items-center gap-2 px-3.5 py-2 rounded-lg border border-border/60 bg-card text-sm font-medium text-muted-foreground hover:text-foreground hover:border-border hover:bg-muted/40 transition-all duration-150 disabled:opacity-50"
+          >
+            {connectMutation.isPending ? (
+              <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Link2 className="h-3.5 w-3.5" />
+            )}
+            Connect Brokerage
+          </button>
+        )}
       </div>
 
-      {/* Today's performance dashboard */}
+      {/* Stats row — 4 cards */}
       {throttledHoldings.length > 0 && (
         <PortfolioDashboard holdings={throttledHoldings} currency={userCurrency} />
       )}
 
-      {/* Unrealized P/L performance chart */}
+      {/* Performance chart + Allocation side-by-side */}
       {throttledHoldings.length > 0 && (
-        <PortfolioPerformanceChart holdings={throttledHoldings} currency={userCurrency} />
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-stretch">
+          <div className="xl:col-span-2 flex flex-col">
+            <PortfolioPerformanceChart holdings={throttledHoldings} currency={userCurrency} />
+          </div>
+          <div className="flex flex-col">
+            <HoldingsPieChart holdings={throttledHoldings} currency={userCurrency} />
+          </div>
+        </div>
       )}
 
-      {/* Sector allocation donut */}
-      {throttledHoldings.length > 0 && (
-        <HoldingsPieChart holdings={throttledHoldings} currency={userCurrency} />
-      )}
-
-      {/* Brokerage connection — visible even when holdings are empty */}
-      <BrokerageConnect />
-
-      {/* Holdings table — reads from holdingsWithPrices which is computed from
-          throttledLivePrices (3 s window), so live ticks don't re-run the full
-          holdings memo on every WebSocket event. */}
+      {/* Holdings table */}
       <HoldingsTable
         holdingsWithPrices={holdingsWithPrices}
         onAddClick={() => setIsAddModalOpen(true)}
       />
 
-      {/* AI risk analysis — deeper insight, lives below the core data */}
+      {/* AI risk analysis */}
       {throttledHoldings.length > 0 && (
         <PortfolioRiskAnalysis holdings={throttledHoldings} />
       )}
