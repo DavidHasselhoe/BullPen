@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 import type { MarketMover } from '@/lib/twelvedata/twelvedata-client';
 import { useAuth } from '@/hooks/use-auth';
 
-/** Returns a human-readable label for when the movers data is from, using ET. */
+/** Returns a human-readable label for the current trading session, using ET. */
 function useMoversDateLabel(): string {
   const nowET = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
   const day = nowET.getDay(); // 0=Sun 6=Sat
@@ -21,24 +21,19 @@ function useMoversDateLabel(): string {
   const fmt = (d: Date) =>
     d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
-  const prevWeekday = (d: Date) => {
-    const copy = new Date(d);
-    const wd = copy.getDay();
-    copy.setDate(copy.getDate() - (wd === 1 ? 3 : wd === 0 ? 2 : 1));
-    return copy;
-  };
-
+  // Weekend: show last Friday's close
   if (day === 0 || day === 6) {
     const lastFriday = new Date(nowET);
     lastFriday.setDate(nowET.getDate() - (day === 0 ? 2 : 1));
     return `${fmt(lastFriday)} · Market closed`;
   }
 
-  const beforeOpen = h < 9 || (h === 9 && m < 30);
-  const afterClose = h >= 16;
+  const etMins = h * 60 + m;
+  const isPreMarket = etMins >= 240 && etMins < 570;   // 4:00 AM – 9:30 AM
+  const isAfterHours = etMins >= 960 && etMins < 1200; // 4:00 PM – 8:00 PM
 
-  if (beforeOpen) return `${fmt(prevWeekday(nowET))} · Pre-market`;
-  if (afterClose) return `${fmt(nowET)} · After close`;
+  if (isPreMarket) return `${fmt(nowET)} · Pre-market`;
+  if (isAfterHours) return `${fmt(nowET)} · After-hours`;
   return fmt(nowET);
 }
 

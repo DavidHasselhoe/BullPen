@@ -124,12 +124,16 @@ interface TwelveDataQuoteResponse {
   previous_close: string;
   datetime?: string;
   timestamp?: number;
+  is_market_open?: boolean;
+  extended_price?: string;
+  extended_change?: string;
+  extended_percent_change?: string;
   status?: string;
   code?: number;
   message?: string;
 }
 
-function parseQuoteResponse(data: TwelveDataQuoteResponse, symbol: string): StockQuote {
+function parseQuoteResponse(data: TwelveDataQuoteResponse, symbol: string, useExtended = false): StockQuote {
   if (data.code || data.status === 'error') {
     const msg = data.message || `Twelve Data API error for ${symbol}`;
     const isRateLimit =
@@ -144,6 +148,24 @@ function parseQuoteResponse(data: TwelveDataQuoteResponse, symbol: string): Stoc
   const percentChange = parseFloat(data.percent_change || '0');
   const pc = parseFloat(data.previous_close || String(close - change));
   const timestamp = data.timestamp ?? Math.floor(Date.now() / 1000);
+
+  // When prepost was requested and market is closed, prefer the extended-hours price.
+  if (useExtended && data.is_market_open === false) {
+    const extPrice = parseFloat(data.extended_price ?? '0');
+    if (extPrice) {
+      return {
+        c: extPrice,
+        d: parseFloat(data.extended_change ?? '0'),
+        dp: parseFloat(data.extended_percent_change ?? '0'),
+        h: parseFloat(data.high || data.close),
+        l: parseFloat(data.low || data.close),
+        o: parseFloat(data.open || data.close),
+        pc: close, // regular session close becomes prev-close baseline
+        t: timestamp,
+      };
+    }
+  }
+
   return {
     c: close,
     d: change,
@@ -216,21 +238,26 @@ export async function batchFetch<T>(
   return out;
 }
 
-export async function getStockQuotes(symbols: string[]): Promise<Map<string, StockQuote>> {
+export async function getStockQuotes(
+  symbols: string[],
+  options?: { prepost?: boolean }
+): Promise<Map<string, StockQuote>> {
   if (symbols.length === 0) return new Map();
   const apiKey = getApiKey();
+  const prepost = options?.prepost ?? false;
 
   // Build one batch request — all quotes in a single POST instead of N sequential GETs
   const requests: Record<string, string> = {};
   for (const sym of symbols) {
-    requests[sym] = `/quote?symbol=${encodeURIComponent(sym.toUpperCase())}&apikey=${apiKey}`;
+    const base = `/quote?symbol=${encodeURIComponent(sym.toUpperCase())}&apikey=${apiKey}`;
+    requests[sym] = prepost ? `${base}&prepost=true` : base;
   }
 
   const raw = await batchFetch<TwelveDataQuoteResponse>(requests);
   const quotes = new Map<string, StockQuote>();
   for (const [sym, data] of Object.entries(raw)) {
     try {
-      quotes.set(sym, parseQuoteResponse(data, sym));
+      quotes.set(sym, parseQuoteResponse(data, sym, prepost));
     } catch {
       // Individual symbol errors don't abort the whole batch
     }
@@ -470,12 +497,23 @@ export async function getTopMovers(limit: number = 5): Promise<TopMovers> {
   return getMarketMovers('stocks', limit);
 }
 
+/** True when the ET clock is in an active pre- or post-market window (weekdays only). */
+function isExtendedHoursET(): boolean {
+  const etStr = new Date().toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour12: false });
+  const [h, m] = etStr.split(':').map(Number);
+  const etMins = h * 60 + m;
+  const day = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })).getDay();
+  if (day === 0 || day === 6) return false;
+  return (etMins >= 240 && etMins < 570) || (etMins >= 960 && etMins < 1200);
+}
+
 export async function getTopMoversForSymbols(
   symbols: string[],
   limit: number = 5
 ): Promise<TopMovers> {
   if (symbols.length === 0) return { gainers: [], losers: [] };
-  const quotes = await getStockQuotes(symbols);
+  const prepost = isExtendedHoursET();
+  const quotes = await getStockQuotes(symbols, { prepost });
   const movers: MarketMover[] = Array.from(quotes.entries())
     .filter(([_, q]) => q.c > 0 && q.pc > 0)
     .map(([sym, q]) => ({
