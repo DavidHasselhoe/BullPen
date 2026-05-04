@@ -1746,7 +1746,8 @@ export async function getExtendedHoursQuote(
   symbol: string
 ): Promise<ExtendedHoursQuote | null> {
   logUsage('/quote (extended)', symbol);
-  const url = buildUrl('/quote', { symbol: symbol.toUpperCase() });
+  // prepost=true is required for TwelveData to include extended_* fields (Pro plan+).
+  const url = buildUrl('/quote', { symbol: symbol.toUpperCase(), prepost: 'true' });
   const res = await fetch(url);
   if (!res.ok) return null;
   const data = (await res.json()) as TwelveDataQuoteExtended;
@@ -1755,9 +1756,17 @@ export async function getExtendedHoursQuote(
   const extPrice = parseFloat(data.extended_price ?? '0');
   if (!extPrice) return null;
 
-  const now = Date.now() / 1000;
-  const marketOpen = data.is_market_open ?? false;
-  const preOrPost = !marketOpen && now < 16 * 3600 ? 'pre' : 'post';
+  // Skip stale extended data when the regular session is currently active.
+  if (data.is_market_open) return null;
+
+  // Determine pre vs post from ET clock time. 4:00 AM – 9:30 AM ET = pre, else post.
+  const etTimeStr = new Date().toLocaleTimeString('en-US', {
+    timeZone: 'America/New_York',
+    hour12: false,
+  });
+  const [etHStr, etMStr] = etTimeStr.split(':');
+  const etMins = parseInt(etHStr, 10) * 60 + parseInt(etMStr, 10);
+  const preOrPost: 'pre' | 'post' = etMins >= 240 && etMins < 570 ? 'pre' : 'post';
 
   const extChange = parseFloat(data.extended_change ?? '0');
   const extChangePct = parseFloat(data.extended_percent_change ?? '0');

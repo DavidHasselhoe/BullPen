@@ -65,6 +65,8 @@ function ThesisReplies({ thesisId, replyCount, defaultOpen = false }: ThesisRepl
   const [showForm, setShowForm] = useState(defaultOpen);
   const [content, setContent] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState('');
   const queryClient = useQueryClient();
 
   const repliesKey = ['thesis-replies', thesisId];
@@ -110,6 +112,33 @@ function ThesisReplies({ thesisId, replyCount, defaultOpen = false }: ThesisRepl
     }
   };
 
+  const startEdit = (reply: ThesisReply) => {
+    setEditingId(reply.id);
+    setEditContent(reply.content);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditContent('');
+  };
+
+  const saveEdit = async (replyId: string) => {
+    if (!editContent.trim()) return;
+    setDeletingId(replyId); // reuse loading state to disable buttons
+    try {
+      await fetch(`/api/social/thesis/reply/${replyId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: editContent.trim() }),
+      });
+      queryClient.invalidateQueries({ queryKey: repliesKey });
+    } finally {
+      setDeletingId(null);
+      setEditingId(null);
+      setEditContent('');
+    }
+  };
+
   const liveCount = replies?.length ?? replyCount;
 
   return (
@@ -143,6 +172,8 @@ function ThesisReplies({ thesisId, replyCount, defaultOpen = false }: ThesisRepl
             (replies ?? []).map((reply) => {
               const name = reply.full_name || reply.username || 'Anonymous';
               const profileHref = `/users/${encodeURIComponent(reply.username ?? reply.user_id)}`;
+              const isEditing = editingId === reply.id;
+              const isBusy = deletingId === reply.id;
               return (
                 <div key={reply.id} className="group flex items-start gap-2">
                   <Link href={profileHref} className="shrink-0 mt-0.5">
@@ -155,19 +186,55 @@ function ThesisReplies({ thesisId, replyCount, defaultOpen = false }: ThesisRepl
                       </Link>
                       <span className="text-[10px] text-muted-foreground">{timeAgo(reply.created_at)}</span>
                     </div>
-                    <p className="text-xs text-foreground leading-relaxed mt-0.5">{reply.content}</p>
+                    {isEditing ? (
+                      <div className="mt-1 space-y-1.5">
+                        <Textarea
+                          value={editContent}
+                          onChange={(e) => setEditContent(e.target.value)}
+                          className="resize-none text-xs min-h-[56px]"
+                          maxLength={280}
+                          autoFocus
+                        />
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] text-muted-foreground">{editContent.length}/280</span>
+                          <div className="flex gap-1.5">
+                            <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={cancelEdit} disabled={isBusy}>
+                              Cancel
+                            </Button>
+                            <Button
+                              size="sm"
+                              className="h-6 text-xs"
+                              disabled={!editContent.trim() || isBusy}
+                              onClick={() => saveEdit(reply.id)}
+                            >
+                              {isBusy ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Save'}
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-foreground leading-relaxed mt-0.5">{reply.content}</p>
+                    )}
                   </div>
-                  {reply.is_own && (
-                    <button
-                      onClick={() => handleDelete(reply.id)}
-                      disabled={deletingId === reply.id}
-                      className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-muted-foreground hover:text-destructive transition-all disabled:opacity-50 shrink-0"
-                      aria-label="Delete reply"
-                    >
-                      {deletingId === reply.id
-                        ? <Loader2 className="h-3 w-3 animate-spin" />
-                        : <Trash2 className="h-3 w-3" />}
-                    </button>
+                  {reply.is_own && !isEditing && (
+                    <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                      <button
+                        onClick={() => startEdit(reply)}
+                        disabled={isBusy}
+                        className="p-0.5 rounded text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+                        aria-label="Edit reply"
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(reply.id)}
+                        disabled={isBusy}
+                        className="p-0.5 rounded text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
+                        aria-label="Delete reply"
+                      >
+                        {isBusy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                      </button>
+                    </div>
                   )}
                 </div>
               );

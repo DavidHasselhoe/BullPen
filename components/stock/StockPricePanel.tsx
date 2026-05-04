@@ -160,14 +160,33 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
 
   const { data: restQuote, isLoading: quoteLoading } = useStockQuote(ticker);
 
-  const price     = live?.price ?? restQuote?.c ?? 0;
+  const livePrice = live?.price;
+  const restClose = restQuote?.c ?? 0;
+  const restChange = restQuote?.d ?? 0;
+  const restPct = restQuote?.dp ?? 0;
   const prevClose = restQuote?.pc ?? 0;
-  // TwelveData WebSocket ticks don't carry change fields — recompute vs REST prevClose.
-  const change    = prevClose > 0 ? price - prevClose : restQuote?.d ?? 0;
-  const changePct = prevClose > 0 ? ((price - prevClose) / prevClose) * 100 : restQuote?.dp ?? 0;
   const dayHigh   = restQuote?.h ?? 0;
   const dayLow    = restQuote?.l ?? 0;
   const openPrice = restQuote?.o ?? 0;
+
+  const showDual = !!extHours;
+
+  // Left block — regular-session close + its published change (static)
+  const closePrice = restClose;
+  const closeChange = restChange;
+  const closePct = restPct;
+  const closeIsPos = closePct >= 0;
+
+  // Right block (dual mode) — extended price, live-updating; change recomputed vs close
+  const extPriceVal = livePrice ?? extHours?.price ?? 0;
+  const extDiff = closePrice > 0 ? extPriceVal - closePrice : (extHours?.change ?? 0);
+  const extPct  = closePrice > 0 ? (extDiff / closePrice) * 100 : (extHours?.changePercent ?? 0);
+  const extIsPos = extDiff >= 0;
+
+  // Single-mode current price (regular hours, live during 9:30–4)
+  const price     = livePrice ?? restClose;
+  const change    = prevClose > 0 ? price - prevClose : restChange;
+  const changePct = prevClose > 0 ? ((price - prevClose) / prevClose) * 100 : restPct;
 
   const isPositive = changePct >= 0;
   const priceColor = isPositive ? 'text-emerald-400' : 'text-red-400';
@@ -345,52 +364,100 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
       <div className="px-5 pt-5 pb-4">
         <div className="flex items-start justify-between gap-6 flex-wrap">
 
-          {/* Left: huge price + change row */}
+          {/* Left: price block(s) + change row */}
           <div className="min-w-0">
-            <div className="text-[52px] font-bold tracking-tight text-foreground tabular-nums leading-none">
-              {fmtPrice(price)}
-            </div>
+            {showDual ? (
+              <div className="flex flex-wrap items-stretch gap-x-8 gap-y-3">
+                {/* Regular session close */}
+                <div className="min-w-0">
+                  <div className="text-[40px] font-bold tracking-tight text-foreground tabular-nums leading-none">
+                    {fmtPrice(closePrice)}
+                  </div>
+                  <div className={cn(
+                    'text-sm font-medium tabular-nums mt-2',
+                    closeIsPos ? 'text-emerald-400' : 'text-red-400'
+                  )}>
+                    {closeIsPos ? '+' : ''}{fmtPrice(closeChange)} ({closeIsPos ? '+' : ''}{closePct.toFixed(2)}%)
+                  </div>
+                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 mt-1.5 font-semibold">
+                    At Close
+                  </div>
+                </div>
 
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-2.5">
-              <span className={cn('text-sm font-medium tabular-nums', priceColor)}>
-                {isPositive ? '+' : ''}{fmtPrice(change)} ({isPositive ? '+' : ''}{changePct.toFixed(2)}%) today
-              </span>
+                {/* Vertical divider */}
+                <div className="w-px self-stretch bg-border/50" />
 
-              {/* % WHY TODAY? — gradient-bordered pill */}
-              {range === '1D' && (
-                <button
-                  onClick={() => setWhyOpen((v) => !v)}
-                  className={cn(
-                    'inline-flex items-center gap-1 rounded-md px-2 py-0.5',
-                    'text-[10px] font-semibold uppercase tracking-wider border transition-colors',
-                    whyOpen
-                      ? 'border-primary/50 text-primary bg-primary/[0.06]'
-                      : 'border-border/50 text-muted-foreground hover:text-foreground hover:border-border'
-                  )}
-                >
-                  <span className={whyOpen ? 'text-primary' : 'text-primary/70'}>%</span> Why today?
-                </button>
-              )}
+                {/* Pre-market or after-hours, live-updating */}
+                <div className="min-w-0">
+                  <div className="text-[40px] font-bold tracking-tight text-foreground tabular-nums leading-none">
+                    {fmtPrice(extPriceVal)}
+                  </div>
+                  <div className={cn(
+                    'text-sm font-medium tabular-nums mt-2',
+                    extIsPos ? 'text-emerald-400' : 'text-red-400'
+                  )}>
+                    {extIsPos ? '+' : ''}{fmtPrice(extDiff)} ({extIsPos ? '+' : ''}{extPct.toFixed(2)}%)
+                  </div>
+                  <div className="flex items-center gap-1.5 mt-1.5">
+                    {isLive && (
+                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    )}
+                    <span className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-semibold">
+                      {extHours!.pre_or_post === 'pre' ? 'Pre-Market' : 'After-Hours'}
+                    </span>
+                  </div>
+                </div>
 
-              {isLive && (
-                <span className="flex items-center gap-1 text-xs text-emerald-400 font-medium">
-                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  Live
-                </span>
-              )}
-            </div>
-
-            {/* Extended hours */}
-            {extHours && (
-              <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-                <span className="font-medium capitalize">
-                  {extHours.pre_or_post === 'pre' ? 'Pre-market' : 'After-hours'}:
-                </span>
-                <span className="font-semibold text-foreground tabular-nums">{fmtPrice(extHours.price)}</span>
-                <span className={cn('tabular-nums', extHours.changePercent >= 0 ? 'text-emerald-400' : 'text-red-400')}>
-                  {extHours.changePercent >= 0 ? '+' : ''}{extHours.changePercent.toFixed(2)}%
-                </span>
+                {/* % WHY TODAY? — kept in the row */}
+                {range === '1D' && (
+                  <button
+                    onClick={() => setWhyOpen((v) => !v)}
+                    className={cn(
+                      'inline-flex items-center gap-1 rounded-md px-2 py-0.5 self-start',
+                      'text-[10px] font-semibold uppercase tracking-wider border transition-colors',
+                      whyOpen
+                        ? 'border-primary/50 text-primary bg-primary/[0.06]'
+                        : 'border-border/50 text-muted-foreground hover:text-foreground hover:border-border'
+                    )}
+                  >
+                    <span className={whyOpen ? 'text-primary' : 'text-primary/70'}>%</span> Why today?
+                  </button>
+                )}
               </div>
+            ) : (
+              <>
+                <div className="text-[52px] font-bold tracking-tight text-foreground tabular-nums leading-none">
+                  {fmtPrice(price)}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-2.5">
+                  <span className={cn('text-sm font-medium tabular-nums', priceColor)}>
+                    {isPositive ? '+' : ''}{fmtPrice(change)} ({isPositive ? '+' : ''}{changePct.toFixed(2)}%) today
+                  </span>
+
+                  {range === '1D' && (
+                    <button
+                      onClick={() => setWhyOpen((v) => !v)}
+                      className={cn(
+                        'inline-flex items-center gap-1 rounded-md px-2 py-0.5',
+                        'text-[10px] font-semibold uppercase tracking-wider border transition-colors',
+                        whyOpen
+                          ? 'border-primary/50 text-primary bg-primary/[0.06]'
+                          : 'border-border/50 text-muted-foreground hover:text-foreground hover:border-border'
+                      )}
+                    >
+                      <span className={whyOpen ? 'text-primary' : 'text-primary/70'}>%</span> Why today?
+                    </button>
+                  )}
+
+                  {isLive && (
+                    <span className="flex items-center gap-1 text-xs text-emerald-400 font-medium">
+                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      Live
+                    </span>
+                  )}
+                </div>
+              </>
             )}
           </div>
 
