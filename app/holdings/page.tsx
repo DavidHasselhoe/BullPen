@@ -49,6 +49,7 @@ export default function HoldingsPage() {
   const { user, isAuthenticated } = useAuth();
   const { data: holdings, isLoading } = useHoldings();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [hoveredSector, setHoveredSector] = useState<string | null>(null);
   const session = useSessionState();
   const isPreMarket = session === 'pre-market';
 
@@ -327,7 +328,7 @@ export default function HoldingsPage() {
             <PortfolioPerformanceChart holdings={throttledHoldings} currency={userCurrency} />
           </div>
           <div className="flex flex-col">
-            <HoldingsPieChart holdings={throttledHoldings} currency={userCurrency} />
+            <HoldingsPieChart holdings={throttledHoldings} currency={userCurrency} onSectorHover={setHoveredSector} />
           </div>
         </div>
       )}
@@ -336,6 +337,7 @@ export default function HoldingsPage() {
       <HoldingsTable
         holdingsWithPrices={holdingsWithPrices}
         onAddClick={() => setIsAddModalOpen(true)}
+        hoveredSector={hoveredSector}
       />
 
       {/* AI risk analysis */}

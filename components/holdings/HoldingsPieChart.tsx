@@ -9,6 +9,7 @@ import type { CurrencyCode } from '@/lib/currency/currency-conversion';
 interface HoldingsPieChartProps {
   holdings: HoldingWithPrice[];
   currency?: CurrencyCode;
+  onSectorHover?: (sector: string | null) => void;
 }
 
 const SECTOR_COLORS = [
@@ -33,7 +34,15 @@ function shortenSector(sector: string): string {
     .replace('Information Technology', 'Tech');
 }
 
-export function HoldingsPieChart({ holdings }: HoldingsPieChartProps) {
+/** Canonical sector label for a holding — must match what the pie chart buckets use. */
+export function getSectorLabel(h: Pick<HoldingWithPrice, 'asset_type' | 'sector'>): string {
+  if (h.asset_type === 'crypto') return 'Crypto';
+  if (h.asset_type === 'commodity') return 'Commodities';
+  if (h.asset_type === 'etf') return shortenSector(h.sector ?? 'ETF');
+  return shortenSector(h.sector ?? 'Other');
+}
+
+export function HoldingsPieChart({ holdings, onSectorHover }: HoldingsPieChartProps) {
   const sectors = useMemo(() => {
     const totalValue = holdings.reduce((sum, h) => sum + (h.marketValue ?? 0), 0);
     if (totalValue === 0) return [];
@@ -41,16 +50,7 @@ export function HoldingsPieChart({ holdings }: HoldingsPieChartProps) {
     const buckets: Record<string, number> = {};
     for (const h of holdings) {
       if (!h.marketValue) continue;
-      let label: string;
-      if (h.asset_type === 'crypto') {
-        label = 'Crypto';
-      } else if (h.asset_type === 'commodity') {
-        label = 'Commodities';
-      } else if (h.asset_type === 'etf') {
-        label = shortenSector(h.sector ?? 'ETF');
-      } else {
-        label = shortenSector(h.sector ?? 'Other');
-      }
+      const label = getSectorLabel(h);
       buckets[label] = (buckets[label] ?? 0) + h.marketValue;
     }
 
@@ -72,7 +72,12 @@ export function HoldingsPieChart({ holdings }: HoldingsPieChartProps) {
       <CardContent>
         <div className="space-y-4">
           {sectors.map((sector, i) => (
-            <div key={sector.name}>
+            <div
+              key={sector.name}
+              onMouseEnter={() => onSectorHover?.(sector.name)}
+              onMouseLeave={() => onSectorHover?.(null)}
+              className="cursor-default"
+            >
               <div className="flex items-center justify-between mb-1.5">
                 <div className="flex items-center gap-2.5 min-w-0">
                   <span

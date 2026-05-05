@@ -13,6 +13,7 @@ import { Trash2, Edit2, ArrowUpRight, ArrowDownRight, Plus, Search, X, Loader2 }
 import { createBrowserClient } from '@/lib/supabase/client';
 import { logger } from '@/lib/utils/logger';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
+import { cn } from '@/lib/utils';
 
 // ─── Sparkline ────────────────────────────────────────────────────────────────
 
@@ -65,22 +66,19 @@ function SparklineCell({ ticker }: { ticker: string }) {
 import { EditHoldingModal } from './EditHoldingModal';
 import { DeleteHoldingDialog } from './DeleteHoldingDialog';
 import type { HoldingWithPrice } from './types';
+import { getSectorLabel } from './HoldingsPieChart';
 import type { UserHolding } from '@/lib/types/database';
 import { getExchangeRates, convertCurrency, formatCurrency as formatCurrencyValue, formatNumber as formatNumberUtil, formatPercent as formatPercentUtil, type CurrencyCode } from '@/lib/currency/currency-conversion';
 import { useUserSettings } from '@/hooks/use-user-settings';
 
 interface HoldingsTableProps {
   onAddClick?: () => void;
-  /**
-   * Pre-computed holdings with live prices, passed down from the page.
-   * When provided, the table skips its own quote fetch and uses this data directly
-   * so all columns (price, market value, P/L, day change) stay in sync with the
-   * live WebSocket stream.
-   */
   holdingsWithPrices?: HoldingWithPrice[];
+  /** When set, rows not matching this sector label are dimmed. */
+  hoveredSector?: string | null;
 }
 
-export function HoldingsTable({ onAddClick, holdingsWithPrices: externalHoldings }: HoldingsTableProps) {
+export function HoldingsTable({ onAddClick, holdingsWithPrices: externalHoldings, hoveredSector }: HoldingsTableProps) {
   const { data: holdings, isLoading } = useHoldings();
   const { user } = useAuth();
   const { roundNumbers } = useUserSettings();
@@ -474,10 +472,16 @@ export function HoldingsTable({ onAddClick, holdingsWithPrices: externalHoldings
                   ? 'text-green-600 dark:text-green-400'
                   : 'text-red-600 dark:text-red-400';
 
+                const isHighlighted =
+                  !hoveredSector || getSectorLabel(holding) === hoveredSector;
+
                 return (
                   <tr
                     key={holding.id}
-                    className="border-b border-border/50 hover:bg-muted/30 transition-colors"
+                    className={cn(
+                      'border-b border-border/50 hover:bg-muted/30 transition-all duration-200',
+                      !isHighlighted && 'opacity-25'
+                    )}
                   >
                     <td className="py-4 px-4">
                       <Link
