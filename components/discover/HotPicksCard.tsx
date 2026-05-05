@@ -25,7 +25,7 @@ interface HotPicksResponse {
 function SkeletonRow({ rank }: { rank: number }) {
   return (
     <div className="flex items-center gap-4 py-3 px-1">
-      <span className="text-[32px] font-black tabular-nums text-foreground/[0.05] select-none w-10 text-right shrink-0 leading-none">
+      <span className="text-[32px] font-black tabular-nums text-foreground/25 select-none w-10 text-right shrink-0 leading-none">
         {rank}
       </span>
       <div className="h-8 w-8 rounded-lg bg-muted animate-pulse shrink-0" />
@@ -92,11 +92,11 @@ export function HotPicksCard() {
     <div className="min-w-0">
       {/* Editorial section header */}
       <div className="flex items-center gap-3 mb-4">
-        <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/70 shrink-0">
+        <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-foreground/70 shrink-0">
           Trending this week
         </span>
         <div className="flex-1 h-px bg-border/50" />
-        <span className="text-[10px] font-mono text-muted-foreground/40 uppercase tracking-wider shrink-0">
+        <span className="text-[10px] font-mono text-foreground/50 uppercase tracking-wider shrink-0">
           by views
         </span>
       </div>
@@ -124,7 +124,7 @@ export function HotPicksCard() {
                   className="flex flex-1 min-w-0 items-center gap-4"
                 >
                   {/* Ghost rank number */}
-                  <span className="text-[32px] font-black tabular-nums text-foreground/[0.07] select-none w-10 text-right shrink-0 leading-none">
+                  <span className="text-[32px] font-black tabular-nums text-foreground/25 select-none w-10 text-right shrink-0 leading-none">
                     {index + 1}
                   </span>
 
@@ -139,12 +139,12 @@ export function HotPicksCard() {
                     <p className="text-sm font-bold text-foreground leading-none group-hover:text-primary transition-colors">
                       {pick.ticker}
                     </p>
-                    <p className="text-xs text-muted-foreground truncate mt-0.5">
+                    <p className="text-xs text-foreground/55 truncate mt-0.5">
                       {pick.name || pick.ticker}
                     </p>
                   </div>
 
-                  <span className="text-[11px] tabular-nums text-muted-foreground/50 shrink-0 font-mono">
+                  <span className="text-[11px] tabular-nums text-foreground/50 shrink-0 font-mono">
                     {pick.click_count} {pick.click_count === 1 ? 'view' : 'views'}
                   </span>
                 </Link>
