@@ -1,13 +1,21 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
+import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Calculator, Loader2, AlertCircle } from 'lucide-react';
 import { useBackground } from '@/hooks/use-background';
+import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
+import {
+  type CurrencyCode,
+  convertCurrency,
+  getCurrencySymbol,
+  getExchangeRates,
+} from '@/lib/currency/currency-conversion';
 import {
   AreaChart,
   Area,
@@ -57,11 +65,13 @@ type BuyHereResult = {
   }>;
 };
 
-function formatCurrency(value: number): string {
-  if (value >= 1e9) return `$${(value / 1e9).toFixed(2)}B`;
-  if (value >= 1e6) return `$${(value / 1e6).toFixed(2)}M`;
-  if (value >= 1e3) return `$${(value / 1e3).toFixed(2)}K`;
-  return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+function makeCurrencyFormatter(symbol: string) {
+  return function fmtCurrency(usdValue: number): string {
+    if (usdValue >= 1e9) return `${symbol}${(usdValue / 1e9).toFixed(2)}B`;
+    if (usdValue >= 1e6) return `${symbol}${(usdValue / 1e6).toFixed(2)}M`;
+    if (usdValue >= 1e3) return `${symbol}${(usdValue / 1e3).toFixed(2)}K`;
+    return `${symbol}${usdValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
 }
 
 function formatPercent(value: number): string {
@@ -69,14 +79,17 @@ function formatPercent(value: number): string {
   return `${sign}${value.toFixed(2)}%`;
 }
 
+// Always format with en-US commas so parseFormattedAmount can reliably strip them.
 function formatAmountInput(value: string): string {
-  const num = value.replace(/\D/g, '');
+  const num = value.replace(/[^0-9]/g, '');
   if (!num) return '';
-  return parseInt(num, 10).toLocaleString();
+  return parseInt(num, 10).toLocaleString('en-US');
 }
 
+// Strip every non-digit character so space/period thousands separators (e.g. "200 000", "200.000") parse correctly.
 function parseFormattedAmount(value: string): number {
-  return parseFloat(value.replace(/,/g, '')) || 0;
+  const digits = value.replace(/[^0-9]/g, '');
+  return digits ? parseInt(digits, 10) : 0;
 }
 
 // ─── Chart ───────────────────────────────────────────────────────────────────
@@ -85,9 +98,10 @@ interface ChartTooltipProps {
   active?: boolean;
   payload?: Array<{ name: string; value: number; color: string }>;
   label?: string;
+  fmtCurrency: (v: number) => string;
 }
 
-function ChartTooltip({ active, payload, label }: ChartTooltipProps) {
+function ChartTooltip({ active, payload, label, fmtCurrency }: ChartTooltipProps) {
   if (!active || !payload?.length || !label) return null;
   const date = new Date(label).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   return (
@@ -99,7 +113,7 @@ function ChartTooltip({ active, payload, label }: ChartTooltipProps) {
             <span className="h-2 w-2 rounded-full shrink-0" style={{ background: entry.color }} />
             <span className="text-muted-foreground">{entry.name}</span>
           </span>
-          <span className="font-semibold tabular-nums text-foreground">{formatCurrency(entry.value)}</span>
+          <span className="font-semibold tabular-nums text-foreground">{fmtCurrency(entry.value)}</span>
         </div>
       ))}
     </div>
@@ -111,11 +125,13 @@ function BuyHereChart({
   ticker,
   stockReturn,
   hasSpy,
+  fmtCurrency,
 }: {
   data: Array<{ date: string; stockValue: number; spyValue?: number }>;
   ticker: string;
   stockReturn: number;
   hasSpy: boolean;
+  fmtCurrency: (v: number) => string;
 }) {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
@@ -170,13 +186,13 @@ function BuyHereChart({
             minTickGap={60}
           />
           <YAxis
-            tickFormatter={(v) => formatCurrency(v)}
+            tickFormatter={(v) => fmtCurrency(v)}
             tick={{ fontSize: 11, fill: tickColor }}
             axisLine={false}
             tickLine={false}
             width={72}
           />
-          <Tooltip content={<ChartTooltip />} />
+          <Tooltip content={<ChartTooltip fmtCurrency={fmtCurrency} />} />
           <Area
             type="monotone"
             dataKey="stockValue"
@@ -208,6 +224,7 @@ function BuyHereChart({
 export default function BuyHereClientPage() {
   const router = useRouter();
   const { hasAnimatedBackground } = useBackground();
+  const { user } = useAuth();
   const [selectedStock, setSelectedStock] = useState<SearchResult | null>(null);
   const [amount, setAmount] = useState('10,000');
   const [timeIndex, setTimeIndex] = useState<number | null>(2);
@@ -215,6 +232,26 @@ export default function BuyHereClientPage() {
   const [compareSpy, setCompareSpy] = useState(true);
   const [result, setResult] = useState<BuyHereResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  const currency = ((user?.settings?.default_currency as CurrencyCode | undefined) ?? 'USD');
+  const currencySymbol = getCurrencySymbol(currency);
+
+  const { data: rates } = useQuery({
+    queryKey: ['exchange-rates', 'USD'],
+    queryFn: () => getExchangeRates('USD'),
+    staleTime: 60 * 60 * 1000,
+    enabled: currency !== 'USD',
+  });
+
+  // Converts a USD value from the API into the user's display currency.
+  const fmtCurrency = useMemo(() => {
+    if (currency === 'USD') return makeCurrencyFormatter('$');
+    const symbol = currencySymbol;
+    return (usdValue: number) => {
+      const converted = convertCurrency(usdValue, 'USD', currency, rates ?? null);
+      return makeCurrencyFormatter(symbol)(converted);
+    };
+  }, [currency, currencySymbol, rates]);
 
   useEffect(() => {
     try {
@@ -255,11 +292,13 @@ export default function BuyHereClientPage() {
       setResult({ success: false, error: 'Select a stock from the search' });
       return;
     }
-    const amt = parseFormattedAmount(amount);
-    if (isNaN(amt) || amt <= 0) {
+    const amtInUserCurrency = parseFormattedAmount(amount);
+    if (!amtInUserCurrency || amtInUserCurrency <= 0) {
       setResult({ success: false, error: 'Enter a valid investment amount' });
       return;
     }
+    // Convert from user's currency to USD (stock prices are quoted in USD)
+    const amtUSD = convertCurrency(amtInUserCurrency, currency, 'USD', rates ?? null);
 
     persistTicker(selectedStock);
     setIsLoading(true);
@@ -271,7 +310,7 @@ export default function BuyHereClientPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ticker: selectedStock.ticker,
-          amount: amt,
+          amount: amtUSD,
           from: getFromDate(),
           compareSpy,
         }),
@@ -354,7 +393,7 @@ export default function BuyHereClientPage() {
                 <label className="text-sm font-medium">Investment amount</label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-                    $
+                    {currencySymbol}
                   </span>
                   <input
                     type="text"
@@ -480,7 +519,7 @@ export default function BuyHereClientPage() {
                         {result.stock.ticker} — Your investment
                       </p>
                       <p className="mt-2 text-2xl font-bold text-foreground">
-                        <AnimatedCounter value={result.stock.valueNow} format={formatCurrency} />
+                        <AnimatedCounter value={result.stock.valueNow} format={fmtCurrency} />
                       </p>
                       <p
                         className={cn(
@@ -491,8 +530,8 @@ export default function BuyHereClientPage() {
                         {formatPercent(result.stock.returnPct)} return
                       </p>
                       <p className="text-xs text-muted-foreground mt-2">
-                        {result.stock.shares.toFixed(2)} shares @ {formatCurrency(result.stock.priceAtStart)} →{' '}
-                        {formatCurrency(result.stock.priceAtEnd)}
+                        {result.stock.shares.toFixed(2)} shares @ {fmtCurrency(result.stock.priceAtStart)} →{' '}
+                        {fmtCurrency(result.stock.priceAtEnd)}
                       </p>
                     </motion.div>
                     {result.spy && (
@@ -504,7 +543,7 @@ export default function BuyHereClientPage() {
                       >
                         <p className="text-sm font-medium text-muted-foreground">SPY — S&P 500</p>
                         <p className="mt-2 text-2xl font-bold text-foreground">
-                          <AnimatedCounter value={result.spy.valueNow} format={formatCurrency} />
+                          <AnimatedCounter value={result.spy.valueNow} format={fmtCurrency} />
                         </p>
                         <p
                           className={cn(
@@ -527,6 +566,7 @@ export default function BuyHereClientPage() {
                       ticker={result.stock.ticker}
                       stockReturn={result.stock.returnPct}
                       hasSpy={!!result.spy}
+                      fmtCurrency={fmtCurrency}
                     />
                   )}
                 </div>
