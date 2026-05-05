@@ -201,8 +201,10 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
       return res.json();
     },
     enabled: !!ticker,
-    staleTime: 5 * 60 * 1000,
-    refetchInterval: range === '1D' ? 5 * 60 * 1000 : false,
+    // 1D uses 1-min candles — treat as stale after 60 s and poll every 60 s.
+    // Longer ranges use daily candles; 5-min stale time is fine.
+    staleTime: range === '1D' ? 60 * 1000 : 5 * 60 * 1000,
+    refetchInterval: range === '1D' ? 60 * 1000 : false,
   });
 
   // ── Indicator queries ─────────────────────────────────────────────────────

@@ -5,7 +5,7 @@ import { TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
 import { slugToSymbol, inferAssetType, has24hTrading } from '@/lib/assets/asset-type';
 
 type Range = '1D' | '1W' | '1M' | '6M' | '1Y' | 'YTD' | '5Y' | 'MAX';
-type Interval = '5min' | '15min' | '1h' | '4h' | '1day' | '1week';
+type Interval = '1min' | '5min' | '15min' | '1h' | '4h' | '1day' | '1week';
 
 interface RangeConfig {
   interval: Interval;
@@ -13,7 +13,7 @@ interface RangeConfig {
 }
 
 const RANGE_CONFIG: Record<Exclude<Range, 'YTD'>, RangeConfig> = {
-  '1D':  { interval: '5min',  daysBack: 1 },
+  '1D':  { interval: '1min',  daysBack: 1 },
   '1W':  { interval: '15min', daysBack: 7 },
   '1M':  { interval: '1h',    daysBack: 31 },
   '6M':  { interval: '1day',  daysBack: 183 },
@@ -24,10 +24,11 @@ const RANGE_CONFIG: Record<Exclude<Range, 'YTD'>, RangeConfig> = {
 
 // Map our interval strings to TwelveData resolution codes
 const INTERVAL_TO_RESOLUTION: Record<Interval, '1' | '5' | '15' | '60' | 'D' | 'W'> = {
+  '1min':  '1',
   '5min':  '5',
   '15min': '15',
   '1h':    '60',
-  '4h':    '60', // fall back to 1h for 4h
+  '4h':    '60',
   '1day':  'D',
   '1week': 'W',
 };
@@ -76,21 +77,29 @@ async function handler(
       );
     }
 
+    // 1D uses 1-min candles and is polled every 60 s client-side — keep server cache tight.
+    const cacheHeader = is1D
+      ? 'private, no-cache'
+      : 'public, s-maxage=300, stale-while-revalidate=60';
+
     return addSecurityHeaders(
-      NextResponse.json({
-        success: true,
-        candles: {
-          t: candles.t,
-          o: candles.o,
-          h: candles.h,
-          l: candles.l,
-          c: candles.c,
-          v: candles.v,
-          session: candles.session,
+      NextResponse.json(
+        {
+          success: true,
+          candles: {
+            t: candles.t,
+            o: candles.o,
+            h: candles.h,
+            l: candles.l,
+            c: candles.c,
+            v: candles.v,
+            session: candles.session,
+          },
+          range,
+          interval: config.interval,
         },
-        range,
-        interval: config.interval,
-      })
+        { headers: { 'Cache-Control': cacheHeader } }
+      )
     );
   } catch (err) {
     if (err instanceof TwelveDataRateLimitError) {
