@@ -71,18 +71,25 @@ export default function HoldingsPage() {
 
       const tickers = holdings.map((h) => h.symbol);
 
-      // Single batched companies query — logo_url + sector in one round trip
-      const { data: companiesData } = await supabase
-        .from('companies')
-        .select('ticker, logo_url, sector')
-        .in('ticker', tickers);
+      // Fetch companies + cached sectors in parallel
+      const [{ data: companiesData }, { data: cachedSectors }] = await Promise.all([
+        supabase.from('companies').select('ticker, logo_url, sector').in('ticker', tickers),
+        supabase.from('ticker_sectors').select('ticker, sector').in('ticker', tickers),
+      ]);
 
       const dbCompanyMap = new Map(
         (companiesData || []).map((c) => [c.ticker, c])
       );
 
-      // Enrich any tickers missing a sector — includes tickers absent from companies table
-      const nullSectorTickers = tickers.filter((t) => !dbCompanyMap.get(t)?.sector);
+      // Pre-populate sectorMap from ticker_sectors cache (covers tickers absent from companies)
+      for (const row of cachedSectors || []) {
+        sectorMap[row.ticker] = row.sector;
+      }
+
+      // Only enrich tickers with no sector in either source
+      const nullSectorTickers = tickers.filter(
+        (t) => !dbCompanyMap.get(t)?.sector && !(t in sectorMap)
+      );
       if (nullSectorTickers.length > 0) {
         try {
           const enrichRes = await fetch('/api/companies/enrich-sectors', {

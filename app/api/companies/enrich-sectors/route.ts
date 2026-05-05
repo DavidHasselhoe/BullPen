@@ -27,10 +27,13 @@ export async function POST(request: NextRequest) {
           const profile = await getCompanyProfile(ticker);
           if (profile.sector) {
             sectors[ticker] = profile.sector;
-            await supabase
-              .from('companies')
-              .update({ sector: profile.sector })
-              .eq('ticker', ticker);
+            await Promise.all([
+              supabase.from('companies').update({ sector: profile.sector }).eq('ticker', ticker),
+              supabase.from('ticker_sectors').upsert(
+                { ticker, sector: profile.sector, updated_at: new Date().toISOString() },
+                { onConflict: 'ticker' }
+              ),
+            ]);
           }
         } catch {
           // Skip — don't fail the batch for one problematic ticker
