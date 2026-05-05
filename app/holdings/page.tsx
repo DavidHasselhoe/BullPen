@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { HoldingsTable } from '@/components/holdings/HoldingsTable';
 import { AddHoldingModal } from '@/components/holdings/AddHoldingModal';
@@ -23,10 +23,34 @@ import {
   type CurrencyCode,
 } from '@/lib/currency/currency-conversion';
 
+type TradingSession = 'pre-market' | 'regular' | 'after-hours' | 'closed';
+
+function getSessionState(): TradingSession {
+  const nowET = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  const day = nowET.getDay();
+  if (day === 0 || day === 6) return 'closed';
+  const etMins = nowET.getHours() * 60 + nowET.getMinutes();
+  if (etMins >= 240 && etMins < 570) return 'pre-market';  // 4:00–9:30 AM ET
+  if (etMins >= 570 && etMins < 960) return 'regular';     // 9:30 AM–4:00 PM ET
+  if (etMins >= 960 && etMins < 1200) return 'after-hours'; // 4:00–8:00 PM ET
+  return 'closed';
+}
+
+function useSessionState(): TradingSession {
+  const [session, setSession] = useState<TradingSession>(getSessionState);
+  useEffect(() => {
+    const id = setInterval(() => setSession(getSessionState()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+  return session;
+}
+
 export default function HoldingsPage() {
   const { user, isAuthenticated } = useAuth();
   const { data: holdings, isLoading } = useHoldings();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const session = useSessionState();
+  const isPreMarket = session === 'pre-market';
 
   // Brokerage connect — used for the compact header button
   const { data: brokerageData } = useBrokerageAccounts();
@@ -60,7 +84,7 @@ export default function HoldingsPage() {
 
   // Fetch quotes and logos for all holdings (shared cache with HoldingsTable)
   const quotesData = useQuery({
-    queryKey: ['holdings-quotes', holdings?.map((h) => h.symbol)],
+    queryKey: ['holdings-quotes', holdings?.map((h) => h.symbol), isPreMarket],
     queryFn: async () => {
       if (!holdings || holdings.length === 0) return { quotes: {}, logos: {}, sectors: {} };
 
@@ -120,11 +144,12 @@ export default function HoldingsPage() {
         }
       }
 
-      // Batch quotes (throttled server-side to avoid Twelve Data rate limits)
+      // Batch quotes — pass prepost:true during pre-market so extended prices
+      // are returned and previousClose is anchored to yesterday's regular close.
       const batchRes = await fetch('/api/quotes/batch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ symbols: tickers }),
+        body: JSON.stringify({ symbols: tickers, prepost: isPreMarket }),
       });
       const batchData = await batchRes.json();
       if (batchRes.status === 429) {
@@ -137,8 +162,12 @@ export default function HoldingsPage() {
       return { quotes: quoteMap, logos: logoMap, sectors: sectorMap };
     },
     enabled: !!holdings && holdings.length > 0,
-    staleTime: 3 * 60 * 1000, // 3 minutes (shared cache with HoldingsTable)
-    gcTime: 5 * 60 * 1000,   // evict price data promptly; stale quotes reset on re-visit
+    // During pre-market, re-anchor previousClose every 90 s so drift doesn't accumulate.
+    // Regular session: 3-minute cache is fine (WebSocket handles real-time).
+    // After-hours / closed: 10-minute cache — we just want today's close, no rushing.
+    staleTime: isPreMarket ? 90 * 1000 : session === 'regular' ? 3 * 60 * 1000 : 10 * 60 * 1000,
+    refetchInterval: isPreMarket ? 90 * 1000 : false,
+    gcTime: 5 * 60 * 1000,
   });
 
   // Combine holdings with quotes, apply currency conversion, and calculate derived values
@@ -250,15 +279,22 @@ export default function HoldingsPage() {
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-3xl font-bold">My Holdings</h1>
-            {livePrices.size > 0 && (
+            {isPreMarket ? (
+              <span className="flex items-center gap-1.5 text-xs font-semibold text-amber-500 bg-amber-500/10 border border-amber-500/20 rounded-full px-2.5 py-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                Pre-Market
+              </span>
+            ) : session === 'regular' && livePrices.size > 0 ? (
               <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-2.5 py-1">
                 <Radio className="h-3 w-3 animate-pulse" />
                 LIVE
               </span>
-            )}
+            ) : null}
           </div>
           <p className="text-muted-foreground mt-1">
-            Track your positions, performance, and risk in real time.
+            {isPreMarket
+              ? 'Showing pre-market prices · Updates every 3s'
+              : 'Track your positions, performance, and risk in real time.'}
           </p>
         </div>
 

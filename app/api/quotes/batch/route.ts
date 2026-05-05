@@ -35,10 +35,12 @@ async function handler(request: NextRequest) {
 
     const quotes: Record<string, { price: number; change: number; changePercent: number }> = {};
 
+    const prepost = body?.prepost === true;
+
     const useTwelveData = !!process.env.TWELVE_DATA_API_KEY;
     if (useTwelveData) {
       // Single batch POST — no throttling needed
-      const quoteMap = await getStockQuotes(capped);
+      const quoteMap = await getStockQuotes(capped, { prepost });
       for (const [symbol, q] of quoteMap.entries()) {
         if (q.c > 0) {
           quotes[symbol] = { price: q.c, change: q.d, changePercent: q.dp };
