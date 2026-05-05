@@ -81,11 +81,8 @@ export default function HoldingsPage() {
         (companiesData || []).map((c) => [c.ticker, c])
       );
 
-      // Enrich any tickers with null sector from TwelveData (writes back to DB)
-      const nullSectorTickers = tickers.filter((t) => {
-        const c = dbCompanyMap.get(t);
-        return c !== undefined && !c.sector;
-      });
+      // Enrich any tickers missing a sector — includes tickers absent from companies table
+      const nullSectorTickers = tickers.filter((t) => !dbCompanyMap.get(t)?.sector);
       if (nullSectorTickers.length > 0) {
         try {
           const enrichRes = await fetch('/api/companies/enrich-sectors', {
