@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { LayoutGrid } from 'lucide-react';
 import type { HoldingWithPrice } from './types';
 import type { CurrencyCode } from '@/lib/currency/currency-conversion';
@@ -10,6 +11,7 @@ interface HoldingsPieChartProps {
   holdings: HoldingWithPrice[];
   currency?: CurrencyCode;
   onSectorHover?: (sector: string | null) => void;
+  isLoading?: boolean;
 }
 
 const SECTOR_COLORS = [
@@ -42,7 +44,7 @@ export function getSectorLabel(h: Pick<HoldingWithPrice, 'asset_type' | 'sector'
   return shortenSector(h.sector ?? 'Other');
 }
 
-export function HoldingsPieChart({ holdings, onSectorHover }: HoldingsPieChartProps) {
+export function HoldingsPieChart({ holdings, onSectorHover, isLoading }: HoldingsPieChartProps) {
   const sectors = useMemo(() => {
     const totalValue = holdings.reduce((sum, h) => sum + (h.marketValue ?? 0), 0);
     if (totalValue === 0) return [];
@@ -58,6 +60,35 @@ export function HoldingsPieChart({ holdings, onSectorHover }: HoldingsPieChartPr
       .map(([name, value]) => ({ name, allocation: (value / totalValue) * 100 }))
       .sort((a, b) => b.allocation - a.allocation);
   }, [holdings]);
+
+  if (isLoading) {
+    return (
+      <Card className="border-border/50 h-full">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+            <LayoutGrid className="h-4 w-4 text-muted-foreground/60" />
+            Allocation
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {[80, 60, 45, 35, 25].map((w, i) => (
+              <div key={i}>
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center gap-2.5">
+                    <Skeleton className="h-2 w-2 rounded-full" />
+                    <Skeleton className="h-3.5" style={{ width: `${w}px` }} />
+                  </div>
+                  <Skeleton className="h-3.5 w-8" />
+                </div>
+                <Skeleton className="h-1.5 w-full rounded-full" />
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (sectors.length === 0) return null;
 

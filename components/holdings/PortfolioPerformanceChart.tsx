@@ -89,9 +89,10 @@ function floorLookup(pairs: [number, number][], ts: number): number | undefined 
 interface Props {
   holdings: HoldingWithPrice[];
   currency?: CurrencyCode;
+  isLoading?: boolean;
 }
 
-export function PortfolioPerformanceChart({ holdings, currency = 'USD' }: Props) {
+export function PortfolioPerformanceChart({ holdings, currency = 'USD', isLoading: holdingsLoading }: Props) {
   const [range, setRange]           = useState<Range>('SINCE');
   const [showBenchmark, setShowBenchmark] = useState(false);
 
@@ -241,6 +242,22 @@ export function PortfolioPerformanceChart({ holdings, currency = 'USD' }: Props)
   const isPositive  = currentPL >= 0;
   const lineColor   = isPositive ? '#10b981' : '#ef4444';
   const gradientId  = `pp-grad-${isPositive ? 'pos' : 'neg'}`;
+
+  if (holdingsLoading) {
+    return (
+      <Card className="overflow-hidden h-full">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <Skeleton className="h-5 w-28" />
+            <Skeleton className="h-7 w-64 rounded-full" />
+          </div>
+        </CardHeader>
+        <CardContent className="p-0 pb-3">
+          <Skeleton className="h-[220px] w-full rounded-none" />
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (eligible.length === 0) return null;
 

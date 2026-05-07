@@ -5,14 +5,16 @@ import { TrendingUp, TrendingDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatCurrency, formatPercent, type CurrencyCode } from '@/lib/currency/currency-conversion';
 import { useUserSettings } from '@/hooks/use-user-settings';
+import { Skeleton } from '@/components/ui/skeleton';
 import type { HoldingWithPrice } from './types';
 
 interface PortfolioDashboardProps {
   holdings: HoldingWithPrice[];
   currency?: CurrencyCode;
+  isLoading?: boolean;
 }
 
-export function PortfolioDashboard({ holdings, currency = 'USD' }: PortfolioDashboardProps) {
+export function PortfolioDashboard({ holdings, currency = 'USD', isLoading }: PortfolioDashboardProps) {
   const { roundNumbers } = useUserSettings();
   const fmt = (value: number) =>
     formatCurrency(value, currency, roundNumbers ? { round: true } : undefined);
@@ -47,6 +49,20 @@ export function PortfolioDashboard({ holdings, currency = 'USD' }: PortfolioDash
 
     return { totalValue, todayDollar, todayPct, totalPL, totalPLPct, costBasis, valuedPositions };
   }, [holdings]);
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="rounded-xl border border-border/50 bg-card p-5">
+            <Skeleton className="h-3 w-20 mb-3" />
+            <Skeleton className="h-7 w-28 mb-2" />
+            <Skeleton className="h-3 w-16" />
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   if (stats.valuedPositions === 0) return null;
 

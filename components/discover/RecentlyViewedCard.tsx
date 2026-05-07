@@ -1,10 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { useRecentlyViewed } from '@/hooks/use-recently-viewed';
+import { useRecentlyViewedQuotes } from '@/hooks/use-recently-viewed-quotes';
 import { History } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
@@ -13,23 +13,7 @@ export function RecentlyViewedCard() {
   const { items } = useRecentlyViewed();
 
   const tickers = items.map((i) => i.ticker);
-
-  const { data: quotes } = useQuery<Record<string, { changePercent: number }>>({
-    queryKey: ['recently-viewed-quotes', tickers],
-    queryFn: async () => {
-      if (tickers.length === 0) return {};
-      const res = await fetch('/api/quotes/batch', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ symbols: tickers }),
-      });
-      const json = await res.json();
-      return json.quotes ?? {};
-    },
-    enabled: tickers.length > 0,
-    staleTime: 2 * 60 * 1000,
-    gcTime: 5 * 60 * 1000,
-  });
+  const { data: quotes } = useRecentlyViewedQuotes(tickers);
 
   if (items.length === 0) return null;
 
@@ -55,7 +39,7 @@ export function RecentlyViewedCard() {
                 <CompanyLogo
                   name={item.name}
                   ticker={item.ticker}
-                  logoUrl={null}
+                  logoUrl={item.logo_url ?? null}
                   size={28}
                   className="rounded overflow-hidden shrink-0"
                 />

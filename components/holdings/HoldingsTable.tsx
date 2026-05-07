@@ -34,7 +34,7 @@ function buildSparkPath(prices: number[], w: number, h: number): string {
 }
 
 function SparklineCell({ ticker }: { ticker: string }) {
-  const { data } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ['sparkline', ticker],
     queryFn: async () => {
       const res = await fetch(`/api/stock/${ticker}/candles?range=1M`);
@@ -45,6 +45,7 @@ function SparklineCell({ ticker }: { ticker: string }) {
     gcTime: 60 * 60 * 1000,
   });
 
+  if (isLoading) return <Skeleton className="w-16 h-7 rounded" />;
   if (!data || data.c.length < 2) return <div className="w-16 h-7" />;
 
   // Downsample to at most 60 points for a clean line
@@ -76,9 +77,62 @@ interface HoldingsTableProps {
   holdingsWithPrices?: HoldingWithPrice[];
   /** When set, rows not matching this sector label are dimmed. */
   hoveredSector?: string | null;
+  /** True while batch quotes are in-flight — shows shimmer in price columns. */
+  isPricesLoading?: boolean;
 }
 
-export function HoldingsTable({ onAddClick, holdingsWithPrices: externalHoldings, hoveredSector }: HoldingsTableProps) {
+// ─── Per-cell skeleton for price columns ─────────────────────────────────────
+
+function PriceSkeleton({ wide }: { wide?: boolean }) {
+  return <Skeleton className={cn('h-4 rounded', wide ? 'w-20' : 'w-14')} />;
+}
+
+// ─── Full-table skeleton row (matches column structure) ───────────────────────
+
+function SkeletonTableRow({ index }: { index: number }) {
+  return (
+    <tr
+      className="border-b border-border/50 holdings-row-enter"
+      style={{ animationDelay: `${index * 70}ms` }}
+    >
+      <td className="py-4 px-4">
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-12 w-12 rounded-lg shrink-0" />
+          <div className="space-y-1.5">
+            <Skeleton className="h-4 w-14" />
+            <Skeleton className="h-3 w-28" />
+          </div>
+        </div>
+      </td>
+      <td className="py-4 px-4"><Skeleton className="h-4 w-8" /></td>
+      <td className="py-4 px-4"><Skeleton className="h-4 w-16" /></td>
+      <td className="py-4 px-4"><Skeleton className="h-4 w-16" /></td>
+      <td className="py-4 px-4"><Skeleton className="h-4 w-14" /></td>
+      <td className="py-4 px-4"><Skeleton className="h-4 w-20" /></td>
+      <td className="py-4 px-4">
+        <div className="space-y-1">
+          <Skeleton className="h-4 w-16" />
+          <Skeleton className="h-3 w-10" />
+        </div>
+      </td>
+      <td className="py-4 px-4">
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-1.5 w-14 rounded-full" />
+          <Skeleton className="h-4 w-8" />
+        </div>
+      </td>
+      <td className="py-4 px-3"><Skeleton className="h-7 w-16 rounded" /></td>
+      <td className="py-4 px-4">
+        <div className="flex items-center justify-end gap-2">
+          <Skeleton className="h-7 w-7 rounded" />
+          <Skeleton className="h-7 w-7 rounded" />
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+export function HoldingsTable({ onAddClick, holdingsWithPrices: externalHoldings, hoveredSector, isPricesLoading }: HoldingsTableProps) {
   const { data: holdings, isLoading } = useHoldings();
   const { user } = useAuth();
   const { roundNumbers } = useUserSettings();
@@ -162,6 +216,9 @@ export function HoldingsTable({ onAddClick, holdingsWithPrices: externalHoldings
     // collected so returning users always see a fresh fetch, not stale prices.
     gcTime: 5 * 60 * 1000,
   });
+
+  // True while price data is in-flight — drives skeleton cells in price columns.
+  const isLoadingPrices = isPricesLoading !== undefined ? isPricesLoading : quotes.isLoading;
 
   // Combine holdings with quotes and calculate derived values.
   // Skipped when externalHoldings is provided — the parent already did this work.
@@ -318,26 +375,50 @@ export function HoldingsTable({ onAddClick, holdingsWithPrices: externalHoldings
 
   if (isLoading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>My Holdings</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="flex items-center gap-4">
-                <Skeleton className="h-10 w-10 rounded" />
-                <div className="flex-1 space-y-2">
-                  <Skeleton className="h-4 w-32" />
-                  <Skeleton className="h-3 w-24" />
-                </div>
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-4 w-20" />
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      <>
+        <style>{`
+          @keyframes holdingsRowIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to   { opacity: 1; transform: translateY(0); }
+          }
+          .holdings-row-enter {
+            animation: holdingsRowIn 0.28s ease-out both;
+          }
+        `}</style>
+        <Card>
+          <CardHeader>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <CardTitle>My Holdings</CardTitle>
+              <Skeleton className="h-8 w-56 rounded-lg" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border/50">
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Symbol</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Quantity</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Avg Price</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Current Price</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Day Change</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Market Value</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Unrealized P/L</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Allocation</th>
+                    <th className="py-3 px-4" />
+                    <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[0, 1, 2, 3, 4].map((i) => (
+                    <SkeletonTableRow key={i} index={i} />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      </>
     );
   }
 
@@ -374,6 +455,16 @@ export function HoldingsTable({ onAddClick, holdingsWithPrices: externalHoldings
   }
 
   return (
+    <>
+    <style>{`
+      @keyframes holdingsRowIn {
+        from { opacity: 0; transform: translateY(5px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+      .holdings-row-enter {
+        animation: holdingsRowIn 0.28s ease-out both;
+      }
+    `}</style>
     <Card>
       <CardHeader>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -462,7 +553,10 @@ export function HoldingsTable({ onAddClick, holdingsWithPrices: externalHoldings
                   </td>
                 </tr>
               )}
-              {filteredHoldings.map((holding) => {
+              {filteredHoldings.map((holding, rowIndex) => {
+                const priceKnown = holding.currentPrice !== undefined;
+                const showPriceSkeleton = isLoadingPrices && !priceKnown;
+
                 const isPositive = (holding.dayChangePercent ?? 0) >= 0;
                 const plIsPositive = (holding.unrealizedPLPercent ?? 0) >= 0;
                 const dayChangeColor = isPositive
@@ -479,9 +573,10 @@ export function HoldingsTable({ onAddClick, holdingsWithPrices: externalHoldings
                   <tr
                     key={holding.id}
                     className={cn(
-                      'border-b border-border/50 hover:bg-muted/30 transition-all duration-200',
+                      'border-b border-border/50 hover:bg-muted/30 transition-all duration-200 holdings-row-enter',
                       !isHighlighted && 'opacity-25'
                     )}
+                    style={{ animationDelay: `${rowIndex * 45}ms` }}
                   >
                     <td className="py-4 px-4">
                       <Link
@@ -515,18 +610,24 @@ export function HoldingsTable({ onAddClick, holdingsWithPrices: externalHoldings
                       {holding.quantity !== null ? formatNumberUtil(holding.quantity, roundNumbers) : '—'}
                     </td>
                     <td className="py-4 px-4 text-sm text-foreground">
-                      {holding.avg_price !== null && holding.avg_price !== undefined 
-                        ? formatCurrencyValue(holding.avg_price, userCurrency || 'USD', roundNumbers ? { round: true } : undefined) 
+                      {holding.avg_price !== null && holding.avg_price !== undefined
+                        ? formatCurrencyValue(holding.avg_price, userCurrency || 'USD', roundNumbers ? { round: true } : undefined)
                         : '—'}
                     </td>
                     <td className="py-4 px-4 text-sm font-medium text-foreground">
-                      {holding.currentPrice !== undefined 
-                        ? formatCurrencyValue(holding.currentPrice, userCurrency || 'USD', roundNumbers ? { round: true } : undefined) 
-                        : '—'}
+                      {showPriceSkeleton ? (
+                        <PriceSkeleton />
+                      ) : holding.currentPrice !== undefined ? (
+                        <span className="animate-in fade-in duration-300">
+                          {formatCurrencyValue(holding.currentPrice, userCurrency || 'USD', roundNumbers ? { round: true } : undefined)}
+                        </span>
+                      ) : '—'}
                     </td>
                     <td className="py-4 px-4">
-                      {holding.dayChangePercent !== undefined ? (
-                        <div className={`flex items-center gap-1 ${dayChangeColor}`}>
+                      {showPriceSkeleton ? (
+                        <PriceSkeleton />
+                      ) : holding.dayChangePercent !== undefined ? (
+                        <div className={cn('flex items-center gap-1 animate-in fade-in duration-300', dayChangeColor)}>
                           {isPositive ? (
                             <ArrowUpRight className="h-3 w-3" />
                           ) : (
@@ -541,13 +642,22 @@ export function HoldingsTable({ onAddClick, holdingsWithPrices: externalHoldings
                       )}
                     </td>
                     <td className="py-4 px-4 text-sm font-medium text-foreground">
-                      {holding.marketValue !== undefined 
-                        ? formatCurrencyValue(holding.marketValue, userCurrency || 'USD', roundNumbers ? { round: true } : undefined) 
-                        : '—'}
+                      {showPriceSkeleton ? (
+                        <PriceSkeleton wide />
+                      ) : holding.marketValue !== undefined ? (
+                        <span className="animate-in fade-in duration-300">
+                          {formatCurrencyValue(holding.marketValue, userCurrency || 'USD', roundNumbers ? { round: true } : undefined)}
+                        </span>
+                      ) : '—'}
                     </td>
                     <td className="py-4 px-4">
-                      {holding.unrealizedPL !== undefined ? (
-                        <div className={`${plColor}`}>
+                      {showPriceSkeleton ? (
+                        <div className="space-y-1">
+                          <PriceSkeleton />
+                          <PriceSkeleton />
+                        </div>
+                      ) : holding.unrealizedPL !== undefined ? (
+                        <div className={cn(plColor, 'animate-in fade-in duration-300')}>
                           <div className="text-sm font-medium">
                             {formatCurrencyValue(holding.unrealizedPL, userCurrency || 'USD', roundNumbers ? { round: true } : undefined)}
                           </div>
@@ -562,8 +672,13 @@ export function HoldingsTable({ onAddClick, holdingsWithPrices: externalHoldings
                       )}
                     </td>
                     <td className="py-4 px-4">
-                      {holding.allocation !== undefined ? (
-                        <div className="flex items-center gap-2.5 min-w-[100px]">
+                      {showPriceSkeleton ? (
+                        <div className="flex items-center gap-2">
+                          <Skeleton className="h-1.5 w-14 rounded-full" />
+                          <Skeleton className="h-4 w-8" />
+                        </div>
+                      ) : holding.allocation !== undefined ? (
+                        <div className="flex items-center gap-2.5 min-w-[100px] animate-in fade-in duration-300">
                           <div className="w-14 h-1 rounded-full bg-muted/50 overflow-hidden shrink-0">
                             <div
                               className="h-full rounded-full transition-all duration-500"
@@ -655,5 +770,6 @@ export function HoldingsTable({ onAddClick, holdingsWithPrices: externalHoldings
         />
       )}
     </Card>
+    </>
   );
 }

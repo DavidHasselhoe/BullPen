@@ -47,7 +47,7 @@ function useSessionState(): TradingSession {
 
 export default function HoldingsPage() {
   const { user, isAuthenticated } = useAuth();
-  const { data: holdings, isLoading } = useHoldings();
+  const { data: holdings, isLoading: holdingsLoading } = useHoldings();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [hoveredSector, setHoveredSector] = useState<string | null>(null);
   const session = useSessionState();
@@ -61,8 +61,8 @@ export default function HoldingsPage() {
 
   // Resolve the user's preferred display currency
   const userCurrency = useMemo((): CurrencyCode => {
-    const settings = (user?.settings as any) ?? {};
-    const c = settings.default_currency;
+    const settings = (user?.settings as Record<string, unknown>) ?? {};
+    const c = settings.default_currency as string | undefined;
     if (!c || c === 'exchange') return 'USD';
     return c as CurrencyCode;
   }, [user]);
@@ -255,6 +255,8 @@ export default function HoldingsPage() {
   // The portfolio value widget updates instantly (it reads livePrices directly via the memo),
   // but the table rows and dashboard stats re-render at most once every 3 seconds.
   const throttledHoldings = useThrottle(holdingsWithPrices, 3000);
+  const hasPricedHoldings = throttledHoldings.some((h) => h.currentPrice !== undefined);
+  const statsLoading = holdingsLoading || quotesData.isLoading || (!!holdings?.length && !hasPricedHoldings);
 
   if (!isAuthenticated) {
     return (
@@ -317,18 +319,16 @@ export default function HoldingsPage() {
       </div>
 
       {/* Stats row — 4 cards */}
-      {throttledHoldings.length > 0 && (
-        <PortfolioDashboard holdings={throttledHoldings} currency={userCurrency} />
-      )}
+      <PortfolioDashboard holdings={throttledHoldings} currency={userCurrency} isLoading={statsLoading} />
 
       {/* Performance chart + Allocation side-by-side */}
-      {throttledHoldings.length > 0 && (
+      {(statsLoading || throttledHoldings.length > 0) && (
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-stretch">
           <div className="xl:col-span-2 flex flex-col">
-            <PortfolioPerformanceChart holdings={throttledHoldings} currency={userCurrency} />
+            <PortfolioPerformanceChart holdings={throttledHoldings} currency={userCurrency} isLoading={statsLoading} />
           </div>
           <div className="flex flex-col">
-            <HoldingsPieChart holdings={throttledHoldings} currency={userCurrency} onSectorHover={setHoveredSector} />
+            <HoldingsPieChart holdings={throttledHoldings} currency={userCurrency} onSectorHover={setHoveredSector} isLoading={statsLoading} />
           </div>
         </div>
       )}
@@ -336,6 +336,7 @@ export default function HoldingsPage() {
       {/* Holdings table */}
       <HoldingsTable
         holdingsWithPrices={holdingsWithPrices}
+        isPricesLoading={quotesData.isLoading}
         onAddClick={() => setIsAddModalOpen(true)}
         hoveredSector={hoveredSector}
       />

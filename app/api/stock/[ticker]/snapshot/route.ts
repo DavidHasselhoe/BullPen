@@ -72,6 +72,7 @@ async function handler(
       price: number; change: number; changePercent: number;
       high: number; low: number; open: number; previousClose: number;
     } | null = null;
+    let instrumentType: string | null = null;
 
     const q = raw.quote as Record<string, string | number> | undefined;
     if (q && !q.code && q.status !== 'error') {
@@ -87,6 +88,7 @@ async function handler(
         open: parseFloat(String(q.open ?? close)),
         previousClose: pc,
       };
+      instrumentType = q.type != null ? String(q.type) : null;
     }
 
     // ---- Statistics (cached or freshly fetched) ----
@@ -170,6 +172,7 @@ async function handler(
         quote,
         statistics,
         earnings,
+        instrumentType,
       }, { headers: { 'Cache-Control': 'private, max-age=60' } })
     );
   } catch (err) {

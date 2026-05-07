@@ -23,6 +23,7 @@ interface SnapshotResponse {
     date: string; time: string; epsEstimate: number | null; epsActual: number | null;
     quarter: number; year: number;
   }[];
+  instrumentType: string | null;
 }
 
 export function useStockSnapshot(ticker: string | null) {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
@@ -21,34 +21,22 @@ function getInitialsColor(ticker: string): string {
   return `hsl(${hue}, 35%, 45%)`;
 }
 
+function getStorageUrl(ticker: string): string {
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!base || !ticker) return '';
+  return `${base}/storage/v1/object/public/company-logos/${ticker.toLowerCase()}.jpg`;
+}
+
 export function CompanyLogo({ name, ticker, logoUrl, size = 40, className }: CompanyLogoProps) {
   const [imageError, setImageError] = useState(false);
-  const [fetchedUrl, setFetchedUrl] = useState<string | null>(null);
-  const fetchInProgress = useRef(false);
 
-  // When no logoUrl prop is supplied, fetch from TwelveData via API route
-  useEffect(() => {
-    if (logoUrl != null || !ticker || fetchInProgress.current) return;
-    fetchInProgress.current = true;
-    fetch(`/api/logo/${encodeURIComponent(ticker.toUpperCase())}`)
-      .then((res) => res.ok ? res.json() : null)
-      .then((data: { success?: boolean; logoUrl?: string } | null) => {
-        if (data?.success && data.logoUrl) setFetchedUrl(data.logoUrl);
-      })
-      .catch(() => {})
-      .finally(() => { fetchInProgress.current = false; });
-  }, [ticker, logoUrl]);
-
-  // Reset on ticker change
-  useEffect(() => {
-    setImageError(false);
-    setFetchedUrl(null);
-    fetchInProgress.current = false;
-  }, [ticker]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { setImageError(false); }, [ticker]);
 
   const handleImageError = useCallback(() => setImageError(true), []);
 
-  const effectiveUrl = logoUrl ?? fetchedUrl;
+  const storageUrl = useMemo(() => getStorageUrl(ticker), [ticker]);
+  const effectiveUrl = logoUrl ?? storageUrl;
   const showFallback = !effectiveUrl || imageError;
 
   const displayText = ticker.toUpperCase();
