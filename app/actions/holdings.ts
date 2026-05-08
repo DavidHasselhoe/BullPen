@@ -14,6 +14,8 @@ export interface AddHoldingInput {
   avg_price?: number | null;
   date_purchased?: string | null;
   asset_type?: 'stock' | 'crypto' | 'commodity' | 'forex' | 'etf' | null;
+  purchase_currency?: string | null;
+  purchase_fx_rate?: number | null;
 }
 
 export interface UpdateHoldingInput {
@@ -22,13 +24,15 @@ export interface UpdateHoldingInput {
   quantity?: number | null;
   avg_price?: number | null;
   date_purchased?: string | null;
+  purchase_currency?: string | null;
+  purchase_fx_rate?: number | null;
 }
 
 /**
  * Server Action: Get all holdings for a user.
  * userId from session only — never trust client-provided userId.
  */
-export async function getMyHoldings(userId: string): Promise<{
+export async function getMyHoldings(/* userId ignored — session-derived */): Promise<{
   success: boolean;
   holdings?: UserHolding[];
   error?: string;
@@ -184,9 +188,9 @@ export async function toggleHoldingAlertAction(
 
   const { createServerClient } = await import('@/lib/supabase/client');
   const supabase = createServerClient();
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from('user_holdings')
-    .update({ alerts_enabled })
+    .update({ alerts_enabled } as Record<string, unknown>)
     .eq('user_id', uid)
     .eq('symbol', symbol.toUpperCase());
 

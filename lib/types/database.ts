@@ -133,6 +133,10 @@ export interface UserHolding {
   brokerage_account_id: string | null;
   alerts_enabled: boolean;
   asset_type: 'stock' | 'crypto' | 'commodity' | 'forex' | 'etf' | null;
+  /** ISO 4217 home currency at purchase time (e.g. 'NOK') */
+  purchase_currency: string | null;
+  /** 1 USD = X purchase_currency on date_purchased */
+  purchase_fx_rate: number | null;
   created_at: string;
   updated_at: string;
 }

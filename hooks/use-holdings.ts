@@ -28,7 +28,7 @@ export function useHoldings() {
         throw new Error('Authentication required');
       }
 
-      const result = await getMyHoldings(user.id);
+      const result = await getMyHoldings();
 
       if (result.success && result.holdings) {
         return result.holdings;

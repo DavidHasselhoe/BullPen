@@ -37,7 +37,7 @@ export async function getHoldings(userId: string): Promise<GetHoldingsResult> {
 
     const { data: holdings, error } = await supabase
       .from('user_holdings')
-      .select('id, user_id, symbol, company_name, quantity, avg_price, date_purchased, asset_type, source, brokerage_account_id, alerts_enabled, created_at, updated_at')
+      .select('id, user_id, symbol, company_name, quantity, avg_price, date_purchased, asset_type, source, brokerage_account_id, alerts_enabled, purchase_currency, purchase_fx_rate, created_at, updated_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
@@ -81,7 +81,7 @@ export async function addHolding(
     }
 
     // Check if holding already exists (unique constraint on user_id, symbol)
-    const { data: existing, error: checkError } = await supabase
+    const { data: existing } = await supabase
       .from('user_holdings')
       .select('id')
       .eq('user_id', userId)
@@ -96,6 +96,12 @@ export async function addHolding(
     }
 
     // Insert new holding
+    const h = holding as {
+      date_purchased?: string | null;
+      asset_type?: string | null;
+      purchase_currency?: string | null;
+      purchase_fx_rate?: number | null;
+    };
     const { data: newHolding, error: insertError } = await supabase
       .from('user_holdings')
       .insert({
@@ -104,8 +110,10 @@ export async function addHolding(
         company_name: holding.company_name,
         quantity: holding.quantity || null,
         avg_price: holding.avg_price || null,
-        date_purchased: (holding as { date_purchased?: string | null }).date_purchased ?? null,
-        asset_type: (holding as { asset_type?: string | null }).asset_type ?? 'stock',
+        date_purchased: h.date_purchased ?? null,
+        asset_type: h.asset_type ?? 'stock',
+        purchase_currency: h.purchase_currency ?? 'USD',
+        purchase_fx_rate: h.purchase_fx_rate ?? null,
       })
       .select()
       .single();
@@ -233,6 +241,8 @@ export async function updateHolding(
     if (updates.quantity !== undefined) updateData.quantity = updates.quantity;
     if (updates.avg_price !== undefined) updateData.avg_price = updates.avg_price;
     if ('date_purchased' in updates) updateData.date_purchased = (updates as { date_purchased?: string | null }).date_purchased ?? null;
+    if ('purchase_currency' in updates) updateData.purchase_currency = (updates as { purchase_currency?: string | null }).purchase_currency ?? null;
+    if ('purchase_fx_rate' in updates) updateData.purchase_fx_rate = (updates as { purchase_fx_rate?: number | null }).purchase_fx_rate ?? null;
 
     // Update holding
     const { data: updated, error: updateError } = await supabase

@@ -180,6 +180,14 @@ export default function HoldingsPage() {
     const sectorsMap = quotesData.data?.sectors || {};
     const rates = exchangeRates.data ?? null;
 
+    // Scalar rate: 1 USD = X userCurrency at today's rates (1 when USD)
+    const currentFxRate =
+      userCurrency === 'USD' || !rates
+        ? 1
+        : convertCurrency(1, 'USD', userCurrency, rates);
+
+    const conv = (usd: number) => usd * currentFxRate;
+
     // Allocation — use live price where available so the percentages stay current.
     const totalMarketValueUSD = holdings.reduce((sum, holding) => {
       const lp = throttledLivePrices.get(holding.symbol);
@@ -187,9 +195,6 @@ export default function HoldingsPage() {
       const price = lp?.price ?? bq?.price;
       return price && holding.quantity ? sum + price * holding.quantity : sum;
     }, 0);
-
-    const conv = (usd: number) =>
-      userCurrency === 'USD' ? usd : convertCurrency(usd, 'USD', userCurrency, rates);
 
     return holdings.map((holding) => {
       const liveQuote = throttledLivePrices.get(holding.symbol);
@@ -221,14 +226,29 @@ export default function HoldingsPage() {
       const marketValueUSD =
         currentPriceUSD && holding.quantity ? currentPriceUSD * holding.quantity : undefined;
 
-      const unrealizedPLUSD =
-        currentPriceUSD && holding.avg_price && holding.quantity
-          ? (currentPriceUSD - holding.avg_price) * holding.quantity
+      // FX-aware P&L: cost basis uses the rate at purchase, current value uses today's rate.
+      // For holdings without a stored purchase rate (pre-migration or USD users), fall back to
+      // currentFxRate — this collapses to the plain USD calculation, the same as before.
+      const purchaseFxRate = holding.purchase_fx_rate ?? currentFxRate;
+
+      const costBasisHome =
+        holding.avg_price != null && holding.quantity != null
+          ? holding.avg_price * holding.quantity * purchaseFxRate
+          : undefined;
+
+      const currentValueHome =
+        currentPriceUSD !== undefined && holding.quantity != null
+          ? currentPriceUSD * holding.quantity * currentFxRate
+          : undefined;
+
+      const unrealizedPL =
+        currentValueHome !== undefined && costBasisHome !== undefined
+          ? currentValueHome - costBasisHome
           : undefined;
 
       const unrealizedPLPercent =
-        currentPriceUSD && holding.avg_price
-          ? ((currentPriceUSD - holding.avg_price) / holding.avg_price) * 100
+        unrealizedPL !== undefined && costBasisHome && costBasisHome > 0
+          ? (unrealizedPL / costBasisHome) * 100
           : undefined;
 
       const allocation =
@@ -242,7 +262,7 @@ export default function HoldingsPage() {
         dayChange: dayChangeUSD !== undefined ? conv(dayChangeUSD) : undefined,
         dayChangePercent,
         marketValue: marketValueUSD !== undefined ? conv(marketValueUSD) : undefined,
-        unrealizedPL: unrealizedPLUSD !== undefined ? conv(unrealizedPLUSD) : undefined,
+        unrealizedPL,
         unrealizedPLPercent,
         allocation,
         logoUrl,

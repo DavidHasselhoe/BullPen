@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   Dialog,
   DialogContent,
@@ -22,9 +22,11 @@ import {
 } from '@/components/ui/command';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { useAddHolding } from '@/hooks/use-holdings';
+import { useAuth } from '@/hooks/use-auth';
 import { CheckCircle2 } from 'lucide-react';
 import type { AddHoldingInput } from '@/app/actions/holdings';
 import { inferAssetType } from '@/lib/assets/asset-type';
+import type { CurrencyCode } from '@/lib/currency/currency-conversion';
 
 interface SearchResult {
   ticker: string;
@@ -48,6 +50,7 @@ interface AddHoldingModalProps {
 }
 
 export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStock, setSelectedStock] = useState<SearchResult | null>(null);
   const [quantity, setQuantity] = useState('');
@@ -56,9 +59,17 @@ export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
   const [quantityError, setQuantityError] = useState('');
   const [avgPriceError, setAvgPriceError] = useState('');
 
+  // Derive user's home currency from settings
+  const userCurrency = useMemo((): CurrencyCode => {
+    const settings = (user?.settings as Record<string, unknown>) ?? {};
+    const c = settings.default_currency as string | undefined;
+    if (!c || c === 'exchange') return 'USD';
+    return c as CurrencyCode;
+  }, [user]);
+
   // Simple debounce implementation
   const [debouncedQuery, setDebouncedQuery] = useState('');
-  
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedQuery(searchQuery);
@@ -66,6 +77,21 @@ export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
     return () => clearTimeout(timer);
   }, [searchQuery]);
   const addHolding = useAddHolding();
+
+  // Fetch historical USD→userCurrency rate for the purchase date
+  const { data: historicalRateData } = useQuery({
+    queryKey: ['historical-fx', datePurchased, userCurrency],
+    queryFn: async () => {
+      const res = await fetch(`/api/currency/rates/historical?date=${datePurchased}`);
+      if (!res.ok) return null;
+      const data = await res.json();
+      const rate = data.rates?.[userCurrency] as number | undefined;
+      return rate ?? null;
+    },
+    enabled: !!datePurchased && userCurrency !== 'USD',
+    staleTime: 24 * 60 * 60 * 1000,
+    gcTime: 7 * 24 * 60 * 60 * 1000,
+  });
 
   // Search query
   const {
@@ -145,6 +171,8 @@ export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
         avg_price: avgPrice ? parseFloat(avgPrice) : null,
         date_purchased: datePurchased || null,
         asset_type: assetType === 'unknown' ? 'stock' : assetType,
+        purchase_currency: userCurrency,
+        purchase_fx_rate: historicalRateData ?? (userCurrency !== 'USD' ? null : 1),
       };
 
       await addHolding.mutateAsync(input);
@@ -297,9 +325,17 @@ export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
               value={datePurchased}
               onChange={(e) => setDatePurchased(e.target.value)}
             />
-            <p className="text-xs text-muted-foreground">
-              Used to chart your P/L from the day you opened this position.
-            </p>
+            {datePurchased && userCurrency !== 'USD' ? (
+              <p className="text-xs text-muted-foreground">
+                {historicalRateData
+                  ? `Rate on ${datePurchased}: 1 USD = ${historicalRateData.toFixed(4)} ${userCurrency} — used for FX-adjusted P/L`
+                  : `Looking up USD/${userCurrency} rate for ${datePurchased}…`}
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Used to chart your P/L from the day you opened this position.
+              </p>
+            )}
           </div>
 
           {/* Submit Button */}
