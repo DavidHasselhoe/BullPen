@@ -103,13 +103,14 @@ export default function StockDetailPage() {
   // then seed each component's individual query cache so they skip extra requests.
   const snapshot = useStockSnapshot(ticker);
 
-  // Derive asset type from TwelveData instrument_type (in the quote response).
-  // Falls back to 'stock' while snapshot is loading — sections self-hide once confirmed ETF.
+  // Derive asset type once the snapshot resolves (quote response includes instrument_type).
+  // While loading, treat type as unknown — fundamentals sections stay unmounted so they
+  // never fire wasted API calls for ETFs.
   const snapshotAssetType = snapshot.data?.instrumentType
     ? inferAssetType(ticker, snapshot.data.instrumentType)
-    : 'stock';
+    : 'unknown';
   const isEtf = snapshotAssetType === 'etf';
-  const showFundamentals = !isEtf && hasFinancials(snapshotAssetType);
+  const showFundamentals = !snapshot.isLoading && !isEtf && hasFinancials(snapshotAssetType);
 
   // Hot Picks: record visit + invalidate list so Discover updates when you navigate back
   useEffect(() => {
