@@ -123,6 +123,14 @@ function StatItem({ label, value, valueClass }: { label: string; value: string; 
   );
 }
 
+function fetchIndicator(ticker: string, opt: IndicatorOption, range: Range): Promise<IndicatorResponse> {
+  const params = new URLSearchParams({ type: opt.type, range });
+  if (opt.params) {
+    for (const [k, v] of Object.entries(opt.params)) params.set(k, String(v));
+  }
+  return fetch(`/api/stock/${ticker}/indicator?${params}`).then(r => r.json());
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function StockPricePanel({ ticker }: { ticker: string }) {
@@ -208,22 +216,12 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
   });
 
   // ── Indicator queries ─────────────────────────────────────────────────────
-  function makeIndicatorQueryFn(opt: IndicatorOption) {
-    return async () => {
-      const params = new URLSearchParams({ type: opt.type, range });
-      if (opt.params) {
-        for (const [k, v] of Object.entries(opt.params)) params.set(k, String(v));
-      }
-      const res = await fetch(`/api/stock/${ticker}/indicator?${params}`);
-      return res.json() as Promise<IndicatorResponse>;
-    };
-  }
-  const sma50Query  = useQuery<IndicatorResponse>({ queryKey: ['indicator', ticker, 'sma50',  range], queryFn: makeIndicatorQueryFn(INDICATORS[0]), enabled: activeIndicators.has('sma50')  && !!ticker, staleTime: 5 * 60 * 1000 });
-  const sma200Query = useQuery<IndicatorResponse>({ queryKey: ['indicator', ticker, 'sma200', range], queryFn: makeIndicatorQueryFn(INDICATORS[1]), enabled: activeIndicators.has('sma200') && !!ticker, staleTime: 5 * 60 * 1000 });
-  const ema20Query  = useQuery<IndicatorResponse>({ queryKey: ['indicator', ticker, 'ema20',  range], queryFn: makeIndicatorQueryFn(INDICATORS[2]), enabled: activeIndicators.has('ema20')  && !!ticker, staleTime: 5 * 60 * 1000 });
-  const bbandsQuery = useQuery<IndicatorResponse>({ queryKey: ['indicator', ticker, 'bbands', range], queryFn: makeIndicatorQueryFn(INDICATORS[3]), enabled: activeIndicators.has('bbands') && !!ticker, staleTime: 5 * 60 * 1000 });
-  const rsiQuery    = useQuery<IndicatorResponse>({ queryKey: ['indicator', ticker, 'rsi',   range], queryFn: makeIndicatorQueryFn(INDICATORS[4]), enabled: activeIndicators.has('rsi')    && !!ticker, staleTime: 5 * 60 * 1000 });
-  const macdQuery   = useQuery<IndicatorResponse>({ queryKey: ['indicator', ticker, 'macd',  range], queryFn: makeIndicatorQueryFn(INDICATORS[5]), enabled: activeIndicators.has('macd')   && !!ticker, staleTime: 5 * 60 * 1000 });
+  const sma50Query  = useQuery<IndicatorResponse>({ queryKey: ['indicator', ticker, 'sma50',  range], queryFn: () => fetchIndicator(ticker, INDICATORS[0], range), enabled: activeIndicators.has('sma50')  && !!ticker, staleTime: 5 * 60 * 1000 });
+  const sma200Query = useQuery<IndicatorResponse>({ queryKey: ['indicator', ticker, 'sma200', range], queryFn: () => fetchIndicator(ticker, INDICATORS[1], range), enabled: activeIndicators.has('sma200') && !!ticker, staleTime: 5 * 60 * 1000 });
+  const ema20Query  = useQuery<IndicatorResponse>({ queryKey: ['indicator', ticker, 'ema20',  range], queryFn: () => fetchIndicator(ticker, INDICATORS[2], range), enabled: activeIndicators.has('ema20')  && !!ticker, staleTime: 5 * 60 * 1000 });
+  const bbandsQuery = useQuery<IndicatorResponse>({ queryKey: ['indicator', ticker, 'bbands', range], queryFn: () => fetchIndicator(ticker, INDICATORS[3], range), enabled: activeIndicators.has('bbands') && !!ticker, staleTime: 5 * 60 * 1000 });
+  const rsiQuery    = useQuery<IndicatorResponse>({ queryKey: ['indicator', ticker, 'rsi',   range], queryFn: () => fetchIndicator(ticker, INDICATORS[4], range), enabled: activeIndicators.has('rsi')    && !!ticker, staleTime: 5 * 60 * 1000 });
+  const macdQuery   = useQuery<IndicatorResponse>({ queryKey: ['indicator', ticker, 'macd',  range], queryFn: () => fetchIndicator(ticker, INDICATORS[5], range), enabled: activeIndicators.has('macd')   && !!ticker, staleTime: 5 * 60 * 1000 });
 
   const sma50Data  = sma50Query.data?.data;
   const sma200Data = sma200Query.data?.data;
@@ -318,7 +316,10 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
 
   const firstPrice = displayData[0]?.price ?? 0;
   const chartLast  = displayData[displayData.length - 1]?.price ?? 0;
-  const chartBase  = range === '1D' && prevClose > 0 ? prevClose : firstPrice;
+  // In dual mode (pre/post-market) anchor to regular-session close, not prev_close,
+  // so tooltip change and the perf banner both reflect move vs today's close.
+  const dayBase    = showDual ? closePrice : prevClose;
+  const chartBase  = range === '1D' && dayBase > 0 ? dayBase : firstPrice;
   const chartDiff  = chartLast - chartBase;
   const chartPct   = chartBase ? (chartDiff / chartBase) * 100 : 0;
   const chartIsPos = chartDiff >= 0;
@@ -340,10 +341,12 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
   const showOscillator  = hasChart && !isSimplified && activeOscillators.length > 0;
 
   // ── For the range performance banner above the tabs ───────────────────────
-  // 1D: use live changePct (matches header exactly). Other ranges: use chart-derived value.
-  const perfIsPos = range === '1D' ? isPositive : chartIsPos;
-  const perfPct   = range === '1D' ? changePct  : chartPct;
-  const perfDiff  = range === '1D' ? change     : chartDiff;
+  // 1D dual (pre/post): use extended-hours change vs regular close.
+  // 1D single (regular session): use live change vs prev close.
+  // Other ranges: use chart-derived value.
+  const perfIsPos = range === '1D' ? (showDual ? extIsPos  : isPositive) : chartIsPos;
+  const perfPct   = range === '1D' ? (showDual ? extPct    : changePct)  : chartPct;
+  const perfDiff  = range === '1D' ? (showDual ? extDiff   : change)     : chartDiff;
 
   if (quoteLoading && !restQuote && !live) {
     return (
