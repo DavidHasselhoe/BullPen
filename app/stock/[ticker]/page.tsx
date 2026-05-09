@@ -104,11 +104,14 @@ export default function StockDetailPage() {
   const snapshot = useStockSnapshot(ticker);
 
   // Derive asset type once the snapshot resolves (quote response includes instrument_type).
-  // While loading, treat type as unknown — fundamentals sections stay unmounted so they
-  // never fire wasted API calls for ETFs.
+  // While loading, treat type as 'unknown' so ETF-irrelevant sections stay unmounted.
+  // After loading, fall back to 'stock' if instrumentType is absent — /stock/[ticker]
+  // routing has already screened out crypto/commodity, so this is a safe assumption.
   const snapshotAssetType = snapshot.data?.instrumentType
     ? inferAssetType(ticker, snapshot.data.instrumentType)
-    : 'unknown';
+    : snapshot.isLoading
+      ? 'unknown'
+      : 'stock';
   const isEtf = snapshotAssetType === 'etf';
   const showFundamentals = !snapshot.isLoading && !isEtf && hasFinancials(snapshotAssetType);
 
