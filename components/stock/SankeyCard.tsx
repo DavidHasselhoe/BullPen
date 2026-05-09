@@ -327,6 +327,7 @@ export function SankeyCard({ ticker }: { ticker: string }) {
   const { resolvedTheme } = useTheme();
   // mounted guard prevents hydration mismatch — node colours flash on first render otherwise
   const [mounted, setMounted] = useState(false);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setMounted(true), []);
   const isDark = mounted && resolvedTheme === 'dark';
 
@@ -347,6 +348,7 @@ export function SankeyCard({ ticker }: { ticker: string }) {
     return () => ro.disconnect();
   }, []);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setPeriodIdx(0); }, [period]);
 
   const { data, isLoading } = useQuery<FinancialsResponse>({
@@ -355,6 +357,7 @@ export function SankeyCard({ ticker }: { ticker: string }) {
       fetch(`/api/stock/${ticker}/financials?type=income&period=${period}`).then(r => r.json()),
     enabled: !!ticker,
     staleTime: 24 * 60 * 60 * 1000,
+    gcTime: 24 * 60 * 60 * 1000,
     retry: false,
   });
 

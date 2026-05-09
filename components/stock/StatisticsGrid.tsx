@@ -107,6 +107,7 @@ export function StatisticsGrid({
     },
     enabled: !!ticker,
     staleTime: 15 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
   });
 
   if (isLoading) {

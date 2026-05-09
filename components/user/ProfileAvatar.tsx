@@ -13,9 +13,16 @@ import {
 } from '@/components/ui/tooltip';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Crown } from 'lucide-react';
-import { getTierColor, getTierName } from '@/lib/tier-colors';
+import { getTierColor } from '@/lib/tier-colors';
 import { cn } from '@/lib/utils';
 import { type ClassValue } from 'clsx';
+
+const SIZE_CLASSES = {
+  sm: 'h-8 w-8',
+  md: 'h-10 w-10',
+  lg: 'h-12 w-12',
+  xl: 'h-24 w-24',
+} as const;
 
 interface ProfileAvatarProps {
   avatarUrl?: string | null;
@@ -53,13 +60,6 @@ export function ProfileAvatar({
       .slice(0, 2) ||
     'U';
 
-  const sizeClasses = {
-    sm: 'h-8 w-8',
-    md: 'h-10 w-10',
-    lg: 'h-12 w-12',
-    xl: 'h-24 w-24',
-  };
-
   // Only show colored border for Gold tier (3)
   // Tier 1-2 are "normal" (no special border)
   // Removed Platinum and Diamond - only Gold and Normal
@@ -69,7 +69,7 @@ export function ProfileAvatar({
   const avatarElement = (
     <div
       className={cn(
-        `relative rounded-full ${sizeClasses[size]}`,
+        `relative rounded-full ${SIZE_CLASSES[size]}`,
         className
       )}
       style={
@@ -136,16 +136,9 @@ export function ProfileAvatarSkeleton({
   size?: 'sm' | 'md' | 'lg' | 'xl';
   className?: ClassValue;
 }) {
-  const sizeClasses = {
-    sm: 'h-8 w-8',
-    md: 'h-10 w-10',
-    lg: 'h-12 w-12',
-    xl: 'h-24 w-24',
-  };
-
   return (
     <div
-      className={cn(`relative rounded-full ${sizeClasses[size]}`, className)}
+      className={cn(`relative rounded-full ${SIZE_CLASSES[size]}`, className)}
       style={{ border: '2px solid #C0C0C0' }}
     >
       <div className="absolute inset-0 rounded-full overflow-hidden">

@@ -54,16 +54,13 @@ export async function uploadLogoToStorage(
     // But Buffer sometimes needs to be converted to Blob for better compatibility
     const blob = new Blob([imageBuffer], { type: mimeType });
 
-    console.log(`[Logo Storage] Uploading ${fileName} (${imageBuffer.length} bytes, ${mimeType}) to bucket '${LOGO_BUCKET}'`);
-
     // Upload to Supabase Storage
-    // Use blob instead of buffer for better compatibility
-    const { data, error } = await supabase.storage
+    const { error } = await supabase.storage
       .from(LOGO_BUCKET)
       .upload(fileName, blob, {
         contentType: mimeType,
-        upsert: true, // Replace if exists
-        cacheControl: 'public, max-age=31536000', // Cache for 1 year
+        upsert: true,
+        cacheControl: 'public, max-age=31536000',
       });
 
     if (error) {

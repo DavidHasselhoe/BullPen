@@ -196,7 +196,7 @@ async function fetchAndStoreFiling(
       };
     }
     
-    let rawContent = await response.text();
+    const rawContent = await response.text();
     
     // Check actual size after fetching
     if (rawContent.length > MAX_FILE_SIZE) {
@@ -211,17 +211,7 @@ async function fetchAndStoreFiling(
     const docMatch = rawContent.match(/<DOCUMENT>[\s\S]*?<TYPE>(10-K|10-Q)(?:\/[A-Z])?[\s\S]*?<TEXT>([\s\S]*?)<\/TEXT>[\s\S]*?<\/DOCUMENT>/i);
     if (docMatch && docMatch[2] && docMatch[2].length > 50000) {
       contentForTables = docMatch[2]; // Use main 10-K/10-Q document for cleaner table structure
-      console.log('[Pipeline:Fetch] Extracted main document from .txt', {
-        fullTxtSize: rawContent.length,
-        mainDocSize: contentForTables.length,
-        filingType: docMatch[1],
-      });
     } else {
-      console.log('[Pipeline:Fetch] Using full .txt (no main doc extracted)', {
-        fullTxtSize: rawContent.length,
-        docMatch: !!docMatch,
-        mainDocSize: docMatch?.[2]?.length ?? 0,
-      });
     }
 
     // Sanitize HTML: Remove scripts, inline JS, and external references
@@ -516,13 +506,6 @@ function classifyTableColumns(tableHtml: string): {
   }
   
   if (!headerHtml) {
-    const firstRows = (tableHtml.match(/<tr[^>]*>([\s\S]*?)<\/tr>/gi) || []).slice(0, 3);
-    console.log('[Pipeline:Classify] No header row found - Pattern 1/2/3 failed', {
-      trCount: (tableHtml.match(/<tr/gi) || []).length,
-      hasThead: /<thead/i.test(tableHtml),
-      hasTh: /<th/i.test(tableHtml),
-      firstRowPreview: firstRows[0]?.replace(/<[^>]+>/g, ' ').slice(0, 150),
-    });
     return { columns: [], quarterlyCount: 0, ytdCount: 0, annualCount: 0 };
   }
 
@@ -772,7 +755,6 @@ function normalizeTable(
         removedCount = 0;
       } else {
         // No columns at all - truly empty table
-        console.log('[Pipeline:Normalize] No columns in table - skipping (quarterly path)');
         onProgress?.('No columns found in table', {
           originalColumns: classification.columns.length,
         });
@@ -1560,14 +1542,6 @@ export async function executeCanonicalPipeline(
       onProgress
     );
 
-    console.log('[Pipeline:Detect] Financial tables detected', {
-      count: tables.length,
-      filingType,
-      htmlSize: fetchResult.rawHtml?.length ?? 0,
-      expectsQuarterly: extractionIntent.expectsQuarterly,
-      expectsAnnual: extractionIntent.expectsAnnual,
-    });
-    
     if (tables.length === 0) {
       const reason = extractionIntent.expectsQuarterly
         ? 'No quarterly income statement tables found'
@@ -1619,7 +1593,6 @@ export async function executeCanonicalPipeline(
     
     for (let tableIdx = 0; tableIdx < tablesToProcess.length; tableIdx++) {
       const tableHtml = tablesToProcess[tableIdx];
-      console.log('[Pipeline:Table] Processing table', { index: tableIdx + 1, of: tablesToProcess.length, tableSize: tableHtml?.length ?? 0 });
 
       // STEP 4: Normalize table with column filtering
       const normalizeResult = normalizeTable(
@@ -1628,23 +1601,11 @@ export async function executeCanonicalPipeline(
         onProgress
       );
 
-      console.log('[Pipeline:Normalize] Result', {
-        tableIdx: tableIdx + 1,
-        structuredTextLength: normalizeResult.structuredText?.length ?? 0,
-        quarterly: normalizeResult.columnStats.quarterly,
-        ytd: normalizeResult.columnStats.ytd,
-        annual: normalizeResult.columnStats.annual,
-      });
-      
       // Skip if no columns of expected period type remain after filtering
       const hasExpectedColumns = extractionIntent.expectsAnnual || extractionIntent.acceptsAnnualFromTables
         ? normalizeResult.columnStats.annual > 0
         : (normalizeResult.columnStats.quarterly > 0 || normalizeResult.columnStats.ytd > 0);
       if (!normalizeResult.structuredText || normalizeResult.structuredText.length < 100 || !hasExpectedColumns) {
-        console.log('[Pipeline:Skip] Table skipped - no matching period columns', {
-          structuredTextLen: normalizeResult.structuredText?.length ?? 0,
-          hasExpectedColumns,
-        });
         log('Table skipped - no matching period columns', false, {
           quarterly: normalizeResult.columnStats.quarterly,
           ytd: normalizeResult.columnStats.ytd,

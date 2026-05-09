@@ -34,6 +34,17 @@ function useMoversDateLabel(): string {
 
   if (isPreMarket) return `${fmt(nowET)} · Pre-market`;
   if (isAfterHours) return `${fmt(nowET)} · After-hours`;
+
+  // Before pre-market (midnight – 4:00 AM ET): data is still from the previous
+  // trading day's close. Pre-market at 4:00 AM is the first point where today's
+  // session data starts coming in, so we only advance the date then.
+  if (etMins < 240) {
+    const prevClose = new Date(nowET);
+    // Monday midnight–4am → roll back to Friday (3 days)
+    prevClose.setDate(nowET.getDate() - (day === 1 ? 3 : 1));
+    return fmt(prevClose);
+  }
+
   return fmt(nowET);
 }
 

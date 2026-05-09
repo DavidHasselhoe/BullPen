@@ -235,6 +235,7 @@ export function HealthScoreCard({ ticker, onSignalsReady }: HealthScoreCardProps
     },
     enabled: !!ticker,
     staleTime: 60 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
   });
 
   // Emit signals to parent after render — avoids "setState during render" warning

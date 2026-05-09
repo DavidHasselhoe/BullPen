@@ -3,7 +3,7 @@
 // Never invents numbers - only uses verified XBRL data
 
 import { createServerClient } from '@/lib/supabase/client';
-import type { MetricType } from '@/lib/types/database';
+
 import { getRevenueSegments, type RevenueSegment } from './segment-extractor';
 
 export interface SankeyNode {
@@ -105,13 +105,6 @@ async function getLatestQuarterlyMetrics(
       }
     }
 
-    console.log(`[Sankey] Metrics for ${symbol} (${periodEndDate}):`, {
-      revenue: metricsMap.get('revenue'),
-      costOfRevenue: metricsMap.get('cost_of_revenue'),
-      operatingIncome: metricsMap.get('operating_income'),
-      netIncome: metricsMap.get('net_income'),
-    });
-
     return {
       revenue: metricsMap.get('revenue'),
       costOfRevenue: metricsMap.get('cost_of_revenue'),
@@ -158,7 +151,7 @@ export async function generateSankeyFromXBRL(
     let costOfRevenue = metrics.costOfRevenue;
     let grossProfit = metrics.grossProfit;
     let operatingIncome = metrics.operatingIncome;
-    let netIncome = metrics.netIncome;
+    const netIncome = metrics.netIncome;
 
     // If gross profit exists but cost of revenue doesn't, calculate it
     if (!costOfRevenue && grossProfit !== undefined) {
