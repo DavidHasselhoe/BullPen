@@ -2,19 +2,21 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Preview Branch Rule
+## Branch Strategy
 
-There is a permanent `preview` branch that is deployed to a single stable Vercel preview URL. It always contains every feature across all branches.
+Two branches only: `preview` and `main`.
 
-**After pushing any feature branch, always also merge it into `preview` and push:**
+- **`preview`** — active development. All new work is committed and pushed here. Vercel auto-deploys it to the stable preview URL.
+- **`main`** — production. Only promoted to from `preview` when work is ready to ship (done manually via Vercel dashboard or by merging `preview` → `main`).
+
+**Always push to `preview` only:**
 ```bash
-git checkout preview
-git merge <your-branch> --no-edit
+git add <files>
+git commit -m "..."
 git push origin preview
-git checkout <your-branch>  # return to feature branch
 ```
 
-Merges from `main` → `preview` happen automatically via `.github/workflows/sync-preview.yml` on every push to `main`. Feature branch → `preview` syncs must be done manually (or by Claude).
+Never create feature branches. Work directly on `preview`.
 
 ## Commands
 
