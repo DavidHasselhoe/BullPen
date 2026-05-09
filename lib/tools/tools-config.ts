@@ -10,6 +10,7 @@ import {
   Scale,
   FileText,
   CalendarDays,
+  Sparkles,
 } from 'lucide-react';
 
 export interface ToolConfig {
@@ -28,6 +29,14 @@ export const TOOLS: ToolConfig[] = [
     description: 'Investment research assistant. Ask about SEC filings, financial metrics, and concepts.',
     href: '/tools/ai-chat',
     icon: MessageSquare,
+    status: 'available',
+  },
+  {
+    id: 'portfolio-builder',
+    name: 'Portfolio Builder',
+    description: 'Type an investment thesis. Get a high-conviction thematic portfolio with allocations, rationale, and risk analysis.',
+    href: '/tools/portfolio-builder',
+    icon: Sparkles,
     status: 'available',
   },
   {
