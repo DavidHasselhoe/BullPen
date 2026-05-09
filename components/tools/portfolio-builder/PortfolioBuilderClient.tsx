@@ -171,7 +171,10 @@ export function PortfolioBuilderClient() {
 
   // streaming / composing / validating — show live reasoning
   return (
-    <StreamingThoughts text={thinkingText} composing={phase !== 'streaming'} />
+    <StreamingThoughts
+      text={thinkingText}
+      phase={phase as 'streaming' | 'composing' | 'validating'}
+    />
   );
 }
 
