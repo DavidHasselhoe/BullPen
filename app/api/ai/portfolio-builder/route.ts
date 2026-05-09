@@ -61,7 +61,7 @@ async function handler(
 
         const stream = anthropic.messages.stream({
           model: MODEL,
-          max_tokens: 4096,
+          max_tokens: 16000,
           thinking: { type: 'enabled', budget_tokens: 8000 },
           system: [
             {
