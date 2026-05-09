@@ -1,14 +1,17 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { ThesisInput } from './ThesisInput';
 import { StreamingThoughts } from './StreamingThoughts';
 import { PortfolioResult } from './PortfolioResult';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Clock, ChevronRight, Trash2 } from 'lucide-react';
 import type { Portfolio } from '@/lib/ai/portfolio-builder/schema';
+import type { SavedGeneration } from '@/app/api/ai/portfolio-builder/history/route';
+import { cn } from '@/lib/utils';
 
 type Phase = 'idle' | 'streaming' | 'composing' | 'validating' | 'done' | 'error';
 type ErrorCode = 'invalid_key' | 'payment_required' | 'rate_limited' | 'parse_failed' | 'too_few_valid_tickers' | 'unknown';
@@ -20,26 +23,66 @@ interface DoneEvent {
   replacedTickers: string[];
 }
 
+const HISTORY_KEY = ['portfolio-builder-history'];
+
 export function PortfolioBuilderClient() {
   const [phase, setPhase] = useState<Phase>('idle');
   const [thinkingText, setThinkingText] = useState('');
   const [result, setResult] = useState<DoneEvent | null>(null);
   const [errorCode, setErrorCode] = useState<ErrorCode>('unknown');
   const [errorMessage, setErrorMessage] = useState('');
+  const [thesis, setThesis] = useState('');
   const abortRef = useRef<AbortController | null>(null);
+  const queryClient = useQueryClient();
 
-  // Cleanup any in-flight stream on unmount
   useEffect(() => () => abortRef.current?.abort(), []);
 
-  const reset = () => {
+  // Fetch recent generations
+  const { data: historyData } = useQuery<{ generations: SavedGeneration[] }>({
+    queryKey: HISTORY_KEY,
+    queryFn: () => fetch('/api/ai/portfolio-builder/history').then((r) => r.json()),
+    staleTime: 30_000,
+  });
+  const history = historyData?.generations ?? [];
+
+  // Save mutation
+  const saveMutation = useMutation({
+    mutationFn: (payload: { thesis: string; portfolio: Portfolio; logoMap: Record<string, string | null>; replacedTickers: string[] }) =>
+      fetch('/api/ai/portfolio-builder/history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: HISTORY_KEY }),
+  });
+
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) =>
+      fetch('/api/ai/portfolio-builder/history', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: HISTORY_KEY }),
+  });
+
+  const reset = useCallback(() => {
     abortRef.current?.abort();
     setPhase('idle');
     setThinkingText('');
     setResult(null);
     setErrorMessage('');
-  };
+    setThesis('');
+  }, []);
 
-  const submit = async (thesis: string) => {
+  const restoreGeneration = useCallback((gen: SavedGeneration) => {
+    setResult({ type: 'done', portfolio: gen.portfolio, logoMap: gen.logoMap, replacedTickers: gen.replacedTickers });
+    setThesis(gen.thesis);
+    setPhase('done');
+  }, []);
+
+  const submit = async (submittedThesis: string) => {
     abortRef.current?.abort();
     const ctrl = new AbortController();
     abortRef.current = ctrl;
@@ -48,20 +91,17 @@ export function PortfolioBuilderClient() {
     setThinkingText('');
     setResult(null);
     setErrorMessage('');
+    setThesis(submittedThesis);
 
     try {
       const res = await fetch('/api/ai/portfolio-builder', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ thesis }),
+        body: JSON.stringify({ thesis: submittedThesis }),
         signal: ctrl.signal,
       });
 
-      if (res.status === 429) {
-        setErrorCode('rate_limited');
-        setPhase('error');
-        return;
-      }
+      if (res.status === 429) { setErrorCode('rate_limited'); setPhase('error'); return; }
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         setErrorMessage(data.error || `Request failed: ${res.status}`);
@@ -71,17 +111,14 @@ export function PortfolioBuilderClient() {
       }
 
       const reader = res.body?.getReader();
-      if (!reader) {
-        setPhase('error');
-        return;
-      }
+      if (!reader) { setPhase('error'); return; }
+
       const dec = new TextDecoder();
       let leftover = '';
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-
         const chunk = leftover + dec.decode(value);
         const lines = chunk.split('\n');
         leftover = lines.pop() ?? '';
@@ -97,16 +134,22 @@ export function PortfolioBuilderClient() {
             } else if (event.type === 'validating') {
               setPhase('validating');
             } else if (event.type === 'done') {
-              setResult(event as DoneEvent);
+              const doneEvent = event as DoneEvent;
+              setResult(doneEvent);
               setPhase('done');
+              // Persist in background — don't await
+              saveMutation.mutate({
+                thesis: submittedThesis,
+                portfolio: doneEvent.portfolio,
+                logoMap: doneEvent.logoMap,
+                replacedTickers: doneEvent.replacedTickers,
+              });
             } else if (event.type === 'error') {
               setErrorCode((event.code as ErrorCode) ?? 'unknown');
               setErrorMessage(event.message ?? '');
               setPhase('error');
             }
-          } catch {
-            // malformed line, ignore
-          }
+          } catch { /* malformed line */ }
         }
       }
     } catch (err) {
@@ -118,24 +161,33 @@ export function PortfolioBuilderClient() {
     }
   };
 
-  // Idle — show input
   if (phase === 'idle') {
-    return <ThesisInput onSubmit={submit} />;
+    return (
+      <div className="space-y-10">
+        <ThesisInput onSubmit={submit} />
+        {history.length > 0 && (
+          <RecentPortfolios
+            items={history}
+            onRestore={restoreGeneration}
+            onDelete={(id) => deleteMutation.mutate(id)}
+          />
+        )}
+      </div>
+    );
   }
 
-  // Done — show result
   if (phase === 'done' && result) {
     return (
       <PortfolioResult
         portfolio={result.portfolio}
         logoMap={result.logoMap}
         replacedTickers={result.replacedTickers}
+        thesis={thesis}
         onReset={reset}
       />
     );
   }
 
-  // Error — show error UI with retry
   if (phase === 'error') {
     return (
       <Card className="border-red-500/30 bg-red-500/[0.02]">
@@ -143,21 +195,12 @@ export function PortfolioBuilderClient() {
           <div className="flex items-start gap-3">
             <AlertCircle className="h-5 w-5 text-red-400 shrink-0 mt-0.5" />
             <div className="flex-1">
-              <h3 className="text-sm font-semibold text-foreground mb-1">
-                {errorTitle(errorCode)}
-              </h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {errorBody(errorCode, errorMessage)}
-              </p>
+              <h3 className="text-sm font-semibold text-foreground mb-1">{errorTitle(errorCode)}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">{errorBody(errorCode, errorMessage)}</p>
               <div className="mt-4 flex gap-2">
-                <Button onClick={reset} size="sm" variant="outline">
-                  Try Again
-                </Button>
+                <Button onClick={reset} size="sm" variant="outline">Try Again</Button>
                 {errorCode === 'rate_limited' && (
-                  <Link
-                    href="/upgrade"
-                    className="inline-flex items-center justify-center text-xs font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-2"
-                  >
+                  <Link href="/upgrade" className="inline-flex items-center justify-center text-xs font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-2">
                     Learn about Pro →
                   </Link>
                 )}
@@ -169,7 +212,6 @@ export function PortfolioBuilderClient() {
     );
   }
 
-  // streaming / composing / validating — show live reasoning
   return (
     <StreamingThoughts
       text={thinkingText}
@@ -178,36 +220,147 @@ export function PortfolioBuilderClient() {
   );
 }
 
+// ── Recent portfolios list ────────────────────────────────────────────────────
+
+function RecentPortfolios({
+  items,
+  onRestore,
+  onDelete,
+}: {
+  items: SavedGeneration[];
+  onRestore: (gen: SavedGeneration) => void;
+  onDelete: (id: string) => void;
+}) {
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-3">
+        <Clock className="h-3.5 w-3.5 text-muted-foreground/50" />
+        <span className="text-[10px] uppercase tracking-widest text-muted-foreground/50 font-semibold">
+          Recent portfolios
+        </span>
+      </div>
+      <div className="space-y-2">
+        {items.map((gen) => (
+          <RecentPortfolioRow
+            key={gen.id}
+            gen={gen}
+            onRestore={onRestore}
+            onDelete={onDelete}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function RecentPortfolioRow({
+  gen,
+  onRestore,
+  onDelete,
+}: {
+  gen: SavedGeneration;
+  onRestore: (gen: SavedGeneration) => void;
+  onDelete: (id: string) => void;
+}) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const score = gen.portfolio.confidence_score;
+  const scoreColor =
+    score >= 70 ? 'text-emerald-400' :
+    score >= 50 ? 'text-amber-400' :
+                  'text-red-400';
+
+  const date = new Date(gen.createdAt);
+  const label = formatRelative(date);
+
+  return (
+    <div className={cn(
+      'group flex items-center gap-3 rounded-xl border border-border/50 bg-card px-4 py-3',
+      'hover:border-border/80 transition-colors',
+    )}>
+      <button
+        className="flex-1 min-w-0 text-left"
+        onClick={() => onRestore(gen)}
+      >
+        <div className="flex items-center gap-2 mb-0.5">
+          <span className="text-sm font-medium text-foreground truncate">
+            {gen.portfolio.theme_summary}
+          </span>
+        </div>
+        <div className="flex items-center gap-3 text-xs text-muted-foreground/60">
+          <span className={cn('font-semibold tabular-nums', scoreColor)}>
+            {score} confidence
+          </span>
+          <span>·</span>
+          <span>{gen.portfolio.holdings.length} holdings</span>
+          <span>·</span>
+          <span>{label}</span>
+        </div>
+      </button>
+
+      <div className="flex items-center gap-1 shrink-0">
+        {confirmDelete ? (
+          <>
+            <button
+              onClick={() => onDelete(gen.id)}
+              className="text-xs text-red-400 hover:text-red-300 px-2 py-1 transition-colors"
+            >
+              Delete
+            </button>
+            <button
+              onClick={() => setConfirmDelete(false)}
+              className="text-xs text-muted-foreground/50 hover:text-muted-foreground px-2 py-1 transition-colors"
+            >
+              Cancel
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              onClick={() => setConfirmDelete(true)}
+              className="opacity-0 group-hover:opacity-100 text-muted-foreground/40 hover:text-muted-foreground/80 p-1.5 transition-all"
+              aria-label="Delete"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+            <ChevronRight className="h-4 w-4 text-muted-foreground/30 group-hover:text-muted-foreground/60 transition-colors" />
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function formatRelative(date: Date): string {
+  const now = Date.now();
+  const diff = now - date.getTime();
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `${days}d ago`;
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
 function errorTitle(code: ErrorCode): string {
   switch (code) {
-    case 'rate_limited':
-      return 'Rate limit reached';
-    case 'payment_required':
-      return 'API credits required';
-    case 'invalid_key':
-      return 'API key issue';
-    case 'parse_failed':
-      return 'Unexpected model response';
-    case 'too_few_valid_tickers':
-      return 'Couldn\'t verify enough tickers';
-    default:
-      return 'Something went wrong';
+    case 'rate_limited':         return 'Rate limit reached';
+    case 'payment_required':     return 'API credits required';
+    case 'invalid_key':          return 'API key issue';
+    case 'parse_failed':         return 'Unexpected model response';
+    case 'too_few_valid_tickers': return "Couldn't verify enough tickers";
+    default:                     return 'Something went wrong';
   }
 }
 
 function errorBody(code: ErrorCode, message: string): string {
   switch (code) {
-    case 'rate_limited':
-      return 'You\'ve hit the per-minute limit (5 generations). Wait a moment and try again.';
-    case 'payment_required':
-      return 'Anthropic API credits are required. Add credits at console.anthropic.com.';
-    case 'invalid_key':
-      return 'The Anthropic API key is missing or invalid. Check ANTHROPIC_API_KEY in .env.local.';
-    case 'parse_failed':
-      return 'The model returned an unexpected response shape. This is usually transient — try again.';
-    case 'too_few_valid_tickers':
-      return 'Most of the suggested tickers couldn\'t be verified against our index. Try rephrasing the thesis with more concrete language.';
-    default:
-      return message || 'An unexpected error occurred. Please try again.';
+    case 'rate_limited':         return "You've hit the per-minute limit (5 generations). Wait a moment and try again.";
+    case 'payment_required':     return 'Anthropic API credits are required. Add credits at console.anthropic.com.';
+    case 'invalid_key':          return 'The Anthropic API key is missing or invalid. Check ANTHROPIC_API_KEY in .env.local.';
+    case 'parse_failed':         return 'The model returned an unexpected response shape. This is usually transient — try again.';
+    case 'too_few_valid_tickers': return "Most of the suggested tickers couldn't be verified against our index. Try rephrasing the thesis with more concrete language.";
+    default:                     return message || 'An unexpected error occurred. Please try again.';
   }
 }

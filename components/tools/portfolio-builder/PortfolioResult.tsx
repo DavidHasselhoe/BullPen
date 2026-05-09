@@ -26,6 +26,7 @@ interface Props {
   portfolio: Portfolio;
   logoMap: Record<string, string | null>;
   replacedTickers: string[];
+  thesis: string;
   onReset: () => void;
 }
 
@@ -93,7 +94,7 @@ function ConfidenceRing({ score }: { score: number }) {
   );
 }
 
-export function PortfolioResult({ portfolio, logoMap, replacedTickers, onReset }: Props) {
+export function PortfolioResult({ portfolio, logoMap, replacedTickers, thesis, onReset }: Props) {
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
 
@@ -113,6 +114,9 @@ export function PortfolioResult({ portfolio, logoMap, replacedTickers, onReset }
               <h2 className="text-xl font-semibold leading-tight text-foreground">
                 {portfolio.theme_summary}
               </h2>
+              {thesis && (
+                <p className="mt-1 text-xs text-muted-foreground/50 italic">&ldquo;{thesis}&rdquo;</p>
+              )}
               <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
                 {portfolio.macro_thesis}
               </p>
