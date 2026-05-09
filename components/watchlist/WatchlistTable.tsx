@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import Link from 'next/link';
+import { useQueryClient } from '@tanstack/react-query';
 import { ArrowUpDown, ArrowUp, ArrowDown, X } from 'lucide-react';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -56,6 +57,15 @@ function SortIcon({ col, sortKey, dir }: { col: SortKey; sortKey: SortKey; dir: 
 export function WatchlistTable({ items, quotes, enhancedData, onRemove, isRemoving }: WatchlistTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>('added_at');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const queryClient = useQueryClient();
+
+  const prefetchSnapshot = useCallback((ticker: string) => {
+    queryClient.prefetchQuery({
+      queryKey: ['stock-snapshot', ticker],
+      queryFn: () => fetch(`/api/stock/${ticker}/snapshot`).then((r) => r.json()),
+      staleTime: 2 * 60 * 1000,
+    });
+  }, [queryClient]);
 
   function toggleSort(key: SortKey) {
     if (sortKey === key) {
@@ -131,7 +141,7 @@ export function WatchlistTable({ items, quotes, enhancedData, onRemove, isRemovi
             return (
               <TableRow key={item.symbol} className={cn(removing && 'opacity-40')}>
                 <TableCell>
-                  <Link href={slugToAssetPath(item.symbol)} className="hover:underline">
+                  <Link href={slugToAssetPath(item.symbol)} onMouseEnter={() => prefetchSnapshot(item.symbol)} className="hover:underline">
                     <span className="font-semibold text-foreground">{item.symbol}</span>
                     <span className="ml-2 text-xs text-muted-foreground truncate max-w-[140px] inline-block align-middle">
                       {item.company_name}

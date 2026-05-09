@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Command,
   CommandEmpty,
@@ -44,6 +44,7 @@ interface LazyIngestionResponse {
  */
 export function StockSearch() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -130,6 +131,14 @@ export function StockSearch() {
     },
   });
 
+  const prefetchSnapshot = useCallback((ticker: string) => {
+    queryClient.prefetchQuery({
+      queryKey: ['stock-snapshot', ticker],
+      queryFn: () => fetch(`/api/stock/${ticker}/snapshot`).then((r) => r.json()),
+      staleTime: 2 * 60 * 1000,
+    });
+  }, [queryClient]);
+
   const handleSelect = useCallback(
     async (result: SearchResult) => {
       setOpen(false);
@@ -211,6 +220,7 @@ export function StockSearch() {
                       key={`${result.ticker}-${result.cik}`}
                       value={`${result.ticker} ${result.name}`}
                       onSelect={() => handleSelect(result)}
+                      onMouseEnter={() => prefetchSnapshot(result.ticker)}
                       className="flex items-center justify-between gap-2"
                     >
                       <div className="flex items-center gap-3 flex-1 min-w-0">

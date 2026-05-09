@@ -1,6 +1,8 @@
 'use client';
 
+import { useCallback } from 'react';
 import Link from 'next/link';
+import { useQueryClient } from '@tanstack/react-query';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { useRecentlyViewed } from '@/hooks/use-recently-viewed';
 import { useRecentlyViewedQuotes } from '@/hooks/use-recently-viewed-quotes';
@@ -9,9 +11,18 @@ import { cn } from '@/lib/utils';
 
 export function RecentlyViewedInline() {
   const { items } = useRecentlyViewed();
+  const queryClient = useQueryClient();
 
   const tickers = items.map((i) => i.ticker);
   const { data: quotes } = useRecentlyViewedQuotes(tickers);
+
+  const prefetchSnapshot = useCallback((ticker: string) => {
+    queryClient.prefetchQuery({
+      queryKey: ['stock-snapshot', ticker],
+      queryFn: () => fetch(`/api/stock/${ticker}/snapshot`).then((r) => r.json()),
+      staleTime: 2 * 60 * 1000,
+    });
+  }, [queryClient]);
 
   if (items.length === 0) return null;
 
@@ -28,6 +39,7 @@ export function RecentlyViewedInline() {
             <Link
               key={item.ticker}
               href={slugToAssetPath(item.ticker)}
+              onMouseEnter={() => prefetchSnapshot(item.ticker)}
               className="flex items-center gap-1.5 rounded-full border border-border/50 bg-muted/20 px-2.5 py-1 text-xs font-semibold text-foreground/70 transition-all hover:border-border hover:bg-accent/50 hover:text-foreground"
             >
               <CompanyLogo

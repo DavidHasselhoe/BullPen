@@ -7,7 +7,8 @@ import { useHoldings } from '@/hooks/use-holdings';
 import { useAuth } from '@/hooks/use-auth';
 import { useQuery } from '@tanstack/react-query';
 import { AreaChart, Area, ResponsiveContainer } from 'recharts';
-import { getExchangeRates, convertCurrency, formatCurrency, type CurrencyCode } from '@/lib/currency/currency-conversion';
+import { convertCurrency, formatCurrency, type CurrencyCode } from '@/lib/currency/currency-conversion';
+import { useExchangeRates } from '@/hooks/use-exchange-rates';
 import { useUserSettings } from '@/hooks/use-user-settings';
 import { ArrowUpRight, ArrowDownRight, ChevronRight } from 'lucide-react';
 import type { UserHolding } from '@/lib/types/database';
@@ -101,13 +102,7 @@ export function PortfolioSummaryWidget() {
     return c as CurrencyCode;
   })();
 
-  const exchangeRates = useQuery({
-    queryKey: ['exchange-rates', userCurrency],
-    queryFn: () => getExchangeRates('USD'),
-    enabled: userCurrency !== 'USD',
-    staleTime: 60 * 60 * 1000,
-    gcTime: 24 * 60 * 60 * 1000,
-  });
+  const exchangeRates = useExchangeRates(userCurrency);
 
   const quotesData = useQuery({
     queryKey: ['holdings-quotes', holdings?.map((h) => h.symbol)],

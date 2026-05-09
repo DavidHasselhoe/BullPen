@@ -17,11 +17,8 @@ import { useQuery } from '@tanstack/react-query';
 import { Radio, Link2, RefreshCw } from 'lucide-react';
 import type { HoldingWithPrice } from '@/components/holdings/types';
 import { useBrokerageAccounts, useBrokerageConnect } from '@/hooks/use-brokerage';
-import {
-  getExchangeRates,
-  convertCurrency,
-  type CurrencyCode,
-} from '@/lib/currency/currency-conversion';
+import { convertCurrency, type CurrencyCode } from '@/lib/currency/currency-conversion';
+import { useExchangeRates } from '@/hooks/use-exchange-rates';
 
 type TradingSession = 'pre-market' | 'regular' | 'after-hours' | 'closed';
 
@@ -67,14 +64,7 @@ export default function HoldingsPage() {
     return c as CurrencyCode;
   }, [user]);
 
-  // Exchange rates — only fetched when the user wants a non-USD currency
-  const exchangeRates = useQuery({
-    queryKey: ['exchange-rates', userCurrency],
-    queryFn: () => getExchangeRates('USD'),
-    enabled: userCurrency !== 'USD',
-    staleTime: 60 * 60 * 1000,  // rates update once daily
-    gcTime: 24 * 60 * 60 * 1000,
-  });
+  const exchangeRates = useExchangeRates(userCurrency);
 
   // Live price stream — updates prices in real time via WsManager SSE
   const holdingSymbols = useMemo(() => (holdings ?? []).map((h) => h.symbol), [holdings]);

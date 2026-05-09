@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
-import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Calculator, Loader2, AlertCircle } from 'lucide-react';
@@ -14,8 +13,8 @@ import {
   type CurrencyCode,
   convertCurrency,
   getCurrencySymbol,
-  getExchangeRates,
 } from '@/lib/currency/currency-conversion';
+import { useExchangeRates } from '@/hooks/use-exchange-rates';
 import {
   AreaChart,
   Area,
@@ -236,12 +235,7 @@ export default function BuyHereClientPage() {
   const currency = ((user?.settings?.default_currency as CurrencyCode | undefined) ?? 'USD');
   const currencySymbol = getCurrencySymbol(currency);
 
-  const { data: rates } = useQuery({
-    queryKey: ['exchange-rates', 'USD'],
-    queryFn: () => getExchangeRates('USD'),
-    staleTime: 60 * 60 * 1000,
-    enabled: currency !== 'USD',
-  });
+  const { data: rates } = useExchangeRates(currency);
 
   // Converts a USD value from the API into the user's display currency.
   const fmtCurrency = useMemo(() => {

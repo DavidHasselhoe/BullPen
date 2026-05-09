@@ -69,7 +69,8 @@ import { DeleteHoldingDialog } from './DeleteHoldingDialog';
 import type { HoldingWithPrice } from './types';
 import { getSectorLabel } from './HoldingsPieChart';
 import type { UserHolding } from '@/lib/types/database';
-import { getExchangeRates, convertCurrency, formatCurrency as formatCurrencyValue, formatNumber as formatNumberUtil, formatPercent as formatPercentUtil, type CurrencyCode } from '@/lib/currency/currency-conversion';
+import { convertCurrency, formatCurrency as formatCurrencyValue, formatNumber as formatNumberUtil, formatPercent as formatPercentUtil, type CurrencyCode } from '@/lib/currency/currency-conversion';
+import { useExchangeRates } from '@/hooks/use-exchange-rates';
 import { useUserSettings } from '@/hooks/use-user-settings';
 
 interface HoldingsTableProps {
@@ -155,14 +156,7 @@ export function HoldingsTable({ onAddClick, holdingsWithPrices: externalHoldings
     return currency as CurrencyCode;
   }, [user]);
 
-  // Fetch exchange rates if user selected a specific currency
-  const exchangeRates = useQuery({
-    queryKey: ['exchange-rates', userCurrency],
-    queryFn: () => getExchangeRates('USD'),
-    enabled: !!userCurrency,
-    staleTime: 60 * 60 * 1000, // 1 hour - rates update daily at 1600 CET
-    gcTime: 24 * 60 * 60 * 1000, // 24 hours
-  });
+  const exchangeRates = useExchangeRates(userCurrency);
 
   // Only run the internal quote fetch when no live data is provided from the parent page.
   // When externalHoldings is present we skip this to avoid duplicate API calls.
