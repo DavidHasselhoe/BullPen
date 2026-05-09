@@ -10,6 +10,11 @@ export const PRESETS = [
   { label: '10 years', years: 10 },
 ];
 
+const OPTIONS: { label: string; years: number | null }[] = [
+  ...PRESETS,
+  { label: 'Custom', years: null },
+];
+
 interface TimeSelectorProps {
   value: number | null;
   onChange: (index: number | null) => void;
@@ -25,12 +30,10 @@ export function TimeSelector({
   onCustomDateChange,
   className,
 }: TimeSelectorProps) {
-  const options = [...PRESETS, { label: 'Custom', years: null as number | null }];
-
   return (
     <div className={cn('space-y-2', className)}>
       <div className="relative flex flex-wrap gap-1 p-1 rounded-xl bg-muted/50 border border-border/50">
-        {options.map((opt, i) => (
+        {OPTIONS.map((opt, i) => (
           <button
             key={opt.label}
             type="button"

@@ -70,6 +70,7 @@ export function EarningsCalendar({ ticker }: { ticker: string }) {
     },
     enabled: !!ticker,
     staleTime: 1000 * 60 * 60 * 6,
+    gcTime: 1000 * 60 * 60 * 6,
   });
 
   if (isLoading) {

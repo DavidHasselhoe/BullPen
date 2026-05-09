@@ -80,7 +80,8 @@ export function InsiderTransactionsCard({ ticker }: { ticker: string }) {
       return res.json();
     },
     enabled: !!ticker,
-    staleTime: 60 * 60 * 1000, // 1 hour
+    staleTime: 60 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
   });
 
   if (isLoading) {
@@ -137,7 +138,7 @@ export function InsiderTransactionsCard({ ticker }: { ticker: string }) {
             </CardTitle>
             {isSimplified ? (
               <p className="text-xs text-muted-foreground mt-1">
-                When company executives buy or sell their own stock, it can signal their confidence in the company's future.
+                When company executives buy or sell their own stock, it can signal their confidence in the company&apos;s future.
               </p>
             ) : (
               <p className="text-xs text-muted-foreground mt-1">

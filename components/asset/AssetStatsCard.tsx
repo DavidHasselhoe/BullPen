@@ -56,7 +56,7 @@ export function AssetStatsCard({ ticker, assetType }: AssetStatsProps) {
       const res = await fetch(`/api/stock/${encodeURIComponent(ticker)}/quote`);
       return res.json();
     },
-    staleTime: 30 * 1000,
+    staleTime: 60 * 1000,
     refetchInterval: 60 * 1000,
     enabled: !!ticker,
   });

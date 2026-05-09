@@ -65,7 +65,6 @@ interface ManagerState {
 }
 
 declare global {
-  // eslint-disable-next-line no-var
   var __wsManagerState: ManagerState | undefined;
 }
 
@@ -189,8 +188,6 @@ function connect(state: ManagerState): void {
   state.ws = ws;
 
   ws.on('open', () => {
-    console.log('[WsManager] Connected to TwelveData WebSocket');
-
     // Subscribe to all currently-wanted symbols
     const wanted = computeWantedSymbols(state);
     if (wanted.size > 0) {
@@ -246,7 +243,6 @@ function connect(state: ManagerState): void {
 
     // Reconnect if there are still listeners
     if (!state.destroyed && state.listeners.size > 0) {
-      console.log(`[WsManager] Reconnecting in ${RECONNECT_DELAY_MS}ms…`);
       state.reconnectTimer = setTimeout(() => connect(state), RECONNECT_DELAY_MS);
     }
   });
