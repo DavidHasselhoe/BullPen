@@ -20,6 +20,14 @@ async function handler(
       return addSecurityHeaders(NextResponse.json({ success: true, stats: cached }));
     }
 
+    // Snapshot route seeds snap-stats:<sym> — reuse it to avoid a duplicate 50-credit fetch
+    // when /snapshot and /statistics fire simultaneously on a cold stock page visit.
+    const snapCached = await getCached<Awaited<ReturnType<typeof getStatistics>>>(`snap-stats:${symbol}`);
+    if (snapCached) {
+      void setCached(cacheKey, symbol, 'statistics', snapCached, STATS_TTL_SECONDS);
+      return addSecurityHeaders(NextResponse.json({ success: true, stats: snapCached }));
+    }
+
     const stats = await getStatistics(symbol);
     await setCached(cacheKey, symbol, 'statistics', stats, STATS_TTL_SECONDS);
     return addSecurityHeaders(NextResponse.json({ success: true, stats }));

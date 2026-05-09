@@ -11,6 +11,9 @@ import {
 import { withRateLimit, addSecurityHeaders, validateSearchQueryParam } from '@/lib/security/api-security';
 import { validateLimit } from '@/lib/security/input-validation';
 import { logger } from '@/lib/utils/logger';
+import { getCached, setCached } from '@/lib/cache/market-data-cache';
+
+const SEARCH_TTL_SECONDS = 60 * 60; // 1 hour
 
 // Instrument types we consider relevant
 const RELEVANT_TYPES = new Set([
@@ -51,6 +54,13 @@ async function handler(request: NextRequest) {
     }
 
     const query = queryValidation.sanitized.trim();
+    const searchCacheKey = `search:${query.toLowerCase()}`;
+
+    type SearchResult = { ticker: string; name: string; exchange: string; country: string; currency: string; instrument_type: string; has_data: boolean; cik: string; logo_url: null };
+    const cachedResults = await getCached<SearchResult[]>(searchCacheKey);
+    if (cachedResults) {
+      return addSecurityHeaders(NextResponse.json({ success: true, results: cachedResults.slice(0, limit) }));
+    }
 
     // Fetch extra matches: TwelveData returns many cross-listings per company; we collapse to one primary per ticker.
     const raw = await symbolSearch(query, Math.min(120, Math.max(limit * 4, 40)));
@@ -79,23 +89,23 @@ async function handler(request: NextRequest) {
       collapsed = filterNonUsWhenUsExists(collapsed);
     }
 
-    const capped = collapsed.slice(0, limit);
-
-    const results = capped.map((r) => ({
+    // Build up to 30 results for cache; caller gets `limit` items
+    const allResults = collapsed.slice(0, 30).map((r) => ({
       ticker:          r.symbol,
       name:            r.instrument_name,
       exchange:        r.exchange,
       country:         r.country,
       currency:        r.currency,
       instrument_type: r.instrument_type,
-      // Kept for backward-compat with consumers that check these fields
       has_data: true,
       cik: '',
       logo_url: null,
     }));
 
+    void setCached(searchCacheKey, query, 'search', allResults, SEARCH_TTL_SECONDS);
+
     return addSecurityHeaders(
-      NextResponse.json({ success: true, results })
+      NextResponse.json({ success: true, results: allResults.slice(0, limit) })
     );
   } catch (error) {
     logger.error('Symbol search error', error);

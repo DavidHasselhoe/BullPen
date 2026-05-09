@@ -3,6 +3,7 @@ import { createServerClient } from '@/lib/supabase/client';
 import { withRateLimit } from '@/lib/security/api-security';
 import { SCREENER_UNIVERSE } from '@/lib/market-data/screener-universe';
 import { logger } from '@/lib/utils/logger';
+import { getCached, setCached } from '@/lib/cache/market-data-cache';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,9 +38,8 @@ interface TwelveDataQuote {
 
 type BatchQuoteResponse = Record<string, TwelveDataQuote>;
 
-let cache: HeatmapResponse | null = null;
-let cacheTime = 0;
-const CACHE_TTL_MS = 5 * 60 * 1000;
+const HEATMAP_CACHE_KEY = 'heatmap:v1';
+const HEATMAP_CACHE_TTL_SECONDS = 5 * 60;
 
 async function fetchBatchQuotes(tickers: string[]): Promise<BatchQuoteResponse> {
   const apiKey = process.env.TWELVE_DATA_API_KEY;
@@ -61,8 +61,9 @@ async function fetchBatchQuotes(tickers: string[]): Promise<BatchQuoteResponse> 
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function heatmapHandler(_req: NextRequest): Promise<NextResponse> {
-  if (cache !== null && Date.now() - cacheTime < CACHE_TTL_MS) {
-    return NextResponse.json(cache);
+  const cachedHeatmap = await getCached<HeatmapResponse>(HEATMAP_CACHE_KEY);
+  if (cachedHeatmap) {
+    return NextResponse.json(cachedHeatmap);
   }
 
   try {
@@ -154,8 +155,7 @@ async function heatmapHandler(_req: NextRequest): Promise<NextResponse> {
       lastUpdated: new Date().toISOString(),
     };
 
-    cache = response;
-    cacheTime = Date.now();
+    void setCached(HEATMAP_CACHE_KEY, 'MARKET', 'heatmap', response, HEATMAP_CACHE_TTL_SECONDS);
 
     return NextResponse.json(response);
   } catch (err) {
