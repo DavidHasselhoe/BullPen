@@ -23,11 +23,10 @@ import { ThesisSection } from '@/components/social/ThesisSection';
 import { useStockSnapshot } from '@/hooks/use-stock-snapshot';
 import dynamic from 'next/dynamic';
 import type { Company } from '@/lib/types/database';
-import type { SignalValue } from '@/lib/finance/health-score';
 import { HOT_PICKS_QUERY_KEY } from '@/lib/discover/hot-picks-query';
 import { postStockVisit } from '@/lib/discover/post-stock-visit';
 import { StockSectionBoundary } from '@/components/stock/StockSectionBoundary';
-import { slugToSymbol, inferAssetType, hasFinancials } from '@/lib/assets/asset-type';
+import { slugToSymbol, inferAssetType } from '@/lib/assets/asset-type';
 
 const StockPricePanel = dynamic(
   () => import('@/components/stock/StockPricePanel').then((m) => ({ default: m.StockPricePanel })),
@@ -39,28 +38,8 @@ const StatisticsGrid = dynamic(
   { ssr: false }
 );
 
-const FinancialsSection = dynamic(
-  () => import('@/components/stock/FinancialsSection').then((m) => ({ default: m.FinancialsSection })),
-  { ssr: false }
-);
-
 const CompanyProfileCard = dynamic(
   () => import('@/components/stock/CompanyProfileCard').then((m) => ({ default: m.CompanyProfileCard })),
-  { ssr: false }
-);
-
-const InsiderTransactionsCard = dynamic(
-  () => import('@/components/stock/InsiderTransactionsCard').then((m) => ({ default: m.InsiderTransactionsCard })),
-  { ssr: false }
-);
-
-const HealthScoreCard = dynamic(
-  () => import('@/components/stock/HealthScoreCard').then((m) => ({ default: m.HealthScoreCard })),
-  { ssr: false }
-);
-
-const SankeyCard = dynamic(
-  () => import('@/components/stock/SankeyCard').then((m) => ({ default: m.SankeyCard })),
   { ssr: false }
 );
 
@@ -75,7 +54,7 @@ interface CompanyResponse {
   error?: string;
 }
 
-export default function StockDetailPage() {
+export default function EtfDetailPage() {
   const params = useParams();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -83,13 +62,12 @@ export default function StockDetailPage() {
   const rawTicker = (params.ticker as string) ?? '';
   const ticker = rawTicker.toUpperCase();
 
-  // Redirect crypto/commodity slugs to the universal asset page,
-  // and redirect ETFs (detected from snapshot) to the canonical /etf/ route.
+  // Redirect crypto/commodity/forex/stocks back to the correct route
   useEffect(() => {
     if (!rawTicker) return;
     const sym = slugToSymbol(ticker);
     const type = inferAssetType(sym);
-    if (type !== 'stock' && type !== 'etf' && type !== 'unknown') {
+    if (type === 'crypto' || type === 'commodity' || type === 'forex') {
       router.replace(`/asset/${ticker}`);
     }
   }, [rawTicker, ticker, router]);
@@ -98,31 +76,22 @@ export default function StockDetailPage() {
   const { add: addRecentlyViewed } = useRecentlyViewed();
   const { open: openAIPanel, setAIContext } = useAIPanel();
 
-  // Signals flow: HealthScoreCard → signals state → StatisticsGrid (no extra fetch needed)
-  const [metricSignals, setMetricSignals] = useState<Record<string, SignalValue> | undefined>(undefined);
-
-  // Batch-fetch quote + statistics + earnings in one TwelveData /batch call,
-  // then seed each component's individual query cache so they skip extra requests.
   const snapshot = useStockSnapshot(ticker);
 
-  // Derive asset type once the snapshot resolves (quote response includes instrument_type).
-  // While loading, treat type as 'unknown' so ETF-irrelevant sections stay unmounted.
-  // After loading, fall back to 'stock' if instrumentType is absent — /stock/[ticker]
-  // routing has already screened out crypto/commodity, so this is a safe assumption.
+  // If the snapshot reveals this is actually a stock (not an ETF), redirect to /stock/
   const snapshotAssetType = snapshot.data?.instrumentType
     ? inferAssetType(ticker, snapshot.data.instrumentType)
     : snapshot.isLoading
       ? 'unknown'
-      : 'stock';
-  const isEtf = snapshotAssetType === 'etf';
-  const showFundamentals = !snapshot.isLoading && !isEtf && hasFinancials(snapshotAssetType);
+      : 'etf'; // default to etf on this route
 
-  // Once the snapshot confirms an ETF, hand off to the dedicated /etf/ route.
   useEffect(() => {
-    if (isEtf) router.replace(`/etf/${ticker}`);
-  }, [isEtf, ticker, router]);
+    if (!snapshot.isLoading && snapshotAssetType === 'stock') {
+      router.replace(`/stock/${ticker}`);
+    }
+  }, [snapshotAssetType, snapshot.isLoading, ticker, router]);
 
-  // Hot Picks: record visit + invalidate list so Discover updates when you navigate back
+  // Hot Picks: record visit + invalidate list
   useEffect(() => {
     if (!ticker) return;
     let cancelled = false;
@@ -132,18 +101,11 @@ export default function StockDetailPage() {
         if (!cancelled && res.ok) {
           await queryClient.invalidateQueries({ queryKey: HOT_PICKS_QUERY_KEY });
         }
-      } catch {
-        /* ignore */
-      }
+      } catch { /* ignore */ }
     })();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [ticker, queryClient]);
 
-  // Fire-and-forget: check TwelveData last_changes (1 credit, throttled 1×/hr)
-  // to expire any cached fundamental data that has actually been updated.
-  // Runs after mount so it never blocks the initial render.
   useEffect(() => {
     if (!ticker) return;
     fetch(`/api/stock/${ticker}/freshness`).catch(() => {});
@@ -160,8 +122,6 @@ export default function StockDetailPage() {
     staleTime: 60 * 1000,
   });
 
-  // Fetch TwelveData profile for the short/common company name.
-  // Key matches CompanyProfileCard so both share the same cache entry.
   const { data: profileData, isLoading: profileLoading } = useQuery<{ success: boolean; profile?: { name: string } }>({
     queryKey: ['company-profile', ticker, i18n.language],
     queryFn: async () => {
@@ -173,10 +133,8 @@ export default function StockDetailPage() {
     gcTime: 24 * 60 * 60 * 1000,
   });
 
-  // Prefer TwelveData short name over the full legal name in Supabase
   const displayName = profileData?.profile?.name ?? company?.name ?? ticker;
 
-  // Scroll to hash anchor (e.g. #earnings or #news from AI assistant links)
   useEffect(() => {
     const hash = typeof window !== 'undefined' ? window.location.hash.slice(1) : '';
     if (!hash) return;
@@ -186,7 +144,6 @@ export default function StockDetailPage() {
     return () => clearTimeout(t);
   }, [ticker]);
 
-  // Set AI context + recently viewed when company loads
   useEffect(() => {
     if (!ticker) return;
     setAIContext({ tickers: [ticker], label: displayName });
@@ -199,7 +156,6 @@ export default function StockDetailPage() {
     }
   }, [company?.ticker, displayName, company?.logo_url, addRecentlyViewed]);
 
-  // All three data sources have settled and none knows this ticker → show 404
   const isNotFound =
     !companyLoading && !profileLoading && !snapshot.isLoading &&
     company === null &&
@@ -228,7 +184,7 @@ export default function StockDetailPage() {
               &ldquo;{ticker}&rdquo; not found
             </h1>
             <p className="text-sm text-muted-foreground max-w-sm mt-1">
-              We couldn&apos;t find a stock with that symbol. Double-check the ticker or search for a company name.
+              We couldn&apos;t find an ETF with that symbol.
             </p>
             <Button className="mt-6" onClick={() => router.push('/')}>
               Back to Dashboard
@@ -243,7 +199,6 @@ export default function StockDetailPage() {
     <div className={`min-h-screen ${hasAnimatedBackground ? '' : 'bg-background'}`}>
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
 
-        {/* Back button */}
         <div className="mb-6">
           <button
             onClick={() => router.back()}
@@ -254,10 +209,8 @@ export default function StockDetailPage() {
           </button>
         </div>
 
-        {/* Experience level onboarding — shown once when level has never been set */}
         <ExperienceOnboardingBanner />
 
-        {/* Company header loading skeleton — shown until both DB and TwelveData profile resolve */}
         {companyLoading && !company && !profileData && (
           <Card className="mb-8">
             <CardHeader>
@@ -272,7 +225,6 @@ export default function StockDetailPage() {
           </Card>
         )}
 
-        {/* Company header — renders from DB record when available, falls back to TwelveData profile */}
         {(company || (!companyLoading && ticker)) && (
           <AnimatedContent reverse={true}>
             <Card className="mb-8">
@@ -292,11 +244,11 @@ export default function StockDetailPage() {
                           <Badge variant="outline" className="font-mono text-sm">
                             {ticker}
                           </Badge>
+                          <Badge variant="secondary" className="text-xs font-medium">
+                            ETF
+                          </Badge>
                           {company?.sector && (
-                            <span className="text-sm text-muted-foreground">
-                              {company.sector}
-                              {company.industry && ` • ${company.industry}`}
-                            </span>
+                            <span className="text-sm text-muted-foreground">{company.sector}</span>
                           )}
                         </div>
                         <CompetitorPills ticker={ticker} />
@@ -323,68 +275,37 @@ export default function StockDetailPage() {
           </AnimatedContent>
         )}
 
-        {/* Price panel — needs only ticker, not DB record */}
+        {/* Price chart */}
         <AnimatedContent reverse={true} delay={0.05}>
           <StockPricePanel ticker={ticker} />
         </AnimatedContent>
 
-        {/* Company Profile (TwelveData: description, executives, facts) */}
+        {/* Company Profile */}
         <StockSectionBoundary>
           <AnimatedContent reverse={true} delay={0.08}>
             <CompanyProfileCard ticker={ticker} />
           </AnimatedContent>
         </StockSectionBoundary>
 
-        {/* Financial Health Score — only for stocks with financials */}
-        {showFundamentals && (
-          <StockSectionBoundary>
-            <AnimatedContent reverse={true} delay={0.12}>
-              <HealthScoreCard ticker={ticker} onSignalsReady={setMetricSignals} />
-            </AnimatedContent>
-          </StockSectionBoundary>
-        )}
-
-        {/* Statistics (TwelveData) — available for both stocks and ETFs */}
+        {/* Key statistics — market cap, P/E, 52-week range, etc. */}
         <StockSectionBoundary>
-          <AnimatedContent reverse={true} delay={0.15}>
-            <StatisticsGrid ticker={ticker} signals={metricSignals} />
+          <AnimatedContent reverse={true} delay={0.12}>
+            <StatisticsGrid ticker={ticker} />
           </AnimatedContent>
         </StockSectionBoundary>
 
-        {/* Financials, Sankey, Insiders, Earnings — stocks only */}
-        {showFundamentals && (
-          <>
-            <StockSectionBoundary>
-              <AnimatedContent reverse={true} delay={0.2}>
-                <FinancialsSection ticker={ticker} />
-              </AnimatedContent>
-            </StockSectionBoundary>
-
-            <StockSectionBoundary>
-              <AnimatedContent reverse={true} delay={0.22}>
-                <SankeyCard ticker={ticker} />
-              </AnimatedContent>
-            </StockSectionBoundary>
-
-            <StockSectionBoundary>
-              <AnimatedContent reverse={true} delay={0.24}>
-                <InsiderTransactionsCard ticker={ticker} />
-              </AnimatedContent>
-            </StockSectionBoundary>
-
-            <div id="earnings" className="mb-8 scroll-mt-6">
-              <StockSectionBoundary>
-                <AnimatedContent reverse={true} delay={0.15}>
-                  <EarningsCalendar ticker={ticker} />
-                </AnimatedContent>
-              </StockSectionBoundary>
-            </div>
-          </>
-        )}
+        {/* Earnings — included for ETFs (some report distribution/NAV earnings) */}
+        <div id="earnings" className="mb-8 scroll-mt-6">
+          <StockSectionBoundary>
+            <AnimatedContent reverse={true} delay={0.15}>
+              <EarningsCalendar ticker={ticker} />
+            </AnimatedContent>
+          </StockSectionBoundary>
+        </div>
 
         {/* Community theses */}
         <StockSectionBoundary>
-          <AnimatedContent reverse={true} delay={0.3}>
+          <AnimatedContent reverse={true} delay={0.2}>
             <Card>
               <CardContent className="pt-6">
                 <ThesisSection symbol={ticker} />

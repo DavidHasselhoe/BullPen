@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { slugToAssetPath } from '@/lib/assets/asset-type';
 import {
   Command,
   CommandEmpty,
@@ -22,6 +23,7 @@ interface SearchResult {
   cik: string;
   has_data: boolean;
   logo_url?: string | null;
+  instrument_type?: string;
 }
 
 interface SearchResponse {
@@ -144,12 +146,11 @@ export function StockSearch() {
       setOpen(false);
       setSearchQuery('');
 
+      const path = slugToAssetPath(result.ticker, result.instrument_type);
       if (result.has_data) {
-        // Navigate directly if data exists
-        router.push(`/stock/${result.ticker}`);
+        router.push(path);
       } else {
-        // Navigate immediately and trigger ingestion in background
-        router.push(`/stock/${result.ticker}`);
+        router.push(path);
         
         // Trigger lazy ingestion asynchronously (fire and forget)
         // The stock page will show progressive loading states

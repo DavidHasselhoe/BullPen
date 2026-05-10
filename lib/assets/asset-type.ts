@@ -14,16 +14,17 @@ export function symbolToSlug(symbol: string): string {
 }
 
 // ─── Asset-aware navigation helper ───────────────────────────────────────────
-// Stocks stay at /stock/AAPL to avoid breaking existing links.
-// Crypto/commodity go to /asset/BTC-USD.
+// Stocks → /stock/AAPL, ETFs → /etf/SPY, crypto/commodity → /asset/BTC-USD.
+// instrumentType is the TwelveData instrument_type string; when supplied the
+// path is exact. Without it the heuristic returns 'stock' for ambiguous tickers
+// (e.g. SPY looks like a stock symbol), so the stock page redirects at runtime.
 
-export function slugToAssetPath(symbolOrSlug: string): string {
+export function slugToAssetPath(symbolOrSlug: string, instrumentType?: string): string {
   const slug = symbolToSlug(symbolOrSlug);
   const sym = slugToSymbol(slug);
-  const type = inferAssetType(sym);
-  if (type === 'stock' || type === 'etf' || type === 'unknown') {
-    return `/stock/${sym}`;
-  }
+  const type = inferAssetType(sym, instrumentType);
+  if (type === 'etf') return `/etf/${sym}`;
+  if (type === 'stock' || type === 'unknown') return `/stock/${sym}`;
   return `/asset/${slug}`;
 }
 
