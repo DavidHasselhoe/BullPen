@@ -38,7 +38,7 @@ export function RecentlyViewedInline() {
           return (
             <Link
               key={item.ticker}
-              href={slugToAssetPath(item.ticker)}
+              href={slugToAssetPath(item.ticker, item.instrument_type)}
               onMouseEnter={() => prefetchSnapshot(item.ticker)}
               className="flex items-center gap-1.5 rounded-full border border-border/50 bg-muted/20 px-2.5 py-1 text-xs font-semibold text-foreground/70 transition-all hover:border-border hover:bg-accent/50 hover:text-foreground"
             >

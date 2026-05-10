@@ -9,6 +9,7 @@ export interface RecentlyViewedCompany {
   ticker: string;
   name: string;
   logo_url?: string | null;
+  instrument_type?: string;
   viewedAt: number;
 }
 
@@ -40,8 +41,8 @@ export function useRecentlyViewed() {
     setItems(loadFromStorage());
   }, []);
 
-  const add = useCallback((ticker: string, name: string, logo_url?: string | null) => {
-    const normalized = { ticker: ticker.toUpperCase(), name: name || ticker, logo_url: logo_url ?? null, viewedAt: Date.now() };
+  const add = useCallback((ticker: string, name: string, logo_url?: string | null, instrument_type?: string) => {
+    const normalized = { ticker: ticker.toUpperCase(), name: name || ticker, logo_url: logo_url ?? null, instrument_type, viewedAt: Date.now() };
     setItems((prev) => {
       const filtered = prev.filter((p) => p.ticker !== normalized.ticker);
       const next = [normalized, ...filtered].slice(0, MAX_ITEMS);

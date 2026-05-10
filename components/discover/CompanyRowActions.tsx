@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import { ExternalLink, Scale, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { slugToAssetPath } from '@/lib/assets/asset-type';
 
 interface CompanyRowActionsProps {
   ticker: string;
@@ -33,7 +34,7 @@ export function CompanyRowActions({ ticker, name, className }: CompanyRowActions
       onClick={(e) => e.stopPropagation()}
     >
       <Link
-        href={`/stock/${ticker}`}
+        href={slugToAssetPath(ticker)}
         className="rounded p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
         title="View company"
       >

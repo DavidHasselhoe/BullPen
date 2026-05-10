@@ -16,6 +16,7 @@ import { CompanyLogo } from '@/components/company/CompanyLogo';
 import type { ScreenerRow } from '@/app/api/screener/route';
 import type { LivePriceMap } from '@/hooks/use-live-prices';
 import { cn } from '@/lib/utils';
+import { slugToAssetPath } from '@/lib/assets/asset-type';
 
 type SortKey =
   | 'ticker'
@@ -174,7 +175,7 @@ export function ScreenerResults({ data, livePrices }: ScreenerResultsProps) {
                 {/* Company */}
                 <TableCell className="sticky left-0 z-10 bg-background">
                   <Link
-                    href={`/stock/${row.ticker}`}
+                    href={slugToAssetPath(row.ticker)}
                     className="flex items-center gap-2.5 group"
                   >
                     <CompanyLogo

@@ -6,6 +6,7 @@ import { CompanyRowActions } from '@/components/discover/CompanyRowActions';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import type { RecentFiling } from '@/hooks/use-discover';
+import { slugToAssetPath } from '@/lib/assets/asset-type';
 
 interface RecentFilingsListProps {
   filings: RecentFiling[] | undefined;
@@ -43,7 +44,7 @@ export function RecentFilingsList({ filings, isLoading }: RecentFilingsListProps
   return (
     <div className="space-y-0">
       {filings.map((item, index) => {
-        const stockUrl = `/stock/${item.company.ticker}`;
+        const stockUrl = slugToAssetPath(item.company.ticker);
 
         return (
           <div key={item.filing.id}>

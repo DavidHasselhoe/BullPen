@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { CompanyRowActions } from '@/components/discover/CompanyRowActions';
 import { cn } from '@/lib/utils';
+import { slugToAssetPath } from '@/lib/assets/asset-type';
 import type { MarketMover } from '@/lib/twelvedata/twelvedata-client';
 import { useAuth } from '@/hooks/use-auth';
 
@@ -142,7 +143,7 @@ function MoverItem({
 
   return (
     <div className="group grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-lg p-2.5 -mx-2 transition-all duration-200 hover:bg-accent/50 hover:shadow-sm border border-transparent hover:border-border/50">
-      <Link href={`/stock/${mover.symbol}`} className="contents">
+      <Link href={slugToAssetPath(mover.symbol)} className="contents">
         <div className="flex items-center gap-2 shrink-0">
           <CompanyLogo
             name={displayName}

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { cn } from '@/lib/utils';
+import { slugToAssetPath } from '@/lib/assets/asset-type';
 
 interface Holding {
   symbol: string;
@@ -26,7 +27,7 @@ export function PublicHoldingsList({ holdings, className }: PublicHoldingsListPr
       {holdings.map((h) => (
         <Link
           key={h.symbol}
-          href={`/stock/${h.symbol}`}
+          href={slugToAssetPath(h.symbol)}
           className={cn(
             'flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2',
             'hover:border-primary/50 hover:bg-accent/60 hover:shadow-sm transition-all duration-150'

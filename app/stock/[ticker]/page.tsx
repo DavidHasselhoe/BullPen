@@ -195,9 +195,10 @@ export default function StockDetailPage() {
 
   useEffect(() => {
     if (company?.ticker && displayName) {
-      addRecentlyViewed(company.ticker, displayName, company.logo_url);
+      const instrType = snapshotAssetType !== 'unknown' ? snapshotAssetType : undefined;
+      addRecentlyViewed(company.ticker, displayName, company.logo_url, instrType);
     }
-  }, [company?.ticker, displayName, company?.logo_url, addRecentlyViewed]);
+  }, [company?.ticker, displayName, company?.logo_url, snapshotAssetType, addRecentlyViewed]);
 
   // All three data sources have settled and none knows this ticker → show 404
   const isNotFound =

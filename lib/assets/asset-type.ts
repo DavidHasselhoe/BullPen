@@ -1,5 +1,56 @@
 export type AssetType = 'stock' | 'crypto' | 'commodity' | 'forex' | 'etf' | 'unknown';
 
+// Well-known ETF tickers — used as a heuristic fallback when instrumentType is absent.
+// Covers the vast majority of ETFs users will encounter in watchlists / trending / search.
+const KNOWN_ETF_TICKERS = new Set([
+  // Broad market
+  'SPY','IVV','VOO','VTI','ITOT','SCHB','SPTM','ESGU',
+  // Nasdaq / growth
+  'QQQ','QQQM','TQQQ','SQQQ','VUG','IWF','SCHG','SPYG',
+  // Small / mid cap
+  'IWM','IWO','IWN','IJR','IJH','MDY','VBR','VBK',
+  // International
+  'VEA','IEFA','EFA','SPDW','VWO','EEM','IEMG','GWL',
+  'EWG','EWU','EWA','EWC','EWH','EWS','EWT','EWY','EWI','EWP','EWQ','EWJ','EWZ','EWW','EWX',
+  'MCHI','INDA','FXI','ASHR','EWT',
+  // Bonds
+  'AGG','BND','TLT','IEF','SHY','GOVT','LQD','HYG','JNK','BIL','VCIT','VCSH','BNDX','SGOV',
+  'VGLT','VGIT','VGSH','SCHZ','MUB','TIP','VTIP','EMB','SPAB',
+  // Commodities / Gold
+  'GLD','IAU','GLDM','SLV','PDBC','GSG','DJP','COMB',
+  'GDX','GDXJ','USO','UNG','DBA','MOO',
+  // Real estate
+  'VNQ','IYR','XLRE','SCHH','ICF','REM','MORT',
+  // Sector ETFs (SPDR)
+  'XLF','XLK','XLE','XLV','XLU','XLI','XLB','XLP','XLRE','XLY','XLC','XLY',
+  // Sector (iShares / Vanguard / Invesco)
+  'VFH','VGT','VDE','VHT','VPU','VIS','VAW','VDC','VCR','VOX',
+  'IBB','XBI','ARKG','IHI','SOXX','SMH',
+  'KRE','KBE','KIE','IAI',
+  'ITB','XHB','JETS','AWAY',
+  'ITA','PPA','DFEN',
+  // Factor / smart beta
+  'QUAL','MTUM','USMV','SIZE','VLUE','VIG','DGRO','DVY','HDV','SCHD','SDY','SPHD',
+  // ARK Innovation
+  'ARKK','ARKG','ARKQ','ARKF','ARKW','ARKX','PRNT','IZRL',
+  // Leveraged / inverse
+  'SPXL','SPXS','UPRO','SPXU','SSO','SDS','TQQQ','SQQQ','UVXY','SVXY','VXX',
+  'FAS','FAZ','TNA','TZA','LABU','LABD',
+  // Dividend / income
+  'JEPI','JEPQ','SVOL','QYLD','XYLD','RYLD',
+  // Thematic
+  'BOTZ','AIQ','ROBO','IRBO','WCLD','CLOU','SKYY','BUG','HACK',
+  'ICLN','TAN','QCLN','FAN','PBW','ACES',
+  'LIT','BATT','DRIV','KARS',
+  // Fixed income alternative
+  'NEAR','JPST','MINT','ICSH',
+  // Dow Jones
+  'DIA',
+  // Others commonly found on platforms
+  'ACWI','ACWX','VT','VSS',
+]);
+
+
 // ─── Symbol ↔ Slug conversion ─────────────────────────────────────────────────
 // TwelveData canonical symbols contain '/' for pairs (BTC/USD, XAU/USD).
 // Next.js route segments can't contain '/', so we use a hyphen slug in URLs.
@@ -51,8 +102,9 @@ export function inferAssetType(symbol: string, instrumentType?: string): AssetTy
     ) return 'stock';
   }
 
-  // Heuristic from symbol format when instrumentType is unavailable
+  // Static registry of well-known ETF tickers (heuristic when instrumentType is absent)
   const sym = symbol.toUpperCase();
+  if (KNOWN_ETF_TICKERS.has(sym)) return 'etf';
 
   // Precious-metal spot prices: XAU/USD, XAG/USD, XPT/USD, XPD/USD
   if (/^X[A-Z]{2}\/USD$/.test(sym)) return 'commodity';

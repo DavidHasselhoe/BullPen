@@ -9,6 +9,7 @@ import { useHoldings } from '@/hooks/use-holdings';
 import { useUserSettings } from '@/hooks/use-user-settings';
 import { useAuth } from '@/hooks/use-auth';
 import type { EarningsCalendarItem, EarningsCalendar } from '@/lib/twelvedata/twelvedata-client';
+import { slugToAssetPath } from '@/lib/assets/asset-type';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -125,7 +126,7 @@ function DayColumn({
               return (
                 <Link
                   key={`${row.symbol}-${i}`}
-                  href={`/stock/${row.symbol}`}
+                  href={slugToAssetPath(row.symbol)}
                   className="group flex items-center justify-between gap-1 rounded-md bg-muted/40 px-2.5 py-[7px] hover:bg-accent/60 transition-colors"
                 >
                   <span className="text-[11px] font-bold text-foreground group-hover:text-primary transition-colors truncate leading-none">

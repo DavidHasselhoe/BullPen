@@ -152,7 +152,7 @@ export default function EtfDetailPage() {
 
   useEffect(() => {
     if (company?.ticker && displayName) {
-      addRecentlyViewed(company.ticker, displayName, company.logo_url);
+      addRecentlyViewed(company.ticker, displayName, company.logo_url, 'ETF');
     }
   }, [company?.ticker, displayName, company?.logo_url, addRecentlyViewed]);
 
