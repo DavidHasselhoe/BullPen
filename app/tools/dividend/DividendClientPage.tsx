@@ -121,13 +121,20 @@ export default function DividendClientPage() {
       setResult({ success: false, error: 'Select a stock from the search' });
       return;
     }
-    const sharesOrAmount =
-      mode === 'amount' ? parseFormattedAmount(amountInput) : parseFloat(sharesInput) || 0;
+    const rawAmount = mode === 'amount' ? parseFormattedAmount(amountInput) : parseFloat(sharesInput) || 0;
 
-    if (!sharesOrAmount || sharesOrAmount <= 0) {
+    if (!rawAmount || rawAmount <= 0) {
       setResult({ success: false, error: `Enter a valid ${mode === 'amount' ? 'investment amount' : 'number of shares'}` });
       return;
     }
+
+    // Convert investment amount from user's currency to USD so the API can
+    // divide by the USD stock price to get the correct share count.
+    // Shares mode is currency-agnostic — no conversion needed.
+    const sharesOrAmount =
+      mode === 'amount' && userCurrency !== 'USD'
+        ? convertCurrency(rawAmount, userCurrency, 'USD', rates)
+        : rawAmount;
 
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(selectedStock));
