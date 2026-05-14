@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -22,6 +22,14 @@ import {
 import { TickerSelector, type SearchResult } from '@/components/tools/buy-here/TickerSelector';
 import { AnimatedCounter } from '@/components/tools/buy-here/AnimatedCounter';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/hooks/use-auth';
+import { useExchangeRates } from '@/hooks/use-exchange-rates';
+import {
+  convertCurrency,
+  getCurrencySymbol,
+  type CurrencyCode,
+  type ExchangeRates,
+} from '@/lib/currency/currency-conversion';
 
 const STORAGE_KEY = 'dividend-last-ticker';
 const YEAR_PRESETS = [1, 5, 10, 20, 30];
@@ -49,20 +57,24 @@ interface DividendResult {
   finalPortfolioValue?: number;
 }
 
-function formatCurrency(value: number): string {
-  if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(2)}M`;
-  if (value >= 1_000) return `$${(value / 1_000).toFixed(1)}K`;
-  return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+function makeFormatCurrency(symbol: string) {
+  return function formatCurrency(value: number): string {
+    if (value >= 1_000_000) return `${symbol}${(value / 1_000_000).toFixed(2)}M`;
+    if (value >= 1_000) return `${symbol}${(value / 1_000).toFixed(1)}K`;
+    return `${symbol}${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
 }
 
 function formatAmountInput(value: string): string {
   const num = value.replace(/\D/g, '');
   if (!num) return '';
-  return parseInt(num, 10).toLocaleString();
+  // Always use en-US locale (commas) so parseFormattedAmount can reliably strip them
+  return parseInt(num, 10).toLocaleString('en-US');
 }
 
 function parseFormattedAmount(value: string): number {
-  return parseFloat(value.replace(/,/g, '')) || 0;
+  // Strip all non-numeric characters (handles commas, spaces, and other locale separators)
+  return parseFloat(value.replace(/[^0-9.]/g, '')) || 0;
 }
 
 function loadStoredTicker(): SearchResult | null {
@@ -79,6 +91,19 @@ function loadStoredTicker(): SearchResult | null {
 export default function DividendClientPage() {
   const router = useRouter();
   const { hasAnimatedBackground } = useBackground();
+  const { user } = useAuth();
+
+  const userCurrency = useMemo((): CurrencyCode => {
+    const settings = user?.settings as Record<string, unknown> | undefined;
+    const c = settings?.default_currency as string | undefined;
+    if (!c || c === 'exchange') return 'USD';
+    return c as CurrencyCode;
+  }, [user?.settings]);
+
+  const exchangeRates = useExchangeRates(userCurrency);
+  const rates = exchangeRates.data ?? null;
+  const currencySymbol = getCurrencySymbol(userCurrency);
+  const formatCurrency = makeFormatCurrency(currencySymbol);
 
   const [selectedStock, setSelectedStock] = useState<SearchResult | null>(() =>
     typeof window !== 'undefined' ? loadStoredTicker() : null
@@ -215,7 +240,7 @@ export default function DividendClientPage() {
                     transition={{ duration: 0.15 }}
                     className="relative max-w-xs"
                   >
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">{currencySymbol}</span>
                     <input
                       type="text"
                       inputMode="numeric"
@@ -364,7 +389,14 @@ export default function DividendClientPage() {
                   </div>
                 </div>
               ) : result.years && result.years.length > 0 ? (
-                <ResultsView result={result} mode={mode} drip={drip} />
+                <ResultsView
+                  result={result}
+                  mode={mode}
+                  drip={drip}
+                  formatCurrency={formatCurrency}
+                  userCurrency={userCurrency}
+                  rates={rates}
+                />
               ) : null}
             </motion.div>
           )}
@@ -374,7 +406,16 @@ export default function DividendClientPage() {
   );
 }
 
-function ResultsView({ result, mode, drip }: { result: DividendResult; mode: 'shares' | 'amount'; drip: boolean }) {
+function ResultsView({
+  result, mode, drip, formatCurrency, userCurrency, rates,
+}: {
+  result: DividendResult;
+  mode: 'shares' | 'amount';
+  drip: boolean;
+  formatCurrency: (v: number) => string;
+  userCurrency: CurrencyCode;
+  rates: ExchangeRates | null;
+}) {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
   const tickColor = isDark ? '#a1a1aa' : '#71717a';
@@ -383,21 +424,42 @@ function ResultsView({ result, mode, drip }: { result: DividendResult; mode: 'sh
     dividendYield, currency, years: yearRows, breakEvenYear, totalIncome, finalPortfolioValue,
   } = result;
 
+  // Convert USD API values to user's display currency
+  const toDisplay = (usd: number) =>
+    userCurrency === 'USD' ? usd : convertCurrency(usd, 'USD', userCurrency, rates);
+
   const yr1 = yearRows![0];
   const noDividends = (annualDividendPerShare ?? 0) === 0;
 
   const summaryCards = [
-    { label: 'Year 1 income', value: yr1.annualIncome, sub: `${currency ?? 'USD'} · ${annualDividendPerShare?.toFixed(4) ?? '—'}/share/yr` },
-    { label: `Total over ${yearRows!.length} years`, value: totalIncome ?? 0, sub: drip ? 'With dividend reinvestment' : 'Without reinvestment' },
-    { label: 'Final portfolio value', value: finalPortfolioValue ?? 0, sub: `${yearRows![yearRows!.length - 1].shares.toFixed(2)} shares @ ${formatCurrency(currentPrice ?? 0)}` },
-    { label: 'Dividend yield', value: dividendYield ?? 0, isPercent: true, sub: `${ticker} · ${sharesStart?.toFixed(2) ?? '—'} shares to start` },
+    {
+      label: 'Year 1 income',
+      value: toDisplay(yr1.annualIncome),
+      sub: `${currency ?? 'USD'} · ${annualDividendPerShare?.toFixed(4) ?? '—'}/share/yr`,
+    },
+    {
+      label: `Total over ${yearRows!.length} years`,
+      value: toDisplay(totalIncome ?? 0),
+      sub: drip ? 'With dividend reinvestment' : 'Without reinvestment',
+    },
+    {
+      label: 'Final portfolio value',
+      value: toDisplay(finalPortfolioValue ?? 0),
+      sub: `${yearRows![yearRows!.length - 1].shares.toFixed(2)} shares @ ${formatCurrency(toDisplay(currentPrice ?? 0))}`,
+    },
+    {
+      label: 'Dividend yield',
+      value: dividendYield ?? 0,
+      isPercent: true,
+      sub: `${ticker} · ${sharesStart?.toFixed(2) ?? '—'} shares to start`,
+    },
   ];
 
   const chartData = yearRows!.map((row) => ({
     year: `Y${row.year}`,
-    annualIncome: parseFloat(row.annualIncome.toFixed(2)),
-    cumulativeIncome: parseFloat(row.cumulativeIncome.toFixed(2)),
-    portfolioValue: parseFloat(row.portfolioValue.toFixed(2)),
+    annualIncome: parseFloat(toDisplay(row.annualIncome).toFixed(2)),
+    cumulativeIncome: parseFloat(toDisplay(row.cumulativeIncome).toFixed(2)),
+    portfolioValue: parseFloat(toDisplay(row.portfolioValue).toFixed(2)),
   }));
 
   return (
