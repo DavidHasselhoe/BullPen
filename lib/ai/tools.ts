@@ -57,6 +57,34 @@ async function resolveCompanyId(ticker: string): Promise<{ companyId: string; na
   return { companyId: d.id, name: d.name };
 }
 
+/**
+ * Resolve a display name for any ticker, without requiring it to be ingested.
+ * Checks companies → company_index → falls back to the ticker symbol itself.
+ */
+async function resolveCompanyName(ticker: string): Promise<string> {
+  const sym = ticker.toUpperCase();
+  const db = supabase();
+
+  // Primary: full company record
+  const { data: company } = await db
+    .from('companies')
+    .select('name')
+    .eq('ticker', sym)
+    .maybeSingle();
+  if (company) return (company as { name: string }).name;
+
+  // Fallback: lightweight search index (populated by TwelveData searches)
+  const { data: indexed } = await db
+    .from('company_index')
+    .select('name')
+    .eq('ticker', sym)
+    .maybeSingle();
+  if (indexed) return (indexed as { name: string }).name;
+
+  // Last resort: use ticker as the name so the holding can still be created
+  return sym;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Tool: Get Company Financial Metrics
 // ─────────────────────────────────────────────────────────────────────────────
@@ -544,34 +572,36 @@ export const openCompanyNews = tool({
 export const addHolding = tool({
   description:
     'Add a stock to the user\'s holdings. Use when the user asks to add, track, or save a company to their portfolio. ' +
-    'Examples: "add 5 NVIDIA to my holdings", "add AAPL to my portfolio", "track 10 shares of Microsoft". ' +
-    'Requires ticker; quantity and average price are optional.',
+    'Examples: "add 5 NVIDIA to my holdings", "add AAPL to my portfolio", "track 10 shares of Microsoft at $150 purchased Jan 2025". ' +
+    'Requires ticker; quantity, avg_price, and date_purchased are optional.',
   inputSchema: jsonSchema<{
     ticker: string;
     quantity?: number;
     avg_price?: number;
+    date_purchased?: string;
   }>({
     type: 'object',
     properties: {
       ticker: { type: 'string', description: 'Stock ticker symbol, e.g. NVDA, AAPL' },
       quantity: { type: 'number', description: 'Number of shares (optional)' },
       avg_price: { type: 'number', description: 'Average cost per share in USD (optional)' },
+      date_purchased: { type: 'string', description: 'Purchase date in YYYY-MM-DD format (optional)' },
     },
     required: ['ticker'],
     additionalProperties: false,
   }),
-  execute: async ({ ticker, quantity, avg_price }) => {
-    const company = await resolveCompanyId(ticker);
-    if (!company) return { error: `Company "${ticker}" not found.` };
+  execute: async ({ ticker, quantity, avg_price, date_purchased }) => {
+    const companyName = await resolveCompanyName(ticker);
     return {
       ...clientAction({
         type: 'addHolding',
         ticker: ticker.toUpperCase(),
-        company_name: company.name,
+        company_name: companyName,
         quantity: quantity ?? null,
         avg_price: avg_price ?? null,
+        date_purchased: date_purchased ?? null,
       }),
-      added: company.name,
+      added: companyName,
     };
   },
 });

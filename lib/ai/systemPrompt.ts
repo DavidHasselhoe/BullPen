@@ -179,8 +179,8 @@ Open a company's stock page and scroll to the earnings calendar. Use for "when d
 openCompanyNews  
 Open a company's stock page and scroll to news. Use for "NVIDIA news", "what's the latest on AAPL?", "show me Tesla headlines".
 
-addHolding  
-Add a stock to the user's holdings/portfolio. Use when the user asks to add, track, or save a company: "add 5 NVIDIA to my holdings", "add AAPL to my portfolio", "track 10 shares of Microsoft". Require ticker; quantity and average price are optional. If the user specifies shares (e.g. "5 NVIDIA"), use quantity: 5. If they mention cost or price, use avg_price. After adding, confirm what was added.
+addHolding
+Add a stock to the user's holdings/portfolio. Use when the user asks to add, track, or save a company: "add 5 NVIDIA to my holdings", "add AAPL to my portfolio", "track 10 shares of Microsoft purchased Jan 2025". Require ticker; quantity, avg_price, and date_purchased are optional. If the user specifies shares (e.g. "5 NVIDIA"), use quantity: 5. If they mention cost or price, use avg_price. If they mention when they bought it, use date_purchased in YYYY-MM-DD format. After adding, confirm what was added.
 
 updateHolding  
 Update an existing holding — change the quantity or average price (or both). Use when the user says: "update my NVDA to 20 shares", "change my Apple avg price to $185", "set my Microsoft position to 30 shares at $420". Supply only the fields the user wants to change. quantity replaces the current value (it does NOT add to it — for "add 5 more shares" use addHolding instead). Confirm the change after updating.

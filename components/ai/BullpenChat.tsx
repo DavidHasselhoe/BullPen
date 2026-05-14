@@ -45,7 +45,7 @@ interface BullpenChatProps {
 
 type ClientAction =
   | { type: 'navigate'; path: string }
-  | { type: 'addHolding'; ticker: string; company_name: string; quantity?: number | null; avg_price?: number | null }
+  | { type: 'addHolding'; ticker: string; company_name: string; quantity?: number | null; avg_price?: number | null; date_purchased?: string | null }
   | { type: 'updateHolding'; ticker: string; quantity?: number | null; avg_price?: number | null }
   | { type: 'removeHolding'; ticker: string };
 
@@ -200,6 +200,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
               company_name: action.company_name,
               quantity: action.quantity ?? null,
               avg_price: action.avg_price ?? null,
+              date_purchased: action.date_purchased ?? null,
             });
           } catch {
             // Silently skip — user may not be logged in or holding already exists
