@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
 import {
   Command,
@@ -32,18 +32,6 @@ interface SearchResponse {
   error?: string;
 }
 
-interface LazyIngestionResponse {
-  success: boolean;
-  companyId?: string;
-  ticker?: string;
-  filingsIngested?: number;
-  error?: string;
-}
-
-/**
- * Stock Search Component with Autocomplete
- * Uses shadcn/ui Command for keyboard-first UX
- */
 export function StockSearch() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -52,7 +40,6 @@ export function StockSearch() {
 
   const debouncedQuery = useDebounce(searchQuery, 300);
 
-  // Search query
   const {
     data: searchResults,
     isLoading: isSearching,
@@ -69,68 +56,27 @@ export function StockSearch() {
         {},
         8000
       );
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || `Search failed: ${response.status}`);
       }
-      
+
       const data: SearchResponse = await response.json();
 
       if (data.success && data.results) {
         return data.results;
       }
-      
-      // If not successful, return empty array (handled by error state)
+
       if (!data.success) {
         throw new Error(data.error || 'Search failed');
       }
-      
+
       return [];
     },
     enabled: debouncedQuery.trim().length >= 2,
-    staleTime: 30 * 1000, // 30 seconds
-    retry: false, // Don't retry failed searches
-  });
-
-  // Lazy ingestion mutation (for background async ingestion)
-  const ingestionMutation = useMutation({
-    mutationFn: async (ticker: string): Promise<LazyIngestionResponse> => {
-      const response = await fetch('/api/ingest/lazy', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ticker }),
-      });
-
-      const data: LazyIngestionResponse = await response.json();
-
-      if (!data.success) {
-        // Handle rate limit with better error message
-        if (response.status === 429) {
-          const retryAfter = response.headers.get('Retry-After');
-          const resetTime = response.headers.get('X-RateLimit-Reset');
-          
-          let errorMessage = 'Rate limit exceeded. Please try again later.';
-          if (retryAfter) {
-            const seconds = parseInt(retryAfter, 10);
-            const minutes = Math.ceil(seconds / 60);
-            errorMessage = `Rate limit exceeded. Please try again in ${minutes} minute${minutes > 1 ? 's' : ''}.`;
-          } else if (resetTime) {
-            const resetDate = new Date(resetTime);
-            const now = new Date();
-            const minutesUntilReset = Math.ceil((resetDate.getTime() - now.getTime()) / 60000);
-            if (minutesUntilReset > 0) {
-              errorMessage = `Rate limit exceeded. Please try again in ${minutesUntilReset} minute${minutesUntilReset > 1 ? 's' : ''}.`;
-            }
-          }
-          throw new Error(errorMessage);
-        }
-        
-        throw new Error(data.error || 'Ingestion failed');
-      }
-
-      return data;
-    },
+    staleTime: 30 * 1000,
+    retry: false,
   });
 
   const prefetchSnapshot = useCallback((ticker: string) => {
@@ -142,30 +88,15 @@ export function StockSearch() {
   }, [queryClient]);
 
   const handleSelect = useCallback(
-    async (result: SearchResult) => {
+    (result: SearchResult) => {
       setOpen(false);
       setSearchQuery('');
-
       const path = slugToAssetPath(result.ticker, result.instrument_type);
-      if (result.has_data) {
-        router.push(path);
-      } else {
-        router.push(path);
-        
-        // Trigger lazy ingestion asynchronously (fire and forget)
-        // The stock page will show progressive loading states
-        ingestionMutation.mutate(result.ticker, {
-          onError: (error) => {
-            console.error('Background ingestion error:', error);
-            // Error will be handled on the stock detail page
-          },
-        });
-      }
+      router.push(path);
     },
-    [router, ingestionMutation]
+    [router]
   );
 
-  // Handle Enter key to select first result
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === 'Enter' && searchResults && searchResults.length > 0) {
@@ -193,7 +124,6 @@ export function StockSearch() {
             />
             <CommandList>
               {debouncedQuery.trim().length < 2 ? (
-                // Show nothing when query is too short - cleaner UI
                 <div className="py-8" />
               ) : (
                 <CommandEmpty>

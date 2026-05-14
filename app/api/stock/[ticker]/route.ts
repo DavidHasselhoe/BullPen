@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCompanyByTicker } from '@/lib/ingestion/database';
+import { createServerClient } from '@/lib/supabase/client';
 import { getStorageLogoUrl } from '@/lib/logos/logos-storage';
 import { withRateLimit, addSecurityHeaders, validateTickerParam } from '@/lib/security/api-security';
 import { logger } from '@/lib/utils/logger';
@@ -13,7 +13,6 @@ async function handler(
     const params = await context.params;
     const ticker = params.ticker;
 
-    // Validate ticker input
     const tickerValidation = validateTickerParam(ticker);
     if (!tickerValidation.valid) {
       return addSecurityHeaders(
@@ -24,9 +23,14 @@ async function handler(
       );
     }
 
-    const result = await getCompanyByTicker(tickerValidation.normalized!);
+    const supabase = createServerClient();
+    const { data, error } = await supabase
+      .from('companies')
+      .select('*')
+      .eq('ticker', tickerValidation.normalized!)
+      .single();
 
-    if (!result.success || !result.data) {
+    if (error || !data) {
       return addSecurityHeaders(
         NextResponse.json(
           { success: false, error: 'Company not found' },
@@ -35,16 +39,13 @@ async function handler(
       );
     }
 
-    const company = result.data as Company;
+    const company = data as Company;
     const enriched = {
       ...company,
       logo_url: company.logo_url || getStorageLogoUrl(company.ticker),
     };
     return addSecurityHeaders(
-      NextResponse.json({
-        success: true,
-        company: enriched,
-      })
+      NextResponse.json({ success: true, company: enriched })
     );
   } catch (error) {
     logger.error('Error fetching company', error);

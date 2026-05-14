@@ -64,14 +64,6 @@ export type TrendType =
 
 export type TrendDirection = 'positive' | 'negative' | 'neutral';
 
-export type CorporateEventType = 
-  | 'stock_split'
-  | 'stock_dividend'
-  | 'merger_acquisition'
-  | 'executive_change'
-  | 'delisting'
-  | 'material_agreement'
-  | 'other';
 
 // =====================================================
 // TABLE TYPES
@@ -173,40 +165,6 @@ export type UpdateUserHolding = Partial<Omit<UserHolding, 'id' | 'created_at' | 
   id?: string;
 };
 
-export interface Filing {
-  id: string;
-  company_id: string;
-  filing_type: FilingType;
-  accession_number: string;
-  filing_date: string;
-  accepted_date: string | null;
-  period_end_date: string | null;
-  period_type: PeriodType | null;
-  fiscal_year: number | null;
-  fiscal_quarter: number | null;
-  items: string[];
-  source_url: string;
-  document_url: string | null;
-  processing_status: ProcessingStatus;
-  processing_error: string | null;
-  metadata: Record<string, unknown>;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface FilingSection {
-  id: string;
-  filing_id: string;
-  section_type: SectionType;
-  section_name: string | null;
-  content: string;
-  content_length: number;
-  section_order: number | null;
-  metadata: Record<string, unknown>;
-  created_at: string;
-  updated_at: string;
-}
-
 export interface FinancialMetric {
   id: string;
   filing_id: string;
@@ -266,17 +224,8 @@ export interface Signal {
 // RELATION TYPES (WITH JOINS)
 // =====================================================
 
-export interface FilingWithCompany extends Filing {
-  company: Company;
-}
-
-export interface FinancialMetricWithFiling extends FinancialMetric {
-  filing: Filing;
-}
-
 export interface SignalWithDetails extends Signal {
   company: Company;
-  filing?: Filing | null;
 }
 
 export interface Trend {
@@ -294,25 +243,6 @@ export interface Trend {
   updated_at: string;
 }
 
-export interface CorporateEvent {
-  id: string;
-  company_id: string;
-  filing_id: string;
-  event_type: CorporateEventType;
-  event_date: string;
-  title: string;
-  description: string | null;
-  metadata: Record<string, unknown>;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface AIInsightWithContext extends AIInsight {
-  company: Company;
-  filing: Filing;
-  section?: FilingSection | null;
-}
-
 export interface CompanyIndex {
   id: string;
   ticker: string;
@@ -320,8 +250,6 @@ export interface CompanyIndex {
   cik: string;
   normalized_ticker: string;
   normalized_name: string;
-  has_data: boolean;
-  last_ingested_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -368,17 +296,6 @@ export type InsertCompany = Omit<Company, 'id' | 'created_at' | 'updated_at'> & 
   metadata?: Record<string, unknown>;
 };
 
-export type InsertFiling = Omit<Filing, 'id' | 'created_at' | 'updated_at'> & {
-  id?: string;
-  processing_status?: ProcessingStatus;
-  metadata?: Record<string, unknown>;
-};
-
-export type InsertFilingSection = Omit<FilingSection, 'id' | 'created_at' | 'updated_at'> & {
-  id?: string;
-  metadata?: Record<string, unknown>;
-};
-
 export type InsertFinancialMetric = Omit<FinancialMetric, 'id' | 'created_at' | 'updated_at'> & {
   id?: string;
   unit?: string;
@@ -401,20 +318,11 @@ export type InsertTrend = Omit<Trend, 'id' | 'created_at' | 'updated_at'> & {
   metadata?: Record<string, unknown>;
 };
 
-export type InsertCorporateEvent = Omit<CorporateEvent, 'id' | 'created_at' | 'updated_at'> & {
-  id?: string;
-  metadata?: Record<string, unknown>;
-};
-
 // =====================================================
 // UPDATE TYPES (ALL FIELDS OPTIONAL EXCEPT ID)
 // =====================================================
 
 export type UpdateCompany = Partial<Omit<Company, 'id' | 'created_at' | 'updated_at'>> & {
-  id: string;
-};
-
-export type UpdateFiling = Partial<Omit<Filing, 'id' | 'created_at' | 'updated_at'>> & {
   id: string;
 };
 

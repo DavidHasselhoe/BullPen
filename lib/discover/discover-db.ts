@@ -3,7 +3,7 @@
 
 import { createServerClient } from '../supabase/client';
 import { getStorageLogoUrl } from '../logos/logos-storage';
-import type { Trend, Signal, Filing, Company } from '../types/database';
+import type { Trend, Signal, Company } from '../types/database';
 
 function enrichCompanyLogo<T extends { ticker: string; logo_url?: string | null }>(company: T): T {
   return { ...company, logo_url: company.logo_url || getStorageLogoUrl(company.ticker) };
@@ -185,112 +185,6 @@ export async function getRecentFundamentalChanges(
 }
 
 /**
- * Gets recently analyzed filings
- * Returns completed filings with insight counts
- */
-export async function getRecentFilings(
-  limit: number = 10
-): Promise<DiscoverDBResult<Array<{
-  filing: Filing;
-  company: Company;
-  insightsCount: number;
-}>>> {
-  const supabase = createServerClient();
-
-  try {
-    // Add timeout wrapper for queries
-    const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> => {
-      return Promise.race([
-        promise,
-        new Promise<T>((_, reject) => 
-          setTimeout(() => reject(new Error(`Query timeout after ${ms}ms`)), ms)
-        ),
-      ]);
-    };
-
-    const { data: filings, error: filingsError } = await withTimeout(
-      supabase
-        .from('filings')
-        .select(`
-          *,
-          company:companies(id, name, ticker, logo_url)
-        `)
-        .eq('processing_status', 'completed')
-        .in('filing_type', ['10-K', '10-Q'])
-        .order('filing_date', { ascending: false })
-        .limit(limit),
-      10000 // 10 second timeout
-    );
-
-    if (filingsError) {
-      return { success: false, error: 'Database unavailable' };
-    }
-
-    if (!filings || filings.length === 0) {
-      return { success: true, data: [] };
-    }
-
-    // Cast to proper types
-    const filingsWithCompany = (filings || []) as Array<Filing & { company?: Company }>;
-
-    // Get insight counts for each filing (with timeout).
-    // Capped at 500 rows — used only for counting, not displaying full content.
-    const filingIds = filingsWithCompany.map((f) => f.id);
-    const { data: insightsData } = await withTimeout(
-      supabase
-        .from('ai_insights')
-        .select('filing_id')
-        .in('filing_id', filingIds)
-        .limit(500),
-      10000 // 10 second timeout
-    );
-
-    // Count insights per filing
-    const insights = (insightsData || []) as Array<{ filing_id: string }>;
-    const insightsCountMap = new Map<string, number>();
-    insights.forEach((insight) => {
-      const count = insightsCountMap.get(insight.filing_id) || 0;
-      insightsCountMap.set(insight.filing_id, count + 1);
-    });
-
-    const result = filingsWithCompany
-      .filter((f) => f.company)
-      .map((f) => {
-        const company = f.company!;
-        const enriched = enrichCompanyLogo(company);
-        return {
-          filing: {
-            id: f.id,
-            company_id: f.company_id,
-            accession_number: f.accession_number,
-            filing_type: f.filing_type,
-            filing_date: f.filing_date,
-            period_end_date: f.period_end_date,
-            fiscal_year: f.fiscal_year,
-            fiscal_quarter: f.fiscal_quarter,
-            source_url: f.source_url,
-            document_url: f.document_url,
-            processing_status: f.processing_status,
-            processing_error: f.processing_error,
-            metadata: f.metadata,
-            created_at: f.created_at,
-            updated_at: f.updated_at,
-          },
-          company: enriched,
-          insightsCount: insightsCountMap.get(f.id) || 0,
-        };
-      });
-
-    return { success: true, data: result };
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    };
-  }
-}
-
-/**
  * Gets companies to watch (ranked by composite score or trend strength)
  */
 export async function getCompaniesToWatch(
@@ -339,57 +233,15 @@ export async function getCompaniesToWatch(
     const companiesList = (companies || []) as Company[];
     const companyIds = companiesList.map((c) => c.id);
 
-    // Fetch filings (for composite scores) and trends in parallel — they are independent
-    const [filingsResult, trendsResult] = await Promise.all([
-      withTimeout(
-        supabase
-          .from('filings')
-          .select('id, company_id, filing_date, metadata')
-          .eq('processing_status', 'completed')
-          .in('company_id', companyIds)
-          .order('filing_date', { ascending: false })
-          .limit(100), // at most 1 per company × 100 companies
-        10000
-      ),
-      withTimeout(
-        supabase
-          .from('trends')
-          .select('company_id, trend_type, strength, direction')
-          .in('company_id', companyIds)
-          .order('strength', { ascending: false })
-          .limit(200),
-        10000
-      ),
-    ]);
-
-    const { data: filingsData } = filingsResult;
-    const { data: trendsData } = trendsResult;
-
-    // Extract composite scores from metadata for latest filing per company
-    const filings = (filingsData || []) as Array<{ id: string; company_id: string; filing_date: string; metadata: unknown }>;
-    const latestFilingIds = new Map<string, string>();
-    const scoreMap = new Map<string, { score: number; direction: 'bullish' | 'bearish' | 'neutral' }>();
-    
-    filings.forEach((filing) => {
-      if (!latestFilingIds.has(filing.company_id)) {
-        latestFilingIds.set(filing.company_id, filing.id);
-        
-        // Extract composite score from metadata
-        const metadata = filing.metadata as Record<string, unknown> | null;
-        if (metadata?.composite_score) {
-          const cs = metadata.composite_score as {
-            composite_score?: number;
-            direction?: 'bullish' | 'bearish' | 'neutral';
-          };
-          if (cs.composite_score !== undefined) {
-            scoreMap.set(filing.id, {
-              score: cs.composite_score,
-              direction: cs.direction || 'neutral',
-            });
-          }
-        }
-      }
-    });
+    const { data: trendsData } = await withTimeout(
+      supabase
+        .from('trends')
+        .select('company_id, trend_type, strength, direction')
+        .in('company_id', companyIds)
+        .order('strength', { ascending: false })
+        .limit(200),
+      10000
+    );
 
     const trends = (trendsData || []) as Trend[];
     const trendMap = new Map<
@@ -410,41 +262,23 @@ export async function getCompaniesToWatch(
     // Combine and rank companies (enrich logo from storage when DB has none)
     const ranked = companiesList.map((company) => {
       const enriched = enrichCompanyLogo(company);
-      const latestFilingId = latestFilingIds.get(company.id);
-      const composite = latestFilingId ? scoreMap.get(latestFilingId) : null;
       const trend = trendMap.get(company.id) || null;
 
-      // Generate supporting label
-      let supportingLabel: string | null = null;
-      if (trend) {
-        const trendLabel = trend.type
-          .split('_')
-          .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-          .join(' ');
-        supportingLabel = trendLabel;
-      } else if (composite) {
-        supportingLabel = `Composite score: ${composite.score.toFixed(1)}`;
-      }
+      const supportingLabel: string | null = trend
+        ? trend.type.split('_').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+        : null;
 
       return {
         company: enriched,
-        compositeScore: composite?.score || null,
-        compositeDirection: composite?.direction || null,
+        compositeScore: null as number | null,
+        compositeDirection: null as 'bullish' | 'bearish' | 'neutral' | null,
         strongestTrend: trend,
         supportingLabel,
       };
     });
 
-    // Sort by composite score (if available), then by trend strength
+    // Sort by trend strength
     ranked.sort((a, b) => {
-      // Prefer companies with composite scores
-      if (a.compositeScore !== null && b.compositeScore === null) return -1;
-      if (a.compositeScore === null && b.compositeScore !== null) return 1;
-      if (a.compositeScore !== null && b.compositeScore !== null) {
-        return b.compositeScore - a.compositeScore;
-      }
-
-      // Then by trend strength
       const aTrendStrength = a.strongestTrend?.strength || 0;
       const bTrendStrength = b.strongestTrend?.strength || 0;
       return bTrendStrength - aTrendStrength;
