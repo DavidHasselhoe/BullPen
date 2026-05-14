@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/client';
 import { withRateLimit } from '@/lib/security/api-security';
-import { SCREENER_UNIVERSE } from '@/lib/market-data/screener-universe';
+import { SP500_TICKERS } from '@/lib/market-data/sp500';
+import { SP500_SECTORS } from '@/lib/market-data/sp500-sectors';
 import { logger } from '@/lib/utils/logger';
 import { getCached, setCached } from '@/lib/cache/market-data-cache';
+import type { Session } from '@/app/api/market/heatmap/stream/route';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,6 +16,8 @@ export interface HeatmapStock {
   marketCap: number;
   change: number;
   price: number;
+  previousClose?: number;
+  isExtended?: boolean;
 }
 
 export interface HeatmapSector {
@@ -26,6 +30,7 @@ export interface HeatmapSector {
 export interface HeatmapResponse {
   success: boolean;
   sectors?: HeatmapSector[];
+  session?: Session;
   lastUpdated?: string;
   error?: string;
 }
@@ -33,25 +38,51 @@ export interface HeatmapResponse {
 interface TwelveDataQuote {
   close?: string;
   percent_change?: string;
+  previous_close?: string;
+  extended_price?: string;
+  extended_percent_change?: string;
+  is_market_open?: boolean;
+  name?: string;
   status?: string;
 }
 
 type BatchQuoteResponse = Record<string, TwelveDataQuote>;
 
-const HEATMAP_CACHE_KEY = 'heatmap:v1';
-const HEATMAP_CACHE_TTL_SECONDS = 5 * 60;
+const HEATMAP_CACHE_KEY = 'heatmap:v2';
+const HEATMAP_CACHE_TTL_SECONDS = 3 * 60;
 
-async function fetchBatchQuotes(tickers: string[]): Promise<BatchQuoteResponse> {
+function getCurrentSession(): Session {
+  const etStr = new Date().toLocaleTimeString('en-US', {
+    timeZone: 'America/New_York',
+    hour12: false,
+  });
+  const [h, m] = etStr.split(':').map(Number);
+  const etMins = h * 60 + m;
+  const day = new Date(
+    new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })
+  ).getDay();
+
+  if (day === 0 || day === 6) return 'closed';
+  if (etMins >= 240 && etMins < 570) return 'pre';
+  if (etMins >= 570 && etMins < 960) return 'regular';
+  if (etMins >= 960 && etMins < 1200) return 'post';
+  return 'closed';
+}
+
+async function fetchBatchQuotes(
+  tickers: string[],
+  prepost: boolean
+): Promise<BatchQuoteResponse> {
   const apiKey = process.env.TWELVE_DATA_API_KEY;
   if (!apiKey) throw new Error('TWELVE_DATA_API_KEY not configured');
 
-  const url = `https://api.twelvedata.com/quote?symbol=${encodeURIComponent(tickers.join(','))}&apikey=${apiKey}`;
+  const prepostParam = prepost ? '&prepost=true' : '';
+  const url = `https://api.twelvedata.com/quote?symbol=${encodeURIComponent(tickers.join(','))}&apikey=${apiKey}${prepostParam}`;
   const res = await fetch(url, { cache: 'no-store' });
   if (!res.ok) throw new Error(`TwelveData responded ${res.status}`);
 
   const json = await res.json() as BatchQuoteResponse | TwelveDataQuote;
 
-  // Single-ticker responses come back as a flat object, not keyed by ticker
   if (tickers.length === 1 && json && typeof json === 'object' && !(tickers[0] in json)) {
     return { [tickers[0]]: json as TwelveDataQuote };
   }
@@ -66,79 +97,114 @@ async function heatmapHandler(_req: NextRequest): Promise<NextResponse> {
     return NextResponse.json(cachedHeatmap);
   }
 
+  const session = getCurrentSession();
+
   try {
     const supabase = createServerClient();
 
-    // companies always has name + sector; screener_stats has market_cap when the
-    // screener refresh job has run. Both queries are best-effort — we fall back
-    // to a rank-based market cap so the heatmap always renders.
-    const [{ data: companies, error: dbError }, { data: stats }] = await Promise.all([
-      supabase.from('companies').select('ticker, name, sector').in('ticker', SCREENER_UNIVERSE),
-      supabase.from('screener_stats').select('ticker, market_cap').in('ticker', SCREENER_UNIVERSE),
+    // Fetch market caps from screener_stats for as many tickers as possible.
+    // Also fetch name+sector from companies table as a fallback for tickers
+    // not in SP500_SECTORS (covers recent additions / reclassifications).
+    const [{ data: statsData }, { data: companiesData }] = await Promise.all([
+      supabase
+        .from('screener_stats')
+        .select('ticker, market_cap')
+        .in('ticker', SP500_TICKERS),
+      supabase
+        .from('companies')
+        .select('ticker, name, sector')
+        .in('ticker', SP500_TICKERS),
     ]);
 
-    if (dbError) {
-      logger.error('Heatmap: Supabase query failed', dbError);
-      return NextResponse.json({ success: false, error: 'Database error' }, { status: 500 });
-    }
-
-    // Build a market-cap lookup from screener_stats
     const marketCapMap = new Map<string, number>();
-    for (const s of stats ?? []) {
+    for (const s of statsData ?? []) {
       if (s.market_cap && (s.market_cap as number) > 0) {
         marketCapMap.set(s.ticker, s.market_cap as number);
       }
     }
 
-    // SCREENER_UNIVERSE is ordered largest-first; use rank as a proxy when
-    // screener_stats has no data for a ticker.
-    const BASE_CAP = 3_000_000_000_000; // ~$3T for rank 0
-    const universeRank = new Map(SCREENER_UNIVERSE.map((t, i) => [t, i]));
+    const dbNameMap = new Map<string, string>();
+    const dbSectorMap = new Map<string, string>();
+    for (const c of companiesData ?? []) {
+      if (c.name) dbNameMap.set(c.ticker, c.name);
+      if (c.sector) dbSectorMap.set(c.ticker, c.sector);
+    }
 
-    const validCompanies = (companies ?? [])
-      .filter((c) => Boolean(c.ticker))
-      .map((c) => {
-        const realCap = marketCapMap.get(c.ticker);
-        const rank = universeRank.get(c.ticker) ?? SCREENER_UNIVERSE.length;
-        const market_cap = realCap ?? Math.round(BASE_CAP * Math.pow(0.96, rank));
-        return { ...c, market_cap };
-      });
+    // Rank-based fallback market cap when screener_stats has no entry
+    const BASE_CAP = 3_000_000_000_000;
+    const universeRank = new Map(SP500_TICKERS.map((t, i) => [t, i]));
 
-    const tickers = validCompanies.map((c) => c.ticker);
+    const usePrepost = session === 'pre' || session === 'post';
 
     const BATCH_SIZE = 20;
     const batches: string[][] = [];
-    for (let i = 0; i < tickers.length; i += BATCH_SIZE) {
-      batches.push(tickers.slice(i, i + BATCH_SIZE));
+    for (let i = 0; i < SP500_TICKERS.length; i += BATCH_SIZE) {
+      batches.push(SP500_TICKERS.slice(i, i + BATCH_SIZE));
     }
 
-    const batchResults = await Promise.all(batches.map(fetchBatchQuotes));
+    const batchResults = await Promise.all(
+      batches.map((b) => fetchBatchQuotes(b, usePrepost))
+    );
     const quoteMap: BatchQuoteResponse = Object.assign({}, ...batchResults);
 
     const sectorMap = new Map<string, HeatmapStock[]>();
 
-    for (const company of validCompanies) {
-      const quote = quoteMap[company.ticker];
+    for (const ticker of SP500_TICKERS) {
+      const quote = quoteMap[ticker];
       if (!quote || quote.status === 'error') continue;
 
-      const price = parseFloat(quote.close ?? '0');
-      const change = parseFloat(quote.percent_change ?? '0');
-      if (!isFinite(price) || !isFinite(change)) continue;
+      // Use extended price when in pre/post session and available
+      const isExtended = usePrepost && quote.extended_price != null;
+      const rawPrice = isExtended ? quote.extended_price : quote.close;
+      const rawChange = isExtended ? quote.extended_percent_change : quote.percent_change;
 
-      const sectorName = (company.sector as string | null)?.trim() || 'Other';
+      const price = parseFloat(rawPrice ?? '0');
+      const change = parseFloat(rawChange ?? '0');
+      const previousClose = parseFloat(quote.previous_close ?? '0');
+      if (!isFinite(price) || !isFinite(change) || price <= 0) continue;
+
+      // Sector: static map → DB → 'Other'
+      const sectorName =
+        SP500_SECTORS[ticker] ??
+        dbSectorMap.get(ticker)?.trim() ??
+        'Other';
+
+      // Name: DB → TwelveData quote → ticker
+      const name = dbNameMap.get(ticker) ?? quote.name ?? ticker;
+
+      const realCap = marketCapMap.get(ticker);
+      const rank = universeRank.get(ticker) ?? SP500_TICKERS.length;
+      const marketCap = realCap ?? Math.round(BASE_CAP * Math.pow(0.96, rank));
+
       const stock: HeatmapStock = {
-        ticker: company.ticker,
-        name: (company.name as string | null) ?? company.ticker,
+        ticker,
+        name,
         sector: sectorName,
-        marketCap: company.market_cap as number,
+        marketCap,
         change,
         price,
+        previousClose: isFinite(previousClose) ? previousClose : undefined,
+        isExtended,
       };
 
       const existing = sectorMap.get(sectorName) ?? [];
       existing.push(stock);
       sectorMap.set(sectorName, existing);
     }
+
+    const SECTOR_ORDER = [
+      'Information Technology',
+      'Health Care',
+      'Financials',
+      'Consumer Discretionary',
+      'Industrials',
+      'Communication Services',
+      'Consumer Staples',
+      'Energy',
+      'Real Estate',
+      'Materials',
+      'Utilities',
+    ];
 
     const sectors: HeatmapSector[] = Array.from(sectorMap.entries())
       .map(([name, stocks]) => {
@@ -147,11 +213,19 @@ async function heatmapHandler(_req: NextRequest): Promise<NextResponse> {
         const avgChange = sorted.reduce((sum, s) => sum + s.change, 0) / (sorted.length || 1);
         return { name, totalMarketCap, avgChange, stocks: sorted };
       })
-      .sort((a, b) => b.totalMarketCap - a.totalMarketCap);
+      .sort((a, b) => {
+        const ai = SECTOR_ORDER.indexOf(a.name);
+        const bi = SECTOR_ORDER.indexOf(b.name);
+        if (ai === -1 && bi === -1) return b.totalMarketCap - a.totalMarketCap;
+        if (ai === -1) return 1;
+        if (bi === -1) return -1;
+        return ai - bi;
+      });
 
     const response: HeatmapResponse = {
       success: true,
       sectors,
+      session,
       lastUpdated: new Date().toISOString(),
     };
 
