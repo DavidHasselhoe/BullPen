@@ -14,6 +14,8 @@ import { DailyBriefWidget } from '@/components/discover/DailyBriefWidget';
 import { QuoteDisplay } from '@/components/ui/QuoteDisplay';
 import { useUserSettings } from '@/hooks/use-user-settings';
 import { CryptoMarketCard } from '@/components/asset/CryptoMarketCard';
+import Link from 'next/link';
+import { Compass, ArrowRight } from 'lucide-react';
 
 export default function DiscoverPage() {
   const { hasAnimatedBackground } = useBackground();
@@ -47,6 +49,29 @@ export default function DiscoverPage() {
             <AnimatedContent reverse={true}>
               <DailyBriefWidget />
             </AnimatedContent>
+          </section>
+
+          {/* Explore CTA — points to the new /discover page */}
+          <section className="min-w-0">
+            <Link
+              href="/discover"
+              className="group relative block overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/[0.08] via-primary/[0.03] to-transparent p-5 hover:border-primary/40 transition-colors"
+            >
+              <div className="flex items-center gap-4">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/15 border border-primary/25 shrink-0">
+                  <Compass className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-base font-semibold text-foreground">Explore the market</h3>
+                  <p className="text-sm text-muted-foreground/80 mt-0.5">
+                    Browse by sector, theme, ETF, and crypto — live prices, curated rails.
+                  </p>
+                </div>
+                <div className="flex items-center gap-1 text-sm font-medium text-primary shrink-0 group-hover:translate-x-0.5 transition-transform">
+                  Open <ArrowRight className="h-4 w-4" />
+                </div>
+              </div>
+            </Link>
           </section>
 
           {/* SECTION 1: Market Context — live movers, hours, news */}

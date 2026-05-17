@@ -7,7 +7,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { UserMenu } from './UserMenu';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Home, Briefcase, Settings, Wrench, ChevronDown, Bookmark, Users, Rss, Trophy } from 'lucide-react';
+import { Home, Briefcase, Settings, Wrench, ChevronDown, Bookmark, Users, Rss, Trophy, Compass } from 'lucide-react';
 import { LiveClock } from '@/components/ui/LiveClock';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { SettingsModal } from '@/components/user/SettingsModal';
@@ -23,7 +23,8 @@ import {
 import { TOOLS } from '@/lib/tools/tools-config';
 
 const navigation = [
-  { name: 'Discover', href: '/', icon: Home },
+  { name: 'Home', href: '/', icon: Home },
+  { name: 'Discover', href: '/discover', icon: Compass },
   { name: 'My Holdings', href: '/holdings', icon: Briefcase },
   { name: 'Watchlist', href: '/watchlist', icon: Bookmark },
 ];

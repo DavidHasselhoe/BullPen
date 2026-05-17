@@ -315,4 +315,43 @@ html.animated-background-active [data-slot="dialog-content"] {
     width: 0 !important;
     height: 0 !important;
   }
+
+  /* ── Discover page carousel rails ─────────────────────────────────────────
+     The rail track contains items duplicated twice (A B C  A B C). The marquee
+     animation translates the track by exactly half its width, then loops —
+     creating the illusion of continuous scroll. Paused on hover; disabled on
+     mobile (uses native swipe) and when prefers-reduced-motion is set. */
+  @keyframes discover-rail-marquee {
+    from { transform: translate3d(0, 0, 0); }
+    to   { transform: translate3d(var(--rail-distance, -100%), 0, 0); }
+  }
+
+  /* Mobile: native swipe, hide scrollbar */
+  .discover-rail-track {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .discover-rail-track::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
+  /* Soft fade on the edges so cards don't get clipped harshly at the page edge */
+  .discover-rail-mask {
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 24px, black calc(100% - 24px), transparent 100%);
+            mask-image: linear-gradient(to right, transparent 0%, black 24px, black calc(100% - 24px), transparent 100%);
+  }
+
+  /* Desktop: enable the marquee, pause on hover */
+  @media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
+    .discover-rail-track {
+      animation: discover-rail-marquee var(--rail-duration, 60s) linear infinite;
+      will-change: transform;
+    }
+    .discover-rail-mask:hover .discover-rail-track,
+    .discover-rail-mask:focus-within .discover-rail-track {
+      animation-play-state: paused;
+    }
+  }
 }

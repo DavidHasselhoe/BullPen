@@ -2,6 +2,16 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## UI/UX Design Standard
+
+**When doing any frontend work** (new components, pages, layout changes, styling decisions, animations, loading states) — read `.agents/skills/ui-ux-pro-max/SKILL.md` and apply its guidelines before writing code.
+
+Key sections to apply:
+- **Priority 1–3** (Accessibility, Touch & Interaction, Performance) — CRITICAL/HIGH, always check
+- **§6 Typography & Color** — contrast ratios, semantic tokens, dark mode
+- **§7 Animation** — 150–300ms, transform/opacity only, respect reduced-motion
+- **Pre-Delivery Checklist** — run through before finishing any UI task
+
 ## Branch Strategy
 
 Two branches only: `preview` and `main`.
