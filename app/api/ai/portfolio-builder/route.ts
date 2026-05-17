@@ -15,6 +15,8 @@ import { validateTickers } from '@/lib/ai/portfolio-builder/validate-tickers';
 import { renormalizeAllocations } from '@/lib/ai/portfolio-builder/renormalize';
 import { z } from 'zod';
 
+export const maxDuration = 300;
+
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const MODEL = 'claude-sonnet-4-6';
 
@@ -23,7 +25,7 @@ async function handler(
   _ctx: unknown,
   session: { userId: string }
 ): Promise<NextResponse> {
-  // Per-user rate limit — these are expensive (extended thinking + ~4k output)
+  // Per-user rate limit — these are expensive (~4k output tokens each)
   const limit = await checkRateLimit(`portfolio-builder:${session.userId}`, {
     windowMs: 60_000,
     maxRequests: 5,
@@ -57,12 +59,14 @@ async function handler(
       let buffered = '';
 
       try {
-        send({ type: 'started' });
-
         const stream = anthropic.messages.stream({
           model: MODEL,
           max_tokens: 16000,
-          thinking: { type: 'enabled', budget_tokens: 8000 },
+          temperature: 1,
+          thinking: {
+            type: 'enabled',
+            budget_tokens: 8000,
+          },
           system: [
             {
               type: 'text',
@@ -73,18 +77,21 @@ async function handler(
           messages: [{ role: 'user', content: thesis }],
         });
 
-        // Stream the model's reasoning trace (engaging to watch); buffer the JSON output silently
-        // so we can parse it after stream completes. Anthropic emits thinking blocks first, then
-        // text blocks, so the user sees a natural "analysis → result" arc.
+        // Thinking deltas → stream to client so the "Analyzing thesis" phase
+        // shows live reasoning text. First text_delta signals the model has
+        // started writing JSON → transition client to "composing" phase.
+        let textStarted = false;
         for await (const event of stream) {
           if (event.type === 'content_block_delta') {
-            const delta = event.delta as { type: string; text?: string; thinking?: string };
+            const delta = event.delta as { type: string; thinking?: string; text?: string };
             if (delta.type === 'thinking_delta' && delta.thinking) {
               send({ type: 'thinking', delta: delta.thinking });
             } else if (delta.type === 'text_delta' && delta.text) {
+              if (!textStarted) {
+                textStarted = true;
+                send({ type: 'composing' });
+              }
               buffered += delta.text;
-              // Heartbeat so the client knows we've moved past thinking into structured output
-              send({ type: 'composing' });
             }
           }
         }
@@ -94,13 +101,12 @@ async function handler(
         try {
           portfolio = parsePortfolio(buffered);
         } catch (parseErr) {
-          if (process.env.NODE_ENV === 'development') {
-            console.error('[portfolio-builder] parse failed:', parseErr, '\n\nraw:\n', buffered);
-          }
+          const detail = parseErr instanceof Error ? parseErr.message : String(parseErr);
+          console.error('[portfolio-builder] parse failed:', detail);
           send({
             type: 'error',
             code: 'parse_failed',
-            message: 'The model returned an unexpected response. Please try again.',
+            message: detail,
           });
           return;
         }

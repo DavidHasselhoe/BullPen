@@ -96,7 +96,7 @@ You must respond with a single valid JSON object. No markdown fences, no preambl
       "allocation_pct": number,
       "role": "CORE" | "SECONDARY" | "HEDGE",
       "rationale": string,
-      "thesis_exposure_score": number,
+      "thesis_exposure_score": integer from 1 to 10 (how directly the company's revenue is exposed to this thesis; 10 = pure play, 1 = peripheral),
       "key_risk": string,
       "risk_level": "LOW" | "MEDIUM" | "HIGH"
     }

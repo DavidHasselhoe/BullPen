@@ -8,7 +8,7 @@ import { StreamingThoughts } from './StreamingThoughts';
 import { PortfolioResult } from './PortfolioResult';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, Clock, ChevronRight, Trash2 } from 'lucide-react';
+import { AlertCircle, Clock, ChevronRight, Trash2, Search, X } from 'lucide-react';
 import type { Portfolio } from '@/lib/ai/portfolio-builder/schema';
 import type { SavedGeneration } from '@/app/api/ai/portfolio-builder/history/route';
 import { cn } from '@/lib/utils';
@@ -37,13 +37,31 @@ export function PortfolioBuilderClient() {
 
   useEffect(() => () => abortRef.current?.abort(), []);
 
-  // Fetch recent generations
-  const { data: historyData } = useQuery<{ generations: SavedGeneration[] }>({
-    queryKey: HISTORY_KEY,
-    queryFn: () => fetch('/api/ai/portfolio-builder/history').then((r) => r.json()),
+  // History state — expand/collapse + search
+  const [historyExpanded, setHistoryExpanded] = useState(false);
+  const [historyQuery, setHistoryQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(historyQuery.trim()), 250);
+    return () => clearTimeout(t);
+  }, [historyQuery]);
+
+  // Fetch generations — preview by default, full list when expanded or searching
+  const historyFetchKey = [...HISTORY_KEY, historyExpanded || debouncedQuery ? 'all' : 'preview', debouncedQuery];
+  const { data: historyData } = useQuery<{ generations: SavedGeneration[]; total?: number }>({
+    queryKey: historyFetchKey,
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (debouncedQuery) params.set('q', debouncedQuery);
+      else if (historyExpanded) params.set('all', 'true');
+      const qs = params.toString();
+      return fetch(`/api/ai/portfolio-builder/history${qs ? `?${qs}` : ''}`).then((r) => r.json());
+    },
     staleTime: 30_000,
   });
   const history = historyData?.generations ?? [];
+  const historyTotal = historyData?.total ?? history.length;
 
   // Save mutation
   const saveMutation = useMutation({
@@ -53,7 +71,7 @@ export function PortfolioBuilderClient() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: HISTORY_KEY }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: HISTORY_KEY, exact: false }),
   });
 
   // Delete mutation
@@ -64,7 +82,7 @@ export function PortfolioBuilderClient() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id }),
       }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: HISTORY_KEY }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: HISTORY_KEY, exact: false }),
   });
 
   const reset = useCallback(() => {
@@ -165,9 +183,14 @@ export function PortfolioBuilderClient() {
     return (
       <div className="space-y-10">
         <ThesisInput onSubmit={submit} />
-        {history.length > 0 && (
+        {(historyTotal > 0 || debouncedQuery) && (
           <RecentPortfolios
             items={history}
+            total={historyTotal}
+            expanded={historyExpanded}
+            onToggleExpanded={() => setHistoryExpanded((v) => !v)}
+            query={historyQuery}
+            onQueryChange={setHistoryQuery}
             onRestore={restoreGeneration}
             onDelete={(id) => deleteMutation.mutate(id)}
           />
@@ -224,21 +247,64 @@ export function PortfolioBuilderClient() {
 
 function RecentPortfolios({
   items,
+  total,
+  expanded,
+  query,
+  onToggleExpanded,
+  onQueryChange,
   onRestore,
   onDelete,
 }: {
   items: SavedGeneration[];
+  total: number;
+  expanded: boolean;
+  query: string;
+  onToggleExpanded: () => void;
+  onQueryChange: (q: string) => void;
   onRestore: (gen: SavedGeneration) => void;
   onDelete: (id: string) => void;
 }) {
+  const isSearching = query.trim().length > 0;
+  const showSearch = expanded || isSearching;
+  const hasMore = total > items.length && !isSearching;
+
   return (
     <div>
       <div className="flex items-center gap-2 mb-3">
         <Clock className="h-3.5 w-3.5 text-muted-foreground/50" />
         <span className="text-[10px] uppercase tracking-widest text-muted-foreground/50 font-semibold">
-          Recent portfolios
+          {isSearching ? `Matching portfolios` : 'Recent portfolios'}
         </span>
+        {total > 0 && (
+          <span className="text-[10px] text-muted-foreground/40 tabular-nums">
+            ({total})
+          </span>
+        )}
       </div>
+
+      {showSearch && (
+        <div className="relative mb-3">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/40 pointer-events-none" />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => onQueryChange(e.target.value)}
+            placeholder="Search your portfolios…"
+            className="w-full rounded-lg border border-border/50 bg-card/50 pl-9 pr-9 py-2 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-border focus:bg-card transition-colors"
+            autoFocus
+          />
+          {query && (
+            <button
+              onClick={() => onQueryChange('')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/40 hover:text-muted-foreground p-1"
+              aria-label="Clear search"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+      )}
+
       <div className="space-y-2">
         {items.map((gen) => (
           <RecentPortfolioRow
@@ -248,7 +314,23 @@ function RecentPortfolios({
             onDelete={onDelete}
           />
         ))}
+        {items.length === 0 && isSearching && (
+          <p className="text-xs text-muted-foreground/50 italic px-1 py-3">
+            No portfolios match &ldquo;{query}&rdquo;.
+          </p>
+        )}
       </div>
+
+      {(hasMore || (expanded && !isSearching)) && (
+        <button
+          onClick={onToggleExpanded}
+          className="mt-3 w-full text-center text-xs text-muted-foreground/60 hover:text-foreground transition-colors py-2 rounded-lg border border-dashed border-border/40 hover:border-border/70"
+        >
+          {expanded
+            ? 'Show less'
+            : `View all (${total})`}
+        </button>
+      )}
     </div>
   );
 }
@@ -359,7 +441,7 @@ function errorBody(code: ErrorCode, message: string): string {
     case 'rate_limited':         return "You've hit the per-minute limit (5 generations). Wait a moment and try again.";
     case 'payment_required':     return 'Anthropic API credits are required. Add credits at console.anthropic.com.';
     case 'invalid_key':          return 'The Anthropic API key is missing or invalid. Check ANTHROPIC_API_KEY in .env.local.';
-    case 'parse_failed':         return 'The model returned an unexpected response shape. This is usually transient — try again.';
+    case 'parse_failed':         return message ? `Parse error: ${message}` : 'The model returned an unexpected response shape. This is usually transient — try again.';
     case 'too_few_valid_tickers': return "Most of the suggested tickers couldn't be verified against our index. Try rephrasing the thesis with more concrete language.";
     default:                     return message || 'An unexpected error occurred. Please try again.';
   }

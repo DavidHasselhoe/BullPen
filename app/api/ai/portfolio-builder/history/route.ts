@@ -3,7 +3,8 @@ import { createServerClient } from '@/lib/supabase/client';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import type { Portfolio } from '@/lib/ai/portfolio-builder/schema';
 
-const MAX_SAVED = 10;
+const MAX_SAVED = 50;
+const PREVIEW_COUNT = 5;
 
 export interface SavedGeneration {
   id: string;
@@ -15,18 +16,29 @@ export interface SavedGeneration {
 }
 
 async function getHandler(
-  _req: NextRequest,
+  req: NextRequest,
   _ctx: unknown,
   session: { userId: string }
 ): Promise<NextResponse> {
   const supabase = createServerClient();
-  const { data, error } = await supabase
+  const sp = req.nextUrl.searchParams;
+  const q = sp.get('q')?.trim() ?? '';
+  const all = sp.get('all') === 'true' || q.length > 0;
+
+  let query = supabase
     .from('portfolio_generations')
     .select('id, thesis, portfolio, logo_map, replaced_tickers, created_at')
     .eq('user_id', session.userId)
     .order('created_at', { ascending: false })
-    .limit(5);
+    .limit(all ? MAX_SAVED : PREVIEW_COUNT);
 
+  if (q) {
+    // Escape % and _ in user input so they're treated literally inside ilike
+    const escaped = q.replace(/[%_]/g, (m) => `\\${m}`);
+    query = query.ilike('thesis', `%${escaped}%`);
+  }
+
+  const { data, error } = await query;
   if (error) return addSecurityHeaders(NextResponse.json({ error: error.message }, { status: 500 }));
 
   const generations: SavedGeneration[] = (data ?? []).map((row) => ({
@@ -38,7 +50,17 @@ async function getHandler(
     createdAt: row.created_at,
   }));
 
-  return addSecurityHeaders(NextResponse.json({ generations }));
+  // Also return total count so the client can render "View all (N)" accurately
+  let total = generations.length;
+  if (!all && !q) {
+    const { count } = await supabase
+      .from('portfolio_generations')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', session.userId);
+    total = count ?? generations.length;
+  }
+
+  return addSecurityHeaders(NextResponse.json({ generations, total }));
 }
 
 async function postHandler(
