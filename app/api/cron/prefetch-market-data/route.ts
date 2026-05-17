@@ -112,6 +112,40 @@ function parseStats(sym: string, raw: RawStats | undefined) {
   };
 }
 
+function buildScreenerRow(sym: string, raw: RawStats | undefined) {
+  if (!raw || raw.code || raw.status === 'error' || !raw.statistics) return null;
+  const s = raw.statistics;
+  const v = (s.valuations_metrics as Record<string, number>) ?? {};
+  const sp = (s.stock_price_summary as Record<string, number>) ?? {};
+  const f = (s.financials as Record<string, unknown>) ?? {};
+  const fi = ((f.income_statement ?? {}) as Record<string, number>);
+  const d = (s.dividends_and_splits as Record<string, number>) ?? {};
+  const revGrowth = fi.quarterly_revenue_growth;
+  const earningsGrowth = fi.quarterly_earnings_growth_yoy;
+  return {
+    ticker: sym,
+    market_cap: v.market_capitalization ? Math.round(v.market_capitalization) : null,
+    pe_ratio: v.trailing_pe ?? null,
+    forward_pe: v.forward_pe ?? null,
+    pb_ratio: v.price_to_book_mrq ?? null,
+    ps_ratio: v.price_to_sales_ttm ?? null,
+    ev_to_ebitda: v.enterprise_to_ebitda ?? null,
+    beta: sp.beta ?? null,
+    week52_high: sp.fifty_two_week_high ?? null,
+    week52_low: sp.fifty_two_week_low ?? null,
+    day50_ma: sp.fifty_day_ma ?? null,
+    day200_ma: sp.two_hundred_day_ma ?? null,
+    dividend_yield: d.forward_annual_dividend_yield ?? null,
+    payout_ratio: d.payout_ratio ?? null,
+    profit_margin: (f.profit_margin as number) ?? null,
+    revenue_ttm: (f.total_revenue as number) ? Math.round(f.total_revenue as number) : null,
+    eps_ttm: (f.diluted_eps as number) ?? null,
+    revenue_growth_yoy: revGrowth != null ? revGrowth * 100 : null,
+    earnings_growth_yoy: earningsGrowth != null ? earningsGrowth * 100 : null,
+    updated_at: new Date().toISOString(),
+  };
+}
+
 function parseEarnings(raw: RawEarnings | undefined) {
   if (!raw || raw.code || raw.status === 'error' || !raw.earnings) return null;
   return raw.earnings.map(e => {
@@ -168,6 +202,17 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const needsStats = allSymbols.filter(sym => !freshSymbols.has(sym));
   summary.statsSkipped = allSymbols.length - needsStats.length;
 
+  // Pre-load company metadata for screener_stats upsert (one query, used in Phase 1 loop)
+  const { data: companyRows } = await supabase
+    .from('companies')
+    .select('ticker, name, sector, industry, logo_url')
+    .in('ticker', allSymbols);
+  const companyMap = new Map(
+    (companyRows ?? []).map((c) => [c.ticker as string, c as {
+      name: string; sector: string | null; industry: string | null; logo_url: string | null;
+    }])
+  );
+
   // ── Phase 1: Stats + Earnings — batched batchFetch calls ─────────────────
   let rateLimited = false;
 
@@ -182,6 +227,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
       const raw = await batchFetch<Record<string, unknown>>(requests);
 
+      const screenerRowsBatch: Array<Record<string, unknown>> = [];
       for (const sym of syms) {
         const writes: Promise<void>[] = [];
 
@@ -205,6 +251,26 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         }
 
         await Promise.all(writes);
+
+        // Build screener row from the same raw stats for screener_stats upsert
+        const screenerRow = buildScreenerRow(sym, raw[`${sym}_s`] as RawStats | undefined);
+        if (screenerRow) {
+          const co = companyMap.get(sym);
+          screenerRowsBatch.push({
+            ...screenerRow,
+            name: co?.name ?? sym,
+            sector: co?.sector ?? null,
+            industry: co?.industry ?? null,
+            logo_url: co?.logo_url ?? null,
+          });
+        }
+      }
+
+      // Upsert all parsed stats for this batch into screener_stats
+      if (screenerRowsBatch.length > 0) {
+        await supabase
+          .from('screener_stats')
+          .upsert(screenerRowsBatch, { onConflict: 'ticker' });
       }
     } catch (err) {
       if (err instanceof TwelveDataRateLimitError) {

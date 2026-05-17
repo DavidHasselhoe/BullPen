@@ -1,28 +1,26 @@
 'use client';
 
-import { useState, useCallback, useMemo, useEffect, Suspense } from 'react';
+import { useState, useCallback, useMemo, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Filter, RefreshCw, Radio } from 'lucide-react';
+import { Filter, RefreshCw } from 'lucide-react';
 import {
   ScreenerFilters,
   EMPTY_FILTERS,
   type ScreenerFilterValues,
 } from '@/components/screener/ScreenerFilters';
 import { ScreenerResults } from '@/components/screener/ScreenerResults';
-import { useLivePrices } from '@/hooks/use-live-prices';
+import { useHeatmapStream } from '@/hooks/use-heatmap-stream';
 import type { ScreenerRow } from '@/app/api/screener/route';
-import { SCREENER_UNIVERSE } from '@/lib/market-data/screener-universe';
 
 export const dynamic = 'force-dynamic';
 
 const FILTER_KEYS = Object.keys(EMPTY_FILTERS) as (keyof ScreenerFilterValues)[];
 
-/** Market cap filters: client sends billions, API expects raw */
 const BILLION_KEYS = new Set(['marketCapMin', 'marketCapMax']);
 
 function filtersFromParams(sp: URLSearchParams): ScreenerFilterValues {
@@ -49,24 +47,15 @@ function buildQueryString(filters: ScreenerFilterValues): string {
   return params.toString();
 }
 
-function isStale(rows: ScreenerRow[]): boolean {
-  if (rows.length === 0) return true;
-  const oldest = rows.reduce(
-    (min, r) => (r.updated_at < min ? r.updated_at : min),
-    rows[0].updated_at,
-  );
-  const ageMs = Date.now() - new Date(oldest).getTime();
-  return ageMs > 24 * 60 * 60 * 1000; // stale after 24h
-}
-
 function ScreenerContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [filters, setFilters] = useState<ScreenerFilterValues>(() =>
     filtersFromParams(searchParams),
   );
-  const [refreshBatch, setRefreshBatch] = useState<number | null>(null);
   const [refreshStatus, setRefreshStatus] = useState<string>('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
 
   const qs = useMemo(() => buildQueryString(filters), [filters]);
 
@@ -74,6 +63,7 @@ function ScreenerContent() {
     success: boolean;
     results: ScreenerRow[];
     sectors: string[];
+    industries: string[];
     total: number;
     stale: boolean;
   }>({
@@ -87,62 +77,39 @@ function ScreenerContent() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Auto-refresh if cache is empty or stale on first load
-  const needsRefresh = !isLoading && (data?.stale || (data?.results?.length === 0));
-
   const { mutate: triggerRefresh, isPending: isRefreshing } = useMutation({
-    mutationFn: async (batch: number) => {
+    mutationFn: async (batch: number): Promise<{
+      success: boolean;
+      nextBatch: number | null;
+      totalBatches: number;
+      refreshed: number;
+      batch: number;
+      done: boolean;
+    }> => {
       const res = await fetch(`/api/screener/refresh?batch=${batch}`, { method: 'POST' });
       if (!res.ok) throw new Error('Refresh failed');
-      return res.json() as Promise<{
-        success: boolean;
-        nextBatch: number | null;
-        totalBatches: number;
-        refreshed: number;
-        batch: number;
-        done: boolean;
-      }>;
+      return res.json();
     },
     onSuccess: (result) => {
       setRefreshStatus(
         `Refreshed batch ${result.batch + 1}/${result.totalBatches} (${result.refreshed} companies)`
       );
       if (result.nextBatch !== null) {
-        // Throttle: wait 65s between batches to stay under the 610 credit/min limit
-        setTimeout(() => setRefreshBatch(result.nextBatch), 65_000);
+        setTimeout(() => triggerRefresh(result.nextBatch!), 65_000);
       } else {
-        setRefreshBatch(null);
         setRefreshStatus('Screener data refreshed successfully');
         refetch();
       }
     },
     onError: () => {
-      setRefreshBatch(null);
       setRefreshStatus('Refresh failed — check console');
     },
   });
 
-  useEffect(() => {
-    if (needsRefresh && refreshBatch === null && !isRefreshing) {
-      setRefreshBatch(0);
-    }
-  }, [needsRefresh, refreshBatch, isRefreshing]);
-
-  useEffect(() => {
-    if (refreshBatch !== null && !isRefreshing) {
-      triggerRefresh(refreshBatch);
-    }
-  }, [refreshBatch, isRefreshing, triggerRefresh]);
-
-  // Kick off manual refresh from the beginning
-  const startManualRefresh = () => {
-    setRefreshBatch(0);
-    setRefreshStatus('Starting refresh…');
-  };
-
   const handleChange = useCallback(
     (next: ScreenerFilterValues) => {
       setFilters(next);
+      setPage(1);
       const params = new URLSearchParams();
       for (const key of FILTER_KEYS) {
         if (next[key]) params.set(key, next[key]);
@@ -159,11 +126,12 @@ function ScreenerContent() {
 
   const results = data?.results ?? [];
   const sectors = data?.sectors ?? [];
+  const industries = data?.industries ?? [];
   const activeFilterCount = Object.values(filters).filter(Boolean).length;
 
-  // Live prices for ALL screener universe symbols (they're already subscribed via WsManager)
-  const livePrices = useLivePrices(SCREENER_UNIVERSE);
-  const liveCount = livePrices.size;
+  // Use heatmap stream for live prices — seeds from REST snapshot on connect so
+  // prices are available immediately without waiting for WS ticks to arrive.
+  const { prices: livePrices, connected } = useHeatmapStream();
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-[1400px]">
@@ -177,12 +145,12 @@ function ScreenerContent() {
               {data?.total ?? 0} result{(data?.total ?? 0) !== 1 ? 's' : ''}
             </Badge>
           )}
-          {liveCount > 0 && (
-            <span className="flex items-center gap-1 text-xs text-emerald-500 font-medium">
-              <Radio className="h-3 w-3 animate-pulse" />
-              {liveCount} live
+          <span className="flex items-center gap-1 text-xs font-medium">
+            <span className={`h-2 w-2 rounded-full ${connected ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+            <span className={connected ? 'text-emerald-500' : 'text-amber-500'}>
+              {connected ? 'Live' : 'Connecting…'}
             </span>
-          )}
+          </span>
           <div className="ml-auto flex items-center gap-2">
             {refreshStatus && (
               <span className="text-xs text-muted-foreground">{refreshStatus}</span>
@@ -190,7 +158,7 @@ function ScreenerContent() {
             <Button
               variant="outline"
               size="sm"
-              onClick={startManualRefresh}
+              onClick={() => { setRefreshStatus('Starting refresh…'); triggerRefresh(0); }}
               disabled={isRefreshing}
               className="gap-1.5 h-8 text-xs"
             >
@@ -200,7 +168,7 @@ function ScreenerContent() {
           </div>
         </div>
         <p className="text-sm text-muted-foreground">
-          Filter companies by live market statistics. Prices stream in real time via TwelveData.
+          Screen the full S&P 500 with live prices and fundamental data.
         </p>
       </div>
 
@@ -224,6 +192,7 @@ function ScreenerContent() {
               <ScreenerFilters
                 filters={filters}
                 sectors={sectors}
+                industries={industries}
                 onChange={handleChange}
                 onReset={handleReset}
               />
@@ -250,6 +219,7 @@ function ScreenerContent() {
                     <ScreenerFilters
                       filters={filters}
                       sectors={sectors}
+                      industries={industries}
                       onChange={handleChange}
                       onReset={handleReset}
                     />
@@ -262,7 +232,7 @@ function ScreenerContent() {
 
         {/* Results */}
         <div className="flex-1 min-w-0">
-          {isLoading || (isRefreshing && results.length === 0) ? (
+          {isLoading ? (
             <Card>
               <CardContent className="p-4">
                 <div className="space-y-3">
@@ -273,7 +243,14 @@ function ScreenerContent() {
               </CardContent>
             </Card>
           ) : (
-            <ScreenerResults data={results} livePrices={livePrices} />
+            <ScreenerResults
+              data={results}
+              livePrices={livePrices}
+              page={page}
+              pageSize={pageSize}
+              onPageChange={setPage}
+              onPageSizeChange={(sz) => { setPageSize(sz); setPage(1); }}
+            />
           )}
         </div>
       </div>

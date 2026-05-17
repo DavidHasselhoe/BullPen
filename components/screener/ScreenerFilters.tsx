@@ -14,6 +14,7 @@ import { RotateCcw } from 'lucide-react';
 
 export interface ScreenerFilterValues {
   sector: string;
+  industry: string;
   marketCapMin: string;
   marketCapMax: string;
   peMin: string;
@@ -34,6 +35,7 @@ export interface ScreenerFilterValues {
 
 export const EMPTY_FILTERS: ScreenerFilterValues = {
   sector: '',
+  industry: '',
   marketCapMin: '',
   marketCapMax: '',
   peMin: '',
@@ -52,9 +54,38 @@ export const EMPTY_FILTERS: ScreenerFilterValues = {
   week52ChangeMax: '',
 };
 
+interface Preset {
+  label: string;
+  filters: Partial<ScreenerFilterValues>;
+}
+
+const PRESETS: Preset[] = [
+  { label: 'All',             filters: {} },
+  { label: 'Deep Value',      filters: { peMax: '15', pbMax: '2' } },
+  { label: 'Growth',          filters: { revenueGrowthMin: '15' } },
+  { label: 'Dividend',        filters: { divYieldMin: '2.5' } },
+  { label: 'Quality',         filters: { profitMarginMin: '15', revenueGrowthMin: '10' } },
+  { label: 'Large Cap',       filters: { marketCapMin: '100' } },
+];
+
+function activePreset(filters: ScreenerFilterValues): string {
+  const hasAny = Object.values(filters).some(Boolean);
+  if (!hasAny) return 'All';
+  for (const p of PRESETS.slice(1)) {
+    const keys = Object.keys(p.filters) as (keyof ScreenerFilterValues)[];
+    const userKeys = Object.keys(filters).filter(k => (filters as Record<string,string>)[k]) as (keyof ScreenerFilterValues)[];
+    if (
+      keys.length === userKeys.length &&
+      keys.every(k => p.filters[k] === filters[k])
+    ) return p.label;
+  }
+  return '';
+}
+
 interface ScreenerFiltersProps {
   filters: ScreenerFilterValues;
   sectors: string[];
+  industries: string[];
   onChange: (filters: ScreenerFilterValues) => void;
   onReset: () => void;
 }
@@ -103,8 +134,13 @@ function RangeFilter({
   );
 }
 
-export function ScreenerFilters({ filters, sectors, onChange, onReset }: ScreenerFiltersProps) {
+export function ScreenerFilters({ filters, sectors, industries, onChange, onReset }: ScreenerFiltersProps) {
   const hasFilters = Object.values(filters).some((v) => v !== '');
+  const current = activePreset(filters);
+
+  const applyPreset = (preset: Preset) => {
+    onChange({ ...EMPTY_FILTERS, ...preset.filters });
+  };
 
   return (
     <div className="space-y-4">
@@ -118,23 +154,66 @@ export function ScreenerFilters({ filters, sectors, onChange, onReset }: Screene
         )}
       </div>
 
-      {/* Sector */}
+      {/* Presets */}
       <div className="space-y-1.5">
-        <Label className="text-xs font-medium text-muted-foreground">Sector</Label>
-        <Select
-          value={filters.sector || 'all'}
-          onValueChange={(v) => onChange({ ...filters, sector: v === 'all' ? '' : v })}
-        >
-          <SelectTrigger className="h-8 text-xs">
-            <SelectValue placeholder="Any sector" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Any sector</SelectItem>
-            {sectors.map((s) => (
-              <SelectItem key={s} value={s}>{s}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">Presets</p>
+        <div className="flex flex-wrap gap-1">
+          {PRESETS.map((p) => (
+            <button
+              key={p.label}
+              onClick={() => applyPreset(p)}
+              className={[
+                'rounded-full px-2.5 py-0.5 text-[11px] font-medium border transition-colors',
+                current === p.label
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'bg-transparent text-muted-foreground border-border hover:border-foreground/40 hover:text-foreground',
+              ].join(' ')}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Sector & Industry */}
+      <div className="space-y-3">
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium text-muted-foreground">Sector</Label>
+          <Select
+            value={filters.sector || 'all'}
+            onValueChange={(v) => onChange({ ...filters, sector: v === 'all' ? '' : v, industry: '' })}
+          >
+            <SelectTrigger className="h-8 text-xs">
+              <SelectValue placeholder="Any sector" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Any sector</SelectItem>
+              {sectors.map((s) => (
+                <SelectItem key={s} value={s}>{s}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {industries.length > 0 && (
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium text-muted-foreground">Industry</Label>
+            <Select
+              value={filters.industry || 'all'}
+              onValueChange={(v) => onChange({ ...filters, industry: v === 'all' ? '' : v })}
+            >
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue placeholder="Any industry" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Any industry</SelectItem>
+                {industries.map((ind) => (
+                  <SelectItem key={ind} value={ind}>{ind}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </div>
 
       {/* Valuation */}
@@ -149,7 +228,7 @@ export function ScreenerFilters({ filters, sectors, onChange, onReset }: Screene
         </div>
       </div>
 
-      {/* Growth & Profitability */}
+      {/* Profitability */}
       <div className="space-y-0.5">
         <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 pb-1">Profitability</p>
         <RangeFilter label="Profit Margin" unit="%" minKey="profitMarginMin" maxKey="profitMarginMax" filters={filters} onChange={onChange} step="1" />

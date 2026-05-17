@@ -51,6 +51,7 @@ async function handler(request: NextRequest) {
 
   // --- Parse filter params ---
   const sector = sp.get('sector') || undefined;
+  const industry = sp.get('industry') || undefined;
   const marketCapMin = parseNum(sp.get('marketCapMin'));  // in billions on client, raw here
   const marketCapMax = parseNum(sp.get('marketCapMax'));
   const peMin = parseNum(sp.get('peMin'));
@@ -83,6 +84,7 @@ async function handler(request: NextRequest) {
   // --- Apply filters ---
   results = results.filter((r) => {
     if (sector && r.sector !== sector) return false;
+    if (industry && r.industry !== industry) return false;
 
     // Market cap: client sends billions, DB stores raw (e.g. 3e12 for $3T)
     if (!inRange(r.market_cap, marketCapMin, marketCapMax)) return false;
@@ -106,15 +108,25 @@ async function handler(request: NextRequest) {
     return true;
   });
 
-  // Collect unique sectors for filter dropdown
+  // Collect unique sectors and industries for filter dropdowns
   const sectors = [...new Set(
     (data ?? []).map((r) => (r as ScreenerRow).sector).filter(Boolean) as string[]
+  )].sort();
+
+  const allRows = (data ?? []) as ScreenerRow[];
+  const sectorFilter = sector;
+  const industriesSource = sectorFilter
+    ? allRows.filter(r => r.sector === sectorFilter)
+    : allRows;
+  const industries = [...new Set(
+    industriesSource.map(r => r.industry).filter(Boolean) as string[]
   )].sort();
 
   const response = NextResponse.json({
     success: true,
     results,
     sectors,
+    industries,
     total: results.length,
     stale: (data ?? []).length === 0,
   });

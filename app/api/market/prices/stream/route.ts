@@ -5,7 +5,7 @@ import { withRateLimit } from '@/lib/security/api-security';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-const MAX_SYMBOLS = 200;
+const MAX_SYMBOLS = 600;
 // Keep SSE open for up to 5 minutes then let the client reconnect
 const SESSION_TTL_MS = 5 * 60 * 1000;
 
