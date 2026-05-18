@@ -3,6 +3,7 @@ import { withRateLimit, withAuth, addSecurityHeaders } from '@/lib/security/api-
 import { getStockCandles } from '@/lib/twelvedata/twelvedata-client';
 import { TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
 import { slugToSymbol, inferAssetType, has24hTrading } from '@/lib/assets/asset-type';
+import { getCached, setCached } from '@/lib/cache/market-data-cache';
 
 type Range = '1D' | '1W' | '1M' | '6M' | '1Y' | 'YTD' | '5Y' | 'MAX';
 type Interval = '1min' | '5min' | '15min' | '1h' | '4h' | '1day' | '1week';
@@ -68,38 +69,63 @@ async function handler(
     ? { extendedHours: true, startDate: `${todayDateET} 04:00:00`, endDate: `${todayDateET} 23:59:00` }
     : undefined;
 
+  // ── Server-side cache ─────────────────────────────────────────────────────
+  // 1D bars are polled every 60 s by the client (extended-hours move) — skip
+  // server cache there. For everything else, cache the response in Supabase:
+  //   30 min for short intraday ranges (1W/1M use 15min/1h bars)
+  //   6 h   for daily/weekly bars (6M, 1Y, YTD, 5Y, MAX — these don't change intraday)
+  const cacheTtlSeconds = is1D
+    ? null
+    : (range === '1W' || range === '1M')
+    ? 30 * 60
+    : 6 * 60 * 60;
+  const cacheKey = cacheTtlSeconds != null ? `candles:${symbol}:${range}` : null;
+
+  const cacheHeader = is1D
+    ? 'private, no-cache'
+    : 'public, s-maxage=300, stale-while-revalidate=60';
+
+  if (cacheKey) {
+    const cachedBody = await getCached<Record<string, unknown>>(cacheKey);
+    if (cachedBody) {
+      return addSecurityHeaders(
+        NextResponse.json(cachedBody, { headers: { 'Cache-Control': cacheHeader } })
+      );
+    }
+  }
+
   try {
     const candles = await getStockCandles(symbol, from, now, resolution, candleOptions);
 
     if (!candles || candles.s === 'no_data' || candles.t.length === 0) {
+      // Don't cache empty results — could be transient (weekend crypto edge, fresh listing)
       return addSecurityHeaders(
         NextResponse.json({ success: true, candles: null, message: 'No data available' })
       );
     }
 
-    // 1D uses 1-min candles and is polled every 60 s client-side — keep server cache tight.
-    const cacheHeader = is1D
-      ? 'private, no-cache'
-      : 'public, s-maxage=300, stale-while-revalidate=60';
+    const responseBody = {
+      success: true as const,
+      candles: {
+        t: candles.t,
+        o: candles.o,
+        h: candles.h,
+        l: candles.l,
+        c: candles.c,
+        v: candles.v,
+        session: candles.session,
+      },
+      range,
+      interval: config.interval,
+    };
+
+    // Fire-and-forget cache write; never block the response.
+    if (cacheKey && cacheTtlSeconds != null) {
+      void setCached(cacheKey, symbol, 'candles', responseBody, cacheTtlSeconds);
+    }
 
     return addSecurityHeaders(
-      NextResponse.json(
-        {
-          success: true,
-          candles: {
-            t: candles.t,
-            o: candles.o,
-            h: candles.h,
-            l: candles.l,
-            c: candles.c,
-            v: candles.v,
-            session: candles.session,
-          },
-          range,
-          interval: config.interval,
-        },
-        { headers: { 'Cache-Control': cacheHeader } }
-      )
+      NextResponse.json(responseBody, { headers: { 'Cache-Control': cacheHeader } })
     );
   } catch (err) {
     if (err instanceof TwelveDataRateLimitError) {
