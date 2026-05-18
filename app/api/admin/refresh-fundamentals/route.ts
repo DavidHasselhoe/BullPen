@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
+import { getTier, isAdmin } from '@/lib/billing/tier';
 import { checkAndInvalidateFundamentals } from '@/lib/cache/fundamentals-freshness';
 
 const BATCH_SIZE = 5;
@@ -35,18 +36,11 @@ async function handler(
 ): Promise<NextResponse> {
   const supabase = createServerClient();
 
-  // Verify the caller is an admin/service user
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: userRow } = await (supabase as any)
-    .from('users')
-    .select('account_tier')
-    .eq('id', session.userId)
-    .maybeSingle();
-
-  // account_tier is stored as integer in DB (see migration 026); 3=pro, 99=admin
-  if (!userRow || (userRow.account_tier < 2)) {
+  // Admin-only — same 404 strategy as /admin/costs so the route is invisible
+  // to non-admins (anonymous, free, or pro users).
+  if (!isAdmin(await getTier(session.userId))) {
     return addSecurityHeaders(
-      NextResponse.json({ error: 'Admin access required' }, { status: 403 })
+      NextResponse.json({ error: 'not_found' }, { status: 404 })
     );
   }
 

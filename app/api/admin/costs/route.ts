@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
-import { getTier } from '@/lib/billing/tier';
+import { getTier, isAdmin } from '@/lib/billing/tier';
 
 export interface CostsResponse {
   totalUsd7d: number;
@@ -38,10 +38,10 @@ async function handler(
   _ctx: unknown,
   session: { userId: string }
 ): Promise<NextResponse> {
-  // Admin-only (tier === 'admin' or 'pro' — restrict here to admin for safety)
-  const tier = await getTier(session.userId);
-  if (tier !== 'admin') {
-    return addSecurityHeaders(NextResponse.json({ error: 'forbidden' }, { status: 403 }));
+  // Admin-only. Return 404 so the route is indistinguishable from a missing one
+  // — same UX as the page-level `notFound()` guard.
+  if (!isAdmin(await getTier(session.userId))) {
+    return addSecurityHeaders(NextResponse.json({ error: 'not_found' }, { status: 404 }));
   }
 
   const supabase = createServerClient();
