@@ -106,7 +106,9 @@ export interface User {
   experience_level: 'beginner' | 'intermediate' | 'advanced' | null;
   market_focus: 'US' | 'EU' | 'BOTH' | null;
   risk_profile: 'conservative' | 'balanced' | 'aggressive' | null;
-  account_tier: 'free' | 'pro' | 'enterprise' | null;
+  // INTEGER in DB (migration 026): 1 = free, 2 = admin, 3 = paid Pro.
+  // Use `tierFromInt()` / `isPro()` from `lib/billing/tier.ts` instead of comparing directly.
+  account_tier: number | null;
   settings: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;

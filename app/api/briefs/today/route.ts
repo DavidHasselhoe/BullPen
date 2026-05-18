@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
+import { getTier, isPro } from '@/lib/billing/tier';
 
 async function handler(
   _request: NextRequest,
@@ -9,15 +10,8 @@ async function handler(
 ): Promise<NextResponse> {
   const supabase = createServerClient();
 
-  // ── Pro tier check (account_tier is INTEGER: 1-2 = free, 3 = gold) ───────
-  const { data: userRow } = await supabase
-    .from('users')
-    .select('account_tier')
-    .eq('id', session.userId)
-    .maybeSingle();
-
-  const tier = userRow?.account_tier ?? 1;
-  if (typeof tier !== 'number' || tier < 3) {
+  // Pro-only — Daily Brief is generated once per day and only shown to Pro/admin users.
+  if (!isPro(await getTier(session.userId))) {
     return addSecurityHeaders(
       NextResponse.json({ success: false, error: 'upgrade_required' }, { status: 403 })
     );

@@ -90,7 +90,7 @@ async function postHandler(
     .eq('id', session.userId)
     .maybeSingle();
 
-  const tier = (userRow?.account_tier ?? 'free') as 'free' | 'pro' | 'enterprise';
+  const tier = (userRow?.account_tier as number | null) ?? null;
 
   // Count existing lists
   const { count, error: countError } = await supabase

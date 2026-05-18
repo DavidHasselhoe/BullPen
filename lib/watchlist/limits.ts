@@ -1,9 +1,11 @@
+import { isPro, tierFromInt } from '@/lib/billing/tier';
+
 export const MAX_FREE_WATCHLISTS = 1;
 
 export function canCreateWatchlist(
   currentCount: number,
-  accountTier: 'free' | 'pro' | 'enterprise' | null
+  accountTier: number | null
 ): boolean {
-  if (accountTier === 'pro' || accountTier === 'enterprise') return true;
+  if (isPro(tierFromInt(accountTier))) return true;
   return currentCount < MAX_FREE_WATCHLISTS;
 }

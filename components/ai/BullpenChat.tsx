@@ -13,7 +13,11 @@ import { Button } from '@/components/ui/button';
 import { Send, Square, Bot, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AuthUser } from '@/lib/auth/auth';
+import type { QuotaState } from '@/lib/billing/quotas';
 import { useAddOrUpdateHolding, useUpdateHoldingBySymbol, useRemoveHoldingBySymbol } from '@/hooks/use-holdings';
+import { QuotaIndicator } from '@/components/billing/QuotaIndicator';
+import { AiPaywallDialog } from '@/components/billing/AiPaywallDialog';
+import { useInvalidateQuota } from '@/hooks/use-quota';
 
 const DEFAULT_STARTER_PROMPTS = [
   'What is EBITDA?',
@@ -159,10 +163,12 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
   const addHoldingMutation = useAddOrUpdateHolding();
   const updateHoldingMutation = useUpdateHoldingBySymbol();
   const removeHoldingMutation = useRemoveHoldingBySymbol();
+  const invalidateQuota = useInvalidateQuota();
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const inputRef = useRef('');
   const initialQuerySentRef = useRef(false);
+  const [paywallQuota, setPaywallQuota] = useState<QuotaState | null>(null);
 
   useImperativeHandle(ref, () => ({
     focusInput: () => textareaRef.current?.focus(),
@@ -189,7 +195,22 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
         ...((user?.settings as any)?.response_style ? { responseStyle: (user?.settings as any).response_style } : {}),
       },
     }),
+    onError: (err) => {
+      // Server returns 402 with body { error: 'quota_exceeded', quota: QuotaState }.
+      // The transport surfaces the body as part of the error message; pick out the JSON.
+      const msg = err?.message ?? '';
+      if (msg.includes('quota_exceeded')) {
+        try {
+          const match = msg.match(/\{[\s\S]*\}/);
+          const parsed = match ? JSON.parse(match[0]) : null;
+          setPaywallQuota(parsed?.quota ?? null);
+        } catch {
+          setPaywallQuota(null);
+        }
+      }
+    },
     onFinish: async ({ message }) => {
+      invalidateQuota('chat');
       for (const action of extractClientActions(message)) {
         if (action.type === 'navigate' && action.path) {
           router.push(action.path);
@@ -317,6 +338,19 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
 
   return (
     <div className={cn('flex flex-col h-full', compact ? '' : 'min-h-[460px]')}>
+      {/* Quota indicator (free users only — invisible for Pro) */}
+      <div className="shrink-0 px-4 pt-3 flex justify-center">
+        <QuotaIndicator feature="chat" unit={{ singular: 'message', plural: 'messages' }} />
+      </div>
+
+      {/* Quota wall (free user hit 15/day → upgrade prompt) */}
+      <AiPaywallDialog
+        open={paywallQuota !== null}
+        onOpenChange={(o) => !o && setPaywallQuota(null)}
+        featureName="BullPen AI"
+        quota={paywallQuota ?? undefined}
+      />
+
       {/* Messages */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-4 space-y-4 scrollbar-hide">
         {messages.length === 0 && (

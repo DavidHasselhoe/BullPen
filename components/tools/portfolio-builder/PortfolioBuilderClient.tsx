@@ -11,10 +11,14 @@ import { Button } from '@/components/ui/button';
 import { AlertCircle, Clock, ChevronRight, Trash2, Search, X } from 'lucide-react';
 import type { Portfolio } from '@/lib/ai/portfolio-builder/schema';
 import type { SavedGeneration } from '@/app/api/ai/portfolio-builder/history/route';
+import type { QuotaState } from '@/lib/billing/quotas';
 import { cn } from '@/lib/utils';
+import { QuotaIndicator } from '@/components/billing/QuotaIndicator';
+import { AiPaywallDialog } from '@/components/billing/AiPaywallDialog';
+import { useInvalidateQuota } from '@/hooks/use-quota';
 
 type Phase = 'idle' | 'streaming' | 'composing' | 'validating' | 'done' | 'error';
-type ErrorCode = 'invalid_key' | 'payment_required' | 'rate_limited' | 'parse_failed' | 'too_few_valid_tickers' | 'unknown';
+type ErrorCode = 'invalid_key' | 'payment_required' | 'rate_limited' | 'parse_failed' | 'too_few_valid_tickers' | 'quota_exceeded' | 'unknown';
 
 interface DoneEvent {
   type: 'done';
@@ -32,8 +36,10 @@ export function PortfolioBuilderClient() {
   const [errorCode, setErrorCode] = useState<ErrorCode>('unknown');
   const [errorMessage, setErrorMessage] = useState('');
   const [thesis, setThesis] = useState('');
+  const [paywallQuota, setPaywallQuota] = useState<QuotaState | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const queryClient = useQueryClient();
+  const invalidateQuota = useInvalidateQuota();
 
   useEffect(() => () => abortRef.current?.abort(), []);
 
@@ -120,6 +126,12 @@ export function PortfolioBuilderClient() {
       });
 
       if (res.status === 429) { setErrorCode('rate_limited'); setPhase('error'); return; }
+      if (res.status === 402) {
+        const data = await res.json().catch(() => ({}));
+        setPaywallQuota((data?.quota as QuotaState | undefined) ?? null);
+        setPhase('idle');
+        return;
+      }
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         setErrorMessage(data.error || `Request failed: ${res.status}`);
@@ -155,6 +167,7 @@ export function PortfolioBuilderClient() {
               const doneEvent = event as DoneEvent;
               setResult(doneEvent);
               setPhase('done');
+              invalidateQuota('portfolio_builder');
               // Persist in background — don't await
               saveMutation.mutate({
                 thesis: submittedThesis,
@@ -183,6 +196,9 @@ export function PortfolioBuilderClient() {
     return (
       <div className="space-y-10">
         <ThesisInput onSubmit={submit} />
+        <div className="-mt-6 flex justify-center">
+          <QuotaIndicator feature="portfolio_builder" unit={{ singular: 'build', plural: 'builds' }} />
+        </div>
         {(historyTotal > 0 || debouncedQuery) && (
           <RecentPortfolios
             items={history}
@@ -195,6 +211,12 @@ export function PortfolioBuilderClient() {
             onDelete={(id) => deleteMutation.mutate(id)}
           />
         )}
+        <AiPaywallDialog
+          open={paywallQuota !== null}
+          onOpenChange={(o) => !o && setPaywallQuota(null)}
+          featureName="Portfolio Builder"
+          quota={paywallQuota ?? undefined}
+        />
       </div>
     );
   }

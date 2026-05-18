@@ -88,7 +88,7 @@ export function UserMenu() {
             avatarUrl={user.avatar_url}
             displayName={displayName}
             fallback={getInitials()}
-            tier={user.account_tier ? parseInt(user.account_tier.toString()) : 1}
+            tier={user.account_tier ?? 1}
             size="md"
             showTooltip={false}
             showCrown={false}

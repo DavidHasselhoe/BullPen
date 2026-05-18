@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
-import { createServerClient } from '@/lib/supabase/client';
 import { checkRateLimit } from '@/lib/security/rate-limiter';
+import { checkQuota } from '@/lib/billing/quotas';
+import { logAiCall } from '@/lib/billing/log-ai-call';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -11,18 +12,13 @@ async function handler(
   _ctx: unknown,
   session: { userId: string }
 ): Promise<NextResponse> {
-  // ── Tier check ────────────────────────────────────────────────────────────
-  const supabase = createServerClient();
-  const { data: userRow } = await supabase
-    .from('users')
-    .select('account_tier')
-    .eq('id', session.userId)
-    .maybeSingle();
-
-  const tier = userRow?.account_tier ?? 'free';
-  if (tier === 'free') {
+  // Pro-only feature. The quota config has count=0 for free → returns reason: 'pro_only'.
+  // (Historical bug: this route used `account_tier === 'free'` against an INT column,
+  //  which never matched. Free users had been slipping through.)
+  const quota = await checkQuota(session.userId, 'why_today');
+  if (!quota.allowed) {
     return addSecurityHeaders(
-      NextResponse.json({ error: 'upgrade_required' }, { status: 403 })
+      NextResponse.json({ error: 'upgrade_required', quota }, { status: 402 })
     );
   }
 
@@ -94,6 +90,19 @@ async function handler(
             send({ type: 'text', delta: event.delta.text });
           }
         }
+
+        // Log usage (non-blocking — never block the response)
+        try {
+          const final = await stream.finalMessage();
+          void logAiCall({
+            userId: session.userId,
+            feature: 'why_today',
+            model: 'claude-sonnet-4-6',
+            inputTokens: final.usage.input_tokens,
+            outputTokens: final.usage.output_tokens,
+            metadata: { ticker },
+          });
+        } catch { /* never block */ }
 
         send({ type: 'done' });
       } catch (err) {

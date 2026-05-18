@@ -3,7 +3,8 @@ import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { getCached, setCached } from '@/lib/cache/market-data-cache';
 import { createServerClient } from '@/lib/supabase/client';
-import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
+import { withRateLimit, addSecurityHeaders, getSessionForApiRoute } from '@/lib/security/api-security';
+import { logAiCall } from '@/lib/billing/log-ai-call';
 
 export const dynamic = 'force-dynamic';
 
@@ -49,7 +50,7 @@ async function handler(
       );
     }
 
-    const { text } = await generateText({
+    const result = await generateText({
       model: openai('gpt-4o-mini'),
       system: SYSTEM_PROMPT,
       prompt: `Competitors for: ${sym}`,
@@ -57,8 +58,18 @@ async function handler(
       temperature: 0,
     });
 
+    // Log usage (no quota — this route is cached 30 days; cost is minimal)
+    const session = await getSessionForApiRoute();
+    void logAiCall({
+      userId: session?.userId ?? null,
+      feature: 'competitors',
+      model: 'gpt-4o-mini',
+      inputTokens: result.usage.inputTokens,
+      outputTokens: result.usage.outputTokens,
+      metadata: { ticker: sym },
+    });
+
     // Extract [...] defensively in case model prepends explanation text
-    const jsonStr = text.match(/\[[\s\S]*\]/)?.[0] ?? text.trim();
     const parsed: unknown = JSON.parse(jsonStr);
     if (!Array.isArray(parsed)) throw new Error('Not an array');
 

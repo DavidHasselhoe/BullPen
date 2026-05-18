@@ -246,7 +246,7 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
                     avatarUrl={avatarUrl}
                     displayName={displayName}
                     fallback={getInitials()}
-                    tier={user?.account_tier ? parseInt(user.account_tier.toString()) : 1}
+                    tier={user?.account_tier ?? 1}
                     size="xl"
                     showTooltip={true}
                   />

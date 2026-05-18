@@ -28,6 +28,17 @@ git push origin preview
 
 Never create feature branches. Work directly on `preview`.
 
+## Supabase Migrations
+
+Whenever you create a new `supabase/migrations/NNN_*.sql` file, **apply it immediately via the Supabase MCP** (`mcp__claude_ai_Supabase__apply_migration`). Do not wait for the user to run it manually.
+
+- Project ID: `kgqpzuvhslqazurfrqya` (BullPen, eu-central-1)
+- Use `apply_migration` for DDL (CREATE TABLE, ALTER, indexes, RLS policies, etc.)
+- Use `execute_sql` for one-off data updates (e.g. setting `account_tier` for an admin user)
+- The file in `supabase/migrations/` is the source of truth — what you push must match what was applied
+
+If the migration fails, fix the SQL in the file and re-apply rather than committing a broken migration.
+
 ## Commands
 
 ```bash

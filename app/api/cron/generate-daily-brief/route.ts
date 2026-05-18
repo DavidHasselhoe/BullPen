@@ -15,6 +15,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { createServerClient } from '@/lib/supabase/client';
 import { getEarningsCalendarRange } from '@/lib/twelvedata/twelvedata-client';
 import { getTopMovers } from '@/lib/market-data';
+import { logAiCall } from '@/lib/billing/log-ai-call';
 
 export const maxDuration = 120;
 
@@ -153,6 +154,19 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         fullText += event.delta.text;
       }
     }
+
+    // Log the cron run's cost (no user → null user_id)
+    try {
+      const final = await stream.finalMessage();
+      void logAiCall({
+        userId: null,
+        feature: 'daily_brief',
+        model: 'claude-sonnet-4-6',
+        inputTokens: final.usage.input_tokens,
+        outputTokens: final.usage.output_tokens,
+        metadata: { date: todayET },
+      });
+    } catch { /* never block cron on logging */ }
   } catch (err) {
     console.error('[generate-daily-brief] Anthropic error:', err);
     return NextResponse.json(

@@ -10,6 +10,8 @@ import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, withRateLimit } from '@/lib/security/api-security';
+import { checkQuota } from '@/lib/billing/quotas';
+import { logAiCall } from '@/lib/billing/log-ai-call';
 
 const RISK_ANALYST_SYSTEM_PROMPT = `You are a senior portfolio risk analyst at a top-tier institutional investment firm. Your task is to produce a rigorous, structured risk assessment of a retail investor's stock portfolio.
 
@@ -59,6 +61,12 @@ interface HoldingInput {
 }
 
 async function handler(req: NextRequest, _context: unknown, session: { userId: string }) {
+  // Monthly quota (3/mo free, unlimited Pro)
+  const quota = await checkQuota(session.userId, 'risk_analysis');
+  if (!quota.allowed) {
+    return NextResponse.json({ error: 'quota_exceeded', quota }, { status: 402 });
+  }
+
   try {
     const body = await req.json();
     const holdings: HoldingInput[] = body.holdings;
@@ -85,15 +93,24 @@ async function handler(req: NextRequest, _context: unknown, session: { userId: s
 
     const prompt = `Analyze this portfolio${totalValue > 0 ? ` (total value: $${totalValue.toFixed(0)})` : ''}:\n\n${lines.join('\n')}`;
 
-    const { text } = await generateText({
+    const result = await generateText({
       model: openai('gpt-4o'),
       system: RISK_ANALYST_SYSTEM_PROMPT,
       prompt,
       maxOutputTokens: 2048,
     });
 
+    void logAiCall({
+      userId: session.userId,
+      feature: 'risk_analysis',
+      model: 'gpt-4o',
+      inputTokens: result.usage.inputTokens,
+      outputTokens: result.usage.outputTokens,
+      metadata: { holdingsCount: holdings.length },
+    });
+
     // Strip any accidental markdown fences before parsing
-    const cleaned = text.trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '');
+    const cleaned = result.text.trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '');
     const analysis = JSON.parse(cleaned);
 
     return NextResponse.json({ success: true, analysis });

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { withAuth } from '@/lib/security/api-security';
 import { checkRateLimit } from '@/lib/security/rate-limiter';
+import { checkQuota } from '@/lib/billing/quotas';
+import { logAiCall } from '@/lib/billing/log-ai-call';
 import { PORTFOLIO_BUILDER_SYSTEM_PROMPT } from '@/lib/ai/portfolio-builder/system-prompt';
 import {
   parsePortfolio,
@@ -32,6 +34,15 @@ async function handler(
   });
   if (!limit.allowed) {
     return NextResponse.json({ error: 'Rate limit exceeded. Please try again in a minute.' }, { status: 429 });
+  }
+
+  // Monthly free-tier quota (3/mo). Pro users bypass entirely.
+  const quota = await checkQuota(session.userId, 'portfolio_builder');
+  if (!quota.allowed) {
+    return NextResponse.json(
+      { error: 'quota_exceeded', quota },
+      { status: 402 }
+    );
   }
 
   // Parse body
@@ -94,6 +105,21 @@ async function handler(
               buffered += delta.text;
             }
           }
+        }
+
+        // Capture token usage and log the call. Logging happens regardless of
+        // downstream parse outcome — the AI call's cost is already incurred.
+        try {
+          const final = await stream.finalMessage();
+          void logAiCall({
+            userId: session.userId,
+            feature: 'portfolio_builder',
+            model: MODEL,
+            inputTokens: final.usage.input_tokens,
+            outputTokens: final.usage.output_tokens,
+          });
+        } catch {
+          // never block the response on logging
         }
 
         // Parse + validate the JSON
