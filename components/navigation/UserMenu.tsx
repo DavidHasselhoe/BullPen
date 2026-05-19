@@ -15,9 +15,10 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { User, LogOut, Loader2 } from 'lucide-react';
+import { User, LogOut, Loader2, Shield } from 'lucide-react';
 import { ProfileModal } from '@/components/user/ProfileModal';
 import { ProfileAvatar } from '@/components/user/ProfileAvatar';
+import { isAdmin, tierFromUser } from '@/lib/billing/tier';
 
 export function UserMenu() {
   const router = useRouter();
@@ -76,6 +77,7 @@ export function UserMenu() {
   };
 
   const displayName = user.full_name || user.username || user.email.split('@')[0];
+  const userIsAdmin = isAdmin(tierFromUser(user.account_tier, user.role));
 
   return (
     <DropdownMenu>
@@ -119,6 +121,23 @@ export function UserMenu() {
           <User className="mr-2 h-4 w-4" />
           <span>Profile</span>
         </DropdownMenuItem>
+
+        {userIsAdmin && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-semibold">
+              Admin
+            </DropdownMenuLabel>
+            <DropdownMenuItem
+              onClick={() => router.push('/admin/costs')}
+              className="cursor-pointer transition-all hover:translate-x-1"
+            >
+              <Shield className="mr-2 h-4 w-4" />
+              <span>AI Costs</span>
+            </DropdownMenuItem>
+          </>
+        )}
+
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={handleSignOut}
