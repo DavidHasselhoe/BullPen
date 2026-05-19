@@ -15,7 +15,7 @@ export default function NotFound() {
         The page you&apos;re looking for doesn&apos;t exist or has been moved.
       </p>
       <Button asChild>
-        <Link href="/" className="flex items-center gap-2">
+        <Link href="/discover" className="flex items-center gap-2">
           <Home className="h-4 w-4" />
           Go to Discover
         </Link>

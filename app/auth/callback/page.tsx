@@ -38,7 +38,7 @@ function AuthCallbackContent() {
     const redirectHome = () => {
       if (!redirected) {
         redirected = true;
-        router.replace('/');
+        router.replace('/dashboard');
       }
     };
 

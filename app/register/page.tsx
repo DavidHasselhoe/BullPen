@@ -31,7 +31,7 @@ export default function RegisterPage() {
   };
 
   const handleSuccess = () => {
-    router.replace('/');
+    router.replace('/dashboard');
   };
 
   return (

@@ -42,6 +42,13 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '1mb',
     },
   },
+  // The marketing landing moved from /welcome to / (Nov 2026). Keep old inbound
+  // links (Show HN posts, tweets, etc.) working.
+  async redirects() {
+    return [
+      { source: '/welcome', destination: '/', permanent: true },
+    ];
+  },
 };
 
 export default nextConfig;

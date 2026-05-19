@@ -5,7 +5,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 
 const VALID_HOMEPAGES = [
-  '/',
+  '/dashboard',
+  '/discover',
   '/holdings',
   '/tools',
   '/tools/ai-chat',
@@ -22,12 +23,11 @@ function isAllowedDefaultHomepage(path: string): boolean {
 }
 
 /**
- * When a logged-in user visits / and has a default_homepage setting other than /,
- * redirects them to that page. Only runs on the root path.
+ * When a logged-in user lands on /dashboard and has a default_homepage setting
+ * other than /dashboard, redirects them to that page. Only runs on /dashboard.
  *
- * Logged-out users are NOT redirected — the dashboard is accessible to anyone,
- * and the marketing landing lives at /welcome (reached via the "Open Dashboard"
- * loop or marketing links).
+ * `/` is the marketing landing (LandingClient handles redirecting authed users
+ * to /dashboard itself), so this redirect does not run there.
  */
 export function HomepageRedirect({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -35,11 +35,11 @@ export function HomepageRedirect({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
 
   useEffect(() => {
-    if (pathname !== '/' || isLoading) return;
+    if (pathname !== '/dashboard' || isLoading) return;
     if (!user) return;
 
     const defaultHomepage = (user.settings as Record<string, unknown> | null)?.default_homepage;
-    if (!defaultHomepage || defaultHomepage === '/' || typeof defaultHomepage !== 'string') return;
+    if (!defaultHomepage || defaultHomepage === '/dashboard' || typeof defaultHomepage !== 'string') return;
 
     const target = defaultHomepage.startsWith('/') ? defaultHomepage : `/${defaultHomepage}`;
     if (!isAllowedDefaultHomepage(target)) return;

@@ -231,7 +231,7 @@ export default function StockDetailPage() {
             <p className="text-sm text-muted-foreground max-w-sm mt-1">
               We couldn&apos;t find a stock with that symbol. Double-check the ticker or search for a company name.
             </p>
-            <Button className="mt-6" onClick={() => router.push('/')}>
+            <Button className="mt-6" onClick={() => router.push('/dashboard')}>
               Back to Dashboard
             </Button>
           </div>

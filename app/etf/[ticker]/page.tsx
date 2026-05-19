@@ -186,7 +186,7 @@ export default function EtfDetailPage() {
             <p className="text-sm text-muted-foreground max-w-sm mt-1">
               We couldn&apos;t find an ETF with that symbol.
             </p>
-            <Button className="mt-6" onClick={() => router.push('/')}>
+            <Button className="mt-6" onClick={() => router.push('/dashboard')}>
               Back to Dashboard
             </Button>
           </div>

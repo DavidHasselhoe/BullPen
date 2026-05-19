@@ -1,7 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { AuthModal, type AuthMode } from '@/components/auth/AuthModal';
+import { useAuth } from '@/hooks/use-auth';
 import { Nav } from './Nav';
 import { Hero } from './Hero';
 import { TickerStrip } from './TickerStrip';
@@ -15,14 +17,22 @@ import { Footer } from './Footer';
 import './landing-styles.css';
 
 /**
- * Top-level marketing landing page. Owns the auth modal state — every "Sign up"
- * and "Sign in" CTA in the page lifts up to here, opening the existing AuthModal
- * with the right initial mode. After successful auth, AuthModal redirects via
- * its own internal flow (or the existing onAuthStateChange listener does).
+ * Top-level marketing landing page (rendered at `/`).
+ *
+ * Owns the auth modal state — every "Sign up" / "Sign in" CTA lifts up to here.
+ * Logged-in users are auto-redirected to /dashboard so they don't see the
+ * marketing page when they're already a customer.
  */
 export function LandingClient() {
+  const router = useRouter();
+  const { user, isLoading } = useAuth();
   const [authOpen, setAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState<AuthMode>('signup');
+
+  // Signed-in users bypass the marketing page
+  useEffect(() => {
+    if (!isLoading && user) router.replace('/dashboard');
+  }, [user, isLoading, router]);
 
   const openSignUp = () => {
     setAuthMode('signup');
@@ -51,7 +61,7 @@ export function LandingClient() {
         <Footer />
       </div>
 
-      <AuthModal open={authOpen} onOpenChange={setAuthOpen} initialMode={authMode} redirectTo="/" />
+      <AuthModal open={authOpen} onOpenChange={setAuthOpen} initialMode={authMode} redirectTo="/dashboard" />
     </div>
   );
 }

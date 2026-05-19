@@ -288,7 +288,7 @@ export default function WatchlistPage() {
               ))}
             </div>
             <Link
-              href="/"
+              href="/discover"
               className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
             >
               <TrendingUp className="h-3.5 w-3.5" />

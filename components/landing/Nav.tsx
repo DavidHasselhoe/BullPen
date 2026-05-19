@@ -86,7 +86,7 @@ export function Nav({ onSignIn, onSignUp }: Props) {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <Link
-            href="/"
+            href="/dashboard"
             style={{
               fontSize: 14,
               fontWeight: 500,

@@ -23,7 +23,7 @@ import {
 import { TOOLS } from '@/lib/tools/tools-config';
 
 const navigation = [
-  { name: 'Home', href: '/', icon: Home },
+  { name: 'Home', href: '/dashboard', icon: Home },
   { name: 'Discover', href: '/discover', icon: Compass },
   { name: 'My Holdings', href: '/holdings', icon: Briefcase },
   { name: 'Watchlist', href: '/watchlist', icon: Bookmark },
@@ -120,7 +120,7 @@ export function Navigation() {
                   <Link
                     key={item.href}
                     href={item.href}
-                    onMouseEnter={item.href === '/' ? prefetchDiscover : undefined}
+                    onMouseEnter={item.href === '/dashboard' ? prefetchDiscover : undefined}
                     className={cn(
                       'flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium transition-all',
                       isActive
