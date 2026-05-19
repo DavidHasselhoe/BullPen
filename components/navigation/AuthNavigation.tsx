@@ -6,8 +6,8 @@ import { Navigation } from './Navigation';
 export function AuthNavigation() {
   const pathname = usePathname();
   
-  // Hide navigation on auth pages
-  if (pathname === '/login' || pathname === '/register') {
+  // Hide navigation on auth and marketing pages (the marketing landing has its own nav)
+  if (pathname === '/login' || pathname === '/register' || pathname === '/welcome') {
     return null;
   }
 

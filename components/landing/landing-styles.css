@@ -1,0 +1,257 @@
+/* ─── BullPen marketing landing — scoped theme + animations ────────────────
+ * All rules are namespaced under `.bullpen-landing-root` so they never leak
+ * into the rest of the app. Inline component styles reference the CSS custom
+ * properties declared here.
+ *
+ * Color system uses OKLCH for perceptually uniform hue/contrast.
+ * Fonts come from next/font (Geist, Geist Mono, Instrument Serif) — root
+ * layout exposes them via --font-geist-sans, --font-geist-mono,
+ * --font-instrument-serif variables.
+ */
+
+.bullpen-landing-root {
+  --font-sans: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", monospace;
+  --font-serif: var(--font-instrument-serif), "Times New Roman", serif;
+
+  /* Accent palette — emerald default; can later be swapped via CSS var override */
+  --accent: oklch(0.72 0.17 152);
+  --accent-soft: oklch(0.72 0.17 152 / 0.15);
+  --accent-glow: oklch(0.72 0.17 152 / 0.35);
+  --accent-ink: oklch(0.18 0.04 152);
+
+  /* Semantic tickers */
+  --up: oklch(0.72 0.17 152);
+  --down: oklch(0.65 0.22 25);
+
+  /* DARK theme tokens (the only theme we ship publicly) */
+  --bg: oklch(0.155 0.005 250);
+  --bg-2: oklch(0.19 0.008 250);
+  --surface: oklch(0.215 0.01 250);
+  --surface-2: oklch(0.25 0.012 250);
+  --border: oklch(1 0 0 / 0.08);
+  --border-strong: oklch(1 0 0 / 0.14);
+  --fg: oklch(0.985 0 0);
+  --fg-muted: oklch(0.72 0.01 250);
+  --fg-dim: oklch(0.55 0.01 250);
+  --grid: oklch(1 0 0 / 0.04);
+
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.bullpen-landing-root *,
+.bullpen-landing-root *::before,
+.bullpen-landing-root *::after {
+  box-sizing: border-box;
+}
+
+.bullpen-landing-root a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.bullpen-landing-root button {
+  font: inherit;
+  color: inherit;
+}
+
+.bullpen-landing-root ::selection {
+  background: var(--accent-soft);
+  color: var(--fg);
+}
+
+/* Page atmosphere — radial spotlights + faint grid */
+.bullpen-landing-root .page-bg {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(60% 50% at 18% 12%, var(--accent-glow), transparent 60%),
+    radial-gradient(50% 40% at 90% 8%, oklch(0.6 0.18 270 / 0.18), transparent 65%),
+    radial-gradient(80% 60% at 50% 110%, var(--accent-soft), transparent 60%);
+  opacity: 0.65;
+}
+
+.bullpen-landing-root .page-grid {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    linear-gradient(to right, var(--grid) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid) 1px, transparent 1px);
+  background-size: 64px 64px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, black 30%, transparent 80%);
+          mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, black 30%, transparent 80%);
+}
+
+.bullpen-landing-root .content-layer {
+  position: relative;
+  z-index: 1;
+}
+
+/* Animations */
+@keyframes bp-float-y {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-8px); }
+}
+@keyframes bp-float-y-2 {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-12px); }
+}
+@keyframes bp-float-y-3 {
+  0%, 100% { transform: translateY(-4px); }
+  50%      { transform: translateY(6px); }
+}
+@keyframes bp-pulse-dot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%      { transform: scale(1.4); opacity: 0.6; }
+}
+@keyframes bp-pulse-ring {
+  0%   { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(2.6); opacity: 0; }
+}
+@keyframes bp-draw-path {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes bp-fade-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes bp-marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+@keyframes bp-blink {
+  0%, 60% { opacity: 1; }
+  61%, 100% { opacity: 0.2; }
+}
+@keyframes bp-count-up {
+  from { opacity: 0.4; }
+  to   { opacity: 1; }
+}
+
+/* Reveal-on-scroll */
+.bullpen-landing-root .reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.bullpen-landing-root .reveal.in {
+  opacity: 1;
+  transform: translateY(0);
+}
+.bullpen-landing-root .reveal[data-delay="1"] { transition-delay: 80ms; }
+.bullpen-landing-root .reveal[data-delay="2"] { transition-delay: 160ms; }
+.bullpen-landing-root .reveal[data-delay="3"] { transition-delay: 240ms; }
+.bullpen-landing-root .reveal[data-delay="4"] { transition-delay: 320ms; }
+.bullpen-landing-root .reveal[data-delay="5"] { transition-delay: 400ms; }
+.bullpen-landing-root .reveal[data-delay="6"] { transition-delay: 480ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .bullpen-landing-root .reveal,
+  .bullpen-landing-root .reveal.in {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .bullpen-landing-root * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/* Buttons */
+.bullpen-landing-root .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 15px;
+  line-height: 1;
+  transition: transform 180ms cubic-bezier(0.22,1,0.36,1), box-shadow 200ms, background 200ms, color 200ms, border-color 200ms;
+  cursor: pointer;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.bullpen-landing-root .btn:active {
+  transform: translateY(1px) scale(0.99);
+}
+.bullpen-landing-root .btn-primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+  box-shadow: 0 12px 32px -10px var(--accent-glow), inset 0 1px 0 oklch(1 0 0 / 0.3);
+}
+.bullpen-landing-root .btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 18px 40px -10px var(--accent-glow), inset 0 1px 0 oklch(1 0 0 / 0.35);
+}
+.bullpen-landing-root .btn-ghost {
+  background: transparent;
+  color: var(--fg);
+  border-color: var(--border-strong);
+}
+.bullpen-landing-root .btn-ghost:hover {
+  background: var(--surface);
+  border-color: var(--fg-dim);
+}
+
+.bullpen-landing-root .headline {
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 0.98;
+  text-wrap: balance;
+}
+.bullpen-landing-root .accent-serif {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+.bullpen-landing-root .mono {
+  font-family: var(--font-mono);
+  font-feature-settings: "tnum" 1;
+}
+
+.bullpen-landing-root .up { color: var(--up); }
+.bullpen-landing-root .down { color: var(--down); }
+
+.bullpen-landing-root .wrap {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 24px;
+  position: relative;
+  z-index: 1;
+}
+@media (max-width: 700px) {
+  .bullpen-landing-root .wrap { padding: 0 18px; }
+}
+
+@media (max-width: 880px) {
+  .bullpen-landing-root .nav-links { display: none !important; }
+  .bullpen-landing-root .footer-grid { grid-template-columns: 1fr 1fr !important; gap: 28px !important; }
+}
+@media (max-width: 900px) {
+  .bullpen-landing-root .feat-grid > div { grid-column: span 12 !important; }
+  .bullpen-landing-root .steps-grid { grid-template-columns: 1fr !important; }
+  .bullpen-landing-root .step-line { display: none !important; }
+}
+@media (max-width: 800px) {
+  .bullpen-landing-root .float-tickers > div > div { display: none !important; }
+}
+@media (max-width: 700px) {
+  .bullpen-landing-root .pricing-grid { grid-template-columns: 1fr !important; }
+}
+@media (max-width: 560px) {
+  .bullpen-landing-root .footer-grid { grid-template-columns: 1fr !important; }
+}

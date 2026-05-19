@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 // Analytics: ERR_BLOCKED_BY_CLIENT = ad blocker (uBlock, etc.). Harmless - analytics won't run for those users.
@@ -24,6 +24,14 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// Display serif used on the marketing landing page (/welcome) for the accented words.
+const instrumentSerif = Instrument_Serif({
+  variable: "--font-instrument-serif",
+  subsets: ["latin"],
+  weight: "400",
+  style: ["normal", "italic"],
+});
+
 export const metadata: Metadata = {
   title: "BullPen - Financial Analytics",
   description: "Professional fintech analytics platform for SEC filings analysis",
@@ -37,7 +45,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark h-full">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased h-full min-h-screen overflow-x-hidden scrollbar-hide`}
+        className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} antialiased h-full min-h-screen overflow-x-hidden scrollbar-hide`}
       >
         <Providers>
           <ThemeProvider>
