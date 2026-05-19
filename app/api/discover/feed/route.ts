@@ -1,230 +1,203 @@
 import { NextResponse } from 'next/server';
-import { unstable_cache } from 'next/cache';
 import { createServerClient } from '@/lib/supabase/client';
 import { getSessionForApiRoute, addSecurityHeaders } from '@/lib/security/api-security';
 import {
   SECTOR_DISPLAY_ORDER,
   STOCKS_PER_SECTOR_RAIL,
   ETF_THEMES,
+  ETF_ISSUER_DOMAINS,
   COMMODITY_SYMBOLS,
   CRYPTO_SYMBOLS,
+  CRYPTO_LOGO_URLS,
+  TRENDING_FALLBACK,
+  logoDevUrl,
   type TickerItem,
   type DiscoverFeed,
 } from '@/lib/discover/discover-config';
 
 export const dynamic = 'force-dynamic';
 
-interface ScreenerRowSlim {
-  ticker: string;
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+interface CompanyMeta {
   name: string;
   logo_url: string | null;
-  sector: string | null;
-  market_cap: number | null;
-  dividend_yield: number | null;
 }
 
-// ── Shared screener_stats loader, cached for 60s across all users ─────────────
-const loadScreenerStats = unstable_cache(
-  async () => {
-    const supabase = createServerClient();
-    const { data, error } = await supabase
-      .from('screener_stats')
-      .select('ticker, name, logo_url, sector, market_cap, dividend_yield')
-      .order('market_cap', { ascending: false, nullsFirst: false });
-    if (error) throw new Error(error.message);
-    return (data ?? []) as ScreenerRowSlim[];
-  },
-  ['discover-feed-screener-stats'],
-  { revalidate: 60 }
-);
-
-function rowToItem(r: ScreenerRowSlim): TickerItem {
-  return {
-    symbol: r.ticker,
-    ticker: r.ticker,
-    name: r.name,
-    logoUrl: r.logo_url,
-    sector: r.sector,
-    marketCap: r.market_cap,
-    dividendYield: r.dividend_yield,
-  };
-}
-
-// ── For ETFs/commodities/crypto we need name+logo — fetch from companies table ─
 async function fetchCompanyMeta(
   tickers: string[]
-): Promise<Map<string, { name: string; logo_url: string | null }>> {
+): Promise<Map<string, CompanyMeta>> {
   if (tickers.length === 0) return new Map();
-  const supabase = createServerClient();
   const upper = [...new Set(tickers.map((t) => t.toUpperCase()))];
+  const supabase = createServerClient();
   const { data } = await supabase
     .from('companies')
     .select('ticker, name, logo_url')
     .in('ticker', upper);
-  return new Map((data ?? []).map((c) => [c.ticker, { name: c.name, logo_url: c.logo_url }]));
+  return new Map(
+    (data ?? []).map((c) => [c.ticker, { name: c.name as string, logo_url: c.logo_url as string | null }])
+  );
 }
 
-// ── For You: derive 2-3 sectors from user's holdings + watchlist ──────────────
-async function buildForYouRail(
-  userId: string | null,
-  stocksBySector: Map<string, ScreenerRowSlim[]>,
-  allRows: ScreenerRowSlim[]
-): Promise<DiscoverFeed['forYou']> {
-  if (!userId) {
-    // Anonymous → top trending fallback
-    return {
-      mode: 'trending',
-      items: allRows.slice(0, 12).map(rowToItem),
-      explanation: 'Most-watched stocks today',
-    };
-  }
+function toStockItem(ticker: string, meta: CompanyMeta | undefined): TickerItem {
+  return {
+    symbol: ticker,
+    ticker,
+    name: meta?.name ?? ticker,
+    logoUrl: meta?.logo_url ?? null,
+  };
+}
 
+function toEtfItem(ticker: string, meta: CompanyMeta | undefined): TickerItem {
+  const issuerDomain = ETF_ISSUER_DOMAINS[ticker.toUpperCase()];
+  const issuerLogo = issuerDomain ? logoDevUrl(issuerDomain) : null;
+  return {
+    symbol: ticker,
+    ticker,
+    name: meta?.name ?? ticker,
+    // Prefer DB-stored logo if present, otherwise the issuer's brand logo
+    logoUrl: meta?.logo_url ?? issuerLogo,
+  };
+}
+
+// ── For You / Trending Today ──────────────────────────────────────────────────
+
+async function buildForYouRail(userId: string | null): Promise<DiscoverFeed['forYou']> {
   const supabase = createServerClient();
 
-  // Holdings + watchlist symbols (deduped, uppercase)
-  const [holdingsRes, watchlistRes] = await Promise.all([
-    supabase.from('user_holdings').select('symbol').eq('user_id', userId),
-    supabase.from('user_watchlist').select('symbol').eq('user_id', userId),
-  ]);
+  // Try personalized: holdings + watchlist symbols
+  if (userId) {
+    const [holdingsRes, watchlistRes] = await Promise.all([
+      supabase.from('user_holdings').select('symbol').eq('user_id', userId),
+      supabase.from('user_watchlist').select('symbol').eq('user_id', userId),
+    ]);
 
-  const userSymbols = new Set<string>();
-  for (const row of holdingsRes.data ?? []) userSymbols.add((row.symbol as string).toUpperCase());
-  for (const row of watchlistRes.data ?? []) userSymbols.add((row.symbol as string).toUpperCase());
+    const userSymbols = new Set<string>();
+    for (const row of holdingsRes.data ?? []) userSymbols.add((row.symbol as string).toUpperCase());
+    for (const row of watchlistRes.data ?? []) userSymbols.add((row.symbol as string).toUpperCase());
 
-  if (userSymbols.size === 0) {
-    return {
-      mode: 'trending',
-      items: allRows.slice(0, 12).map(rowToItem),
-      explanation: 'Most-watched stocks today',
-    };
+    if (userSymbols.size > 0) {
+      // Personalized: surface stocks from the same sectors the user already follows,
+      // excluding tickers they already own/watch.
+      const userTickers = [...userSymbols];
+      const userSectors = SECTOR_DISPLAY_ORDER.filter((s) =>
+        s.tickers.some((t) => userSymbols.has(t))
+      ).slice(0, 3);
+
+      if (userSectors.length > 0) {
+        const candidates: string[] = [];
+        const perSector = Math.ceil(12 / userSectors.length);
+        for (const sector of userSectors) {
+          const fresh = sector.tickers.filter((t) => !userSymbols.has(t)).slice(0, perSector);
+          candidates.push(...fresh);
+        }
+        const items = candidates.slice(0, 12);
+        const meta = await fetchCompanyMeta(items);
+        const explanation = `Based on your ${userSectors
+          .slice(0, 2)
+          .map((s) => s.label)
+          .join(' + ')} holdings`;
+        return {
+          mode: 'personalized',
+          items: items.map((t) => toStockItem(t, meta.get(t))),
+          explanation,
+        };
+      }
+
+      // User has holdings but none in our curated sector lists — fall through to trending.
+      void userTickers;
+    }
   }
 
-  // Tally sectors from owned/watched tickers
-  const sectorCounts = new Map<string, number>();
-  const tickerToRow = new Map(allRows.map((r) => [r.ticker, r]));
-  for (const sym of userSymbols) {
-    const row = tickerToRow.get(sym);
-    if (row?.sector) sectorCounts.set(row.sector, (sectorCounts.get(row.sector) ?? 0) + 1);
+  // Trending Today: most-viewed in the last 24h via the existing hot_picks function
+  let trendingTickers: string[] = [];
+  try {
+    const { data: hotPicks } = await supabase.rpc('get_hot_picks', {
+      time_period_hours: 24,
+      limit_count: 12,
+    });
+    if (Array.isArray(hotPicks)) {
+      trendingTickers = hotPicks
+        .map((row: { ticker?: string }) => (row.ticker ? String(row.ticker).toUpperCase() : ''))
+        .filter(Boolean);
+    }
+  } catch {
+    /* fall through to hardcoded fallback */
   }
 
-  if (sectorCounts.size === 0) {
-    return {
-      mode: 'trending',
-      items: allRows.slice(0, 12).map(rowToItem),
-      explanation: 'Most-watched stocks today',
-    };
+  if (trendingTickers.length === 0) {
+    trendingTickers = [...TRENDING_FALLBACK];
   }
 
-  // Pick top 3 sectors
-  const topSectors = [...sectorCounts.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 3)
-    .map(([s]) => s);
-
-  // Round-robin pick from each top sector, skipping symbols user already owns
-  const candidates: ScreenerRowSlim[] = [];
-  const perSector = Math.ceil(12 / topSectors.length);
-  for (const sector of topSectors) {
-    const sectorRows = stocksBySector.get(sector) ?? [];
-    const fresh = sectorRows.filter((r) => !userSymbols.has(r.ticker)).slice(0, perSector);
-    candidates.push(...fresh);
-  }
-
-  // Sector display label lookup (use friendly label from config)
-  const sectorLabel = (key: string) =>
-    SECTOR_DISPLAY_ORDER.find((s) => s.key === key)?.label ?? key;
-  const explanation =
-    `Based on your ${topSectors.map(sectorLabel).slice(0, 2).join(' + ')} holdings`;
-
+  const meta = await fetchCompanyMeta(trendingTickers);
   return {
-    mode: 'personalized',
-    items: candidates.slice(0, 12).map(rowToItem),
-    explanation,
+    mode: 'trending',
+    items: trendingTickers.map((t) => toStockItem(t, meta.get(t))),
+    explanation: 'Most-viewed today',
   };
 }
 
 // ── Handler ──────────────────────────────────────────────────────────────────
+
 export async function GET(): Promise<NextResponse> {
   const session = await getSessionForApiRoute();
   const userId = session?.userId ?? null;
 
-  let allRows: ScreenerRowSlim[];
-  try {
-    allRows = await loadScreenerStats();
-  } catch (err) {
-    return addSecurityHeaders(
-      NextResponse.json(
-        { success: false, error: err instanceof Error ? err.message : 'Failed to load stats' },
-        { status: 500 }
-      )
-    );
-  }
+  // Collect every ticker we need company metadata for (stocks + ETFs)
+  const sectorTickers = SECTOR_DISPLAY_ORDER.flatMap((s) =>
+    s.tickers.slice(0, STOCKS_PER_SECTOR_RAIL)
+  );
+  const etfTickers = ETF_THEMES.flatMap((t) => t.tickers);
+  const commodityTickers = COMMODITY_SYMBOLS.map((c) => c.symbol);
+  const cryptoTickers = CRYPTO_SYMBOLS.map((c) => c.symbol);
 
-  // Group rows by sector once
-  const stocksBySector = new Map<string, ScreenerRowSlim[]>();
-  for (const row of allRows) {
-    if (!row.sector) continue;
-    const list = stocksBySector.get(row.sector) ?? [];
-    list.push(row);
-    stocksBySector.set(row.sector, list);
-  }
+  const allMeta = await fetchCompanyMeta([
+    ...sectorTickers,
+    ...etfTickers,
+    ...commodityTickers,
+    ...cryptoTickers,
+  ]);
 
-  // Build sector rails
+  // Build sector rails (one entry per SECTOR_DISPLAY_ORDER)
   const sectors: Record<string, TickerItem[]> = {};
   for (const entry of SECTOR_DISPLAY_ORDER) {
-    const rows = (stocksBySector.get(entry.key) ?? []).slice(0, STOCKS_PER_SECTOR_RAIL);
-    sectors[entry.key] = rows.map(rowToItem);
+    sectors[entry.key] = entry.tickers
+      .slice(0, STOCKS_PER_SECTOR_RAIL)
+      .map((t) => toStockItem(t, allMeta.get(t)));
   }
 
-  // Build ETF/commodity/crypto rails — need name + logo from companies table
-  const allNonStockTickers = [
-    ...ETF_THEMES.flatMap((t) => t.tickers),
-    ...COMMODITY_SYMBOLS.map((c) => c.symbol),
-    ...CRYPTO_SYMBOLS.map((c) => c.symbol),
-  ];
-  const meta = await fetchCompanyMeta(allNonStockTickers);
-
+  // ETF rails
   const etfs: Record<string, TickerItem[]> = {};
   for (const theme of ETF_THEMES) {
-    etfs[theme.key] = theme.tickers.map((t) => {
-      const m = meta.get(t.toUpperCase());
-      return {
-        symbol: t,
-        ticker: t,
-        name: m?.name ?? t,
-        logoUrl: m?.logo_url ?? null,
-      };
-    });
+    etfs[theme.key] = theme.tickers.map((t) => toEtfItem(t, allMeta.get(t)));
   }
 
+  // Commodities — rely on initials fallback; no logo override
   const commodities: TickerItem[] = COMMODITY_SYMBOLS.map((c) => {
-    const m = meta.get(c.symbol.toUpperCase());
+    const m = allMeta.get(c.symbol.toUpperCase());
     return {
       symbol: c.symbol,
-      // For pair symbols, the display ticker is the base part (XAU/USD → XAU)
       ticker: c.symbol.split('/')[0],
       name: m?.name ?? c.name,
       logoUrl: m?.logo_url ?? null,
     };
   });
 
+  // Crypto — apply Coingecko logo overrides
   const crypto: TickerItem[] = CRYPTO_SYMBOLS.map((c) => {
-    const m = meta.get(c.symbol.toUpperCase());
+    const m = allMeta.get(c.symbol.toUpperCase());
     return {
       symbol: c.symbol,
       ticker: c.symbol.split('/')[0],
       name: m?.name ?? c.name,
-      logoUrl: m?.logo_url ?? null,
+      logoUrl: m?.logo_url ?? CRYPTO_LOGO_URLS[c.symbol] ?? null,
     };
   });
 
-  // For You rail (uses user holdings + watchlist when signed in)
-  const forYou = await buildForYouRail(userId, stocksBySector, allRows);
-
+  const forYou = await buildForYouRail(userId);
   const feed: DiscoverFeed = { forYou, sectors, etfs, commodities, crypto };
 
   const response = NextResponse.json({ success: true, feed });
-  // Edge-cache anonymous responses; user-specific responses are still cheap (~1 query)
   if (!userId) {
     response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120');
   } else {

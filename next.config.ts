@@ -30,6 +30,16 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'lh3.googleusercontent.com',
       },
+      {
+        // logo.dev — ETF issuer logos on /discover
+        protocol: 'https',
+        hostname: 'img.logo.dev',
+      },
+      {
+        // Coingecko CDN — crypto logos on /discover
+        protocol: 'https',
+        hostname: 'assets.coingecko.com',
+      },
     ],
   },
   // Security: Hide Next.js version in production

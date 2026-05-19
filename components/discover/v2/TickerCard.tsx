@@ -14,26 +14,39 @@ interface Props {
   href?: string;
 }
 
-function formatPrice(p: number | null | undefined): string {
-  if (p == null || !isFinite(p)) return '—';
+function formatPrice(p: number): string {
   if (p >= 1000) return p.toLocaleString(undefined, { maximumFractionDigits: 0 });
   if (p >= 1) return p.toFixed(2);
   if (p >= 0.01) return p.toFixed(4);
   return p.toFixed(6);
 }
 
-function formatPct(p: number | null | undefined): string {
-  if (p == null || !isFinite(p)) return '—';
+function formatPct(p: number): string {
   const sign = p > 0 ? '+' : '';
   return `${sign}${p.toFixed(2)}%`;
+}
+
+/** Subtle shimmer placeholder used while live prices haven't streamed in yet. */
+function PriceSkeleton({ wide = false }: { wide?: boolean }) {
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        'inline-block h-3 rounded-full bg-muted/40 animate-pulse',
+        wide ? 'w-12' : 'w-8'
+      )}
+    />
+  );
 }
 
 export function TickerCard({ item, href }: Props) {
   const live = useLivePrice(item.symbol);
 
-  // Compute the price + change with seed fallback to the previousClose from screener_stats
-  const price = live?.price ?? item.previousClose ?? null;
-  const changePct = live?.changePercent ?? null;
+  // Live SSE tick wins; fall back to the optional `previousClose` seed.
+  const rawPrice = live?.price ?? item.previousClose ?? null;
+  const rawChange = live?.changePercent ?? null;
+  const price: number | null = rawPrice != null && isFinite(rawPrice) ? rawPrice : null;
+  const changePct: number | null = rawChange != null && isFinite(rawChange) ? rawChange : null;
 
   const direction: 'up' | 'down' | 'flat' =
     changePct == null ? 'flat' : changePct > 0.01 ? 'up' : changePct < -0.01 ? 'down' : 'flat';
@@ -80,18 +93,27 @@ export function TickerCard({ item, href }: Props) {
       </div>
 
       <div className="flex items-baseline justify-between gap-1.5">
-        <span className="text-sm font-semibold tabular-nums text-foreground/90">
-          {formatPrice(price)}
-        </span>
-        <span
-          className={cn(
-            'inline-flex items-center gap-0.5 text-[11px] font-semibold tabular-nums',
-            dirClass,
-          )}
-        >
-          <DirIcon className="h-3 w-3" strokeWidth={2.5} aria-hidden />
-          {formatPct(changePct)}
-        </span>
+        {price != null ? (
+          <span className="text-sm font-semibold tabular-nums text-foreground/90">
+            {formatPrice(price)}
+          </span>
+        ) : (
+          <PriceSkeleton wide />
+        )}
+
+        {changePct != null ? (
+          <span
+            className={cn(
+              'inline-flex items-center gap-0.5 text-[11px] font-semibold tabular-nums',
+              dirClass,
+            )}
+          >
+            <DirIcon className="h-3 w-3" strokeWidth={2.5} aria-hidden />
+            {formatPct(changePct)}
+          </span>
+        ) : (
+          <PriceSkeleton />
+        )}
       </div>
     </Link>
   );
