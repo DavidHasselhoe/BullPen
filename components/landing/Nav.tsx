@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { Logo } from './Atoms';
 import { Icon } from './Icon';
 
@@ -84,6 +85,21 @@ export function Nav({ onSignIn, onSignUp }: Props) {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <Link
+            href="/"
+            style={{
+              fontSize: 14,
+              fontWeight: 500,
+              color: 'var(--fg-muted)',
+              padding: '8px 12px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+            }}
+          >
+            Open dashboard
+            <Icon name="arrowRight" size={13} />
+          </Link>
           <button
             type="button"
             onClick={onSignIn}

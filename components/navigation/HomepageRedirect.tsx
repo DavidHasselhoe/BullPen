@@ -22,9 +22,12 @@ function isAllowedDefaultHomepage(path: string): boolean {
 }
 
 /**
- * Handles two redirects on the root path:
- *  - Logged-out visitors → /welcome (the marketing landing)
- *  - Logged-in users with a default_homepage setting → that page
+ * When a logged-in user visits / and has a default_homepage setting other than /,
+ * redirects them to that page. Only runs on the root path.
+ *
+ * Logged-out users are NOT redirected — the dashboard is accessible to anyone,
+ * and the marketing landing lives at /welcome (reached via the "Open Dashboard"
+ * loop or marketing links).
  */
 export function HomepageRedirect({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -33,14 +36,8 @@ export function HomepageRedirect({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (pathname !== '/' || isLoading) return;
+    if (!user) return;
 
-    // Logged-out → marketing landing
-    if (!user) {
-      router.replace('/welcome');
-      return;
-    }
-
-    // Logged-in → honor default_homepage setting if set
     const defaultHomepage = (user.settings as Record<string, unknown> | null)?.default_homepage;
     if (!defaultHomepage || defaultHomepage === '/' || typeof defaultHomepage !== 'string') return;
 

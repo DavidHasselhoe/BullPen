@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Counter, Reveal } from './Atoms';
 import { Icon } from './Icon';
 
@@ -52,6 +53,10 @@ export function FinalCTA({ onSignUp }: Props) {
                   Sign up free
                   <Icon name="arrowRight" size={16} />
                 </button>
+                <Link href="/" className="btn btn-ghost" style={{ padding: '14px 22px', fontSize: 15 }}>
+                  Open dashboard
+                  <Icon name="arrowRight" size={15} />
+                </Link>
                 <span style={{ fontSize: 13, color: 'var(--fg-dim)' }}>
                   <Counter to={28412} /> investors joined this month
                 </span>

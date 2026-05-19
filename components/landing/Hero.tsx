@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
+import Link from 'next/link';
 import { Reveal } from './Atoms';
 import { Icon } from './Icon';
 import { buildPath } from './buildPath';
@@ -427,10 +428,10 @@ export function Hero({ onSignUp }: Props) {
                 Sign up free
                 <Icon name="arrowRight" size={16} />
               </button>
-              <a href="#how" className="btn btn-ghost" style={{ padding: '14px 22px', fontSize: 15 }}>
+              <Link href="/" className="btn btn-ghost" style={{ padding: '14px 22px', fontSize: 15 }}>
                 <Icon name="bolt" size={15} />
-                See it in action
-              </a>
+                Open dashboard
+              </Link>
             </div>
           </Reveal>
 
