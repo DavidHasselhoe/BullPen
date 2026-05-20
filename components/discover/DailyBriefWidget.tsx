@@ -42,9 +42,16 @@ function formatRelativeTime(isoString: string): string {
 }
 
 function formatPublishedDate(dateStr: string): string {
-  return new Date(dateStr + 'T12:00:00Z').toLocaleDateString('en-US', {
+  return new Date(dateStr + 'T12:00:00Z').toLocaleDateString(undefined, {
     weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC',
   });
+}
+
+function getNextBriefLocalTime(): string {
+  const target = new Date();
+  target.setUTCHours(6, 30, 0, 0);
+  if (Date.now() > target.getTime()) target.setUTCDate(target.getUTCDate() + 1);
+  return target.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 }
 
 // Render **bold** markers as <strong>
@@ -228,12 +235,12 @@ export function DailyBriefWidget() {
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['daily-brief-today'],
-    queryFn: async (): Promise<{ brief: DailyBrief | null; locked?: boolean }> => {
+    queryFn: async (): Promise<{ brief: DailyBrief | null; locked?: boolean; is_today?: boolean }> => {
       const res = await fetch('/api/briefs/today');
       if (res.status === 403) return { brief: null, locked: true };
       if (!res.ok) throw new Error('Failed to fetch brief');
       const json = await res.json();
-      return { brief: json.brief };
+      return { brief: json.brief, is_today: json.is_today };
     },
     staleTime: 5 * 60_000,
     retry: false,
@@ -243,6 +250,7 @@ export function DailyBriefWidget() {
 
   const isLocked = data?.locked === true;
   const brief = data?.brief ?? null;
+  const isToday = data?.is_today !== false;
 
   if (isLoading) {
     return (
@@ -251,8 +259,8 @@ export function DailyBriefWidget() {
           <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/70 shrink-0">Daily brief</span>
           <div className="flex-1 h-px bg-border/50" />
         </div>
-        <div className="h-4 w-72 bg-muted/60 animate-pulse rounded mb-2" />
-        <div className="h-3 w-40 bg-muted/40 animate-pulse rounded" />
+        <div className="h-4 w-72 animate-shimmer rounded mb-2" />
+        <div className="h-3 w-40 animate-shimmer rounded" />
       </div>
     );
   }
@@ -290,7 +298,7 @@ export function DailyBriefWidget() {
           <div className="flex-1 h-px bg-border/50" />
         </div>
         <p className="text-sm text-muted-foreground/50">
-          Today&apos;s brief is generating — check back after 7 AM ET.
+          Today&apos;s brief is generating — check back after {getNextBriefLocalTime()}.
         </p>
       </div>
     );
@@ -305,7 +313,7 @@ export function DailyBriefWidget() {
       <div className="min-w-0">
         <div className="flex items-center gap-3 mb-3">
           <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/70 shrink-0">
-            Daily brief
+            {isToday ? 'Daily brief' : "Yesterday's brief"}
           </span>
           <div className="flex-1 h-px bg-border/50" />
           <span className="text-[10px] font-mono text-muted-foreground/35 tracking-wider shrink-0">

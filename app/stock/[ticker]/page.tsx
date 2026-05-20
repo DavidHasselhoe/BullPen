@@ -31,7 +31,7 @@ import { slugToSymbol, inferAssetType, hasFinancials } from '@/lib/assets/asset-
 
 const StockPricePanel = dynamic(
   () => import('@/components/stock/StockPricePanel').then((m) => ({ default: m.StockPricePanel })),
-  { ssr: false, loading: () => <div className="mb-8 h-[340px] animate-pulse rounded-2xl bg-muted" /> }
+  { ssr: false, loading: () => <div className="mb-8 h-[340px] animate-shimmer rounded-2xl" /> }
 );
 
 const StatisticsGrid = dynamic(

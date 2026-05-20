@@ -47,8 +47,8 @@ export function AdminCostsClient() {
 
       {isLoading && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-          <div className="h-24 rounded-xl bg-muted/30 animate-pulse" />
-          <div className="h-24 rounded-xl bg-muted/30 animate-pulse" />
+          <div className="h-24 rounded-xl animate-shimmer" />
+          <div className="h-24 rounded-xl animate-shimmer" />
         </div>
       )}
 

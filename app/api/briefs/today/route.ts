@@ -17,13 +17,20 @@ async function handler(
     );
   }
 
-  // ── Fetch today's brief (ET calendar date) ────────────────────────────────
   const todayET = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+
+  // Return the most recent brief within the last 2 days so users always see
+  // content — even before today's cron has run (overnight gap) or if generation
+  // failed. The client uses `is_today` to show a "yesterday's brief" label.
+  const twoDaysAgoET = new Date(Date.now() - 2 * 86_400_000)
+    .toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
 
   const { data: brief, error } = await supabase
     .from('daily_briefs')
     .select('*')
-    .eq('published_date', todayET)
+    .gte('published_date', twoDaysAgoET)
+    .order('published_date', { ascending: false })
+    .limit(1)
     .maybeSingle();
 
   if (error) {
@@ -34,7 +41,11 @@ async function handler(
 
   return addSecurityHeaders(
     NextResponse.json(
-      { success: true, brief: brief ?? null },
+      {
+        success: true,
+        brief: brief ?? null,
+        is_today: brief ? brief.published_date === todayET : false,
+      },
       { headers: { 'Cache-Control': 'private, max-age=300, stale-while-revalidate=600' } }
     )
   );

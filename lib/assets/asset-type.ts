@@ -124,4 +124,3 @@ export const has24hTrading = (t: AssetType): boolean => t === 'crypto';
 export const hasEarnings   = (t: AssetType): boolean => t === 'stock' || t === 'etf';
 export const hasFinancials = (t: AssetType): boolean => t === 'stock';
 export const isCrypto      = (t: AssetType): boolean => t === 'crypto';
-export const isEquity      = (t: AssetType): boolean => t === 'stock' || t === 'etf';

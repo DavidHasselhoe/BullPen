@@ -47,6 +47,8 @@
 
 :root {
   --radius: 0.625rem;
+  --shimmer-base: oklch(0.93 0 0);
+  --shimmer-peak: oklch(0.98 0 0);
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -81,6 +83,8 @@
 }
 
 .dark {
+  --shimmer-base: oklch(0.22 0 0);
+  --shimmer-peak: oklch(0.30 0 0);
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
@@ -285,6 +289,8 @@ html.animated-background-active [data-slot="dialog-content"] {
   /* Minimal custom scrollbar for the brief drawer */
   .brief-scroll {
     scroll-behavior: smooth;
+    scrollbar-width: thin;
+    scrollbar-color: oklch(0.45 0 0 / 45%) transparent;
   }
   .brief-scroll::-webkit-scrollbar {
     width: 3px;
@@ -293,16 +299,11 @@ html.animated-background-active [data-slot="dialog-content"] {
     background: transparent;
   }
   .brief-scroll::-webkit-scrollbar-thumb {
-    background: hsl(var(--border) / 0.5);
+    background: oklch(0.45 0 0 / 45%);
     border-radius: 99px;
   }
   .brief-scroll::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--border) / 0.8);
-  }
-  /* Firefox */
-  .brief-scroll {
-    scrollbar-width: thin;
-    scrollbar-color: hsl(var(--border) / 0.4) transparent;
+    background: oklch(0.55 0 0 / 65%);
   }
 
   /* Hide scrollbar while keeping scroll functionality */
@@ -316,17 +317,9 @@ html.animated-background-active [data-slot="dialog-content"] {
     height: 0 !important;
   }
 
-  /* ── Discover page carousel rails ─────────────────────────────────────────
-     The rail track contains items duplicated twice (A B C  A B C). The marquee
-     animation translates the track by exactly half its width, then loops —
-     creating the illusion of continuous scroll. Paused on hover; disabled on
-     mobile (uses native swipe) and when prefers-reduced-motion is set. */
-  @keyframes discover-rail-marquee {
-    from { transform: translate3d(0, 0, 0); }
-    to   { transform: translate3d(var(--rail-distance, -100%), 0, 0); }
-  }
-
-  /* Mobile: native swipe, hide scrollbar */
+  /* ── Discover page carousel rails ──────────────────────────────────────── */
+  /* Native horizontal scroll container — hides the scrollbar while preserving
+     scroll and drag-to-scroll functionality */
   .discover-rail-track {
     -ms-overflow-style: none;
     scrollbar-width: none;
@@ -337,21 +330,35 @@ html.animated-background-active [data-slot="dialog-content"] {
     height: 0;
   }
 
-  /* Soft fade on the edges so cards don't get clipped harshly at the page edge */
-  .discover-rail-mask {
-    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 24px, black calc(100% - 24px), transparent 100%);
-            mask-image: linear-gradient(to right, transparent 0%, black 24px, black calc(100% - 24px), transparent 100%);
+  /* ── Shimmer skeleton animation ──────────────────────────────────────────
+     Left-to-right highlight sweep for loading skeletons.
+     Uses CSS variables so light/dark themes automatically match. */
+  @keyframes shimmer {
+    0%   { background-position: 200% center; }
+    100% { background-position: -200% center; }
+  }
+  .animate-shimmer {
+    background: linear-gradient(
+      90deg,
+      var(--shimmer-base) 0%,
+      var(--shimmer-peak) 40%,
+      var(--shimmer-base) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.6s ease-in-out infinite;
   }
 
-  /* Desktop: enable the marquee, pause on hover */
-  @media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
-    .discover-rail-track {
-      animation: discover-rail-marquee var(--rail-duration, 60s) linear infinite;
-      will-change: transform;
-    }
-    .discover-rail-mask:hover .discover-rail-track,
-    .discover-rail-mask:focus-within .discover-rail-track {
-      animation-play-state: paused;
+  /* ── Respect reduced motion preference ───────────────────────────────────
+     Snap all durations to near-zero so motion-sensitive users don't see
+     animations, while still allowing instant state transitions. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.1ms !important;
+      scroll-behavior: auto !important;
     }
   }
 }

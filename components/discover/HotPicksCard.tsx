@@ -28,12 +28,12 @@ function SkeletonRow({ rank }: { rank: number }) {
       <span className="text-[32px] font-black tabular-nums text-foreground/25 select-none w-10 text-right shrink-0 leading-none">
         {rank}
       </span>
-      <div className="h-8 w-8 rounded-lg bg-muted animate-pulse shrink-0" />
+      <div className="h-8 w-8 rounded-lg animate-shimmer shrink-0" />
       <div className="flex-1 space-y-1.5">
-        <div className="h-3 w-16 bg-muted animate-pulse rounded" />
-        <div className="h-2.5 w-24 bg-muted animate-pulse rounded" />
+        <div className="h-3 w-16 animate-shimmer rounded" />
+        <div className="h-2.5 w-24 animate-shimmer rounded" />
       </div>
-      <div className="h-2.5 w-10 bg-muted animate-pulse rounded shrink-0" />
+      <div className="h-2.5 w-10 animate-shimmer rounded shrink-0" />
     </div>
   );
 }

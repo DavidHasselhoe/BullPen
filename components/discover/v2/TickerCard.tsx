@@ -32,7 +32,7 @@ function PriceSkeleton({ wide = false }: { wide?: boolean }) {
     <span
       aria-hidden
       className={cn(
-        'inline-block h-3 rounded-full bg-muted/40 animate-pulse',
+        'inline-block h-3 rounded-full animate-shimmer',
         wide ? 'w-12' : 'w-8'
       )}
     />
@@ -72,6 +72,7 @@ export function TickerCard({ item, href }: Props) {
         'w-[168px] h-[100px] rounded-xl border border-border/50 bg-card/50',
         'p-3 transition-all duration-200',
         'hover:border-border hover:bg-card hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20',
+        'active:scale-[0.97] active:shadow-none active:translate-y-0',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background',
       )}
     >

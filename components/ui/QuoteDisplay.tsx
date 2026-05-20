@@ -54,7 +54,7 @@ export function QuoteDisplay({ enabled = true }: QuoteDisplayProps) {
   if (isLoading) {
     return (
       <div className="py-3 border-t border-border/40">
-        <div className="h-4 w-64 animate-pulse rounded bg-muted/50" />
+        <div className="h-4 w-64 animate-shimmer rounded" />
       </div>
     );
   }

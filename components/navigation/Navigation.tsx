@@ -8,7 +8,6 @@ import { UserMenu } from './UserMenu';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Home, Briefcase, Settings, Wrench, ChevronDown, Bookmark, Users, Rss, Trophy, Compass } from 'lucide-react';
-import { LiveClock } from '@/components/ui/LiveClock';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { SettingsModal } from '@/components/user/SettingsModal';
 import { useCommandPalette } from '@/components/command-palette/CommandPaletteProvider';
@@ -103,9 +102,14 @@ export function Navigation() {
     <>
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto relative flex h-16 items-center justify-center px-4">
-          {/* Clock - Absolute Left */}
+          {/* Logo - Absolute Left */}
           <div className="absolute left-4 flex items-center">
-            <LiveClock className="hidden sm:flex" />
+            <Link
+              href="/"
+              className="text-[17px] font-semibold tracking-tight text-foreground/90 hover:text-foreground transition-colors duration-150 select-none"
+            >
+              bullpen
+            </Link>
           </div>
 
           {/* Navigation - Centered */}
@@ -122,7 +126,7 @@ export function Navigation() {
                     href={item.href}
                     onMouseEnter={item.href === '/dashboard' ? prefetchDiscover : undefined}
                     className={cn(
-                      'flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium transition-all',
+                      'flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium transition-all duration-150 active:scale-[0.97]',
                       isActive
                         ? 'bg-primary/10 text-primary border border-primary/20'
                         : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground border border-transparent'
@@ -140,7 +144,7 @@ export function Navigation() {
                   <DropdownMenuTrigger asChild>
                     <button
                       className={cn(
-                        'flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium transition-all',
+                        'flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium transition-all duration-150 active:scale-[0.97]',
                         isCommunityActive
                           ? 'bg-primary/15 text-primary border border-primary/30 shadow-sm'
                           : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground border border-transparent'
@@ -148,7 +152,10 @@ export function Navigation() {
                     >
                       <Users className="h-4 w-4" />
                       Community
-                      <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+                      <ChevronDown className={cn(
+                        'h-3.5 w-3.5 opacity-60 transition-transform duration-200',
+                        communityOpen && 'rotate-180 opacity-100'
+                      )} />
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent
@@ -184,7 +191,7 @@ export function Navigation() {
                 <DropdownMenuTrigger asChild>
                   <button
                     className={cn(
-                      'flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium transition-all',
+                      'flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium transition-all duration-150 active:scale-[0.97]',
                       isToolsActive
                         ? 'bg-primary/15 text-primary border border-primary/30 shadow-sm'
                         : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground border border-transparent'
@@ -192,7 +199,10 @@ export function Navigation() {
                   >
                     <Wrench className="h-4 w-4" />
                     Tools
-                    <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+                    <ChevronDown className={cn(
+                      'h-3.5 w-3.5 opacity-60 transition-transform duration-200',
+                      toolsOpen && 'rotate-180 opacity-100'
+                    )} />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
@@ -237,7 +247,7 @@ export function Navigation() {
             <button
               type="button"
               onClick={() => openCommandPalette()}
-              className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 md:px-4 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+              className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 md:px-4 text-sm text-muted-foreground transition-all duration-150 hover:bg-accent hover:text-accent-foreground active:scale-[0.97]"
               aria-label={`Search (${searchShortcut})`}
             >
               <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
@@ -265,7 +275,7 @@ export function Navigation() {
           setSettingsOpen(val);
           if (!val) setActiveSettingsTab(undefined);
         }}
-        initialTab={activeSettingsTab as any}
+        initialTab={activeSettingsTab as Parameters<typeof SettingsModal>[0]['initialTab']}
       />
     </>
   );

@@ -1,6 +1,7 @@
 'use client';
 
-import { useId, type ReactNode } from 'react';
+import { useId, useRef, useState, useCallback, useEffect, type ReactNode } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TickerCard } from './TickerCard';
 import type { TickerItem } from '@/lib/discover/discover-config';
@@ -8,24 +9,17 @@ import type { TickerItem } from '@/lib/discover/discover-config';
 interface Props {
   title: string;
   subtitle?: string;
-  /** Tailwind bg-* class for the small accent dot beside the title (e.g. 'bg-sky-500') */
   accent?: string;
-  /** Optional icon shown before the title */
   icon?: ReactNode;
-  /** Optional right-side label, e.g. "12 stocks" or "Crypto" */
   meta?: string;
   items: TickerItem[];
-  /** Optional href override per item — useful when canonical symbol differs from slugToAssetPath input */
   hrefForItem?: (item: TickerItem) => string;
-  /**
-   * Pixels per second for the auto-scroll. Default 18 — slow enough to read,
-   * fast enough to feel alive. Skipped if user prefers reduced motion.
-   */
-  speed?: number;
 }
 
 const CARD_WIDTH = 168;
 const GAP_PX = 12;
+const SCROLL_CARDS = 5;
+const SCROLL_AMOUNT = (CARD_WIDTH + GAP_PX) * SCROLL_CARDS;
 
 export function StockCarouselRail({
   title,
@@ -35,9 +29,57 @@ export function StockCarouselRail({
   meta,
   items,
   hrefForItem,
-  speed = 18,
 }: Props) {
   const headingId = useId();
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+  const isDragging = useRef(false);
+  const dragOrigin = useRef({ x: 0, scrollLeft: 0 });
+
+  const updateArrows = useCallback(() => {
+    const el = trackRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 4);
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 4);
+  }, []);
+
+  useEffect(() => {
+    const el = trackRef.current;
+    if (!el) return;
+    updateArrows();
+    el.addEventListener('scroll', updateArrows, { passive: true });
+    const ro = new ResizeObserver(updateArrows);
+    ro.observe(el);
+    return () => { el.removeEventListener('scroll', updateArrows); ro.disconnect(); };
+  }, [updateArrows]);
+
+  const scroll = (dir: 'left' | 'right') =>
+    trackRef.current?.scrollBy({
+      left: dir === 'left' ? -SCROLL_AMOUNT : SCROLL_AMOUNT,
+      behavior: 'smooth',
+    });
+
+  const onMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!trackRef.current) return;
+    isDragging.current = true;
+    dragOrigin.current = { x: e.pageX, scrollLeft: trackRef.current.scrollLeft };
+    trackRef.current.style.cursor = 'grabbing';
+    trackRef.current.style.userSelect = 'none';
+  };
+
+  const onMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isDragging.current || !trackRef.current) return;
+    e.preventDefault();
+    trackRef.current.scrollLeft = dragOrigin.current.scrollLeft - (e.pageX - dragOrigin.current.x);
+  };
+
+  const stopDrag = () => {
+    if (!trackRef.current) return;
+    isDragging.current = false;
+    trackRef.current.style.cursor = '';
+    trackRef.current.style.userSelect = '';
+  };
 
   if (items.length === 0) {
     return (
@@ -50,40 +92,56 @@ export function StockCarouselRail({
     );
   }
 
-  // Duplicate the items so the marquee loop is seamless.
-  const looped = items.concat(items);
-
-  // The total scrollable width = (count * card + gap) but only the original half completes one loop.
-  const trackWidth = items.length * (CARD_WIDTH + GAP_PX);
-  const durationSec = Math.max(20, Math.round(trackWidth / speed));
-
   return (
     <section aria-labelledby={headingId} className="min-w-0">
       <Header id={headingId} title={title} subtitle={subtitle} accent={accent} icon={icon} meta={meta} />
 
-      {/* Marquee container.
-          - Desktop (md+): CSS marquee animation, paused on hover.
-          - Mobile: native horizontal scroll (animation disabled via media query).
-          - prefers-reduced-motion: animation disabled.
-          - The page width clips overflow; only this strip scrolls.
-      */}
-      <div className="relative discover-rail-mask">
-        <div
+      <div className="relative group/rail">
+        {/* Left arrow — desktop only, fades in on hover */}
+        <button
+          onClick={() => scroll('left')}
+          aria-label="Scroll left"
           className={cn(
-            'discover-rail-track flex gap-3 overflow-x-auto md:overflow-hidden',
-            'snap-x snap-mandatory md:snap-none',
-            'pb-2 -mb-2', // hides the scrollbar visual gutter on mobile
+            'absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 z-10',
+            'hidden md:flex items-center justify-center',
+            'w-7 h-7 rounded-full bg-background border border-border/60 shadow-md',
+            'text-muted-foreground hover:text-foreground transition-all duration-150',
+            'opacity-0 group-hover/rail:opacity-100',
+            !canScrollLeft && '!opacity-0 pointer-events-none',
           )}
-          style={
-            {
-              // Custom property the keyframes reference. Halves keep the loop seamless.
-              ['--rail-distance' as string]: `-${trackWidth}px`,
-              ['--rail-duration' as string]: `${durationSec}s`,
-            } as React.CSSProperties
-          }
         >
-          {looped.map((item, i) => (
-            <div key={`${item.symbol}-${i}`} className="snap-start">
+          <ChevronLeft className="h-4 w-4" />
+        </button>
+
+        {/* Right arrow */}
+        <button
+          onClick={() => scroll('right')}
+          aria-label="Scroll right"
+          className={cn(
+            'absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 z-10',
+            'hidden md:flex items-center justify-center',
+            'w-7 h-7 rounded-full bg-background border border-border/60 shadow-md',
+            'text-muted-foreground hover:text-foreground transition-all duration-150',
+            'opacity-0 group-hover/rail:opacity-100',
+            !canScrollRight && '!opacity-0 pointer-events-none',
+          )}
+        >
+          <ChevronRight className="h-4 w-4" />
+        </button>
+
+        {/* Scrollable track */}
+        <div
+          ref={trackRef}
+          role="list"
+          className="discover-rail-track flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 -mb-2 md:cursor-grab"
+          style={{ animation: 'none' }}
+          onMouseDown={onMouseDown}
+          onMouseMove={onMouseMove}
+          onMouseUp={stopDrag}
+          onMouseLeave={stopDrag}
+        >
+          {items.map((item, i) => (
+            <div key={`${item.symbol}-${i}`} role="listitem" className="snap-start shrink-0">
               <TickerCard item={item} href={hrefForItem?.(item)} />
             </div>
           ))}
@@ -94,19 +152,9 @@ export function StockCarouselRail({
 }
 
 function Header({
-  id,
-  title,
-  subtitle,
-  accent,
-  icon,
-  meta,
+  id, title, subtitle, accent, icon, meta,
 }: {
-  id: string;
-  title: string;
-  subtitle?: string;
-  accent: string;
-  icon?: ReactNode;
-  meta?: string;
+  id: string; title: string; subtitle?: string; accent: string; icon?: ReactNode; meta?: string;
 }) {
   return (
     <div className="flex items-end justify-between gap-3 mb-3">
@@ -114,12 +162,8 @@ function Header({
         <span className={cn('w-1.5 h-5 rounded-full shrink-0', accent)} aria-hidden />
         {icon && <span className="shrink-0 text-muted-foreground/70">{icon}</span>}
         <div className="min-w-0">
-          <h3 id={id} className="text-base font-semibold text-foreground leading-none">
-            {title}
-          </h3>
-          {subtitle && (
-            <p className="text-[11px] text-muted-foreground/60 truncate mt-1">{subtitle}</p>
-          )}
+          <h3 id={id} className="text-base font-semibold text-foreground leading-none">{title}</h3>
+          {subtitle && <p className="text-[11px] text-muted-foreground/60 truncate mt-1">{subtitle}</p>}
         </div>
       </div>
       {meta && (

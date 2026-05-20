@@ -313,6 +313,11 @@ export const WsManager = {
     return getState().subscribed.size;
   },
 
+  /** Returns true if prevClose is already seeded for this symbol. */
+  hasPrevClose(symbol: string): boolean {
+    return getState().prevClose.has(symbol);
+  },
+
   /**
    * Seed a previous-close price so parseTick can compute change/changePercent
    * on the first WebSocket tick for this symbol (TwelveData WS never sends prevClose).

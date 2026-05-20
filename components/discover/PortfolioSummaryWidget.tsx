@@ -175,11 +175,11 @@ export function PortfolioSummaryWidget() {
       <Card className="border-border/50 overflow-hidden">
         <CardContent className="p-0">
           <div className="px-4 pt-4 pb-3 space-y-1.5">
-            <div className="h-3 w-14 bg-muted animate-pulse rounded" />
-            <div className="h-6 w-28 bg-muted animate-pulse rounded" />
-            <div className="h-3 w-24 bg-muted animate-pulse rounded" />
+            <div className="h-3 w-14 animate-shimmer rounded" />
+            <div className="h-6 w-28 animate-shimmer rounded" />
+            <div className="h-3 w-24 animate-shimmer rounded" />
           </div>
-          <div className="h-[72px] bg-muted/30 animate-pulse" />
+          <div className="h-[72px] animate-shimmer" />
         </CardContent>
       </Card>
     );
@@ -240,7 +240,7 @@ export function PortfolioSummaryWidget() {
               </AreaChart>
             </ResponsiveContainer>
           ) : (
-            <div className={`h-[72px]${sparklineLoading ? ' bg-muted/20 animate-pulse' : ''}`} />
+            <div className={`h-[72px]${sparklineLoading ? ' animate-shimmer' : ''}`} />
           )}
         </CardContent>
       </Card>

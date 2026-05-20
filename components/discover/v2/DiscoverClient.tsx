@@ -22,7 +22,8 @@ export function DiscoverClient() {
       if (!res.ok) throw new Error(`Feed failed: ${res.status}`);
       return res.json();
     },
-    staleTime: 60 * 1000,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
 
@@ -78,14 +79,14 @@ function SkeletonRail() {
   return (
     <div>
       <div className="flex items-center gap-2.5 mb-3">
-        <div className="w-1.5 h-5 rounded-full bg-muted/40" />
-        <div className="h-4 w-32 rounded bg-muted/40 animate-pulse" />
+        <div className="w-1.5 h-5 rounded-full animate-shimmer" />
+        <div className="h-4 w-32 rounded animate-shimmer" />
       </div>
       <div className="flex gap-3 overflow-hidden">
         {Array.from({ length: 8 }, (_, i) => (
           <div
             key={i}
-            className="w-[168px] h-[100px] rounded-xl border border-border/30 bg-card/30 animate-pulse shrink-0"
+            className="w-[168px] h-[100px] rounded-xl border border-border/20 animate-shimmer shrink-0"
           />
         ))}
       </div>
@@ -97,14 +98,14 @@ function DiscoverSkeleton() {
   return (
     <>
       <div className="mb-8">
-        <div className="h-7 w-40 bg-muted/40 rounded animate-pulse mb-2" />
-        <div className="h-3.5 w-96 max-w-full bg-muted/30 rounded animate-pulse" />
+        <div className="h-7 w-40 rounded animate-shimmer mb-2" />
+        <div className="h-3.5 w-96 max-w-full rounded animate-shimmer" />
       </div>
       <div className="mb-10">
-        <div className="h-3.5 w-16 bg-muted/40 rounded mb-3" />
+        <div className="h-3.5 w-16 rounded mb-3 animate-shimmer" />
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {Array.from({ length: 8 }, (_, i) => (
-            <div key={i} className="h-[110px] rounded-xl border border-border/30 bg-card/30 animate-pulse" />
+            <div key={i} className="h-[110px] rounded-xl border border-border/20 animate-shimmer" />
           ))}
         </div>
       </div>

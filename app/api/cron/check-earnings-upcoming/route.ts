@@ -5,15 +5,15 @@
  * Runs daily at 8:00 AM UTC.
  * For every user who has upcoming_earnings notifications enabled:
  *   1. Collects their tracked symbols (watchlist + holdings, alerts_enabled = true)
- *   2. Fetches the Finnhub earnings calendar for the next 7 days (one call for all users)
- *   3. Creates a grouped notification for any user whose tracked stocks have earnings soon
+ *   2. Fetches the Twelve Data earnings calendar for today only (one call for all users, cached 24 h)
+ *   3. Creates a grouped notification for any user whose tracked stocks report earnings today
  *
- * Credit cost: 0 (Finnhub free tier, one API call for everyone).
+ * Credit cost: 40 credits per run (Twelve Data /earnings_calendar, Venture+).
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/client';
-import { getEarningsCalendar } from '@/lib/finnhub/finnhub-client';
+import { getEarningsCalendarRange, TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
 import {
   createEarningsUpcomingNotification,
   type EarningsItem,
@@ -78,25 +78,25 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ ...summary, message: 'No tracked symbols with alerts enabled' });
     }
 
-    // ── 3. Fetch earnings calendar for next 7 days (ONE call for all users) ─
-    const today = new Date();
-    const in7Days = new Date(today);
-    in7Days.setDate(today.getDate() + 7);
-
-    const fmt = (d: Date) => d.toISOString().slice(0, 10);
+    // ── 3. Fetch earnings calendar for today only (ONE call for all users) ──
+    const todayStr = new Date().toISOString().slice(0, 10);
     let earningsEvents: Array<{ symbol: string; date: string }> = [];
 
     try {
-      const calendar = await getEarningsCalendar(fmt(today), fmt(in7Days));
+      const calendar = await getEarningsCalendarRange(todayStr, todayStr);
       earningsEvents = calendar.map((e) => ({ symbol: e.symbol, date: e.date }));
       summary.earningsFound = earningsEvents.length;
     } catch (e) {
-      summary.errors.push(`Finnhub earnings calendar failed: ${String(e)}`);
+      if (e instanceof TwelveDataRateLimitError) {
+        summary.errors.push(`Twelve Data rate limit hit: ${String(e)}`);
+      } else {
+        summary.errors.push(`Twelve Data earnings calendar failed: ${String(e)}`);
+      }
       return NextResponse.json(summary);
     }
 
     if (earningsEvents.length === 0) {
-      return NextResponse.json({ ...summary, message: 'No earnings in next 7 days' });
+      return NextResponse.json({ ...summary, message: 'No earnings today' });
     }
 
     // Build lookup: symbol → date

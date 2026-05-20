@@ -123,28 +123,21 @@ export async function createPriceMoveDigestNotification(
 // ─── Earnings upcoming notifications ─────────────────────────────────────────
 
 /**
- * Create a notification when tracked stocks have earnings in the next 7 days.
- * Groups all upcoming tickers into a single notification per user per day.
+ * Create a notification when tracked stocks report earnings today.
+ * Groups all tickers reporting today into a single notification per user per day.
  */
 export async function createEarningsUpcomingNotification(
   userId: string,
   items: EarningsItem[]
 ): Promise<boolean> {
-  const dedupeId = 'portfolio:earnings_upcoming';
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const dedupeId = `portfolio:earnings_today:${todayStr}`;
   if (await alreadyNotifiedToday(userId, 'earnings', dedupeId)) return false;
 
   const count = items.length;
-  // Sort by soonest date first
-  const sorted = [...items].sort((a, b) => a.date.localeCompare(b.date));
-
-  // Format: "AAPL (Apr 30), MSFT (Apr 28)"
-  const tickerList = sorted
+  const tickerList = items
     .slice(0, 5)
-    .map((e) => {
-      const d = new Date(e.date + 'T12:00:00Z'); // noon UTC to avoid timezone shift
-      const formatted = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      return `${e.symbol} (${formatted})`;
-    })
+    .map((e) => e.symbol)
     .join(', ');
 
   const suffix = count > 5 ? ` +${count - 5} more` : '';
@@ -152,7 +145,7 @@ export async function createEarningsUpcomingNotification(
   const input: CreateNotificationInput = {
     user_id: userId,
     type: 'earnings',
-    title: `${count} tracked stock${count === 1 ? '' : 's'} report${count === 1 ? 's' : ''} earnings this week`,
+    title: `${count} tracked stock${count === 1 ? '' : 's'} report${count === 1 ? 's' : ''} earnings today`,
     message: tickerList + suffix,
     entity_type: 'portfolio',
     entity_id: dedupeId,

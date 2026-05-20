@@ -17,7 +17,6 @@ export async function GET(
   }
 
   try {
-    // Get date range (next 90 days)
     const from = new Date();
     const to = new Date();
     to.setDate(to.getDate() + 90);

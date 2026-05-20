@@ -1496,7 +1496,7 @@ export async function getEarningsCalendarRange(
     end_date: endDate,
     country,
   });
-  const res = await fetch(url, { next: { revalidate: 3600 } });
+  const res = await fetch(url, { next: { revalidate: 86400 } }); // cache 24 h — earnings calendars are set in advance
   const json = (await res.json()) as TwelveDataEarningsCalResponse;
 
   const apiFailed =
