@@ -101,19 +101,17 @@ export function Navigation() {
   return (
     <>
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto relative flex h-16 items-center justify-center px-4">
-          {/* Logo - Absolute Left */}
-          <div className="absolute left-4 flex items-center">
-            <Link
-              href="/"
-              className="text-[17px] font-semibold tracking-tight text-foreground/90 hover:text-foreground transition-colors duration-150 select-none"
-            >
-              bullpen
-            </Link>
-          </div>
+        <div className="container mx-auto grid h-16 items-center px-4 gap-2" style={{ gridTemplateColumns: 'auto 1fr auto' }}>
+          {/* Logo - Left */}
+          <Link
+            href="/"
+            className="text-[17px] font-semibold tracking-tight text-foreground/90 hover:text-foreground transition-colors duration-150 select-none shrink-0"
+          >
+            bullpen
+          </Link>
 
           {/* Navigation - Centered */}
-          <div className="flex items-center">
+          <div className="flex items-center justify-center min-w-0">
             {/* Navigation Links */}
             <nav className="hidden items-center gap-2 md:flex">
               {navigation.map((item) => {
@@ -242,8 +240,8 @@ export function Navigation() {
             </nav>
           </div>
 
-          {/* Search, User Menu - Absolute Right */}
-          <div className="absolute right-4 flex items-center gap-4">
+          {/* Search, User Menu - Right */}
+          <div className="flex items-center gap-4 shrink-0 justify-end">
             <button
               type="button"
               onClick={() => openCommandPalette()}
