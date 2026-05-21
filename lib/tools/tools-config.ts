@@ -83,7 +83,7 @@ export const TOOLS: ToolConfig[] = [
     description: 'Bullish vs bearish sentiment, volatility trend, macro pulse. A fear vs greed index.',
     href: '/tools/market-mood',
     icon: Gauge,
-    status: 'coming-soon',
+    status: 'available',
   },
   {
     id: 'heatmap',
