@@ -42,7 +42,7 @@ function parseSections(content: string): BriefSection[] {
       const body = part.slice(firstNewline + 1).trim();
       return { heading, body, slug: slugify(heading) };
     })
-    .filter((s): s is BriefSection => s !== null && s.heading.length > 0);
+    .filter((s): s is BriefSection => s !== null && s.heading.length > 0 && /\w/.test(s.heading));
 }
 
 function formatRelativeTime(isoString: string): string {
@@ -127,7 +127,7 @@ interface SectionBlockProps {
 }
 
 function SectionBlock({ section, index, isTldr, sectionRef }: SectionBlockProps) {
-  const lines = section.body.split('\n').filter(Boolean);
+  const lines = section.body.split('\n').filter((l) => l.trim().length > 0 && !/^-+$/.test(l.trim()));
 
   if (isTldr) {
     return (
@@ -267,27 +267,6 @@ function BriefReader({
   const [activeSlug, setActiveSlug] = useState<string | null>(sections[0]?.slug ?? null);
   const [progress, setProgress] = useState(0);
 
-  // Track which section is centered in the viewport for the TOC active state.
-  useEffect(() => {
-    if (!open) return;
-    const root = scrollRef.current;
-    if (!root) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
-        if (visible[0]) setActiveSlug(visible[0].target.id);
-      },
-      { root, rootMargin: '-20% 0px -60% 0px', threshold: [0, 0.25, 0.5, 1] }
-    );
-
-    Object.values(sectionRefs.current).forEach((el) => {
-      if (el) observer.observe(el);
-    });
-    return () => observer.disconnect();
-  }, [open, sections]);
 
   // Reset scroll + progress when reopening
   useEffect(() => {
@@ -305,6 +284,15 @@ function BriefReader({
     if (!el) return;
     const max = Math.max(1, el.scrollHeight - el.clientHeight);
     setProgress(Math.min(1, el.scrollTop / max));
+
+    // Active section: last one whose top edge is at or above the trigger line
+    const triggerY = el.scrollTop + 120;
+    let active = sections[0]?.slug ?? null;
+    for (const section of sections) {
+      const ref = sectionRefs.current[section.slug];
+      if (ref && ref.offsetTop <= triggerY) active = section.slug;
+    }
+    setActiveSlug(active);
   }
 
   function navigateTo(slug: string) {
@@ -362,12 +350,6 @@ function BriefReader({
                   <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary/75">
                     {isToday ? 'Daily Brief' : "Yesterday's Brief"}
                   </span>
-                  {isToday && (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-400/90">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                      Live
-                    </span>
-                  )}
                 </div>
                 <h2 className="text-xl md:text-[26px] font-semibold text-foreground leading-tight tracking-tight pr-10">
                   {brief.title}

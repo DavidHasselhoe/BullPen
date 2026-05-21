@@ -10,7 +10,6 @@ import { CompanyRowActions } from '@/components/discover/CompanyRowActions';
 import { cn } from '@/lib/utils';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
 import type { MarketMover } from '@/lib/twelvedata/twelvedata-client';
-import { useAuth } from '@/hooks/use-auth';
 
 /** Returns a human-readable label for the current trading session, using ET. */
 function useMoversDateLabel(): string {
@@ -57,30 +56,25 @@ interface TopMoversCardProps {
 }
 
 // ─── Intraday sparkline ───────────────────────────────────────────────────────
+// Single batch request instead of N parallel fetches — all symbols load together
+// so sparklines are always consistent (no partial-load flicker).
 
 function useMoversSparklines(symbols: string[], enabled: boolean) {
+  const key = symbols.slice().sort().join(',');
   return useQuery({
-    queryKey: ['movers-sparklines-1d', symbols.slice().sort()],
+    queryKey: ['movers-sparklines-batch', key],
     queryFn: async (): Promise<Record<string, number[]>> => {
-      const results = await Promise.all(
-        symbols.map(async (sym) => {
-          try {
-            const res = await fetch(`/api/stock/${encodeURIComponent(sym)}/candles?range=1D`);
-            if (!res.ok) return [sym, [] as number[]] as const;
-            const json = await res.json();
-            const closes: number[] = json.candles?.c ?? [];
-            return [sym, closes] as const;
-          } catch {
-            return [sym, [] as number[]] as const;
-          }
-        })
-      );
-      return Object.fromEntries(results);
+      if (!key) return {};
+      const res = await fetch(`/api/market/movers-sparklines?symbols=${encodeURIComponent(key)}`);
+      if (!res.ok) return {};
+      const json = await res.json();
+      return (json.sparklines as Record<string, number[]>) ?? {};
     },
     enabled,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 5 * 60 * 1000,   // matches server CDN TTL
     gcTime: 15 * 60 * 1000,
-    retry: false,
+    refetchInterval: 5 * 60 * 1000, // refresh every 5 min during market hours
+    retry: 1,
   });
 }
 
@@ -202,10 +196,9 @@ function MoverItem({
 
 export function TopMoversCard({ gainers, losers, isLoading, isHoldingsMode }: TopMoversCardProps) {
   const dateLabel = useMoversDateLabel();
-  const { isAuthenticated } = useAuth();
   const allTickers = [...(gainers || []), ...(losers || [])].map((m) => m.symbol);
 
-  const { data: sparklines } = useMoversSparklines(allTickers, isAuthenticated && !isLoading && allTickers.length > 0);
+  const { data: sparklines } = useMoversSparklines(allTickers, !isLoading && allTickers.length > 0);
 
   const { data: companyBatch } = useQuery({
     queryKey: ['companies-batch', allTickers],

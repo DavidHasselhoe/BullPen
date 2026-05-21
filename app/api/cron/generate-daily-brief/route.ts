@@ -6,15 +6,15 @@
  * Generates one shared brief per calendar date for all pro users.
  * Idempotent: skips generation if today's brief already exists.
  *
- * Claude prompt credit cost: ~$0.05–0.10 per run (web search + 600-word response).
- * TwelveData credit cost: ~50–80 credits (earnings calendar x2 + movers).
+ * Claude prompt credit cost: ~$0.05–0.10 per run (web search + 800-word response).
+ * TwelveData credit cost: ~60–100 credits (earnings calendar x3 + movers + market quotes).
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { createServerClient } from '@/lib/supabase/client';
 import { getEarningsCalendarRange } from '@/lib/twelvedata/twelvedata-client';
-import { getTopMovers } from '@/lib/market-data';
+import { getTopMovers, getStockQuotes } from '@/lib/market-data';
 import { logAiCall } from '@/lib/billing/log-ai-call';
 
 export const maxDuration = 120;
@@ -50,6 +50,67 @@ function extractTickers(text: string): string[] {
   return [...new Set(tickers)].slice(0, 20);
 }
 
+/**
+ * Trim text that ends mid-sentence (no terminal punctuation on the last line).
+ * Walks back to the nearest sentence-ending character so the brief never
+ * publishes with a truncated thought.
+ */
+function trimIncomplete(text: string): string {
+  const trimmed = text.trimEnd();
+  const lastChar = trimmed[trimmed.length - 1];
+  if (['.', '!', '?', ')', '"', '’'].includes(lastChar)) return text;
+
+  // Find the last sentence terminator followed by whitespace or end-of-string
+  const lastPeriod = Math.max(
+    trimmed.lastIndexOf('. '),
+    trimmed.lastIndexOf('.\n'),
+    trimmed.lastIndexOf('! '),
+    trimmed.lastIndexOf('!\n'),
+    trimmed.lastIndexOf('? '),
+    trimmed.lastIndexOf('?\n'),
+  );
+  if (lastPeriod === -1) return text;
+  return trimmed.slice(0, lastPeriod + 1).trimEnd();
+}
+
+/**
+ * Compute the EPS beat rate (%) from yesterday's earnings with confirmed actuals.
+ * Returns null when there's insufficient data (<3 companies with both actual+estimate).
+ */
+function computeBeatRate(earningsData: Array<{ eps_actual?: number | null; eps_estimate?: number | null }>): string | null {
+  const confirmed = earningsData.filter(
+    (e) => e.eps_actual != null && e.eps_estimate != null
+  );
+  if (confirmed.length < 3) return null;
+  const beats = confirmed.filter((e) => (e.eps_actual ?? 0) >= (e.eps_estimate ?? 0)).length;
+  return `${Math.round((beats / confirmed.length) * 100)}% beat rate (${beats}/${confirmed.length} companies)`;
+}
+
+/**
+ * Fetch VIX (volatility index) and TNX (10-year Treasury yield) as supplemental
+ * market-context data. Both are optional — failures are silently swallowed so
+ * the cron never blocks on these quotes.
+ */
+async function fetchMarketContext(): Promise<{ vix: string | null; treasury10y: string | null }> {
+  try {
+    // TwelveData supports VIX (CBOE) and TNX (10Y Treasury) as quotable symbols
+    const quotes = await getStockQuotes(['VIX', 'TNX']);
+    const vixQ = quotes.get('VIX');
+    const tnxQ = quotes.get('TNX');
+
+    const vix = vixQ
+      ? `${vixQ.c.toFixed(2)} (${vixQ.dp >= 0 ? '+' : ''}${vixQ.dp.toFixed(1)}% on day)`
+      : null;
+    const treasury10y = tnxQ
+      ? `${tnxQ.c.toFixed(2)}% yield (${tnxQ.d >= 0 ? '+' : ''}${tnxQ.d.toFixed(2)}bp on day)`
+      : null;
+
+    return { vix, treasury10y };
+  } catch {
+    return { vix: null, treasury10y: null };
+  }
+}
+
 export async function GET(request: NextRequest): Promise<NextResponse> {
   // ── Auth ──────────────────────────────────────────────────────────────────
   const cronSecret = process.env.CRON_SECRET;
@@ -64,6 +125,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const nowET = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
   const todayET = toETDateString(new Date());
   const yesterdayET = toETDateString(new Date(nowET.getTime() - 86_400_000));
+  const tomorrowET = toETDateString(new Date(nowET.getTime() + 86_400_000));
 
   // ── Idempotency: skip if today's brief already exists ─────────────────────
   const { data: existing } = await supabase
@@ -77,30 +139,56 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   }
 
   // ── Gather context data in parallel ──────────────────────────────────────
-  const [yesterdayEarnings, todayEarnings, moversResult, yesterdayBrief] = await Promise.allSettled([
+  const [
+    yesterdayEarnings,
+    todayEarnings,
+    tomorrowEarnings,
+    moversResult,
+    yesterdayBrief,
+    marketContextResult,
+  ] = await Promise.allSettled([
     getEarningsCalendarRange(yesterdayET, yesterdayET),
     getEarningsCalendarRange(todayET, todayET),
+    getEarningsCalendarRange(tomorrowET, tomorrowET),
     getTopMovers(5),
     supabase
       .from('daily_briefs')
       .select('title, content')
       .eq('published_date', yesterdayET)
       .maybeSingle(),
+    fetchMarketContext(),
   ]);
 
   const yesterdayEarningsData = yesterdayEarnings.status === 'fulfilled' ? yesterdayEarnings.value : [];
   const todayEarningsData = todayEarnings.status === 'fulfilled' ? todayEarnings.value : [];
+  const tomorrowEarningsData = tomorrowEarnings.status === 'fulfilled' ? tomorrowEarnings.value : [];
   const movers = moversResult.status === 'fulfilled' ? moversResult.value : { gainers: [], losers: [] };
   const prevBrief = yesterdayBrief.status === 'fulfilled' ? yesterdayBrief.value.data : null;
+  const marketCtx = marketContextResult.status === 'fulfilled' ? marketContextResult.value : { vix: null, treasury10y: null };
+
+  // ── Filter earnings to confirmed large/mid-caps only (prevent small-cap hallucination) ───
+  // Only pass through tickers with EPS estimates — these are analyst-covered companies.
+  // Symbols longer than 5 chars (foreign cross-listings) are also excluded.
+  const confirmedYesterdayEarnings = yesterdayEarningsData.filter(
+    (e) => e.symbol.length <= 5 && /^[A-Z]/.test(e.symbol) && (e.eps_estimate != null || e.eps_actual != null)
+  );
 
   // ── Build context strings for the prompt ──────────────────────────────────
-  const earningsResultsText = yesterdayEarningsData.length > 0
-    ? yesterdayEarningsData.slice(0, 15).map(formatEarningsRow).join('\n')
-    : 'No major earnings reported yesterday.';
+  const earningsResultsText = confirmedYesterdayEarnings.length > 0
+    ? confirmedYesterdayEarnings.slice(0, 15).map(formatEarningsRow).join('\n')
+    : 'No analyst-covered earnings with EPS estimates reported yesterday.';
 
-  const todayReportersText = todayEarningsData.length > 0
-    ? todayEarningsData.slice(0, 10).map(formatEarningsRow).join('\n')
-    : 'No major earnings scheduled today.';
+  const todayReportersText = todayEarningsData
+    .filter((e) => e.symbol.length <= 5 && /^[A-Z]/.test(e.symbol))
+    .slice(0, 10)
+    .map(formatEarningsRow)
+    .join('\n') || 'No major earnings scheduled today.';
+
+  const tomorrowReportersText = tomorrowEarningsData
+    .filter((e) => e.symbol.length <= 5 && /^[A-Z]/.test(e.symbol))
+    .slice(0, 8)
+    .map(formatEarningsRow)
+    .join('\n') || 'No major earnings scheduled tomorrow.';
 
   const topGainers = movers.gainers.slice(0, 5).map(
     (m) => `${m.symbol} +${m.changePercent.toFixed(1)}%`
@@ -108,6 +196,19 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const topLosers = movers.losers.slice(0, 5).map(
     (m) => `${m.symbol} ${m.changePercent.toFixed(1)}%`
   ).join(', ') || 'N/A';
+
+  const beatRateText = computeBeatRate(confirmedYesterdayEarnings);
+
+  // Optional market context lines (omit block when data is unavailable)
+  const marketContextLines = [
+    marketCtx.vix ? `VIX: ${marketCtx.vix}` : null,
+    marketCtx.treasury10y ? `10Y Treasury: ${marketCtx.treasury10y}` : null,
+    beatRateText ? `EPS beat rate yesterday: ${beatRateText}` : null,
+  ].filter(Boolean);
+
+  const marketContextBlock = marketContextLines.length > 0
+    ? `\nMARKET CONTEXT (use in "The Setup" or "TL;DR"):\n${marketContextLines.join('\n')}\n`
+    : '';
 
   const avoidanceSection = prevBrief
     ? `\nDO NOT REPEAT any topics, companies, or stories already covered in yesterday's brief (${yesterdayET}). Yesterday's brief:\n---\n${prevBrief.content.slice(0, 1200)}\n---\n`
@@ -127,7 +228,16 @@ Hard rules:
 - Use ## section headers exactly as listed below, in order.
 - Use • for bullet points inside sections.
 - Use **bold** for company names on first mention and for key metrics.
-- Target ~550 words total. Hard ceiling: 650.
+- Target ~650 words total. Hard ceiling: 800.
+- COMPLETE EVERY SENTENCE. Never end a section or the brief mid-thought. If you are running long, cut earlier content — never trail off.
+
+DATA FIDELITY (critical):
+- In "Earnings Pulse": cite ONLY companies listed in "YESTERDAY'S EARNINGS RESULTS" below. Do not invent additional tickers — especially micro/small-cap names (symbols like AAMMF, ADKT, AGNC-type cross-listings) that are not on that list. If the list is sparse, say so concisely.
+- For "Reporting Today": cite ONLY companies from "TODAY'S SCHEDULED REPORTERS" below.
+- After-hours or pre-market moves must be flagged [AH] or [PM] immediately after the ticker, e.g. "$INTU [AH] fell 13%".
+
+Sector analysis:
+- When citing a sector gain or loss in "Movers & Stories", add one sentence explaining the specific catalyst (not just "on strong earnings" — why did that sector move relative to others today?).
 
 Banned phrases (do not use): "investors are watching", "in a sign that", "as the saying goes", "remains to be seen", "only time will tell", "amid", "on the heels of", "broader market", "risk-on", "risk-off", "Wall Street".`;
 
@@ -136,37 +246,43 @@ Banned phrases (do not use): "investors are watching", "in a sign that", "as the
 REQUIRED STRUCTURE (in this order, exactly these headers):
 
 ## TL;DR
-2–3 punchy sentences capturing today's single most important narrative. Max 60 words. Hook the reader. Mention 1–2 $TICKERs if relevant.
+2–3 punchy sentences capturing today's single most important narrative. Max 60 words. Hook the reader. Mention 1–2 $TICKERs if relevant. If VIX data is available, note whether fear is elevated or subdued.
 
 ## The Setup
-Overnight + premarket context. Futures, key macro data dropping today, any overseas moves that matter for US trade. ~120 words.
+Overnight + premarket context. Futures, key macro data dropping today, any overseas moves that matter for US trade. Include VIX level and 10Y Treasury yield if provided. ~120 words.
 
 ## Earnings Pulse
-Yesterday's beats/misses that still matter + today's most important reporters. Use the data below as factual anchors — don't invent numbers. ~140 words.
+Yesterday's beats/misses that still matter + today's most important reporters. Use ONLY the data below as factual anchors — do not invent numbers or add tickers not in the list. Tag after-hours moves [AH]. Include the EPS beat rate if provided. ~140 words.
 
 ## Movers & Stories
-Top 2–3 stories driving stocks today — the *why*, not just the *what*. Skip pure mechanical movers; lead with catalysts (downgrades, product news, litigation, M&A chatter). ~140 words.
+Top 2–3 stories driving stocks today — the *why*, not just the *what*. For each sector mentioned (+2%+), add one sentence on the specific catalyst. Skip pure mechanical movers; lead with catalysts (downgrades, product news, litigation, M&A chatter). ~140 words.
 
 ## Watch Today
 Specific events to monitor: Fed speakers + times, key economic releases, technical levels for major indices, upcoming catalysts. Bullet list. ~80 words.
 
-YESTERDAY'S EARNINGS RESULTS (factual anchors, use exact numbers):
+## Next 24 Hours
+Tomorrow's forward catalysts: key earnings reporters (from data below), any scheduled Fed speakers or economic releases, and one sentence on what traders will be watching most closely. Bullet list. ~80 words.
+
+YESTERDAY'S EARNINGS RESULTS (use ONLY these — no additions):
 ${earningsResultsText}
 
-TODAY'S SCHEDULED REPORTERS:
+TODAY'S SCHEDULED REPORTERS (use ONLY these):
 ${todayReportersText}
+
+TOMORROW'S SCHEDULED REPORTERS (for "Next 24 Hours"):
+${tomorrowReportersText}
 
 YESTERDAY'S TOP MOVERS:
 Gainers: ${topGainers}
 Losers:  ${topLosers}
-${avoidanceSection}
-Use live web search to verify the latest news for "Movers & Stories" and "Watch Today". Cite specific events, not generic narratives.`;
+${marketContextBlock}${avoidanceSection}
+Use live web search to verify the latest news for "Movers & Stories", "Watch Today", and "Next 24 Hours". Cite specific events, not generic narratives.`;
 
   let fullText = '';
   try {
     const stream = anthropic.beta.messages.stream({
       model: 'claude-sonnet-4-6',
-      max_tokens: 1200,
+      max_tokens: 1500,
       betas: ['web-search-2025-03-05'],
       tools: [{ type: 'web_search_20250305' as const, name: 'web_search' }],
       system: systemPrompt,
@@ -206,12 +322,15 @@ Use live web search to verify the latest news for "Movers & Stories" and "Watch 
     return NextResponse.json({ success: false, error: 'Empty response from Claude' }, { status: 500 });
   }
 
+  // ── Post-process: trim any incomplete trailing sentence ────────────────────
+  const processedText = trimIncomplete(fullText);
+
   // ── Parse title (first non-empty line) and body ───────────────────────────
-  const lines = fullText.trim().split('\n');
+  const lines = processedText.trim().split('\n');
   const titleLine = lines[0].replace(/^#+\s*/, '').replace(/\*\*/g, '').trim();
   const content = lines.slice(1).join('\n').trim();
 
-  const featured = extractTickers(fullText);
+  const featured = extractTickers(processedText);
 
   // ── Store in Supabase ─────────────────────────────────────────────────────
   const { error: insertError } = await supabase.from('daily_briefs').insert({
@@ -230,7 +349,7 @@ Use live web search to verify the latest news for "Movers & Stories" and "Watch 
     success: true,
     date: todayET,
     title: titleLine,
-    length: fullText.length,
+    length: processedText.length,
     featured_tickers: featured,
   });
 }

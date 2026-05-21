@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { arc as d3Arc } from 'd3';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Card,
   CardContent,
@@ -9,17 +8,17 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
 import {
   ShieldAlert,
   RefreshCw,
   AlertTriangle,
   Info,
   CheckCircle2,
-  ChevronDown,
-  ChevronUp,
+  Crown,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { AiPaywallDialog } from '@/components/billing/AiPaywallDialog';
+import type { QuotaState } from '@/lib/billing/quotas';
 import type { HoldingWithPrice } from './types';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -30,17 +29,27 @@ interface RiskMetric {
   detail: string;
 }
 
+interface StressScenario {
+  scenario: string;
+  estimatedImpact: string;
+  severity: 'low' | 'medium' | 'high';
+}
+
 interface RiskAnalysis {
   overallRiskScore: number;
   riskLevel: string;
+  generatedAt: string;
   metrics: {
     concentration: RiskMetric;
     sectorDiversification: RiskMetric;
     marketCapBias: RiskMetric;
     volatilityExposure: RiskMetric;
+    correlationRisk: RiskMetric;
+    liquidityRisk: RiskMetric;
   };
   topRisks: { severity: string; factor: string; description: string }[];
   sectorBreakdown: { sector: string; symbols: string[]; estimatedWeight: number }[];
+  stressScenarios: StressScenario[];
   recommendations: string[];
   portfolioSummary: string;
 }
@@ -49,58 +58,74 @@ interface PortfolioRiskAnalysisProps {
   holdings: HoldingWithPrice[];
 }
 
-// ─── Gauge ───────────────────────────────────────────────────────────────────
-
-// d3 angle convention: 0 = 12-o'clock, clockwise positive
-// Gauge arc: 9 o'clock (score 0) → 12 o'clock (top) → 3 o'clock (score 100)
-const GAUGE_START = -Math.PI / 2; // 9 o'clock
-const GAUGE_END = Math.PI / 2;    // 3 o'clock
-
-// SVG dimensions: arc center sits at the bottom edge so the flat face is flush
-const GAUGE_R_OUTER = 84;
-const GAUGE_R_INNER = 60;
-const GAUGE_CX = 100;
-const GAUGE_CY = GAUGE_R_OUTER + 10; // top padding + radius = arc top at y=10
-const GAUGE_W = 200;
-const GAUGE_H = GAUGE_CY; // SVG height ends exactly at the flat edge
+// ─── Color helpers ────────────────────────────────────────────────────────────
 
 function gaugeColor(score: number): string {
-  if (score <= 33) return '#22c55e'; // green-500
-  if (score <= 60) return '#f59e0b'; // amber-500
-  if (score <= 79) return '#f97316'; // orange-500
-  return '#ef4444';                  // red-500
+  if (score <= 33) return '#22c55e';
+  if (score <= 60) return '#f59e0b';
+  if (score <= 79) return '#f97316';
+  return '#ef4444';
 }
 
-function buildGaugePath(startAngle: number, endAngle: number, rInner: number, rOuter: number) {
-  const gen = d3Arc()
-    .innerRadius(rInner)
-    .outerRadius(rOuter)
-    .cornerRadius(4);
-  return (
-    gen({ startAngle, endAngle, innerRadius: rInner, outerRadius: rOuter } as Parameters<typeof gen>[0]) ?? ''
-  );
+function riskLevelColor(level: string) {
+  switch (level) {
+    case 'Low':      return 'text-green-600 dark:text-green-400';
+    case 'Moderate': return 'text-emerald-600 dark:text-emerald-400';
+    case 'Elevated': return 'text-amber-600 dark:text-amber-400';
+    case 'High':     return 'text-orange-600 dark:text-orange-400';
+    case 'Very High':return 'text-red-600 dark:text-red-400';
+    default:         return 'text-foreground';
+  }
 }
 
-/**
- * Clean semicircular gauge — no needle, no internal text.
- * Score and risk level are rendered as HTML beneath the SVG.
- */
-function GaugeChart({
-  score,
-  riskLevel,
-  animated,
-}: {
-  score: number;
-  riskLevel: string;
-  animated: boolean;
-}) {
-  const [displayScore, setDisplayScore] = useState(animated ? 0 : score);
+function riskBandColor(level: string): string {
+  switch (level) {
+    case 'Low':      return 'bg-green-500/8 border-green-500/20';
+    case 'Moderate': return 'bg-emerald-500/8 border-emerald-500/20';
+    case 'Elevated': return 'bg-amber-500/8 border-amber-500/20';
+    case 'High':     return 'bg-orange-500/8 border-orange-500/20';
+    case 'Very High':return 'bg-red-500/8 border-red-500/20';
+    default:         return 'bg-muted/20 border-border/40';
+  }
+}
+
+function severityConfig(severity: string) {
+  switch (severity) {
+    case 'critical':
+      return { border: 'border-red-500/60', bg: 'bg-red-500/8', badge: 'bg-red-500/15 text-red-600 dark:text-red-400', icon: AlertTriangle };
+    case 'high':
+      return { border: 'border-orange-500/60', bg: 'bg-orange-500/8', badge: 'bg-orange-500/15 text-orange-600 dark:text-orange-400', icon: AlertTriangle };
+    case 'medium':
+      return { border: 'border-amber-500/60', bg: 'bg-amber-500/8', badge: 'bg-amber-500/15 text-amber-600 dark:text-amber-400', icon: Info };
+    default:
+      return { border: 'border-blue-500/60', bg: 'bg-blue-500/8', badge: 'bg-blue-500/15 text-blue-600 dark:text-blue-400', icon: Info };
+  }
+}
+
+function stressSeverityChip(severity: StressScenario['severity']) {
+  if (severity === 'high') return 'bg-red-500/15 text-red-600 dark:text-red-400';
+  if (severity === 'medium') return 'bg-amber-500/15 text-amber-600 dark:text-amber-400';
+  return 'bg-blue-500/15 text-blue-600 dark:text-blue-400';
+}
+
+// ─── Score ring (pure SVG, no d3) ────────────────────────────────────────────
+
+function arcPath(cx: number, cy: number, r: number, startDeg: number, endDeg: number): string {
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const clamp = Math.min(endDeg, startDeg + 359.99);
+  const x1 = cx + r * Math.cos(toRad(startDeg - 90));
+  const y1 = cy + r * Math.sin(toRad(startDeg - 90));
+  const x2 = cx + r * Math.cos(toRad(clamp - 90));
+  const y2 = cy + r * Math.sin(toRad(clamp - 90));
+  const large = clamp - startDeg > 180 ? 1 : 0;
+  return `M ${x1.toFixed(2)} ${y1.toFixed(2)} A ${r} ${r} 0 ${large} 1 ${x2.toFixed(2)} ${y2.toFixed(2)}`;
+}
+
+function ScoreRing({ score, riskLevel, animated }: { score: number; riskLevel: string; animated: boolean }) {
+  const [animatedScore, setAnimatedScore] = useState(0);
 
   useEffect(() => {
-    if (!animated) {
-      setDisplayScore(score);
-      return;
-    }
+    if (!animated) return;
     let frame: number;
     let start: number | null = null;
     const duration = 900;
@@ -108,118 +133,80 @@ function GaugeChart({
     const tick = (ts: number) => {
       if (!start) start = ts;
       const progress = Math.min((ts - start) / duration, 1);
-      setDisplayScore(Math.round(ease(progress) * score));
+      setAnimatedScore(Math.round(ease(progress) * score));
       if (progress < 1) frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
   }, [score, animated]);
 
+  const displayScore = animated ? animatedScore : score;
+
   const color = gaugeColor(score);
-  const bgPath = buildGaugePath(GAUGE_START, GAUGE_END, GAUGE_R_INNER, GAUGE_R_OUTER);
-  const fillEnd = GAUGE_START + (displayScore / 100) * Math.PI;
-  const fillPath = displayScore > 0 ? buildGaugePath(GAUGE_START, fillEnd, GAUGE_R_INNER, GAUGE_R_OUTER) : '';
+  const endDeg = (displayScore / 100) * 360;
 
   return (
-    <div className="flex flex-col items-center gap-3 shrink-0">
-      {/* Arc — text-free, clean */}
-      <svg
-        viewBox={`0 0 ${GAUGE_W} ${GAUGE_H}`}
-        width={GAUGE_W}
-        height={GAUGE_H}
-        className="overflow-visible"
-      >
-        <g transform={`translate(${GAUGE_CX}, ${GAUGE_CY})`}>
+    <div className="flex flex-col items-center gap-2 shrink-0">
+      <div className="relative">
+        <svg viewBox="0 0 160 160" width={144} height={144}>
           {/* Background track */}
-          <path d={bgPath} fill="currentColor" className="text-muted/50" />
-          {/* Colored fill arc */}
-          {fillPath && <path d={fillPath} fill={color} />}
-          {/* Subtle end-cap dots at 0 and 100 */}
-          {[0, 100].map((t) => {
-            const angle = GAUGE_START + (t / 100) * Math.PI;
-            const rm = (GAUGE_R_INNER + GAUGE_R_OUTER) / 2;
-            return (
-              <circle
-                key={t}
-                cx={rm * Math.cos(angle)}
-                cy={rm * Math.sin(angle)}
-                r={3}
-                fill="currentColor"
-                className="text-background"
-              />
-            );
-          })}
-        </g>
-      </svg>
-
-      {/* Score label — outside the SVG, no overlap possible */}
-      <div className="text-center">
-        <div className="flex items-baseline justify-center gap-1 leading-none">
-          <span className="text-4xl font-black text-foreground tabular-nums">{displayScore}</span>
-          <span className="text-sm font-medium text-muted-foreground">/100</span>
-        </div>
-        <span className={cn('text-sm font-bold mt-1 block', riskLevelColor(riskLevel))}>
-          {riskLevel} Risk
-        </span>
+          <circle cx="80" cy="80" r="61" fill="none" stroke="currentColor" strokeWidth="18" className="text-muted/40" />
+          {/* Colored arc */}
+          {displayScore > 0 && (
+            <path
+              d={arcPath(80, 80, 61, 0, endDeg)}
+              fill="none"
+              stroke={color}
+              strokeWidth="18"
+              strokeLinecap="round"
+            />
+          )}
+          {/* Center text */}
+          <text x="80" y="74" textAnchor="middle" className="fill-foreground" fontSize="28" fontWeight="900" fontFamily="monospace">
+            {displayScore}
+          </text>
+          <text x="80" y="92" textAnchor="middle" fontSize="11" fontFamily="sans-serif" fill="currentColor" className="fill-muted-foreground/60">
+            /100
+          </text>
+        </svg>
       </div>
+      <span className={cn('text-sm font-bold tracking-tight', riskLevelColor(riskLevel))}>
+        {riskLevel} Risk
+      </span>
     </div>
   );
 }
 
-// ─── Metric Bar ───────────────────────────────────────────────────────────────
+// ─── Metric cell ──────────────────────────────────────────────────────────────
 
-function MetricBar({ label, score, detail }: { label: string; score: number; detail: string }) {
-  const [width, setWidth] = useState(0);
-
+function MetricCell({ label, metric }: { label: string; metric: RiskMetric }) {
+  const [barWidth, setBarWidth] = useState(0);
   useEffect(() => {
-    const timer = setTimeout(() => setWidth(score), 120);
-    return () => clearTimeout(timer);
-  }, [score]);
+    const t = setTimeout(() => setBarWidth(metric.score), 150);
+    return () => clearTimeout(t);
+  }, [metric.score]);
 
-  const color =
-    score >= 70 ? 'bg-red-500' : score >= 50 ? 'bg-orange-500' : score >= 30 ? 'bg-amber-500' : 'bg-green-500';
+  const barColor =
+    metric.score >= 70 ? 'bg-red-500'
+    : metric.score >= 50 ? 'bg-orange-500'
+    : metric.score >= 30 ? 'bg-amber-500'
+    : 'bg-green-500';
 
   return (
-    <div className="space-y-1.5">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-sm font-medium text-foreground">{label}</span>
-        <span className="text-sm font-bold tabular-nums text-foreground">{score}</span>
+    <div className="rounded-lg border border-border/40 bg-muted/10 p-3 space-y-2">
+      <div className="flex items-center justify-between gap-1">
+        <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground/70 leading-tight">{label}</span>
+        <span className="text-sm font-bold tabular-nums text-foreground shrink-0">{metric.score}</span>
       </div>
-      <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+      <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
         <div
-          className={cn('h-full rounded-full transition-all duration-700 ease-out', color)}
-          style={{ width: `${width}%` }}
+          className={cn('h-full rounded-full transition-all duration-700 ease-out', barColor)}
+          style={{ width: `${barWidth}%` }}
         />
       </div>
-      <p className="text-xs text-muted-foreground leading-relaxed">{detail}</p>
+      <p className="text-[11px] text-muted-foreground/80 leading-relaxed line-clamp-3">{metric.detail}</p>
     </div>
   );
-}
-
-// ─── Severity styling ─────────────────────────────────────────────────────────
-
-function severityConfig(severity: string) {
-  switch (severity) {
-    case 'critical':
-      return { border: 'border-red-500/60', bg: 'bg-red-500/8', badge: 'bg-red-500/15 text-red-600 dark:text-red-400', icon: AlertTriangle, label: 'Critical' };
-    case 'high':
-      return { border: 'border-orange-500/60', bg: 'bg-orange-500/8', badge: 'bg-orange-500/15 text-orange-600 dark:text-orange-400', icon: AlertTriangle, label: 'High' };
-    case 'medium':
-      return { border: 'border-amber-500/60', bg: 'bg-amber-500/8', badge: 'bg-amber-500/15 text-amber-600 dark:text-amber-400', icon: Info, label: 'Medium' };
-    default:
-      return { border: 'border-blue-500/60', bg: 'bg-blue-500/8', badge: 'bg-blue-500/15 text-blue-600 dark:text-blue-400', icon: Info, label: 'Low' };
-  }
-}
-
-function riskLevelColor(level: string) {
-  switch (level) {
-    case 'Low': return 'text-green-600 dark:text-green-400';
-    case 'Moderate': return 'text-emerald-600 dark:text-emerald-400';
-    case 'Elevated': return 'text-amber-600 dark:text-amber-400';
-    case 'High': return 'text-orange-600 dark:text-orange-400';
-    case 'Very High': return 'text-red-600 dark:text-red-400';
-    default: return 'text-foreground';
-  }
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -231,7 +218,16 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
   const [analysis, setAnalysis] = useState<RiskAnalysis | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [animated, setAnimated] = useState(false);
-  const [showSectors, setShowSectors] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const [paywallQuota, setPaywallQuota] = useState<QuotaState | null>(null);
+
+  // Sequential loading reveal
+  const [loadingStep, setLoadingStep] = useState(0);
+  const loadingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Typewriter reveal for summary
+  const [displayedSummary, setDisplayedSummary] = useState('');
+  const typewriterRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const payload = useMemo(
     () =>
@@ -247,21 +243,67 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
     [holdings]
   );
 
+  // Start sequential loading animation
+  useEffect(() => {
+    if (state === 'loading') {
+      setLoadingStep(0);
+      loadingTimerRef.current = setInterval(() => {
+        setLoadingStep((s) => s + 1);
+      }, 220);
+    } else {
+      if (loadingTimerRef.current) {
+        clearInterval(loadingTimerRef.current);
+        loadingTimerRef.current = null;
+      }
+    }
+    return () => {
+      if (loadingTimerRef.current) clearInterval(loadingTimerRef.current);
+    };
+  }, [state]);
+
+  // Typewriter reveal when analysis loads
+  useEffect(() => {
+    if (state !== 'loaded' || !analysis) return;
+    setDisplayedSummary('');
+    let i = 0;
+    const full = analysis.portfolioSummary;
+    typewriterRef.current = setInterval(() => {
+      i++;
+      setDisplayedSummary(full.slice(0, i));
+      if (i >= full.length) {
+        clearInterval(typewriterRef.current!);
+        typewriterRef.current = null;
+      }
+    }, 14);
+    return () => {
+      if (typewriterRef.current) clearInterval(typewriterRef.current);
+    };
+  }, [state, analysis]);
+
   async function analyze() {
     setState('loading');
     setError(null);
     setAnimated(false);
+    setDisplayedSummary('');
     try {
       const res = await fetch('/api/holdings/risk-analysis', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ holdings: payload }),
       });
+
+      if (res.status === 402) {
+        const data = await res.json();
+        setPaywallQuota(data.quota ?? null);
+        setShowPaywall(true);
+        setState('idle');
+        return;
+      }
+
       const data = await res.json();
       if (!data.success) throw new Error(data.error ?? 'Analysis failed');
       setAnalysis(data.analysis);
       setState('loaded');
-      // Slight delay so DOM is ready before animation starts
       requestAnimationFrame(() => setTimeout(() => setAnimated(true), 50));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to analyze portfolio');
@@ -269,233 +311,270 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
     }
   }
 
+  const generatedTime = analysis?.generatedAt
+    ? new Date(analysis.generatedAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+    : null;
+
+  const summaryDone = analysis ? displayedSummary.length >= analysis.portfolioSummary.length : false;
+
   return (
-    <Card className="border-border/50">
-      <CardHeader>
-        <div className="flex items-center justify-between gap-4">
-          <CardTitle className="flex items-center gap-2">
-            <ShieldAlert className="h-5 w-5 text-primary" />
-            Portfolio Risk Analysis
-          </CardTitle>
-          <Button
-            size="sm"
-            variant={state === 'loaded' ? 'outline' : 'default'}
-            onClick={analyze}
-            disabled={state === 'loading'}
-            className="shrink-0 gap-2"
-          >
-            {state === 'loading' ? (
-              <>
-                <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                Analyzing…
-              </>
-            ) : state === 'loaded' ? (
-              <>
-                <RefreshCw className="h-3.5 w-3.5" />
-                Re-analyze
-              </>
-            ) : (
-              <>
+    <>
+      <Card className="border-border/50">
+        <CardHeader>
+          <div className="flex items-center justify-between gap-4">
+            <CardTitle className="flex items-center gap-2">
+              <ShieldAlert className="h-5 w-5 text-primary" />
+              Portfolio Risk Analysis
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.14em] text-primary/80 bg-primary/10 px-2 py-0.5 rounded-full">
+                <Crown className="h-2.5 w-2.5" /> Pro
+              </span>
+            </CardTitle>
+            {state === 'idle' && (
+              <Button size="sm" onClick={analyze} className="shrink-0 gap-2">
                 <ShieldAlert className="h-3.5 w-3.5" />
                 Analyze Risk
-              </>
+              </Button>
             )}
-          </Button>
-        </div>
-      </CardHeader>
-
-      <CardContent>
-        {/* Idle state */}
-        {state === 'idle' && (
-          <div className="flex flex-col items-center justify-center py-10 gap-3 text-center">
-            <div className="rounded-full bg-primary/8 p-4">
-              <ShieldAlert className="h-7 w-7 text-primary" />
-            </div>
-            <p className="text-sm font-medium text-foreground">AI-Powered Risk Assessment</p>
-            <p className="text-xs text-muted-foreground max-w-xs">
-              Analyze concentration, sector exposure, market cap bias, and volatility across your {holdings.length} position{holdings.length !== 1 ? 's' : ''}.
-            </p>
-            <Button onClick={analyze} className="mt-1 gap-2">
-              <ShieldAlert className="h-4 w-4" />
-              Analyze Portfolio Risk
-            </Button>
           </div>
-        )}
+        </CardHeader>
 
-        {/* Loading skeleton */}
-        {state === 'loading' && (
-          <div className="space-y-6 py-2">
-            <div className="flex flex-col md:flex-row gap-6">
-              <Skeleton className="h-32 w-52 rounded-xl mx-auto md:mx-0" />
-              <div className="flex-1 space-y-4">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="space-y-1.5">
-                    <div className="flex justify-between">
-                      <Skeleton className="h-4 w-32" />
-                      <Skeleton className="h-4 w-8" />
-                    </div>
-                    <Skeleton className="h-2 w-full rounded-full" />
-                    <Skeleton className="h-3 w-3/4" />
+        <CardContent>
+          {/* Idle state */}
+          {state === 'idle' && (
+            <div className="flex flex-col items-center justify-center py-10 gap-3 text-center">
+              <div className="rounded-full bg-primary/8 p-4">
+                <ShieldAlert className="h-7 w-7 text-primary" />
+              </div>
+              <p className="text-sm font-medium text-foreground">AI-Powered Risk Assessment</p>
+              <p className="text-xs text-muted-foreground max-w-xs">
+                Analyze concentration, sector exposure, correlation, liquidity, and stress scenarios across your {holdings.length} position{holdings.length !== 1 ? 's' : ''}.
+              </p>
+              <Button onClick={analyze} className="mt-1 gap-2">
+                <ShieldAlert className="h-4 w-4" />
+                Analyze Portfolio Risk
+              </Button>
+            </div>
+          )}
+
+          {/* Loading — sequential holdings reveal */}
+          {state === 'loading' && (
+            <div className="py-8 space-y-4">
+              <div className="text-center space-y-1">
+                <p className="text-sm font-medium text-foreground">Analyzing portfolio with Claude…</p>
+                <p className="text-xs text-muted-foreground/60">Running 6-dimension risk assessment</p>
+              </div>
+              <div className="max-w-[200px] mx-auto space-y-1.5 font-mono text-xs">
+                {holdings.slice(0, Math.min(loadingStep, holdings.length)).map((h) => (
+                  <div key={h.symbol} className="flex items-center gap-2 text-muted-foreground">
+                    <span className="text-green-500 shrink-0">✓</span>
+                    <span className="tabular-nums">{h.symbol}</span>
                   </div>
                 ))}
+                {loadingStep < holdings.length && (
+                  <div className="flex items-center gap-2 text-foreground/50">
+                    <span className="animate-pulse shrink-0">…</span>
+                    <span className="tabular-nums">{holdings[loadingStep]?.symbol}</span>
+                  </div>
+                )}
               </div>
             </div>
-            <Skeleton className="h-16 w-full rounded-lg" />
-            <div className="space-y-2">
-              {[1, 2, 3].map((i) => <Skeleton key={i} className="h-14 w-full rounded-lg" />)}
+          )}
+
+          {/* Error state */}
+          {state === 'error' && (
+            <div className="flex flex-col items-center py-8 gap-3 text-center">
+              <AlertTriangle className="h-8 w-8 text-destructive" />
+              <p className="text-sm text-destructive">{error}</p>
+              <Button variant="outline" size="sm" onClick={analyze}>Try Again</Button>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Error state */}
-        {state === 'error' && (
-          <div className="flex flex-col items-center py-8 gap-3 text-center">
-            <AlertTriangle className="h-8 w-8 text-destructive" />
-            <p className="text-sm text-destructive">{error}</p>
-            <Button variant="outline" size="sm" onClick={analyze}>Try Again</Button>
-          </div>
-        )}
-
-        {/* Results */}
-        {state === 'loaded' && analysis && (
-          <div className="space-y-6">
-            {/* Executive summary */}
-            <p className="text-sm text-muted-foreground leading-relaxed border-l-2 border-primary/40 pl-3">
-              {analysis.portfolioSummary}
-            </p>
-
-            {/* Gauge + Metrics */}
-            <div className="flex flex-col md:flex-row gap-6 md:gap-10 items-start">
-              {/* Gauge */}
-              <div className="mx-auto md:mx-0">
-                <GaugeChart
-                  score={analysis.overallRiskScore}
-                  riskLevel={analysis.riskLevel}
-                  animated={animated}
-                />
+          {/* Results */}
+          {state === 'loaded' && analysis && (
+            <div className="space-y-6">
+              {/* Risk level band */}
+              <div className={cn('rounded-xl border px-4 py-3 flex items-center justify-between gap-4', riskBandColor(analysis.riskLevel))}>
+                <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground/70">
+                  Overall Risk Level
+                </div>
+                <div className={cn('text-sm font-bold tracking-tight', riskLevelColor(analysis.riskLevel))}>
+                  {analysis.riskLevel}
+                </div>
               </div>
 
-              {/* Metric bars */}
-              <div className="flex-1 space-y-4 w-full">
-                <MetricBar
-                  label="Concentration"
-                  score={analysis.metrics.concentration.score}
-                  detail={analysis.metrics.concentration.detail}
-                />
-                <MetricBar
-                  label="Sector Diversification"
-                  score={analysis.metrics.sectorDiversification.score}
-                  detail={analysis.metrics.sectorDiversification.detail}
-                />
-                <MetricBar
-                  label="Market Cap Bias"
-                  score={analysis.metrics.marketCapBias.score}
-                  detail={analysis.metrics.marketCapBias.detail}
-                />
-                <MetricBar
-                  label="Volatility Exposure"
-                  score={analysis.metrics.volatilityExposure.score}
-                  detail={analysis.metrics.volatilityExposure.detail}
-                />
+              {/* Score ring + summary */}
+              <div className="flex flex-col sm:flex-row gap-6 items-start">
+                <div className="mx-auto sm:mx-0 shrink-0">
+                  <ScoreRing score={analysis.overallRiskScore} riskLevel={analysis.riskLevel} animated={animated} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/50 mb-2">
+                    Summary
+                  </p>
+                  <p className="text-sm text-muted-foreground leading-relaxed border-l-2 border-primary/30 pl-3">
+                    {displayedSummary}
+                    {!summaryDone && (
+                      <span className="inline-block w-[2px] h-[1em] bg-primary/60 ml-0.5 animate-pulse align-middle" />
+                    )}
+                  </p>
+                </div>
               </div>
-            </div>
 
-            {/* Sector breakdown (collapsible) */}
-            {analysis.sectorBreakdown && analysis.sectorBreakdown.length > 0 && (
-              <div className="rounded-xl border border-border/50 overflow-hidden">
-                <button
-                  onClick={() => setShowSectors((v) => !v)}
-                  className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-foreground hover:bg-muted/30 transition-colors"
-                >
-                  Sector Breakdown
-                  {showSectors ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
-                </button>
-                {showSectors && (
-                  <div className="px-4 pb-4 space-y-2 border-t border-border/40">
+              {/* Metrics 2×3 grid */}
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/50 mb-3">
+                  Risk Dimensions
+                </p>
+                <div className="grid grid-cols-2 gap-2.5">
+                  {([
+                    { key: 'concentration',         label: 'Concentration' },
+                    { key: 'sectorDiversification', label: 'Sector Diversification' },
+                    { key: 'marketCapBias',          label: 'Market Cap Bias' },
+                    { key: 'volatilityExposure',     label: 'Volatility' },
+                    { key: 'correlationRisk',        label: 'Correlation Risk' },
+                    { key: 'liquidityRisk',          label: 'Liquidity Risk' },
+                  ] as const).map(({ key, label }) => (
+                    <MetricCell
+                      key={key}
+                      label={label}
+                      metric={analysis.metrics[key]}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Stress scenarios */}
+              {analysis.stressScenarios && analysis.stressScenarios.length > 0 && (
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/50 mb-3">
+                    Stress Scenarios
+                  </p>
+                  <div className="rounded-xl border border-border/40 overflow-hidden divide-y divide-border/30">
+                    {analysis.stressScenarios.map((s, i) => (
+                      <div key={i} className="flex items-center justify-between gap-3 px-4 py-3">
+                        <span className="text-sm text-foreground/80 leading-snug">{s.scenario}</span>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="text-sm font-semibold tabular-nums text-foreground">{s.estimatedImpact}</span>
+                          <span className={cn('text-[10px] font-bold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded-full', stressSeverityChip(s.severity))}>
+                            {s.severity}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Sector breakdown */}
+              {analysis.sectorBreakdown && analysis.sectorBreakdown.length > 0 && (
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/50 mb-3">
+                    Sector Breakdown
+                  </p>
+                  <div className="space-y-2">
                     {analysis.sectorBreakdown
                       .sort((a, b) => b.estimatedWeight - a.estimatedWeight)
                       .map((s) => (
-                        <div key={s.sector} className="flex items-center gap-3 py-1.5">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-sm font-medium text-foreground">{s.sector}</span>
-                              <span className="text-xs font-semibold text-foreground tabular-nums">
-                                {s.estimatedWeight.toFixed(0)}%
+                        <div key={s.sector}>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs font-medium text-foreground/80">{s.sector}</span>
+                            <span className="text-xs font-semibold text-foreground tabular-nums">{s.estimatedWeight.toFixed(0)}%</span>
+                          </div>
+                          <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden mb-1.5">
+                            <div
+                              className="h-full rounded-full bg-primary/60 transition-all duration-700"
+                              style={{ width: `${s.estimatedWeight}%` }}
+                            />
+                          </div>
+                          <div className="flex flex-wrap gap-1">
+                            {s.symbols.map((sym) => (
+                              <span key={sym} className="text-[10px] bg-muted/60 text-muted-foreground px-1.5 py-0.5 rounded font-mono">
+                                {sym}
                               </span>
-                            </div>
-                            <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-                              <div
-                                className="h-full rounded-full bg-primary/70 transition-all duration-700"
-                                style={{ width: `${s.estimatedWeight}%` }}
-                              />
-                            </div>
-                            <div className="flex flex-wrap gap-1 mt-1.5">
-                              {s.symbols.map((sym) => (
-                                <span
-                                  key={sym}
-                                  className="text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-mono"
-                                >
-                                  {sym}
-                                </span>
-                              ))}
-                            </div>
+                            ))}
                           </div>
                         </div>
                       ))}
                   </div>
-                )}
-              </div>
-            )}
-
-            {/* Risk factors */}
-            {analysis.topRisks && analysis.topRisks.length > 0 && (
-              <div className="space-y-2">
-                <h3 className="text-sm font-semibold text-foreground">Key Risk Factors</h3>
-                {analysis.topRisks.map((risk, i) => {
-                  const cfg = severityConfig(risk.severity);
-                  const Icon = cfg.icon;
-                  return (
-                    <div
-                      key={i}
-                      className={cn(
-                        'rounded-lg border-l-4 px-4 py-3 flex gap-3 items-start',
-                        cfg.border,
-                        cfg.bg
-                      )}
-                    >
-                      <Icon className="h-4 w-4 shrink-0 mt-0.5 opacity-80" />
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                          <span className="text-sm font-semibold text-foreground">{risk.factor}</span>
-                          <span className={cn('text-xs font-medium px-1.5 py-0.5 rounded-full', cfg.badge)}>
-                            {risk.severity.charAt(0).toUpperCase() + risk.severity.slice(1)}
-                          </span>
-                        </div>
-                        <p className="text-xs text-muted-foreground leading-relaxed">{risk.description}</p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Recommendations */}
-            {analysis.recommendations && analysis.recommendations.length > 0 && (
-              <div className="space-y-2">
-                <h3 className="text-sm font-semibold text-foreground">Recommendations</h3>
-                <div className="space-y-2">
-                  {analysis.recommendations.map((rec, i) => (
-                    <div key={i} className="flex gap-3 items-start">
-                      <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5 text-primary" />
-                      <p className="text-sm text-muted-foreground leading-relaxed">{rec}</p>
-                    </div>
-                  ))}
                 </div>
+              )}
+
+              {/* Risk factors */}
+              {analysis.topRisks && analysis.topRisks.length > 0 && (
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/50 mb-3">
+                    Key Risk Factors
+                  </p>
+                  <div className="space-y-2">
+                    {analysis.topRisks.map((risk, i) => {
+                      const cfg = severityConfig(risk.severity);
+                      const Icon = cfg.icon;
+                      return (
+                        <div
+                          key={i}
+                          className={cn('rounded-lg border-l-4 px-4 py-3 flex gap-3 items-start', cfg.border, cfg.bg)}
+                        >
+                          <Icon className="h-4 w-4 shrink-0 mt-0.5 opacity-80" />
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                              <span className="text-sm font-semibold text-foreground">{risk.factor}</span>
+                              <span className={cn('text-[10px] font-bold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded-full', cfg.badge)}>
+                                {risk.severity.charAt(0).toUpperCase() + risk.severity.slice(1)}
+                              </span>
+                            </div>
+                            <p className="text-xs text-muted-foreground leading-relaxed">{risk.description}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Recommendations */}
+              {analysis.recommendations && analysis.recommendations.length > 0 && (
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/50 mb-3">
+                    Recommendations
+                  </p>
+                  <div className="space-y-2.5">
+                    {analysis.recommendations.map((rec, i) => (
+                      <div key={i} className="flex gap-3 items-start">
+                        <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5 text-primary/70" />
+                        <p className="text-sm text-muted-foreground leading-relaxed">{rec}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Footer */}
+              <div className="flex items-center justify-between pt-3 border-t border-border/30">
+                <span className="text-[10px] font-mono text-muted-foreground/35 tracking-[0.1em] uppercase select-none">
+                  Generated by Claude Sonnet{generatedTime ? ` · ${generatedTime}` : ''}
+                </span>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={analyze}
+                  disabled={state === 'loading'}
+                  className="h-7 text-xs gap-1.5 text-muted-foreground hover:text-foreground"
+                >
+                  <RefreshCw className="h-3 w-3" />
+                  Re-analyze
+                </Button>
               </div>
-            )}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <AiPaywallDialog
+        open={showPaywall}
+        onOpenChange={setShowPaywall}
+        featureName="Portfolio Risk Analysis"
+        quota={paywallQuota ?? undefined}
+      />
+    </>
   );
 }

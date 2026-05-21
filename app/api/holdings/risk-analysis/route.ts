@@ -1,17 +1,18 @@
 /**
  * Portfolio Risk Analysis API
  *
- * Accepts a holdings payload, sends it to GPT-4o with a specialized risk-analyst
- * system prompt, and returns a structured JSON risk report.
- * Pattern mirrors /api/ai/compare-explain/route.ts.
+ * Accepts a holdings payload, sends it to Claude Sonnet 4.6 with a specialized
+ * risk-analyst system prompt, and returns a structured JSON risk report.
+ * Quota: 1 free run/month for free users, unlimited for Pro.
  */
 
-import { generateText } from 'ai';
-import { openai } from '@ai-sdk/openai';
+import Anthropic from '@anthropic-ai/sdk';
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, withRateLimit } from '@/lib/security/api-security';
 import { checkQuota } from '@/lib/billing/quotas';
 import { logAiCall } from '@/lib/billing/log-ai-call';
+
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 const RISK_ANALYST_SYSTEM_PROMPT = `You are a senior portfolio risk analyst at a top-tier institutional investment firm. Your task is to produce a rigorous, structured risk assessment of a retail investor's stock portfolio.
 
@@ -22,10 +23,12 @@ Output this exact schema:
   "overallRiskScore": <integer 0-100, where 100 = maximum risk>,
   "riskLevel": <"Low" | "Moderate" | "Elevated" | "High" | "Very High">,
   "metrics": {
-    "concentration": { "score": <integer 0-100>, "label": <string>, "detail": <string> },
-    "sectorDiversification": { "score": <integer 0-100>, "label": <string>, "detail": <string> },
-    "marketCapBias": { "score": <integer 0-100>, "label": <string>, "detail": <string> },
-    "volatilityExposure": { "score": <integer 0-100>, "label": <string>, "detail": <string> }
+    "concentration":        { "score": <integer 0-100>, "label": <string>, "detail": <string> },
+    "sectorDiversification":{ "score": <integer 0-100>, "label": <string>, "detail": <string> },
+    "marketCapBias":        { "score": <integer 0-100>, "label": <string>, "detail": <string> },
+    "volatilityExposure":   { "score": <integer 0-100>, "label": <string>, "detail": <string> },
+    "correlationRisk":      { "score": <integer 0-100>, "label": <string>, "detail": <string> },
+    "liquidityRisk":        { "score": <integer 0-100>, "label": <string>, "detail": <string> }
   },
   "topRisks": [
     { "severity": <"critical" | "high" | "medium" | "low">, "factor": <string>, "description": <string> }
@@ -33,17 +36,23 @@ Output this exact schema:
   "sectorBreakdown": [
     { "sector": <string>, "symbols": [<string>], "estimatedWeight": <number 0-100> }
   ],
+  "stressScenarios": [
+    { "scenario": <string>, "estimatedImpact": <string>, "severity": <"low" | "medium" | "high"> }
+  ],
   "recommendations": [<string>],
   "portfolioSummary": <string>
 }
 
 Scoring guidelines:
-- overallRiskScore: weighted average — concentration 30%, sectorDiversification 25%, marketCapBias 20%, volatilityExposure 25%
+- overallRiskScore: weighted average — concentration 25%, sectorDiversification 20%, marketCapBias 15%, volatilityExposure 20%, correlationRisk 10%, liquidityRisk 10%
 - riskLevel thresholds: 0-20 = Low, 21-40 = Moderate, 41-60 = Elevated, 61-79 = High, 80-100 = Very High
 - concentration: score 80+ if top 1 holding > 40%, or top 3 > 75%; score 50-79 if top 3 = 55-75%; score <50 if well spread
 - sectorDiversification: score 80+ if >70% in one sector; score 50-79 if 50-70% in one sector; score <50 if no sector exceeds 40%
 - marketCapBias: score 70+ if heavy small/micro-cap; score 30-69 for mid-cap mix; score <30 for large/mega-cap dominated
 - volatilityExposure: score 80+ for biotech/crypto-adjacent/speculative; 60-79 for high-beta tech; 40-59 for mixed; <40 for defensive sectors
+- correlationRisk: score 80+ if >80% of holdings are high-beta tech/growth names that move in lockstep; score 40-79 for mixed growth/value; score <40 if genuinely diversified across growth, value, and defensive
+- liquidityRisk: score 80+ if >30% of portfolio value is in small/micro-cap or thinly traded names; score 40-79 for some mid-cap exposure; score <30 if dominated by large/mega-cap liquid names
+- stressScenarios: exactly 3 items — (1) a rate-hike cycle scenario, (2) a sector-specific correction for the portfolio's most concentrated sector, (3) a broad market sell-off. For each, estimate a % drawdown range (e.g. "−22% to −35% estimated drawdown") based on the holdings' sector membership, known beta characteristics, and historical analogues. severity: "low" if estimated impact <10%, "medium" if 10-25%, "high" if >25%
 - topRisks: 3-5 items ordered by severity; be specific and name actual ticker symbols
 - sectorBreakdown: classify each symbol into its GICS sector; estimatedWeight = approximate % of portfolio in that sector
 - recommendations: 3-5 concrete, actionable bullet points mentioning specific ticker symbols where relevant
@@ -61,7 +70,7 @@ interface HoldingInput {
 }
 
 async function handler(req: NextRequest, _context: unknown, session: { userId: string }) {
-  // Monthly quota (3/mo free, unlimited Pro)
+  // Monthly quota (1/mo free, unlimited Pro)
   const quota = await checkQuota(session.userId, 'risk_analysis');
   if (!quota.allowed) {
     return NextResponse.json({ error: 'quota_exceeded', quota }, { status: 402 });
@@ -93,25 +102,29 @@ async function handler(req: NextRequest, _context: unknown, session: { userId: s
 
     const prompt = `Analyze this portfolio${totalValue > 0 ? ` (total value: $${totalValue.toFixed(0)})` : ''}:\n\n${lines.join('\n')}`;
 
-    const result = await generateText({
-      model: openai('gpt-4o'),
+    const msg = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 2048,
       system: RISK_ANALYST_SYSTEM_PROMPT,
-      prompt,
-      maxOutputTokens: 2048,
+      messages: [{ role: 'user', content: prompt }],
     });
 
     void logAiCall({
       userId: session.userId,
       feature: 'risk_analysis',
-      model: 'gpt-4o',
-      inputTokens: result.usage.inputTokens,
-      outputTokens: result.usage.outputTokens,
+      model: 'claude-sonnet-4-6',
+      inputTokens: msg.usage.input_tokens,
+      outputTokens: msg.usage.output_tokens,
       metadata: { holdingsCount: holdings.length },
     });
 
+    const rawText = msg.content[0].type === 'text' ? msg.content[0].text : '';
     // Strip any accidental markdown fences before parsing
-    const cleaned = result.text.trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '');
+    const cleaned = rawText.trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '');
     const analysis = JSON.parse(cleaned);
+
+    // Attach server-side timestamp so the UI can display when analysis was generated
+    analysis.generatedAt = new Date().toISOString();
 
     return NextResponse.json({ success: true, analysis });
   } catch (err) {
@@ -123,5 +136,5 @@ async function handler(req: NextRequest, _context: unknown, session: { userId: s
   }
 }
 
-/** Auth required; rate limited to 10/min to protect OpenAI usage */
+/** Auth required; rate limited to 10/min to protect Claude usage */
 export const POST = withRateLimit(withAuth(handler), { windowMs: 60 * 1000, maxRequests: 10 });

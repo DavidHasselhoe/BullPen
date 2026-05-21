@@ -25,7 +25,7 @@ export const QUOTAS = {
   chat:              { count: 15, period: 'day'   } as QuotaConfig,
   why_today:         { count: 0,  period: 'day'   } as QuotaConfig,  // pro-only
   compare_explain:   { count: 5,  period: 'day'   } as QuotaConfig,
-  risk_analysis:     { count: 3,  period: 'month' } as QuotaConfig,
+  risk_analysis:     { count: 1,  period: 'month' } as QuotaConfig,
 };
 
 export type QuotaFeature = keyof typeof QUOTAS;
