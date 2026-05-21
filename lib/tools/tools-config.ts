@@ -2,7 +2,6 @@ import type { LucideIcon } from 'lucide-react';
 import {
   Calculator,
   Wallet,
-  PieChart,
   Gauge,
   Grid3X3,
   MessageSquare,
@@ -77,14 +76,6 @@ export const TOOLS: ToolConfig[] = [
     href: '/tools/dividend',
     icon: Wallet,
     status: 'available',
-  },
-  {
-    id: 'portfolio',
-    name: 'Portfolio Analyzer',
-    description: 'Analyze diversification from your holdings. Sector concentration, correlation score, and diversification rating.',
-    href: '/tools/portfolio',
-    icon: PieChart,
-    status: 'coming-soon',
   },
   {
     id: 'market-mood',
