@@ -267,13 +267,33 @@ html.animated-background-active [data-slot="dialog-content"] {
     50% { opacity: 0; }
   }
 
-  /* Daily Brief drawer slide-up animation */
+  /* Daily Brief drawer slide-up animation (mobile bottom sheet) */
   @keyframes slideUp {
     from { transform: translateY(100%); }
     to   { transform: translateY(0); }
   }
   .animate-slide-up {
-    animation: slideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+    animation: slideUp 0.32s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  }
+
+  /* Daily Brief modal entrance (desktop centered) — fade + slight scale.
+     Combined with the existing -translate-x-1/2 -translate-y-1/2 utilities, the
+     animation only animates opacity + scale so the centering math stays intact. */
+  @keyframes briefModalIn {
+    from { opacity: 0; transform: translate(-50%, -50%) scale(0.96); }
+    to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  }
+  .animate-brief-modal-in {
+    animation: briefModalIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  /* Overlay fade-in for the brief reader backdrop */
+  @keyframes briefOverlayIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  .animate-brief-overlay-in {
+    animation: briefOverlayIn 0.2s ease-out forwards;
   }
 
   /* Brief section fade-in stagger */

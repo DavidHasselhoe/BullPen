@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { X, ArrowUpRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { slugToAssetPath } from '@/lib/assets/asset-type';
 
 interface DailyBrief {
   id: string;
@@ -18,6 +20,16 @@ interface DailyBrief {
 interface BriefSection {
   heading: string;
   body: string;
+  slug: string;
+}
+
+// ── helpers ──────────────────────────────────────────────────────────────────
+
+function slugify(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
 }
 
 function parseSections(content: string): BriefSection[] {
@@ -28,7 +40,7 @@ function parseSections(content: string): BriefSection[] {
       if (firstNewline === -1) return null;
       const heading = part.slice(0, firstNewline).replace(/^##\s*/, '').trim();
       const body = part.slice(firstNewline + 1).trim();
-      return { heading, body };
+      return { heading, body, slug: slugify(heading) };
     })
     .filter((s): s is BriefSection => s !== null && s.heading.length > 0);
 }
@@ -54,50 +66,115 @@ function getNextBriefLocalTime(): string {
   return target.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 }
 
-// Render **bold** markers as <strong>
-function renderInline(text: string): React.ReactNode {
-  const parts = text.split(/\*\*([^*]+)\*\*/g);
-  return parts.map((part, i) =>
-    i % 2 === 1
-      ? <strong key={i} className="font-semibold text-foreground">{part}</strong>
-      : part
-  );
+function estimateReadingTime(content: string): number {
+  const words = content.trim().split(/\s+/).filter(Boolean).length;
+  return Math.max(1, Math.round(words / 220));
 }
 
-// Classify each line so we can style it correctly
+// Tokenize a line into <strong>, ticker <Link>, and plain text in a single pass.
+// Patterns: **bold text**, $TICKER
+function renderInline(text: string): React.ReactNode {
+  const nodes: React.ReactNode[] = [];
+  const combined = /\*\*([^*]+)\*\*|\$([A-Z]{1,5})\b/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  let key = 0;
+
+  while ((match = combined.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      nodes.push(text.slice(lastIndex, match.index));
+    }
+    if (match[1] != null) {
+      nodes.push(
+        <strong key={key++} className="font-semibold text-foreground">
+          {match[1]}
+        </strong>
+      );
+    } else if (match[2]) {
+      const ticker = match[2];
+      nodes.push(
+        <Link
+          key={key++}
+          href={slugToAssetPath(ticker)}
+          className="font-mono font-medium text-primary/85 hover:text-primary border-b border-primary/20 hover:border-primary/60 transition-colors"
+        >
+          ${ticker}
+        </Link>
+      );
+    }
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < text.length) {
+    nodes.push(text.slice(lastIndex));
+  }
+  return nodes;
+}
+
 type LineKind = 'bullet' | 'sub-header' | 'paragraph';
 function lineKind(line: string): LineKind {
   if (line.startsWith('•') || line.startsWith('-')) return 'bullet';
-  // Lines that end with a colon act as in-section sub-headers
   if (/:\s*$/.test(line.replace(/\*\*[^*]+\*\*/g, ''))) return 'sub-header';
   return 'paragraph';
 }
 
-function SectionBlock({ section, index }: { section: BriefSection; index: number }) {
+// ── section blocks ───────────────────────────────────────────────────────────
+
+interface SectionBlockProps {
+  section: BriefSection;
+  index: number;
+  isTldr: boolean;
+  sectionRef: (el: HTMLElement | null) => void;
+}
+
+function SectionBlock({ section, index, isTldr, sectionRef }: SectionBlockProps) {
   const lines = section.body.split('\n').filter(Boolean);
 
+  if (isTldr) {
+    return (
+      <section
+        ref={sectionRef}
+        id={section.slug}
+        className="brief-section mb-10"
+        style={{ animationDelay: `${index * 60}ms` }}
+      >
+        <div className="relative rounded-2xl border border-primary/15 bg-primary/[0.04] px-5 py-4 md:px-6 md:py-5 overflow-hidden">
+          <div className="absolute left-0 top-3 bottom-3 w-[3px] rounded-full bg-primary/50" />
+          <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary/80 mb-2.5">
+            TL;DR
+          </div>
+          <div className="space-y-2.5 text-[15px] leading-7 text-foreground/90">
+            {lines.map((line, i) => {
+              const text = line.replace(/^[•\-]\s*/, '');
+              return <p key={i}>{renderInline(text)}</p>;
+            })}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
-    <div
-      className="brief-section"
+    <section
+      ref={sectionRef}
+      id={section.slug}
+      className="brief-section mb-10"
       style={{ animationDelay: `${index * 60}ms` }}
     >
-      {/* Section label */}
-      <div className="flex items-center gap-3 mb-4">
-        <span className="text-[9px] font-black uppercase tracking-[0.18em] text-muted-foreground/45 shrink-0 tabular-nums">
+      <div className="flex items-center gap-3 mb-5">
+        <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground/70 shrink-0">
           {section.heading}
         </span>
-        <div className="flex-1 h-px bg-border/25" />
+        <div className="flex-1 h-px bg-border/30" />
       </div>
 
-      {/* Lines */}
-      <div className="space-y-3">
+      <div className="space-y-4">
         {lines.map((line, i) => {
           const kind = lineKind(line);
           const text = line.replace(/^[•\-]\s*/, '');
 
           if (kind === 'sub-header') {
             return (
-              <p key={i} className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/50 pt-1">
+              <p key={i} className="text-[12px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/60 pt-2">
                 {renderInline(text.replace(/:$/, ''))}
               </p>
             );
@@ -106,129 +183,264 @@ function SectionBlock({ section, index }: { section: BriefSection; index: number
           if (kind === 'bullet') {
             return (
               <div key={i} className="flex gap-3 items-start">
-                <span className="text-muted-foreground/25 select-none shrink-0 text-sm leading-6">›</span>
-                <p className="text-sm leading-6 text-foreground/85">
+                <span className="text-primary/40 select-none shrink-0 text-[15px] leading-7">›</span>
+                <p className="text-[15px] leading-7 text-foreground/85">
                   {renderInline(text)}
                 </p>
               </div>
             );
           }
 
-          // paragraph — full readable body text
           return (
-            <p key={i} className="text-sm leading-6 text-foreground/70">
+            <p key={i} className="text-[15px] leading-7 text-foreground/80">
               {renderInline(text)}
             </p>
           );
         })}
       </div>
-    </div>
+    </section>
   );
 }
 
-function BriefDrawer({ brief, onClose }: { brief: DailyBrief; onClose: () => void }) {
-  const sections = parseSections(brief.content);
+// ── section navigation rail (desktop) ───────────────────────────────────────
+
+function SectionTOC({
+  sections,
+  activeSlug,
+  onNavigate,
+}: {
+  sections: BriefSection[];
+  activeSlug: string | null;
+  onNavigate: (slug: string) => void;
+}) {
+  if (sections.length === 0) return null;
+  return (
+    <nav
+      aria-label="Sections"
+      className="hidden md:block w-[180px] shrink-0 border-r border-border/30 px-4 py-7 overflow-y-auto brief-scroll"
+    >
+      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/40 mb-3 pl-3">
+        In this brief
+      </p>
+      <ul className="space-y-0.5">
+        {sections.map((s) => {
+          const active = activeSlug === s.slug;
+          return (
+            <li key={s.slug}>
+              <button
+                onClick={() => onNavigate(s.slug)}
+                aria-current={active ? 'true' : undefined}
+                className={cn(
+                  'w-full text-left text-[12px] pl-3 pr-2 py-1.5 rounded-r-md border-l-2 transition-all duration-150',
+                  active
+                    ? 'border-primary text-foreground bg-muted/30 font-medium'
+                    : 'border-transparent text-muted-foreground/70 hover:text-foreground hover:bg-muted/20'
+                )}
+              >
+                {s.heading}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+  );
+}
+
+// ── reader (Radix Dialog — bottom sheet on mobile, centered modal on desktop) ─
+
+function BriefReader({
+  brief,
+  isToday,
+  open,
+  onOpenChange,
+}: {
+  brief: DailyBrief;
+  isToday: boolean;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const sections = useMemo(() => parseSections(brief.content), [brief.content]);
+  const readingMinutes = useMemo(() => estimateReadingTime(brief.content), [brief.content]);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [scrolled, setScrolled] = useState(false);
-  const [atBottom, setAtBottom] = useState(false);
+  const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
+  const [activeSlug, setActiveSlug] = useState<string | null>(sections[0]?.slug ?? null);
+  const [progress, setProgress] = useState(0);
 
+  // Track which section is centered in the viewport for the TOC active state.
   useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = ''; };
-  }, []);
+    if (!open) return;
+    const root = scrollRef.current;
+    if (!root) return;
 
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+        if (visible[0]) setActiveSlug(visible[0].target.id);
+      },
+      { root, rootMargin: '-20% 0px -60% 0px', threshold: [0, 0.25, 0.5, 1] }
+    );
+
+    Object.values(sectionRefs.current).forEach((el) => {
+      if (el) observer.observe(el);
+    });
+    return () => observer.disconnect();
+  }, [open, sections]);
+
+  // Reset scroll + progress when reopening
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [onClose]);
+    if (open) {
+      requestAnimationFrame(() => {
+        scrollRef.current?.scrollTo({ top: 0 });
+        setProgress(0);
+        setActiveSlug(sections[0]?.slug ?? null);
+      });
+    }
+  }, [open, sections]);
 
   function handleScroll() {
     const el = scrollRef.current;
     if (!el) return;
-    setScrolled(el.scrollTop > 8);
-    setAtBottom(el.scrollTop + el.clientHeight >= el.scrollHeight - 8);
+    const max = Math.max(1, el.scrollHeight - el.clientHeight);
+    setProgress(Math.min(1, el.scrollTop / max));
   }
 
+  function navigateTo(slug: string) {
+    const target = sectionRefs.current[slug];
+    const root = scrollRef.current;
+    if (!target || !root) return;
+    root.scrollTo({ top: target.offsetTop - 16, behavior: 'smooth' });
+  }
+
+  const topTickers = (brief.featured_tickers ?? [])
+    .filter((t) => t.length >= 1 && t.length <= 5)
+    .slice(0, 6);
+
+  // TL;DR detection — first section whose slug starts with "tl"
+  const tldrSlug = sections.find((s) => s.slug.startsWith('tl'))?.slug ?? null;
+
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/55 backdrop-blur-[6px]"
-        onClick={onClose}
-        aria-hidden
-      />
+    <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Overlay
+          className="fixed inset-0 z-50 bg-black/55 backdrop-blur-[6px] animate-brief-overlay-in"
+        />
+        <DialogPrimitive.Content
+          aria-describedby={undefined}
+          className={cn(
+            'fixed z-50 bg-background outline-none flex flex-col overflow-hidden shadow-2xl',
+            // Mobile (<768px): bottom sheet anchored to bottom edge
+            'inset-x-0 bottom-0 max-h-[88vh] rounded-t-2xl border-t border-border/40 max-md:animate-slide-up',
+            // Desktop (≥768px): centered modal — overrides the bottom positioning
+            'md:inset-x-auto md:bottom-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2',
+            'md:w-[92vw] md:max-w-4xl md:rounded-2xl md:border md:border-border/40',
+            'md:animate-brief-modal-in'
+          )}
+        >
+          <DialogPrimitive.Title className="sr-only">{brief.title}</DialogPrimitive.Title>
 
-      {/* Sheet — centered and width-capped on large screens */}
-      <div className="relative z-10 mx-auto w-full max-w-2xl animate-slide-up">
-        <div className="bg-background border border-border/40 border-b-0 rounded-t-2xl flex flex-col max-h-[82vh] shadow-2xl">
-
-          {/* Drag handle */}
-          <div className="flex justify-center pt-2.5 pb-0 shrink-0">
-            <div className="w-9 h-[3px] rounded-full bg-border/40" />
+          {/* Reading progress bar */}
+          <div className="absolute top-0 left-0 right-0 h-[2px] bg-border/15 z-20 overflow-hidden">
+            <div
+              className="h-full bg-primary/70 origin-left will-change-transform"
+              style={{ transform: `scaleX(${progress})`, transition: 'transform 80ms linear' }}
+            />
           </div>
 
-          {/* Header — shadow appears when scrolled */}
-          <div className={cn(
-            'flex items-start justify-between px-6 pt-3 pb-4 shrink-0 transition-shadow duration-200',
-            scrolled && 'shadow-[0_1px_0_0_hsl(var(--border)/0.3)]'
-          )}>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 mb-1.5">
-                <span className="text-[9px] font-black uppercase tracking-[0.18em] text-muted-foreground/40">
-                  Daily Brief
-                </span>
-                <span className="text-muted-foreground/20">·</span>
-                <span className="text-[9px] font-mono text-muted-foreground/35">
-                  {formatPublishedDate(brief.published_date)}
-                </span>
-                <span className="text-muted-foreground/20">·</span>
-                <span className="text-[9px] font-mono text-muted-foreground/30">
-                  {formatRelativeTime(brief.generated_at)}
-                </span>
+          {/* Mobile drag handle */}
+          <div className="flex justify-center pt-2.5 shrink-0 md:hidden">
+            <div className="w-9 h-[3px] rounded-full bg-border/50" />
+          </div>
+
+          {/* Hero header */}
+          <header className="px-6 md:px-8 pt-5 md:pt-7 pb-5 shrink-0 border-b border-border/30 relative">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary/75">
+                    {isToday ? 'Daily Brief' : "Yesterday's Brief"}
+                  </span>
+                  {isToday && (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-400/90">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      Live
+                    </span>
+                  )}
+                </div>
+                <h2 className="text-xl md:text-[26px] font-semibold text-foreground leading-tight tracking-tight pr-10">
+                  {brief.title}
+                </h2>
+                <div className="flex items-center flex-wrap gap-x-2 gap-y-1 mt-3 text-[11px] text-muted-foreground/70 font-mono">
+                  <span>{formatPublishedDate(brief.published_date)}</span>
+                  <span className="text-muted-foreground/30">·</span>
+                  <span>{readingMinutes} min read</span>
+                  <span className="text-muted-foreground/30">·</span>
+                  <span>Generated {formatRelativeTime(brief.generated_at)}</span>
+                </div>
               </div>
-              <h2 className="text-[15px] font-semibold text-foreground leading-snug tracking-tight pr-8">
-                {brief.title}
-              </h2>
+              <DialogPrimitive.Close
+                className="absolute top-5 right-5 md:top-7 md:right-7 text-muted-foreground/50 hover:text-foreground transition-all duration-150 p-1.5 rounded-lg hover:bg-muted/40 active:scale-95"
+                aria-label="Close"
+              >
+                <X className="h-4 w-4" />
+              </DialogPrimitive.Close>
             </div>
-            <button
-              onClick={onClose}
-              className="absolute top-5 right-5 text-muted-foreground/30 hover:text-muted-foreground/70 transition-colors p-1.5 rounded-lg hover:bg-muted/40"
-              aria-label="Close"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          </div>
 
-          {/* Scrollable content */}
-          <div
-            ref={scrollRef}
-            onScroll={handleScroll}
-            className="overflow-y-auto flex-1 brief-scroll px-6 pb-2"
-          >
-            <div className="space-y-7 pt-1 pb-8">
-              {sections.map((section, i) => (
-                <SectionBlock key={i} section={section} index={i} />
-              ))}
-              <p className="text-[9px] text-muted-foreground/20 select-none tracking-wide uppercase pb-2">
-                Generated by Claude · live web search
-              </p>
-            </div>
-          </div>
-
-          {/* Bottom fade — hides when scrolled to bottom */}
-          <div
-            className={cn(
-              'pointer-events-none absolute bottom-0 left-0 right-0 h-16 rounded-b-2xl transition-opacity duration-200',
-              'bg-gradient-to-t from-background to-transparent',
-              atBottom ? 'opacity-0' : 'opacity-100'
+            {topTickers.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-4">
+                {topTickers.map((ticker) => (
+                  <Link
+                    key={ticker}
+                    href={slugToAssetPath(ticker)}
+                    className="text-[11px] font-mono font-medium text-foreground/80 bg-muted/40 hover:bg-muted/70 hover:text-foreground transition-all duration-150 px-2 py-0.5 rounded border border-border/30 hover:border-border"
+                  >
+                    ${ticker}
+                  </Link>
+                ))}
+              </div>
             )}
-          />
-        </div>
-      </div>
-    </div>
+          </header>
+
+          {/* Body: TOC (desktop) + content */}
+          <div className="flex flex-1 min-h-0 overflow-hidden">
+            <SectionTOC
+              sections={sections}
+              activeSlug={activeSlug}
+              onNavigate={navigateTo}
+            />
+
+            <div
+              ref={scrollRef}
+              onScroll={handleScroll}
+              className="overflow-y-auto flex-1 brief-scroll px-6 md:px-10 py-7"
+            >
+              <article className="max-w-[640px] mx-auto md:mx-0">
+                {sections.map((section, i) => (
+                  <SectionBlock
+                    key={section.slug || i}
+                    section={section}
+                    index={i}
+                    isTldr={section.slug === tldrSlug}
+                    sectionRef={(el) => {
+                      sectionRefs.current[section.slug] = el;
+                    }}
+                  />
+                ))}
+                <p className="text-[10px] text-muted-foreground/30 tracking-[0.15em] uppercase pt-2 pb-2 select-none">
+                  Generated by Claude · Live web search
+                </p>
+              </article>
+            </div>
+          </div>
+        </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
 }
+
+// ── widget (dashboard entry point) ──────────────────────────────────────────
 
 export function DailyBriefWidget() {
   const [isOpen, setIsOpen] = useState(false);
@@ -277,7 +489,7 @@ export function DailyBriefWidget() {
             <p className="text-sm font-medium text-foreground/30 blur-sm select-none truncate">
               Markets surge as Fed signals pivot — tech leads broad rally
             </p>
-            <p className="text-xs text-muted-foreground/30 blur-sm select-none">Markets · Earnings · Headlines · Watch Today</p>
+            <p className="text-xs text-muted-foreground/30 blur-sm select-none">TL;DR · The Setup · Earnings Pulse · Movers · Watch Today</p>
           </div>
           <Link
             href="/upgrade"
@@ -305,7 +517,7 @@ export function DailyBriefWidget() {
   }
 
   const topTickers = (brief.featured_tickers ?? [])
-    .filter(t => t.length >= 2 && t.length <= 5)
+    .filter((t) => t.length >= 2 && t.length <= 5)
     .slice(0, 5);
 
   return (
@@ -323,7 +535,7 @@ export function DailyBriefWidget() {
 
         <button
           onClick={() => setIsOpen(true)}
-          className="w-full text-left group flex items-start justify-between gap-4 rounded-lg border border-border/30 bg-muted/10 hover:bg-muted/20 hover:border-border/50 transition-all duration-200 px-4 py-3"
+          className="w-full text-left group flex items-start justify-between gap-4 rounded-lg border border-border/30 bg-muted/10 hover:bg-muted/20 hover:border-border/50 transition-all duration-200 px-4 py-3 active:scale-[0.997]"
         >
           <div className="min-w-0 space-y-2">
             <p className="text-sm font-semibold text-foreground leading-snug">
@@ -331,22 +543,22 @@ export function DailyBriefWidget() {
             </p>
             {topTickers.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
-                {topTickers.map(ticker => (
+                {topTickers.map((ticker) => (
                   <span
                     key={ticker}
-                    className="text-[10px] font-mono font-medium text-muted-foreground/50 bg-muted/40 px-1.5 py-0.5 rounded"
+                    className="text-[10px] font-mono font-medium text-muted-foreground/60 bg-muted/40 px-1.5 py-0.5 rounded"
                   >
-                    {ticker}
+                    ${ticker}
                   </span>
                 ))}
               </div>
             )}
           </div>
-          <ArrowUpRight className="h-4 w-4 text-muted-foreground/30 group-hover:text-muted-foreground/60 shrink-0 mt-0.5 transition-colors" />
+          <ArrowUpRight className="h-4 w-4 text-muted-foreground/30 group-hover:text-muted-foreground/60 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 shrink-0 mt-0.5 transition-all duration-150" />
         </button>
       </div>
 
-      {isOpen && <BriefDrawer brief={brief} onClose={() => setIsOpen(false)} />}
+      <BriefReader brief={brief} isToday={isToday} open={isOpen} onOpenChange={setIsOpen} />
     </>
   );
 }

@@ -44,11 +44,10 @@ function formatEarningsRow(e: {
 }
 
 function extractTickers(text: string): string[] {
-  const dollarTickers = Array.from(text.matchAll(/\$([A-Z]{1,5})\b/g), (m) => m[1]);
-  const allCaps = Array.from(text.matchAll(/\b([A-Z]{2,5})\b/g), (m) => m[1]).filter(
-    (t) => !['BMO', 'AMC', 'CEO', 'CFO', 'EPS', 'IPO', 'ETF', 'GDP', 'CPI', 'FED', 'SEC', 'NYSE', 'THE', 'AND', 'FOR'].includes(t)
-  );
-  return [...new Set([...dollarTickers, ...allCaps])].slice(0, 20);
+  // Prompt mandates $TICKER for every stock mention — only match the dollar form
+  // to avoid false positives like "EPS", "CEO", "BEAT" leaking into featured_tickers.
+  const tickers = Array.from(text.matchAll(/\$([A-Z]{1,5})\b/g), (m) => m[1]);
+  return [...new Set(tickers)].slice(0, 20);
 }
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
@@ -119,21 +118,49 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   });
 
   // ── Call Claude with web search ───────────────────────────────────────────
-  const systemPrompt =
-    'You are a financial journalist writing the Daily Market Brief for a stock-tracking app. ' +
-    'Write in a clean, editorial style: specific numbers, named companies, concrete catalysts. ' +
-    'No generic commentary ("markets were mixed", "investors were cautious"). ' +
-    'Each section gets a ## header. Use bullet points (•) inside sections. ' +
-    'Keep the total brief under 600 words. Begin with a one-line title on the first line (no # prefix).';
+  const systemPrompt = `You are the lead writer of the BullPen Daily Market Brief — a premium morning read for retail investors who follow markets daily. Voice: smart, specific, a touch witty. Think Robinhood Snacks meets Stratechery — not stiff financial-journalese.
 
-  const userPrompt =
-    `Write today's Daily Market Brief for ${todayFormatted}.\n\n` +
-    `YESTERDAY'S EARNINGS RESULTS (use as factual anchors):\n${earningsResultsText}\n\n` +
-    `TODAY'S SCHEDULED REPORTERS:\n${todayReportersText}\n\n` +
-    `YESTERDAY'S TOP MOVERS:\nGainers: ${topGainers}\nLosers: ${topLosers}\n` +
-    avoidanceSection +
-    '\nWrite exactly these 5 sections:\n' +
-    '## Markets\n## Earnings Results\n## Reporting Today\n## Headlines\n## Watch Today';
+Hard rules:
+- Lead every stock mention with $TICKER (e.g. "$NVDA beat by 8%"). Always.
+- Use concrete numbers, named companies, and the *why* behind moves — never generic filler ("markets were mixed", "investors weighed", "Wall Street watched").
+- Begin with a one-line title (no # prefix, no quotes, no markdown).
+- Use ## section headers exactly as listed below, in order.
+- Use • for bullet points inside sections.
+- Use **bold** for company names on first mention and for key metrics.
+- Target ~550 words total. Hard ceiling: 650.
+
+Banned phrases (do not use): "investors are watching", "in a sign that", "as the saying goes", "remains to be seen", "only time will tell", "amid", "on the heels of", "broader market", "risk-on", "risk-off", "Wall Street".`;
+
+  const userPrompt = `Write today's Daily Market Brief for ${todayFormatted}.
+
+REQUIRED STRUCTURE (in this order, exactly these headers):
+
+## TL;DR
+2–3 punchy sentences capturing today's single most important narrative. Max 60 words. Hook the reader. Mention 1–2 $TICKERs if relevant.
+
+## The Setup
+Overnight + premarket context. Futures, key macro data dropping today, any overseas moves that matter for US trade. ~120 words.
+
+## Earnings Pulse
+Yesterday's beats/misses that still matter + today's most important reporters. Use the data below as factual anchors — don't invent numbers. ~140 words.
+
+## Movers & Stories
+Top 2–3 stories driving stocks today — the *why*, not just the *what*. Skip pure mechanical movers; lead with catalysts (downgrades, product news, litigation, M&A chatter). ~140 words.
+
+## Watch Today
+Specific events to monitor: Fed speakers + times, key economic releases, technical levels for major indices, upcoming catalysts. Bullet list. ~80 words.
+
+YESTERDAY'S EARNINGS RESULTS (factual anchors, use exact numbers):
+${earningsResultsText}
+
+TODAY'S SCHEDULED REPORTERS:
+${todayReportersText}
+
+YESTERDAY'S TOP MOVERS:
+Gainers: ${topGainers}
+Losers:  ${topLosers}
+${avoidanceSection}
+Use live web search to verify the latest news for "Movers & Stories" and "Watch Today". Cite specific events, not generic narratives.`;
 
   let fullText = '';
   try {
