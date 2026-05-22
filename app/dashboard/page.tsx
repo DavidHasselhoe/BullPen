@@ -1,9 +1,11 @@
 'use client';
 
+import { Pencil } from 'lucide-react';
 import { HomepageRedirect } from '@/components/navigation/HomepageRedirect';
 import { CommandBar } from '@/components/command-palette/CommandBar';
 import { WelcomeMessage } from '@/components/ui/WelcomeMessage';
 import AnimatedContent from '@/components/ui/AnimatedContent';
+import { Button } from '@/components/ui/button';
 import { useBackground } from '@/hooks/use-background';
 import { MarketContextSection } from '@/components/market/MarketContextSection';
 import { HotPicksCard } from '@/components/discover/HotPicksCard';
@@ -14,16 +16,66 @@ import { DailyBriefWidget } from '@/components/discover/DailyBriefWidget';
 import { QuoteDisplay } from '@/components/ui/QuoteDisplay';
 import { useUserSettings } from '@/hooks/use-user-settings';
 import { CryptoMarketCard } from '@/components/asset/CryptoMarketCard';
+import { resolveWidgetOrder } from '@/lib/dashboard/widgets';
+
+function WidgetSlot({ id }: { id: string }) {
+  switch (id) {
+    case 'recently_viewed':
+      return <RecentlyViewedInline />;
+    case 'daily_brief':
+      return (
+        <section className="min-w-0 overflow-hidden">
+          <AnimatedContent reverse={true}>
+            <DailyBriefWidget />
+          </AnimatedContent>
+        </section>
+      );
+    case 'market_context':
+      return <MarketContextSection />;
+    case 'earnings_calendar':
+      return (
+        <section className="min-w-0 overflow-hidden">
+          <AnimatedContent reverse={true}>
+            <EarningsCalendarWidget />
+          </AnimatedContent>
+        </section>
+      );
+    case 'hot_picks':
+      return (
+        <section className="min-w-0 overflow-hidden">
+          <AnimatedContent reverse={true}>
+            <HotPicksCard />
+          </AnimatedContent>
+        </section>
+      );
+    case 'crypto_market':
+      return (
+        <section className="min-w-0 overflow-hidden">
+          <AnimatedContent reverse={true}>
+            <CryptoMarketCard />
+          </AnimatedContent>
+        </section>
+      );
+    default:
+      return null;
+  }
+}
 
 export default function DiscoverPage() {
   const { hasAnimatedBackground } = useBackground();
-  const { showQuotes, showWelcomeText } = useUserSettings();
+  const { showQuotes, showWelcomeText, homepageWidgetOrder, homepageWidgetHidden } = useUserSettings();
+
+  const resolvedOrder = resolveWidgetOrder(homepageWidgetOrder, homepageWidgetHidden);
+
+  const openCustomize = () => {
+    window.dispatchEvent(new CustomEvent('settings:open', { detail: { tab: 'customize' } }));
+  };
 
   return (
     <HomepageRedirect>
     <div className={`min-h-screen ${hasAnimatedBackground ? '' : 'bg-background'}`}>
       <main className="container mx-auto max-w-6xl py-8 px-4 sm:px-6 lg:px-8 min-w-0">
-        {/* SECTION: Search / Command bar */}
+        {/* SECTION: Search / Command bar — fixed header, not reorderable */}
         <section className="mb-10">
           <div className="flex flex-col gap-4">
             {showWelcomeText && <WelcomeMessage />}
@@ -37,41 +89,27 @@ export default function DiscoverPage() {
                 <PortfolioSummaryWidget />
               </div>
             </div>
-            <RecentlyViewedInline />
           </div>
         </section>
 
+        {/* Customize control */}
+        <div className="flex justify-end mb-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={openCustomize}
+            className="gap-1.5 h-7 px-2 text-xs text-muted-foreground/60 hover:text-foreground"
+          >
+            <Pencil className="h-3 w-3" />
+            Customize
+          </Button>
+        </div>
+
+        {/* Reorderable widget stack */}
         <div className="space-y-16">
-          {/* Daily Brief — AI-generated daily market summary (pro users) */}
-          <section className="min-w-0 overflow-hidden">
-            <AnimatedContent reverse={true}>
-              <DailyBriefWidget />
-            </AnimatedContent>
-          </section>
-
-          {/* SECTION 1: Market Context — live movers, hours, news */}
-          <MarketContextSection />
-
-          {/* Earnings Calendar — switches between all-markets and portfolio mode */}
-          <section className="min-w-0 overflow-hidden">
-            <AnimatedContent reverse={true}>
-              <EarningsCalendarWidget />
-            </AnimatedContent>
-          </section>
-
-          {/* Hot Picks */}
-          <section className="min-w-0 overflow-hidden">
-            <AnimatedContent reverse={true}>
-              <HotPicksCard />
-            </AnimatedContent>
-          </section>
-
-          {/* Crypto & Commodities market overview */}
-          <section className="min-w-0 overflow-hidden">
-            <AnimatedContent reverse={true}>
-              <CryptoMarketCard />
-            </AnimatedContent>
-          </section>
+          {resolvedOrder.map((id) => (
+            <WidgetSlot key={id} id={id} />
+          ))}
 
           {showQuotes && (
             <footer className="pt-4">

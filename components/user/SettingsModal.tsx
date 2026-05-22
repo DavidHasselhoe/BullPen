@@ -22,7 +22,9 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Globe, DollarSign, Moon, Bell, Shield, AlertTriangle, Trash2, Download, Check, Settings2, Eye, EyeOff, Home, Hash, Search, Bot } from 'lucide-react';
+import { Loader2, Globe, DollarSign, Moon, Bell, Shield, AlertTriangle, Trash2, Download, Check, Settings2, Eye, EyeOff, Home, Hash, Search, Bot, LayoutGrid } from 'lucide-react';
+import { HomepageLayoutEditor } from '@/components/settings/HomepageLayoutEditor';
+import { DEFAULT_ORDER as DEFAULT_WIDGET_ORDER } from '@/lib/dashboard/widgets';
 import { ExperienceLevelToggle } from '@/components/ui/ExperienceLevelToggle';
 import { Input } from '@/components/ui/input';
 import { TickerSelector, type SearchResult } from '@/components/tools/buy-here/TickerSelector';
@@ -88,6 +90,8 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
   const [marketContextMode, setMarketContextMode] = useState<'all' | 'holdings'>('all');
   const [profilePublic, setProfilePublic] = useState<boolean>(true);
   const [holdingsPublic, setHoldingsPublic] = useState<boolean>(true);
+  const [widgetOrder, setWidgetOrder] = useState<string[]>(DEFAULT_WIDGET_ORDER);
+  const [widgetHidden, setWidgetHidden] = useState<string[]>([]);
   // AI settings state
   const [riskProfile, setRiskProfile] = useState<'conservative' | 'balanced' | 'aggressive' | null>(null);
   const [investmentHorizon, setInvestmentHorizon] = useState<'short' | 'medium' | 'long' | null>(null);
@@ -160,6 +164,8 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
       setMarketContextMode(settings.market_context_mode === 'holdings' ? 'holdings' : 'all');
       setProfilePublic(settings.profile_public !== false);
       setHoldingsPublic(settings.holdings_public !== false);
+      setWidgetOrder(Array.isArray(settings.homepage_widget_order) ? settings.homepage_widget_order : DEFAULT_WIDGET_ORDER);
+      setWidgetHidden(Array.isArray(settings.homepage_widget_hidden) ? settings.homepage_widget_hidden : []);
       // AI settings
       setRiskProfile((user as any).risk_profile ?? null);
       setInvestmentHorizon((settings.investment_horizon as 'short' | 'medium' | 'long') ?? null);
@@ -194,6 +200,8 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
         holdings_public: holdingsPublic,
         investment_horizon: investmentHorizon,
         response_style: responseStyle,
+        homepage_widget_order: widgetOrder,
+        homepage_widget_hidden: widgetHidden,
       };
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -240,7 +248,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
     }, 500);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedMarkets, defaultCurrency, theme, language, defaultHomepage, showQuotes, showWelcomeText, roundNumbers, marketContextMode, notifications, profilePublic, holdingsPublic, riskProfile, investmentHorizon, responseStyle]);
+  }, [selectedMarkets, defaultCurrency, theme, language, defaultHomepage, showQuotes, showWelcomeText, roundNumbers, marketContextMode, notifications, profilePublic, holdingsPublic, riskProfile, investmentHorizon, responseStyle, widgetOrder, widgetHidden]);
 
   const handleDeleteAccount = async () => {
     if (!user) return;
@@ -837,6 +845,26 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                     <p className="text-xs text-muted-foreground">
                       {t('settings.marketContextDescription')}
                     </p>
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-3">
+                    <Label className="flex items-center gap-2">
+                      <LayoutGrid className="h-4 w-4" />
+                      Homepage Layout
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Drag to reorder widgets on your homepage. Toggle the eye icon to hide widgets you don&apos;t use.
+                    </p>
+                    <HomepageLayoutEditor
+                      order={widgetOrder}
+                      hidden={widgetHidden}
+                      onChange={(o, h) => {
+                        setWidgetOrder(o);
+                        setWidgetHidden(h);
+                      }}
+                    />
                   </div>
                 </div>
               </div>

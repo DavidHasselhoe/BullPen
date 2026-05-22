@@ -3,6 +3,7 @@
 import { useCallback } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { createBrowserClient } from '@/lib/supabase/client';
+import { DEFAULT_ORDER as DEFAULT_WIDGET_ORDER } from '@/lib/dashboard/widgets';
 
 export type MarketContextMode = 'all' | 'holdings';
 
@@ -22,6 +23,14 @@ export function useUserSettings() {
   // market_context_mode: 'all' | 'holdings' — default 'all'
   const marketContextMode: MarketContextMode =
     settings.market_context_mode === 'holdings' ? 'holdings' : 'all';
+
+  // Homepage layout customization
+  const homepageWidgetOrder: string[] = Array.isArray(settings.homepage_widget_order)
+    ? settings.homepage_widget_order
+    : DEFAULT_WIDGET_ORDER;
+  const homepageWidgetHidden: string[] = Array.isArray(settings.homepage_widget_hidden)
+    ? settings.homepage_widget_hidden
+    : [];
 
   const updateMarketContextMode = useCallback(
     async (mode: MarketContextMode) => {
@@ -54,5 +63,7 @@ export function useUserSettings() {
     roundNumbers,
     marketContextMode,
     updateMarketContextMode,
+    homepageWidgetOrder,
+    homepageWidgetHidden,
   };
 }
