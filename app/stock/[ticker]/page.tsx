@@ -367,19 +367,19 @@ export default function StockDetailPage() {
               </AnimatedContent>
             </StockSectionBoundary>
 
-            <StockSectionBoundary>
-              <AnimatedContent reverse={true} delay={0.24}>
-                <InsiderTransactionsCard ticker={ticker} />
-              </AnimatedContent>
-            </StockSectionBoundary>
-
             <div id="earnings" className="mb-8 scroll-mt-6">
               <StockSectionBoundary>
-                <AnimatedContent reverse={true} delay={0.15}>
+                <AnimatedContent reverse={true} delay={0.24}>
                   <EarningsCalendar ticker={ticker} />
                 </AnimatedContent>
               </StockSectionBoundary>
             </div>
+
+            <StockSectionBoundary>
+              <AnimatedContent reverse={true} delay={0.26}>
+                <InsiderTransactionsCard ticker={ticker} />
+              </AnimatedContent>
+            </StockSectionBoundary>
           </>
         )}
 
