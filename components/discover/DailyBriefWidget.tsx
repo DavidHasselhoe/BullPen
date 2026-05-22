@@ -285,12 +285,18 @@ function BriefReader({
     const max = Math.max(1, el.scrollHeight - el.clientHeight);
     setProgress(Math.min(1, el.scrollTop / max));
 
-    // Active section: last one whose top edge is at or above the trigger line
-    const triggerY = el.scrollTop + 120;
+    // Use getBoundingClientRect so positions are always relative to the
+    // actual viewport, not the fixed modal ancestor (which offsetTop would be).
+    const containerTop = el.getBoundingClientRect().top;
+    const triggerOffset = 140; // px from container top edge to consider "active"
+
     let active = sections[0]?.slug ?? null;
     for (const section of sections) {
       const ref = sectionRefs.current[section.slug];
-      if (ref && ref.offsetTop <= triggerY) active = section.slug;
+      if (!ref) continue;
+      if (ref.getBoundingClientRect().top - containerTop <= triggerOffset) {
+        active = section.slug;
+      }
     }
     setActiveSlug(active);
   }

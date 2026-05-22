@@ -232,7 +232,7 @@ Hard rules:
 - COMPLETE EVERY SENTENCE. Never end a section or the brief mid-thought. If you are running long, cut earlier content — never trail off.
 
 DATA FIDELITY (critical):
-- In "Earnings Pulse": cite ONLY companies listed in "YESTERDAY'S EARNINGS RESULTS" below. Do not invent additional tickers — especially micro/small-cap names (symbols like AAMMF, ADKT, AGNC-type cross-listings) that are not on that list. If the list is sparse, say so concisely.
+- In "Earnings Results": cite ONLY companies listed in "YESTERDAY'S EARNINGS RESULTS" below. Do not invent additional tickers — especially micro/small-cap names (symbols like AAMMF, ADKT, AGNC-type cross-listings) that are not on that list. If the list is sparse, say so concisely.
 - For "Reporting Today": cite ONLY companies from "TODAY'S SCHEDULED REPORTERS" below.
 - After-hours or pre-market moves must be flagged [AH] or [PM] immediately after the ticker, e.g. "$INTU [AH] fell 13%".
 
@@ -251,11 +251,11 @@ REQUIRED STRUCTURE (in this order, exactly these headers):
 ## The Setup
 Overnight + premarket context. Futures, key macro data dropping today, any overseas moves that matter for US trade. Include VIX level and 10Y Treasury yield if provided. ~120 words.
 
-## Earnings Pulse
-Yesterday's beats/misses that still matter + today's most important reporters. Use ONLY the data below as factual anchors — do not invent numbers or add tickers not in the list. Tag after-hours moves [AH]. Include the EPS beat rate if provided. ~140 words.
-
-## Movers & Stories
+## Headlines
 Top 2–3 stories driving stocks today — the *why*, not just the *what*. For each sector mentioned (+2%+), add one sentence on the specific catalyst. Skip pure mechanical movers; lead with catalysts (downgrades, product news, litigation, M&A chatter). ~140 words.
+
+## Earnings Results
+Yesterday's beats/misses that still matter + today's most important reporters. Use ONLY the data below as factual anchors — do not invent numbers or add tickers not in the list. Tag after-hours moves [AH]. Include the EPS beat rate if provided. ~140 words.
 
 ## Watch Today
 Specific events to monitor: Fed speakers + times, key economic releases, technical levels for major indices, upcoming catalysts. Bullet list. ~80 words.
