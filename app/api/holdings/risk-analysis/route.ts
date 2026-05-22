@@ -104,7 +104,7 @@ async function handler(req: NextRequest, _context: unknown, session: { userId: s
 
     const msg = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 2048,
+      max_tokens: 4096,
       system: RISK_ANALYST_SYSTEM_PROMPT,
       messages: [{ role: 'user', content: prompt }],
     });
