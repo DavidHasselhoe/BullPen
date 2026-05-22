@@ -10,7 +10,7 @@
  * CDN-cached for 15 minutes — no auth required.
  */
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
 import { getStockQuotes, getIndicator } from '@/lib/twelvedata/twelvedata-client';
 
@@ -63,29 +63,35 @@ function safeHavenToScore(spyDp: number, tltDp: number): number {
   return Math.round(clamp(50 + divergence * 18, 5, 95));
 }
 
-async function handler(): Promise<NextResponse> {
-  const [quotesMap, smaResult] = await Promise.allSettled([
+async function handler(_request: NextRequest): Promise<NextResponse> {
+  const [quotesResult, smaResult] = await Promise.allSettled([
     getStockQuotes(['VIX', 'SPY', 'HYG', 'LQD', 'TLT']),
     getIndicator('SPY', 'sma', { interval: '1day', time_period: 125, outputsize: 5 }),
   ]);
 
-  if (quotesMap.status === 'rejected') {
-    console.error('[market/mood] quotes failed:', quotesMap.reason);
+  // Log which symbols are missing so we can diagnose plan / symbol issues
+  const quotes = quotesResult.status === 'fulfilled' ? quotesResult.value : new Map();
+  if (quotesResult.status === 'rejected') {
+    console.error('[market/mood] batch quotes failed:', quotesResult.reason);
+  }
+
+  const vixQ = quotes.get('VIX');
+  const spyQ = quotes.get('SPY');
+  const hygQ = quotes.get('HYG');
+  const lqdQ = quotes.get('LQD');
+  const tltQ = quotes.get('TLT');
+
+  const missing = ['VIX', 'SPY', 'HYG', 'LQD', 'TLT'].filter(s => !quotes.get(s));
+  if (missing.length > 0) {
+    console.warn('[market/mood] missing symbols:', missing.join(', '));
+  }
+
+  // Require at least SPY to compute any meaningful signal
+  if (!spyQ) {
     return NextResponse.json({ error: 'Failed to fetch market data' }, { status: 503 });
   }
 
-  const quotes = quotesMap.value;
-  const vixQ  = quotes.get('VIX');
-  const spyQ  = quotes.get('SPY');
-  const hygQ  = quotes.get('HYG');
-  const lqdQ  = quotes.get('LQD');
-  const tltQ  = quotes.get('TLT');
-
-  if (!vixQ || !spyQ || !hygQ || !lqdQ || !tltQ) {
-    return NextResponse.json({ error: 'Incomplete market data' }, { status: 503 });
-  }
-
-  // SMA is best-effort — fall back to neutral if unavailable
+  // SMA — best effort
   let smaValue: number | null = null;
   if (smaResult.status === 'fulfilled' && smaResult.value.values.length > 0) {
     const raw = smaResult.value.values[0].sma;
@@ -93,46 +99,69 @@ async function handler(): Promise<NextResponse> {
   }
 
   const momentumPct = smaValue ? ((spyQ.c - smaValue) / smaValue) * 100 : 0;
-  const momentumScore = smaValue ? momentumToScore(momentumPct) : 50;
 
-  const signals: MoodSignal[] = [
-    {
+  // Build signals — each is computed only when its required data is present,
+  // otherwise it's omitted from the composite so the weight is redistributed.
+  type WeightedSignal = MoodSignal & { weight: number };
+  const available: WeightedSignal[] = [];
+
+  if (vixQ) {
+    const score = vixToScore(vixQ.c);
+    available.push({
+      weight: 0.35,
       name: 'Market Volatility',
-      score: vixToScore(vixQ.c),
-      label: scoreToLabel(vixToScore(vixQ.c)),
+      score,
+      label: scoreToLabel(score),
       detail: `VIX at ${vixQ.c.toFixed(2)} (${vixQ.dp >= 0 ? '+' : ''}${vixQ.dp.toFixed(1)}% today) — ${vixQ.c < 15 ? 'low volatility, investors are complacent' : vixQ.c < 25 ? 'moderate market uncertainty' : 'elevated fear and risk aversion'}`,
       raw: { vix: vixQ.c, change: vixQ.dp },
-    },
-    {
+    });
+  }
+
+  {
+    const score = smaValue ? momentumToScore(momentumPct) : 50;
+    available.push({
+      weight: 0.30,
       name: 'S&P 500 Momentum',
-      score: momentumScore,
-      label: scoreToLabel(momentumScore),
+      score,
+      label: scoreToLabel(score),
       detail: smaValue
         ? `SPY $${spyQ.c.toFixed(2)} is ${momentumPct >= 0 ? '+' : ''}${momentumPct.toFixed(1)}% ${momentumPct >= 0 ? 'above' : 'below'} its 125-day moving average — ${momentumPct > 5 ? 'strong bullish trend' : momentumPct > 0 ? 'mild bullish bias' : momentumPct > -5 ? 'mild bearish pressure' : 'bearish momentum'}`
-        : `SPY at $${spyQ.c.toFixed(2)} (125-day SMA unavailable)`,
+        : `SPY at $${spyQ.c.toFixed(2)} — 125-day average unavailable`,
       raw: { price: spyQ.c, sma125: smaValue ?? 0, pctFromSma: momentumPct },
-    },
-    {
+    });
+  }
+
+  if (hygQ && lqdQ) {
+    const score = bondSpreadToScore(hygQ.dp, lqdQ.dp);
+    available.push({
+      weight: 0.20,
       name: 'Junk Bond Demand',
-      score: bondSpreadToScore(hygQ.dp, lqdQ.dp),
-      label: scoreToLabel(bondSpreadToScore(hygQ.dp, lqdQ.dp)),
+      score,
+      label: scoreToLabel(score),
       detail: `HYG ${hygQ.dp >= 0 ? '+' : ''}${hygQ.dp.toFixed(2)}% vs LQD ${lqdQ.dp >= 0 ? '+' : ''}${lqdQ.dp.toFixed(2)}% — ${hygQ.dp > lqdQ.dp ? 'investors chasing yield signals risk appetite' : 'flight to quality bonds signals caution'}`,
       raw: { hyg: hygQ.dp, lqd: lqdQ.dp, spread: hygQ.dp - lqdQ.dp },
-    },
-    {
+    });
+  }
+
+  if (tltQ) {
+    const score = safeHavenToScore(spyQ.dp, tltQ.dp);
+    available.push({
+      weight: 0.15,
       name: 'Safe Haven Demand',
-      score: safeHavenToScore(spyQ.dp, tltQ.dp),
-      label: scoreToLabel(safeHavenToScore(spyQ.dp, tltQ.dp)),
+      score,
+      label: scoreToLabel(score),
       detail: `SPY ${spyQ.dp >= 0 ? '+' : ''}${spyQ.dp.toFixed(2)}% vs TLT ${tltQ.dp >= 0 ? '+' : ''}${tltQ.dp.toFixed(2)}% — ${spyQ.dp > tltQ.dp ? 'equities outperforming treasuries, risk-on sentiment' : 'treasuries outperforming equities, defensive positioning'}`,
       raw: { spy: spyQ.dp, tlt: tltQ.dp, divergence: spyQ.dp - tltQ.dp },
-    },
-  ];
+    });
+  }
 
-  // Weighted composite: VIX 35%, Momentum 30%, Bond Spread 20%, Safe Haven 15%
-  const weights = [0.35, 0.30, 0.20, 0.15];
+  // Normalize weights to 1.0 across available signals, then compute composite
+  const totalWeight = available.reduce((s, sig) => s + sig.weight, 0);
   const composite = Math.round(
-    signals.reduce((sum, s, i) => sum + s.score * weights[i], 0)
+    available.reduce((s, sig) => s + sig.score * (sig.weight / totalWeight), 0)
   );
+
+  const signals: MoodSignal[] = available.map(({ weight: _, ...rest }) => rest);
 
   const data: MarketMoodData = {
     composite,
