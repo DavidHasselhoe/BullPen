@@ -27,6 +27,7 @@ import type { SignalValue } from '@/lib/finance/health-score';
 import { HOT_PICKS_QUERY_KEY } from '@/lib/discover/hot-picks-query';
 import { postStockVisit } from '@/lib/discover/post-stock-visit';
 import { StockSectionBoundary } from '@/components/stock/StockSectionBoundary';
+import { StockNavSidebar, type StockNavSection } from '@/components/stock/StockNavSidebar';
 import { slugToSymbol, inferAssetType, hasFinancials } from '@/lib/assets/asset-type';
 
 const StockPricePanel = dynamic(
@@ -208,6 +209,20 @@ export default function StockDetailPage() {
     !profileData?.profile &&
     !snapshot.data?.success;
 
+  const navSections: StockNavSection[] = [
+    { id: 'nav-overview',    label: 'Overview' },
+    { id: 'nav-profile',     label: 'Profile' },
+    ...(showFundamentals ? [{ id: 'nav-health', label: 'Health Score' }] : []),
+    { id: 'nav-statistics',  label: 'Statistics' },
+    ...(showFundamentals ? [
+      { id: 'nav-financials', label: 'Financials' },
+      { id: 'nav-revenue',    label: 'Revenue' },
+      { id: 'nav-earnings',   label: 'Earnings' },
+      { id: 'nav-insiders',   label: 'Insiders' },
+    ] : []),
+    { id: 'nav-community', label: 'Community' },
+  ];
+
   if (isNotFound) {
     return (
       <div className="min-h-screen bg-background">
@@ -242,7 +257,7 @@ export default function StockDetailPage() {
 
   return (
     <div className={`min-h-screen ${hasAnimatedBackground ? '' : 'bg-background'}`}>
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-[1520px] px-4 py-8 sm:px-6 lg:px-8">
 
         {/* Back button */}
         <div className="mb-6">
@@ -255,145 +270,173 @@ export default function StockDetailPage() {
           </button>
         </div>
 
-        {/* Experience level onboarding — shown once when level has never been set */}
-        <ExperienceOnboardingBanner />
+        <div className="xl:grid xl:grid-cols-[160px_1fr] xl:gap-8 items-start">
 
-        {/* Company header loading skeleton — shown until both DB and TwelveData profile resolve */}
-        {companyLoading && !company && !profileData && (
-          <Card className="mb-8">
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <Skeleton className="h-16 w-16 rounded-full" />
-                <div className="space-y-2">
-                  <Skeleton className="h-7 w-48" />
-                  <Skeleton className="h-4 w-32" />
-                </div>
-              </div>
-            </CardHeader>
-          </Card>
-        )}
+          {/* Left nav — sticky, hidden below xl */}
+          <aside className="hidden xl:block sticky top-20 self-start pt-1">
+            <StockNavSidebar sections={navSections} />
+          </aside>
 
-        {/* Company header — renders from DB record when available, falls back to TwelveData profile */}
-        {(company || (!companyLoading && ticker)) && (
-          <AnimatedContent reverse={true}>
-            <Card className="mb-8">
-              <CardHeader>
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3">
-                      <CompanyLogo
-                        name={displayName}
-                        ticker={ticker}
-                        logoUrl={company?.logo_url}
-                        size={64}
-                      />
-                      <div>
-                        <h1 className="text-3xl font-semibold text-foreground">{displayName}</h1>
-                        <div className="mt-1 flex items-center gap-2">
-                          <Badge variant="outline" className="font-mono text-sm">
-                            {ticker}
-                          </Badge>
-                          {company?.sector && (
-                            <span className="text-sm text-muted-foreground">
-                              {company.sector}
-                              {company.industry && ` • ${company.industry}`}
-                            </span>
-                          )}
-                        </div>
-                        <CompetitorPills ticker={ticker} />
-                      </div>
+          {/* Main content */}
+          <div className="min-w-0">
+
+            {/* Experience level onboarding — shown once when level has never been set */}
+            <ExperienceOnboardingBanner />
+
+            {/* Company header loading skeleton — shown until both DB and TwelveData profile resolve */}
+            {companyLoading && !company && !profileData && (
+              <Card className="mb-8">
+                <CardHeader>
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="h-16 w-16 rounded-full" />
+                    <div className="space-y-2">
+                      <Skeleton className="h-7 w-48" />
+                      <Skeleton className="h-4 w-32" />
                     </div>
                   </div>
-                  <div className="flex shrink-0 items-center gap-2 flex-wrap justify-end">
-                    <ExperienceLevelToggle />
-                    <AddToListPicker symbol={ticker} companyName={displayName} />
-                    <Button variant="outline" size="sm" onClick={() => openAIPanel()} className="gap-2">
-                      <MessageSquare className="h-4 w-4" />
-                      Ask AI
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              {company?.description && (
-                <CardContent>
-                  <Separator className="mb-4" />
-                  <p className="text-sm leading-relaxed text-muted-foreground">{company.description}</p>
-                </CardContent>
+                </CardHeader>
+              </Card>
+            )}
+
+            {/* Company header */}
+            <div id="nav-overview" className="scroll-mt-20">
+              {(company || (!companyLoading && ticker)) && (
+                <AnimatedContent reverse={true}>
+                  <Card className="mb-8">
+                    <CardHeader>
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3">
+                            <CompanyLogo
+                              name={displayName}
+                              ticker={ticker}
+                              logoUrl={company?.logo_url}
+                              size={64}
+                            />
+                            <div>
+                              <h1 className="text-3xl font-semibold text-foreground">{displayName}</h1>
+                              <div className="mt-1 flex items-center gap-2">
+                                <Badge variant="outline" className="font-mono text-sm">
+                                  {ticker}
+                                </Badge>
+                                {company?.sector && (
+                                  <span className="text-sm text-muted-foreground">
+                                    {company.sector}
+                                    {company.industry && ` • ${company.industry}`}
+                                  </span>
+                                )}
+                              </div>
+                              <CompetitorPills ticker={ticker} />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-2 flex-wrap justify-end">
+                          <ExperienceLevelToggle />
+                          <AddToListPicker symbol={ticker} companyName={displayName} />
+                          <Button variant="outline" size="sm" onClick={() => openAIPanel()} className="gap-2">
+                            <MessageSquare className="h-4 w-4" />
+                            Ask AI
+                          </Button>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    {company?.description && (
+                      <CardContent>
+                        <Separator className="mb-4" />
+                        <p className="text-sm leading-relaxed text-muted-foreground">{company.description}</p>
+                      </CardContent>
+                    )}
+                  </Card>
+                </AnimatedContent>
               )}
-            </Card>
-          </AnimatedContent>
-        )}
 
-        {/* Price panel — needs only ticker, not DB record */}
-        <AnimatedContent reverse={true} delay={0.05}>
-          <StockPricePanel ticker={ticker} />
-        </AnimatedContent>
-
-        {/* Company Profile (TwelveData: description, executives, facts) */}
-        <StockSectionBoundary>
-          <AnimatedContent reverse={true} delay={0.08}>
-            <CompanyProfileCard ticker={ticker} />
-          </AnimatedContent>
-        </StockSectionBoundary>
-
-        {/* Financial Health Score — only for stocks with financials */}
-        {showFundamentals && (
-          <StockSectionBoundary>
-            <AnimatedContent reverse={true} delay={0.12}>
-              <HealthScoreCard ticker={ticker} onSignalsReady={setMetricSignals} />
-            </AnimatedContent>
-          </StockSectionBoundary>
-        )}
-
-        {/* Statistics (TwelveData) — available for both stocks and ETFs */}
-        <StockSectionBoundary>
-          <AnimatedContent reverse={true} delay={0.15}>
-            <StatisticsGrid ticker={ticker} signals={metricSignals} />
-          </AnimatedContent>
-        </StockSectionBoundary>
-
-        {/* Financials, Sankey, Insiders, Earnings — stocks only */}
-        {showFundamentals && (
-          <>
-            <StockSectionBoundary>
-              <AnimatedContent reverse={true} delay={0.2}>
-                <FinancialsSection ticker={ticker} />
+              {/* Price panel — needs only ticker, not DB record */}
+              <AnimatedContent reverse={true} delay={0.05}>
+                <StockPricePanel ticker={ticker} />
               </AnimatedContent>
-            </StockSectionBoundary>
+            </div>
 
-            <StockSectionBoundary>
-              <AnimatedContent reverse={true} delay={0.22}>
-                <SankeyCard ticker={ticker} />
-              </AnimatedContent>
-            </StockSectionBoundary>
-
-            <div id="earnings" className="mb-8 scroll-mt-6">
+            {/* Company Profile (TwelveData: description, executives, facts) */}
+            <div id="nav-profile" className="scroll-mt-20">
               <StockSectionBoundary>
-                <AnimatedContent reverse={true} delay={0.24}>
-                  <EarningsCalendar ticker={ticker} />
+                <AnimatedContent reverse={true} delay={0.08}>
+                  <CompanyProfileCard ticker={ticker} />
                 </AnimatedContent>
               </StockSectionBoundary>
             </div>
 
-            <StockSectionBoundary>
-              <AnimatedContent reverse={true} delay={0.26}>
-                <InsiderTransactionsCard ticker={ticker} />
-              </AnimatedContent>
-            </StockSectionBoundary>
-          </>
-        )}
+            {/* Financial Health Score — only for stocks with financials */}
+            {showFundamentals && (
+              <div id="nav-health" className="scroll-mt-20">
+                <StockSectionBoundary>
+                  <AnimatedContent reverse={true} delay={0.12}>
+                    <HealthScoreCard ticker={ticker} onSignalsReady={setMetricSignals} />
+                  </AnimatedContent>
+                </StockSectionBoundary>
+              </div>
+            )}
 
-        {/* Community theses */}
-        <StockSectionBoundary>
-          <AnimatedContent reverse={true} delay={0.3}>
-            <Card>
-              <CardContent className="pt-6">
-                <ThesisSection symbol={ticker} />
-              </CardContent>
-            </Card>
-          </AnimatedContent>
-        </StockSectionBoundary>
+            {/* Statistics (TwelveData) — available for both stocks and ETFs */}
+            <div id="nav-statistics" className="scroll-mt-20">
+              <StockSectionBoundary>
+                <AnimatedContent reverse={true} delay={0.15}>
+                  <StatisticsGrid ticker={ticker} signals={metricSignals} />
+                </AnimatedContent>
+              </StockSectionBoundary>
+            </div>
 
+            {/* Financials, Sankey, Earnings, Insiders — stocks only */}
+            {showFundamentals && (
+              <>
+                <div id="nav-financials" className="scroll-mt-20">
+                  <StockSectionBoundary>
+                    <AnimatedContent reverse={true} delay={0.2}>
+                      <FinancialsSection ticker={ticker} />
+                    </AnimatedContent>
+                  </StockSectionBoundary>
+                </div>
+
+                <div id="nav-revenue" className="scroll-mt-20">
+                  <StockSectionBoundary>
+                    <AnimatedContent reverse={true} delay={0.22}>
+                      <SankeyCard ticker={ticker} />
+                    </AnimatedContent>
+                  </StockSectionBoundary>
+                </div>
+
+                <div id="nav-earnings" className="scroll-mt-20">
+                  <StockSectionBoundary>
+                    <AnimatedContent reverse={true} delay={0.24}>
+                      <EarningsCalendar ticker={ticker} />
+                    </AnimatedContent>
+                  </StockSectionBoundary>
+                </div>
+
+                <div id="nav-insiders" className="scroll-mt-20">
+                  <StockSectionBoundary>
+                    <AnimatedContent reverse={true} delay={0.26}>
+                      <InsiderTransactionsCard ticker={ticker} />
+                    </AnimatedContent>
+                  </StockSectionBoundary>
+                </div>
+              </>
+            )}
+
+            {/* Community theses */}
+            <div id="nav-community" className="scroll-mt-20">
+              <StockSectionBoundary>
+                <AnimatedContent reverse={true} delay={0.3}>
+                  <Card>
+                    <CardContent className="pt-6">
+                      <ThesisSection symbol={ticker} />
+                    </CardContent>
+                  </Card>
+                </AnimatedContent>
+              </StockSectionBoundary>
+            </div>
+
+          </div>
+        </div>
       </div>
     </div>
   );
