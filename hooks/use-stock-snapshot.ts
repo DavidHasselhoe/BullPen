@@ -19,6 +19,7 @@ interface SnapshotResponse {
     high: number; low: number; open: number; previousClose: number;
   } | null;
   statistics: CompanyStatistics | null;
+  statsFetchedAt: string | null;
   earnings: {
     date: string; time: string; epsEstimate: number | null; epsActual: number | null;
     quarter: number; year: number;
@@ -43,7 +44,7 @@ export function useStockSnapshot(ticker: string | null) {
   // Seed individual component caches so they skip their own requests
   useEffect(() => {
     if (!query.data?.success || !ticker) return;
-    const { quote, statistics, earnings } = query.data;
+    const { quote, statistics, statsFetchedAt, earnings } = query.data;
 
     // StockQuoteCard — useStockQuote uses ['stock-quote', ticker]
     if (quote) {
@@ -64,7 +65,7 @@ export function useStockSnapshot(ticker: string | null) {
     if (statistics) {
       queryClient.setQueryData(
         ['stock-statistics', ticker],
-        (old: unknown) => old ?? { success: true, stats: statistics }
+        (old: unknown) => old ?? { success: true, stats: statistics, fetchedAt: statsFetchedAt }
       );
     }
 

@@ -8,7 +8,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { batchFetch, TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
-import { getCached, setCached } from '@/lib/cache/market-data-cache';
+import { getCached, getCachedWithMeta, setCached } from '@/lib/cache/market-data-cache';
 import { withRateLimit, withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { slugToSymbol, inferAssetType, hasEarnings } from '@/lib/assets/asset-type';
 
@@ -53,10 +53,12 @@ async function handler(
 
   try {
     // Check cache for the expensive endpoints (50 + 20 credits)
-    const [cachedStats, cachedEarnings] = await Promise.all([
-      getCached<Statistics>(`snap-stats:${sym}`),
+    const [cachedStatsMeta, cachedEarnings] = await Promise.all([
+      getCachedWithMeta<Statistics>(`snap-stats:${sym}`),
       getCached<EarningsItem[]>(`snap-earnings:${sym}`),
     ]);
+    const cachedStats = cachedStatsMeta?.payload ?? null;
+    let statsFetchedAt: string | null = cachedStatsMeta?.fetchedAt ?? null;
 
     // Build batch — always include quote (real-time); skip cached endpoints
     const requests: Record<string, string> = {
@@ -124,6 +126,7 @@ async function handler(
         } as unknown as Statistics;
 
         // Fire-and-forget cache write
+        statsFetchedAt = new Date().toISOString();
         void setCached(`snap-stats:${sym}`, sym, 'snap_statistics', statistics, STATS_TTL);
       } else if (statRaw?.message && planRestricted(statRaw.message)) {
         statistics = null;
@@ -171,6 +174,7 @@ async function handler(
         symbol: sym,
         quote,
         statistics,
+        statsFetchedAt,
         earnings,
         instrumentType,
       }, { headers: { 'Cache-Control': 'private, max-age=60' } })

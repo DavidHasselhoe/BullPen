@@ -33,6 +33,28 @@ export async function getCached<T>(key: string): Promise<T | null> {
 }
 
 /**
+ * Like getCached but also returns the fetched_at timestamp.
+ * Returns null on miss/expiry; { payload, fetchedAt } on hit.
+ */
+export async function getCachedWithMeta<T>(key: string): Promise<{ payload: T; fetchedAt: string } | null> {
+  try {
+    const supabase = createServerClient();
+    const { data, error } = await supabase
+      .from(TABLE)
+      .select('payload, fetched_at, expires_at')
+      .eq('cache_key', key)
+      .maybeSingle<Pick<MarketDataCacheRow, 'payload' | 'fetched_at' | 'expires_at'>>();
+
+    if (error || !data) return null;
+    if (Date.parse(data.expires_at) <= Date.now()) return null;
+    return { payload: data.payload as T, fetchedAt: data.fetched_at };
+  } catch (error) {
+    console.error('[market-data-cache] read failed:', error);
+    return null;
+  }
+}
+
+/**
  * Write/refresh cache key with a TTL.
  */
 export async function setCached<T>(

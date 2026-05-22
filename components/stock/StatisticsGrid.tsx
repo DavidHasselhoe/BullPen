@@ -11,6 +11,17 @@ import { cn } from '@/lib/utils';
 import type { CompanyStatistics } from '@/lib/twelvedata/twelvedata-client';
 import type { SignalValue } from '@/lib/finance/health-score';
 
+function formatFetchedAt(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return null;
+  const now = new Date();
+  const isToday = d.toDateString() === now.toDateString();
+  const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  if (isToday) return `Updated today at ${time}`;
+  return `Updated ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at ${time}`;
+}
+
 // Maps the display label → metricSignals key so we can look up the signal for each row
 const LABEL_TO_SIGNAL_KEY: Record<string, string> = {
   'P/E (TTM)':      'peRatioTTM',
@@ -27,6 +38,7 @@ const LABEL_TO_SIGNAL_KEY: Record<string, string> = {
 interface StatsResponse {
   success: boolean;
   stats?: CompanyStatistics;
+  fetchedAt?: string | null;
   error?: string;
 }
 
@@ -145,6 +157,7 @@ export function StatisticsGrid({
   if (!data.stats) return null;
 
   const s = data.stats;
+  const updatedLabel = formatFetchedAt(data.fetchedAt);
 
   // Look up a signal for a given display label using the prop passed from the parent
   function sig(label: string): SignalValue | undefined {
@@ -193,13 +206,20 @@ export function StatisticsGrid({
     <Card className="mb-8">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between gap-2">
-          <CardTitle className="text-base font-semibold">
-            {isSimplified ? 'Key Numbers' : 'Statistics'}
-          </CardTitle>
+          <div className="flex items-baseline gap-3 min-w-0">
+            <CardTitle className="text-base font-semibold shrink-0">
+              {isSimplified ? 'Key Numbers' : 'Statistics'}
+            </CardTitle>
+            {updatedLabel && (
+              <span className="text-[10px] text-muted-foreground/40 font-mono tracking-wide truncate">
+                {updatedLabel}
+              </span>
+            )}
+          </div>
           {isSimplified && (
             <button
               onClick={() => setLevel('intermediate')}
-              className="text-xs text-muted-foreground hover:text-primary transition-colors"
+              className="text-xs text-muted-foreground hover:text-primary transition-colors shrink-0"
             >
               Show full statistics →
             </button>
