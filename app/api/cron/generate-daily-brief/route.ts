@@ -50,6 +50,39 @@ function extractTickers(text: string): string[] {
   return [...new Set(tickers)].slice(0, 20);
 }
 
+// Lines that look like Claude's between-tool-call narration, not a real title.
+// e.g. "Now I have everything needed for a complete, well-sourced brief. Let me compile it."
+const PREAMBLE_PATTERNS: RegExp[] = [
+  /^(now|okay|ok|got it|sure|here|let me|alright|great|perfect|i['’]?(?:ll|ve|m| have| will| can| need)|i need|based on)\b/i,
+  /\b(compile|let me|let's|put together|draft|here(?:'s| is)|ready to write)\b/i,
+];
+
+function looksLikePreamble(line: string): boolean {
+  if (line.length > 140) return true; // titles aren't paragraphs
+  return PREAMBLE_PATTERNS.some((re) => re.test(line));
+}
+
+/**
+ * Extract the brief's title. The title must appear ABOVE the first `## ` section
+ * header. Among candidates, skip lines that look like Claude's tool-orchestration
+ * narration (e.g. "Now I have everything needed...") and prefer the line closest
+ * to the first `##` (that's the actual headline). Returns null if nothing clean
+ * is found — the caller falls back to a date-based title.
+ */
+function extractTitle(text: string): string | null {
+  const firstHeaderIdx = text.search(/(^|\n)##\s/);
+  const head = firstHeaderIdx >= 0 ? text.slice(0, firstHeaderIdx) : text;
+  const candidates = head
+    .split('\n')
+    .map((l) => l.replace(/^#+\s*/, '').replace(/\*\*/g, '').replace(/^["'“]|["'”]$/g, '').trim())
+    .filter((l) => l.length > 0);
+
+  for (let i = candidates.length - 1; i >= 0; i--) {
+    if (!looksLikePreamble(candidates[i])) return candidates[i];
+  }
+  return null;
+}
+
 /**
  * Trim text that ends mid-sentence (no terminal punctuation on the last line).
  * Walks back to the nearest sentence-ending character so the brief never
@@ -289,18 +322,26 @@ Use live web search to verify the latest news for "Movers & Stories", "Watch Tod
       messages: [{ role: 'user', content: userPrompt }],
     });
 
-    for await (const event of stream) {
-      if (
-        event.type === 'content_block_delta' &&
-        event.delta.type === 'text_delta'
-      ) {
-        fullText += event.delta.text;
+    // Web search produces interleaved text blocks: brief commentary between
+    // tool calls ("Let me search for...", "Now I have everything I need...")
+    // followed by the FINAL synthesized brief in the last text block(s).
+    // We must only keep the trailing run of text blocks — anything before a
+    // tool_use / web_search_tool_result block is orchestration narration.
+    const final = await stream.finalMessage();
+
+    const tail: string[] = [];
+    for (let i = final.content.length - 1; i >= 0; i--) {
+      const block = final.content[i];
+      if (block.type === 'text') {
+        tail.unshift(block.text);
+      } else {
+        break;
       }
     }
+    fullText = tail.join('').trim();
 
     // Log the cron run's cost (no user → null user_id)
     try {
-      const final = await stream.finalMessage();
       void logAiCall({
         userId: null,
         feature: 'daily_brief',
@@ -325,17 +366,22 @@ Use live web search to verify the latest news for "Movers & Stories", "Watch Tod
   // ── Post-process: trim any incomplete trailing sentence ────────────────────
   const processedText = trimIncomplete(fullText);
 
-  // ── Parse title (first non-empty line) and body ───────────────────────────
-  const lines = processedText.trim().split('\n');
-  const titleLine = lines[0].replace(/^#+\s*/, '').replace(/\*\*/g, '').trim();
-  const content = lines.slice(1).join('\n').trim();
+  // ── Parse title (defensive: filters out Claude's tool-orchestration narration) ─
+  const titleLine = extractTitle(processedText) ?? `Market Brief — ${todayFormatted}`;
+
+  // Body = everything from the first `##` section onward. If no header was found
+  // (degenerate response), fall back to dropping the matched title line.
+  const firstHeaderIdx = processedText.search(/(^|\n)##\s/);
+  const content = firstHeaderIdx >= 0
+    ? processedText.slice(firstHeaderIdx).trimStart()
+    : processedText.split('\n').slice(1).join('\n').trim();
 
   const featured = extractTickers(processedText);
 
   // ── Store in Supabase ─────────────────────────────────────────────────────
   const { error: insertError } = await supabase.from('daily_briefs').insert({
     published_date: todayET,
-    title: titleLine || `Market Brief — ${todayFormatted}`,
+    title: titleLine,
     content,
     featured_tickers: featured,
   });
