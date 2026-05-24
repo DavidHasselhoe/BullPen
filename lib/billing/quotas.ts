@@ -26,6 +26,7 @@ export const QUOTAS = {
   why_today:         { count: 0,  period: 'day'   } as QuotaConfig,  // pro-only
   compare_explain:   { count: 5,  period: 'day'   } as QuotaConfig,
   risk_analysis:     { count: 1,  period: 'month' } as QuotaConfig,
+  academy_explain:   { count: 30, period: 'day'   } as QuotaConfig,  // free for all; glossary cache absorbs repeats
 };
 
 export type QuotaFeature = keyof typeof QUOTAS;

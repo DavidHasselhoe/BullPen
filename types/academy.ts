@@ -1,0 +1,141 @@
+import { z } from 'zod';
+
+// ─── Lesson type enum ────────────────────────────────────────────────────────
+
+export const LessonTypeSchema = z.enum(['read', 'quiz', 'match', 'scenario']);
+export type LessonType = z.infer<typeof LessonTypeSchema>;
+
+// ─── Per-lesson content schemas ─────────────────────────────────────────────
+
+export const ReadContentSchema = z.object({
+  sections: z.array(
+    z.object({
+      text: z.string(),
+      highlightedTerms: z.array(
+        z.object({ term: z.string(), definition: z.string() })
+      ),
+    })
+  ),
+  funFact: z.string().optional(),
+});
+export type ReadContent = z.infer<typeof ReadContentSchema>;
+
+export const QuizContentSchema = z.object({
+  questions: z
+    .array(
+      z.object({
+        question: z.string(),
+        options: z.array(z.string()).min(2).max(5),
+        correctIndex: z.number().int().min(0),
+        explanation: z.string(),
+      })
+    )
+    .min(1),
+});
+export type QuizContent = z.infer<typeof QuizContentSchema>;
+
+export const MatchContentSchema = z.object({
+  pairs: z
+    .array(z.object({ term: z.string(), definition: z.string() }))
+    .min(2)
+    .max(8),
+});
+export type MatchContent = z.infer<typeof MatchContentSchema>;
+
+export const ScenarioContentSchema = z.object({
+  setup: z.string(),
+  image: z.string().url().optional(),
+  choices: z
+    .array(
+      z.object({
+        label: z.string(),
+        feedback: z.string(),
+        isCorrect: z.boolean(),
+      })
+    )
+    .min(2),
+});
+export type ScenarioContent = z.infer<typeof ScenarioContentSchema>;
+
+/**
+ * Discriminated union over lesson type + its content payload.
+ * Use this at the API boundary to validate before sending to the player.
+ */
+export const LessonContentSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('read'), data: ReadContentSchema }),
+  z.object({ type: z.literal('quiz'), data: QuizContentSchema }),
+  z.object({ type: z.literal('match'), data: MatchContentSchema }),
+  z.object({ type: z.literal('scenario'), data: ScenarioContentSchema }),
+]);
+export type LessonContent = z.infer<typeof LessonContentSchema>;
+
+// ─── Domain entities ────────────────────────────────────────────────────────
+
+export interface Course {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  icon: string;
+  color: string;
+  orderIndex: number;
+}
+
+export interface Lesson {
+  id: string;
+  courseId: string;
+  slug: string;
+  title: string;
+  type: LessonType;
+  orderIndex: number;
+  xpReward: number;
+  content: ReadContent | QuizContent | MatchContent | ScenarioContent;
+}
+
+export interface AcademyStats {
+  totalXp: number;
+  currentStreak: number;
+  longestStreak: number;
+  lastActivityDate: string | null;
+  level: number;
+}
+
+export interface CourseWithProgress extends Course {
+  totalLessons: number;
+  completedLessons: number;
+  percentComplete: number;
+  isLocked: boolean;
+}
+
+export interface UserCourseProgress {
+  courseId: string;
+  startedAt: string;
+  completedAt: string | null;
+  lastLessonId: string | null;
+  completedLessonIds: string[];
+  percentComplete: number;
+}
+
+export interface LessonWithCompletion extends Lesson {
+  completed: boolean;
+}
+
+// ─── Level helpers ──────────────────────────────────────────────────────────
+//
+// Tunable XP curve. Level 1 starts at 0 XP; each successive level needs more.
+// Formula: xpForLevel(n) = 50 * (n - 1)^2   →   levels at 0, 50, 200, 450, 800, …
+
+export function xpForLevel(level: number): number {
+  return 50 * Math.max(0, level - 1) ** 2;
+}
+
+export function levelForXp(totalXp: number): number {
+  return Math.floor(Math.sqrt(totalXp / 50)) + 1;
+}
+
+export function xpToNextLevel(totalXp: number): { current: number; needed: number; level: number } {
+  const level = levelForXp(totalXp);
+  const floor = xpForLevel(level);
+  const ceil = xpForLevel(level + 1);
+  return { current: totalXp - floor, needed: ceil - floor, level };
+}
