@@ -52,13 +52,18 @@ function extractTickers(text: string): string[] {
 
 // Lines that look like Claude's between-tool-call narration, not a real title.
 // e.g. "Now I have everything needed for a complete, well-sourced brief. Let me compile it."
+//      "All the data I need is now in hand. Here is today's BullPen Daily Market Brief:"
 const PREAMBLE_PATTERNS: RegExp[] = [
-  /^(now|okay|ok|got it|sure|here|let me|alright|great|perfect|i['’]?(?:ll|ve|m| have| will| can| need)|i need|based on)\b/i,
-  /\b(compile|let me|let's|put together|draft|here(?:'s| is)|ready to write)\b/i,
+  /^(now|okay|ok|got it|sure|here|let me|alright|great|perfect|all the|i['’]?(?:ll|ve|m| have| will| can| need)|i need|based on)\b/i,
+  /\b(compile|let me|let's|put together|draft|here(?:'s| is)|ready to write|here is today)\b/i,
+  // Self-references — a headline never names itself
+  /\b(daily (market )?brief|bullpen daily|today['’]?s brief)\b/i,
 ];
 
 function looksLikePreamble(line: string): boolean {
-  if (line.length > 140) return true; // titles aren't paragraphs
+  if (line.length > 140) return true;                          // titles aren't paragraphs
+  if (/^[-*_=]{3,}\s*$/.test(line)) return true;               // horizontal rules (---, ***, ___)
+  if (line.trimEnd().endsWith(':')) return true;               // trailing colon = "here comes the brief" intro
   return PREAMBLE_PATTERNS.some((re) => re.test(line));
 }
 
@@ -257,7 +262,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 Hard rules:
 - Lead every stock mention with $TICKER (e.g. "$NVDA beat by 8%"). Always.
 - Use concrete numbers, named companies, and the *why* behind moves — never generic filler ("markets were mixed", "investors weighed", "Wall Street watched").
-- Begin with a one-line title (no # prefix, no quotes, no markdown).
+- The VERY FIRST line of your output must be the headline. NO preamble. NO meta-commentary. NO horizontal rules before it. Do not announce what you're about to do.
+  * BAD first lines: "All the data I need is now in hand. Here is today's brief:", "Now I have everything I need.", "Here is today's BullPen Daily Market Brief:", "Let me compile this..."
+  * GOOD first lines: "Eight Up, One New Fed Chair, and a Consumer Quietly Falling Apart", "Dow Hits Record, $DELL Explodes 17%", "Quantum Surge, Retail Warning"
+- Headline must be 6–14 words, punchy, NEVER end in a colon, NEVER contain the words "Daily Brief" / "Market Brief" / "today's brief" (the headline must not name itself).
 - Use ## section headers exactly as listed below, in order.
 - Use • for bullet points inside sections.
 - Use **bold** for company names on first mention and for key metrics.
