@@ -48,34 +48,36 @@ export function CourseCard({ course }: Props) {
           )}
         </div>
 
-        {/* Progress ring */}
-        <svg viewBox="0 0 56 56" className="h-12 w-12 shrink-0 -rotate-90">
-          <circle
-            cx="28"
-            cy="28"
-            r={RING_R}
-            fill="none"
-            stroke="rgba(255,255,255,0.08)"
-            strokeWidth="3"
-          />
-          <circle
-            cx="28"
-            cy="28"
-            r={RING_R}
-            fill="none"
-            stroke="rgb(34,197,94)"
-            strokeWidth="3"
-            strokeLinecap="round"
-            strokeDasharray={RING_C.toFixed(2)}
-            strokeDashoffset={dashOffset.toFixed(2)}
-            className="transition-[stroke-dashoffset] duration-700 ease-out"
-          />
+        {/* Progress ring — rotate the circles only (so the arc starts at 12 o'clock)
+            and leave the text upright. */}
+        <svg viewBox="0 0 56 56" className="h-12 w-12 shrink-0">
+          <g transform="rotate(-90 28 28)">
+            <circle
+              cx="28"
+              cy="28"
+              r={RING_R}
+              fill="none"
+              stroke="rgba(255,255,255,0.08)"
+              strokeWidth="3"
+            />
+            <circle
+              cx="28"
+              cy="28"
+              r={RING_R}
+              fill="none"
+              stroke="rgb(34,197,94)"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeDasharray={RING_C.toFixed(2)}
+              strokeDashoffset={dashOffset.toFixed(2)}
+              className="transition-[stroke-dashoffset] duration-700 ease-out"
+            />
+          </g>
           <text
             x="28"
             y="32"
             textAnchor="middle"
-            className="text-[10px] font-mono font-bold rotate-90"
-            style={{ transform: 'rotate(90deg)', transformOrigin: '28px 28px' }}
+            className="text-[10px] font-mono font-bold"
             fill="currentColor"
           >
             {pct}%
