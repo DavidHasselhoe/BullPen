@@ -12,6 +12,16 @@ Key sections to apply:
 - **§7 Animation** — 150–300ms, transform/opacity only, respect reduced-motion
 - **Pre-Delivery Checklist** — run through before finishing any UI task
 
+### Pre-ship polish pass
+
+**Before committing UI/UX-heavy work** (new pages, redesigns, hero components, anything visual the user will react to), invoke the `impeccable` skill's polish command on the changed surface:
+
+```
+/impeccable polish <file-or-route>
+```
+
+It runs a methodical final pass — design-system alignment, spacing/alignment audit, interaction-state coverage, copy consistency, loading/transition smoothness — and is the gate between "functionally done" and "shipped". Skip it for backend-only changes, small bug fixes, or tweaks the user already directed precisely (e.g. "change this color to X"). Required for anything the user might call "vibe coded" if it shipped as-is.
+
 ## Branch Strategy
 
 Two branches only: `preview` and `main`.
