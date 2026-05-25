@@ -266,19 +266,20 @@ export default function MarketMoodClientPage() {
               <MoodHero score={composite} label={data.label} animated={!!data} />
             </div>
 
-            {/* Section header for signals */}
-            <div className="flex items-end justify-between gap-3 -mb-2 px-1">
-              <div>
+            {/* Section header for signals — counter on the title line so it
+                can't collide with the subtitle text */}
+            <div className="px-1 -mb-2">
+              <div className="flex items-baseline justify-between gap-3">
                 <h2 className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground/55">
                   Signal Breakdown
                 </h2>
-                <p className="text-xs text-muted-foreground/40 mt-1">
-                  How each input contributes to the composite
-                </p>
+                <span className="text-[10px] font-mono text-muted-foreground/35 tracking-wider">
+                  {data.signals.length} of 4
+                </span>
               </div>
-              <span className="text-[10px] font-mono text-muted-foreground/35 tracking-wider">
-                {data.signals.length} of 4
-              </span>
+              <p className="text-xs text-muted-foreground/40 mt-1">
+                How each input contributes to the composite
+              </p>
             </div>
 
             {/* Signal cards */}
