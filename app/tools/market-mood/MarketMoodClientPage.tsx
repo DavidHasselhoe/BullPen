@@ -266,30 +266,31 @@ export default function MarketMoodClientPage() {
               <MoodHero score={composite} label={data.label} animated={!!data} />
             </div>
 
-            {/* Section header for signals — counter on the title line so it
-                can't collide with the subtitle text */}
-            <div className="px-1 -mb-2">
-              <div className="flex items-baseline justify-between gap-3">
-                <h2 className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground/55">
-                  Signal Breakdown
-                </h2>
-                <span className="text-[10px] font-mono text-muted-foreground/35 tracking-wider">
-                  {data.signals.length} of 4
-                </span>
+            {/* Signal section — header + cards grouped so the gap between
+                them is deterministic regardless of parent space-y rules. */}
+            <div className="space-y-4">
+              <div className="px-1">
+                <div className="flex items-baseline justify-between gap-3">
+                  <h2 className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground/55">
+                    Signal Breakdown
+                  </h2>
+                  <span className="text-[10px] font-mono text-muted-foreground/35 tracking-wider">
+                    {data.signals.length} of 4
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground/40 mt-1">
+                  How each input contributes to the composite
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground/40 mt-1">
-                How each input contributes to the composite
-              </p>
-            </div>
 
-            {/* Signal cards */}
-            <div className={cn(
-              'grid gap-3',
-              data.signals.length > 2 ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1 max-w-md mx-auto w-full'
-            )}>
-              {data.signals.map((signal) => (
-                <SignalCard key={signal.name} signal={signal} />
-              ))}
+              <div className={cn(
+                'grid gap-3',
+                data.signals.length > 2 ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1 max-w-md mx-auto w-full'
+              )}>
+                {data.signals.map((signal) => (
+                  <SignalCard key={signal.name} signal={signal} />
+                ))}
+              </div>
             </div>
 
             {/* Methodology — quiet, editorial, mono accent on symbol codes */}
