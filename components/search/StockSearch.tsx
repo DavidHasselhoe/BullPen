@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { useDebounce } from '@/hooks/use-debounce';
 import { fetchWithTimeout } from '@/lib/utils';
+import { humanizeError } from '@/lib/errors/humanize';
 
 interface SearchResult {
   ticker: string;
@@ -134,7 +135,7 @@ export function StockSearch() {
                   ) : searchError ? (
                     <div className="py-6 text-center">
                       <div className="text-sm text-muted-foreground">
-                        {searchError instanceof Error ? searchError.message : 'Search failed'}
+                        {humanizeError(searchError)}
                       </div>
                     </div>
                   ) : (

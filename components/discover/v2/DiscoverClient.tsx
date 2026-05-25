@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { AlertCircle } from 'lucide-react';
 import { useLivePrices } from '@/hooks/use-live-prices';
+import { humanizeError } from '@/lib/errors/humanize';
 import { LivePriceContext } from './LivePriceContext';
 import { DiscoverHeader } from './DiscoverHeader';
 import { ToolShortcutsBar } from './ToolShortcutsBar';
@@ -51,7 +52,7 @@ export function DiscoverClient() {
         <div>
           <h3 className="text-sm font-semibold text-foreground">Couldn&apos;t load the feed</h3>
           <p className="text-sm text-muted-foreground mt-1">
-            {error instanceof Error ? error.message : 'Please refresh the page.'}
+            {humanizeError(error)}
           </p>
         </div>
       </div>

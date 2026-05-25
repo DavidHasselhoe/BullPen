@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getStockQuote, TwelveDataRateLimitError } from '@/lib/market-data';
 import { logger } from '@/lib/utils/logger';
 import { slugToSymbol } from '@/lib/assets/asset-type';
+import { humanizeError } from '@/lib/errors/humanize';
 
 export async function GET(
   request: NextRequest,
@@ -27,16 +28,13 @@ export async function GET(
   } catch (error) {
     if (error instanceof TwelveDataRateLimitError) {
       return NextResponse.json(
-        { success: false, error: error.message },
+        { success: false, error: humanizeError(error), code: 'rate_limited' },
         { status: 429, headers: { 'Retry-After': '60' } }
       );
     }
     logger.error('Error fetching stock quote', error);
     return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : 'Internal server error',
-      },
+      { success: false, error: humanizeError(error) },
       { status: 500 }
     );
   }

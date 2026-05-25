@@ -9,6 +9,7 @@ import { getStockQuote } from '@/lib/market-data';
 import { logger } from '@/lib/utils/logger';
 import { withRateLimit } from '@/lib/security/api-security';
 import { validateTicker } from '@/lib/security/input-validation';
+import { humanizeError } from '@/lib/errors/humanize';
 
 export const maxDuration = 30;
 
@@ -69,13 +70,13 @@ async function handler(request: NextRequest) {
   } catch (error) {
     if (error instanceof TwelveDataRateLimitError) {
       return NextResponse.json(
-        { success: false, error: error.message },
+        { success: false, error: humanizeError(error), code: 'rate_limited' },
         { status: 429, headers: { 'Retry-After': '60' } }
       );
     }
     logger.error('[quotes-batch] Error', error);
     return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
+      { success: false, error: humanizeError(error) },
       { status: 500 }
     );
   }

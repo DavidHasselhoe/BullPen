@@ -6,6 +6,7 @@ import {
 } from '@/lib/twelvedata/twelvedata-client';
 import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
 import { logger } from '@/lib/utils/logger';
+import { humanizeError } from '@/lib/errors/humanize';
 
 async function handler(request: NextRequest) {
   try {
@@ -32,7 +33,7 @@ async function handler(request: NextRequest) {
     if (error instanceof TwelveDataRateLimitError) {
       return addSecurityHeaders(
         NextResponse.json(
-          { success: false, error: error.message },
+          { success: false, error: humanizeError(error), code: 'rate_limited' },
           { status: 429, headers: { 'Retry-After': '60' } }
         )
       );
@@ -40,7 +41,7 @@ async function handler(request: NextRequest) {
     logger.error('Error fetching top movers', error);
     return addSecurityHeaders(
       NextResponse.json(
-        { success: false, error: error instanceof Error ? error.message : 'Internal server error' },
+        { success: false, error: humanizeError(error) },
         { status: 500 }
       )
     );
