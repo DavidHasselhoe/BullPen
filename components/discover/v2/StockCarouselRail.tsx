@@ -14,6 +14,8 @@ interface Props {
   meta?: string;
   items: TickerItem[];
   hrefForItem?: (item: TickerItem) => string;
+  /** Auto-scroll pixels per second. Pass 0 (or omit) to disable. */
+  speed?: number;
 }
 
 const CARD_WIDTH = 168;
@@ -29,6 +31,7 @@ export function StockCarouselRail({
   meta,
   items,
   hrefForItem,
+  speed = 0,
 }: Props) {
   const headingId = useId();
   const trackRef = useRef<HTMLDivElement>(null);
@@ -36,6 +39,7 @@ export function StockCarouselRail({
   const [canScrollRight, setCanScrollRight] = useState(true);
   const isDragging = useRef(false);
   const dragOrigin = useRef({ x: 0, scrollLeft: 0 });
+  const isHovering = useRef(false);
 
   const updateArrows = useCallback(() => {
     const el = trackRef.current;
@@ -53,6 +57,38 @@ export function StockCarouselRail({
     ro.observe(el);
     return () => { el.removeEventListener('scroll', updateArrows); ro.disconnect(); };
   }, [updateArrows]);
+
+  // ── Auto-scroll loop ───────────────────────────────────────────────────────
+  // Continuous left-to-right scroll. Pauses while hovered or being dragged.
+  // Skips when the user prefers reduced motion. Uses requestAnimationFrame so
+  // the speed feels native and never jumps. We render the items twice (see
+  // below) so seamless wrap-around feels infinite — when scrollLeft passes the
+  // halfway mark, we subtract one set's width and continue.
+  useEffect(() => {
+    if (speed <= 0) return;
+    const el = trackRef.current;
+    if (!el) return;
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return;
+    }
+
+    let raf = 0;
+    let last = performance.now();
+
+    const tick = (now: number) => {
+      const dt = (now - last) / 1000;
+      last = now;
+      if (!isHovering.current && !isDragging.current) {
+        const half = el.scrollWidth / 2;
+        let next = el.scrollLeft + speed * dt;
+        if (half > 0 && next >= half) next -= half;
+        el.scrollLeft = next;
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [speed, items.length]);
 
   const scroll = (dir: 'left' | 'right') =>
     trackRef.current?.scrollBy({
@@ -133,15 +169,30 @@ export function StockCarouselRail({
         <div
           ref={trackRef}
           role="list"
-          className="discover-rail-track flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 -mb-2 md:cursor-grab"
-          style={{ animation: 'none' }}
+          className={cn(
+            'flex gap-3 overflow-x-auto pb-2 -mb-2 md:cursor-grab scrollbar-hide',
+            // Snap only when auto-scroll is off, so the rAF loop isn't fighting CSS snap points
+            speed > 0 ? '' : 'snap-x snap-mandatory'
+          )}
           onMouseDown={onMouseDown}
           onMouseMove={onMouseMove}
           onMouseUp={stopDrag}
-          onMouseLeave={stopDrag}
+          onMouseLeave={() => { isHovering.current = false; stopDrag(); }}
+          onMouseEnter={() => { isHovering.current = true; }}
         >
           {items.map((item, i) => (
-            <div key={`${item.symbol}-${i}`} role="listitem" className="snap-start shrink-0">
+            <div key={`${item.symbol}-${i}`} role="listitem" className={cn('shrink-0', speed > 0 ? '' : 'snap-start')}>
+              <TickerCard item={item} href={hrefForItem?.(item)} />
+            </div>
+          ))}
+          {/* Mirror copy enables seamless wrap-around when auto-scrolling */}
+          {speed > 0 && items.map((item, i) => (
+            <div
+              key={`${item.symbol}-${i}-mirror`}
+              role="presentation"
+              aria-hidden
+              className="shrink-0"
+            >
               <TickerCard item={item} href={hrefForItem?.(item)} />
             </div>
           ))}

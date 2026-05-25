@@ -9,11 +9,19 @@ export const runtime = 'nodejs';
 const MAX_SYMBOLS = 600;
 const SESSION_TTL_MS = 5 * 60 * 1000;
 
+// TwelveData /batch caps at ~120 requests per call. Discover sends ~200 symbols
+// in one go, which silently failed the whole batch and left every card showing
+// a price skeleton (especially obvious when markets are closed and WS ticks
+// can't fill the gap). Chunk to stay well under the limit.
+const SEED_CHUNK = 100;
+
 /**
  * Fetch quotes for any symbols that don't yet have a seeded prevClose in
  * WsManager. Runs fire-and-forget when a new SSE session opens.
  * After the first call per server warm-start, WsManager caches prevClose
  * so subsequent sessions skip the API call entirely.
+ *
+ * Each chunk's failure is isolated — one bad chunk won't blank the others.
  */
 async function seedInitialPrices(
   symbols: string[],
@@ -22,25 +30,37 @@ async function seedInitialPrices(
   const unseeded = symbols.filter((s) => !WsManager.hasPrevClose(s));
   if (unseeded.length === 0) return;
 
-  try {
-    const quotes = await getStockQuotes(unseeded);
-    for (const [sym, quote] of quotes.entries()) {
-      // StockQuote uses Finnhub-compat fields: c=close, d=change, dp=changePercent, pc=prevClose
-      if (!quote || quote.c <= 0) continue;
-      const prevClose = quote.pc > 0 ? quote.pc : quote.c;
-      WsManager.seedPrevClose(sym, prevClose);
-      const tick: PriceTick = {
-        symbol: sym,
-        price: quote.c,
-        change: isFinite(quote.d) ? quote.d : undefined,
-        changePercent: isFinite(quote.dp) ? quote.dp : undefined,
-        previousClose: prevClose,
-      };
-      safeEnqueue(`data: ${JSON.stringify(tick)}\n\n`);
-    }
-  } catch {
-    // Non-fatal — WS ticks will provide prices once market opens
+  const chunks: string[][] = [];
+  for (let i = 0; i < unseeded.length; i += SEED_CHUNK) {
+    chunks.push(unseeded.slice(i, i + SEED_CHUNK));
   }
+
+  await Promise.all(
+    chunks.map(async (chunk) => {
+      try {
+        const quotes = await getStockQuotes(chunk);
+        for (const [sym, quote] of quotes.entries()) {
+          // StockQuote uses Finnhub-compat fields: c=close, d=change, dp=changePercent, pc=prevClose
+          if (!quote || quote.c <= 0) continue;
+          const prevClose = quote.pc > 0 ? quote.pc : quote.c;
+          WsManager.seedPrevClose(sym, prevClose);
+          const tick: PriceTick = {
+            symbol: sym,
+            price: quote.c,
+            change: isFinite(quote.d) ? quote.d : undefined,
+            changePercent: isFinite(quote.dp) ? quote.dp : undefined,
+            previousClose: prevClose,
+          };
+          safeEnqueue(`data: ${JSON.stringify(tick)}\n\n`);
+        }
+      } catch (err) {
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('[prices/stream] seed chunk failed:', err instanceof Error ? err.message : err);
+        }
+        // Non-fatal — other chunks + WS ticks still deliver prices
+      }
+    })
+  );
 }
 
 async function streamHandler(request: NextRequest) {
