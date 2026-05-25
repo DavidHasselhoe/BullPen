@@ -9,10 +9,10 @@ import { symbolToSlug } from '@/lib/assets/asset-type';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 
 const CRYPTO_ASSETS = [
-  { symbol: 'BTC/USD', name: 'Bitcoin',      short: 'BTC' },
-  { symbol: 'ETH/USD', name: 'Ethereum',     short: 'ETH' },
-  { symbol: 'SOL/USD', name: 'Solana',       short: 'SOL' },
-  { symbol: 'XAU/USD', name: 'Gold',         short: 'XAU' },
+  { symbol: 'BTC/USD', name: 'Bitcoin',  short: 'BTC', logoUrl: 'https://assets.coingecko.com/coins/images/1/small/bitcoin.png' },
+  { symbol: 'ETH/USD', name: 'Ethereum', short: 'ETH', logoUrl: 'https://assets.coingecko.com/coins/images/279/small/ethereum.png' },
+  { symbol: 'SOL/USD', name: 'Solana',   short: 'SOL', logoUrl: 'https://assets.coingecko.com/coins/images/4128/small/solana.png' },
+  { symbol: 'XAU/USD', name: 'Gold',     short: 'XAU', logoUrl: 'https://assets.coingecko.com/coins/images/9519/small/tether-gold.png' },
 ];
 
 interface AssetQuote {
@@ -54,7 +54,7 @@ export function CryptoMarketCard() {
         </CardTitle>
       </CardHeader>
       <CardContent className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {CRYPTO_ASSETS.map(({ symbol, name, short }) => {
+        {CRYPTO_ASSETS.map(({ symbol, name, short, logoUrl }) => {
           const slug = symbolToSlug(symbol);
           const q = quotes?.[symbol];
           const isUp = (q?.changePercent ?? 0) >= 0;
@@ -66,7 +66,7 @@ export function CryptoMarketCard() {
               className="group flex flex-col gap-2 rounded-xl border border-border/40 bg-muted/30 p-3 transition-colors hover:border-border hover:bg-muted/60"
             >
               <div className="flex items-center justify-between">
-                <CompanyLogo name={name} ticker={symbolToSlug(symbol)} size={28} />
+                <CompanyLogo name={name} ticker={symbolToSlug(symbol)} logoUrl={logoUrl} size={28} />
                 {q ? (
                   isUp
                     ? <TrendingUp className="h-3 w-3 text-emerald-500" />
