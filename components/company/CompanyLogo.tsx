@@ -21,12 +21,6 @@ function getInitialsColor(ticker: string): string {
   return `hsl(${hue}, 35%, 45%)`;
 }
 
-function getStorageUrl(ticker: string): string {
-  const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  if (!base || !ticker) return '';
-  return `${base}/storage/v1/object/public/company-logos/${ticker.toLowerCase()}.jpg`;
-}
-
 export function CompanyLogo({ name, ticker, logoUrl, size = 40, className }: CompanyLogoProps) {
   const [imageError, setImageError] = useState(false);
 
@@ -35,8 +29,11 @@ export function CompanyLogo({ name, ticker, logoUrl, size = 40, className }: Com
 
   const handleImageError = useCallback(() => setImageError(true), []);
 
-  const storageUrl = useMemo(() => getStorageUrl(ticker), [ticker]);
-  const effectiveUrl = logoUrl ?? storageUrl;
+  // Only render a remote image when the caller actually has a known URL.
+  // Previously we auto-guessed a Supabase storage path per ticker, which
+  // 400'd loudly in the console for every ticker without an uploaded logo.
+  // Source of truth is now `companies.logo_url` — pass it explicitly.
+  const effectiveUrl = logoUrl || null;
   const showFallback = !effectiveUrl || imageError;
 
   const displayText = ticker.toUpperCase();
