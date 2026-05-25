@@ -12,7 +12,7 @@ const CRYPTO_ASSETS = [
   { symbol: 'BTC/USD', name: 'Bitcoin',  short: 'BTC', logoUrl: 'https://assets.coingecko.com/coins/images/1/small/bitcoin.png' },
   { symbol: 'ETH/USD', name: 'Ethereum', short: 'ETH', logoUrl: 'https://assets.coingecko.com/coins/images/279/small/ethereum.png' },
   { symbol: 'SOL/USD', name: 'Solana',   short: 'SOL', logoUrl: 'https://assets.coingecko.com/coins/images/4128/small/solana.png' },
-  { symbol: 'XAU/USD', name: 'Gold',     short: 'XAU', logoUrl: 'https://assets.coingecko.com/coins/images/9519/small/tether-gold.png' },
+  { symbol: 'XAU/USD', name: 'Gold',     short: 'XAU', logoUrl: 'https://kgqpzuvhslqazurfrqya.supabase.co/storage/v1/object/public/company-logos/commodity-xau.svg' },
 ];
 
 interface AssetQuote {

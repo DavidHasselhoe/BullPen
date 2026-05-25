@@ -9,6 +9,7 @@ import {
   ETF_THEMES,
   ETF_ISSUER_DOMAINS,
   COMMODITY_SYMBOLS,
+  COMMODITY_LOGO_URLS,
   CRYPTO_SYMBOLS,
   CRYPTO_LOGO_URLS,
   TRENDING_FALLBACK,
@@ -256,14 +257,14 @@ export async function GET(): Promise<NextResponse> {
     etfs[theme.key] = theme.tickers.map((t) => toEtfItem(t, allMeta.get(t)));
   }
 
-  // Commodities — rely on initials fallback; no logo override
+  // Commodities — self-hosted SVG logos in the company-logos bucket
   const commodities: TickerItem[] = COMMODITY_SYMBOLS.map((c) => {
     const m = allMeta.get(c.symbol.toUpperCase());
     return {
       symbol: c.symbol,
       ticker: c.symbol.split('/')[0],
       name: m?.name ?? c.name,
-      logoUrl: m?.logo_url ?? null,
+      logoUrl: m?.logo_url ?? COMMODITY_LOGO_URLS[c.symbol] ?? null,
     };
   });
 

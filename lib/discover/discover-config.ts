@@ -251,6 +251,22 @@ export const CRYPTO_LOGO_URLS: Record<string, string> = {
 };
 
 /**
+ * Self-hosted commodity logos. SVG source lives in scripts/commodity-logos/.
+ * Upload via `npm run upload-commodity-logos`. Bucket is public-readable.
+ */
+const SUPABASE_LOGO_BASE =
+  'https://kgqpzuvhslqazurfrqya.supabase.co/storage/v1/object/public/company-logos';
+
+export const COMMODITY_LOGO_URLS: Record<string, string> = {
+  'XAU/USD': `${SUPABASE_LOGO_BASE}/commodity-xau.svg`,
+  'XAG/USD': `${SUPABASE_LOGO_BASE}/commodity-xag.svg`,
+  'XPT/USD': `${SUPABASE_LOGO_BASE}/commodity-xpt.svg`,
+  'XPD/USD': `${SUPABASE_LOGO_BASE}/commodity-xpd.svg`,
+  'WTI/USD': `${SUPABASE_LOGO_BASE}/commodity-wti.svg`,
+  'XBR/USD': `${SUPABASE_LOGO_BASE}/commodity-xbr.svg`,
+};
+
+/**
  * Build a logo.dev URL for an issuer domain. Returns null if LOGO_DEV_KEY
  * is not configured (we'd rather show initials than a broken image).
  */
