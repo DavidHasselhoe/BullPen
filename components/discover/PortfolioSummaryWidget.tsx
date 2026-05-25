@@ -10,7 +10,7 @@ import { AreaChart, Area, ResponsiveContainer } from 'recharts';
 import { convertCurrency, formatCurrency, type CurrencyCode } from '@/lib/currency/currency-conversion';
 import { useExchangeRates } from '@/hooks/use-exchange-rates';
 import { useUserSettings } from '@/hooks/use-user-settings';
-import { ArrowUpRight, ArrowDownRight, ChevronRight } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, ChevronRight, Plus } from 'lucide-react';
 import type { UserHolding } from '@/lib/types/database';
 
 // ─── Sparkline hook ────────────────────────────────────────────────────────────
@@ -185,7 +185,39 @@ export function PortfolioSummaryWidget() {
     );
   }
 
-  if (!holdings || holdings.length === 0 || !summary) return null;
+  // Empty state — no holdings yet. Render an inline CTA at the same footprint
+  // as the populated card so the layout never collapses or shifts.
+  if (!holdings || holdings.length === 0) {
+    return (
+      <Link href="/holdings" className="block group">
+        <Card className="border-dashed border-border/60 hover:border-emerald-500/40 hover:bg-emerald-500/[0.03] transition-colors overflow-hidden">
+          <CardContent className="p-0">
+            <div className="flex items-start justify-between gap-3 px-4 pt-4 pb-3">
+              <div className="min-w-0">
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  Portfolio
+                </p>
+                <p className="text-sm font-semibold text-foreground mt-0.5">
+                  Track your first holding
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5 leading-snug">
+                  Add a stock to see live P/L, day moves, and a 1-month trend.
+                </p>
+              </div>
+              <div className="h-7 w-7 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-emerald-500/20 transition-colors">
+                <Plus className="h-3.5 w-3.5 text-emerald-500" />
+              </div>
+            </div>
+            <div className="h-[72px] bg-gradient-to-b from-transparent to-emerald-500/[0.04]" />
+          </CardContent>
+        </Card>
+      </Link>
+    );
+  }
+
+  // Holdings exist but quotes couldn't price them (transient API failure) —
+  // hide silently rather than show a misleading $0 number.
+  if (!summary) return null;
 
   const isPositive = summary.dayChangePercent >= 0;
   const chartColor = sparklinePositive ? '#10b981' : '#ef4444';
