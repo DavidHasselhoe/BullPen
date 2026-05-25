@@ -33,6 +33,7 @@ export function SectorRailsSection({ sectors }: Props) {
             icon={<Icon className="h-4 w-4" />}
             items={items}
             meta={`${items.length} stocks`}
+            speed={15}
           />
         );
       })}

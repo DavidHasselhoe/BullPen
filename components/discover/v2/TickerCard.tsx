@@ -42,9 +42,10 @@ function PriceSkeleton({ wide = false }: { wide?: boolean }) {
 export function TickerCard({ item, href }: Props) {
   const live = useLivePrice(item.symbol);
 
-  // Live SSE tick wins; fall back to the optional `previousClose` seed.
+  // Live SSE tick wins; fall back to server-hydrated seeds so the card never
+  // renders empty (markets closed → no WS ticks; SSE seed not yet delivered).
   const rawPrice = live?.price ?? item.previousClose ?? null;
-  const rawChange = live?.changePercent ?? null;
+  const rawChange = live?.changePercent ?? item.changePercent ?? null;
   const price: number | null = rawPrice != null && isFinite(rawPrice) ? rawPrice : null;
   const changePct: number | null = rawChange != null && isFinite(rawChange) ? rawChange : null;
 

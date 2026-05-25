@@ -48,6 +48,7 @@ export function AssetExplorerSection({ etfs, commodities, crypto }: Props) {
             items={items}
             meta="ETFs"
             hrefForItem={etfHref}
+            speed={15}
           />
         );
       })}
@@ -62,6 +63,7 @@ export function AssetExplorerSection({ etfs, commodities, crypto }: Props) {
           items={commodities}
           meta="Spot"
           hrefForItem={pairHref}
+          speed={15}
         />
       )}
 
@@ -75,6 +77,7 @@ export function AssetExplorerSection({ etfs, commodities, crypto }: Props) {
           items={crypto}
           meta="Crypto"
           hrefForItem={pairHref}
+          speed={15}
         />
       )}
     </section>

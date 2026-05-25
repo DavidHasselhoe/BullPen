@@ -283,6 +283,8 @@ export interface TickerItem {
   sector?: string | null;
   /** Last known close (seed for the card before SSE ticks arrive) */
   previousClose?: number | null;
+  /** Last known day change percent (seed for the card before SSE ticks arrive) */
+  changePercent?: number | null;
   marketCap?: number | null;
   dividendYield?: number | null;
 }

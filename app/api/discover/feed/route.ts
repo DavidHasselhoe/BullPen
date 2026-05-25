@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/client';
 import { getSessionForApiRoute, addSecurityHeaders } from '@/lib/security/api-security';
+import { getStockQuotes } from '@/lib/twelvedata/twelvedata-client';
+import { getCached, setCached } from '@/lib/cache/market-data-cache';
 import {
   SECTOR_DISPLAY_ORDER,
   STOCKS_PER_SECTOR_RAIL,
@@ -58,6 +60,88 @@ function toEtfItem(ticker: string, meta: CompanyMeta | undefined): TickerItem {
     // Prefer DB-stored logo if present, otherwise the issuer's brand logo
     logoUrl: meta?.logo_url ?? issuerLogo,
   };
+}
+
+// ── Price hydration ──────────────────────────────────────────────────────────
+//
+// Hydrate every TickerItem with a `previousClose` and `changePercent` from
+// the last TwelveData quote. This guarantees that the page renders real
+// numbers immediately — no skeleton on initial paint, no dependency on the
+// live WebSocket (which is silent when markets are closed, e.g. on holidays).
+// Cached shared across users for 5 minutes via market_data_cache to keep
+// TwelveData credit usage bounded.
+
+interface PriceSeed {
+  previousClose: number;
+  changePercent: number | null;
+}
+
+const PRICE_CACHE_TTL_S = 5 * 60;
+const QUOTE_CHUNK = 100;
+
+async function loadPriceSeed(symbol: string): Promise<PriceSeed | null> {
+  return getCached<PriceSeed>(`discover-price:${symbol.toUpperCase()}`);
+}
+
+async function fetchAndCachePriceSeeds(symbols: string[]): Promise<Map<string, PriceSeed>> {
+  if (symbols.length === 0) return new Map();
+  const out = new Map<string, PriceSeed>();
+
+  // TwelveData /batch caps at ~120 requests; chunk well under that.
+  const chunks: string[][] = [];
+  for (let i = 0; i < symbols.length; i += QUOTE_CHUNK) {
+    chunks.push(symbols.slice(i, i + QUOTE_CHUNK));
+  }
+
+  await Promise.all(
+    chunks.map(async (chunk) => {
+      try {
+        const quotes = await getStockQuotes(chunk);
+        for (const [sym, q] of quotes.entries()) {
+          if (!q || !isFinite(q.c) || q.c <= 0) continue;
+          const previousClose = q.pc > 0 ? q.pc : q.c;
+          const changePercent = isFinite(q.dp) ? q.dp : null;
+          const seed: PriceSeed = { previousClose, changePercent };
+          out.set(sym.toUpperCase(), seed);
+          // Cache fire-and-forget — never block the response
+          void setCached(`discover-price:${sym.toUpperCase()}`, sym, 'discover_price', seed, PRICE_CACHE_TTL_S);
+        }
+      } catch (err) {
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('[discover/feed] quote chunk failed:', err instanceof Error ? err.message : err);
+        }
+        // Non-fatal — other chunks + the SSE will still deliver prices
+      }
+    })
+  );
+  return out;
+}
+
+/**
+ * Return a Map of symbol → { previousClose, changePercent } for every passed
+ * symbol. Cache hits are reused; cache misses are fetched in chunks.
+ */
+async function hydratePriceSeeds(symbols: string[]): Promise<Map<string, PriceSeed>> {
+  const upper = [...new Set(symbols.map((s) => s.toUpperCase()))];
+  const cached = await Promise.all(upper.map((s) => loadPriceSeed(s)));
+  const seeds = new Map<string, PriceSeed>();
+  const missing: string[] = [];
+  upper.forEach((sym, i) => {
+    const hit = cached[i];
+    if (hit) seeds.set(sym, hit);
+    else missing.push(sym);
+  });
+  if (missing.length > 0) {
+    const freshlyFetched = await fetchAndCachePriceSeeds(missing);
+    for (const [sym, seed] of freshlyFetched.entries()) seeds.set(sym, seed);
+  }
+  return seeds;
+}
+
+function applySeed(item: TickerItem, seeds: Map<string, PriceSeed>): TickerItem {
+  const seed = seeds.get(item.symbol.toUpperCase());
+  if (!seed) return item;
+  return { ...item, previousClose: seed.previousClose, changePercent: seed.changePercent ?? undefined };
 }
 
 // ── For You / Trending Today ──────────────────────────────────────────────────
@@ -195,7 +279,30 @@ export async function GET(): Promise<NextResponse> {
   });
 
   const forYou = await buildForYouRail(userId);
-  const feed: DiscoverFeed = { forYou, sectors, etfs, commodities, crypto };
+
+  // ── Hydrate every item with a price seed so cards never render empty ──
+  // Collect every symbol that will appear on the page and resolve a single
+  // map of price seeds (cache hits + chunked TwelveData fetches for misses).
+  const allSymbols = [
+    ...forYou.items.map((i) => i.symbol),
+    ...Object.values(sectors).flat().map((i) => i.symbol),
+    ...Object.values(etfs).flat().map((i) => i.symbol),
+    ...commodities.map((i) => i.symbol),
+    ...crypto.map((i) => i.symbol),
+  ];
+  const priceSeeds = await hydratePriceSeeds(allSymbols);
+
+  const feed: DiscoverFeed = {
+    forYou: { ...forYou, items: forYou.items.map((i) => applySeed(i, priceSeeds)) },
+    sectors: Object.fromEntries(
+      Object.entries(sectors).map(([k, list]) => [k, list.map((i) => applySeed(i, priceSeeds))])
+    ),
+    etfs: Object.fromEntries(
+      Object.entries(etfs).map(([k, list]) => [k, list.map((i) => applySeed(i, priceSeeds))])
+    ),
+    commodities: commodities.map((i) => applySeed(i, priceSeeds)),
+    crypto: crypto.map((i) => applySeed(i, priceSeeds)),
+  };
 
   const response = NextResponse.json({ success: true, feed });
   if (!userId) {
