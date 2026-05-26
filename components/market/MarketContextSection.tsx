@@ -24,7 +24,12 @@ const DEFAULT_EXCHANGES = ['NYSE', 'NASDAQ', 'LSE', 'OSE', 'XETRA', 'STO'];
 export function MarketContextSection() {
   const { isAuthenticated } = useAuth();
   const { data: holdings } = useHoldings();
-  const { marketContextMode, updateMarketContextMode } = useUserSettings();
+  const {
+    marketContextMode,
+    updateMarketContextMode,
+    marketHoursExchanges,
+    updateMarketHoursExchanges,
+  } = useUserSettings();
   const holdingsMode = marketContextMode === 'holdings';
 
   const tickers = (holdings ?? [])
@@ -34,9 +39,15 @@ export function MarketContextSection() {
   const canUseHoldingsMode = isAuthenticated && hasHoldings;
   const effectiveHoldingsMode = holdingsMode && canUseHoldingsMode;
 
+  // In "all markets" mode, prefer the user's saved exchange list; fall back to defaults.
+  // In holdings mode, exchanges are derived from the portfolio's tickers automatically.
+  const customExchanges =
+    isAuthenticated && marketHoursExchanges !== null && marketHoursExchanges.length > 0
+      ? marketHoursExchanges
+      : DEFAULT_EXCHANGES;
   const exchangeCodes = effectiveHoldingsMode
     ? getExchangesForTickers(tickers)
-    : DEFAULT_EXCHANGES;
+    : customExchanges;
   const moversSymbols = effectiveHoldingsMode ? tickers : null;
   const newsSymbols = effectiveHoldingsMode ? tickers : null;
 
@@ -96,8 +107,13 @@ export function MarketContextSection() {
             exchangeCodes={
               effectiveHoldingsMode && exchangeCodes.length > 0
                 ? exchangeCodes
-                : DEFAULT_EXCHANGES
+                : customExchanges
             }
+            // Editing only makes sense in "all markets" mode — holdings mode
+            // derives the list from the portfolio so manual edits would fight
+            // that derivation on the next render.
+            editable={isAuthenticated && !effectiveHoldingsMode}
+            onExchangesChange={(codes) => updateMarketHoursExchanges?.(codes)}
           />
         </AnimatedContent>
         <AnimatedContent reverse={true} delay={0.05} className="min-w-0">

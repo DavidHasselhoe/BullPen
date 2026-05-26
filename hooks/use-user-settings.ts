@@ -32,6 +32,34 @@ export function useUserSettings() {
     ? settings.homepage_widget_hidden
     : [];
 
+  // User-picked list of exchanges to show in the Market Hours widget when in
+  // "all markets" mode. Holdings mode derives exchanges from the portfolio.
+  const marketHoursExchanges: string[] | null = Array.isArray(settings.market_hours_exchanges)
+    ? (settings.market_hours_exchanges as string[])
+    : null;
+
+  const updateMarketHoursExchanges = useCallback(
+    async (codes: string[]) => {
+      if (!user?.id) return;
+      const supabase = createBrowserClient();
+      const { data: row, error: fetchError } = await supabase
+        .from('users')
+        .select('settings')
+        .eq('id', user.id)
+        .single();
+      if (fetchError) return;
+      const existing = (row?.settings as Record<string, unknown>) || {};
+      const merged = { ...existing, market_hours_exchanges: codes };
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ settings: merged })
+        .eq('id', user.id);
+      if (updateError) return;
+      window.dispatchEvent(new Event('auth:refresh'));
+    },
+    [user?.id]
+  );
+
   const updateMarketContextMode = useCallback(
     async (mode: MarketContextMode) => {
       if (!user?.id) return;
@@ -65,5 +93,7 @@ export function useUserSettings() {
     updateMarketContextMode,
     homepageWidgetOrder,
     homepageWidgetHidden,
+    marketHoursExchanges,
+    updateMarketHoursExchanges,
   };
 }
