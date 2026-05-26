@@ -1,5 +1,4 @@
 {
-  "//": "Vercel Hobby caps crons at 2. We keep the two time-critical ones here; the rest run via .github/workflows/cron-*.yml — see CLAUDE.md.",
   "crons": [
     {
       "path": "/api/cron/generate-daily-brief",
