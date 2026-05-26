@@ -1,0 +1,27 @@
+name: Cron — Prefetch Market Data
+
+# Daily at 05:00 UTC. Pre-caches S&P 500 + NASDAQ 100 stats/financials so
+# the morning's first dashboard loads are free hits from market_data_cache.
+# Was a Vercel cron, moved here to fit within Hobby plan's 2-cron limit.
+on:
+  schedule:
+    - cron: '0 5 * * *'
+  workflow_dispatch:
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: POST /api/cron/prefetch-market-data
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          APP_URL: ${{ vars.APP_URL || 'https://bullpen.no' }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::CRON_SECRET secret is not configured in repo settings"
+            exit 1
+          fi
+          curl -fsS -X GET \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "${APP_URL}/api/cron/prefetch-market-data"

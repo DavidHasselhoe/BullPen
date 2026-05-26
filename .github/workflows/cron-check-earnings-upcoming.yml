@@ -1,0 +1,28 @@
+name: Cron — Check Upcoming Earnings
+
+# Daily at 08:00 UTC. Notifies users about earnings on stocks they track.
+# Was a Vercel cron, moved to GitHub Actions when we exceeded the Hobby
+# plan's 2-cron limit. Time-tolerant (a 5–15 min drift is fine for a daily
+# digest), so GH's lower precision doesn't matter here.
+on:
+  schedule:
+    - cron: '0 8 * * *'
+  workflow_dispatch:  # allows manual fire from the Actions tab
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: POST /api/cron/check-earnings-upcoming
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          APP_URL: ${{ vars.APP_URL || 'https://bullpen.no' }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::CRON_SECRET secret is not configured in repo settings"
+            exit 1
+          fi
+          curl -fsS -X GET \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "${APP_URL}/api/cron/check-earnings-upcoming"

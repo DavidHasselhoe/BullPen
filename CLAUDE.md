@@ -179,15 +179,24 @@ All API routes live under `app/api/`. They follow these patterns:
 
 ### Scheduled work
 
-Five Vercel crons defined in `vercel.json`. All are protected by the `CRON_SECRET` header. Trigger any manually with `npm run trigger-cron`.
+Split across two schedulers. All cron routes are protected by the `CRON_SECRET` bearer header regardless of who triggers them. Local manual trigger: `npm run trigger-cron` (or `trigger-alerts`).
+
+**Vercel crons** (`vercel.json`) — time-critical, capped at 2 by the Hobby plan:
 
 | Endpoint | Schedule (UTC) | Purpose |
 |---|---|---|
-| `/api/cron/update-stale-companies` | `0 8 * * *` | Re-ingest SEC filings for the 10 stalest companies; send filing alerts |
+| `/api/cron/generate-daily-brief` | `30 6 * * *` | Generate AI daily brief for Pro users (Anthropic Claude) |
+| `/api/cron/check-user-alerts` | `30 14-21 * * 1-5` | Evaluate user-defined price/metric alerts hourly through market hours |
+
+**GitHub Actions crons** (`.github/workflows/cron-*.yml`) — time-tolerant daily jobs. Each workflow `POST`s to the same Vercel route with `Bearer $CRON_SECRET`, so the route code is unchanged; only the scheduler differs. GH cron has ~5–15 min drift, which is fine for these:
+
+| Endpoint | Schedule (UTC) | Purpose |
+|---|---|---|
 | `/api/cron/check-earnings-upcoming` | `0 8 * * *` | Email users about upcoming earnings in held/watched stocks |
 | `/api/cron/check-price-moves` | `30 21 * * 1-5` | Email on 5%+ price moves for held/watched stocks |
-| `/api/cron/generate-daily-brief` | `30 6 * * *` | Generate AI daily brief for Pro users (Anthropic Claude) |
 | `/api/cron/prefetch-market-data` | `0 5 * * *` | Pre-cache S&P 500 + NASDAQ 100 stats/financials |
+
+The GitHub Actions workflows require **`CRON_SECRET`** to be set in repo secrets (Settings → Secrets and variables → Actions). The production URL defaults to `https://bullpen.no` — override with an `APP_URL` repo variable if needed.
 
 ## Environment variables
 

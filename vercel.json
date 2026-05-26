@@ -1,20 +1,9 @@
 {
+  "//": "Vercel Hobby caps crons at 2. We keep the two time-critical ones here; the rest run via .github/workflows/cron-*.yml — see CLAUDE.md.",
   "crons": [
-    {
-      "path": "/api/cron/check-earnings-upcoming",
-      "schedule": "0 8 * * *"
-    },
-    {
-      "path": "/api/cron/check-price-moves",
-      "schedule": "30 21 * * 1-5"
-    },
     {
       "path": "/api/cron/generate-daily-brief",
       "schedule": "30 6 * * *"
-    },
-    {
-      "path": "/api/cron/prefetch-market-data",
-      "schedule": "0 5 * * *"
     },
     {
       "path": "/api/cron/check-user-alerts",
