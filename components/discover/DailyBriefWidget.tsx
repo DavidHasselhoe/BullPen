@@ -32,17 +32,43 @@ function slugify(s: string): string {
     .replace(/^-+|-+$/g, '');
 }
 
+/**
+ * A real section heading is short (<60 chars), starts with `## `, and
+ * doesn't end with sentence punctuation. We drop anything else so a
+ * malformed brief (e.g. the model wrote a setup sentence before the first
+ * proper `## TL;DR`) doesn't render as a fake section + TOC entry.
+ */
+const MAX_HEADING_LENGTH = 60;
+
+function looksLikeRealHeading(line: string): boolean {
+  if (!line) return false;
+  if (line.length > MAX_HEADING_LENGTH) return false;
+  if (/[.!?]$/.test(line.trimEnd())) return false;
+  return /\w/.test(line);
+}
+
 function parseSections(content: string): BriefSection[] {
+  // Split BEFORE every `## ` so the chunk preceding the first header is
+  // dropped entirely (it can't form a section without a `## ` prefix).
   const parts = content.split(/\n(?=##\s)/);
-  return parts
-    .map((part) => {
-      const firstNewline = part.indexOf('\n');
-      if (firstNewline === -1) return null;
-      const heading = part.slice(0, firstNewline).replace(/^##\s*/, '').trim();
-      const body = part.slice(firstNewline + 1).trim();
-      return { heading, body, slug: slugify(heading) };
-    })
-    .filter((s): s is BriefSection => s !== null && s.heading.length > 0 && /\w/.test(s.heading));
+  const sections: BriefSection[] = [];
+
+  for (const part of parts) {
+    // Skip prose blocks that never opened a `## ` header
+    if (!/^##\s/.test(part)) continue;
+
+    const firstNewline = part.indexOf('\n');
+    const headingRaw = (firstNewline === -1 ? part : part.slice(0, firstNewline))
+      .replace(/^##\s*/, '')
+      .trim();
+    const body = firstNewline === -1 ? '' : part.slice(firstNewline + 1).trim();
+
+    if (!looksLikeRealHeading(headingRaw)) continue;
+
+    sections.push({ heading: headingRaw, body, slug: slugify(headingRaw) });
+  }
+
+  return sections;
 }
 
 function formatRelativeTime(isoString: string): string {
@@ -160,8 +186,8 @@ function SectionBlock({ section, index, isTldr, sectionRef }: SectionBlockProps)
       className="brief-section mb-10"
       style={{ animationDelay: `${index * 60}ms` }}
     >
-      <div className="flex items-center gap-3 mb-5">
-        <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground/70 shrink-0">
+      <div className="flex items-center gap-3 mb-5 min-w-0">
+        <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground/70 shrink-0 max-w-full truncate">
           {section.heading}
         </span>
         <div className="flex-1 h-px bg-border/30" />
@@ -213,7 +239,8 @@ function SectionTOC({
   activeSlug: string | null;
   onNavigate: (slug: string) => void;
 }) {
-  if (sections.length === 0) return null;
+  // Hide the TOC entirely when there's only one section — wastes space.
+  if (sections.length <= 1) return null;
   return (
     <nav
       aria-label="Sections"
@@ -230,8 +257,9 @@ function SectionTOC({
               <button
                 onClick={() => onNavigate(s.slug)}
                 aria-current={active ? 'true' : undefined}
+                title={s.heading}
                 className={cn(
-                  'w-full text-left text-[12px] pl-3 pr-2 py-1.5 rounded-r-md border-l-2 transition-all duration-150',
+                  'w-full text-left text-[12px] pl-3 pr-2 py-1.5 rounded-r-md border-l-2 transition-all duration-150 truncate',
                   active
                     ? 'border-primary text-foreground bg-muted/30 font-medium'
                     : 'border-transparent text-muted-foreground/70 hover:text-foreground hover:bg-muted/20'
