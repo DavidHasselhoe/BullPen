@@ -29,11 +29,15 @@ export function CompanyLogo({ name, ticker, logoUrl, size = 40, className }: Com
 
   const handleImageError = useCallback(() => setImageError(true), []);
 
-  // Only render a remote image when the caller actually has a known URL.
-  // Previously we auto-guessed a Supabase storage path per ticker, which
-  // 400'd loudly in the console for every ticker without an uploaded logo.
-  // Source of truth is now `companies.logo_url` — pass it explicitly.
-  const effectiveUrl = logoUrl || null;
+  // Logo resolution cascade:
+  //  1. Caller passed `logoUrl` explicitly → use it directly (instant).
+  //  2. No URL → fall back to the self-healing `/api/logo/[ticker]` proxy,
+  //     which redirects to the resolved CDN URL and caches the result.
+  //     Next.js' image optimizer follows the redirect and caches the
+  //     optimized image, so subsequent renders are served from its own CDN.
+  //  3. On image error (proxy returned 404 or upstream broke) → initials.
+  const effectiveUrl =
+    logoUrl ?? (ticker ? `/api/logo/${encodeURIComponent(ticker)}` : null);
   const showFallback = !effectiveUrl || imageError;
 
   const displayText = ticker.toUpperCase();
