@@ -9,6 +9,7 @@ import {
   Scale,
   CalendarDays,
   Sparkles,
+  Bell,
 } from 'lucide-react';
 
 export interface ToolConfig {
@@ -91,6 +92,14 @@ export const TOOLS: ToolConfig[] = [
     description: 'Interactive heatmap by sector and stock. Size by market cap, color by performance.',
     href: '/tools/heatmap',
     icon: Grid3X3,
+    status: 'available',
+  },
+  {
+    id: 'alerts',
+    name: 'Price Alerts',
+    description: 'Get notified when a stock hits a target price, daily move, 52-week extreme, or all-time high.',
+    href: '/tools/alerts',
+    icon: Bell,
     status: 'available',
   },
 ];

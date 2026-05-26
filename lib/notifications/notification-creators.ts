@@ -120,6 +120,41 @@ export async function createPriceMoveDigestNotification(
   return result.success;
 }
 
+// ─── User-defined alert notifications ────────────────────────────────────────
+
+import { describeAlert, type UserAlert } from '@/types/alerts';
+
+/**
+ * Create a notification when a user-defined alert is triggered by the
+ * `/api/cron/check-user-alerts` job. 24h dedup is enforced at the cron layer
+ * via the alert's `last_triggered_at`; the 12h check here is a belt-and-
+ * suspenders extra layer.
+ */
+export async function createUserAlertNotification(
+  userId: string,
+  alert: Pick<UserAlert, 'id' | 'symbol' | 'companyName' | 'alertType' | 'threshold'>,
+  currentPrice: number
+): Promise<boolean> {
+  const dedupeId = `user_alert:${alert.id}`;
+  if (await alreadyNotifiedToday(userId, 'price_move', dedupeId)) return false;
+
+  const name = alert.companyName || alert.symbol;
+  const priceStr = `$${currentPrice.toFixed(2)}`;
+
+  const input: CreateNotificationInput = {
+    user_id: userId,
+    type: 'price_move',
+    title: `${alert.symbol} hit ${priceStr}`,
+    message: `${name} — your alert "${describeAlert(alert)}" was triggered.`,
+    entity_type: 'user_alert',
+    entity_id: dedupeId,
+    severity: 'info',
+  };
+
+  const result = await createNotification(input);
+  return result.success;
+}
+
 // ─── Earnings upcoming notifications ─────────────────────────────────────────
 
 /**

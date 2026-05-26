@@ -17,6 +17,7 @@
     "populate-quotes": "tsx scripts/populate-investing-quotes.ts",
     "test-resend": "tsx scripts/test-resend.ts",
     "trigger-cron": "tsx scripts/trigger-cron.ts",
+    "trigger-alerts": "tsx scripts/trigger-alerts-cron.ts",
     "test-earnings-email": "tsx scripts/test-earnings-email.ts",
     "rules": "tsx scripts/print-cursor-rules.ts"
   },

@@ -1,0 +1,155 @@
+'use client';
+
+import { useMemo, useState } from 'react';
+import { Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { TickerSelector, type SearchResult } from '@/components/tools/buy-here/TickerSelector';
+import { AlertTypePicker } from './AlertTypePicker';
+import { describeAlert, type AlertType, type CreateAlertPayload } from '@/types/alerts';
+
+interface Props {
+  onCreated: () => void;
+  onCancel: () => void;
+  onCreate: (payload: CreateAlertPayload) => Promise<{ ok: boolean; error?: string }>;
+}
+
+export function CreateAlertForm({ onCreated, onCancel, onCreate }: Props) {
+  const [ticker, setTicker] = useState<SearchResult | null>(null);
+  const [alertType, setAlertType] = useState<AlertType | null>(null);
+  const [rawValue, setRawValue] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const needsThreshold = alertType !== null && alertType !== 'all_time_high';
+  const isPriceType   = alertType === 'price_above' || alertType === 'price_below';
+  const isPctType     = alertType === 'pct_change_up' || alertType === 'pct_change_down' ||
+                        alertType === 'near_52w_high' || alertType === 'near_52w_low';
+
+  /** Normalises the raw input into the on-wire `threshold` shape: price = dollars,
+   *  pct/proximity = decimal (5 → 0.05). */
+  const parsedThreshold = useMemo<number | null>(() => {
+    if (!alertType) return null;
+    if (alertType === 'all_time_high') return 0;
+    const n = parseFloat(rawValue);
+    if (!isFinite(n) || n < 0) return null;
+    return isPriceType ? n : n / 100;
+  }, [alertType, rawValue, isPriceType]);
+
+  const canSubmit = ticker !== null && alertType !== null && parsedThreshold !== null && !submitting;
+
+  const preview = useMemo(() => {
+    if (!ticker || !alertType || parsedThreshold === null) return null;
+    return `You'll be alerted when ${ticker.ticker} ${describeAlert({ alertType, threshold: parsedThreshold }).toLowerCase()}.`;
+  }, [ticker, alertType, parsedThreshold]);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!canSubmit || !ticker || !alertType || parsedThreshold === null) return;
+    setSubmitting(true);
+    setError(null);
+    const res = await onCreate({
+      symbol: ticker.ticker,
+      companyName: ticker.name,
+      alertType,
+      threshold: parsedThreshold,
+    });
+    setSubmitting(false);
+    if (res.ok) {
+      onCreated();
+    } else {
+      setError(res.error ?? 'Couldn’t create the alert. Please try again.');
+    }
+  }
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      className="rounded-2xl border border-border/50 bg-card/40 p-5 space-y-5"
+    >
+      {/* Step 1 — stock */}
+      <div className="space-y-1.5">
+        <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/55">
+          Stock
+        </label>
+        <TickerSelector
+          value={ticker}
+          onChange={setTicker}
+          placeholder="Search a stock (e.g. AAPL)"
+        />
+      </div>
+
+      {/* Step 2 — condition */}
+      <div className="space-y-2">
+        <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/55">
+          Condition
+        </label>
+        <AlertTypePicker value={alertType} onChange={setAlertType} />
+      </div>
+
+      {/* Step 3 — threshold (only when needed) */}
+      {needsThreshold && (
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/55">
+            {isPriceType ? 'Target price' : 'Threshold (%)'}
+          </label>
+          <div className="relative">
+            {isPriceType && (
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground/60 font-mono pointer-events-none">
+                $
+              </span>
+            )}
+            <Input
+              type="number"
+              inputMode="decimal"
+              min={0}
+              step={isPriceType ? '0.01' : '0.1'}
+              value={rawValue}
+              onChange={(e) => setRawValue(e.target.value)}
+              placeholder={isPriceType ? '200.00' : isPctType ? '5' : ''}
+              className={isPriceType ? 'pl-7 font-mono tabular-nums' : 'font-mono tabular-nums'}
+              autoFocus
+            />
+            {isPctType && (
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground/60 font-mono pointer-events-none">
+                %
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Live preview */}
+      {preview && (
+        <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/[0.04] px-3 py-2">
+          <p className="text-xs text-foreground/85 leading-relaxed">
+            <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-500/80 mr-1.5">Preview</span>
+            {preview}
+          </p>
+        </div>
+      )}
+
+      {/* Error */}
+      {error && (
+        <div className="rounded-lg border border-red-500/30 bg-red-500/[0.06] px-3 py-2">
+          <p className="text-xs text-red-300">{error}</p>
+        </div>
+      )}
+
+      {/* Actions */}
+      <div className="flex items-center justify-end gap-2 pt-1">
+        <Button type="button" variant="ghost" size="sm" onClick={onCancel} disabled={submitting}>
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          size="sm"
+          disabled={!canSubmit}
+          className="bg-emerald-500 hover:bg-emerald-600 text-white"
+        >
+          {submitting ? <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />Creating…</> : 'Create alert'}
+        </Button>
+      </div>
+    </form>
+  );
+}
