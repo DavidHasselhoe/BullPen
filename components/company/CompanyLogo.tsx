@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
 export interface CompanyLogoProps {
@@ -31,11 +30,14 @@ export function CompanyLogo({ name, ticker, logoUrl, size = 40, className }: Com
 
   // Logo resolution cascade:
   //  1. Caller passed `logoUrl` explicitly → use it directly (instant).
-  //  2. No URL → fall back to the self-healing `/api/logo/[ticker]` proxy,
-  //     which redirects to the resolved CDN URL and caches the result.
-  //     Next.js' image optimizer follows the redirect and caches the
-  //     optimized image, so subsequent renders are served from its own CDN.
-  //  3. On image error (proxy returned 404 or upstream broke) → initials.
+  //  2. No URL → fall back to the self-healing `/api/logo/[ticker]` proxy
+  //     which 302-redirects to the resolved CDN URL and caches the result.
+  //  3. On image error (proxy 404'd or upstream broke) → initials.
+  //
+  // We use a plain <img> instead of next/image because the optimizer struggles
+  // to follow redirects to dynamically-resolved upstream image hosts and 400s
+  // even when the destination is whitelisted in remotePatterns. These logos
+  // are tiny (22–40px) so the optimization gain isn't worth the breakage.
   const effectiveUrl =
     logoUrl ?? (ticker ? `/api/logo/${encodeURIComponent(ticker)}` : null);
   const showFallback = !effectiveUrl || imageError;
@@ -58,11 +60,14 @@ export function CompanyLogo({ name, ticker, logoUrl, size = 40, className }: Com
       style={{ width: size, height: size, minWidth: size, minHeight: size }}
     >
       {effectiveUrl && !imageError && (
-        <Image
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
           src={effectiveUrl}
           alt={`${name} logo`}
           width={size}
           height={size}
+          loading="lazy"
+          decoding="async"
           className="h-full w-full object-cover object-center"
           onError={handleImageError}
         />
