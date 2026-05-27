@@ -3,10 +3,6 @@
     {
       "path": "/api/cron/generate-daily-brief",
       "schedule": "30 6 * * *"
-    },
-    {
-      "path": "/api/cron/check-user-alerts",
-      "schedule": "30 14-21 * * 1-5"
     }
   ]
 }
