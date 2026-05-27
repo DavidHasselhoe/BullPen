@@ -27,9 +27,9 @@ It runs a methodical final pass — design-system alignment, spacing/alignment a
 Two branches only: `preview` and `main`.
 
 - **`preview`** — active development. All new work is committed and pushed here. Vercel auto-deploys it to the stable preview URL.
-- **`main`** — production. Only promoted to from `preview` when work is ready to ship (done manually via Vercel dashboard or by merging `preview` → `main`).
+- **`main`** — production. Updated at the end of each session by merging `preview` → `main` (see End Session Protocol below). Vercel auto-deploys `main` to production on every push.
 
-**Always push to `preview` only:**
+**Always push to `preview` during a session:**
 ```bash
 git add <files>
 git commit -m "..."
@@ -37,6 +37,36 @@ git push origin preview
 ```
 
 Never create feature branches. Work directly on `preview`.
+
+## End Session Protocol
+
+When the user says **"end session"**, run this sequence in order. Stop and report if any step fails.
+
+**1. Lint check**
+```bash
+npm run lint
+```
+Fix any errors before proceeding. Warnings are acceptable.
+
+**2. Confirm preview is ahead of main**
+```bash
+git log origin/main..origin/preview --oneline
+```
+If there are no commits ahead, nothing to merge — tell the user and stop.
+
+**3. Merge preview → main and push**
+```bash
+git checkout main
+git pull origin main
+git merge origin/preview --no-edit
+git push origin main
+git checkout preview
+```
+
+**4. Confirm deployment triggered**
+Use `mcp__claude_ai_Vercel__list_deployments` to verify a new deployment appeared for `main`. Report the deployment URL to the user.
+
+**Why this matters:** Keeping `main` = what's in production means git history is the source of truth, the `sync-preview` GitHub Action stays a no-op, and there's no drift between the dashboard-promoted build and the actual branch state.
 
 ## Supabase Migrations
 
