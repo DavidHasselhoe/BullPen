@@ -12,9 +12,9 @@ import { WatchlistCard } from '@/components/watchlist/WatchlistCard';
 import { WatchlistTable } from '@/components/watchlist/WatchlistTable';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent } from '@/components/ui/card';
+import { AuthGate } from '@/components/ui/AuthGate';
 import Link from 'next/link';
-import { Bookmark, Search, Plus, Lock, Radio, TrendingUp, LayoutGrid, List } from 'lucide-react';
+import { Bookmark, Search, Plus, Radio, TrendingUp, LayoutGrid, List } from 'lucide-react';
 import { fetchWithTimeout } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 
@@ -132,17 +132,11 @@ export default function WatchlistPage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Card className="max-w-sm w-full mx-4">
-          <CardContent className="pt-8 pb-8 text-center space-y-3">
-            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-              <Lock className="h-6 w-6 text-primary" />
-            </div>
-            <p className="font-semibold text-foreground">Sign in to use Watchlist</p>
-            <p className="text-sm text-muted-foreground">Track your favourite stocks in one place.</p>
-          </CardContent>
-        </Card>
-      </div>
+      <AuthGate
+        icon={<Bookmark className="h-7 w-7" />}
+        title="Sign in to use Watchlist"
+        description="Track your favourite stocks and get alerts when prices move."
+      />
     );
   }
 

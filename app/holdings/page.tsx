@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { AuthGate } from '@/components/ui/AuthGate';
 import { HoldingsTable } from '@/components/holdings/HoldingsTable';
 import { AddHoldingModal } from '@/components/holdings/AddHoldingModal';
 import { HoldingsPieChart } from '@/components/holdings/HoldingsPieChart';
@@ -14,7 +14,7 @@ import { useLivePrices } from '@/hooks/use-live-prices';
 import { useThrottle } from '@/hooks/use-throttle';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { useQuery } from '@tanstack/react-query';
-import { Radio, Link2, RefreshCw } from 'lucide-react';
+import { Radio, Link2, RefreshCw, BarChart2 } from 'lucide-react';
 import type { HoldingWithPrice } from '@/components/holdings/types';
 import { useBrokerageAccounts, useBrokerageConnect } from '@/hooks/use-brokerage';
 import { convertCurrency, type CurrencyCode } from '@/lib/currency/currency-conversion';
@@ -270,18 +270,11 @@ export default function HoldingsPage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="container mx-auto py-8">
-        <Card>
-          <CardContent className="py-12">
-            <div className="text-center">
-              <h2 className="text-2xl font-semibold mb-2">Authentication Required</h2>
-              <p className="text-muted-foreground">
-                Please sign in to view your holdings.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <AuthGate
+        icon={<BarChart2 className="h-7 w-7" />}
+        title="Sign in to view your holdings"
+        description="Track positions, performance, and risk across your whole portfolio in real time."
+      />
     );
   }
 

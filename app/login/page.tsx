@@ -2,6 +2,7 @@
 
 import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { signInWithGoogle } from '@/lib/auth/auth';
 import { AuthOAuthButtons } from '@/components/auth/AuthOAuthButtons';
 import { AuthFormLogin } from '@/components/auth/AuthFormLogin';
@@ -37,14 +38,28 @@ function LoginContent() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
+    <div className="relative flex min-h-screen items-center justify-center p-4 overflow-hidden">
+      {/* Atmospheric glow */}
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-[480px]"
+        style={{
+          background: 'radial-gradient(ellipse 60% 40% at 50% -10%, oklch(0.45 0.12 162 / 0.18) 0%, transparent 70%)',
+        }}
+      />
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.2 }}
-        className="w-full max-w-md space-y-6"
+        transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+        className="relative w-full max-w-md space-y-6"
       >
-        <div className="space-y-2 text-center">
+        {/* Wordmark */}
+        <div className="text-center">
+          <Link href="/" className="inline-block text-[22px] font-semibold tracking-tight text-foreground/90 hover:text-foreground transition-colors duration-150">
+            bullpen
+          </Link>
+        </div>
+
+        <div className="space-y-1.5 text-center">
           <h1 className="text-xl font-semibold">Welcome back</h1>
           <p className="text-sm text-muted-foreground">Sign in to your BullPen account</p>
         </div>

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { signInWithGoogle } from '@/lib/auth/auth';
 import { AuthOAuthButtons } from '@/components/auth/AuthOAuthButtons';
 import { AuthFormSignup } from '@/components/auth/AuthFormSignup';
@@ -35,15 +36,29 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
+    <div className="relative flex min-h-screen items-center justify-center p-4 overflow-hidden">
+      {/* Atmospheric glow */}
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-[480px]"
+        style={{
+          background: 'radial-gradient(ellipse 60% 40% at 50% -10%, oklch(0.45 0.12 162 / 0.18) 0%, transparent 70%)',
+        }}
+      />
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.2 }}
-        className="w-full max-w-md space-y-6"
+        transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+        className="relative w-full max-w-md space-y-6"
       >
+        {/* Wordmark */}
+        <div className="text-center">
+          <Link href="/" className="inline-block text-[22px] font-semibold tracking-tight text-foreground/90 hover:text-foreground transition-colors duration-150">
+            bullpen
+          </Link>
+        </div>
+
         {/* Header */}
-        <div className="space-y-2 text-center">
+        <div className="space-y-1.5 text-center">
           <h1 className="text-xl font-semibold">Create an account</h1>
           <p className="text-sm text-muted-foreground">Track, analyze, and understand the market</p>
         </div>
