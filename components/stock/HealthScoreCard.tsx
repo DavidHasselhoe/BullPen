@@ -110,6 +110,7 @@ function MethodologyPopover({ onClose, anchorRect }: { onClose: () => void; anch
 // ─── Category bar ─────────────────────────────────────────────────────────────
 
 function CategoryBar({ cat }: { cat: CategoryScore }) {
+  const unavailable = cat.dataAvailable === false;
   const ratio = cat.max > 0 ? cat.score / cat.max : 0;
   const pct = Math.round(ratio * 100);
 
@@ -117,15 +118,21 @@ function CategoryBar({ cat }: { cat: CategoryScore }) {
     <div className="space-y-1">
       <div className="flex items-center justify-between text-xs">
         <span className="font-medium text-foreground">{cat.name}</span>
-        <span className="tabular-nums text-[11px] font-semibold text-muted-foreground">
-          {cat.score}<span className="font-medium text-muted-foreground/40">/{cat.max}</span>
-        </span>
+        {unavailable ? (
+          <span className="text-[11px] font-medium text-muted-foreground/40">N/A</span>
+        ) : (
+          <span className="tabular-nums text-[11px] font-semibold text-muted-foreground">
+            {cat.score}<span className="font-medium text-muted-foreground/40">/{cat.max}</span>
+          </span>
+        )}
       </div>
       <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-        <div
-          className={cn('h-full rounded-full transition-all duration-700', scoreBarColor(ratio))}
-          style={{ width: `${pct}%` }}
-        />
+        {!unavailable && (
+          <div
+            className={cn('h-full rounded-full transition-all duration-700', scoreBarColor(ratio))}
+            style={{ width: `${pct}%` }}
+          />
+        )}
       </div>
     </div>
   );
@@ -336,6 +343,7 @@ export function HealthScoreCard({ ticker, onSignalsReady }: HealthScoreCardProps
           {isSimplified && (
             <div className="flex-1 pt-1 grid grid-cols-1 gap-2 min-w-0">
               {hs.categories.map((cat) => {
+                const unavailable = cat.dataAvailable === false;
                 const ratio = cat.score / cat.max;
                 const pct = Math.round(ratio * 100);
                 const sig = ratio >= 0.7 ? 'positive' : ratio >= 0.45 ? 'neutral' : 'negative';
@@ -346,13 +354,19 @@ export function HealthScoreCard({ ticker, onSignalsReady }: HealthScoreCardProps
                   <div key={cat.name} className="space-y-1">
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-xs font-medium text-foreground truncate">{cat.name}</span>
-                      <span className={cn('text-[10px] font-semibold shrink-0', textColor)}>{sigLabel}</span>
+                      {unavailable ? (
+                        <span className="text-[10px] font-medium text-muted-foreground/40 shrink-0">N/A</span>
+                      ) : (
+                        <span className={cn('text-[10px] font-semibold shrink-0', textColor)}>{sigLabel}</span>
+                      )}
                     </div>
                     <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-                      <div
-                        className={cn('h-full rounded-full transition-all duration-700', barColor)}
-                        style={{ width: `${pct}%` }}
-                      />
+                      {!unavailable && (
+                        <div
+                          className={cn('h-full rounded-full transition-all duration-700', barColor)}
+                          style={{ width: `${pct}%` }}
+                        />
+                      )}
                     </div>
                   </div>
                 );

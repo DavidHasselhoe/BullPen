@@ -31,6 +31,8 @@ export interface CategoryScore {
   max: number;
   /** Plain-English label for this category's performance */
   label: string;
+  /** False when the underlying data was unavailable — score of 0 is not meaningful */
+  dataAvailable?: boolean;
 }
 
 export interface HealthScore {
@@ -114,7 +116,11 @@ function scoreProfitability(
 function scoreFinancialStrength(
   balance: BalanceSheetPeriod[],
   cashflow: CashFlowPeriod[]
-): { score: number; signals: Record<string, SignalValue> } {
+): { score: number; dataAvailable: boolean; signals: Record<string, SignalValue> } {
+  if (balance.length === 0 && cashflow.length === 0) {
+    return { score: 0, dataAvailable: false, signals: {} };
+  }
+
   let score = 0;
   const signals: Record<string, SignalValue> = {};
 
@@ -154,7 +160,7 @@ function scoreFinancialStrength(
     signals['freeCashFlow'] = 'neutral';
   }
 
-  return { score: Math.min(score, 25), signals };
+  return { score: Math.min(score, 25), dataAvailable: true, signals };
 }
 
 function scoreValuation(
@@ -282,7 +288,7 @@ function buildSummary(
   const grwCat  = cats.find((c) => c.name === 'Growth')!;
 
   const isProfit   = profCat.score / profCat.max >= 0.6;
-  const isStrong   = strCat.score / strCat.max >= 0.6;
+  const isStrong   = strCat.dataAvailable === false ? true : strCat.score / strCat.max >= 0.6;
   const isCheap    = valCat.score / valCat.max >= 0.6;
   const isGrowing  = grwCat.score / grwCat.max >= 0.6;
   const margin     = stats.profitMargin != null ? pct(stats.profitMargin) : null;
@@ -334,7 +340,7 @@ export function computeHealthScore(
 
   const categories: CategoryScore[] = [
     { name: 'Profitability',        score: prof.score, max: 30, label: catLabel(prof.score, 30) },
-    { name: 'Financial Strength',   score: str.score,  max: 25, label: catLabel(str.score, 25) },
+    { name: 'Financial Strength',   score: str.score,  max: 25, label: catLabel(str.score, 25), dataAvailable: str.dataAvailable },
     { name: 'Valuation',            score: val.score,  max: 20, label: catLabel(val.score, 20) },
     { name: 'Growth',               score: grw.score,  max: 15, label: catLabel(grw.score, 15) },
     { name: 'Market Risk',          score: mkt.score,  max: 10, label: catLabel(mkt.score, 10) },

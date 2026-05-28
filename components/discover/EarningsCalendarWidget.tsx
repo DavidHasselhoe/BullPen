@@ -72,6 +72,12 @@ const MAX_PER_DAY = 5;
 
 // ── Day column ────────────────────────────────────────────────────────────────
 
+function timeOrder(time?: string): number {
+  if (time === 'BMO' || time === 'pre_market') return 0;
+  if (time === 'AMC' || time === 'after_close') return 2;
+  return 1;
+}
+
 function DayColumn({
   dateStr,
   dayLabel,
@@ -83,7 +89,8 @@ function DayColumn({
   isToday: boolean;
   rows: EarningsRow[];
 }) {
-  const visible = rows.slice(0, MAX_PER_DAY);
+  const sorted = [...rows].sort((a, b) => timeOrder(a.time) - timeOrder(b.time));
+  const visible = sorted.slice(0, MAX_PER_DAY);
   const overflow = rows.length - visible.length;
   const dayNum = parseInt(dateStr.slice(8), 10);
 

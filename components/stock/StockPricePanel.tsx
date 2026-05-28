@@ -185,12 +185,6 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
   const closePct = restPct;
   const closeIsPos = closePct >= 0;
 
-  // Right block (dual mode) — extended price, live-updating; change recomputed vs close
-  const extPriceVal = livePrice ?? extHours?.price ?? 0;
-  const extDiff = closePrice > 0 ? extPriceVal - closePrice : (extHours?.change ?? 0);
-  const extPct  = closePrice > 0 ? (extDiff / closePrice) * 100 : (extHours?.changePercent ?? 0);
-  const extIsPos = extDiff >= 0;
-
   // Single-mode current price (regular hours, live during 9:30–4)
   const price     = livePrice ?? restClose;
   const change    = prevClose > 0 ? price - prevClose : restChange;
@@ -313,6 +307,19 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
     }
     return { openLabel, closeLabel };
   }, [chartData, range]);
+
+  // Right block (dual mode) — derive extended price from the last candle when it's a
+  // pre/post session so the header and chart tooltip always read from the same source.
+  // Only fall back to the extended-hours API price when candles haven't loaded yet.
+  const lastDisplayPt = displayData.length > 0 ? displayData[displayData.length - 1] : null;
+  const lastIsExtended = lastDisplayPt?.session === 'pre' || lastDisplayPt?.session === 'post';
+  const extPriceVal = livePrice
+    ?? (showDual && lastIsExtended && lastDisplayPt ? lastDisplayPt.price : null)
+    ?? extHours?.price
+    ?? 0;
+  const extDiff = closePrice > 0 ? extPriceVal - closePrice : (extHours?.change ?? 0);
+  const extPct  = closePrice > 0 ? (extDiff / closePrice) * 100 : (extHours?.changePercent ?? 0);
+  const extIsPos = extDiff >= 0;
 
   const firstPrice = displayData[0]?.price ?? 0;
   const chartLast  = displayData[displayData.length - 1]?.price ?? 0;
