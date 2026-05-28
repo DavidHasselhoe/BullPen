@@ -10,6 +10,7 @@ import {
   CalendarDays,
   Sparkles,
   Bell,
+  Telescope,
 } from 'lucide-react';
 
 export interface ToolConfig {
@@ -28,6 +29,14 @@ export const TOOLS: ToolConfig[] = [
     description: 'Investment research assistant. Ask about SEC filings, financial metrics, and concepts.',
     href: '/tools/ai-chat',
     icon: MessageSquare,
+    status: 'available',
+  },
+  {
+    id: 'deep-dive',
+    name: 'AI Deep Dive',
+    description: 'Analyst-grade report on any stock — latest results, guidance, valuation, bull vs bear, catalysts, and risks. Powered by Claude.',
+    href: '/tools/deep-dive',
+    icon: Telescope,
     status: 'available',
   },
   {

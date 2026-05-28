@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Harness scratch space (agent worktrees) — never lint their build artifacts.
+    ".claude/**",
+    "**/.next/**",
   ]),
 ]);
 

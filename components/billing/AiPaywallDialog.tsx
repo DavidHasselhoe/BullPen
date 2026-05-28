@@ -24,12 +24,18 @@ function formatReset(iso: string, period: 'day' | 'month'): string {
 
 export function AiPaywallDialog({ open, onOpenChange, featureName, quota }: Props) {
   const isProOnly = quota?.reason === 'pro_only';
+  // Pro user who hit a cost-protection soft cap — they're already Pro, so don't upsell.
+  const isProCap = quota?.reason === 'pro_cap_reached';
 
-  const headline = isProOnly
+  const headline = isProCap
+    ? `You've reached this month's ${featureName} limit`
+    : isProOnly
     ? `${featureName} is a Pro feature`
     : `You've used your free ${featureName} ${quota?.limit === 1 ? 'run' : 'runs'} ${quota?.period === 'day' ? 'today' : 'this month'}`;
 
-  const body = isProOnly
+  const body = isProCap
+    ? `You've used all ${quota?.limit} of this month's ${featureName} runs. ${quota ? `Resets ${formatReset(quota.resetsAt, quota.period)}.` : ''} Saved reports are always free to revisit.`
+    : isProOnly
     ? `Upgrade to Pro to unlock ${featureName} and the rest of BullPen's AI features.`
     : quota
     ? `Resets ${formatReset(quota.resetsAt, quota.period)}. Upgrade to Pro for unlimited access — plus Daily Brief, "Why Today?", and more.`
@@ -48,12 +54,20 @@ export function AiPaywallDialog({ open, onOpenChange, featureName, quota }: Prop
         <p className="text-sm text-muted-foreground leading-relaxed">{body}</p>
 
         <DialogFooter className="flex-col gap-2 sm:flex-col">
-          <Button asChild className="w-full">
-            <a href="/upgrade">Upgrade to Pro</a>
-          </Button>
-          <Button variant="ghost" className="w-full" onClick={() => onOpenChange(false)}>
-            Maybe later
-          </Button>
+          {isProCap ? (
+            <Button className="w-full" onClick={() => onOpenChange(false)}>
+              Got it
+            </Button>
+          ) : (
+            <>
+              <Button asChild className="w-full">
+                <a href="/upgrade">Upgrade to Pro</a>
+              </Button>
+              <Button variant="ghost" className="w-full" onClick={() => onOpenChange(false)}>
+                Maybe later
+              </Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -9,7 +9,8 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, MessageSquare, SearchX } from 'lucide-react';
+import { ArrowLeft, MessageSquare, SearchX, Telescope } from 'lucide-react';
+import Link from 'next/link';
 import { ExperienceLevelToggle } from '@/components/ui/ExperienceLevelToggle';
 import { ExperienceOnboardingBanner } from '@/components/stock/ExperienceOnboardingBanner';
 import { useRecentlyViewed } from '@/hooks/use-recently-viewed';
@@ -337,6 +338,14 @@ export default function StockDetailPage() {
                             <MessageSquare className="h-4 w-4" />
                             Ask AI
                           </Button>
+                          {showFundamentals && (
+                            <Button asChild size="sm" className="gap-2">
+                              <Link href={`/tools/deep-dive/${ticker}`}>
+                                <Telescope className="h-4 w-4" />
+                                Deep Dive
+                              </Link>
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </CardHeader>

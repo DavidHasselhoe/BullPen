@@ -167,6 +167,36 @@ export interface Database {
           featured_tickers: string[] | null;
         }>;
       };
+      stock_deep_dives: {
+        Row: {
+          id: string;
+          user_id: string;
+          symbol: string;
+          company_name: string | null;
+          lens: string;
+          report: JsonValue;
+          model: string;
+          data_as_of: string | null;
+          created_at: string;
+        };
+        Insert: {
+          user_id: string;
+          symbol: string;
+          report: JsonValue;
+          model: string;
+          company_name?: string | null;
+          lens?: string;
+          data_as_of?: string | null;
+          id?: string;
+          created_at?: string;
+        };
+        Update: Partial<{
+          company_name: string | null;
+          lens: string;
+          report: JsonValue;
+          data_as_of: string | null;
+        }>;
+      };
       market_data_cache: {
         Row: {
           cache_key: string;

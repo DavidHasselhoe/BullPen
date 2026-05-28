@@ -14,10 +14,16 @@ import { getTier, isPro } from './tier';
 export interface QuotaConfig {
   count: number;
   period: 'day' | 'month';
+  /**
+   * Optional soft cap for Pro/admin users. When set, Pro is no longer "unlimited" —
+   * usage is counted in the same window and blocked past `proCap`. Use only for
+   * features with real per-call cost (e.g. Sonnet + extended thinking + web search).
+   */
+  proCap?: number;
 }
 
 /**
- * Free-tier quotas. Pro users bypass these entirely.
+ * Free-tier quotas. Pro users bypass these entirely unless `proCap` is set.
  * A count of 0 means "pro-only" (free users blocked immediately).
  */
 export const QUOTAS = {
@@ -27,6 +33,7 @@ export const QUOTAS = {
   compare_explain:   { count: 5,  period: 'day'   } as QuotaConfig,
   risk_analysis:     { count: 1,  period: 'month' } as QuotaConfig,
   academy_explain:   { count: 30, period: 'day'   } as QuotaConfig,  // free for all; glossary cache absorbs repeats
+  deep_dive:         { count: 1,  period: 'month', proCap: 25 } as QuotaConfig,  // free teaser 1/mo; Pro soft-capped to bound cost
 };
 
 export type QuotaFeature = keyof typeof QUOTAS;
@@ -37,7 +44,7 @@ export interface QuotaState {
   limit: number | 'unlimited';
   period: 'day' | 'month';
   resetsAt: string;          // ISO timestamp
-  reason?: 'free_quota_exceeded' | 'pro_only';
+  reason?: 'free_quota_exceeded' | 'pro_only' | 'pro_cap_reached';
 }
 
 /** First moment of the next period (when the quota window rolls over). */
@@ -74,29 +81,35 @@ export async function checkQuota(
   const config = QUOTAS[feature];
   const tier = await getTier(userId);
   const resetsAt = nextPeriodBoundary(config.period).toISOString();
+  const windowStart = currentPeriodStart(config.period).toISOString();
+
+  // Shared helper — count this user's successful calls for the feature in the window
+  const countUsed = async (): Promise<number> => {
+    const supabase = createServerClient();
+    const { count } = await supabase
+      .from('ai_usage')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('feature', feature)
+      .eq('status', 'success')
+      .gte('created_at', windowStart);
+    return count ?? 0;
+  };
 
   if (isPro(tier)) {
-    return {
-      allowed: true,
-      used: 0,
-      limit: 'unlimited',
-      period: config.period,
-      resetsAt,
-    };
+    // Pro is unlimited unless the feature defines a soft cap to bound cost.
+    if (config.proCap == null) {
+      return { allowed: true, used: 0, limit: 'unlimited', period: config.period, resetsAt };
+    }
+    const used = await countUsed();
+    if (used >= config.proCap) {
+      return { allowed: false, used, limit: config.proCap, period: config.period, resetsAt, reason: 'pro_cap_reached' };
+    }
+    return { allowed: true, used, limit: config.proCap, period: config.period, resetsAt };
   }
 
   // Free users: count successful calls in the current window
-  const windowStart = currentPeriodStart(config.period).toISOString();
-  const supabase = createServerClient();
-  const { count } = await supabase
-    .from('ai_usage')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .eq('feature', feature)
-    .eq('status', 'success')
-    .gte('created_at', windowStart);
-
-  const used = count ?? 0;
+  const used = await countUsed();
 
   // Pro-only features (limit 0) bail out with a distinct reason
   if (config.count === 0) {
