@@ -40,11 +40,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     // ── 1. Fetch all users with upcoming_earnings enabled ──────────────────
     // upcoming_earnings defaults to true when not set
-    const { data: users, error: usersErr } = await (supabase as any)
+    const { data: users, error: usersErr } = await supabase
       .from('users')
       .select('id, settings')
-      .or('settings->notifications->upcoming_earnings.is.null,settings->notifications->upcoming_earnings.eq.true') as
-      { data: Array<{ id: string; settings: Record<string, any> | null }> | null; error: unknown };
+      .or('settings->notifications->upcoming_earnings.is.null,settings->notifications->upcoming_earnings.eq.true') as unknown as
+      { data: Array<{ id: string; settings: Record<string, unknown> | null }> | null; error: unknown };
 
     if (usersErr || !users?.length) {
       return NextResponse.json({ ...summary, message: 'No eligible users' });
@@ -54,14 +54,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const eligibleUserIds = new Set(users.map((u) => u.id));
 
     const [watchlistRes, holdingsRes] = await Promise.all([
-      (supabase as any)
+      supabase
         .from('user_watchlist')
         .select('user_id, symbol, company_name')
-        .eq('alerts_enabled', true) as Promise<{ data: Array<{ user_id: string; symbol: string; company_name: string }> | null }>,
-      (supabase as any)
+        .eq('alerts_enabled', true) as unknown as Promise<{ data: Array<{ user_id: string; symbol: string; company_name: string }> | null }>,
+      supabase
         .from('user_holdings')
         .select('user_id, symbol, company_name')
-        .eq('alerts_enabled', true) as Promise<{ data: Array<{ user_id: string; symbol: string; company_name: string }> | null }>,
+        .eq('alerts_enabled', true) as unknown as Promise<{ data: Array<{ user_id: string; symbol: string; company_name: string }> | null }>,
     ]);
 
     const userSymbols = new Map<string, Map<string, string>>(); // userId → (symbol → companyName)

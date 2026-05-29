@@ -107,7 +107,7 @@ export function NotificationCenter({ open, onOpenChange }: NotificationCenterPro
           </div>
         ) : !notifications || notifications.length === 0 ? (
           <div className="p-8 text-center">
-            <p className="text-sm text-muted-foreground">You're all caught up</p>
+            <p className="text-sm text-muted-foreground">You&apos;re all caught up</p>
           </div>
         ) : (
           <div className="divide-y">

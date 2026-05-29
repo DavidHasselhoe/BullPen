@@ -14,8 +14,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Get theme from user settings, default to 'dark'
-    const settings = user?.settings as any;
-    const theme = settings?.theme || 'dark';
+    const settings = user?.settings as Record<string, unknown>;
+    const theme = (settings?.theme as string | undefined) || 'dark';
 
     // Apply theme to HTML element
     // Gradient names are dark mode

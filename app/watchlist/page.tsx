@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
 import { useWatchlist, useWatchlistLists, useWatchlistItems, useAddToWatchlist, useRemoveFromWatchlist, useToggleWatchlistAlert } from '@/hooks/use-watchlist';
@@ -36,34 +36,28 @@ export default function WatchlistPage() {
   const { isAuthenticated } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
-  const debouncedQuery = useDebounce(searchQuery, 280);
-
-  useEffect(() => {
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    if (typeof window === 'undefined') return 'grid';
     const saved = localStorage.getItem('watchlist-view') as ViewMode | null;
-    if (saved === 'grid' || saved === 'table') setViewMode(saved);
-  }, []);
+    return saved === 'grid' || saved === 'table' ? saved : 'grid';
+  });
+  const debouncedQuery = useDebounce(searchQuery, 280);
 
   function switchView(mode: ViewMode) {
     setViewMode(mode);
     localStorage.setItem('watchlist-view', mode);
   }
 
-  const [activeListId, setActiveListId] = useState<string | null>(null);
-
+  // selectedListId is the user's explicit choice; activeListId derives the first list
+  // as the default once loaded, avoiding a useEffect-driven setState.
+  const [selectedListId, setSelectedListId] = useState<string | null>(null);
   const { data: watchlist, isLoading: watchlistLoading } = useWatchlist();
   const { data: lists, isLoading: listsLoading } = useWatchlistLists();
+  const activeListId = selectedListId ?? (lists?.[0]?.id ?? null);
   const { data: listItems, isLoading: listItemsLoading } = useWatchlistItems(activeListId);
   const addMutation = useAddToWatchlist();
   const removeMutation = useRemoveFromWatchlist();
   const toggleAlertMutation = useToggleWatchlistAlert();
-
-  // Auto-select first list once lists load
-  useEffect(() => {
-    if (!activeListId && lists && lists.length > 0) {
-      setActiveListId(lists[0].id);
-    }
-  }, [lists, activeListId]);
 
   // Items to display: per-list when a list is active, otherwise all
   const displayItems = activeListId ? (listItems ?? []) : (watchlist ?? []);
@@ -235,8 +229,8 @@ export default function WatchlistPage() {
           <WatchlistListTabs
             lists={lists}
             activeListId={activeListId}
-            onSelect={setActiveListId}
-            onListCreated={(id) => setActiveListId(id)}
+            onSelect={setSelectedListId}
+            onListCreated={(id) => setSelectedListId(id)}
           />
         )}
 

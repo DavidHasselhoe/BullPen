@@ -54,6 +54,22 @@ function SortIcon({ col, sortKey, dir }: { col: SortKey; sortKey: SortKey; dir: 
     : <ArrowDown className="h-3.5 w-3.5" />;
 }
 
+function Col({
+  label, col, sortKey, sortDir, onSort,
+}: {
+  label: string; col: SortKey; sortKey: SortKey; sortDir: SortDir; onSort: (col: SortKey) => void;
+}) {
+  return (
+    <button
+      onClick={() => onSort(col)}
+      className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+    >
+      {label}
+      <SortIcon col={col} sortKey={sortKey} dir={sortDir} />
+    </button>
+  );
+}
+
 export function WatchlistTable({ items, quotes, enhancedData, onRemove, isRemoving }: WatchlistTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>('added_at');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
@@ -101,32 +117,20 @@ export function WatchlistTable({ items, quotes, enhancedData, onRemove, isRemovi
     return sortDir === 'asc' ? cmp : -cmp;
   });
 
-  function Col({ label, col }: { label: string; col: SortKey }) {
-    return (
-      <button
-        onClick={() => toggleSort(col)}
-        className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-      >
-        {label}
-        <SortIcon col={col} sortKey={sortKey} dir={sortDir} />
-      </button>
-    );
-  }
-
   return (
     <div className="rounded-xl border border-border overflow-hidden">
       <Table>
         <TableHeader>
           <TableRow className="bg-muted/40 hover:bg-muted/40">
-            <TableHead className="w-48"><Col label="Symbol" col="symbol" /></TableHead>
-            <TableHead><Col label="Price" col="price" /></TableHead>
-            <TableHead><Col label="Change" col="changePercent" /></TableHead>
-            <TableHead><Col label="Mkt Cap" col="marketCap" /></TableHead>
+            <TableHead className="w-48"><Col sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} label="Symbol" col="symbol" /></TableHead>
+            <TableHead><Col sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} label="Price" col="price" /></TableHead>
+            <TableHead><Col sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} label="Change" col="changePercent" /></TableHead>
+            <TableHead><Col sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} label="Mkt Cap" col="marketCap" /></TableHead>
             <TableHead className="text-xs font-medium text-muted-foreground">P/E</TableHead>
-            <TableHead><Col label="Health" col="health" /></TableHead>
-            <TableHead><Col label="Earnings" col="earnings" /></TableHead>
+            <TableHead><Col sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} label="Health" col="health" /></TableHead>
+            <TableHead><Col sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} label="Earnings" col="earnings" /></TableHead>
             <TableHead className="text-xs font-medium text-muted-foreground">Thesis</TableHead>
-            <TableHead><Col label="Added" col="added_at" /></TableHead>
+            <TableHead><Col sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} label="Added" col="added_at" /></TableHead>
             <TableHead className="w-10" />
           </TableRow>
         </TableHeader>

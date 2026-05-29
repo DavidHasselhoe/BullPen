@@ -26,6 +26,7 @@ function AuthCallbackContent() {
 
     if (error) {
       const msg = errorDescription || error;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: synchronize URL error param into state
       setAuthError(msg);
       setTimeout(() => router.replace(`/login?error=${encodeURIComponent(msg)}`), 1500);
       return;

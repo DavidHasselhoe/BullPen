@@ -15,10 +15,10 @@ import { validateTicker, validateSearchQuery, validateUUID } from './input-valid
  * when any "strict" route's max was exceeded by total traffic across all routes.
  */
 export function withRateLimit(
-  handler: (request: NextRequest, context?: any) => Promise<NextResponse>,
+  handler: (request: NextRequest, context?: unknown) => Promise<NextResponse>,
   options: { windowMs?: number; maxRequests?: number; scope?: string } = {}
 ) {
-  return async (request: NextRequest, context?: any): Promise<NextResponse> => {
+  return async (request: NextRequest, context?: unknown): Promise<NextResponse> => {
     const routeScope =
       options.scope != null && options.scope !== '' ? options.scope : (request.nextUrl?.pathname || 'api');
     const identifier = `${getClientIdentifier(request)}:${routeScope}`;
@@ -126,10 +126,10 @@ export async function requireAuth(): Promise<{ userId: string } | NextResponse> 
  * Use for costly/protected endpoints (AI, paid APIs). Combine with withRateLimit.
  */
 export function withAuth(
-  handler: (request: NextRequest, context: any, session: { userId: string }) => Promise<NextResponse>,
+  handler: (request: NextRequest, context: unknown, session: { userId: string }) => Promise<NextResponse>,
   options: { rateLimit?: { windowMs?: number; maxRequests?: number } } = {}
 ) {
-  const base = async (request: NextRequest, context?: any): Promise<NextResponse> => {
+  const base = async (request: NextRequest, context?: unknown): Promise<NextResponse> => {
     const session = await getSessionForApiRoute();
     if (!session) {
       return NextResponse.json(

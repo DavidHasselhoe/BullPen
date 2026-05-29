@@ -10,7 +10,7 @@ export type MarketContextMode = 'all' | 'holdings';
 export function useUserSettings() {
   const { user } = useAuth();
 
-  const settings = (user?.settings as any) || {};
+  const settings = (user?.settings as Record<string, unknown>) ?? {};
 
   // Default to true if not set
   const showQuotes = settings.show_quotes !== undefined ? settings.show_quotes : true;
@@ -38,6 +38,7 @@ export function useUserSettings() {
     ? (settings.market_hours_exchanges as string[])
     : null;
 
+
   const updateMarketHoursExchanges = useCallback(
     async (codes: string[]) => {
       if (!user?.id) return;
@@ -57,7 +58,7 @@ export function useUserSettings() {
       if (updateError) return;
       window.dispatchEvent(new Event('auth:refresh'));
     },
-    [user?.id]
+    [user]
   );
 
   const updateMarketContextMode = useCallback(
@@ -82,7 +83,7 @@ export function useUserSettings() {
       if (updateError) return;
       window.dispatchEvent(new Event('auth:refresh'));
     },
-    [user?.id]
+    [user]
   );
 
   return {

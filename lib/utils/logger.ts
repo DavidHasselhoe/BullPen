@@ -7,9 +7,7 @@ const isProduction = process.env.NODE_ENV === 'production';
 
 type LogLevel = 'info' | 'warn' | 'error' | 'debug';
 
-interface LogContext {
-  [key: string]: any;
-}
+type LogContext = Record<string, unknown>;
 
 /**
  * Structured logger that respects environment

@@ -33,7 +33,7 @@ async function main() {
     }
 
     filingId = filing.id;
-    const company = (filing as any).company;
+    const company = (filing as Record<string, unknown>).company as { name: string; ticker: string };
     console.log(`Found: ${company.name} (${company.ticker})`);
     console.log(`Filing: ${filing.filing_type} - ${filing.filing_date}`);
     console.log(`Accession: ${filing.accession_number}`);
@@ -100,7 +100,7 @@ async function main() {
       console.log(`   Model: ${insight.model_version}`);
       console.log(`   Confidence: ${insight.confidence_score}`);
       
-      const content = insight.content as any;
+      const content = insight.content as Record<string, unknown> | null;
       if (content) {
         console.log(`   Sentiment: ${content.sentiment}`);
         console.log(`   Summary: ${content.summary?.substring(0, 100)}...`);

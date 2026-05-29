@@ -32,6 +32,7 @@ export function EditHoldingModal({ open, onOpenChange, holding }: EditHoldingMod
   // Populate form when holding changes
   useEffect(() => {
     if (holding) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: populate controlled form fields when the holding prop changes
       setQuantity(holding.quantity?.toString() || '');
       setAvgPrice(holding.avg_price?.toString() || '');
       setDatePurchased(holding.date_purchased ?? '');

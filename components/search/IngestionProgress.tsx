@@ -10,15 +10,15 @@ import { cn } from '@/lib/utils';
 interface ProgressUpdate {
   type: 'progress' | 'complete' | 'error';
   step?: string;
-  details?: any;
+  details?: unknown;
   error?: string;
-  result?: any;
+  result?: unknown;
   timestamp: string;
 }
 
 interface IngestionProgressProps {
   ticker: string;
-  onComplete?: (result: any) => void;
+  onComplete?: (result: unknown) => void;
   onError?: (error: string) => void;
 }
 

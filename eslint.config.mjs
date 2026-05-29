@@ -15,6 +15,8 @@ const eslintConfig = defineConfig([
     // Harness scratch space (agent worktrees) — never lint their build artifacts.
     ".claude/**",
     "**/.next/**",
+    // Compiled Vercel output — not source
+    ".vercel/**",
   ]),
 ]);
 

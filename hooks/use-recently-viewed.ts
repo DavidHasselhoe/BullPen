@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 const STORAGE_KEY = 'bullpen-recently-viewed';
 const MAX_ITEMS = 8;
@@ -35,11 +35,7 @@ function saveToStorage(items: RecentlyViewedCompany[]) {
 }
 
 export function useRecentlyViewed() {
-  const [items, setItems] = useState<RecentlyViewedCompany[]>([]);
-
-  useEffect(() => {
-    setItems(loadFromStorage());
-  }, []);
+  const [items, setItems] = useState<RecentlyViewedCompany[]>(loadFromStorage);
 
   const add = useCallback((ticker: string, name: string, logo_url?: string | null, instrument_type?: string) => {
     const normalized = { ticker: ticker.toUpperCase(), name: name || ticker, logo_url: logo_url ?? null, instrument_type, viewedAt: Date.now() };

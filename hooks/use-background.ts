@@ -18,7 +18,7 @@ const GRADIENT_VARIANTS: string[] = [
 
 export function useBackground() {
   const { user } = useAuth();
-  const theme = ((user as any)?.settings as any)?.theme || 'dark';
+  const theme = ((user?.settings as Record<string, unknown>)?.theme as string | undefined) || 'dark';
 
   const background: BackgroundType = GRADIENT_VARIANTS.includes(theme)
     ? (theme as BackgroundType)

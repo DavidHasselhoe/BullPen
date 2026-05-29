@@ -119,7 +119,7 @@ export function OnboardingModal() {
               <DialogHeader className="space-y-2 mb-6">
                 <DialogTitle className="text-2xl font-bold">Welcome to BullPen</DialogTitle>
                 <DialogDescription className="text-sm text-muted-foreground leading-relaxed">
-                  Invest with understanding, not guesswork. Let's personalise your experience so the app works exactly the way you need it.
+                  Invest with understanding, not guesswork. Let&apos;s personalise your experience so the app works exactly the way you need it.
                 </DialogDescription>
               </DialogHeader>
               <Button
@@ -142,7 +142,7 @@ export function OnboardingModal() {
               className="px-6 pb-8 pt-4"
             >
               <DialogHeader className="mb-6 text-center">
-                <DialogTitle className="text-lg font-semibold">What's your investing experience?</DialogTitle>
+                <DialogTitle className="text-lg font-semibold">What&apos;s your investing experience?</DialogTitle>
                 <DialogDescription className="text-xs text-muted-foreground">
                   This sets how data and explanations are shown. You can change it anytime.
                 </DialogDescription>
@@ -189,7 +189,7 @@ export function OnboardingModal() {
               <DialogHeader className="mb-6 text-center">
                 <DialogTitle className="text-lg font-semibold">Which markets do you follow?</DialogTitle>
                 <DialogDescription className="text-xs text-muted-foreground">
-                  We'll surface the most relevant data and news for you.
+                  We&apos;ll surface the most relevant data and news for you.
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-3">
@@ -241,9 +241,9 @@ export function OnboardingModal() {
                 </motion.div>
               </div>
               <DialogHeader className="space-y-2 mb-2">
-                <DialogTitle className="text-2xl font-bold">You're all set!</DialogTitle>
+                <DialogTitle className="text-2xl font-bold">You&apos;re all set!</DialogTitle>
                 <DialogDescription className="text-sm text-muted-foreground leading-relaxed">
-                  Try searching a company you know — Apple, Tesla, or any stock you're curious about. The AI can explain anything you don't understand.
+                  Try searching a company you know — Apple, Tesla, or any stock you&apos;re curious about. The AI can explain anything you don&apos;t understand.
                 </DialogDescription>
               </DialogHeader>
               <div className="flex items-center justify-center gap-1.5 mb-6 text-xs text-muted-foreground">

@@ -29,7 +29,9 @@ export function AuthModal({ open, onOpenChange, initialMode = 'login', redirectT
 
   useEffect(() => {
     if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: reset form state when modal opens
       setMode(initialMode);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setError('');
     }
   }, [open, initialMode]);

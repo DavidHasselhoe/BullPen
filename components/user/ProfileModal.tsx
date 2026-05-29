@@ -95,8 +95,8 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
 
       // Optionally auto-save
       // For now, user needs to click "Save Changes" to persist
-    } catch (err: any) {
-      setError(err.message || 'Failed to upload avatar');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to upload avatar');
     } finally {
       setIsUploadingAvatar(false);
       // Reset input so same file can be selected again
@@ -124,7 +124,7 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
 
       const { error: updateError } = await supabase
         .from('users')
-        .update(updateData as any)
+        .update(updateData as Record<string, unknown>)
         .eq('id', user.id);
 
       if (updateError) {
@@ -405,7 +405,7 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-muted-foreground">
-                      We'll customize data display based on your experience level
+                      We&apos;ll customize data display based on your experience level
                     </p>
                     {experienceLevel && (
                       <div className="mt-2">

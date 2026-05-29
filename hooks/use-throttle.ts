@@ -16,6 +16,7 @@ export function useThrottle<T>(value: T, intervalMs: number): T {
   const lastFired = useRef<number>(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // eslint-disable-next-line react-hooks/refs -- intentional: updating a tracking ref during render is the correct pattern for avoiding stale closures in throttle callbacks
   latestValue.current = value;
 
   useEffect(() => {

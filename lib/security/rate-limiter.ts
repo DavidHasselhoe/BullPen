@@ -70,17 +70,17 @@ function rateLimitMemory(
 
 // ── Upstash (shared across all serverless instances) ─────────────────────────
 
-function checkRateLimitUpstash(
+async function checkRateLimitUpstash(
   identifier: string,
   options: RateLimitOptions
-): Promise<RateLimitResult> | null {
+): Promise<RateLimitResult | null> {
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
   if (!url || !token) return null;
 
   try {
-    const { Ratelimit } = require('@upstash/ratelimit');
-    const { Redis } = require('@upstash/redis');
+    const { Ratelimit } = await import('@upstash/ratelimit');
+    const { Redis } = await import('@upstash/redis');
 
     const windowSeconds = Math.max(1, Math.ceil(options.windowMs / 1000));
     const limiter = new Ratelimit({
@@ -114,7 +114,7 @@ export async function checkRateLimit(
   if (process.env.NODE_ENV === 'development') {
     return { allowed: true, remaining: 9999, resetTime: Date.now() + options.windowMs };
   }
-  const upstashResult = checkRateLimitUpstash(identifier, options);
+  const upstashResult = await checkRateLimitUpstash(identifier, options);
   if (upstashResult) {
     return upstashResult;
   }

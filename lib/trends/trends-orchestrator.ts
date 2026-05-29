@@ -13,7 +13,7 @@ import { upsertTrends, deleteCompanyTrends } from './trends-db';
 import type { MetricType, PeriodType } from '../types/database';
 import type { TrendResult } from './trend-detector';
 
-export type TrendProgressCallback = (step: string, details?: any) => void;
+export type TrendProgressCallback = (step: string, details?: unknown) => void;
 
 export interface TrendAnalysisResult {
   success: boolean;

@@ -45,11 +45,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     // ── 1. Fetch all users with price_alerts enabled ────────────────────────
     // settings is a JSONB column; NULL or missing key both mean "enabled by default"
-    const { data: users, error: usersErr } = await (supabase as any)
+    const { data: users, error: usersErr } = await supabase
       .from('users')
       .select('id, settings')
-      .or('settings->notifications->price_alerts.is.null,settings->notifications->price_alerts.eq.true') as
-      { data: Array<{ id: string; settings: Record<string, any> | null }> | null; error: unknown };
+      .or('settings->notifications->price_alerts.is.null,settings->notifications->price_alerts.eq.true') as unknown as
+      { data: Array<{ id: string; settings: Record<string, unknown> | null }> | null; error: unknown };
 
     if (usersErr || !users?.length) {
       return NextResponse.json({ ...summary, error: 'No eligible users or query failed' });
@@ -57,14 +57,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     // ── 2. Collect (userId → symbol[]) from watchlist + holdings ──────────
     const [watchlistRes, holdingsRes] = await Promise.all([
-      (supabase as any)
+      supabase
         .from('user_watchlist')
         .select('user_id, symbol, company_name')
-        .eq('alerts_enabled', true) as Promise<{ data: Array<{ user_id: string; symbol: string; company_name: string }> | null }>,
-      (supabase as any)
+        .eq('alerts_enabled', true) as unknown as Promise<{ data: Array<{ user_id: string; symbol: string; company_name: string }> | null }>,
+      supabase
         .from('user_holdings')
         .select('user_id, symbol, company_name')
-        .eq('alerts_enabled', true) as Promise<{ data: Array<{ user_id: string; symbol: string; company_name: string }> | null }>,
+        .eq('alerts_enabled', true) as unknown as Promise<{ data: Array<{ user_id: string; symbol: string; company_name: string }> | null }>,
     ]);
 
     // Build per-user symbol map

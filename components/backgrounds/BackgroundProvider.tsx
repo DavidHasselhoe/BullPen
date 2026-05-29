@@ -34,7 +34,7 @@ const GRADIENT_VARIANTS = Object.keys(GRADIENTS);
 
 export function BackgroundProvider() {
   const { user } = useAuth();
-  const theme = ((user as any)?.settings as any)?.theme || 'dark';
+  const theme = ((user?.settings as Record<string, unknown>)?.theme as string | undefined) || 'dark';
   const isGradient = GRADIENT_VARIANTS.includes(theme);
 
   useEffect(() => {

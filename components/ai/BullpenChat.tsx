@@ -190,9 +190,9 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
         ...(aiContext ? { context: aiContext } : {}),
         ...(user?.experience_level ? { experienceLevel: user.experience_level } : {}),
         language: i18n.language,
-        ...((user as any)?.risk_profile ? { riskProfile: (user as any).risk_profile } : {}),
-        ...((user?.settings as any)?.investment_horizon ? { investmentHorizon: (user?.settings as any).investment_horizon } : {}),
-        ...((user?.settings as any)?.response_style ? { responseStyle: (user?.settings as any).response_style } : {}),
+        ...(user?.risk_profile ? { riskProfile: user.risk_profile } : {}),
+        ...((user?.settings as Record<string, unknown>)?.investment_horizon ? { investmentHorizon: (user.settings as Record<string, unknown>).investment_horizon } : {}),
+        ...((user?.settings as Record<string, unknown>)?.response_style ? { responseStyle: (user.settings as Record<string, unknown>).response_style } : {}),
       },
     }),
     onError: (err) => {

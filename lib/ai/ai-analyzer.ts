@@ -103,7 +103,7 @@ function truncateContent(content: string, maxChars: number): string {
 /**
  * Validates AI response structure
  */
-function validateInsight(data: any): data is SectionInsight {
+function validateInsight(data: unknown): data is SectionInsight {
   if (typeof data !== 'object' || data === null) {
     return false;
   }

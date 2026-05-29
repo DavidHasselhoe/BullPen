@@ -55,7 +55,7 @@ const SP500_TICKERS = [
 ];
 
 interface ProgressCallback {
-  (step: string, details?: any): void;
+  (step: string, details?: unknown): void;
 }
 
 async function downloadAndUploadLogo(

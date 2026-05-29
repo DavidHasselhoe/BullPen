@@ -121,7 +121,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
   useEffect(() => {
     isInitializedRef.current = false;
     if (user?.settings && open) {
-      const settings = user.settings as any;
+      const settings = user.settings as Record<string, unknown>;
       const markets = settings.selected_markets;
       if (Array.isArray(markets)) {
         setSelectedMarkets(markets);
@@ -167,7 +167,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
       setWidgetOrder(Array.isArray(settings.homepage_widget_order) ? settings.homepage_widget_order : DEFAULT_WIDGET_ORDER);
       setWidgetHidden(Array.isArray(settings.homepage_widget_hidden) ? settings.homepage_widget_hidden : []);
       // AI settings
-      setRiskProfile((user as any).risk_profile ?? null);
+      setRiskProfile(user.risk_profile ?? null);
       setInvestmentHorizon((settings.investment_horizon as 'short' | 'medium' | 'long') ?? null);
       setResponseStyle((settings.response_style as 'concise' | 'balanced' | 'detailed') ?? null);
       setError(null);
@@ -183,7 +183,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
     setError(null);
     try {
       const supabase = createBrowserClient();
-      const existingSettings = ((user as any).settings as any) || {};
+      const existingSettings = (user.settings as Record<string, unknown>) ?? {};
       const mergedSettings = {
         ...existingSettings,
         selected_markets: selectedMarkets.length === 0 ? null : selectedMarkets,
@@ -226,8 +226,8 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
       }
 
       window.dispatchEvent(new Event('auth:refresh'));
-    } catch (err: any) {
-      setError(err.message || 'Failed to update settings');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update settings');
     }
   };
 
@@ -272,8 +272,8 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
       await signOut();
       router.push('/');
       router.refresh();
-    } catch (err: any) {
-      setError(err.message || 'Failed to delete account');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete account');
       setIsDeletingAccount(false);
     }
   };
@@ -301,8 +301,8 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-    } catch (err: any) {
-      setError(err.message || 'Failed to export data');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to export data');
     } finally {
       setIsExportingData(false);
     }
@@ -340,8 +340,8 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
         setShowPasswordForm(false);
         setPasswordSuccess(false);
       }, 2000);
-    } catch (err: any) {
-      setError(err.message || 'Failed to update password.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update password.');
     } finally {
       setIsChangingPassword(false);
     }

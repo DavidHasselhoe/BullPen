@@ -36,7 +36,7 @@ export async function createAIInsight(params: {
       section_id: params.sectionId,
       insight_type: params.insightType,
       title: params.title,
-      content: params.content as any, // JSONB field
+      content: params.content as unknown, // JSONB field
       summary: params.content.summary,
       confidence_score: params.content.confidence,
       model_version: params.modelVersion,

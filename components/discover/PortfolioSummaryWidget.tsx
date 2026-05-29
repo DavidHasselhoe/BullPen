@@ -134,25 +134,16 @@ export function PortfolioSummaryWidget() {
     const conv = (usd: number) =>
       userCurrency === 'USD' ? usd : convertCurrency(usd, 'USD', userCurrency, rates);
 
-    let totalValueUSD = 0;
-    let totalDayChangeUSD = 0;
-
     const withPrices = holdings
       .map((h) => {
         const q = quotes[h.symbol];
         if (!q || !h.quantity) return null;
-        const mv = q.price * h.quantity;
-        const dayChg = q.change * h.quantity;
-        totalValueUSD += mv;
-        totalDayChangeUSD += dayChg;
-        return { holding: h, quote: q, marketValue: mv, dayChange: dayChg };
+        return { holding: h, quote: q, marketValue: q.price * h.quantity, dayChange: q.change * h.quantity };
       })
-      .filter(Boolean) as Array<{
-        holding: (typeof holdings)[0];
-        quote: { price: number; change: number; changePercent: number };
-        marketValue: number;
-        dayChange: number;
-      }>;
+      .filter((x): x is NonNullable<typeof x> => x !== null);
+
+    const totalValueUSD = withPrices.reduce((s, p) => s + p.marketValue, 0);
+    const totalDayChangeUSD = withPrices.reduce((s, p) => s + p.dayChange, 0);
 
     if (withPrices.length === 0) return null;
 
