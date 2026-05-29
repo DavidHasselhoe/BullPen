@@ -221,9 +221,13 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
   const [showPaywall, setShowPaywall] = useState(false);
   const [paywallQuota, setPaywallQuota] = useState<QuotaState | null>(null);
 
-  // Sequential loading reveal
+  // Sequential loading reveal (Phase 1: symbol tick-off)
   const [loadingStep, setLoadingStep] = useState(0);
   const loadingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Phase 2: cycle through analysis stages while Claude is computing
+  const [analyzeStep, setAnalyzeStep] = useState(0);
+  const analyzeTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Typewriter reveal for summary
   const [displayedSummary, setDisplayedSummary] = useState('');
@@ -243,10 +247,21 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
     [holdings]
   );
 
-  // Start sequential loading animation
+  const ANALYZE_STAGES = [
+    'Calculating concentration risk…',
+    'Assessing sector diversification…',
+    'Modelling stress scenarios…',
+    'Computing correlation exposure…',
+    'Evaluating liquidity risk…',
+    'Generating recommendations…',
+    'Synthesizing findings…',
+  ];
+
+  // Phase 1: tick off symbols one by one
   useEffect(() => {
     if (state === 'loading') {
       setLoadingStep(0);
+      setAnalyzeStep(0);
       loadingTimerRef.current = setInterval(() => {
         setLoadingStep((s) => s + 1);
       }, 220);
@@ -255,11 +270,30 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
         clearInterval(loadingTimerRef.current);
         loadingTimerRef.current = null;
       }
+      if (analyzeTimerRef.current) {
+        clearInterval(analyzeTimerRef.current);
+        analyzeTimerRef.current = null;
+      }
     }
     return () => {
       if (loadingTimerRef.current) clearInterval(loadingTimerRef.current);
+      if (analyzeTimerRef.current) clearInterval(analyzeTimerRef.current);
     };
   }, [state]);
+
+  // Phase 2: once all symbols are ticked, start cycling analysis stages
+  const allSymbolsLoaded = loadingStep >= holdings.length;
+  useEffect(() => {
+    if (state !== 'loading' || !allSymbolsLoaded) return;
+    analyzeTimerRef.current = setInterval(() => {
+      setAnalyzeStep((s) => (s + 1) % ANALYZE_STAGES.length);
+    }, 2200);
+    return () => {
+      if (analyzeTimerRef.current) clearInterval(analyzeTimerRef.current);
+    };
+  // ANALYZE_STAGES is stable (declared inside component but never changes)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, allSymbolsLoaded]);
 
   // Typewriter reveal when analysis loads
   useEffect(() => {
@@ -356,27 +390,55 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
             </div>
           )}
 
-          {/* Loading — sequential holdings reveal */}
+          {/* Loading — Phase 1: symbol tick-off → Phase 2: analysis stages */}
           {state === 'loading' && (
             <div className="py-8 space-y-4">
               <div className="text-center space-y-1">
-                <p className="text-sm font-medium text-foreground">Analyzing portfolio with Claude…</p>
+                <p className="text-sm font-medium text-foreground">Analyzing portfolio…</p>
                 <p className="text-xs text-muted-foreground/60">Running 6-dimension risk assessment</p>
               </div>
+
+              {/* Symbol checklist */}
               <div className="max-w-[200px] mx-auto space-y-1.5 font-mono text-xs">
                 {holdings.slice(0, Math.min(loadingStep, holdings.length)).map((h) => (
                   <div key={h.symbol} className="flex items-center gap-2 text-muted-foreground">
-                    <span className="text-green-500 shrink-0">✓</span>
+                    <CheckCircle2 className="h-3 w-3 text-green-500 shrink-0" />
                     <span className="tabular-nums">{h.symbol}</span>
                   </div>
                 ))}
                 {loadingStep < holdings.length && (
                   <div className="flex items-center gap-2 text-foreground/50">
-                    <span className="animate-pulse shrink-0">…</span>
+                    <span className="h-3 w-3 rounded-full border border-muted-foreground/30 shrink-0 motion-safe:animate-pulse" />
                     <span className="tabular-nums">{holdings[loadingStep]?.symbol}</span>
                   </div>
                 )}
               </div>
+
+              {/* Phase 2: cycling stage messages + animated indicators */}
+              {allSymbolsLoaded && (
+                <div className="flex flex-col items-center gap-3 pt-2">
+                  {/* Cycling stage label */}
+                  <p className="text-xs text-muted-foreground/70 min-h-[1.25rem] transition-all duration-300 flex items-center gap-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary motion-safe:animate-pulse shrink-0" />
+                    {ANALYZE_STAGES[analyzeStep]}
+                  </p>
+
+                  {/* Bouncing dots — clearly "still working" */}
+                  <div className="flex items-end gap-1" aria-hidden>
+                    {[0, 1, 2].map((i) => (
+                      <span
+                        key={i}
+                        className="inline-block h-1.5 w-1.5 rounded-full bg-muted-foreground/35 motion-safe:animate-bounce"
+                        style={{ animationDelay: `${i * 0.18}s`, animationDuration: '0.9s' }}
+                      />
+                    ))}
+                  </div>
+
+                  <p className="text-[10px] text-muted-foreground/40 text-center max-w-[200px]">
+                    This usually takes 15–30 seconds
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
