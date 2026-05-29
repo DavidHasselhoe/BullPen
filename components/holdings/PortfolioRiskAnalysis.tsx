@@ -1,27 +1,23 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
+  Card, CardContent, CardHeader, CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
-  ShieldAlert,
-  RefreshCw,
-  AlertTriangle,
-  Info,
-  CheckCircle2,
-  Crown,
+  ShieldAlert, RefreshCw, AlertTriangle, Info, CheckCircle2,
+  Crown, Trash2, Clock, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AiPaywallDialog } from '@/components/billing/AiPaywallDialog';
+import { useAuth } from '@/hooks/use-auth';
 import type { QuotaState } from '@/lib/billing/quotas';
 import type { HoldingWithPrice } from './types';
+import type { SavedRiskAnalysis } from '@/app/api/holdings/risk-analysis/history/route';
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface RiskMetric {
   score: number;
@@ -58,57 +54,64 @@ interface PortfolioRiskAnalysisProps {
   holdings: HoldingWithPrice[];
 }
 
-// ─── Color helpers ────────────────────────────────────────────────────────────
+// ─── Color & style helpers ─────────────────────────────────────────────────────
 
-function gaugeColor(score: number): string {
+function riskColor(score: number): string {
   if (score <= 33) return '#22c55e';
   if (score <= 60) return '#f59e0b';
   if (score <= 79) return '#f97316';
   return '#ef4444';
 }
 
-function riskLevelColor(level: string) {
+function riskTextClass(level: string) {
   switch (level) {
-    case 'Low':      return 'text-green-600 dark:text-green-400';
-    case 'Moderate': return 'text-emerald-600 dark:text-emerald-400';
-    case 'Elevated': return 'text-amber-600 dark:text-amber-400';
-    case 'High':     return 'text-orange-600 dark:text-orange-400';
-    case 'Very High':return 'text-red-600 dark:text-red-400';
+    case 'Low':      return 'text-green-500';
+    case 'Moderate': return 'text-emerald-400';
+    case 'Elevated': return 'text-amber-400';
+    case 'High':     return 'text-orange-400';
+    case 'Very High':return 'text-red-500';
     default:         return 'text-foreground';
   }
 }
 
-function riskBandColor(level: string): string {
+function riskBgBorder(level: string) {
   switch (level) {
-    case 'Low':      return 'bg-green-500/8 border-green-500/20';
-    case 'Moderate': return 'bg-emerald-500/8 border-emerald-500/20';
-    case 'Elevated': return 'bg-amber-500/8 border-amber-500/20';
-    case 'High':     return 'bg-orange-500/8 border-orange-500/20';
-    case 'Very High':return 'bg-red-500/8 border-red-500/20';
-    default:         return 'bg-muted/20 border-border/40';
+    case 'Low':       return 'bg-green-500/[0.06] border-green-500/25';
+    case 'Moderate':  return 'bg-emerald-500/[0.06] border-emerald-500/25';
+    case 'Elevated':  return 'bg-amber-500/[0.06] border-amber-500/25';
+    case 'High':      return 'bg-orange-500/[0.06] border-orange-500/25';
+    case 'Very High': return 'bg-red-500/[0.06] border-red-500/25';
+    default:          return 'bg-muted/10 border-border/30';
   }
 }
 
-function severityConfig(severity: string) {
+function severityChip(severity: string) {
   switch (severity) {
-    case 'critical':
-      return { border: 'border-red-500/60', bg: 'bg-red-500/8', badge: 'bg-red-500/15 text-red-600 dark:text-red-400', icon: AlertTriangle };
-    case 'high':
-      return { border: 'border-orange-500/60', bg: 'bg-orange-500/8', badge: 'bg-orange-500/15 text-orange-600 dark:text-orange-400', icon: AlertTriangle };
-    case 'medium':
-      return { border: 'border-amber-500/60', bg: 'bg-amber-500/8', badge: 'bg-amber-500/15 text-amber-600 dark:text-amber-400', icon: Info };
-    default:
-      return { border: 'border-blue-500/60', bg: 'bg-blue-500/8', badge: 'bg-blue-500/15 text-blue-600 dark:text-blue-400', icon: Info };
+    case 'critical': return 'bg-red-500/15 text-red-400 border border-red-500/25';
+    case 'high':     return 'bg-orange-500/15 text-orange-400 border border-orange-500/25';
+    case 'medium':   return 'bg-amber-500/15 text-amber-400 border border-amber-500/25';
+    default:         return 'bg-blue-500/15 text-blue-400 border border-blue-500/25';
   }
 }
 
-function stressSeverityChip(severity: StressScenario['severity']) {
-  if (severity === 'high') return 'bg-red-500/15 text-red-600 dark:text-red-400';
-  if (severity === 'medium') return 'bg-amber-500/15 text-amber-600 dark:text-amber-400';
-  return 'bg-blue-500/15 text-blue-600 dark:text-blue-400';
+function metricBarColor(score: number): string {
+  if (score >= 70) return 'bg-red-500';
+  if (score >= 50) return 'bg-orange-500';
+  if (score >= 30) return 'bg-amber-500';
+  return 'bg-green-500';
 }
 
-// ─── Score ring (pure SVG, no d3) ────────────────────────────────────────────
+// ─── Section label (terminal-style ALL CAPS micro-typography) ─────────────────
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-[9px] font-mono font-bold uppercase tracking-[0.3em] text-muted-foreground/45 mb-3 select-none">
+      {children}
+    </p>
+  );
+}
+
+// ─── Score ring ───────────────────────────────────────────────────────────────
 
 function arcPath(cx: number, cy: number, r: number, startDeg: number, endDeg: number): string {
   const toRad = (d: number) => (d * Math.PI) / 180;
@@ -122,8 +125,7 @@ function arcPath(cx: number, cy: number, r: number, startDeg: number, endDeg: nu
 }
 
 function ScoreRing({ score, riskLevel, animated }: { score: number; riskLevel: string; animated: boolean }) {
-  const [animatedScore, setAnimatedScore] = useState(0);
-
+  const [displayed, setDisplayed] = useState(0);
   useEffect(() => {
     if (!animated) return;
     let frame: number;
@@ -132,45 +134,31 @@ function ScoreRing({ score, riskLevel, animated }: { score: number; riskLevel: s
     const ease = (t: number) => (t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t);
     const tick = (ts: number) => {
       if (!start) start = ts;
-      const progress = Math.min((ts - start) / duration, 1);
-      setAnimatedScore(Math.round(ease(progress) * score));
-      if (progress < 1) frame = requestAnimationFrame(tick);
+      const p = Math.min((ts - start) / duration, 1);
+      setDisplayed(Math.round(ease(p) * score));
+      if (p < 1) frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
   }, [score, animated]);
 
-  const displayScore = animated ? animatedScore : score;
-
-  const color = gaugeColor(score);
-  const endDeg = (displayScore / 100) * 360;
+  const d = animated ? displayed : score;
+  const color = riskColor(score);
 
   return (
-    <div className="flex flex-col items-center gap-2 shrink-0">
+    <div className="flex flex-col items-center gap-1.5 shrink-0">
       <div className="relative">
-        <svg viewBox="0 0 160 160" width={144} height={144}>
-          {/* Background track */}
-          <circle cx="80" cy="80" r="61" fill="none" stroke="currentColor" strokeWidth="18" className="text-muted/40" />
-          {/* Colored arc */}
-          {displayScore > 0 && (
-            <path
-              d={arcPath(80, 80, 61, 0, endDeg)}
-              fill="none"
-              stroke={color}
-              strokeWidth="18"
-              strokeLinecap="round"
-            />
+        <svg viewBox="0 0 120 120" width={108} height={108}>
+          <circle cx="60" cy="60" r="46" fill="none" stroke="currentColor" strokeWidth="12" className="text-muted/30" />
+          {d > 0 && (
+            <path d={arcPath(60, 60, 46, 0, (d / 100) * 360)} fill="none"
+              stroke={color} strokeWidth="12" strokeLinecap="round" />
           )}
-          {/* Center text */}
-          <text x="80" y="74" textAnchor="middle" className="fill-foreground" fontSize="28" fontWeight="900" fontFamily="monospace">
-            {displayScore}
-          </text>
-          <text x="80" y="92" textAnchor="middle" fontSize="11" fontFamily="sans-serif" fill="currentColor" className="fill-muted-foreground/60">
-            /100
-          </text>
+          <text x="60" y="56" textAnchor="middle" className="fill-foreground" fontSize="22" fontWeight="800" fontFamily="monospace">{d}</text>
+          <text x="60" y="70" textAnchor="middle" fontSize="9" fill="currentColor" className="fill-muted-foreground/50">/100</text>
         </svg>
       </div>
-      <span className={cn('text-sm font-bold tracking-tight', riskLevelColor(riskLevel))}>
+      <span className={cn('text-xs font-bold tracking-tight', riskTextClass(riskLevel))}>
         {riskLevel} Risk
       </span>
     </div>
@@ -179,32 +167,155 @@ function ScoreRing({ score, riskLevel, animated }: { score: number; riskLevel: s
 
 // ─── Metric cell ──────────────────────────────────────────────────────────────
 
-function MetricCell({ label, metric }: { label: string; metric: RiskMetric }) {
-  const [barWidth, setBarWidth] = useState(0);
+function MetricCell({ label, metric, expanded, onToggle }: {
+  label: string;
+  metric: RiskMetric;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  const [barW, setBarW] = useState(0);
   useEffect(() => {
-    const t = setTimeout(() => setBarWidth(metric.score), 150);
+    const t = setTimeout(() => setBarW(metric.score), 150);
     return () => clearTimeout(t);
   }, [metric.score]);
 
-  const barColor =
-    metric.score >= 70 ? 'bg-red-500'
-    : metric.score >= 50 ? 'bg-orange-500'
-    : metric.score >= 30 ? 'bg-amber-500'
-    : 'bg-green-500';
+  return (
+    <div className="rounded-lg border border-border/30 bg-muted/[0.06] overflow-hidden">
+      <button
+        onClick={onToggle}
+        className="w-full text-left p-3 space-y-2 group"
+        aria-expanded={expanded}
+      >
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[9px] font-mono font-bold uppercase tracking-[0.2em] text-muted-foreground/60 leading-none">{label}</span>
+          <div className="flex items-center gap-1.5">
+            <span className={cn('text-base font-black tabular-nums leading-none', metricBarColor(metric.score).replace('bg-', 'text-'))}>{metric.score}</span>
+            {expanded ? <ChevronUp className="h-3 w-3 text-muted-foreground/40" /> : <ChevronDown className="h-3 w-3 text-muted-foreground/30 group-hover:text-muted-foreground/50" />}
+          </div>
+        </div>
+        <div className="h-1 w-full rounded-full bg-muted/50 overflow-hidden">
+          <div className={cn('h-full rounded-full transition-all duration-700 ease-out', metricBarColor(metric.score))}
+            style={{ width: `${barW}%` }} />
+        </div>
+      </button>
+      {expanded && (
+        <div className="px-3 pb-3 pt-0">
+          <p className="text-[11px] text-muted-foreground/80 leading-relaxed border-t border-border/20 pt-2.5">
+            {metric.detail}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Stress scenarios compact table ───────────────────────────────────────────
+
+function StressTable({ scenarios }: { scenarios: StressScenario[] }) {
+  const [expanded, setExpanded] = useState<number | null>(null);
 
   return (
-    <div className="rounded-lg border border-border/40 bg-muted/10 p-3 space-y-2">
-      <div className="flex items-center justify-between gap-1">
-        <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground/70 leading-tight">{label}</span>
-        <span className="text-sm font-bold tabular-nums text-foreground shrink-0">{metric.score}</span>
+    <div className="w-full">
+      <table className="w-full text-xs border-collapse">
+        <thead>
+          <tr>
+            <th className="text-left text-[9px] font-mono uppercase tracking-[0.25em] text-muted-foreground/40 pb-2.5 font-normal w-1/2">Scenario</th>
+            <th className="text-right text-[9px] font-mono uppercase tracking-[0.25em] text-muted-foreground/40 pb-2.5 font-normal pr-3">Est. Impact</th>
+            <th className="text-right text-[9px] font-mono uppercase tracking-[0.25em] text-muted-foreground/40 pb-2.5 font-normal">Sev.</th>
+          </tr>
+        </thead>
+        <tbody>
+          {scenarios.map((s, i) => {
+            const isExpanded = expanded === i;
+            return (
+              <>
+                <tr
+                  key={i}
+                  onClick={() => setExpanded(isExpanded ? null : i)}
+                  className="border-t border-border/20 cursor-pointer hover:bg-muted/20 transition-colors"
+                >
+                  <td className="py-2.5 pr-3">
+                    <span className={cn('text-foreground/80 leading-tight line-clamp-1', isExpanded && 'line-clamp-none')}>{s.scenario}</span>
+                  </td>
+                  <td className="py-2.5 pr-3 text-right tabular-nums font-mono text-foreground/90 whitespace-nowrap text-[11px]">
+                    {s.estimatedImpact}
+                  </td>
+                  <td className="py-2.5 text-right">
+                    <span className={cn('text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full', severityChip(s.severity))}>
+                      {s.severity}
+                    </span>
+                  </td>
+                </tr>
+                {isExpanded && (
+                  <tr key={`${i}-detail`} className="border-t-0">
+                    <td colSpan={3} className="pb-3 pt-0 pr-2">
+                      <p className="text-[11px] text-muted-foreground/70 leading-relaxed pl-0">
+                        {s.estimatedImpact} — {s.scenario.toLowerCase()}
+                      </p>
+                    </td>
+                  </tr>
+                )}
+              </>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ─── History panel ────────────────────────────────────────────────────────────
+
+function formatAgo(iso: string): string {
+  const d = new Date(iso);
+  const diff = Date.now() - d.getTime();
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function HistoryPanel({
+  items,
+  onRestore,
+  onDelete,
+}: {
+  items: SavedRiskAnalysis[];
+  onRestore: (id: string) => void;
+  onDelete: (id: string) => void;
+}) {
+  if (items.length === 0) return null;
+  return (
+    <div className="border-b border-border/20 pb-3 mb-4">
+      <div className="flex items-center gap-1.5 mb-2">
+        <Clock className="h-2.5 w-2.5 text-muted-foreground/40" />
+        <span className="text-[9px] font-mono uppercase tracking-[0.25em] text-muted-foreground/40">Saved analyses</span>
       </div>
-      <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-        <div
-          className={cn('h-full rounded-full transition-all duration-700 ease-out', barColor)}
-          style={{ width: `${barWidth}%` }}
-        />
+      <div className="flex flex-wrap gap-1.5">
+        {items.map((item) => (
+          <div key={item.id} className="group flex items-center gap-0 rounded border border-border/30 bg-muted/20 overflow-hidden">
+            <button
+              onClick={() => onRestore(item.id)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 hover:bg-muted/40 transition-colors"
+            >
+              <span className={cn('text-[10px] font-bold', riskTextClass(item.riskLevel))}>
+                {item.overallRiskScore}
+              </span>
+              <span className="text-[10px] text-muted-foreground/60">{item.riskLevel}</span>
+              <span className="text-[9px] text-muted-foreground/35 tabular-nums">{formatAgo(item.createdAt)}</span>
+            </button>
+            <button
+              onClick={() => onDelete(item.id)}
+              className="px-1.5 py-1.5 opacity-0 group-hover:opacity-100 hover:bg-red-500/10 transition-all"
+              aria-label="Delete"
+            >
+              <Trash2 className="h-3 w-3 text-muted-foreground/50 hover:text-red-400" />
+            </button>
+          </div>
+        ))}
       </div>
-      <p className="text-[11px] text-muted-foreground/80 leading-relaxed line-clamp-3">{metric.detail}</p>
     </div>
   );
 }
@@ -214,40 +325,39 @@ function MetricCell({ label, metric }: { label: string; metric: RiskMetric }) {
 type State = 'idle' | 'loading' | 'loaded' | 'error';
 
 export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  // Derive user's display currency from settings
+  const userCurrency = useMemo((): string => {
+    const s = (user?.settings as Record<string, unknown>) ?? {};
+    const c = s.default_currency as string | undefined;
+    if (!c || c === 'exchange') return 'USD';
+    return c.toUpperCase();
+  }, [user]);
+
   const [state, setState] = useState<State>('idle');
   const [analysis, setAnalysis] = useState<RiskAnalysis | null>(null);
+  const [restoredFrom, setRestoredFrom] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [animated, setAnimated] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
   const [paywallQuota, setPaywallQuota] = useState<QuotaState | null>(null);
 
-  // Sequential loading reveal (Phase 1: symbol tick-off)
+  // Sequential loading (Phase 1: symbol tick-off)
   const [loadingStep, setLoadingStep] = useState(0);
   const loadingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  // Phase 2: cycle through analysis stages while Claude is computing
-  const [analyzeStep, setAnalyzeStep] = useState(0);
   const analyzeTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [analyzeStep, setAnalyzeStep] = useState(0);
 
   // Typewriter reveal for summary
   const [displayedSummary, setDisplayedSummary] = useState('');
   const typewriterRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const payload = useMemo(
-    () =>
-      holdings.map((h) => ({
-        symbol: h.symbol,
-        company_name: h.company_name,
-        allocation: h.allocation,
-        marketValue: h.marketValue,
-        quantity: h.quantity,
-        dayChangePercent: h.dayChangePercent,
-        unrealizedPLPercent: h.unrealizedPLPercent,
-      })),
-    [holdings]
-  );
+  // Expanded metric cells
+  const [expandedMetric, setExpandedMetric] = useState<string | null>(null);
 
-  const ANALYZE_STAGES = [
+  const ANALYZE_STAGES = useMemo(() => [
     'Calculating concentration risk…',
     'Assessing sector diversification…',
     'Modelling stress scenarios…',
@@ -255,25 +365,30 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
     'Evaluating liquidity risk…',
     'Generating recommendations…',
     'Synthesizing findings…',
-  ];
+  ], []);
 
-  // Phase 1: tick off symbols one by one
+  const payload = useMemo(
+    () => holdings.map((h) => ({
+      symbol: h.symbol,
+      company_name: h.company_name,
+      allocation: h.allocation,
+      marketValue: h.marketValue,
+      quantity: h.quantity,
+      dayChangePercent: h.dayChangePercent,
+      unrealizedPLPercent: h.unrealizedPLPercent,
+    })),
+    [holdings]
+  );
+
+  // Phase 1: tick off symbols
   useEffect(() => {
     if (state === 'loading') {
       setLoadingStep(0);
       setAnalyzeStep(0);
-      loadingTimerRef.current = setInterval(() => {
-        setLoadingStep((s) => s + 1);
-      }, 220);
+      loadingTimerRef.current = setInterval(() => setLoadingStep((s) => s + 1), 220);
     } else {
-      if (loadingTimerRef.current) {
-        clearInterval(loadingTimerRef.current);
-        loadingTimerRef.current = null;
-      }
-      if (analyzeTimerRef.current) {
-        clearInterval(analyzeTimerRef.current);
-        analyzeTimerRef.current = null;
-      }
+      if (loadingTimerRef.current) { clearInterval(loadingTimerRef.current); loadingTimerRef.current = null; }
+      if (analyzeTimerRef.current) { clearInterval(analyzeTimerRef.current); analyzeTimerRef.current = null; }
     }
     return () => {
       if (loadingTimerRef.current) clearInterval(loadingTimerRef.current);
@@ -281,21 +396,18 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
     };
   }, [state]);
 
-  // Phase 2: once all symbols are ticked, start cycling analysis stages
   const allSymbolsLoaded = loadingStep >= holdings.length;
   useEffect(() => {
     if (state !== 'loading' || !allSymbolsLoaded) return;
-    analyzeTimerRef.current = setInterval(() => {
-      setAnalyzeStep((s) => (s + 1) % ANALYZE_STAGES.length);
-    }, 2200);
-    return () => {
-      if (analyzeTimerRef.current) clearInterval(analyzeTimerRef.current);
-    };
-  // ANALYZE_STAGES is stable (declared inside component but never changes)
+    analyzeTimerRef.current = setInterval(
+      () => setAnalyzeStep((s) => (s + 1) % ANALYZE_STAGES.length),
+      2200
+    );
+    return () => { if (analyzeTimerRef.current) clearInterval(analyzeTimerRef.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, allSymbolsLoaded]);
 
-  // Typewriter reveal when analysis loads
+  // Typewriter reveal
   useEffect(() => {
     if (state !== 'loaded' || !analysis) return;
     setDisplayedSummary('');
@@ -304,28 +416,55 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
     typewriterRef.current = setInterval(() => {
       i++;
       setDisplayedSummary(full.slice(0, i));
-      if (i >= full.length) {
-        clearInterval(typewriterRef.current!);
-        typewriterRef.current = null;
-      }
+      if (i >= full.length) { clearInterval(typewriterRef.current!); typewriterRef.current = null; }
     }, 14);
-    return () => {
-      if (typewriterRef.current) clearInterval(typewriterRef.current);
-    };
+    return () => { if (typewriterRef.current) clearInterval(typewriterRef.current); };
   }, [state, analysis]);
+
+  // Saved analyses history
+  const historyKey = ['risk-analysis-history'];
+  const { data: historyData } = useQuery<{ analyses: SavedRiskAnalysis[] }>({
+    queryKey: historyKey,
+    queryFn: () => fetch('/api/holdings/risk-analysis/history').then((r) => r.json()),
+    staleTime: 30_000,
+  });
+  const history = historyData?.analyses ?? [];
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) =>
+      fetch('/api/holdings/risk-analysis/history', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: historyKey }),
+  });
+
+  const restoreAnalysis = useCallback(async (id: string) => {
+    const res = await fetch(`/api/holdings/risk-analysis/history?id=${id}`);
+    const data = await res.json();
+    if (data?.analysis) {
+      setAnalysis(data.analysis as RiskAnalysis);
+      setRestoredFrom(data.createdAt);
+      setDisplayedSummary((data.analysis as RiskAnalysis).portfolioSummary);
+      setState('loaded');
+      requestAnimationFrame(() => setTimeout(() => setAnimated(true), 50));
+    }
+  }, []);
 
   async function analyze() {
     setState('loading');
     setError(null);
     setAnimated(false);
     setDisplayedSummary('');
+    setRestoredFrom(null);
+    setExpandedMetric(null);
     try {
       const res = await fetch('/api/holdings/risk-analysis', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ holdings: payload }),
+        body: JSON.stringify({ holdings: payload, currency: userCurrency }),
       });
-
       if (res.status === 402) {
         const data = await res.json();
         setPaywallQuota(data.quota ?? null);
@@ -333,258 +472,256 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
         setState('idle');
         return;
       }
-
       const data = await res.json();
       if (!data.success) throw new Error(data.error ?? 'Analysis failed');
       setAnalysis(data.analysis);
       setState('loaded');
       requestAnimationFrame(() => setTimeout(() => setAnimated(true), 50));
+      queryClient.invalidateQueries({ queryKey: historyKey });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to analyze portfolio');
       setState('error');
     }
   }
 
-  const generatedTime = analysis?.generatedAt
-    ? new Date(analysis.generatedAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+  const generatedTime = (restoredFrom ?? analysis?.generatedAt)
+    ? new Date(restoredFrom ?? analysis!.generatedAt).toLocaleString(undefined, {
+        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+      })
     : null;
 
   const summaryDone = analysis ? displayedSummary.length >= analysis.portfolioSummary.length : false;
 
+  const METRIC_LABELS: Record<string, string> = {
+    concentration: 'Concentration',
+    sectorDiversification: 'Sector Divers.',
+    marketCapBias: 'Mkt Cap Bias',
+    volatilityExposure: 'Volatility',
+    correlationRisk: 'Correlation',
+    liquidityRisk: 'Liquidity',
+  };
+
   return (
     <>
-      <Card className="border-border/50">
-        <CardHeader>
+      <Card className="border-border/40 bg-card">
+        {/* ── Header ─────────────────────────────────────────────────────── */}
+        <CardHeader className="pb-3 border-b border-border/20">
           <div className="flex items-center justify-between gap-4">
-            <CardTitle className="flex items-center gap-2">
-              <ShieldAlert className="h-5 w-5 text-primary" />
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+              <ShieldAlert className="h-4 w-4 text-primary" />
               Portfolio Risk Analysis
-              <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.14em] text-primary/80 bg-primary/10 px-2 py-0.5 rounded-full">
-                <Crown className="h-2.5 w-2.5" /> Pro
+              <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.14em] text-primary/80 bg-primary/10 px-1.5 py-0.5 rounded-full">
+                <Crown className="h-2 w-2" /> Pro
               </span>
             </CardTitle>
             {state === 'idle' && (
-              <Button size="sm" onClick={analyze} className="shrink-0 gap-2">
-                <ShieldAlert className="h-3.5 w-3.5" />
-                Analyze Risk
+              <Button size="sm" onClick={analyze} className="shrink-0 gap-1.5 h-7 text-xs">
+                <ShieldAlert className="h-3 w-3" /> Analyze
+              </Button>
+            )}
+            {state === 'loaded' && (
+              <Button size="sm" variant="ghost" onClick={analyze}
+                className="shrink-0 gap-1.5 h-7 text-xs text-muted-foreground hover:text-foreground">
+                <RefreshCw className="h-3 w-3" /> Re-analyze
               </Button>
             )}
           </div>
         </CardHeader>
 
-        <CardContent>
-          {/* Idle state */}
+        <CardContent className="pt-4">
+          {/* ── Idle ───────────────────────────────────────────────────────── */}
           {state === 'idle' && (
-            <div className="flex flex-col items-center justify-center py-10 gap-3 text-center">
-              <div className="rounded-full bg-primary/8 p-4">
-                <ShieldAlert className="h-7 w-7 text-primary" />
+            <div className="flex flex-col items-center justify-center py-8 gap-3 text-center">
+              <div className="rounded-full bg-primary/8 p-3.5">
+                <ShieldAlert className="h-6 w-6 text-primary" />
               </div>
               <p className="text-sm font-medium text-foreground">AI-Powered Risk Assessment</p>
-              <p className="text-xs text-muted-foreground max-w-xs">
-                Analyze concentration, sector exposure, correlation, liquidity, and stress scenarios across your {holdings.length} position{holdings.length !== 1 ? 's' : ''}.
+              <p className="text-xs text-muted-foreground max-w-xs leading-relaxed">
+                Concentration, sector exposure, correlation, liquidity, and stress scenarios across your {holdings.length} holding{holdings.length !== 1 ? 's' : ''}.
               </p>
-              <Button onClick={analyze} className="mt-1 gap-2">
-                <ShieldAlert className="h-4 w-4" />
-                Analyze Portfolio Risk
+              <Button onClick={analyze} size="sm" className="mt-1 gap-1.5">
+                <ShieldAlert className="h-3.5 w-3.5" /> Run Analysis
               </Button>
+              {history.length > 0 && (
+                <div className="w-full max-w-sm mt-2">
+                  <HistoryPanel items={history} onRestore={restoreAnalysis} onDelete={(id) => deleteMutation.mutate(id)} />
+                </div>
+              )}
             </div>
           )}
 
-          {/* Loading — Phase 1: symbol tick-off → Phase 2: analysis stages */}
+          {/* ── Loading ─────────────────────────────────────────────────────── */}
           {state === 'loading' && (
-            <div className="py-8 space-y-4">
-              <div className="text-center space-y-1">
+            <div className="py-7 space-y-4">
+              <div className="text-center space-y-0.5">
                 <p className="text-sm font-medium text-foreground">Analyzing portfolio…</p>
-                <p className="text-xs text-muted-foreground/60">Running 6-dimension risk assessment</p>
+                <p className="text-[11px] text-muted-foreground/50">Running 6-dimension risk assessment</p>
               </div>
-
-              {/* Symbol checklist */}
-              <div className="max-w-[200px] mx-auto space-y-1.5 font-mono text-xs">
+              <div className="max-w-[190px] mx-auto space-y-1.5 font-mono text-[11px]">
                 {holdings.slice(0, Math.min(loadingStep, holdings.length)).map((h) => (
-                  <div key={h.symbol} className="flex items-center gap-2 text-muted-foreground">
+                  <div key={h.symbol} className="flex items-center gap-2 text-muted-foreground/70">
                     <CheckCircle2 className="h-3 w-3 text-green-500 shrink-0" />
                     <span className="tabular-nums">{h.symbol}</span>
                   </div>
                 ))}
                 {loadingStep < holdings.length && (
-                  <div className="flex items-center gap-2 text-foreground/50">
+                  <div className="flex items-center gap-2 text-foreground/40">
                     <span className="h-3 w-3 rounded-full border border-muted-foreground/30 shrink-0 motion-safe:animate-pulse" />
                     <span className="tabular-nums">{holdings[loadingStep]?.symbol}</span>
                   </div>
                 )}
               </div>
-
-              {/* Phase 2: cycling stage messages + animated indicators */}
               {allSymbolsLoaded && (
-                <div className="flex flex-col items-center gap-3 pt-2">
-                  {/* Cycling stage label */}
-                  <p className="text-xs text-muted-foreground/70 min-h-[1.25rem] transition-all duration-300 flex items-center gap-1.5">
+                <div className="flex flex-col items-center gap-2.5 pt-1">
+                  <p className="text-[11px] text-muted-foreground/60 flex items-center gap-1.5">
                     <span className="h-1.5 w-1.5 rounded-full bg-primary motion-safe:animate-pulse shrink-0" />
                     {ANALYZE_STAGES[analyzeStep]}
                   </p>
-
-                  {/* Bouncing dots — clearly "still working" */}
                   <div className="flex items-end gap-1" aria-hidden>
                     {[0, 1, 2].map((i) => (
-                      <span
-                        key={i}
-                        className="inline-block h-1.5 w-1.5 rounded-full bg-muted-foreground/35 motion-safe:animate-bounce"
-                        style={{ animationDelay: `${i * 0.18}s`, animationDuration: '0.9s' }}
-                      />
+                      <span key={i} className="inline-block h-1.5 w-1.5 rounded-full bg-muted-foreground/30 motion-safe:animate-bounce"
+                        style={{ animationDelay: `${i * 0.18}s`, animationDuration: '0.9s' }} />
                     ))}
                   </div>
-
-                  <p className="text-[10px] text-muted-foreground/40 text-center max-w-[200px]">
-                    This usually takes 15–30 seconds
-                  </p>
+                  <p className="text-[9px] text-muted-foreground/35 text-center">Typically 15–30 seconds</p>
                 </div>
               )}
             </div>
           )}
 
-          {/* Error state */}
+          {/* ── Error ───────────────────────────────────────────────────────── */}
           {state === 'error' && (
-            <div className="flex flex-col items-center py-8 gap-3 text-center">
-              <AlertTriangle className="h-8 w-8 text-destructive" />
-              <p className="text-sm text-destructive">{error}</p>
-              <Button variant="outline" size="sm" onClick={analyze}>Try Again</Button>
+            <div className="flex flex-col items-center py-7 gap-3 text-center">
+              <AlertTriangle className="h-7 w-7 text-destructive/80" />
+              <p className="text-sm text-destructive/90">{error}</p>
+              <Button variant="outline" size="sm" onClick={analyze} className="gap-1.5">
+                <RefreshCw className="h-3 w-3" /> Try Again
+              </Button>
             </div>
           )}
 
-          {/* Results */}
+          {/* ── Results ─────────────────────────────────────────────────────── */}
           {state === 'loaded' && analysis && (
             <div className="space-y-6">
+
+              {/* History chips */}
+              {history.length > 0 && (
+                <HistoryPanel items={history} onRestore={restoreAnalysis} onDelete={(id) => deleteMutation.mutate(id)} />
+              )}
+
               {/* Risk level band */}
-              <div className={cn('rounded-xl border px-4 py-3 flex items-center justify-between gap-4', riskBandColor(analysis.riskLevel))}>
-                <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground/70">
+              <div className={cn('rounded-lg border px-4 py-2.5 flex items-center justify-between', riskBgBorder(analysis.riskLevel))}>
+                <span className="text-[9px] font-mono font-bold uppercase tracking-[0.28em] text-muted-foreground/50">
                   Overall Risk Level
-                </div>
-                <div className={cn('text-sm font-bold tracking-tight', riskLevelColor(analysis.riskLevel))}>
-                  {analysis.riskLevel}
+                </span>
+                <div className="flex items-center gap-3">
+                  <div className="h-1.5 w-32 rounded-full bg-muted/40 overflow-hidden">
+                    <div className="h-full rounded-full transition-all duration-700"
+                      style={{ width: `${analysis.overallRiskScore}%`, backgroundColor: riskColor(analysis.overallRiskScore) }} />
+                  </div>
+                  <span className={cn('text-sm font-black tabular-nums', riskTextClass(analysis.riskLevel))}>
+                    {analysis.riskLevel}
+                  </span>
                 </div>
               </div>
 
               {/* Score ring + summary */}
-              <div className="flex flex-col sm:flex-row gap-6 items-start">
-                <div className="mx-auto sm:mx-0 shrink-0">
-                  <ScoreRing score={analysis.overallRiskScore} riskLevel={analysis.riskLevel} animated={animated} />
-                </div>
+              <div className="flex flex-col sm:flex-row gap-5 items-start">
+                <ScoreRing score={analysis.overallRiskScore} riskLevel={analysis.riskLevel} animated={animated} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/50 mb-2">
-                    Summary
-                  </p>
-                  <p className="text-sm text-muted-foreground leading-relaxed border-l-2 border-primary/30 pl-3">
+                  <SectionLabel>Summary</SectionLabel>
+                  <p className="text-[13px] text-foreground/85 leading-relaxed">
                     {displayedSummary}
                     {!summaryDone && (
-                      <span className="inline-block w-[2px] h-[1em] bg-primary/60 ml-0.5 animate-pulse align-middle" />
+                      <span className="inline-block w-[2px] h-[1.1em] bg-primary/60 ml-0.5 motion-safe:animate-pulse align-middle" />
                     )}
                   </p>
                 </div>
               </div>
 
-              {/* Metrics 2×3 grid */}
+              {/* Risk Dimensions — 2×3 grid, click to expand detail */}
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/50 mb-3">
-                  Risk Dimensions
-                </p>
-                <div className="grid grid-cols-2 gap-2.5">
-                  {([
-                    { key: 'concentration',         label: 'Concentration' },
-                    { key: 'sectorDiversification', label: 'Sector Diversification' },
-                    { key: 'marketCapBias',          label: 'Market Cap Bias' },
-                    { key: 'volatilityExposure',     label: 'Volatility' },
-                    { key: 'correlationRisk',        label: 'Correlation Risk' },
-                    { key: 'liquidityRisk',          label: 'Liquidity Risk' },
-                  ] as const).map(({ key, label }) => (
+                <SectionLabel>Risk Dimensions</SectionLabel>
+                <div className="grid grid-cols-2 gap-2">
+                  {(Object.entries(analysis.metrics) as [string, RiskMetric][]).map(([key, metric]) => (
                     <MetricCell
                       key={key}
-                      label={label}
-                      metric={analysis.metrics[key]}
+                      label={METRIC_LABELS[key] ?? key}
+                      metric={metric}
+                      expanded={expandedMetric === key}
+                      onToggle={() => setExpandedMetric(expandedMetric === key ? null : key)}
                     />
                   ))}
                 </div>
+                <p className="text-[9px] text-muted-foreground/35 mt-2 text-center">Click a metric to expand detail</p>
               </div>
 
-              {/* Stress scenarios */}
-              {analysis.stressScenarios && analysis.stressScenarios.length > 0 && (
+              {/* Stress scenarios + Sector side by side */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/50 mb-3">
-                    Stress Scenarios
-                  </p>
-                  <div className="rounded-xl border border-border/40 overflow-hidden divide-y divide-border/30">
-                    {analysis.stressScenarios.map((s, i) => (
-                      <div key={i} className="flex items-center justify-between gap-3 px-4 py-3">
-                        <span className="text-sm text-foreground/80 leading-snug">{s.scenario}</span>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="text-sm font-semibold tabular-nums text-foreground">{s.estimatedImpact}</span>
-                          <span className={cn('text-[10px] font-bold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded-full', stressSeverityChip(s.severity))}>
-                            {s.severity}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <SectionLabel>Stress Scenarios</SectionLabel>
+                  {analysis.stressScenarios?.length > 0 && (
+                    <StressTable scenarios={analysis.stressScenarios} />
+                  )}
                 </div>
-              )}
 
-              {/* Sector breakdown */}
-              {analysis.sectorBreakdown && analysis.sectorBreakdown.length > 0 && (
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/50 mb-3">
-                    Sector Breakdown
-                  </p>
-                  <div className="space-y-2">
-                    {analysis.sectorBreakdown
-                      .sort((a, b) => b.estimatedWeight - a.estimatedWeight)
-                      .map((s) => (
-                        <div key={s.sector}>
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs font-medium text-foreground/80">{s.sector}</span>
-                            <span className="text-xs font-semibold text-foreground tabular-nums">{s.estimatedWeight.toFixed(0)}%</span>
+                  <SectionLabel>Sector Breakdown</SectionLabel>
+                  {analysis.sectorBreakdown?.length > 0 && (
+                    <div className="space-y-2.5">
+                      {[...analysis.sectorBreakdown]
+                        .sort((a, b) => b.estimatedWeight - a.estimatedWeight)
+                        .map((s) => (
+                          <div key={s.sector}>
+                            <div className="flex items-baseline justify-between mb-1 gap-2">
+                              <span className="text-xs text-foreground/80 truncate">{s.sector}</span>
+                              <span className="text-xs font-bold tabular-nums text-foreground shrink-0">{s.estimatedWeight.toFixed(0)}%</span>
+                            </div>
+                            <div className="h-1 w-full rounded-full bg-muted/40 overflow-hidden mb-1">
+                              <div className="h-full rounded-full bg-primary/50 transition-all duration-700"
+                                style={{ width: `${s.estimatedWeight}%` }} />
+                            </div>
+                            <div className="flex flex-wrap gap-1">
+                              {s.symbols.map((sym) => (
+                                <span key={sym} className="text-[9px] font-mono bg-muted/40 text-muted-foreground/70 px-1 py-0.5 rounded">
+                                  {sym}
+                                </span>
+                              ))}
+                            </div>
                           </div>
-                          <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden mb-1.5">
-                            <div
-                              className="h-full rounded-full bg-primary/60 transition-all duration-700"
-                              style={{ width: `${s.estimatedWeight}%` }}
-                            />
-                          </div>
-                          <div className="flex flex-wrap gap-1">
-                            {s.symbols.map((sym) => (
-                              <span key={sym} className="text-[10px] bg-muted/60 text-muted-foreground px-1.5 py-0.5 rounded font-mono">
-                                {sym}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                  </div>
+                        ))}
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
 
-              {/* Risk factors */}
-              {analysis.topRisks && analysis.topRisks.length > 0 && (
+              {/* Key Risk Factors — 2-col on lg */}
+              {analysis.topRisks?.length > 0 && (
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/50 mb-3">
-                    Key Risk Factors
-                  </p>
-                  <div className="space-y-2">
+                  <SectionLabel>Key Risk Factors</SectionLabel>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
                     {analysis.topRisks.map((risk, i) => {
-                      const cfg = severityConfig(risk.severity);
-                      const Icon = cfg.icon;
+                      const Icon = risk.severity === 'medium' || risk.severity === 'low' ? Info : AlertTriangle;
                       return (
                         <div
                           key={i}
-                          className={cn('rounded-lg border-l-4 px-4 py-3 flex gap-3 items-start', cfg.border, cfg.bg)}
+                          className={cn(
+                            'rounded-lg border-l-[3px] px-3.5 py-3 flex gap-3 items-start',
+                            risk.severity === 'critical' ? 'border-red-500 bg-red-500/[0.05]'
+                            : risk.severity === 'high' ? 'border-orange-500 bg-orange-500/[0.05]'
+                            : risk.severity === 'medium' ? 'border-amber-500 bg-amber-500/[0.05]'
+                            : 'border-blue-500 bg-blue-500/[0.05]'
+                          )}
                         >
-                          <Icon className="h-4 w-4 shrink-0 mt-0.5 opacity-80" />
+                          <Icon className="h-3.5 w-3.5 shrink-0 mt-0.5 opacity-70 text-current" />
                           <div className="min-w-0">
                             <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                              <span className="text-sm font-semibold text-foreground">{risk.factor}</span>
-                              <span className={cn('text-[10px] font-bold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded-full', cfg.badge)}>
-                                {risk.severity.charAt(0).toUpperCase() + risk.severity.slice(1)}
+                              <span className="text-[11px] font-bold text-foreground/90">{risk.factor}</span>
+                              <span className={cn('text-[8px] font-bold uppercase tracking-wide px-1 py-0.5 rounded', severityChip(risk.severity))}>
+                                {risk.severity}
                               </span>
                             </div>
-                            <p className="text-xs text-muted-foreground leading-relaxed">{risk.description}</p>
+                            <p className="text-[11px] text-muted-foreground/75 leading-relaxed">{risk.description}</p>
                           </div>
                         </div>
                       );
@@ -594,37 +731,25 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
               )}
 
               {/* Recommendations */}
-              {analysis.recommendations && analysis.recommendations.length > 0 && (
+              {analysis.recommendations?.length > 0 && (
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/50 mb-3">
-                    Recommendations
-                  </p>
-                  <div className="space-y-2.5">
+                  <SectionLabel>Recommendations</SectionLabel>
+                  <ol className="space-y-2">
                     {analysis.recommendations.map((rec, i) => (
-                      <div key={i} className="flex gap-3 items-start">
-                        <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5 text-primary/70" />
-                        <p className="text-sm text-muted-foreground leading-relaxed">{rec}</p>
-                      </div>
+                      <li key={i} className="flex gap-2.5 items-start">
+                        <span className="text-[9px] font-mono font-bold text-primary/60 shrink-0 mt-0.5 tabular-nums">{String(i + 1).padStart(2, '0')}</span>
+                        <p className="text-[12px] text-muted-foreground/85 leading-relaxed">{rec}</p>
+                      </li>
                     ))}
-                  </div>
+                  </ol>
                 </div>
               )}
 
               {/* Footer */}
-              <div className="flex items-center justify-between pt-3 border-t border-border/30">
-                <span className="text-[10px] font-mono text-muted-foreground/35 tracking-[0.1em] uppercase select-none">
-                  Generated by Claude Sonnet{generatedTime ? ` · ${generatedTime}` : ''}
+              <div className="flex items-center justify-between pt-2 border-t border-border/15">
+                <span className="text-[9px] font-mono text-muted-foreground/25 uppercase tracking-[0.15em] select-none">
+                  {restoredFrom ? `Restored · ${generatedTime}` : `Generated · ${generatedTime}`}
                 </span>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={analyze}
-                  disabled={state === 'loading'}
-                  className="h-7 text-xs gap-1.5 text-muted-foreground hover:text-foreground"
-                >
-                  <RefreshCw className="h-3 w-3" />
-                  Re-analyze
-                </Button>
               </div>
             </div>
           )}

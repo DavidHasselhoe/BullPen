@@ -167,6 +167,25 @@ export interface Database {
           featured_tickers: string[] | null;
         }>;
       };
+      risk_analyses: {
+        Row: {
+          id: string;
+          user_id: string;
+          analysis: JsonValue;
+          currency: string;
+          holdings_count: number | null;
+          created_at: string;
+        };
+        Insert: {
+          user_id: string;
+          analysis: JsonValue;
+          currency?: string;
+          holdings_count?: number | null;
+          id?: string;
+          created_at?: string;
+        };
+        Update: Partial<{ currency: string; holdings_count: number | null }>;
+      };
       stock_deep_dives: {
         Row: {
           id: string;

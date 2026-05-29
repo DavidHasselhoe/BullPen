@@ -3,14 +3,17 @@
  *
  * Accepts a holdings payload, sends it to Claude Sonnet 4.6 with a specialized
  * risk-analyst system prompt, and returns a structured JSON risk report.
+ * Saves the result to risk_analyses so users can revisit without regenerating.
  * Quota: 1 free run/month for free users, unlimited for Pro.
  */
 
 import Anthropic from '@anthropic-ai/sdk';
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuth, withRateLimit } from '@/lib/security/api-security';
+import { withAuth, withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
 import { checkQuota } from '@/lib/billing/quotas';
 import { logAiCall } from '@/lib/billing/log-ai-call';
+import { createServerClient } from '@/lib/supabase/client';
+import type { Database } from '@/lib/supabase/types';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -52,11 +55,11 @@ Scoring guidelines:
 - volatilityExposure: score 80+ for biotech/crypto-adjacent/speculative; 60-79 for high-beta tech; 40-59 for mixed; <40 for defensive sectors
 - correlationRisk: score 80+ if >80% of holdings are high-beta tech/growth names that move in lockstep; score 40-79 for mixed growth/value; score <40 if genuinely diversified across growth, value, and defensive
 - liquidityRisk: score 80+ if >30% of portfolio value is in small/micro-cap or thinly traded names; score 40-79 for some mid-cap exposure; score <30 if dominated by large/mega-cap liquid names
-- stressScenarios: exactly 3 items — (1) a rate-hike cycle scenario, (2) a sector-specific correction for the portfolio's most concentrated sector, (3) a broad market sell-off. For each, estimate a % drawdown range (e.g. "−22% to −35% estimated drawdown") based on the holdings' sector membership, known beta characteristics, and historical analogues. severity: "low" if estimated impact <10%, "medium" if 10-25%, "high" if >25%
+- stressScenarios: exactly 3 items — (1) a rate-hike cycle scenario, (2) a sector-specific correction for the portfolio's most concentrated sector, (3) a broad market sell-off. For each, estimate a % drawdown range (e.g. "−22% to −35% estimated drawdown") based on the holdings' sector membership, known beta characteristics, and historical analogues. severity: "low" if estimated impact <10%, "medium" if 10-25%, "high" if >25%. Keep scenario names SHORT (5 words max).
 - topRisks: 3-5 items ordered by severity; be specific and name actual ticker symbols
 - sectorBreakdown: classify each symbol into its GICS sector; estimatedWeight = approximate % of portfolio in that sector
 - recommendations: 3-5 concrete, actionable bullet points mentioning specific ticker symbols where relevant
-- portfolioSummary: 2-3 sentence executive-level summary; be honest about risk level and key vulnerabilities
+- portfolioSummary: 2-3 sentence executive-level summary; use the portfolio currency provided; be honest about risk level and key vulnerabilities
 - Use professional financial language; do not sugarcoat high-risk findings`;
 
 interface HoldingInput {
@@ -69,38 +72,53 @@ interface HoldingInput {
   unrealizedPLPercent?: number;
 }
 
+// Currency display helpers
+const CURRENCY_PREFIXES: Record<string, string> = {
+  USD: '$', EUR: '€', GBP: '£', JPY: '¥',
+  CAD: 'CA$', AUD: 'A$', CHF: 'Fr.',
+};
+function currencyPrefix(code: string): string {
+  return CURRENCY_PREFIXES[code] ?? `${code} `;
+}
+
 async function handler(req: NextRequest, _context: unknown, session: { userId: string }) {
-  // Monthly quota (1/mo free, unlimited Pro)
   const quota = await checkQuota(session.userId, 'risk_analysis');
   if (!quota.allowed) {
-    return NextResponse.json({ error: 'quota_exceeded', quota }, { status: 402 });
+    return addSecurityHeaders(
+      NextResponse.json({ error: 'quota_exceeded', quota }, { status: 402 })
+    );
   }
 
   try {
     const body = await req.json();
     const holdings: HoldingInput[] = body.holdings;
+    const currency: string = (typeof body.currency === 'string' && body.currency.length > 0)
+      ? body.currency.toUpperCase()
+      : 'USD';
 
     if (!Array.isArray(holdings) || holdings.length === 0) {
-      return NextResponse.json({ success: false, error: 'No holdings provided' }, { status: 400 });
+      return addSecurityHeaders(
+        NextResponse.json({ success: false, error: 'No holdings provided' }, { status: 400 })
+      );
     }
 
+    const prefix = currencyPrefix(currency);
     const totalValue = holdings.reduce((sum, h) => sum + (h.marketValue ?? 0), 0);
 
     const lines = holdings.map((h) => {
       const parts: string[] = [`${h.symbol} (${h.company_name})`];
       if (h.allocation != null) parts.push(`allocation: ${h.allocation.toFixed(1)}%`);
-      if (h.marketValue != null) parts.push(`value: $${h.marketValue.toFixed(0)}`);
+      if (h.marketValue != null) parts.push(`value: ${prefix}${h.marketValue.toFixed(0)}`);
       if (h.quantity != null) parts.push(`shares: ${h.quantity}`);
       if (h.dayChangePercent != null)
         parts.push(`today: ${h.dayChangePercent >= 0 ? '+' : ''}${h.dayChangePercent.toFixed(2)}%`);
       if (h.unrealizedPLPercent != null)
-        parts.push(
-          `unrealized P/L: ${h.unrealizedPLPercent >= 0 ? '+' : ''}${h.unrealizedPLPercent.toFixed(2)}%`
-        );
+        parts.push(`unrealized P/L: ${h.unrealizedPLPercent >= 0 ? '+' : ''}${h.unrealizedPLPercent.toFixed(2)}%`);
       return parts.join(', ');
     });
 
-    const prompt = `Analyze this portfolio${totalValue > 0 ? ` (total value: $${totalValue.toFixed(0)})` : ''}:\n\n${lines.join('\n')}`;
+    const currencyNote = currency !== 'USD' ? `\nAll portfolio values are in ${currency}.` : '';
+    const prompt = `Analyze this portfolio${totalValue > 0 ? ` (total value: ${prefix}${totalValue.toFixed(0)})` : ''}:${currencyNote}\n\n${lines.join('\n')}`;
 
     const msg = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
@@ -115,26 +133,57 @@ async function handler(req: NextRequest, _context: unknown, session: { userId: s
       model: 'claude-sonnet-4-6',
       inputTokens: msg.usage.input_tokens,
       outputTokens: msg.usage.output_tokens,
-      metadata: { holdingsCount: holdings.length },
+      metadata: { holdingsCount: holdings.length, currency },
     });
 
     const rawText = msg.content[0].type === 'text' ? msg.content[0].text : '';
-    // Strip any accidental markdown fences before parsing
     const cleaned = rawText.trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '');
     const analysis = JSON.parse(cleaned);
-
-    // Attach server-side timestamp so the UI can display when analysis was generated
     analysis.generatedAt = new Date().toISOString();
 
-    return NextResponse.json({ success: true, analysis });
+    // Persist the analysis so users can revisit without regenerating.
+    let savedId: string | null = null;
+    try {
+      type RiskInsert = Database['public']['Tables']['risk_analyses']['Insert'];
+      const supabase = createServerClient();
+      const { data: inserted } = await supabase
+        .from('risk_analyses')
+        .insert({
+          user_id: session.userId,
+          analysis: analysis as unknown as RiskInsert['analysis'],
+          currency,
+          holdings_count: holdings.length,
+        } satisfies Omit<RiskInsert, 'id' | 'created_at'>)
+        .select('id')
+        .single();
+      savedId = inserted?.id ?? null;
+
+      // Keep only the 10 most recent analyses per user (cost control).
+      const { data: oldest } = await supabase
+        .from('risk_analyses')
+        .select('id')
+        .eq('user_id', session.userId)
+        .order('created_at', { ascending: false })
+        .range(10, 999);
+      if (oldest && oldest.length > 0) {
+        await supabase.from('risk_analyses').delete().in('id', oldest.map((r) => (r as { id: string }).id));
+      }
+    } catch {
+      // Never block the response on a save failure.
+    }
+
+    return addSecurityHeaders(
+      NextResponse.json({ success: true, analysis, savedId })
+    );
   } catch (err) {
     console.error('[risk-analysis]', err);
-    return NextResponse.json(
-      { success: false, error: err instanceof Error ? err.message : 'Failed to generate risk analysis' },
-      { status: 500 }
+    return addSecurityHeaders(
+      NextResponse.json(
+        { success: false, error: err instanceof Error ? err.message : 'Failed to generate risk analysis' },
+        { status: 500 }
+      )
     );
   }
 }
 
-/** Auth required; rate limited to 10/min to protect Claude usage */
 export const POST = withRateLimit(withAuth(handler), { windowMs: 60 * 1000, maxRequests: 10 });
