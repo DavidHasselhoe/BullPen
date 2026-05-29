@@ -49,6 +49,12 @@ async function handler(request: NextRequest) {
   const supabase = createServerClient();
   const sp = request.nextUrl.searchParams;
 
+  // --- Symbol allowlist (used by screener views) ---
+  const symbolsParam = sp.get('symbols');
+  const symbolAllowlist = symbolsParam
+    ? new Set(symbolsParam.split(',').map((s) => s.trim().toUpperCase()).filter(Boolean))
+    : null;
+
   // --- Parse filter params ---
   const sector = sp.get('sector') || undefined;
   const industry = sp.get('industry') || undefined;
@@ -80,6 +86,11 @@ async function handler(request: NextRequest) {
   }
 
   let results: ScreenerRow[] = (data ?? []) as ScreenerRow[];
+
+  // --- Apply symbol allowlist first (views) ---
+  if (symbolAllowlist && symbolAllowlist.size > 0) {
+    results = results.filter((r) => symbolAllowlist.has(r.ticker.toUpperCase()));
+  }
 
   // --- Apply filters ---
   results = results.filter((r) => {
@@ -122,13 +133,18 @@ async function handler(request: NextRequest) {
     industriesSource.map(r => r.industry).filter(Boolean) as string[]
   )].sort();
 
+  const allData = data ?? [];
+  const financialsLoaded = allData.filter((r) => (r as ScreenerRow).market_cap != null).length;
+
   const response = NextResponse.json({
     success: true,
     results,
     sectors,
     industries,
     total: results.length,
-    stale: (data ?? []).length === 0,
+    universeSize: allData.length,
+    financialsLoaded,
+    stale: allData.length === 0,
   });
   response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60');
   return response;

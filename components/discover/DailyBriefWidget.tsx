@@ -111,11 +111,37 @@ function renderInline(text: string): React.ReactNode {
       nodes.push(text.slice(lastIndex, match.index));
     }
     if (match[1] != null) {
-      nodes.push(
-        <strong key={key++} className="font-semibold text-foreground">
-          {match[1]}
-        </strong>
-      );
+      const boldContent = match[1];
+      // Bold content that starts with a ticker, e.g. **$ANF** or **$ANF (Abercrombie & Fitch)**
+      const tickerInBold = boldContent.match(/^(\$[A-Z]{1,5})\b(.*)?$/s);
+      if (tickerInBold) {
+        const ticker = tickerInBold[1].slice(1);
+        const rest = tickerInBold[2] ?? '';
+        const linkEl = (
+          <Link
+            key={key++}
+            href={slugToAssetPath(ticker)}
+            className="font-mono font-semibold text-primary/85 hover:text-primary border-b border-primary/20 hover:border-primary/60 transition-colors"
+          >
+            ${ticker}
+          </Link>
+        );
+        if (rest) {
+          nodes.push(
+            <strong key={key++} className="font-semibold text-foreground">
+              {linkEl}{rest}
+            </strong>
+          );
+        } else {
+          nodes.push(linkEl);
+        }
+      } else {
+        nodes.push(
+          <strong key={key++} className="font-semibold text-foreground">
+            {boldContent}
+          </strong>
+        );
+      }
     } else if (match[2]) {
       const ticker = match[2];
       nodes.push(

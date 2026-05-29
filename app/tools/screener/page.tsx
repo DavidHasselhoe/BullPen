@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo, Suspense } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
@@ -14,13 +14,16 @@ import {
   type ScreenerFilterValues,
 } from '@/components/screener/ScreenerFilters';
 import { ScreenerResults } from '@/components/screener/ScreenerResults';
+import { ScreenerViewBar, type ActiveView } from '@/components/screener/ScreenerViewBar';
+import { ScreenerViewStockPicker } from '@/components/screener/ScreenerViewStockPicker';
 import { useHeatmapStream } from '@/hooks/use-heatmap-stream';
+import { useWatchlist, useWatchlistItems } from '@/hooks/use-watchlist';
+import { useScreenerViews, useUpdateScreenerView, type ScreenerView } from '@/hooks/use-screener-views';
 import type { ScreenerRow } from '@/app/api/screener/route';
 
 export const dynamic = 'force-dynamic';
 
 const FILTER_KEYS = Object.keys(EMPTY_FILTERS) as (keyof ScreenerFilterValues)[];
-
 const BILLION_KEYS = new Set(['marketCapMin', 'marketCapMax']);
 
 function filtersFromParams(sp: URLSearchParams): ScreenerFilterValues {
@@ -32,8 +35,9 @@ function filtersFromParams(sp: URLSearchParams): ScreenerFilterValues {
   return f;
 }
 
-function buildQueryString(filters: ScreenerFilterValues): string {
+function buildQueryString(filters: ScreenerFilterValues, symbols: string | null): string {
   const params = new URLSearchParams();
+  if (symbols) params.set('symbols', symbols);
   for (const key of FILTER_KEYS) {
     const val = filters[key];
     if (!val) continue;
@@ -47,17 +51,78 @@ function buildQueryString(filters: ScreenerFilterValues): string {
   return params.toString();
 }
 
+function viewToParam(view: ActiveView): string {
+  if (view.type === 'sp500') return 'sp500';
+  if (view.type === 'watchlist') return view.listId ? `watchlist:${view.listId}` : 'watchlist';
+  return view.view.id;
+}
+
+function paramToView(param: string | null, customViews: ScreenerView[]): ActiveView {
+  if (!param || param === 'sp500') return { type: 'sp500' };
+  if (param === 'watchlist') return { type: 'watchlist', listId: null };
+  if (param.startsWith('watchlist:')) return { type: 'watchlist', listId: param.slice(10) };
+  const found = customViews.find((v) => v.id === param);
+  if (found) return { type: 'custom', view: found };
+  return { type: 'sp500' };
+}
+
 function ScreenerContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [filters, setFilters] = useState<ScreenerFilterValues>(() =>
-    filtersFromParams(searchParams),
-  );
-  const [refreshStatus, setRefreshStatus] = useState<string>('');
+
+  const [filters, setFilters] = useState<ScreenerFilterValues>(() => filtersFromParams(searchParams));
+  const [refreshStatus, setRefreshStatus] = useState('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
 
-  const qs = useMemo(() => buildQueryString(filters), [filters]);
+  const { data: customViews = [] } = useScreenerViews();
+  const [activeView, setActiveView] = useState<ActiveView>({ type: 'sp500' });
+  const updateView = useUpdateScreenerView();
+
+  // Restore active view from URL once custom views are loaded
+  useEffect(() => {
+    const viewParam = searchParams.get('view');
+    if (viewParam) setActiveView(paramToView(viewParam, customViews));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customViews.length]);
+
+  // Sync active view object when views list updates (e.g. after rename)
+  useEffect(() => {
+    if (activeView.type === 'custom') {
+      const updated = customViews.find((v) => v.id === activeView.view.id);
+      if (updated && updated.name !== activeView.view.name) {
+        setActiveView({ type: 'custom', view: updated });
+      }
+    }
+  }, [customViews, activeView]);
+
+  // Company universe for stock picker search — cached from full screener load
+  const universeRef = useRef<ScreenerRow[]>([]);
+
+  // Watchlist data
+  const { data: allWatchlistItems = [] } = useWatchlist();
+  const watchlistListId = activeView.type === 'watchlist' ? activeView.listId : null;
+  const { data: listItems = [] } = useWatchlistItems(watchlistListId);
+
+  // Symbol allowlist based on active view
+  const symbolsFilter = useMemo((): string | null => {
+    if (activeView.type === 'sp500') return null;
+    if (activeView.type === 'watchlist') {
+      const items = watchlistListId ? listItems : allWatchlistItems;
+      return items.length > 0 ? items.map((i) => i.symbol).join(',') : '__none__';
+    }
+    if (activeView.type === 'custom') {
+      return activeView.view.tickers.length > 0
+        ? activeView.view.tickers.join(',')
+        : '__none__';
+    }
+    return null;
+  }, [activeView, allWatchlistItems, listItems, watchlistListId]);
+
+  const qs = useMemo(
+    () => buildQueryString(filters, symbolsFilter === '__none__' ? null : symbolsFilter),
+    [filters, symbolsFilter]
+  );
 
   const { data, isLoading, refetch } = useQuery<{
     success: boolean;
@@ -65,10 +130,15 @@ function ScreenerContent() {
     sectors: string[];
     industries: string[];
     total: number;
+    universeSize: number;
+    financialsLoaded: number;
     stale: boolean;
   }>({
     queryKey: ['screener', qs],
     queryFn: async () => {
+      if (symbolsFilter === '__none__') {
+        return { success: true, results: [], sectors: [], industries: [], total: 0, universeSize: 0, financialsLoaded: 0, stale: false };
+      }
       const url = `/api/screener${qs ? `?${qs}` : ''}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error('Failed to fetch screener data');
@@ -77,23 +147,38 @@ function ScreenerContent() {
     staleTime: 5 * 60 * 1000,
   });
 
+  // Cache company universe whenever we have the full S&P 500 set
+  useEffect(() => {
+    if (activeView.type === 'sp500' && data?.results && data.results.length > 10) {
+      universeRef.current = data.results;
+    }
+  }, [activeView.type, data?.results]);
+
+  // If universe is empty (landed on custom view directly), fetch it silently
+  const needsUniverse = activeView.type === 'custom' && universeRef.current.length === 0;
+  useQuery({
+    queryKey: ['screener-universe'],
+    queryFn: async () => {
+      const res = await fetch('/api/screener');
+      if (!res.ok) throw new Error();
+      const d = await res.json();
+      universeRef.current = d.results ?? [];
+      return d.results as ScreenerRow[];
+    },
+    enabled: needsUniverse,
+    staleTime: 10 * 60 * 1000,
+  });
+
   const { mutate: triggerRefresh, isPending: isRefreshing } = useMutation({
     mutationFn: async (batch: number): Promise<{
-      success: boolean;
-      nextBatch: number | null;
-      totalBatches: number;
-      refreshed: number;
-      batch: number;
-      done: boolean;
+      success: boolean; nextBatch: number | null; totalBatches: number; refreshed: number; batch: number; done: boolean;
     }> => {
       const res = await fetch(`/api/screener/refresh?batch=${batch}`, { method: 'POST' });
       if (!res.ok) throw new Error('Refresh failed');
       return res.json();
     },
     onSuccess: (result) => {
-      setRefreshStatus(
-        `Refreshed batch ${result.batch + 1}/${result.totalBatches} (${result.refreshed} companies)`
-      );
+      setRefreshStatus(`Refreshed batch ${result.batch + 1}/${result.totalBatches} (${result.refreshed} companies)`);
       if (result.nextBatch !== null) {
         setTimeout(() => triggerRefresh(result.nextBatch!), 65_000);
       } else {
@@ -101,46 +186,64 @@ function ScreenerContent() {
         refetch();
       }
     },
-    onError: () => {
-      setRefreshStatus('Refresh failed — check console');
-    },
+    onError: () => setRefreshStatus('Refresh failed — check console'),
   });
 
-  const handleChange = useCallback(
-    (next: ScreenerFilterValues) => {
-      setFilters(next);
-      setPage(1);
-      const params = new URLSearchParams();
-      for (const key of FILTER_KEYS) {
-        if (next[key]) params.set(key, next[key]);
-      }
-      const newUrl = params.toString()
-        ? `?${params.toString()}`
-        : window.location.pathname;
-      router.replace(newUrl, { scroll: false });
-    },
-    [router],
-  );
+  const handleFilterChange = useCallback((next: ScreenerFilterValues) => {
+    setFilters(next);
+    setPage(1);
+    const params = new URLSearchParams();
+    const viewParam = viewToParam(activeView);
+    if (viewParam !== 'sp500') params.set('view', viewParam);
+    for (const key of FILTER_KEYS) {
+      if (next[key]) params.set(key, next[key]);
+    }
+    router.replace(params.toString() ? `?${params.toString()}` : window.location.pathname, { scroll: false });
+  }, [router, activeView]);
 
-  const handleReset = useCallback(() => handleChange({ ...EMPTY_FILTERS }), [handleChange]);
+  const handleReset = useCallback(() => handleFilterChange({ ...EMPTY_FILTERS }), [handleFilterChange]);
+
+  const handleViewChange = useCallback((view: ActiveView) => {
+    setActiveView(view);
+    setPage(1);
+    const params = new URLSearchParams();
+    const viewParam = viewToParam(view);
+    if (viewParam !== 'sp500') params.set('view', viewParam);
+    for (const key of FILTER_KEYS) {
+      if (filters[key]) params.set(key, filters[key]);
+    }
+    router.replace(params.toString() ? `?${params.toString()}` : window.location.pathname, { scroll: false });
+  }, [router, filters]);
+
+  // Add a ticker to the active custom view
+  const handleAddTicker = useCallback(async (ticker: string) => {
+    if (activeView.type !== 'custom') return;
+    const current = activeView.view.tickers;
+    if (current.includes(ticker)) return;
+    const updated = [...current, ticker];
+    try {
+      const result = await updateView.mutateAsync({ id: activeView.view.id, tickers: updated });
+      setActiveView({ type: 'custom', view: result });
+    } catch {}
+  }, [activeView, updateView]);
 
   const results = data?.results ?? [];
   const sectors = data?.sectors ?? [];
   const industries = data?.industries ?? [];
   const activeFilterCount = Object.values(filters).filter(Boolean).length;
-
-  // Use heatmap stream for live prices — seeds from REST snapshot on connect so
-  // prices are available immediately without waiting for WS ticks to arrive.
   const { prices: livePrices, connected } = useHeatmapStream();
 
+  const isCustomView = activeView.type === 'custom';
+  const customViewEmpty = isCustomView && symbolsFilter === '__none__';
+
   return (
-    <div className="container mx-auto px-4 py-8 max-w-[1400px]">
+    <div className="w-full px-4 py-8">
       {/* Header */}
-      <div className="mb-6">
+      <div className="mb-4">
         <div className="flex items-center gap-3 mb-1 flex-wrap">
           <Filter className="h-5 w-5 text-primary" />
           <h1 className="text-xl font-semibold">Stock Screener</h1>
-          {!isLoading && (
+          {!isLoading && !customViewEmpty && (
             <Badge variant="secondary" className="text-xs">
               {data?.total ?? 0} result{(data?.total ?? 0) !== 1 ? 's' : ''}
             </Badge>
@@ -152,12 +255,9 @@ function ScreenerContent() {
             </span>
           </span>
           <div className="ml-auto flex items-center gap-2">
-            {refreshStatus && (
-              <span className="text-xs text-muted-foreground">{refreshStatus}</span>
-            )}
+            {refreshStatus && <span className="text-xs text-muted-foreground">{refreshStatus}</span>}
             <Button
-              variant="outline"
-              size="sm"
+              variant="outline" size="sm"
               onClick={() => { setRefreshStatus('Starting refresh…'); triggerRefresh(0); }}
               disabled={isRefreshing}
               className="gap-1.5 h-8 text-xs"
@@ -168,15 +268,24 @@ function ScreenerContent() {
           </div>
         </div>
         <p className="text-sm text-muted-foreground">
-          Screen the full S&P 500 with live prices and fundamental data.
+          {activeView.type === 'sp500'
+            ? 'Screen the full S&P 500 with live prices and fundamental data.'
+            : activeView.type === 'watchlist'
+              ? 'Screening your watchlist.'
+              : `Screening "${activeView.view.name}"`}
         </p>
       </div>
 
-      <div className="flex gap-6">
-        {/* Sidebar filters */}
-        <Card className="w-64 flex-shrink-0 hidden lg:block self-start sticky top-20">
+      {/* View bar */}
+      <div className="mb-5">
+        <ScreenerViewBar activeView={activeView} onViewChange={handleViewChange} />
+      </div>
+
+      <div className="flex gap-4">
+        {/* Sidebar filters — always visible */}
+        <Card className="w-56 flex-shrink-0 hidden lg:block self-start sticky top-20">
           <CardContent className="p-4">
-            {isLoading ? (
+            {isLoading && !customViewEmpty ? (
               <div className="space-y-4">
                 {Array.from({ length: 8 }).map((_, i) => (
                   <div key={i} className="space-y-1.5">
@@ -193,7 +302,7 @@ function ScreenerContent() {
                 filters={filters}
                 sectors={sectors}
                 industries={industries}
-                onChange={handleChange}
+                onChange={handleFilterChange}
                 onReset={handleReset}
               />
             )}
@@ -220,7 +329,7 @@ function ScreenerContent() {
                       filters={filters}
                       sectors={sectors}
                       industries={industries}
-                      onChange={handleChange}
+                      onChange={handleFilterChange}
                       onReset={handleReset}
                     />
                   </div>
@@ -232,7 +341,24 @@ function ScreenerContent() {
 
         {/* Results */}
         <div className="flex-1 min-w-0">
-          {isLoading ? (
+          {/* Empty custom view — stock picker inline in the normal results area */}
+          {customViewEmpty && isCustomView ? (
+            <div className="rounded-md border border-border/40 overflow-hidden">
+              {/* Table header row */}
+              <div className="px-3 py-2.5 border-b border-border/30 bg-muted/10">
+                <span className="text-xs font-medium text-muted-foreground">Company</span>
+              </div>
+              {/* Empty body with inline picker */}
+              <div className="px-3 py-6">
+                <ScreenerViewStockPicker
+                  view={activeView.view}
+                  universe={universeRef.current}
+                  onAdd={handleAddTicker}
+                  hasStocks={false}
+                />
+              </div>
+            </div>
+          ) : isLoading ? (
             <Card>
               <CardContent className="p-4">
                 <div className="space-y-3">
@@ -243,14 +369,25 @@ function ScreenerContent() {
               </CardContent>
             </Card>
           ) : (
-            <ScreenerResults
-              data={results}
-              livePrices={livePrices}
-              page={page}
-              pageSize={pageSize}
-              onPageChange={setPage}
-              onPageSizeChange={(sz) => { setPageSize(sz); setPage(1); }}
-            />
+            <>
+              <ScreenerResults
+                data={results}
+                livePrices={livePrices}
+                page={page}
+                pageSize={pageSize}
+                onPageChange={setPage}
+                onPageSizeChange={(sz) => { setPageSize(sz); setPage(1); }}
+              />
+              {/* Inline add row — only for custom views with stocks */}
+              {isCustomView && (
+                <ScreenerViewStockPicker
+                  view={activeView.view}
+                  universe={universeRef.current}
+                  onAdd={handleAddTicker}
+                  hasStocks={results.length > 0}
+                />
+              )}
+            </>
           )}
         </div>
       </div>
@@ -262,10 +399,10 @@ export default function ScreenerPage() {
   return (
     <Suspense
       fallback={
-        <div className="container mx-auto px-4 py-8 max-w-[1400px]">
+        <div className="w-full px-4 py-8">
           <Skeleton className="h-8 w-48 mb-6" />
-          <div className="flex gap-6">
-            <Skeleton className="w-64 h-[600px] hidden lg:block" />
+          <div className="flex gap-4">
+            <Skeleton className="w-56 h-[600px] hidden lg:block" />
             <div className="flex-1 space-y-3">
               {Array.from({ length: 10 }).map((_, i) => (
                 <Skeleton key={i} className="h-10 w-full" />

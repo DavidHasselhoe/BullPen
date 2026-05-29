@@ -67,19 +67,19 @@ interface ColumnDef {
 }
 
 const COLUMNS: ColumnDef[] = [
-  { key: 'price',             label: 'Price',       tip: 'Live price' },
-  { key: 'change_pct',        label: '% Chg',       tip: 'Day change %' },
-  { key: 'market_cap',        label: 'Mkt Cap',     tip: 'Market capitalisation' },
-  { key: 'pe_ratio',          label: 'P/E',         tip: 'Trailing P/E ratio' },
-  { key: 'forward_pe',        label: 'Fwd P/E',     tip: 'Forward P/E (next 12 months estimate)' },
-  { key: 'pb_ratio',          label: 'P/B',         tip: 'Price-to-book ratio' },
-  { key: 'eps_ttm',           label: 'EPS',         tip: 'Earnings per share, trailing 12 months' },
-  { key: 'ev_to_ebitda',      label: 'EV/EBITDA',   tip: 'Enterprise value to EBITDA' },
-  { key: 'beta',              label: 'Beta',        tip: '5Y monthly beta' },
-  { key: 'dividend_yield',    label: 'Div Yld',     tip: 'Forward annual dividend yield' },
-  { key: 'profit_margin',     label: 'Net Margin',  tip: 'Net profit margin' },
-  { key: 'revenue_growth_yoy', label: 'Rev Growth', tip: 'Quarterly revenue growth YoY' },
-  { key: 'week52_high',       label: '52W High',    tip: '52-week high price' },
+  { key: 'price',             label: 'Price',    tip: 'Live price' },
+  { key: 'change_pct',        label: '% Chg',    tip: 'Day change %' },
+  { key: 'market_cap',        label: 'Mkt Cap',  tip: 'Market capitalisation' },
+  { key: 'pe_ratio',          label: 'P/E',      tip: 'Trailing P/E ratio' },
+  { key: 'forward_pe',        label: 'Fwd P/E',  tip: 'Forward P/E (next 12 months estimate)' },
+  { key: 'pb_ratio',          label: 'P/B',      tip: 'Price-to-book ratio' },
+  { key: 'eps_ttm',           label: 'EPS',      tip: 'Earnings per share, trailing 12 months' },
+  { key: 'ev_to_ebitda',      label: 'EV/EB',    tip: 'Enterprise value to EBITDA (EV/EBITDA)' },
+  { key: 'beta',              label: 'Beta',     tip: '5Y monthly beta' },
+  { key: 'dividend_yield',    label: 'Div Yld',  tip: 'Forward annual dividend yield' },
+  { key: 'profit_margin',     label: 'Margin',   tip: 'Net profit margin' },
+  { key: 'revenue_growth_yoy', label: 'Rev Gth', tip: 'Quarterly revenue growth YoY' },
+  { key: 'week52_high',       label: '52W Hi',   tip: '52-week high price' },
 ];
 
 const PAGE_SIZE_OPTIONS = [25, 50, 100];
@@ -160,11 +160,11 @@ export function ScreenerResults({ data, livePrices, page, pageSize, onPageChange
 
   return (
     <div className="space-y-3">
-      <div className="rounded-md border overflow-auto">
+      <div className="rounded-md border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="sticky left-0 z-10 bg-background min-w-[200px]">
+              <TableHead className="sticky left-0 z-10 bg-background min-w-[160px]">
                 <button
                   onClick={() => toggleSort('ticker')}
                   className="flex items-center gap-1 text-xs font-medium hover:text-foreground"
@@ -174,7 +174,7 @@ export function ScreenerResults({ data, livePrices, page, pageSize, onPageChange
               </TableHead>
 
               {COLUMNS.map((col) => (
-                <TableHead key={col.key} className="min-w-[80px] text-right" title={col.tip}>
+                <TableHead key={col.key} className="min-w-[58px] text-right" title={col.tip}>
                   <button
                     onClick={() => toggleSort(col.key)}
                     className="flex items-center justify-end gap-1 text-xs font-medium w-full hover:text-foreground"

@@ -1,0 +1,35 @@
+name: Cron — Refresh Screener Financial Data
+
+# Daily at 22:00 UTC (after US market close + price-moves cron).
+# Chains through all screener batches with 65s delays to stay within
+# TwelveData's 610 credits/min rate limit (each batch = 10 stocks × 50 credits).
+# ~51 batches × 65s ≈ 55 min total — well within the 70-min job timeout.
+on:
+  schedule:
+    - cron: '0 22 * * *'
+  workflow_dispatch:
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    steps:
+      - name: Chain through all screener refresh batches
+        env:
+          APP_URL: ${{ vars.APP_URL || 'https://bullpen.no' }}
+        run: |
+          echo "Starting screener refresh…"
+          for batch in $(seq 0 60); do
+            echo "→ Batch $batch"
+            RESPONSE=$(curl -fsS -X POST "${APP_URL}/api/screener/refresh?batch=${batch}") || {
+              echo "Batch $batch failed (rate limit or network error) — stopping"
+              break
+            }
+            echo "$RESPONSE"
+            DONE=$(echo "$RESPONSE" | jq -r '.done // false')
+            if [ "$DONE" = "true" ]; then
+              echo "All batches complete."
+              break
+            fi
+            sleep 65
+          done
