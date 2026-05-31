@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { WsManager, type PriceTick } from '@/lib/market-data/ws-manager';
 import { getStockQuotes } from '@/lib/twelvedata/twelvedata-client';
 import { withRateLimit } from '@/lib/security/api-security';
+import { rget, rset } from '@/lib/cache/redis-cache';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -15,11 +16,23 @@ const SESSION_TTL_MS = 5 * 60 * 1000;
 // can't fill the gap). Chunk to stay well under the limit.
 const SEED_CHUNK = 100;
 
+// Cached quote shape — only the fields needed to seed WsManager + emit a tick.
+interface SeedQuote { c: number; d: number; dp: number; pc: number }
+
+// 15 s: long enough for multiple cold-start instances to share the batch result,
+// short enough that prices don't feel stale on the first render.
+const SEED_TTL = 15;
+
+function seedKey(sym: string) { return `seed:${sym}`; }
+
 /**
- * Fetch quotes for any symbols that don't yet have a seeded prevClose in
- * WsManager. Runs fire-and-forget when a new SSE session opens.
- * After the first call per server warm-start, WsManager caches prevClose
- * so subsequent sessions skip the API call entirely.
+ * Seed WsManager with initial prices for any symbols it hasn't seen yet.
+ *
+ * Flow (two-level dedup):
+ *   1. WsManager.hasPrevClose — in-process; zero cost on warm instances.
+ *   2. Redis per-symbol cache — shared across serverless instances; avoids
+ *      re-fetching on cold starts when another instance already paid the cost.
+ *   3. TwelveData batch fetch — only for the true remainder.
  *
  * Each chunk's failure is isolated — one bad chunk won't blank the others.
  */
@@ -27,12 +40,37 @@ async function seedInitialPrices(
   symbols: string[],
   safeEnqueue: (chunk: string) => void
 ): Promise<void> {
+  // Level 1: skip anything WsManager already knows (in-process, zero cost).
   const unseeded = symbols.filter((s) => !WsManager.hasPrevClose(s));
   if (unseeded.length === 0) return;
 
+  // Level 2: pull what's available in Redis to avoid hitting TwelveData.
+  const redisCached = await Promise.all(
+    unseeded.map(async (sym) => ({ sym, q: await rget<SeedQuote>(seedKey(sym)) }))
+  );
+
+  const stillNeeded: string[] = [];
+  for (const { sym, q } of redisCached) {
+    if (q && q.c > 0) {
+      const prevClose = q.pc > 0 ? q.pc : q.c;
+      WsManager.seedPrevClose(sym, prevClose);
+      safeEnqueue(`data: ${JSON.stringify({
+        symbol: sym, price: q.c,
+        change: isFinite(q.d) ? q.d : undefined,
+        changePercent: isFinite(q.dp) ? q.dp : undefined,
+        previousClose: prevClose,
+      } satisfies PriceTick)}\n\n`);
+    } else {
+      stillNeeded.push(sym);
+    }
+  }
+
+  if (stillNeeded.length === 0) return;
+
+  // Level 3: fetch the true remainder from TwelveData in chunks.
   const chunks: string[][] = [];
-  for (let i = 0; i < unseeded.length; i += SEED_CHUNK) {
-    chunks.push(unseeded.slice(i, i + SEED_CHUNK));
+  for (let i = 0; i < stillNeeded.length; i += SEED_CHUNK) {
+    chunks.push(stillNeeded.slice(i, i + SEED_CHUNK));
   }
 
   await Promise.all(
@@ -40,7 +78,6 @@ async function seedInitialPrices(
       try {
         const quotes = await getStockQuotes(chunk);
         for (const [sym, quote] of quotes.entries()) {
-          // StockQuote uses Finnhub-compat fields: c=close, d=change, dp=changePercent, pc=prevClose
           if (!quote || quote.c <= 0) continue;
           const prevClose = quote.pc > 0 ? quote.pc : quote.c;
           WsManager.seedPrevClose(sym, prevClose);
@@ -52,6 +89,8 @@ async function seedInitialPrices(
             previousClose: prevClose,
           };
           safeEnqueue(`data: ${JSON.stringify(tick)}\n\n`);
+          // Write to Redis so sibling instances skip this fetch for 15 s.
+          void rset<SeedQuote>(seedKey(sym), { c: quote.c, d: quote.d, dp: quote.dp, pc: prevClose }, SEED_TTL);
         }
       } catch (err) {
         if (process.env.NODE_ENV === 'development') {

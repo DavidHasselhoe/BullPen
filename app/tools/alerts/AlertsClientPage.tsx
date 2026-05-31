@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Bell, Plus, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -104,7 +105,7 @@ export default function AlertsClientPage() {
     return (
       <div className={cn('min-h-screen', !hasAnimatedBackground && 'bg-background')}>
         <div className="max-w-xl mx-auto px-4 py-16 text-center space-y-4">
-          <Bell className="h-10 w-10 text-emerald-500/70 mx-auto" />
+          <Bell className="h-10 w-10 text-primary/70 mx-auto" />
           <h1 className="text-2xl font-semibold">Sign in to set alerts</h1>
           <p className="text-sm text-muted-foreground">
             Create personal alerts when a stock hits a price, % move, or all-time high.
@@ -121,26 +122,22 @@ export default function AlertsClientPage() {
 
         {/* Header */}
         <div className="pb-4 border-b border-border/30">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.back()}
-            className="gap-1.5 -ml-2 mb-3 text-muted-foreground hover:text-foreground"
+          <Link
+            href="/tools"
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-3 group"
           >
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </Button>
+            <ArrowLeft className="h-3 w-3 transition-transform group-hover:-translate-x-0.5" />
+            All tools
+          </Link>
 
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-start gap-3 min-w-0">
-              <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
-                <Bell className="h-5 w-5 text-emerald-500" />
+              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <Bell className="h-5 w-5 text-primary" />
               </div>
               <div className="min-w-0">
-                <h1 className="text-xl sm:text-2xl font-semibold tracking-tight leading-tight">
-                  Price Alerts
-                </h1>
-                <p className="text-xs text-muted-foreground/65 mt-1 leading-relaxed">
+                <h1 className="text-2xl font-bold tracking-tight">Price Alerts</h1>
+                <p className="text-sm text-muted-foreground mt-0.5">
                   Get notified when a stock hits a target price, daily move, 52-week extreme, or new high.
                 </p>
               </div>
@@ -149,7 +146,7 @@ export default function AlertsClientPage() {
             {/* Quota + new-alert button */}
             <div className="flex items-center gap-3 shrink-0">
               {!isLoading && (
-                <span className="hidden sm:inline text-[10px] font-mono text-muted-foreground/40 tracking-wider whitespace-nowrap">
+                <span className="hidden sm:inline text-xs font-mono text-muted-foreground/50 tabular-nums whitespace-nowrap">
                   {activeCount}/{FREE_ACTIVE_ALERT_LIMIT} used
                 </span>
               )}
@@ -157,7 +154,7 @@ export default function AlertsClientPage() {
                 <Button
                   size="sm"
                   onClick={() => setComposerOpen(true)}
-                  className="gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-white"
+                  className="gap-1.5"
                 >
                   <Plus className="h-3.5 w-3.5" />
                   New alert

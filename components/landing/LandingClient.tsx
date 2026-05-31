@@ -10,6 +10,7 @@ import { HowItWorks } from './HowItWorks';
 import { Peek } from './Peek';
 import { Pricing } from './Pricing';
 import { FAQ } from './FAQ';
+import { Testimonials } from './Testimonials';
 import { FinalCTA } from './FinalCTA';
 import { Footer } from './Footer';
 import './landing-styles.css';
@@ -31,6 +32,7 @@ export function LandingClient() {
     <div className="bullpen-landing-root">
       <div className="page-bg" aria-hidden />
       <div className="page-grid" aria-hidden />
+      <div className="page-noise" aria-hidden />
 
       <div className="content-layer">
         <Nav onSignIn={openSignIn} onSignUp={openSignUp} />
@@ -39,6 +41,7 @@ export function LandingClient() {
         <Features />
         <HowItWorks />
         <Peek />
+        <Testimonials />
         <Pricing onSignUp={openSignUp} />
         <FAQ />
         <FinalCTA onSignUp={openSignUp} />

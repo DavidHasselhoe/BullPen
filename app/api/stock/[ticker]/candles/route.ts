@@ -4,6 +4,7 @@ import { getStockCandles } from '@/lib/twelvedata/twelvedata-client';
 import { TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
 import { slugToSymbol, inferAssetType, has24hTrading } from '@/lib/assets/asset-type';
 import { getCached, setCached } from '@/lib/cache/market-data-cache';
+import { rget, rset, candleTtlSeconds } from '@/lib/cache/redis-cache';
 
 type Range = '1D' | '1W' | '1M' | '6M' | '1Y' | 'YTD' | '5Y' | 'MAX';
 type Interval = '1min' | '5min' | '15min' | '1h' | '4h' | '1day' | '1week';
@@ -70,20 +71,33 @@ async function handler(
     : undefined;
 
   // ── Server-side cache ─────────────────────────────────────────────────────
-  // 1D bars are polled every 60 s by the client (extended-hours move) — skip
-  // server cache there. For everything else, cache the response in Supabase:
-  //   30 min for short intraday ranges (1W/1M use 15min/1h bars)
-  //   6 h   for daily/weekly bars (6M, 1Y, YTD, 5Y, MAX — these don't change intraday)
+  // 1D bars: clients poll every 60 s, so we cache in Redis with a session-aware
+  //   TTL (10 s regular, 30 s extended, 5 min closed). The short TTL keeps data
+  //   fresh while absorbing the per-user poll burst across serverless instances.
+  // Non-1D: cache in Supabase (infrequent reads, longer TTL)
+  //   30 min for 1W/1M (15min/1h bars), 6 h for daily/weekly bars.
+  const cacheHeader = is1D
+    ? 'private, no-cache'
+    : 'public, s-maxage=300, stale-while-revalidate=60';
+
+  if (is1D) {
+    // Crypto has no ET date concept — use a plain '24h' suffix so keys don't
+    // collide across the midnight boundary for stocks.
+    const rKey = `candles:1D:${symbol}:${todayDateET ?? '24h'}`;
+    const cached = await rget<Record<string, unknown>>(rKey);
+    if (cached) {
+      return addSecurityHeaders(
+        NextResponse.json(cached, { headers: { 'Cache-Control': cacheHeader } })
+      );
+    }
+  }
+
   const cacheTtlSeconds = is1D
     ? null
     : (range === '1W' || range === '1M')
     ? 30 * 60
     : 6 * 60 * 60;
   const cacheKey = cacheTtlSeconds != null ? `candles:${symbol}:${range}` : null;
-
-  const cacheHeader = is1D
-    ? 'private, no-cache'
-    : 'public, s-maxage=300, stale-while-revalidate=60';
 
   if (cacheKey) {
     const cachedBody = await getCached<Record<string, unknown>>(cacheKey);
@@ -119,8 +133,11 @@ async function handler(
       interval: config.interval,
     };
 
-    // Fire-and-forget cache write; never block the response.
-    if (cacheKey && cacheTtlSeconds != null) {
+    // Fire-and-forget cache writes; never block the response.
+    if (is1D) {
+      const rKey = `candles:1D:${symbol}:${todayDateET ?? '24h'}`;
+      void rset(rKey, responseBody, candleTtlSeconds());
+    } else if (cacheKey && cacheTtlSeconds != null) {
       void setCached(cacheKey, symbol, 'candles', responseBody, cacheTtlSeconds);
     }
 

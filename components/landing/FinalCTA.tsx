@@ -1,7 +1,6 @@
 'use client';
 
-import Link from 'next/link';
-import { Counter, Reveal } from './Atoms';
+import { Reveal } from './Atoms';
 import { Icon } from './Icon';
 
 interface Props {
@@ -34,6 +33,7 @@ export function FinalCTA({ onSignUp }: Props) {
                 borderRadius: '50%',
                 background: 'radial-gradient(closest-side, var(--accent-glow), transparent)',
                 pointerEvents: 'none',
+                animation: 'bp-glow-pulse 4s ease-in-out infinite',
               }}
             />
 
@@ -46,20 +46,21 @@ export function FinalCTA({ onSignUp }: Props) {
                 with conviction?
               </h2>
               <p style={{ margin: '20px 0 32px', fontSize: 18, lineHeight: 1.55, color: 'var(--fg-muted)', maxWidth: 540, textWrap: 'pretty' }}>
-                Join thousands of investors getting smarter every morning. Free plan, no card, 30-second signup.
+                Sign up free in 30 seconds. No credit card. Connect your brokerage later — or never. Start getting smarter today.
               </p>
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-                <button type="button" onClick={onSignUp} className="btn btn-primary" style={{ padding: '14px 22px', fontSize: 15 }}>
-                  Sign up free
+                <button type="button" onClick={onSignUp} className="btn btn-primary" style={{ padding: '16px 28px', fontSize: 16 }}>
+                  Start for free
                   <Icon name="arrowRight" size={16} />
                 </button>
-                <Link href="/dashboard" className="btn btn-ghost" style={{ padding: '14px 22px', fontSize: 15 }}>
-                  Open dashboard
-                  <Icon name="arrowRight" size={15} />
-                </Link>
-                <span style={{ fontSize: 13, color: 'var(--fg-dim)' }}>
-                  <Counter to={28412} /> investors joined this month
-                </span>
+                <div style={{ display: 'flex', gap: 16, fontSize: 13, color: 'var(--fg-dim)', flexWrap: 'wrap' }}>
+                  {['No credit card', 'Free forever plan', 'Cancel anytime'].map((t) => (
+                    <span key={t} style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                      <Icon name="check" size={13} style={{ color: 'var(--accent)' }} />
+                      {t}
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
           </div>

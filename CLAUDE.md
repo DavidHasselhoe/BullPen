@@ -228,6 +228,116 @@ Split across two schedulers. All cron routes are protected by the `CRON_SECRET` 
 
 The GitHub Actions workflows require **`CRON_SECRET`** to be set in repo secrets (Settings → Secrets and variables → Actions). The production URL defaults to `https://bullpen.no` — override with an `APP_URL` repo variable if needed.
 
+## Market Data: TwelveData Performance & Cost Guidelines
+
+Every TwelveData call costs API credits. The rules below are binding — violating them either burns the credit budget or causes 429 errors that degrade the entire app.
+
+### Credit costs at a glance
+
+| Endpoint | Wrapper function | Credits | Default cache TTL |
+|---|---|---|---|
+| `/quote` (via `/batch`) | `getStockQuotes(symbols[])` | 1 per symbol | Redis 15 s (seed) · 30 s (movers) |
+| `/batch` | `batchFetch()` | Σ individual costs | — |
+| `/time_series` | `getStockCandles()` | 1 per request | Redis 10–300 s (1D) · Supabase 30 min–6 h |
+| `/earnings` | `getCompanyEarnings()` | 20 per symbol | Supabase 12 h |
+| `/earnings_calendar` | `getEarningsCalendarRange()` | 40 per request | Next.js 24 h |
+| `/statistics` | `getStatistics()` | high (plan-dependent) | Supabase 12 h |
+| `/income_statement` | `getIncomeStatement()` | 1 per request | Supabase 12 h |
+| `/balance_sheet` | `getBalanceSheet()` | 1 per request | Supabase 12 h |
+| `/cash_flow` | `getCashFlow()` | 1 per request | Supabase 12 h |
+| `/fundamentals/last_changes` | `getFundamentalsLastChange()` | 1 per symbol | no-store (freshness check) |
+| `/profile` | `getCompanyProfile()` | 1 per request | Supabase 24 h |
+| `/logo` | `getLogoUrl()` | 1 per symbol | Next.js 24 h |
+| `/press_releases` | `getPressReleases()` | 1 per request | Next.js 1 h |
+| `/symbol_search` | `symbolSearch()` | 1 per request | no-store |
+| `/splits` | `getSplits()` | 20 per request | Next.js 24 h |
+| `/dividends` | `getDividends()` | 1 per request | Supabase 12 h |
+| `/dividends_calendar` | `getDividendsCalendar()` | 40 per request | Next.js 1 h |
+| `/splits_calendar` | `getSplitsCalendar()` | 40 per request | Next.js 1 h |
+| `/ipo_calendar` | `getIPOCalendar()` | 40 per request | Next.js 1 h |
+| `/insider_transactions` | `getInsiderTransactions()` | **200 per symbol** | Next.js 1 h |
+| `/indicator` (SMA/EMA/RSI…) | `getIndicator()` | 1 per request | Next.js 5 min |
+
+### Golden rules
+
+**1. Always batch quotes — never call `getStockQuote` in a loop.**
+`getStockQuotes(symbols[])` sends one `/batch` POST. N individual `/quote` GETs cost the same credits but use N round-trips and are far more likely to hit the per-minute rate limit. The batch cap is ~120 requests per POST; use `SEED_CHUNK = 100` as the safe limit.
+
+**2. Check both cache layers before calling TwelveData.**
+```
+Request → Redis (rget, ~2 ms) → Supabase market_data_cache (getCached, ~20 ms) → TwelveData (100–500 ms, costs credits)
+```
+- **Redis** (`lib/cache/redis-cache.ts`) — for hot paths: 1D candles, movers, seed quotes. Sub-5 ms reads, shared across serverless instances.
+- **Supabase market_data_cache** (`lib/cache/market-data-cache.ts`) — for warm paths: stats, financials, earnings, candles ≥ 1 W. Persisted across cold starts.
+
+Write to both caches fire-and-forget (`void rset(...)`, `void setCached(...)`) so they never block the response.
+
+**3. Use session-aware TTLs for 1D candle data.**
+`candleTtlSeconds()` in `lib/cache/redis-cache.ts` reads the ET clock and returns:
+- Regular hours (9:30–16:00 ET): **10 s** — prices move every few seconds
+- Extended hours (4:00–9:30, 16:00–20:00 ET): **30 s** — slower movement
+- Market closed (overnight/weekends): **300 s** — fully static
+
+Always call this function instead of hardcoding a TTL for 1D data.
+
+**4. Check WsManager before fetching seed prices.**
+`WsManager.hasPrevClose(symbol)` is a zero-cost in-process check. The SSE stream already seeds WsManager on first delivery and writes each symbol to Redis for 15 s. The three-level dedup in `seedInitialPrices()` is the model to follow for any new real-time data path:
+```
+WsManager (in-process, 0 ms) → Redis (shared, ~2 ms) → TwelveData (paid)
+```
+
+**5. Use `getFundamentalsLastChange()` before re-fetching fundamentals.**
+Costs 1 credit and tells you whether financials have updated since last cache. The daily prefetch cron uses this pattern — each symbol costs 1 credit to check vs. 1–20 credits to re-fetch unnecessarily. Do not skip this check in the cron.
+
+**6. Expensive endpoints need long cache TTLs.**
+| Endpoint | Why it's safe to cache long |
+|---|---|
+| `/insider_transactions` (200 credits) | Insider filings are delayed by days; data doesn't change intraday |
+| `/earnings_calendar` (40 credits) | Earnings dates are set weeks in advance |
+| `/dividends_calendar` (40 credits) | Ex-dividend dates are published weeks ahead |
+| `/statistics` (high) | Fundamental ratios update at most daily, often weekly |
+| `/profile` (1 credit) | Company metadata changes rarely |
+
+**7. Always catch `TwelveDataRateLimitError` at every API boundary.**
+```ts
+} catch (error) {
+  if (error instanceof TwelveDataRateLimitError) {
+    return NextResponse.json({ error: 'plan_restricted' }, { status: 200 });
+  }
+  // ...
+}
+```
+Return status 200 with `error: 'plan_restricted'` so components render a plan-gated UI instead of an error state. Never let it propagate to a 500 — a 500 triggers retries which amplify the rate limit hit.
+
+### Enabling usage logging
+
+Set `TWELVE_DATA_USAGE_LOG=true` in `.env.local` to log every TwelveData call:
+```json
+{ "ts": 1716900000000, "source": "twelvedata", "endpoint": "quote", "symbol": "AAPL" }
+```
+Run a real session with this enabled and `grep twelvedata` the output to identify hot endpoints before optimising.
+
+### TwelveData datetime parsing
+
+TwelveData returns US stock datetimes as ET strings (`"2024-04-29 09:35:00"`). **Never parse these with `new Date()` on a UTC server** — it will apply the server's local timezone and produce wrong timestamps. Use `etDatetimeToUnix()` from `lib/twelvedata/twelvedata-client.ts`, which resolves the EDT/EST offset via `Intl.DateTimeFormat` and caches the result per date.
+
+For market session detection, use `getMarketSession()` (`lib/cache/redis-cache.ts`) or `isExtendedHoursET()` (`lib/twelvedata/twelvedata-client.ts`). Both read the ET clock correctly via `Intl`.
+
+### TanStack Query cache hygiene
+
+Client-side cache settings to enforce for TwelveData-backed hooks:
+
+| Data type | `staleTime` | `gcTime` | `refetchOnWindowFocus` |
+|---|---|---|---|
+| Live prices (SSE) | N/A — use `useLivePrices` | N/A | N/A |
+| Quotes / snapshot | 3 min | 5 min | default (true) |
+| Sparklines (decorative) | 20 min | 60 min | `false` |
+| Statistics / financials | 30 min | 60 min | `false` |
+| Earnings / calendar | 60 min | 120 min | `false` |
+| Company profile / logo | 24 h | 48 h | `false` |
+
+Omitting `staleTime` defaults to 0 — the query refetches on every component mount. This is the single most common source of unnecessary TwelveData calls in the codebase.
+
 ## Environment variables
 
 Copy `.env.example` (or see `ENV_SETUP.md`) and create `.env.local`. Required:

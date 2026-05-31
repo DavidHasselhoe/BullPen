@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Reveal, SectionHeading } from './Atoms';
 import { Icon } from './Icon';
@@ -528,21 +529,40 @@ function PortfolioView() {
   );
 }
 
+function ScreenshotView({ src, alt }: { src: string; alt: string }) {
+  return (
+    <div style={{ background: 'var(--bg)', position: 'relative', overflow: 'hidden', maxHeight: 500 }}>
+      <Image
+        src={src}
+        alt={alt}
+        width={1400}
+        height={800}
+        style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'cover', objectPosition: 'top' }}
+        unoptimized
+      />
+    </div>
+  );
+}
+
 const VIEWS = [
+  { id: 'screener', label: 'Screener', url: '/tools/screener', Component: () => <ScreenshotView src="/screenshots/screener.png" alt="BullPen stock screener" /> },
   { id: 'stock', label: 'Stock detail', url: '/stock/AAPL', Component: StockDetailView },
   { id: 'ai', label: 'BullPen AI', url: '/tools/ai', Component: AiChatView },
   { id: 'portfolio', label: 'Portfolio', url: '/holdings', Component: PortfolioView },
+  { id: 'dashboard', label: 'Dashboard', url: '/dashboard', Component: () => <ScreenshotView src="/screenshots/dashboard.png" alt="BullPen dashboard" /> },
 ];
 
 export function Peek() {
   const [idx, setIdx] = useState(0);
-  const [paused, setPaused] = useState(false);
+  const [hovering, setHovering] = useState(false);
+  const [clickPaused, setClickPaused] = useState(false);
+  const isPaused = hovering || clickPaused;
 
   useEffect(() => {
-    if (paused) return;
-    const id = setInterval(() => setIdx((i) => (i + 1) % VIEWS.length), 5200);
+    if (isPaused) return;
+    const id = setInterval(() => setIdx((i) => (i + 1) % VIEWS.length), 4500);
     return () => clearInterval(id);
-  }, [paused]);
+  }, [isPaused]);
 
   const View = VIEWS[idx].Component;
 
@@ -580,7 +600,7 @@ export function Peek() {
                   type="button"
                   onClick={() => {
                     setIdx(i);
-                    setPaused(true);
+                    setClickPaused(true);
                   }}
                   style={{
                     padding: '8px 16px',
@@ -592,9 +612,25 @@ export function Peek() {
                     fontWeight: 600,
                     cursor: 'pointer',
                     transition: 'background 200ms, color 200ms',
+                    position: 'relative',
+                    overflow: 'hidden',
                   }}
                 >
                   {v.label}
+                  {i === idx && !isPaused && (
+                    <span
+                      key={idx}
+                      style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        left: 0,
+                        height: 2,
+                        background: 'oklch(0 0 0 / 0.25)',
+                        animation: 'bp-tab-progress 4.5s linear forwards',
+                        borderRadius: 99,
+                      }}
+                    />
+                  )}
                 </button>
               ))}
             </div>
@@ -602,7 +638,7 @@ export function Peek() {
         </Reveal>
 
         <Reveal delay={1}>
-          <div onMouseEnter={() => setPaused(true)}>
+          <div onMouseEnter={() => setHovering(true)} onMouseLeave={() => setHovering(false)}>
             <BrowserChrome url={VIEWS[idx].url}>
               <div key={idx} style={{ animation: 'bp-fade-up 0.4s ease-out' }}>
                 <View />
@@ -619,7 +655,7 @@ export function Peek() {
                 type="button"
                 onClick={() => {
                   setIdx(i);
-                  setPaused(true);
+                  setClickPaused(true);
                 }}
                 aria-label={v.label}
                 style={{ border: 'none', background: 'none', padding: 4, cursor: 'pointer' }}

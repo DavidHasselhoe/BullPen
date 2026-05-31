@@ -7,6 +7,15 @@ import {
 import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
 import { logger } from '@/lib/utils/logger';
 import { humanizeError } from '@/lib/errors/humanize';
+import { rget, rset } from '@/lib/cache/redis-cache';
+
+// Custom-symbol movers are keyed by a sorted, deduped symbol list + limit.
+// 30 s TTL: fresh enough for a live dashboard, cheap enough for concurrent users.
+const MOVERS_TTL = 30;
+
+function moversKey(symbols: string[], limit: number): string {
+  return `movers:${limit}:${[...new Set(symbols)].sort().join(',')}`;
+}
 
 async function handler(request: NextRequest) {
   try {
@@ -17,11 +26,24 @@ async function handler(request: NextRequest) {
       ? symbolsParam.split(',').map((s) => s.trim().toUpperCase()).filter(Boolean)
       : null;
 
-    // Holdings / custom symbol set → compute from batch quotes
-    // All-markets (no symbols) → use real /market_movers/stocks endpoint
-    const { gainers, losers } = symbols && symbols.length > 0
-      ? await getTopMoversForSymbols(symbols, limit)
-      : await getMarketMovers('stocks', limit);
+    let gainers: Awaited<ReturnType<typeof getTopMoversForSymbols>>['gainers'];
+    let losers: Awaited<ReturnType<typeof getTopMoversForSymbols>>['losers'];
+
+    if (symbols && symbols.length > 0) {
+      // Custom symbol set (holdings / watchlist) — cache in Redis so concurrent
+      // users with the same portfolio don't each hit TwelveData independently.
+      const key = moversKey(symbols, limit);
+      const cached = await rget<{ gainers: typeof gainers; losers: typeof losers }>(key);
+      if (cached) {
+        ({ gainers, losers } = cached);
+      } else {
+        ({ gainers, losers } = await getTopMoversForSymbols(symbols, limit));
+        void rset(key, { gainers, losers }, MOVERS_TTL);
+      }
+    } else {
+      // All-markets path — CDN already caches via s-maxage=60 below, no Redis needed.
+      ({ gainers, losers } = await getMarketMovers('stocks', limit));
+    }
 
     return addSecurityHeaders(
       NextResponse.json(

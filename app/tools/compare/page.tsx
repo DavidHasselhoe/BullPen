@@ -431,21 +431,25 @@ function CompareContent() {
 
     return (
       <div className="container mx-auto px-4 py-12 max-w-6xl">
-        <Link
-          href="/tools"
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Tools
-        </Link>
-        <div className="mb-6">
-          <div className="flex items-center gap-3 mb-1">
-            <Scale className="h-6 w-6 text-primary" />
-            <h1 className="text-2xl font-semibold">Compare Companies</h1>
+        <div className="mb-8">
+          <Link
+            href="/tools"
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-5 group"
+          >
+            <ArrowLeft className="h-3 w-3 transition-transform group-hover:-translate-x-0.5" />
+            All tools
+          </Link>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+              <Scale className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-foreground">Compare Companies</h1>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                Select 2–5 companies to compare side-by-side.
+              </p>
+            </div>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Select 2–5 companies to compare side-by-side. Or ask BullPen AI: &quot;compare NVIDIA and AMD&quot;.
-          </p>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
           {Array.from({ length: slots }).map((_, i) => (
@@ -560,10 +564,10 @@ function CompareContent() {
       <div className="container mx-auto px-4 py-12 max-w-6xl">
         <Link
           href="/tools"
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6"
+          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-6 group"
         >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Tools
+          <ArrowLeft className="h-3 w-3 transition-transform group-hover:-translate-x-0.5" />
+          All tools
         </Link>
         <Card className="border-destructive/50">
           <CardContent className="py-8 text-center">
@@ -617,10 +621,10 @@ function CompareContent() {
     <div className="container mx-auto px-4 py-8 max-w-[1600px]">
       <Link
         href="/tools"
-        className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6"
+        className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-6 group"
       >
-        <ArrowLeft className="h-4 w-4" />
-        Back to Tools
+        <ArrowLeft className="h-3 w-3 transition-transform group-hover:-translate-x-0.5" />
+        All tools
       </Link>
 
       {isLoading ? (
@@ -637,9 +641,11 @@ function CompareContent() {
           <div className="mb-8">
             <div className="flex items-center justify-between gap-4 mb-1">
               <div className="flex items-center gap-3">
-                <Scale className="h-6 w-6 text-primary" />
-                <h1 className="text-2xl font-semibold">
-                  Comparing {companies.map((c) => c.name).join(' vs ')}
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                  <Scale className="h-5 w-5 text-primary" />
+                </div>
+                <h1 className="text-2xl font-bold tracking-tight text-foreground">
+                  {companies.map((c) => c.ticker).join(' vs ')}
                 </h1>
               </div>
               <Button

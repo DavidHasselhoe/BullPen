@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { CalendarDays, TrendingUp, DollarSign, Scissors, Rocket } from 'lucide-react';
+import { CalendarDays, TrendingUp, DollarSign, Scissors, Rocket, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useBackground } from '@/hooks/use-background';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
@@ -517,13 +517,22 @@ export default function CalendarPage() {
       <main className="container mx-auto max-w-3xl py-10 px-4 sm:px-6 lg:px-8">
 
         {/* Header */}
-        <div className="flex items-center gap-3 mb-8">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 shrink-0">
-            <CalendarDays className="h-5 w-5 text-primary" aria-hidden />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Market Calendar</h1>
-            <p className="text-sm text-muted-foreground">Earnings, dividends, splits & IPOs</p>
+        <div className="mb-8">
+          <Link
+            href="/tools"
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-5 group"
+          >
+            <ArrowLeft className="h-3 w-3 transition-transform group-hover:-translate-x-0.5" />
+            All tools
+          </Link>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 shrink-0">
+              <CalendarDays className="h-5 w-5 text-primary" aria-hidden />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">Market Calendar</h1>
+              <p className="text-sm text-muted-foreground mt-0.5">Earnings, dividends, splits & IPOs</p>
+            </div>
           </div>
         </div>
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useTheme } from 'next-themes';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -89,7 +89,6 @@ function loadStoredTicker(): SearchResult | null {
 }
 
 export default function DividendClientPage() {
-  const router = useRouter();
   const { hasAnimatedBackground } = useBackground();
   const { user } = useAuth();
 
@@ -166,15 +165,13 @@ export default function DividendClientPage() {
       <div className="fixed inset-0 -z-10 bg-gradient-to-br from-background via-background to-primary/5 pointer-events-none" />
 
       <main className="container mx-auto max-w-4xl py-10 px-4 sm:px-6 lg:px-8">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="mb-6 -ml-2 group"
-          onClick={() => router.push('/tools')}
+        <Link
+          href="/tools"
+          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-6 group"
         >
-          <ArrowLeft className="h-4 w-4 mr-2 group-hover:-translate-x-1 transition-transform" />
-          Back to Tools
-        </Button>
+          <ArrowLeft className="h-3 w-3 transition-transform group-hover:-translate-x-0.5" />
+          All tools
+        </Link>
 
         <motion.div
           initial={{ opacity: 0, y: 8 }}
@@ -183,8 +180,8 @@ export default function DividendClientPage() {
           className="mb-8"
         >
           <div className="flex items-center gap-3 mb-2">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-              <Wallet className="h-6 w-6 text-primary" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+              <Wallet className="h-5 w-5 text-primary" />
             </div>
             <div>
               <h1 className="text-2xl font-bold tracking-tight text-foreground">Dividend Calculator</h1>

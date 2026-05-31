@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { memo, useCallback, useMemo, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -14,6 +14,7 @@ import { createBrowserClient } from '@/lib/supabase/client';
 import { logger } from '@/lib/utils/logger';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
 import { cn } from '@/lib/utils';
+import { useHoldingsSparklines } from '@/hooks/use-holdings-sparklines';
 
 // ─── Sparkline ────────────────────────────────────────────────────────────────
 
@@ -33,29 +34,18 @@ function buildSparkPath(prices: number[], w: number, h: number): string {
     .join(' ');
 }
 
-function SparklineCell({ ticker }: { ticker: string }) {
-  const { data, isLoading } = useQuery({
-    queryKey: ['sparkline', ticker],
-    queryFn: async () => {
-      const res = await fetch(`/api/stock/${ticker}/candles?range=1M`);
-      const json = await res.json();
-      return (json.candles as { t: number[]; c: number[] } | null) ?? null;
-    },
-    staleTime: 20 * 60 * 1000,
-    gcTime: 60 * 60 * 1000,
-  });
+// SparklineCell is now a pure display component — data comes from the parent's
+// single batch query instead of N individual per-row useQuery calls.
+function SparklineCell({ prices }: { prices: number[] | null | undefined }) {
+  if (!prices || prices.length < 2) return <div className="w-16 h-7" />;
 
-  if (isLoading) return <Skeleton className="w-16 h-7 rounded" />;
-  if (!data || data.c.length < 2) return <div className="w-16 h-7" />;
+  // Downsample to at most 60 points for a clean line.
+  const step = Math.max(1, Math.floor(prices.length / 60));
+  const pts = prices.filter((_, i) => i % step === 0);
 
-  // Downsample to at most 60 points for a clean line
-  const raw = data.c;
-  const step = Math.max(1, Math.floor(raw.length / 60));
-  const prices = raw.filter((_, i) => i % step === 0);
-
-  const isUp = prices[prices.length - 1] >= prices[0];
+  const isUp = pts[pts.length - 1] >= pts[0];
   const color = isUp ? '#22c55e' : '#ef4444';
-  const path = buildSparkPath(prices, 64, 28);
+  const path = buildSparkPath(pts, 64, 28);
 
   return (
     <svg width={64} height={28} className="overflow-visible">
@@ -133,6 +123,201 @@ function SkeletonTableRow({ index }: { index: number }) {
   );
 }
 
+// ─── Memoized table row ───────────────────────────────────────────────────────
+// Prevents re-rendering unchanged rows on every live-price tick.
+// Only volatile price/state fields are in the comparator — static props like
+// handlers, formatting options, and rowIndex are intentionally excluded.
+
+interface HoldingRowProps {
+  holding: HoldingWithPrice;
+  maxAllocation: number;
+  isHighlighted: boolean;
+  showPriceSkeleton: boolean;
+  rowIndex: number;
+  userCurrency: CurrencyCode | null;
+  roundNumbers: boolean;
+  sparklinePrices: number[] | null | undefined;
+  isDeletingThis: boolean;
+  anyPending: boolean;
+  isEditModalOpen: boolean;
+  onEdit: (h: HoldingWithPrice) => void;
+  onRemove: (h: { id: string; symbol: string; companyName: string }) => void;
+}
+
+const HoldingRow = memo(function HoldingRow({
+  holding,
+  maxAllocation,
+  isHighlighted,
+  showPriceSkeleton,
+  rowIndex,
+  userCurrency,
+  roundNumbers,
+  sparklinePrices,
+  isDeletingThis,
+  anyPending,
+  isEditModalOpen,
+  onEdit,
+  onRemove,
+}: HoldingRowProps) {
+  const queryClient = useQueryClient();
+  const isPositive = (holding.dayChangePercent ?? 0) >= 0;
+  const plIsPositive = (holding.unrealizedPLPercent ?? 0) >= 0;
+  const dayChangeColor = isPositive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
+  const plColor = plIsPositive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
+  const currency = userCurrency ?? 'USD';
+
+  const prefetchStock = useCallback(() => {
+    queryClient.prefetchQuery({
+      queryKey: ['stock-snapshot', holding.symbol],
+      queryFn: () => fetch(`/api/stock/${holding.symbol}/snapshot`).then(r => r.json()),
+      staleTime: 30_000,
+    });
+  }, [queryClient, holding.symbol]);
+
+  return (
+    <tr
+      className={cn(
+        'border-b border-border/50 hover:bg-muted/30 transition-all duration-200 holdings-row-enter',
+        !isHighlighted && 'opacity-25'
+      )}
+      style={{ animationDelay: `${rowIndex * 45}ms` }}
+    >
+      <td className="py-4 px-4">
+        <Link
+          href={slugToAssetPath(holding.symbol)}
+          onMouseEnter={prefetchStock}
+          className="flex items-center gap-3 group"
+        >
+          <CompanyLogo
+            name={holding.company_name}
+            ticker={holding.symbol}
+            logoUrl={holding.logoUrl || null}
+            size={48}
+          />
+          <div>
+            <div className="flex items-center gap-1.5">
+              <span className="font-medium text-foreground group-hover:underline">
+                {holding.symbol}
+              </span>
+              {holding.source === 'snaptrade' && (
+                <span className="inline-flex items-center rounded-full bg-blue-500/10 px-1.5 py-0 text-[10px] font-medium text-blue-400 border border-blue-500/20">
+                  synced
+                </span>
+              )}
+            </div>
+            <div className="text-xs text-muted-foreground">{holding.company_name}</div>
+          </div>
+        </Link>
+      </td>
+      <td className="py-4 px-4 text-sm text-foreground">
+        {holding.quantity !== null ? formatNumberUtil(holding.quantity, roundNumbers) : '—'}
+      </td>
+      <td className="py-4 px-4 text-sm text-foreground">
+        {holding.avg_price !== null && holding.avg_price !== undefined
+          ? formatCurrencyValue(holding.avg_price, currency, roundNumbers ? { round: true } : undefined)
+          : '—'}
+      </td>
+      <td className="py-4 px-4 text-sm font-medium text-foreground">
+        {showPriceSkeleton ? <PriceSkeleton /> : holding.currentPrice !== undefined ? (
+          <span className="animate-in fade-in duration-300">
+            {formatCurrencyValue(holding.currentPrice, currency, roundNumbers ? { round: true } : undefined)}
+          </span>
+        ) : '—'}
+      </td>
+      <td className="py-4 px-4">
+        {showPriceSkeleton ? <PriceSkeleton /> : holding.dayChangePercent !== undefined ? (
+          <div className={cn('flex items-center gap-1 animate-in fade-in duration-300', dayChangeColor)}>
+            {isPositive ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+            <span className="text-sm font-medium">
+              {formatPercentUtil(holding.dayChangePercent, roundNumbers)}
+            </span>
+          </div>
+        ) : <span className="text-sm text-muted-foreground">—</span>}
+      </td>
+      <td className="py-4 px-4 text-sm font-medium text-foreground">
+        {showPriceSkeleton ? <PriceSkeleton wide /> : holding.marketValue !== undefined ? (
+          <span className="animate-in fade-in duration-300">
+            {formatCurrencyValue(holding.marketValue, currency, roundNumbers ? { round: true } : undefined)}
+          </span>
+        ) : '—'}
+      </td>
+      <td className="py-4 px-4">
+        {showPriceSkeleton ? (
+          <div className="space-y-1"><PriceSkeleton /><PriceSkeleton /></div>
+        ) : holding.unrealizedPL !== undefined ? (
+          <div className={cn(plColor, 'animate-in fade-in duration-300')}>
+            <div className="text-sm font-medium">
+              {formatCurrencyValue(holding.unrealizedPL, currency, roundNumbers ? { round: true } : undefined)}
+            </div>
+            {holding.unrealizedPLPercent !== undefined && (
+              <div className="text-xs">{formatPercentUtil(holding.unrealizedPLPercent, roundNumbers)}</div>
+            )}
+          </div>
+        ) : <span className="text-sm text-muted-foreground">—</span>}
+      </td>
+      <td className="py-4 px-4">
+        {showPriceSkeleton ? (
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-1.5 w-14 rounded-full" />
+            <Skeleton className="h-4 w-8" />
+          </div>
+        ) : holding.allocation !== undefined ? (
+          <div className="flex items-center gap-2.5 min-w-[100px] animate-in fade-in duration-300">
+            <div className="w-14 h-1 rounded-full bg-muted/50 overflow-hidden shrink-0">
+              <div
+                className="h-full rounded-full transition-all duration-500"
+                style={{ width: `${(holding.allocation / maxAllocation) * 100}%`, backgroundColor: '#a855f7' }}
+              />
+            </div>
+            <span className="text-sm tabular-nums text-foreground">
+              {holding.allocation.toFixed(roundNumbers ? 0 : 1)}%
+            </span>
+          </div>
+        ) : <span className="text-sm text-muted-foreground">—</span>}
+      </td>
+      <td className="py-4 px-3">
+        <SparklineCell prices={sparklinePrices} />
+      </td>
+      <td className="py-4 px-4">
+        <div className="flex items-center justify-end gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onEdit(holding)}
+            disabled={anyPending || isEditModalOpen}
+            title="Edit holding"
+          >
+            <Edit2 className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onRemove({ id: holding.id, symbol: holding.symbol, companyName: holding.company_name })}
+            disabled={anyPending}
+            title={isDeletingThis ? 'Removing…' : 'Remove holding'}
+          >
+            {isDeletingThis ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+          </Button>
+        </div>
+      </td>
+    </tr>
+  );
+}, (prev, next) =>
+  prev.holding.currentPrice === next.holding.currentPrice &&
+  prev.holding.dayChangePercent === next.holding.dayChangePercent &&
+  prev.holding.marketValue === next.holding.marketValue &&
+  prev.holding.unrealizedPL === next.holding.unrealizedPL &&
+  prev.holding.allocation === next.holding.allocation &&
+  prev.isHighlighted === next.isHighlighted &&
+  prev.showPriceSkeleton === next.showPriceSkeleton &&
+  prev.isDeletingThis === next.isDeletingThis &&
+  prev.anyPending === next.anyPending &&
+  prev.maxAllocation === next.maxAllocation &&
+  prev.sparklinePrices === next.sparklinePrices
+);
+
+// ─── Main table ───────────────────────────────────────────────────────────────
+
 export function HoldingsTable({ onAddClick, holdingsWithPrices: externalHoldings, hoveredSector, isPricesLoading }: HoldingsTableProps) {
   const { data: holdings, isLoading } = useHoldings();
   const { user } = useAuth();
@@ -145,6 +330,23 @@ export function HoldingsTable({ onAddClick, holdingsWithPrices: externalHoldings
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [deletingHolding, setDeletingHolding] = useState<{ id: string; symbol: string; companyName: string } | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  // Batch sparklines — one request for all symbols instead of N individual candle fetches.
+  const allSymbols = useMemo(
+    () => (externalHoldings ?? holdings ?? []).map(h => h.symbol),
+    [externalHoldings, holdings]
+  );
+  const sparklines = useHoldingsSparklines(allSymbols);
+
+  // Stable row handlers so HoldingRow memo comparator sees the same references.
+  const handleEditRow = useCallback((h: HoldingWithPrice) => {
+    setEditingHolding(h as unknown as UserHolding);
+    setIsEditModalOpen(true);
+  }, []);
+  const handleRemoveRow = useCallback((h: { id: string; symbol: string; companyName: string }) => {
+    setDeletingHolding(h);
+    setIsDeleteDialogOpen(true);
+  }, []);
 
   // Get user's currency preference
   const userCurrency = useMemo((): CurrencyCode | null => {
@@ -341,18 +543,8 @@ export function HoldingsTable({ onAddClick, holdingsWithPrices: externalHoldings
     }
   };
 
-  const handleRemoveClick = (holding: UserHolding) => {
-    setDeletingHolding({
-      id: holding.id,
-      symbol: holding.symbol,
-      companyName: holding.company_name,
-    });
-    setIsDeleteDialogOpen(true);
-  };
-
   const handleConfirmDelete = async () => {
     if (!deletingHolding) return;
-    
     try {
       await removeHolding.mutateAsync(deletingHolding.id);
     } catch (error) {
@@ -360,11 +552,6 @@ export function HoldingsTable({ onAddClick, holdingsWithPrices: externalHoldings
     } finally {
       setDeletingHolding(null);
     }
-  };
-
-  const handleEdit = (holding: UserHolding) => {
-    setEditingHolding(holding);
-    setIsEditModalOpen(true);
   };
 
   if (isLoading) {
@@ -547,188 +734,24 @@ export function HoldingsTable({ onAddClick, holdingsWithPrices: externalHoldings
                   </td>
                 </tr>
               )}
-              {filteredHoldings.map((holding, rowIndex) => {
-                const priceKnown = holding.currentPrice !== undefined;
-                const showPriceSkeleton = isLoadingPrices && !priceKnown;
-
-                const isPositive = (holding.dayChangePercent ?? 0) >= 0;
-                const plIsPositive = (holding.unrealizedPLPercent ?? 0) >= 0;
-                const dayChangeColor = isPositive
-                  ? 'text-green-600 dark:text-green-400'
-                  : 'text-red-600 dark:text-red-400';
-                const plColor = plIsPositive
-                  ? 'text-green-600 dark:text-green-400'
-                  : 'text-red-600 dark:text-red-400';
-
-                const isHighlighted =
-                  !hoveredSector || getSectorLabel(holding) === hoveredSector;
-
-                return (
-                  <tr
-                    key={holding.id}
-                    className={cn(
-                      'border-b border-border/50 hover:bg-muted/30 transition-all duration-200 holdings-row-enter',
-                      !isHighlighted && 'opacity-25'
-                    )}
-                    style={{ animationDelay: `${rowIndex * 45}ms` }}
-                  >
-                    <td className="py-4 px-4">
-                      <Link
-                        href={slugToAssetPath(holding.symbol)}
-                        className="flex items-center gap-3 group"
-                      >
-                        <CompanyLogo
-                          name={holding.company_name}
-                          ticker={holding.symbol}
-                          logoUrl={holding.logoUrl || null}
-                          size={48}
-                        />
-                        <div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-medium text-foreground group-hover:underline">
-                              {holding.symbol}
-                            </span>
-                            {holding.source === 'snaptrade' && (
-                              <span className="inline-flex items-center rounded-full bg-blue-500/10 px-1.5 py-0 text-[10px] font-medium text-blue-400 border border-blue-500/20">
-                                synced
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {holding.company_name}
-                          </div>
-                        </div>
-                      </Link>
-                    </td>
-                    <td className="py-4 px-4 text-sm text-foreground">
-                      {holding.quantity !== null ? formatNumberUtil(holding.quantity, roundNumbers) : '—'}
-                    </td>
-                    <td className="py-4 px-4 text-sm text-foreground">
-                      {holding.avg_price !== null && holding.avg_price !== undefined
-                        ? formatCurrencyValue(holding.avg_price, userCurrency || 'USD', roundNumbers ? { round: true } : undefined)
-                        : '—'}
-                    </td>
-                    <td className="py-4 px-4 text-sm font-medium text-foreground">
-                      {showPriceSkeleton ? (
-                        <PriceSkeleton />
-                      ) : holding.currentPrice !== undefined ? (
-                        <span className="animate-in fade-in duration-300">
-                          {formatCurrencyValue(holding.currentPrice, userCurrency || 'USD', roundNumbers ? { round: true } : undefined)}
-                        </span>
-                      ) : '—'}
-                    </td>
-                    <td className="py-4 px-4">
-                      {showPriceSkeleton ? (
-                        <PriceSkeleton />
-                      ) : holding.dayChangePercent !== undefined ? (
-                        <div className={cn('flex items-center gap-1 animate-in fade-in duration-300', dayChangeColor)}>
-                          {isPositive ? (
-                            <ArrowUpRight className="h-3 w-3" />
-                          ) : (
-                            <ArrowDownRight className="h-3 w-3" />
-                          )}
-                          <span className="text-sm font-medium">
-                            {formatPercentUtil(holding.dayChangePercent, roundNumbers)}
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">—</span>
-                      )}
-                    </td>
-                    <td className="py-4 px-4 text-sm font-medium text-foreground">
-                      {showPriceSkeleton ? (
-                        <PriceSkeleton wide />
-                      ) : holding.marketValue !== undefined ? (
-                        <span className="animate-in fade-in duration-300">
-                          {formatCurrencyValue(holding.marketValue, userCurrency || 'USD', roundNumbers ? { round: true } : undefined)}
-                        </span>
-                      ) : '—'}
-                    </td>
-                    <td className="py-4 px-4">
-                      {showPriceSkeleton ? (
-                        <div className="space-y-1">
-                          <PriceSkeleton />
-                          <PriceSkeleton />
-                        </div>
-                      ) : holding.unrealizedPL !== undefined ? (
-                        <div className={cn(plColor, 'animate-in fade-in duration-300')}>
-                          <div className="text-sm font-medium">
-                            {formatCurrencyValue(holding.unrealizedPL, userCurrency || 'USD', roundNumbers ? { round: true } : undefined)}
-                          </div>
-                          {holding.unrealizedPLPercent !== undefined && (
-                            <div className="text-xs">
-                              {formatPercentUtil(holding.unrealizedPLPercent, roundNumbers)}
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">—</span>
-                      )}
-                    </td>
-                    <td className="py-4 px-4">
-                      {showPriceSkeleton ? (
-                        <div className="flex items-center gap-2">
-                          <Skeleton className="h-1.5 w-14 rounded-full" />
-                          <Skeleton className="h-4 w-8" />
-                        </div>
-                      ) : holding.allocation !== undefined ? (
-                        <div className="flex items-center gap-2.5 min-w-[100px] animate-in fade-in duration-300">
-                          <div className="w-14 h-1 rounded-full bg-muted/50 overflow-hidden shrink-0">
-                            <div
-                              className="h-full rounded-full transition-all duration-500"
-                              style={{
-                                width: `${(holding.allocation / maxAllocation) * 100}%`,
-                                backgroundColor: '#a855f7',
-                              }}
-                            />
-                          </div>
-                          <span className="text-sm tabular-nums text-foreground">
-                            {holding.allocation.toFixed(roundNumbers ? 0 : 1)}%
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">—</span>
-                      )}
-                    </td>
-                    <td className="py-4 px-3">
-                      <SparklineCell ticker={holding.symbol} />
-                    </td>
-                    <td className="py-4 px-4">
-                      {(() => {
-                        const isDeleting =
-                          removeHolding.isPending && deletingHolding?.id === holding.id;
-                        const anyPending = removeHolding.isPending;
-                        return (
-                          <div className="flex items-center justify-end gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEdit(holding)}
-                              disabled={anyPending || isEditModalOpen}
-                              title="Edit holding"
-                            >
-                              <Edit2 className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleRemoveClick(holding)}
-                              disabled={anyPending}
-                              title={isDeleting ? 'Removing…' : 'Remove holding'}
-                            >
-                              {isDeleting ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Trash2 className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </div>
-                        );
-                      })()}
-                    </td>
-                  </tr>
-                );
-              })}
+              {filteredHoldings.map((holding, rowIndex) => (
+                <HoldingRow
+                  key={holding.id}
+                  holding={holding}
+                  rowIndex={rowIndex}
+                  maxAllocation={maxAllocation}
+                  isHighlighted={!hoveredSector || getSectorLabel(holding) === hoveredSector}
+                  showPriceSkeleton={isLoadingPrices && holding.currentPrice === undefined}
+                  userCurrency={userCurrency}
+                  roundNumbers={roundNumbers}
+                  sparklinePrices={sparklines[holding.symbol] ?? null}
+                  isDeletingThis={removeHolding.isPending && deletingHolding?.id === holding.id}
+                  anyPending={removeHolding.isPending}
+                  isEditModalOpen={isEditModalOpen}
+                  onEdit={handleEditRow}
+                  onRemove={handleRemoveRow}
+                />
+              ))}
               {onAddClick && (
                 <tr>
                   <td colSpan={10} className="p-0 align-middle">

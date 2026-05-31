@@ -97,12 +97,14 @@ export default function SocialFeedPage() {
       <div className="max-w-2xl mx-auto px-4 py-10 space-y-6">
 
         {/* Header */}
-        <div>
-          <div className="flex items-center gap-2 mb-1">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
             <Rss className="h-5 w-5 text-primary" />
-            <h1 className="text-2xl font-bold text-foreground">Feed</h1>
           </div>
-          <p className="text-sm text-muted-foreground">Portfolio activity from investors you follow.</p>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Feed</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">Portfolio activity from investors you follow.</p>
+          </div>
         </div>
 
         {/* Content */}

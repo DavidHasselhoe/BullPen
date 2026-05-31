@@ -26,12 +26,7 @@ export async function middleware(request: NextRequest) {
       },
     });
     // Refresh session so Server Actions and Server Components see it
-    const { data: { user } } = await supabase.auth.getUser();
-
-    // Logged-in users hitting / go straight to dashboard
-    if (user && request.nextUrl.pathname === '/') {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
-    }
+    await supabase.auth.getUser();
   }
 
   // Security Headers (OWASP recommended)

@@ -360,10 +360,11 @@ export function Hero({ onSignUp }: Props) {
               padding: '6px 14px 6px 8px',
               borderRadius: 999,
               background: 'var(--surface)',
-              border: '1px solid var(--border)',
+              border: '1px solid oklch(from var(--accent) l c h / 0.3)',
               fontSize: 13,
               color: 'var(--fg-muted)',
               margin: '0 auto 28px',
+              boxShadow: '0 0 24px -10px var(--accent-glow)',
             }}
           >
             <span
@@ -373,8 +374,8 @@ export function Hero({ onSignUp }: Props) {
                 gap: 6,
                 padding: '4px 8px',
                 borderRadius: 99,
-                background: 'var(--accent-soft)',
-                color: 'var(--accent)',
+                background: 'var(--accent)',
+                color: 'var(--accent-ink)',
                 fontWeight: 700,
                 fontSize: 11,
                 letterSpacing: '0.05em',
@@ -409,7 +410,7 @@ export function Hero({ onSignUp }: Props) {
                 textWrap: 'pretty',
               }}
             >
-              Real-time charts, AI that explains every move, and a research toolkit built for first-timers and serious traders alike.
+              Real-time market data, an AI that explains every move, and pro-grade research tools — built for investors who are serious about getting smarter.
             </p>
           </Reveal>
 
@@ -424,13 +425,12 @@ export function Hero({ onSignUp }: Props) {
                 flexWrap: 'wrap',
               }}
             >
-              <button type="button" onClick={onSignUp} className="btn btn-primary" style={{ padding: '14px 22px', fontSize: 15 }}>
-                Sign up free
+              <button type="button" onClick={onSignUp} className="btn btn-primary" style={{ padding: '16px 28px', fontSize: 16 }}>
+                Start for free
                 <Icon name="arrowRight" size={16} />
               </button>
-              <Link href="/dashboard" className="btn btn-ghost" style={{ padding: '14px 22px', fontSize: 15 }}>
-                <Icon name="bolt" size={15} />
-                Open dashboard
+              <Link href="/dashboard" style={{ fontSize: 14, color: 'var(--fg-dim)', textDecoration: 'underline', textUnderlineOffset: 3 }}>
+                or explore the dashboard →
               </Link>
             </div>
           </Reveal>
@@ -492,8 +492,8 @@ export function Hero({ onSignUp }: Props) {
                   pct="+4.21%"
                   change="+36.12"
                   up
-                  anim="bp-float-y 5s"
-                  style={{ left: -60, top: 40, transform: 'rotate(-3deg)' }}
+                  anim="bp-float-tilted-neg3 5s"
+                  style={{ left: -60, top: 40 }}
                   sparkSeed={1.2}
                 />
               </div>
@@ -505,8 +505,8 @@ export function Hero({ onSignUp }: Props) {
                   pct="+2.08%"
                   change="+1390"
                   up
-                  anim="bp-float-y-2 6s"
-                  style={{ right: -50, top: -20, transform: 'rotate(4deg)' }}
+                  anim="bp-float-tilted-pos4 6s"
+                  style={{ right: -50, top: -20 }}
                   sparkSeed={2.4}
                 />
               </div>
@@ -518,8 +518,8 @@ export function Hero({ onSignUp }: Props) {
                   pct="-1.42%"
                   change="-3.15"
                   up={false}
-                  anim="bp-float-y-3 7s"
-                  style={{ right: -30, bottom: 30, transform: 'rotate(-2deg)' }}
+                  anim="bp-float-tilted-neg2 7s"
+                  style={{ right: -30, bottom: 30 }}
                   sparkSeed={3.8}
                 />
               </div>
@@ -546,19 +546,22 @@ export function Hero({ onSignUp }: Props) {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: 'clamp(20px, 4vw, 56px)',
+                gap: 8,
                 flexWrap: 'wrap',
-                color: 'var(--fg-muted)',
-                opacity: 0.7,
               }}
             >
               {['NASDAQ', 'NYSE', 'TwelveData', 'Finnhub', 'SEC EDGAR', 'Anthropic'].map((b) => (
                 <span
                   key={b}
                   style={{
-                    fontSize: 15,
+                    padding: '5px 12px',
+                    borderRadius: 99,
+                    background: 'var(--surface)',
+                    border: '1px solid var(--border)',
+                    fontSize: 12,
                     fontWeight: 600,
                     letterSpacing: '-0.01em',
+                    color: 'var(--fg-dim)',
                     fontFamily: b === 'TwelveData' || b === 'Finnhub' ? 'var(--font-mono)' : 'inherit',
                   }}
                 >

@@ -13,12 +13,12 @@ export default function AcademyHomePage() {
     <div className="space-y-6 pt-2">
       {/* Header */}
       <div className="flex items-start gap-3">
-        <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
-          <GraduationCap className="h-5 w-5 text-emerald-500" />
+        <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+          <GraduationCap className="h-5 w-5 text-primary" />
         </div>
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Academy</h1>
-          <p className="text-sm text-muted-foreground/70 mt-0.5">
+          <h1 className="text-2xl font-bold tracking-tight">Academy</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
             Bite-sized lessons that teach you how investing actually works. Earn XP, build a streak.
           </p>
         </div>

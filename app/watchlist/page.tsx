@@ -140,22 +140,26 @@ export default function WatchlistPage() {
 
         {/* Header */}
         <div className="flex items-start justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
               <Bookmark className="h-5 w-5 text-primary" />
-              <h1 className="text-2xl font-bold text-foreground">Watchlist</h1>
-              {livePrices.size > 0 && (
-                <span className="flex items-center gap-1 text-xs text-emerald-500 font-medium">
-                  <Radio className="h-3 w-3 animate-pulse" />
-                  Live
-                </span>
-              )}
             </div>
-            <p className="text-sm text-muted-foreground">
-              {(displayItems.length) > 0
-                ? `${displayItems.length} stock${displayItems.length === 1 ? '' : 's'} tracked`
-                : 'Add stocks you want to keep an eye on.'}
-            </p>
+            <div>
+              <div className="flex items-center gap-2.5 mb-0.5">
+                <h1 className="text-2xl font-bold tracking-tight text-foreground">Watchlist</h1>
+                {livePrices.size > 0 && (
+                  <span className="flex items-center gap-1 text-xs text-emerald-500 font-medium">
+                    <Radio className="h-3 w-3 animate-pulse" />
+                    Live
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {(displayItems.length) > 0
+                  ? `${displayItems.length} stock${displayItems.length === 1 ? '' : 's'} tracked`
+                  : 'Add stocks you want to keep an eye on.'}
+              </p>
+            </div>
           </div>
 
           {/* Toolbar: view toggle + search */}

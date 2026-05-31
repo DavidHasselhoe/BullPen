@@ -2,10 +2,10 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, RefreshCw, AlertCircle } from 'lucide-react';
+import { ArrowLeft, RefreshCw, AlertCircle, Gauge } from 'lucide-react';
 import { useBackground } from '@/hooks/use-background';
 import { cn } from '@/lib/utils';
 import type { MarketMoodData, MoodSignal } from '@/app/api/market/mood/route';
@@ -194,7 +194,6 @@ function MoodSkeleton() {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function MarketMoodClientPage() {
-  const router = useRouter();
   const { hasAnimatedBackground } = useBackground();
 
   const { data, isLoading, isError, refetch, isFetching, dataUpdatedAt } =
@@ -223,32 +222,43 @@ export default function MarketMoodClientPage() {
     <div className={cn('min-h-screen', !hasAnimatedBackground && 'bg-background')}>
       <div className="max-w-2xl mx-auto px-4 py-6 sm:py-10 space-y-10">
 
-        {/* Header — refined hairline divider below, no decorative chrome */}
-        <div className="flex items-center gap-3 pb-4 border-b border-border/30">
-          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 -ml-2" onClick={() => router.back()}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-lg font-semibold tracking-tight leading-tight">Market Mood</h1>
-            <p className="text-[11px] text-muted-foreground/55 mt-0.5 font-mono tracking-wider uppercase">
-              Fear &amp; Greed Index
-            </p>
-          </div>
-          {updatedLabel && (
-            <span className="hidden sm:inline text-[10px] text-muted-foreground/40 font-mono tracking-wider">
-              {updatedLabel}
-            </span>
-          )}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => refetch()}
-            disabled={isFetching}
-            aria-label="Refresh"
+        {/* Header */}
+        <div className="mb-2">
+          <Link
+            href="/tools"
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-5 group"
           >
-            <RefreshCw className={cn('h-3.5 w-3.5 text-muted-foreground/60', isFetching && 'animate-spin')} />
-          </Button>
+            <ArrowLeft className="h-3 w-3 transition-transform group-hover:-translate-x-0.5" />
+            All tools
+          </Link>
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                <Gauge className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight text-foreground">Market Mood</h1>
+                <p className="text-sm text-muted-foreground mt-0.5">Fear &amp; Greed Index — composite of 4 market signals</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              {updatedLabel && (
+                <span className="hidden sm:inline text-xs text-muted-foreground/50 font-mono tabular-nums">
+                  {updatedLabel}
+                </span>
+              )}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => refetch()}
+                disabled={isFetching}
+                aria-label="Refresh"
+              >
+                <RefreshCw className={cn('h-3.5 w-3.5 text-muted-foreground/60', isFetching && 'animate-spin')} />
+              </Button>
+            </div>
+          </div>
         </div>
 
         {/* Body */}

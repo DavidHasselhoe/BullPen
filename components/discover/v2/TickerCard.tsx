@@ -1,6 +1,8 @@
 'use client';
 
+import { useCallback } from 'react';
 import Link from 'next/link';
+import { useQueryClient } from '@tanstack/react-query';
 import { ArrowDown, ArrowUp, Minus } from 'lucide-react';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
@@ -41,6 +43,14 @@ function PriceSkeleton({ wide = false }: { wide?: boolean }) {
 
 export function TickerCard({ item, href }: Props) {
   const live = useLivePrice(item.symbol);
+  const queryClient = useQueryClient();
+  const prefetch = useCallback(() => {
+    queryClient.prefetchQuery({
+      queryKey: ['stock-snapshot', item.ticker],
+      queryFn: () => fetch(`/api/stock/${item.ticker}/snapshot`).then(r => r.json()),
+      staleTime: 30_000,
+    });
+  }, [queryClient, item.ticker]);
 
   // Live SSE tick wins; fall back to server-hydrated seeds so the card never
   // renders empty (markets closed → no WS ticks; SSE seed not yet delivered).
@@ -68,6 +78,7 @@ export function TickerCard({ item, href }: Props) {
     <Link
       href={computedHref}
       aria-label={label}
+      onMouseEnter={prefetch}
       className={cn(
         'group flex flex-col justify-between shrink-0',
         'w-[168px] h-[100px] rounded-xl border border-border/50 bg-card/50',

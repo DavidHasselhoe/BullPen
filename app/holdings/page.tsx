@@ -14,7 +14,7 @@ import { useLivePrices } from '@/hooks/use-live-prices';
 import { useThrottle } from '@/hooks/use-throttle';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { useQuery } from '@tanstack/react-query';
-import { Radio, Link2, RefreshCw, BarChart2 } from 'lucide-react';
+import { Radio, Link2, RefreshCw, BarChart2, Briefcase } from 'lucide-react';
 import type { HoldingWithPrice } from '@/components/holdings/types';
 import { useBrokerageAccounts, useBrokerageConnect } from '@/hooks/use-brokerage';
 import { convertCurrency, type CurrencyCode } from '@/lib/currency/currency-conversion';
@@ -282,26 +282,31 @@ export default function HoldingsPage() {
     <div className="container mx-auto py-8 space-y-8">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold">My Holdings</h1>
-            {isPreMarket ? (
-              <span className="flex items-center gap-1.5 text-xs font-semibold text-amber-500 bg-amber-500/10 border border-amber-500/20 rounded-full px-2.5 py-1">
-                <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
-                Pre-Market
-              </span>
-            ) : session === 'regular' && livePrices.size > 0 ? (
-              <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-2.5 py-1">
-                <Radio className="h-3 w-3 animate-pulse" />
-                LIVE
-              </span>
-            ) : null}
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+            <Briefcase className="h-5 w-5 text-primary" />
           </div>
-          <p className="text-muted-foreground mt-1">
-            {isPreMarket
-              ? 'Showing pre-market prices · Updates every 3s'
-              : 'Track your positions, performance, and risk in real time.'}
-          </p>
+          <div>
+            <div className="flex items-center gap-2.5 mb-0.5">
+              <h1 className="text-2xl font-bold tracking-tight">My Holdings</h1>
+              {isPreMarket ? (
+                <span className="flex items-center gap-1.5 text-xs font-semibold text-amber-500 bg-amber-500/10 border border-amber-500/20 rounded-full px-2.5 py-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                  Pre-Market
+                </span>
+              ) : session === 'regular' && livePrices.size > 0 ? (
+                <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-2.5 py-1">
+                  <Radio className="h-3 w-3 animate-pulse" />
+                  LIVE
+                </span>
+              ) : null}
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {isPreMarket
+                ? 'Showing pre-market prices · Updates every 3s'
+                : 'Track your positions, performance, and risk in real time.'}
+            </p>
+          </div>
         </div>
 
         {/* Compact brokerage connect button — only when configured and not yet connected */}

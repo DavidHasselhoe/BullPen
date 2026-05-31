@@ -139,6 +139,38 @@
   to   { opacity: 1; }
 }
 
+/* Tilted float variants — rotation baked in so the animation doesn't overwrite an inline transform: rotate() */
+@keyframes bp-float-tilted-neg3 {
+  0%, 100% { transform: rotate(-3deg) translateY(0); }
+  50%      { transform: rotate(-3deg) translateY(-8px); }
+}
+@keyframes bp-float-tilted-pos4 {
+  0%, 100% { transform: rotate(4deg) translateY(0); }
+  50%      { transform: rotate(4deg) translateY(-12px); }
+}
+@keyframes bp-float-tilted-neg2 {
+  0%, 100% { transform: rotate(-2deg) translateY(-4px); }
+  50%      { transform: rotate(-2deg) translateY(6px); }
+}
+
+/* Shimmer sweep for primary button */
+@keyframes bp-shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+
+/* Glow pulse for FinalCTA orb */
+@keyframes bp-glow-pulse {
+  0%, 100% { opacity: 0.45; transform: scale(1); }
+  50%       { opacity: 0.75; transform: scale(1.08); }
+}
+
+/* Peek tab auto-advance progress bar */
+@keyframes bp-tab-progress {
+  from { width: 0%; }
+  to   { width: 100%; }
+}
+
 /* Reveal-on-scroll */
 .bullpen-landing-root .reveal {
   opacity: 0;
@@ -155,6 +187,9 @@
 .bullpen-landing-root .reveal[data-delay="4"] { transition-delay: 320ms; }
 .bullpen-landing-root .reveal[data-delay="5"] { transition-delay: 400ms; }
 .bullpen-landing-root .reveal[data-delay="6"] { transition-delay: 480ms; }
+.bullpen-landing-root .reveal[data-delay="7"] { transition-delay: 560ms; }
+.bullpen-landing-root .reveal[data-delay="8"] { transition-delay: 640ms; }
+.bullpen-landing-root .reveal[data-delay="9"] { transition-delay: 720ms; }
 
 @media (prefers-reduced-motion: reduce) {
   .bullpen-landing-root .reveal,
@@ -191,6 +226,18 @@
   background: var(--accent);
   color: var(--accent-ink);
   box-shadow: 0 12px 32px -10px var(--accent-glow), inset 0 1px 0 oklch(1 0 0 / 0.3);
+  position: relative;
+  overflow: hidden;
+}
+.bullpen-landing-root .btn-primary::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(105deg, transparent 35%, oklch(1 0 0 / 0.22) 50%, transparent 65%);
+  background-size: 200% 100%;
+  animation: bp-shimmer 2.8s ease-in-out infinite;
+  pointer-events: none;
 }
 .bullpen-landing-root .btn-primary:hover {
   transform: translateY(-1px);
@@ -254,4 +301,16 @@
 }
 @media (max-width: 560px) {
   .bullpen-landing-root .footer-grid { grid-template-columns: 1fr !important; }
+}
+
+/* Subtle grain overlay — SVG feTurbulence data-URI, extremely low opacity */
+.bullpen-landing-root .page-noise {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.028;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.78' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 180px;
 }
