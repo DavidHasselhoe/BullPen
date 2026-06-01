@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import {
   Table,
@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Bell } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Bell, Download } from 'lucide-react';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import type { ScreenerRow } from '@/app/api/screener/route';
 import type { HeatmapPriceEntry } from '@/hooks/use-heatmap-stream';
@@ -83,6 +83,31 @@ export function ScreenerResults({
     () => sorted.slice((page - 1) * pageSize, page * pageSize),
     [sorted, page, pageSize]
   );
+
+  const exportCSV = useCallback(() => {
+    const headers = ['Company', 'Ticker', 'Sector', ...columns.map((c) => c.label)];
+    const rows = sorted.map((row) => {
+      const live = livePrices?.get(row.ticker);
+      const cells = [
+        `"${row.name.replace(/"/g, '""')}"`,
+        row.ticker,
+        row.sector ?? '',
+        ...columns.map((col) => {
+          const v = col.getValue(row, live);
+          return v == null ? '' : String(v);
+        }),
+      ];
+      return cells.join(',');
+    });
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `screener-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [sorted, columns, livePrices]);
 
   const toggleSort = (key: string) => {
     if (sortKey === key) {
@@ -214,9 +239,20 @@ export function ScreenerResults({
 
       {/* Pagination */}
       <div className="flex items-center justify-between px-1">
-        <p className="text-xs text-muted-foreground">
-          Showing {startItem}–{endItem} of {sorted.length} results
-        </p>
+        <div className="flex items-center gap-3">
+          <p className="text-xs text-muted-foreground">
+            Showing {startItem}–{endItem} of {sorted.length} results
+          </p>
+          <button
+            type="button"
+            onClick={exportCSV}
+            className="flex items-center gap-1 text-xs text-muted-foreground/60 hover:text-foreground transition-colors"
+            title="Export all results to CSV"
+          >
+            <Download className="h-3 w-3" />
+            CSV
+          </button>
+        </div>
         <div className="flex items-center gap-3">
           {/* Page size */}
           <div className="flex items-center gap-1">
