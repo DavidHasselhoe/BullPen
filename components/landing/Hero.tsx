@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useState, useRef, type CSSProperties } from 'react';
 import Link from 'next/link';
 import { Reveal } from './Atoms';
 import { Icon } from './Icon';
@@ -10,8 +10,63 @@ interface Props {
   onSignUp: () => void;
 }
 
+// ── Live quote fetching ───────────────────────────────────────────────────────
+interface LiveQuote {
+  price: string;
+  change: string;
+  pct: string;
+  up: boolean;
+  raw: number;
+}
+
+function fmtPrice(c: number): string {
+  if (c >= 1000) return c.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return c.toFixed(2);
+}
+
+function useLiveQuotes(symbols: string[]) {
+  const [quotes, setQuotes] = useState<Record<string, LiveQuote>>({});
+  const symbolsRef = useRef(symbols);
+
+  useEffect(() => {
+    async function fetchAll() {
+      const results = await Promise.allSettled(
+        symbolsRef.current.map(async (sym) => {
+          const slug = sym.replace('/', '-');
+          const res = await fetch(`/api/stock/${slug}/quote`);
+          if (!res.ok) return null;
+          const data = await res.json() as { success: boolean; quote?: { c: number; d: number; dp: number } };
+          if (!data.success || !data.quote) return null;
+          const q = data.quote;
+          return [sym, {
+            price: fmtPrice(q.c),
+            change: `${q.d >= 0 ? '+' : ''}${q.d.toFixed(2)}`,
+            pct: `${q.dp >= 0 ? '+' : ''}${q.dp.toFixed(2)}%`,
+            up: q.dp >= 0,
+            raw: q.c,
+          }] as [string, LiveQuote];
+        })
+      );
+      const next: Record<string, LiveQuote> = {};
+      for (const r of results) {
+        if (r.status === 'fulfilled' && r.value) {
+          const [sym, q] = r.value;
+          next[sym] = q;
+        }
+      }
+      if (Object.keys(next).length > 0) setQuotes(next);
+    }
+
+    fetchAll();
+    const id = setInterval(fetchAll, 60_000);
+    return () => clearInterval(id);
+  }, []);
+
+  return quotes;
+}
+
 // ── Hero chart ────────────────────────────────────────────────────────────────
-function HeroChart() {
+function HeroChart({ liveQuote }: { liveQuote?: LiveQuote }) {
   const W = 720;
   const H = 320;
 
@@ -48,9 +103,13 @@ function HeroChart() {
   const { line, area, lastX, lastY } = buildPath(points, W, H);
   const lastPrice = points[points.length - 1];
   const firstPrice = points[0];
-  const change = lastPrice - firstPrice;
-  const pct = (change / firstPrice) * 100;
-  const displayPrice = (180 + (lastPrice - 100) * 0.7).toFixed(2);
+  const animChange = lastPrice - firstPrice;
+  const animPct = (animChange / firstPrice) * 100;
+  // Use live AAPL data when available, fall back to animated values
+  const displayPrice = liveQuote ? liveQuote.price : (180 + (lastPrice - 100) * 0.7).toFixed(2);
+  const displayChange = liveQuote ? liveQuote.change : `${animChange >= 0 ? '+' : ''}${animChange.toFixed(2)}`;
+  const displayPct = liveQuote ? liveQuote.pct : `${animPct.toFixed(2)}%`;
+  const isUp = liveQuote ? liveQuote.up : animPct >= 0;
   const tabs = ['1D', '1W', '1M', '3M', '1Y', 'ALL'];
 
   return (
@@ -134,12 +193,12 @@ function HeroChart() {
             className="mono"
             style={{
               fontSize: 13,
-              color: pct >= 0 ? 'var(--up)' : 'var(--down)',
+              color: isUp ? 'var(--up)' : 'var(--down)',
               fontWeight: 600,
               marginTop: 2,
             }}
           >
-            {pct >= 0 ? '▲' : '▼'} ${Math.abs(change).toFixed(2)} ({pct.toFixed(2)}%)
+            {isUp ? '▲' : '▼'} {displayChange} ({displayPct})
           </div>
         </div>
       </div>
@@ -348,6 +407,8 @@ function FloatingTicker({ symbol, name, price, pct, up, style, anim, sparkSeed =
 
 // ── Hero ─────────────────────────────────────────────────────────────────────
 export function Hero({ onSignUp }: Props) {
+  const liveQuotes = useLiveQuotes(['AAPL', 'NVDA', 'TSLA', 'BTC/USD']);
+
   return (
     <section id="top" style={{ position: 'relative', padding: '60px 0 80px' }}>
       <div className="wrap">
@@ -480,7 +541,7 @@ export function Hero({ onSignUp }: Props) {
               }}
             />
             <div style={{ position: 'relative', zIndex: 1 }}>
-              <HeroChart />
+              <HeroChart liveQuote={liveQuotes['AAPL']} />
             </div>
 
             <div className="float-tickers" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 2 }}>
@@ -488,10 +549,10 @@ export function Hero({ onSignUp }: Props) {
                 <FloatingTicker
                   symbol="NVDA"
                   name="NVIDIA"
-                  price="892.40"
-                  pct="+4.21%"
-                  change="+36.12"
-                  up
+                  price={liveQuotes['NVDA']?.price ?? '—'}
+                  pct={liveQuotes['NVDA']?.pct ?? '—'}
+                  change={liveQuotes['NVDA']?.change ?? '—'}
+                  up={liveQuotes['NVDA']?.up ?? true}
                   anim="bp-float-tilted-neg3 5s"
                   style={{ left: -60, top: 40 }}
                   sparkSeed={1.2}
@@ -501,10 +562,10 @@ export function Hero({ onSignUp }: Props) {
                 <FloatingTicker
                   symbol="BTC/USD"
                   name="Bitcoin"
-                  price="68,242"
-                  pct="+2.08%"
-                  change="+1390"
-                  up
+                  price={liveQuotes['BTC/USD']?.price ?? '—'}
+                  pct={liveQuotes['BTC/USD']?.pct ?? '—'}
+                  change={liveQuotes['BTC/USD']?.change ?? '—'}
+                  up={liveQuotes['BTC/USD']?.up ?? true}
                   anim="bp-float-tilted-pos4 6s"
                   style={{ right: -50, top: -20 }}
                   sparkSeed={2.4}
@@ -514,10 +575,10 @@ export function Hero({ onSignUp }: Props) {
                 <FloatingTicker
                   symbol="TSLA"
                   name="Tesla"
-                  price="218.94"
-                  pct="-1.42%"
-                  change="-3.15"
-                  up={false}
+                  price={liveQuotes['TSLA']?.price ?? '—'}
+                  pct={liveQuotes['TSLA']?.pct ?? '—'}
+                  change={liveQuotes['TSLA']?.change ?? '—'}
+                  up={liveQuotes['TSLA']?.up ?? false}
                   anim="bp-float-tilted-neg2 7s"
                   style={{ right: -30, bottom: 30 }}
                   sparkSeed={3.8}

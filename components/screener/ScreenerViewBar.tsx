@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { useWatchlist, useWatchlistLists } from '@/hooks/use-watchlist';
+import { useHoldings } from '@/hooks/use-holdings';
 import {
   useScreenerViews,
   useCreateScreenerView,
@@ -22,6 +23,7 @@ import { useAuth } from '@/hooks/use-auth';
 
 export type ActiveView =
   | { type: 'sp500' }
+  | { type: 'holdings' }
   | { type: 'watchlist'; listId: string | null }
   | { type: 'custom'; view: ScreenerView };
 
@@ -90,6 +92,7 @@ export function ScreenerViewBar({ activeView, onViewChange }: Props) {
   const { isAuthenticated } = useAuth();
   const { data: watchlistItems = [] } = useWatchlist();
   const { data: watchlistLists = [] } = useWatchlistLists();
+  const { data: holdings = [] } = useHoldings();
   const { data: customViews = [] } = useScreenerViews();
   const createView = useCreateScreenerView();
   const deleteView = useDeleteScreenerView();
@@ -137,6 +140,19 @@ export function ScreenerViewBar({ activeView, onViewChange }: Props) {
       >
         S&amp;P 500
       </button>
+
+      {/* My Holdings */}
+      {isAuthenticated && holdings.length > 0 && (
+        <button
+          onClick={() => onViewChange({ type: 'holdings' })}
+          className={cn(pillBase, isActive({ type: 'holdings' }) ? pillActive : pillInactive)}
+        >
+          My Holdings
+          <span className={cn('text-[10px] opacity-60', isActive({ type: 'holdings' }) ? 'text-primary-foreground' : 'text-muted-foreground')}>
+            {holdings.length}
+          </span>
+        </button>
+      )}
 
       {/* Watchlist */}
       {isAuthenticated && watchlistItems.length > 0 && (

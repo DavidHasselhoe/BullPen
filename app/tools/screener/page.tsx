@@ -16,8 +16,11 @@ import {
 import { ScreenerResults } from '@/components/screener/ScreenerResults';
 import { ScreenerViewBar, type ActiveView } from '@/components/screener/ScreenerViewBar';
 import { ScreenerViewStockPicker } from '@/components/screener/ScreenerViewStockPicker';
+import { ColumnChooser } from '@/components/screener/ColumnChooser';
+import { useScreenerColumns } from '@/hooks/use-screener-columns';
 import { useHeatmapStream } from '@/hooks/use-heatmap-stream';
 import { useWatchlist, useWatchlistItems } from '@/hooks/use-watchlist';
+import { useHoldings } from '@/hooks/use-holdings';
 import { useScreenerViews, useUpdateScreenerView, type ScreenerView } from '@/hooks/use-screener-views';
 import type { ScreenerRow } from '@/app/api/screener/route';
 
@@ -25,6 +28,9 @@ export const dynamic = 'force-dynamic';
 
 const FILTER_KEYS = Object.keys(EMPTY_FILTERS) as (keyof ScreenerFilterValues)[];
 const BILLION_KEYS = new Set(['marketCapMin', 'marketCapMax']);
+// Filters applied client-side only (derived from the live stream) — never sent
+// to /api/screener, so they don't pollute the server query or its cache key.
+const CLIENT_ONLY_KEYS = new Set<keyof ScreenerFilterValues>(['rvolMin']);
 
 function filtersFromParams(sp: URLSearchParams): ScreenerFilterValues {
   const f = { ...EMPTY_FILTERS };
@@ -41,6 +47,7 @@ function buildQueryString(filters: ScreenerFilterValues, symbols: string | null)
   for (const key of FILTER_KEYS) {
     const val = filters[key];
     if (!val) continue;
+    if (CLIENT_ONLY_KEYS.has(key)) continue; // applied client-side, not server-side
     if (BILLION_KEYS.has(key)) {
       const n = parseFloat(val);
       if (isFinite(n)) params.set(key, String(n * 1e9));
@@ -53,12 +60,14 @@ function buildQueryString(filters: ScreenerFilterValues, symbols: string | null)
 
 function viewToParam(view: ActiveView): string {
   if (view.type === 'sp500') return 'sp500';
+  if (view.type === 'holdings') return 'holdings';
   if (view.type === 'watchlist') return view.listId ? `watchlist:${view.listId}` : 'watchlist';
   return view.view.id;
 }
 
 function paramToView(param: string | null, customViews: ScreenerView[]): ActiveView {
   if (!param || param === 'sp500') return { type: 'sp500' };
+  if (param === 'holdings') return { type: 'holdings' };
   if (param === 'watchlist') return { type: 'watchlist', listId: null };
   if (param.startsWith('watchlist:')) return { type: 'watchlist', listId: param.slice(10) };
   const found = customViews.find((v) => v.id === param);
@@ -78,6 +87,7 @@ function ScreenerContent() {
   const { data: customViews = [] } = useScreenerViews();
   const [activeView, setActiveView] = useState<ActiveView>({ type: 'sp500' });
   const updateView = useUpdateScreenerView();
+  const screenerColumns = useScreenerColumns();
 
   // Restore active view from URL once custom views are loaded
   useEffect(() => {
@@ -99,6 +109,9 @@ function ScreenerContent() {
   // Company universe for stock picker search — cached from full screener load
   const universeRef = useRef<ScreenerRow[]>([]);
 
+  // Holdings data (for "My Holdings" view)
+  const { data: userHoldings = [] } = useHoldings();
+
   // Watchlist data
   const { data: allWatchlistItems = [] } = useWatchlist();
   const watchlistListId = activeView.type === 'watchlist' ? activeView.listId : null;
@@ -107,6 +120,10 @@ function ScreenerContent() {
   // Symbol allowlist based on active view
   const symbolsFilter = useMemo((): string | null => {
     if (activeView.type === 'sp500') return null;
+    if (activeView.type === 'holdings') {
+      const symbols = [...new Set(userHoldings.map((h) => h.symbol))];
+      return symbols.length > 0 ? symbols.join(',') : '__none__';
+    }
     if (activeView.type === 'watchlist') {
       const items = watchlistListId ? listItems : allWatchlistItems;
       return items.length > 0 ? items.map((i) => i.symbol).join(',') : '__none__';
@@ -117,7 +134,7 @@ function ScreenerContent() {
         : '__none__';
     }
     return null;
-  }, [activeView, allWatchlistItems, listItems, watchlistListId]);
+  }, [activeView, userHoldings, allWatchlistItems, listItems, watchlistListId]);
 
   const qs = useMemo(
     () => buildQueryString(filters, symbolsFilter === '__none__' ? null : symbolsFilter),
@@ -258,6 +275,7 @@ function ScreenerContent() {
           </span>
           <div className="ml-auto flex items-center gap-2">
             {refreshStatus && <span className="text-xs text-muted-foreground">{refreshStatus}</span>}
+            <ColumnChooser columns={screenerColumns} />
             <Button
               variant="outline" size="sm"
               onClick={() => { setRefreshStatus('Starting refresh…'); triggerRefresh(0); }}
@@ -272,9 +290,11 @@ function ScreenerContent() {
         <p className="text-sm text-muted-foreground">
           {activeView.type === 'sp500'
             ? 'Screen the full S&P 500 with live prices and fundamental data.'
-            : activeView.type === 'watchlist'
-              ? 'Screening your watchlist.'
-              : `Screening "${activeView.view.name}"`}
+            : activeView.type === 'holdings'
+              ? `Screening your ${userHoldings.length} held position${userHoldings.length !== 1 ? 's' : ''}.`
+              : activeView.type === 'watchlist'
+                ? 'Screening your watchlist.'
+                : `Screening "${activeView.view.name}"`}
         </p>
       </div>
 
@@ -375,6 +395,8 @@ function ScreenerContent() {
               <ScreenerResults
                 data={results}
                 livePrices={livePrices}
+                visibleColumns={screenerColumns.visibleColumns}
+                rvolMin={filters.rvolMin ? parseFloat(filters.rvolMin) : undefined}
                 page={page}
                 pageSize={pageSize}
                 onPageChange={setPage}

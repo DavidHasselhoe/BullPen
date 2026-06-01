@@ -1,9 +1,8 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Bell, Plus, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -13,92 +12,22 @@ import { humanizeError } from '@/lib/errors/humanize';
 import { cn } from '@/lib/utils';
 import { CreateAlertForm } from '@/components/alerts/CreateAlertForm';
 import { AlertList } from '@/components/alerts/AlertList';
-import { FREE_ACTIVE_ALERT_LIMIT, type CreateAlertPayload, type UserAlert } from '@/types/alerts';
-
-const ALERTS_QUERY_KEY = ['user-alerts'] as const;
-
-interface AlertsResponse {
-  success: boolean;
-  alerts: UserAlert[];
-}
+import { FREE_ACTIVE_ALERT_LIMIT } from '@/types/alerts';
+import { useAlerts } from '@/hooks/use-alerts';
 
 export default function AlertsClientPage() {
   const router = useRouter();
-  const queryClient = useQueryClient();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { hasAnimatedBackground } = useBackground();
   const [composerOpen, setComposerOpen] = useState(false);
 
-  const { data, isLoading, isError, error, refetch } = useQuery<AlertsResponse>({
-    queryKey: ALERTS_QUERY_KEY,
-    queryFn: async () => {
-      const res = await fetch('/api/alerts');
-      if (!res.ok) throw new Error('Failed to load alerts');
-      return res.json();
-    },
-    enabled: isAuthenticated,
-    staleTime: 30 * 1000,
-  });
+  const { alerts, isLoading, isError, error, refetch, create, toggle, remove } = useAlerts();
 
-  const alerts = data?.alerts ?? [];
   const activeCount = alerts.filter((a) => a.isActive).length;
 
-  const togglePauseMutation = useMutation({
-    mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) => {
-      const res = await fetch(`/api/alerts/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isActive }),
-      });
-      if (!res.ok) throw new Error('Failed to update alert');
-      return res.json();
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ALERTS_QUERY_KEY }),
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const res = await fetch(`/api/alerts/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Failed to delete alert');
-      return res.json();
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ALERTS_QUERY_KEY }),
-  });
-
-  const handleToggle = useCallback(
-    async (id: string, isActive: boolean) => {
-      await togglePauseMutation.mutateAsync({ id, isActive });
-    },
-    [togglePauseMutation]
-  );
-
-  const handleDelete = useCallback(
-    async (id: string) => {
-      await deleteMutation.mutateAsync(id);
-    },
-    [deleteMutation]
-  );
-
-  const handleCreate = useCallback(
-    async (payload: CreateAlertPayload): Promise<{ ok: boolean; error?: string }> => {
-      try {
-        const res = await fetch('/api/alerts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-        const body = await res.json();
-        if (!res.ok) {
-          return { ok: false, error: body?.error || humanizeError(res.status) };
-        }
-        await queryClient.invalidateQueries({ queryKey: ALERTS_QUERY_KEY });
-        return { ok: true };
-      } catch (err) {
-        return { ok: false, error: humanizeError(err) };
-      }
-    },
-    [queryClient]
-  );
+  const handleToggle = toggle;
+  const handleDelete = remove;
+  const handleCreate = create;
 
   // ── Auth gate ──────────────────────────────────────────────────────────────
   if (!authLoading && !isAuthenticated) {

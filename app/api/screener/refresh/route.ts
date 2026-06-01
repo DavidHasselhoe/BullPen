@@ -78,6 +78,7 @@ function parseStats(raw: TwelveDataStatisticsRaw, sym: string) {
     ps_ratio: v.price_to_sales_ttm ?? null,
     ev_to_ebitda: v.enterprise_to_ebitda ?? null,
     beta: sp.beta ?? null,
+    avg_volume: s.stock_statistics?.avg_90_volume ? Math.round(s.stock_statistics.avg_90_volume) : null,
     week52_high: sp.fifty_two_week_high ?? null,
     week52_low: sp.fifty_two_week_low ?? null,
     day50_ma: sp.fifty_day_ma ?? null,

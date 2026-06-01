@@ -12,10 +12,16 @@ interface Props {
   onCreated: () => void;
   onCancel: () => void;
   onCreate: (payload: CreateAlertPayload) => Promise<{ ok: boolean; error?: string }>;
+  /** Pre-fill and lock the ticker field (e.g. when opened from a stock page). */
+  initialTicker?: { ticker: string; name: string };
 }
 
-export function CreateAlertForm({ onCreated, onCancel, onCreate }: Props) {
-  const [ticker, setTicker] = useState<SearchResult | null>(null);
+export function CreateAlertForm({ onCreated, onCancel, onCreate, initialTicker }: Props) {
+  const [ticker, setTicker] = useState<SearchResult | null>(
+    initialTicker
+      ? { ticker: initialTicker.ticker, name: initialTicker.name, cik: '', has_data: true }
+      : null
+  );
   const [alertType, setAlertType] = useState<AlertType | null>(null);
   const [rawValue, setRawValue] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -68,16 +74,23 @@ export function CreateAlertForm({ onCreated, onCancel, onCreate }: Props) {
       className="rounded-2xl border border-border/50 bg-card/40 p-5 space-y-5"
     >
       {/* Step 1 — stock */}
-      <div className="space-y-1.5">
-        <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/55">
-          Stock
-        </label>
-        <TickerSelector
-          value={ticker}
-          onChange={setTicker}
-          placeholder="Search a stock (e.g. AAPL)"
-        />
-      </div>
+      {initialTicker ? (
+        <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-muted/30 px-3 py-2.5">
+          <span className="font-mono font-bold text-sm text-foreground">{initialTicker.ticker}</span>
+          <span className="text-xs text-muted-foreground truncate">{initialTicker.name}</span>
+        </div>
+      ) : (
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/55">
+            Stock
+          </label>
+          <TickerSelector
+            value={ticker}
+            onChange={setTicker}
+            placeholder="Search a stock (e.g. AAPL)"
+          />
+        </div>
+      )}
 
       {/* Step 2 — condition */}
       <div className="space-y-2">

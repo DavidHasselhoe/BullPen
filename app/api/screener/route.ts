@@ -23,6 +23,7 @@ export interface ScreenerRow {
   revenue_growth_yoy: number | null;
   earnings_growth_yoy: number | null;
   beta: number | null;
+  avg_volume: number | null;
   dividend_yield: number | null;
   payout_ratio: number | null;
   week52_high: number | null;

@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, MessageSquare, SearchX, Telescope } from 'lucide-react';
+import { AlertDialog } from '@/components/alerts/AlertDialog';
 import Link from 'next/link';
 import { ExperienceLevelToggle } from '@/components/ui/ExperienceLevelToggle';
 import { ExperienceOnboardingBanner } from '@/components/stock/ExperienceOnboardingBanner';
@@ -334,6 +335,7 @@ export default function StockDetailPage() {
                         <div className="flex shrink-0 items-center gap-2 flex-wrap justify-end">
                           <ExperienceLevelToggle />
                           <AddToListPicker symbol={ticker} companyName={displayName} />
+                          <AlertDialog symbol={ticker} companyName={displayName} />
                           <Button variant="outline" size="sm" onClick={() => openAIPanel()} className="gap-2">
                             <MessageSquare className="h-4 w-4" />
                             Ask AI

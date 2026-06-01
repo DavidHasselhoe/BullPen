@@ -31,6 +31,8 @@ export interface ScreenerFilterValues {
   revenueGrowthMax: string;
   week52ChangeMin: string;
   week52ChangeMax: string;
+  // Client-only: relative volume (live ÷ 90-day avg). Not sent to the API.
+  rvolMin: string;
 }
 
 export const EMPTY_FILTERS: ScreenerFilterValues = {
@@ -52,6 +54,7 @@ export const EMPTY_FILTERS: ScreenerFilterValues = {
   revenueGrowthMax: '',
   week52ChangeMin: '',
   week52ChangeMax: '',
+  rvolMin: '',
 };
 
 interface Preset {
@@ -66,6 +69,7 @@ const PRESETS: Preset[] = [
   { label: 'Dividend',        filters: { divYieldMin: '2.5' } },
   { label: 'Quality',         filters: { profitMarginMin: '15', revenueGrowthMin: '10' } },
   { label: 'Large Cap',       filters: { marketCapMin: '100' } },
+  { label: 'Volume Surge',    filters: { rvolMin: '2' } },
 ];
 
 function activePreset(filters: ScreenerFilterValues): string {
@@ -250,6 +254,26 @@ export function ScreenerFilters({ filters, sectors, industries, onChange, onRese
       <div className="space-y-0.5">
         <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 pb-1">Price Range</p>
         <RangeFilter label="52W H/L Spread" unit="%" minKey="week52ChangeMin" maxKey="week52ChangeMax" filters={filters} onChange={onChange} step="5" />
+      </div>
+
+      {/* Volume */}
+      <div className="space-y-1.5">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 pb-1">Volume</p>
+        <Label className="text-xs font-medium text-muted-foreground">
+          Min Relative Volume <span className="ml-1 opacity-60">(×)</span>
+        </Label>
+        <Input
+          type="number"
+          placeholder="e.g. 2"
+          value={filters.rvolMin}
+          onChange={(e) => onChange({ ...filters, rvolMin: e.target.value })}
+          className="h-8 text-xs"
+          step="0.5"
+          min="0"
+        />
+        <p className="text-[10px] text-muted-foreground/50 leading-snug">
+          Today&apos;s volume vs 90-day average. Needs live market data.
+        </p>
       </div>
     </div>
   );
