@@ -1,8 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/client';
 import { withRateLimit } from '@/lib/security/api-security';
+import { fetchAndUpsertScreenerStats } from '@/lib/market-data/screener-stats';
+import { TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
 
 export const dynamic = 'force-dynamic';
+
+/**
+ * Max symbols to fetch on-demand in a single request. Symbol-filtered views
+ * (holdings / watchlist / custom) reference a bounded set, so this caps abuse
+ * while comfortably covering any real portfolio or watchlist.
+ */
+const ON_DEMAND_CAP = 50;
 
 export interface ScreenerRow {
   ticker: string;
@@ -88,9 +97,31 @@ async function handler(request: NextRequest) {
 
   let results: ScreenerRow[] = (data ?? []) as ScreenerRow[];
 
+  // Rows fetched on-demand this request (merged into sectors/industries below).
+  let onDemandRows: ScreenerRow[] = [];
+  let onDemandPartial = false;
+
   // --- Apply symbol allowlist first (views) ---
   if (symbolAllowlist && symbolAllowlist.size > 0) {
     results = results.filter((r) => symbolAllowlist.has(r.ticker.toUpperCase()));
+
+    // On-demand: any requested ticker missing from screener_stats (e.g. a holding
+    // or watchlist name outside the actively-refreshed universe — TSM, HOOD, etc.)
+    // is fetched live, cached for next time, and included in this response.
+    const present = new Set(results.map((r) => r.ticker.toUpperCase()));
+    const missing = [...symbolAllowlist].filter((t) => !present.has(t));
+    if (missing.length > 0) {
+      try {
+        onDemandRows = await fetchAndUpsertScreenerStats(missing.slice(0, ON_DEMAND_CAP));
+        results = results.concat(onDemandRows);
+      } catch (err) {
+        // Rate-limited or upstream failure: serve what we have rather than 500.
+        onDemandPartial = true;
+        if (!(err instanceof TwelveDataRateLimitError)) {
+          console.error('[screener] on-demand fetch failed:', err);
+        }
+      }
+    }
   }
 
   // --- Apply filters ---
@@ -121,11 +152,12 @@ async function handler(request: NextRequest) {
   });
 
   // Collect unique sectors and industries for filter dropdowns
+  // (include any rows fetched on-demand so their sectors appear).
+  const allRows = [...((data ?? []) as ScreenerRow[]), ...onDemandRows];
   const sectors = [...new Set(
-    (data ?? []).map((r) => (r as ScreenerRow).sector).filter(Boolean) as string[]
+    allRows.map((r) => r.sector).filter(Boolean) as string[]
   )].sort();
 
-  const allRows = (data ?? []) as ScreenerRow[];
   const sectorFilter = sector;
   const industriesSource = sectorFilter
     ? allRows.filter(r => r.sector === sectorFilter)
@@ -134,8 +166,7 @@ async function handler(request: NextRequest) {
     industriesSource.map(r => r.industry).filter(Boolean) as string[]
   )].sort();
 
-  const allData = data ?? [];
-  const financialsLoaded = allData.filter((r) => (r as ScreenerRow).market_cap != null).length;
+  const financialsLoaded = allRows.filter((r) => r.market_cap != null).length;
 
   const response = NextResponse.json({
     success: true,
@@ -143,9 +174,11 @@ async function handler(request: NextRequest) {
     sectors,
     industries,
     total: results.length,
-    universeSize: allData.length,
+    universeSize: (data ?? []).length,
     financialsLoaded,
-    stale: allData.length === 0,
+    stale: (data ?? []).length === 0,
+    ...(onDemandRows.length > 0 ? { onDemandFetched: onDemandRows.length } : {}),
+    ...(onDemandPartial ? { partial: true } : {}),
   });
   response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60');
   return response;
