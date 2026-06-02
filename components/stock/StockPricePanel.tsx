@@ -298,14 +298,14 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
   }, [chartData, range, isLive, live]);
 
   const sessionBoundaries = useMemo(() => {
-    if (range !== '1D') return { openLabel: undefined, closeLabel: undefined };
-    let openLabel: string | undefined;
-    let closeLabel: string | undefined;
+    if (range !== '1D') return { openTime: undefined, closeTime: undefined };
+    let openTime: number | undefined;
+    let closeTime: number | undefined;
     for (let i = 1; i < chartData.length; i++) {
-      if (!openLabel && chartData[i].session === 'regular' && chartData[i - 1]?.session === 'pre') openLabel = chartData[i].label;
-      if (!closeLabel && chartData[i].session === 'post' && chartData[i - 1]?.session === 'regular') closeLabel = chartData[i].label;
+      if (!openTime && chartData[i].session === 'regular' && chartData[i - 1]?.session === 'pre') openTime = chartData[i].time;
+      if (!closeTime && chartData[i].session === 'post' && chartData[i - 1]?.session === 'regular') closeTime = chartData[i].time;
     }
-    return { openLabel, closeLabel };
+    return { openTime, closeTime };
   }, [chartData, range]);
 
   // Right block (dual mode) — derive extended price from the last candle when it's a
@@ -338,8 +338,6 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
   const priceMax = displayData.length ? Math.max(...displayData.map(d => d.price)) : 0;
   const yPad     = (priceMax - priceMin) * 0.06;
 
-  const tickCount    = 4;
-  const tickInterval = chartData.length ? Math.max(1, Math.floor(chartData.length / tickCount)) : 1;
   const textColor    = isDark ? '#3f3f46' : '#c4c4c8';
 
   const isLoadingChart  = (candleLoading || isFetching) && !candleData?.candles;
@@ -572,8 +570,12 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
               <YAxis domain={[priceMin - yPad, priceMax + yPad]} hide />
 
               <XAxis
-                dataKey="label"
-                interval={tickInterval}
+                dataKey="time"
+                type="number"
+                scale="time"
+                domain={['dataMin', 'dataMax']}
+                tickCount={5}
+                tickFormatter={(ts: number) => fmtLabel(ts, range)}
                 tick={{ fill: textColor, fontSize: 10 }}
                 axisLine={false}
                 tickLine={false}
@@ -611,9 +613,9 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
                     connectNulls={false}
                     isAnimationActive={false}
                   />
-                  {sessionBoundaries.openLabel && (
+                  {sessionBoundaries.openTime && (
                     <ReferenceLine
-                      x={sessionBoundaries.openLabel}
+                      x={sessionBoundaries.openTime}
                       stroke="#6b7280"
                       strokeOpacity={0.2}
                       strokeDasharray="2 4"
@@ -621,9 +623,9 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
                       label={{ value: 'Open', position: 'insideTopRight', fontSize: 9, fill: '#9ca3af', dy: 2 }}
                     />
                   )}
-                  {sessionBoundaries.closeLabel && (
+                  {sessionBoundaries.closeTime && (
                     <ReferenceLine
-                      x={sessionBoundaries.closeLabel}
+                      x={sessionBoundaries.closeTime}
                       stroke="#6b7280"
                       strokeOpacity={0.2}
                       strokeDasharray="2 4"
@@ -648,7 +650,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
               {/* Live dot at trailing edge */}
               {range === '1D' && isLive && displayData.length > 0 && (
                 <ReferenceDot
-                  x={displayData[displayData.length - 1].label}
+                  x={displayData[displayData.length - 1].time}
                   y={displayData[displayData.length - 1].price}
                   r={5}
                   fill={lineColor}
@@ -700,7 +702,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
               {osc === 'rsi' && (
                 <ResponsiveContainer width="100%" height={90}>
                   <LineChart data={displayData} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
-                    <XAxis dataKey="label" hide />
+                    <XAxis dataKey="time" type="number" scale="time" domain={['dataMin', 'dataMax']} hide />
                     <YAxis domain={[0, 100]} hide ticks={[30, 50, 70]} />
                     <Tooltip formatter={(v: number) => v?.toFixed(1)} labelFormatter={() => ''} contentStyle={{ fontSize: 10 }} />
                     <ReferenceLine y={70} stroke="#ef4444" strokeOpacity={0.3} strokeDasharray="3 3" strokeWidth={1} />
@@ -713,7 +715,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
               {osc === 'macd' && (
                 <ResponsiveContainer width="100%" height={90}>
                   <LineChart data={displayData} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
-                    <XAxis dataKey="label" hide />
+                    <XAxis dataKey="time" type="number" scale="time" domain={['dataMin', 'dataMax']} hide />
                     <YAxis hide tickFormatter={(v) => v?.toFixed(1)} />
                     <Tooltip formatter={(v: number) => v?.toFixed(3)} labelFormatter={() => ''} contentStyle={{ fontSize: 10 }} />
                     <ReferenceLine y={0} stroke={textColor} strokeDasharray="2 4" strokeWidth={1} />
