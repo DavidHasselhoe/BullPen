@@ -24,6 +24,19 @@ import { AlertDialog } from '@/components/alerts/AlertDialog';
 type SortDir = 'asc' | 'desc';
 const PAGE_SIZE_OPTIONS = [25, 50, 100];
 
+/** Rows older than this (mid/small caps on the slower refresh tier) get a freshness marker. */
+const STALE_AFTER_DAYS = 3;
+
+/** Returns a tooltip label when a row's fundamentals are older than the freshness window. */
+function stalenessLabel(updatedAt: string | null | undefined): string | null {
+  if (!updatedAt) return null;
+  const ms = Date.now() - new Date(updatedAt).getTime();
+  if (!isFinite(ms) || ms < 0) return null;
+  const days = Math.floor(ms / 86_400_000);
+  if (days < STALE_AFTER_DAYS) return null;
+  return `Fundamentals as of ${days} day${days === 1 ? '' : 's'} ago`;
+}
+
 interface ScreenerResultsProps {
   data: ScreenerRow[];
   livePrices?: Map<string, HeatmapPriceEntry>;
@@ -195,6 +208,15 @@ export function ScreenerResults({
                           <span className="font-semibold text-sm text-foreground group-hover:underline">
                             {row.ticker}
                           </span>
+                          {(() => {
+                            const stale = stalenessLabel(row.updated_at);
+                            return stale ? (
+                              <span
+                                className="ml-1 inline-block h-1.5 w-1.5 rounded-full bg-amber-400/70 align-middle"
+                                title={stale}
+                              />
+                            ) : null;
+                          })()}
                           <span className="ml-1.5 text-xs text-muted-foreground hidden sm:inline truncate">
                             {row.name.length > 22 ? `${row.name.slice(0, 22)}…` : row.name}
                           </span>

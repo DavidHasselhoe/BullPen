@@ -85,29 +85,42 @@ async function handler(request: NextRequest) {
   const week52ChangeMin = parseNum(sp.get('week52ChangeMin'));
   const week52ChangeMax = parseNum(sp.get('week52ChangeMax'));
 
-  // Fetch all cached stats
-  const { data, error } = await supabase
-    .from('screener_stats')
-    .select('*')
-    .order('market_cap', { ascending: false, nullsFirst: false });
-
-  if (error) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  // Fetch base rows. Two scoped queries instead of loading the whole table:
+  //  - symbol views (holdings/watchlist/custom): just the requested tickers.
+  //  - default view: the active universe (tier 1) via the screener_active_rows()
+  //    join, so the on-demand/discovery long tail in screener_stats never bloats
+  //    the default screen.
+  let baseRows: ScreenerRow[];
+  if (symbolAllowlist && symbolAllowlist.size > 0) {
+    const { data, error } = await supabase
+      .from('screener_stats')
+      .select('*')
+      .in('ticker', [...symbolAllowlist])
+      .order('market_cap', { ascending: false, nullsFirst: false });
+    if (error) {
+      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    }
+    baseRows = (data ?? []) as ScreenerRow[];
+  } else {
+    const { data, error } = await supabase
+      .rpc('screener_active_rows')
+      .order('market_cap', { ascending: false, nullsFirst: false });
+    if (error) {
+      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    }
+    baseRows = (data ?? []) as ScreenerRow[];
   }
 
-  let results: ScreenerRow[] = (data ?? []) as ScreenerRow[];
+  let results: ScreenerRow[] = baseRows;
 
   // Rows fetched on-demand this request (merged into sectors/industries below).
   let onDemandRows: ScreenerRow[] = [];
   let onDemandPartial = false;
 
-  // --- Apply symbol allowlist first (views) ---
+  // On-demand: any requested ticker missing from screener_stats (e.g. a holding
+  // or watchlist name outside the actively-refreshed universe — TSM, HOOD, etc.)
+  // is fetched live, cached for next time, and included in this response.
   if (symbolAllowlist && symbolAllowlist.size > 0) {
-    results = results.filter((r) => symbolAllowlist.has(r.ticker.toUpperCase()));
-
-    // On-demand: any requested ticker missing from screener_stats (e.g. a holding
-    // or watchlist name outside the actively-refreshed universe — TSM, HOOD, etc.)
-    // is fetched live, cached for next time, and included in this response.
     const present = new Set(results.map((r) => r.ticker.toUpperCase()));
     const missing = [...symbolAllowlist].filter((t) => !present.has(t));
     if (missing.length > 0) {
@@ -153,7 +166,7 @@ async function handler(request: NextRequest) {
 
   // Collect unique sectors and industries for filter dropdowns
   // (include any rows fetched on-demand so their sectors appear).
-  const allRows = [...((data ?? []) as ScreenerRow[]), ...onDemandRows];
+  const allRows = [...baseRows, ...onDemandRows];
   const sectors = [...new Set(
     allRows.map((r) => r.sector).filter(Boolean) as string[]
   )].sort();
@@ -174,9 +187,9 @@ async function handler(request: NextRequest) {
     sectors,
     industries,
     total: results.length,
-    universeSize: (data ?? []).length,
+    universeSize: baseRows.length,
     financialsLoaded,
-    stale: (data ?? []).length === 0,
+    stale: baseRows.length === 0,
     ...(onDemandRows.length > 0 ? { onDemandFetched: onDemandRows.length } : {}),
     ...(onDemandPartial ? { partial: true } : {}),
   });
