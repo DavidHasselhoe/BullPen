@@ -1,0 +1,27 @@
+name: Seed Screener Universe
+
+# Manual one-time bootstrap (and occasional top-up for newly-listed tickers).
+# Seeds the screener_universe table from TwelveData's /stocks reference list as
+# tier 0, then forces S&P 500 + Nasdaq 100 to tier 1. The nightly discovery cron
+# grows coverage from there. Trigger from the Actions tab → Run workflow.
+on:
+  workflow_dispatch:
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: POST /api/screener/seed-universe
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          APP_URL: ${{ vars.APP_URL || 'https://bullpen.no' }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::CRON_SECRET secret is not configured in repo settings"
+            exit 1
+          fi
+          echo "Seeding screener universe…"
+          curl -fsS -X POST \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "${APP_URL}/api/screener/seed-universe"
