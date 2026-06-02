@@ -1,0 +1,59 @@
+name: Cron — Refresh Screener (Extended + Discovery)
+
+# Daily at 03:00 UTC. Complements the 22:00 "Refresh Screener Financial Data"
+# job, which covers the top ~600 active names (batches 0–60). This job:
+#   1. Refreshes the remaining mid/small-cap active universe (batches 61–115).
+#   2. Runs a discovery sweep over the on-demand (tier-0) long tail so newly
+#      significant names get stats and are promoted to the active set when they
+#      clear the market-cap floor.
+# Each batch = 10 stocks × 50 credits, paced 65s apart to stay under the
+# TwelveData 610 credits/min limit.
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  refresh-extended:
+    runs-on: ubuntu-latest
+    timeout-minutes: 85
+    steps:
+      - name: Refresh remaining active universe (batches 61–115)
+        env:
+          APP_URL: ${{ vars.APP_URL || 'https://bullpen.no' }}
+        run: |
+          echo "Extended active refresh…"
+          for batch in $(seq 61 115); do
+            echo "→ Active batch $batch"
+            RESPONSE=$(curl -fsS -X POST "${APP_URL}/api/screener/refresh?batch=${batch}") || {
+              echo "Batch $batch failed (rate limit or network) — stopping active phase"
+              break
+            }
+            echo "$RESPONSE"
+            DONE=$(echo "$RESPONSE" | jq -r '.done // false')
+            if [ "$DONE" = "true" ]; then
+              echo "Active universe fully covered."
+              break
+            fi
+            sleep 65
+          done
+
+      - name: Discovery sweep over the long tail (tier-0)
+        env:
+          APP_URL: ${{ vars.APP_URL || 'https://bullpen.no' }}
+        run: |
+          echo "Discovery sweep…"
+          for i in $(seq 1 15); do
+            echo "→ Discovery $i"
+            RESPONSE=$(curl -fsS -X POST "${APP_URL}/api/screener/refresh?mode=discovery") || {
+              echo "Discovery $i failed (rate limit or network) — stopping"
+              break
+            }
+            echo "$RESPONSE"
+            DONE=$(echo "$RESPONSE" | jq -r '.done // false')
+            if [ "$DONE" = "true" ]; then
+              echo "Discovery exhausted (no tier-0 tickers left)."
+              break
+            fi
+            sleep 65
+          done

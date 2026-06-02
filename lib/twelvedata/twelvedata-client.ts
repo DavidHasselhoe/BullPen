@@ -1244,6 +1244,60 @@ export async function symbolSearch(
   return json.data ?? [];
 }
 
+// -------- Stocks reference list --------
+
+export interface StockReference {
+  symbol: string;
+  name: string;
+  exchange: string;
+  mic_code: string;
+  country: string;
+  currency: string;
+  type: string;
+}
+
+interface TwelveDataStocksResponse {
+  data?: Array<{
+    symbol?: string;
+    name?: string;
+    exchange?: string;
+    mic_code?: string;
+    country?: string;
+    currency?: string;
+    type?: string;
+  }>;
+  status?: string;
+  message?: string;
+}
+
+/**
+ * Fetch the TwelveData stocks reference list (not market data — the catalogue of
+ * listed instruments). Used to seed the screener universe table.
+ * Endpoint: GET /stocks. Reference data — very low credit cost.
+ */
+export async function getUsStocksList(
+  opts: { country?: string; exchange?: string } = {}
+): Promise<StockReference[]> {
+  logUsage('/stocks', opts.exchange ?? opts.country ?? 'all');
+  const url = buildUrl('/stocks', {
+    country: opts.country ?? 'United States',
+    exchange: opts.exchange,
+  });
+  const res = await fetch(url, { cache: 'no-store' });
+  if (!res.ok) throw new Error(`TwelveData /stocks HTTP ${res.status}`);
+  const json = (await res.json()) as TwelveDataStocksResponse;
+  if (json.status === 'error') throw new Error(json.message ?? 'TwelveData /stocks error');
+  return (json.data ?? []).map((d) => ({
+    symbol: d.symbol ?? '',
+    name: d.name ?? d.symbol ?? '',
+    exchange: d.exchange ?? '',
+    mic_code: d.mic_code ?? '',
+    country: d.country ?? '',
+    currency: d.currency ?? '',
+    type: d.type ?? '',
+  })).filter((d) => d.symbol);
+}
+
 // -------- Press Releases --------
 
 export interface PressRelease {
