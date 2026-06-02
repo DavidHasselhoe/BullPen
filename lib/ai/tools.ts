@@ -489,14 +489,90 @@ export const openComparison = tool({
 
 export const openScreener = tool({
   description:
-    'Open the stock screener. Use when the user asks to find, screen, or filter companies by criteria. ' +
-    'Examples: "show companies with high revenue growth", "find tech companies", "open the screener".',
-  inputSchema: jsonSchema<Record<string, never>>({
+    'Open the BullPen stock screener, optionally pre-applying filters so the user sees results immediately. ' +
+    'Use whenever the user asks to find, screen, filter, or browse stocks — even vague requests like ' +
+    '"show me value stocks", "find tech growth plays", or "I want dividend ideas". ' +
+    'Map natural language criteria to filter params: ' +
+    '"large-cap" → marketCapMin=10, "mega-cap" → marketCapMin=200, "small-cap" → marketCapMax=2, ' +
+    '"deep value" → peMax=15 + pbMax=2, "growth stocks" → revenueGrowthMin=15, ' +
+    '"high quality" → profitMarginMin=15 + revenueGrowthMin=10, "dividend" → divYieldMin=2.5, ' +
+    '"low volatility" → betaMax=0.8, "high volatility" → betaMin=1.5. ' +
+    'Always prefer this over openComparison or screenCompanies when the user wants to browse visually.',
+  inputSchema: jsonSchema<{
+    sector?: string;
+    industry?: string;
+    marketCapMin?: number;
+    marketCapMax?: number;
+    peMin?: number;
+    peMax?: number;
+    pbMin?: number;
+    pbMax?: number;
+    betaMin?: number;
+    betaMax?: number;
+    divYieldMin?: number;
+    divYieldMax?: number;
+    profitMarginMin?: number;
+    profitMarginMax?: number;
+    revenueGrowthMin?: number;
+    revenueGrowthMax?: number;
+    week52ChangeMin?: number;
+    week52ChangeMax?: number;
+  }>({
     type: 'object',
-    properties: {},
+    properties: {
+      sector:           { type: 'string', description: 'Sector name, e.g. "Technology", "Healthcare", "Energy", "Financials", "Consumer Cyclical"' },
+      industry:         { type: 'string', description: 'Industry within the sector, e.g. "Semiconductors", "Software—Application", "Biotechnology"' },
+      marketCapMin:     { type: 'number', description: 'Min market cap in billions USD (e.g. 10 = $10B, 200 = $200B)' },
+      marketCapMax:     { type: 'number', description: 'Max market cap in billions USD' },
+      peMin:            { type: 'number', description: 'Min P/E ratio (TTM)' },
+      peMax:            { type: 'number', description: 'Max P/E ratio (TTM) — e.g. 15 for value / cheap stocks' },
+      pbMin:            { type: 'number', description: 'Min Price-to-Book ratio' },
+      pbMax:            { type: 'number', description: 'Max Price-to-Book ratio — e.g. 2 for deep value' },
+      betaMin:          { type: 'number', description: 'Min beta — e.g. 1.5 for high-volatility / aggressive stocks' },
+      betaMax:          { type: 'number', description: 'Max beta — e.g. 0.8 for low-volatility / defensive stocks' },
+      divYieldMin:      { type: 'number', description: 'Min dividend yield as a percentage — e.g. 2.5 for 2.5% yield' },
+      divYieldMax:      { type: 'number', description: 'Max dividend yield as a percentage' },
+      profitMarginMin:  { type: 'number', description: 'Min profit margin as a percentage — e.g. 15 for 15% margin' },
+      profitMarginMax:  { type: 'number', description: 'Max profit margin as a percentage' },
+      revenueGrowthMin: { type: 'number', description: 'Min revenue growth YoY as a percentage — e.g. 15 for 15% growth' },
+      revenueGrowthMax: { type: 'number', description: 'Max revenue growth YoY as a percentage' },
+      week52ChangeMin:  { type: 'number', description: 'Min 52-week price change % — e.g. -30 for stocks down >30% (beaten-down)' },
+      week52ChangeMax:  { type: 'number', description: 'Max 52-week price change % — e.g. 0 for stocks still below prior high' },
+    },
     additionalProperties: false,
   }),
-  execute: async () => clientAction({ type: 'navigate', path: '/tools/screener' }),
+  execute: async (filters) => {
+    const params = new URLSearchParams();
+    const add = (k: string, v: number | string | undefined) => {
+      if (v != null && v !== '') params.set(k, String(v));
+    };
+    add('sector',           filters.sector);
+    add('industry',         filters.industry);
+    add('marketCapMin',     filters.marketCapMin);
+    add('marketCapMax',     filters.marketCapMax);
+    add('peMin',            filters.peMin);
+    add('peMax',            filters.peMax);
+    add('pbMin',            filters.pbMin);
+    add('pbMax',            filters.pbMax);
+    add('betaMin',          filters.betaMin);
+    add('betaMax',          filters.betaMax);
+    add('divYieldMin',      filters.divYieldMin);
+    add('divYieldMax',      filters.divYieldMax);
+    add('profitMarginMin',  filters.profitMarginMin);
+    add('profitMarginMax',  filters.profitMarginMax);
+    add('revenueGrowthMin', filters.revenueGrowthMin);
+    add('revenueGrowthMax', filters.revenueGrowthMax);
+    add('week52ChangeMin',  filters.week52ChangeMin);
+    add('week52ChangeMax',  filters.week52ChangeMax);
+
+    const qs = params.toString();
+    const path = qs ? `/tools/screener?${qs}` : '/tools/screener';
+    const appliedCount = [...params.keys()].length;
+    return {
+      ...clientAction({ type: 'navigate', path }),
+      ...(appliedCount > 0 ? { filtersApplied: appliedCount, description: `Screener opened with ${appliedCount} filter(s)` } : {}),
+    };
+  },
 });
 
 export const openHoldings = tool({

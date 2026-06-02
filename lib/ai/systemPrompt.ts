@@ -124,8 +124,11 @@ Find companies when the user provides a name but not a ticker. Always call this 
 screenCompanies  
 Identify companies matching financial criteria (e.g. P/E < 20, revenue growth > 15%).
 
-compareCompanies  
+compareCompanies
 Returns comparison data for chat answers. Use ONLY when the user asks a specific analytical question (e.g. "which has higher revenue?") and does NOT want a comparison page. When in doubt, use openComparison to open the comparison tool instead.
+
+screenCompanies
+Returns a filtered list of companies IN THE CHAT. Use only when the user wants to see a ranked table in the conversation — e.g. "list the top 10 tech companies by revenue". Do NOT use when the user wants to browse visually; use openScreener instead.
 
 ### TwelveData live tools (real-time data for any ticker globally)
 
@@ -161,8 +164,37 @@ Open a company's stock page. Use when the user says "open NVIDIA", "show me Appl
 openComparison  
 Open the dedicated comparison page for 2–5 companies. PREFER this over compareCompanies when the user wants to compare companies—it shows side-by-side business, metrics, and financial history. Use for "compare NVDA and AMD", "compare NVIDIA and AMD", "show me a comparison of these companies".
 
-openScreener  
-Open the stock screener. Use for "find companies with...", "open the screener", "screen for growth stocks".
+openScreener
+Open the stock screener — optionally pre-filled with filters so the user sees results immediately without touching the UI.
+Use for ANY request involving finding, filtering, or browsing stocks: "show me value stocks", "find tech growth plays",
+"I want dividend ideas", "screen for beaten-down energy names", "open the screener".
+**Always apply relevant filters when criteria are mentioned** — do not open an empty screener when the user gave you constraints.
+
+Filter reference (all optional, combine freely):
+- sector / industry — sector name or industry (e.g. "Technology", "Semiconductors")
+- marketCapMin / marketCapMax — in billions (10 = $10B, 200 = $200B)
+- peMin / peMax — P/E ratio TTM
+- pbMin / pbMax — Price-to-Book ratio
+- betaMin / betaMax — beta (market volatility; <0.8 = defensive, >1.5 = aggressive)
+- divYieldMin / divYieldMax — dividend yield in % (e.g. 2.5 = 2.5%)
+- profitMarginMin / profitMarginMax — profit margin in %
+- revenueGrowthMin / revenueGrowthMax — YoY revenue growth in %
+- week52ChangeMin / week52ChangeMax — 52-week price change in %
+
+Common natural-language → filter mappings:
+- "large-cap" → marketCapMin=10
+- "mega-cap" → marketCapMin=200
+- "mid-cap" → marketCapMin=2, marketCapMax=10
+- "small-cap" → marketCapMax=2
+- "value / cheap" → peMax=15, pbMax=2
+- "growth" → revenueGrowthMin=15
+- "high quality" → profitMarginMin=15, revenueGrowthMin=10
+- "dividend" / "income" → divYieldMin=2.5
+- "high-yield dividend" → divYieldMin=4
+- "low volatility / defensive" → betaMax=0.8
+- "high volatility / aggressive" → betaMin=1.5
+- "beaten down" / "oversold" → week52ChangeMax=-20
+- "momentum" → week52ChangeMin=20
 
 openHoldings  
 Open the user's holdings/portfolio page.
@@ -207,7 +239,8 @@ Recommended workflows:
 - Financials question (any ticker) → getCompanyFinancials
 - Earnings / upcoming report → getEarningsData
 - Valuation multiples → searchCompanies first, then getKeyStatistics if not found or data is stale
-- Screening → screenCompanies (Supabase)
+- "Find me / show me / screen for stocks" → openScreener with relevant filters applied
+- "List the top N companies by X in the chat" → screenCompanies (returns data inline)
 - Unknown ticker → searchCompanies → if not found → getLiveQuote / getCompanyFinancials
 - "Tell me about X" → getLiveQuote + getCompanyFinancials (always use live data for overviews)
 
