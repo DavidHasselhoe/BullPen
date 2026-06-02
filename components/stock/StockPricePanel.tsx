@@ -6,7 +6,11 @@ import { useQuery } from '@tanstack/react-query';
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
   LineChart, Line, ReferenceLine, ReferenceDot,
+  BarChart, Bar, Cell,
 } from 'recharts';
+import { useChartPrefs } from '@/hooks/use-chart-prefs';
+import { ChartSettingsPanel } from './ChartSettingsPanel';
+import type { CompanyEarnings } from '@/lib/twelvedata/twelvedata-client';
 import { useTheme } from 'next-themes';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLivePrices } from '@/hooks/use-live-prices';
@@ -136,9 +140,12 @@ function fetchIndicator(ticker: string, opt: IndicatorOption, range: Range): Pro
 export function StockPricePanel({ ticker }: { ticker: string }) {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
-  const [range, setRange] = useState<Range>('1D');
+  const { prefs, setPref, reset: resetPrefs } = useChartPrefs();
+  const [range, setRange] = useState<Range>(prefs.defaultRange as Range);
   const [whyOpen, setWhyOpen] = useState(false);
-  const [activeIndicators, setActiveIndicators] = useState<Set<Indicator>>(new Set());
+  const [activeIndicators, setActiveIndicators] = useState<Set<Indicator>>(
+    new Set(prefs.defaultIndicators as Indicator[])
+  );
   const { isSimplified } = useExperienceLevel();
 
   function toggleIndicator(key: Indicator) {
@@ -177,7 +184,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
   const dayLow    = restQuote?.l ?? 0;
   const openPrice = restQuote?.o ?? 0;
 
-  const showDual = !!extHours;
+  const showDual = !!extHours && prefs.showExtendedHours;
 
   // Left block — regular-session close + its published change (static)
   const closePrice = restClose;
@@ -207,6 +214,19 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
     // Longer ranges use daily candles; 5-min stale time is fine.
     staleTime: range === '1D' ? 60 * 1000 : 5 * 60 * 1000,
     refetchInterval: range === '1D' ? 60 * 1000 : false,
+  });
+
+  // ── Earnings (for overlay) ────────────────────────────────────────────────
+  const { data: earningsResp } = useQuery<{ success: boolean; earnings: CompanyEarnings[] }>({
+    queryKey: ['company-earnings', ticker],
+    queryFn: async () => {
+      const res = await fetch(`/api/stock/${ticker}/earnings`);
+      return res.json();
+    },
+    enabled: !!ticker && prefs.showEarnings,
+    staleTime: 12 * 60 * 60 * 1000,
+    gcTime: 24 * 60 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   // ── Indicator queries ─────────────────────────────────────────────────────
@@ -308,6 +328,30 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
     return { openTime, closeTime };
   }, [chartData, range]);
 
+  // When extended hours are hidden, strip pre/post candles so the chart shows
+  // only regular-session data (avoids a jagged gap at market open).
+  const chartDisplayData = useMemo(() => {
+    if (range !== '1D' || prefs.showExtendedHours) return displayData;
+    const hasSession = displayData.some((d) => d.session !== undefined);
+    if (!hasSession) return displayData;
+    return displayData.filter((d) => !d.session || d.session === 'regular');
+  }, [displayData, range, prefs.showExtendedHours]);
+
+  // Earnings markers — filter to dates visible in the current chart window.
+  const earningsMarkers = useMemo<Array<{ ts: number; beat: boolean | null }>>(() => {
+    if (!prefs.showEarnings || !earningsResp?.earnings?.length || !chartDisplayData.length) return [];
+    const chartStart = chartDisplayData[0].time;
+    const chartEnd   = chartDisplayData[chartDisplayData.length - 1].time;
+    return earningsResp.earnings
+      .map((e) => {
+        // Convert "YYYY-MM-DD" to Unix seconds, using noon UTC so it lands inside the trading day.
+        const ts = Math.floor(new Date(`${e.period}T12:00:00Z`).getTime() / 1000);
+        const beat = e.actual != null && e.estimate != null ? e.actual >= e.estimate : null;
+        return { ts, beat };
+      })
+      .filter(({ ts }) => ts >= chartStart && ts <= chartEnd);
+  }, [prefs.showEarnings, earningsResp, chartDisplayData]);
+
   // Right block (dual mode) — derive extended price from the last candle when it's a
   // pre/post session so the header and chart tooltip always read from the same source.
   // Only fall back to the extended-hours API price when candles haven't loaded yet.
@@ -321,8 +365,8 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
   const extPct  = closePrice > 0 ? (extDiff / closePrice) * 100 : (extHours?.changePercent ?? 0);
   const extIsPos = extDiff >= 0;
 
-  const firstPrice = displayData[0]?.price ?? 0;
-  const chartLast  = displayData[displayData.length - 1]?.price ?? 0;
+  const firstPrice = chartDisplayData[0]?.price ?? 0;
+  const chartLast  = chartDisplayData[chartDisplayData.length - 1]?.price ?? 0;
   // In dual mode (pre/post-market) anchor to regular-session close, not prev_close,
   // so tooltip change and the perf banner both reflect move vs today's close.
   const dayBase    = showDual ? closePrice : prevClose;
@@ -334,14 +378,14 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
   const lineColor  = chartIsPos ? '#22c55e' : '#ef4444';
   const gradientId = `pg-${ticker}`;
 
-  const priceMin = displayData.length ? Math.min(...displayData.map(d => d.price)) : 0;
-  const priceMax = displayData.length ? Math.max(...displayData.map(d => d.price)) : 0;
+  const priceMin = chartDisplayData.length ? Math.min(...chartDisplayData.map(d => d.price)) : 0;
+  const priceMax = chartDisplayData.length ? Math.max(...chartDisplayData.map(d => d.price)) : 0;
   const yPad     = (priceMax - priceMin) * 0.06;
 
   const textColor    = isDark ? '#3f3f46' : '#c4c4c8';
 
   const isLoadingChart  = (candleLoading || isFetching) && !candleData?.candles;
-  const hasChart        = displayData.length > 0;
+  const hasChart        = chartDisplayData.length > 0;
   const activeOscillators = [...activeIndicators].filter((i) => OSCILLATOR_INDICATORS.has(i));
   const showOscillator  = hasChart && !isSimplified && activeOscillators.length > 0;
 
@@ -487,7 +531,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
               </div>
             )}
 
-            {/* Range tabs */}
+            {/* Range tabs + settings gear */}
             <div className="flex items-center gap-0.5">
               {RANGES.map((r) => (
                 <button
@@ -503,6 +547,17 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
                   {RANGE_DISPLAY[r]}
                 </button>
               ))}
+              <div className="ml-1 pl-1 border-l border-border/30">
+                <ChartSettingsPanel
+                  prefs={prefs}
+                  setPref={setPref}
+                  reset={resetPrefs}
+                  onRangeChange={(r) => { setRange(r as Range); }}
+                  onIndicatorsChange={(inds) => {
+                    setActiveIndicators(new Set(inds as Indicator[]));
+                  }}
+                />
+              </div>
             </div>
 
             {/* Indicators — advanced users, non-1D only */}
@@ -558,16 +613,20 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
 
         {hasChart && (
           <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={displayData} margin={{ top: 8, right: 0, bottom: 0, left: 0 }}>
+            <AreaChart data={chartDisplayData} margin={{ top: 8, right: 0, bottom: 0, left: 0 }}>
               <defs>
                 <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%"   stopColor={lineColor} stopOpacity={0.25} />
-                  <stop offset="55%"  stopColor={lineColor} stopOpacity={0.06} />
+                  <stop offset="0%"   stopColor={lineColor} stopOpacity={prefs.chartStyle === 'area' ? 0.25 : 0} />
+                  <stop offset="55%"  stopColor={lineColor} stopOpacity={prefs.chartStyle === 'area' ? 0.06 : 0} />
                   <stop offset="100%" stopColor={lineColor} stopOpacity={0} />
                 </linearGradient>
               </defs>
 
-              <YAxis domain={[priceMin - yPad, priceMax + yPad]} hide />
+              <YAxis
+                domain={[Math.max(0.01, priceMin - yPad), priceMax + yPad]}
+                scale={prefs.priceScale === 'log' ? 'log' : 'auto'}
+                hide
+              />
 
               <XAxis
                 dataKey="time"
@@ -647,11 +706,40 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
                 />
               )}
 
+              {/* Period open / prev-close reference line */}
+              {prefs.showPrevClose && chartBase > 0 && (
+                <ReferenceLine
+                  y={chartBase}
+                  stroke={isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)'}
+                  strokeDasharray="4 4"
+                  strokeWidth={1}
+                />
+              )}
+
+              {/* Earnings event markers */}
+              {earningsMarkers.map(({ ts, beat }) => (
+                <ReferenceLine
+                  key={ts}
+                  x={ts}
+                  stroke={beat === null ? '#f59e0b' : beat ? '#22c55e' : '#ef4444'}
+                  strokeOpacity={0.55}
+                  strokeDasharray="3 4"
+                  strokeWidth={1.5}
+                  label={{
+                    value: 'E',
+                    position: 'insideTopLeft',
+                    fontSize: 8,
+                    fill: beat === null ? '#f59e0b' : beat ? '#22c55e' : '#ef4444',
+                    dy: 4,
+                  }}
+                />
+              ))}
+
               {/* Live dot at trailing edge */}
-              {range === '1D' && isLive && displayData.length > 0 && (
+              {range === '1D' && isLive && chartDisplayData.length > 0 && (
                 <ReferenceDot
-                  x={displayData[displayData.length - 1].time}
-                  y={displayData[displayData.length - 1].price}
+                  x={chartDisplayData[chartDisplayData.length - 1].time}
+                  y={chartDisplayData[chartDisplayData.length - 1].price}
                   r={5}
                   fill={lineColor}
                   stroke={`${lineColor}55`}
@@ -676,18 +764,46 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
           </ResponsiveContainer>
         )}
 
-        {/* Floating high/low labels */}
+        {/* Floating period high/low labels */}
         {hasChart && priceMax > 0 && (
-          <div className="pointer-events-none absolute inset-x-3 top-2 flex justify-end">
+          <div className="pointer-events-none absolute inset-x-3 top-2 flex items-center justify-end gap-1">
+            <span className="text-[9px] text-muted-foreground/30 font-medium uppercase tracking-wider">H</span>
             <span className="text-[10px] tabular-nums text-muted-foreground/40 font-medium">{fmtPrice(priceMax)}</span>
           </div>
         )}
         {hasChart && priceMin > 0 && (
-          <div className="pointer-events-none absolute inset-x-3 bottom-6 flex justify-end">
+          <div className="pointer-events-none absolute inset-x-3 bottom-6 flex items-center justify-end gap-1">
+            <span className="text-[9px] text-muted-foreground/30 font-medium uppercase tracking-wider">L</span>
             <span className="text-[10px] tabular-nums text-muted-foreground/40 font-medium">{fmtPrice(priceMin)}</span>
           </div>
         )}
       </div>
+
+      {/* ── Volume bars ──────────────────────────────────────────────────── */}
+      {prefs.showVolume && hasChart && (
+        <div className="border-t border-border/30">
+          <div className="px-5 pt-2 pb-0.5">
+            <span className="text-[10px] text-muted-foreground/60 font-medium uppercase tracking-widest">
+              Volume
+            </span>
+          </div>
+          <ResponsiveContainer width="100%" height={58}>
+            <BarChart data={chartDisplayData} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
+              <XAxis dataKey="time" type="number" scale="time" domain={['dataMin', 'dataMax']} hide />
+              <YAxis hide />
+              <Bar dataKey="volume" isAnimationActive={false} maxBarSize={6}>
+                {chartDisplayData.map((entry, i) => (
+                  <Cell
+                    key={`vol-${entry.time}`}
+                    fill={i === 0 || entry.price >= chartDisplayData[i - 1].price ? '#22c55e' : '#ef4444'}
+                    fillOpacity={0.5}
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
 
       {/* ── Oscillator panels (RSI / MACD) ───────────────────────────────── */}
       {showOscillator && (
@@ -701,7 +817,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
               </div>
               {osc === 'rsi' && (
                 <ResponsiveContainer width="100%" height={90}>
-                  <LineChart data={displayData} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
+                  <LineChart data={chartDisplayData} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
                     <XAxis dataKey="time" type="number" scale="time" domain={['dataMin', 'dataMax']} hide />
                     <YAxis domain={[0, 100]} hide ticks={[30, 50, 70]} />
                     <Tooltip formatter={(v: number) => v?.toFixed(1)} labelFormatter={() => ''} contentStyle={{ fontSize: 10 }} />
@@ -714,7 +830,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
               )}
               {osc === 'macd' && (
                 <ResponsiveContainer width="100%" height={90}>
-                  <LineChart data={displayData} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
+                  <LineChart data={chartDisplayData} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
                     <XAxis dataKey="time" type="number" scale="time" domain={['dataMin', 'dataMax']} hide />
                     <YAxis hide tickFormatter={(v) => v?.toFixed(1)} />
                     <Tooltip formatter={(v: number) => v?.toFixed(3)} labelFormatter={() => ''} contentStyle={{ fontSize: 10 }} />
