@@ -163,7 +163,10 @@ export function ScreenerResults({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="sticky left-0 z-10 bg-background min-w-[160px]">
+              <TableHead
+                className="sticky left-0 z-10 bg-background"
+                style={{ width: 240, minWidth: 220 }}
+              >
                 <button
                   onClick={() => toggleSort('ticker')}
                   className="flex items-center gap-1 text-xs font-medium hover:text-foreground"
@@ -173,7 +176,12 @@ export function ScreenerResults({
               </TableHead>
 
               {columns.map((col) => (
-                <TableHead key={col.key} className="min-w-[58px] text-right" title={col.tip}>
+                <TableHead
+                  key={col.key}
+                  className="text-right"
+                  style={{ width: col.width, minWidth: col.width }}
+                  title={col.tip}
+                >
                   <button
                     onClick={() => toggleSort(col.key)}
                     className="flex items-center justify-end gap-1 text-xs font-medium w-full hover:text-foreground"
@@ -190,7 +198,6 @@ export function ScreenerResults({
               const live = livePrices?.get(row.ticker);
               return (
                 <TableRow key={row.ticker} className="hover:bg-muted/40">
-                  {/* Company (pinned) */}
                   <TableCell className="sticky left-0 z-10 bg-background">
                     <div className="flex items-center gap-2.5 group/row">
                       <Link
@@ -248,7 +255,11 @@ export function ScreenerResults({
                   </TableCell>
 
                   {columns.map((col) => (
-                    <TableCell key={col.key} className="text-xs text-right tabular-nums">
+                    <TableCell
+                      key={col.key}
+                      className="text-xs text-right tabular-nums"
+                      style={{ width: col.width, minWidth: col.width }}
+                    >
                       {col.render(row, live)}
                     </TableCell>
                   ))}

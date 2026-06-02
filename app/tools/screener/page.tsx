@@ -2,7 +2,8 @@
 
 import { useState, useCallback, useMemo, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, keepPreviousData } from '@tanstack/react-query';
+import { useDebounce } from '@/hooks/use-debounce';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -80,6 +81,8 @@ function ScreenerContent() {
   const searchParams = useSearchParams();
 
   const [filters, setFilters] = useState<ScreenerFilterValues>(() => filtersFromParams(searchParams));
+  // Debounced copy — drives the query key and URL so typing doesn't re-fetch on every keystroke
+  const debouncedFilters = useDebounce(filters, 350);
   const [refreshStatus, setRefreshStatus] = useState('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
@@ -137,11 +140,11 @@ function ScreenerContent() {
   }, [activeView, userHoldings, allWatchlistItems, listItems, watchlistListId]);
 
   const qs = useMemo(
-    () => buildQueryString(filters, symbolsFilter === '__none__' ? null : symbolsFilter),
-    [filters, symbolsFilter]
+    () => buildQueryString(debouncedFilters, symbolsFilter === '__none__' ? null : symbolsFilter),
+    [debouncedFilters, symbolsFilter]
   );
 
-  const { data, isLoading, refetch } = useQuery<{
+  const { data, isLoading, isFetching, refetch } = useQuery<{
     success: boolean;
     results: ScreenerRow[];
     sectors: string[];
@@ -162,6 +165,7 @@ function ScreenerContent() {
       return res.json();
     },
     staleTime: 5 * 60 * 1000,
+    placeholderData: keepPreviousData,
   });
 
   // Cache company universe whenever we have the full S&P 500 set
@@ -206,17 +210,28 @@ function ScreenerContent() {
     onError: () => setRefreshStatus('Refresh failed — check console'),
   });
 
+  // Keep a stable ref to activeView so the URL-sync effect doesn't need it as a dep
+  const activeViewRef = useRef(activeView);
+  activeViewRef.current = activeView;
+
+  // Sync URL after debounce settles — skip the very first render (URL is already correct)
+  const isFirstFilterSync = useRef(true);
+  useEffect(() => {
+    if (isFirstFilterSync.current) { isFirstFilterSync.current = false; return; }
+    const params = new URLSearchParams();
+    const viewParam = viewToParam(activeViewRef.current);
+    if (viewParam !== 'sp500') params.set('view', viewParam);
+    for (const key of FILTER_KEYS) {
+      if (debouncedFilters[key]) params.set(key, debouncedFilters[key]);
+    }
+    router.replace(params.toString() ? `?${params.toString()}` : window.location.pathname, { scroll: false });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedFilters, router]);
+
   const handleFilterChange = useCallback((next: ScreenerFilterValues) => {
     setFilters(next);
     setPage(1);
-    const params = new URLSearchParams();
-    const viewParam = viewToParam(activeView);
-    if (viewParam !== 'sp500') params.set('view', viewParam);
-    for (const key of FILTER_KEYS) {
-      if (next[key]) params.set(key, next[key]);
-    }
-    router.replace(params.toString() ? `?${params.toString()}` : window.location.pathname, { scroll: false });
-  }, [router, activeView]);
+  }, []);
 
   const handleReset = useCallback(() => handleFilterChange({ ...EMPTY_FILTERS }), [handleFilterChange]);
 
@@ -361,8 +376,8 @@ function ScreenerContent() {
           </Card>
         </div>
 
-        {/* Results */}
-        <div className="flex-1 min-w-0">
+        {/* Results — pb/pr give clearance for the fixed AI Assistant button */}
+        <div className="flex-1 min-w-0 pb-20 sm:pr-40">
           {/* Empty custom view — stock picker inline in the normal results area */}
           {customViewEmpty && isCustomView ? (
             <div className="rounded-md border border-border/40 overflow-hidden">
@@ -391,12 +406,12 @@ function ScreenerContent() {
               </CardContent>
             </Card>
           ) : (
-            <>
+            <div className={isFetching ? 'opacity-60 transition-opacity duration-150' : 'transition-opacity duration-150'}>
               <ScreenerResults
                 data={results}
                 livePrices={livePrices}
                 visibleColumns={screenerColumns.visibleColumns}
-                rvolMin={filters.rvolMin ? parseFloat(filters.rvolMin) : undefined}
+                rvolMin={debouncedFilters.rvolMin ? parseFloat(debouncedFilters.rvolMin) : undefined}
                 page={page}
                 pageSize={pageSize}
                 onPageChange={setPage}
@@ -411,7 +426,7 @@ function ScreenerContent() {
                   hasStocks={results.length > 0}
                 />
               )}
-            </>
+            </div>
           )}
         </div>
       </div>

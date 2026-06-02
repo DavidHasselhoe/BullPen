@@ -68,6 +68,8 @@ export interface ScreenerColumn {
   tip: string;
   group: ColumnGroup;
   defaultVisible: boolean;
+  /** Fixed column width in px — keeps layout stable regardless of cell content. */
+  width: number;
   /** Numeric value used for sorting (reads live or static data). null sorts last. */
   getValue: (row: ScreenerRow, live?: HeatmapPriceEntry) => number | null;
   /** Display cell content. */
@@ -82,6 +84,7 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
     tip: 'Live price',
     group: 'price',
     defaultVisible: true,
+    width: 92,
     getValue: (_r, live) => live?.price ?? null,
     render: (_r, live) => (live ? fmtPrice(live.price) : '—'),
   },
@@ -91,6 +94,7 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
     tip: 'Day change %',
     group: 'price',
     defaultVisible: true,
+    width: 84,
     getValue: (_r, live) => live?.changePercent ?? null,
     render: (_r, live) => {
       if (!live) return '—';
@@ -107,9 +111,10 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
   {
     key: 'rvol',
     label: 'RVOL',
-    tip: 'Relative volume — today’s volume vs 90-day average. ≥2× = unusual activity. Green = bought on the move, red = sold. Needs live market data.',
+    tip: "Relative volume — today's volume vs 90-day average. ≥2× = unusual activity. Green = bought on the move, red = sold. Needs live market data.",
     group: 'volume',
     defaultVisible: true,
+    width: 72,
     getValue: (row, live) => computeRvol(row, live),
     render: (row, live) => {
       const rvol = computeRvol(row, live);
@@ -133,9 +138,10 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
   {
     key: 'volume',
     label: 'Volume',
-    tip: 'Today’s cumulative trading volume (live)',
+    tip: "Today's cumulative trading volume (live)",
     group: 'volume',
     defaultVisible: false,
+    width: 80,
     getValue: (_r, live) => live?.volume ?? null,
     render: (_r, live) => fmtVolume(live?.volume ?? null),
   },
@@ -145,6 +151,7 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
     tip: '90-day average daily volume',
     group: 'volume',
     defaultVisible: false,
+    width: 80,
     getValue: (row) => row.avg_volume,
     render: (row) => fmtVolume(row.avg_volume),
   },
@@ -156,6 +163,7 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
     tip: 'Market capitalisation',
     group: 'valuation',
     defaultVisible: true,
+    width: 84,
     getValue: (row) => row.market_cap,
     render: (row) => fmtCap(row.market_cap),
   },
@@ -165,6 +173,7 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
     tip: 'Trailing P/E ratio',
     group: 'valuation',
     defaultVisible: true,
+    width: 72,
     getValue: (row) => row.pe_ratio,
     render: (row) => (row.pe_ratio != null && row.pe_ratio > 0 ? fmtNum(row.pe_ratio, 1) : '—'),
   },
@@ -174,6 +183,7 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
     tip: 'Forward P/E (next 12 months estimate)',
     group: 'valuation',
     defaultVisible: true,
+    width: 80,
     getValue: (row) => row.forward_pe,
     render: (row) => (row.forward_pe != null && row.forward_pe > 0 ? fmtNum(row.forward_pe, 1) : '—'),
   },
@@ -183,6 +193,7 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
     tip: 'Price-to-book ratio',
     group: 'valuation',
     defaultVisible: true,
+    width: 72,
     getValue: (row) => row.pb_ratio,
     render: (row) => (row.pb_ratio != null && row.pb_ratio > 0 ? fmtNum(row.pb_ratio, 2) : '—'),
   },
@@ -192,6 +203,7 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
     tip: 'Price-to-sales ratio (TTM)',
     group: 'valuation',
     defaultVisible: false,
+    width: 68,
     getValue: (row) => row.ps_ratio,
     render: (row) => (row.ps_ratio != null && row.ps_ratio > 0 ? fmtNum(row.ps_ratio, 2) : '—'),
   },
@@ -201,6 +213,7 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
     tip: 'Enterprise value to EBITDA (EV/EBITDA)',
     group: 'valuation',
     defaultVisible: true,
+    width: 72,
     getValue: (row) => row.ev_to_ebitda,
     render: (row) => (row.ev_to_ebitda != null && row.ev_to_ebitda > 0 ? fmtNum(row.ev_to_ebitda, 1) : '—'),
   },
@@ -210,6 +223,7 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
     tip: 'Earnings per share, trailing 12 months',
     group: 'valuation',
     defaultVisible: true,
+    width: 76,
     getValue: (row) => row.eps_ttm,
     render: (row) => (
       <span className={cn(row.eps_ttm != null && row.eps_ttm < 0 && 'text-red-500')}>
@@ -225,6 +239,7 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
     tip: 'Net profit margin',
     group: 'profitability',
     defaultVisible: true,
+    width: 76,
     getValue: (row) => (row.profit_margin != null ? row.profit_margin * 100 : null),
     render: (row) => (
       <span className={cn(
@@ -241,6 +256,7 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
     tip: 'Quarterly revenue growth YoY',
     group: 'profitability',
     defaultVisible: true,
+    width: 80,
     getValue: (row) => row.revenue_growth_yoy,
     render: (row) => (
       <span className={cn(
@@ -257,6 +273,7 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
     tip: 'Quarterly earnings growth YoY',
     group: 'profitability',
     defaultVisible: false,
+    width: 84,
     getValue: (row) => row.earnings_growth_yoy,
     render: (row) => (
       <span className={cn(
@@ -275,6 +292,7 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
     tip: '5Y monthly beta',
     group: 'risk',
     defaultVisible: true,
+    width: 68,
     getValue: (row) => row.beta,
     render: (row) => (
       <span className={cn(
@@ -291,6 +309,7 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
     tip: 'Forward annual dividend yield',
     group: 'risk',
     defaultVisible: true,
+    width: 76,
     getValue: (row) => row.dividend_yield,
     render: (row) => (row.dividend_yield != null && row.dividend_yield > 0 ? fmtPct(row.dividend_yield, 2) : '—'),
   },
@@ -300,6 +319,7 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
     tip: 'Dividend payout ratio',
     group: 'risk',
     defaultVisible: false,
+    width: 72,
     getValue: (row) => row.payout_ratio,
     render: (row) => (row.payout_ratio != null && row.payout_ratio > 0 ? fmtPct(row.payout_ratio, 0) : '—'),
   },
@@ -311,6 +331,7 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
     tip: '52-week high price',
     group: 'price',
     defaultVisible: true,
+    width: 92,
     getValue: (row) => row.week52_high,
     render: (row) => <span className="text-muted-foreground">{fmtPrice(row.week52_high)}</span>,
   },
@@ -320,6 +341,7 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
     tip: '52-week low price',
     group: 'price',
     defaultVisible: false,
+    width: 92,
     getValue: (row) => row.week52_low,
     render: (row) => <span className="text-muted-foreground">{fmtPrice(row.week52_low)}</span>,
   },
@@ -329,6 +351,7 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
     tip: '50-day moving average',
     group: 'price',
     defaultVisible: false,
+    width: 92,
     getValue: (row) => row.day50_ma,
     render: (row) => <span className="text-muted-foreground">{fmtPrice(row.day50_ma)}</span>,
   },
@@ -338,6 +361,7 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
     tip: '200-day moving average',
     group: 'price',
     defaultVisible: false,
+    width: 96,
     getValue: (row) => row.day200_ma,
     render: (row) => <span className="text-muted-foreground">{fmtPrice(row.day200_ma)}</span>,
   },
