@@ -1,7 +1,8 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Zap } from 'lucide-react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { TickerSelector, type SearchResult } from '@/components/tools/buy-here/TickerSelector';
@@ -26,6 +27,7 @@ export function CreateAlertForm({ onCreated, onCancel, onCreate, initialTicker }
   const [rawValue, setRawValue] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [limitReached, setLimitReached] = useState(false);
 
   const needsThreshold = alertType !== null && alertType !== 'all_time_high';
   const isPriceType   = alertType === 'price_above' || alertType === 'price_below';
@@ -54,6 +56,7 @@ export function CreateAlertForm({ onCreated, onCancel, onCreate, initialTicker }
     if (!canSubmit || !ticker || !alertType || parsedThreshold === null) return;
     setSubmitting(true);
     setError(null);
+    setLimitReached(false);
     const res = await onCreate({
       symbol: ticker.ticker,
       companyName: ticker.name,
@@ -63,8 +66,10 @@ export function CreateAlertForm({ onCreated, onCancel, onCreate, initialTicker }
     setSubmitting(false);
     if (res.ok) {
       onCreated();
+    } else if (res.code === 'free_limit_reached') {
+      setLimitReached(true);
     } else {
-      setError(res.error ?? 'Couldn’t create the alert. Please try again.');
+      setError(res.error ?? "Couldn't create the alert. Please try again.");
     }
   }
 
@@ -142,7 +147,22 @@ export function CreateAlertForm({ onCreated, onCancel, onCreate, initialTicker }
         </div>
       )}
 
-      {/* Error */}
+      {/* Limit reached — upgrade CTA */}
+      {limitReached && (
+        <div className="rounded-lg border border-amber-500/30 bg-amber-500/[0.06] px-3 py-2.5 flex items-start gap-2">
+          <Zap className="h-3.5 w-3.5 text-amber-400 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-xs text-amber-300 font-medium">You&apos;ve reached the 5-stock limit on the free plan.</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Pause all alerts on a stock to free up a slot, or{' '}
+              <Link href="/pricing" className="text-amber-400 hover:underline">upgrade to Pro</Link>
+              {' '}for unlimited stocks.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Generic error */}
       {error && (
         <div className="rounded-lg border border-red-500/30 bg-red-500/[0.06] px-3 py-2">
           <p className="text-xs text-red-300">{error}</p>

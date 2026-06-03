@@ -4,6 +4,57 @@
 import { createServerClient } from '@/lib/supabase/client';
 import type { UserHolding, InsertUserHolding, UpdateUserHolding } from '@/lib/types/database';
 import { logger } from '@/lib/utils/logger';
+import { getCompanyProfile } from '@/lib/twelvedata/twelvedata-client';
+
+/** Cap how many profiles we resolve per fetch so a fresh portfolio doesn't burst the API. */
+const MAX_CURRENCY_BACKFILL = 25;
+
+/**
+ * Fills in `trading_currency` for holdings that don't have it yet (legacy rows,
+ * brokerage-synced positions, or any add path that didn't capture it). Resolves
+ * the asset's listing currency from the TwelveData profile, persists it so this
+ * only runs once per holding, and returns the holdings enriched for immediate display.
+ *
+ * Never throws — on any failure the holding keeps a null currency (UI falls back to
+ * USD) and we retry on a later fetch.
+ */
+async function backfillTradingCurrencies(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  userId: string,
+  holdings: UserHolding[]
+): Promise<UserHolding[]> {
+  const missing = [
+    ...new Set(holdings.filter((h) => !h.trading_currency).map((h) => h.symbol.toUpperCase())),
+  ].slice(0, MAX_CURRENCY_BACKFILL);
+  if (missing.length === 0) return holdings;
+
+  const resolved = new Map<string, string>();
+  await Promise.allSettled(
+    missing.map(async (sym) => {
+      const profile = await getCompanyProfile(sym);
+      if (profile?.currency) resolved.set(sym, profile.currency);
+    })
+  );
+  if (resolved.size === 0) return holdings;
+
+  // Persist fire-and-forget — we already have the values for this response.
+  void Promise.allSettled(
+    [...resolved].map(([sym, cur]) =>
+      supabase
+        .from('user_holdings')
+        .update({ trading_currency: cur })
+        .eq('user_id', userId)
+        .eq('symbol', sym)
+    )
+  );
+
+  return holdings.map((h) =>
+    h.trading_currency
+      ? h
+      : { ...h, trading_currency: resolved.get(h.symbol.toUpperCase()) ?? null }
+  );
+}
 
 export interface GetHoldingsResult {
   success: boolean;
@@ -37,7 +88,7 @@ export async function getHoldings(userId: string): Promise<GetHoldingsResult> {
 
     const { data: holdings, error } = await supabase
       .from('user_holdings')
-      .select('id, user_id, symbol, company_name, quantity, avg_price, date_purchased, asset_type, source, brokerage_account_id, alerts_enabled, purchase_currency, purchase_fx_rate, created_at, updated_at')
+      .select('id, user_id, symbol, company_name, quantity, avg_price, date_purchased, asset_type, source, brokerage_account_id, alerts_enabled, purchase_currency, purchase_fx_rate, trading_currency, created_at, updated_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
@@ -49,9 +100,18 @@ export async function getHoldings(userId: string): Promise<GetHoldingsResult> {
       };
     }
 
+    // Fill in any missing trading currencies (legacy/synced rows) so Avg Price can be
+    // labeled in the asset's native currency. Best-effort — never blocks the response.
+    let result = holdings as UserHolding[];
+    try {
+      result = await backfillTradingCurrencies(supabase, userId, result);
+    } catch (err) {
+      logger.warn('trading_currency backfill skipped:', err);
+    }
+
     return {
       success: true,
-      holdings: holdings as UserHolding[],
+      holdings: result,
     };
   } catch (error) {
     logger.error('Error in getHoldings:', error);
@@ -101,6 +161,7 @@ export async function addHolding(
       asset_type?: string | null;
       purchase_currency?: string | null;
       purchase_fx_rate?: number | null;
+      trading_currency?: string | null;
     };
     const { data: newHolding, error: insertError } = await supabase
       .from('user_holdings')
@@ -114,6 +175,7 @@ export async function addHolding(
         asset_type: h.asset_type ?? 'stock',
         purchase_currency: h.purchase_currency ?? 'USD',
         purchase_fx_rate: h.purchase_fx_rate ?? null,
+        trading_currency: h.trading_currency ?? null,
       })
       .select()
       .single();

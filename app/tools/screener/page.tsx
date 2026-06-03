@@ -214,6 +214,30 @@ function ScreenerContent() {
   const activeViewRef = useRef(activeView);
   activeViewRef.current = activeView;
 
+  // Stable ref to debouncedFilters — used to detect externally-driven URL changes
+  const debouncedFiltersRef = useRef(debouncedFilters);
+  debouncedFiltersRef.current = debouncedFilters;
+
+  // When the AI (or any external source) navigates to the screener with new URL params,
+  // searchParams updates reactively but filters/view state doesn't. Detect the mismatch
+  // and sync state so the grid reloads without a manual page refresh.
+  useEffect(() => {
+    const newFilters = filtersFromParams(searchParams);
+    const filtersChanged = FILTER_KEYS.some(k => newFilters[k] !== debouncedFiltersRef.current[k]);
+    if (filtersChanged) {
+      setFilters(newFilters);
+      setPage(1);
+    }
+
+    const viewParam = searchParams.get('view');
+    const currentViewParam = viewToParam(activeViewRef.current);
+    if ((viewParam ?? 'sp500') !== currentViewParam) {
+      setActiveView(paramToView(viewParam ?? '', customViews));
+      setPage(1);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
   // Sync URL after debounce settles — skip the very first render (URL is already correct)
   const isFirstFilterSync = useRef(true);
   useEffect(() => {

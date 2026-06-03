@@ -59,20 +59,43 @@ export function useAddToWatchlist() {
       if (!res.ok) throw new Error('Failed to add to watchlist');
       return res.json();
     },
-    onMutate: async ({ symbol, company_name }) => {
+    onMutate: async ({ symbol, company_name, listId }) => {
+      const symUp = symbol.toUpperCase();
+      const optimistic: WatchlistItem = {
+        id: `optimistic-${symUp}`,
+        symbol: symUp,
+        company_name,
+        alerts_enabled: true,
+        added_at: new Date().toISOString(),
+        list_id: listId ?? null,
+      };
+
+      // Update the flat watchlist cache
       await queryClient.cancelQueries({ queryKey: ['watchlist'] });
-      const previous = queryClient.getQueryData<WatchlistItem[]>(['watchlist']);
-      queryClient.setQueryData<WatchlistItem[]>(['watchlist'], (old) => [
-        { id: `optimistic-${symbol}`, symbol: symbol.toUpperCase(), company_name, alerts_enabled: true, added_at: new Date().toISOString() },
-        ...(old ?? []),
-      ]);
-      return { previous };
+      const previousAll = queryClient.getQueryData<WatchlistItem[]>(['watchlist']);
+      queryClient.setQueryData<WatchlistItem[]>(['watchlist'], (old) => [optimistic, ...(old ?? [])]);
+
+      // Also update the list-specific cache so the card appears immediately in list view
+      let previousList: WatchlistItem[] | undefined;
+      if (listId) {
+        await queryClient.cancelQueries({ queryKey: ['watchlist-items', listId] });
+        previousList = queryClient.getQueryData<WatchlistItem[]>(['watchlist-items', listId]);
+        queryClient.setQueryData<WatchlistItem[]>(['watchlist-items', listId], (old) => [optimistic, ...(old ?? [])]);
+      }
+
+      return { previousAll, previousList, listId };
     },
     onError: (_err, _vars, ctx) => {
-      queryClient.setQueryData(['watchlist'], ctx?.previous);
+      if (ctx?.previousAll !== undefined) queryClient.setQueryData(['watchlist'], ctx.previousAll);
+      if (ctx?.listId && ctx?.previousList !== undefined) {
+        queryClient.setQueryData(['watchlist-items', ctx.listId], ctx.previousList);
+      }
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['watchlist'] });
+      queryClient.invalidateQueries({ queryKey: ['watchlist-items'] });
+      queryClient.invalidateQueries({ queryKey: ['watchlist-sparklines'] });
+      queryClient.invalidateQueries({ queryKey: ['watchlist-lists'] }); // refresh item_count badge
     },
   });
 }
@@ -115,23 +138,44 @@ export function useRemoveFromWatchlist() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (symbol: string) => {
+    mutationFn: async ({ symbol }: { symbol: string; listId?: string | null }) => {
       const res = await fetch(`/api/watchlist?symbol=${encodeURIComponent(symbol)}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to remove from watchlist');
     },
-    onMutate: async (symbol) => {
+    onMutate: async ({ symbol, listId }) => {
+      const symUp = symbol.toUpperCase();
+
+      // Remove from flat watchlist cache
       await queryClient.cancelQueries({ queryKey: ['watchlist'] });
-      const previous = queryClient.getQueryData<WatchlistItem[]>(['watchlist']);
+      const previousAll = queryClient.getQueryData<WatchlistItem[]>(['watchlist']);
       queryClient.setQueryData<WatchlistItem[]>(['watchlist'], (old) =>
-        (old ?? []).filter((item) => item.symbol !== symbol.toUpperCase())
+        (old ?? []).filter((item) => item.symbol !== symUp)
       );
-      return { previous };
+
+      // Remove from list-specific cache so the card vanishes immediately in list view
+      let previousList: WatchlistItem[] | undefined;
+      if (listId) {
+        await queryClient.cancelQueries({ queryKey: ['watchlist-items', listId] });
+        previousList = queryClient.getQueryData<WatchlistItem[]>(['watchlist-items', listId]);
+        queryClient.setQueryData<WatchlistItem[]>(['watchlist-items', listId], (old) =>
+          (old ?? []).filter((item) => item.symbol !== symUp)
+        );
+      }
+
+      return { previousAll, previousList, listId };
     },
     onError: (_err, _vars, ctx) => {
-      queryClient.setQueryData(['watchlist'], ctx?.previous);
+      if (ctx?.previousAll !== undefined) queryClient.setQueryData(['watchlist'], ctx.previousAll);
+      if (ctx?.listId && ctx?.previousList !== undefined) {
+        queryClient.setQueryData(['watchlist-items', ctx.listId], ctx.previousList);
+      }
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['watchlist'] });
+      queryClient.invalidateQueries({ queryKey: ['watchlist-items'] });
+      queryClient.invalidateQueries({ queryKey: ['watchlist-sparklines'] });
+      queryClient.invalidateQueries({ queryKey: ['watchlist-lists'] }); // refresh item_count badge
+      queryClient.invalidateQueries({ queryKey: ['user-alerts'] }); // server removes alerts for unwatched symbol
     },
   });
 }

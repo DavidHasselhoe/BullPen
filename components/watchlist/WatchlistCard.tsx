@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { X, TrendingUp, TrendingDown, Minus, Bell, BellOff } from 'lucide-react';
+import { X, TrendingUp, TrendingDown, Minus, Bell } from 'lucide-react';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
+import { AlertDialog } from '@/components/alerts/AlertDialog';
 import { cn } from '@/lib/utils';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
 
@@ -22,11 +23,8 @@ interface WatchlistCardProps {
   symbol: string;
   company_name: string;
   quote?: Quote | null;
-  alerts_enabled?: boolean;
   onRemove: (symbol: string) => void;
-  onToggleAlert?: (symbol: string, enabled: boolean) => void;
   isRemoving?: boolean;
-  isTogglingAlert?: boolean;
   healthScore?: HealthScore | null;
   nextEarningsDate?: string | null;
   daysToEarnings?: number | null;
@@ -85,11 +83,8 @@ export function WatchlistCard({
   symbol,
   company_name,
   quote,
-  alerts_enabled = true,
   onRemove,
-  onToggleAlert,
   isRemoving,
-  isTogglingAlert,
   healthScore,
   nextEarningsDate: _nextEarningsDate,
   daysToEarnings,
@@ -112,29 +107,23 @@ export function WatchlistCard({
         />
       )}
 
-      {/* Hover action buttons: alert toggle + remove */}
+      {/* Hover action buttons: alerts + remove */}
       <div className="absolute right-2 top-2 z-10 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
-        {onToggleAlert && (
-          <button
-            onClick={(e) => { e.preventDefault(); onToggleAlert(symbol, !alerts_enabled); }}
-            disabled={isTogglingAlert}
-            className={cn(
-              'rounded-full p-1 transition-all',
-              'text-muted-foreground hover:bg-accent',
-              alerts_enabled
-                ? 'hover:text-foreground'
-                : 'text-destructive/70 hover:text-destructive',
-              isTogglingAlert && 'opacity-50 cursor-not-allowed'
-            )}
-            title={alerts_enabled ? 'Disable price alerts for this stock' : 'Enable price alerts for this stock'}
-            aria-label={`${alerts_enabled ? 'Disable' : 'Enable'} alerts for ${symbol}`}
-          >
-            {alerts_enabled
-              ? <Bell className="h-3.5 w-3.5" />
-              : <BellOff className="h-3.5 w-3.5" />
-            }
-          </button>
-        )}
+        <AlertDialog
+          symbol={symbol}
+          companyName={company_name}
+          trigger={
+            <button
+              type="button"
+              onClick={(e) => e.preventDefault()}
+              className="rounded-full p-1 text-muted-foreground hover:bg-accent hover:text-foreground transition-all"
+              title={`Price alerts for ${symbol}`}
+              aria-label={`Manage price alerts for ${symbol}`}
+            >
+              <Bell className="h-3.5 w-3.5" />
+            </button>
+          }
+        />
         <button
           onClick={(e) => { e.preventDefault(); onRemove(symbol); }}
           disabled={isRemoving}
@@ -157,10 +146,6 @@ export function WatchlistCard({
             <p className="text-sm font-semibold text-foreground leading-none">{symbol}</p>
             <p className="text-xs text-muted-foreground truncate mt-0.5">{company_name}</p>
           </div>
-          {/* Alert-off indicator (always visible, subtle) */}
-          {!alerts_enabled && (
-            <BellOff className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
-          )}
         </div>
 
         {/* Price */}

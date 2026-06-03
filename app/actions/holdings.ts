@@ -16,6 +16,8 @@ export interface AddHoldingInput {
   asset_type?: 'stock' | 'crypto' | 'commodity' | 'forex' | 'etf' | null;
   purchase_currency?: string | null;
   purchase_fx_rate?: number | null;
+  /** ISO 4217 currency the asset trades in — the currency avg_price is entered in. */
+  trading_currency?: string | null;
 }
 
 export interface UpdateHoldingInput {
@@ -72,6 +74,9 @@ export async function addHoldingAction(
     avg_price: input.avg_price ?? null,
     date_purchased: input.date_purchased ?? null,
     asset_type: input.asset_type ?? 'stock',
+    purchase_currency: input.purchase_currency ?? 'USD',
+    purchase_fx_rate: input.purchase_fx_rate ?? null,
+    trading_currency: input.trading_currency ?? null,
   } as Parameters<typeof addHolding>[1]);
 }
 
@@ -100,6 +105,9 @@ export async function addOrUpdateHoldingAction(
     avg_price: input.avg_price ?? null,
     date_purchased: input.date_purchased ?? null,
     asset_type: input.asset_type ?? 'stock',
+    purchase_currency: input.purchase_currency ?? 'USD',
+    purchase_fx_rate: input.purchase_fx_rate ?? null,
+    trading_currency: input.trading_currency ?? null,
   } as Parameters<typeof addOrUpdateHolding>[1]);
 }
 

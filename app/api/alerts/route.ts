@@ -93,21 +93,24 @@ async function createHandler(
 
   const supabase = createServerClient();
 
-  // Enforce free-tier cap on ACTIVE alerts
+  // Enforce free-tier cap on ACTIVE stocks (distinct symbols), not individual alert rows.
+  // Adding a second condition to an already-watched stock doesn't consume a new slot.
   const tier = await getTier(session.userId);
   if (!isPro(tier)) {
-    const { count } = await supabase
+    const { data: activeRows } = await supabase
       .from('user_alerts')
-      .select('id', { count: 'exact', head: true })
+      .select('symbol')
       .eq('user_id', session.userId)
       .eq('is_active', true);
-    if ((count ?? 0) >= FREE_ACTIVE_ALERT_LIMIT) {
+    const activeSymbols = new Set((activeRows ?? []).map((r) => r.symbol as string));
+    const isNewSymbol = !activeSymbols.has(payload.symbol);
+    if (isNewSymbol && activeSymbols.size >= FREE_ACTIVE_ALERT_LIMIT) {
       return addSecurityHeaders(
         NextResponse.json(
           {
             success: false,
             code: 'free_limit_reached',
-            error: `You've reached the free tier limit — ${FREE_ACTIVE_ALERT_LIMIT} active alerts. Pause one or upgrade to Pro for unlimited alerts.`,
+            error: `You've reached the free tier limit — ${FREE_ACTIVE_ALERT_LIMIT} stocks with active alerts. Pause alerts on a stock to free up a slot, or upgrade to Pro for unlimited.`,
           },
           { status: 402 }
         )

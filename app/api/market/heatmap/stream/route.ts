@@ -114,6 +114,7 @@ async function streamHandler(request: NextRequest) {
               change: q.d ?? 0,
               changePercent: q.dp ?? 0,
               previousClose: q.pc,
+              ...(q.volume ? { volume: q.volume } : {}),
             });
           }
         }
@@ -131,12 +132,15 @@ async function streamHandler(request: NextRequest) {
           if (closed) return;
           if (tick.change == null || tick.changePercent == null) return;
 
+          // Preserve existing volume when this tick doesn't carry day_volume —
+          // TwelveData only includes day_volume periodically, not on every tick.
+          const prevVolume = priceMap.get(tick.symbol)?.volume;
           priceMap.set(tick.symbol, {
             price: tick.price,
             change: tick.change,
             changePercent: tick.changePercent,
             previousClose: tick.previousClose,
-            volume: tick.dayVolume,
+            volume: tick.dayVolume ?? prevVolume,
           });
 
           const now = Date.now();

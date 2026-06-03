@@ -33,8 +33,15 @@ const instrumentSerif = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-  title: "BullPen - Financial Analytics",
-  description: "Professional fintech analytics platform for SEC filings analysis",
+  title: {
+    template: "%s | BullPen",
+    default: "BullPen — Invest smarter",
+  },
+  description: "Track your portfolio, screen stocks, set price alerts, and get AI-powered market insights — all in one place.",
+  openGraph: {
+    siteName: "BullPen",
+    type: "website",
+  },
 };
 
 export default function RootLayout({

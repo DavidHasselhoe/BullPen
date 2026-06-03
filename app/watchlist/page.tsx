@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
-import { useWatchlist, useWatchlistLists, useWatchlistItems, useAddToWatchlist, useRemoveFromWatchlist, useToggleWatchlistAlert } from '@/hooks/use-watchlist';
+import { useWatchlist, useWatchlistLists, useWatchlistItems, useAddToWatchlist, useRemoveFromWatchlist, useCreateWatchlistList } from '@/hooks/use-watchlist';
+import { useAlerts } from '@/hooks/use-alerts';
 import { useWatchlistEnhanced } from '@/hooks/use-watchlist-enhanced';
 import { WatchlistListTabs } from '@/components/watchlist/WatchlistListTabs';
 import { useDebounce } from '@/hooks/use-debounce';
@@ -19,6 +20,23 @@ import { fetchWithTimeout } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 
 type ViewMode = 'grid' | 'table';
+
+function isRegularSession(): boolean {
+  const nowET = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  const day = nowET.getDay();
+  if (day === 0 || day === 6) return false;
+  const mins = nowET.getHours() * 60 + nowET.getMinutes();
+  return mins >= 570 && mins < 960; // 9:30 AM – 4:00 PM ET
+}
+
+function useIsRegularSession(): boolean {
+  const [open, setOpen] = useState(isRegularSession);
+  useEffect(() => {
+    const id = setInterval(() => setOpen(isRegularSession()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+  return open;
+}
 
 interface SearchResult {
   ticker: string;
@@ -50,6 +68,7 @@ export default function WatchlistPage() {
 
   // selectedListId is the user's explicit choice; activeListId derives the first list
   // as the default once loaded, avoiding a useEffect-driven setState.
+  const isLive = useIsRegularSession();
   const [selectedListId, setSelectedListId] = useState<string | null>(null);
   const { data: watchlist, isLoading: watchlistLoading } = useWatchlist();
   const { data: lists, isLoading: listsLoading } = useWatchlistLists();
@@ -57,7 +76,8 @@ export default function WatchlistPage() {
   const { data: listItems, isLoading: listItemsLoading } = useWatchlistItems(activeListId);
   const addMutation = useAddToWatchlist();
   const removeMutation = useRemoveFromWatchlist();
-  const toggleAlertMutation = useToggleWatchlistAlert();
+  const createListMutation = useCreateWatchlistList();
+  const { create: createAlert, alerts } = useAlerts();
 
   // Items to display: per-list when a list is active, otherwise all
   const displayItems = activeListId ? (listItems ?? []) : (watchlist ?? []);
@@ -116,8 +136,36 @@ export default function WatchlistPage() {
     refetchInterval: false,
   });
 
-  const handleAdd = (result: SearchResult) => {
-    addMutation.mutate({ symbol: result.ticker, company_name: result.name, listId: activeListId ?? undefined });
+  const handleAdd = async (result: SearchResult) => {
+    let listId = activeListId ?? undefined;
+
+    // No list exists yet — auto-create "Watchlist 1" so list_id NOT NULL is satisfied
+    if (!listId) {
+      const res = await createListMutation.mutateAsync({ name: 'Watchlist 1', color: null });
+      if (res.success && res.list) {
+        listId = res.list.id;
+        setSelectedListId(listId);
+      }
+    }
+
+    addMutation.mutate({ symbol: result.ticker, company_name: result.name, listId });
+
+    // Auto-create default price alerts for this stock if none exist yet.
+    // Best-effort — limit hits or failures are silently ignored.
+    const sym = result.ticker.toUpperCase();
+    const hasAlerts = alerts.some((a) => a.symbol === sym);
+    if (!hasAlerts) {
+      const defaults: Array<{ alertType: Parameters<typeof createAlert>[0]['alertType']; threshold: number }> = [
+        { alertType: 'all_time_high',   threshold: 0 },
+        { alertType: 'near_52w_high',   threshold: 0 },
+        { alertType: 'near_52w_low',    threshold: 0 },
+        { alertType: 'pct_change_up',   threshold: 0.03 },
+      ];
+      for (const { alertType, threshold } of defaults) {
+        createAlert({ symbol: sym, companyName: result.name, alertType, threshold });
+      }
+    }
+
     setSearchQuery('');
     setShowDropdown(false);
   };
@@ -147,7 +195,7 @@ export default function WatchlistPage() {
             <div>
               <div className="flex items-center gap-2.5 mb-0.5">
                 <h1 className="text-2xl font-bold tracking-tight text-foreground">Watchlist</h1>
-                {livePrices.size > 0 && (
+                {isLive && livePrices.size > 0 && (
                   <span className="flex items-center gap-1 text-xs text-emerald-500 font-medium">
                     <Radio className="h-3 w-3 animate-pulse" />
                     Live
@@ -235,6 +283,10 @@ export default function WatchlistPage() {
             activeListId={activeListId}
             onSelect={setSelectedListId}
             onListCreated={(id) => setSelectedListId(id)}
+            onListDeleted={(id) => {
+              // If we deleted the active list, fall back to the first remaining list
+              if (selectedListId === id) setSelectedListId(null);
+            }}
           />
         )}
 
@@ -300,8 +352,8 @@ export default function WatchlistPage() {
               })
             )}
             enhancedData={enhancedData}
-            onRemove={(sym) => removeMutation.mutate(sym)}
-            isRemoving={(sym) => removeMutation.isPending && removeMutation.variables === sym}
+            onRemove={(sym) => removeMutation.mutate({ symbol: sym, listId: activeListId })}
+            isRemoving={(sym) => removeMutation.isPending && removeMutation.variables?.symbol === sym}
           />
         ) : (
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -323,10 +375,8 @@ export default function WatchlistPage() {
                   company_name={item.company_name}
                   quote={quote}
                   alerts_enabled={item.alerts_enabled}
-                  onRemove={(sym) => removeMutation.mutate(sym)}
-                  onToggleAlert={(sym, enabled) => toggleAlertMutation.mutate({ symbol: sym, alerts_enabled: enabled })}
-                  isRemoving={removeMutation.isPending && removeMutation.variables === item.symbol}
-                  isTogglingAlert={toggleAlertMutation.isPending && toggleAlertMutation.variables?.symbol === item.symbol}
+                  onRemove={(sym) => removeMutation.mutate({ symbol: sym, listId: activeListId })}
+                  isRemoving={removeMutation.isPending && removeMutation.variables?.symbol === item.symbol}
                   healthScore={enhanced?.healthScore}
                   nextEarningsDate={enhanced?.nextEarningsDate}
                   daysToEarnings={enhanced?.daysToEarnings}

@@ -83,20 +83,13 @@ async function postHandler(
 
   const supabase = createServerClient();
 
-  // Fetch account tier
-  const { data: userRow } = await supabase
-    .from('users')
-    .select('account_tier')
-    .eq('id', session.userId)
-    .maybeSingle();
+  // Fetch tier and existing list count in parallel
+  const [{ data: userRow }, { count, error: countError }] = await Promise.all([
+    supabase.from('users').select('account_tier').eq('id', session.userId).maybeSingle(),
+    supabase.from('watchlist_lists').select('id', { count: 'exact', head: true }).eq('user_id', session.userId),
+  ]);
 
   const tier = (userRow?.account_tier as number | null) ?? null;
-
-  // Count existing lists
-  const { count, error: countError } = await supabase
-    .from('watchlist_lists')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', session.userId);
 
   if (countError) {
     return addSecurityHeaders(

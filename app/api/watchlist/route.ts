@@ -112,6 +112,17 @@ async function deleteHandler(
     );
   }
 
+  // Remove all alerts for this symbol — if the user is unwatching, alerts are no longer relevant.
+  // Fire-and-forget; a failure here is non-critical.
+  supabase
+    .from('user_alerts')
+    .delete()
+    .eq('user_id', session.userId)
+    .eq('symbol', symbol)
+    .then(({ error: alertErr }) => {
+      if (alertErr) console.warn('[DELETE /api/watchlist] Failed to remove alerts for', symbol, alertErr);
+    });
+
   return addSecurityHeaders(NextResponse.json({ success: true }));
 }
 
@@ -131,8 +142,7 @@ async function patchHandler(
     );
   }
 
-  const cookieStore = await cookies();
-  const supabase = makeSupabase(cookieStore);
+  const supabase = createServerClient();
 
   const { error } = await supabase
     .from('user_watchlist')

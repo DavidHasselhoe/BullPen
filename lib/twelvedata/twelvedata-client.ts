@@ -53,6 +53,8 @@ export interface StockQuote {
   o: number;
   pc: number;
   t: number;
+  /** Cumulative day volume in full shares (from REST /quote). Optional — not provided by WS ticks. */
+  volume?: number;
 }
 
 export interface StockCandles {
@@ -122,6 +124,7 @@ interface TwelveDataQuoteResponse {
   low: string;
   open: string;
   previous_close: string;
+  volume?: string;
   datetime?: string;
   timestamp?: number;
   is_market_open?: boolean;
@@ -166,6 +169,8 @@ function parseQuoteResponse(data: TwelveDataQuoteResponse, symbol: string, useEx
     }
   }
 
+  const volume = data.volume ? parseInt(data.volume, 10) : undefined;
+
   return {
     c: close,
     d: change,
@@ -175,6 +180,7 @@ function parseQuoteResponse(data: TwelveDataQuoteResponse, symbol: string, useEx
     o: parseFloat(data.open || data.close),
     pc,
     t: timestamp,
+    ...(volume && volume > 0 ? { volume } : {}),
   };
 }
 

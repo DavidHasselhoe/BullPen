@@ -213,8 +213,10 @@ const HoldingRow = memo(function HoldingRow({
         {holding.quantity !== null ? formatNumberUtil(holding.quantity, roundNumbers) : '—'}
       </td>
       <td className="py-4 px-4 text-sm text-foreground">
+        {/* Avg price is shown in the asset's native trading currency (USD/NOK/EUR…),
+            never converted — it's the cost basis the user actually paid. */}
         {holding.avg_price !== null && holding.avg_price !== undefined
-          ? formatCurrencyValue(holding.avg_price, currency, roundNumbers ? { round: true } : undefined)
+          ? `${holding.trading_currency ?? 'USD'} ${formatNumberUtil(holding.avg_price, roundNumbers)}`
           : '—'}
       </td>
       <td className="py-4 px-4 text-sm font-medium text-foreground">
@@ -308,6 +310,7 @@ const HoldingRow = memo(function HoldingRow({
   prev.holding.marketValue === next.holding.marketValue &&
   prev.holding.unrealizedPL === next.holding.unrealizedPL &&
   prev.holding.allocation === next.holding.allocation &&
+  prev.holding.trading_currency === next.holding.trading_currency &&
   prev.isHighlighted === next.isHighlighted &&
   prev.showPriceSkeleton === next.showPriceSkeleton &&
   prev.isDeletingThis === next.isDeletingThis &&

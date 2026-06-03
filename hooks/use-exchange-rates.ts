@@ -4,7 +4,7 @@ import { getExchangeRates, type CurrencyCode } from '@/lib/currency/currency-con
 export function useExchangeRates(currency: CurrencyCode = 'USD') {
   return useQuery({
     queryKey: ['exchange-rates', currency],
-    queryFn: () => getExchangeRates('USD'),
+    queryFn: () => getExchangeRates(currency),
     enabled: currency !== 'USD',
     staleTime: 60 * 60 * 1000,
     gcTime: 24 * 60 * 60 * 1000,

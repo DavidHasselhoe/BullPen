@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useMutation } from '@tanstack/react-query';
+import { Check } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -27,6 +28,8 @@ export function EditHoldingModal({ open, onOpenChange, holding }: EditHoldingMod
   const [quantity, setQuantity] = useState('');
   const [avgPrice, setAvgPrice] = useState('');
   const [datePurchased, setDatePurchased] = useState('');
+  const [saved, setSaved] = useState(false);
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const updateHolding = useUpdateHolding();
 
   // Populate form when holding changes
@@ -58,10 +61,14 @@ export function EditHoldingModal({ open, onOpenChange, holding }: EditHoldingMod
         updates,
       });
 
-      // Reset form
-      setQuantity('');
-      setAvgPrice('');
-      onOpenChange(false);
+      setSaved(true);
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+      savedTimerRef.current = setTimeout(() => {
+        setSaved(false);
+        setQuantity('');
+        setAvgPrice('');
+        onOpenChange(false);
+      }, 1000);
     } catch (error) {
       logger.error('Error updating holding', error);
       // Error is handled by the mutation
@@ -69,6 +76,8 @@ export function EditHoldingModal({ open, onOpenChange, holding }: EditHoldingMod
   };
 
   const handleClose = () => {
+    if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+    setSaved(false);
     setQuantity('');
     setAvgPrice('');
     setDatePurchased('');
@@ -140,9 +149,12 @@ export function EditHoldingModal({ open, onOpenChange, holding }: EditHoldingMod
             </Button>
             <Button
               type="submit"
-              disabled={updateHolding.isPending}
+              disabled={updateHolding.isPending || saved}
+              className={saved ? 'bg-emerald-600 hover:bg-emerald-600 text-white' : ''}
             >
-              {updateHolding.isPending ? 'Updating...' : 'Update Holding'}
+              {saved
+                ? <><Check className="h-4 w-4 mr-1.5" />Saved!</>
+                : updateHolding.isPending ? 'Updating...' : 'Update Holding'}
             </Button>
           </div>
 

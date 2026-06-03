@@ -21,13 +21,7 @@ export default function AlertsClientPage() {
   const { hasAnimatedBackground } = useBackground();
   const [composerOpen, setComposerOpen] = useState(false);
 
-  const { alerts, isLoading, isError, error, refetch, create, toggle, remove } = useAlerts();
-
-  const activeCount = alerts.filter((a) => a.isActive).length;
-
-  const handleToggle = toggle;
-  const handleDelete = remove;
-  const handleCreate = create;
+  const { alerts, activeSymbolCount, isLoading, isError, error, refetch, create, toggle, remove } = useAlerts();
 
   // ── Auth gate ──────────────────────────────────────────────────────────────
   if (!authLoading && !isAuthenticated) {
@@ -76,7 +70,7 @@ export default function AlertsClientPage() {
             <div className="flex items-center gap-3 shrink-0">
               {!isLoading && (
                 <span className="hidden sm:inline text-xs font-mono text-muted-foreground/50 tabular-nums whitespace-nowrap">
-                  {activeCount}/{FREE_ACTIVE_ALERT_LIMIT} used
+                  {activeSymbolCount}/{FREE_ACTIVE_ALERT_LIMIT} used
                 </span>
               )}
               {!composerOpen && (
@@ -98,7 +92,7 @@ export default function AlertsClientPage() {
           <CreateAlertForm
             onCreated={() => setComposerOpen(false)}
             onCancel={() => setComposerOpen(false)}
-            onCreate={handleCreate}
+            onCreate={create}
           />
         )}
 
@@ -138,7 +132,7 @@ export default function AlertsClientPage() {
             )}
           </div>
         ) : (
-          <AlertList alerts={alerts} onToggle={handleToggle} onDelete={handleDelete} />
+          <AlertList alerts={alerts} onToggle={toggle} onDelete={remove} />
         )}
 
         {/* About */}

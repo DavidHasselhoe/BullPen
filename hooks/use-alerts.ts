@@ -51,7 +51,7 @@ export function useAlerts() {
   });
 
   const create = useCallback(
-    async (payload: CreateAlertPayload): Promise<{ ok: boolean; error?: string }> => {
+    async (payload: CreateAlertPayload): Promise<{ ok: boolean; error?: string; code?: string }> => {
       try {
         const res = await fetch('/api/alerts', {
           method: 'POST',
@@ -59,7 +59,7 @@ export function useAlerts() {
           body: JSON.stringify(payload),
         });
         const body = await res.json();
-        if (!res.ok) return { ok: false, error: body?.error || humanizeError(res.status) };
+        if (!res.ok) return { ok: false, error: body?.error || humanizeError(res.status), code: body?.code };
         await queryClient.invalidateQueries({ queryKey: ALERTS_QUERY_KEY });
         return { ok: true };
       } catch (err) {
@@ -83,8 +83,12 @@ export function useAlerts() {
     [deleteMutation]
   );
 
+  const alerts = query.data?.alerts ?? [];
+  const activeSymbolCount = new Set(alerts.filter((a) => a.isActive).map((a) => a.symbol)).size;
+
   return {
-    alerts: query.data?.alerts ?? [],
+    alerts,
+    activeSymbolCount,
     isLoading: query.isLoading,
     isError: query.isError,
     error: query.error,

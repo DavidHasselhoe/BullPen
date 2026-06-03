@@ -131,6 +131,8 @@ export interface UserHolding {
   purchase_currency: string | null;
   /** 1 USD = X purchase_currency on date_purchased */
   purchase_fx_rate: number | null;
+  /** ISO 4217 currency the asset trades in (e.g. 'USD', 'NOK', 'EUR') — the currency avg_price is in. NULL = unknown. */
+  trading_currency: string | null;
   created_at: string;
   updated_at: string;
 }

@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { Pause, Play, Trash2, Loader2 } from 'lucide-react';
-import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { cn } from '@/lib/utils';
 import { describeAlert, type UserAlert } from '@/types/alerts';
 
@@ -24,10 +23,10 @@ function formatRelativeTime(iso: string | null): string {
   const days = Math.floor(hours / 24);
   if (days === 1) return 'Yesterday';
   if (days < 30) return `${days}d ago`;
-  const months = Math.floor(days / 30);
-  return `${months}mo ago`;
+  return `${Math.floor(days / 30)}mo ago`;
 }
 
+/** Compact sub-row inside a grouped stock card. No logo/company — those live in the group header. */
 export function AlertCard({ alert, onToggle, onDelete }: Props) {
   const [busy, setBusy] = useState<'toggle' | 'delete' | null>(null);
 
@@ -45,47 +44,25 @@ export function AlertCard({ alert, onToggle, onDelete }: Props) {
   };
 
   return (
-    <div
-      className={cn(
-        'flex items-center gap-3 rounded-2xl border bg-card/30 px-4 py-3.5 transition-[border-color,opacity] duration-200',
-        alert.isActive ? 'border-border/50' : 'border-border/30 opacity-75',
-        'hover:border-border/80'
-      )}
-    >
+    <div className={cn('flex items-center gap-2.5 py-2 px-3', !alert.isActive && 'opacity-60')}>
       {/* Status dot */}
       <span
         className={cn(
-          'h-2 w-2 shrink-0 rounded-full',
+          'h-1.5 w-1.5 shrink-0 rounded-full',
           !alert.isActive
             ? 'bg-muted-foreground/30'
             : triggeredRecently
-              ? 'bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.6)] animate-pulse'
-              : 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]'
+              ? 'bg-amber-400 animate-pulse'
+              : 'bg-emerald-500'
         )}
-        aria-label={alert.isActive ? 'Active' : 'Paused'}
       />
 
-      {/* Logo */}
-      <CompanyLogo
-        name={alert.companyName ?? alert.symbol}
-        ticker={alert.symbol}
-        size={32}
-        className="shrink-0"
-      />
-
-      {/* Main */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-baseline gap-2">
-          <span className="font-mono font-bold text-sm text-foreground">{alert.symbol}</span>
-          {alert.companyName && (
-            <span className="text-xs text-muted-foreground/65 truncate">{alert.companyName}</span>
-          )}
-        </div>
-        <div className="text-[11px] text-muted-foreground/70 mt-0.5 flex items-center gap-2 flex-wrap">
-          <span className="font-mono">{describeAlert(alert)}</span>
-          <span className="text-muted-foreground/30">·</span>
-          <span>{formatRelativeTime(alert.lastTriggeredAt)}</span>
-        </div>
+      {/* Description + last triggered */}
+      <div className="flex-1 min-w-0 flex items-center gap-2 flex-wrap">
+        <span className="text-xs font-mono text-foreground/90">{describeAlert(alert)}</span>
+        <span className="text-[10px] text-muted-foreground/45">
+          {formatRelativeTime(alert.lastTriggeredAt)}
+        </span>
       </div>
 
       {/* Actions */}
@@ -94,31 +71,23 @@ export function AlertCard({ alert, onToggle, onDelete }: Props) {
           type="button"
           onClick={handleToggle}
           disabled={busy !== null}
-          className="h-7 w-7 rounded-md flex items-center justify-center text-muted-foreground/55 hover:text-foreground hover:bg-muted/60 transition-colors"
-          aria-label={alert.isActive ? 'Pause alert' : 'Resume alert'}
+          className="h-6 w-6 rounded flex items-center justify-center text-muted-foreground/40 hover:text-foreground hover:bg-muted/60 transition-colors"
           title={alert.isActive ? 'Pause' : 'Resume'}
         >
-          {busy === 'toggle' ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : alert.isActive ? (
-            <Pause className="h-3.5 w-3.5" />
-          ) : (
-            <Play className="h-3.5 w-3.5" />
-          )}
+          {busy === 'toggle'
+            ? <Loader2 className="h-3 w-3 animate-spin" />
+            : alert.isActive ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
         </button>
         <button
           type="button"
           onClick={handleDelete}
           disabled={busy !== null}
-          className="h-7 w-7 rounded-md flex items-center justify-center text-muted-foreground/55 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-          aria-label="Delete alert"
+          className="h-6 w-6 rounded flex items-center justify-center text-muted-foreground/40 hover:text-red-400 hover:bg-red-500/10 transition-colors"
           title="Delete"
         >
-          {busy === 'delete' ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Trash2 className="h-3.5 w-3.5" />
-          )}
+          {busy === 'delete'
+            ? <Loader2 className="h-3 w-3 animate-spin" />
+            : <Trash2 className="h-3 w-3" />}
         </button>
       </div>
     </div>

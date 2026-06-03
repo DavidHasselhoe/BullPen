@@ -12,6 +12,12 @@ export function renormalizeAllocations(holdings: PortfolioHolding[]): PortfolioH
 
   const currentTotal = holdings.reduce((sum, h) => sum + h.allocation_pct, 0);
   if (currentTotal === 100) return holdings;
+  if (currentTotal === 0) {
+    // All allocations are zero — distribute equally rather than producing NaN.
+    const equal = Math.floor(100 / holdings.length);
+    const remainder = 100 - equal * holdings.length;
+    return holdings.map((h, i) => ({ ...h, allocation_pct: equal + (i === 0 ? remainder : 0) }));
+  }
 
   // Scale each holding proportionally
   const scaled = holdings.map((h) => ({

@@ -33,6 +33,8 @@ interface SearchResult {
   name: string;
   exchange?: string;
   instrument_type?: string;
+  /** ISO 4217 listing currency from symbol search (e.g. USD, NOK, EUR). */
+  currency?: string;
   cik: string;
   has_data: boolean;
   logo_url?: string | null;
@@ -173,6 +175,8 @@ export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
         asset_type: assetType === 'unknown' ? 'stock' : assetType,
         purchase_currency: userCurrency,
         purchase_fx_rate: historicalRateData ?? (userCurrency !== 'USD' ? null : 1),
+        // The asset's listing currency — what avg_price is denominated in (USD/NOK/EUR…).
+        trading_currency: selectedStock.currency ?? null,
       };
 
       await addHolding.mutateAsync(input);
