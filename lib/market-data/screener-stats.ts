@@ -9,19 +9,35 @@
  *
  * One TwelveData /statistics batch POST = ~50 credits per symbol. Keep call
  * sites bounded (the cron paces with delays; the GET route caps on-demand size).
+ *
+ * Health score is computed alongside stats (+3 credits per cold symbol for
+ * income / balance / cash-flow; cache hits cost 0 extra credits).
  */
 
 import { createServerClient } from '@/lib/supabase/client';
-import { batchFetch } from '@/lib/twelvedata/twelvedata-client';
+import {
+  batchFetch,
+  getIncomeStatement,
+  getBalanceSheet,
+  getCashFlow,
+  type CompanyStatistics,
+  type IncomeStatementPeriod,
+  type BalanceSheetPeriod,
+  type CashFlowPeriod,
+} from '@/lib/twelvedata/twelvedata-client';
+import { getCached, setCached } from '@/lib/cache/market-data-cache';
+import { computeHealthScore } from '@/lib/finance/health-score';
 import type { ScreenerRow } from '@/app/api/screener/route';
 
 /** Max symbols per TwelveData /batch POST. Stays well under the ~120 cap. */
 const CHUNK_SIZE = 10;
+const FINANCIALS_TTL = 24 * 60 * 60;
 
 interface TwelveDataStatisticsRaw {
   statistics?: {
     valuations_metrics?: {
       market_capitalization?: number | null;
+      enterprise_value?: number | null;
       trailing_pe?: number | null;
       forward_pe?: number | null;
       price_to_book_mrq?: number | null;
@@ -30,6 +46,8 @@ interface TwelveDataStatisticsRaw {
     };
     stock_statistics?: {
       avg_90_volume?: number | null;
+      float_shares?: number | null;
+      short_ratio?: number | null;
     };
     stock_price_summary?: {
       beta?: number | null;
@@ -91,6 +109,62 @@ export function parseStats(raw: TwelveDataStatisticsRaw, sym: string) {
   };
 }
 
+/** Build a CompanyStatistics object from the raw TwelveData batch payload. */
+function rawToCompanyStats(raw: TwelveDataStatisticsRaw, sym: string): CompanyStatistics {
+  const s = raw.statistics ?? {};
+  const v = s.valuations_metrics ?? {};
+  const sp = s.stock_price_summary ?? {};
+  const ss = s.stock_statistics ?? {};
+  const d = s.dividends_and_splits ?? {};
+  const f = s.financials ?? {};
+  const fi = f.income_statement ?? {};
+  return {
+    symbol: sym,
+    marketCap: v.market_capitalization ?? null,
+    enterpriseValue: v.enterprise_value ?? null,
+    peRatioTTM: v.trailing_pe ?? null,
+    peRatioForward: v.forward_pe ?? null,
+    pbRatio: v.price_to_book_mrq ?? null,
+    evToEbitda: v.enterprise_to_ebitda ?? null,
+    beta: sp.beta ?? null,
+    week52High: sp.fifty_two_week_high ?? null,
+    week52Low: sp.fifty_two_week_low ?? null,
+    avgVolume: ss.avg_90_volume ?? null,
+    sharesFloat: ss.float_shares ?? null,
+    shortRatio: ss.short_ratio ?? null,
+    dividendYield: d.forward_annual_dividend_yield ?? null,
+    profitMargin: f.profit_margin ?? null,
+    revenueGrowthTTM: fi.quarterly_revenue_growth ?? null,
+    epsGrowthTTM: fi.quarterly_earnings_growth_yoy ?? null,
+  };
+}
+
+/** Fetch quarterly financials for one symbol, hitting the shared market_data_cache first. */
+async function fetchFinancials(sym: string): Promise<{
+  income: IncomeStatementPeriod[];
+  balance: BalanceSheetPeriod[];
+  cashflow: CashFlowPeriod[];
+}> {
+  const [income, balance, cashflow] = await Promise.all([
+    getCached<IncomeStatementPeriod[]>(`financials:${sym}:income:quarterly`).then(
+      (c) => c ?? getIncomeStatement(sym, 'quarterly').catch(() => [] as IncomeStatementPeriod[])
+    ),
+    getCached<BalanceSheetPeriod[]>(`financials:${sym}:balance:quarterly`).then(
+      (c) => c ?? getBalanceSheet(sym, 'quarterly').catch(() => [] as BalanceSheetPeriod[])
+    ),
+    getCached<CashFlowPeriod[]>(`financials:${sym}:cashflow:quarterly`).then(
+      (c) => c ?? getCashFlow(sym, 'quarterly').catch(() => [] as CashFlowPeriod[])
+    ),
+  ]);
+
+  // Warm the shared cache so /health-score and /financials routes get free hits
+  if (income.length)   void setCached(`financials:${sym}:income:quarterly`,   sym, 'financials', income,   FINANCIALS_TTL).catch(() => {});
+  if (balance.length)  void setCached(`financials:${sym}:balance:quarterly`,  sym, 'financials', balance,  FINANCIALS_TTL).catch(() => {});
+  if (cashflow.length) void setCached(`financials:${sym}:cashflow:quarterly`, sym, 'financials', cashflow, FINANCIALS_TTL).catch(() => {});
+
+  return { income, balance, cashflow };
+}
+
 function chunk<T>(arr: T[], size: number): T[][] {
   const out: T[][] = [];
   for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
@@ -99,7 +173,8 @@ function chunk<T>(arr: T[], size: number): T[][] {
 
 /**
  * Fetch /statistics for the given symbols from TwelveData, enrich with company
- * metadata from Supabase, upsert into screener_stats, and return the rows.
+ * metadata from Supabase, compute the BullPen health score from cached or freshly-
+ * fetched financials, upsert everything into screener_stats, and return the rows.
  *
  * Chunks into batch POSTs of CHUNK_SIZE. Throws TwelveDataRateLimitError up to
  * the caller (which decides whether to 429 or degrade to partial results).
@@ -133,11 +208,28 @@ export async function fetchAndUpsertScreenerStats(symbols: string[]): Promise<Sc
     }
     const raw = await batchFetch<TwelveDataStatisticsRaw>(requests);
 
+    // Fetch financials for all symbols in this group in parallel.
+    // Cache hits are free; cold symbols cost +3 credits (vs 50 for stats).
+    const financialsMap = new Map<string, Awaited<ReturnType<typeof fetchFinancials>>>();
+    await Promise.all(
+      group.map(async (sym) => {
+        const financials = await fetchFinancials(sym);
+        financialsMap.set(sym, financials);
+      })
+    );
+
     for (const sym of group) {
       const statsRaw = raw[sym];
       if (!statsRaw) continue;
+
       const stats = parseStats(statsRaw, sym);
       const company = companyMap.get(sym);
+
+      // Compute health score from the full CompanyStatistics shape + financials
+      const companyStats = rawToCompanyStats(statsRaw, sym);
+      const { income, balance, cashflow } = financialsMap.get(sym) ?? { income: [], balance: [], cashflow: [] };
+      const healthScore = computeHealthScore(companyStats, income, balance, cashflow);
+
       rows.push({
         ...stats,
         name: company?.name ?? sym,
@@ -145,6 +237,8 @@ export async function fetchAndUpsertScreenerStats(symbols: string[]): Promise<Sc
         industry: company?.industry ?? null,
         logo_url: company?.logo_url ?? null,
         exchange: null,
+        health_score: healthScore.score,
+        health_score_grade: healthScore.grade,
       } as ScreenerRow);
     }
   }

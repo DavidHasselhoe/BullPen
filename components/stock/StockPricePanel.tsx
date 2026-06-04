@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { WhyTodayPanel } from './WhyTodayPanel';
+
 import { useQuery } from '@tanstack/react-query';
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -142,7 +142,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
   const isDark = resolvedTheme === 'dark';
   const { prefs, setPref, reset: resetPrefs } = useChartPrefs();
   const [range, setRange] = useState<Range>(prefs.defaultRange as Range);
-  const [whyOpen, setWhyOpen] = useState(false);
+
   const [activeIndicators, setActiveIndicators] = useState<Set<Indicator>>(
     new Set(prefs.defaultIndicators as Indicator[])
   );
@@ -462,21 +462,6 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
                   </div>
                 </div>
 
-                {/* % WHY TODAY? — kept in the row */}
-                {range === '1D' && (
-                  <button
-                    onClick={() => setWhyOpen((v) => !v)}
-                    className={cn(
-                      'inline-flex items-center gap-1 rounded-md px-2 py-0.5 self-start',
-                      'text-[10px] font-semibold uppercase tracking-wider border transition-colors',
-                      whyOpen
-                        ? 'border-primary/50 text-primary bg-primary/[0.06]'
-                        : 'border-border/50 text-muted-foreground hover:text-foreground hover:border-border'
-                    )}
-                  >
-                    <span className={whyOpen ? 'text-primary' : 'text-primary/70'}>%</span> Why today?
-                  </button>
-                )}
               </div>
             ) : (
               <>
@@ -488,21 +473,6 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
                   <span className={cn('text-sm font-medium tabular-nums', priceColor)}>
                     {isPositive ? '+' : ''}{fmtPrice(change)} ({isPositive ? '+' : ''}{changePct.toFixed(2)}%) today
                   </span>
-
-                  {range === '1D' && (
-                    <button
-                      onClick={() => setWhyOpen((v) => !v)}
-                      className={cn(
-                        'inline-flex items-center gap-1 rounded-md px-2 py-0.5',
-                        'text-[10px] font-semibold uppercase tracking-wider border transition-colors',
-                        whyOpen
-                          ? 'border-primary/50 text-primary bg-primary/[0.06]'
-                          : 'border-border/50 text-muted-foreground hover:text-foreground hover:border-border'
-                      )}
-                    >
-                      <span className={whyOpen ? 'text-primary' : 'text-primary/70'}>%</span> Why today?
-                    </button>
-                  )}
 
                   {isLive && (
                     <span className="flex items-center gap-1 text-xs text-emerald-400 font-medium">
@@ -590,16 +560,6 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
           </div>
         </div>
       </div>
-
-      {/* ── Why Today panel ──────────────────────────────────────────────── */}
-      <WhyTodayPanel
-        ticker={ticker}
-        price={price}
-        change={change}
-        changePct={changePct}
-        open={whyOpen}
-        onClose={() => setWhyOpen(false)}
-      />
 
       {/* ── Price chart ──────────────────────────────────────────────────── */}
       <div className="relative">

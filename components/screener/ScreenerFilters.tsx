@@ -92,6 +92,9 @@ interface ScreenerFiltersProps {
   industries: string[];
   onChange: (filters: ScreenerFilterValues) => void;
   onReset: () => void;
+  /** Keys of currently-visible screener columns. Filters whose column is hidden are omitted
+   *  unless the filter already has an active value (so users can always clear it). */
+  visibleColumnKeys?: Set<string>;
 }
 
 function RangeFilter({
@@ -138,9 +141,19 @@ function RangeFilter({
   );
 }
 
-export function ScreenerFilters({ filters, sectors, industries, onChange, onReset }: ScreenerFiltersProps) {
+export function ScreenerFilters({ filters, sectors, industries, onChange, onReset, visibleColumnKeys }: ScreenerFiltersProps) {
   const hasFilters = Object.values(filters).some((v) => v !== '');
   const current = activePreset(filters);
+
+  // Returns true when the filter should be shown:
+  // - no column visibility constraint (visibleColumnKeys not passed), OR
+  // - the corresponding column is visible, OR
+  // - the filter already has an active value (always allow clearing)
+  const show = (colKey: string, ...filterKeys: (keyof ScreenerFilterValues)[]): boolean => {
+    if (!visibleColumnKeys) return true;
+    if (visibleColumnKeys.has(colKey)) return true;
+    return filterKeys.some((k) => !!filters[k]);
+  };
 
   const applyPreset = (preset: Preset) => {
     onChange({ ...EMPTY_FILTERS, ...preset.filters });
@@ -221,60 +234,88 @@ export function ScreenerFilters({ filters, sectors, industries, onChange, onRese
       </div>
 
       {/* Valuation */}
-      <div className="space-y-0.5">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 pb-1">Valuation</p>
-        <RangeFilter label="Market Cap" unit="$B" minKey="marketCapMin" maxKey="marketCapMax" filters={filters} onChange={onChange} step="10" />
-        <div className="pt-3">
-          <RangeFilter label="P/E Ratio (TTM)" minKey="peMin" maxKey="peMax" filters={filters} onChange={onChange} step="1" />
+      {(show('market_cap', 'marketCapMin', 'marketCapMax') ||
+        show('pe_ratio', 'peMin', 'peMax') ||
+        show('pb_ratio', 'pbMin', 'pbMax')) && (
+        <div className="space-y-0.5">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 pb-1">Valuation</p>
+          {show('market_cap', 'marketCapMin', 'marketCapMax') && (
+            <RangeFilter label="Market Cap" unit="$B" minKey="marketCapMin" maxKey="marketCapMax" filters={filters} onChange={onChange} step="10" />
+          )}
+          {show('pe_ratio', 'peMin', 'peMax') && (
+            <div className="pt-3">
+              <RangeFilter label="P/E Ratio (TTM)" minKey="peMin" maxKey="peMax" filters={filters} onChange={onChange} step="1" />
+            </div>
+          )}
+          {show('pb_ratio', 'pbMin', 'pbMax') && (
+            <div className="pt-3">
+              <RangeFilter label="P/B Ratio" minKey="pbMin" maxKey="pbMax" filters={filters} onChange={onChange} step="0.1" />
+            </div>
+          )}
         </div>
-        <div className="pt-3">
-          <RangeFilter label="P/B Ratio" minKey="pbMin" maxKey="pbMax" filters={filters} onChange={onChange} step="0.1" />
-        </div>
-      </div>
+      )}
 
       {/* Profitability */}
-      <div className="space-y-0.5">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 pb-1">Profitability</p>
-        <RangeFilter label="Profit Margin" unit="%" minKey="profitMarginMin" maxKey="profitMarginMax" filters={filters} onChange={onChange} step="1" />
-        <div className="pt-3">
-          <RangeFilter label="Revenue Growth YoY" unit="%" minKey="revenueGrowthMin" maxKey="revenueGrowthMax" filters={filters} onChange={onChange} step="1" />
+      {(show('profit_margin', 'profitMarginMin', 'profitMarginMax') ||
+        show('revenue_growth_yoy', 'revenueGrowthMin', 'revenueGrowthMax')) && (
+        <div className="space-y-0.5">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 pb-1">Profitability</p>
+          {show('profit_margin', 'profitMarginMin', 'profitMarginMax') && (
+            <RangeFilter label="Profit Margin" unit="%" minKey="profitMarginMin" maxKey="profitMarginMax" filters={filters} onChange={onChange} step="1" />
+          )}
+          {show('revenue_growth_yoy', 'revenueGrowthMin', 'revenueGrowthMax') && (
+            <div className="pt-3">
+              <RangeFilter label="Revenue Growth YoY" unit="%" minKey="revenueGrowthMin" maxKey="revenueGrowthMax" filters={filters} onChange={onChange} step="1" />
+            </div>
+          )}
         </div>
-      </div>
+      )}
 
       {/* Risk & Income */}
-      <div className="space-y-0.5">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 pb-1">Risk & Income</p>
-        <RangeFilter label="Beta" minKey="betaMin" maxKey="betaMax" filters={filters} onChange={onChange} step="0.1" />
-        <div className="pt-3">
-          <RangeFilter label="Dividend Yield" unit="%" minKey="divYieldMin" maxKey="divYieldMax" filters={filters} onChange={onChange} step="0.1" />
+      {(show('beta', 'betaMin', 'betaMax') ||
+        show('dividend_yield', 'divYieldMin', 'divYieldMax')) && (
+        <div className="space-y-0.5">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 pb-1">Risk & Income</p>
+          {show('beta', 'betaMin', 'betaMax') && (
+            <RangeFilter label="Beta" minKey="betaMin" maxKey="betaMax" filters={filters} onChange={onChange} step="0.1" />
+          )}
+          {show('dividend_yield', 'divYieldMin', 'divYieldMax') && (
+            <div className="pt-3">
+              <RangeFilter label="Dividend Yield" unit="%" minKey="divYieldMin" maxKey="divYieldMax" filters={filters} onChange={onChange} step="0.1" />
+            </div>
+          )}
         </div>
-      </div>
+      )}
 
       {/* 52-Week Range */}
-      <div className="space-y-0.5">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 pb-1">Price Range</p>
-        <RangeFilter label="52W H/L Spread" unit="%" minKey="week52ChangeMin" maxKey="week52ChangeMax" filters={filters} onChange={onChange} step="5" />
-      </div>
+      {show('week52_high', 'week52ChangeMin', 'week52ChangeMax') && (
+        <div className="space-y-0.5">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 pb-1">Price Range</p>
+          <RangeFilter label="52W H/L Spread" unit="%" minKey="week52ChangeMin" maxKey="week52ChangeMax" filters={filters} onChange={onChange} step="5" />
+        </div>
+      )}
 
       {/* Volume */}
-      <div className="space-y-1.5">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 pb-1">Volume</p>
-        <Label className="text-xs font-medium text-muted-foreground">
-          Min Relative Volume <span className="ml-1 opacity-60">(×)</span>
-        </Label>
-        <Input
-          type="number"
-          placeholder="e.g. 2"
-          value={filters.rvolMin}
-          onChange={(e) => onChange({ ...filters, rvolMin: e.target.value })}
-          className="h-8 text-xs"
-          step="0.5"
-          min="0"
-        />
-        <p className="text-[10px] text-muted-foreground/50 leading-snug">
-          Today&apos;s volume vs 90-day average. Needs live market data.
-        </p>
-      </div>
+      {show('rvol', 'rvolMin') && (
+        <div className="space-y-1.5">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 pb-1">Volume</p>
+          <Label className="text-xs font-medium text-muted-foreground">
+            Min Relative Volume <span className="ml-1 opacity-60">(×)</span>
+          </Label>
+          <Input
+            type="number"
+            placeholder="e.g. 2"
+            value={filters.rvolMin}
+            onChange={(e) => onChange({ ...filters, rvolMin: e.target.value })}
+            className="h-8 text-xs"
+            step="0.5"
+            min="0"
+          />
+          <p className="text-[10px] text-muted-foreground/50 leading-snug">
+            Today&apos;s volume vs 90-day average. Needs live market data.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

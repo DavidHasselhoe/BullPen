@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { useHoldings, useRemoveHolding } from '@/hooks/use-holdings';
 import { useAuth } from '@/hooks/use-auth';
-import { Trash2, Edit2, ArrowUpRight, ArrowDownRight, Plus, Search, X, Loader2 } from 'lucide-react';
+import { Trash2, Edit2, ArrowUpRight, ArrowDownRight, Plus, Search, X, Loader2, Upload } from 'lucide-react';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { logger } from '@/lib/utils/logger';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
@@ -65,6 +65,7 @@ import { useUserSettings } from '@/hooks/use-user-settings';
 
 interface HoldingsTableProps {
   onAddClick?: () => void;
+  onImportClick?: () => void;
   holdingsWithPrices?: HoldingWithPrice[];
   /** When set, rows not matching this sector label are dimmed. */
   hoveredSector?: string | null;
@@ -321,7 +322,7 @@ const HoldingRow = memo(function HoldingRow({
 
 // ─── Main table ───────────────────────────────────────────────────────────────
 
-export function HoldingsTable({ onAddClick, holdingsWithPrices: externalHoldings, hoveredSector, isPricesLoading }: HoldingsTableProps) {
+export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: externalHoldings, hoveredSector, isPricesLoading }: HoldingsTableProps) {
   const { data: holdings, isLoading } = useHoldings();
   const { user } = useAuth();
   const { roundNumbers } = useUserSettings();
@@ -622,17 +623,30 @@ export function HoldingsTable({ onAddClick, holdingsWithPrices: externalHoldings
               Add stocks to track your portfolio, see performance, and get AI-powered insights.
             </p>
           </div>
-          {onAddClick && (
-            <button
-              onClick={onAddClick}
-              className="w-full flex items-center justify-center gap-2 py-5 rounded-lg border-2 border-dashed border-border/60 hover:border-primary/50 hover:bg-primary/5 text-muted-foreground hover:text-primary transition-colors group"
-            >
-              <span className="flex items-center justify-center h-8 w-8 rounded-full border-2 border-dashed border-border/60 group-hover:border-primary/50 transition-colors">
-                <Plus className="h-4 w-4" />
-              </span>
-              <span className="text-sm font-medium">Add your first holding</span>
-            </button>
-          )}
+          <div className="flex flex-col sm:flex-row gap-2">
+            {onAddClick && (
+              <button
+                onClick={onAddClick}
+                className="flex-1 flex items-center justify-center gap-2 py-5 rounded-lg border-2 border-dashed border-border/60 hover:border-primary/50 hover:bg-primary/5 text-muted-foreground hover:text-primary transition-colors group"
+              >
+                <span className="flex items-center justify-center h-8 w-8 rounded-full border-2 border-dashed border-border/60 group-hover:border-primary/50 transition-colors">
+                  <Plus className="h-4 w-4" />
+                </span>
+                <span className="text-sm font-medium">Add your first holding</span>
+              </button>
+            )}
+            {onImportClick && (
+              <button
+                onClick={onImportClick}
+                className="flex-1 flex items-center justify-center gap-2 py-5 rounded-lg border-2 border-dashed border-border/60 hover:border-emerald-500/40 hover:bg-emerald-500/5 text-muted-foreground hover:text-emerald-500 transition-colors group"
+              >
+                <span className="flex items-center justify-center h-8 w-8 rounded-full border-2 border-dashed border-border/60 group-hover:border-emerald-500/40 transition-colors">
+                  <Upload className="h-4 w-4" />
+                </span>
+                <span className="text-sm font-medium">Import from CSV</span>
+              </button>
+            )}
+          </div>
         </CardContent>
       </Card>
     );
@@ -653,6 +667,16 @@ export function HoldingsTable({ onAddClick, holdingsWithPrices: externalHoldings
       <CardHeader>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <CardTitle>My Holdings</CardTitle>
+          <div className="flex items-center gap-2">
+            {onImportClick && (
+              <button
+                onClick={onImportClick}
+                className="flex items-center gap-1.5 h-8 rounded-lg border border-border/60 bg-muted/30 px-3 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-border hover:bg-muted/60 transition-colors"
+              >
+                <Upload className="h-3.5 w-3.5" />
+                Import CSV
+              </button>
+            )}
           {/* Search */}
           <div className="relative w-full sm:w-56">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
@@ -671,6 +695,7 @@ export function HoldingsTable({ onAddClick, holdingsWithPrices: externalHoldings
                 <X className="h-3.5 w-3.5" />
               </button>
             )}
+          </div>
           </div>
         </div>
         {search && (

@@ -55,6 +55,8 @@ export interface UseScreenerColumns {
   visibleColumns: ScreenerColumn[];
   isHidden: (key: string) => boolean;
   toggle: (key: string) => void;
+  showAll: () => void;
+  hideAll: () => void;
   reorder: (keys: string[]) => void;
   reset: () => void;
 }
@@ -122,6 +124,14 @@ export function useScreenerColumns(): UseScreenerColumns {
     update({ order: orderedKeys, hidden: [...set] });
   }, [prefs.hidden, orderedKeys, update]);
 
+  const showAll = useCallback(() => {
+    update({ order: orderedKeys, hidden: [] });
+  }, [orderedKeys, update]);
+
+  const hideAll = useCallback(() => {
+    update({ order: orderedKeys, hidden: orderedKeys });
+  }, [orderedKeys, update]);
+
   const reorder = useCallback((keys: string[]) => {
     update({ order: keys, hidden: prefs.hidden });
   }, [prefs.hidden, update]);
@@ -137,5 +147,5 @@ export function useScreenerColumns(): UseScreenerColumns {
     }
   }, [saveToSupabase]);
 
-  return { orderedColumns, visibleColumns, isHidden, toggle, reorder, reset };
+  return { orderedColumns, visibleColumns, isHidden, toggle, showAll, hideAll, reorder, reset };
 }

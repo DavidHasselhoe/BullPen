@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Bell, Plus, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -17,9 +17,15 @@ import { useAlerts } from '@/hooks/use-alerts';
 
 export default function AlertsClientPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { hasAnimatedBackground } = useBackground();
-  const [composerOpen, setComposerOpen] = useState(false);
+
+  // When arriving from the command palette (?symbol=NVDA&name=NVIDIA+Corporation),
+  // open the composer immediately. useState initializer runs once so this is safe.
+  const prefilledSymbol = searchParams.get('symbol')?.toUpperCase() ?? null;
+  const prefilledName = searchParams.get('name') ?? prefilledSymbol ?? null;
+  const [composerOpen, setComposerOpen] = useState(() => !!prefilledSymbol);
 
   const { alerts, activeSymbolCount, isLoading, isError, error, refetch, create, toggle, remove } = useAlerts();
 
@@ -93,6 +99,9 @@ export default function AlertsClientPage() {
             onCreated={() => setComposerOpen(false)}
             onCancel={() => setComposerOpen(false)}
             onCreate={create}
+            initialTicker={prefilledSymbol && prefilledName
+              ? { ticker: prefilledSymbol, name: prefilledName }
+              : undefined}
           />
         )}
 

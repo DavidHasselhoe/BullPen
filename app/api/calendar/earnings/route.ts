@@ -6,7 +6,8 @@ import { NASDAQ100_TICKERS } from '@/lib/market-data/nasdaq100';
 import { getCached, setCached } from '@/lib/cache/market-data-cache';
 
 const NASDAQ100_SET = new Set(NASDAQ100_TICKERS);
-const EARNINGS_CACHE_TTL_SECONDS = 4 * 60 * 60;  // 4 hours
+// Earnings dates are announced weeks in advance and almost never change intraday.
+const EARNINGS_CACHE_TTL_SECONDS = 24 * 60 * 60;
 
 interface EarningsRow { symbol: string; date: string }
 interface EarningsResponse { success: true; data: EarningsRow[] }

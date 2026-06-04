@@ -460,69 +460,6 @@ function CandleVisual() {
   );
 }
 
-function WhyTodayVisual() {
-  return (
-    <div
-      style={{
-        marginTop: 'auto',
-        background: 'var(--bg-2)',
-        border: '1px solid var(--border)',
-        borderRadius: 14,
-        padding: 16,
-        position: 'relative',
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--fg)' }}>TSLA</span>
-          <span className="mono" style={{ fontSize: 12, color: 'var(--down)', fontWeight: 600 }}>
-            ▼ -1.42%
-          </span>
-        </div>
-        <div
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            padding: '3px 8px',
-            borderRadius: 99,
-            background: 'var(--accent-soft)',
-            color: 'var(--accent)',
-            fontSize: 10,
-            fontWeight: 700,
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-          }}
-        >
-          <Icon name="sparkles" size={10} />
-          Why today?
-        </div>
-      </div>
-      <div style={{ fontSize: 12.5, color: 'var(--fg-muted)', lineHeight: 1.55, marginBottom: 10 }}>
-        Tesla dipped after a Wells Fargo downgrade citing
-        <span style={{ color: 'var(--fg)' }}> softer EV demand in Q4</span> and concerns about margin compression. Counter-balanced by strong
-        <span style={{ color: 'var(--up)' }}> energy storage</span> deliveries.
-      </div>
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-        {['Reuters · 2h', 'Bloomberg · 4h', 'CNBC · 6h'].map((s) => (
-          <span
-            key={s}
-            style={{
-              fontSize: 10,
-              color: 'var(--fg-dim)',
-              padding: '2px 8px',
-              borderRadius: 99,
-              border: '1px solid var(--border)',
-              fontFamily: 'var(--font-mono)',
-            }}
-          >
-            {s}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 export function Features() {
   return (
@@ -590,18 +527,7 @@ export function Features() {
             </FeatureCard>
           </Reveal>
 
-          <Reveal delay={1} style={{ gridColumn: 'span 7' }}>
-            <FeatureCard accent>
-              <FeatureKicker icon="target" label="Why Today?" />
-              <FeatureTitle>The story behind every price move.</FeatureTitle>
-              <FeatureDesc>
-                Claude reads the news and filings, then explains exactly why a stock moved — with citations you can verify in one click.
-              </FeatureDesc>
-              <WhyTodayVisual />
-            </FeatureCard>
-          </Reveal>
-
-          <Reveal delay={2} style={{ gridColumn: 'span 5' }}>
+          <Reveal delay={2} style={{ gridColumn: 'span 12' }}>
             <FeatureCard>
               <FeatureKicker icon="shield" label="Alerts & filings" />
               <FeatureTitle>Never miss a 10-K, an earnings beat, or a 5% move.</FeatureTitle>

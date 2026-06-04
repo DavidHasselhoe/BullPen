@@ -42,9 +42,10 @@ function filtersFromParams(sp: URLSearchParams): ScreenerFilterValues {
   return f;
 }
 
-function buildQueryString(filters: ScreenerFilterValues, symbols: string | null): string {
+function buildQueryString(filters: ScreenerFilterValues, symbols: string | null, scope?: string): string {
   const params = new URLSearchParams();
   if (symbols) params.set('symbols', symbols);
+  if (scope) params.set('scope', scope);
   for (const key of FILTER_KEYS) {
     const val = filters[key];
     if (!val) continue;
@@ -60,6 +61,7 @@ function buildQueryString(filters: ScreenerFilterValues, symbols: string | null)
 }
 
 function viewToParam(view: ActiveView): string {
+  if (view.type === 'all') return 'all';
   if (view.type === 'sp500') return 'sp500';
   if (view.type === 'holdings') return 'holdings';
   if (view.type === 'watchlist') return view.listId ? `watchlist:${view.listId}` : 'watchlist';
@@ -68,6 +70,7 @@ function viewToParam(view: ActiveView): string {
 
 function paramToView(param: string | null, customViews: ScreenerView[]): ActiveView {
   if (!param || param === 'sp500') return { type: 'sp500' };
+  if (param === 'all') return { type: 'all' };
   if (param === 'holdings') return { type: 'holdings' };
   if (param === 'watchlist') return { type: 'watchlist', listId: null };
   if (param.startsWith('watchlist:')) return { type: 'watchlist', listId: param.slice(10) };
@@ -140,8 +143,12 @@ function ScreenerContent() {
   }, [activeView, userHoldings, allWatchlistItems, listItems, watchlistListId]);
 
   const qs = useMemo(
-    () => buildQueryString(debouncedFilters, symbolsFilter === '__none__' ? null : symbolsFilter),
-    [debouncedFilters, symbolsFilter]
+    () => buildQueryString(
+      debouncedFilters,
+      symbolsFilter === '__none__' ? null : symbolsFilter,
+      activeView.type === 'all' ? 'all' : undefined,
+    ),
+    [debouncedFilters, symbolsFilter, activeView.type]
   );
 
   const { data, isLoading, isFetching, refetch } = useQuery<{
@@ -168,9 +175,9 @@ function ScreenerContent() {
     placeholderData: keepPreviousData,
   });
 
-  // Cache company universe whenever we have the full S&P 500 set
+  // Cache company universe whenever we have a full market set loaded
   useEffect(() => {
-    if (activeView.type === 'sp500' && data?.results && data.results.length > 10) {
+    if ((activeView.type === 'sp500' || activeView.type === 'all') && data?.results && data.results.length > 10) {
       universeRef.current = data.results;
     }
   }, [activeView.type, data?.results]);
@@ -287,7 +294,7 @@ function ScreenerContent() {
   const sectors = data?.sectors ?? [];
   const industries = data?.industries ?? [];
   const activeFilterCount = Object.values(filters).filter(Boolean).length;
-  const { prices: livePrices, connected } = useHeatmapStream();
+  const { prices: livePrices, session: marketSession, connected } = useHeatmapStream();
 
   const isCustomView = activeView.type === 'custom';
   const customViewEmpty = isCustomView && symbolsFilter === '__none__';
@@ -307,10 +314,32 @@ function ScreenerContent() {
             </Badge>
           )}
           <span className="flex items-center gap-1 text-xs font-medium">
-            <span className={`h-2 w-2 rounded-full ${connected ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-            <span className={connected ? 'text-emerald-500' : 'text-amber-500'}>
-              {connected ? 'Live' : 'Connecting…'}
-            </span>
+            {!connected ? (
+              <>
+                <span className="h-2 w-2 rounded-full bg-amber-500" />
+                <span className="text-amber-500">Connecting…</span>
+              </>
+            ) : marketSession === 'regular' ? (
+              <>
+                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-emerald-500">Live</span>
+              </>
+            ) : marketSession === 'pre' ? (
+              <>
+                <span className="h-2 w-2 rounded-full bg-amber-400" />
+                <span className="text-amber-400">Pre-market</span>
+              </>
+            ) : marketSession === 'post' ? (
+              <>
+                <span className="h-2 w-2 rounded-full bg-amber-400" />
+                <span className="text-amber-400">After-hours</span>
+              </>
+            ) : (
+              <>
+                <span className="h-2 w-2 rounded-full bg-muted-foreground/40" />
+                <span className="text-muted-foreground/60">Closed</span>
+              </>
+            )}
           </span>
           <div className="ml-auto flex items-center gap-2">
             {refreshStatus && <span className="text-xs text-muted-foreground">{refreshStatus}</span>}
@@ -327,13 +356,15 @@ function ScreenerContent() {
           </div>
         </div>
         <p className="text-sm text-muted-foreground">
-          {activeView.type === 'sp500'
-            ? 'Screen the full S&P 500 with live prices and fundamental data.'
-            : activeView.type === 'holdings'
-              ? `Screening your ${userHoldings.length} held position${userHoldings.length !== 1 ? 's' : ''}.`
-              : activeView.type === 'watchlist'
-                ? 'Screening your watchlist.'
-                : `Screening "${activeView.view.name}"`}
+          {activeView.type === 'all'
+            ? `Every stock in BullPen's database — ${data?.total ?? '…'} tickers with live prices and fundamental data.`
+            : activeView.type === 'sp500'
+              ? 'Screen the full S&P 500 with live prices and fundamental data.'
+              : activeView.type === 'holdings'
+                ? `Screening your ${userHoldings.length} held position${userHoldings.length !== 1 ? 's' : ''}.`
+                : activeView.type === 'watchlist'
+                  ? 'Screening your watchlist.'
+                  : `Screening "${activeView.view.name}"`}
         </p>
       </div>
 
@@ -365,6 +396,7 @@ function ScreenerContent() {
                 industries={industries}
                 onChange={handleFilterChange}
                 onReset={handleReset}
+                visibleColumnKeys={new Set(screenerColumns.visibleColumns.map((c) => c.key))}
               />
             )}
           </CardContent>

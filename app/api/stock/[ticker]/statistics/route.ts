@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withRateLimit, withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { getStatistics, TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
-import { getCached, setCached } from '@/lib/cache/market-data-cache';
+import { getCachedWithMeta, setCached } from '@/lib/cache/market-data-cache';
 
 const STATS_TTL_SECONDS = 24 * 60 * 60;
 
@@ -15,22 +15,23 @@ async function handler(
   const cacheKey = `stats:${symbol}`;
 
   try {
-    const cached = await getCached<Awaited<ReturnType<typeof getStatistics>>>(cacheKey);
+    const cached = await getCachedWithMeta<Awaited<ReturnType<typeof getStatistics>>>(cacheKey);
     if (cached) {
-      return addSecurityHeaders(NextResponse.json({ success: true, stats: cached }));
+      return addSecurityHeaders(NextResponse.json({ success: true, stats: cached.payload, fetchedAt: cached.fetchedAt }));
     }
 
     // Snapshot route seeds snap-stats:<sym> — reuse it to avoid a duplicate 50-credit fetch
     // when /snapshot and /statistics fire simultaneously on a cold stock page visit.
-    const snapCached = await getCached<Awaited<ReturnType<typeof getStatistics>>>(`snap-stats:${symbol}`);
+    const snapCached = await getCachedWithMeta<Awaited<ReturnType<typeof getStatistics>>>(`snap-stats:${symbol}`);
     if (snapCached) {
-      void setCached(cacheKey, symbol, 'statistics', snapCached, STATS_TTL_SECONDS);
-      return addSecurityHeaders(NextResponse.json({ success: true, stats: snapCached }));
+      void setCached(cacheKey, symbol, 'statistics', snapCached.payload, STATS_TTL_SECONDS);
+      return addSecurityHeaders(NextResponse.json({ success: true, stats: snapCached.payload, fetchedAt: snapCached.fetchedAt }));
     }
 
+    const fetchedAt = new Date().toISOString();
     const stats = await getStatistics(symbol);
     await setCached(cacheKey, symbol, 'statistics', stats, STATS_TTL_SECONDS);
-    return addSecurityHeaders(NextResponse.json({ success: true, stats }));
+    return addSecurityHeaders(NextResponse.json({ success: true, stats, fetchedAt }));
   } catch (err) {
     if (err instanceof TwelveDataRateLimitError) {
       return addSecurityHeaders(

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { useQueryClient } from '@tanstack/react-query';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
@@ -9,9 +9,15 @@ import { useRecentlyViewedQuotes } from '@/hooks/use-recently-viewed-quotes';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
 import { cn } from '@/lib/utils';
 
+// useSyncExternalStore gives server=false / client=true with no effect or setState.
+// This is the React 18+ canonical pattern for localStorage-backed components.
+const _noop = () => () => {};
+const useIsClient = () => useSyncExternalStore(_noop, () => true, () => false);
+
 export function RecentlyViewedInline() {
   const { items } = useRecentlyViewed();
   const queryClient = useQueryClient();
+  const isClient = useIsClient();
 
   const tickers = items.map((i) => i.ticker);
   const { data: quotes } = useRecentlyViewedQuotes(tickers);
@@ -24,7 +30,7 @@ export function RecentlyViewedInline() {
     });
   }, [queryClient]);
 
-  if (items.length === 0) return null;
+  if (!isClient || items.length === 0) return null;
 
   return (
     <div className="flex items-center gap-3 min-w-0 overflow-hidden">

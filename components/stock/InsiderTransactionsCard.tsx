@@ -72,6 +72,7 @@ const INITIAL_SHOW = 8;
 export function InsiderTransactionsCard({ ticker }: { ticker: string }) {
   const { isSimplified } = useExperienceLevel();
   const [showAll, setShowAll] = useState(false);
+  const [requested, setRequested] = useState(false);
 
   const { data, isLoading } = useQuery<InsiderResponse>({
     queryKey: ['insider-transactions', ticker],
@@ -79,10 +80,37 @@ export function InsiderTransactionsCard({ ticker }: { ticker: string }) {
       const res = await fetch(`/api/stock/${ticker}/insider-transactions`);
       return res.json();
     },
-    enabled: !!ticker,
-    staleTime: 60 * 60 * 1000,
-    gcTime: 60 * 60 * 1000,
+    enabled: requested,
+    staleTime: 7 * 24 * 60 * 60 * 1000,
+    gcTime: 7 * 24 * 60 * 60 * 1000,
   });
+
+  // Gate: show a prompt until the user explicitly requests the data
+  if (!requested) {
+    return (
+      <Card className="mb-8">
+        <CardContent className="flex items-center justify-between gap-4 py-4">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <Users className="h-4 w-4 text-muted-foreground shrink-0" />
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-foreground">Insider Transactions</p>
+              <p className="text-xs text-muted-foreground/70">
+                {isSimplified
+                  ? 'See when executives buy or sell their own stock'
+                  : 'SEC Form 4 filings by executives, directors & 10%+ shareholders'}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setRequested(true)}
+            className="shrink-0 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors whitespace-nowrap"
+          >
+            View
+          </button>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (isLoading) {
     return (

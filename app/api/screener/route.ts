@@ -39,6 +39,8 @@ export interface ScreenerRow {
   week52_low: number | null;
   day50_ma: number | null;
   day200_ma: number | null;
+  health_score: number | null;
+  health_score_grade: string | null;
   updated_at: string;
 }
 
@@ -64,6 +66,9 @@ async function handler(request: NextRequest) {
   const symbolAllowlist = symbolsParam
     ? new Set(symbolsParam.split(',').map((s) => s.trim().toUpperCase()).filter(Boolean))
     : null;
+
+  // scope=all: bypass the tier-1 filter and return all rows in screener_stats
+  const scopeAll = sp.get('scope') === 'all';
 
   // --- Parse filter params ---
   const sector = sp.get('sector') || undefined;
@@ -96,6 +101,16 @@ async function handler(request: NextRequest) {
       .from('screener_stats')
       .select('*')
       .in('ticker', [...symbolAllowlist])
+      .order('market_cap', { ascending: false, nullsFirst: false });
+    if (error) {
+      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    }
+    baseRows = (data ?? []) as ScreenerRow[];
+  } else if (scopeAll) {
+    // "All" view — every row in screener_stats, no tier restriction
+    const { data, error } = await supabase
+      .from('screener_stats')
+      .select('*')
       .order('market_cap', { ascending: false, nullsFirst: false });
     if (error) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });

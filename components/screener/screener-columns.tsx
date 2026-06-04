@@ -52,9 +52,10 @@ const RVOL_SURGE = 2; // ≥2× average = unusual activity
 
 // ─── Column registry ──────────────────────────────────────────────────────────
 
-export type ColumnGroup = 'price' | 'volume' | 'valuation' | 'profitability' | 'risk';
+export type ColumnGroup = 'health' | 'price' | 'volume' | 'valuation' | 'profitability' | 'risk';
 
 export const GROUP_LABELS: Record<ColumnGroup, string> = {
+  health: 'Health Score',
   price: 'Price',
   volume: 'Volume',
   valuation: 'Valuation',
@@ -76,7 +77,39 @@ export interface ScreenerColumn {
   render: (row: ScreenerRow, live?: HeatmapPriceEntry) => ReactNode;
 }
 
+const GRADE_STYLES: Record<string, string> = {
+  A: 'bg-emerald-500/15 text-emerald-500',
+  B: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+  C: 'bg-amber-400/15 text-amber-500',
+  D: 'bg-orange-500/15 text-orange-500',
+  F: 'bg-red-500/15 text-red-500',
+};
+
 export const SCREENER_COLUMNS: ScreenerColumn[] = [
+  // ── Health Score ──
+  {
+    key: 'health_score',
+    label: 'Health',
+    tip: 'BullPen financial health score (0–100) — rates profitability, balance sheet strength, valuation, growth, and market risk.',
+    group: 'health',
+    defaultVisible: true,
+    width: 88,
+    getValue: (row) => row.health_score,
+    render: (row) => {
+      const score = row.health_score;
+      const grade = row.health_score_grade;
+      if (score == null || !grade) return <span className="text-muted-foreground/40">—</span>;
+      return (
+        <span className="inline-flex items-center gap-1.5">
+          <span className="tabular-nums font-semibold text-xs">{score}</span>
+          <span className={cn('rounded px-1 py-px text-[10px] font-bold leading-tight', GRADE_STYLES[grade] ?? 'bg-muted text-muted-foreground')}>
+            {grade}
+          </span>
+        </span>
+      );
+    },
+  },
+
   // ── Price ──
   {
     key: 'price',

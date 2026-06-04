@@ -56,7 +56,7 @@ function ColumnItem({
 }
 
 export function ColumnChooser({ columns }: Props) {
-  const { orderedColumns, isHidden, toggle, reorder, reset } = columns;
+  const { orderedColumns, isHidden, toggle, showAll, hideAll, reorder, reset } = columns;
   const visibleCount = orderedColumns.filter((c) => !isHidden(c.key)).length;
   const orderedKeys = orderedColumns.map((c) => c.key);
 
@@ -75,14 +75,32 @@ export function ColumnChooser({ columns }: Props) {
             <span className="text-xs font-semibold text-foreground">Columns</span>
             <span className="text-[10px] text-muted-foreground/60">Drag to reorder · click to show/hide</span>
           </div>
-          <button
-            type="button"
-            onClick={reset}
-            className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors shrink-0"
-          >
-            <RotateCcw className="h-3 w-3" />
-            Reset
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={showAll}
+              className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+            >
+              All
+            </button>
+            <span className="text-border/60">·</span>
+            <button
+              type="button"
+              onClick={hideAll}
+              className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+            >
+              None
+            </button>
+            <span className="text-border/60">·</span>
+            <button
+              type="button"
+              onClick={reset}
+              className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <RotateCcw className="h-3 w-3" />
+              Reset
+            </button>
+          </div>
         </div>
 
         <div className="max-h-[55vh] overflow-y-auto">

@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { AuthGate } from '@/components/ui/AuthGate';
 import { HoldingsTable } from '@/components/holdings/HoldingsTable';
 import { AddHoldingModal } from '@/components/holdings/AddHoldingModal';
+import { CSVImportModal } from '@/components/holdings/CSVImportModal';
 import { HoldingsPieChart } from '@/components/holdings/HoldingsPieChart';
 import { PortfolioDashboard } from '@/components/holdings/PortfolioDashboard';
 import { PortfolioRiskAnalysis } from '@/components/holdings/PortfolioRiskAnalysis';
@@ -46,6 +47,7 @@ export default function HoldingsPage() {
   const { user, isAuthenticated } = useAuth();
   const { data: holdings, isLoading: holdingsLoading } = useHoldings();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [hoveredSector, setHoveredSector] = useState<string | null>(null);
   const session = useSessionState();
   const isPreMarket = session === 'pre-market';
@@ -346,6 +348,7 @@ export default function HoldingsPage() {
         holdingsWithPrices={holdingsWithPrices}
         isPricesLoading={quotesData.isLoading}
         onAddClick={() => setIsAddModalOpen(true)}
+        onImportClick={() => setIsImportModalOpen(true)}
         hoveredSector={hoveredSector}
       />
 
@@ -356,6 +359,8 @@ export default function HoldingsPage() {
 
       {/* Add Modal */}
       <AddHoldingModal open={isAddModalOpen} onOpenChange={setIsAddModalOpen} />
+      {/* Import Modal */}
+      <CSVImportModal open={isImportModalOpen} onOpenChange={setIsImportModalOpen} />
     </div>
   );
 }

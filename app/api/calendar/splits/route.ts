@@ -1,18 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSplitsCalendar, TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
 import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
+import { getCached, setCached } from '@/lib/cache/market-data-cache';
+
+// Split announcements are made weeks ahead and the schedule is stable day-to-day.
+const CACHE_TTL_SECONDS = 24 * 60 * 60;
 
 async function handler(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const from = searchParams.get('from') ?? new Date().toISOString().slice(0, 10);
   const to = searchParams.get('to') ?? from;
 
+  const cacheKey = `calendar:splits:${from}:${to}`;
+  const cached = await getCached<unknown>(cacheKey);
+  if (cached) {
+    return addSecurityHeaders(
+      NextResponse.json(
+        { success: true, data: cached },
+        { headers: { 'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=3600' } }
+      )
+    );
+  }
+
   try {
     const data = await getSplitsCalendar(from, to);
+    void setCached(cacheKey, '_market', 'splits_calendar', data, CACHE_TTL_SECONDS);
     return addSecurityHeaders(
       NextResponse.json(
         { success: true, data },
-        { headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=600' } }
+        { headers: { 'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=3600' } }
       )
     );
   } catch (err) {

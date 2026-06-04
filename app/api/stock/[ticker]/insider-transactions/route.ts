@@ -3,7 +3,10 @@ import { getInsiderTransactions, TwelveDataRateLimitError } from '@/lib/twelveda
 import { getCached, setCached } from '@/lib/cache/market-data-cache';
 import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
 
-const INSIDER_TTL_SECONDS = 24 * 60 * 60;
+// Form 4 filings are due within 2 business days but insider trading windows
+// only open after earnings (~quarterly), so meaningful new data arrives at most
+// a few times a year. 7 days balances freshness with the 200-credit cost.
+const INSIDER_TTL_SECONDS = 7 * 24 * 60 * 60;
 
 async function handler(
   _request: NextRequest,

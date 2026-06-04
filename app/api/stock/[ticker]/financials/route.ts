@@ -12,7 +12,13 @@ import {
 
 type FinancialType = 'income' | 'balance' | 'cashflow' | 'dividends' | 'splits';
 type Period = 'quarterly' | 'annual';
-const FINANCIALS_TTL_SECONDS = 24 * 60 * 60;
+
+// Splits are announced weeks ahead and happen rarely (years apart for most stocks).
+// Everything else updates quarterly, so 24h is fine.
+function ttlForType(type: FinancialType): number {
+  if (type === 'splits') return 30 * 24 * 60 * 60;
+  return 24 * 60 * 60;
+}
 
 async function handler(
   request: NextRequest,
@@ -55,7 +61,7 @@ async function handler(
         );
     }
 
-    await setCached(cacheKey, symbol, 'financials', result, FINANCIALS_TTL_SECONDS);
+    await setCached(cacheKey, symbol, 'financials', result, ttlForType(type));
     return addSecurityHeaders(NextResponse.json({ success: true, data: result, type, period }));
   } catch (err) {
     if (err instanceof TwelveDataRateLimitError) {

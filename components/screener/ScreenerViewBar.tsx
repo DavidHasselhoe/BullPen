@@ -22,6 +22,7 @@ import {
 import { useAuth } from '@/hooks/use-auth';
 
 export type ActiveView =
+  | { type: 'all' }
   | { type: 'sp500' }
   | { type: 'holdings' }
   | { type: 'watchlist'; listId: string | null }
@@ -133,6 +134,14 @@ export function ScreenerViewBar({ activeView, onViewChange }: Props) {
 
   return (
     <div className="flex items-center gap-1.5 flex-wrap">
+      {/* All */}
+      <button
+        onClick={() => onViewChange({ type: 'all' })}
+        className={cn(pillBase, isActive({ type: 'all' }) ? pillActive : pillInactive)}
+      >
+        All
+      </button>
+
       {/* S&P 500 */}
       <button
         onClick={() => onViewChange({ type: 'sp500' })}
