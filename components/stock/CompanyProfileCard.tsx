@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -60,6 +61,7 @@ function InfoRow({ icon: Icon, label, value }: { icon: React.ElementType; label:
 
 export function CompanyProfileCard({ ticker }: { ticker: string }) {
   const { i18n } = useTranslation();
+  const [descExpanded, setDescExpanded] = useState(false);
   const { data, isLoading } = useQuery<ProfileResponse>({
     queryKey: ['company-profile', ticker, i18n.language],
     queryFn: async () => {
@@ -108,9 +110,17 @@ export function CompanyProfileCard({ ticker }: { ticker: string }) {
 
         {/* Description */}
         {profile.description && (
-          <p className="text-sm text-muted-foreground leading-relaxed line-clamp-4">
-            {profile.description}
-          </p>
+          <div>
+            <p className={`text-sm text-muted-foreground leading-relaxed ${descExpanded ? '' : 'line-clamp-4'}`}>
+              {profile.description}
+            </p>
+            <button
+              onClick={() => setDescExpanded((v) => !v)}
+              className="mt-1.5 text-xs font-medium text-primary/70 hover:text-primary transition-colors"
+            >
+              {descExpanded ? 'Show less' : 'Show more'}
+            </button>
+          </div>
         )}
 
         {/* Key facts grid */}

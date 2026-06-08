@@ -71,6 +71,8 @@ export type LessonContent = z.infer<typeof LessonContentSchema>;
 
 // ─── Domain entities ────────────────────────────────────────────────────────
 
+export type CourseDifficulty = 'beginner' | 'intermediate' | 'advanced';
+
 export interface Course {
   id: string;
   slug: string;
@@ -79,6 +81,7 @@ export interface Course {
   icon: string;
   color: string;
   orderIndex: number;
+  difficulty: CourseDifficulty | null;
 }
 
 export interface Lesson {

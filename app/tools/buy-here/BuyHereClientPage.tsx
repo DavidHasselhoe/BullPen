@@ -14,6 +14,7 @@ import {
   convertCurrency,
   getCurrencySymbol,
 } from '@/lib/currency/currency-conversion';
+import { useUserSettings } from '@/hooks/use-user-settings';
 import { useExchangeRates } from '@/hooks/use-exchange-rates';
 import {
   AreaChart,
@@ -64,13 +65,48 @@ type BuyHereResult = {
   }>;
 };
 
-function makeCurrencyFormatter(symbol: string) {
-  return function fmtCurrency(usdValue: number): string {
-    if (usdValue >= 1e9) return `${symbol}${(usdValue / 1e9).toFixed(2)}B`;
-    if (usdValue >= 1e6) return `${symbol}${(usdValue / 1e6).toFixed(2)}M`;
-    if (usdValue >= 1e3) return `${symbol}${(usdValue / 1e3).toFixed(2)}K`;
-    return `${symbol}${usdValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  };
+/** Maps currency code → the locale that governs formatting conventions (symbol position, separators). */
+const CURRENCY_LOCALE: Partial<Record<CurrencyCode, string>> = {
+  USD: 'en-US', EUR: 'de-DE', GBP: 'en-GB',
+  NOK: 'nb-NO', SEK: 'sv-SE', DKK: 'da-DK',
+  JPY: 'ja-JP', CHF: 'de-CH', CAD: 'en-CA',
+  AUD: 'en-AU', NZD: 'en-NZ', CNY: 'zh-CN',
+  BRL: 'pt-BR', HKD: 'zh-HK', SGD: 'en-SG',
+  KRW: 'ko-KR', MXN: 'es-MX', INR: 'hi-IN',
+};
+
+/**
+ * Full locale-aware formatter for result cards.
+ * Respects symbol placement, thousands separator, and the "round numbers" preference.
+ * Never uses K/M/B abbreviations — shows the complete value.
+ *   NOK, roundNumbers=true  → "281 120 kr"
+ *   USD, roundNumbers=false → "$281,120.22"
+ */
+function makeFullFormatter(currency: CurrencyCode, roundNumbers: boolean) {
+  const locale = CURRENCY_LOCALE[currency] ?? 'en-US';
+  const d = roundNumbers ? 0 : 2;
+  return (value: number) =>
+    new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency,
+      minimumFractionDigits: d,
+      maximumFractionDigits: d,
+    }).format(value);
+}
+
+/**
+ * Compact formatter for chart Y-axis tick labels only (space is constrained).
+ * Uses the browser's compact notation (e.g. "281K", "1.2M") in the correct locale.
+ */
+function makeCompactFormatter(currency: CurrencyCode) {
+  const locale = CURRENCY_LOCALE[currency] ?? 'en-US';
+  return (value: number) =>
+    new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency,
+      notation: 'compact',
+      maximumSignificantDigits: 3,
+    }).format(value);
 }
 
 function formatPercent(value: number): string {
@@ -125,12 +161,14 @@ function BuyHereChart({
   stockReturn,
   hasSpy,
   fmtCurrency,
+  fmtChartAxis,
 }: {
   data: Array<{ date: string; stockValue: number; spyValue?: number }>;
   ticker: string;
   stockReturn: number;
   hasSpy: boolean;
   fmtCurrency: (v: number) => string;
+  fmtChartAxis: (v: number) => string;
 }) {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
@@ -185,11 +223,11 @@ function BuyHereChart({
             minTickGap={60}
           />
           <YAxis
-            tickFormatter={(v) => fmtCurrency(v)}
+            tickFormatter={(v) => fmtChartAxis(v)}
             tick={{ fontSize: 11, fill: tickColor }}
             axisLine={false}
             tickLine={false}
-            width={72}
+            width={80}
           />
           <Tooltip content={<ChartTooltip fmtCurrency={fmtCurrency} />} />
           <Area
@@ -223,6 +261,7 @@ function BuyHereChart({
 export default function BuyHereClientPage() {
   const { hasAnimatedBackground } = useBackground();
   const { user } = useAuth();
+  const { roundNumbers } = useUserSettings();
   const [selectedStock, setSelectedStock] = useState<SearchResult | null>(null);
   const [amount, setAmount] = useState('10,000');
   const [timeIndex, setTimeIndex] = useState<number | null>(2);
@@ -236,15 +275,19 @@ export default function BuyHereClientPage() {
 
   const { data: rates } = useExchangeRates(currency);
 
-  // Converts a USD value from the API into the user's display currency.
+  // Full formatter for result cards — locale-aware, no abbreviations, honours roundNumbers.
   const fmtCurrency = useMemo(() => {
-    if (currency === 'USD') return makeCurrencyFormatter('$');
-    const symbol = currencySymbol;
-    return (usdValue: number) => {
-      const converted = convertCurrency(usdValue, 'USD', currency, rates ?? null);
-      return makeCurrencyFormatter(symbol)(converted);
-    };
-  }, [currency, currencySymbol, rates]);
+    const fmt = makeFullFormatter(currency, roundNumbers);
+    if (currency === 'USD') return fmt;
+    return (usdValue: number) => fmt(convertCurrency(usdValue, 'USD', currency, rates ?? null));
+  }, [currency, roundNumbers, rates]);
+
+  // Compact formatter for chart Y-axis tick labels only (space-constrained).
+  const fmtChartAxis = useMemo(() => {
+    const fmt = makeCompactFormatter(currency);
+    if (currency === 'USD') return fmt;
+    return (usdValue: number) => fmt(convertCurrency(usdValue, 'USD', currency, rates ?? null));
+  }, [currency, rates]);
 
   useEffect(() => {
     try {
@@ -558,6 +601,7 @@ export default function BuyHereClientPage() {
                       stockReturn={result.stock.returnPct}
                       hasSpy={!!result.spy}
                       fmtCurrency={fmtCurrency}
+                      fmtChartAxis={fmtChartAxis}
                     />
                   )}
                 </div>

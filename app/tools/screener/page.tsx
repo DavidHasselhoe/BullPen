@@ -4,6 +4,7 @@ import { useState, useCallback, useMemo, useEffect, useRef, Suspense } from 'rea
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, keepPreviousData } from '@tanstack/react-query';
 import { useDebounce } from '@/hooks/use-debounce';
+import { cn } from '@/lib/utils';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -16,6 +17,7 @@ import {
 } from '@/components/screener/ScreenerFilters';
 import { ScreenerResults } from '@/components/screener/ScreenerResults';
 import { ScreenerViewBar, type ActiveView } from '@/components/screener/ScreenerViewBar';
+import { ScreenerSearchBar } from '@/components/screener/ScreenerSearchBar';
 import { ScreenerViewStockPicker } from '@/components/screener/ScreenerViewStockPicker';
 import { ColumnChooser } from '@/components/screener/ColumnChooser';
 import { useScreenerColumns } from '@/hooks/use-screener-columns';
@@ -92,6 +94,8 @@ function ScreenerContent() {
 
   const { data: customViews = [] } = useScreenerViews();
   const [activeView, setActiveView] = useState<ActiveView>({ type: 'sp500' });
+  // Ad-hoc "cherry pick" search — when non-empty, overrides the view and shows just these tickers.
+  const [pickedTickers, setPickedTickers] = useState<string[]>([]);
   const updateView = useUpdateScreenerView();
   const screenerColumns = useScreenerColumns();
 
@@ -123,8 +127,11 @@ function ScreenerContent() {
   const watchlistListId = activeView.type === 'watchlist' ? activeView.listId : null;
   const { data: listItems = [] } = useWatchlistItems(watchlistListId);
 
-  // Symbol allowlist based on active view
+  // Symbol allowlist based on active view.
+  // Picked tickers (the search bar) take precedence over the view — the user is
+  // cherry-picking an explicit set, so show exactly those.
   const symbolsFilter = useMemo((): string | null => {
+    if (pickedTickers.length > 0) return pickedTickers.join(',');
     if (activeView.type === 'sp500') return null;
     if (activeView.type === 'holdings') {
       const symbols = [...new Set(userHoldings.map((h) => h.symbol))];
@@ -140,15 +147,16 @@ function ScreenerContent() {
         : '__none__';
     }
     return null;
-  }, [activeView, userHoldings, allWatchlistItems, listItems, watchlistListId]);
+  }, [pickedTickers, activeView, userHoldings, allWatchlistItems, listItems, watchlistListId]);
 
   const qs = useMemo(
     () => buildQueryString(
       debouncedFilters,
       symbolsFilter === '__none__' ? null : symbolsFilter,
-      activeView.type === 'all' ? 'all' : undefined,
+      // scope=all only matters for the unfiltered "All" view, never when cherry-picking
+      pickedTickers.length === 0 && activeView.type === 'all' ? 'all' : undefined,
     ),
-    [debouncedFilters, symbolsFilter, activeView.type]
+    [debouncedFilters, symbolsFilter, activeView.type, pickedTickers.length]
   );
 
   const { data, isLoading, isFetching, refetch } = useQuery<{
@@ -182,20 +190,27 @@ function ScreenerContent() {
     }
   }, [activeView.type, data?.results]);
 
-  // If universe is empty (landed on custom view directly), fetch it silently
-  const needsUniverse = activeView.type === 'custom' && universeRef.current.length === 0;
-  useQuery({
+  // Ensure the company universe is loaded so the search bar can resolve names →
+  // tickers. The sp500/all views populate it from their own results; for every
+  // other view (holdings, watchlist, custom) fetch it silently once.
+  const needsUniverse =
+    universeRef.current.length === 0 &&
+    activeView.type !== 'sp500' &&
+    activeView.type !== 'all';
+  const { data: fetchedUniverse } = useQuery({
     queryKey: ['screener-universe'],
     queryFn: async () => {
-      const res = await fetch('/api/screener');
+      const res = await fetch('/api/screener?scope=all');
       if (!res.ok) throw new Error();
       const d = await res.json();
       universeRef.current = d.results ?? [];
-      return d.results as ScreenerRow[];
+      return (d.results ?? []) as ScreenerRow[];
     },
     enabled: needsUniverse,
     staleTime: 10 * 60 * 1000,
   });
+  // The search bar reads this so it re-renders when the universe arrives.
+  const universe = universeRef.current.length > 0 ? universeRef.current : (fetchedUniverse ?? []);
 
   const { mutate: triggerRefresh, isPending: isRefreshing } = useMutation({
     mutationFn: async (batch: number): Promise<{
@@ -356,20 +371,31 @@ function ScreenerContent() {
           </div>
         </div>
         <p className="text-sm text-muted-foreground">
-          {activeView.type === 'all'
-            ? `Every stock in BullPen's database — ${data?.total ?? '…'} tickers with live prices and fundamental data.`
-            : activeView.type === 'sp500'
-              ? 'Screen the full S&P 500 with live prices and fundamental data.'
-              : activeView.type === 'holdings'
-                ? `Screening your ${userHoldings.length} held position${userHoldings.length !== 1 ? 's' : ''}.`
-                : activeView.type === 'watchlist'
-                  ? 'Screening your watchlist.'
-                  : `Screening "${activeView.view.name}"`}
+          {pickedTickers.length > 0
+            ? `Comparing ${pickedTickers.length} cherry-picked stock${pickedTickers.length !== 1 ? 's' : ''}. Clear the search to return to your view.`
+            : activeView.type === 'all'
+              ? `Every stock in BullPen's database — ${data?.total ?? '…'} tickers with live prices and fundamental data.`
+              : activeView.type === 'sp500'
+                ? 'Screen the full S&P 500 with live prices and fundamental data.'
+                : activeView.type === 'holdings'
+                  ? `Screening your ${userHoldings.length} held position${userHoldings.length !== 1 ? 's' : ''}.`
+                  : activeView.type === 'watchlist'
+                    ? 'Screening your watchlist.'
+                    : `Screening "${activeView.view.name}"`}
         </p>
       </div>
 
-      {/* View bar */}
-      <div className="mb-5">
+      {/* Cherry-pick search */}
+      <div className="mb-3">
+        <ScreenerSearchBar
+          universe={universe}
+          value={pickedTickers}
+          onChange={(next) => { setPickedTickers(next); setPage(1); }}
+        />
+      </div>
+
+      {/* View bar — dimmed while cherry-picking since picks override the view */}
+      <div className={cn('mb-5 transition-opacity', pickedTickers.length > 0 && 'opacity-40 pointer-events-none')}>
         <ScreenerViewBar activeView={activeView} onViewChange={handleViewChange} />
       </div>
 

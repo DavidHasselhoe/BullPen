@@ -13,25 +13,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
-import { levelForXp } from '@/types/academy';
-import type { AcademyStats } from '@/types/academy';
+import { applyActivityAndXp } from '@/lib/academy/streak';
 
 const BodySchema = z.object({
   score: z.number().min(0).max(1).optional(),
 });
-
-function todayInET(): string {
-  // YYYY-MM-DD in America/New_York
-  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
-}
-
-function isoDateBefore(a: string, b: string): boolean {
-  return Date.parse(a) < Date.parse(b);
-}
-
-function daysBetween(earlier: string, later: string): number {
-  return Math.round((Date.parse(later) - Date.parse(earlier)) / 86_400_000);
-}
 
 async function handler(
   req: NextRequest,
@@ -116,64 +102,8 @@ async function handler(
       { onConflict: 'user_id,course_id' }
     );
 
-  // ── Stats: recompute XP + streak + level ─────────────────────────────────
-  const { data: statsRow } = await supabase
-    .from('academy_user_stats')
-    .select('total_xp, current_streak, longest_streak, last_activity_date')
-    .eq('user_id', session.userId)
-    .maybeSingle<{
-      total_xp: number;
-      current_streak: number;
-      longest_streak: number;
-      last_activity_date: string | null;
-    }>();
-
-  const today = todayInET();
-  const prevXp = statsRow?.total_xp ?? 0;
-  const prevStreak = statsRow?.current_streak ?? 0;
-  const prevLongest = statsRow?.longest_streak ?? 0;
-  const prevLastActive = statsRow?.last_activity_date ?? null;
-
-  // Streak logic — only applies when this completion changes activity for today
-  let currentStreak = prevStreak;
-  let lastActivityDate = prevLastActive;
-
-  if (prevLastActive !== today) {
-    if (prevLastActive === null) {
-      currentStreak = 1;
-    } else if (daysBetween(prevLastActive, today) === 1) {
-      currentStreak = prevStreak + 1; // consecutive day
-    } else if (isoDateBefore(prevLastActive, today)) {
-      currentStreak = 1; // gap broke the streak
-    }
-    lastActivityDate = today;
-  }
-
-  const totalXp = prevXp + xpAwarded;
-  const longestStreak = Math.max(prevLongest, currentStreak);
-  const level = levelForXp(totalXp);
-
-  await db
-    .from('academy_user_stats')
-    .upsert(
-      {
-        user_id: session.userId,
-        total_xp: totalXp,
-        current_streak: currentStreak,
-        longest_streak: longestStreak,
-        last_activity_date: lastActivityDate,
-        level,
-      },
-      { onConflict: 'user_id' }
-    );
-
-  const stats: AcademyStats = {
-    totalXp,
-    currentStreak,
-    longestStreak,
-    lastActivityDate,
-    level,
-  };
+  // ── Stats: recompute XP + streak + level (shared with the daily challenge) ──
+  const stats = await applyActivityAndXp({ supabase: db, userId: session.userId, xpToAdd: xpAwarded });
 
   return addSecurityHeaders(
     NextResponse.json({

@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { Bell, TrendingUp, TrendingDown, BarChart2, Sparkles } from 'lucide-react';
+import { TrendingUp, TrendingDown, BarChart2, Sparkles, Bell } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { CompanyLogo } from '@/components/company/CompanyLogo';
 import type { Notification } from '@/lib/notifications/notifications-db';
 
 function formatRelativeTime(dateString: string): string {
@@ -19,16 +20,75 @@ function formatRelativeTime(dateString: string): string {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-function NotifIcon({ type, severity }: { type: Notification['type']; severity: Notification['severity'] }) {
-  const base = 'h-4 w-4 shrink-0';
-  if (type === 'price_move') {
-    return severity === 'warning' || severity === 'critical'
-      ? <TrendingDown className={cn(base, 'text-red-400')} />
-      : <TrendingUp className={cn(base, 'text-emerald-400')} />;
+/** Extract ticker symbols from a price-move message like "AVGO +12.6%, MU -7.7%" */
+function parseTickersFromMessage(message: string): string[] {
+  const matches = message.match(/\b([A-Z]{1,5})(?:\/[A-Z]{1,5})?\s[+-]/g) ?? [];
+  return matches.map((m) => m.trim().split(/\s/)[0] ?? '').filter(Boolean).slice(0, 5);
+}
+
+/** Stacked company logo strip — up to 4 logos overlapping like an avatar group. */
+function LogoStrip({ tickers, isGain }: { tickers: string[]; isGain: boolean }) {
+  if (tickers.length === 0) {
+    return (
+      <div className={cn(
+        'h-7 w-7 shrink-0 rounded-lg flex items-center justify-center',
+        isGain ? 'bg-emerald-500/10' : 'bg-red-500/10',
+      )}>
+        {isGain
+          ? <TrendingUp className="h-4 w-4 text-emerald-400" />
+          : <TrendingDown className="h-4 w-4 text-red-400" />}
+      </div>
+    );
   }
-  if (type === 'earnings') return <BarChart2 className={cn(base, 'text-blue-400')} />;
-  if (type === 'ai_insight') return <Sparkles className={cn(base, 'text-violet-400')} />;
-  return <Bell className={cn(base, 'text-muted-foreground/60')} />;
+
+  const shown = tickers.slice(0, 4);
+  const LOGO_SIZE = 22;
+  const OVERLAP = 8;
+  const totalWidth = LOGO_SIZE + (shown.length - 1) * (LOGO_SIZE - OVERLAP);
+
+  return (
+    <div
+      className="relative shrink-0 self-start mt-0.5"
+      style={{ width: totalWidth, height: LOGO_SIZE }}
+    >
+      {shown.map((ticker, i) => (
+        <div
+          key={ticker}
+          className="absolute rounded-full ring-2 ring-background overflow-hidden"
+          style={{
+            left: i * (LOGO_SIZE - OVERLAP),
+            zIndex: shown.length - i,
+            width: LOGO_SIZE,
+            height: LOGO_SIZE,
+          }}
+        >
+          <CompanyLogo name={ticker} ticker={ticker} logoUrl={null} size={LOGO_SIZE} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function GenericIcon({ type, severity }: { type: Notification['type']; severity: Notification['severity'] }) {
+  const base = 'h-4 w-4 shrink-0';
+  if (type === 'earnings') return (
+    <div className="mt-0.5 h-7 w-7 shrink-0 rounded-lg bg-blue-500/10 flex items-center justify-center">
+      <BarChart2 className={cn(base, 'text-blue-400')} />
+    </div>
+  );
+  if (type === 'ai_insight') return (
+    <div className="mt-0.5 h-7 w-7 shrink-0 rounded-lg bg-violet-500/10 flex items-center justify-center">
+      <Sparkles className={cn(base, 'text-violet-400')} />
+    </div>
+  );
+  const isDown = severity === 'warning' || severity === 'critical';
+  return (
+    <div className={cn('mt-0.5 h-7 w-7 shrink-0 rounded-lg flex items-center justify-center', isDown ? 'bg-red-500/10' : 'bg-emerald-500/10')}>
+      {isDown
+        ? <TrendingDown className={cn(base, 'text-red-400')} />
+        : <Bell className={cn(base, 'text-muted-foreground/60')} />}
+    </div>
+  );
 }
 
 interface NotificationItemProps {
@@ -43,10 +103,30 @@ export function NotificationItem({ notification, onMarkRead }: NotificationItemP
 
   const stockHref =
     notification.entity_type === 'stock' && notification.entity_id
-      ? `/stock/${notification.entity_id}`
+      ? `/stock/${notification.entity_id.replace(/:.*$/, '')}`
       : notification.entity_type === 'portfolio'
         ? '/holdings'
         : null;
+
+  // For price_move digest/portfolio notifications, show stacked logos from the message.
+  // For single-stock price_move, show a logo for that one ticker.
+  const isPriceMove = notification.type === 'price_move';
+  const isDigest = notification.entity_type === 'portfolio';
+  const isGain = !notification.entity_id?.includes('loss') &&
+    (notification.severity !== 'warning' && notification.severity !== 'critical') &&
+    !notification.title.toLowerCase().includes('down');
+
+  let logoTickers: string[] = [];
+  if (isPriceMove && isDigest) {
+    logoTickers = parseTickersFromMessage(notification.message ?? '');
+  } else if (isPriceMove && notification.entity_type === 'stock') {
+    const sym = notification.entity_id?.split(':')[0];
+    if (sym) logoTickers = [sym];
+  }
+
+  const iconEl = isPriceMove && logoTickers.length > 0
+    ? <LogoStrip tickers={logoTickers} isGain={isGain} />
+    : <GenericIcon type={notification.type} severity={notification.severity} />;
 
   const inner = (
     <div
@@ -56,19 +136,7 @@ export function NotificationItem({ notification, onMarkRead }: NotificationItemP
       )}
       onClick={handleClick}
     >
-      {/* Icon */}
-      <div className={cn(
-        'mt-0.5 h-7 w-7 shrink-0 rounded-lg flex items-center justify-center',
-        notification.type === 'price_move'
-          ? (notification.severity === 'warning' || notification.severity === 'critical' ? 'bg-red-500/10' : 'bg-emerald-500/10')
-          : notification.type === 'earnings'
-            ? 'bg-blue-500/10'
-            : notification.type === 'ai_insight'
-              ? 'bg-violet-500/10'
-              : 'bg-muted'
-      )}>
-        <NotifIcon type={notification.type} severity={notification.severity} />
-      </div>
+      {iconEl}
 
       {/* Body */}
       <div className="flex-1 min-w-0 space-y-0.5">
@@ -97,7 +165,7 @@ export function NotificationItem({ notification, onMarkRead }: NotificationItemP
               onClick={(e) => e.stopPropagation()}
               className="text-[10px] font-medium text-primary/70 hover:text-primary transition-colors"
             >
-              View stock →
+              {isDigest ? 'View holdings →' : 'View stock →'}
             </Link>
             <Link
               href="/tools/alerts"
@@ -121,7 +189,6 @@ export function NotificationItem({ notification, onMarkRead }: NotificationItemP
     </div>
   );
 
-  // Wrap in a Link only for non-price_move types (price_move has its own sub-links)
   if (stockHref && notification.type !== 'price_move' && notification.type !== 'earnings') {
     return <Link href={stockHref}>{inner}</Link>;
   }

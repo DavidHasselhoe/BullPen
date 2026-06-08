@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import { GraduationCap } from 'lucide-react';
 import { CourseCard } from '@/components/academy/CourseCard';
+import { DailyChallengeCard } from '@/components/academy/DailyChallengeCard';
 import { useAcademyCourses } from '@/hooks/use-user-progress';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -23,6 +24,9 @@ export default function AcademyHomePage() {
           </p>
         </div>
       </div>
+
+      {/* Daily challenge */}
+      <DailyChallengeCard />
 
       {/* Course grid */}
       {isLoading ? (

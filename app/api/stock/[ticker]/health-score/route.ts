@@ -13,6 +13,7 @@ import {
 } from '@/lib/twelvedata/twelvedata-client';
 import { getCached, setCached } from '@/lib/cache/market-data-cache';
 import { computeHealthScore } from '@/lib/finance/health-score';
+import { createServerClient } from '@/lib/supabase/client';
 
 const STATS_TTL = 60 * 60;        // 1 hour — matches /statistics route
 const FINANCIALS_TTL = 24 * 60 * 60; // 24 hours — matches /financials route
@@ -67,6 +68,16 @@ async function handler(
     if (cashflow.length) void setCached(`financials:${symbol}:cashflow:quarterly`, symbol, 'financials', cashflow, FINANCIALS_TTL).catch(() => {});
 
     const healthScore = computeHealthScore(stats, income ?? [], balance ?? [], cashflow ?? []);
+
+    // Keep screener_stats in sync — fire-and-forget so it never delays the response.
+    // This ensures the screener always reflects the same score the stock page shows.
+    void createServerClient()
+      .from('screener_stats')
+      .update({ health_score: healthScore.score, health_score_grade: healthScore.grade })
+      .eq('ticker', symbol)
+      .then(({ error }) => {
+        if (error) console.warn('[health-score] screener_stats sync failed:', error.message);
+      });
 
     return addSecurityHeaders(
       NextResponse.json(

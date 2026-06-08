@@ -89,35 +89,64 @@ export async function createPriceMoveNotification(
 }
 
 /**
- * Create a single grouped notification when 3+ tracked stocks moved significantly.
- * Lists top movers by absolute change percent in the message.
+ * Create grouped notifications when 3+ tracked stocks moved significantly.
+ * Gainers and losers are split into separate notifications so the direction
+ * is always unambiguous. Returns true if at least one notification was created.
  */
 export async function createPriceMoveDigestNotification(
   userId: string,
   movers: PriceMover[]
 ): Promise<boolean> {
-  const dedupeId = 'portfolio:price_digest';
-  if (await alreadyNotifiedToday(userId, 'price_move', dedupeId)) return false;
+  const gainers = movers.filter((m) => m.changePercent > 0)
+    .sort((a, b) => b.changePercent - a.changePercent);
+  const losers  = movers.filter((m) => m.changePercent <= 0)
+    .sort((a, b) => a.changePercent - b.changePercent);
 
-  const count = movers.length;
-  const topMovers = movers
-    .sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent))
-    .slice(0, 5)
-    .map((m) => `${m.symbol} ${m.changePercent > 0 ? '+' : ''}${m.changePercent.toFixed(1)}%`)
-    .join(', ');
+  let created = false;
 
-  const input: CreateNotificationInput = {
-    user_id: userId,
-    type: 'price_move',
-    title: `${count} tracked stocks moved 5%+ today`,
-    message: topMovers,
-    entity_type: 'portfolio',
-    entity_id: dedupeId,
-    severity: 'info',
-  };
+  if (gainers.length > 0) {
+    const dedupeId = 'portfolio:price_digest_gain';
+    if (!(await alreadyNotifiedToday(userId, 'price_move', dedupeId))) {
+      const topList = gainers
+        .slice(0, 5)
+        .map((m) => `${m.symbol} +${m.changePercent.toFixed(1)}%`)
+        .join(', ');
+      const suffix = gainers.length > 5 ? ` +${gainers.length - 5} more` : '';
+      const result = await createNotification({
+        user_id: userId,
+        type: 'price_move',
+        title: `${gainers.length} tracked stock${gainers.length === 1 ? '' : 's'} up 5%+ today`,
+        message: topList + suffix,
+        entity_type: 'portfolio',
+        entity_id: dedupeId,
+        severity: 'info',
+      });
+      if (result.success) created = true;
+    }
+  }
 
-  const result = await createNotification(input);
-  return result.success;
+  if (losers.length > 0) {
+    const dedupeId = 'portfolio:price_digest_loss';
+    if (!(await alreadyNotifiedToday(userId, 'price_move', dedupeId))) {
+      const topList = losers
+        .slice(0, 5)
+        .map((m) => `${m.symbol} ${m.changePercent.toFixed(1)}%`)
+        .join(', ');
+      const suffix = losers.length > 5 ? ` +${losers.length - 5} more` : '';
+      const result = await createNotification({
+        user_id: userId,
+        type: 'price_move',
+        title: `${losers.length} tracked stock${losers.length === 1 ? '' : 's'} down 5%+ today`,
+        message: topList + suffix,
+        entity_type: 'portfolio',
+        entity_id: dedupeId,
+        severity: losers.some((m) => Math.abs(m.changePercent) >= 10) ? 'warning' : 'info',
+      });
+      if (result.success) created = true;
+    }
+  }
+
+  return created;
 }
 
 // ─── User-defined alert notifications ────────────────────────────────────────

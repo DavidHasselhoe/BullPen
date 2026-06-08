@@ -89,8 +89,20 @@ export function CourseCard({ course }: Props) {
       <p className="text-sm text-muted-foreground/70 leading-relaxed line-clamp-3">
         {course.description}
       </p>
-      <div className="mt-3 text-[10px] font-mono uppercase tracking-[0.15em] text-muted-foreground/50">
-        {course.completedLessons}/{course.totalLessons} lessons
+      <div className="mt-3 flex items-center gap-2">
+        {course.difficulty && (
+          <span className={cn(
+            'text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded',
+            course.difficulty === 'beginner' && 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+            course.difficulty === 'intermediate' && 'bg-amber-400/10 text-amber-500',
+            course.difficulty === 'advanced' && 'bg-red-500/10 text-red-500',
+          )}>
+            {course.difficulty}
+          </span>
+        )}
+        <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-muted-foreground/50">
+          {course.completedLessons}/{course.totalLessons} lessons
+        </span>
       </div>
     </motion.div>
   );

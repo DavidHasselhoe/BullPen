@@ -17,6 +17,7 @@ interface CourseRow {
   icon: string | null;
   color: string | null;
   order_index: number;
+  difficulty: 'beginner' | 'intermediate' | 'advanced' | null;
 }
 
 async function handler(
@@ -29,7 +30,7 @@ async function handler(
   const [coursesRes, lessonsRes, lessonProgressRes, courseProgressRes] = await Promise.all([
     supabase
       .from('academy_courses')
-      .select('id, slug, title, description, icon, color, order_index')
+      .select('id, slug, title, description, icon, color, order_index, difficulty')
       .eq('is_published', true)
       .order('order_index'),
     supabase
@@ -83,6 +84,7 @@ async function handler(
       icon: c.icon ?? 'BookOpen',
       color: c.color ?? 'emerald',
       orderIndex: c.order_index,
+      difficulty: c.difficulty,
       totalLessons: total,
       completedLessons: done,
       percentComplete,

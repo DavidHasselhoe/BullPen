@@ -16,6 +16,7 @@ interface CourseRow {
   icon: string | null;
   color: string | null;
   order_index: number;
+  difficulty: 'beginner' | 'intermediate' | 'advanced' | null;
 }
 
 interface LessonRow {
@@ -39,7 +40,7 @@ async function handler(
 
   const { data: course } = await supabase
     .from('academy_courses')
-    .select('id, slug, title, description, icon, color, order_index')
+    .select('id, slug, title, description, icon, color, order_index, difficulty')
     .eq('slug', slug)
     .eq('is_published', true)
     .maybeSingle<CourseRow>();
@@ -93,6 +94,7 @@ async function handler(
     icon: course.icon ?? 'BookOpen',
     color: course.color ?? 'emerald',
     orderIndex: course.order_index,
+    difficulty: course.difficulty,
   };
 
   return addSecurityHeaders(
