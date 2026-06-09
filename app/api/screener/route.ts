@@ -3,6 +3,7 @@ import { createServerClient } from '@/lib/supabase/client';
 import { withRateLimit } from '@/lib/security/api-security';
 import { fetchAndUpsertScreenerStats } from '@/lib/market-data/screener-stats';
 import { TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
+import { SP500_TICKERS } from '@/lib/market-data/sp500';
 
 export const dynamic = 'force-dynamic';
 
@@ -67,8 +68,13 @@ async function handler(request: NextRequest) {
     ? new Set(symbolsParam.split(',').map((s) => s.trim().toUpperCase()).filter(Boolean))
     : null;
 
-  // scope=all: bypass the tier-1 filter and return all rows in screener_stats
-  const scopeAll = sp.get('scope') === 'all';
+  // scope controls which slice of screener_stats the default (non-symbol) view returns:
+  //   'all'    → every cached row (the full tracked universe)
+  //   'sp500'  → only the real S&P 500 constituents (SP500_TICKERS)
+  //   (none)   → the tier-1 actively-tracked universe via screener_active_rows()
+  const scope = sp.get('scope');
+  const scopeAll = scope === 'all';
+  const scopeSp500 = scope === 'sp500';
 
   // --- Parse filter params ---
   const sector = sp.get('sector') || undefined;
@@ -101,6 +107,17 @@ async function handler(request: NextRequest) {
       .from('screener_stats')
       .select('*')
       .in('ticker', [...symbolAllowlist])
+      .order('market_cap', { ascending: false, nullsFirst: false });
+    if (error) {
+      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    }
+    baseRows = (data ?? []) as ScreenerRow[];
+  } else if (scopeSp500) {
+    // "S&P 500" view — only the real index constituents (committee-curated list).
+    const { data, error } = await supabase
+      .from('screener_stats')
+      .select('*')
+      .in('ticker', SP500_TICKERS)
       .order('market_cap', { ascending: false, nullsFirst: false });
     if (error) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });

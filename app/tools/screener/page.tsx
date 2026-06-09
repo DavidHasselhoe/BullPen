@@ -153,8 +153,14 @@ function ScreenerContent() {
     () => buildQueryString(
       debouncedFilters,
       symbolsFilter === '__none__' ? null : symbolsFilter,
-      // scope=all only matters for the unfiltered "All" view, never when cherry-picking
-      pickedTickers.length === 0 && activeView.type === 'all' ? 'all' : undefined,
+      // Scope only applies to the unfiltered list views, never when cherry-picking.
+      pickedTickers.length > 0
+        ? undefined
+        : activeView.type === 'all'
+          ? 'all'
+          : activeView.type === 'sp500'
+            ? 'sp500'
+            : undefined,
     ),
     [debouncedFilters, symbolsFilter, activeView.type, pickedTickers.length]
   );

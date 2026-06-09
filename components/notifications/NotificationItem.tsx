@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { TrendingUp, TrendingDown, BarChart2, Sparkles, Bell } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, BarChart2, Sparkles, Bell } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import type { Notification } from '@/lib/notifications/notifications-db';
@@ -20,75 +20,118 @@ function formatRelativeTime(dateString: string): string {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-/** Extract ticker symbols from a price-move message like "AVGO +12.6%, MU -7.7%" */
+/** Extract ticker symbols from a digest message like "AVGO +12.6%, MU -7.7%". */
 function parseTickersFromMessage(message: string): string[] {
   const matches = message.match(/\b([A-Z]{1,5})(?:\/[A-Z]{1,5})?\s[+-]/g) ?? [];
   return matches.map((m) => m.trim().split(/\s/)[0] ?? '').filter(Boolean).slice(0, 5);
 }
 
-/** Stacked company logo strip — up to 4 logos overlapping like an avatar group. */
-function LogoStrip({ tickers, isGain }: { tickers: string[]; isGain: boolean }) {
-  if (tickers.length === 0) {
-    return (
-      <div className={cn(
-        'h-7 w-7 shrink-0 rounded-lg flex items-center justify-center',
-        isGain ? 'bg-emerald-500/10' : 'bg-red-500/10',
-      )}>
-        {isGain
-          ? <TrendingUp className="h-4 w-4 text-emerald-400" />
-          : <TrendingDown className="h-4 w-4 text-red-400" />}
-      </div>
-    );
-  }
+/** Leading ticker from a title like "MU moved +9.9% today" or "AAPL hit $150". */
+function leadingTicker(title: string): string | null {
+  return title.match(/^([A-Z]{1,6}(?:\/[A-Z]{1,6})?)\b/)?.[1] ?? null;
+}
 
-  const shown = tickers.slice(0, 4);
-  const LOGO_SIZE = 22;
-  const OVERLAP = 8;
-  const totalWidth = LOGO_SIZE + (shown.length - 1) * (LOGO_SIZE - OVERLAP);
+type Direction = 'up' | 'down' | null;
 
+/**
+ * Direction of a price-move notification, read from the REAL data — never from
+ * severity (severity reflects magnitude, so a big +9.9% gain is "warning" too).
+ */
+function moveDirection(n: Notification): Direction {
+  if (n.type !== 'price_move') return null;
+  if (n.entity_id?.includes('digest_gain')) return 'up';
+  if (n.entity_id?.includes('digest_loss')) return 'down';
+  const m = n.title.match(/(-?\d+(?:\.\d+)?)\s*%/);  // "+9.9%" → up, "-7.7%" → down
+  if (m) return parseFloat(m[1]) < 0 ? 'down' : 'up';
+  return null;
+}
+
+/** Small colored corner badge showing move direction. Parent must be `relative`. */
+function DirectionBadge({ direction }: { direction: Direction }) {
+  if (!direction) return null;
+  const up = direction === 'up';
   return (
-    <div
-      className="relative shrink-0 self-start mt-0.5"
-      style={{ width: totalWidth, height: LOGO_SIZE }}
-    >
-      {shown.map((ticker, i) => (
-        <div
-          key={ticker}
-          className="absolute rounded-full ring-2 ring-background overflow-hidden"
-          style={{
-            left: i * (LOGO_SIZE - OVERLAP),
-            zIndex: shown.length - i,
-            width: LOGO_SIZE,
-            height: LOGO_SIZE,
-          }}
-        >
-          <CompanyLogo name={ticker} ticker={ticker} logoUrl={null} size={LOGO_SIZE} />
-        </div>
-      ))}
+    <span className={cn(
+      'absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full ring-2 ring-background',
+      up ? 'bg-emerald-500' : 'bg-red-500',
+    )}>
+      {up
+        ? <ArrowUpRight className="h-2.5 w-2.5 text-white" />
+        : <ArrowDownRight className="h-2.5 w-2.5 text-white" />}
+    </span>
+  );
+}
+
+/** Single company logo + direction badge — the icon for a one-stock notification. */
+function MoveLogo({ ticker, direction }: { ticker: string; direction: Direction }) {
+  return (
+    <div className="relative mt-0.5 shrink-0">
+      <CompanyLogo ticker={ticker} name={ticker} logoUrl={null} size={34} className="rounded-lg" />
+      <DirectionBadge direction={direction} />
     </div>
   );
 }
 
-function GenericIcon({ type, severity }: { type: Notification['type']; severity: Notification['severity'] }) {
+/** Overlapping logo stack for a multi-stock digest, with one direction badge. */
+function LogoStack({ tickers, direction }: { tickers: string[]; direction: Direction }) {
+  const shown = tickers.slice(0, 4);
+  const SIZE = 30;
+  const OVERLAP = 10;
+  const width = SIZE + (shown.length - 1) * (SIZE - OVERLAP);
+  return (
+    <div className="relative mt-0.5 shrink-0" style={{ width, height: SIZE }}>
+      {shown.map((ticker, i) => (
+        <div
+          key={ticker}
+          className="absolute overflow-hidden rounded-full ring-2 ring-background"
+          style={{ left: i * (SIZE - OVERLAP), zIndex: shown.length - i, width: SIZE, height: SIZE }}
+        >
+          <CompanyLogo ticker={ticker} name={ticker} logoUrl={null} size={SIZE} />
+        </div>
+      ))}
+      <DirectionBadge direction={direction} />
+    </div>
+  );
+}
+
+/** Icon for non-stock notifications (earnings, AI) or a neutral fallback. */
+function GenericIcon({ type }: { type: Notification['type'] }) {
   const base = 'h-4 w-4 shrink-0';
   if (type === 'earnings') return (
-    <div className="mt-0.5 h-7 w-7 shrink-0 rounded-lg bg-blue-500/10 flex items-center justify-center">
+    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-500/10">
       <BarChart2 className={cn(base, 'text-blue-400')} />
     </div>
   );
   if (type === 'ai_insight') return (
-    <div className="mt-0.5 h-7 w-7 shrink-0 rounded-lg bg-violet-500/10 flex items-center justify-center">
+    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/10">
       <Sparkles className={cn(base, 'text-violet-400')} />
     </div>
   );
-  const isDown = severity === 'warning' || severity === 'critical';
   return (
-    <div className={cn('mt-0.5 h-7 w-7 shrink-0 rounded-lg flex items-center justify-center', isDown ? 'bg-red-500/10' : 'bg-emerald-500/10')}>
-      {isDown
-        ? <TrendingDown className={cn(base, 'text-red-400')} />
-        : <Bell className={cn(base, 'text-muted-foreground/60')} />}
+    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted">
+      <Bell className={cn(base, 'text-muted-foreground/60')} />
     </div>
   );
+}
+
+/** Choose the icon: company logo(s) for stock moves, themed glyph otherwise. */
+function NotificationIcon({ n }: { n: Notification }) {
+  const direction = moveDirection(n);
+
+  if (n.type === 'price_move' && n.entity_type === 'portfolio') {
+    const tickers = parseTickersFromMessage(n.message ?? '');
+    return tickers.length > 0
+      ? <LogoStack tickers={tickers} direction={direction} />
+      : <GenericIcon type={n.type} />;
+  }
+
+  if (n.type === 'price_move') {
+    // Single stock — symbol from entity_id (price moves) or the title (user alerts).
+    const sym = n.entity_type === 'stock' ? n.entity_id?.split(':')[0] : leadingTicker(n.title);
+    return sym ? <MoveLogo ticker={sym} direction={direction} /> : <GenericIcon type={n.type} />;
+  }
+
+  return <GenericIcon type={n.type} />;
 }
 
 interface NotificationItemProps {
@@ -108,25 +151,8 @@ export function NotificationItem({ notification, onMarkRead }: NotificationItemP
         ? '/holdings'
         : null;
 
-  // For price_move digest/portfolio notifications, show stacked logos from the message.
-  // For single-stock price_move, show a logo for that one ticker.
-  const isPriceMove = notification.type === 'price_move';
   const isDigest = notification.entity_type === 'portfolio';
-  const isGain = !notification.entity_id?.includes('loss') &&
-    (notification.severity !== 'warning' && notification.severity !== 'critical') &&
-    !notification.title.toLowerCase().includes('down');
-
-  let logoTickers: string[] = [];
-  if (isPriceMove && isDigest) {
-    logoTickers = parseTickersFromMessage(notification.message ?? '');
-  } else if (isPriceMove && notification.entity_type === 'stock') {
-    const sym = notification.entity_id?.split(':')[0];
-    if (sym) logoTickers = [sym];
-  }
-
-  const iconEl = isPriceMove && logoTickers.length > 0
-    ? <LogoStrip tickers={logoTickers} isGain={isGain} />
-    : <GenericIcon type={notification.type} severity={notification.severity} />;
+  const iconEl = <NotificationIcon n={notification} />;
 
   const inner = (
     <div
