@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowUpRight, ArrowDownRight, BarChart2, Sparkles, Bell } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, BarChart2, Sparkles, Bell, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import type { Notification } from '@/lib/notifications/notifications-db';
@@ -52,7 +52,7 @@ function DirectionBadge({ direction }: { direction: Direction }) {
   const up = direction === 'up';
   return (
     <span className={cn(
-      'absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full ring-2 ring-background',
+      'absolute -bottom-1 -right-1 z-10 flex h-4 w-4 items-center justify-center rounded-full ring-2 ring-background',
       up ? 'bg-emerald-500' : 'bg-red-500',
     )}>
       {up
@@ -134,37 +134,45 @@ function NotificationIcon({ n }: { n: Notification }) {
   return <GenericIcon type={n.type} />;
 }
 
+/**
+ * Where a notification "came from" — the place clicking the card navigates to,
+ * plus a short label shown on the card.
+ *
+ * Note: price moves on a single held/watched stock aren't tagged with their
+ * origin (holdings vs a specific watchlist) in the DB, so those link to the
+ * stock itself — unambiguously what the notification is about.
+ */
+function notificationSource(n: Notification): { label: string; href: string } | null {
+  // entity_type is typed narrower than runtime — the alert cron writes 'user_alert'.
+  const et = n.entity_type as string | null;
+  const sym = et === 'stock' && n.entity_id ? n.entity_id.replace(/:.*$/, '') : null;
+  if (et === 'portfolio') return { label: 'My holdings', href: '/holdings' };
+  if (et === 'user_alert') return { label: 'Price alerts', href: '/tools/alerts' };
+  if (sym) return { label: sym, href: `/stock/${sym}` };
+  return null;
+}
+
 interface NotificationItemProps {
   notification: Notification;
   onMarkRead: (notificationId: string) => void;
 }
 
 export function NotificationItem({ notification, onMarkRead }: NotificationItemProps) {
+  const source = notificationSource(notification);
   const handleClick = () => {
     if (!notification.is_read) onMarkRead(notification.id);
   };
 
-  const stockHref =
-    notification.entity_type === 'stock' && notification.entity_id
-      ? `/stock/${notification.entity_id.replace(/:.*$/, '')}`
-      : notification.entity_type === 'portfolio'
-        ? '/holdings'
-        : null;
-
-  const isDigest = notification.entity_type === 'portfolio';
-  const iconEl = <NotificationIcon n={notification} />;
-
-  const inner = (
+  const body = (
     <div
       className={cn(
-        'flex items-start gap-3 px-4 py-3 transition-colors hover:bg-muted/40 cursor-pointer',
+        'flex items-start gap-3 px-4 py-3 transition-colors hover:bg-muted/40',
+        source && 'cursor-pointer',
         !notification.is_read && 'bg-primary/[0.04]'
       )}
-      onClick={handleClick}
     >
-      {iconEl}
+      <NotificationIcon n={notification} />
 
-      {/* Body */}
       <div className="flex-1 min-w-0 space-y-0.5">
         <div className="flex items-start justify-between gap-2">
           <p className={cn(
@@ -183,41 +191,20 @@ export function NotificationItem({ notification, onMarkRead }: NotificationItemP
         <p className="text-[11px] text-muted-foreground/70 leading-snug line-clamp-2">
           {notification.message}
         </p>
-        {/* Contextual footer links */}
-        {notification.type === 'price_move' && stockHref && (
-          <div className="flex items-center gap-3 pt-1">
-            <Link
-              href={stockHref}
-              onClick={(e) => e.stopPropagation()}
-              className="text-[10px] font-medium text-primary/70 hover:text-primary transition-colors"
-            >
-              {isDigest ? 'View holdings →' : 'View stock →'}
-            </Link>
-            <Link
-              href="/tools/alerts"
-              onClick={(e) => e.stopPropagation()}
-              className="text-[10px] font-medium text-muted-foreground/50 hover:text-foreground transition-colors"
-            >
-              Manage alerts
-            </Link>
-          </div>
-        )}
-        {notification.type === 'earnings' && stockHref && (
-          <Link
-            href={stockHref}
-            onClick={(e) => e.stopPropagation()}
-            className="block pt-1 text-[10px] font-medium text-primary/70 hover:text-primary transition-colors"
-          >
-            View earnings →
-          </Link>
+        {/* Source label — where this notification came from / where the card leads. */}
+        {source && (
+          <span className="inline-flex items-center gap-0.5 pt-0.5 text-[10px] font-medium text-muted-foreground/45">
+            {source.label}
+            <ChevronRight className="h-2.5 w-2.5" />
+          </span>
         )}
       </div>
     </div>
   );
 
-  if (stockHref && notification.type !== 'price_move' && notification.type !== 'earnings') {
-    return <Link href={stockHref}>{inner}</Link>;
+  // The whole card navigates to its source; clicking also marks it read.
+  if (source) {
+    return <Link href={source.href} onClick={handleClick} className="block">{body}</Link>;
   }
-
-  return inner;
+  return <div onClick={handleClick}>{body}</div>;
 }

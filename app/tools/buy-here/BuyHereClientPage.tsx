@@ -16,6 +16,7 @@ import {
 } from '@/lib/currency/currency-conversion';
 import { useUserSettings } from '@/hooks/use-user-settings';
 import { useExchangeRates } from '@/hooks/use-exchange-rates';
+import { makeFullFormatter, makeCompactFormatter } from '@/lib/currency/format';
 import {
   AreaChart,
   Area,
@@ -65,50 +66,6 @@ type BuyHereResult = {
   }>;
 };
 
-/** Maps currency code → the locale that governs formatting conventions (symbol position, separators). */
-const CURRENCY_LOCALE: Partial<Record<CurrencyCode, string>> = {
-  USD: 'en-US', EUR: 'de-DE', GBP: 'en-GB',
-  NOK: 'nb-NO', SEK: 'sv-SE', DKK: 'da-DK',
-  JPY: 'ja-JP', CHF: 'de-CH', CAD: 'en-CA',
-  AUD: 'en-AU', NZD: 'en-NZ', CNY: 'zh-CN',
-  BRL: 'pt-BR', HKD: 'zh-HK', SGD: 'en-SG',
-  KRW: 'ko-KR', MXN: 'es-MX', INR: 'hi-IN',
-};
-
-/**
- * Full locale-aware formatter for result cards.
- * Respects symbol placement, thousands separator, and the "round numbers" preference.
- * Never uses K/M/B abbreviations — shows the complete value.
- *   NOK, roundNumbers=true  → "281 120 kr"
- *   USD, roundNumbers=false → "$281,120.22"
- */
-function makeFullFormatter(currency: CurrencyCode, roundNumbers: boolean) {
-  const locale = CURRENCY_LOCALE[currency] ?? 'en-US';
-  const d = roundNumbers ? 0 : 2;
-  return (value: number) =>
-    new Intl.NumberFormat(locale, {
-      style: 'currency',
-      currency,
-      minimumFractionDigits: d,
-      maximumFractionDigits: d,
-    }).format(value);
-}
-
-/**
- * Compact formatter for chart Y-axis tick labels only (space is constrained).
- * Uses the browser's compact notation (e.g. "281K", "1.2M") in the correct locale.
- */
-function makeCompactFormatter(currency: CurrencyCode) {
-  const locale = CURRENCY_LOCALE[currency] ?? 'en-US';
-  return (value: number) =>
-    new Intl.NumberFormat(locale, {
-      style: 'currency',
-      currency,
-      notation: 'compact',
-      maximumSignificantDigits: 3,
-    }).format(value);
-}
-
 function formatPercent(value: number): string {
   const sign = value >= 0 ? '+' : '';
   return `${sign}${value.toFixed(2)}%`;
@@ -134,23 +91,36 @@ interface ChartTooltipProps {
   payload?: Array<{ name: string; value: number; color: string }>;
   label?: string;
   fmtCurrency: (v: number) => string;
+  /** series name → shares held, so we can show the per-share price alongside the value. */
+  sharesByName?: Record<string, number>;
 }
 
-function ChartTooltip({ active, payload, label, fmtCurrency }: ChartTooltipProps) {
+function ChartTooltip({ active, payload, label, fmtCurrency, sharesByName }: ChartTooltipProps) {
   if (!active || !payload?.length || !label) return null;
   const date = new Date(label).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   return (
-    <div className="rounded-lg border border-border bg-background/95 px-3 py-2 shadow-lg backdrop-blur-sm text-xs min-w-[160px]">
+    <div className="rounded-lg border border-border bg-background/95 px-3 py-2 shadow-lg backdrop-blur-sm text-xs min-w-[180px]">
       <p className="text-muted-foreground mb-1.5">{date}</p>
-      {payload.map((entry) => (
-        <div key={entry.name} className="flex items-center justify-between gap-4">
-          <span className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full shrink-0" style={{ background: entry.color }} />
-            <span className="text-muted-foreground">{entry.name}</span>
-          </span>
-          <span className="font-semibold tabular-nums text-foreground">{fmtCurrency(entry.value)}</span>
-        </div>
-      ))}
+      {payload.map((entry) => {
+        const shares = sharesByName?.[entry.name];
+        const perShare = shares && shares > 0 ? entry.value / shares : undefined;
+        return (
+          <div key={entry.name} className="mb-1 last:mb-0">
+            <div className="flex items-center justify-between gap-4">
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full shrink-0" style={{ background: entry.color }} />
+                <span className="text-muted-foreground">{entry.name}</span>
+              </span>
+              <span className="font-semibold tabular-nums text-foreground">{fmtCurrency(entry.value)}</span>
+            </div>
+            {perShare !== undefined && (
+              <div className="flex justify-end text-[10px] text-muted-foreground/60 tabular-nums">
+                {fmtCurrency(perShare)}/share
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -162,6 +132,8 @@ function BuyHereChart({
   hasSpy,
   fmtCurrency,
   fmtChartAxis,
+  shares,
+  spyShares,
 }: {
   data: Array<{ date: string; stockValue: number; spyValue?: number }>;
   ticker: string;
@@ -169,7 +141,12 @@ function BuyHereChart({
   hasSpy: boolean;
   fmtCurrency: (v: number) => string;
   fmtChartAxis: (v: number) => string;
+  shares: number;
+  spyShares?: number;
 }) {
+  // Maps each chart series to its share count so the tooltip can show price/share.
+  const sharesByName: Record<string, number> = { [ticker]: shares };
+  if (spyShares) sharesByName['S&P 500'] = spyShares;
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
   const tickColor = isDark ? '#a1a1aa' : '#71717a';
@@ -229,7 +206,7 @@ function BuyHereChart({
             tickLine={false}
             width={80}
           />
-          <Tooltip content={<ChartTooltip fmtCurrency={fmtCurrency} />} />
+          <Tooltip content={<ChartTooltip fmtCurrency={fmtCurrency} sharesByName={sharesByName} />} />
           <Area
             type="monotone"
             dataKey="stockValue"
@@ -602,6 +579,8 @@ export default function BuyHereClientPage() {
                       hasSpy={!!result.spy}
                       fmtCurrency={fmtCurrency}
                       fmtChartAxis={fmtChartAxis}
+                      shares={result.stock.shares}
+                      spyShares={result.spy?.shares}
                     />
                   )}
                 </div>

@@ -7,6 +7,7 @@ import { useTopMoversWithStream, useMarketNews } from '@/hooks/use-market-data';
 import { getExchangesForTickers } from '@/lib/market/ticker-exchange-map';
 import { Card, CardContent } from '@/components/ui/card';
 import { MarketHoursCard } from './MarketHoursCard';
+import { ToolsShortcutCard } from './ToolsShortcutCard';
 import { TopMoversCard } from './TopMoversCard';
 import { MarketNewsCard } from './MarketNewsCard';
 import { Button } from '@/components/ui/button';
@@ -18,8 +19,11 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { ALL_SUPPORTED_EXCHANGE_CODES } from '@/lib/market/supported-markets';
 
-const DEFAULT_EXCHANGES = ['NYSE', 'NASDAQ', 'LSE', 'OSE', 'XETRA', 'STO'];
+// Default when the user hasn't toggled any markets off in Preferences → "Markets
+// to display": show every market we support.
+const DEFAULT_EXCHANGES = ALL_SUPPORTED_EXCHANGE_CODES;
 
 export function MarketContextSection() {
   const { isAuthenticated } = useAuth();
@@ -29,6 +33,8 @@ export function MarketContextSection() {
     updateMarketContextMode,
     marketHoursExchanges,
     updateMarketHoursExchanges,
+    toolsShortcuts,
+    updateToolsShortcuts,
   } = useUserSettings();
   const holdingsMode = marketContextMode === 'holdings';
 
@@ -103,18 +109,25 @@ export function MarketContextSection() {
 
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 min-w-0">
         <AnimatedContent reverse={true} className="min-w-0">
-          <MarketHoursCard
-            exchangeCodes={
-              effectiveHoldingsMode && exchangeCodes.length > 0
-                ? exchangeCodes
-                : customExchanges
-            }
-            // Editing only makes sense in "all markets" mode — holdings mode
-            // derives the list from the portfolio so manual edits would fight
-            // that derivation on the next render.
-            editable={isAuthenticated && !effectiveHoldingsMode}
-            onExchangesChange={(codes) => updateMarketHoursExchanges?.(codes)}
-          />
+          <div className="space-y-4 min-w-0">
+            <MarketHoursCard
+              exchangeCodes={
+                effectiveHoldingsMode && exchangeCodes.length > 0
+                  ? exchangeCodes
+                  : customExchanges
+              }
+              // Editing only makes sense in "all markets" mode — holdings mode
+              // derives the list from the portfolio so manual edits would fight
+              // that derivation on the next render.
+              editable={isAuthenticated && !effectiveHoldingsMode}
+              onExchangesChange={(codes) => updateMarketHoursExchanges?.(codes)}
+            />
+            <ToolsShortcutCard
+              toolIds={toolsShortcuts}
+              editable={isAuthenticated}
+              onToolsChange={(ids) => updateToolsShortcuts?.(ids)}
+            />
+          </div>
         </AnimatedContent>
         <AnimatedContent reverse={true} delay={0.05} className="min-w-0">
           {effectiveHoldingsMode && tickers.length === 0 ? (

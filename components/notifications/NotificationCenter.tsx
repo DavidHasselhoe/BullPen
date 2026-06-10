@@ -3,11 +3,11 @@
 import { useMemo, useEffect } from 'react';
 import { useNotifications, useMarkNotificationRead, useMarkAllNotificationsRead } from '@/hooks/use-notifications';
 import { NotificationItem } from './NotificationItem';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
-import { Check } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Check, Settings } from 'lucide-react';
 
 interface NotificationCenterProps {
   open: boolean;
@@ -80,18 +80,29 @@ export function NotificationCenter({ open, onOpenChange }: NotificationCenterPro
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b">
         <h3 className="font-semibold text-sm">Notifications</h3>
-        {unreadCount > 0 && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleMarkAllRead}
-            disabled={markAllRead.isPending}
-            className="h-7 text-xs"
+        <div className="flex items-center gap-1">
+          {unreadCount > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleMarkAllRead}
+              disabled={markAllRead.isPending}
+              className="h-7 text-xs"
+            >
+              <Check className="h-3 w-3 mr-1" />
+              Mark all read
+            </Button>
+          )}
+          <Link
+            href="/tools/alerts"
+            onClick={() => onOpenChange(false)}
+            aria-label="Alert options"
+            title="Alert options"
+            className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
           >
-            <Check className="h-3 w-3 mr-1" />
-            Mark all read
-          </Button>
-        )}
+            <Settings className="h-4 w-4" />
+          </Link>
+        </div>
       </div>
 
       {/* Content */}

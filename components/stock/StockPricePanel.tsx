@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import dynamic from 'next/dynamic';
+import { Maximize2 } from 'lucide-react';
 
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -9,6 +11,7 @@ import {
   BarChart, Bar, Cell,
 } from 'recharts';
 import { useChartPrefs } from '@/hooks/use-chart-prefs';
+import { getIndicatorDef, defaultParamsFor, INDICATOR_PALETTE, type IndicatorInstance } from '@/lib/finance/indicators';
 import { ChartSettingsPanel } from './ChartSettingsPanel';
 import type { CompanyEarnings } from '@/lib/twelvedata/twelvedata-client';
 import { useTheme } from 'next-themes';
@@ -18,6 +21,13 @@ import { useStockQuote } from '@/hooks/use-stock-price';
 import { useExperienceLevel } from '@/hooks/use-experience-level';
 import { cn } from '@/lib/utils';
 import type { IndicatorValue, ExtendedHoursQuote } from '@/lib/twelvedata/twelvedata-client';
+
+// Fullscreen advanced chart is loaded on demand so lightweight-charts stays out
+// of the main bundle (only advanced users who click Expand pay for it).
+const AdvancedChartModal = dynamic(
+  () => import('./advanced-chart/AdvancedChartModal').then((m) => m.AdvancedChartModal),
+  { ssr: false }
+);
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -146,7 +156,24 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
   const [activeIndicators, setActiveIndicators] = useState<Set<Indicator>>(
     new Set(prefs.defaultIndicators as Indicator[])
   );
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const { isSimplified } = useExperienceLevel();
+
+  // Advanced (fullscreen) chart prefs — single source of truth lives here so the
+  // experience persists across open/close within a session, then to localStorage/Supabase.
+  const advIndicators = prefs.advancedIndicators;
+  const addAdvIndicator = (type: string) => {
+    const def = getIndicatorDef(type);
+    if (!def) return;
+    const used = new Set(advIndicators.map((i) => i.color));
+    const color = INDICATOR_PALETTE.find((c) => !used.has(c)) ?? INDICATOR_PALETTE[advIndicators.length % INDICATOR_PALETTE.length];
+    const inst: IndicatorInstance = { id: `${type}-${Date.now()}`, type, params: defaultParamsFor(def), color };
+    setPref('advancedIndicators', [...advIndicators, inst]);
+  };
+  const removeAdvIndicator = (id: string) =>
+    setPref('advancedIndicators', advIndicators.filter((i) => i.id !== id));
+  const updateAdvIndicator = (id: string, params: Record<string, number>) =>
+    setPref('advancedIndicators', advIndicators.map((i) => (i.id === id ? { ...i, params } : i)));
 
   function toggleIndicator(key: Indicator) {
     setActiveIndicators((prev) => {
@@ -517,7 +544,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
                   {RANGE_DISPLAY[r]}
                 </button>
               ))}
-              <div className="ml-1 pl-1 border-l border-border/30">
+              <div className="ml-1 pl-1 border-l border-border/30 flex items-center gap-0.5">
                 <ChartSettingsPanel
                   prefs={prefs}
                   setPref={setPref}
@@ -527,6 +554,17 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
                     setActiveIndicators(new Set(inds as Indicator[]));
                   }}
                 />
+                {!isSimplified && (
+                  <button
+                    type="button"
+                    onClick={() => setAdvancedOpen(true)}
+                    title="Advanced chart (fullscreen)"
+                    aria-label="Open advanced fullscreen chart"
+                    className="rounded-md p-1.5 text-muted-foreground/40 hover:text-foreground hover:bg-muted/60 transition-colors"
+                  >
+                    <Maximize2 className="h-3.5 w-3.5" />
+                  </button>
+                )}
               </div>
             </div>
 
@@ -813,6 +851,24 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
           {dayLow > 0     && <StatItem label="Low"        value={fmtPrice(dayLow)}    valueClass="text-red-400" />}
           {prevClose > 0  && <StatItem label="Prev Close" value={fmtPrice(prevClose)} />}
         </div>
+      )}
+
+      {advancedOpen && (
+        <AdvancedChartModal
+          ticker={ticker}
+          initialRange={range}
+          onClose={() => setAdvancedOpen(false)}
+          chartType={prefs.advancedChartType}
+          onChartType={(t) => setPref('advancedChartType', t)}
+          indicators={advIndicators}
+          onAddIndicator={addAdvIndicator}
+          onRemoveIndicator={removeAdvIndicator}
+          onUpdateIndicator={updateAdvIndicator}
+          showVolume={prefs.showVolume}
+          onToggleVolume={() => setPref('showVolume', !prefs.showVolume)}
+          showEvents={prefs.showEarnings}
+          onToggleEvents={() => setPref('showEarnings', !prefs.showEarnings)}
+        />
       )}
     </div>
   );

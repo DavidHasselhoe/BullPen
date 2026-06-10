@@ -56,6 +56,12 @@ function WidgetSlot({ id }: { id: string }) {
           </AnimatedContent>
         </section>
       );
+    case 'investing_quote':
+      return (
+        <footer className="min-w-0">
+          <QuoteDisplay enabled />
+        </footer>
+      );
     default:
       return null;
   }
@@ -63,7 +69,7 @@ function WidgetSlot({ id }: { id: string }) {
 
 export default function DiscoverPage() {
   const { hasAnimatedBackground } = useBackground();
-  const { showQuotes, showWelcomeText, homepageWidgetOrder, homepageWidgetHidden } = useUserSettings();
+  const { showWelcomeText, homepageWidgetOrder, homepageWidgetHidden } = useUserSettings();
 
   const resolvedOrder = resolveWidgetOrder(homepageWidgetOrder, homepageWidgetHidden);
 
@@ -110,12 +116,6 @@ export default function DiscoverPage() {
           {resolvedOrder.map((id) => (
             <WidgetSlot key={id} id={id} />
           ))}
-
-          {showQuotes && (
-            <footer className="pt-4">
-              <QuoteDisplay enabled={showQuotes} />
-            </footer>
-          )}
         </div>
       </main>
     </div>

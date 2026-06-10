@@ -121,8 +121,28 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    /* Default the focus-ring offset to the page background instead of Tailwind's
+       white default — otherwise `focus:ring-offset-2` paints an ugly white box
+       around inputs/toggles/buttons on click in dark mode. */
+    --tw-ring-offset-color: var(--background);
     scrollbar-width: thin;
     scrollbar-color: oklch(0.4 0 0 / 0.22) transparent;
+  }
+
+  /* Don't paint the browser's default focus outline (the "white box") on mouse
+     click — only for keyboard navigation. :focus-visible keeps a11y intact. */
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  /* Recharts 3 enables accessibilityLayer, which makes the chart wrapper
+     focusable — clicking a chart drew a white UA outline box around it. The
+     chart's own crosshair / active dot conveys interaction, so suppress it. */
+  .recharts-wrapper:focus,
+  .recharts-wrapper:focus-visible,
+  .recharts-surface:focus,
+  .recharts-surface:focus-visible {
+    outline: none;
   }
   .dark * {
     scrollbar-color: oklch(0.65 0 0 / 0.22) transparent;

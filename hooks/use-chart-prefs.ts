@@ -3,12 +3,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { createBrowserClient } from '@/lib/supabase/client';
+import type { IndicatorInstance } from '@/lib/finance/indicators';
 
 const STORAGE_KEY = 'chart-prefs';
 const SETTINGS_KEY = 'chart_prefs';
 
 export type ChartRange = '1D' | '1W' | '1M' | '6M' | '1Y' | 'YTD' | '5Y' | 'MAX';
 export type ChartIndicator = 'sma50' | 'sma200' | 'ema20' | 'bbands' | 'rsi' | 'macd';
+export type AdvancedChartType = 'candles' | 'line' | 'area';
 
 export interface ChartPrefs {
   defaultRange: ChartRange;
@@ -19,6 +21,9 @@ export interface ChartPrefs {
   showExtendedHours: boolean;
   chartStyle: 'area' | 'line';
   priceScale: 'linear' | 'log';
+  // Advanced (fullscreen) chart — persisted so the experience is sticky.
+  advancedChartType: AdvancedChartType;
+  advancedIndicators: IndicatorInstance[];
 }
 
 export const CHART_PREF_DEFAULTS: ChartPrefs = {
@@ -30,6 +35,8 @@ export const CHART_PREF_DEFAULTS: ChartPrefs = {
   showExtendedHours: true,
   chartStyle: 'area',
   priceScale: 'linear',
+  advancedChartType: 'candles',
+  advancedIndicators: [],
 };
 
 function loadLocal(): ChartPrefs {

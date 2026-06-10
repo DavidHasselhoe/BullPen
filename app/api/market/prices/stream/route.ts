@@ -25,6 +25,22 @@ const SEED_TTL = 15;
 
 function seedKey(sym: string) { return `seed:${sym}`; }
 
+// previousClose is constant for the whole ET trading day (it only changes at the
+// close), so we cache it separately with a TTL that expires at the next ET
+// midnight. This lets a cold-start instance pre-seed WsManager's prevClose
+// instantly from Redis — so the FIRST websocket tick computes changePercent
+// correctly instead of emitting undefined/0% while the REST seed is in flight
+// (or if it fails). The value can't go stale within a session, so this is safe.
+function pcKey(sym: string) { return `pc:${sym}`; }
+
+function secondsToEtMidnight(): number {
+  const now = new Date();
+  const et = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  const next = new Date(et);
+  next.setHours(24, 0, 0, 0);
+  return Math.max(60, Math.round((next.getTime() - et.getTime()) / 1000));
+}
+
 /**
  * Seed WsManager with initial prices for any symbols it hasn't seen yet.
  *
@@ -67,6 +83,16 @@ async function seedInitialPrices(
 
   if (stillNeeded.length === 0) return;
 
+  // Level 2.5: pre-seed prevClose from the day-stable pc: cache. Doesn't emit a
+  // price (no fresh quote), but guarantees the next WS tick computes a correct
+  // changePercent even before the REST seed below returns — or if it fails.
+  const pcCached = await Promise.all(
+    stillNeeded.map(async (sym) => ({ sym, pc: await rget<number>(pcKey(sym)) }))
+  );
+  for (const { sym, pc } of pcCached) {
+    if (pc && pc > 0) WsManager.seedPrevClose(sym, pc);
+  }
+
   // Level 3: fetch the true remainder from TwelveData in chunks.
   const chunks: string[][] = [];
   for (let i = 0; i < stillNeeded.length; i += SEED_CHUNK) {
@@ -91,6 +117,8 @@ async function seedInitialPrices(
           safeEnqueue(`data: ${JSON.stringify(tick)}\n\n`);
           // Write to Redis so sibling instances skip this fetch for 15 s.
           void rset<SeedQuote>(seedKey(sym), { c: quote.c, d: quote.d, dp: quote.dp, pc: prevClose }, SEED_TTL);
+          // Persist previousClose until ET midnight so cold starts pre-seed it instantly.
+          void rset<number>(pcKey(sym), prevClose, secondsToEtMidnight());
         }
       } catch (err) {
         if (process.env.NODE_ENV === 'development') {

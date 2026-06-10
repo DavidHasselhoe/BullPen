@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useRef, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useTheme } from 'next-themes';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Wallet, Loader2, AlertCircle, TrendingUp } from 'lucide-react';
+import { ArrowLeft, Wallet, Loader2, AlertCircle, TrendingUp, Plus, X } from 'lucide-react';
 import { useBackground } from '@/hooks/use-background';
 import { cn } from '@/lib/utils';
 import {
@@ -15,14 +15,13 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
-  LineChart,
-  Line,
-  Legend,
 } from 'recharts';
 import { TickerSelector, type SearchResult } from '@/components/tools/buy-here/TickerSelector';
+import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { AnimatedCounter } from '@/components/tools/buy-here/AnimatedCounter';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
+import { useUserSettings } from '@/hooks/use-user-settings';
 import { useExchangeRates } from '@/hooks/use-exchange-rates';
 import {
   convertCurrency,
@@ -30,67 +29,127 @@ import {
   type CurrencyCode,
   type ExchangeRates,
 } from '@/lib/currency/currency-conversion';
+import { makeFullFormatter, makeCompactFormatter } from '@/lib/currency/format';
+import { DIVIDEND_QUICK_PICKS } from '@/lib/finance/dividend-quick-picks';
 
-const STORAGE_KEY = 'dividend-last-ticker';
+// Chart palette — explicit hex so colors never depend on CSS vars (this app's
+// theme tokens are oklch, so hsl(var(--primary)) renders invalid/invisible).
+const INCOME_COLOR = '#22c55e';
+const PORTFOLIO_COLOR = '#818cf8';
+
+const STORAGE_KEY = 'dividend-portfolio';
 const YEAR_PRESETS = [1, 5, 10, 20, 30];
+const MAX_HOLDINGS = 15;
 
-interface YearResult {
+/** Tooltip matching the "If you bought here" chart style. */
+function ChartTooltip({
+  active, payload, label, fmt,
+}: {
+  active?: boolean;
+  payload?: Array<{ name: string; value: number; color: string }>;
+  label?: string;
+  fmt: (v: number) => string;
+}) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="rounded-lg border border-border bg-background/95 px-3 py-2 shadow-lg backdrop-blur-sm text-xs min-w-[170px]">
+      <p className="text-muted-foreground mb-1.5">{label}</p>
+      {payload.map((entry) => (
+        <div key={entry.name} className="flex items-center justify-between gap-4">
+          <span className="flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full shrink-0" style={{ background: entry.color }} />
+            <span className="text-muted-foreground">{entry.name}</span>
+          </span>
+          <span className="font-semibold tabular-nums text-foreground">{fmt(entry.value)}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+interface PortfolioYearResult {
   year: number;
   annualIncome: number;
   cumulativeIncome: number;
-  shares: number;
   portfolioValue: number;
+}
+
+interface HoldingResult {
+  ticker: string;
+  mode: 'shares' | 'amount';
+  sharesStart: number;
+  currentPrice: number;
+  annualDividendPerShare: number;
+  dividendYield: number;
+  currency: string;
+  invested: number;
+  year1Income: number;
+  noDividends: boolean;
 }
 
 interface DividendResult {
   success: boolean;
   error?: string;
-  ticker?: string;
-  sharesStart?: number;
-  currentPrice?: number;
-  annualDividendPerShare?: number;
-  dividendYield?: number;
-  currency?: string;
-  years?: YearResult[];
-  breakEvenYear?: number | null;
+  holdings?: HoldingResult[];
+  years?: PortfolioYearResult[];
+  totalInvested?: number;
+  totalIncomeYear1?: number;
   totalIncome?: number;
   finalPortfolioValue?: number;
+  blendedYield?: number;
+  breakEvenYear?: number | null;
+  currency?: string;
 }
 
-function makeFormatCurrency(symbol: string) {
-  return function formatCurrency(value: number): string {
-    if (value >= 1_000_000) return `${symbol}${(value / 1_000_000).toFixed(2)}M`;
-    if (value >= 1_000) return `${symbol}${(value / 1_000).toFixed(1)}K`;
-    return `${symbol}${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  };
+/** A single editable portfolio line. */
+interface Holding {
+  id: string;
+  stock: SearchResult | null;
+  mode: 'amount' | 'shares';
+  value: string;
 }
 
 function formatAmountInput(value: string): string {
   const num = value.replace(/\D/g, '');
   if (!num) return '';
-  // Always use en-US locale (commas) so parseFormattedAmount can reliably strip them
   return parseInt(num, 10).toLocaleString('en-US');
 }
 
 function parseFormattedAmount(value: string): number {
-  // Strip all non-numeric characters (handles commas, spaces, and other locale separators)
   return parseFloat(value.replace(/[^0-9.]/g, '')) || 0;
 }
 
-function loadStoredTicker(): SearchResult | null {
+function holdingValueNumber(h: Holding): number {
+  return h.mode === 'amount' ? parseFormattedAmount(h.value) : parseFloat(h.value) || 0;
+}
+
+function minimalStock(ticker: string, name: string): SearchResult {
+  return { ticker: ticker.toUpperCase(), name, cik: '', has_data: false };
+}
+
+function loadStoredPortfolio(): Holding[] | null {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) return null;
-    const parsed = JSON.parse(stored) as SearchResult;
-    return parsed?.ticker ? parsed : null;
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Array<{ ticker: string; name: string; mode: string; value: string }>;
+    if (!Array.isArray(parsed) || parsed.length === 0) return null;
+    return parsed.slice(0, MAX_HOLDINGS).map((p, i) => ({
+      id: `saved-${i}`,
+      stock: p.ticker ? minimalStock(p.ticker, p.name ?? p.ticker) : null,
+      mode: p.mode === 'shares' ? 'shares' : 'amount',
+      value: typeof p.value === 'string' ? p.value : '',
+    }));
   } catch {
     return null;
   }
 }
 
+const EMPTY_ROW: Holding = { id: 'seed', stock: null, mode: 'amount', value: '10,000' };
+
 export default function DividendClientPage() {
   const { hasAnimatedBackground } = useBackground();
   const { user } = useAuth();
+  const { roundNumbers } = useUserSettings();
 
   const userCurrency = useMemo((): CurrencyCode => {
     const settings = user?.settings as Record<string, unknown> | undefined;
@@ -102,41 +161,85 @@ export default function DividendClientPage() {
   const exchangeRates = useExchangeRates(userCurrency);
   const rates = exchangeRates.data ?? null;
   const currencySymbol = getCurrencySymbol(userCurrency);
-  const formatCurrency = makeFormatCurrency(currencySymbol);
+  const fmtFull = useMemo(() => makeFullFormatter(userCurrency, roundNumbers), [userCurrency, roundNumbers]);
+  const fmtCompact = useMemo(() => makeCompactFormatter(userCurrency), [userCurrency]);
 
-  const [selectedStock, setSelectedStock] = useState<SearchResult | null>(() =>
-    typeof window !== 'undefined' ? loadStoredTicker() : null
+  const idRef = useRef(0);
+  const makeId = () => `h-${idRef.current++}`;
+
+  const [holdings, setHoldings] = useState<Holding[]>(() =>
+    typeof window !== 'undefined' ? loadStoredPortfolio() ?? [EMPTY_ROW] : [EMPTY_ROW]
   );
-  const [mode, setMode] = useState<'shares' | 'amount'>('amount');
-  const [amountInput, setAmountInput] = useState('10,000');
-  const [sharesInput, setSharesInput] = useState('100');
   const [years, setYears] = useState(10);
   const [drip, setDrip] = useState(true);
   const [result, setResult] = useState<DividendResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  const pickedTickers = useMemo(
+    () => new Set(holdings.map((h) => h.stock?.ticker.toUpperCase()).filter(Boolean) as string[]),
+    [holdings]
+  );
+
+  const updateHolding = (id: string, patch: Partial<Holding>) =>
+    setHoldings((prev) => prev.map((h) => (h.id === id ? { ...h, ...patch } : h)));
+
+  const removeHolding = (id: string) =>
+    setHoldings((prev) => {
+      const next = prev.filter((h) => h.id !== id);
+      return next.length ? next : [{ ...EMPTY_ROW, id: makeId() }];
+    });
+
+  const addHolding = () =>
+    setHoldings((prev) =>
+      prev.length >= MAX_HOLDINGS ? prev : [...prev, { id: makeId(), stock: null, mode: 'amount', value: '10,000' }]
+    );
+
+  const togglePick = (ticker: string, name: string) => {
+    setHoldings((prev) => {
+      const idx = prev.findIndex((h) => h.stock?.ticker.toUpperCase() === ticker.toUpperCase());
+      if (idx >= 0) {
+        const next = prev.filter((_, i) => i !== idx);
+        return next.length ? next : [{ ...EMPTY_ROW, id: makeId() }];
+      }
+      const picked = minimalStock(ticker, name);
+      const emptyIdx = prev.findIndex((h) => !h.stock);
+      if (emptyIdx >= 0) {
+        const next = [...prev];
+        next[emptyIdx] = { ...next[emptyIdx], stock: picked, value: next[emptyIdx].value || '10,000' };
+        return next;
+      }
+      if (prev.length >= MAX_HOLDINGS) return prev;
+      return [...prev, { id: makeId(), stock: picked, mode: 'amount', value: '10,000' }];
+    });
+  };
+
+  const validHoldings = holdings.filter((h) => h.stock && holdingValueNumber(h) > 0);
+  const isValid = validHoldings.length > 0;
+
   const handleCalculate = async () => {
-    if (!selectedStock) {
-      setResult({ success: false, error: 'Select a stock from the search' });
-      return;
-    }
-    const rawAmount = mode === 'amount' ? parseFormattedAmount(amountInput) : parseFloat(sharesInput) || 0;
-
-    if (!rawAmount || rawAmount <= 0) {
-      setResult({ success: false, error: `Enter a valid ${mode === 'amount' ? 'investment amount' : 'number of shares'}` });
+    if (!isValid) {
+      setResult({ success: false, error: 'Add at least one stock with a valid amount' });
       return;
     }
 
-    // Convert investment amount from user's currency to USD so the API can
-    // divide by the USD stock price to get the correct share count.
-    // Shares mode is currency-agnostic — no conversion needed.
-    const sharesOrAmount =
-      mode === 'amount' && userCurrency !== 'USD'
-        ? convertCurrency(rawAmount, userCurrency, 'USD', rates)
-        : rawAmount;
+    const payload = validHoldings.map((h) => {
+      const raw = holdingValueNumber(h);
+      // Amounts are entered in the user's currency → convert to USD so the API
+      // can divide by the USD price. Shares are currency-agnostic.
+      const sharesOrAmount =
+        h.mode === 'amount' && userCurrency !== 'USD'
+          ? convertCurrency(raw, userCurrency, 'USD', rates)
+          : raw;
+      return { ticker: h.stock!.ticker, sharesOrAmount, mode: h.mode };
+    });
 
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(selectedStock));
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(
+          validHoldings.map((h) => ({ ticker: h.stock!.ticker, name: h.stock!.name, mode: h.mode, value: h.value }))
+        )
+      );
     } catch { /* storage unavailable */ }
 
     setIsLoading(true);
@@ -146,7 +249,7 @@ export default function DividendClientPage() {
       const res = await fetch('/api/tools/dividend', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ticker: selectedStock.ticker, sharesOrAmount, mode, years, drip }),
+        body: JSON.stringify({ holdings: payload, years, drip }),
       });
       setResult(await res.json());
     } catch (e) {
@@ -155,10 +258,6 @@ export default function DividendClientPage() {
       setIsLoading(false);
     }
   };
-
-  const isValid =
-    selectedStock &&
-    (mode === 'amount' ? parseFormattedAmount(amountInput) > 0 : parseFloat(sharesInput) > 0);
 
   return (
     <div className={cn('min-h-screen', hasAnimatedBackground ? '' : 'bg-background')}>
@@ -186,7 +285,7 @@ export default function DividendClientPage() {
             <div>
               <h1 className="text-2xl font-bold tracking-tight text-foreground">Dividend Calculator</h1>
               <p className="text-muted-foreground text-sm mt-0.5">
-                Project annual income, reinvestment growth, and break-even year for dividend stocks
+                Build a dividend portfolio and project income, reinvestment growth, and break-even
               </p>
             </div>
           </div>
@@ -200,156 +299,195 @@ export default function DividendClientPage() {
           transition={{ duration: 0.3, delay: 0.05 }}
           className="mb-8 rounded-2xl border border-border/50 bg-background/60 backdrop-blur-xl shadow-xl p-6 sm:p-8"
         >
-          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-6">
-            Inputs
-          </p>
-
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Stock</label>
-              <TickerSelector
-                value={selectedStock}
-                onChange={setSelectedStock}
-                placeholder="Search by ticker or company name..."
-              />
-            </div>
-
-            {/* Mode toggle */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-1 rounded-lg border border-border bg-muted/40 p-1 w-fit">
-                {(['amount', 'shares'] as const).map((m) => (
+          {/* Quick pick */}
+          <div className="mb-6">
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-3">
+              Quick add
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {DIVIDEND_QUICK_PICKS.map((pick) => {
+                const active = pickedTickers.has(pick.ticker);
+                return (
                   <button
-                    key={m}
+                    key={pick.ticker}
                     type="button"
-                    onClick={() => setMode(m)}
+                    onClick={() => togglePick(pick.ticker, pick.name)}
+                    aria-pressed={active}
+                    title={pick.name}
                     className={cn(
-                      'px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-150',
-                      mode === m
-                        ? 'bg-background shadow text-foreground'
-                        : 'text-muted-foreground hover:text-foreground'
+                      'group flex items-center gap-2 rounded-full border py-1.5 pl-1.5 pr-3 text-sm transition-all duration-150 active:scale-[0.97]',
+                      active
+                        ? 'border-primary/40 bg-primary/10 text-foreground'
+                        : 'border-border bg-background hover:border-foreground/20 hover:bg-accent/50'
                     )}
                   >
-                    {m === 'amount' ? 'Investment amount' : 'Number of shares'}
+                    <CompanyLogo size={22} ticker={pick.ticker} name={pick.name} logoUrl={null} className="shrink-0" />
+                    <span className="font-medium">{pick.ticker}</span>
+                    {pick.highYield && (
+                      <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-emerald-500">
+                        High yield
+                      </span>
+                    )}
+                    <span
+                      className={cn(
+                        'flex h-4 w-4 items-center justify-center rounded-full text-[11px] leading-none transition-colors',
+                        active ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                      )}
+                    >
+                      {active ? '✓' : '+'}
+                    </span>
                   </button>
-                ))}
-              </div>
+                );
+              })}
+            </div>
+          </div>
 
-              <AnimatePresence mode="wait">
-                {mode === 'amount' ? (
-                  <motion.div
-                    key="amount"
-                    initial={{ opacity: 0, x: -4 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 4 }}
-                    transition={{ duration: 0.15 }}
-                    className="relative max-w-xs"
-                  >
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">{currencySymbol}</span>
+          {/* Portfolio rows */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Your portfolio
+              </p>
+              <span className="text-xs text-muted-foreground">{pickedTickers.size}/{MAX_HOLDINGS} stocks</span>
+            </div>
+
+            <div className="space-y-2">
+              {holdings.map((h) => (
+                <div
+                  key={h.id}
+                  className="flex flex-col gap-2 rounded-xl border border-border/50 bg-muted/20 p-3 sm:flex-row sm:items-center"
+                >
+                  <div className="min-w-0 flex-1">
+                    <TickerSelector
+                      value={h.stock}
+                      onChange={(r) => updateHolding(h.id, { stock: r })}
+                      placeholder="Search stock…"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
                     <input
                       type="text"
                       inputMode="numeric"
-                      value={amountInput}
-                      onChange={(e) => setAmountInput(formatAmountInput(e.target.value))}
-                      placeholder="10,000"
+                      value={h.value}
+                      onChange={(e) =>
+                        updateHolding(h.id, {
+                          value: h.mode === 'amount'
+                            ? formatAmountInput(e.target.value)
+                            : e.target.value.replace(/[^0-9.]/g, ''),
+                        })
+                      }
+                      placeholder={h.mode === 'amount' ? '10,000' : '100'}
                       className={cn(
-                        'flex h-11 w-full rounded-lg border border-input bg-background pl-8 pr-4 py-2 text-sm',
-                        'placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 transition-all duration-200'
+                        'h-10 w-28 rounded-lg border border-input bg-background px-3 text-sm tabular-nums',
+                        'placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-all'
                       )}
                     />
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="shares"
-                    initial={{ opacity: 0, x: 4 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -4 }}
-                    transition={{ duration: 0.15 }}
-                    className="relative max-w-xs"
-                  >
-                    <input
-                      type="number"
-                      min="1"
-                      step="1"
-                      value={sharesInput}
-                      onChange={(e) => setSharesInput(e.target.value)}
-                      placeholder="100"
-                      className={cn(
-                        'flex h-11 w-full rounded-lg border border-input bg-background px-4 py-2 text-sm',
-                        'placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 transition-all duration-200'
-                      )}
-                    />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm pointer-events-none">
-                      shares
-                    </span>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                    <div className="inline-flex shrink-0 rounded-lg border border-border bg-muted/40 p-0.5">
+                      {(['amount', 'shares'] as const).map((m) => (
+                        <button
+                          key={m}
+                          type="button"
+                          onClick={() => updateHolding(h.id, { mode: m })}
+                          className={cn(
+                            'rounded-md px-2.5 py-1 text-xs font-medium transition-all duration-150',
+                            h.mode === m ? 'bg-background text-foreground shadow' : 'text-muted-foreground hover:text-foreground'
+                          )}
+                          title={m === 'amount' ? `Amount (${userCurrency})` : 'Number of shares'}
+                        >
+                          {m === 'amount' ? currencySymbol : 'sh'}
+                        </button>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeHolding(h.id)}
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground/60 transition-colors hover:bg-red-500/10 hover:text-red-400"
+                      aria-label="Remove stock"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
 
-            {/* Year presets */}
-            <div className="space-y-3">
-              <label className="text-sm font-medium">Projection period</label>
-              <div className="flex flex-wrap gap-1 p-1 rounded-xl bg-muted/50 border border-border/50 w-fit">
-                {YEAR_PRESETS.map((y) => (
-                  <button
-                    key={y}
-                    type="button"
-                    onClick={() => setYears(y)}
-                    className={cn(
-                      'px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150',
-                      years === y
-                        ? 'bg-background text-foreground shadow-sm border border-border/50'
-                        : 'border border-transparent text-muted-foreground hover:text-foreground'
-                    )}
-                  >
-                    {y} {y === 1 ? 'year' : 'years'}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* DRIP toggle */}
-            <div className="flex items-center gap-3">
+            {holdings.length < MAX_HOLDINGS && (
               <button
                 type="button"
-                role="switch"
-                aria-checked={drip}
-                onClick={() => setDrip((d) => !d)}
-                className={cn(
-                  'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent',
-                  'transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
-                  drip ? 'bg-primary' : 'bg-muted'
-                )}
+                onClick={addHolding}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border/60 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground"
               >
-                <span
-                  className={cn(
-                    'pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform duration-200',
-                    drip ? 'translate-x-5' : 'translate-x-0'
-                  )}
-                />
+                <Plus className="h-4 w-4" />
+                Add stock
               </button>
-              <div>
-                <p className="text-sm font-medium">Reinvest dividends (DRIP)</p>
-                <p className="text-xs text-muted-foreground">
-                  Dividends buy more shares each year, compounding your income
-                </p>
-              </div>
-            </div>
+            )}
+          </div>
 
-            <Button
-              type="submit"
-              disabled={!isValid || isLoading}
+          <div className="my-6 h-px bg-border/50" />
+
+          {/* Year presets */}
+          <div className="space-y-3">
+            <label className="text-sm font-medium">Projection period</label>
+            <div className="flex flex-wrap gap-1 p-1 rounded-xl bg-muted/50 border border-border/50 w-fit">
+              {YEAR_PRESETS.map((y) => (
+                <button
+                  key={y}
+                  type="button"
+                  onClick={() => setYears(y)}
+                  className={cn(
+                    'px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150',
+                    years === y
+                      ? 'bg-background text-foreground shadow-sm border border-border/50'
+                      : 'border border-transparent text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  {y} {y === 1 ? 'year' : 'years'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* DRIP toggle */}
+          <div className="mt-6 flex items-center gap-3">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={drip}
+              onClick={() => setDrip((d) => !d)}
               className={cn(
-                'w-full h-12 text-base font-semibold',
-                'bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70',
-                'transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5'
+                'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent',
+                'transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
+                drip ? 'bg-primary' : 'bg-muted'
               )}
             >
-              {isLoading ? (
-                <><Loader2 className="h-5 w-5 mr-2 animate-spin" />Calculating...</>
-              ) : 'Calculate'}
-            </Button>
+              <span
+                className={cn(
+                  'pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform duration-200',
+                  drip ? 'translate-x-5' : 'translate-x-0'
+                )}
+              />
+            </button>
+            <div>
+              <p className="text-sm font-medium">Reinvest dividends (DRIP)</p>
+              <p className="text-xs text-muted-foreground">
+                Each stock&apos;s dividends buy more of its own shares, compounding income
+              </p>
+            </div>
           </div>
+
+          <Button
+            type="submit"
+            disabled={!isValid || isLoading}
+            className={cn(
+              'mt-6 w-full h-12 text-base font-semibold',
+              'bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70',
+              'transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5'
+            )}
+          >
+            {isLoading ? (
+              <><Loader2 className="h-5 w-5 mr-2 animate-spin" />Calculating…</>
+            ) : 'Calculate dividends'}
+          </Button>
         </motion.form>
 
         {/* Results */}
@@ -388,16 +526,16 @@ export default function DividendClientPage() {
                     <p className="font-medium text-destructive">Could not calculate dividends</p>
                     <p className="text-sm text-muted-foreground mt-1">{result.error}</p>
                     <p className="text-xs text-muted-foreground mt-2">
-                      Make sure the stock pays dividends. Rate-limited APIs may need a moment before retrying.
+                      Make sure the stocks pay dividends. Rate-limited APIs may need a moment before retrying.
                     </p>
                   </div>
                 </div>
               ) : result.years && result.years.length > 0 ? (
                 <ResultsView
                   result={result}
-                  mode={mode}
                   drip={drip}
-                  formatCurrency={formatCurrency}
+                  fmtFull={fmtFull}
+                  fmtCompact={fmtCompact}
                   userCurrency={userCurrency}
                   rates={rates}
                 />
@@ -411,12 +549,12 @@ export default function DividendClientPage() {
 }
 
 function ResultsView({
-  result, mode, drip, formatCurrency, userCurrency, rates,
+  result, drip, fmtFull, fmtCompact, userCurrency, rates,
 }: {
   result: DividendResult;
-  mode: 'shares' | 'amount';
   drip: boolean;
-  formatCurrency: (v: number) => string;
+  fmtFull: (v: number) => string;
+  fmtCompact: (v: number) => string;
   userCurrency: CurrencyCode;
   rates: ExchangeRates | null;
 }) {
@@ -424,22 +562,21 @@ function ResultsView({
   const isDark = resolvedTheme === 'dark';
   const tickColor = isDark ? '#a1a1aa' : '#71717a';
   const {
-    ticker, sharesStart, currentPrice, annualDividendPerShare,
-    dividendYield, currency, years: yearRows, breakEvenYear, totalIncome, finalPortfolioValue,
+    holdings, years: yearRows, blendedYield, totalIncomeYear1, totalIncome,
+    finalPortfolioValue, totalInvested, breakEvenYear,
   } = result;
 
-  // Convert USD API values to user's display currency
   const toDisplay = (usd: number) =>
     userCurrency === 'USD' ? usd : convertCurrency(usd, 'USD', userCurrency, rates);
 
-  const yr1 = yearRows![0];
-  const noDividends = (annualDividendPerShare ?? 0) === 0;
+  const holdingList = holdings ?? [];
+  const hasAnyDividends = holdingList.some((h) => !h.noDividends);
 
   const summaryCards = [
     {
       label: 'Year 1 income',
-      value: toDisplay(yr1.annualIncome),
-      sub: `${currency ?? 'USD'} · ${annualDividendPerShare?.toFixed(4) ?? '—'}/share/yr`,
+      value: toDisplay(totalIncomeYear1 ?? 0),
+      sub: `${holdingList.length} ${holdingList.length === 1 ? 'stock' : 'stocks'} · ${fmtFull(toDisplay(totalInvested ?? 0))} invested`,
     },
     {
       label: `Total over ${yearRows!.length} years`,
@@ -449,13 +586,13 @@ function ResultsView({
     {
       label: 'Final portfolio value',
       value: toDisplay(finalPortfolioValue ?? 0),
-      sub: `${yearRows![yearRows!.length - 1].shares.toFixed(2)} shares @ ${formatCurrency(toDisplay(currentPrice ?? 0))}`,
+      sub: drip ? 'Shares grow via reinvestment' : 'Share count held flat',
     },
     {
-      label: 'Dividend yield',
-      value: dividendYield ?? 0,
+      label: 'Blended yield',
+      value: blendedYield ?? 0,
       isPercent: true,
-      sub: `${ticker} · ${sharesStart?.toFixed(2) ?? '—'} shares to start`,
+      sub: 'Weighted by amount invested',
     },
   ];
 
@@ -468,11 +605,12 @@ function ResultsView({
 
   return (
     <div className="space-y-8">
-      {noDividends && (
+      {!hasAnyDividends && (
         <div className="flex items-start gap-3 rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-4">
           <AlertCircle className="h-5 w-5 text-yellow-500 shrink-0 mt-0.5" />
           <p className="text-sm text-muted-foreground">
-            No dividend history found for <strong>{ticker}</strong>. This stock may not pay dividends, or data is unavailable.
+            None of the selected stocks have dividend history available, so income projects to zero.
+            Try adding dividend-paying stocks from Quick add.
           </p>
         </div>
       )}
@@ -491,7 +629,7 @@ function ResultsView({
               {card.isPercent ? (
                 <AnimatedCounter value={card.value} format={(n) => `${n.toFixed(2)}%`} />
               ) : (
-                <AnimatedCounter value={card.value} format={formatCurrency} />
+                <AnimatedCounter value={card.value} format={fmtFull} />
               )}
             </p>
             <p className="text-xs text-muted-foreground mt-1 truncate">{card.sub}</p>
@@ -499,7 +637,36 @@ function ResultsView({
         ))}
       </div>
 
-      {mode === 'amount' && breakEvenYear != null && (
+      {/* Per-stock breakdown */}
+      {holdingList.length > 0 && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}>
+          <p className="text-sm font-medium mb-3">By stock</p>
+          <div className="overflow-hidden rounded-xl border border-border/50 divide-y divide-border/50">
+            {holdingList.map((h) => (
+              <div key={h.ticker} className="flex items-center gap-3 px-4 py-3">
+                <CompanyLogo size={32} ticker={h.ticker} name={h.ticker} logoUrl={null} className="shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-foreground">{h.ticker}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {h.sharesStart.toFixed(2)} shares · {fmtFull(toDisplay(h.invested))} invested
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-semibold tabular-nums text-foreground">
+                    {fmtFull(toDisplay(h.year1Income))}
+                    <span className="text-xs font-normal text-muted-foreground">/yr</span>
+                  </p>
+                  <p className={cn('text-xs tabular-nums', h.noDividends ? 'text-muted-foreground' : 'text-emerald-500')}>
+                    {h.noDividends ? 'No dividend' : `${h.dividendYield.toFixed(2)}% yield`}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
+      {breakEvenYear != null && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -508,21 +675,21 @@ function ResultsView({
         >
           <TrendingUp className="h-5 w-5 text-primary shrink-0" />
           <p className="text-sm">
-            Cumulative dividends cover your initial investment in{' '}
+            Cumulative dividends cover your total investment in{' '}
             <strong className="text-foreground">year {breakEvenYear}</strong>.
           </p>
         </motion.div>
       )}
 
-      {mode === 'amount' && !noDividends && breakEvenYear == null && (
+      {hasAnyDividends && breakEvenYear == null && (
         <div className="rounded-xl border border-border/50 bg-muted/20 p-4">
           <p className="text-sm text-muted-foreground">
-            At current dividend levels, cumulative income does not cover the initial investment within the selected projection window.
+            At current dividend levels, cumulative income does not cover the total investment within the selected projection window.
           </p>
         </div>
       )}
 
-      {!noDividends && (
+      {hasAnyDividends && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }}>
           <p className="text-sm font-medium mb-3">
             Annual dividend income {drip ? '(DRIP — growing each year)' : '(no reinvestment — flat)'}
@@ -532,39 +699,52 @@ function ResultsView({
               <AreaChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#22c55e" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                    <stop offset="5%" stopColor={INCOME_COLOR} stopOpacity={0.25} />
+                    <stop offset="95%" stopColor={INCOME_COLOR} stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <XAxis dataKey="year" tick={{ fontSize: 11, fill: tickColor }} axisLine={false} tickLine={false} />
-                <YAxis tickFormatter={(v) => formatCurrency(v)} tick={{ fontSize: 11, fill: tickColor }} axisLine={false} tickLine={false} width={72} />
-                <Tooltip
-                  contentStyle={{ background: 'hsl(var(--background))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 12 }}
-                  formatter={(value: number) => [formatCurrency(value), 'Annual income']}
-                />
-                <Area dataKey="annualIncome" name="Annual income" type="monotone" stroke="#22c55e" strokeWidth={2} fill="url(#incomeGradient)" dot={false} />
+                <YAxis tickFormatter={(v) => fmtCompact(v)} tick={{ fontSize: 11, fill: tickColor }} axisLine={false} tickLine={false} width={72} />
+                <Tooltip content={<ChartTooltip fmt={fmtFull} />} />
+                <Area dataKey="annualIncome" name="Annual income" type="monotone" stroke={INCOME_COLOR} strokeWidth={2} fill="url(#incomeGradient)" dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </motion.div>
       )}
 
-      {!noDividends && (
+      {hasAnyDividends && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
           <p className="text-sm font-medium mb-3">Cumulative income over time</p>
+          <div className="flex items-center gap-4 mb-3 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full" style={{ background: INCOME_COLOR }} />
+              <span className="font-medium text-foreground">Cumulative income</span>
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full" style={{ background: PORTFOLIO_COLOR }} />
+              <span>Portfolio value</span>
+            </span>
+          </div>
           <div className="w-full overflow-hidden">
             <ResponsiveContainer width="100%" height={256}>
-              <LineChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+              <AreaChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="cumIncomeGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={INCOME_COLOR} stopOpacity={0.18} />
+                    <stop offset="95%" stopColor={INCOME_COLOR} stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="portfolioGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={PORTFOLIO_COLOR} stopOpacity={0.12} />
+                    <stop offset="95%" stopColor={PORTFOLIO_COLOR} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
                 <XAxis dataKey="year" tick={{ fontSize: 11, fill: tickColor }} axisLine={false} tickLine={false} />
-                <YAxis tickFormatter={(v) => formatCurrency(v)} tick={{ fontSize: 11, fill: tickColor }} axisLine={false} tickLine={false} width={72} />
-                <Tooltip
-                  contentStyle={{ background: 'hsl(var(--background))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 12 }}
-                  formatter={(value: number) => [formatCurrency(value)]}
-                />
-                <Legend />
-                <Line type="monotone" dataKey="cumulativeIncome" name="Cumulative income" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="portfolioValue" name="Portfolio value" stroke="hsl(var(--chart-2, 160 60% 45%))" strokeWidth={2} dot={false} strokeDasharray="4 4" />
-              </LineChart>
+                <YAxis tickFormatter={(v) => fmtCompact(v)} tick={{ fontSize: 11, fill: tickColor }} axisLine={false} tickLine={false} width={72} />
+                <Tooltip content={<ChartTooltip fmt={fmtFull} />} />
+                <Area type="monotone" dataKey="cumulativeIncome" name="Cumulative income" stroke={INCOME_COLOR} strokeWidth={2} fill="url(#cumIncomeGradient)" dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
+                <Area type="monotone" dataKey="portfolioValue" name="Portfolio value" stroke={PORTFOLIO_COLOR} strokeWidth={2} fill="url(#portfolioGradient)" dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
+              </AreaChart>
             </ResponsiveContainer>
           </div>
         </motion.div>

@@ -15,7 +15,8 @@ export function AnimatedCounter({
   className,
 }: AnimatedCounterProps) {
   const [display, setDisplay] = useState(0);
-  const spring = useSpring(0, { stiffness: 50, damping: 20 });
+  // Snappier settle — the previous (stiffness 50 / damping 20) felt sluggish.
+  const spring = useSpring(0, { stiffness: 130, damping: 26, restDelta: 0.5 });
 
   useEffect(() => {
     spring.set(value);

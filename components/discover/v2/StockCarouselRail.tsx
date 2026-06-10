@@ -74,15 +74,22 @@ export function StockCarouselRail({
 
     let raf = 0;
     let last = performance.now();
+    // Accumulate position as a float. Reading el.scrollLeft back each frame would
+    // round to an integer, so a sub-pixel delta (e.g. 15px/s ≈ 0.25px/frame) gets
+    // truncated away and the rail "barely moves". We own the float and only resync
+    // from the DOM while paused (hover / drag), so user scrolling is respected.
+    let pos = el.scrollLeft;
 
     const tick = (now: number) => {
       const dt = (now - last) / 1000;
       last = now;
-      if (!isHovering.current && !isDragging.current) {
+      if (isHovering.current || isDragging.current) {
+        pos = el.scrollLeft; // user is in control — stay in sync
+      } else {
         const half = el.scrollWidth / 2;
-        let next = el.scrollLeft + speed * dt;
-        if (half > 0 && next >= half) next -= half;
-        el.scrollLeft = next;
+        pos += speed * dt;
+        if (half > 0 && pos >= half) pos -= half;
+        el.scrollLeft = pos;
       }
       raf = requestAnimationFrame(tick);
     };

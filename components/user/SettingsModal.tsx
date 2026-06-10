@@ -22,10 +22,36 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Globe, DollarSign, Moon, Bell, Shield, AlertTriangle, Trash2, Download, Check, Settings2, Eye, EyeOff, Home, Hash, Search, Bot, LayoutGrid } from 'lucide-react';
+import { Loader2, Globe, DollarSign, Moon, Bell, Shield, AlertTriangle, Trash2, Download, Check, Settings2, Eye, EyeOff, Home, Hash, Search, Bot, LayoutGrid, LineChart, Wrench, ChevronDown, type LucideIcon } from 'lucide-react';
+import Image from 'next/image';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  HOMEPAGE_PAGES,
+  HOMEPAGE_TOOL_OPTIONS,
+  ALL_TOOLS_OPTION,
+  findHomepageOption,
+} from '@/lib/navigation/homepage-options';
 import { HomepageLayoutEditor } from '@/components/settings/HomepageLayoutEditor';
 import { DEFAULT_ORDER as DEFAULT_WIDGET_ORDER } from '@/lib/dashboard/widgets';
 import { ExperienceLevelToggle } from '@/components/ui/ExperienceLevelToggle';
+import { ChartPrefsControls } from '@/components/stock/ChartPrefsControls';
+import { useChartPrefs } from '@/hooks/use-chart-prefs';
+import {
+  SUPPORTED_MARKETS,
+  selectedCountriesFromCodes,
+  codesFromSelectedCountries,
+} from '@/lib/market/supported-markets';
+import { getCountryName } from '@/lib/market/country-flags';
+import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { TickerSelector, type SearchResult } from '@/components/tools/buy-here/TickerSelector';
 import { createBrowserClient } from '@/lib/supabase/client';
@@ -51,12 +77,55 @@ type ThemeValue = 'dark' | 'light' | 'gradient-purple' | 'gradient-blue' | 'grad
 
 const VALID_THEMES: ThemeValue[] = ['dark', 'light', 'gradient-purple', 'gradient-blue', 'gradient-midnight', 'gradient-embers'];
 
-/** Select sentinel — persisted value is `/stock/TICKER` */
-const HOMEPAGE_STOCK = '__stock__';
-
 function minimalStockPick(ticker: string): SearchResult {
   const t = ticker.toUpperCase();
   return { ticker: t, name: t, cik: '', has_data: false };
+}
+
+/** A single label + description + switch row. Shared across tabs for consistency. */
+function ToggleSetting({
+  label, description, checked, onCheckedChange, disabled, icon: Icon, badge,
+}: {
+  label: string;
+  description?: string;
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+  disabled?: boolean;
+  icon?: LucideIcon;
+  badge?: string;
+}) {
+  return (
+    <div className={cn('flex items-center justify-between gap-4 py-3.5', disabled && 'opacity-70')}>
+      <div className="min-w-0 space-y-0.5">
+        <div className="flex items-center gap-2">
+          {Icon && <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />}
+          <span className="text-sm font-medium text-foreground">{label}</span>
+          {badge && (
+            <Badge variant="secondary" className="h-4 px-1.5 text-[10px] font-medium">{badge}</Badge>
+          )}
+        </div>
+        {description && (
+          <p className="text-xs leading-snug text-muted-foreground">{description}</p>
+        )}
+      </div>
+      <Switch
+        checked={checked}
+        onCheckedChange={onCheckedChange}
+        disabled={disabled}
+        aria-label={label}
+        className="shrink-0"
+      />
+    </div>
+  );
+}
+
+/** Groups related rows into a single bordered card with hairline dividers. */
+function SettingsCard({ children, className }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div className={cn('rounded-xl border bg-card/30 px-4 divide-y divide-border/50', className)}>
+      {children}
+    </div>
+  );
 }
 
 export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalProps) {
@@ -77,18 +146,67 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
   // Settings state
-  const [selectedMarkets, setSelectedMarkets] = useState<string[]>([]);
+  // Selected market-hours exchange codes (null = all markets on by default).
+  const [marketHoursExchanges, setMarketHoursExchanges] = useState<string[] | null>(null);
   const [defaultCurrency, setDefaultCurrency] = useState<string | null>(null);
   const [theme, setTheme] = useState<ThemeValue>('dark');
   const [language, setLanguage] = useState<string | null>(null);
-  const [defaultHomepage, setDefaultHomepage] = useState<string>('/');
+  const [defaultHomepage, setDefaultHomepage] = useState<string>('/dashboard');
   /** Selected company when default homepage is a stock detail page (search UI) */
   const [homepageStockPick, setHomepageStockPick] = useState<SearchResult | null>(null);
-  const [showQuotes, setShowQuotes] = useState<boolean>(true);
+  /** True while the user is choosing "A specific stock" (shows the ticker search). */
+  const [stockMode, setStockMode] = useState<boolean>(false);
+  const [homepageMenuOpen, setHomepageMenuOpen] = useState<boolean>(false);
   const [showWelcomeText, setShowWelcomeText] = useState<boolean>(true);
   const [roundNumbers, setRoundNumbers] = useState<boolean>(false);
-  const [marketContextMode, setMarketContextMode] = useState<'all' | 'holdings'>('all');
   const [profilePublic, setProfilePublic] = useState<boolean>(true);
+
+  // Chart preferences — shared with the stock-page chart settings popover via the
+  // same hook (localStorage + users.settings.chart_prefs), so edits stay in sync.
+  const chartPrefs = useChartPrefs();
+
+  // Which markets are currently "on" in the Markets-to-display toggles.
+  const selectedCountries = selectedCountriesFromCodes(marketHoursExchanges);
+
+  const toggleMarket = (country: string) => {
+    const next = new Set(selectedCountries);
+    if (next.has(country)) next.delete(country);
+    else next.add(country);
+    // Empty (all off) or full (all on) both collapse to null = "all markets",
+    // which keeps the Market Context from ever rendering with zero markets.
+    if (next.size === 0 || next.size === SUPPORTED_MARKETS.length) {
+      setMarketHoursExchanges(null);
+    } else {
+      setMarketHoursExchanges(codesFromSelectedCountries(next));
+    }
+  };
+
+  // ── Default homepage picker ──────────────────────────────────────────────
+  const selectHomepage = (value: string) => {
+    setStockMode(false);
+    setHomepageStockPick(null);
+    setDefaultHomepage(value);
+    setHomepageMenuOpen(false);
+  };
+
+  const enterStockMode = () => {
+    // Don't commit a route yet — `defaultHomepage` only becomes a /stock/… path
+    // once the user actually picks a ticker below, so we never save a bogus stock.
+    setStockMode(true);
+    setHomepageMenuOpen(false);
+  };
+
+  const currentHomepageOption = findHomepageOption(defaultHomepage);
+  const HomepageIcon: LucideIcon = stockMode
+    ? LineChart
+    : currentHomepageOption?.icon ?? Home;
+  const homepageLabel = stockMode
+    ? homepageStockPick
+      ? homepageStockPick.name && homepageStockPick.name !== homepageStockPick.ticker
+        ? `${homepageStockPick.ticker} — ${homepageStockPick.name}`
+        : homepageStockPick.ticker
+      : t('settings.homepageStock')
+    : currentHomepageOption?.label ?? 'Home';
   const [holdingsPublic, setHoldingsPublic] = useState<boolean>(true);
   const [widgetOrder, setWidgetOrder] = useState<string[]>(DEFAULT_WIDGET_ORDER);
   const [widgetHidden, setWidgetHidden] = useState<string[]>([]);
@@ -122,14 +240,8 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
     isInitializedRef.current = false;
     if (user?.settings && open) {
       const settings = user.settings as Record<string, unknown>;
-      const markets = settings.selected_markets;
-      if (Array.isArray(markets)) {
-        setSelectedMarkets(markets);
-      } else if (markets) {
-        setSelectedMarkets([markets]);
-      } else {
-        setSelectedMarkets([]);
-      }
+      const savedExchanges = settings.market_hours_exchanges;
+      setMarketHoursExchanges(Array.isArray(savedExchanges) ? (savedExchanges as string[]) : null);
       setDefaultCurrency(settings.default_currency || null);
       setLanguage(settings.language || null);
 
@@ -154,14 +266,13 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
         insider_trades: settings.notifications?.insider_trades || false,
         signal_threshold_crossed: settings.notifications?.signal_threshold_crossed || false,
       });
-      const dh = (settings.default_homepage as string) || '/';
+      const dh = (settings.default_homepage as string) || '/dashboard';
       setDefaultHomepage(dh);
       const stockMatch = dh.match(/^\/stock\/([A-Za-z0-9.-]+)$/i);
       setHomepageStockPick(stockMatch ? minimalStockPick(stockMatch[1]) : null);
-      setShowQuotes(settings.show_quotes !== undefined ? settings.show_quotes : true);
+      setStockMode(!!stockMatch);
       setShowWelcomeText(settings.show_welcome_text !== undefined ? settings.show_welcome_text : true);
       setRoundNumbers(settings.round_numbers === true);
-      setMarketContextMode(settings.market_context_mode === 'holdings' ? 'holdings' : 'all');
       setProfilePublic(settings.profile_public !== false);
       setHoldingsPublic(settings.holdings_public !== false);
       setWidgetOrder(Array.isArray(settings.homepage_widget_order) ? settings.homepage_widget_order : DEFAULT_WIDGET_ORDER);
@@ -183,18 +294,26 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
     setError(null);
     try {
       const supabase = createBrowserClient();
-      const existingSettings = (user.settings as Record<string, unknown>) ?? {};
+      // Read the freshest settings before merging so we never clobber values
+      // written by other surfaces between modal open and save — chart_prefs (the
+      // stock-page chart popover) and market_hours_exchanges (the in-card editor).
+      const { data: latest } = await supabase
+        .from('users')
+        .select('settings')
+        .eq('id', user.id)
+        .single();
+      const existingSettings =
+        ((latest?.settings as Record<string, unknown>) ??
+          (user.settings as Record<string, unknown>)) ?? {};
       const mergedSettings = {
         ...existingSettings,
-        selected_markets: selectedMarkets.length === 0 ? null : selectedMarkets,
         default_currency: defaultCurrency,
         theme,
         language,
         default_homepage: defaultHomepage,
-        show_quotes: showQuotes,
         show_welcome_text: showWelcomeText,
         round_numbers: roundNumbers,
-        market_context_mode: marketContextMode,
+        market_hours_exchanges: marketHoursExchanges,
         notifications,
         profile_public: profilePublic,
         holdings_public: holdingsPublic,
@@ -248,7 +367,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
     }, 500);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedMarkets, defaultCurrency, theme, language, defaultHomepage, showQuotes, showWelcomeText, roundNumbers, marketContextMode, notifications, profilePublic, holdingsPublic, riskProfile, investmentHorizon, responseStyle, widgetOrder, widgetHidden]);
+  }, [marketHoursExchanges, defaultCurrency, theme, language, defaultHomepage, showWelcomeText, roundNumbers, notifications, profilePublic, holdingsPublic, riskProfile, investmentHorizon, responseStyle, widgetOrder, widgetHidden]);
 
   const handleDeleteAccount = async () => {
     if (!user) return;
@@ -347,73 +466,136 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
     }
   };
 
-  const sections: Array<{
+  interface SectionMeta {
     id: SettingsSection;
     label: string;
-    icon: React.ReactNode;
-  }> = [
-    { id: 'preferences', label: t('settings.preferences'), icon: <Globe className="h-4 w-4" /> },
-    { id: 'notifications', label: t('settings.notifications'), icon: <Bell className="h-4 w-4" /> },
-    { id: 'customize', label: t('settings.customize'), icon: <Settings2 className="h-4 w-4" /> },
-    { id: 'privacy', label: t('settings.privacy'), icon: <Shield className="h-4 w-4" /> },
-    { id: 'ai', label: 'AI', icon: <Bot className="h-4 w-4" /> },
-    { id: 'danger', label: t('settings.danger'), icon: <AlertTriangle className="h-4 w-4" /> },
+    description: string;
+    icon: LucideIcon;
+  }
+  const sectionGroups: Array<{ heading?: string; items: SectionMeta[] }> = [
+    {
+      items: [
+        { id: 'preferences', label: t('settings.preferences'), icon: Globe, description: 'Region, currency, language, theme, and your default homepage.' },
+        { id: 'notifications', label: t('settings.notifications'), icon: Bell, description: 'Choose which emails and alerts BullPen sends you.' },
+        { id: 'customize', label: t('settings.customize'), icon: Settings2, description: 'Tailor your home layout and chart defaults.' },
+        { id: 'ai', label: 'AI', icon: Bot, description: 'How BullPen AI communicates and frames its analysis.' },
+      ],
+    },
+    {
+      heading: 'Account',
+      items: [
+        { id: 'privacy', label: t('settings.privacy'), icon: Shield, description: 'Control your profile visibility and password.' },
+        { id: 'danger', label: t('settings.danger'), icon: AlertTriangle, description: 'Export your data or permanently delete your account.' },
+      ],
+    },
   ];
+  const allSections = sectionGroups.flatMap((g) => g.items);
+  const activeMeta = allSections.find((s) => s.id === activeSection) ?? allSections[0];
+  const ActiveIcon = activeMeta.icon;
+  const isDangerActive = activeSection === 'danger';
 
   if (!user) {
     return null;
   }
 
+  const emailInitials = (user.email ?? '?')
+    .split('@')[0]
+    .slice(0, 2)
+    .toUpperCase();
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[90vw] !max-w-[1000px] sm:!max-w-[1000px] h-[85vh] overflow-hidden flex flex-col p-0">
         <DialogHeader className="px-6 pt-6 pb-4 border-b">
-          <div className="flex items-center justify-between">
-            <div>
-              <DialogTitle>{t('settings.title')}</DialogTitle>
-              <DialogDescription>
-                {t('settings.description')}
-              </DialogDescription>
-            </div>
-            {/* Autosave status indicator */}
-            <div className="mr-8 flex items-center gap-1.5 text-xs text-muted-foreground min-w-[60px] justify-end">
-              {saveStatus === 'saving' && (
-                <>
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                  <span>Saving…</span>
-                </>
-              )}
-              {saveStatus === 'saved' && (
-                <>
-                  <Check className="h-3 w-3 text-emerald-500" />
-                  <span className="text-emerald-500">Saved</span>
-                </>
-              )}
-            </div>
-          </div>
+          <DialogTitle>{t('settings.title')}</DialogTitle>
+          <DialogDescription>
+            {t('settings.description')}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-1 overflow-hidden">
           {/* Sidebar Navigation */}
-          <div className="w-56 border-r bg-muted/30 p-4 space-y-2 flex-shrink-0">
-            {sections.map((section) => (
-              <button
-                key={section.id}
-                onClick={() => setActiveSection(section.id)}
-                className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${
-                  activeSection === section.id
-                    ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'hover:bg-accent text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {section.icon}
-                {section.label}
-              </button>
-            ))}
-          </div>
+          <aside className="flex w-16 flex-shrink-0 flex-col border-r bg-muted/20 sm:w-56">
+            <nav className="flex-1 space-y-4 overflow-y-auto p-2 sm:p-3">
+              {sectionGroups.map((group, gi) => (
+                <div key={gi} className="space-y-1">
+                  {group.heading && (
+                    <p className="hidden px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/50 sm:block">
+                      {group.heading}
+                    </p>
+                  )}
+                  {group.items.map((section) => {
+                    const Icon = section.icon;
+                    const active = activeSection === section.id;
+                    const danger = section.id === 'danger';
+                    return (
+                      <button
+                        key={section.id}
+                        onClick={() => setActiveSection(section.id)}
+                        aria-current={active ? 'page' : undefined}
+                        title={section.label}
+                        className={cn(
+                          'group relative flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                          'justify-center sm:justify-start',
+                          active
+                            ? 'bg-accent text-foreground'
+                            : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
+                          danger && (active ? 'text-destructive' : 'text-destructive/75 hover:text-destructive')
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            'absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r-full transition-opacity',
+                            danger ? 'bg-destructive' : 'bg-primary',
+                            active ? 'opacity-100' : 'opacity-0'
+                          )}
+                        />
+                        <Icon className={cn('h-4 w-4 shrink-0', active && !danger && 'text-primary')} />
+                        <span className="hidden sm:inline">{section.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
+            </nav>
+
+            {/* Identity + autosave status */}
+            <div className="hidden border-t p-3 sm:block">
+              <div className="flex min-w-0 items-center gap-2.5">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-semibold text-primary">
+                  {emailInitials}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-xs font-medium text-foreground">{user.email}</p>
+                  <p className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                    {saveStatus === 'saving' ? (
+                      <><Loader2 className="h-2.5 w-2.5 animate-spin" />Saving…</>
+                    ) : saveStatus === 'saved' ? (
+                      <><Check className="h-2.5 w-2.5 text-emerald-500" /><span className="text-emerald-500">All changes saved</span></>
+                    ) : (
+                      'Changes save automatically'
+                    )}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </aside>
 
           {/* Main Content */}
-          <div className="flex-1 overflow-y-auto p-6 min-h-0 relative">
+          <div className="relative min-h-0 flex-1 overflow-y-auto">
+            <div
+              key={activeSection}
+              className="p-6 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-right-1 motion-safe:duration-200"
+            >
+              {/* Section header */}
+              <div className="mb-6 max-w-2xl">
+                <div className="flex items-center gap-2">
+                  <ActiveIcon className={cn('h-4 w-4', isDangerActive ? 'text-destructive' : 'text-primary')} />
+                  <h2 className="text-base font-semibold tracking-tight text-foreground">{activeMeta.label}</h2>
+                </div>
+                <p className="mt-1 text-sm text-muted-foreground">{activeMeta.description}</p>
+              </div>
+
             {activeSection === 'preferences' && (
               <div className="space-y-6 max-w-2xl">
                 <div className="space-y-4">
@@ -422,65 +604,52 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                       <Globe className="h-4 w-4" />
                       {t('settings.markets')}
                     </Label>
-                    <div className="space-y-2">
-                      <button
-                        type="button"
-                        onClick={() => setSelectedMarkets([])}
-                        className="w-full flex items-center gap-3 px-3 py-2 rounded-md border bg-background hover:bg-accent text-left transition-colors"
-                      >
-                        <div className="flex h-4 w-4 items-center justify-center rounded border border-foreground/20">
-                          {selectedMarkets.length === 0 && (
-                            <Check className="h-3 w-3 text-foreground" />
-                          )}
-                        </div>
-                        <span className="text-sm font-medium">{t('settings.marketsAny')}</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (selectedMarkets.length === 0) {
-                            setSelectedMarkets(['US']);
-                          } else if (selectedMarkets.includes('US')) {
-                            const newMarkets = selectedMarkets.filter((m) => m !== 'US');
-                            setSelectedMarkets(newMarkets.length === 0 ? [] : newMarkets);
-                          } else {
-                            setSelectedMarkets([...selectedMarkets, 'US']);
-                          }
-                        }}
-                        className="w-full flex items-center gap-3 px-3 py-2 rounded-md border bg-background hover:bg-accent text-left transition-colors"
-                      >
-                        <div className="flex h-4 w-4 items-center justify-center rounded border border-foreground/20">
-                          {selectedMarkets.length > 0 && selectedMarkets.includes('US') && (
-                            <Check className="h-3 w-3 text-foreground" />
-                          )}
-                        </div>
-                        <span className="text-sm font-medium">{t('settings.marketsUS')}</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (selectedMarkets.length === 0) {
-                            setSelectedMarkets(['EU']);
-                          } else if (selectedMarkets.includes('EU')) {
-                            const newMarkets = selectedMarkets.filter((m) => m !== 'EU');
-                            setSelectedMarkets(newMarkets.length === 0 ? [] : newMarkets);
-                          } else {
-                            setSelectedMarkets([...selectedMarkets, 'EU']);
-                          }
-                        }}
-                        className="w-full flex items-center gap-3 px-3 py-2 rounded-md border bg-background hover:bg-accent text-left transition-colors"
-                      >
-                        <div className="flex h-4 w-4 items-center justify-center rounded border border-foreground/20">
-                          {selectedMarkets.length > 0 && selectedMarkets.includes('EU') && (
-                            <Check className="h-3 w-3 text-foreground" />
-                          )}
-                        </div>
-                        <span className="text-sm font-medium">{t('settings.marketsEU')}</span>
-                      </button>
-                    </div>
                     <p className="text-xs text-muted-foreground">
-                      {t('settings.marketsDescription')}
+                      Choose which markets appear in Market Context. All are shown by
+                      default — switch off the ones you don&apos;t follow.
                     </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {SUPPORTED_MARKETS.map(({ country }) => {
+                        const on = selectedCountries.has(country);
+                        const name = getCountryName(country);
+                        return (
+                          <button
+                            key={country}
+                            type="button"
+                            role="checkbox"
+                            aria-checked={on}
+                            onClick={() => toggleMarket(country)}
+                            className={cn(
+                              'flex items-center gap-2.5 rounded-md border px-3 py-2 text-left transition-colors',
+                              on
+                                ? 'border-primary/40 bg-primary/5'
+                                : 'border-border bg-background hover:bg-accent opacity-60 hover:opacity-100'
+                            )}
+                          >
+                            <Image
+                              src={`https://flagcdn.com/w20/${country.toLowerCase()}.png`}
+                              alt=""
+                              width={20}
+                              height={15}
+                              className="rounded-sm object-cover shrink-0"
+                              style={{ width: '20px', height: '15px' }}
+                              unoptimized
+                            />
+                            <span className="text-sm font-medium flex-1 min-w-0 truncate">{name}</span>
+                            <span
+                              className={cn(
+                                'flex h-4 w-4 items-center justify-center rounded border shrink-0',
+                                on
+                                  ? 'border-primary bg-primary text-primary-foreground'
+                                  : 'border-foreground/20'
+                              )}
+                            >
+                              {on && <Check className="h-3 w-3" />}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
 
                   <div className="space-y-2">
@@ -542,40 +711,104 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="default-homepage" className="flex items-center gap-2">
+                    <Label className="flex items-center gap-2">
                       <Home className="h-4 w-4" />
                       {t('settings.defaultHomepage')}
                     </Label>
-                    <Select
-                      value={/^\/stock\//i.test(defaultHomepage) ? HOMEPAGE_STOCK : defaultHomepage}
-                      onValueChange={(v) => {
-                        if (v === HOMEPAGE_STOCK) {
-                          const m = defaultHomepage.match(/^\/stock\/([A-Za-z0-9.-]+)$/i);
-                          const sym = ((m?.[1] ?? homepageStockPick?.ticker) || 'SPY').toUpperCase();
-                          setHomepageStockPick(minimalStockPick(sym));
-                          setDefaultHomepage(`/stock/${sym}`);
-                        } else {
-                          setDefaultHomepage(v);
-                        }
-                      }}
-                    >
-                      <SelectTrigger id="default-homepage">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="/">{t('settings.homepageDiscover')}</SelectItem>
-                        <SelectItem value="/holdings">{t('settings.homepageHoldings')}</SelectItem>
-                        <SelectItem value="/tools">{t('settings.homepageTools')}</SelectItem>
-                        <SelectItem value="/tools/ai-chat">{t('settings.homepageAIChat')}</SelectItem>
-                        <SelectItem value="/tools/screener">{t('settings.homepageScreener')}</SelectItem>
-                        <SelectItem value="/tools/compare">{t('settings.homepageCompare')}</SelectItem>
-                        <SelectItem value="/tools/filings">{t('settings.homepageFilings')}</SelectItem>
-                        <SelectItem value="/tools/buy-here">{t('settings.homepageBuyHere')}</SelectItem>
-                        <SelectItem value={HOMEPAGE_STOCK}>{t('settings.homepageStock')}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {/^\/stock\//i.test(defaultHomepage) && (
-                      <div className="space-y-1.5 pt-1">
+
+                    <DropdownMenu open={homepageMenuOpen} onOpenChange={setHomepageMenuOpen}>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          className="flex w-full items-center justify-between gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm transition-colors hover:bg-accent/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          <span className="flex min-w-0 items-center gap-2">
+                            <HomepageIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                            <span className="truncate">{homepageLabel}</span>
+                          </span>
+                          <ChevronDown
+                            className={cn(
+                              'h-4 w-4 shrink-0 opacity-50 transition-transform duration-200',
+                              homepageMenuOpen && 'rotate-180'
+                            )}
+                          />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent
+                        align="start"
+                        className="w-(--radix-dropdown-menu-trigger-width) min-w-[260px]"
+                      >
+                        {HOMEPAGE_PAGES.map((page) => {
+                          const Icon = page.icon;
+                          const selected = !stockMode && defaultHomepage === page.value;
+                          return (
+                            <DropdownMenuItem
+                              key={page.value}
+                              onSelect={() => selectHomepage(page.value)}
+                              className="cursor-pointer gap-2"
+                            >
+                              <Icon className="h-4 w-4" />
+                              <span>{page.label}</span>
+                              {selected && <Check className="ml-auto h-4 w-4 text-primary" />}
+                            </DropdownMenuItem>
+                          );
+                        })}
+
+                        <DropdownMenuSeparator />
+
+                        {/* Tools sub-dropdown */}
+                        <DropdownMenuSub>
+                          <DropdownMenuSubTrigger className="gap-2">
+                            <Wrench className="h-4 w-4" />
+                            <span>Tools</span>
+                          </DropdownMenuSubTrigger>
+                          <DropdownMenuSubContent className="max-h-[320px] overflow-y-auto">
+                            {HOMEPAGE_TOOL_OPTIONS.map((tool) => {
+                              const Icon = tool.icon;
+                              const selected = !stockMode && defaultHomepage === tool.value;
+                              return (
+                                <DropdownMenuItem
+                                  key={tool.value}
+                                  onSelect={() => selectHomepage(tool.value)}
+                                  className="cursor-pointer gap-2"
+                                >
+                                  <Icon className="h-4 w-4" />
+                                  <span>{tool.label}</span>
+                                  {selected && <Check className="ml-auto h-4 w-4 text-primary" />}
+                                </DropdownMenuItem>
+                              );
+                            })}
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onSelect={() => selectHomepage(ALL_TOOLS_OPTION.value)}
+                              className="cursor-pointer gap-2 font-medium"
+                            >
+                              <Wrench className="h-4 w-4" />
+                              <span>{ALL_TOOLS_OPTION.label}</span>
+                              {!stockMode && defaultHomepage === ALL_TOOLS_OPTION.value && (
+                                <Check className="ml-auto h-4 w-4 text-primary" />
+                              )}
+                            </DropdownMenuItem>
+                          </DropdownMenuSubContent>
+                        </DropdownMenuSub>
+
+                        <DropdownMenuSeparator />
+
+                        <DropdownMenuItem
+                          onSelect={() => enterStockMode()}
+                          className="cursor-pointer gap-2"
+                        >
+                          <LineChart className="h-4 w-4" />
+                          <span>{t('settings.homepageStock')}</span>
+                          {stockMode && <Check className="ml-auto h-4 w-4 text-primary" />}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    {/* Specific-stock search — rendered outside the menu so the
+                        input keeps focus (no Radix typeahead/focus-trap bugs). */}
+                    {stockMode && (
+                      <div className="space-y-1.5 rounded-md border border-border/60 bg-muted/20 p-3">
                         <Label className="flex items-center gap-2 text-xs">
                           <Search className="h-3.5 w-3.5" />
                           {t('settings.homepageStockTickerLabel')}
@@ -587,16 +820,19 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                               setHomepageStockPick(r);
                               setDefaultHomepage(`/stock/${r.ticker.toUpperCase()}`);
                             } else {
-                              const fallback = minimalStockPick('SPY');
-                              setHomepageStockPick(fallback);
-                              setDefaultHomepage('/stock/SPY');
+                              setHomepageStockPick(null);
                             }
                           }}
                           placeholder={t('settings.homepageStockSearchPlaceholder')}
                         />
-                        <p className="text-xs text-muted-foreground">{t('settings.homepageStockTickerHint')}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {homepageStockPick
+                            ? t('settings.homepageStockTickerHint')
+                            : 'Search and pick a stock to use as your homepage.'}
+                        </p>
                       </div>
                     )}
+
                     <p className="text-xs text-muted-foreground">
                       {t('settings.defaultHomepageDescription')}
                     </p>
@@ -624,238 +860,104 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                       </SelectContent>
                     </Select>
                   </div>
+
+                  <SettingsCard>
+                    <ToggleSetting
+                      icon={Hash}
+                      label={t('settings.roundNumbers')}
+                      description={t('settings.roundNumbersDescription')}
+                      checked={roundNumbers}
+                      onCheckedChange={setRoundNumbers}
+                    />
+                  </SettingsCard>
                 </div>
               </div>
             )}
 
             {activeSection === 'notifications' && (
               <div className="space-y-6 max-w-2xl">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label>Earnings Alerts</Label>
-                        <p className="text-xs text-muted-foreground">
-                          Email when companies in your holdings file new 10-K or 10-Q reports
-                        </p>
-                      </div>
-                      <Switch
-                        checked={notifications.holdings_earnings}
-                        onCheckedChange={(checked) =>
-                          setNotifications({ ...notifications, holdings_earnings: checked })
-                        }
-                      />
-                    </div>
-                  </div>
+                <SettingsCard>
+                  <ToggleSetting
+                    label="Earnings Alerts"
+                    description="Email when companies in your holdings file new 10-K or 10-Q reports"
+                    checked={notifications.holdings_earnings}
+                    onCheckedChange={(checked) => setNotifications({ ...notifications, holdings_earnings: checked })}
+                  />
+                  <ToggleSetting
+                    label="Upcoming Earnings Reminders"
+                    description="Get notified 7 days before a tracked stock reports earnings"
+                    checked={notifications.upcoming_earnings}
+                    onCheckedChange={(checked) => setNotifications({ ...notifications, upcoming_earnings: checked })}
+                  />
+                  <ToggleSetting
+                    label="Big Price Moves"
+                    description="Daily alert when a tracked stock moves 5% or more"
+                    checked={notifications.price_alerts}
+                    onCheckedChange={(checked) => setNotifications({ ...notifications, price_alerts: checked })}
+                  />
+                </SettingsCard>
 
-                  <Separator />
-
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label>Upcoming Earnings Reminders</Label>
-                        <p className="text-xs text-muted-foreground">
-                          Get notified 7 days before a tracked stock reports earnings
-                        </p>
-                      </div>
-                      <Switch
-                        checked={notifications.upcoming_earnings}
-                        onCheckedChange={(checked) =>
-                          setNotifications({ ...notifications, upcoming_earnings: checked })
-                        }
-                      />
-                    </div>
-                  </div>
-
-                  <Separator />
-
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label>Big Price Moves</Label>
-                        <p className="text-xs text-muted-foreground">
-                          Daily alert when a tracked stock moves 5% or more
-                        </p>
-                      </div>
-                      <Switch
-                        checked={notifications.price_alerts}
-                        onCheckedChange={(checked) =>
-                          setNotifications({ ...notifications, price_alerts: checked })
-                        }
-                      />
-                    </div>
-                  </div>
-
-                  <Separator />
-
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label>Breaking News</Label>
-                        <p className="text-xs text-muted-foreground">
-                          Receive alerts for important market news
-                        </p>
-                      </div>
-                      <Switch
-                        checked={notifications.breaking_news}
-                        onCheckedChange={(checked) =>
-                          setNotifications({ ...notifications, breaking_news: checked })
-                        }
-                        disabled
-                      />
-                    </div>
-                    <Badge variant="secondary" className="text-xs">
-                      Coming soon
-                    </Badge>
-                  </div>
-
-                  <Separator />
-
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label>Insider Trades</Label>
-                        <p className="text-xs text-muted-foreground">
-                          Notifications for significant insider trading activity
-                        </p>
-                      </div>
-                      <Switch
-                        checked={notifications.insider_trades}
-                        onCheckedChange={(checked) =>
-                          setNotifications({ ...notifications, insider_trades: checked })
-                        }
-                        disabled
-                      />
-                    </div>
-                    <Badge variant="secondary" className="text-xs">
-                      Coming soon
-                    </Badge>
-                  </div>
-
-                  <Separator />
-
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label>Signal Threshold Crossed</Label>
-                        <p className="text-xs text-muted-foreground">
-                          Alerts when signals cross your configured thresholds
-                        </p>
-                      </div>
-                      <Switch
-                        checked={notifications.signal_threshold_crossed}
-                        onCheckedChange={(checked) =>
-                          setNotifications({
-                            ...notifications,
-                            signal_threshold_crossed: checked,
-                          })
-                        }
-                        disabled
-                      />
-                    </div>
-                    <Badge variant="secondary" className="text-xs">
-                      Coming soon
-                    </Badge>
-                  </div>
+                <div className="space-y-2">
+                  <p className="px-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/50">
+                    Coming soon
+                  </p>
+                  <SettingsCard>
+                    <ToggleSetting
+                      label="Breaking News"
+                      description="Receive alerts for important market news"
+                      checked={notifications.breaking_news}
+                      onCheckedChange={(checked) => setNotifications({ ...notifications, breaking_news: checked })}
+                      disabled
+                    />
+                    <ToggleSetting
+                      label="Insider Trades"
+                      description="Notifications for significant insider trading activity"
+                      checked={notifications.insider_trades}
+                      onCheckedChange={(checked) => setNotifications({ ...notifications, insider_trades: checked })}
+                      disabled
+                    />
+                    <ToggleSetting
+                      label="Signal Threshold Crossed"
+                      description="Alerts when signals cross your configured thresholds"
+                      checked={notifications.signal_threshold_crossed}
+                      onCheckedChange={(checked) => setNotifications({ ...notifications, signal_threshold_crossed: checked })}
+                      disabled
+                    />
+                  </SettingsCard>
                 </div>
               </div>
             )}
 
             {activeSection === 'customize' && (
-              <div className="space-y-6 max-w-2xl">
+              <div className="space-y-8 max-w-2xl">
+                <div className="space-y-2">
+                  <ExperienceLevelToggle variant="full" />
+                </div>
+
+                {/* ── Home ──────────────────────────────────────────── */}
                 <div className="space-y-4">
-
-                  <div className="space-y-2">
-                    <ExperienceLevelToggle variant="full" />
+                  <div className="flex items-center gap-2 border-b pb-2">
+                    <Home className="h-4 w-4 text-muted-foreground" />
+                    <h3 className="text-sm font-semibold">Home</h3>
                   </div>
 
-                  <Separator />
+                  <SettingsCard>
+                    <ToggleSetting
+                      label="Show Welcome Text"
+                      description="Display a personalized welcome message at the top of the page"
+                      checked={showWelcomeText}
+                      onCheckedChange={setShowWelcomeText}
+                    />
+                  </SettingsCard>
 
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label>Show Investing Quotes</Label>
-                        <p className="text-xs text-muted-foreground">
-                          Display inspirational investing quotes on the main page
-                        </p>
-                      </div>
-                      <Switch
-                        checked={showQuotes}
-                        onCheckedChange={setShowQuotes}
-                      />
-                    </div>
-                  </div>
-
-                  <Separator />
-
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label>Show Welcome Text</Label>
-                        <p className="text-xs text-muted-foreground">
-                          Display personalized welcome message at the top of the page
-                        </p>
-                      </div>
-                      <Switch
-                        checked={showWelcomeText}
-                        onCheckedChange={setShowWelcomeText}
-                      />
-                    </div>
-                  </div>
-
-                  <Separator />
-
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label className="flex items-center gap-2">
-                          <Hash className="h-4 w-4" />
-                          {t('settings.roundNumbers')}
-                        </Label>
-                        <p className="text-xs text-muted-foreground">
-                          {t('settings.roundNumbersDescription')}
-                        </p>
-                      </div>
-                      <Switch
-                        checked={roundNumbers}
-                        onCheckedChange={setRoundNumbers}
-                      />
-                    </div>
-                  </div>
-
-                  <Separator />
-
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-2">
-                      <Globe className="h-4 w-4" />
-                      {t('settings.marketContext')}
-                    </Label>
-                    <Select
-                      value={marketContextMode}
-                      onValueChange={(v) => setMarketContextMode(v as 'all' | 'holdings')}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">{t('settings.marketContextAll')}</SelectItem>
-                        <SelectItem value="holdings">{t('settings.marketContextHoldings')}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground">
-                      {t('settings.marketContextDescription')}
-                    </p>
-                  </div>
-
-                  <Separator />
-
-                  <div className="space-y-3">
+                  <div className="space-y-3 pt-1">
                     <Label className="flex items-center gap-2">
                       <LayoutGrid className="h-4 w-4" />
                       Homepage Layout
                     </Label>
                     <p className="text-xs text-muted-foreground">
-                      Drag to reorder widgets on your homepage. Toggle the eye icon to hide widgets you don&apos;t use.
+                      Drag to reorder cards on your homepage. Toggle the eye icon to hide cards
+                      you don&apos;t use — including the investing quote.
                     </p>
                     <HomepageLayoutEditor
                       order={widgetOrder}
@@ -864,6 +966,25 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                         setWidgetOrder(o);
                         setWidgetHidden(h);
                       }}
+                    />
+                  </div>
+                </div>
+
+                {/* ── Charts ────────────────────────────────────────── */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 border-b pb-2">
+                    <LineChart className="h-4 w-4 text-muted-foreground" />
+                    <h3 className="text-sm font-semibold">Charts</h3>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Defaults for every price chart. These stay in sync with the chart settings
+                    on each stock page.
+                  </p>
+                  <div className="rounded-lg border bg-muted/20 p-4">
+                    <ChartPrefsControls
+                      prefs={chartPrefs.prefs}
+                      setPref={chartPrefs.setPref}
+                      reset={chartPrefs.reset}
                     />
                   </div>
                 </div>
@@ -879,34 +1000,21 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                       <Shield className="h-4 w-4" />
                       Profile Visibility
                     </Label>
-                    <div className="rounded-lg border bg-muted/30 p-4 space-y-4">
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <p className="text-sm font-medium">Public profile</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            Allow other BullPen members to find and view your profile page.
-                          </p>
-                        </div>
-                        <Switch
-                          checked={profilePublic}
-                          onCheckedChange={setProfilePublic}
-                        />
-                      </div>
-                      <Separator />
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <p className="text-sm font-medium">Show portfolio</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            Show your portfolio stocks (ticker and company name only — no quantities or prices) on your public profile.
-                          </p>
-                        </div>
-                        <Switch
-                          checked={holdingsPublic}
-                          onCheckedChange={setHoldingsPublic}
-                          disabled={!profilePublic}
-                        />
-                      </div>
-                    </div>
+                    <SettingsCard>
+                      <ToggleSetting
+                        label="Public profile"
+                        description="Allow other BullPen members to find and view your profile page."
+                        checked={profilePublic}
+                        onCheckedChange={setProfilePublic}
+                      />
+                      <ToggleSetting
+                        label="Show portfolio"
+                        description="Show your portfolio stocks (ticker and company name only — no quantities or prices) on your public profile."
+                        checked={holdingsPublic}
+                        onCheckedChange={setHoldingsPublic}
+                        disabled={!profilePublic}
+                      />
+                    </SettingsCard>
                   </div>
 
                   <Separator />
@@ -1000,13 +1108,6 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
 
             {activeSection === 'ai' && (
               <div className="space-y-6 max-w-2xl">
-                <div>
-                  <h3 className="text-sm font-semibold">AI Preferences</h3>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Customize how BullPen AI communicates and analyzes information for you.
-                  </p>
-                </div>
-
                 <div className="space-y-2">
                   <ExperienceLevelToggle variant="full" />
                 </div>
@@ -1176,6 +1277,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                 {error}
               </div>
             )}
+            </div>
           </div>
         </div>
       </DialogContent>

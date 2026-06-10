@@ -6,14 +6,41 @@ import {
   isLikelyTickerQuery,
   pickPrimaryListingPerSymbol,
   pickPrimaryPerCompanyName,
+  rankByRelevance,
   symbolOrderFromResults,
 } from '@/lib/search/twelvedata-symbol-search-rank';
 import { withRateLimit, addSecurityHeaders, validateSearchQueryParam } from '@/lib/security/api-security';
 import { validateLimit } from '@/lib/security/input-validation';
 import { logger } from '@/lib/utils/logger';
 import { getCached, setCached } from '@/lib/cache/market-data-cache';
+import { createServerClient } from '@/lib/supabase/client';
 
 const SEARCH_TTL_SECONDS = 60 * 60; // 1 hour
+
+/**
+ * Market cap per ticker from our tracked universe — used as the "popularity"
+ * signal so the most significant stock ranks first within a relevance tier.
+ * One indexed query per uncached search; misses just rank as 0 (last in tier).
+ */
+async function marketCapMap(symbols: string[]): Promise<Map<string, number>> {
+  const uniq = [...new Set(symbols.map((s) => s.toUpperCase()))];
+  if (uniq.length === 0) return new Map();
+  try {
+    const supabase = createServerClient();
+    const { data } = await supabase
+      .from('screener_stats')
+      .select('ticker, market_cap')
+      .in('ticker', uniq);
+    return new Map(
+      (data ?? []).map((r) => [
+        (r as { ticker: string }).ticker.toUpperCase(),
+        Number((r as { market_cap: number | null }).market_cap) || 0,
+      ])
+    );
+  } catch {
+    return new Map();
+  }
+}
 
 // Instrument types we consider relevant
 const RELEVANT_TYPES = new Set([
@@ -88,6 +115,12 @@ async function handler(request: NextRequest) {
     if (!tickerQuery) {
       collapsed = filterNonUsWhenUsExists(collapsed);
     }
+
+    // Re-rank by query relevance, then popularity (market cap from our universe),
+    // so the most relevant/significant match leads (e.g. Micron Technology before
+    // Micron Solutions). Applies to every search since all go through this route.
+    const popularity = await marketCapMap(collapsed.map((r) => r.symbol));
+    collapsed = rankByRelevance(collapsed, query, popularity);
 
     // Build up to 30 results for cache; caller gets `limit` items
     const allResults = collapsed.slice(0, 30).map((r) => ({

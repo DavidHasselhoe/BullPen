@@ -7,6 +7,9 @@ import { DEFAULT_ORDER as DEFAULT_WIDGET_ORDER } from '@/lib/dashboard/widgets';
 
 export type MarketContextMode = 'all' | 'holdings';
 
+/** Tool ids shown in the home "Tools shortcut" card before the user customises it. */
+export const DEFAULT_TOOL_SHORTCUTS = ['screener', 'alerts', 'compare'];
+
 export function useUserSettings() {
   const { user } = useAuth();
 
@@ -38,6 +41,33 @@ export function useUserSettings() {
     ? (settings.market_hours_exchanges as string[])
     : null;
 
+  // User-picked one-click tool shortcuts shown on the home page. Defaults to a
+  // useful starter set; an explicit empty array means the user removed them all.
+  const toolsShortcuts: string[] = Array.isArray(settings.tools_shortcuts)
+    ? (settings.tools_shortcuts as string[])
+    : DEFAULT_TOOL_SHORTCUTS;
+
+  const updateToolsShortcuts = useCallback(
+    async (ids: string[]) => {
+      if (!user?.id) return;
+      const supabase = createBrowserClient();
+      const { data: row, error: fetchError } = await supabase
+        .from('users')
+        .select('settings')
+        .eq('id', user.id)
+        .single();
+      if (fetchError) return;
+      const existing = (row?.settings as Record<string, unknown>) || {};
+      const merged = { ...existing, tools_shortcuts: ids };
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ settings: merged })
+        .eq('id', user.id);
+      if (updateError) return;
+      window.dispatchEvent(new Event('auth:refresh'));
+    },
+    [user]
+  );
 
   const updateMarketHoursExchanges = useCallback(
     async (codes: string[]) => {
@@ -96,5 +126,7 @@ export function useUserSettings() {
     homepageWidgetHidden,
     marketHoursExchanges,
     updateMarketHoursExchanges,
+    toolsShortcuts,
+    updateToolsShortcuts,
   };
 }

@@ -194,26 +194,31 @@ export default function HoldingsPage() {
       const logoUrl = logosMap[holding.symbol] || null;
       const sector = sectorsMap[holding.symbol] ?? null;
 
-      // The live WebSocket tick gives us the current price but not reliable change data.
-      // Derive previousClose from the batch REST quote (batchPrice − batchChange = previous_close)
-      // so we can recompute dayChange live as the price moves throughout the session.
       const currentPriceUSD = liveQuote?.price ?? batchQuote?.price;
 
+      // previousClose anchor — lets us recompute dayChange live as the price moves.
+      // Prefer the batch REST quote (price − change); fall back to the live SSE
+      // tick's previousClose, which the stream seeds within ~0.5s of page load.
+      // (Previously this used only the batch quote, so the column showed 0%/blank
+      //  for any symbol the batch missed until it eventually arrived.)
       const previousCloseUSD =
-        batchQuote && batchQuote.price > 0
+        batchQuote && batchQuote.price > 0 && batchQuote.change !== undefined
           ? batchQuote.price - batchQuote.change
-          : undefined;
+          : liveQuote && liveQuote.previousClose > 0
+            ? liveQuote.previousClose
+            : undefined;
 
-      // Recompute change from live price whenever we have a previous close anchor.
+      // Recompute change from live price whenever we have a previous close anchor,
+      // else fall back to whatever change the batch or live tick already carries.
       const dayChangeUSD =
         currentPriceUSD !== undefined && previousCloseUSD !== undefined
           ? currentPriceUSD - previousCloseUSD
-          : batchQuote?.change;
+          : batchQuote?.change ?? liveQuote?.change;
 
       const dayChangePercent =
         currentPriceUSD !== undefined && previousCloseUSD && previousCloseUSD > 0
           ? ((currentPriceUSD - previousCloseUSD) / previousCloseUSD) * 100
-          : batchQuote?.changePercent;
+          : batchQuote?.changePercent ?? liveQuote?.changePercent;
 
       const marketValueUSD =
         currentPriceUSD && holding.quantity ? currentPriceUSD * holding.quantity : undefined;

@@ -226,7 +226,7 @@ export function MarketHoursCard({
                 <button
                   type="button"
                   onClick={() => handleRemove(status.exchange.code)}
-                  className="h-7 w-7 rounded-md flex items-center justify-center text-muted-foreground/60 hover:text-red-400 hover:bg-red-500/10 transition-colors shrink-0"
+                  className="h-7 w-7 rounded-md flex items-center justify-center bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-500 transition-colors shrink-0"
                   aria-label={`Remove ${countryName}`}
                   title={`Remove ${countryName}`}
                 >

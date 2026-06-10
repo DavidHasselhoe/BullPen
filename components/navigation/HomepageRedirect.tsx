@@ -3,24 +3,7 @@
 import { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
-
-const VALID_HOMEPAGES = [
-  '/dashboard',
-  '/discover',
-  '/holdings',
-  '/tools',
-  '/tools/ai-chat',
-  '/tools/screener',
-  '/tools/compare',
-  '/tools/filings',
-  '/tools/buy-here',
-];
-
-const STOCK_HOMEPAGE_RE = /^\/stock\/[A-Za-z0-9.-]{1,10}$/;
-
-function isAllowedDefaultHomepage(path: string): boolean {
-  return VALID_HOMEPAGES.includes(path) || STOCK_HOMEPAGE_RE.test(path);
-}
+import { isAllowedDefaultHomepage } from '@/lib/navigation/homepage-options';
 
 /**
  * When a logged-in user lands on /dashboard and has a default_homepage setting

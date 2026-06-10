@@ -1,0 +1,140 @@
+'use client';
+
+import { Plus, X, LineChart as LineChartIcon } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
+import {
+  INDICATORS,
+  getIndicatorDef,
+  indicatorLabel,
+  type IndicatorInstance,
+} from '@/lib/finance/indicators';
+
+interface Props {
+  indicators: IndicatorInstance[];
+  onAdd: (type: string) => void;
+  onRemove: (id: string) => void;
+  onUpdate: (id: string, params: Record<string, number>) => void;
+}
+
+const OVERLAYS = INDICATORS.filter((d) => d.group === 'overlay');
+const OSCILLATORS = INDICATORS.filter((d) => d.group === 'oscillator');
+
+function clampParam(value: number, min: number, max: number): number {
+  if (Number.isNaN(value)) return min;
+  return Math.min(max, Math.max(min, value));
+}
+
+export function IndicatorMenu({ indicators, onAdd, onRemove, onUpdate }: Props) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        >
+          <LineChartIcon className="h-3.5 w-3.5" />
+          Indicators
+          {indicators.length > 0 && (
+            <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
+              {indicators.length}
+            </span>
+          )}
+        </button>
+      </PopoverTrigger>
+
+      {/* z above the z-[100] fullscreen modal — the content portals to <body>. */}
+      <PopoverContent align="end" className="z-[110] w-80 p-0">
+        {/* Active indicators */}
+        {indicators.length > 0 && (
+          <div className="border-b border-border/60 p-2">
+            <p className="px-1 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+              Active
+            </p>
+            <div className="space-y-1.5">
+              {indicators.map((inst) => {
+                const def = getIndicatorDef(inst.type);
+                if (!def) return null;
+                const color = inst.color ?? def.lines.find((l) => l.primary)?.color ?? def.lines[0]?.color;
+                return (
+                  <div key={inst.id} className="flex items-center gap-2 rounded-md bg-muted/40 px-2 py-1.5">
+                    <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: color }} />
+                    <span className="w-12 shrink-0 truncate text-xs font-medium text-foreground">{def.label}</span>
+                    <div className="flex flex-1 items-center gap-1">
+                      {def.params.map((spec) => (
+                        <input
+                          key={spec.key}
+                          type="number"
+                          aria-label={`${indicatorLabel(inst)} ${spec.label}`}
+                          title={spec.label}
+                          value={inst.params[spec.key]}
+                          min={spec.min}
+                          max={spec.max}
+                          step={spec.step ?? 1}
+                          onChange={(e) =>
+                            onUpdate(inst.id, {
+                              ...inst.params,
+                              [spec.key]: clampParam(parseFloat(e.target.value), spec.min, spec.max),
+                            })
+                          }
+                          className="h-7 w-14 rounded border border-input bg-background px-1.5 text-xs tabular-nums focus:outline-none focus:ring-1 focus:ring-ring"
+                        />
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => onRemove(inst.id)}
+                      aria-label={`Remove ${def.label}`}
+                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground/60 transition-colors hover:bg-red-500/10 hover:text-red-400"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Add catalog */}
+        <div className="max-h-72 overflow-y-auto p-2">
+          <AddGroup title="Overlays" defs={OVERLAYS} onAdd={onAdd} />
+          <AddGroup title="Oscillators" defs={OSCILLATORS} onAdd={onAdd} className="mt-2" />
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function AddGroup({
+  title, defs, onAdd, className,
+}: {
+  title: string;
+  defs: typeof INDICATORS;
+  onAdd: (type: string) => void;
+  className?: string;
+}) {
+  return (
+    <div className={className}>
+      <p className="px-1 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+        {title}
+      </p>
+      <div className="space-y-0.5">
+        {defs.map((def) => (
+          <button
+            key={def.type}
+            type="button"
+            onClick={() => onAdd(def.type)}
+            className={cn(
+              'flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-accent/60'
+            )}
+          >
+            <Plus className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />
+            <span className="w-12 shrink-0 text-xs font-semibold text-foreground">{def.label}</span>
+            <span className="flex-1 truncate text-xs text-muted-foreground">{def.name}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}

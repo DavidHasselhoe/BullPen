@@ -12,6 +12,7 @@ export const DASHBOARD_WIDGETS: DashboardWidget[] = [
   { id: 'earnings_calendar', label: 'Earnings calendar' },
   { id: 'hot_picks',         label: 'Hot Picks' },
   { id: 'crypto_market',     label: 'Crypto & Commodities' },
+  { id: 'investing_quote',   label: 'Investing quote' },
 ];
 
 export const DEFAULT_ORDER: string[] = DASHBOARD_WIDGETS.map((w) => w.id);

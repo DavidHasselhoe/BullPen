@@ -346,8 +346,14 @@ export default function WatchlistPage() {
               displayItems.map((item) => {
                 const live = livePrices.get(item.symbol);
                 const seed = seedQuotes?.[item.symbol];
+                // A live tick before prevClose is seeded carries undefined change/%
+                // — fall back to the seed quote so the column never blanks to 0.
                 return [item.symbol, live
-                  ? { price: live.price, change: live.change, changePercent: live.changePercent }
+                  ? {
+                      price: live.price,
+                      change: live.change ?? seed?.change ?? 0,
+                      changePercent: live.changePercent ?? seed?.changePercent ?? 0,
+                    }
                   : seed ?? null];
               })
             )}

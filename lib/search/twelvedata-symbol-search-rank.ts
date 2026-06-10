@@ -12,6 +12,49 @@ export function isLikelyTickerQuery(query: string): boolean {
   return /^[A-Z0-9][A-Z0-9.-]*$/.test(t);
 }
 
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/** Query-match tier for a result — lower is more relevant. */
+function relevanceTier(r: SymbolSearchResult, qLower: string, qUpper: string): number {
+  const sym = r.symbol.toUpperCase();
+  const name = r.instrument_name.toLowerCase();
+  if (sym === qUpper) return 0;                                       // exact ticker
+  if (name === qLower) return 1;                                      // exact company name
+  if (name.startsWith(qLower)) return 2;                             // name starts with query
+  if (sym.startsWith(qUpper)) return 3;                              // ticker starts with query
+  if (new RegExp(`\\b${escapeRegExp(qLower)}`).test(name)) return 4; // query at a word boundary
+  if (name.includes(qLower)) return 5;                               // substring anywhere
+  return 6;
+}
+
+/**
+ * Final ordering for search results: query-match relevance first, then
+ * popularity (market cap from our tracked universe, when supplied), then listing
+ * quality. JS sort is stable, so TwelveData's own order breaks remaining ties.
+ *
+ * This is why "micron" surfaces Micron Technology (large-cap, in our universe)
+ * above Micron Solutions / Ambiq Micro, instead of trusting raw API order.
+ */
+export function rankByRelevance(
+  rows: SymbolSearchResult[],
+  query: string,
+  popularity?: Map<string, number>,
+): SymbolSearchResult[] {
+  const qLower = query.toLowerCase().trim();
+  const qUpper = query.toUpperCase().trim();
+  return [...rows].sort((a, b) => {
+    const ta = relevanceTier(a, qLower, qUpper);
+    const tb = relevanceTier(b, qLower, qUpper);
+    if (ta !== tb) return ta - tb;
+    const pa = popularity?.get(a.symbol.toUpperCase()) ?? 0;
+    const pb = popularity?.get(b.symbol.toUpperCase()) ?? 0;
+    if (pa !== pb) return pb - pa;
+    return scoreCandidate(b) - scoreCandidate(a);
+  });
+}
+
 const US_COUNTRY = new Set(['united states', 'us', 'usa']);
 
 export function isUnitedStatesListing(r: SymbolSearchResult): boolean {

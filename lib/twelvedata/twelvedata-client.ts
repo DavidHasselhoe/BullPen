@@ -1025,7 +1025,8 @@ export interface DividendItem {
 }
 
 interface TwelveDataDividendItem {
-  ex_dividend_date?: string;
+  ex_date?: string;           // current field name returned by /dividends
+  ex_dividend_date?: string;  // legacy field name (kept as a fallback)
   payment_date?: string | null;
   record_date?: string | null;
   declaration_date?: string | null;
@@ -1042,7 +1043,17 @@ interface TwelveDataDividendsResponse {
 
 export async function getDividends(symbol: string): Promise<DividendItem[]> {
   logUsage('dividends', symbol);
-  const url = buildUrl('/dividends', { symbol: symbol.toUpperCase(), outputsize: 20 });
+  // /dividends defaults to a single (most recent) record and does NOT honour
+  // `outputsize`; a date range is required to get real history. Fetch ~6y so
+  // TTM yield and the dividend-history table both have enough data.
+  const end = new Date();
+  const start = new Date(end);
+  start.setFullYear(start.getFullYear() - 6);
+  const url = buildUrl('/dividends', {
+    symbol: symbol.toUpperCase(),
+    start_date: start.toISOString().slice(0, 10),
+    end_date: end.toISOString().slice(0, 10),
+  });
   const response = await fetch(url);
   const data = (await response.json()) as TwelveDataDividendsResponse;
 
@@ -1053,7 +1064,8 @@ export async function getDividends(symbol: string): Promise<DividendItem[]> {
   }
 
   return (data.dividends ?? []).map((item) => ({
-    ex_dividend_date: item.ex_dividend_date ?? '',
+    // The API returns `ex_date`; older responses used `ex_dividend_date`.
+    ex_dividend_date: item.ex_date ?? item.ex_dividend_date ?? '',
     payment_date: item.payment_date ?? null,
     record_date: item.record_date ?? null,
     declaration_date: item.declaration_date ?? null,
