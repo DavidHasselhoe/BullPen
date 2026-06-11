@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   createChart, createSeriesMarkers, ColorType, CrosshairMode, LineStyle,
   CandlestickSeries, LineSeries, AreaSeries, HistogramSeries,
@@ -14,6 +14,9 @@ import {
   type IndicatorInstance,
 } from '@/lib/finance/indicators';
 import type { AdvancedChartType } from '@/hooks/use-chart-prefs';
+import { cn } from '@/lib/utils';
+
+export type ChartTool = 'none' | 'measure' | 'alert';
 
 interface Props {
   candles: OHLCV | null;
@@ -27,10 +30,24 @@ interface Props {
   fitKey: string;
   /** Past earnings events to mark on the price series (when the Events toggle is on). */
   events?: { ts: number; beat: boolean | null }[];
+  /** Unix seconds: bars before this are warm-up only (not rendered). */
+  displayFrom?: number;
+  /** Live price — updates the last (intraday) bar in place. */
+  livePrice?: number;
+  /** Active interaction tool. */
+  tool?: ChartTool;
+  /** Called with a clicked price level when the alert tool is active. */
+  onCreateAlert?: (price: number) => void;
 }
 
 const UP = '#22c55e';
 const DOWN = '#ef4444';
+
+interface LastBar { time: UTCTimestamp; open: number; high: number; low: number; close: number }
+interface MeasureBox {
+  left: number; top: number; width: number; height: number;
+  up: boolean; dAbs: number; dPct: number; bars: number; days: number;
+}
 
 function chartTheme(isDark: boolean) {
   const text = isDark ? '#a1a1aa' : '#52525b';
@@ -54,8 +71,12 @@ function chartTheme(isDark: boolean) {
  * Sort ascending + dedupe by time (lightweight-charts requires strictly
  * ascending, unique times). Returns `order` — the original candle indices in the
  * accepted order — so indicator series can be built with the identical ordering.
+ *
+ * When `displayFrom` is set, bars before it are used only as indicator warm-up
+ * (they advance prevClose) but are NOT rendered — so a 200-period SMA can cover
+ * the whole visible window without the chart showing extra history.
  */
-function pricePoints(candles: OHLCV) {
+function pricePoints(candles: OHLCV, displayFrom?: number) {
   const idx = candles.t.map((_, i) => i).sort((a, b) => candles.t[a] - candles.t[b]);
   const seen = new Set<number>();
   const order: number[] = [];
@@ -67,22 +88,30 @@ function pricePoints(candles: OHLCV) {
     const time = candles.t[i] as UTCTimestamp;
     if (seen.has(time)) continue;
     seen.add(time);
-    order.push(i);
-    candle.push({ time, open: candles.o[i], high: candles.h[i], low: candles.l[i], close: candles.c[i] });
-    line.push({ time, value: candles.c[i] });
-    volume.push({ time, value: candles.v[i] || 0, color: candles.c[i] >= prevClose ? `${UP}55` : `${DOWN}55` });
+    if (displayFrom == null || time >= displayFrom) {
+      order.push(i);
+      candle.push({ time, open: candles.o[i], high: candles.h[i], low: candles.l[i], close: candles.c[i] });
+      line.push({ time, value: candles.c[i] });
+      volume.push({ time, value: candles.v[i] || 0, color: candles.c[i] >= prevClose ? `${UP}55` : `${DOWN}55` });
+    }
     prevClose = candles.c[i];
   }
   return { candle, line, volume, order };
 }
 
-export function AdvancedChart({ candles, chartType, indicators, showVolume, isDark, intraday, fitKey, events }: Props) {
+export function AdvancedChart({
+  candles, chartType, indicators, showVolume, isDark, intraday, fitKey, events, displayFrom,
+  livePrice, tool = 'none', onCreateAlert,
+}: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const legendRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<SeriesType>[]>([]);
   const priceSeriesRef = useRef<ISeriesApi<SeriesType> | null>(null);
+  const lastBarRef = useRef<LastBar | null>(null);
   const lastFitKey = useRef<string>('');
+  const dragRef = useRef<{ x: number; y: number } | null>(null);
+  const [measureBox, setMeasureBox] = useState<MeasureBox | null>(null);
 
   // ── Create chart once ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -113,14 +142,15 @@ export function AdvancedChart({ candles, chartType, indicators, showVolume, isDa
   }, [intraday]);
 
   // Pre-compute candle-derived point sets (independent of chart type).
-  const points = useMemo(() => (candles ? pricePoints(candles) : null), [candles]);
+  // Indicators still compute over the full `candles` (incl. warm-up); only the
+  // rendered bars are limited to >= displayFrom.
+  const points = useMemo(() => (candles ? pricePoints(candles, displayFrom) : null), [candles, displayFrom]);
 
   // ── Rebuild all series on data / type / indicator / volume change ───────────
   useEffect(() => {
     const chart = chartRef.current;
     if (!chart || !candles || !points) return;
 
-    // Tear down previous series.
     for (const s of seriesRef.current) {
       try { chart.removeSeries(s); } catch { /* already gone */ }
     }
@@ -145,6 +175,10 @@ export function AdvancedChart({ candles, chartType, indicators, showVolume, isDa
     }
     priceSeriesRef.current = priceSeries;
     seriesRef.current.push(priceSeries);
+    lastBarRef.current = points.candle.length ? points.candle[points.candle.length - 1] : null;
+
+    // Markers (earnings events + SMA crosses) are all set in one call at the end.
+    const markers: SeriesMarker<Time>[] = [];
 
     // ── Event markers (past earnings), snapped to the nearest candle ──
     if (events?.length) {
@@ -153,7 +187,6 @@ export function AdvancedChart({ candles, chartType, indicators, showVolume, isDa
         const first = times[0];
         const last = times[times.length - 1];
         const used = new Set<number>();
-        const markers: SeriesMarker<Time>[] = [];
         for (const ev of events) {
           if (ev.ts < first - 86_400 || ev.ts > last + 86_400) continue;
           let best = times[0];
@@ -167,8 +200,6 @@ export function AdvancedChart({ candles, chartType, indicators, showVolume, isDa
           const color = ev.beat === null ? '#f59e0b' : ev.beat ? UP : DOWN;
           markers.push({ time: best as Time, position: 'belowBar', color, shape: 'circle', text: 'E' });
         }
-        markers.sort((a, b) => (a.time as number) - (b.time as number));
-        if (markers.length) createSeriesMarkers(priceSeries, markers);
       }
     }
 
@@ -184,6 +215,7 @@ export function AdvancedChart({ candles, chartType, indicators, showVolume, isDa
 
     // ── Indicators ──
     let nextPane = 1; // pane 0 is price; oscillators get their own panes
+    const smaOutputs: { period: number; values: (number | null)[] }[] = [];
     for (const inst of indicators) {
       const def = getIndicatorDef(inst.type);
       if (!def) continue;
@@ -191,13 +223,16 @@ export function AdvancedChart({ candles, chartType, indicators, showVolume, isDa
       let output: Record<string, (number | null)[]>;
       try { output = def.compute(candles, params); } catch { continue; }
 
+      if (inst.type === 'sma' && output.sma) {
+        smaOutputs.push({ period: params.length ?? 0, values: output.sma });
+      }
+
       const paneIndex = def.group === 'oscillator' ? nextPane++ : 0;
       let refTarget: ISeriesApi<SeriesType> | null = null;
 
       for (const line of def.lines) {
         const raw = output[line.key];
         if (!raw) continue;
-        // Build in the same sorted/deduped order as the price series.
         const data = points.order
           .map((i) => ({ time: candles.t[i] as UTCTimestamp, value: raw[i] }))
           .filter((d) => d.value != null) as { time: UTCTimestamp; value: number }[];
@@ -226,7 +261,6 @@ export function AdvancedChart({ candles, chartType, indicators, showVolume, isDa
         }
       }
 
-      // Oscillator reference levels (e.g. RSI 30/70) on the pane's first series.
       if (refTarget && def.refLines) {
         for (const ref of def.refLines) {
           refTarget.createPriceLine({
@@ -236,7 +270,34 @@ export function AdvancedChart({ candles, chartType, indicators, showVolume, isDa
       }
     }
 
-    // Give the price pane more height than oscillator panes.
+    // ── Golden / death cross markers (when two SMAs are present) ──
+    if (smaOutputs.length >= 2) {
+      const sorted = [...smaOutputs].sort((a, b) => a.period - b.period);
+      const shortV = sorted[0].values;
+      const longV = sorted[sorted.length - 1].values;
+      let prevI = -1;
+      for (const i of points.order) {
+        if (prevI >= 0) {
+          const ps = shortV[prevI], pl = longV[prevI], cs = shortV[i], cl = longV[i];
+          if (ps != null && pl != null && cs != null && cl != null) {
+            const prevDiff = ps - pl;
+            const diff = cs - cl;
+            if (prevDiff <= 0 && diff > 0) {
+              markers.push({ time: candles.t[i] as Time, position: 'belowBar', color: UP, shape: 'arrowUp', text: 'GC' });
+            } else if (prevDiff >= 0 && diff < 0) {
+              markers.push({ time: candles.t[i] as Time, position: 'aboveBar', color: DOWN, shape: 'arrowDown', text: 'DC' });
+            }
+          }
+        }
+        prevI = i;
+      }
+    }
+
+    if (markers.length) {
+      markers.sort((a, b) => (a.time as number) - (b.time as number));
+      createSeriesMarkers(priceSeries, markers);
+    }
+
     const panes = chart.panes();
     if (panes.length > 1) {
       panes[0].setStretchFactor(3);
@@ -249,15 +310,29 @@ export function AdvancedChart({ candles, chartType, indicators, showVolume, isDa
     }
   }, [candles, points, chartType, indicators, showVolume, fitKey, events]);
 
+  // ── Live last-bar update (intraday) ─────────────────────────────────────────
+  useEffect(() => {
+    if (livePrice == null) return;
+    const ps = priceSeriesRef.current;
+    const last = lastBarRef.current;
+    if (!ps || !last) return;
+    if (chartType === 'candles') {
+      (ps as ISeriesApi<'Candlestick'>).update({
+        time: last.time, open: last.open,
+        high: Math.max(last.high, livePrice), low: Math.min(last.low, livePrice), close: livePrice,
+      });
+    } else {
+      (ps as ISeriesApi<'Line'>).update({ time: last.time, value: livePrice });
+    }
+  }, [livePrice, chartType]);
+
   // ── Alt+R / Option+R → reset zoom (TradingView parity) ──────────────────────
-  // `e.code === 'KeyR'` is layout/OS-independent (Mac Option+R mangles `e.key`).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (!e.altKey || e.code !== 'KeyR') return;
       const chart = chartRef.current;
       if (!chart) return;
       e.preventDefault();
-      // Re-enable vertical autoscale on every pane, then fit the time axis.
       for (const s of seriesRef.current) {
         try { s.priceScale().applyOptions({ autoScale: true }); } catch { /* detached */ }
       }
@@ -291,16 +366,73 @@ export function AdvancedChart({ candles, chartType, indicators, showVolume, isDa
     return () => chart.unsubscribeCrosshairMove(handler);
   }, []);
 
-  // Active indicator legend chips (top-left, below OHLC).
+  // Clear the measure box when leaving the tool.
+  useEffect(() => {
+    if (tool !== 'measure') { setMeasureBox(null); dragRef.current = null; }
+  }, [tool]);
+
   const indicatorLegend = indicators.map((inst) => {
     const def = getIndicatorDef(inst.type);
     const color = inst.color ?? def?.lines.find((l) => l.primary)?.color ?? def?.lines[0]?.color ?? '#888';
     return { id: inst.id, label: indicatorLabel(inst), color };
   });
 
+  // ── Interaction overlay (measure + alert) ──────────────────────────────────
+  function localXY(e: { clientX: number; clientY: number }) {
+    const r = containerRef.current!.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+  }
+
+  function computeBox(x1: number, y1: number, x2: number, y2: number): MeasureBox | null {
+    const ps = priceSeriesRef.current;
+    const chart = chartRef.current;
+    if (!ps || !chart) return null;
+    const p1 = ps.coordinateToPrice(y1);
+    const p2 = ps.coordinateToPrice(y2);
+    if (p1 == null || p2 == null) return null;
+    const ts = chart.timeScale();
+    const l1 = ts.coordinateToLogical(x1);
+    const l2 = ts.coordinateToLogical(x2);
+    const t1 = ts.coordinateToTime(x1) as number | null;
+    const t2 = ts.coordinateToTime(x2) as number | null;
+    const dAbs = (p2 as number) - (p1 as number);
+    const dPct = p1 ? (dAbs / (p1 as number)) * 100 : 0;
+    const bars = l1 != null && l2 != null ? Math.abs(Math.round((l2 as number) - (l1 as number))) : 0;
+    const days = t1 != null && t2 != null ? Math.abs(t2 - t1) / 86_400 : 0;
+    return {
+      left: Math.min(x1, x2), top: Math.min(y1, y2), width: Math.abs(x2 - x1), height: Math.abs(y2 - y1),
+      up: dAbs >= 0, dAbs, dPct, bars, days,
+    };
+  }
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    if (tool !== 'measure') return;
+    const { x, y } = localXY(e);
+    dragRef.current = { x, y };
+    setMeasureBox(null);
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  };
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (tool !== 'measure' || !dragRef.current) return;
+    const { x, y } = localXY(e);
+    setMeasureBox(computeBox(dragRef.current.x, dragRef.current.y, x, y));
+  };
+  const onPointerUp = () => { if (tool === 'measure') dragRef.current = null; };
+  const onClick = (e: React.MouseEvent) => {
+    if (tool !== 'alert' || !onCreateAlert) return;
+    const { y } = localXY(e);
+    const price = priceSeriesRef.current?.coordinateToPrice(y);
+    if (price != null) onCreateAlert(price as number);
+  };
+
+  const span = measureBox
+    ? measureBox.days >= 1 ? `${Math.round(measureBox.days)}d` : `${Math.round(measureBox.days * 24)}h`
+    : '';
+
   return (
     <div className="relative h-full w-full">
       <div ref={containerRef} className="h-full w-full" />
+
       {/* Crosshair OHLC + indicator legend */}
       <div className="pointer-events-none absolute left-3 top-2 z-10 space-y-1">
         <div ref={legendRef} className="text-xs font-medium tabular-nums text-foreground/90" />
@@ -313,6 +445,46 @@ export function AdvancedChart({ candles, chartType, indicators, showVolume, isDa
               </span>
             ))}
           </div>
+        )}
+      </div>
+
+      {/* Tool hint */}
+      {tool !== 'none' && (
+        <div className="pointer-events-none absolute right-3 top-2 z-20 rounded-md bg-background/80 px-2 py-1 text-[11px] font-medium text-muted-foreground backdrop-blur">
+          {tool === 'measure' ? 'Drag to measure' : 'Click a price level to set an alert'}
+        </div>
+      )}
+
+      {/* Interaction capture layer (only intercepts when a tool is active) */}
+      <div
+        className={cn('absolute inset-0 z-20', tool === 'none' ? 'pointer-events-none' : 'cursor-crosshair')}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onClick={onClick}
+      >
+        {measureBox && (
+          <>
+            <div
+              className="absolute border"
+              style={{
+                left: measureBox.left, top: measureBox.top, width: measureBox.width, height: measureBox.height,
+                background: measureBox.up ? `${UP}1f` : `${DOWN}1f`,
+                borderColor: measureBox.up ? UP : DOWN,
+              }}
+            />
+            <div
+              className="absolute -translate-x-1/2 whitespace-nowrap rounded-md px-2 py-1 text-[11px] font-semibold tabular-nums text-white shadow-lg"
+              style={{
+                left: measureBox.left + measureBox.width / 2,
+                top: Math.max(0, measureBox.top - 34),
+                background: measureBox.up ? UP : DOWN,
+              }}
+            >
+              {measureBox.dAbs >= 0 ? '+' : ''}{measureBox.dAbs.toFixed(2)} ({measureBox.dPct >= 0 ? '+' : ''}{measureBox.dPct.toFixed(2)}%)
+              <span className="ml-1.5 font-normal opacity-90">{measureBox.bars} bars · {span}</span>
+            </div>
+          </>
         )}
       </div>
     </div>

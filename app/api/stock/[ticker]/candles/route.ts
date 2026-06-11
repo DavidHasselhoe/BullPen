@@ -46,6 +46,9 @@ async function handler(
   const assetType = inferAssetType(symbol);
   const { searchParams } = new URL(request.url);
   const range = (searchParams.get('range') ?? '1Y') as Range;
+  // Extra leading history (calendar days) so indicators like a 200-period SMA
+  // have warm-up data before the visible window. Ignored for 1D (intraday).
+  const padDays = Math.max(0, Math.min(4000, parseInt(searchParams.get('padDays') ?? '0', 10) || 0));
 
   const now = Math.floor(Date.now() / 1000);
   // YTD: from Jan 1 of the current year at midnight UTC
@@ -65,7 +68,7 @@ async function handler(
   const todayDateET = is1D && !isCrypto24h
     ? new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' }) // "YYYY-MM-DD"
     : undefined;
-  const from = is1D ? now - 24 * 60 * 60 : now - config.daysBack * 24 * 60 * 60;
+  const from = is1D ? now - 24 * 60 * 60 : now - (config.daysBack + padDays) * 24 * 60 * 60;
   const candleOptions = is1D && todayDateET
     ? { extendedHours: true, startDate: `${todayDateET} 04:00:00`, endDate: `${todayDateET} 23:59:00` }
     : undefined;
@@ -97,7 +100,9 @@ async function handler(
     : (range === '1W' || range === '1M')
     ? 30 * 60
     : 6 * 60 * 60;
-  const cacheKey = cacheTtlSeconds != null ? `candles:${symbol}:${range}` : null;
+  const cacheKey = cacheTtlSeconds != null
+    ? (padDays > 0 ? `candles:${symbol}:${range}:p${padDays}` : `candles:${symbol}:${range}`)
+    : null;
 
   if (cacheKey) {
     const cachedBody = await getCached<Record<string, unknown>>(cacheKey);

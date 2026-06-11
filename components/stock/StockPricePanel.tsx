@@ -11,7 +11,7 @@ import {
   BarChart, Bar, Cell,
 } from 'recharts';
 import { useChartPrefs } from '@/hooks/use-chart-prefs';
-import { getIndicatorDef, defaultParamsFor, INDICATOR_PALETTE, type IndicatorInstance } from '@/lib/finance/indicators';
+import { getIndicatorDef, defaultParamsFor, INDICATOR_PALETTE, INDICATOR_PRESETS, type IndicatorInstance } from '@/lib/finance/indicators';
 import { ChartSettingsPanel } from './ChartSettingsPanel';
 import type { CompanyEarnings } from '@/lib/twelvedata/twelvedata-client';
 import { useTheme } from 'next-themes';
@@ -174,6 +174,23 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
     setPref('advancedIndicators', advIndicators.filter((i) => i.id !== id));
   const updateAdvIndicator = (id: string, params: Record<string, number>) =>
     setPref('advancedIndicators', advIndicators.map((i) => (i.id === id ? { ...i, params } : i)));
+  const applyAdvPreset = (presetId: string) => {
+    const preset = INDICATOR_PRESETS.find((p) => p.id === presetId);
+    if (!preset) return;
+    const insts = preset.items
+      .map((item, i) => {
+        const def = getIndicatorDef(item.type);
+        if (!def) return null;
+        return {
+          id: `${item.type}-${Date.now()}-${i}`,
+          type: item.type,
+          params: { ...defaultParamsFor(def), ...(item.params ?? {}) },
+          color: INDICATOR_PALETTE[i % INDICATOR_PALETTE.length],
+        } as IndicatorInstance;
+      })
+      .filter((x): x is IndicatorInstance => x != null);
+    setPref('advancedIndicators', insts);
+  };
 
   function toggleIndicator(key: Indicator) {
     setActiveIndicators((prev) => {
@@ -864,6 +881,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
           onAddIndicator={addAdvIndicator}
           onRemoveIndicator={removeAdvIndicator}
           onUpdateIndicator={updateAdvIndicator}
+          onApplyPreset={applyAdvPreset}
           showVolume={prefs.showVolume}
           onToggleVolume={() => setPref('showVolume', !prefs.showVolume)}
           showEvents={prefs.showEarnings}

@@ -5,6 +5,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 import {
   INDICATORS,
+  INDICATOR_PRESETS,
   getIndicatorDef,
   indicatorLabel,
   type IndicatorInstance,
@@ -15,6 +16,7 @@ interface Props {
   onAdd: (type: string) => void;
   onRemove: (id: string) => void;
   onUpdate: (id: string, params: Record<string, number>) => void;
+  onApplyPreset: (presetId: string) => void;
 }
 
 const OVERLAYS = INDICATORS.filter((d) => d.group === 'overlay');
@@ -25,7 +27,7 @@ function clampParam(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-export function IndicatorMenu({ indicators, onAdd, onRemove, onUpdate }: Props) {
+export function IndicatorMenu({ indicators, onAdd, onRemove, onUpdate, onApplyPreset }: Props) {
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -45,6 +47,26 @@ export function IndicatorMenu({ indicators, onAdd, onRemove, onUpdate }: Props) 
 
       {/* z above the z-[100] fullscreen modal — the content portals to <body>. */}
       <PopoverContent align="end" className="z-[110] w-80 p-0">
+        {/* Presets */}
+        <div className="border-b border-border/60 p-2">
+          <p className="px-1 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+            Presets
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {INDICATOR_PRESETS.map((preset) => (
+              <button
+                key={preset.id}
+                type="button"
+                onClick={() => onApplyPreset(preset.id)}
+                title={preset.description}
+                className="rounded-full border border-border bg-background px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-foreground"
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Active indicators */}
         {indicators.length > 0 && (
           <div className="border-b border-border/60 p-2">

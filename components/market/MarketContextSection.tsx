@@ -19,11 +19,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { ALL_SUPPORTED_EXCHANGE_CODES } from '@/lib/market/supported-markets';
 
-// Default when the user hasn't toggled any markets off in Preferences → "Markets
-// to display": show every market we support.
-const DEFAULT_EXCHANGES = ALL_SUPPORTED_EXCHANGE_CODES;
+// Sensible default set shown in the Market Hours widget until the user customises
+// it via the widget's own add/remove (edit) controls.
+const DEFAULT_EXCHANGES = ['NYSE', 'NASDAQ', 'LSE', 'OSE', 'XETRA', 'STO'];
 
 export function MarketContextSection() {
   const { isAuthenticated } = useAuth();

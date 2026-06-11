@@ -382,6 +382,29 @@ export function defaultParamsFor(def: IndicatorDef): Record<string, number> {
   return p;
 }
 
+/** One-click starter sets so newcomers don't face a blank canvas. */
+export interface IndicatorPreset {
+  id: string;
+  label: string;
+  description: string;
+  items: { type: string; params?: Record<string, number> }[];
+}
+
+export const INDICATOR_PRESETS: IndicatorPreset[] = [
+  {
+    id: 'trend', label: 'Trend', description: 'SMA 50 & 200 with cross markers',
+    items: [{ type: 'sma', params: { length: 50 } }, { type: 'sma', params: { length: 200 } }],
+  },
+  {
+    id: 'momentum', label: 'Momentum', description: 'RSI + MACD',
+    items: [{ type: 'rsi' }, { type: 'macd' }],
+  },
+  {
+    id: 'volatility', label: 'Volatility', description: 'Bollinger Bands + ATR',
+    items: [{ type: 'bbands' }, { type: 'atr' }],
+  },
+];
+
 /** Short human label, e.g. "SMA 50" or "MACD 12 26 9". */
 export function indicatorLabel(inst: IndicatorInstance): string {
   const def = getIndicatorDef(inst.type);

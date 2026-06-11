@@ -2,15 +2,17 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { useTheme } from 'next-themes';
 import { motion } from 'framer-motion';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import type { AdvancedChartType, ChartRange } from '@/hooks/use-chart-prefs';
 import { useStockQuote } from '@/hooks/use-stock-price';
+import { useLivePrices } from '@/hooks/use-live-prices';
 import type { CompanyEarnings } from '@/lib/twelvedata/twelvedata-client';
 import type { OHLCV, IndicatorInstance } from '@/lib/finance/indicators';
-import { AdvancedChart } from './AdvancedChart';
+import { AdvancedChart, type ChartTool } from './AdvancedChart';
 import { ChartToolbar } from './ChartToolbar';
 
 interface CandlesResponse {
@@ -20,6 +22,20 @@ interface CandlesResponse {
 }
 
 const INTRADAY_RANGES = new Set<ChartRange>(['1D', '1W', '1M']);
+
+// Approximate bars-per-calendar-day + the visible window per range — used to
+// fetch enough warm-up history for long indicators (e.g. SMA 200) so they cover
+// the whole visible window instead of starting partway in.
+const RANGE_META: Record<ChartRange, { daysBack: number; barsPerDay: number }> = {
+  '1D':  { daysBack: 1,        barsPerDay: 390 },
+  '1W':  { daysBack: 7,        barsPerDay: 26 },
+  '1M':  { daysBack: 31,       barsPerDay: 7 },
+  '6M':  { daysBack: 183,      barsPerDay: 1 },
+  '1Y':  { daysBack: 365,      barsPerDay: 1 },
+  'YTD': { daysBack: 365,      barsPerDay: 1 },
+  '5Y':  { daysBack: 365 * 5,  barsPerDay: 1 / 7 },
+  'MAX': { daysBack: 365 * 20, barsPerDay: 1 / 7 },
+};
 
 interface Props {
   ticker: string;
@@ -31,6 +47,7 @@ interface Props {
   onAddIndicator: (type: string) => void;
   onRemoveIndicator: (id: string) => void;
   onUpdateIndicator: (id: string, params: Record<string, number>) => void;
+  onApplyPreset: (presetId: string) => void;
   showVolume: boolean;
   onToggleVolume: () => void;
   showEvents: boolean;
@@ -39,19 +56,49 @@ interface Props {
 
 export function AdvancedChartModal({
   ticker, initialRange, onClose,
-  chartType, onChartType, indicators, onAddIndicator, onRemoveIndicator, onUpdateIndicator,
+  chartType, onChartType, indicators, onAddIndicator, onRemoveIndicator, onUpdateIndicator, onApplyPreset,
   showVolume, onToggleVolume, showEvents, onToggleEvents,
 }: Props) {
+  const router = useRouter();
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme !== 'light';
   const [range, setRange] = useState<ChartRange>(initialRange);
+  const [tool, setTool] = useState<ChartTool>('none');
 
   const { data: quote } = useStockQuote(ticker);
 
+  // Live ticks for the in-place last-bar update (1D only).
+  const liveMap = useLivePrices([ticker]);
+  const livePrice = range === '1D' ? liveMap.get(ticker)?.price : undefined;
+
+  const handleCreateAlert = (price: number) => {
+    const current = quote?.c ?? price;
+    const type = price >= current ? 'price_above' : 'price_below';
+    const params = new URLSearchParams({ symbol: ticker.toUpperCase(), price: price.toFixed(2), type });
+    onClose();
+    router.push(`/tools/alerts?${params.toString()}`);
+  };
+
+  // Longest indicator lookback in use → warm-up history to fetch behind the
+  // visible window so long SMAs span the full timeframe (TradingView parity).
+  const maxPeriod = useMemo(() => {
+    let m = 0;
+    for (const inst of indicators) {
+      for (const v of Object.values(inst.params)) if (typeof v === 'number') m = Math.max(m, v);
+    }
+    return m;
+  }, [indicators]);
+
+  const padDays = useMemo(() => {
+    if (range === '1D' || maxPeriod <= 0) return 0;
+    return Math.min(4000, Math.ceil((maxPeriod / RANGE_META[range].barsPerDay) * 1.6));
+  }, [range, maxPeriod]);
+
   const { data, isLoading, isError } = useQuery<CandlesResponse>({
-    queryKey: ['stock-candles', ticker, range],
+    queryKey: ['stock-candles', ticker, range, padDays],
     queryFn: async () => {
-      const res = await fetch(`/api/stock/${ticker}/candles?range=${range}`);
+      const url = `/api/stock/${ticker}/candles?range=${range}${padDays ? `&padDays=${padDays}` : ''}`;
+      const res = await fetch(url);
       if (res.status === 429) throw new Error('rate_limited');
       return res.json();
     },
@@ -77,6 +124,16 @@ export function AdvancedChartModal({
       beat: e.actual != null && e.estimate != null ? e.actual >= e.estimate : null,
     }));
   }, [showEvents, earningsResp]);
+
+  // Anchor the visible window to the newest loaded bar (avoids Date.now during
+  // render). Bars before this are warm-up only so long SMAs cover the window.
+  const displayFrom = useMemo(() => {
+    const t = data?.candles?.t;
+    if (range === '1D' || maxPeriod <= 0 || !t?.length) return undefined;
+    let lastT = t[0];
+    for (const x of t) if (x > lastT) lastT = x;
+    return lastT - RANGE_META[range].daysBack * 86400;
+  }, [range, maxPeriod, data]);
 
   // Body scroll lock + Esc to close. (Rendered client-only via ssr:false, so
   // document is always available — no mount gate needed.)
@@ -117,10 +174,13 @@ export function AdvancedChartModal({
         onAddIndicator={onAddIndicator}
         onRemoveIndicator={onRemoveIndicator}
         onUpdateIndicator={onUpdateIndicator}
+        onApplyPreset={onApplyPreset}
         showVolume={showVolume}
         onToggleVolume={onToggleVolume}
         showEvents={showEvents}
         onToggleEvents={onToggleEvents}
+        tool={tool}
+        onToolChange={setTool}
         onClose={onClose}
       />
 
@@ -147,8 +207,12 @@ export function AdvancedChartModal({
             showVolume={showVolume}
             isDark={isDark}
             intraday={INTRADAY_RANGES.has(range)}
-            fitKey={range}
+            fitKey={`${range}:${displayFrom ?? 0}`}
             events={events}
+            displayFrom={displayFrom}
+            livePrice={livePrice}
+            tool={tool}
+            onCreateAlert={handleCreateAlert}
           />
         )}
       </div>

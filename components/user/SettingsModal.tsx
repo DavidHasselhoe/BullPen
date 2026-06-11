@@ -23,7 +23,6 @@ import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Globe, DollarSign, Moon, Bell, Shield, AlertTriangle, Trash2, Download, Check, Settings2, Eye, EyeOff, Home, Hash, Search, Bot, LayoutGrid, LineChart, Wrench, ChevronDown, type LucideIcon } from 'lucide-react';
-import Image from 'next/image';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,12 +44,6 @@ import { DEFAULT_ORDER as DEFAULT_WIDGET_ORDER } from '@/lib/dashboard/widgets';
 import { ExperienceLevelToggle } from '@/components/ui/ExperienceLevelToggle';
 import { ChartPrefsControls } from '@/components/stock/ChartPrefsControls';
 import { useChartPrefs } from '@/hooks/use-chart-prefs';
-import {
-  SUPPORTED_MARKETS,
-  selectedCountriesFromCodes,
-  codesFromSelectedCountries,
-} from '@/lib/market/supported-markets';
-import { getCountryName } from '@/lib/market/country-flags';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { TickerSelector, type SearchResult } from '@/components/tools/buy-here/TickerSelector';
@@ -146,8 +139,6 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
   // Settings state
-  // Selected market-hours exchange codes (null = all markets on by default).
-  const [marketHoursExchanges, setMarketHoursExchanges] = useState<string[] | null>(null);
   const [defaultCurrency, setDefaultCurrency] = useState<string | null>(null);
   const [theme, setTheme] = useState<ThemeValue>('dark');
   const [language, setLanguage] = useState<string | null>(null);
@@ -164,22 +155,6 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
   // Chart preferences — shared with the stock-page chart settings popover via the
   // same hook (localStorage + users.settings.chart_prefs), so edits stay in sync.
   const chartPrefs = useChartPrefs();
-
-  // Which markets are currently "on" in the Markets-to-display toggles.
-  const selectedCountries = selectedCountriesFromCodes(marketHoursExchanges);
-
-  const toggleMarket = (country: string) => {
-    const next = new Set(selectedCountries);
-    if (next.has(country)) next.delete(country);
-    else next.add(country);
-    // Empty (all off) or full (all on) both collapse to null = "all markets",
-    // which keeps the Market Context from ever rendering with zero markets.
-    if (next.size === 0 || next.size === SUPPORTED_MARKETS.length) {
-      setMarketHoursExchanges(null);
-    } else {
-      setMarketHoursExchanges(codesFromSelectedCountries(next));
-    }
-  };
 
   // ── Default homepage picker ──────────────────────────────────────────────
   const selectHomepage = (value: string) => {
@@ -240,8 +215,6 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
     isInitializedRef.current = false;
     if (user?.settings && open) {
       const settings = user.settings as Record<string, unknown>;
-      const savedExchanges = settings.market_hours_exchanges;
-      setMarketHoursExchanges(Array.isArray(savedExchanges) ? (savedExchanges as string[]) : null);
       setDefaultCurrency(settings.default_currency || null);
       setLanguage(settings.language || null);
 
@@ -313,7 +286,6 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
         default_homepage: defaultHomepage,
         show_welcome_text: showWelcomeText,
         round_numbers: roundNumbers,
-        market_hours_exchanges: marketHoursExchanges,
         notifications,
         profile_public: profilePublic,
         holdings_public: holdingsPublic,
@@ -367,7 +339,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
     }, 500);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [marketHoursExchanges, defaultCurrency, theme, language, defaultHomepage, showWelcomeText, roundNumbers, notifications, profilePublic, holdingsPublic, riskProfile, investmentHorizon, responseStyle, widgetOrder, widgetHidden]);
+  }, [defaultCurrency, theme, language, defaultHomepage, showWelcomeText, roundNumbers, notifications, profilePublic, holdingsPublic, riskProfile, investmentHorizon, responseStyle, widgetOrder, widgetHidden]);
 
   const handleDeleteAccount = async () => {
     if (!user) return;
@@ -599,59 +571,6 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
             {activeSection === 'preferences' && (
               <div className="space-y-6 max-w-2xl">
                 <div className="space-y-4">
-                  <div className="space-y-3">
-                    <Label className="flex items-center gap-2">
-                      <Globe className="h-4 w-4" />
-                      {t('settings.markets')}
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      Choose which markets appear in Market Context. All are shown by
-                      default — switch off the ones you don&apos;t follow.
-                    </p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {SUPPORTED_MARKETS.map(({ country }) => {
-                        const on = selectedCountries.has(country);
-                        const name = getCountryName(country);
-                        return (
-                          <button
-                            key={country}
-                            type="button"
-                            role="checkbox"
-                            aria-checked={on}
-                            onClick={() => toggleMarket(country)}
-                            className={cn(
-                              'flex items-center gap-2.5 rounded-md border px-3 py-2 text-left transition-colors',
-                              on
-                                ? 'border-primary/40 bg-primary/5'
-                                : 'border-border bg-background hover:bg-accent opacity-60 hover:opacity-100'
-                            )}
-                          >
-                            <Image
-                              src={`https://flagcdn.com/w20/${country.toLowerCase()}.png`}
-                              alt=""
-                              width={20}
-                              height={15}
-                              className="rounded-sm object-cover shrink-0"
-                              style={{ width: '20px', height: '15px' }}
-                              unoptimized
-                            />
-                            <span className="text-sm font-medium flex-1 min-w-0 truncate">{name}</span>
-                            <span
-                              className={cn(
-                                'flex h-4 w-4 items-center justify-center rounded border shrink-0',
-                                on
-                                  ? 'border-primary bg-primary text-primary-foreground'
-                                  : 'border-foreground/20'
-                              )}
-                            >
-                              {on && <Check className="h-3 w-3" />}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
                   <div className="space-y-2">
                     <Label htmlFor="default-currency" className="flex items-center gap-2">
                       <DollarSign className="h-4 w-4" />

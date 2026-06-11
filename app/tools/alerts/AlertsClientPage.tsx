@@ -12,7 +12,7 @@ import { humanizeError } from '@/lib/errors/humanize';
 import { cn } from '@/lib/utils';
 import { CreateAlertForm } from '@/components/alerts/CreateAlertForm';
 import { AlertList } from '@/components/alerts/AlertList';
-import { FREE_ACTIVE_ALERT_LIMIT } from '@/types/alerts';
+import { FREE_ACTIVE_ALERT_LIMIT, type AlertType } from '@/types/alerts';
 import { useAlerts } from '@/hooks/use-alerts';
 
 export default function AlertsClientPage() {
@@ -26,6 +26,13 @@ export default function AlertsClientPage() {
   const prefilledSymbol = searchParams.get('symbol')?.toUpperCase() ?? null;
   const prefilledName = searchParams.get('name') ?? prefilledSymbol ?? null;
   const [composerOpen, setComposerOpen] = useState(() => !!prefilledSymbol);
+
+  // Optional pre-fill from the chart's alert tool (?price=200&type=price_above).
+  const rawType = searchParams.get('type');
+  const initialAlertType: AlertType | undefined =
+    rawType === 'price_above' || rawType === 'price_below' ? rawType : undefined;
+  const rawPrice = parseFloat(searchParams.get('price') ?? '');
+  const initialThreshold = Number.isFinite(rawPrice) && rawPrice > 0 ? rawPrice : undefined;
 
   const { alerts, activeSymbolCount, isLoading, isError, error, refetch, create, toggle, remove } = useAlerts();
 
@@ -102,6 +109,8 @@ export default function AlertsClientPage() {
             initialTicker={prefilledSymbol && prefilledName
               ? { ticker: prefilledSymbol, name: prefilledName }
               : undefined}
+            initialAlertType={initialAlertType}
+            initialThreshold={initialThreshold}
           />
         )}
 

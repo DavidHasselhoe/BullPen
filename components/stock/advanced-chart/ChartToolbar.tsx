@@ -1,6 +1,6 @@
 'use client';
 
-import { CandlestickChart, LineChart, AreaChart, BarChart3, CalendarDays, X } from 'lucide-react';
+import { CandlestickChart, LineChart, AreaChart, BarChart3, CalendarDays, Ruler, BellPlus, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { IndicatorMenu } from './IndicatorMenu';
 import type { AdvancedChartType, ChartRange } from '@/hooks/use-chart-prefs';
@@ -35,17 +35,20 @@ interface Props {
   onAddIndicator: (type: string) => void;
   onRemoveIndicator: (id: string) => void;
   onUpdateIndicator: (id: string, params: Record<string, number>) => void;
+  onApplyPreset: (presetId: string) => void;
   showVolume: boolean;
   onToggleVolume: () => void;
   showEvents: boolean;
   onToggleEvents: () => void;
+  tool: 'none' | 'measure' | 'alert';
+  onToolChange: (t: 'none' | 'measure' | 'alert') => void;
   onClose: () => void;
 }
 
 export function ChartToolbar({
   symbol, price, changePct, chartType, onChartType, range, onRange,
-  indicators, onAddIndicator, onRemoveIndicator, onUpdateIndicator,
-  showVolume, onToggleVolume, showEvents, onToggleEvents, onClose,
+  indicators, onAddIndicator, onRemoveIndicator, onUpdateIndicator, onApplyPreset,
+  showVolume, onToggleVolume, showEvents, onToggleEvents, tool, onToolChange, onClose,
 }: Props) {
   const pct = changePct ?? 0;
   const pos = pct >= 0;
@@ -113,7 +116,32 @@ export function ChartToolbar({
           onAdd={onAddIndicator}
           onRemove={onRemoveIndicator}
           onUpdate={onUpdateIndicator}
+          onApplyPreset={onApplyPreset}
         />
+        <button
+          type="button"
+          onClick={() => onToolChange(tool === 'measure' ? 'none' : 'measure')}
+          aria-pressed={tool === 'measure'}
+          title="Measure tool — drag between two points"
+          className={cn(
+            'flex h-8 w-8 items-center justify-center rounded-md border border-border transition-colors',
+            tool === 'measure' ? 'bg-accent text-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+          )}
+        >
+          <Ruler className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => onToolChange(tool === 'alert' ? 'none' : 'alert')}
+          aria-pressed={tool === 'alert'}
+          title="Set a price alert — click a level on the chart"
+          className={cn(
+            'flex h-8 w-8 items-center justify-center rounded-md border border-border transition-colors',
+            tool === 'alert' ? 'bg-accent text-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+          )}
+        >
+          <BellPlus className="h-4 w-4" />
+        </button>
         <button
           type="button"
           onClick={onToggleVolume}

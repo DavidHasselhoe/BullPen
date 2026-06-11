@@ -15,16 +15,20 @@ interface Props {
   onCreate: (payload: CreateAlertPayload) => Promise<{ ok: boolean; error?: string }>;
   /** Pre-fill and lock the ticker field (e.g. when opened from a stock page). */
   initialTicker?: { ticker: string; name: string };
+  /** Pre-select a condition (e.g. opened from the chart's alert tool). */
+  initialAlertType?: AlertType;
+  /** Pre-fill the target price (dollars) for price conditions. */
+  initialThreshold?: number;
 }
 
-export function CreateAlertForm({ onCreated, onCancel, onCreate, initialTicker }: Props) {
+export function CreateAlertForm({ onCreated, onCancel, onCreate, initialTicker, initialAlertType, initialThreshold }: Props) {
   const [ticker, setTicker] = useState<SearchResult | null>(
     initialTicker
       ? { ticker: initialTicker.ticker, name: initialTicker.name, cik: '', has_data: true }
       : null
   );
-  const [alertType, setAlertType] = useState<AlertType | null>(null);
-  const [rawValue, setRawValue] = useState('');
+  const [alertType, setAlertType] = useState<AlertType | null>(initialAlertType ?? null);
+  const [rawValue, setRawValue] = useState(initialThreshold != null ? String(initialThreshold) : '');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [limitReached, setLimitReached] = useState(false);
