@@ -211,7 +211,7 @@ function EarningsTab({ from, to }: { from: string; to: string }) {
             {items.map((e, i) => (
               <div
                 key={`${e.symbol}-${i}`}
-                className="flex items-center justify-between gap-4 py-2.5 px-2 -mx-2 rounded-lg hover:bg-muted/20 transition-colors group"
+                className="flex items-center justify-between gap-2 sm:gap-4 py-2.5 px-2 -mx-2 rounded-lg hover:bg-muted/20 transition-colors group"
               >
                 {/* Left: ticker + name + badges */}
                 <div className="flex items-center gap-3 min-w-0">
@@ -302,7 +302,7 @@ function DividendsTab({ from, to }: { from: string; to: string }) {
             {items.map((d, i) => (
               <div
                 key={`${d.symbol}-${i}`}
-                className="flex items-center justify-between gap-4 py-2.5 px-2 -mx-2 rounded-lg hover:bg-muted/20 transition-colors group"
+                className="flex items-center justify-between gap-2 sm:gap-4 py-2.5 px-2 -mx-2 rounded-lg hover:bg-muted/20 transition-colors group"
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <Link
@@ -373,7 +373,7 @@ function SplitsTab({ from, to }: { from: string; to: string }) {
             {items.map((s, i) => (
               <div
                 key={`${s.symbol}-${i}`}
-                className="flex items-center justify-between gap-4 py-2.5 px-2 -mx-2 rounded-lg hover:bg-muted/20 transition-colors"
+                className="flex items-center justify-between gap-2 sm:gap-4 py-2.5 px-2 -mx-2 rounded-lg hover:bg-muted/20 transition-colors"
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <Link
@@ -443,7 +443,7 @@ function IPOTab({ from, to }: { from: string; to: string }) {
             {items.map((ipo, i) => (
               <div
                 key={`${ipo.symbol ?? ipo.name}-${i}`}
-                className="flex items-center justify-between gap-4 py-2.5 px-2 -mx-2 rounded-lg hover:bg-muted/20 transition-colors"
+                className="flex items-center justify-between gap-2 sm:gap-4 py-2.5 px-2 -mx-2 rounded-lg hover:bg-muted/20 transition-colors"
               >
                 <div className="flex items-center gap-3 min-w-0">
                   {ipo.symbol ? (

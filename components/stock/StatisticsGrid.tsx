@@ -127,7 +127,7 @@ export function StatisticsGrid({
       <Card className="mb-8">
         <CardHeader><CardTitle className="text-base font-semibold">Statistics</CardTitle></CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 gap-x-8 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-x-8 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 12 }).map((_, i) => (
               <div key={i} className="flex items-center justify-between py-2.5 border-b border-border/50">
                 <Skeleton className="h-3 w-24" />
@@ -238,7 +238,7 @@ export function StatisticsGrid({
             <div>{simpleCol2.map((r) => <StatCell key={r.label} {...r} signal={sig(r.label)} ticker={ticker} onAskAI={handleAskAI} />)}</div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-x-10 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-x-10 sm:grid-cols-2 lg:grid-cols-3">
             <div>{col1.map((r) => <StatCell key={r.label} {...r} signal={sig(r.label)} ticker={ticker} onAskAI={handleAskAI} />)}</div>
             <div>{col2.map((r) => <StatCell key={r.label} {...r} signal={sig(r.label)} ticker={ticker} onAskAI={handleAskAI} />)}</div>
             <div>{col3.map((r) => <StatCell key={r.label} {...r} signal={sig(r.label)} ticker={ticker} onAskAI={handleAskAI} />)}</div>

@@ -79,6 +79,17 @@ function PriceSkeleton({ wide }: { wide?: boolean }) {
   return <Skeleton className={cn('h-4 rounded', wide ? 'w-20' : 'w-14')} />;
 }
 
+// ─── Mobile card field (label + value row) ───────────────────────────────────
+
+function HoldingField({ label, value, valueClass }: { label: string; value: string; valueClass?: string }) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <span className="text-muted-foreground">{label}</span>
+      <span className={cn('font-medium tabular-nums text-foreground', valueClass)}>{value}</span>
+    </div>
+  );
+}
+
 // ─── Full-table skeleton row (matches column structure) ───────────────────────
 
 function SkeletonTableRow({ index }: { index: number }) {
@@ -705,7 +716,52 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
         )}
       </CardHeader>
       <CardContent>
-        <div className="overflow-x-auto">
+        {/* Mobile: card list (the 10-column table is unusable < md) */}
+        <div className="space-y-2 md:hidden">
+          {filteredHoldings.length === 0 && search && (
+            <p className="py-8 text-center text-sm text-muted-foreground">No holdings match &ldquo;{search}&rdquo;</p>
+          )}
+          {filteredHoldings.map((holding) => {
+            const isPos = (holding.dayChangePercent ?? 0) >= 0;
+            const plPos = (holding.unrealizedPLPercent ?? 0) >= 0;
+            const ccy = userCurrency ?? 'USD';
+            const opts = roundNumbers ? { round: true } : undefined;
+            return (
+              <div key={holding.id} className="rounded-xl border bg-card p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <Link href={slugToAssetPath(holding.symbol)} className="flex min-w-0 items-center gap-2.5">
+                    <CompanyLogo name={holding.company_name} ticker={holding.symbol} logoUrl={holding.logoUrl || null} size={36} />
+                    <div className="min-w-0">
+                      <span className="text-sm font-semibold text-foreground">{holding.symbol}</span>
+                      <span className="block truncate text-xs text-muted-foreground">{holding.company_name}</span>
+                    </div>
+                  </Link>
+                  <div className="flex shrink-0 items-center gap-1">
+                    <button onClick={() => handleEditRow(holding)} disabled={removeHolding.isPending || isEditModalOpen} title="Edit holding" className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/60 hover:text-foreground">
+                      <Edit2 className="h-4 w-4" />
+                    </button>
+                    <button onClick={() => handleRemoveRow({ id: holding.id, symbol: holding.symbol, companyName: holding.company_name })} disabled={removeHolding.isPending} title="Remove holding" className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-red-500/10 hover:text-red-400">
+                      {removeHolding.isPending && deletingHolding?.id === holding.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+                  <HoldingField label="Price" value={holding.currentPrice !== undefined ? formatCurrencyValue(holding.currentPrice, ccy, opts) : '—'} />
+                  <HoldingField label="Day" valueClass={isPos ? 'text-green-500' : 'text-red-500'} value={holding.dayChangePercent !== undefined ? formatPercentUtil(holding.dayChangePercent, roundNumbers) : '—'} />
+                  <HoldingField label="Value" value={holding.marketValue !== undefined ? formatCurrencyValue(holding.marketValue, ccy, opts) : '—'} />
+                  <HoldingField label="P/L" valueClass={plPos ? 'text-green-500' : 'text-red-500'} value={holding.unrealizedPL !== undefined ? formatCurrencyValue(holding.unrealizedPL, ccy, opts) : '—'} />
+                </div>
+              </div>
+            );
+          })}
+          {onAddClick && (
+            <button onClick={onAddClick} className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border/60 py-3 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary">
+              <Plus className="h-4 w-4" /> Add holding
+            </button>
+          )}
+        </div>
+
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-border/50">

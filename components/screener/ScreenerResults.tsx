@@ -159,7 +159,77 @@ export function ScreenerResults({
 
   return (
     <div className="space-y-3">
-      <div className="rounded-md border overflow-x-auto">
+      {/* ── Mobile: sort control + card list (the table is unusable < md) ── */}
+      <div className="space-y-2 md:hidden">
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">Sort</span>
+          <select
+            value={sortKey}
+            onChange={(e) => setSortKey(e.target.value)}
+            className="h-8 flex-1 rounded-md border border-input bg-background px-2 text-xs"
+          >
+            <option value="ticker">Ticker</option>
+            {columns.map((c) => (
+              <option key={c.key} value={c.key}>{c.label}</option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={() => setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))}
+            aria-label={`Sort ${sortDir === 'asc' ? 'descending' : 'ascending'}`}
+            className="flex h-8 w-8 items-center justify-center rounded-md border border-input text-muted-foreground hover:text-foreground"
+          >
+            {sortDir === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+          </button>
+        </div>
+
+        {paginated.map((row) => {
+          const live = livePrices?.get(row.ticker);
+          const stale = stalenessLabel(row.updated_at);
+          return (
+            <div key={row.ticker} className="rounded-xl border bg-card p-3">
+              <div className="flex items-start justify-between gap-2">
+                <Link href={slugToAssetPath(row.ticker)} className="flex min-w-0 items-center gap-2.5">
+                  <CompanyLogo name={row.name} ticker={row.ticker} logoUrl={row.logo_url} size={32} className="shrink-0 rounded" />
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm font-semibold text-foreground">{row.ticker}</span>
+                      {stale && <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-400/70" title={stale} />}
+                      {row.sector && <Badge variant="outline" className="px-1 py-0 text-[10px]">{row.sector}</Badge>}
+                    </div>
+                    <span className="block truncate text-xs text-muted-foreground">{row.name}</span>
+                  </div>
+                </Link>
+                <AlertDialog
+                  symbol={row.ticker}
+                  companyName={row.name}
+                  trigger={
+                    <button
+                      type="button"
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-muted-foreground/60 hover:bg-muted/60 hover:text-foreground"
+                      title={`Set alert for ${row.ticker}`}
+                    >
+                      <Bell className="h-4 w-4" />
+                    </button>
+                  }
+                />
+              </div>
+              {columns.length > 0 && (
+                <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5">
+                  {columns.slice(0, 4).map((col) => (
+                    <div key={col.key} className="flex items-center justify-between gap-2">
+                      <span className="truncate text-[11px] text-muted-foreground">{col.label}</span>
+                      <span className="text-xs font-medium tabular-nums text-foreground">{col.render(row, live)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="hidden md:block rounded-md border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>

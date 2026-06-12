@@ -465,10 +465,10 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
           {/* Left: price block(s) + change row */}
           <div className="min-w-0">
             {showDual ? (
-              <div className="flex flex-wrap items-stretch gap-x-8 gap-y-3">
+              <div className="flex flex-wrap items-stretch gap-x-4 gap-y-3 sm:gap-x-8">
                 {/* Regular session close */}
                 <div className="min-w-0">
-                  <div className="text-[40px] font-bold tracking-tight text-foreground tabular-nums leading-none">
+                  <div className="text-[32px] sm:text-[40px] font-bold tracking-tight text-foreground tabular-nums leading-none">
                     {fmtPrice(closePrice)}
                   </div>
                   <div className={cn(
@@ -487,7 +487,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
 
                 {/* Pre-market or after-hours, live-updating */}
                 <div className="min-w-0">
-                  <div className="text-[40px] font-bold tracking-tight text-foreground tabular-nums leading-none">
+                  <div className="text-[32px] sm:text-[40px] font-bold tracking-tight text-foreground tabular-nums leading-none">
                     {fmtPrice(extPriceVal)}
                   </div>
                   <div className={cn(
@@ -509,7 +509,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
               </div>
             ) : (
               <>
-                <div className="text-[52px] font-bold tracking-tight text-foreground tabular-nums leading-none">
+                <div className="text-[40px] sm:text-[52px] font-bold tracking-tight text-foreground tabular-nums leading-none">
                   {fmtPrice(price)}
                 </div>
 

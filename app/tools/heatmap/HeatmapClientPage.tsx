@@ -603,11 +603,11 @@ export default function HeatmapClientPage() {
               <Button variant="outline" onClick={() => refetch()}>Try again</Button>
             </div>
           ) : treemapData.length === 0 ? (
-            <div className="flex items-center justify-center text-muted-foreground text-sm" style={{ height: '65vh' }}>
+            <div className="flex h-[55vh] items-center justify-center text-muted-foreground text-sm sm:h-[65vh]">
               {sectorFilter ? `No data for ${sectorFilter}` : 'No heatmap data available'}
             </div>
           ) : (
-            <div style={{ width: '100%', height: '65vh' }}>
+            <div className="h-[55vh] w-full sm:h-[65vh]">
               <ResponsiveContainer width="100%" height="100%">
                 <Treemap
                   data={treemapData}

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowUpRight, ArrowDownRight, BarChart2, Sparkles, Bell, ChevronRight } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, BarChart2, Sparkles, Bell, ChevronRight, Coins, GraduationCap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import type { Notification } from '@/lib/notifications/notifications-db';
@@ -107,6 +107,16 @@ function GenericIcon({ type }: { type: Notification['type'] }) {
       <Sparkles className={cn(base, 'text-violet-400')} />
     </div>
   );
+  if (type === 'dividend') return (
+    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10">
+      <Coins className={cn(base, 'text-emerald-400')} />
+    </div>
+  );
+  if (type === 'academy') return (
+    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-500/10">
+      <GraduationCap className={cn(base, 'text-amber-400')} />
+    </div>
+  );
   return (
     <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted">
       <Bell className={cn(base, 'text-muted-foreground/60')} />
@@ -148,6 +158,7 @@ function notificationSource(n: Notification): { label: string; href: string } | 
   const sym = et === 'stock' && n.entity_id ? n.entity_id.replace(/:.*$/, '') : null;
   if (et === 'portfolio') return { label: 'My holdings', href: '/holdings' };
   if (et === 'user_alert') return { label: 'Price alerts', href: '/tools/alerts' };
+  if (n.type === 'academy') return { label: 'Academy', href: '/academy' };
   if (sym) return { label: sym, href: `/stock/${sym}` };
   return null;
 }

@@ -149,6 +149,46 @@ export async function createPriceMoveDigestNotification(
   return created;
 }
 
+// ─── Daily portfolio recap ────────────────────────────────────────────────────
+
+export interface PortfolioRecap {
+  /** Portfolio-weighted day change (%). */
+  dayPct: number;
+  /** Largest day contributor by dollar move. */
+  topSymbol: string;
+  topPct: number;
+  holdingsCount: number;
+}
+
+/**
+ * A once-per-trading-day pulse of the user's actual holdings:
+ * "Your portfolio +1.2% today — 8 holdings · NVDA +4.1% led".
+ * Rendered as a portfolio price_move so the existing logo/direction UI applies.
+ */
+export async function createPortfolioRecapNotification(
+  userId: string,
+  recap: PortfolioRecap
+): Promise<boolean> {
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const dedupeId = `portfolio:daily_recap:${todayStr}`;
+  if (await alreadyNotifiedToday(userId, 'price_move', dedupeId)) return false;
+
+  const sign = recap.dayPct >= 0 ? '+' : '';
+  const topSign = recap.topPct >= 0 ? '+' : '';
+  const input: CreateNotificationInput = {
+    user_id: userId,
+    type: 'price_move',
+    title: `Your portfolio ${sign}${recap.dayPct.toFixed(2)}% today`,
+    message: `${recap.holdingsCount} holding${recap.holdingsCount === 1 ? '' : 's'} · ${recap.topSymbol} ${topSign}${recap.topPct.toFixed(1)}% led`,
+    entity_type: 'portfolio',
+    entity_id: dedupeId,
+    severity: 'info',
+  };
+
+  const result = await createNotification(input);
+  return result.success;
+}
+
 // ─── User-defined alert notifications ────────────────────────────────────────
 
 import { describeAlert, type UserAlert } from '@/types/alerts';

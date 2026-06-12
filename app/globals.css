@@ -404,6 +404,14 @@ html.animated-background-active [data-slot="dialog-content"] {
     background: oklch(0.55 0 0 / 65%);
   }
 
+  /* Reserve space for the mobile bottom tab bar so it never covers content.
+     The class is toggled by MobileTabBar, so it only applies on authed routes. */
+  @media (max-width: 767px) {
+    body.has-mobile-tabbar {
+      padding-bottom: calc(3.5rem + env(safe-area-inset-bottom));
+    }
+  }
+
   /* Hide scrollbar while keeping scroll functionality */
   .scrollbar-hide {
     -ms-overflow-style: none !important;

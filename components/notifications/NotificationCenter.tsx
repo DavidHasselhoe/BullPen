@@ -142,6 +142,17 @@ export function NotificationCenter({ open, onOpenChange }: NotificationCenterPro
           </div>
         )}
       </div>
+
+      {/* Footer */}
+      <div className="border-t">
+        <Link
+          href="/notifications"
+          onClick={() => onOpenChange(false)}
+          className="block px-4 py-2.5 text-center text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
+        >
+          View all notifications
+        </Link>
+      </div>
     </div>
   );
 }

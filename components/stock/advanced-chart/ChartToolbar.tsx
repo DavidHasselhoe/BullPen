@@ -92,15 +92,15 @@ export function ChartToolbar({
         ))}
       </div>
 
-      {/* Range */}
-      <div className="flex items-center gap-0.5">
+      {/* Range — horizontal scroller on mobile so it stays one row */}
+      <div className="scrollbar-hide -mx-1 flex max-w-full items-center gap-0.5 overflow-x-auto px-1">
         {RANGES.map(({ value, label }) => (
           <button
             key={value}
             type="button"
             onClick={() => onRange(value)}
             className={cn(
-              'rounded-md px-2 py-1 text-xs font-medium transition-all',
+              'shrink-0 rounded-md px-2.5 py-1.5 text-xs font-medium transition-all',
               range === value ? 'bg-accent text-foreground' : 'text-muted-foreground/60 hover:text-foreground'
             )}
           >

@@ -451,7 +451,7 @@ function CompareContent() {
             </div>
           </div>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-4 md:grid-cols-5">
           {Array.from({ length: slots }).map((_, i) => (
             <div key={i}>
               {selectedCompanies[i] ? (
@@ -471,7 +471,7 @@ function CompareContent() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 shrink-0"
+                        className="h-9 w-9 shrink-0"
                         onClick={() => handleRemove(i)}
                         title="Remove"
                       >

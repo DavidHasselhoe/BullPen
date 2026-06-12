@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/tooltip';
 import { BullpenChat, type BullpenChatHandle } from './BullpenChat';
 import { useAuth } from '@/hooks/use-auth';
+import { useIsMobile } from '@/hooks/use-is-mobile';
 import { cn } from '@/lib/utils';
 import type { AIContext } from './AIPanelProvider';
 
@@ -69,6 +70,9 @@ function AuthGate() {
 
 export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumedQuery }: AISidePanelProps) {
   const { user, isLoading, isAuthenticated } = useAuth();
+  const isMobile = useIsMobile();
+  // Full-screen chat on phones (480px would collapse the page content beside it).
+  const panelWidth = isMobile ? '100vw' : PANEL_WIDTH;
   const chatRef = useRef<BullpenChatHandle>(null);
 
   const handleClose = useCallback(() => {
@@ -95,7 +99,7 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
     <motion.aside
       aria-hidden={!open}
       initial={false}
-      animate={{ width: open ? PANEL_WIDTH : 0 }}
+      animate={{ width: open ? panelWidth : 0 }}
       // On close: content fades first (0.13s), then width collapses (delay 0.13s)
       // On open: width springs first (no delay), then content fades in (delay 0.22s)
       transition={open ? spring : { ...spring, delay: 0.13 }}

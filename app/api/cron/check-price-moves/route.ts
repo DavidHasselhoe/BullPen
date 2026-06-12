@@ -17,6 +17,7 @@ import { createServerClient } from '@/lib/supabase/client';
 import {
   createPriceMoveNotification,
   createPriceMoveDigestNotification,
+  createPortfolioRecapNotification,
   type PriceMover,
 } from '@/lib/notifications/notification-creators';
 
@@ -63,13 +64,15 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         .eq('alerts_enabled', true) as unknown as Promise<{ data: Array<{ user_id: string; symbol: string; company_name: string }> | null }>,
       supabase
         .from('user_holdings')
-        .select('user_id, symbol, company_name')
-        .eq('alerts_enabled', true) as unknown as Promise<{ data: Array<{ user_id: string; symbol: string; company_name: string }> | null }>,
+        .select('user_id, symbol, company_name, quantity')
+        .eq('alerts_enabled', true) as unknown as Promise<{ data: Array<{ user_id: string; symbol: string; company_name: string; quantity: number | null }> | null }>,
     ]);
 
     // Build per-user symbol map
     const eligibleUserIds = new Set(users.map((u) => u.id));
     const userSymbols = new Map<string, Map<string, string>>(); // userId → (symbol → companyName)
+    // Held quantities (for the portfolio recap) — watchlist isn't part of the portfolio.
+    const userHoldings = new Map<string, Array<{ symbol: string; quantity: number }>>();
 
     for (const row of [...(watchlistRes.data ?? []), ...(holdingsRes.data ?? [])]) {
       if (!eligibleUserIds.has(row.user_id)) continue;
@@ -78,6 +81,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       if (!userSymbols.get(row.user_id)!.has(row.symbol)) {
         userSymbols.get(row.user_id)!.set(row.symbol, row.company_name || row.symbol);
       }
+    }
+
+    for (const row of holdingsRes.data ?? []) {
+      if (!eligibleUserIds.has(row.user_id) || !row.quantity || row.quantity <= 0) continue;
+      if (!userHoldings.has(row.user_id)) userHoldings.set(row.user_id, []);
+      userHoldings.get(row.user_id)!.push({ symbol: row.symbol, quantity: row.quantity });
     }
 
     if (userSymbols.size === 0) {
@@ -124,6 +133,37 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         if (!q) continue;
         if (Math.abs(q.changePercent) >= MOVE_THRESHOLD_PCT) {
           movers.push({ symbol, companyName, ...q });
+        }
+      }
+
+      // ── Daily portfolio recap (runs regardless of the 5% mover threshold) ──
+      const holdings = userHoldings.get(userId);
+      if (holdings?.length) {
+        let prevValue = 0;
+        let dayChange = 0;
+        let counted = 0;
+        let top: { symbol: string; pct: number; contrib: number } | null = null;
+        for (const h of holdings) {
+          const q = quoteMap.get(h.symbol);
+          if (!q) continue;
+          const prevPrice = q.price - q.change;
+          if (prevPrice <= 0) continue;
+          prevValue += prevPrice * h.quantity;
+          const contrib = q.change * h.quantity;
+          dayChange += contrib;
+          counted++;
+          if (!top || Math.abs(contrib) > Math.abs(top.contrib)) {
+            top = { symbol: h.symbol, pct: q.changePercent, contrib };
+          }
+        }
+        if (prevValue > 0 && top && counted > 0) {
+          const ok = await createPortfolioRecapNotification(userId, {
+            dayPct: (dayChange / prevValue) * 100,
+            topSymbol: top.symbol,
+            topPct: top.pct,
+            holdingsCount: counted,
+          });
+          if (ok) summary.notificationsCreated++;
         }
       }
 

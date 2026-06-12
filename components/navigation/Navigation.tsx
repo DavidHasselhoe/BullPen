@@ -7,7 +7,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { UserMenu } from './UserMenu';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Home, Briefcase, Settings, Wrench, ChevronDown, Bookmark, Users, Rss, Trophy, Compass, GraduationCap } from 'lucide-react';
+import { Settings, Wrench, ChevronDown, Users } from 'lucide-react';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { SettingsModal } from '@/components/user/SettingsModal';
 import { useCommandPalette } from '@/components/command-palette/CommandPaletteProvider';
@@ -20,20 +20,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { TOOLS } from '@/lib/tools/tools-config';
-
-const navigation = [
-  { name: 'Home', href: '/dashboard', icon: Home },
-  { name: 'Discover', href: '/discover', icon: Compass },
-  { name: 'Academy', href: '/academy', icon: GraduationCap },
-  { name: 'My Holdings', href: '/holdings', icon: Briefcase },
-  { name: 'Watchlist', href: '/watchlist', icon: Bookmark },
-];
-
-const COMMUNITY_LINKS = [
-  { id: 'feed', name: 'Feed', href: '/social', icon: Rss, description: 'Activity from investors you follow' },
-  { id: 'leaderboard', name: 'Leaderboard', href: '/leaderboard', icon: Trophy, description: 'Top portfolios by diversity' },
-  { id: 'members', name: 'Members', href: '/users', icon: Users, description: 'Browse investor profiles' },
-];
+import { NAV_ITEMS as navigation, COMMUNITY_LINKS } from '@/lib/navigation/nav-items';
 
 export function Navigation() {
   const pathname = usePathname();
