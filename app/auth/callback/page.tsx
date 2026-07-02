@@ -36,10 +36,14 @@ function AuthCallbackContent() {
     let redirected = false;
     const DEBUG = false; // Set true to log callback flow
 
+    // Honor ?next (relative paths only) so OAuth can resume checkout on /upgrade.
+    const next = searchParams.get('next');
+    const dest = next && next.startsWith('/') && !next.startsWith('//') ? next : '/dashboard';
+
     const redirectHome = () => {
       if (!redirected) {
         redirected = true;
-        router.replace('/dashboard');
+        router.replace(dest);
       }
     };
 

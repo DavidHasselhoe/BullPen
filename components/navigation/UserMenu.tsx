@@ -15,16 +15,19 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { User, LogOut, Loader2, Shield } from 'lucide-react';
+import { User, LogOut, Loader2, Shield, CreditCard, Sparkles } from 'lucide-react';
 import { ProfileModal } from '@/components/user/ProfileModal';
 import { ProfileAvatar } from '@/components/user/ProfileAvatar';
-import { isAdmin, tierFromUser } from '@/lib/billing/tier';
+import { ProBadge } from '@/components/billing/ProBadge';
+import { isAdmin, isPro, tierFromUser } from '@/lib/billing/tier';
+import { startPortal } from '@/lib/billing/checkout';
 
 export function UserMenu() {
   const router = useRouter();
   const { user, isLoading, isAuthenticated } = useAuth();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [portalLoading, setPortalLoading] = useState(false);
 
   const handleSignOut = async () => {
     setIsSigningOut(true);
@@ -35,6 +38,13 @@ export function UserMenu() {
       return;
     }
     setIsSigningOut(false);
+  };
+
+  const handleManageSubscription = async () => {
+    setPortalLoading(true);
+    const result = await startPortal();
+    // Comped/admin accounts have no Stripe customer — fall back to pricing.
+    window.location.href = result.url || '/upgrade';
   };
 
   // Show Sign In/Sign Up when loading or logged out (optimistic: most visitors are logged out)
@@ -77,7 +87,9 @@ export function UserMenu() {
   };
 
   const displayName = user.full_name || user.username || user.email.split('@')[0];
-  const userIsAdmin = isAdmin(tierFromUser(user.account_tier, user.role));
+  const tier = tierFromUser(user.account_tier, user.role);
+  const userIsAdmin = isAdmin(tier);
+  const userIsPro = isPro(tier);
 
   return (
     <DropdownMenu>
@@ -104,8 +116,17 @@ export function UserMenu() {
         forceMount
       >
         <DropdownMenuLabel className="font-normal">
-          <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{displayName}</p>
+          <div className="flex flex-col space-y-1.5">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm font-medium leading-none">{displayName}</p>
+              {userIsPro ? (
+                <ProBadge />
+              ) : (
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Free
+                </span>
+              )}
+            </div>
             <p className="text-xs leading-none text-muted-foreground">
               {user.email}
             </p>
@@ -121,6 +142,29 @@ export function UserMenu() {
           <User className="mr-2 h-4 w-4" />
           <span>Profile</span>
         </DropdownMenuItem>
+
+        {userIsPro ? (
+          <DropdownMenuItem
+            onClick={handleManageSubscription}
+            disabled={portalLoading}
+            className="cursor-pointer transition-all hover:translate-x-1"
+          >
+            {portalLoading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <CreditCard className="mr-2 h-4 w-4" />
+            )}
+            <span>Manage subscription</span>
+          </DropdownMenuItem>
+        ) : (
+          <DropdownMenuItem
+            onClick={() => router.push('/upgrade')}
+            className="cursor-pointer text-primary transition-all hover:translate-x-1 focus:text-primary"
+          >
+            <Sparkles className="mr-2 h-4 w-4" />
+            <span>Upgrade to Pro</span>
+          </DropdownMenuItem>
+        )}
 
         {userIsAdmin && (
           <>

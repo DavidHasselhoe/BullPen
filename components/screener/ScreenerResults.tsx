@@ -2,6 +2,9 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEntitlements } from '@/hooks/use-entitlements';
+import { ProBadge } from '@/components/billing/ProBadge';
 import {
   Table,
   TableBody,
@@ -60,6 +63,8 @@ export function ScreenerResults({
   onPageChange,
   onPageSizeChange,
 }: ScreenerResultsProps) {
+  const router = useRouter();
+  const { isPro } = useEntitlements();
   const columns = visibleColumns ?? SCREENER_COLUMNS;
   const [sortKey, setSortKey] = useState<string>('market_cap');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
@@ -98,6 +103,8 @@ export function ScreenerResults({
   );
 
   const exportCSV = useCallback(() => {
+    // CSV export is a Pro feature — free users are routed to /upgrade.
+    if (!isPro) { router.push('/upgrade'); return; }
     const headers = ['Company', 'Ticker', 'Sector', ...columns.map((c) => c.label)];
     const rows = sorted.map((row) => {
       const live = livePrices?.get(row.ticker);
@@ -120,7 +127,7 @@ export function ScreenerResults({
     a.download = `screener-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-  }, [sorted, columns, livePrices]);
+  }, [sorted, columns, livePrices, isPro, router]);
 
   const toggleSort = (key: string) => {
     if (sortKey === key) {
@@ -350,10 +357,11 @@ export function ScreenerResults({
             type="button"
             onClick={exportCSV}
             className="flex items-center gap-1 text-xs text-muted-foreground/60 hover:text-foreground transition-colors"
-            title="Export all results to CSV"
+            title={isPro ? 'Export all results to CSV' : 'CSV export is a Pro feature'}
           >
             <Download className="h-3 w-3" />
             CSV
+            {!isPro && <ProBadge className="ml-0.5" />}
           </button>
         </div>
         <div className="flex items-center gap-3">

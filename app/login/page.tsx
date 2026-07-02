@@ -22,7 +22,7 @@ function LoginContent() {
     setIsGoogleLoading(true);
 
     try {
-      const result = await signInWithGoogle();
+      const result = await signInWithGoogle(redirectTo !== '/' ? redirectTo : undefined);
       if (!result.success) {
         setError(result.error || 'Failed to sign in with Google');
         setIsGoogleLoading(false);
@@ -94,7 +94,7 @@ function LoginContent() {
           <p className="text-sm text-muted-foreground">
             Don&apos;t have an account?{' '}
             <a
-              href="/register"
+              href={redirectTo !== '/' ? `/register?redirect=${encodeURIComponent(redirectTo)}` : '/register'}
               className="font-medium text-primary underline-offset-4 hover:underline transition-colors"
             >
               Sign up

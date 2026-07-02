@@ -396,14 +396,20 @@ export async function getSession() {
  * Signs in with Google OAuth
  * According to Supabase docs: https://supabase.com/docs/guides/auth/social-login/auth-google
  */
-export async function signInWithGoogle(): Promise<{ success: boolean; error?: string }> {
+export async function signInWithGoogle(next?: string): Promise<{ success: boolean; error?: string }> {
   const supabase = createBrowserClient();
 
   try {
+    const callback = new URL('/auth/callback', window.location.origin);
+    // Carry the post-auth destination (e.g. /upgrade?checkout=annual) through OAuth.
+    if (next && next.startsWith('/') && !next.startsWith('//')) {
+      callback.searchParams.set('next', next);
+    }
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: callback.toString(),
       },
     });
 

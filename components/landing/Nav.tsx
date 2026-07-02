@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Logo } from './Atoms';
 import { Icon } from './Icon';
+import { useAuth } from '@/hooks/use-auth';
+import { UserMenu } from '@/components/navigation/UserMenu';
 
 interface Props {
   onSignIn: () => void;
@@ -12,6 +14,7 @@ interface Props {
 
 export function Nav({ onSignIn, onSignUp }: Props) {
   const [scrolled, setScrolled] = useState(false);
+  const { isAuthenticated, isLoading } = useAuth();
 
   useEffect(() => {
     const on = () => setScrolled(window.scrollY > 8);
@@ -85,45 +88,49 @@ export function Nav({ onSignIn, onSignUp }: Props) {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Link
-            href="/dashboard"
-            style={{
-              fontSize: 14,
-              fontWeight: 500,
-              color: 'var(--fg-muted)',
-              padding: '8px 12px',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-            }}
-          >
-            Open dashboard
-            <Icon name="arrowRight" size={13} />
-          </Link>
-          <button
-            type="button"
-            onClick={onSignIn}
-            style={{
-              fontSize: 14,
-              fontWeight: 500,
-              color: 'var(--fg-muted)',
-              padding: '8px 12px',
-              background: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-            }}
-          >
-            Sign in
-          </button>
-          <button
-            type="button"
-            onClick={onSignUp}
-            className="btn btn-primary"
-            style={{ padding: '10px 18px', fontSize: 14 }}
-          >
-            Sign up free
-            <Icon name="arrowRight" size={14} />
-          </button>
+          {isLoading ? (
+            // Reserve space while auth resolves — avoids a flash of the wrong CTAs.
+            <div style={{ width: 40, height: 40 }} aria-hidden />
+          ) : isAuthenticated ? (
+            <>
+              <Link
+                href="/dashboard"
+                className="btn btn-primary"
+                style={{ padding: '10px 18px', fontSize: 14 }}
+              >
+                Open dashboard
+                <Icon name="arrowRight" size={14} />
+              </Link>
+              <UserMenu />
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={onSignIn}
+                style={{
+                  fontSize: 14,
+                  fontWeight: 500,
+                  color: 'var(--fg-muted)',
+                  padding: '8px 12px',
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                }}
+              >
+                Sign in
+              </button>
+              <button
+                type="button"
+                onClick={onSignUp}
+                className="btn btn-primary"
+                style={{ padding: '10px 18px', fontSize: 14 }}
+              >
+                Sign up free
+                <Icon name="arrowRight" size={14} />
+              </button>
+            </>
+          )}
         </div>
       </div>
     </nav>

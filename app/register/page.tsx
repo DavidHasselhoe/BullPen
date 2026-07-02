@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { signInWithGoogle } from '@/lib/auth/auth';
 import { AuthOAuthButtons } from '@/components/auth/AuthOAuthButtons';
@@ -9,17 +9,24 @@ import { AuthFormSignup } from '@/components/auth/AuthFormSignup';
 import { Separator } from '@/components/ui/separator';
 import { motion } from 'framer-motion';
 
-export default function RegisterPage() {
+function RegisterContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Honor ?redirect so post-signup we can land users on checkout (/upgrade),
+  // not always the dashboard.
+  const redirectTo = searchParams.get('redirect') || '/dashboard';
+  const signInHref =
+    redirectTo !== '/dashboard' ? `/login?redirect=${encodeURIComponent(redirectTo)}` : '/login';
 
   const handleGoogleSignIn = async () => {
     setError('');
     setIsGoogleLoading(true);
 
     try {
-      const result = await signInWithGoogle();
+      const result = await signInWithGoogle(redirectTo !== '/dashboard' ? redirectTo : undefined);
       if (!result.success) {
         setError(result.error || 'Failed to sign in with Google');
         setIsGoogleLoading(false);
@@ -32,7 +39,7 @@ export default function RegisterPage() {
   };
 
   const handleSuccess = () => {
-    router.replace('/dashboard');
+    router.replace(redirectTo);
   };
 
   return (
@@ -93,7 +100,7 @@ export default function RegisterPage() {
           <p className="text-sm text-muted-foreground">
             Already have an account?{' '}
             <a
-              href="/login"
+              href={signInHref}
               className="font-medium text-primary underline-offset-4 hover:underline transition-colors"
             >
               Sign in
@@ -102,5 +109,13 @@ export default function RegisterPage() {
         </motion.div>
       </motion.div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense>
+      <RegisterContent />
+    </Suspense>
   );
 }

@@ -41,7 +41,7 @@ export function AuthModal({ open, onOpenChange, initialMode = 'login', redirectT
     setIsGoogleLoading(true);
 
     try {
-      const result = await signInWithGoogle();
+      const result = await signInWithGoogle(redirectTo);
       if (!result.success) {
         setError(result.error || 'Failed to sign in with Google');
         setIsGoogleLoading(false);

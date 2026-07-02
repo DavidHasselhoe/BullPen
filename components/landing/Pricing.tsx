@@ -6,6 +6,8 @@ import { Icon } from './Icon';
 
 interface Props {
   onSignUp: () => void;
+  /** Pro CTA — carries the chosen billing cycle so checkout resumes after signup. */
+  onSubscribe?: (cycle: 'monthly' | 'annual') => void;
 }
 
 interface Plan {
@@ -57,7 +59,7 @@ const PLANS: Plan[] = [
   },
 ];
 
-export function Pricing({ onSignUp }: Props) {
+export function Pricing({ onSignUp, onSubscribe }: Props) {
   const [annual, setAnnual] = useState(true);
 
   return (
@@ -207,7 +209,11 @@ export function Pricing({ onSignUp }: Props) {
 
                   <button
                     type="button"
-                    onClick={onSignUp}
+                    onClick={
+                      p.highlight && onSubscribe
+                        ? () => onSubscribe(annual ? 'annual' : 'monthly')
+                        : onSignUp
+                    }
                     className={`btn btn-${p.ctaStyle}`}
                     style={{ justifyContent: 'center', padding: '14px', fontSize: 14, marginBottom: 24 }}
                   >

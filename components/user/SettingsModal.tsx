@@ -22,7 +22,10 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Globe, DollarSign, Moon, Bell, Shield, AlertTriangle, Trash2, Download, Check, Settings2, Eye, EyeOff, Home, Hash, Search, Bot, LayoutGrid, LineChart, Wrench, ChevronDown, type LucideIcon } from 'lucide-react';
+import Link from 'next/link';
+import { Loader2, Globe, DollarSign, Moon, Bell, Shield, AlertTriangle, Trash2, Download, Check, Settings2, Eye, EyeOff, Home, Hash, Search, Bot, LayoutGrid, LineChart, Wrench, ChevronDown, Sparkles, Crown, type LucideIcon } from 'lucide-react';
+import { useEntitlements } from '@/hooks/use-entitlements';
+import { UpgradeCTA } from '@/components/billing/UpgradeCTA';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -62,6 +65,7 @@ type SettingsSection =
   | 'preferences'
   | 'notifications'
   | 'customize'
+  | 'plan'
   | 'privacy'
   | 'ai'
   | 'danger';
@@ -155,6 +159,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
   // Chart preferences — shared with the stock-page chart settings popover via the
   // same hook (localStorage + users.settings.chart_prefs), so edits stay in sync.
   const chartPrefs = useChartPrefs();
+  const ent = useEntitlements();
 
   // ── Default homepage picker ──────────────────────────────────────────────
   const selectHomepage = (value: string) => {
@@ -456,6 +461,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
     {
       heading: 'Account',
       items: [
+        { id: 'plan', label: 'Plan', icon: Sparkles, description: 'Your plan and what Pro unlocks.' },
         { id: 'privacy', label: t('settings.privacy'), icon: Shield, description: 'Control your profile visibility and password.' },
         { id: 'danger', label: t('settings.danger'), icon: AlertTriangle, description: 'Export your data or permanently delete your account.' },
       ],
@@ -907,6 +913,44 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                     />
                   </div>
                 </div>
+              </div>
+            )}
+
+            {activeSection === 'plan' && (
+              <div className="space-y-4 max-w-2xl">
+                <div className="rounded-xl border bg-card p-5">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      {ent.isPro
+                        ? <Crown className="h-5 w-5 shrink-0 text-primary" />
+                        : <Sparkles className="h-5 w-5 shrink-0 text-muted-foreground" />}
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">{ent.isPro ? 'Pro' : 'Free'}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {ent.isPro
+                            ? 'Full access to the AI suite and unlimited tracking.'
+                            : 'Unlimited research, screener, alerts and Academy — free.'}
+                        </p>
+                      </div>
+                    </div>
+                    {!ent.isPro && <UpgradeCTA />}
+                  </div>
+                </div>
+
+                {!ent.isPro && (
+                  <div className="rounded-xl border bg-muted/20 p-5">
+                    <p className="text-sm font-semibold text-foreground">Pro unlocks</p>
+                    <ul className="mt-2.5 space-y-2 text-sm text-muted-foreground">
+                      <li className="flex items-center gap-2"><Check className="h-4 w-4 shrink-0 text-primary" /> Unlimited AI chat, Deep Dives &amp; Portfolio Builder</li>
+                      <li className="flex items-center gap-2"><Check className="h-4 w-4 shrink-0 text-primary" /> Daily Brief &amp; &ldquo;Why Today?&rdquo; explanations</li>
+                      <li className="flex items-center gap-2"><Check className="h-4 w-4 shrink-0 text-primary" /> Unlimited price alerts &amp; watchlists</li>
+                      <li className="flex items-center gap-2"><Check className="h-4 w-4 shrink-0 text-primary" /> CSV/PDF exports &amp; insider transactions</li>
+                    </ul>
+                    <Link href="/upgrade" className="mt-4 inline-block text-xs font-medium text-primary hover:underline">
+                      See the full comparison →
+                    </Link>
+                  </div>
+                )}
               </div>
             )}
 
