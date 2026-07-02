@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import type Stripe from 'stripe';
 import { withAuth } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
 import { tierFromUser, isPro } from '@/lib/billing/tier';
@@ -64,54 +65,70 @@ async function checkoutHandler(
     return NextResponse.json({ waitlisted: true, url: null });
   }
 
-  // ── Real Stripe Checkout ─────────────────────────────────────────────────────
-  const email = (row?.email as string | null) ?? undefined;
+  try {
+    const email = (row?.email as string | null) ?? undefined;
 
-  // Reuse the customer if we've created one before, else create + persist it.
-  let customerId = (row?.stripe_customer_id as string | null) ?? null;
-  if (!customerId) {
-    const customer = await stripe.customers.create({
-      email,
-      metadata: { supabase_user_id: userId },
+    // Reuse a stored customer, but verify it exists in the CURRENT Stripe mode.
+    // The Supabase DB is shared across test/live, so a test-mode customer id can
+    // leak into a live checkout (and vice versa) → "No such customer". If the
+    // stored id doesn't resolve, drop it and mint a fresh one.
+    let customerId = (row?.stripe_customer_id as string | null) ?? null;
+    if (customerId) {
+      try {
+        const existing = await stripe.customers.retrieve(customerId);
+        if ((existing as Stripe.DeletedCustomer).deleted) customerId = null;
+      } catch {
+        customerId = null;
+      }
+    }
+    if (!customerId) {
+      const customer = await stripe.customers.create({
+        email,
+        metadata: { supabase_user_id: userId },
+      });
+      customerId = customer.id;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any)
+        .from('users')
+        .update({ stripe_customer_id: customerId })
+        .eq('id', userId);
+    }
+
+    const base = process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin;
+
+    // Stripe Tax adds VAT/sales tax on top of the price at checkout ("tax-exclusive").
+    // Requires Stripe Tax to be active on the account, so it's opt-in via env to
+    // avoid failing session creation before tax is configured.
+    const automaticTax = process.env.STRIPE_AUTOMATIC_TAX === 'true';
+
+    const checkoutSession = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      customer: customerId,
+      line_items: [{ price: priceId, quantity: 1 }],
+      subscription_data: {
+        trial_period_days: PRO_TRIAL_DAYS,
+        metadata: { supabase_user_id: userId },
+      },
+      client_reference_id: userId,
+      metadata: { supabase_user_id: userId, cycle },
+      allow_promotion_codes: true,
+      ...(automaticTax
+        ? {
+            automatic_tax: { enabled: true },
+            billing_address_collection: 'auto' as const,
+            customer_update: { address: 'auto' as const },
+          }
+        : {}),
+      success_url: `${base}/upgrade?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${base}/upgrade?checkout=cancelled`,
     });
-    customerId = customer.id;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any)
-      .from('users')
-      .update({ stripe_customer_id: customerId })
-      .eq('id', userId);
+
+    return NextResponse.json({ url: checkoutSession.url });
+  } catch (err) {
+    // Never let a Stripe error become an unhandled 500 with a stack trace.
+    console.error('[billing/checkout] stripe error', err);
+    return NextResponse.json({ error: 'checkout_failed' }, { status: 500 });
   }
-
-  const base = process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin;
-
-  // Stripe Tax adds VAT/sales tax on top of the price at checkout ("tax-exclusive").
-  // Requires Stripe Tax to be active on the account, so it's opt-in via env to
-  // avoid failing session creation before tax is configured.
-  const automaticTax = process.env.STRIPE_AUTOMATIC_TAX === 'true';
-
-  const checkoutSession = await stripe.checkout.sessions.create({
-    mode: 'subscription',
-    customer: customerId,
-    line_items: [{ price: priceId, quantity: 1 }],
-    subscription_data: {
-      trial_period_days: PRO_TRIAL_DAYS,
-      metadata: { supabase_user_id: userId },
-    },
-    client_reference_id: userId,
-    metadata: { supabase_user_id: userId, cycle },
-    allow_promotion_codes: true,
-    ...(automaticTax
-      ? {
-          automatic_tax: { enabled: true },
-          billing_address_collection: 'auto' as const,
-          customer_update: { address: 'auto' as const },
-        }
-      : {}),
-    success_url: `${base}/upgrade?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${base}/upgrade?checkout=cancelled`,
-  });
-
-  return NextResponse.json({ url: checkoutSession.url });
 }
 
 export const POST = withAuth(checkoutHandler, {
