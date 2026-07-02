@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { withAuth } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
 import { tierFromUser, isPro } from '@/lib/billing/tier';
 import {
@@ -18,15 +19,17 @@ import {
  * If Stripe isn't configured yet (no keys / price IDs), it falls back to the
  * original stub: captures interest on the user's profile and returns
  * `{ waitlisted: true }`.
+ *
+ * Auth goes through `withAuth` (cookie session) — the service-role client can't
+ * read the caller's session, so `getUser()` here would always 401.
  */
-export async function POST(request: NextRequest) {
+async function checkoutHandler(
+  request: NextRequest,
+  _ctx: unknown,
+  session: { userId: string }
+): Promise<NextResponse> {
   const supabase = createServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
-  }
+  const userId = session.userId;
 
   const body = await request.json().catch(() => ({}));
   const cycle = body?.cycle === 'monthly' ? 'monthly' : 'annual';
@@ -34,7 +37,7 @@ export async function POST(request: NextRequest) {
   const { data: row } = await supabase
     .from('users')
     .select('account_tier, role, email, stripe_customer_id, settings')
-    .eq('id', user.id)
+    .eq('id', userId)
     .single();
 
   // Already Pro? Nothing to sell — surface it so the UI can send them to the portal.
@@ -54,7 +57,7 @@ export async function POST(request: NextRequest) {
         upgrade_interest: { plan: 'pro', cycle, at: new Date().toISOString() },
       };
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any).from('users').update({ settings: merged }).eq('id', user.id);
+      await (supabase as any).from('users').update({ settings: merged }).eq('id', userId);
     } catch {
       // non-critical — still return waitlisted so the UX doesn't error
     }
@@ -62,21 +65,21 @@ export async function POST(request: NextRequest) {
   }
 
   // ── Real Stripe Checkout ─────────────────────────────────────────────────────
-  const email = (row?.email as string | null) ?? user.email ?? undefined;
+  const email = (row?.email as string | null) ?? undefined;
 
-  // Reuse the customer if we've created one before, else let Checkout create it.
+  // Reuse the customer if we've created one before, else create + persist it.
   let customerId = (row?.stripe_customer_id as string | null) ?? null;
   if (!customerId) {
     const customer = await stripe.customers.create({
       email,
-      metadata: { supabase_user_id: user.id },
+      metadata: { supabase_user_id: userId },
     });
     customerId = customer.id;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any)
       .from('users')
       .update({ stripe_customer_id: customerId })
-      .eq('id', user.id);
+      .eq('id', userId);
   }
 
   const base = process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin;
@@ -86,16 +89,16 @@ export async function POST(request: NextRequest) {
   // avoid failing session creation before tax is configured.
   const automaticTax = process.env.STRIPE_AUTOMATIC_TAX === 'true';
 
-  const session = await stripe.checkout.sessions.create({
+  const checkoutSession = await stripe.checkout.sessions.create({
     mode: 'subscription',
     customer: customerId,
     line_items: [{ price: priceId, quantity: 1 }],
     subscription_data: {
       trial_period_days: PRO_TRIAL_DAYS,
-      metadata: { supabase_user_id: user.id },
+      metadata: { supabase_user_id: userId },
     },
-    client_reference_id: user.id,
-    metadata: { supabase_user_id: user.id, cycle },
+    client_reference_id: userId,
+    metadata: { supabase_user_id: userId, cycle },
     allow_promotion_codes: true,
     ...(automaticTax
       ? {
@@ -108,5 +111,9 @@ export async function POST(request: NextRequest) {
     cancel_url: `${base}/upgrade?checkout=cancelled`,
   });
 
-  return NextResponse.json({ url: session.url });
+  return NextResponse.json({ url: checkoutSession.url });
 }
+
+export const POST = withAuth(checkoutHandler, {
+  rateLimit: { windowMs: 60_000, maxRequests: 20 },
+});
