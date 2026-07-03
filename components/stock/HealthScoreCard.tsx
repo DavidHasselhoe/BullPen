@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { useExperienceLevel } from '@/hooks/use-experience-level';
 import { HelpCircle, X, Sparkles } from 'lucide-react';
 import { useAIPanel } from '@/components/ai/AIPanelProvider';
+import { HealthRing } from '@/components/finance/HealthRing';
 import type { HealthScore, CategoryScore } from '@/lib/finance/health-score';
 
 // ─── API response shape ───────────────────────────────────────────────────────
@@ -20,12 +21,6 @@ interface HealthScoreResponse {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function gradeColor(grade: HealthScore['grade']): string {
-  if (grade === 'A' || grade === 'B') return 'text-emerald-500';
-  if (grade === 'C') return 'text-amber-400';
-  return 'text-red-500';
-}
 
 function gradeBadgeClass(grade: HealthScore['grade']): string {
   if (grade === 'A' || grade === 'B')
@@ -133,39 +128,6 @@ function CategoryBar({ cat }: { cat: CategoryScore }) {
             style={{ width: `${pct}%` }}
           />
         )}
-      </div>
-    </div>
-  );
-}
-
-// ─── Circular score gauge ─────────────────────────────────────────────────────
-
-function ScoreGauge({ score, grade }: { score: number; grade: HealthScore['grade'] }) {
-  const radius = 34;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (score / 100) * circumference;
-  const color =
-    grade === 'A' || grade === 'B' ? '#10b981' :
-    grade === 'C' ? '#fbbf24' : '#ef4444';
-
-  return (
-    <div className="relative flex items-center justify-center" style={{ width: 88, height: 88 }}>
-      <svg width="88" height="88" className="-rotate-90">
-        <circle cx="44" cy="44" r={radius} fill="none" stroke="currentColor"
-          strokeWidth="5" className="text-muted/50" />
-        <circle cx="44" cy="44" r={radius} fill="none" stroke={color}
-          strokeWidth="5" strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={strokeDashoffset}
-          style={{ transition: 'stroke-dashoffset 0.8s ease' }} />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className={cn('text-xl font-bold tabular-nums leading-none', gradeColor(grade))}>
-          {score}
-        </span>
-        <span className={cn('text-[11px] font-semibold mt-0.5 tabular-nums', gradeColor(grade))}>
-          {grade}
-        </span>
       </div>
     </div>
   );
@@ -326,7 +288,14 @@ export function HealthScoreCard({ ticker, onSignalsReady }: HealthScoreCardProps
         <div className="flex gap-5 items-start">
           {/* Circular gauge */}
           <div className="shrink-0 flex flex-col items-center gap-1">
-            <ScoreGauge score={hs.score} grade={hs.grade} />
+            <HealthRing
+              score={hs.score}
+              grade={hs.grade}
+              pillars={hs.categories}
+              size={96}
+              showLabel={false}
+              className="text-foreground"
+            />
             <span className="text-[10px] text-muted-foreground/50 tracking-wide uppercase">out of 100</span>
           </div>
 

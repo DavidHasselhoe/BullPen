@@ -14,7 +14,7 @@ import { startCheckout } from '@/lib/billing/checkout';
 const FAQ = [
   { q: `Is there a free trial?`, a: `Yes — Pro starts with a ${PRICING.trialDays}-day free trial, and there's a ${PRICING.moneyBackDays}-day money-back guarantee. No card needed to use the free plan.` },
   { q: 'Can I cancel anytime?', a: 'Anytime. You keep Pro until the end of the billing period, then drop back to the (still generous) free plan.' },
-  { q: 'How is BullPen different from Simply Wall St or Seeking Alpha?', a: 'They gate the basics — Simply Wall St caps free users to 5 company reports a month with no screener; Seeking Alpha paywalls articles. BullPen keeps unlimited research and the screener free. Pro is about the AI analyst, not locking data.' },
+  { q: 'How is BullPen different from Simply Wall St or Seeking Alpha?', a: 'They meter the basics — Simply Wall St caps free users at 5 company reports a month and has no AI assistant; Seeking Alpha paywalls articles. BullPen keeps unlimited research and the screener free, and Pro adds a real AI analyst — chat, Deep Dives, a daily brief, and "Why did it move?" — for less than their entry price.' },
   { q: 'What counts against the AI limits?', a: 'Only the AI features (chat, Deep Dive, Portfolio Builder, Portfolio Checkup). Everything else — charts, screener, alerts, holdings, Academy — is unlimited on free.' },
 ];
 
@@ -60,12 +60,26 @@ function UpgradeContent() {
         <div className="mx-auto max-w-2xl text-center">
           <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-primary">Pricing</p>
           <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
-            Unlimited stock research — free.<br className="hidden sm:block" />{' '}
+            Unlimited research, free.<br className="hidden sm:block" />{' '}
             <span className="text-primary">Pro adds your AI analyst.</span>
           </h1>
           <p className="mt-3 text-sm text-muted-foreground sm:text-base">
-            Keep the whole app free — charts, screener, alerts, Academy. Upgrade only when the AI Deep Dives and daily brief become your edge.
+            Keep the whole app — advanced charts, full screener, alerts, holdings, Academy — free, with no report caps. Upgrade when you want an analyst that reads the filings, explains the moves, and briefs you every morning.
           </p>
+        </div>
+
+        {/* Why upgrade — three things the report-capped apps can't match */}
+        <div className="mx-auto mt-8 grid max-w-3xl gap-3 sm:grid-cols-3">
+          {[
+            { t: 'No report limits', d: 'Research every stock, unlimited — no monthly cap on how much you can look at.' },
+            { t: 'An AI analyst, not just charts', d: 'Ask anything and get a full Deep Dive — not a static report.' },
+            { t: 'Learn as you invest', d: 'Academy, streaks, and plain-English explanations on every metric.' },
+          ].map((f) => (
+            <div key={f.t} className="rounded-xl border bg-card/50 p-4 text-left">
+              <p className="text-sm font-semibold text-foreground">{f.t}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{f.d}</p>
+            </div>
+          ))}
         </div>
 
         {isPro && (
@@ -100,7 +114,7 @@ function UpgradeContent() {
           {/* Free */}
           <div className="flex flex-col rounded-2xl border bg-card p-6">
             <span className="text-lg font-bold">Free</span>
-            <p className="mt-1 text-sm text-muted-foreground">Everything to research and track stocks.</p>
+            <p className="mt-1 text-sm text-muted-foreground">Everything to research and track stocks. Unlimited, no card.</p>
             <div className="mt-4 flex items-baseline gap-1.5">
               <span className="text-4xl font-bold tabular-nums">$0</span>
               <span className="text-sm text-muted-foreground">/ month</span>
@@ -116,7 +130,7 @@ function UpgradeContent() {
           <div className="relative flex flex-col rounded-2xl border border-primary bg-gradient-to-b from-primary/[0.06] to-transparent p-6 shadow-lg shadow-primary/10">
             <span className="absolute -top-3 right-5 rounded-full bg-primary px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary-foreground">Most popular</span>
             <span className="flex items-center gap-1.5 text-lg font-bold"><Sparkles className="h-4 w-4 text-primary" /> Pro</span>
-            <p className="mt-1 text-sm text-muted-foreground">The AI analyst + unlimited everything.</p>
+            <p className="mt-1 text-sm text-muted-foreground">Your AI analyst + unlimited everything.</p>
             <div className="mt-4 flex items-baseline gap-1.5">
               <span className="text-4xl font-bold tabular-nums">${price}</span>
               <span className="text-sm text-muted-foreground">/ month</span>
@@ -128,8 +142,13 @@ function UpgradeContent() {
               <Button disabled className="mt-5 w-full">✓ You’re on the list</Button>
             ) : (
               <Button onClick={handleUpgrade} disabled={status === 'loading'} className="mt-5 w-full">
-                {status === 'loading' ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />One sec…</> : `Start ${PRICING.trialDays}-day free trial`}
+                {status === 'loading' ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />One sec…</> : `Start your ${PRICING.trialDays}-day free trial`}
               </Button>
+            )}
+            {!isPro && status === 'idle' && (
+              <p className="mt-2 text-center text-[11px] text-muted-foreground">
+                No card charged today · Cancel anytime · {PRICING.moneyBackDays}-day money-back
+              </p>
             )}
             {status === 'done' && (
               <p className="mt-2 text-center text-xs text-muted-foreground">Self-serve checkout opens soon — we’ll email you.</p>

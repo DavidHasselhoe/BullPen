@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import type { ScreenerRow } from '@/app/api/screener/route';
 import type { HeatmapPriceEntry } from '@/hooks/use-heatmap-stream';
+import { HealthRing } from '@/components/finance/HealthRing';
 
 // ─── Formatters ───────────────────────────────────────────────────────────────
 
@@ -77,13 +78,6 @@ export interface ScreenerColumn {
   render: (row: ScreenerRow, live?: HeatmapPriceEntry) => ReactNode;
 }
 
-const GRADE_STYLES: Record<string, string> = {
-  A: 'bg-emerald-500/15 text-emerald-500',
-  B: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
-  C: 'bg-amber-400/15 text-amber-500',
-  D: 'bg-orange-500/15 text-orange-500',
-  F: 'bg-red-500/15 text-red-500',
-};
 
 export const SCREENER_COLUMNS: ScreenerColumn[] = [
   // ── Health Score ──
@@ -100,11 +94,8 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
       const grade = row.health_score_grade;
       if (score == null || !grade) return <span className="text-muted-foreground/40">—</span>;
       return (
-        <span className="inline-flex items-center gap-1.5">
-          <span className="tabular-nums font-semibold text-xs">{score}</span>
-          <span className={cn('rounded px-1 py-px text-[10px] font-bold leading-tight', GRADE_STYLES[grade] ?? 'bg-muted text-muted-foreground')}>
-            {grade}
-          </span>
+        <span className="inline-flex items-center" title={`Health ${score}/100 · Grade ${grade}`}>
+          <HealthRing score={score} grade={grade as 'A' | 'B' | 'C' | 'D' | 'F'} size={34} className="text-foreground" />
         </span>
       );
     },
