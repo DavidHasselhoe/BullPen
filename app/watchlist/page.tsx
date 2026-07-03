@@ -11,11 +11,12 @@ import { useDebounce } from '@/hooks/use-debounce';
 import { useLivePrices } from '@/hooks/use-live-prices';
 import { WatchlistCard } from '@/components/watchlist/WatchlistCard';
 import { WatchlistTable } from '@/components/watchlist/WatchlistTable';
+import { WatchlistTemplatesDialog } from '@/components/watchlist/WatchlistTemplatesDialog';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AuthGate } from '@/components/ui/AuthGate';
 import Link from 'next/link';
-import { Bookmark, Search, Plus, Radio, TrendingUp, LayoutGrid, List } from 'lucide-react';
+import { Bookmark, Search, Plus, Radio, TrendingUp, LayoutGrid, List, Sparkles } from 'lucide-react';
 import { fetchWithTimeout } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 
@@ -54,6 +55,7 @@ export default function WatchlistPage() {
   const { isAuthenticated } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
+  const [templatesOpen, setTemplatesOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     if (typeof window === 'undefined') return 'grid';
     const saved = localStorage.getItem('watchlist-view') as ViewMode | null;
@@ -210,8 +212,17 @@ export default function WatchlistPage() {
             </div>
           </div>
 
-          {/* Toolbar: view toggle + search */}
+          {/* Toolbar: templates + view toggle + search */}
           <div className="flex items-center gap-2">
+            {/* Starter watchlists */}
+            <button
+              onClick={() => setTemplatesOpen(true)}
+              className="flex items-center gap-1.5 h-9 rounded-lg border border-border px-3 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              title="Add a starter watchlist"
+            >
+              <Sparkles className="h-4 w-4" />
+              <span className="hidden sm:inline">Templates</span>
+            </button>
             {/* View toggle */}
             <div className="flex rounded-lg border border-border overflow-hidden">
               <button
@@ -331,13 +342,22 @@ export default function WatchlistPage() {
                 </button>
               ))}
             </div>
-            <Link
-              href="/discover"
-              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
-            >
-              <TrendingUp className="h-3.5 w-3.5" />
-              Browse Hot Picks on Discover
-            </Link>
+            <div className="flex flex-col items-center gap-3">
+              <button
+                onClick={() => setTemplatesOpen(true)}
+                className="flex items-center gap-1.5 rounded-lg border border-border bg-muted/40 px-3.5 py-2 text-sm font-medium text-foreground hover:border-primary/50 hover:bg-primary/5 hover:text-primary transition-colors"
+              >
+                <Sparkles className="h-4 w-4" />
+                Start from a template
+              </button>
+              <Link
+                href="/discover"
+                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
+              >
+                <TrendingUp className="h-3.5 w-3.5" />
+                Browse Hot Picks on Discover
+              </Link>
+            </div>
           </div>
         ) : viewMode === 'table' ? (
           <WatchlistTable
@@ -393,6 +413,12 @@ export default function WatchlistPage() {
             })}
           </div>
         )}
+
+        <WatchlistTemplatesDialog
+          open={templatesOpen}
+          onOpenChange={setTemplatesOpen}
+          onCreated={(id) => setSelectedListId(id)}
+        />
       </div>
     </div>
   );
