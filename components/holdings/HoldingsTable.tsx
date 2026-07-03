@@ -9,12 +9,15 @@ import { Button } from '@/components/ui/button';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { useHoldings, useRemoveHolding } from '@/hooks/use-holdings';
 import { useAuth } from '@/hooks/use-auth';
-import { Trash2, Edit2, ArrowUpRight, ArrowDownRight, Plus, Search, X, Loader2, Upload } from 'lucide-react';
+import { Trash2, Edit2, ArrowUpRight, ArrowDownRight, Plus, Search, X, Loader2, Upload, Download } from 'lucide-react';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { logger } from '@/lib/utils/logger';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
 import { cn } from '@/lib/utils';
 import { useHoldingsSparklines } from '@/hooks/use-holdings-sparklines';
+import { useRouter } from 'next/navigation';
+import { useEntitlements } from '@/hooks/use-entitlements';
+import { ProBadge } from '@/components/billing/ProBadge';
 
 // ─── Sparkline ────────────────────────────────────────────────────────────────
 
@@ -62,6 +65,63 @@ import type { UserHolding } from '@/lib/types/database';
 import { convertCurrency, formatCurrency as formatCurrencyValue, formatNumber as formatNumberUtil, formatPercent as formatPercentUtil, type CurrencyCode } from '@/lib/currency/currency-conversion';
 import { useExchangeRates } from '@/hooks/use-exchange-rates';
 import { useUserSettings } from '@/hooks/use-user-settings';
+
+// ─── CSV export ───────────────────────────────────────────────────────────────
+
+function csvEscape(v: string): string {
+  return /[",\n\r]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
+}
+
+function fmtNum(v: number | null | undefined, dp = 2): string {
+  return v == null || !Number.isFinite(v) ? '' : v.toFixed(dp);
+}
+
+function fmtShares(v: number | null | undefined): string {
+  return v == null || !Number.isFinite(v) ? '' : String(Number(v.toFixed(6)));
+}
+
+/** Clean, Excel-friendly CSV of the holdings — all monetary values in `currency`. */
+function buildHoldingsCsv(rows: HoldingWithPrice[], currency: string): string {
+  const headers = [
+    'Symbol', 'Company', 'Asset Type', 'Shares', 'Avg Cost', 'Current Price',
+    'Cost Basis', 'Market Value', 'Unrealized P/L', 'Unrealized P/L %',
+    'Allocation %', 'Date Purchased', 'Currency',
+  ];
+  const lines = [headers.join(',')];
+  for (const h of rows) {
+    const costBasis = h.avg_price != null && h.quantity != null ? h.avg_price * h.quantity : null;
+    const cells = [
+      h.symbol,
+      h.company_name ?? '',
+      h.asset_type ?? 'stock',
+      fmtShares(h.quantity),
+      fmtNum(h.avg_price),
+      fmtNum(h.currentPrice),
+      fmtNum(costBasis),
+      fmtNum(h.marketValue),
+      fmtNum(h.unrealizedPL),
+      fmtNum(h.unrealizedPLPercent),
+      fmtNum(h.allocation),
+      h.date_purchased ?? '',
+      currency,
+    ];
+    lines.push(cells.map((c) => csvEscape(String(c))).join(','));
+  }
+  return lines.join('\r\n');
+}
+
+function downloadCsv(filename: string, content: string): void {
+  // Prepend a BOM (U+FEFF) so Excel reads UTF-8 (accented company names) correctly.
+  const blob = new Blob(['﻿' + content], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 
 interface HoldingsTableProps {
   onAddClick?: () => void;
@@ -338,6 +398,8 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
   const { user } = useAuth();
   const { roundNumbers } = useUserSettings();
   const removeHolding = useRemoveHolding();
+  const router = useRouter();
+  const { isPro } = useEntitlements();
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<'marketValue' | 'symbol' | 'allocation'>('marketValue');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
@@ -558,6 +620,14 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
     }
   };
 
+  // Export all holdings (not the search-filtered subset) — Pro-gated like screener export.
+  const handleExport = useCallback(() => {
+    if (!isPro) { router.push('/upgrade'); return; }
+    if (sortedHoldings.length === 0) return;
+    const csv = buildHoldingsCsv(sortedHoldings, userCurrency ?? 'USD');
+    downloadCsv(`bullpen-holdings-${new Date().toISOString().slice(0, 10)}.csv`, csv);
+  }, [isPro, router, sortedHoldings, userCurrency]);
+
   const handleConfirmDelete = async () => {
     if (!deletingHolding) return;
     try {
@@ -686,6 +756,17 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
               >
                 <Upload className="h-3.5 w-3.5" />
                 Import CSV
+              </button>
+            )}
+            {sortedHoldings.length > 0 && (
+              <button
+                onClick={handleExport}
+                title={isPro ? 'Export holdings to CSV' : 'Exporting is a Pro feature'}
+                className="flex items-center gap-1.5 h-8 rounded-lg border border-border/60 bg-muted/30 px-3 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-border hover:bg-muted/60 transition-colors"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Export CSV
+                {!isPro && <ProBadge className="ml-0.5" />}
               </button>
             )}
           {/* Search */}
