@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { useHoldings, useRemoveHolding } from '@/hooks/use-holdings';
 import { useAuth } from '@/hooks/use-auth';
@@ -694,40 +695,36 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
         <CardHeader>
           <CardTitle>My Holdings</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex flex-col items-center text-center py-4">
-            <div className="flex items-center justify-center h-16 w-16 rounded-full bg-muted/50 mb-4">
-              <Plus className="h-8 w-8 text-muted-foreground" />
+        <CardContent className="py-6">
+          <EmptyState
+            title="No holdings yet"
+            description="Add stocks to track your portfolio, see performance, and get AI-powered insights."
+          >
+            <div className="mx-auto flex max-w-md flex-col gap-2 sm:flex-row">
+              {onAddClick && (
+                <button
+                  onClick={onAddClick}
+                  className="flex-1 flex items-center justify-center gap-2 py-5 rounded-lg border-2 border-dashed border-border/60 hover:border-primary/50 hover:bg-primary/5 text-muted-foreground hover:text-primary transition-colors group"
+                >
+                  <span className="flex items-center justify-center h-8 w-8 rounded-full border-2 border-dashed border-border/60 group-hover:border-primary/50 transition-colors">
+                    <Plus className="h-4 w-4" />
+                  </span>
+                  <span className="text-sm font-medium">Add your first holding</span>
+                </button>
+              )}
+              {onImportClick && (
+                <button
+                  onClick={onImportClick}
+                  className="flex-1 flex items-center justify-center gap-2 py-5 rounded-lg border-2 border-dashed border-border/60 hover:border-emerald-500/40 hover:bg-emerald-500/5 text-muted-foreground hover:text-emerald-500 transition-colors group"
+                >
+                  <span className="flex items-center justify-center h-8 w-8 rounded-full border-2 border-dashed border-border/60 group-hover:border-emerald-500/40 transition-colors">
+                    <Upload className="h-4 w-4" />
+                  </span>
+                  <span className="text-sm font-medium">Import from CSV</span>
+                </button>
+              )}
             </div>
-            <h3 className="font-semibold text-foreground">No holdings yet</h3>
-            <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-              Add stocks to track your portfolio, see performance, and get AI-powered insights.
-            </p>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-2">
-            {onAddClick && (
-              <button
-                onClick={onAddClick}
-                className="flex-1 flex items-center justify-center gap-2 py-5 rounded-lg border-2 border-dashed border-border/60 hover:border-primary/50 hover:bg-primary/5 text-muted-foreground hover:text-primary transition-colors group"
-              >
-                <span className="flex items-center justify-center h-8 w-8 rounded-full border-2 border-dashed border-border/60 group-hover:border-primary/50 transition-colors">
-                  <Plus className="h-4 w-4" />
-                </span>
-                <span className="text-sm font-medium">Add your first holding</span>
-              </button>
-            )}
-            {onImportClick && (
-              <button
-                onClick={onImportClick}
-                className="flex-1 flex items-center justify-center gap-2 py-5 rounded-lg border-2 border-dashed border-border/60 hover:border-emerald-500/40 hover:bg-emerald-500/5 text-muted-foreground hover:text-emerald-500 transition-colors group"
-              >
-                <span className="flex items-center justify-center h-8 w-8 rounded-full border-2 border-dashed border-border/60 group-hover:border-emerald-500/40 transition-colors">
-                  <Upload className="h-4 w-4" />
-                </span>
-                <span className="text-sm font-medium">Import from CSV</span>
-              </button>
-            )}
-          </div>
+          </EmptyState>
         </CardContent>
       </Card>
     );

@@ -7,6 +7,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { Telescope, Search, ChevronRight, Trash2, Clock, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useBackground } from '@/hooks/use-background';
@@ -137,9 +138,13 @@ export default function DeepDiveLanding() {
             {[0, 1, 2].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}
           </div>
         ) : dives.length === 0 ? (
-          <p className="text-sm text-muted-foreground/60 italic py-6 text-center">
-            No deep dives yet. Enter a ticker above to generate your first.
-          </p>
+          <EmptyState
+            pose="thinking"
+            title="No deep dives yet"
+            description="Enter a ticker above and the AI analyst will dig into the business, financials, and risks."
+            imageSize={150}
+            className="py-6"
+          />
         ) : (
           <div className="space-y-2">
             {dives.map((d) => (

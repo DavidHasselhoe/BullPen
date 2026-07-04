@@ -1,6 +1,5 @@
 'use client';
 
-import { Lock } from 'lucide-react';
 import { useEntitlements } from '@/hooks/use-entitlements';
 import type { ProFeature } from '@/lib/billing/entitlements';
 import { UpgradeCTA } from './UpgradeCTA';
@@ -24,9 +23,13 @@ export function ProGate({ feature, title = 'A Pro feature', description = 'Upgra
 
   return (
     <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border/70 bg-muted/20 p-6 text-center">
-      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
-        <Lock className="h-4 w-4 text-primary" />
-      </div>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/illustrations/bull-locked.png"
+        alt=""
+        aria-hidden
+        className="h-auto w-20 select-none opacity-90 dark:opacity-80 dark:invert"
+      />
       <div>
         <p className="text-sm font-semibold text-foreground">{title}</p>
         <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>

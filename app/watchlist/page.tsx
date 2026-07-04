@@ -310,9 +310,13 @@ export default function WatchlistPage() {
           </div>
         ) : displayItems.length === 0 ? (
           <div className="flex flex-col items-center gap-6 py-20 text-center">
-            <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center">
-              <Bookmark className="h-8 w-8 text-muted-foreground/50" />
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/illustrations/bull-shrug.png"
+              alt=""
+              aria-hidden
+              className="h-auto w-36 select-none opacity-90 dark:opacity-80 dark:invert"
+            />
             <div>
               <p className="text-base font-medium text-foreground">Nothing here yet</p>
               <p className="text-sm text-muted-foreground mt-1">

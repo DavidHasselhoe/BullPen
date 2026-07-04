@@ -183,7 +183,13 @@ function FilterChip({ label, active, onClick }: { label: string; active: boolean
 function EmptyState({ text }: { text: string }) {
   return (
     <div className="rounded-xl border border-dashed py-16 text-center">
-      <Bell className="mx-auto mb-3 h-8 w-8 text-muted-foreground/30" />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/illustrations/bull-shrug.png"
+        alt=""
+        aria-hidden
+        className="mx-auto mb-4 h-auto w-28 select-none opacity-90 dark:opacity-80 dark:invert"
+      />
       <p className="mx-auto max-w-xs px-6 text-sm text-muted-foreground">{text}</p>
     </div>
   );

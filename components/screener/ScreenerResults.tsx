@@ -17,6 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Bell, Download } from 'lucide-react';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
+import { EmptyState } from '@/components/ui/EmptyState';
 import type { ScreenerRow } from '@/app/api/screener/route';
 import type { HeatmapPriceEntry } from '@/hooks/use-heatmap-stream';
 import { cn } from '@/lib/utils';
@@ -147,16 +148,26 @@ export function ScreenerResults({
 
   if (data.length === 0) {
     return (
-      <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
-        No companies match the current filters.
+      <div className="flex items-center justify-center py-10">
+        <EmptyState
+          pose="search"
+          title="No matches"
+          description="No companies match the current filters. Try widening or clearing them."
+          imageSize={140}
+        />
       </div>
     );
   }
 
   if (sorted.length === 0) {
     return (
-      <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
-        No companies match the current filters.
+      <div className="flex items-center justify-center py-10">
+        <EmptyState
+          pose="search"
+          title="No matches"
+          description="No companies match the current filters. Try widening or clearing them."
+          imageSize={140}
+        />
       </div>
     );
   }

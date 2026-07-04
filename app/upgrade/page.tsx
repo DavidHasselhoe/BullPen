@@ -10,6 +10,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useEntitlements } from '@/hooks/use-entitlements';
 import { PRICING, PLAN_COMPARISON } from '@/lib/billing/entitlements';
 import { startCheckout } from '@/lib/billing/checkout';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 const FAQ = [
   { q: `Is there a free trial?`, a: `Yes — Pro starts with a ${PRICING.trialDays}-day free trial, and there's a ${PRICING.moneyBackDays}-day money-back guarantee. No card needed to use the free plan.` },
@@ -31,6 +32,7 @@ function UpgradeContent() {
   // Preselect the plan the user clicked on the landing page (?checkout=monthly|annual).
   const [annual, setAnnual] = useState(searchParams.get('checkout') !== 'monthly');
   const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
+  const justSubscribed = searchParams.get('checkout') === 'success';
 
   const price = annual ? PRICING.proAnnualPerMonth : PRICING.proMonthly;
 
@@ -55,6 +57,21 @@ function UpgradeContent() {
           <ArrowLeft className="h-3 w-3 transition-transform group-hover:-translate-x-0.5" />
           Home
         </Link>
+
+        {justSubscribed && (
+          <div className="mx-auto mb-8 max-w-lg rounded-2xl border border-primary/30 bg-primary/[0.06] p-6">
+            <EmptyState
+              pose="celebrate"
+              title="Welcome to Pro! 🎉"
+              description="Your 14-day trial is live and the full AI analyst is unlocked. It can take a few seconds for your account to reflect it."
+              imageSize={150}
+            >
+              <Button asChild>
+                <Link href="/dashboard">Start exploring</Link>
+              </Button>
+            </EmptyState>
+          </div>
+        )}
 
         {/* Hero */}
         <div className="mx-auto max-w-2xl text-center">
@@ -82,7 +99,7 @@ function UpgradeContent() {
           ))}
         </div>
 
-        {isPro && (
+        {isPro && !justSubscribed && (
           <div className="mx-auto mt-6 flex max-w-md items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-4 py-2.5 text-sm font-medium text-foreground">
             <Crown className="h-4 w-4 text-primary" /> You’re on Pro — thanks for supporting BullPen.
           </div>
