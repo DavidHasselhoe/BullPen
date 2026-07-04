@@ -165,6 +165,7 @@ export default function EtfDetailPage() {
     company === null &&
     profileData !== undefined &&
     !profileData?.profile &&
+    snapshot.data?.success === true &&
     !hasRealQuote;
 
   if (isNotFound) {

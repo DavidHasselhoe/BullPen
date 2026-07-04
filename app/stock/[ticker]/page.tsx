@@ -215,6 +215,7 @@ export default function StockDetailPage() {
     company === null &&
     profileData !== undefined &&
     !profileData?.profile &&
+    snapshot.data?.success === true &&
     !hasRealQuote;
 
   const navSections: StockNavSection[] = [

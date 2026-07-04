@@ -50,13 +50,16 @@ export default function AssetPage() {
   const displayName = profile?.name ?? symbol;
   const assetType = profile?.assetType ?? 'unknown';
 
-  // A real asset resolves a profile (known type) or has a live quote (price > 0).
-  // useAssetProfile throws on an unknown slug, so `profile` is null in that case.
+  // The asset profile route infers the type from the symbol pattern, so a bogus
+  // "FAKECOIN/USD" still comes back as assetType 'crypto' — the profile can't tell
+  // us it's invalid. The snapshot is authoritative: if the request SUCCEEDED but
+  // TwelveData returned no quote, the symbol doesn't exist. A rate-limit/error
+  // returns success=false, so we never false-flag a real asset then.
   const hasRealQuote = (snapshot.data?.quote?.price ?? 0) > 0;
   const isNotFound =
-    !profileLoading && !snapshot.isLoading &&
-    !hasRealQuote &&
-    (profile == null || assetType === 'unknown');
+    !snapshot.isLoading &&
+    snapshot.data?.success === true &&
+    !hasRealQuote;
 
   useEffect(() => {
     if (!symbol) return;
