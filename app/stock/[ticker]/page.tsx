@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, MessageSquare, SearchX, Telescope } from 'lucide-react';
+import { ArrowLeft, MessageSquare, Telescope } from 'lucide-react';
 import { AlertDialog } from '@/components/alerts/AlertDialog';
 import Link from 'next/link';
 import { ExperienceLevelToggle } from '@/components/ui/ExperienceLevelToggle';
@@ -18,6 +18,7 @@ import { useRecentlyViewed } from '@/hooks/use-recently-viewed';
 import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import { Button } from '@/components/ui/button';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
+import { EmptyState } from '@/components/ui/EmptyState';
 import AnimatedContent from '@/components/ui/AnimatedContent';
 import { useBackground } from '@/hooks/use-background';
 import { AddToListPicker } from '@/components/watchlist/AddToListPicker';
@@ -203,13 +204,18 @@ export default function StockDetailPage() {
     }
   }, [company?.ticker, displayName, company?.logo_url, snapshotAssetType, addRecentlyViewed]);
 
-  // All three data sources have settled and none knows this ticker → show 404
+  // A real symbol resolves at least one of: a Supabase company row, a TwelveData
+  // profile, or a live quote (price > 0). The snapshot request returns
+  // success:true even for a bogus ticker, so key off actual quote data, not the
+  // request flag. If, once everything has settled, none of the three know the
+  // symbol, it isn't a real ticker → show not-found.
+  const hasRealQuote = (snapshot.data?.quote?.price ?? 0) > 0;
   const isNotFound =
     !companyLoading && !profileLoading && !snapshot.isLoading &&
     company === null &&
     profileData !== undefined &&
     !profileData?.profile &&
-    !snapshot.data?.success;
+    !hasRealQuote;
 
   const navSections: StockNavSection[] = [
     { id: 'nav-overview',    label: 'Overview' },
@@ -238,19 +244,14 @@ export default function StockDetailPage() {
               Back
             </button>
           </div>
-          <div className="flex flex-col items-center justify-center py-24 text-center">
-            <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-muted">
-              <SearchX className="h-10 w-10 text-muted-foreground/40" />
-            </div>
-            <h1 className="text-2xl font-semibold mb-2">
-              &ldquo;{ticker}&rdquo; not found
-            </h1>
-            <p className="text-sm text-muted-foreground max-w-sm mt-1">
-              We couldn&apos;t find a stock with that symbol. Double-check the ticker or search for a company name.
-            </p>
-            <Button className="mt-6" onClick={() => router.push('/dashboard')}>
-              Back to Dashboard
-            </Button>
+          <div className="py-20">
+            <EmptyState
+              pose="error"
+              title={`“${ticker}” not found`}
+              description="We couldn't find a stock with that symbol. Double-check the ticker, or search for a company name."
+            >
+              <Button onClick={() => router.push('/dashboard')}>Back to Dashboard</Button>
+            </EmptyState>
           </div>
         </div>
       </div>
