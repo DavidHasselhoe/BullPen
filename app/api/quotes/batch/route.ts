@@ -1,6 +1,7 @@
 /**
- * Batch quotes API — fetches multiple symbols in a single TwelveData /batch POST.
- * One round-trip regardless of how many symbols are requested (up to 20).
+ * Batch quotes API — fetches many symbols via TwelveData /batch POSTs, chunked
+ * into groups of BATCH_CHUNK (100) and run in parallel. Large portfolios and
+ * watchlists get every quote instead of being silently truncated to 20.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -12,6 +13,9 @@ import { validateTicker } from '@/lib/security/input-validation';
 import { humanizeError } from '@/lib/errors/humanize';
 
 export const maxDuration = 30;
+
+const MAX_SYMBOLS = 300; // hard safety bound on a single request
+const BATCH_CHUNK = 100; // TwelveData /batch-safe size (matches SEED_CHUNK)
 
 async function handler(request: NextRequest) {
   try {
@@ -32,7 +36,7 @@ async function handler(request: NextRequest) {
       const { valid, normalized } = validateTicker(s.trim());
       if (valid && normalized) unique.push(normalized);
     }
-    const capped = unique.slice(0, 20);
+    const capped = unique.slice(0, MAX_SYMBOLS);
 
     const quotes: Record<string, { price: number; change: number; changePercent: number }> = {};
 
@@ -40,11 +44,18 @@ async function handler(request: NextRequest) {
 
     const useTwelveData = !!process.env.TWELVE_DATA_API_KEY;
     if (useTwelveData) {
-      // Single batch POST — no throttling needed
-      const quoteMap = await getStockQuotes(capped, { prepost });
-      for (const [symbol, q] of quoteMap.entries()) {
-        if (q.c > 0) {
-          quotes[symbol] = { price: q.c, change: q.d, changePercent: q.dp };
+      // Chunk into /batch-sized groups and fire them in parallel, so a 40-stock
+      // portfolio isn't cut to 20.
+      const chunks: string[][] = [];
+      for (let i = 0; i < capped.length; i += BATCH_CHUNK) {
+        chunks.push(capped.slice(i, i + BATCH_CHUNK));
+      }
+      const maps = await Promise.all(chunks.map((c) => getStockQuotes(c, { prepost })));
+      for (const quoteMap of maps) {
+        for (const [symbol, q] of quoteMap.entries()) {
+          if (q.c > 0) {
+            quotes[symbol] = { price: q.c, change: q.d, changePercent: q.dp };
+          }
         }
       }
     } else {

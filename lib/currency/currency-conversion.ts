@@ -1,6 +1,8 @@
 // Currency Conversion Utilities
 // Handles currency conversion using exchange rates from Frankfurter API
 
+import { logger } from '@/lib/utils/logger';
+
 /**
  * Currency codes supported by the system
  */
@@ -57,7 +59,7 @@ export function convertCurrency(
   }
   
   if (!rates) {
-    console.warn('Exchange rates not available, returning original value');
+    logger.debug('Exchange rates not available, returning original value');
     return value;
   }
   
@@ -65,7 +67,7 @@ export function convertCurrency(
   if (fromCurrency === rates.base) {
     const rate = rates.rates[toCurrency];
     if (!rate) {
-      console.warn(`Rate not found for ${toCurrency}, returning original value`);
+      logger.debug(`Rate not found for ${toCurrency}, returning original value`);
       return value;
     }
     return value * rate;
@@ -75,7 +77,7 @@ export function convertCurrency(
   if (toCurrency === rates.base) {
     const rate = rates.rates[fromCurrency];
     if (!rate) {
-      console.warn(`Rate not found for ${fromCurrency}, returning original value`);
+      logger.debug(`Rate not found for ${fromCurrency}, returning original value`);
       return value;
     }
     return value / rate;
@@ -87,7 +89,7 @@ export function convertCurrency(
   const toRate = rates.rates[toCurrency];
   
   if (!fromRate || !toRate) {
-    console.warn(`Rate not found for conversion ${fromCurrency} -> ${toCurrency}, returning original value`);
+    logger.debug(`Rate not found for conversion ${fromCurrency} -> ${toCurrency}, returning original value`);
     return value;
   }
   
