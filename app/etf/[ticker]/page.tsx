@@ -9,13 +9,14 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, MessageSquare, SearchX } from 'lucide-react';
+import { ArrowLeft, MessageSquare } from 'lucide-react';
 import { ExperienceLevelToggle } from '@/components/ui/ExperienceLevelToggle';
 import { ExperienceOnboardingBanner } from '@/components/stock/ExperienceOnboardingBanner';
 import { useRecentlyViewed } from '@/hooks/use-recently-viewed';
 import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import { Button } from '@/components/ui/button';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
+import { EmptyState } from '@/components/ui/EmptyState';
 import AnimatedContent from '@/components/ui/AnimatedContent';
 import { useBackground } from '@/hooks/use-background';
 import { AddToListPicker } from '@/components/watchlist/AddToListPicker';
@@ -156,12 +157,15 @@ export default function EtfDetailPage() {
     }
   }, [company?.ticker, displayName, company?.logo_url, addRecentlyViewed]);
 
+  // Key off a real quote (price > 0), not snapshot.data.success — the batch
+  // request returns success:true even for a bogus symbol.
+  const hasRealQuote = (snapshot.data?.quote?.price ?? 0) > 0;
   const isNotFound =
     !companyLoading && !profileLoading && !snapshot.isLoading &&
     company === null &&
     profileData !== undefined &&
     !profileData?.profile &&
-    !snapshot.data?.success;
+    !hasRealQuote;
 
   if (isNotFound) {
     return (
@@ -176,19 +180,14 @@ export default function EtfDetailPage() {
               Back
             </button>
           </div>
-          <div className="flex flex-col items-center justify-center py-24 text-center">
-            <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-muted">
-              <SearchX className="h-10 w-10 text-muted-foreground/40" />
-            </div>
-            <h1 className="text-2xl font-semibold mb-2">
-              &ldquo;{ticker}&rdquo; not found
-            </h1>
-            <p className="text-sm text-muted-foreground max-w-sm mt-1">
-              We couldn&apos;t find an ETF with that symbol.
-            </p>
-            <Button className="mt-6" onClick={() => router.push('/dashboard')}>
-              Back to Dashboard
-            </Button>
+          <div className="py-20">
+            <EmptyState
+              pose="error"
+              title={`“${ticker}” not found`}
+              description="We couldn't find an ETF with that symbol."
+            >
+              <Button onClick={() => router.push('/dashboard')}>Back to Dashboard</Button>
+            </EmptyState>
           </div>
         </div>
       </div>

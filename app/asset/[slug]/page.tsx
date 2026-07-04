@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
+import { EmptyState } from '@/components/ui/EmptyState';
 import AnimatedContent from '@/components/ui/AnimatedContent';
 import { useBackground } from '@/hooks/use-background';
 import { AddToListPicker } from '@/components/watchlist/AddToListPicker';
@@ -44,16 +45,51 @@ export default function AssetPage() {
   const { open: openAIPanel, setAIContext } = useAIPanel();
 
   const { data: profile, isLoading: profileLoading } = useAssetProfile(slug.toUpperCase());
-  useStockSnapshot(slug.toUpperCase());
+  const snapshot = useStockSnapshot(slug.toUpperCase());
 
   const displayName = profile?.name ?? symbol;
   const assetType = profile?.assetType ?? 'unknown';
+
+  // A real asset resolves a profile (known type) or has a live quote (price > 0).
+  // useAssetProfile throws on an unknown slug, so `profile` is null in that case.
+  const hasRealQuote = (snapshot.data?.quote?.price ?? 0) > 0;
+  const isNotFound =
+    !profileLoading && !snapshot.isLoading &&
+    !hasRealQuote &&
+    (profile == null || assetType === 'unknown');
 
   useEffect(() => {
     if (!symbol) return;
     setAIContext({ tickers: [symbol], label: displayName });
     return () => setAIContext(null);
   }, [symbol, displayName, setAIContext]);
+
+  if (isNotFound) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+          <div className="mb-6">
+            <button
+              onClick={() => router.back()}
+              className="flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back
+            </button>
+          </div>
+          <div className="py-20">
+            <EmptyState
+              pose="error"
+              title={`“${symbol}” not found`}
+              description="We couldn't find an asset with that symbol. Double-check it, or search for a name."
+            >
+              <Button onClick={() => router.push('/dashboard')}>Back to Dashboard</Button>
+            </EmptyState>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`min-h-screen ${hasAnimatedBackground ? '' : 'bg-background'}`}>
