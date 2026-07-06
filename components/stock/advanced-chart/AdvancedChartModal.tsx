@@ -5,15 +5,25 @@ import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { useTheme } from 'next-themes';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import type { AdvancedChartType, ChartRange } from '@/hooks/use-chart-prefs';
 import { useStockQuote } from '@/hooks/use-stock-price';
 import { useLivePrices } from '@/hooks/use-live-prices';
+import { useAlerts } from '@/hooks/use-alerts';
 import type { CompanyEarnings } from '@/lib/twelvedata/twelvedata-client';
-import type { OHLCV, IndicatorInstance } from '@/lib/finance/indicators';
+import {
+  getIndicatorDef,
+  defaultParamsFor,
+  indicatorLabel,
+  INDICATOR_PALETTE,
+  type OHLCV,
+  type IndicatorInstance,
+} from '@/lib/finance/indicators';
 import { AdvancedChart, type ChartTool } from './AdvancedChart';
 import { ChartToolbar } from './ChartToolbar';
+import { ChartAIPanel } from './ChartAIPanel';
+import { buildChartSnapshot, type ChartAction } from './chart-context';
 import { useChartPresets, type ChartPreset } from '@/hooks/use-chart-presets';
 
 interface CandlesResponse {
@@ -75,8 +85,10 @@ export function AdvancedChartModal({
   const isDark = resolvedTheme !== 'light';
   const [range, setRange] = useState<ChartRange>(initialRange);
   const [tool, setTool] = useState<ChartTool>('none');
+  const [aiOpen, setAiOpen] = useState(false);
 
   const { presets, savePreset, deletePreset } = useChartPresets();
+  const { create: createAlert } = useAlerts();
 
   const handleClearIndicators = () => onReplaceIndicators([]);
   const handleSavePreset = (name: string) =>
@@ -177,6 +189,78 @@ export function AdvancedChartModal({
   const candles = data?.candles ?? null;
   const hasData = !!candles && candles.t.length > 0;
 
+  // Live snapshot the AI reads — rebuilt as the chart state changes.
+  const currentPrice = livePrice ?? quote?.c ?? null;
+  const snapshot = useMemo(
+    () =>
+      buildChartSnapshot({
+        symbol: ticker,
+        timeframe: range,
+        chartType,
+        indicatorLabels: indicators.map(indicatorLabel),
+        showVolume,
+        showEvents,
+        currentPrice,
+        changePctToday: quote?.dp ?? null,
+        candles,
+      }),
+    [ticker, range, chartType, indicators, showVolume, showEvents, currentPrice, quote?.dp, candles],
+  );
+
+  // Execute an AI-issued chart action against the real chart handlers.
+  const dispatchChartAction = async (action: ChartAction) => {
+    switch (action.type) {
+      case 'chart_set_timeframe':
+        setRange(action.range);
+        break;
+      case 'chart_set_type':
+        onChartType(action.chartType);
+        break;
+      case 'chart_add_indicator': {
+        const def = getIndicatorDef(action.indicator);
+        if (!def) break;
+        const params = defaultParamsFor(def);
+        if (action.length != null) {
+          const spec = def.params.find((p) => p.key === 'length');
+          if (spec) params.length = Math.min(spec.max, Math.max(spec.min, Math.round(action.length)));
+        }
+        const used = new Set(indicators.map((i) => i.color));
+        const color = INDICATOR_PALETTE.find((c) => !used.has(c)) ?? INDICATOR_PALETTE[indicators.length % INDICATOR_PALETTE.length];
+        const inst: IndicatorInstance = { id: `${action.indicator}-${Date.now()}`, type: action.indicator, params, color };
+        onReplaceIndicators([...indicators, inst]);
+        break;
+      }
+      case 'chart_remove_indicator':
+        onReplaceIndicators(indicators.filter((i) => i.type !== action.indicator));
+        break;
+      case 'chart_clear_indicators':
+        onReplaceIndicators([]);
+        break;
+      case 'chart_apply_preset':
+        onApplyPreset(action.preset);
+        break;
+      case 'chart_toggle_volume':
+        if (action.show !== showVolume) onToggleVolume();
+        break;
+      case 'chart_toggle_events':
+        if (action.show !== showEvents) onToggleEvents();
+        break;
+      case 'chart_set_alert': {
+        const base = currentPrice ?? action.price;
+        const alertType =
+          action.direction === 'below'
+            ? 'price_below'
+            : action.direction === 'above'
+            ? 'price_above'
+            : action.price >= base
+            ? 'price_above'
+            : 'price_below';
+        await createAlert({ symbol: ticker.toUpperCase(), alertType, threshold: action.price });
+        break;
+      }
+    }
+  };
+
   return createPortal(
     <motion.div
       initial={{ opacity: 0 }}
@@ -212,6 +296,8 @@ export function AdvancedChartModal({
         onToggleEvents={onToggleEvents}
         tool={tool}
         onToolChange={setTool}
+        aiOpen={aiOpen}
+        onToggleAI={() => setAiOpen((v) => !v)}
         onClose={onClose}
       />
 
@@ -246,6 +332,18 @@ export function AdvancedChartModal({
             onCreateAlert={handleCreateAlert}
           />
         )}
+
+        <AnimatePresence>
+          {aiOpen && (
+            <ChartAIPanel
+              key="chart-ai"
+              symbol={ticker}
+              snapshot={snapshot}
+              onAction={dispatchChartAction}
+              onClose={() => setAiOpen(false)}
+            />
+          )}
+        </AnimatePresence>
       </div>
     </motion.div>,
     document.body

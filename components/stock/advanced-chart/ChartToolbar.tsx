@@ -1,6 +1,6 @@
 'use client';
 
-import { CandlestickChart, LineChart, AreaChart, BarChart3, CalendarDays, Ruler, BellPlus, X } from 'lucide-react';
+import { CandlestickChart, LineChart, AreaChart, BarChart3, CalendarDays, Ruler, BellPlus, Sparkles, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { IndicatorMenu } from './IndicatorMenu';
 import { PresetMenu } from './PresetMenu';
@@ -49,6 +49,8 @@ interface Props {
   onToggleEvents: () => void;
   tool: 'none' | 'measure' | 'alert';
   onToolChange: (t: 'none' | 'measure' | 'alert') => void;
+  aiOpen: boolean;
+  onToggleAI: () => void;
   onClose: () => void;
 }
 
@@ -56,7 +58,7 @@ export function ChartToolbar({
   symbol, price, changePct, chartType, onChartType, range, onRange,
   indicators, onAddIndicator, onRemoveIndicator, onUpdateIndicator, onApplyPreset, onClearIndicators,
   presets, onApplyUserPreset, onSavePreset, onDeletePreset,
-  showVolume, onToggleVolume, showEvents, onToggleEvents, tool, onToolChange, onClose,
+  showVolume, onToggleVolume, showEvents, onToggleEvents, tool, onToolChange, aiOpen, onToggleAI, onClose,
 }: Props) {
   const pct = changePct ?? 0;
   const pos = pct >= 0;
@@ -119,6 +121,21 @@ export function ChartToolbar({
 
       {/* Right cluster */}
       <div className="ml-auto flex items-center gap-1.5">
+        <button
+          type="button"
+          onClick={onToggleAI}
+          aria-pressed={aiOpen}
+          title="Ask AI about this chart"
+          className={cn(
+            'flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-semibold transition-colors',
+            aiOpen
+              ? 'border-primary/40 bg-primary/10 text-primary'
+              : 'border-primary/30 bg-primary/5 text-primary hover:bg-primary/10',
+          )}
+        >
+          <Sparkles className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">Ask AI</span>
+        </button>
         <PresetMenu
           presets={presets}
           onApply={onApplyUserPreset}
