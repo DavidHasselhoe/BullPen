@@ -74,17 +74,6 @@ function riskTextClass(level: string) {
   }
 }
 
-function riskBgBorder(level: string) {
-  switch (level) {
-    case 'Low':       return 'bg-green-500/[0.06] border-green-500/25';
-    case 'Moderate':  return 'bg-emerald-500/[0.06] border-emerald-500/25';
-    case 'Elevated':  return 'bg-amber-500/[0.06] border-amber-500/25';
-    case 'High':      return 'bg-orange-500/[0.06] border-orange-500/25';
-    case 'Very High': return 'bg-red-500/[0.06] border-red-500/25';
-    default:          return 'bg-muted/10 border-border/30';
-  }
-}
-
 function severityChip(severity: string) {
   switch (severity) {
     case 'critical': return 'bg-red-500/15 text-red-400 border border-red-500/25';
@@ -105,7 +94,7 @@ function metricBarColor(score: number): string {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-[9px] font-mono font-bold uppercase tracking-[0.3em] text-muted-foreground/45 mb-3 select-none">
+    <p className="mb-3 select-none font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/55">
       {children}
     </p>
   );
@@ -124,10 +113,15 @@ function arcPath(cx: number, cy: number, r: number, startDeg: number, endDeg: nu
   return `M ${x1.toFixed(2)} ${y1.toFixed(2)} A ${r} ${r} 0 ${large} 1 ${x2.toFixed(2)} ${y2.toFixed(2)}`;
 }
 
-function ScoreRing({ score, riskLevel, animated }: { score: number; riskLevel: string; animated: boolean }) {
+function ScoreRing({ score, animated }: { score: number; animated: boolean }) {
   const [displayed, setDisplayed] = useState(0);
+  // Lazy init (client-only) so we can skip the count-up under reduced-motion
+  // without a synchronous setState inside the effect.
+  const [reduced] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  );
   useEffect(() => {
-    if (!animated) return;
+    if (!animated || reduced) return;
     let frame: number;
     let start: number | null = null;
     const duration = 900;
@@ -140,27 +134,22 @@ function ScoreRing({ score, riskLevel, animated }: { score: number; riskLevel: s
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [score, animated]);
+  }, [score, animated, reduced]);
 
-  const d = animated ? displayed : score;
+  const d = animated && !reduced ? displayed : score;
   const color = riskColor(score);
 
   return (
-    <div className="flex flex-col items-center gap-1.5 shrink-0">
-      <div className="relative">
-        <svg viewBox="0 0 120 120" width={108} height={108}>
-          <circle cx="60" cy="60" r="46" fill="none" stroke="currentColor" strokeWidth="12" className="text-muted/30" />
-          {d > 0 && (
-            <path d={arcPath(60, 60, 46, 0, (d / 100) * 360)} fill="none"
-              stroke={color} strokeWidth="12" strokeLinecap="round" />
-          )}
-          <text x="60" y="56" textAnchor="middle" className="fill-foreground" fontSize="22" fontWeight="800" fontFamily="monospace">{d}</text>
-          <text x="60" y="70" textAnchor="middle" fontSize="9" fill="currentColor" className="fill-muted-foreground/50">/100</text>
-        </svg>
-      </div>
-      <span className={cn('text-xs font-bold tracking-tight', riskTextClass(riskLevel))}>
-        {riskLevel} Risk
-      </span>
+    <div className="relative shrink-0">
+      <svg viewBox="0 0 120 120" width={126} height={126} role="img" aria-label={`Overall risk score ${score} out of 100`}>
+        <circle cx="60" cy="60" r="46" fill="none" stroke="currentColor" strokeWidth="11" className="text-muted/30" />
+        {d > 0 && (
+          <path d={arcPath(60, 60, 46, 0, (d / 100) * 360)} fill="none"
+            stroke={color} strokeWidth="11" strokeLinecap="round" />
+        )}
+        <text x="60" y="59" textAnchor="middle" className="fill-foreground" fontSize="27" fontWeight="800" fontFamily="monospace">{d}</text>
+        <text x="60" y="75" textAnchor="middle" fontSize="10" className="fill-muted-foreground/50">/ 100</text>
+      </svg>
     </div>
   );
 }
@@ -183,11 +172,11 @@ function MetricCell({ label, metric, expanded, onToggle }: {
     <div className="rounded-lg border border-border/30 bg-muted/[0.06] overflow-hidden">
       <button
         onClick={onToggle}
-        className="w-full text-left p-3 space-y-2 group"
+        className="group w-full cursor-pointer space-y-2 p-3 text-left transition-colors hover:bg-muted/[0.05]"
         aria-expanded={expanded}
       >
         <div className="flex items-center justify-between gap-2">
-          <span className="text-[9px] font-mono font-bold uppercase tracking-[0.2em] text-muted-foreground/60 leading-none">{label}</span>
+          <span className="text-[10px] font-mono font-bold uppercase tracking-[0.1em] text-muted-foreground/75 leading-none">{label}</span>
           <div className="flex items-center gap-1.5">
             <span className={cn('text-base font-black tabular-nums leading-none', metricBarColor(metric.score).replace('bg-', 'text-'))}>{metric.score}</span>
             {expanded ? <ChevronUp className="h-3 w-3 text-muted-foreground/40" /> : <ChevronDown className="h-3 w-3 text-muted-foreground/30 group-hover:text-muted-foreground/50" />}
@@ -200,7 +189,7 @@ function MetricCell({ label, metric, expanded, onToggle }: {
       </button>
       {expanded && (
         <div className="px-3 pb-3 pt-0">
-          <p className="text-[11px] text-muted-foreground/80 leading-relaxed border-t border-border/20 pt-2.5">
+          <p className="text-[12px] text-muted-foreground leading-relaxed border-t border-border/20 pt-2.5">
             {metric.detail}
           </p>
         </div>
@@ -209,57 +198,64 @@ function MetricCell({ label, metric, expanded, onToggle }: {
   );
 }
 
-// ─── Stress scenarios compact table ───────────────────────────────────────────
+// ─── Stress scenarios (stacked cards) ─────────────────────────────────────────
+// The AI returns a full descriptive paragraph in `estimatedImpact`, so these wrap
+// as readable prose — never a no-wrap table cell (which overflowed the card).
 
-function StressTable({ scenarios }: { scenarios: StressScenario[] }) {
-  const [expanded, setExpanded] = useState<number | null>(null);
+function severityStripe(severity: string): string {
+  switch (severity) {
+    case 'high':   return 'bg-red-500';
+    case 'medium': return 'bg-amber-500';
+    default:       return 'bg-blue-500';
+  }
+}
 
+function severityFigureText(severity: string): string {
+  switch (severity) {
+    case 'high':   return 'text-red-400';
+    case 'medium': return 'text-amber-400';
+    default:       return 'text-blue-400';
+  }
+}
+
+// Pull a leading drawdown figure ("-30% to -45%") out of the impact text so it
+// reads as a scannable stat; the remainder becomes the description.
+function splitImpact(impact: string): { figure: string | null; rest: string } {
+  const m = impact.match(
+    /^\s*-?\d+(?:\.\d+)?%\s*(?:to|–|—|-)\s*-?\d+(?:\.\d+)?%|^\s*[-−]?\d+(?:\.\d+)?%/i
+  );
+  if (!m) return { figure: null, rest: impact.trim() };
+  const figure = m[0].trim();
+  const rest = impact.slice(m[0].length).replace(/^[\s.,—–-]+/, '').trim();
+  return { figure, rest };
+}
+
+function StressScenarioList({ scenarios }: { scenarios: StressScenario[] }) {
   return (
-    <div className="w-full">
-      <table className="w-full text-xs border-collapse">
-        <thead>
-          <tr>
-            <th className="text-left text-[9px] font-mono uppercase tracking-[0.25em] text-muted-foreground/40 pb-2.5 font-normal w-1/2">Scenario</th>
-            <th className="text-right text-[9px] font-mono uppercase tracking-[0.25em] text-muted-foreground/40 pb-2.5 font-normal pr-3">Est. Impact</th>
-            <th className="text-right text-[9px] font-mono uppercase tracking-[0.25em] text-muted-foreground/40 pb-2.5 font-normal">Sev.</th>
-          </tr>
-        </thead>
-        <tbody>
-          {scenarios.map((s, i) => {
-            const isExpanded = expanded === i;
-            return (
-              <>
-                <tr
-                  key={i}
-                  onClick={() => setExpanded(isExpanded ? null : i)}
-                  className="border-t border-border/20 cursor-pointer hover:bg-muted/20 transition-colors"
-                >
-                  <td className="py-2.5 pr-3">
-                    <span className={cn('text-foreground/80 leading-tight line-clamp-1', isExpanded && 'line-clamp-none')}>{s.scenario}</span>
-                  </td>
-                  <td className="py-2.5 pr-3 text-right tabular-nums font-mono text-foreground/90 whitespace-nowrap text-[11px]">
-                    {s.estimatedImpact}
-                  </td>
-                  <td className="py-2.5 text-right">
-                    <span className={cn('text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full', severityChip(s.severity))}>
-                      {s.severity}
-                    </span>
-                  </td>
-                </tr>
-                {isExpanded && (
-                  <tr key={`${i}-detail`} className="border-t-0">
-                    <td colSpan={3} className="pb-3 pt-0 pr-2">
-                      <p className="text-[11px] text-muted-foreground/70 leading-relaxed pl-0">
-                        {s.estimatedImpact} — {s.scenario.toLowerCase()}
-                      </p>
-                    </td>
-                  </tr>
-                )}
-              </>
-            );
-          })}
-        </tbody>
-      </table>
+    <div className="space-y-2.5">
+      {scenarios.map((s, i) => {
+        const { figure, rest } = splitImpact(s.estimatedImpact);
+        return (
+          <div
+            key={i}
+            className="relative overflow-hidden rounded-xl border border-border/40 bg-muted/[0.04] py-3.5 pl-5 pr-4"
+          >
+            <span className={cn('absolute inset-y-0 left-0 w-1', severityStripe(s.severity))} aria-hidden />
+            <div className="mb-2 flex items-start justify-between gap-3">
+              <span className="text-sm font-semibold text-foreground">{s.scenario}</span>
+              <span className={cn('mt-0.5 shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide', severityChip(s.severity))}>
+                {s.severity}
+              </span>
+            </div>
+            {figure && (
+              <div className={cn('mb-1.5 font-mono text-lg font-bold leading-none tabular-nums', severityFigureText(s.severity))}>
+                {figure}
+              </div>
+            )}
+            <p className="text-[13px] leading-relaxed text-muted-foreground">{rest || s.estimatedImpact}</p>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -410,6 +406,11 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
   // Typewriter reveal
   useEffect(() => {
     if (state !== 'loaded' || !analysis) return;
+    // Reduced-motion: reveal the summary immediately, no typewriter.
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setDisplayedSummary(analysis.portfolioSummary);
+      return;
+    }
     setDisplayedSummary('');
     let i = 0;
     const full = analysis.portfolioSummary;
@@ -609,40 +610,35 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
                 <HistoryPanel items={history} onRestore={restoreAnalysis} onDelete={(id) => deleteMutation.mutate(id)} />
               )}
 
-              {/* Risk level band */}
-              <div className={cn('rounded-lg border px-4 py-2.5 flex items-center justify-between', riskBgBorder(analysis.riskLevel))}>
-                <span className="text-[9px] font-mono font-bold uppercase tracking-[0.28em] text-muted-foreground/50">
-                  Overall Risk Level
-                </span>
-                <div className="flex items-center gap-3">
-                  <div className="h-1.5 w-32 rounded-full bg-muted/40 overflow-hidden">
+              {/* Hero — score ring + level + meter + summary */}
+              <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:gap-7">
+                <ScoreRing score={analysis.overallRiskScore} animated={animated} />
+                <div className="min-w-0 flex-1 space-y-3">
+                  <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                    <span className={cn('text-2xl font-bold tracking-tight', riskTextClass(analysis.riskLevel))}>
+                      {analysis.riskLevel} Risk
+                    </span>
+                    <span className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/50">
+                      Overall assessment
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full max-w-[260px] overflow-hidden rounded-full bg-muted/40">
                     <div className="h-full rounded-full transition-all duration-700"
                       style={{ width: `${analysis.overallRiskScore}%`, backgroundColor: riskColor(analysis.overallRiskScore) }} />
                   </div>
-                  <span className={cn('text-sm font-black tabular-nums', riskTextClass(analysis.riskLevel))}>
-                    {analysis.riskLevel}
-                  </span>
-                </div>
-              </div>
-
-              {/* Score ring + summary */}
-              <div className="flex flex-col sm:flex-row gap-5 items-start">
-                <ScoreRing score={analysis.overallRiskScore} riskLevel={analysis.riskLevel} animated={animated} />
-                <div className="flex-1 min-w-0">
-                  <SectionLabel>Summary</SectionLabel>
-                  <p className="text-[13px] text-foreground/85 leading-relaxed">
+                  <p className="max-w-prose text-sm leading-relaxed text-foreground/85">
                     {displayedSummary}
                     {!summaryDone && (
-                      <span className="inline-block w-[2px] h-[1.1em] bg-primary/60 ml-0.5 motion-safe:animate-pulse align-middle" />
+                      <span className="ml-0.5 inline-block h-[1.05em] w-[2px] align-middle bg-primary/60 motion-safe:animate-pulse" />
                     )}
                   </p>
                 </div>
               </div>
 
-              {/* Risk Dimensions — 2×3 grid, click to expand detail */}
+              {/* Risk Dimensions */}
               <div>
                 <SectionLabel>Risk Dimensions</SectionLabel>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-2.5 md:grid-cols-3">
                   {(Object.entries(analysis.metrics) as [string, RiskMetric][]).map(([key, metric]) => (
                     <MetricCell
                       key={key}
@@ -653,47 +649,45 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
                     />
                   ))}
                 </div>
-                <p className="text-[9px] text-muted-foreground/35 mt-2 text-center">Click a metric to expand detail</p>
               </div>
 
-              {/* Stress scenarios + Sector side by side */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              {/* Stress Scenarios — full width, wrapping cards */}
+              {analysis.stressScenarios?.length > 0 && (
                 <div>
                   <SectionLabel>Stress Scenarios</SectionLabel>
-                  {analysis.stressScenarios?.length > 0 && (
-                    <StressTable scenarios={analysis.stressScenarios} />
-                  )}
+                  <StressScenarioList scenarios={analysis.stressScenarios} />
                 </div>
+              )}
 
+              {/* Sector Breakdown — full width */}
+              {analysis.sectorBreakdown?.length > 0 && (
                 <div>
                   <SectionLabel>Sector Breakdown</SectionLabel>
-                  {analysis.sectorBreakdown?.length > 0 && (
-                    <div className="space-y-2.5">
-                      {[...analysis.sectorBreakdown]
-                        .sort((a, b) => b.estimatedWeight - a.estimatedWeight)
-                        .map((s) => (
-                          <div key={s.sector}>
-                            <div className="flex items-baseline justify-between mb-1 gap-2">
-                              <span className="text-xs text-foreground/80 truncate">{s.sector}</span>
-                              <span className="text-xs font-bold tabular-nums text-foreground shrink-0">{s.estimatedWeight.toFixed(0)}%</span>
-                            </div>
-                            <div className="h-1 w-full rounded-full bg-muted/40 overflow-hidden mb-1">
-                              <div className="h-full rounded-full bg-primary/50 transition-all duration-700"
-                                style={{ width: `${s.estimatedWeight}%` }} />
-                            </div>
-                            <div className="flex flex-wrap gap-1">
-                              {s.symbols.map((sym) => (
-                                <span key={sym} className="text-[9px] font-mono bg-muted/40 text-muted-foreground/70 px-1 py-0.5 rounded">
-                                  {sym}
-                                </span>
-                              ))}
-                            </div>
+                  <div className="space-y-3">
+                    {[...analysis.sectorBreakdown]
+                      .sort((a, b) => b.estimatedWeight - a.estimatedWeight)
+                      .map((s) => (
+                        <div key={s.sector}>
+                          <div className="mb-1.5 flex items-baseline justify-between gap-3">
+                            <span className="truncate text-[13px] text-foreground/85">{s.sector}</span>
+                            <span className="shrink-0 text-sm font-bold tabular-nums text-foreground">{s.estimatedWeight.toFixed(0)}%</span>
                           </div>
-                        ))}
-                    </div>
-                  )}
+                          <div className="mb-1.5 h-1.5 w-full overflow-hidden rounded-full bg-muted/40">
+                            <div className="h-full rounded-full bg-primary/50 transition-all duration-700"
+                              style={{ width: `${Math.min(s.estimatedWeight, 100)}%` }} />
+                          </div>
+                          <div className="flex flex-wrap gap-1">
+                            {s.symbols.map((sym) => (
+                              <span key={sym} className="rounded bg-muted/50 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground/80">
+                                {sym}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Key Risk Factors — 2-col on lg */}
               {analysis.topRisks?.length > 0 && (
@@ -713,15 +707,15 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
                             : 'border-blue-500 bg-blue-500/[0.05]'
                           )}
                         >
-                          <Icon className="h-3.5 w-3.5 shrink-0 mt-0.5 opacity-70 text-current" />
+                          <Icon className="h-4 w-4 shrink-0 mt-0.5 opacity-70 text-current" />
                           <div className="min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                              <span className="text-[11px] font-bold text-foreground/90">{risk.factor}</span>
-                              <span className={cn('text-[8px] font-bold uppercase tracking-wide px-1 py-0.5 rounded', severityChip(risk.severity))}>
+                            <div className="flex items-center gap-2 flex-wrap mb-1">
+                              <span className="text-[13px] font-bold text-foreground">{risk.factor}</span>
+                              <span className={cn('text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded', severityChip(risk.severity))}>
                                 {risk.severity}
                               </span>
                             </div>
-                            <p className="text-[11px] text-muted-foreground/75 leading-relaxed">{risk.description}</p>
+                            <p className="text-[12.5px] text-muted-foreground leading-relaxed">{risk.description}</p>
                           </div>
                         </div>
                       );
@@ -736,9 +730,9 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
                   <SectionLabel>Recommendations</SectionLabel>
                   <ol className="space-y-2">
                     {analysis.recommendations.map((rec, i) => (
-                      <li key={i} className="flex gap-2.5 items-start">
-                        <span className="text-[9px] font-mono font-bold text-primary/60 shrink-0 mt-0.5 tabular-nums">{String(i + 1).padStart(2, '0')}</span>
-                        <p className="text-[12px] text-muted-foreground/85 leading-relaxed">{rec}</p>
+                      <li key={i} className="flex gap-3 items-start">
+                        <span className="text-[11px] font-mono font-bold text-primary/70 shrink-0 mt-[3px] tabular-nums">{String(i + 1).padStart(2, '0')}</span>
+                        <p className="text-[13px] text-muted-foreground leading-relaxed">{rec}</p>
                       </li>
                     ))}
                   </ol>
