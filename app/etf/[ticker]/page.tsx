@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -92,20 +92,8 @@ export default function EtfDetailPage() {
     }
   }, [snapshotAssetType, snapshot.isLoading, ticker, router]);
 
-  // Hot Picks: record visit + invalidate list
-  useEffect(() => {
-    if (!ticker) return;
-    let cancelled = false;
-    void (async () => {
-      try {
-        const res = await postStockVisit(ticker);
-        if (!cancelled && res.ok) {
-          await queryClient.invalidateQueries({ queryKey: HOT_PICKS_QUERY_KEY });
-        }
-      } catch { /* ignore */ }
-    })();
-    return () => { cancelled = true; };
-  }, [ticker, queryClient]);
+  // Hot Picks visit is recorded further down — only once the symbol is confirmed
+  // real, so bogus tickers never pollute "Trending this week".
 
   useEffect(() => {
     if (!ticker) return;
@@ -167,6 +155,26 @@ export default function EtfDetailPage() {
     !profileData?.profile &&
     snapshot.data?.success === true &&
     !hasRealQuote;
+
+  // Record a Hot Picks visit only once the symbol is confirmed real — never for
+  // invalid tickers. Keys on the ticker so it records once per symbol.
+  const recordedVisitTicker = useRef<string | null>(null);
+  useEffect(() => {
+    if (!ticker || recordedVisitTicker.current === ticker) return;
+    const confirmedReal = company != null || !!profileData?.profile || hasRealQuote;
+    if (!confirmedReal) return;
+    recordedVisitTicker.current = ticker;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await postStockVisit(ticker);
+        if (!cancelled && res.ok) {
+          await queryClient.invalidateQueries({ queryKey: HOT_PICKS_QUERY_KEY });
+        }
+      } catch { /* ignore */ }
+    })();
+    return () => { cancelled = true; };
+  }, [ticker, company, profileData?.profile, hasRealQuote, queryClient]);
 
   if (isNotFound) {
     return (
