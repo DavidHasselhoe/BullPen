@@ -158,7 +158,8 @@ export function BrokerageConnect() {
   const connectMutation    = useBrokerageConnect();
   const syncMutation       = useBrokerageSync();
   const disconnectMutation = useBrokerageDisconnect();
-  const [expanded, setExpanded] = useState(false);
+  // Default open so the per-account Disconnect control is immediately visible.
+  const [expanded, setExpanded] = useState(true);
 
   const activeAccounts = (data?.accounts ?? []).filter((a) => a.is_active);
   const hasConnections = activeAccounts.length > 0;

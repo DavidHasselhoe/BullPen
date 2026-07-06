@@ -18,6 +18,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Radio, Link2, RefreshCw, BarChart2, Briefcase } from 'lucide-react';
 import type { HoldingWithPrice } from '@/components/holdings/types';
 import { useBrokerageAccounts, useBrokerageConnect } from '@/hooks/use-brokerage';
+import { BrokerageConnect } from '@/components/brokerage/BrokerageConnect';
 import { convertCurrency, type CurrencyCode } from '@/lib/currency/currency-conversion';
 import { useExchangeRates } from '@/hooks/use-exchange-rates';
 
@@ -332,6 +333,9 @@ export default function HoldingsPage() {
           </button>
         )}
       </div>
+
+      {/* Connected brokerage — manage, sync, or disconnect (only shown once connected) */}
+      {brokerageConfigured && isBrokerageConnected && <BrokerageConnect />}
 
       {/* Stats row — 4 cards */}
       <PortfolioDashboard holdings={throttledHoldings} currency={userCurrency} isLoading={statsLoading} />
