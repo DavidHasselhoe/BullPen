@@ -9,23 +9,46 @@ import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { CompanyRowActions } from '@/components/discover/CompanyRowActions';
 import { cn } from '@/lib/utils';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
+import { useExchanges } from '@/hooks/use-market-status';
 import type { MarketMover } from '@/lib/twelvedata/twelvedata-client';
 
-/** Returns a human-readable label for the current trading session, using ET. */
+/**
+ * Human-readable label for the session the movers data is from, in ET — now
+ * holiday-aware. A US market holiday (e.g. the observed July 4th) is treated
+ * like a closed day: the label rolls back to the last actual trading day rather
+ * than naming the closed date. Uses the NYSE holiday calendar from /api/exchanges.
+ */
 function useMoversDateLabel(): string {
+  const { data } = useExchanges();
+
   const nowET = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
-  const day = nowET.getDay(); // 0=Sun 6=Sat
   const h = nowET.getHours();
   const m = nowET.getMinutes();
 
+  // Full-closure NYSE holidays as YYYY-MM-DD (early-close days still trade).
+  const closedDates = new Set(
+    (data?.holidays ?? [])
+      .filter((hol) => hol.exchange_code === 'NYSE' && hol.type === 'closed')
+      .map((hol) => hol.date)
+  );
+
+  const ymd = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   const fmt = (d: Date) =>
     d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  const isClosedDay = (d: Date) => {
+    const wd = d.getDay();
+    return wd === 0 || wd === 6 || closedDates.has(ymd(d));
+  };
+  const lastTradingDay = (from: Date) => {
+    const d = new Date(from);
+    for (let i = 0; i < 10 && isClosedDay(d); i++) d.setDate(d.getDate() - 1);
+    return d;
+  };
 
-  // Weekend: show last Friday's close
-  if (day === 0 || day === 6) {
-    const lastFriday = new Date(nowET);
-    lastFriday.setDate(nowET.getDate() - (day === 0 ? 2 : 1));
-    return `${fmt(lastFriday)} · Market closed`;
+  // Weekend or holiday: the market is closed today, so show the last trading day.
+  if (isClosedDay(nowET)) {
+    return `${fmt(lastTradingDay(nowET))} · Market closed`;
   }
 
   const etMins = h * 60 + m;
@@ -36,13 +59,11 @@ function useMoversDateLabel(): string {
   if (isAfterHours) return `${fmt(nowET)} · After-hours`;
 
   // Before pre-market (midnight – 4:00 AM ET): data is still from the previous
-  // trading day's close. Pre-market at 4:00 AM is the first point where today's
-  // session data starts coming in, so we only advance the date then.
+  // trading day's close — walk back over the weekend and any holiday.
   if (etMins < 240) {
-    const prevClose = new Date(nowET);
-    // Monday midnight–4am → roll back to Friday (3 days)
-    prevClose.setDate(nowET.getDate() - (day === 1 ? 3 : 1));
-    return fmt(prevClose);
+    const prev = new Date(nowET);
+    prev.setDate(prev.getDate() - 1);
+    return fmt(lastTradingDay(prev));
   }
 
   return fmt(nowET);
