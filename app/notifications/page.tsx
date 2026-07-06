@@ -142,7 +142,10 @@ export default function NotificationsPage() {
         ) : !isAuthenticated ? (
           <EmptyState text="Sign in to see your notifications." />
         ) : filtered.length === 0 ? (
-          <EmptyState text={all.length === 0 ? 'No notifications yet. Alerts, earnings, and portfolio updates will show up here.' : 'Nothing matches this filter.'} />
+          <EmptyState
+            text={all.length === 0 ? 'No notifications yet. Alerts, earnings, and portfolio updates will show up here.' : 'Nothing matches this filter.'}
+            illustration={all.length === 0 ? '/illustrations/bull-sleeping.png' : '/illustrations/bull-shrug.png'}
+          />
         ) : (
           <div className="overflow-hidden rounded-xl border">
             {grouped.map(([day, items], gi) => (
@@ -180,12 +183,12 @@ function FilterChip({ label, active, onClick }: { label: string; active: boolean
   );
 }
 
-function EmptyState({ text }: { text: string }) {
+function EmptyState({ text, illustration = '/illustrations/bull-shrug.png' }: { text: string; illustration?: string }) {
   return (
     <div className="rounded-xl border border-dashed py-16 text-center">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src="/illustrations/bull-shrug.png"
+        src={illustration}
         alt=""
         aria-hidden
         className="mx-auto mb-4 h-auto w-28 select-none opacity-90 dark:opacity-80 dark:invert"
