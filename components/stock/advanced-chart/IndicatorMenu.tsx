@@ -17,6 +17,7 @@ interface Props {
   onRemove: (id: string) => void;
   onUpdate: (id: string, params: Record<string, number>) => void;
   onApplyPreset: (presetId: string) => void;
+  onClear: () => void;
 }
 
 const OVERLAYS = INDICATORS.filter((d) => d.group === 'overlay');
@@ -27,7 +28,7 @@ function clampParam(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-export function IndicatorMenu({ indicators, onAdd, onRemove, onUpdate, onApplyPreset }: Props) {
+export function IndicatorMenu({ indicators, onAdd, onRemove, onUpdate, onApplyPreset, onClear }: Props) {
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -70,9 +71,16 @@ export function IndicatorMenu({ indicators, onAdd, onRemove, onUpdate, onApplyPr
         {/* Active indicators */}
         {indicators.length > 0 && (
           <div className="border-b border-border/60 p-2">
-            <p className="px-1 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
-              Active
-            </p>
+            <div className="flex items-center justify-between px-1 pb-1.5">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">Active</p>
+              <button
+                type="button"
+                onClick={onClear}
+                className="text-[10px] font-medium text-muted-foreground/70 transition-colors hover:text-red-400"
+              >
+                Clear all
+              </button>
+            </div>
             <div className="space-y-1.5">
               {indicators.map((inst) => {
                 const def = getIndicatorDef(inst.type);

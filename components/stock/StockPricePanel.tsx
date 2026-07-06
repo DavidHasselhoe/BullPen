@@ -10,7 +10,7 @@ import {
   LineChart, Line, ReferenceLine, ReferenceDot,
   BarChart, Bar, Cell,
 } from 'recharts';
-import { useChartPrefs } from '@/hooks/use-chart-prefs';
+import { useChartPrefs, type AdvancedChartType } from '@/hooks/use-chart-prefs';
 import { getIndicatorDef, defaultParamsFor, INDICATOR_PALETTE, INDICATOR_PRESETS, type IndicatorInstance } from '@/lib/finance/indicators';
 import { ChartSettingsPanel } from './ChartSettingsPanel';
 import type { CompanyEarnings } from '@/lib/twelvedata/twelvedata-client';
@@ -150,7 +150,7 @@ function fetchIndicator(ticker: string, opt: IndicatorOption, range: Range): Pro
 export function StockPricePanel({ ticker }: { ticker: string }) {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
-  const { prefs, setPref, reset: resetPrefs } = useChartPrefs();
+  const { prefs, setPref, setPrefs, reset: resetPrefs } = useChartPrefs();
   const [range, setRange] = useState<Range>(prefs.defaultRange as Range);
 
   const [activeIndicators, setActiveIndicators] = useState<Set<Indicator>>(
@@ -191,6 +191,21 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
       .filter((x): x is IndicatorInstance => x != null);
     setPref('advancedIndicators', insts);
   };
+  const replaceAdvIndicators = (insts: IndicatorInstance[]) =>
+    setPref('advancedIndicators', insts);
+  // Apply a user preset's chart config atomically (one settings write).
+  const applyAdvConfig = (c: {
+    chartType: AdvancedChartType;
+    indicators: IndicatorInstance[];
+    showVolume: boolean;
+    showEvents: boolean;
+  }) =>
+    setPrefs({
+      advancedChartType: c.chartType,
+      advancedIndicators: c.indicators,
+      showVolume: c.showVolume,
+      showEarnings: c.showEvents,
+    });
 
   function toggleIndicator(key: Indicator) {
     setActiveIndicators((prev) => {
@@ -882,6 +897,8 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
           onRemoveIndicator={removeAdvIndicator}
           onUpdateIndicator={updateAdvIndicator}
           onApplyPreset={applyAdvPreset}
+          onReplaceIndicators={replaceAdvIndicators}
+          onApplyConfig={applyAdvConfig}
           showVolume={prefs.showVolume}
           onToggleVolume={() => setPref('showVolume', !prefs.showVolume)}
           showEvents={prefs.showEarnings}

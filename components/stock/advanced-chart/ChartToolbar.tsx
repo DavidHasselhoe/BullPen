@@ -3,7 +3,9 @@
 import { CandlestickChart, LineChart, AreaChart, BarChart3, CalendarDays, Ruler, BellPlus, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { IndicatorMenu } from './IndicatorMenu';
+import { PresetMenu } from './PresetMenu';
 import type { AdvancedChartType, ChartRange } from '@/hooks/use-chart-prefs';
+import type { ChartPreset } from '@/hooks/use-chart-presets';
 import type { IndicatorInstance } from '@/lib/finance/indicators';
 
 const RANGES: { value: ChartRange; label: string }[] = [
@@ -36,6 +38,11 @@ interface Props {
   onRemoveIndicator: (id: string) => void;
   onUpdateIndicator: (id: string, params: Record<string, number>) => void;
   onApplyPreset: (presetId: string) => void;
+  onClearIndicators: () => void;
+  presets: ChartPreset[];
+  onApplyUserPreset: (preset: ChartPreset) => void;
+  onSavePreset: (name: string) => void;
+  onDeletePreset: (id: string) => void;
   showVolume: boolean;
   onToggleVolume: () => void;
   showEvents: boolean;
@@ -47,7 +54,8 @@ interface Props {
 
 export function ChartToolbar({
   symbol, price, changePct, chartType, onChartType, range, onRange,
-  indicators, onAddIndicator, onRemoveIndicator, onUpdateIndicator, onApplyPreset,
+  indicators, onAddIndicator, onRemoveIndicator, onUpdateIndicator, onApplyPreset, onClearIndicators,
+  presets, onApplyUserPreset, onSavePreset, onDeletePreset,
   showVolume, onToggleVolume, showEvents, onToggleEvents, tool, onToolChange, onClose,
 }: Props) {
   const pct = changePct ?? 0;
@@ -111,12 +119,19 @@ export function ChartToolbar({
 
       {/* Right cluster */}
       <div className="ml-auto flex items-center gap-1.5">
+        <PresetMenu
+          presets={presets}
+          onApply={onApplyUserPreset}
+          onSave={onSavePreset}
+          onDelete={onDeletePreset}
+        />
         <IndicatorMenu
           indicators={indicators}
           onAdd={onAddIndicator}
           onRemove={onRemoveIndicator}
           onUpdate={onUpdateIndicator}
           onApplyPreset={onApplyPreset}
+          onClear={onClearIndicators}
         />
         <button
           type="button"

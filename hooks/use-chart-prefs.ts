@@ -58,6 +58,8 @@ function saveLocal(prefs: ChartPrefs) {
 export interface UseChartPrefs {
   prefs: ChartPrefs;
   setPref: <K extends keyof ChartPrefs>(key: K, val: ChartPrefs[K]) => void;
+  /** Set several prefs atomically (avoids stale-closure clobbering when applying a preset). */
+  setPrefs: (partial: Partial<ChartPrefs>) => void;
   reset: () => void;
 }
 
@@ -104,6 +106,10 @@ export function useChartPrefs(): UseChartPrefs {
     update({ ...prefs, [key]: val });
   }, [prefs, update]);
 
+  const setPrefs = useCallback((partial: Partial<ChartPrefs>) => {
+    update({ ...prefs, ...partial });
+  }, [prefs, update]);
+
   const reset = useCallback(() => {
     setUserEdited(false);
     setLocalPrefs(CHART_PREF_DEFAULTS);
@@ -114,5 +120,5 @@ export function useChartPrefs(): UseChartPrefs {
     }
   }, [saveToSupabase]);
 
-  return { prefs, setPref, reset };
+  return { prefs, setPref, setPrefs, reset };
 }

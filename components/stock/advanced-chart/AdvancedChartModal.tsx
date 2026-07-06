@@ -14,6 +14,7 @@ import type { CompanyEarnings } from '@/lib/twelvedata/twelvedata-client';
 import type { OHLCV, IndicatorInstance } from '@/lib/finance/indicators';
 import { AdvancedChart, type ChartTool } from './AdvancedChart';
 import { ChartToolbar } from './ChartToolbar';
+import { useChartPresets, type ChartPreset } from '@/hooks/use-chart-presets';
 
 interface CandlesResponse {
   success: boolean;
@@ -48,6 +49,15 @@ interface Props {
   onRemoveIndicator: (id: string) => void;
   onUpdateIndicator: (id: string, params: Record<string, number>) => void;
   onApplyPreset: (presetId: string) => void;
+  /** Replace the whole indicator list (used by Clear and preset apply). */
+  onReplaceIndicators: (insts: IndicatorInstance[]) => void;
+  /** Apply several chart prefs atomically (used when applying a user preset). */
+  onApplyConfig: (config: {
+    chartType: AdvancedChartType;
+    indicators: IndicatorInstance[];
+    showVolume: boolean;
+    showEvents: boolean;
+  }) => void;
   showVolume: boolean;
   onToggleVolume: () => void;
   showEvents: boolean;
@@ -57,6 +67,7 @@ interface Props {
 export function AdvancedChartModal({
   ticker, initialRange, onClose,
   chartType, onChartType, indicators, onAddIndicator, onRemoveIndicator, onUpdateIndicator, onApplyPreset,
+  onReplaceIndicators, onApplyConfig,
   showVolume, onToggleVolume, showEvents, onToggleEvents,
 }: Props) {
   const router = useRouter();
@@ -64,6 +75,21 @@ export function AdvancedChartModal({
   const isDark = resolvedTheme !== 'light';
   const [range, setRange] = useState<ChartRange>(initialRange);
   const [tool, setTool] = useState<ChartTool>('none');
+
+  const { presets, savePreset, deletePreset } = useChartPresets();
+
+  const handleClearIndicators = () => onReplaceIndicators([]);
+  const handleSavePreset = (name: string) =>
+    savePreset({ name, range, chartType, indicators, showVolume, showEvents });
+  const handleApplyPreset = (p: ChartPreset) => {
+    setRange(p.range);
+    onApplyConfig({
+      chartType: p.chartType,
+      indicators: p.indicators,
+      showVolume: p.showVolume,
+      showEvents: p.showEvents,
+    });
+  };
 
   const { data: quote } = useStockQuote(ticker);
 
@@ -175,6 +201,11 @@ export function AdvancedChartModal({
         onRemoveIndicator={onRemoveIndicator}
         onUpdateIndicator={onUpdateIndicator}
         onApplyPreset={onApplyPreset}
+        onClearIndicators={handleClearIndicators}
+        presets={presets}
+        onApplyUserPreset={handleApplyPreset}
+        onSavePreset={handleSavePreset}
+        onDeletePreset={deletePreset}
         showVolume={showVolume}
         onToggleVolume={onToggleVolume}
         showEvents={showEvents}
