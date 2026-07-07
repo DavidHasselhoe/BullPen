@@ -61,7 +61,12 @@ async function handler(
         );
     }
 
-    await setCached(cacheKey, symbol, 'financials', result, ttlForType(type));
+    // Only cache non-empty results — an empty array can come from a transient/partial
+    // TwelveData response (200 OK, no rows) rather than a genuine "no data" answer.
+    // Caching it here would poison the same key /health-score reads from for a full day.
+    if (Array.isArray(result) ? result.length > 0 : !!result) {
+      await setCached(cacheKey, symbol, 'financials', result, ttlForType(type));
+    }
     return addSecurityHeaders(NextResponse.json({ success: true, data: result, type, period }));
   } catch (err) {
     if (err instanceof TwelveDataRateLimitError) {

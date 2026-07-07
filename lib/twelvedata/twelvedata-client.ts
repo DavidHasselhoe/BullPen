@@ -14,6 +14,26 @@ export class TwelveDataRateLimitError extends Error {
   }
 }
 
+/**
+ * Retries a Twelve Data call once after a delay when it fails due to rate
+ * limiting. The Basic plan's 8/min cap is easy to blow past when a single
+ * page load fires several statement endpoints (stats + income + balance +
+ * cash flow) back to back — a short wait usually clears the window, so this
+ * turns a transient 429 into a successful call instead of a false "no data".
+ * Non-rate-limit errors (e.g. plan restrictions) are rethrown immediately.
+ */
+export async function withRateLimitRetry<T>(fn: () => Promise<T>, delayMs = 9000): Promise<T> {
+  try {
+    return await fn();
+  } catch (err) {
+    if (err instanceof TwelveDataRateLimitError) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+      return fn();
+    }
+    throw err;
+  }
+}
+
 /** Log Twelve Data API usage for cost modeling. Set TWELVE_DATA_USAGE_LOG=true to enable. */
 function logUsage(endpoint: string, symbol?: string): void {
   if (process.env.TWELVE_DATA_USAGE_LOG === 'true') {

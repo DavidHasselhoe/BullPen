@@ -5,6 +5,7 @@ import {
   getIncomeStatement,
   getBalanceSheet,
   getCashFlow,
+  withRateLimitRetry,
   TwelveDataRateLimitError,
   type CompanyStatistics,
   type IncomeStatementPeriod,
@@ -36,48 +37,58 @@ async function handler(
 
     // ── Financial statements — fetched in parallel to avoid sequential rate-limiting.
     //    Cache keys are shared with /financials so a prior visit by either route warms
-    //    the other. On a cold cache all three TwelveData calls fire concurrently.
-    const [incomeRaw, balanceRaw, cashflowRaw] = await Promise.all([
+    //    the other. On a cold cache all three TwelveData calls fire concurrently, which
+    //    on the Basic plan's 8/min cap can trip a 429 — withRateLimitRetry waits out the
+    //    window and retries once rather than silently treating the failure as "no data".
+    let incomeDegraded = false;
+    let balanceDegraded = false;
+    let cashflowDegraded = false;
+
+    const [income, balance, cashflow] = await Promise.all([
       getCached<IncomeStatementPeriod[]>(`financials:${symbol}:income:quarterly`).then(
-        (cached) => cached ?? getIncomeStatement(symbol, 'quarterly').catch((err) => {
+        (cached) => cached ?? withRateLimitRetry(() => getIncomeStatement(symbol, 'quarterly')).catch((err) => {
           console.warn(`[health-score] income fetch failed for ${symbol}:`, err instanceof Error ? err.message : err);
+          incomeDegraded = true;
           return [] as IncomeStatementPeriod[];
         })
       ),
       getCached<BalanceSheetPeriod[]>(`financials:${symbol}:balance:quarterly`).then(
-        (cached) => cached ?? getBalanceSheet(symbol, 'quarterly').catch((err) => {
+        (cached) => cached ?? withRateLimitRetry(() => getBalanceSheet(symbol, 'quarterly')).catch((err) => {
           console.warn(`[health-score] balance sheet fetch failed for ${symbol}:`, err instanceof Error ? err.message : err);
+          balanceDegraded = true;
           return [] as BalanceSheetPeriod[];
         })
       ),
       getCached<CashFlowPeriod[]>(`financials:${symbol}:cashflow:quarterly`).then(
-        (cached) => cached ?? getCashFlow(symbol, 'quarterly').catch((err) => {
+        (cached) => cached ?? withRateLimitRetry(() => getCashFlow(symbol, 'quarterly')).catch((err) => {
           console.warn(`[health-score] cash flow fetch failed for ${symbol}:`, err instanceof Error ? err.message : err);
+          cashflowDegraded = true;
           return [] as CashFlowPeriod[];
         })
       ),
     ]);
-
-    const income = incomeRaw;
-    const balance = balanceRaw;
-    const cashflow = cashflowRaw;
 
     // Persist any freshly-fetched data to the shared cache (fire-and-forget).
     if (income.length)   void setCached(`financials:${symbol}:income:quarterly`,   symbol, 'financials', income,   FINANCIALS_TTL).catch(() => {});
     if (balance.length)  void setCached(`financials:${symbol}:balance:quarterly`,  symbol, 'financials', balance,  FINANCIALS_TTL).catch(() => {});
     if (cashflow.length) void setCached(`financials:${symbol}:cashflow:quarterly`, symbol, 'financials', cashflow, FINANCIALS_TTL).catch(() => {});
 
-    const healthScore = computeHealthScore(stats, income ?? [], balance ?? [], cashflow ?? []);
+    const healthScore = computeHealthScore(stats, income, balance, cashflow);
 
     // Keep screener_stats in sync — fire-and-forget so it never delays the response.
-    // This ensures the screener always reflects the same score the stock page shows.
-    void createServerClient()
-      .from('screener_stats')
-      .update({ health_score: healthScore.score, health_score_grade: healthScore.grade })
-      .eq('ticker', symbol)
-      .then(({ error }) => {
-        if (error) console.warn('[health-score] screener_stats sync failed:', error.message);
-      });
+    // Skipped when any statement fetch degraded (rate-limited/errored even after retry):
+    // a score computed from an incomplete fetch would otherwise permanently overwrite a
+    // previously-correct persisted score with a falsely low one.
+    const financialsDegraded = incomeDegraded || balanceDegraded || cashflowDegraded;
+    if (!financialsDegraded) {
+      void createServerClient()
+        .from('screener_stats')
+        .update({ health_score: healthScore.score, health_score_grade: healthScore.grade })
+        .eq('ticker', symbol)
+        .then(({ error }) => {
+          if (error) console.warn('[health-score] screener_stats sync failed:', error.message);
+        });
+    }
 
     return addSecurityHeaders(
       NextResponse.json(

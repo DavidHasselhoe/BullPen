@@ -20,6 +20,7 @@ import {
   getIncomeStatement,
   getBalanceSheet,
   getCashFlow,
+  withRateLimitRetry,
   type CompanyStatistics,
   type IncomeStatementPeriod,
   type BalanceSheetPeriod,
@@ -144,16 +145,30 @@ async function fetchFinancials(sym: string): Promise<{
   income: IncomeStatementPeriod[];
   balance: BalanceSheetPeriod[];
   cashflow: CashFlowPeriod[];
+  /** True if any statement fetch failed even after retry (e.g. rate-limited) — the
+   *  resulting health score should not overwrite a previously good persisted one. */
+  degraded: boolean;
 }> {
+  let degraded = false;
+
   const [income, balance, cashflow] = await Promise.all([
     getCached<IncomeStatementPeriod[]>(`financials:${sym}:income:quarterly`).then(
-      (c) => c ?? getIncomeStatement(sym, 'quarterly').catch(() => [] as IncomeStatementPeriod[])
+      (c) => c ?? withRateLimitRetry(() => getIncomeStatement(sym, 'quarterly')).catch(() => {
+        degraded = true;
+        return [] as IncomeStatementPeriod[];
+      })
     ),
     getCached<BalanceSheetPeriod[]>(`financials:${sym}:balance:quarterly`).then(
-      (c) => c ?? getBalanceSheet(sym, 'quarterly').catch(() => [] as BalanceSheetPeriod[])
+      (c) => c ?? withRateLimitRetry(() => getBalanceSheet(sym, 'quarterly')).catch(() => {
+        degraded = true;
+        return [] as BalanceSheetPeriod[];
+      })
     ),
     getCached<CashFlowPeriod[]>(`financials:${sym}:cashflow:quarterly`).then(
-      (c) => c ?? getCashFlow(sym, 'quarterly').catch(() => [] as CashFlowPeriod[])
+      (c) => c ?? withRateLimitRetry(() => getCashFlow(sym, 'quarterly')).catch(() => {
+        degraded = true;
+        return [] as CashFlowPeriod[];
+      })
     ),
   ]);
 
@@ -162,7 +177,7 @@ async function fetchFinancials(sym: string): Promise<{
   if (balance.length)  void setCached(`financials:${sym}:balance:quarterly`,  sym, 'financials', balance,  FINANCIALS_TTL).catch(() => {});
   if (cashflow.length) void setCached(`financials:${sym}:cashflow:quarterly`, sym, 'financials', cashflow, FINANCIALS_TTL).catch(() => {});
 
-  return { income, balance, cashflow };
+  return { income, balance, cashflow, degraded };
 }
 
 function chunk<T>(arr: T[], size: number): T[][] {
@@ -200,6 +215,7 @@ export async function fetchAndUpsertScreenerStats(symbols: string[]): Promise<Sc
   );
 
   const rows: ScreenerRow[] = [];
+  const degradedSymbols = new Set<string>();
 
   for (const group of chunk(uniqueSymbols, CHUNK_SIZE)) {
     const requests: Record<string, string> = {};
@@ -227,7 +243,8 @@ export async function fetchAndUpsertScreenerStats(symbols: string[]): Promise<Sc
 
       // Compute health score from the full CompanyStatistics shape + financials
       const companyStats = rawToCompanyStats(statsRaw, sym);
-      const { income, balance, cashflow } = financialsMap.get(sym) ?? { income: [], balance: [], cashflow: [] };
+      const { income, balance, cashflow, degraded } = financialsMap.get(sym) ?? { income: [], balance: [], cashflow: [], degraded: false };
+      if (degraded) degradedSymbols.add(sym);
       const healthScore = computeHealthScore(companyStats, income, balance, cashflow);
 
       rows.push({
@@ -240,6 +257,27 @@ export async function fetchAndUpsertScreenerStats(symbols: string[]): Promise<Sc
         health_score: healthScore.score,
         health_score_grade: healthScore.grade,
       } as ScreenerRow);
+    }
+  }
+
+  // For symbols whose financials fetch was rate-limited/errored (even after retry),
+  // the freshly-computed health score is unreliable — restore the previously
+  // persisted score instead of overwriting a good one with a falsely low one.
+  if (degradedSymbols.size > 0) {
+    const { data: priorRows } = await supabase
+      .from('screener_stats')
+      .select('ticker, health_score, health_score_grade')
+      .in('ticker', [...degradedSymbols]);
+    const priorMap = new Map(
+      (priorRows ?? []).map((r) => [(r as { ticker: string }).ticker, r as { health_score: number | null; health_score_grade: string | null }])
+    );
+    for (const row of rows) {
+      if (!degradedSymbols.has(row.ticker)) continue;
+      const prior = priorMap.get(row.ticker);
+      if (prior && prior.health_score != null) {
+        row.health_score = prior.health_score;
+        row.health_score_grade = prior.health_score_grade as ScreenerRow['health_score_grade'];
+      }
     }
   }
 
