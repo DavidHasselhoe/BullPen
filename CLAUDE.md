@@ -54,7 +54,10 @@ git log origin/main..origin/preview --oneline
 ```
 If there are no commits ahead, nothing to merge — tell the user and stop.
 
-**3. Merge preview → main and push**
+**3. Generate changelog entry**
+Run `git log <content/changelog.json's last commit>..HEAD --oneline` on `preview` to see everything shipped since the changelog was last updated. If there's user-facing material in that range — new features, meaningful UX/behavior changes, user-noticeable bug fixes — write one entry dated with today's date to `content/changelog.json` (newest entry first in the array). Use plain, non-technical language: no file paths, no commit/ticket references, no jargon. Each item's `type` is exactly one of `"new" | "improved" | "fixed"`. Exclude pure internal refactors, perf/RLS-only commits, dependency bumps, and doc/CLAUDE.md-only changes. If nothing in the range qualifies, skip this step silently — do not add an empty or filler entry. Commit the change to `preview` before continuing.
+
+**4. Merge preview → main and push**
 ```bash
 git checkout main
 git pull origin main
@@ -63,7 +66,7 @@ git push origin main
 git checkout preview
 ```
 
-**4. Confirm deployment triggered**
+**5. Confirm deployment triggered**
 Use `mcp__claude_ai_Vercel__list_deployments` to verify a new deployment appeared for `main`. Report the deployment URL to the user.
 
 **Why this matters:** Keeping `main` = what's in production means git history is the source of truth, the `sync-preview` GitHub Action stays a no-op, and there's no drift between the dashboard-promoted build and the actual branch state.

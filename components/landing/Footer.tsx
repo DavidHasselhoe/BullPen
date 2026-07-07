@@ -13,6 +13,7 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
       { label: 'BullPen AI', href: '#bullpen-ai' },
       { label: 'Screener', href: '#screener' },
       { label: 'Roadmap', href: '#roadmap' },
+      { label: 'Changelog', href: '/changelog' },
     ],
   },
   {
