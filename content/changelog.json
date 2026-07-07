@@ -3,7 +3,10 @@
     "date": "2026-07-07",
     "entries": [
       { "type": "new", "text": "Published our Privacy Policy" },
-      { "type": "new", "text": "Added a public changelog so you can see what's new" }
+      { "type": "new", "text": "Added a public changelog so you can see what's new" },
+      { "type": "new", "text": "Added the BullPen logo throughout the app and as your browser tab icon" },
+      { "type": "new", "text": "The AI assistant can now look up any company's Financial Health score and profile, even ones not yet in our database" },
+      { "type": "fixed", "text": "Fixed financial health scores occasionally showing incorrect or missing data during high-traffic periods" }
     ]
   }
 ]
