@@ -97,6 +97,7 @@ export function UserMenu() {
         <Button
           variant="ghost"
           className="relative h-9 w-9 rounded-full transition-all hover:scale-105 focus:ring-2 focus:ring-ring p-0"
+          aria-label="Account menu"
         >
           <ProfileAvatar
             avatarUrl={user.avatar_url}

@@ -1,21 +1,23 @@
 'use client';
 
+import Image from 'next/image';
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 
 // ── Brand mark ────────────────────────────────────────────────────────────────
+// The marketing landing page always renders on its own dark background
+// (landing-styles.css — "the only theme we ship publicly"), independent of the
+// app-wide theme toggle, so the white/inverted variant is used unconditionally here.
 export function BullPenMark({ size = 28 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 32 32" fill="none" aria-hidden="true">
-      <defs>
-        <linearGradient id="bp-grad" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="var(--accent)" />
-          <stop offset="100%" stopColor="var(--accent)" stopOpacity="0.7" />
-        </linearGradient>
-      </defs>
-      <path d="M5 21 L5 11 L13 6 L22 11 L22 16 L26 19 L26 23 L22 25 L18 22 L13 25 L5 21 Z" fill="url(#bp-grad)" />
-      <path d="M5 11 L13 6 L22 11 L13 16 Z" fill="oklch(1 0 0 / 0.18)" />
-      <path d="M13 16 L13 25" stroke="oklch(0 0 0 / 0.35)" strokeWidth="0.8" />
-    </svg>
+    <Image
+      src="/BullPenLogo-dark.png"
+      alt=""
+      width={size}
+      height={size}
+      priority
+      style={{ objectFit: 'contain' }}
+      aria-hidden="true"
+    />
   );
 }
 

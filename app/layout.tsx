@@ -42,6 +42,14 @@ export const metadata: Metadata = {
     siteName: "BullPen",
     type: "website",
   },
+  icons: {
+    // Two variants so the tab icon stays visible in both light and dark browser chrome —
+    // the mark is a solid silhouette with no outline, so a single color disappears on one of them.
+    icon: [
+      { url: "/icon-light.png", media: "(prefers-color-scheme: light)" },
+      { url: "/icon-dark.png", media: "(prefers-color-scheme: dark)" },
+    ],
+  },
 };
 
 export default function RootLayout({

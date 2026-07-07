@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
@@ -93,8 +94,11 @@ export function Navigation() {
           {/* Logo - Left */}
           <Link
             href="/"
-            className="text-[17px] font-semibold tracking-tight text-foreground/90 hover:text-foreground transition-colors duration-150 select-none shrink-0"
+            className="flex items-center gap-2 text-[17px] font-semibold tracking-tight text-foreground/90 hover:text-foreground transition-colors duration-150 select-none shrink-0"
           >
+            {/* Black mark on light theme, white mark on dark theme (theme is user-selectable, not fixed) */}
+            <Image src="/BullPenLogo.png" alt="" width={24} height={24} priority aria-hidden="true" className="block dark:hidden" />
+            <Image src="/BullPenLogo-dark.png" alt="" width={24} height={24} priority aria-hidden="true" className="hidden dark:block" />
             bullpen
           </Link>
 
@@ -247,6 +251,7 @@ export function Navigation() {
               size="icon"
               onClick={() => setSettingsOpen(true)}
               className="transition-all hover:scale-105"
+              aria-label="Open settings"
             >
               <Settings className="h-5 w-5" />
             </Button>
