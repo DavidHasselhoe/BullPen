@@ -33,7 +33,8 @@
   --border-strong: oklch(1 0 0 / 0.14);
   --fg: oklch(0.985 0 0);
   --fg-muted: oklch(0.72 0.01 250);
-  --fg-dim: oklch(0.55 0.01 250);
+  /* 0.62 keeps small dim text ≥ 4.5:1 (WCAG AA) on --bg and --surface */
+  --fg-dim: oklch(0.62 0.01 250);
   --grid: oklch(1 0 0 / 0.04);
 
   background: var(--bg);
@@ -153,10 +154,10 @@
   50%      { transform: rotate(-2deg) translateY(6px); }
 }
 
-/* Shimmer sweep for primary button */
+/* Shimmer sweep for primary button — transform-only so it stays composited */
 @keyframes bp-shimmer {
-  0%   { background-position: -200% center; }
-  100% { background-position:  200% center; }
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
 /* Glow pulse for FinalCTA orb */
@@ -165,10 +166,10 @@
   50%       { opacity: 0.75; transform: scale(1.08); }
 }
 
-/* Peek tab auto-advance progress bar */
+/* Peek tab auto-advance progress bar — scaleX, not width, to avoid layout work */
 @keyframes bp-tab-progress {
-  from { width: 0%; }
-  to   { width: 100%; }
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
 }
 
 /* Reveal-on-scroll */
@@ -235,7 +236,6 @@
   inset: 0;
   border-radius: inherit;
   background: linear-gradient(105deg, transparent 35%, oklch(1 0 0 / 0.22) 50%, transparent 65%);
-  background-size: 200% 100%;
   animation: bp-shimmer 2.8s ease-in-out infinite;
   pointer-events: none;
 }
@@ -313,4 +313,72 @@
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.78' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
   background-repeat: repeat;
   background-size: 180px;
+}
+
+/* ─── Legal document (Termly-generated policies) ──────────────────────────
+ * Termly's export hardcodes light-mode inline colors (#000, rgb(89,89,89),
+ * rgb(0,58,250)) via `data-custom-class` attributes it adds specifically so
+ * hosts can override them. We do exactly that here, remapped onto this
+ * page's dark theme tokens — the underlying HTML content is left untouched.
+ */
+.bullpen-landing-root .legal-doc {
+  max-width: 760px;
+  margin: 0 auto;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.bullpen-landing-root .legal-doc [data-custom-class='title'],
+.bullpen-landing-root .legal-doc [data-custom-class='title'] * {
+  color: var(--fg) !important;
+  font-family: var(--font-sans) !important;
+}
+.bullpen-landing-root .legal-doc [data-custom-class='subtitle'],
+.bullpen-landing-root .legal-doc [data-custom-class='subtitle'] * {
+  color: var(--fg-dim) !important;
+  font-family: var(--font-sans) !important;
+}
+.bullpen-landing-root .legal-doc [data-custom-class='heading_1'],
+.bullpen-landing-root .legal-doc [data-custom-class='heading_1'] *,
+.bullpen-landing-root .legal-doc [data-custom-class='heading_2'],
+.bullpen-landing-root .legal-doc [data-custom-class='heading_2'] * {
+  color: var(--fg) !important;
+  font-family: var(--font-sans) !important;
+}
+.bullpen-landing-root .legal-doc [data-custom-class='body_text'],
+.bullpen-landing-root .legal-doc [data-custom-class='body_text'] * {
+  color: var(--fg-muted) !important;
+  font-family: var(--font-sans) !important;
+}
+.bullpen-landing-root .legal-doc [data-custom-class='link'],
+.bullpen-landing-root .legal-doc [data-custom-class='link'] * {
+  color: var(--accent) !important;
+  font-family: var(--font-sans) !important;
+}
+.bullpen-landing-root .legal-doc a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.bullpen-landing-root .legal-doc h1 {
+  font-size: 28px;
+  margin: 0 0 8px;
+}
+.bullpen-landing-root .legal-doc h2 {
+  font-size: 19px;
+  margin: 40px 0 12px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+.bullpen-landing-root .legal-doc h3 {
+  font-size: 16px;
+  margin: 24px 0 8px;
+}
+.bullpen-landing-root .legal-doc ul {
+  margin: 8px 0 16px;
+  padding-left: 22px;
+}
+.bullpen-landing-root .legal-doc li {
+  margin: 4px 0;
+  color: var(--fg-muted);
 }

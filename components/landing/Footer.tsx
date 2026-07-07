@@ -3,11 +3,48 @@
 import { Logo } from './Atoms';
 import { Icon, type IconName } from './Icon';
 
-const COLUMNS: { title: string; links: string[] }[] = [
-  { title: 'Product', links: ['Features', 'Pricing', 'Daily Brief', 'BullPen AI', 'Screener', 'Roadmap'] },
-  { title: 'Resources', links: ['Help center', 'API docs', 'Blog', 'Glossary', 'Status'] },
-  { title: 'Company', links: ['About', 'Careers', 'Press kit', 'Contact', 'Partners'] },
-  { title: 'Legal', links: ['Terms', 'Privacy', 'Disclosures', 'Data sources', 'Security'] },
+const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
+  {
+    title: 'Product',
+    links: [
+      { label: 'Features', href: '#features' },
+      { label: 'Pricing', href: '#pricing' },
+      { label: 'Daily Brief', href: '#daily-brief' },
+      { label: 'BullPen AI', href: '#bullpen-ai' },
+      { label: 'Screener', href: '#screener' },
+      { label: 'Roadmap', href: '#roadmap' },
+    ],
+  },
+  {
+    title: 'Resources',
+    links: [
+      { label: 'Help center', href: '#help-center' },
+      { label: 'API docs', href: '#api-docs' },
+      { label: 'Blog', href: '#blog' },
+      { label: 'Glossary', href: '#glossary' },
+      { label: 'Status', href: '#status' },
+    ],
+  },
+  {
+    title: 'Company',
+    links: [
+      { label: 'About', href: '#about' },
+      { label: 'Careers', href: '#careers' },
+      { label: 'Press kit', href: '#press-kit' },
+      { label: 'Contact', href: '#contact' },
+      { label: 'Partners', href: '#partners' },
+    ],
+  },
+  {
+    title: 'Legal',
+    links: [
+      { label: 'Terms', href: '#terms' },
+      { label: 'Privacy', href: '/privacy' },
+      { label: 'Disclosures', href: '#disclosures' },
+      { label: 'Data sources', href: '#data-sources' },
+      { label: 'Security', href: '#security' },
+    ],
+  },
 ];
 
 const SOCIALS: { icon: IconName; label: string }[] = [
@@ -77,9 +114,9 @@ export function Footer() {
               </div>
               <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {col.links.map((l) => (
-                  <li key={l}>
+                  <li key={l.label}>
                     <a
-                      href={`#${l.toLowerCase().replace(/\s/g, '-')}`}
+                      href={l.href}
                       style={{ fontSize: 13, color: 'var(--fg-muted)', transition: 'color 150ms' }}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.color = 'var(--fg)';
@@ -88,7 +125,7 @@ export function Footer() {
                         e.currentTarget.style.color = 'var(--fg-muted)';
                       }}
                     >
-                      {l}
+                      {l.label}
                     </a>
                   </li>
                 ))}
@@ -110,7 +147,7 @@ export function Footer() {
             color: 'var(--fg-dim)',
           }}
         >
-          <span>© 2026 BullPen Labs, Inc. All rights reserved.</span>
+          <span>© 2026 Hasselø BullPen. All rights reserved.</span>
           <span style={{ maxWidth: 600, textAlign: 'right' }}>
             BullPen is not a registered investment advisor. Content is informational only and not financial advice. Markets data delayed up
             to 15s on Free plan.
