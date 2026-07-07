@@ -624,8 +624,11 @@ export function Peek() {
                         position: 'absolute',
                         bottom: 0,
                         left: 0,
+                        width: '100%',
                         height: 2,
                         background: 'oklch(0 0 0 / 0.25)',
+                        transformOrigin: 'left',
+                        transform: 'scaleX(0)',
                         animation: 'bp-tab-progress 4.5s linear forwards',
                         borderRadius: 99,
                       }}

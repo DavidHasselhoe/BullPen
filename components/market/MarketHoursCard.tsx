@@ -191,8 +191,9 @@ export function MarketHoursCard({
                     'h-2 w-2 shrink-0 rounded-full',
                     status.isOpen ? 'bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.6)]' : 'bg-red-500/80'
                   )}
-                  aria-label={status.isOpen ? 'Open' : 'Closed'}
+                  aria-hidden="true"
                 />
+                <span className="sr-only">{status.isOpen ? 'Market open' : 'Market closed'}</span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
                     <Image

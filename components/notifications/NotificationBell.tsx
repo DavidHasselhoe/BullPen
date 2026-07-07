@@ -41,6 +41,7 @@ export function NotificationBell() {
           'relative transition-all hover:scale-105',
           open && 'bg-accent'
         )}
+        aria-label={unreadCount > 0 ? `Notifications (${unreadCount} unread)` : 'Notifications'}
       >
         <Bell className="h-5 w-5" />
         {!isLoading && unreadCount > 0 && (

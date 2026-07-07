@@ -388,6 +388,7 @@ const HoldingRow = memo(function HoldingRow({
   prev.showPriceSkeleton === next.showPriceSkeleton &&
   prev.isDeletingThis === next.isDeletingThis &&
   prev.anyPending === next.anyPending &&
+  prev.isEditModalOpen === next.isEditModalOpen &&
   prev.maxAllocation === next.maxAllocation &&
   prev.sparklinePrices === next.sparklinePrices
 );
