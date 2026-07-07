@@ -1,7 +1,10 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { CommandPalette } from './CommandPalette';
+import { createContext, lazy, Suspense, useCallback, useContext, useEffect, useState } from 'react';
+
+// cmdk and the palette's command registry only download on the first ⌘K /
+// search click instead of shipping with every page.
+const CommandPalette = lazy(() => import('./CommandPalette').then((m) => ({ default: m.CommandPalette })));
 
 interface CommandPaletteContextValue {
   open: () => void;
@@ -18,14 +21,21 @@ export function useCommandPalette() {
 
 export function CommandPaletteProvider({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
+  // Mount (and download) the palette on first open; keep it mounted after so
+  // reopening is instant and its state persists.
+  const [hasOpened, setHasOpened] = useState(false);
 
-  const handleOpen = useCallback(() => setOpen(true), []);
+  const handleOpen = useCallback(() => {
+    setHasOpened(true);
+    setOpen(true);
+  }, []);
   const handleClose = useCallback(() => setOpen(false), []);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
+        setHasOpened(true);
         setOpen((v) => !v);
       }
       if (e.key === 'Escape') setOpen(false);
@@ -37,7 +47,11 @@ export function CommandPaletteProvider({ children }: { children: React.ReactNode
   return (
     <CommandPaletteContext.Provider value={{ open: handleOpen, close: handleClose }}>
       {children}
-      <CommandPalette open={open} onOpenChange={setOpen} />
+      {hasOpened && (
+        <Suspense fallback={null}>
+          <CommandPalette open={open} onOpenChange={setOpen} />
+        </Suspense>
+      )}
     </CommandPaletteContext.Provider>
   );
 }

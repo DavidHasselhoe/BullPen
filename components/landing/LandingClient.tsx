@@ -1,10 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { startCheckout } from '@/lib/billing/checkout';
-import { AuthModal, type AuthMode } from '@/components/auth/AuthModal';
+import type { AuthMode } from '@/components/auth/AuthModal';
+
+// Auth forms (Supabase client, validation) only download when a CTA is clicked —
+// keeps them out of the landing page's initial bundle.
+const AuthModal = lazy(() => import('@/components/auth/AuthModal').then((m) => ({ default: m.AuthModal })));
 import { Nav } from './Nav';
 import { Hero } from './Hero';
 import { TickerStrip } from './TickerStrip';
@@ -22,6 +26,8 @@ export function LandingClient() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
   const [authOpen, setAuthOpen] = useState(false);
+  // Once true, the modal stays mounted so close animations and state survive.
+  const [authMounted, setAuthMounted] = useState(false);
   const [authMode, setAuthMode] = useState<AuthMode>('signup');
   const [redirectTo, setRedirectTo] = useState('/dashboard');
 
@@ -29,12 +35,14 @@ export function LandingClient() {
     if (isAuthenticated) { router.push('/dashboard'); return; }
     setRedirectTo('/dashboard');
     setAuthMode('signup');
+    setAuthMounted(true);
     setAuthOpen(true);
   };
   const openSignIn = () => {
     if (isAuthenticated) { router.push('/dashboard'); return; }
     setRedirectTo('/dashboard');
     setAuthMode('login');
+    setAuthMounted(true);
     setAuthOpen(true);
   };
   // Pro CTA: already signed in → straight to Stripe checkout; otherwise sign up
@@ -49,6 +57,7 @@ export function LandingClient() {
     }
     setRedirectTo(`/upgrade?checkout=${cycle}`);
     setAuthMode('signup');
+    setAuthMounted(true);
     setAuthOpen(true);
   };
 
@@ -72,7 +81,11 @@ export function LandingClient() {
         <Footer />
       </div>
 
-      <AuthModal open={authOpen} onOpenChange={setAuthOpen} initialMode={authMode} redirectTo={redirectTo} />
+      {authMounted && (
+        <Suspense fallback={null}>
+          <AuthModal open={authOpen} onOpenChange={setAuthOpen} initialMode={authMode} redirectTo={redirectTo} />
+        </Suspense>
+      )}
     </div>
   );
 }
