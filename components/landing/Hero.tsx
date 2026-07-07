@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, useRef, type CSSProperties } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import Link from 'next/link';
 import { Reveal } from './Atoms';
 import { Icon } from './Icon';
@@ -24,42 +24,40 @@ function fmtPrice(c: number): string {
   return c.toFixed(2);
 }
 
-function useLiveQuotes(symbols: string[]) {
+function useLiveQuotes() {
   const [quotes, setQuotes] = useState<Record<string, LiveQuote>>({});
-  const symbolsRef = useRef(symbols);
 
   useEffect(() => {
+    let cancelled = false;
+
+    // One shared, CDN/Redis-cached request for all hero symbols — never
+    // per-symbol quote calls from the landing page (see CLAUDE.md golden rules).
     async function fetchAll() {
-      const results = await Promise.allSettled(
-        symbolsRef.current.map(async (sym) => {
-          const slug = sym.replace('/', '-');
-          const res = await fetch(`/api/stock/${slug}/quote`);
-          if (!res.ok) return null;
-          const data = await res.json() as { success: boolean; quote?: { c: number; d: number; dp: number } };
-          if (!data.success || !data.quote) return null;
-          const q = data.quote;
-          return [sym, {
+      if (document.hidden) return; // don't burn requests for background tabs
+      try {
+        const res = await fetch('/api/market/landing-quotes');
+        if (!res.ok) return;
+        const data = await res.json() as { success: boolean; quotes?: Record<string, { c: number; d: number; dp: number }> };
+        if (cancelled || !data.success || !data.quotes) return;
+        const next: Record<string, LiveQuote> = {};
+        for (const [sym, q] of Object.entries(data.quotes)) {
+          next[sym] = {
             price: fmtPrice(q.c),
             change: `${q.d >= 0 ? '+' : ''}${q.d.toFixed(2)}`,
             pct: `${q.dp >= 0 ? '+' : ''}${q.dp.toFixed(2)}%`,
             up: q.dp >= 0,
             raw: q.c,
-          }] as [string, LiveQuote];
-        })
-      );
-      const next: Record<string, LiveQuote> = {};
-      for (const r of results) {
-        if (r.status === 'fulfilled' && r.value) {
-          const [sym, q] = r.value;
-          next[sym] = q;
+          };
         }
+        if (Object.keys(next).length > 0) setQuotes(next);
+      } catch {
+        // Network hiccup — hero falls back to its animated demo values.
       }
-      if (Object.keys(next).length > 0) setQuotes(next);
     }
 
     fetchAll();
     const id = setInterval(fetchAll, 60_000);
-    return () => clearInterval(id);
+    return () => { cancelled = true; clearInterval(id); };
   }, []);
 
   return quotes;
@@ -407,7 +405,7 @@ function FloatingTicker({ symbol, name, price, pct, up, style, anim, sparkSeed =
 
 // ── Hero ─────────────────────────────────────────────────────────────────────
 export function Hero({ onSignUp }: Props) {
-  const liveQuotes = useLiveQuotes(['AAPL', 'NVDA', 'TSLA', 'BTC/USD']);
+  const liveQuotes = useLiveQuotes();
 
   return (
     <section id="top" style={{ position: 'relative', padding: '60px 0 80px' }}>
