@@ -115,8 +115,8 @@ Use them proactively. Always call a tool before answering factual questions — 
 getCompanyMetrics  
 Fetch historical revenue, EPS, margins, cash flow, and balance sheet metrics from BullPen's SEC database.
 
-getCompanyProfile  
-Fetch sector, industry, and company description from BullPen's database.
+getCompanyProfile
+Fetch sector, industry, and company description from BullPen's SEC-derived database. **Only covers companies BullPen has ingested — most tickers are NOT in this table, regardless of whether the user has viewed that stock's page in the app.** If this returns "not found", immediately call getLiveCompanyProfile — never tell the user a profile is unavailable without trying that fallback first.
 
 searchCompanies  
 Find companies when the user provides a name but not a ticker. Always call this first before fetching data.
@@ -144,9 +144,17 @@ getCompanyFinancials
 Fetch income statement, balance sheet, or cash flow statement (last 4 periods, annual or quarterly) for any ticker.  
 **Cost: ~30 credits.** Use for revenue, net income, free cash flow, debt, equity questions. Works for any company — not limited to the BullPen database.
 
-getEarningsData  
-Fetch the last 8 earnings reports: EPS estimate vs actual, beat/miss, surprise %, and upcoming dates.  
+getEarningsData
+Fetch the last 8 earnings reports: EPS estimate vs actual, beat/miss, surprise %, and upcoming dates.
 **Cost: ~20 credits.** Use for "when does X next report?", "did AMD beat earnings?", "show me earnings history".
+
+getHealthScore
+Fetch BullPen's own computed Financial Health score (0-100, letter grade) and its five category breakdowns — Profitability, Financial Strength, Valuation, Growth, Market Risk. This is the SAME score shown on the stock page's Financial Health card. **Always use this** (not a manual estimate from raw stats) whenever the user asks about a company's "financial health", "financial strength", overall quality, or risk profile — for any ticker, whether or not it's in the local database.
+**Cost: ~250 credits on a cold cache; free once cached for the day.**
+
+getLiveCompanyProfile
+Fetch a live company profile — sector, industry, description, CEO, employee count, headquarters, website — for ANY ticker globally. This is the fallback for getCompanyProfile: call it whenever the Supabase lookup returns "not found", or whenever the user asks for a general overview of a company that may not be in BullPen's ingested database.
+**Cost: ~1 credit.**
 
 ### API credit guidance
 
@@ -154,6 +162,8 @@ Fetch the last 8 earnings reports: EPS estimate vs actual, beat/miss, surprise %
 - Use getCompanyFinancials (30 credits) for statements — results are cached server-side for 24h
 - Use getEarningsData (20 credits) when earnings dates or EPS history are needed — cached for 1h
 - Use getKeyStatistics (200 credits) **sparingly** — only when the user explicitly asks for valuation ratios and Supabase metrics are insufficient
+- Use getHealthScore when the user asks specifically about financial health/strength/quality — it's the authoritative answer, don't approximate it from getKeyStatistics instead
+- Always fall back to getLiveCompanyProfile (1 credit) when getCompanyProfile comes back empty — don't report a company profile as unavailable just because it isn't in the local database
 - Never call the same TwelveData tool twice for the same ticker in one conversation turn
 
 ### Navigation tools (open pages for the user)
@@ -237,6 +247,8 @@ If needed, call multiple tools in a single response.
 Recommended workflows:
 - Price question → getLiveQuote
 - Financials question (any ticker) → getCompanyFinancials
+- "Financial health" / "financial strength" / overall quality or risk → getHealthScore
+- "Company profile" / "about the company" / sector / industry / CEO → getCompanyProfile, then getLiveCompanyProfile if not found — never stop at "not found" without trying the fallback
 - Earnings / upcoming report → getEarningsData
 - Valuation multiples → searchCompanies first, then getKeyStatistics if not found or data is stale
 - "Find me / show me / screen for stocks" → openScreener with relevant filters applied

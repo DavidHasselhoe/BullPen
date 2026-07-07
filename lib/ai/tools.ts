@@ -18,8 +18,16 @@ import {
   getIncomeStatement,
   getBalanceSheet,
   getCashFlow,
+  getCompanyProfile as getTwelveDataProfile,
+  withRateLimitRetry,
   TwelveDataRateLimitError,
+  type CompanyStatistics,
+  type IncomeStatementPeriod,
+  type BalanceSheetPeriod,
+  type CashFlowPeriod,
 } from '@/lib/twelvedata/twelvedata-client';
+import { getCached, setCached } from '@/lib/cache/market-data-cache';
+import { computeHealthScore } from '@/lib/finance/health-score';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -196,8 +204,10 @@ export const getCompanyMetrics = tool({
 
 export const getCompanyProfile = tool({
   description:
-    'Fetch the company profile including sector, industry, description, employee count, ' +
-    'and fiscal year end. Use this when the user asks general questions about a company.',
+    'Fetch the company profile (sector, industry, description, employee count, fiscal year end) from ' +
+    'BullPen\'s SEC-derived database. Fast and free, but only covers companies BullPen has ingested — ' +
+    'most tickers are NOT in this database. If this returns "not found", call getLiveCompanyProfile instead ' +
+    '— do not tell the user the profile is unavailable without trying that fallback first.',
   inputSchema: jsonSchema<{ ticker: string }>({
     type: 'object',
     properties: {
@@ -902,6 +912,41 @@ const getCompanyFinancials = tool({
   },
 });
 
+const getLiveCompanyProfile = tool({
+  description:
+    'Fetch a company\'s live profile — sector, industry, description, CEO, employee count, headquarters, ' +
+    'and website — directly from market data, for ANY ticker globally. Use this whenever getCompanyProfile ' +
+    '(the Supabase one) returns "not found", or whenever the user wants a general company overview for a ' +
+    'ticker that may not be in BullPen\'s ingested database. ' +
+    'Costs ~1 API credit.',
+  inputSchema: jsonSchema<{ ticker: string }>({
+    type: 'object',
+    properties: {
+      ticker: { type: 'string', description: 'Stock ticker symbol, e.g. NOW, AAPL, MSFT' },
+    },
+    required: ['ticker'],
+  }),
+  execute: async ({ ticker }) => {
+    try {
+      const p = await getTwelveDataProfile(ticker.toUpperCase());
+      return {
+        ticker: p.symbol,
+        name: p.name,
+        sector: p.sector,
+        industry: p.industry,
+        description: p.description,
+        ceo: p.ceo,
+        employees: p.employees,
+        website: p.website,
+        headquarters: [p.city, p.state, p.country].filter(Boolean).join(', ') || null,
+      };
+    } catch (err) {
+      if (err instanceof TwelveDataRateLimitError) return { error: 'Rate limit reached. Try again shortly.' };
+      return { error: `Could not fetch profile for ${ticker}: ${(err as Error).message}` };
+    }
+  },
+});
+
 const getEarningsData = tool({
   description:
     'Fetch historical earnings data for a stock: EPS estimates vs actuals, beat/miss, and upcoming earnings dates. ' +
@@ -936,6 +981,88 @@ const getEarningsData = tool({
   },
 });
 
+const STATS_TTL = 60 * 60;
+const FINANCIALS_TTL = 24 * 60 * 60;
+
+const getHealthScore = tool({
+  description:
+    'Fetch BullPen\'s computed Financial Health score (0-100, grade A-F) for a stock — the same score ' +
+    'shown on the stock page\'s Financial Health card, broken into Profitability, Financial Strength, ' +
+    'Valuation, Growth, and Market Risk. Use this whenever the user asks about a company\'s "financial health", ' +
+    '"financial strength", overall quality/fundamentals, or asks for a health score/grade. ' +
+    'Works for any ticker globally. Costs ~250 API credits on a cold cache (free once cached for the day).',
+  inputSchema: jsonSchema<{ ticker: string }>({
+    type: 'object',
+    properties: {
+      ticker: { type: 'string', description: 'Stock ticker symbol, e.g. NOW, AAPL, MSFT' },
+    },
+    required: ['ticker'],
+  }),
+  execute: async ({ ticker }) => {
+    const symbol = ticker.toUpperCase();
+    try {
+      let stats = await getCached<CompanyStatistics>(`stats:${symbol}`);
+      if (!stats) {
+        stats = await getStatistics(symbol);
+        void setCached(`stats:${symbol}`, symbol, 'statistics', stats, STATS_TTL).catch(() => {});
+      }
+
+      const [income, balance, cashflow] = await Promise.all([
+        getCached<IncomeStatementPeriod[]>(`financials:${symbol}:income:quarterly`).then(
+          (c) => c ?? withRateLimitRetry(() => getIncomeStatement(symbol, 'quarterly')).catch(() => [] as IncomeStatementPeriod[])
+        ),
+        getCached<BalanceSheetPeriod[]>(`financials:${symbol}:balance:quarterly`).then(
+          (c) => c ?? withRateLimitRetry(() => getBalanceSheet(symbol, 'quarterly')).catch(() => [] as BalanceSheetPeriod[])
+        ),
+        getCached<CashFlowPeriod[]>(`financials:${symbol}:cashflow:quarterly`).then(
+          (c) => c ?? withRateLimitRetry(() => getCashFlow(symbol, 'quarterly')).catch(() => [] as CashFlowPeriod[])
+        ),
+      ]);
+      if (income.length)   void setCached(`financials:${symbol}:income:quarterly`,   symbol, 'financials', income,   FINANCIALS_TTL).catch(() => {});
+      if (balance.length)  void setCached(`financials:${symbol}:balance:quarterly`,  symbol, 'financials', balance,  FINANCIALS_TTL).catch(() => {});
+      if (cashflow.length) void setCached(`financials:${symbol}:cashflow:quarterly`, symbol, 'financials', cashflow, FINANCIALS_TTL).catch(() => {});
+
+      const hs = computeHealthScore(stats, income, balance, cashflow);
+      return {
+        ticker: symbol,
+        score: hs.score,
+        grade: hs.grade,
+        label: hs.label,
+        summary: hs.summary,
+        categories: hs.categories.map((c) => ({
+          name: c.name,
+          score: c.score,
+          max: c.max,
+          label: c.dataAvailable === false ? 'N/A (no data)' : c.label,
+        })),
+      };
+    } catch (err) {
+      if (err instanceof TwelveDataRateLimitError) return { error: 'Rate limit reached. Try again shortly.' };
+      return { error: `Could not compute health score for ${ticker}: ${(err as Error).message}` };
+    }
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Data-only tools — no navigation or portfolio mutation. Shared by any AI
+// surface that needs company/financial data lookups (main chat, chart
+// assistant, etc.) regardless of where in the app it's embedded.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const COMPANY_DATA_TOOLS = {
+  getCompanyMetrics,
+  getCompanyProfile,
+  searchCompanies,
+  screenCompanies,
+  compareCompanies,
+  getLiveQuote,
+  getKeyStatistics,
+  getCompanyFinancials,
+  getEarningsData,
+  getHealthScore,
+  getLiveCompanyProfile,
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Exported tool map (passed directly to streamText)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -965,6 +1092,8 @@ export const BULLPEN_TOOLS = {
   getKeyStatistics,
   getCompanyFinancials,
   getEarningsData,
+  getHealthScore,
+  getLiveCompanyProfile,
 };
 
 export const CLIENT_ACTION_KEY = '__clientAction';

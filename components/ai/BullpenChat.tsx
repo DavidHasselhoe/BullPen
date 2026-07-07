@@ -18,6 +18,9 @@ import { useAddOrUpdateHolding, useUpdateHoldingBySymbol, useRemoveHoldingBySymb
 import { QuotaIndicator } from '@/components/billing/QuotaIndicator';
 import { AiPaywallDialog } from '@/components/billing/AiPaywallDialog';
 import { useInvalidateQuota } from '@/hooks/use-quota';
+import { useAIPanel } from '@/components/ai/AIPanelProvider';
+import { ToolResultCard } from '@/components/ai/ToolResultCard';
+import { getActiveToolName, getToolStatusLabel, getCompletedToolCalls, getFollowups, extractTickers } from '@/lib/ai/tool-ux';
 
 const DEFAULT_STARTER_PROMPTS = [
   'What is EBITDA?',
@@ -164,6 +167,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
   const updateHoldingMutation = useUpdateHoldingBySymbol();
   const removeHoldingMutation = useRemoveHoldingBySymbol();
   const invalidateQuota = useInvalidateQuota();
+  const { lastTicker, noteTicker } = useAIPanel();
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const inputRef = useRef('');
@@ -173,6 +177,12 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
   useImperativeHandle(ref, () => ({
     focusInput: () => textareaRef.current?.focus(),
   }));
+
+  // Fall back to the last company discussed in ANY AI surface (main chat or the
+  // in-chart assistant) when the page itself doesn't supply explicit context —
+  // e.g. opening the widget from Discover or Holdings right after asking the
+  // chart assistant about a company.
+  const effectiveContext = aiContext ?? (lastTicker ? { tickers: [lastTicker], label: `${lastTicker} (previously discussed)` } : undefined);
 
   const {
     messages,
@@ -187,7 +197,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
       // Include the current page context (ticker + label) so the server-side agent
       // knows which stock/comparison the user is viewing without requiring them to type it.
       body: {
-        ...(aiContext ? { context: aiContext } : {}),
+        ...(effectiveContext ? { context: effectiveContext } : {}),
         ...(user?.experience_level ? { experienceLevel: user.experience_level } : {}),
         language: i18n.language,
         ...(user?.risk_profile ? { riskProfile: user.risk_profile } : {}),
@@ -211,6 +221,8 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
     },
     onFinish: async ({ message }) => {
       invalidateQuota('chat');
+      const tickers = extractTickers(message);
+      if (tickers.length) noteTicker(tickers[tickers.length - 1]);
       for (const action of extractClientActions(message)) {
         if (action.type === 'navigate' && action.path) {
           router.push(action.path);
@@ -248,6 +260,15 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
   });
 
   const isStreaming = status === 'streaming' || status === 'submitted';
+  const lastMessage = messages[messages.length - 1];
+  const lastMessageHasText = lastMessage?.role === 'assistant' &&
+    lastMessage.parts.some((p) => p.type === 'text' && p.text.trim().length > 0);
+  // While a tool is running and the assistant hasn't started writing text yet, show what
+  // it's doing ("Checking financial health…") instead of a generic "thinking" indicator.
+  const toolStatusLabel = isStreaming && !lastMessageHasText
+    ? getToolStatusLabel(getActiveToolName(lastMessage))
+    : null;
+  const followups = !isStreaming && lastMessage?.role === 'assistant' ? getFollowups(lastMessage) : [];
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -429,16 +450,21 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
                     })}
                   </div>
                 ) : (
-                  <AssistantMessageContent
-                    text={message.parts
-                      .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
-                      .map((p) => p.text)
-                      .join('')}
-                    isStreaming={
-                      isStreaming &&
-                      message.id === messages[messages.length - 1]?.id
-                    }
-                  />
+                  <>
+                    {getCompletedToolCalls(message).map((call, i) => (
+                      <ToolResultCard key={`${message.id}-tool-${i}`} toolName={call.toolName} output={call.output} />
+                    ))}
+                    <AssistantMessageContent
+                      text={message.parts
+                        .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
+                        .map((p) => p.text)
+                        .join('')}
+                      isStreaming={
+                        isStreaming &&
+                        message.id === messages[messages.length - 1]?.id
+                      }
+                    />
+                  </>
                 )}
               </div>
               {isUser && (
@@ -464,8 +490,8 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
           );
         })}
 
-        {/* Thinking indicator */}
-        {isStreaming && messages[messages.length - 1]?.role === 'user' && (
+        {/* Thinking / tool-status indicator */}
+        {isStreaming && !lastMessageHasText && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -475,7 +501,8 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
             <div className="shrink-0 rounded-full bg-primary/10 p-1.5 mb-0.5">
               <Bot className="h-3.5 w-3.5 text-primary" />
             </div>
-            <div className="bg-muted rounded-2xl rounded-bl-sm px-3.5 py-2.5">
+            <div className="bg-muted rounded-2xl rounded-bl-sm px-3.5 py-2.5 flex items-center gap-2">
+              {toolStatusLabel && <span className="text-xs text-muted-foreground">{toolStatusLabel}</span>}
               <span className="flex gap-1.5 items-center">
                 {[0, 1, 2].map((i) => (
                   <motion.span
@@ -487,6 +514,29 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
                 ))}
               </span>
             </div>
+          </motion.div>
+        )}
+
+        {/* Follow-up suggestions after the assistant's latest answer */}
+        {followups.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            className="flex flex-wrap gap-2 pl-9"
+          >
+            {followups.map((s) => (
+              <button
+                key={s}
+                onClick={() => {
+                  sendMessage({ parts: [{ type: 'text', text: s }] });
+                  refocusInput();
+                }}
+                className="text-xs px-3 py-1.5 rounded-full border border-border bg-muted/40 hover:bg-muted/80 hover:border-primary/30 text-muted-foreground hover:text-foreground transition-all duration-200"
+              >
+                {s}
+              </button>
+            ))}
           </motion.div>
         )}
 

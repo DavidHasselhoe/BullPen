@@ -13,6 +13,9 @@ import { useAuth } from '@/hooks/use-auth';
 import { useInvalidateQuota } from '@/hooks/use-quota';
 import { QuotaIndicator } from '@/components/billing/QuotaIndicator';
 import { AiPaywallDialog } from '@/components/billing/AiPaywallDialog';
+import { useAIPanel } from '@/components/ai/AIPanelProvider';
+import { ToolResultCard } from '@/components/ai/ToolResultCard';
+import { getActiveToolName, getToolStatusLabel, getCompletedToolCalls, getFollowups, extractTickers } from '@/lib/ai/tool-ux';
 import type { QuotaState } from '@/lib/billing/quotas';
 import type { ChartAction, ChartSnapshot } from './chart-context';
 
@@ -87,6 +90,7 @@ export function ChartAIPanel({ symbol, snapshot, onAction, onClose }: Props) {
   const { user } = useAuth();
   const { i18n } = useTranslation();
   const invalidateQuota = useInvalidateQuota();
+  const { noteTicker } = useAIPanel();
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const inputRef = useRef('');
@@ -110,6 +114,8 @@ export function ChartAIPanel({ symbol, snapshot, onAction, onClose }: Props) {
     },
     onFinish: async ({ message }) => {
       invalidateQuota('chat');
+      const tickers = extractTickers(message);
+      if (tickers.length) noteTicker(tickers[tickers.length - 1]);
       for (const action of extractChartActions(message)) {
         try {
           await onAction(action);
@@ -121,6 +127,15 @@ export function ChartAIPanel({ symbol, snapshot, onAction, onClose }: Props) {
   });
 
   const isStreaming = status === 'streaming' || status === 'submitted';
+  const lastMessage = messages[messages.length - 1];
+  const lastMessageHasText = lastMessage?.role === 'assistant' &&
+    lastMessage.parts.some((p) => p.type === 'text' && p.text.trim().length > 0);
+  // While a tool is running and the assistant hasn't started writing text yet, show what
+  // it's doing ("Checking financial health…") instead of a generic "thinking" indicator.
+  const toolStatusLabel = isStreaming && !lastMessageHasText
+    ? getToolStatusLabel(getActiveToolName(lastMessage))
+    : null;
+  const followups = !isStreaming && lastMessage?.role === 'assistant' ? getFollowups(lastMessage) : [];
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -247,8 +262,9 @@ export function ChartAIPanel({ symbol, snapshot, onAction, onClose }: Props) {
             .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
             .map((p) => p.text)
             .join('');
-          // Skip empty assistant shells (tool-only turns still render their confirmation text).
-          if (!isUser && !text) return null;
+          const toolCalls = isUser ? [] : getCompletedToolCalls(message);
+          // Skip empty assistant shells (tool-only turns still render their confirmation text or a result card).
+          if (!isUser && !text && toolCalls.length === 0) return null;
           return (
             <motion.div
               key={message.id}
@@ -268,16 +284,24 @@ export function ChartAIPanel({ symbol, snapshot, onAction, onClose }: Props) {
                 {isUser ? (
                   <span className="whitespace-pre-wrap break-words">{text}</span>
                 ) : (
-                  <AssistantContent text={text} isStreaming={isStreaming && message.id === messages[messages.length - 1]?.id} />
+                  <>
+                    {toolCalls.map((call, i) => (
+                      <ToolResultCard key={`${message.id}-tool-${i}`} toolName={call.toolName} output={call.output} />
+                    ))}
+                    {text && (
+                      <AssistantContent text={text} isStreaming={isStreaming && message.id === messages[messages.length - 1]?.id} />
+                    )}
+                  </>
                 )}
               </div>
             </motion.div>
           );
         })}
 
-        {isStreaming && messages[messages.length - 1]?.role === 'user' && (
+        {isStreaming && !lastMessageHasText && (
           <div className="flex justify-start">
-            <div className="rounded-2xl rounded-bl-sm bg-muted px-3.5 py-2.5">
+            <div className="rounded-2xl rounded-bl-sm bg-muted px-3.5 py-2.5 flex items-center gap-2">
+              {toolStatusLabel && <span className="text-xs text-muted-foreground">{toolStatusLabel}</span>}
               <span className="flex items-center gap-1.5">
                 {[0, 1, 2].map((i) => (
                   <motion.span
@@ -290,6 +314,26 @@ export function ChartAIPanel({ symbol, snapshot, onAction, onClose }: Props) {
               </span>
             </div>
           </div>
+        )}
+
+        {followups.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.18, ease: 'easeOut' }}
+            className="flex flex-wrap gap-2"
+          >
+            {followups.map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => send(s)}
+                className="rounded-full border border-border bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground transition-all hover:border-primary/30 hover:bg-muted/80 hover:text-foreground"
+              >
+                {s}
+              </button>
+            ))}
+          </motion.div>
         )}
 
         <div ref={bottomRef} />

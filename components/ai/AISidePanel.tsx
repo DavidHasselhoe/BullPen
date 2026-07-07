@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useCallback } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState, useCallback } from 'react';
 import Image from 'next/image';
 import { Bot, X, PanelRightClose, Settings } from 'lucide-react';
 import Link from 'next/link';
@@ -10,7 +10,12 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { BullpenChat, type BullpenChatHandle } from './BullpenChat';
+import type { BullpenChatHandle } from './BullpenChat';
+
+// The chat stack (AI SDK transport, react-markdown, tool result cards) is heavy
+// and mounted on every page via the root layout — load its chunk only when the
+// panel is first opened.
+const BullpenChat = lazy(() => import('./BullpenChat').then((m) => ({ default: m.BullpenChat })));
 import { useAuth } from '@/hooks/use-auth';
 import { useIsMobile } from '@/hooks/use-is-mobile';
 import { cn } from '@/lib/utils';
@@ -74,6 +79,10 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
   // Full-screen chat on phones (480px would collapse the page content beside it).
   const panelWidth = isMobile ? '100vw' : PANEL_WIDTH;
   const chatRef = useRef<BullpenChatHandle>(null);
+  // Defer mounting (and downloading) the chat until the first open; stay
+  // mounted afterwards so the conversation survives close/reopen.
+  const [hasOpened, setHasOpened] = useState(open);
+  if (open && !hasOpened) setHasOpened(true);
 
   const handleClose = useCallback(() => {
     onClose();
@@ -98,6 +107,9 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
   return (
     <motion.aside
       aria-hidden={!open}
+      // inert removes the collapsed panel's buttons from tab order and the
+      // accessibility tree — aria-hidden alone leaves focusable descendants.
+      inert={!open}
       initial={false}
       animate={{ width: open ? panelWidth : 0 }}
       // On close: content fades first (0.13s), then width collapses (delay 0.13s)
@@ -204,18 +216,26 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
             </div>
           ) : !isAuthenticated ? (
             <AuthGate />
-          ) : (
-            <BullpenChat
-              ref={chatRef}
-              compact
-              user={user}
-              starterPrompts={STARTER_PROMPTS}
-              open={open}
-              initialQuery={initialQuery ?? undefined}
-              aiContext={aiContext ?? undefined}
-              onConsumedQuery={onConsumedQuery}
-            />
-          )}
+          ) : hasOpened ? (
+            <Suspense
+              fallback={
+                <div className="flex flex-1 items-center justify-center">
+                  <span className="h-5 w-5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                </div>
+              }
+            >
+              <BullpenChat
+                ref={chatRef}
+                compact
+                user={user}
+                starterPrompts={STARTER_PROMPTS}
+                open={open}
+                initialQuery={initialQuery ?? undefined}
+                aiContext={aiContext ?? undefined}
+                onConsumedQuery={onConsumedQuery}
+              />
+            </Suspense>
+          ) : null}
         </div>
       </motion.div>
     </motion.aside>

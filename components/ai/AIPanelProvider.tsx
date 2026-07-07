@@ -26,6 +26,14 @@ interface AIPanelContextValue {
   clearInitialQuery: () => void;
   /** Set AI context from page (e.g. stock page, compare page) */
   setAIContext: (ctx: AIContext | null) => void;
+  /**
+   * Last ticker either AI surface (main chat or the in-chart assistant) discussed —
+   * lets the other surface pick up the same company as a fallback when the page
+   * itself doesn't supply an explicit context (e.g. Discover, Holdings, Screener).
+   */
+  lastTicker: string | null;
+  /** Record that a ticker was just discussed, for the other AI surface to fall back to. */
+  noteTicker: (ticker: string) => void;
 }
 
 const AIPanelContext = createContext<AIPanelContextValue | null>(null);
@@ -42,6 +50,8 @@ export function useAIPanel() {
       aiContext: null,
       clearInitialQuery: () => {},
       setAIContext: () => {},
+      lastTicker: null,
+      noteTicker: () => {},
     };
   return ctx;
 }
@@ -50,6 +60,7 @@ export function AIPanelProvider({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   const [initialQuery, setInitialQuery] = useState<string | null>(null);
   const [aiContext, setAIContextState] = useState<AIContext | null>(null);
+  const [lastTicker, setLastTicker] = useState<string | null>(null);
 
   const open = useCallback((opt?: OpenOptions) => {
     if (opt?.query) setInitialQuery(opt.query);
@@ -69,6 +80,10 @@ export function AIPanelProvider({ children }: { children: React.ReactNode }) {
     setAIContextState(ctx);
   }, []);
 
+  const noteTicker = useCallback((ticker: string) => {
+    setLastTicker(ticker.toUpperCase());
+  }, []);
+
   return (
     <AIPanelContext.Provider
       value={{
@@ -80,6 +95,8 @@ export function AIPanelProvider({ children }: { children: React.ReactNode }) {
         aiContext,
         clearInitialQuery,
         setAIContext,
+        lastTicker,
+        noteTicker,
       }}
     >
       <div className="flex h-screen min-h-full w-full overflow-x-hidden">

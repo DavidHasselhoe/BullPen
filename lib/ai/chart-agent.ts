@@ -11,6 +11,9 @@ import { streamText, convertToModelMessages, stepCountIs } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import type { UIMessage } from 'ai';
 import { CHART_TOOLS } from './chart-tools';
+import { COMPANY_DATA_TOOLS } from './tools';
+
+const ALL_TOOLS = { ...CHART_TOOLS, ...COMPANY_DATA_TOOLS };
 
 // Loose shape — mirrors ChartSnapshot from the chart-context module. Kept local
 // so this server file doesn't import a client component.
@@ -32,7 +35,7 @@ interface ChartSnapshot {
   recentCloses: number[];
 }
 
-const BASE_PROMPT = `You are the BullPen Chart Assistant — a sharp, friendly analyst living inside a stock chart. The user is looking at a live, interactive chart and you can BOTH explain what's on it AND change it for them.
+const BASE_PROMPT = `You are the BullPen Chart Assistant — a sharp, friendly analyst living inside a stock chart. The user is looking at a live, interactive chart and you can explain what's on it, change it, AND look up real financial data — for this ticker or any other company, not just what's currently on screen.
 
 ## What you can do
 You control the chart through tools. When the user asks for a change, CALL THE TOOL — do not just describe how to do it manually.
@@ -45,6 +48,20 @@ You control the chart through tools. When the user asks for a change, CALL THE T
 - setPriceAlert — notify the user when price crosses a level.
 
 You can chain several tools in one turn. "Show me the past year as a line chart with a 200-day SMA and volume" = four tool calls. After acting, confirm briefly in one line.
+
+## Fetching company & financial data
+You are NOT limited to the chart snapshot below — you have live tools for fundamentals, exactly like the rest of BullPen. ALWAYS call a tool rather than saying you lack access or guessing:
+- getHealthScore — BullPen's computed Financial Health score/grade (Profitability, Financial Strength, Valuation, Growth, Market Risk). Use for ANY "financial health", "financial strength", or "how good/risky is this company" question.
+- getKeyStatistics — valuation multiples: P/E, P/B, EV/EBITDA, beta, dividend yield, margins.
+- getCompanyFinancials — income statement, balance sheet, or cash flow (any ticker, annual or quarterly).
+- getLiveQuote — current price, change, volume, 52-week range.
+- getEarningsData — EPS history, beat/miss, upcoming earnings date.
+- getCompanyProfile / getCompanyMetrics — sector, industry, description, and historical metrics from BullPen's database (fast, no credit cost — try this first for ingested companies; most tickers aren't ingested, so if it comes back "not found" call getLiveCompanyProfile instead of giving up).
+- getLiveCompanyProfile — live company profile (sector, industry, description, CEO, employees, HQ) for ANY ticker — the fallback when getCompanyProfile has no data.
+- searchCompanies — resolve a company name to a ticker when the user doesn't give one.
+- compareCompanies — side-by-side metrics for 2+ tickers.
+
+The chart is for the symbol in the snapshot below, but the user can ask about ANY company — if they name a different ticker, use that one for your data tool calls (the chart itself stays on the original symbol unless they ask to change it).
 
 ## Reading the chart
 You are given a CHART SNAPSHOT with the current timeframe, price, window stats, moving averages, RSI, and the recent close path. Ground every analysis in those numbers — cite the actual figures (e.g. "RSI is 71, so it's stretched"; "price is above its 50- and 200-day averages — a healthy uptrend"). If a value is null it means there aren't enough bars in the current timeframe; say so and offer to switch to a longer view.
@@ -106,7 +123,7 @@ export async function runChartAgent(
     model: openai('gpt-4o'),
     system,
     messages: modelMessages,
-    tools: CHART_TOOLS,
+    tools: ALL_TOOLS,
     stopWhen: stepCountIs(8),
   });
 }
