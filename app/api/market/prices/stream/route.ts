@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { WsManager, type PriceTick } from '@/lib/market-data/ws-manager';
-import { getStockQuotes } from '@/lib/twelvedata/twelvedata-client';
+import { getStockQuotes, isExtendedHoursET } from '@/lib/twelvedata/twelvedata-client';
 import { withRateLimit } from '@/lib/security/api-security';
 import { rget, rset } from '@/lib/cache/redis-cache';
 
@@ -83,6 +83,12 @@ async function seedInitialPrices(
 
   if (stillNeeded.length === 0) return;
 
+  // During pre-/post-market, request prepost data so `close` reflects the actual
+  // extended-hours price instead of yesterday's regular close — otherwise the seed
+  // (and every WS tick computed against it) shows 0% change until price happens to
+  // move away from that stale value.
+  const prepost = isExtendedHoursET();
+
   // Level 2.5: pre-seed prevClose from the day-stable pc: cache. Doesn't emit a
   // price (no fresh quote), but guarantees the next WS tick computes a correct
   // changePercent even before the REST seed below returns — or if it fails.
@@ -102,7 +108,7 @@ async function seedInitialPrices(
   await Promise.all(
     chunks.map(async (chunk) => {
       try {
-        const quotes = await getStockQuotes(chunk);
+        const quotes = await getStockQuotes(chunk, { prepost });
         for (const [sym, quote] of quotes.entries()) {
           if (!quote || quote.c <= 0) continue;
           const prevClose = quote.pc > 0 ? quote.pc : quote.c;

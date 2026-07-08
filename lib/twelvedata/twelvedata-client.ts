@@ -524,7 +524,7 @@ export async function getTopMovers(limit: number = 5): Promise<TopMovers> {
 }
 
 /** True when the ET clock is in an active pre- or post-market window (weekdays only). */
-function isExtendedHoursET(): boolean {
+export function isExtendedHoursET(): boolean {
   const etStr = new Date().toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour12: false });
   const [h, m] = etStr.split(':').map(Number);
   const etMins = h * 60 + m;
