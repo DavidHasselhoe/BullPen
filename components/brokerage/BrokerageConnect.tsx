@@ -23,6 +23,8 @@ import {
   useBrokerageDisconnect,
   type BrokerageConnection,
 } from '@/hooks/use-brokerage';
+import { useEntitlements } from '@/hooks/use-entitlements';
+import { UpgradeCTA } from '@/components/billing/UpgradeCTA';
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -158,6 +160,7 @@ export function BrokerageConnect() {
   const connectMutation    = useBrokerageConnect();
   const syncMutation       = useBrokerageSync();
   const disconnectMutation = useBrokerageDisconnect();
+  const canConnectBrokerage = useEntitlements().can('brokerage');
   // Default open so the per-account Disconnect control is immediately visible.
   const [expanded, setExpanded] = useState(true);
 
@@ -213,16 +216,20 @@ export function BrokerageConnect() {
                   : <><RefreshCw className="h-3.5 w-3.5 mr-1.5" />Sync All</>
                 }
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 text-xs"
-                onClick={() => connectMutation.mutate()}
-                disabled={connectMutation.isPending}
-              >
-                <Link2 className="h-3.5 w-3.5 mr-1.5" />
-                Add Account
-              </Button>
+              {canConnectBrokerage ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs"
+                  onClick={() => connectMutation.mutate()}
+                  disabled={connectMutation.isPending}
+                >
+                  <Link2 className="h-3.5 w-3.5 mr-1.5" />
+                  Add Account
+                </Button>
+              ) : (
+                <UpgradeCTA label="Add Account (Pro)" size="sm" variant="outline" className="h-8 text-xs" />
+              )}
               <Button
                 variant="ghost"
                 size="sm"
@@ -286,20 +293,32 @@ export function BrokerageConnect() {
 
       <CardContent className="pt-0">
         <div className="flex items-center gap-3 flex-wrap">
-          <Button
-            onClick={() => connectMutation.mutate()}
-            disabled={connectMutation.isPending}
-            className="gap-2"
-          >
-            {connectMutation.isPending
-              ? <><RefreshCw className="h-4 w-4 animate-spin" />Connecting…</>
-              : <><Link2 className="h-4 w-4" />Connect Brokerage</>
-            }
-          </Button>
+          {canConnectBrokerage ? (
+            <>
+              <Button
+                onClick={() => connectMutation.mutate()}
+                disabled={connectMutation.isPending}
+                className="gap-2"
+              >
+                {connectMutation.isPending
+                  ? <><RefreshCw className="h-4 w-4 animate-spin" />Connecting…</>
+                  : <><Link2 className="h-4 w-4" />Connect Brokerage</>
+                }
+              </Button>
 
-          <span className="text-xs text-muted-foreground">
-            Powered by SnapTrade · Read-only access
-          </span>
+              <span className="text-xs text-muted-foreground">
+                Powered by SnapTrade · Read-only access
+              </span>
+            </>
+          ) : (
+            <>
+              <UpgradeCTA label="Upgrade to Pro to connect" className="gap-2" />
+
+              <span className="text-xs text-muted-foreground">
+                Brokerage sync is a Pro feature
+              </span>
+            </>
+          )}
         </div>
 
         {connectMutation.isError && (

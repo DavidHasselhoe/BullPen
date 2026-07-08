@@ -19,6 +19,8 @@ import { Radio, Link2, RefreshCw, BarChart2, Briefcase } from 'lucide-react';
 import type { HoldingWithPrice } from '@/components/holdings/types';
 import { useBrokerageAccounts, useBrokerageConnect } from '@/hooks/use-brokerage';
 import { BrokerageConnect } from '@/components/brokerage/BrokerageConnect';
+import { useEntitlements } from '@/hooks/use-entitlements';
+import { UpgradeCTA } from '@/components/billing/UpgradeCTA';
 import { convertCurrency, type CurrencyCode } from '@/lib/currency/currency-conversion';
 import { useExchangeRates } from '@/hooks/use-exchange-rates';
 
@@ -58,6 +60,7 @@ export default function HoldingsPage() {
   const connectMutation = useBrokerageConnect();
   const isBrokerageConnected = (brokerageData?.accounts ?? []).some((a) => a.is_active);
   const brokerageConfigured = brokerageData?.configured !== false;
+  const canConnectBrokerage = useEntitlements().can('brokerage');
 
   // Resolve the user's preferred display currency
   const userCurrency = useMemo((): CurrencyCode => {
@@ -319,18 +322,22 @@ export default function HoldingsPage() {
 
         {/* Compact brokerage connect button — only when configured and not yet connected */}
         {brokerageConfigured && !isBrokerageConnected && (
-          <button
-            onClick={() => connectMutation.mutate()}
-            disabled={connectMutation.isPending}
-            className="shrink-0 flex items-center gap-2 px-3.5 py-2 rounded-lg border border-border/60 bg-card text-sm font-medium text-muted-foreground hover:text-foreground hover:border-border hover:bg-muted/40 transition-all duration-150 disabled:opacity-50"
-          >
-            {connectMutation.isPending ? (
-              <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Link2 className="h-3.5 w-3.5" />
-            )}
-            Connect Brokerage
-          </button>
+          canConnectBrokerage ? (
+            <button
+              onClick={() => connectMutation.mutate()}
+              disabled={connectMutation.isPending}
+              className="shrink-0 flex items-center gap-2 px-3.5 py-2 rounded-lg border border-border/60 bg-card text-sm font-medium text-muted-foreground hover:text-foreground hover:border-border hover:bg-muted/40 transition-all duration-150 disabled:opacity-50"
+            >
+              {connectMutation.isPending ? (
+                <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Link2 className="h-3.5 w-3.5" />
+              )}
+              Connect Brokerage
+            </button>
+          ) : (
+            <UpgradeCTA label="Connect Brokerage (Pro)" variant="outline" />
+          )
         )}
       </div>
 

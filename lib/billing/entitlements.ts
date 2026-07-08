@@ -33,7 +33,8 @@ export type ProFeature =
   | 'unlimited_alerts'
   | 'unlimited_watchlists'
   | 'dividend_hub'          // future flagship
-  | 'portfolio_checkup';    // future flagship
+  | 'portfolio_checkup'     // future flagship
+  | 'brokerage';            // SnapTrade brokerage connection — costs us per connected user
 
 export interface Entitlements {
   tier: Tier;
@@ -95,7 +96,8 @@ export const PLAN_COMPARISON: ComparisonGroup[] = [
     rows: [
       { label: 'Price alerts', free: `${FREE_ALERT_STOCKS} stocks`, pro: 'Unlimited' },
       { label: 'Watchlists', free: `${FREE_WATCHLISTS}`, pro: 'Unlimited' },
-      { label: 'Holdings, CSV import & brokerage sync', free: true, pro: true },
+      { label: 'Holdings tracking & CSV import', free: true, pro: true },
+      { label: 'Automatic brokerage sync', free: false, pro: true, hint: 'Connect Robinhood, Schwab, Fidelity, IBKR, and 100+ more' },
       { label: 'In-app notifications & daily recap', free: true, pro: true },
     ],
   },

@@ -6,11 +6,18 @@ import { NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/client';
 import { getCurrentUserId } from '@/lib/auth/server-session';
 import { getSnapTradeClient, isSnapTradeConfigured } from '@/lib/snaptrade/client';
+import { getTier, isPro } from '@/lib/billing/tier';
 
 export async function POST() {
   const userId = await getCurrentUserId();
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  // Pro-only — see app/api/brokerage/connect/route.ts for the rationale.
+  // Existing registrations/connections made before this gate are unaffected.
+  if (!isPro(await getTier(userId))) {
+    return NextResponse.json({ error: 'upgrade_required' }, { status: 403 });
   }
 
   if (!isSnapTradeConfigured()) {

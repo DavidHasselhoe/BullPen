@@ -6,11 +6,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/client';
 import { getCurrentUserId } from '@/lib/auth/server-session';
 import { getSnapTradeClient, isSnapTradeConfigured } from '@/lib/snaptrade/client';
+import { getTier, isPro } from '@/lib/billing/tier';
 
 export async function POST(request: NextRequest) {
   const userId = await getCurrentUserId();
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  // Pro-only — brokerage sync costs us per connected user (SnapTrade billing).
+  // Existing free-tier connections made before this gate are grandfathered in;
+  // this only blocks NEW connections, so sync/accounts/disconnect stay open.
+  if (!isPro(await getTier(userId))) {
+    return NextResponse.json({ error: 'upgrade_required' }, { status: 403 });
   }
 
   if (!isSnapTradeConfigured()) {
