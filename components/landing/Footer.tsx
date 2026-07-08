@@ -12,28 +12,22 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
       { label: 'Daily Brief', href: '#daily-brief' },
       { label: 'BullPen AI', href: '#bullpen-ai' },
       { label: 'Screener', href: '#screener' },
-      { label: 'Roadmap', href: '#roadmap' },
+      { label: 'Roadmap', href: '/roadmap' },
       { label: 'Changelog', href: '/changelog' },
     ],
   },
   {
     title: 'Resources',
     links: [
-      { label: 'Help center', href: '#help-center' },
-      { label: 'API docs', href: '#api-docs' },
-      { label: 'Blog', href: '#blog' },
-      { label: 'Glossary', href: '#glossary' },
-      { label: 'Status', href: '#status' },
+      { label: 'Help center', href: '/help' },
+      { label: 'Glossary', href: '/glossary' },
     ],
   },
   {
     title: 'Company',
     links: [
-      { label: 'About', href: '#about' },
-      { label: 'Careers', href: '#careers' },
-      { label: 'Press kit', href: '#press-kit' },
-      { label: 'Contact', href: '#contact' },
-      { label: 'Partners', href: '#partners' },
+      { label: 'About', href: '/about' },
+      { label: 'Contact', href: '/contact' },
     ],
   },
   {
@@ -41,9 +35,8 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
     links: [
       { label: 'Terms', href: '#terms' },
       { label: 'Privacy', href: '/privacy' },
-      { label: 'Disclosures', href: '#disclosures' },
-      { label: 'Data sources', href: '#data-sources' },
-      { label: 'Security', href: '#security' },
+      { label: 'Disclosures', href: '/disclosures' },
+      { label: 'Security', href: '/security' },
     ],
   },
 ];
