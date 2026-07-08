@@ -1,5 +1,16 @@
 [
   {
+    "date": "2026-07-08",
+    "entries": [
+      { "type": "new", "text": "Save and reuse your favorite dividend calculator setups, with a one-click option to fill it in from your holdings" },
+      { "type": "new", "text": "Added a Contact page so you can reach us directly" },
+      { "type": "new", "text": "Added Roadmap, Glossary, Help Center, About, Disclosures, and Security pages, plus fixed up footer links" },
+      { "type": "improved", "text": "Automatic brokerage account syncing is now a Pro feature; manually adding holdings or importing from CSV stays free for everyone" },
+      { "type": "fixed", "text": "Fixed pre-market price changes sometimes showing as stuck at 0%" },
+      { "type": "fixed", "text": "Fixed the app navigation showing up incorrectly on the Privacy and Changelog pages" }
+    ]
+  },
+  {
     "date": "2026-07-07",
     "entries": [
       { "type": "new", "text": "Published our Privacy Policy" },
