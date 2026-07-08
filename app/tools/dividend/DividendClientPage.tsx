@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useTheme } from 'next-themes';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Wallet, Loader2, AlertCircle, TrendingUp, Plus, X } from 'lucide-react';
+import { ArrowLeft, Wallet, Loader2, AlertCircle, TrendingUp, Plus, X, Briefcase } from 'lucide-react';
 import { useBackground } from '@/hooks/use-background';
 import { cn } from '@/lib/utils';
 import {
@@ -22,6 +22,7 @@ import { AnimatedCounter } from '@/components/tools/buy-here/AnimatedCounter';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
 import { useUserSettings } from '@/hooks/use-user-settings';
+import { useHoldings } from '@/hooks/use-holdings';
 import { useExchangeRates } from '@/hooks/use-exchange-rates';
 import {
   convertCurrency,
@@ -186,6 +187,38 @@ export default function DividendClientPage() {
 
   const applyPreset = (preset: DividendPreset) => {
     setHoldings(preset.holdings.length ? preset.holdings : [EMPTY_ROW]);
+  };
+
+  const { data: myHoldings } = useHoldings();
+
+  const loadFromHoldings = () => {
+    const rows = myHoldings ?? [];
+    if (rows.length === 0) return;
+
+    // Group by symbol — the same ticker may appear across multiple connected
+    // brokerage accounts as separate rows; sum quantities into one line.
+    const bySymbol = new Map<string, { name: string; quantity: number }>();
+    for (const h of rows) {
+      const existing = bySymbol.get(h.symbol);
+      const qty = h.quantity ?? 0;
+      if (existing) {
+        existing.quantity += qty;
+      } else {
+        bySymbol.set(h.symbol, { name: h.company_name, quantity: qty });
+      }
+    }
+
+    const next: Holding[] = Array.from(bySymbol.entries())
+      .filter(([, v]) => v.quantity > 0)
+      .slice(0, MAX_HOLDINGS)
+      .map(([symbol, v], i) => ({
+        id: `holdings-${i}`,
+        stock: minimalStock(symbol, v.name),
+        mode: 'shares',
+        value: String(v.quantity),
+      }));
+
+    setHoldings(next.length ? next : [EMPTY_ROW]);
   };
 
   const updateHolding = (id: string, patch: Partial<Holding>) =>
@@ -357,6 +390,17 @@ export default function DividendClientPage() {
                 Your portfolio
               </p>
               <div className="flex items-center gap-2">
+                {myHoldings && myHoldings.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={loadFromHoldings}
+                    className="flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                    title="Replace the portfolio below with your real holdings"
+                  >
+                    <Briefcase className="h-3.5 w-3.5" />
+                    Load from My Holdings
+                  </button>
+                )}
                 <DividendPresetMenu
                   presets={presets}
                   onApply={applyPreset}
