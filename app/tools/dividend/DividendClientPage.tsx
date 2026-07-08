@@ -102,7 +102,7 @@ interface DividendResult {
 }
 
 /** A single editable portfolio line. */
-interface Holding {
+export interface Holding {
   id: string;
   stock: SearchResult | null;
   mode: 'amount' | 'shares';
