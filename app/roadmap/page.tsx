@@ -16,10 +16,30 @@ interface HistoryEntry {
   text: string;
 }
 
+interface MonthGroup {
+  date: string;
+  items: string[];
+}
+
 function readRoadmapHistory(): HistoryEntry[] {
   const filePath = path.join(process.cwd(), 'content', 'roadmap.json');
   const raw = fs.readFileSync(filePath, 'utf-8');
   return JSON.parse(raw) as HistoryEntry[];
+}
+
+// Entries for the same month are already adjacent in content/roadmap.json,
+// so a simple consecutive-run grouping is enough — no need to re-sort.
+function groupByMonth(history: HistoryEntry[]): MonthGroup[] {
+  const groups: MonthGroup[] = [];
+  for (const entry of history) {
+    const last = groups[groups.length - 1];
+    if (last && last.date === entry.date) {
+      last.items.push(entry.text);
+    } else {
+      groups.push({ date: entry.date, items: [entry.text] });
+    }
+  }
+  return groups;
 }
 
 function formatMonth(isoMonth: string): string {
@@ -31,7 +51,7 @@ function formatMonth(isoMonth: string): string {
 }
 
 export default function RoadmapPage() {
-  const history = readRoadmapHistory();
+  const groups = groupByMonth(readRoadmapHistory());
 
   return (
     <div className="bullpen-landing-root">
@@ -70,14 +90,16 @@ export default function RoadmapPage() {
           </div>
 
           <div className="changelog-list">
-            {history.map((entry, i) => (
-              <div className="changelog-date-group" key={i}>
-                <div className="changelog-date">{formatMonth(entry.date)}</div>
+            {groups.map((group) => (
+              <div className="changelog-date-group" key={group.date}>
+                <div className="changelog-date">{formatMonth(group.date)}</div>
                 <div className="changelog-items">
-                  <div className="changelog-item">
-                    <span className="changelog-pill changelog-pill--new">Shipped</span>
-                    <span>{entry.text}</span>
-                  </div>
+                  {group.items.map((text, i) => (
+                    <div className="changelog-item" key={i}>
+                      <span className="changelog-pill changelog-pill--new">Shipped</span>
+                      <span>{text}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}
