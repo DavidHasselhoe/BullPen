@@ -165,7 +165,7 @@ async function handler(
     // Seed the statistics cache so health-score and /statistics route get a free hit
     // (same cache key as app/api/stock/[ticker]/statistics/route.ts)
     if (statistics) {
-      setCached(`stats:${sym}`, sym, 'statistics', { symbol: sym, ...statistics }, 60 * 60).catch(() => {});
+      setCached(`stats:${sym}`, sym, 'statistics', { symbol: sym, ...statistics }, STATS_TTL).catch(() => {});
     }
 
     return addSecurityHeaders(
