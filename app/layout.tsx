@@ -43,13 +43,35 @@ export const metadata: Metadata = {
     type: "website",
   },
   icons: {
-    // Two variants so the tab icon stays visible in both light and dark browser chrome —
-    // the mark is a solid silhouette with no outline, so a single color disappears on one of them.
+    // Search engines (Google, Bing) don't evaluate the `media` condition on
+    // favicon links, so they need one unconditional default — icon-light.png
+    // reads correctly on the plain white/light background most crawlers and
+    // browser chrome default to. Browsers that DO support prefers-color-scheme
+    // favicons still get the light/dark pair below for their own tab chrome.
     icon: [
+      { url: "/icon-light.png" },
       { url: "/icon-light.png", media: "(prefers-color-scheme: light)" },
       { url: "/icon-dark.png", media: "(prefers-color-scheme: dark)" },
     ],
   },
+};
+
+const ORGANIZATION_JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "BullPen",
+  legalName: "Hasselø Bullpen",
+  url: "https://bullpen.no",
+  logo: "https://bullpen.no/icon-light.png",
+  description:
+    "Investment research and portfolio-tracking platform for everyday investors — real-time market data, AI-powered analysis, and educational tools.",
+};
+
+const WEBSITE_JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "BullPen",
+  url: "https://bullpen.no",
 };
 
 export default function RootLayout({
@@ -62,6 +84,14 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} antialiased h-full min-h-screen overflow-x-hidden scrollbar-hide`}
       >
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(ORGANIZATION_JSON_LD) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(WEBSITE_JSON_LD) }}
+        />
         <Providers>
           <ThemeProvider>
             <AIPanelProvider>
