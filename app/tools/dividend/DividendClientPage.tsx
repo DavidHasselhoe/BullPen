@@ -31,6 +31,8 @@ import {
 } from '@/lib/currency/currency-conversion';
 import { makeFullFormatter, makeCompactFormatter } from '@/lib/currency/format';
 import { DIVIDEND_QUICK_PICKS } from '@/lib/finance/dividend-quick-picks';
+import { useDividendPresets, type DividendPreset } from '@/hooks/use-dividend-presets';
+import { DividendPresetMenu } from '@/components/tools/DividendPresetMenu';
 
 // Chart palette — explicit hex so colors never depend on CSS vars (this app's
 // theme tokens are oklch, so hsl(var(--primary)) renders invalid/invisible).
@@ -179,6 +181,12 @@ export default function DividendClientPage() {
     () => new Set(holdings.map((h) => h.stock?.ticker.toUpperCase()).filter(Boolean) as string[]),
     [holdings]
   );
+
+  const { presets, savePreset, deletePreset } = useDividendPresets();
+
+  const applyPreset = (preset: DividendPreset) => {
+    setHoldings(preset.holdings.length ? preset.holdings : [EMPTY_ROW]);
+  };
 
   const updateHolding = (id: string, patch: Partial<Holding>) =>
     setHoldings((prev) => prev.map((h) => (h.id === id ? { ...h, ...patch } : h)));
@@ -344,11 +352,19 @@ export default function DividendClientPage() {
 
           {/* Portfolio rows */}
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 Your portfolio
               </p>
-              <span className="text-xs text-muted-foreground">{pickedTickers.size}/{MAX_HOLDINGS} stocks</span>
+              <div className="flex items-center gap-2">
+                <DividendPresetMenu
+                  presets={presets}
+                  onApply={applyPreset}
+                  onSave={(name) => savePreset(name, validHoldings)}
+                  onDelete={deletePreset}
+                />
+                <span className="text-xs text-muted-foreground">{pickedTickers.size}/{MAX_HOLDINGS} stocks</span>
+              </div>
             </div>
 
             <div className="space-y-2">
