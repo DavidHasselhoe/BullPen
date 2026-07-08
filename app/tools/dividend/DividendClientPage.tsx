@@ -185,8 +185,15 @@ export default function DividendClientPage() {
 
   const { presets, savePreset, deletePreset } = useDividendPresets();
 
+  // Re-stamp ids on restore — preset rows carry ids from the session that saved
+  // them (usually makeId()'s h-N scheme, which resets every mount), so reusing
+  // them verbatim can collide with ids makeId() hands out in THIS session.
   const applyPreset = (preset: DividendPreset) => {
-    setHoldings(preset.holdings.length ? preset.holdings : [EMPTY_ROW]);
+    setHoldings(
+      preset.holdings.length
+        ? preset.holdings.map((h) => ({ ...h, id: makeId() }))
+        : [{ ...EMPTY_ROW, id: makeId() }]
+    );
   };
 
   const { data: myHoldings } = useHoldings();
@@ -211,14 +218,14 @@ export default function DividendClientPage() {
     const next: Holding[] = Array.from(bySymbol.entries())
       .filter(([, v]) => v.quantity > 0)
       .slice(0, MAX_HOLDINGS)
-      .map(([symbol, v], i) => ({
-        id: `holdings-${i}`,
+      .map(([symbol, v]) => ({
+        id: makeId(),
         stock: minimalStock(symbol, v.name),
         mode: 'shares',
         value: String(v.quantity),
       }));
 
-    setHoldings(next.length ? next : [EMPTY_ROW]);
+    setHoldings(next.length ? next : [{ ...EMPTY_ROW, id: makeId() }]);
   };
 
   const updateHolding = (id: string, patch: Partial<Holding>) =>
