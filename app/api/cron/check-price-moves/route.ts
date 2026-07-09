@@ -14,6 +14,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/client';
+import { getStockCandles } from '@/lib/market-data';
 import {
   createPriceMoveNotification,
   createPriceMoveDigestNotification,
@@ -25,6 +26,38 @@ export const maxDuration = 300;
 
 // Minimum absolute % change to qualify as a significant move
 const MOVE_THRESHOLD_PCT = 5;
+
+// Live /quote snapshots can occasionally return a stale or wrong previous_close
+// (observed: TwelveData briefly reported a stock at -30% intraday when the real
+// close-to-close move was +11%), which would otherwise trigger a false, alarming
+// price-move alert. Moves at or above this magnitude get cross-checked against
+// real daily candles — a different endpoint/cache path, so it isn't affected by
+// the same transient glitch — before they're allowed to notify anyone.
+const SANITY_CHECK_THRESHOLD_PCT = 15;
+// How far the quote's claimed % change may disagree with the candle-verified
+// change before we distrust the quote entirely.
+const SANITY_CHECK_TOLERANCE_PCT = 5;
+
+/**
+ * Re-derives a symbol's day change from its last two daily candles and compares
+ * it to the live quote's claimed change. Returns false if they disagree beyond
+ * tolerance (or verification itself fails) — callers should drop the mover
+ * rather than risk alerting on bad data.
+ */
+async function verifyLargeMove(symbol: string, claimedPct: number): Promise<boolean> {
+  try {
+    const now = Math.floor(Date.now() / 1000);
+    const candles = await getStockCandles(symbol, now - 7 * 24 * 60 * 60, now, 'D');
+    if (candles.s !== 'ok' || candles.c.length < 2) return false;
+    const prevClose = candles.c[candles.c.length - 2];
+    const lastClose = candles.c[candles.c.length - 1];
+    if (!prevClose || !lastClose) return false;
+    const verifiedPct = ((lastClose - prevClose) / prevClose) * 100;
+    return Math.abs(verifiedPct - claimedPct) <= SANITY_CHECK_TOLERANCE_PCT;
+  } catch {
+    return false;
+  }
+}
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   // ── Auth ──────────────────────────────────────────────────────────────────
@@ -122,6 +155,24 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       }
     }
 
+    // ── 3b. Sanity-check implausibly large moves before they can alert anyone ──
+    const untrustedSymbols = new Set<string>();
+    const outliers = allSymbols.filter((s) => {
+      const q = quoteMap.get(s);
+      return q && Math.abs(q.changePercent) >= SANITY_CHECK_THRESHOLD_PCT;
+    });
+    await Promise.all(
+      outliers.map(async (symbol) => {
+        const trusted = await verifyLargeMove(symbol, quoteMap.get(symbol)!.changePercent);
+        if (!trusted) {
+          untrustedSymbols.add(symbol);
+          summary.errors.push(
+            `Discarded implausible move for ${symbol}: quote claimed ${quoteMap.get(symbol)!.changePercent.toFixed(1)}%, failed daily-candle verification`
+          );
+        }
+      })
+    );
+
     // ── 4. For each user — find movers and create notifications ───────────
     summary.usersChecked = userSymbols.size;
 
@@ -130,7 +181,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
       for (const [symbol, companyName] of symbolMap.entries()) {
         const q = quoteMap.get(symbol);
-        if (!q) continue;
+        if (!q || untrustedSymbols.has(symbol)) continue;
         if (Math.abs(q.changePercent) >= MOVE_THRESHOLD_PCT) {
           movers.push({ symbol, companyName, ...q });
         }
@@ -145,7 +196,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         let top: { symbol: string; pct: number; contrib: number } | null = null;
         for (const h of holdings) {
           const q = quoteMap.get(h.symbol);
-          if (!q) continue;
+          if (!q || untrustedSymbols.has(h.symbol)) continue;
           const prevPrice = q.price - q.change;
           if (prevPrice <= 0) continue;
           prevValue += prevPrice * h.quantity;

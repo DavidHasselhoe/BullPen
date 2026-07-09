@@ -115,7 +115,7 @@ export async function createPriceMoveDigestNotification(
       const result = await createNotification({
         user_id: userId,
         type: 'price_move',
-        title: `${gainers.length} tracked stock${gainers.length === 1 ? '' : 's'} up 5%+ today`,
+        title: `${gainers.length} tracked stock${gainers.length === 1 ? '' : 's'} up today (${gainers[0].symbol} +${gainers[0].changePercent.toFixed(1)}%)`,
         message: topList + suffix,
         entity_type: 'portfolio',
         entity_id: dedupeId,
@@ -136,7 +136,7 @@ export async function createPriceMoveDigestNotification(
       const result = await createNotification({
         user_id: userId,
         type: 'price_move',
-        title: `${losers.length} tracked stock${losers.length === 1 ? '' : 's'} down 5%+ today`,
+        title: `${losers.length} tracked stock${losers.length === 1 ? '' : 's'} down today (${losers[0].symbol} ${losers[0].changePercent.toFixed(1)}%)`,
         message: topList + suffix,
         entity_type: 'portfolio',
         entity_id: dedupeId,
