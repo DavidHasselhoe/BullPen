@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 
@@ -17,6 +18,7 @@ interface Props {
 }
 
 export function WhyTodayPanel({ ticker, price, change, changePct, open, onClose }: Props) {
+  const { i18n } = useTranslation();
   const [status, setStatus] = useState<Status>('idle');
   const [text, setText] = useState('');
   const [errorCode, setErrorCode] = useState<ErrorCode>('unknown');
@@ -39,7 +41,7 @@ export function WhyTodayPanel({ ticker, price, change, changePct, open, onClose 
         const res = await fetch('/api/ai/why-today', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ticker, price, change, changePct }),
+          body: JSON.stringify({ ticker, price, change, changePct, language: i18n.language }),
           signal: ctrl.signal,
         });
 
@@ -86,7 +88,7 @@ export function WhyTodayPanel({ ticker, price, change, changePct, open, onClose 
     })();
 
     return () => ctrl.abort();
-  }, [open, ticker, price, change, changePct]);
+  }, [open, ticker, price, change, changePct, i18n.language]);
 
   if (!open) return null;
 

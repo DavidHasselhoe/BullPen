@@ -4,6 +4,7 @@ import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { checkRateLimit } from '@/lib/security/rate-limiter';
 import { checkQuota } from '@/lib/billing/quotas';
 import { logAiCall } from '@/lib/billing/log-ai-call';
+import { languageName } from '@/lib/i18n/language-names';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -32,13 +33,14 @@ async function handler(
   }
 
   // ── Parse body ────────────────────────────────────────────────────────────
-  let ticker: string, price: number, change: number, changePct: number;
+  let ticker: string, price: number, change: number, changePct: number, language: string;
   try {
     const body = await request.json();
     ticker   = String(body.ticker ?? '').toUpperCase().slice(0, 10);
     price    = Number(body.price)    || 0;
     change   = Number(body.change)   || 0;
     changePct = Number(body.changePct) || 0;
+    language = String(body.language ?? 'en');
     if (!ticker) throw new Error('missing ticker');
   } catch {
     return addSecurityHeaders(
@@ -59,6 +61,10 @@ async function handler(
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`));
 
       try {
+        const languagePrefix = language && language !== 'en'
+          ? `[Language: You MUST respond entirely in ${languageName(language)}. Do not switch to English under any circumstance.]\n\n`
+          : '';
+
         // web_search_20250305 is a built-in tool — must use anthropic.beta.messages
         const stream = anthropic.beta.messages.stream({
           model: 'claude-sonnet-4-6',
@@ -66,6 +72,7 @@ async function handler(
           betas: ['web-search-2025-03-05'],
           tools: [{ type: 'web_search_20250305', name: 'web_search' }],
           system:
+            languagePrefix +
             'You are a concise financial analyst. Explain why a stock moved today using only what you find in current news. ' +
             'Respond with exactly 2–3 bullet points (each starting with "• "). ' +
             'Name the specific catalyst, event, or news item. Keep each bullet under 25 words. ' +
