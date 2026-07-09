@@ -1,8 +1,8 @@
 import { createHash } from 'crypto';
 import { createServerClient } from '@/lib/supabase/client';
-import { deeplTranslate, DeepLError } from './deepl';
+import { aiTranslate, TranslationError } from './ai-translate';
 
-const SUPPORTED_LANGS = new Set(['es', 'fr', 'de', 'ja', 'zh']);
+const SUPPORTED_LANGS = new Set(['es', 'fr', 'de', 'ja', 'zh', 'no']);
 
 function hashText(text: string): string {
   return createHash('sha256').update(text, 'utf8').digest('hex');
@@ -43,7 +43,7 @@ export async function translateText(text: string, targetLang: string): Promise<s
 
   try {
     const { textParts, delims } = segmentByNewlines(text);
-    const translated = await deeplTranslate(textParts, lang);
+    const translated = await aiTranslate(textParts, lang);
     const result = rejoinSegments(translated, delims);
 
     // Fire-and-forget cache write
@@ -58,8 +58,8 @@ export async function translateText(text: string, targetLang: string): Promise<s
 
     return result;
   } catch (err) {
-    if (err instanceof DeepLError) {
-      console.error(`[translate] DeepL error ${err.statusCode}:`, err.message);
+    if (err instanceof TranslationError) {
+      console.error(`[translate] Translation error ${err.statusCode}:`, err.message);
     } else {
       console.error('[translate] Unexpected error:', err);
     }
