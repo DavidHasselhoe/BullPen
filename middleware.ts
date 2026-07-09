@@ -10,9 +10,17 @@ export async function middleware(request: NextRequest) {
     request,
   });
 
+  // API routes authenticate themselves per-request (getSessionForApiRoute →
+  // cookie-based getSession(), no network call) and don't rely on middleware
+  // to refresh the session cookie. Skipping the network round-trip to
+  // Supabase's auth server here removes ~50-150ms of TTFB from every single
+  // API call. Pages/Server Components still get the refresh below, since they
+  // read the session from the cookie without re-verifying it themselves.
+  const isApiRoute = request.nextUrl.pathname.startsWith('/api/');
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (supabaseUrl && supabaseAnonKey) {
+  if (!isApiRoute && supabaseUrl && supabaseAnonKey) {
     const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
       cookies: {
         getAll() {
@@ -38,6 +46,9 @@ export async function middleware(request: NextRequest) {
     'Permissions-Policy',
     'geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=()'
   );
+  // Isolates the browsing context from cross-origin popups/openers — required
+  // for window.crossOriginIsolated and blocks a class of cross-window attacks.
+  response.headers.set('Cross-Origin-Opener-Policy', 'same-origin');
 
   // Content Security Policy (adjust as needed for your app)
   const csp = [

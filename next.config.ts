@@ -7,6 +7,8 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
+    // Serve AVIF first (typically 20-40% smaller than WebP), fall back to WebP.
+    formats: ['image/avif', 'image/webp'],
     remotePatterns: [
       {
         // TwelveData logo CDN (replaces logo.dev)
