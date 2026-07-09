@@ -1,11 +1,32 @@
 'use client';
 
+import { usePathname } from 'next/navigation';
 import { Bot } from 'lucide-react';
 import { useAIPanel } from './AIPanelProvider';
 import { cn } from '@/lib/utils';
 
+// Public marketing/support pages — no app context (tickers, portfolio, etc.) for the
+// assistant to act on, so the toggle stays inside the actual dashboard experience.
+const PUBLIC_ROUTES = new Set([
+  '/',
+  '/about',
+  '/contact',
+  '/roadmap',
+  '/changelog',
+  '/help',
+  '/glossary',
+  '/privacy',
+  '/disclosures',
+  '/security',
+  '/login',
+  '/register',
+]);
+
 export function AIPanelToggle() {
   const { isOpen, toggle } = useAIPanel();
+  const pathname = usePathname();
+
+  if (PUBLIC_ROUTES.has(pathname)) return null;
 
   // Hide when panel is open so it doesn't overlap the input; close via panel X button
   if (isOpen) return null;
