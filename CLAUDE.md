@@ -55,7 +55,7 @@ git log origin/main..origin/preview --oneline
 If there are no commits ahead, nothing to merge — tell the user and stop.
 
 **3. Generate changelog entry**
-Find the last commit that touched the changelog with `git log -1 --format=%H -- content/changelog.json`, then run `git log <that commit>..HEAD --oneline` on `preview` to see everything shipped since. If there's user-facing material in that range — new features, meaningful UX/behavior changes, user-noticeable bug fixes — write one entry dated with today's date to `content/changelog.json` (newest entry first in the array). Use plain, non-technical language: no file paths, no commit/ticket references, no jargon. Each item's `type` is exactly one of `"new" | "improved" | "fixed"`. Exclude pure internal refactors, perf/RLS-only commits, dependency bumps, and doc/CLAUDE.md-only changes. If nothing in the range qualifies, skip this step silently — do not add an empty or filler entry. Commit the change to `preview` before continuing.
+Find the last commit that touched the changelog with `git log -1 --format=%H -- content/changelog.json`, then run `git log <that commit>..HEAD --oneline` on `preview` to see everything shipped since. If there's user-facing material in that range — new features, meaningful UX/behavior changes, user-noticeable bug fixes — write one entry dated with today's date to `content/changelog.json` (newest entry first in the array). Use plain, non-technical language: no file paths, no commit/ticket references, no jargon. Each item's `type` is exactly one of `"new" | "improved" | "fixed"`. Exclude pure internal refactors, perf/RLS-only commits, dependency bumps, and doc/CLAUDE.md-only changes. If nothing in the range qualifies, skip this step silently — do not add an empty or filler entry. Commit the change to `preview` before continuing. If an entry was added, run `npm run post-changelog-discord` to announce it in Discord.
 
 **4. Merge preview → main and push**
 ```bash
@@ -353,4 +353,4 @@ OPENAI_API_KEY
 TWELVE_DATA_API_KEY
 ```
 
-Optional but used in production: `FINNHUB_API_KEY`, `RESEND_API_KEY`, `CRON_SECRET`, `LOGO_DEV_KEY`, `NEXT_PUBLIC_APP_URL`, `ANTHROPIC_API_KEY` (Why Today? + Daily Brief), `SNAPTRADE_CLIENT_ID`, `SNAPTRADE_CONSUMER_KEY`, `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`.
+Optional but used in production: `FINNHUB_API_KEY`, `RESEND_API_KEY`, `CRON_SECRET`, `LOGO_DEV_KEY`, `NEXT_PUBLIC_APP_URL`, `ANTHROPIC_API_KEY` (Why Today? + Daily Brief), `SNAPTRADE_CLIENT_ID`, `SNAPTRADE_CONSUMER_KEY`, `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`, `DISCORD_CHANGELOG_WEBHOOK_URL` (Discord changelog announcements — see `scripts/post-changelog-discord.ts`).

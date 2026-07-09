@@ -49,6 +49,10 @@ RESEND_API_KEY=re_your_key_here
 # Get your API key at https://logo.dev
 LOGO_DEV_KEY=your-logo-dev-key
 
+# Discord notifications (optional) — posts the newest changelog entry to a channel
+# Create an Incoming Webhook: Discord channel Settings → Integrations → Webhooks → New Webhook
+DISCORD_CHANGELOG_WEBHOOK_URL=https://discord.com/api/webhooks/your-changelog-webhook
+
 # Optional: override default sender (default: BullPen <hello@updates.bullpen.no>)
 # RESEND_FROM_EMAIL=BullPen <noreply@updates.bullpen.no>
 
