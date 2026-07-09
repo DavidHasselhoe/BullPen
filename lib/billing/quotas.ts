@@ -33,6 +33,7 @@ compare_explain:   { count: 5,  period: 'day'   } as QuotaConfig,
   risk_analysis:     { count: 1,  period: 'month' } as QuotaConfig,
   academy_explain:   { count: 30, period: 'day'   } as QuotaConfig,  // free for all; glossary cache absorbs repeats
   deep_dive:         { count: 1,  period: 'month', proCap: 25 } as QuotaConfig,  // free teaser 1/mo; Pro soft-capped to bound cost
+  why_today:         { count: 0,  period: 'day'   } as QuotaConfig,  // Pro-only; unlimited for Pro (Sonnet + web search per call)
 };
 
 export type QuotaFeature = keyof typeof QUOTAS;
