@@ -8,6 +8,7 @@ import {
   getIndicatorDef,
   defaultParamsFor,
   INDICATOR_PALETTE,
+  INDICATOR_PRESETS,
   type IndicatorInstance,
 } from '@/lib/finance/indicators';
 import { CourseChartTour } from './CourseChartTour';
@@ -62,6 +63,24 @@ export function ChartTourLesson({ content, onComplete }: Props) {
   const updateIndicator = (id: string, params: Record<string, number>) =>
     setIndicators((prev) => prev.map((i) => (i.id === id ? { ...i, params } : i)));
 
+  const applyPreset = (presetId: string) => {
+    const preset = INDICATOR_PRESETS.find((p) => p.id === presetId);
+    if (!preset) return;
+    const insts = preset.items
+      .map((item, i) => {
+        const def = getIndicatorDef(item.type);
+        if (!def) return null;
+        return {
+          id: `${item.type}-${Date.now()}-${i}`,
+          type: item.type,
+          params: { ...defaultParamsFor(def), ...(item.params ?? {}) },
+          color: INDICATOR_PALETTE[i % INDICATOR_PALETTE.length],
+        } as IndicatorInstance;
+      })
+      .filter((x): x is IndicatorInstance => x != null);
+    setIndicators(insts);
+  };
+
   const finish = () => {
     setActive(false);
     onComplete();
@@ -82,7 +101,7 @@ export function ChartTourLesson({ content, onComplete }: Props) {
         onAddIndicator={addIndicator}
         onRemoveIndicator={removeIndicator}
         onUpdateIndicator={updateIndicator}
-        onApplyPreset={() => {}}
+        onApplyPreset={applyPreset}
         onReplaceIndicators={setIndicators}
         onApplyConfig={(config) => {
           setChartType(config.chartType);

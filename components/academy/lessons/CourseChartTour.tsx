@@ -90,7 +90,7 @@ export function CourseChartTour({ steps, stepIndex, onStepIndexChange, isActionS
   };
 
   return (
-    <div className="fixed inset-0 z-[120]">
+    <div className="pointer-events-none fixed inset-0 z-[120]">
       {/* Dimmed backdrop with a spotlight cutout around the current target (box-shadow trick — no SVG mask needed) */}
       {rect ? (
         <div

@@ -47,8 +47,8 @@ export function IndicatorMenu({ indicators, onAdd, onRemove, onUpdate, onApplyPr
         </button>
       </PopoverTrigger>
 
-      {/* z above the z-[100] fullscreen modal — the content portals to <body>. */}
-      <PopoverContent align="end" className="z-[110] w-80 p-0">
+      {/* z above both the z-[100] fullscreen modal and the z-[120] Academy chart-tour overlay — content portals to <body>. */}
+      <PopoverContent align="end" className="z-[130] w-80 p-0">
         {/* Presets */}
         <div className="border-b border-border/60 p-2">
           <p className="px-1 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
