@@ -28,6 +28,7 @@ import {
 } from '@/lib/twelvedata/twelvedata-client';
 import { getCached, setCached } from '@/lib/cache/market-data-cache';
 import { computeHealthScore } from '@/lib/finance/health-score';
+import { recordHealthScoreSnapshot } from '@/lib/finance/health-score-history';
 import type { ScreenerRow } from '@/app/api/screener/route';
 
 /** Max symbols per TwelveData /batch POST. Stays well under the ~120 cap. */
@@ -246,6 +247,15 @@ export async function fetchAndUpsertScreenerStats(symbols: string[]): Promise<Sc
       const { income, balance, cashflow, degraded } = financialsMap.get(sym) ?? { income: [], balance: [], cashflow: [], degraded: false };
       if (degraded) degradedSymbols.add(sym);
       const healthScore = computeHealthScore(companyStats, income, balance, cashflow);
+
+      // Fire-and-forget: record a history snapshot only when we have complete,
+      // non-degraded financials AND a real fiscal quarter identifier. The helper's
+      // UNIQUE(ticker, fiscal_date) constraint makes this a no-op if this exact
+      // quarter was already recorded (e.g. by yesterday's cron run, or by a user
+      // visiting the stock page directly — see Task 4).
+      if (!degraded && income[0]?.fiscal_date) {
+        void recordHealthScoreSnapshot(sym, healthScore, income[0].fiscal_date);
+      }
 
       rows.push({
         ...stats,
