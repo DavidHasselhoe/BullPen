@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 // ─── Lesson type enum ────────────────────────────────────────────────────────
 
-export const LessonTypeSchema = z.enum(['read', 'quiz', 'match', 'scenario']);
+export const LessonTypeSchema = z.enum(['read', 'quiz', 'match', 'scenario', 'chart-tour']);
 export type LessonType = z.infer<typeof LessonTypeSchema>;
 
 // ─── Per-lesson content schemas ─────────────────────────────────────────────
@@ -57,6 +57,23 @@ export const ScenarioContentSchema = z.object({
 });
 export type ScenarioContent = z.infer<typeof ScenarioContentSchema>;
 
+export const ChartTourStepSchema = z.object({
+  id: z.string(),
+  target: z.enum(['chart-type-toggle', 'range-selector', 'add-indicator-button', 'candle-area', 'none']),
+  title: z.string(),
+  body: z.string(),
+  requiredAction: z.enum(['add-sma-indicator', 'switch-chart-type', 'change-range', 'none']).default('none'),
+});
+export type ChartTourStep = z.infer<typeof ChartTourStepSchema>;
+
+export const ChartTourContentSchema = z.object({
+  ticker: z.string(),
+  initialRange: z.enum(['1D', '1W', '1M', '6M', '1Y', 'YTD', '5Y', 'MAX']),
+  initialChartType: z.enum(['candles', 'line', 'area']),
+  steps: z.array(ChartTourStepSchema).min(1),
+});
+export type ChartTourContent = z.infer<typeof ChartTourContentSchema>;
+
 /**
  * Discriminated union over lesson type + its content payload.
  * Use this at the API boundary to validate before sending to the player.
@@ -66,6 +83,7 @@ export const LessonContentSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('quiz'), data: QuizContentSchema }),
   z.object({ type: z.literal('match'), data: MatchContentSchema }),
   z.object({ type: z.literal('scenario'), data: ScenarioContentSchema }),
+  z.object({ type: z.literal('chart-tour'), data: ChartTourContentSchema }),
 ]);
 export type LessonContent = z.infer<typeof LessonContentSchema>;
 
@@ -92,7 +110,7 @@ export interface Lesson {
   type: LessonType;
   orderIndex: number;
   xpReward: number;
-  content: ReadContent | QuizContent | MatchContent | ScenarioContent;
+  content: ReadContent | QuizContent | MatchContent | ScenarioContent | ChartTourContent;
 }
 
 export interface AcademyStats {
