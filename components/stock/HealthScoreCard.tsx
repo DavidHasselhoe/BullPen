@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { useExperienceLevel } from '@/hooks/use-experience-level';
-import { HelpCircle, X, Sparkles, ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
+import { HelpCircle, X, Sparkles, ArrowUpRight, ArrowDownRight, Minus, History } from 'lucide-react';
 import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import { HealthRing } from '@/components/finance/HealthRing';
 import { HealthScoreHistoryModal, type HealthScoreHistoryPoint } from '@/components/stock/HealthScoreHistoryModal';
@@ -305,11 +305,17 @@ export function HealthScoreCard({ ticker, onSignalsReady }: HealthScoreCardProps
               <button
                 onClick={() => setHistoryOpen(true)}
                 className={cn(
-                  'flex items-center gap-0.5 text-xs font-semibold tabular-nums hover:opacity-80 transition-opacity',
-                  trend > 0 ? 'text-emerald-500' : trend < 0 ? 'text-red-500' : 'text-muted-foreground'
+                  'flex items-center gap-1 text-xs font-semibold tabular-nums px-2 py-0.5 rounded-full border transition-colors',
+                  trend > 0
+                    ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20'
+                    : trend < 0
+                    ? 'bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/20'
+                    : 'bg-muted text-muted-foreground border-border hover:bg-muted/70'
                 )}
                 aria-label="View financial health score history"
+                title="View score history"
               >
+                <History className="h-3 w-3" />
                 {trend > 0 ? <ArrowUpRight className="h-3 w-3" /> : trend < 0 ? <ArrowDownRight className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
                 {Math.abs(trend)}
               </button>
