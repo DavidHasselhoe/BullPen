@@ -1,5 +1,18 @@
 [
   {
+    "date": "2026-07-09",
+    "entries": [
+      { "type": "new", "text": "Added a new interactive Academy course, Reading Charts, that walks you through reading a price chart step by step" },
+      { "type": "new", "text": "The Financial Health score now tracks history over time, with a trend indicator and a chart showing how it's changed since the last earnings report" },
+      { "type": "new", "text": "Added Norwegian as a supported language" },
+      { "type": "new", "text": "Added a quick \"Why?\" button next to a stock's price that explains what's driving today's move, powered by AI with live web search" },
+      { "type": "improved", "text": "AI features across the app, including the AI assistant, now reply in your chosen language instead of always English" },
+      { "type": "fixed", "text": "Fixed the account avatar sometimes not appearing on the landing page for signed-in users" },
+      { "type": "fixed", "text": "Fixed notifications occasionally showing implausible price swings, and made the wording clearer" },
+      { "type": "fixed", "text": "Fixed the AI Assistant button appearing on public pages like About and Help where it wasn't useful" }
+    ]
+  },
+  {
     "date": "2026-07-08",
     "entries": [
       { "type": "new", "text": "Save and reuse your favorite dividend calculator setups, with a one-click option to fill it in from your holdings" },
