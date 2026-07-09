@@ -14,7 +14,7 @@ INSERT INTO academy_courses (slug, title, description, icon, color, order_index,
     'Learn to read a real candlestick chart and use your first indicator — hands-on, on a live AAPL chart.',
     'CandlestickChart',
     'blue',
-    1,
+    2,
     'beginner',
     TRUE
   )
