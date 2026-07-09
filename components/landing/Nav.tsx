@@ -101,7 +101,7 @@ export function Nav({ onSignIn, onSignUp }: Props) {
                 Open dashboard
                 <Icon name="arrowRight" size={14} />
               </Link>
-              <UserMenu />
+              <UserMenu forceDark />
             </>
           ) : (
             <>

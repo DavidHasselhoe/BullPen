@@ -21,8 +21,17 @@ import { ProfileAvatar } from '@/components/user/ProfileAvatar';
 import { ProBadge } from '@/components/billing/ProBadge';
 import { isAdmin, isPro, tierFromUser } from '@/lib/billing/tier';
 import { startPortal } from '@/lib/billing/checkout';
+import { cn } from '@/lib/utils';
 
-export function UserMenu() {
+interface UserMenuProps {
+  // Landing page forces dark mode locally (see LandingClient's `dark` class) but
+  // DropdownMenuContent portals to document.body, outside that scope — so a
+  // signed-in user with a 'light' app theme would otherwise see a light-themed
+  // menu float over the always-dark landing page. Set by Nav.tsx only.
+  forceDark?: boolean;
+}
+
+export function UserMenu({ forceDark = false }: UserMenuProps = {}) {
   const router = useRouter();
   const { user, isLoading, isAuthenticated } = useAuth();
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -112,7 +121,7 @@ export function UserMenu() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
-        className="w-56 animate-fade-in-up"
+        className={cn('w-56 animate-fade-in-up', forceDark && 'dark')}
         align="end"
         forceMount
       >

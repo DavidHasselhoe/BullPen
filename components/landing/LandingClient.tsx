@@ -62,7 +62,12 @@ export function LandingClient() {
   };
 
   return (
-    <div className="bullpen-landing-root">
+    // `dark` re-asserts shadcn's dark-mode tokens locally: the landing page is dark-only by
+    // design, but ThemeProvider strips `.dark` off <html> for any signed-in user whose saved
+    // app theme is 'light', which otherwise made shadcn-themed pieces here (e.g. the account
+    // avatar in Nav's UserMenu) render in near-black light-mode colors — invisible against
+    // this page's independently dark background until a hover state happened to add contrast.
+    <div className="bullpen-landing-root dark">
       <div className="page-bg" aria-hidden />
       <div className="page-grid" aria-hidden />
       <div className="page-noise" aria-hidden />
