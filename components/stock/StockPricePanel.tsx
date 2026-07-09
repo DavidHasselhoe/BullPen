@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import dynamic from 'next/dynamic';
-import { Maximize2 } from 'lucide-react';
+import { Maximize2, Sparkles } from 'lucide-react';
 
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -13,6 +13,7 @@ import {
 import { useChartPrefs, type AdvancedChartType } from '@/hooks/use-chart-prefs';
 import { getIndicatorDef, defaultParamsFor, INDICATOR_PALETTE, INDICATOR_PRESETS, type IndicatorInstance } from '@/lib/finance/indicators';
 import { ChartSettingsPanel } from './ChartSettingsPanel';
+import { WhyTodayPanel } from './WhyTodayPanel';
 import type { CompanyEarnings } from '@/lib/twelvedata/twelvedata-client';
 import { useTheme } from 'next-themes';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -157,6 +158,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
     new Set(prefs.defaultIndicators as Indicator[])
   );
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [whyTodayOpen, setWhyTodayOpen] = useState(false);
   const { isSimplified } = useExperienceLevel();
 
   // Advanced (fullscreen) chart prefs — single source of truth lives here so the
@@ -492,8 +494,24 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
                   )}>
                     {closeIsPos ? '+' : ''}{fmtPrice(closeChange)} ({closeIsPos ? '+' : ''}{closePct.toFixed(2)}%)
                   </div>
-                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 mt-1.5 font-semibold">
-                    At Close
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <span className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-semibold">
+                      At Close
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setWhyTodayOpen((v) => !v)}
+                      aria-expanded={whyTodayOpen}
+                      className={cn(
+                        'flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium transition-colors',
+                        whyTodayOpen
+                          ? 'border-primary/40 bg-primary/10 text-primary'
+                          : 'border-border text-muted-foreground hover:text-foreground hover:border-foreground/30'
+                      )}
+                    >
+                      <Sparkles className="h-3 w-3" />
+                      Why?
+                    </button>
                   </div>
                 </div>
 
@@ -532,6 +550,23 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
                   <span className={cn('text-sm font-medium tabular-nums', priceColor)}>
                     {isPositive ? '+' : ''}{fmtPrice(change)} ({isPositive ? '+' : ''}{changePct.toFixed(2)}%) today
                   </span>
+
+                  {range === '1D' && (
+                    <button
+                      type="button"
+                      onClick={() => setWhyTodayOpen((v) => !v)}
+                      aria-expanded={whyTodayOpen}
+                      className={cn(
+                        'flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium transition-colors',
+                        whyTodayOpen
+                          ? 'border-primary/40 bg-primary/10 text-primary'
+                          : 'border-border text-muted-foreground hover:text-foreground hover:border-foreground/30'
+                      )}
+                    >
+                      <Sparkles className="h-3 w-3" />
+                      Why?
+                    </button>
+                  )}
 
                   {isLive && (
                     <span className="flex items-center gap-1 text-xs text-emerald-400 font-medium">
@@ -630,6 +665,15 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
           </div>
         </div>
       </div>
+
+      <WhyTodayPanel
+        ticker={ticker}
+        price={price}
+        change={change}
+        changePct={changePct}
+        open={whyTodayOpen}
+        onClose={() => setWhyTodayOpen(false)}
+      />
 
       {/* ── Price chart ──────────────────────────────────────────────────── */}
       <div className="relative">
