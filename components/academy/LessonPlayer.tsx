@@ -9,6 +9,7 @@ import { ReadLesson } from '@/components/academy/lessons/ReadLesson';
 import { QuizLesson } from '@/components/academy/lessons/QuizLesson';
 import { MatchLesson } from '@/components/academy/lessons/MatchLesson';
 import { ScenarioLesson } from '@/components/academy/lessons/ScenarioLesson';
+import { ChartTourLesson } from '@/components/academy/lessons/ChartTourLesson';
 import { CompletionCelebration } from '@/components/academy/CompletionCelebration';
 import { ACADEMY_STATS_QUERY_KEY } from '@/hooks/use-academy-stats';
 import {
@@ -16,6 +17,7 @@ import {
   QuizContentSchema,
   MatchContentSchema,
   ScenarioContentSchema,
+  ChartTourContentSchema,
 } from '@/types/academy';
 import type {
   AcademyStats,
@@ -24,6 +26,7 @@ import type {
   QuizContent,
   MatchContent,
   ScenarioContent,
+  ChartTourContent,
 } from '@/types/academy';
 
 interface CompleteResponse {
@@ -47,10 +50,11 @@ export function LessonPlayer({ lesson, courseSlug }: Props) {
   // Validate the JSONB content against its lesson type's schema.
   const validatedContent = useMemo(() => {
     switch (lesson.type) {
-      case 'read':     return ReadContentSchema.safeParse(lesson.content);
-      case 'quiz':     return QuizContentSchema.safeParse(lesson.content);
-      case 'match':    return MatchContentSchema.safeParse(lesson.content);
-      case 'scenario': return ScenarioContentSchema.safeParse(lesson.content);
+      case 'read':       return ReadContentSchema.safeParse(lesson.content);
+      case 'quiz':       return QuizContentSchema.safeParse(lesson.content);
+      case 'match':      return MatchContentSchema.safeParse(lesson.content);
+      case 'scenario':   return ScenarioContentSchema.safeParse(lesson.content);
+      case 'chart-tour': return ChartTourContentSchema.safeParse(lesson.content);
     }
   }, [lesson.type, lesson.content]);
 
@@ -148,6 +152,12 @@ export function LessonPlayer({ lesson, courseSlug }: Props) {
         <ScenarioLesson
           content={validatedContent.data as ScenarioContent}
           onComplete={(score) => handleLessonComplete(score)}
+        />
+      )}
+      {lesson.type === 'chart-tour' && (
+        <ChartTourLesson
+          content={validatedContent.data as ChartTourContent}
+          onComplete={() => handleLessonComplete()}
         />
       )}
 
