@@ -11,6 +11,7 @@ import { openai } from '@ai-sdk/openai';
 import type { UIMessage } from 'ai';
 import { SYSTEM_PROMPT } from './systemPrompt';
 import { BULLPEN_TOOLS } from './tools';
+import { languageName } from '@/lib/i18n/language-names';
 
 interface AIContext {
   tickers: string[];
@@ -29,7 +30,7 @@ export async function runAgent(
   const modelMessages = await convertToModelMessages(messages);
 
   const languagePrefix = language && language !== 'en'
-    ? `[Language: You MUST respond entirely in ${language}. Do not switch to English under any circumstance.]\n\n`
+    ? `[Language: You MUST respond entirely in ${languageName(language)}. Do not switch to English under any circumstance.]\n\n`
     : '';
 
   // Prepend experience level so the model adapts its tone and vocabulary.
