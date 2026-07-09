@@ -14,6 +14,7 @@ import {
 } from '@/lib/twelvedata/twelvedata-client';
 import { getCached, setCached } from '@/lib/cache/market-data-cache';
 import { computeHealthScore } from '@/lib/finance/health-score';
+import { recordHealthScoreSnapshot } from '@/lib/finance/health-score-history';
 import { createServerClient } from '@/lib/supabase/client';
 
 const STATS_TTL = 60 * 60;        // 1 hour — matches /statistics route
@@ -88,6 +89,13 @@ async function handler(
         .then(({ error }) => {
           if (error) console.warn('[health-score] screener_stats sync failed:', error.message);
         });
+
+      // Safety net for tickers outside the screener's tracked universe (e.g. a
+      // long-tail holding) — the daily cron (Task 3) covers the tracked universe;
+      // this covers any ticker a user actually views. Same UNIQUE(ticker,
+      // fiscal_date) no-op behavior means this can't double-record what the cron
+      // already caught.
+      void recordHealthScoreSnapshot(symbol, healthScore, income[0]?.fiscal_date);
     }
 
     return addSecurityHeaders(
