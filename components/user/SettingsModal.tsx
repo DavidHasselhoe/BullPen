@@ -628,6 +628,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                         <SelectItem value="de">{t('languages.de')}</SelectItem>
                         <SelectItem value="ja">{t('languages.ja')}</SelectItem>
                         <SelectItem value="zh">{t('languages.zh')}</SelectItem>
+                        <SelectItem value="no">{t('languages.no')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-muted-foreground">

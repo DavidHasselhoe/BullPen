@@ -23,7 +23,8 @@
     "rules": "tsx scripts/print-cursor-rules.ts",
     "test-discord-webhook": "tsx scripts/test-discord-webhook.ts",
     "post-changelog-discord": "tsx scripts/post-changelog-discord.ts",
-    "test-ai-translate": "tsx scripts/test-ai-translate.ts"
+    "test-ai-translate": "tsx scripts/test-ai-translate.ts",
+    "add-norwegian-locale": "tsx scripts/add-norwegian-locale.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.33",

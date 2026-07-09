@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/use-auth';
 
-const SUPPORTED_LANGUAGES = ['en', 'es', 'fr', 'de', 'ja', 'zh'];
+const SUPPORTED_LANGUAGES = ['en', 'es', 'fr', 'de', 'ja', 'zh', 'no'];
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
