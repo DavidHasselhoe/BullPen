@@ -9,7 +9,8 @@
       { "type": "improved", "text": "AI features across the app, including the AI assistant, now reply in your chosen language instead of always English" },
       { "type": "fixed", "text": "Fixed the account avatar sometimes not appearing on the landing page for signed-in users" },
       { "type": "fixed", "text": "Fixed notifications occasionally showing implausible price swings, and made the wording clearer" },
-      { "type": "fixed", "text": "Fixed the AI Assistant button appearing on public pages like About and Help where it wasn't useful" }
+      { "type": "fixed", "text": "Fixed the AI Assistant button appearing on public pages like About and Help where it wasn't useful" },
+      { "type": "improved", "text": "Sped up API responses across the app by skipping an unnecessary network check on requests that didn't need it" }
     ]
   },
   {
