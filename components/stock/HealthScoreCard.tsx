@@ -7,9 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { useExperienceLevel } from '@/hooks/use-experience-level';
-import { HelpCircle, X, Sparkles } from 'lucide-react';
+import { HelpCircle, X, Sparkles, ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
 import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import { HealthRing } from '@/components/finance/HealthRing';
+import { HealthScoreHistoryModal, type HealthScoreHistoryPoint } from '@/components/stock/HealthScoreHistoryModal';
 import type { HealthScore, CategoryScore } from '@/lib/finance/health-score';
 
 // ─── API response shape ───────────────────────────────────────────────────────
@@ -17,6 +18,12 @@ import type { HealthScore, CategoryScore } from '@/lib/finance/health-score';
 interface HealthScoreResponse {
   success: boolean;
   data?: HealthScore;
+  error?: string;
+}
+
+interface HealthScoreHistoryResponse {
+  success: boolean;
+  data?: HealthScoreHistoryPoint[];
   error?: string;
 }
 
@@ -207,6 +214,25 @@ export function HealthScoreCard({ ticker, onSignalsReady }: HealthScoreCardProps
     gcTime: 60 * 60 * 1000,
   });
 
+  const { data: historyData } = useQuery<HealthScoreHistoryResponse>({
+    queryKey: ['health-score-history', ticker],
+    queryFn: async () => {
+      const res = await fetch(`/api/stock/${ticker}/health-score/history`);
+      return res.json();
+    },
+    enabled: !!ticker,
+    staleTime: 60 * 60 * 1000,
+    gcTime: 120 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+
+  const history = historyData?.success ? historyData.data ?? [] : [];
+  const trend = history.length >= 2
+    ? history[history.length - 1].score - history[history.length - 2].score
+    : null;
+
+  const [historyOpen, setHistoryOpen] = useState(false);
+
   // Emit signals to parent after render — avoids "setState during render" warning
   useEffect(() => {
     if (data?.success && data.data?.metricSignals) {
@@ -274,12 +300,27 @@ export function HealthScoreCard({ ticker, onSignalsReady }: HealthScoreCardProps
               anchorRect={anchorRect}
             />
           )}
-          <span className={cn(
-            'text-xs font-semibold px-2.5 py-0.5 rounded-full border',
-            gradeBadgeClass(hs.grade)
-          )}>
-            {hs.label}
-          </span>
+          <div className="flex items-center gap-2">
+            {trend !== null && (
+              <button
+                onClick={() => setHistoryOpen(true)}
+                className={cn(
+                  'flex items-center gap-0.5 text-xs font-semibold tabular-nums hover:opacity-80 transition-opacity',
+                  trend > 0 ? 'text-emerald-500' : trend < 0 ? 'text-red-500' : 'text-muted-foreground'
+                )}
+                aria-label="View financial health score history"
+              >
+                {trend > 0 ? <ArrowUpRight className="h-3 w-3" /> : trend < 0 ? <ArrowDownRight className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
+                {Math.abs(trend)}
+              </button>
+            )}
+            <span className={cn(
+              'text-xs font-semibold px-2.5 py-0.5 rounded-full border',
+              gradeBadgeClass(hs.grade)
+            )}>
+              {hs.label}
+            </span>
+          </div>
         </div>
       </CardHeader>
 
@@ -358,6 +399,13 @@ export function HealthScoreCard({ ticker, onSignalsReady }: HealthScoreCardProps
           </button>
         </div>
       </CardContent>
+
+      <HealthScoreHistoryModal
+        ticker={ticker}
+        open={historyOpen}
+        onOpenChange={setHistoryOpen}
+        history={history}
+      />
     </Card>
   );
 }
