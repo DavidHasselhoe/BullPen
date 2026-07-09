@@ -83,7 +83,7 @@ export function ChartToolbar({
       </div>
 
       {/* Chart type */}
-      <div className="flex items-center gap-0.5 rounded-lg border border-border bg-muted/40 p-0.5">
+      <div data-tour="chart-type-toggle" className="flex items-center gap-0.5 rounded-lg border border-border bg-muted/40 p-0.5">
         {CHART_TYPES.map(({ value, label, Icon }) => (
           <button
             key={value}
@@ -103,7 +103,7 @@ export function ChartToolbar({
       </div>
 
       {/* Range — horizontal scroller on mobile so it stays one row */}
-      <div className="scrollbar-hide -mx-1 flex max-w-full items-center gap-0.5 overflow-x-auto px-1">
+      <div data-tour="range-selector" className="scrollbar-hide -mx-1 flex max-w-full items-center gap-0.5 overflow-x-auto px-1">
         {RANGES.map(({ value, label }) => (
           <button
             key={value}

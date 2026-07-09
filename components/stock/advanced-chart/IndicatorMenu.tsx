@@ -34,6 +34,7 @@ export function IndicatorMenu({ indicators, onAdd, onRemove, onUpdate, onApplyPr
       <PopoverTrigger asChild>
         <button
           type="button"
+          data-tour="add-indicator-button"
           className="flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
         >
           <LineChartIcon className="h-3.5 w-3.5" />

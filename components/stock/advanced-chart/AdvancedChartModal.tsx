@@ -54,6 +54,8 @@ interface Props {
   onClose: () => void;
   chartType: AdvancedChartType;
   onChartType: (t: AdvancedChartType) => void;
+  /** Optional — notified whenever the range changes, for callers that don't otherwise observe it (e.g. the Academy chart-tour lesson). Range itself stays modal-internal state. */
+  onRangeChange?: (range: ChartRange) => void;
   indicators: IndicatorInstance[];
   onAddIndicator: (type: string) => void;
   onRemoveIndicator: (id: string) => void;
@@ -76,7 +78,7 @@ interface Props {
 
 export function AdvancedChartModal({
   ticker, initialRange, onClose,
-  chartType, onChartType, indicators, onAddIndicator, onRemoveIndicator, onUpdateIndicator, onApplyPreset,
+  chartType, onChartType, onRangeChange, indicators, onAddIndicator, onRemoveIndicator, onUpdateIndicator, onApplyPreset,
   onReplaceIndicators, onApplyConfig,
   showVolume, onToggleVolume, showEvents, onToggleEvents,
 }: Props) {
@@ -87,6 +89,11 @@ export function AdvancedChartModal({
   const [tool, setTool] = useState<ChartTool>('none');
   const [aiOpen, setAiOpen] = useState(false);
 
+  const handleSetRange = (r: ChartRange) => {
+    setRange(r);
+    onRangeChange?.(r);
+  };
+
   const { presets, savePreset, deletePreset } = useChartPresets();
   const { create: createAlert } = useAlerts();
 
@@ -94,7 +101,7 @@ export function AdvancedChartModal({
   const handleSavePreset = (name: string) =>
     savePreset({ name, range, chartType, indicators, showVolume, showEvents });
   const handleApplyPreset = (p: ChartPreset) => {
-    setRange(p.range);
+    handleSetRange(p.range);
     onApplyConfig({
       chartType: p.chartType,
       indicators: p.indicators,
@@ -211,7 +218,7 @@ export function AdvancedChartModal({
   const dispatchChartAction = async (action: ChartAction) => {
     switch (action.type) {
       case 'chart_set_timeframe':
-        setRange(action.range);
+        handleSetRange(action.range);
         break;
       case 'chart_set_type':
         onChartType(action.chartType);
@@ -279,7 +286,7 @@ export function AdvancedChartModal({
         chartType={chartType}
         onChartType={onChartType}
         range={range}
-        onRange={setRange}
+        onRange={handleSetRange}
         indicators={indicators}
         onAddIndicator={onAddIndicator}
         onRemoveIndicator={onRemoveIndicator}
