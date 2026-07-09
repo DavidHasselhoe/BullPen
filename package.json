@@ -21,7 +21,8 @@
     "test-earnings-email": "tsx scripts/test-earnings-email.ts",
     "generate-course": "tsx scripts/generate-academy-course.ts",
     "rules": "tsx scripts/print-cursor-rules.ts",
-    "test-discord-webhook": "tsx scripts/test-discord-webhook.ts"
+    "test-discord-webhook": "tsx scripts/test-discord-webhook.ts",
+    "post-changelog-discord": "tsx scripts/post-changelog-discord.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.33",
