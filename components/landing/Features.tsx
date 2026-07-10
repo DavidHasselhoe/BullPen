@@ -38,10 +38,12 @@ void MiniSpark;
 function FeatureCard({
   children,
   accent = false,
+  compact = false,
   style,
 }: {
   children: ReactNode;
   accent?: boolean;
+  compact?: boolean;
   style?: CSSProperties;
 }) {
   return (
@@ -52,11 +54,11 @@ function FeatureCard({
           : 'var(--surface)',
         border: '1px solid var(--border)',
         borderRadius: 22,
-        padding: 28,
+        padding: compact ? 20 : 28,
         position: 'relative',
         overflow: 'hidden',
         transition: 'border-color 200ms, transform 240ms cubic-bezier(.22,1,.36,1), box-shadow 240ms',
-        minHeight: 320,
+        minHeight: compact ? 240 : 320,
         display: 'flex',
         flexDirection: 'column',
         ...style,
@@ -466,33 +468,57 @@ export function Features() {
     <section id="features" style={{ padding: '120px 0 80px', position: 'relative' }}>
       <div className="wrap">
         <SectionHeading
-          eyebrow="What's inside"
+          eyebrow="The core of BullPen"
           title={
             <>
-              Everything you need to{' '}
+              Two ways to always{' '}
               <span className="accent-serif" style={{ color: 'var(--accent)' }}>
-                conviction-check
-              </span>{' '}
-              every move.
+                know why.
+              </span>
             </>
           }
-          sub="Live data, AI explanations, portfolio tools, and a research kit that grows with you — from your first share to your hundredth thesis."
+          sub="Ask any stock why it moved, or let a Daily Brief tell you before you ask. Everything else is here to help once you're in."
         />
 
         <div className="feat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 18 }}>
           <Reveal delay={1} style={{ gridColumn: 'span 7' }}>
             <FeatureCard accent>
-              <FeatureKicker icon="sparkles" label="BullPen AI" />
-              <FeatureTitle>Ask anything. Get answers with the receipts.</FeatureTitle>
+              <FeatureKicker icon="sparkles" label="Why Today?" />
+              <FeatureTitle>Ask why any stock moved. Get an answer with sources.</FeatureTitle>
               <FeatureDesc>
-                A research assistant that knows your portfolio, reads filings, and explains moves in plain English. Always shows its sources.
+                A research assistant that knows your portfolio, reads filings, and explains moves in plain English — always with the receipts.
               </FeatureDesc>
               <ChatVisual />
             </FeatureCard>
           </Reveal>
 
           <Reveal delay={2} style={{ gridColumn: 'span 5' }}>
-            <FeatureCard>
+            <FeatureCard accent>
+              <FeatureKicker icon="bolt" label="Daily Brief" />
+              <FeatureTitle>Your market summary, every morning at 6:30.</FeatureTitle>
+              <FeatureDesc>Personalized to what you hold and watch — written by Claude.</FeatureDesc>
+              <BriefVisual />
+            </FeatureCard>
+          </Reveal>
+        </div>
+
+        <Reveal delay={1}>
+          <div
+            style={{
+              margin: '56px 0 20px',
+              fontSize: 13,
+              fontWeight: 600,
+              color: 'var(--fg-dim)',
+              letterSpacing: '0.02em',
+            }}
+          >
+            And once you&apos;re in, the rest of the toolkit:
+          </div>
+        </Reveal>
+
+        <div className="feat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 18 }}>
+          <Reveal delay={2} style={{ gridColumn: 'span 4' }}>
+            <FeatureCard compact>
               <FeatureKicker icon="chart" label="Real-time charts" />
               <FeatureTitle>TradingView-grade candles, indicators, alerts.</FeatureTitle>
               <FeatureDesc>8 timeframes from 1D to ALL. Overlay SMA, EMA, Bollinger Bands, RSI, MACD.</FeatureDesc>
@@ -500,17 +526,8 @@ export function Features() {
             </FeatureCard>
           </Reveal>
 
-          <Reveal delay={1} style={{ gridColumn: 'span 4' }}>
-            <FeatureCard>
-              <FeatureKicker icon="bolt" label="Daily Brief" />
-              <FeatureTitle>Your market summary, every morning at 6:30.</FeatureTitle>
-              <FeatureDesc>Personalized to what you hold and watch — written by Claude.</FeatureDesc>
-              <BriefVisual />
-            </FeatureCard>
-          </Reveal>
-
           <Reveal delay={2} style={{ gridColumn: 'span 4' }}>
-            <FeatureCard>
+            <FeatureCard compact>
               <FeatureKicker icon="pie" label="Portfolio" />
               <FeatureTitle>Holdings, P&amp;L, and risk in one view.</FeatureTitle>
               <FeatureDesc>Link a brokerage or track manually. Sector breakdown and diversification score included.</FeatureDesc>
@@ -519,7 +536,7 @@ export function Features() {
           </Reveal>
 
           <Reveal delay={3} style={{ gridColumn: 'span 4' }}>
-            <FeatureCard>
+            <FeatureCard compact>
               <FeatureKicker icon="search" label="Screener" />
               <FeatureTitle>Find tomorrow&apos;s winners with the filters you trust.</FeatureTitle>
               <FeatureDesc>Stack filters on revenue, margins, EPS, debt-to-equity, ROE, and yield.</FeatureDesc>
@@ -528,7 +545,7 @@ export function Features() {
           </Reveal>
 
           <Reveal delay={2} style={{ gridColumn: 'span 12' }}>
-            <FeatureCard>
+            <FeatureCard compact>
               <FeatureKicker icon="shield" label="Alerts & filings" />
               <FeatureTitle>Never miss a 10-K, an earnings beat, or a 5% move.</FeatureTitle>
               <FeatureDesc>Email alerts on SEC filings, insider trades, earnings, and price thresholds.</FeatureDesc>
