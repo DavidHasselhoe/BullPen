@@ -1,10 +1,9 @@
 'use client';
 
-import { useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Reveal } from './Atoms';
 import { Icon } from './Icon';
-import { buildPath } from './buildPath';
 
 interface Props {
   onSignUp: () => void;
@@ -63,270 +62,89 @@ function useLiveQuotes() {
   return quotes;
 }
 
-// ── Hero chart ────────────────────────────────────────────────────────────────
-function HeroChart({ liveQuote }: { liveQuote?: LiveQuote }) {
-  const W = 720;
-  const H = 320;
 
-  const basePoints = useMemo(() => {
-    const n = 64;
-    const arr: number[] = [];
-    let v = 100;
-    for (let i = 0; i < n; i++) {
-      const trend = i * 0.45;
-      const wave = Math.sin(i * 0.38) * 4 + Math.sin(i * 0.11) * 6;
-      const noise = (Math.sin(i * 1.7) + Math.cos(i * 2.3)) * 1.6;
-      v = 100 + trend + wave + noise;
-      arr.push(v);
-    }
-    return arr;
-  }, []);
-
-  const [points, setPoints] = useState(basePoints);
-  const [tab, setTab] = useState('1M');
-
-  useEffect(() => {
-    const id = setInterval(() => {
-      setPoints((p) => {
-        const next = p.slice();
-        const last = next[next.length - 1];
-        const delta = (Math.random() - 0.45) * 1.3;
-        next[next.length - 1] = Math.max(80, Math.min(180, last + delta));
-        return next;
-      });
-    }, 1400);
-    return () => clearInterval(id);
-  }, []);
-
-  const { line, area, lastX, lastY } = buildPath(points, W, H);
-  const lastPrice = points[points.length - 1];
-  const firstPrice = points[0];
-  const animChange = lastPrice - firstPrice;
-  const animPct = (animChange / firstPrice) * 100;
-  // Use live AAPL data when available, fall back to animated values
-  const displayPrice = liveQuote ? liveQuote.price : (180 + (lastPrice - 100) * 0.7).toFixed(2);
-  const displayChange = liveQuote ? liveQuote.change : `${animChange >= 0 ? '+' : ''}${animChange.toFixed(2)}`;
-  const displayPct = liveQuote ? liveQuote.pct : `${animPct.toFixed(2)}%`;
-  const isUp = liveQuote ? liveQuote.up : animPct >= 0;
-  const tabs = ['1D', '1W', '1M', '3M', '1Y', 'ALL'];
-
+// ── Why Today card ────────────────────────────────────────────────────────────
+function WhyTodayCard() {
   return (
     <div
       style={{
-        position: 'relative',
         background: 'var(--surface)',
         border: '1px solid var(--border)',
-        borderRadius: 24,
-        padding: 22,
+        borderRadius: 20,
+        padding: 20,
         boxShadow: '0 30px 80px -30px oklch(0 0 0 / 0.5), 0 0 0 1px var(--border)',
-        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 12,
+        minHeight: 280,
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 10,
-              background: 'oklch(0.18 0 0)',
-              color: 'oklch(0.95 0 0)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontWeight: 700,
-              fontSize: 18,
-              letterSpacing: '-0.04em',
-              border: '1px solid var(--border)',
-            }}
-          ></div>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-              <span style={{ fontWeight: 600, fontSize: 16, color: 'var(--fg)' }}>AAPL</span>
-              <span style={{ fontSize: 13, color: 'var(--fg-dim)' }}>Apple Inc.</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-              <div
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  fontSize: 11,
-                  color: 'var(--up)',
-                  fontWeight: 600,
-                  fontFamily: 'var(--font-mono)',
-                }}
-              >
-                <span
-                  style={{
-                    width: 6,
-                    height: 6,
-                    borderRadius: 99,
-                    background: 'var(--up)',
-                    animation: 'bp-pulse-dot 1.6s ease-in-out infinite',
-                  }}
-                />
-                LIVE
-              </div>
-              <span style={{ fontSize: 11, color: 'var(--fg-dim)' }}>NASDAQ · Real-time</span>
-            </div>
-          </div>
-        </div>
-
-        <div style={{ textAlign: 'right' }}>
-          <div
-            className="mono"
-            style={{
-              fontSize: 28,
-              fontWeight: 700,
-              letterSpacing: '-0.02em',
-              color: 'var(--fg)',
-              animation: 'bp-count-up 0.4s ease-out',
-            }}
-            key={displayPrice}
-          >
-            ${displayPrice}
-          </div>
-          <div
-            className="mono"
-            style={{
-              fontSize: 13,
-              color: isUp ? 'var(--up)' : 'var(--down)',
-              fontWeight: 600,
-              marginTop: 2,
-            }}
-          >
-            {isUp ? '▲' : '▼'} {displayChange} ({displayPct})
-          </div>
-        </div>
+      <div
+        style={{
+          fontSize: 11,
+          fontWeight: 700,
+          color: 'var(--accent)',
+          letterSpacing: '0.1em',
+          textTransform: 'uppercase',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+        }}
+      >
+        <Icon name="sparkles" size={12} />
+        Why Today?
       </div>
 
-      <div style={{ position: 'relative' }}>
-        <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: 'block', overflow: 'visible' }}>
-          <defs>
-            <linearGradient id="hero-area" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.35" />
-              <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
-            </linearGradient>
-            <linearGradient id="hero-line" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.6" />
-              <stop offset="100%" stopColor="var(--accent)" stopOpacity="1" />
-            </linearGradient>
-          </defs>
-
-          {[0.25, 0.5, 0.75].map((f, i) => (
-            <line key={i} x1="0" x2={W} y1={H * f} y2={H * f} stroke="var(--border)" strokeDasharray="3 6" />
-          ))}
-
-          <path
-            d={area}
-            fill="url(#hero-area)"
-            style={{ opacity: 0, animation: 'bp-fade-up 0.9s 0.35s cubic-bezier(.22,1,.36,1) forwards' }}
-          />
-          <path
-            d={line}
-            fill="none"
-            stroke="url(#hero-line)"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            style={{
-              strokeDasharray: 4000,
-              strokeDashoffset: 4000,
-              animation: 'bp-draw-path 1.8s cubic-bezier(.22,1,.36,1) forwards',
-            }}
-          />
-
-          <circle
-            cx={lastX}
-            cy={lastY}
-            r="14"
-            fill="var(--accent)"
-            opacity="0.35"
-            style={{
-              transformOrigin: `${lastX}px ${lastY}px`,
-              animation: 'bp-pulse-ring 1.8s ease-out infinite',
-            }}
-          />
-          <circle cx={lastX} cy={lastY} r="5" fill="var(--accent)" style={{ filter: 'drop-shadow(0 0 8px var(--accent-glow))' }} />
-        </svg>
-
-        <div
-          style={{
-            position: 'absolute',
-            left: `calc(${(lastX / W) * 100}% + 10px)`,
-            top: `calc(${(lastY / H) * 100}% - 14px)`,
-            background: 'var(--accent)',
-            color: 'var(--accent-ink)',
-            fontSize: 11,
-            fontWeight: 700,
-            padding: '4px 8px',
-            borderRadius: 6,
-            fontFamily: 'var(--font-mono)',
-            letterSpacing: '0.02em',
-            boxShadow: '0 6px 20px -6px var(--accent-glow)',
-            pointerEvents: 'none',
-            animation: 'bp-fade-up 0.6s 1.2s both',
-          }}
-        >
-          ${displayPrice}
-        </div>
+      <div
+        style={{
+          alignSelf: 'flex-end',
+          maxWidth: '85%',
+          padding: '10px 14px',
+          borderRadius: 14,
+          fontSize: 13,
+          fontWeight: 600,
+          background: 'var(--accent)',
+          color: 'var(--accent-ink)',
+        }}
+      >
+        Why did NVDA jump 4.2% today?
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 18, gap: 8 }}>
-        <div
-          style={{
-            display: 'inline-flex',
-            gap: 2,
-            background: 'var(--surface-2)',
-            border: '1px solid var(--border)',
-            padding: 3,
-            borderRadius: 999,
-          }}
-        >
-          {tabs.map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => setTab(t)}
+      <div
+        style={{
+          maxWidth: '92%',
+          padding: '14px 16px',
+          borderRadius: 14,
+          background: 'var(--bg-2)',
+          border: '1px solid var(--border)',
+          fontSize: 13,
+          color: 'var(--fg)',
+          lineHeight: 1.55,
+        }}
+      >
+        <div style={{ marginBottom: 6 }}>
+          NVDA gained <strong>4.21% to $892.40</strong> on three catalysts:
+        </div>
+        <ol style={{ margin: 0, paddingLeft: 18, fontSize: 12, color: 'var(--fg-muted)' }}>
+          <li>Leaked Blackwell GPU benchmarks beat H100 by 2.3×</li>
+          <li>Morgan Stanley raised PT to $1,100</li>
+          <li>Sector rotation back into AI names</li>
+        </ol>
+        <div style={{ marginTop: 10, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {['Reuters', 'Bloomberg', 'MS Research'].map((s) => (
+            <span
+              key={s}
               style={{
-                padding: '6px 12px',
+                fontSize: 10,
+                padding: '2px 8px',
                 borderRadius: 99,
-                border: 'none',
-                background: tab === t ? 'var(--surface)' : 'transparent',
-                color: tab === t ? 'var(--fg)' : 'var(--fg-dim)',
-                fontSize: 12,
-                fontWeight: 600,
-                fontFamily: 'var(--font-mono)',
-                cursor: 'pointer',
-                transition: 'all 150ms',
-                boxShadow: tab === t ? '0 1px 3px oklch(0 0 0 / 0.2)' : 'none',
-              }}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          {[
-            { l: 'SMA 50', c: 'oklch(0.7 0.18 50)' },
-            { l: 'EMA 20', c: 'oklch(0.72 0.18 240)' },
-          ].map((i) => (
-            <div
-              key={i.l}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                fontSize: 11,
+                border: '1px solid var(--border)',
                 color: 'var(--fg-dim)',
                 fontFamily: 'var(--font-mono)',
               }}
             >
-              <span style={{ width: 10, height: 2, background: i.c, borderRadius: 2 }} />
-              {i.l}
-            </div>
+              {s}
+            </span>
           ))}
         </div>
       </div>
@@ -334,71 +152,104 @@ function HeroChart({ liveQuote }: { liveQuote?: LiveQuote }) {
   );
 }
 
-// ── Floating mini ticker card ─────────────────────────────────────────────────
-interface FloatingTickerProps {
-  symbol: string;
-  name: string;
-  price: string;
-  change: string;
-  pct: string;
-  up: boolean;
-  style?: CSSProperties;
-  anim: string;
-  sparkSeed?: number;
-}
-
-function FloatingTicker({ symbol, name, price, pct, up, style, anim, sparkSeed = 1 }: FloatingTickerProps) {
-  const pts = useMemo(() => {
-    const arr: number[] = [];
-    for (let i = 0; i < 14; i++) {
-      arr.push(50 + Math.sin(i * 0.7 + sparkSeed) * 12 + i * (up ? 1.6 : -1.6) + Math.sin(i * 1.4) * 4);
-    }
-    return arr;
-  }, [up, sparkSeed]);
-  const sw = 110;
-  const sh = 36;
-  const { line } = buildPath(pts, sw, sh, 2, 4);
+// ── Daily Brief card ──────────────────────────────────────────────────────────
+function DailyBriefCard({ liveQuote }: { liveQuote?: LiveQuote }) {
+  const today = useMemo(
+    () => new Date().toLocaleDateString('en-US', { weekday: 'long' }),
+    []
+  );
+  // liveQuote.pct already carries its own sign and '%' (see useLiveQuotes mapping below) —
+  // do not prepend another sign here.
+  const priceLine = liveQuote ? `AAPL ${liveQuote.pct}` : 'AAPL +1.5%';
 
   return (
     <div
       style={{
-        position: 'absolute',
         background: 'var(--surface)',
-        border: '1px solid var(--border-strong)',
-        borderRadius: 14,
-        padding: '12px 14px',
-        boxShadow: '0 16px 40px -10px oklch(0 0 0 / 0.4)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        minWidth: 200,
-        animation: `${anim} ease-in-out infinite`,
-        ...style,
+        border: '1px solid var(--border)',
+        borderRadius: 20,
+        padding: 20,
+        boxShadow: '0 30px 80px -30px oklch(0 0 0 / 0.5), 0 0 0 1px var(--border)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 12,
+        minHeight: 280,
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)' }}>{symbol}</div>
-          <div style={{ fontSize: 10, color: 'var(--fg-dim)' }}>{name}</div>
-        </div>
-        <div style={{ textAlign: 'right' }}>
-          <div className="mono" style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>
-            ${price}
-          </div>
-          <div className="mono" style={{ fontSize: 10, color: up ? 'var(--up)' : 'var(--down)', fontWeight: 600 }}>
-            {up ? '▲' : '▼'} {pct}
-          </div>
-        </div>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          fontSize: 11,
+          fontWeight: 700,
+          color: 'var(--accent)',
+          letterSpacing: '0.1em',
+          textTransform: 'uppercase',
+        }}
+      >
+        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Icon name="bolt" size={12} />
+          Daily Brief
+        </span>
+        <span
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            fontSize: 10,
+            color: 'var(--up)',
+            fontWeight: 700,
+            fontFamily: 'var(--font-mono)',
+            textTransform: 'none',
+            letterSpacing: 'normal',
+          }}
+        >
+          <span
+            style={{
+              width: 6,
+              height: 6,
+              borderRadius: 99,
+              background: 'var(--up)',
+              animation: 'bp-pulse-dot 1.6s ease-in-out infinite',
+            }}
+          />
+          {today} · 6:30 AM
+        </span>
       </div>
-      <svg viewBox={`0 0 ${sw} ${sh}`} width="100%" height="36" style={{ display: 'block' }}>
-        <path
-          d={line}
-          fill="none"
-          stroke={up ? 'var(--up)' : 'var(--down)'}
-          strokeWidth="1.6"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
+
+      <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--fg)', letterSpacing: '-0.01em' }}>
+        Good morning. Markets steady before CPI.
+      </div>
+
+      <div style={{ fontSize: 13, color: 'var(--fg-muted)', lineHeight: 1.6 }}>
+        Your watchlist is <span style={{ color: 'var(--up)', fontWeight: 600 }}>up 1.2% premarket</span>.{' '}
+        <span style={{ color: 'var(--fg)', fontWeight: 600 }}>{priceLine}</span> leads after a broker upgrade. Fed minutes drop at 2PM ET.
+      </div>
+
+      <div style={{ marginTop: 'auto', display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+        {[
+          { l: 'AAPL', v: liveQuote?.pct ?? '+1.5%', up: liveQuote?.up ?? true },
+          { l: 'NVDA', v: '+2.1%', up: true },
+          { l: 'TSLA', v: '-0.4%', up: false },
+        ].map((m) => (
+          <span
+            key={m.l}
+            className="mono"
+            style={{
+              fontSize: 10,
+              padding: '3px 7px',
+              borderRadius: 6,
+              background: 'var(--surface-2)',
+              border: '1px solid var(--border)',
+              fontWeight: 600,
+              color: 'var(--fg)',
+            }}
+          >
+            {m.l} <span style={{ color: m.up ? 'var(--up)' : 'var(--down)' }}>{m.v}</span>
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
@@ -443,7 +294,7 @@ export function Hero({ onSignUp }: Props) {
             >
               New
             </span>
-            Daily Brief — your AI market summary, every morning
+            Why Today? Ask any stock why it moved, get an answer with sources
             <Icon name="arrowRight" size={14} />
           </div>
         </Reveal>
@@ -451,9 +302,9 @@ export function Hero({ onSignUp }: Props) {
         <div style={{ textAlign: 'center', maxWidth: 920, margin: '0 auto' }}>
           <Reveal delay={1}>
             <h1 className="headline" style={{ margin: 0, fontSize: 'clamp(48px, 8vw, 104px)', color: 'var(--fg)' }}>
-              Invest like you{' '}
+              The market,{' '}
               <span className="accent-serif" style={{ color: 'var(--accent)' }}>
-                mean it.
+                explained.
               </span>
             </h1>
           </Reveal>
@@ -469,7 +320,7 @@ export function Hero({ onSignUp }: Props) {
                 textWrap: 'pretty',
               }}
             >
-              Real-time market data, an AI that explains every move, and pro-grade research tools — built for investors who are serious about getting smarter.
+              Ask why any stock moved and get a real answer — sources included. Every morning, a Daily Brief tells you before you ask. Built for investors who want to understand, not just watch.
             </p>
           </Reveal>
 
@@ -538,50 +389,12 @@ export function Hero({ onSignUp }: Props) {
                 zIndex: 0,
               }}
             />
-            <div style={{ position: 'relative', zIndex: 1 }}>
-              <HeroChart liveQuote={liveQuotes['AAPL']} />
-            </div>
-
-            <div className="float-tickers" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 2 }}>
-              <div style={{ pointerEvents: 'auto' }}>
-                <FloatingTicker
-                  symbol="NVDA"
-                  name="NVIDIA"
-                  price={liveQuotes['NVDA']?.price ?? '—'}
-                  pct={liveQuotes['NVDA']?.pct ?? '—'}
-                  change={liveQuotes['NVDA']?.change ?? '—'}
-                  up={liveQuotes['NVDA']?.up ?? true}
-                  anim="bp-float-tilted-neg3 5s"
-                  style={{ left: -60, top: 40 }}
-                  sparkSeed={1.2}
-                />
-              </div>
-              <div style={{ pointerEvents: 'auto' }}>
-                <FloatingTicker
-                  symbol="BTC/USD"
-                  name="Bitcoin"
-                  price={liveQuotes['BTC/USD']?.price ?? '—'}
-                  pct={liveQuotes['BTC/USD']?.pct ?? '—'}
-                  change={liveQuotes['BTC/USD']?.change ?? '—'}
-                  up={liveQuotes['BTC/USD']?.up ?? true}
-                  anim="bp-float-tilted-pos4 6s"
-                  style={{ right: -50, top: -20 }}
-                  sparkSeed={2.4}
-                />
-              </div>
-              <div style={{ pointerEvents: 'auto' }}>
-                <FloatingTicker
-                  symbol="TSLA"
-                  name="Tesla"
-                  price={liveQuotes['TSLA']?.price ?? '—'}
-                  pct={liveQuotes['TSLA']?.pct ?? '—'}
-                  change={liveQuotes['TSLA']?.change ?? '—'}
-                  up={liveQuotes['TSLA']?.up ?? false}
-                  anim="bp-float-tilted-neg2 7s"
-                  style={{ right: -30, bottom: 30 }}
-                  sparkSeed={3.8}
-                />
-              </div>
+            <div
+              className="hero-duo"
+              style={{ position: 'relative', zIndex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}
+            >
+              <WhyTodayCard />
+              <DailyBriefCard liveQuote={liveQuotes['AAPL']} />
             </div>
           </div>
         </Reveal>

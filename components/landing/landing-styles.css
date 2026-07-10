@@ -299,8 +299,8 @@
   .bullpen-landing-root .steps-grid { grid-template-columns: 1fr !important; }
   .bullpen-landing-root .step-line { display: none !important; }
 }
-@media (max-width: 800px) {
-  .bullpen-landing-root .float-tickers > div > div { display: none !important; }
+@media (max-width: 700px) {
+  .bullpen-landing-root .hero-duo { grid-template-columns: 1fr !important; }
 }
 @media (max-width: 700px) {
   .bullpen-landing-root .pricing-grid { grid-template-columns: 1fr !important; }
