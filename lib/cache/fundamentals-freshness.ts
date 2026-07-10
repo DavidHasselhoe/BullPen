@@ -9,7 +9,7 @@
  */
 
 import { createServerClient } from '@/lib/supabase/client';
-import { getFundamentalsLastChange } from '@/lib/twelvedata/twelvedata-client';
+import { getFundamentalsLastChange, withRateLimitRetry } from '@/lib/twelvedata/twelvedata-client';
 
 const CHECK_THROTTLE_MS = 60 * 60 * 1000; // 1 hour between checks per company
 
@@ -77,7 +77,10 @@ export async function checkAndInvalidateFundamentals(
     }
 
     // ── Call TwelveData last_changes (1 credit) ───────────────────────────
-    const lastChanges = await getFundamentalsLastChange(sym);
+    // withRateLimitRetry also covers the truncated/malformed-JSON responses seen
+    // intermittently on this endpoint in production — a transient network issue,
+    // not a real "no data" answer.
+    const lastChanges = await withRateLimitRetry(() => getFundamentalsLastChange(sym));
 
     // ── Find cache rows for this ticker and check their fetched_at ────────
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

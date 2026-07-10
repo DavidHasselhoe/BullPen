@@ -38,9 +38,9 @@ async function handler(
 
     // ── Financial statements — fetched in parallel to avoid sequential rate-limiting.
     //    Cache keys are shared with /financials so a prior visit by either route warms
-    //    the other. On a cold cache all three TwelveData calls fire concurrently, which
-    //    on the Basic plan's 8/min cap can trip a 429 — withRateLimitRetry waits out the
-    //    window and retries once rather than silently treating the failure as "no data".
+    //    the other. withRateLimitRetry guards against a 429 (rare on the current 610/min
+    //    Venture plan, but possible under real concurrent load) and retries once rather
+    //    than silently treating the failure as "no data".
     let incomeDegraded = false;
     let balanceDegraded = false;
     let cashflowDegraded = false;
@@ -98,10 +98,14 @@ async function handler(
       void recordHealthScoreSnapshot(symbol, healthScore, income[0]?.fiscal_date);
     }
 
+    // A degraded computation (one or more statement fetches failed even after retry)
+    // must not be cached — caching it would pin an incomplete/N-A score in the client's
+    // HTTP cache for an hour even after the underlying data becomes available on a
+    // later request (e.g. once /financials repopulates the shared cache on refresh).
     return addSecurityHeaders(
       NextResponse.json(
         { success: true, data: healthScore },
-        { headers: { 'Cache-Control': 'private, max-age=3600' } }
+        { headers: { 'Cache-Control': financialsDegraded ? 'private, no-store' : 'private, max-age=3600' } }
       )
     );
   } catch (err) {

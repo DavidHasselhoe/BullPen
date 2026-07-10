@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withRateLimit, withAuth, addSecurityHeaders } from '@/lib/security/api-security';
-import { getStockCandles } from '@/lib/twelvedata/twelvedata-client';
-import { TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
+import { getStockCandles, withRateLimitRetry, TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
 import { slugToSymbol, inferAssetType, has24hTrading } from '@/lib/assets/asset-type';
 import { getCached, setCached } from '@/lib/cache/market-data-cache';
 import { rget, rset, candleTtlSeconds } from '@/lib/cache/redis-cache';
@@ -114,7 +113,10 @@ async function handler(
   }
 
   try {
-    const candles = await getStockCandles(symbol, from, now, resolution, candleOptions);
+    // withRateLimitRetry also covers transient socket errors seen intermittently on
+    // this route in production ("TypeError: terminated", "SocketError: other side
+    // closed") — those aren't rate-limit hits, but retrying once clears them.
+    const candles = await withRateLimitRetry(() => getStockCandles(symbol, from, now, resolution, candleOptions));
 
     if (!candles || candles.s === 'no_data' || candles.t.length === 0) {
       // Don't cache empty results — could be transient (weekend crypto edge, fresh listing)

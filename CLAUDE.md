@@ -22,6 +22,10 @@ Key sections to apply:
 
 It runs a methodical final pass — design-system alignment, spacing/alignment audit, interaction-state coverage, copy consistency, loading/transition smoothness — and is the gate between "functionally done" and "shipped". Skip it for backend-only changes, small bug fixes, or tweaks the user already directed precisely (e.g. "change this color to X"). Required for anything the user might call "vibe coded" if it shipped as-is.
 
+### Design Context
+
+`PRODUCT.md` and `DESIGN.md` at the repo root capture BullPen's strategic and visual design system (register: product, platform: web). Read them before non-trivial frontend work — `/impeccable` commands load them automatically, but if you're working outside that skill, check them directly. Key points: **Signal Emerald/Red** is the only meaningful color, reserved for gain/loss + the landing brand accent; Bloomberg-terminal density is the named anti-reference; Instrument Serif italic is a one-word marketing-headline accent only, never product UI.
+
 ## Branch Strategy
 
 Two branches only: `preview` and `main`.
@@ -232,6 +236,8 @@ Split across two schedulers. All cron routes are protected by the `CRON_SECRET` 
 The GitHub Actions workflows require **`CRON_SECRET`** to be set in repo secrets (Settings → Secrets and variables → Actions). The production URL defaults to `https://bullpen.no` — override with an `APP_URL` repo variable if needed.
 
 ## Market Data: TwelveData Performance & Cost Guidelines
+
+**Current plan: Venture (610 API credits/minute, no daily cap).** See `docs/twelve-data-venture-analysis.md` for full plan details. This is not the Basic plan (8/min) — if you see code comments referencing "Basic plan's 8/min cap", they predate the upgrade and are stale; a single page load's credit burst (even the ~71-credit stock snapshot) is not expected to trip rate limiting on its own at this tier. `withRateLimitRetry` (`lib/twelvedata/twelvedata-client.ts`) still exists as a guard against real bursts (many concurrent users, cron overlap) but 429s should be rare in practice — if a card is intermittently empty and reloading fixes it, suspect transient network errors (fetch/socket resets, malformed JSON bodies) over rate limiting first; check Vercel runtime errors for the actual exception before assuming credits.
 
 Every TwelveData call costs API credits. The rules below are binding — violating them either burns the credit budget or causes 429 errors that degrade the entire app.
 

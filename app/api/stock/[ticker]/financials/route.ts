@@ -7,6 +7,7 @@ import {
   getCashFlow,
   getDividends,
   getSplits,
+  withRateLimitRetry,
   TwelveDataRateLimitError,
 } from '@/lib/twelvedata/twelvedata-client';
 
@@ -38,22 +39,26 @@ async function handler(
       return addSecurityHeaders(NextResponse.json({ success: true, data: cached, type, period }));
     }
 
+    // withRateLimitRetry guards against a genuine 429 (rare on the current 610/min
+    // Venture plan) so it doesn't surface as a false "no data" to the client — same
+    // pattern as /health-score. It does not cover transient network errors (fetch
+    // failures, socket resets); those still propagate to the catch block below.
     let result;
     switch (type) {
       case 'income':
-        result = await getIncomeStatement(symbol, period);
+        result = await withRateLimitRetry(() => getIncomeStatement(symbol, period));
         break;
       case 'balance':
-        result = await getBalanceSheet(symbol, period);
+        result = await withRateLimitRetry(() => getBalanceSheet(symbol, period));
         break;
       case 'cashflow':
-        result = await getCashFlow(symbol, period);
+        result = await withRateLimitRetry(() => getCashFlow(symbol, period));
         break;
       case 'dividends':
-        result = await getDividends(symbol);
+        result = await withRateLimitRetry(() => getDividends(symbol));
         break;
       case 'splits':
-        result = await getSplits(symbol);
+        result = await withRateLimitRetry(() => getSplits(symbol));
         break;
       default:
         return addSecurityHeaders(

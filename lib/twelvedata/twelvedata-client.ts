@@ -6,7 +6,7 @@
 
 const TWELVE_DATA_BASE_URL = 'https://api.twelvedata.com';
 
-/** Thrown when Twelve Data API rate limit (8/min Basic, etc.) is exceeded */
+/** Thrown when the Twelve Data API rate limit (610 credits/min on the current Venture plan) is exceeded */
 export class TwelveDataRateLimitError extends Error {
   constructor(message: string = 'Market data rate limit exceeded. Please try again in a minute.') {
     super(message);
@@ -15,12 +15,31 @@ export class TwelveDataRateLimitError extends Error {
 }
 
 /**
- * Retries a Twelve Data call once after a delay when it fails due to rate
- * limiting. The Basic plan's 8/min cap is easy to blow past when a single
- * page load fires several statement endpoints (stats + income + balance +
- * cash flow) back to back — a short wait usually clears the window, so this
- * turns a transient 429 into a successful call instead of a false "no data".
- * Non-rate-limit errors (e.g. plan restrictions) are rethrown immediately.
+ * Matches transient failures observed intermittently on Vercel's outbound calls to
+ * TwelveData/Supabase — dropped connections and truncated/malformed response bodies
+ * (e.g. "TypeError: terminated", "SocketError: other side closed", ECONNRESET, or a
+ * JSON.parse failure from a body that got cut off mid-response). These are one-off
+ * network blips, not deterministic API responses — retrying immediately usually
+ * succeeds because the underlying connection issue has already cleared. Distinct from
+ * deterministic errors (plan restrictions, invalid symbols, "no data for range") which
+ * would fail identically on retry and should NOT be retried here.
+ */
+function isTransientNetworkError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  return /fetch failed|ECONNRESET|ECONNREFUSED|socket|terminated|other side closed|network|Unexpected (?:end of JSON input|token|non-whitespace character)/i.test(
+    err.message
+  );
+}
+
+/**
+ * Retries a Twelve Data call once when it fails due to rate limiting or a transient
+ * network error. Rate-limit hits wait out the per-minute window (9s default) before
+ * retrying; transient network errors retry almost immediately (500ms) since the
+ * connection issue has typically already resolved by the time we'd notice it.
+ * Guards against real rate-limit bursts (many concurrent users, cron overlap) — a
+ * single page load should not trip that on the current 610/min plan — and against
+ * one-off socket resets, which are the more commonly observed failure in production.
+ * Non-retryable errors (e.g. plan restrictions, invalid symbols) are rethrown immediately.
  */
 export async function withRateLimitRetry<T>(fn: () => Promise<T>, delayMs = 9000): Promise<T> {
   try {
@@ -28,6 +47,10 @@ export async function withRateLimitRetry<T>(fn: () => Promise<T>, delayMs = 9000
   } catch (err) {
     if (err instanceof TwelveDataRateLimitError) {
       await new Promise((resolve) => setTimeout(resolve, delayMs));
+      return fn();
+    }
+    if (isTransientNetworkError(err)) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
       return fn();
     }
     throw err;
