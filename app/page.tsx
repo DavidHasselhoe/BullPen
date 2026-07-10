@@ -2,13 +2,13 @@ import type { Metadata } from 'next';
 import { LandingClient } from '@/components/landing/LandingClient';
 
 export const metadata: Metadata = {
-  title: 'BullPen — Invest with conviction',
+  title: 'BullPen — The market, explained.',
   description:
-    'Real-time charts, AI that explains every move, and a research toolkit built for first-timers and serious traders alike. Free forever plan, no card required.',
+    'Ask why any stock moved and get a real answer — sources included. Every morning, a Daily Brief tells you before you ask. Free forever plan, no card required.',
   openGraph: {
-    title: 'BullPen — Invest with conviction',
+    title: 'BullPen — The market, explained.',
     description:
-      'Real-time charts, AI that explains every move, and a research toolkit built for first-timers and serious traders alike.',
+      'Ask why any stock moved and get a real answer — sources included. Every morning, a Daily Brief tells you before you ask.',
     url: '/',
     siteName: 'BullPen',
     type: 'website',
