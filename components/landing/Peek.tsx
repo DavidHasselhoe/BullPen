@@ -545,9 +545,9 @@ function ScreenshotView({ src, alt }: { src: string; alt: string }) {
 }
 
 const VIEWS = [
-  { id: 'screener', label: 'Screener', url: '/tools/screener', Component: () => <ScreenshotView src="/screenshots/screener.png" alt="BullPen stock screener" /> },
-  { id: 'stock', label: 'Stock detail', url: '/stock/AAPL', Component: StockDetailView },
   { id: 'ai', label: 'BullPen AI', url: '/tools/ai', Component: AiChatView },
+  { id: 'stock', label: 'Stock detail', url: '/stock/AAPL', Component: StockDetailView },
+  { id: 'screener', label: 'Screener', url: '/tools/screener', Component: () => <ScreenshotView src="/screenshots/screener.png" alt="BullPen stock screener" /> },
   { id: 'portfolio', label: 'Portfolio', url: '/holdings', Component: PortfolioView },
   { id: 'dashboard', label: 'Dashboard', url: '/dashboard', Component: () => <ScreenshotView src="/screenshots/dashboard.png" alt="BullPen dashboard" /> },
 ];

@@ -82,7 +82,7 @@ const STEPS: Step[] = [
     n: '02',
     icon: 'plus',
     title: 'Build your watchlist',
-    desc: 'Search 10,000+ stocks, ETFs, crypto, and commodities. Add anything you want to follow. We handle the rest.',
+    desc: 'Search 10,000+ stocks, ETFs, crypto, and commodities — then ask BullPen AI why any of them just moved.',
     visual: (
       <div style={{ background: 'var(--bg-2)', border: '1px solid var(--border)', borderRadius: 12, padding: 14 }}>
         <div

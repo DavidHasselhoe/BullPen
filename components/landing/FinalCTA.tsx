@@ -39,14 +39,13 @@ export function FinalCTA({ onSignUp }: Props) {
 
             <div style={{ position: 'relative', zIndex: 1, maxWidth: 700 }}>
               <h2 className="headline" style={{ margin: 0, fontSize: 'clamp(36px, 5vw, 64px)', color: 'var(--fg)' }}>
-                Ready to{' '}
+                Ready to know{' '}
                 <span className="accent-serif" style={{ color: 'var(--accent)' }}>
-                  invest
-                </span>{' '}
-                with conviction?
+                  why?
+                </span>
               </h2>
               <p style={{ margin: '20px 0 32px', fontSize: 18, lineHeight: 1.55, color: 'var(--fg-muted)', maxWidth: 540, textWrap: 'pretty' }}>
-                Sign up free in 30 seconds. No credit card. Connect your brokerage later — or never. Start getting smarter today.
+                Sign up free in 30 seconds. No credit card. Connect your brokerage later — or never. Start understanding today.
               </p>
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
                 <button type="button" onClick={onSignUp} className="btn btn-primary" style={{ padding: '16px 28px', fontSize: 16 }}>
