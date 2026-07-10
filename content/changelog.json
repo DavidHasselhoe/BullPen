@@ -1,5 +1,12 @@
 [
   {
+    "date": "2026-07-10",
+    "entries": [
+      { "type": "improved", "text": "Refreshed the homepage around how BullPen explains the market to you — ask why any stock moved and get an answer with sources, or get a Daily Brief every morning" },
+      { "type": "fixed", "text": "Fixed stock pages occasionally failing to load Financials or the Revenue Flow chart on first visit, and the Financial Health score not updating after a temporary data hiccup" }
+    ]
+  },
+  {
     "date": "2026-07-09",
     "entries": [
       { "type": "new", "text": "Added a new interactive Academy course, Reading Charts, that walks you through reading a price chart step by step" },
