@@ -1,5 +1,11 @@
 [
   {
+    "date": "2026-07-12",
+    "entries": [
+      { "type": "new", "text": "Added a Why Today widget to your dashboard — see the biggest mover in your holdings and watchlist at a glance, and ask why with one click" }
+    ]
+  },
+  {
     "date": "2026-07-10",
     "entries": [
       { "type": "fixed", "text": "Fixed stock pages occasionally failing to load Financials or the Revenue Flow chart on first visit, and the Financial Health score not updating after a temporary data hiccup" }
