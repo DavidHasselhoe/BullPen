@@ -41,10 +41,8 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
   },
 ];
 
-const SOCIALS: { icon: IconName; label: string }[] = [
-  { icon: 'twitter', label: 'Twitter' },
-  { icon: 'discord', label: 'Discord' },
-  { icon: 'github', label: 'GitHub' },
+const SOCIALS: { icon: IconName; label: string; href: string }[] = [
+  { icon: 'discord', label: 'Discord', href: 'https://discord.gg/RkTFXyjZSY' },
 ];
 
 export function Footer() {
@@ -61,8 +59,10 @@ export function Footer() {
               {SOCIALS.map((s) => (
                 <a
                   key={s.icon}
-                  href={`#${s.icon}`}
+                  href={s.href}
                   aria-label={s.label}
+                  target={s.href.startsWith('http') ? '_blank' : undefined}
+                  rel={s.href.startsWith('http') ? 'noopener noreferrer' : undefined}
                   style={{
                     width: 36,
                     height: 36,
