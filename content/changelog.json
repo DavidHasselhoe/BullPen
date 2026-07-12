@@ -2,7 +2,6 @@
   {
     "date": "2026-07-10",
     "entries": [
-      { "type": "improved", "text": "Refreshed the homepage around how BullPen explains the market to you — ask why any stock moved and get an answer with sources, or get a Daily Brief every morning" },
       { "type": "fixed", "text": "Fixed stock pages occasionally failing to load Financials or the Revenue Flow chart on first visit, and the Financial Health score not updating after a temporary data hiccup" }
     ]
   },
@@ -14,9 +13,7 @@
       { "type": "new", "text": "Added Norwegian as a supported language" },
       { "type": "new", "text": "Added a quick \"Why?\" button next to a stock's price that explains what's driving today's move, powered by AI with live web search" },
       { "type": "improved", "text": "AI features across the app, including the AI assistant, now reply in your chosen language instead of always English" },
-      { "type": "fixed", "text": "Fixed the account avatar sometimes not appearing on the landing page for signed-in users" },
       { "type": "fixed", "text": "Fixed notifications occasionally showing implausible price swings, and made the wording clearer" },
-      { "type": "fixed", "text": "Fixed the AI Assistant button appearing on public pages like About and Help where it wasn't useful" },
       { "type": "improved", "text": "Sped up API responses across the app by skipping an unnecessary network check on requests that didn't need it" }
     ]
   },
@@ -24,18 +21,13 @@
     "date": "2026-07-08",
     "entries": [
       { "type": "new", "text": "Save and reuse your favorite dividend calculator setups, with a one-click option to fill it in from your holdings" },
-      { "type": "new", "text": "Added a Contact page so you can reach us directly" },
-      { "type": "new", "text": "Added Roadmap, Glossary, Help Center, About, Disclosures, and Security pages, plus fixed up footer links" },
       { "type": "improved", "text": "Automatic brokerage account syncing is now a Pro feature; manually adding holdings or importing from CSV stays free for everyone" },
-      { "type": "fixed", "text": "Fixed pre-market price changes sometimes showing as stuck at 0%" },
-      { "type": "fixed", "text": "Fixed the app navigation showing up incorrectly on the Privacy and Changelog pages" }
+      { "type": "fixed", "text": "Fixed pre-market price changes sometimes showing as stuck at 0%" }
     ]
   },
   {
     "date": "2026-07-07",
     "entries": [
-      { "type": "new", "text": "Published our Privacy Policy" },
-      { "type": "new", "text": "Added a public changelog so you can see what's new" },
       { "type": "new", "text": "Added the BullPen logo throughout the app and as your browser tab icon" },
       { "type": "new", "text": "The AI assistant can now look up any company's Financial Health score and profile, even ones not yet in our database" },
       { "type": "fixed", "text": "Fixed financial health scores occasionally showing incorrect or missing data during high-traffic periods" }

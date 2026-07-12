@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Reveal } from './Atoms';
 import { Icon } from './Icon';
+import { buildPath } from './buildPath';
+import { CompanyLogo } from '@/components/company/CompanyLogo';
 
 interface Props {
   onSignUp: () => void;
@@ -63,192 +65,260 @@ function useLiveQuotes() {
 }
 
 
-// ── Why Today card ────────────────────────────────────────────────────────────
-function WhyTodayCard() {
+// ── Skeleton placeholder for numbers still loading — never show a fabricated price ──
+function Skel({ w, h = 14 }: { w: number; h?: number }) {
+  return <span className="hero-skel" style={{ width: w, height: h }} />;
+}
+
+// Deterministic illustrative curve (no Math.random — stable across renders/SSR).
+// Shape evokes a catalyst-driven spike: slow drift, then acceleration late.
+const CHART_POINTS: number[] = (() => {
+  const n = 20;
+  const arr: number[] = [];
+  for (let i = 0; i < n; i++) {
+    const t = i / (n - 1);
+    const climb = t < 0.55 ? t * 0.6 : 0.33 + (t - 0.55) * 2.9;
+    const wave = Math.sin(i * 0.9) * 1.4;
+    arr.push(100 + climb * 40 + wave);
+  }
+  return arr;
+})();
+
+// ── Floating ticker card — ambient market pulse, real price via live quotes ────
+function FloatTicker({
+  symbol,
+  name,
+  side,
+  liveQuote,
+}: {
+  symbol: string;
+  name: string;
+  side: 'tsla' | 'aapl';
+  liveQuote?: LiveQuote;
+}) {
   return (
     <div
+      className={`hero-float-ticker ${side}`}
       style={{
         background: 'var(--surface)',
-        border: '1px solid var(--border)',
-        borderRadius: 20,
-        padding: 20,
-        boxShadow: '0 30px 80px -30px oklch(0 0 0 / 0.5), 0 0 0 1px var(--border)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 12,
-        minHeight: 280,
+        border: '1px solid var(--border-strong)',
+        borderRadius: 13,
+        padding: '9px 11px',
+        boxShadow: '0 18px 40px -14px oklch(0 0 0 / 0.5)',
       }}
     >
-      <div
-        style={{
-          fontSize: 11,
-          fontWeight: 700,
-          color: 'var(--accent)',
-          letterSpacing: '0.1em',
-          textTransform: 'uppercase',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-        }}
-      >
-        <Icon name="sparkles" size={12} />
-        Why Today?
-      </div>
-
-      <div
-        style={{
-          alignSelf: 'flex-end',
-          maxWidth: '85%',
-          padding: '10px 14px',
-          borderRadius: 14,
-          fontSize: 13,
-          fontWeight: 600,
-          background: 'var(--accent)',
-          color: 'var(--accent-ink)',
-        }}
-      >
-        Why did NVDA jump 4.2% today?
-      </div>
-
-      <div
-        style={{
-          maxWidth: '92%',
-          padding: '14px 16px',
-          borderRadius: 14,
-          background: 'var(--bg-2)',
-          border: '1px solid var(--border)',
-          fontSize: 13,
-          color: 'var(--fg)',
-          lineHeight: 1.55,
-        }}
-      >
-        <div style={{ marginBottom: 6 }}>
-          NVDA gained <strong>4.21% to $892.40</strong> on three catalysts:
+      <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 6 }}>
+        <CompanyLogo ticker={symbol} name={name} size={20} />
+        <div>
+          <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--fg)' }}>{symbol}</div>
+          <div style={{ fontSize: 9, color: 'var(--fg-dim)' }}>{name}</div>
         </div>
-        <ol style={{ margin: 0, paddingLeft: 18, fontSize: 12, color: 'var(--fg-muted)' }}>
-          <li>Leaked Blackwell GPU benchmarks beat H100 by 2.3×</li>
-          <li>Morgan Stanley raised PT to $1,100</li>
-          <li>Sector rotation back into AI names</li>
-        </ol>
-        <div style={{ marginTop: 10, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {['Reuters', 'Bloomberg', 'MS Research'].map((s) => (
-            <span
-              key={s}
-              style={{
-                fontSize: 10,
-                padding: '2px 8px',
-                borderRadius: 99,
-                border: '1px solid var(--border)',
-                color: 'var(--fg-dim)',
-                fontFamily: 'var(--font-mono)',
-              }}
-            >
-              {s}
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
+        {liveQuote ? (
+          <>
+            <span className="mono" style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--fg)' }}>
+              {liveQuote.price}
             </span>
-          ))}
-        </div>
+            <span
+              className="mono"
+              style={{ fontSize: 9.5, fontWeight: 600, color: liveQuote.up ? 'var(--up)' : 'var(--down)' }}
+            >
+              {liveQuote.pct}
+            </span>
+          </>
+        ) : (
+          <>
+            <Skel w={44} h={12} />
+            <Skel w={32} h={10} />
+          </>
+        )}
       </div>
     </div>
   );
 }
 
-// ── Daily Brief card ──────────────────────────────────────────────────────────
-function DailyBriefCard({ liveQuote }: { liveQuote?: LiveQuote }) {
-  const today = useMemo(
-    () => new Date().toLocaleDateString('en-US', { weekday: 'long' }),
-    []
-  );
-  // liveQuote.pct already carries its own sign and '%' (see useLiveQuotes mapping below) —
-  // do not prepend another sign here.
-  const priceLine = liveQuote ? `AAPL ${liveQuote.pct}` : 'AAPL +1.5%';
+// ── Hero chart panel — the "why" demo: real NVDA price, animated draw, why-bubble
+// pinned to the actual spike, Daily Brief tucked in as a glance ────────────────
+function HeroChartPanel({ liveQuotes }: { liveQuotes: Record<string, LiveQuote> }) {
+  const { line, area, lastX, lastY } = useMemo(() => buildPath(CHART_POINTS, 400, 170), []);
+  const nvda = liveQuotes['NVDA'];
+  const whyHeadline = nvda
+    ? `NVDA ${nvda.up ? 'gained' : 'fell'} ${nvda.pct.replace(/^[+-]/, '')} on three catalysts:`
+    : 'NVDA moved today on three catalysts:';
 
   return (
     <div
+      className="hero-chart-panel"
       style={{
         background: 'var(--surface)',
         border: '1px solid var(--border)',
         borderRadius: 20,
         padding: 20,
-        boxShadow: '0 30px 80px -30px oklch(0 0 0 / 0.5), 0 0 0 1px var(--border)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 12,
-        minHeight: 280,
+        boxShadow: '0 30px 80px -30px oklch(0 0 0 / 0.55)',
       }}
     >
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <CompanyLogo ticker="NVDA" name="NVIDIA Corp" size={34} />
+          <div style={{ textAlign: 'left' }}>
+            <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--fg)' }}>NVDA</div>
+            <div style={{ fontSize: 11, color: 'var(--fg-dim)' }}>NVIDIA Corp · NASDAQ</div>
+          </div>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          {nvda ? (
+            <>
+              <div className="mono" style={{ fontSize: 20, fontWeight: 700, color: 'var(--fg)' }}>
+                ${nvda.price}
+              </div>
+              <div
+                className="mono"
+                style={{ fontSize: 12, fontWeight: 600, color: nvda.up ? 'var(--up)' : 'var(--down)' }}
+              >
+                {nvda.up ? '▲' : '▼'} {nvda.pct}
+              </div>
+            </>
+          ) : (
+            <>
+              <Skel w={70} h={20} />
+              <div style={{ marginTop: 4 }}>
+                <Skel w={50} h={12} />
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      <svg viewBox="0 0 400 170" width="100%" height={170} style={{ display: 'block', overflow: 'visible', margin: '6px 0 2px' }}>
+        <defs>
+          <linearGradient id="hero-area-v2" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.35" />
+            <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <path className="hero-chart-area" d={area} fill="url(#hero-area-v2)" />
+        <path
+          className="hero-chart-line"
+          d={line}
+          fill="none"
+          stroke="var(--accent)"
+          strokeWidth={2.5}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <circle className="hero-spike-ring" cx={lastX} cy={lastY} r={4} fill="none" stroke="var(--accent)" strokeWidth={2} />
+        <circle className="hero-spike-dot" cx={lastX} cy={lastY} r={5} fill="var(--accent)" />
+      </svg>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--fg-dim)', fontFamily: 'var(--font-mono)' }}>
+        <span>9:30</span>
+        <span>11:00</span>
+        <span>13:00</span>
+        <span>15:00</span>
+        <span>16:00</span>
+      </div>
+
       <div
+        className="hero-why-bubble"
         style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          fontSize: 11,
-          fontWeight: 700,
-          color: 'var(--accent)',
-          letterSpacing: '0.1em',
-          textTransform: 'uppercase',
+          background: 'var(--surface-2)',
+          border: '1px solid oklch(from var(--accent) l c h / 0.5)',
+          borderRadius: 14,
+          padding: '13px 15px',
+          boxShadow: '0 18px 44px -14px oklch(0 0 0 / 0.6), 0 0 0 4px oklch(from var(--accent) l c h / 0.06)',
         }}
       >
-        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <Icon name="bolt" size={12} />
-          Daily Brief
-        </span>
-        <span
+        <div
           style={{
-            display: 'inline-flex',
+            display: 'flex',
             alignItems: 'center',
             gap: 6,
-            fontSize: 10,
-            color: 'var(--up)',
+            fontSize: 11,
             fontWeight: 700,
-            fontFamily: 'var(--font-mono)',
-            textTransform: 'none',
-            letterSpacing: 'normal',
+            color: 'var(--accent)',
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
+            marginBottom: 6,
           }}
         >
-          <span
-            style={{
-              width: 6,
-              height: 6,
-              borderRadius: 99,
-              background: 'var(--up)',
-              animation: 'bp-pulse-dot 1.6s ease-in-out infinite',
-            }}
-          />
-          {today} · 6:30 AM
-        </span>
+          <Icon name="sparkles" size={12} />
+          Why Today?
+        </div>
+        <div style={{ fontSize: 12.5, fontWeight: 600, marginBottom: 6, lineHeight: 1.4, color: 'var(--fg)' }}>
+          {whyHeadline}
+        </div>
+        <ul style={{ margin: 0, paddingLeft: 16, fontSize: 11, color: 'var(--fg-dim)', lineHeight: 1.65 }}>
+          <li>Blackwell GPU benchmarks leak, beat H100 by 2.3×</li>
+          <li>Morgan Stanley raised price target</li>
+        </ul>
       </div>
+      <div className="hero-why-connector" />
 
-      <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--fg)', letterSpacing: '-0.01em' }}>
-        Good morning. Markets steady before CPI.
-      </div>
-
-      <div style={{ fontSize: 13, color: 'var(--fg-muted)', lineHeight: 1.6 }}>
-        Your watchlist is <span style={{ color: 'var(--up)', fontWeight: 600 }}>up 1.2% premarket</span>.{' '}
-        <span style={{ color: 'var(--fg)', fontWeight: 600 }}>{priceLine}</span> leads after a broker upgrade. Fed minutes drop at 2PM ET.
-      </div>
-
-      <div style={{ marginTop: 'auto', display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-        {[
-          { l: 'AAPL', v: liveQuote?.pct ?? '+1.5%', up: liveQuote?.up ?? true },
-          { l: 'NVDA', v: '+2.1%', up: true },
-          { l: 'TSLA', v: '-0.4%', up: false },
-        ].map((m) => (
-          <span
-            key={m.l}
-            className="mono"
-            style={{
-              fontSize: 10,
-              padding: '3px 7px',
-              borderRadius: 6,
-              background: 'var(--surface-2)',
-              border: '1px solid var(--border)',
-              fontWeight: 600,
-              color: 'var(--fg)',
-            }}
-          >
-            {m.l} <span style={{ color: m.up ? 'var(--up)' : 'var(--down)' }}>{m.v}</span>
+      <div
+        className="hero-brief-card"
+        style={{
+          background: 'var(--surface)',
+          border: '1px solid var(--border)',
+          borderRadius: 14,
+          padding: 14,
+          boxShadow: '0 20px 50px -18px oklch(0 0 0 / 0.55)',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            fontSize: 10,
+            fontWeight: 700,
+            color: 'var(--accent)',
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
+            marginBottom: 8,
+          }}
+        >
+          <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <span
+              style={{
+                width: 5,
+                height: 5,
+                borderRadius: 99,
+                background: 'var(--up)',
+                display: 'inline-block',
+                animation: 'bp-pulse-dot 1.6s ease-in-out infinite',
+              }}
+            />
+            Daily Brief
           </span>
-        ))}
+          <span style={{ textTransform: 'none', letterSpacing: 'normal', color: 'var(--fg-dim)', fontWeight: 600 }}>
+            6:30 AM
+          </span>
+        </div>
+        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg)', marginBottom: 8 }}>
+          Good morning. Markets steady before CPI.
+        </div>
+        <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+          {(['AAPL', 'NVDA', 'TSLA'] as const).map((sym) => {
+            const q = liveQuotes[sym];
+            return (
+              <span
+                key={sym}
+                className="mono"
+                style={{
+                  fontSize: 9.5,
+                  padding: '3px 7px',
+                  borderRadius: 6,
+                  background: 'var(--surface-2)',
+                  border: '1px solid var(--border)',
+                  fontWeight: 600,
+                  color: 'var(--fg)',
+                }}
+              >
+                {sym} {q ? <span style={{ color: q.up ? 'var(--up)' : 'var(--down)' }}>{q.pct}</span> : <Skel w={28} h={10} />}
+              </span>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
@@ -377,7 +447,7 @@ export function Hero({ onSignUp }: Props) {
         </div>
 
         <Reveal delay={5}>
-          <div style={{ position: 'relative', maxWidth: 1040, margin: '64px auto 0' }}>
+          <div className="hero-visual-wrap">
             <div
               style={{
                 position: 'absolute',
@@ -389,12 +459,10 @@ export function Hero({ onSignUp }: Props) {
                 zIndex: 0,
               }}
             />
-            <div
-              className="hero-duo"
-              style={{ position: 'relative', zIndex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}
-            >
-              <WhyTodayCard />
-              <DailyBriefCard liveQuote={liveQuotes['AAPL']} />
+            <div className="hero-stage" style={{ position: 'relative', zIndex: 1 }}>
+              <FloatTicker symbol="TSLA" name="Tesla Inc." side="tsla" liveQuote={liveQuotes['TSLA']} />
+              <FloatTicker symbol="AAPL" name="Apple Inc." side="aapl" liveQuote={liveQuotes['AAPL']} />
+              <HeroChartPanel liveQuotes={liveQuotes} />
             </div>
           </div>
         </Reveal>
