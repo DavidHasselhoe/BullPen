@@ -13,6 +13,7 @@ import { RecentlyViewedInline } from '@/components/discover/RecentlyViewedInline
 import { PortfolioSummaryWidget } from '@/components/discover/PortfolioSummaryWidget';
 import { EarningsCalendarWidget } from '@/components/discover/EarningsCalendarWidget';
 import { DailyBriefWidget } from '@/components/discover/DailyBriefWidget';
+import { WhyTodayWidget } from '@/components/discover/WhyTodayWidget';
 import { QuoteDisplay } from '@/components/ui/QuoteDisplay';
 import { useUserSettings } from '@/hooks/use-user-settings';
 import { CryptoMarketCard } from '@/components/asset/CryptoMarketCard';
@@ -27,6 +28,14 @@ function WidgetSlot({ id }: { id: string }) {
         <section className="min-w-0 overflow-hidden">
           <AnimatedContent reverse={true}>
             <DailyBriefWidget />
+          </AnimatedContent>
+        </section>
+      );
+    case 'why_today':
+      return (
+        <section className="min-w-0 overflow-hidden">
+          <AnimatedContent reverse={true}>
+            <WhyTodayWidget />
           </AnimatedContent>
         </section>
       );

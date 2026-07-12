@@ -8,6 +8,7 @@ export interface DashboardWidget {
 export const DASHBOARD_WIDGETS: DashboardWidget[] = [
   { id: 'recently_viewed',   label: 'Recently viewed' },
   { id: 'daily_brief',       label: 'Daily Brief', requiresPro: true },
+  { id: 'why_today',         label: 'Why Today?' },
   { id: 'market_context',    label: 'Market Context' },
   { id: 'earnings_calendar', label: 'Earnings calendar' },
   { id: 'hot_picks',         label: 'Hot Picks' },
