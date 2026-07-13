@@ -125,10 +125,9 @@ export function WhyTodayPanel({ ticker, price, change, changePct, open, onClose 
 
           {status === 'error' && (
             <p className="text-xs text-muted-foreground">
-              {errorCode === 'payment_required' && 'Anthropic API credits required. Add credits at console.anthropic.com.'}
-              {errorCode === 'invalid_key' && 'Invalid Anthropic API key. Check ANTHROPIC_API_KEY in .env.local.'}
-              {errorCode === 'rate_limited' && 'Too many requests. Please wait a moment and try again.'}
-              {errorCode === 'unknown' && 'Couldn\'t fetch the analysis. Check the server logs for details.'}
+              {errorCode === 'rate_limited'
+                ? 'Too many requests. Please wait a moment and try again.'
+                : "Couldn't load an explanation right now. Please try again shortly."}
             </p>
           )}
 
