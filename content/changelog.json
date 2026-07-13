@@ -1,5 +1,15 @@
 [
   {
+    "date": "2026-07-13",
+    "entries": [
+      { "type": "new", "text": "Added a new Academy course, Reading a Stock Quote, covering price, bid/ask spreads, and trading volume" },
+      { "type": "new", "text": "The Academy daily challenge is live again with a fresh question every day" },
+      { "type": "fixed", "text": "Fixed Academy sending signed-out visitors straight to the sign-in page instead of showing what they'd be learning first" },
+      { "type": "fixed", "text": "Fixed the Community \"Browse Members\" page showing no one when you weren't signed in" },
+      { "type": "fixed", "text": "Fixed the \"Why Today?\" explanation showing a technical error message instead of a plain one when something went wrong" }
+    ]
+  },
+  {
     "date": "2026-07-12",
     "entries": [
       { "type": "new", "text": "Added a Why Today widget to your dashboard — see the biggest mover in your holdings and watchlist at a glance, and ask why with one click" }
