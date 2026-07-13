@@ -28,7 +28,7 @@ export function Logo({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
       <BullPenMark size={px} />
       <span style={{ fontWeight: 700, letterSpacing: '-0.02em', fontSize: fs, color: 'var(--fg)' }}>
-        BullPen
+        bullpen
       </span>
     </div>
   );

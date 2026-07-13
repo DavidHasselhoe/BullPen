@@ -94,18 +94,18 @@ export function Navigation() {
           {/* Logo - Left */}
           <Link
             href="/"
-            className="flex items-center gap-2 text-[17px] font-semibold tracking-tight text-foreground/90 hover:text-foreground transition-colors duration-150 select-none shrink-0"
+            className="flex items-center gap-2 text-[19px] font-bold tracking-tight text-foreground/90 hover:text-foreground transition-colors duration-150 select-none shrink-0"
           >
             {/* Black mark on light theme, white mark on dark theme (theme is user-selectable, not fixed) */}
-            <Image src="/BullPenLogo.png" alt="" width={24} height={24} priority aria-hidden="true" className="block dark:hidden" />
-            <Image src="/BullPenLogo-dark.png" alt="" width={24} height={24} priority aria-hidden="true" className="hidden dark:block" />
+            <Image src="/BullPenLogo.png" alt="" width={26} height={26} priority aria-hidden="true" className="block dark:hidden" />
+            <Image src="/BullPenLogo-dark.png" alt="" width={26} height={26} priority aria-hidden="true" className="hidden dark:block" />
             bullpen
           </Link>
 
           {/* Navigation - Centered */}
-          <div className="flex items-center justify-center min-w-0">
+          <div className="flex items-center justify-center min-w-0 overflow-x-auto scrollbar-hide">
             {/* Navigation Links */}
-            <nav className="hidden items-center gap-2 md:flex">
+            <nav className="hidden items-center gap-2 md:flex shrink-0">
               {navigation.map((item) => {
                 const isActive = pathname === item.href || (item.href !== '/' && pathname?.startsWith(item.href));
                 const Icon = item.icon;
