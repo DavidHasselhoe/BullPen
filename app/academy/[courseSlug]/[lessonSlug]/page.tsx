@@ -4,6 +4,7 @@ import { useParams } from 'next/navigation';
 import { LessonPlayer } from '@/components/academy/LessonPlayer';
 import { useUserProgress } from '@/hooks/use-user-progress';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ProGate } from '@/components/billing/ProGate';
 import type { Lesson } from '@/types/academy';
 
 export default function LessonPage() {
@@ -29,6 +30,19 @@ export default function LessonPage() {
       <div className="rounded-2xl border border-border/40 bg-card p-6 text-center text-sm text-muted-foreground">
         Lesson not found.
       </div>
+    );
+  }
+
+  // Content is omitted by the API for Pro-gated courses viewed by non-Pro
+  // users. The course overview page already stops sequential navigation here,
+  // but direct URL access hits this defensively too.
+  if (data.locked || !lessonRow.content) {
+    return (
+      <ProGate
+        feature="academy_pro"
+        title="Unlock this course with Pro"
+        description="Intermediate and advanced Academy courses are a Pro benefit — upgrade to start learning."
+      />
     );
   }
 

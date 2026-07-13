@@ -2,9 +2,10 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, BookOpen, HelpCircle, Shuffle, GitFork, CandlestickChart, Check, Zap } from 'lucide-react';
+import { ArrowLeft, BookOpen, HelpCircle, Shuffle, GitFork, CandlestickChart, Check, Zap, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ProGate } from '@/components/billing/ProGate';
 import { cn } from '@/lib/utils';
 import { useUserProgress } from '@/hooks/use-user-progress';
 import type { LessonType, LessonWithCompletion } from '@/types/academy';
@@ -37,7 +38,7 @@ export default function CourseOverviewPage() {
     );
   }
 
-  const { course, lessons, progress } = data;
+  const { course, lessons, progress, locked } = data;
   const completedCount = lessons.filter((l) => l.completed).length;
   const totalXp = lessons.reduce((s, l) => s + l.xpReward, 0);
   const nextLesson: LessonWithCompletion | undefined =
@@ -75,14 +76,15 @@ export default function CourseOverviewPage() {
       <div className="space-y-2.5">
         {lessons.map((lesson) => {
           const meta = TYPE_META[lesson.type];
-          const Icon = meta.icon;
-          return (
-            <Link
-              key={lesson.id}
-              href={`/academy/${course.slug}/${lesson.slug}`}
+          const Icon = locked ? Lock : meta.icon;
+          const row = (
+            <div
               className={cn(
                 'flex items-center gap-3 rounded-xl border px-4 py-3.5 transition-colors',
-                'bg-card hover:border-emerald-500/30',
+                'bg-card',
+                locked
+                  ? 'border-border/40 opacity-70'
+                  : 'hover:border-emerald-500/30',
                 lesson.completed ? 'border-emerald-500/30 bg-emerald-500/[0.04]' : 'border-border/50'
               )}
             >
@@ -108,22 +110,38 @@ export default function CourseOverviewPage() {
                 <Zap className="h-3 w-3" />
                 {lesson.xpReward}
               </div>
+            </div>
+          );
+          return locked ? (
+            <div key={lesson.id}>{row}</div>
+          ) : (
+            <Link key={lesson.id} href={`/academy/${course.slug}/${lesson.slug}`}>
+              {row}
             </Link>
           );
         })}
       </div>
 
-      {nextLesson && completedCount < lessons.length && (
-        <div className="pt-2">
-          <Link href={`/academy/${course.slug}/${nextLesson.slug}`}>
-            <Button
-              size="lg"
-              className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold"
-            >
-              {completedCount === 0 ? 'Start course' : 'Continue'}
-            </Button>
-          </Link>
-        </div>
+      {locked ? (
+        <ProGate
+          feature="academy_pro"
+          title="Unlock this course with Pro"
+          description="Intermediate and advanced Academy courses are a Pro benefit — upgrade to start learning."
+        />
+      ) : (
+        nextLesson &&
+        completedCount < lessons.length && (
+          <div className="pt-2">
+            <Link href={`/academy/${course.slug}/${nextLesson.slug}`}>
+              <Button
+                size="lg"
+                className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold"
+              >
+                {completedCount === 0 ? 'Start course' : 'Continue'}
+              </Button>
+            </Link>
+          </div>
+        )
       )}
 
       {completedCount === lessons.length && lessons.length > 0 && (

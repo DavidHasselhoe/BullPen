@@ -24,21 +24,29 @@ function CourseIcon({ name, className }: { name: string; className?: string }) {
 export function CourseCard({ course }: Props) {
   const pct = course.percentComplete;
   const dashOffset = RING_C * (1 - pct / 100);
+  const isProLocked = course.lockedReason === 'pro';
+  const isProgressionLocked = course.lockedReason === 'progression';
 
   const content = (
     <motion.div
-      whileHover={!course.isLocked ? { y: -2 } : undefined}
-      whileTap={!course.isLocked ? { scale: 0.99 } : undefined}
+      whileHover={!course.isLocked || isProLocked ? { y: -2 } : undefined}
+      whileTap={!course.isLocked || isProLocked ? { scale: 0.99 } : undefined}
       transition={{ duration: 0.15 }}
       className={cn(
         'group relative rounded-2xl border p-5 sm:p-6',
         'bg-gradient-to-br from-emerald-500/[0.04] to-transparent',
         'border-border/40',
-        course.isLocked
-          ? 'opacity-55 cursor-not-allowed'
-          : 'hover:border-emerald-500/30 cursor-pointer transition-colors'
+        isProgressionLocked && 'opacity-55 cursor-not-allowed',
+        isProLocked && 'hover:border-amber-400/40 cursor-pointer transition-colors',
+        !course.isLocked && 'hover:border-emerald-500/30 cursor-pointer transition-colors'
       )}
     >
+      {isProLocked && (
+        <span className="absolute right-4 top-4 text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-400/10 text-amber-500">
+          Pro
+        </span>
+      )}
+
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="h-11 w-11 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
           {course.isLocked ? (
@@ -107,9 +115,9 @@ export function CourseCard({ course }: Props) {
     </motion.div>
   );
 
-  if (course.isLocked) return content;
+  if (isProgressionLocked) return content;
   return (
-    <Link href={`/academy/${course.slug}`} className="block">
+    <Link href={isProLocked ? '/upgrade' : `/academy/${course.slug}`} className="block">
       {content}
     </Link>
   );

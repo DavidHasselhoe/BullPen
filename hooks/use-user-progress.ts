@@ -12,6 +12,7 @@ interface CourseResponse {
   success: boolean;
   course: Course;
   lessons: LessonWithCompletion[];
+  locked: boolean;
   progress: {
     last_lesson_id: string | null;
     completed_at: string | null;

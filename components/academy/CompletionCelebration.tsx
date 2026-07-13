@@ -71,6 +71,15 @@ export function CompletionCelebration({ xpEarned, durationMs = 1600, onDismiss }
         transition={{ type: 'spring', stiffness: 240, damping: 18 }}
         className="text-center select-none"
       >
+        <motion.img
+          src="/illustrations/bull-celebrate.png"
+          alt=""
+          aria-hidden
+          initial={{ scale: 0.5, opacity: 0, y: 10 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          transition={{ type: 'spring', stiffness: 260, damping: 16, delay: 0.1 }}
+          className="mx-auto mb-2 h-auto w-24 sm:w-28 opacity-95 dark:invert"
+        />
         <motion.div
           initial={{ scale: 0.8 }}
           animate={{ scale: [0.8, 1.15, 1] }}

@@ -100,6 +100,7 @@ export interface Course {
   color: string;
   orderIndex: number;
   difficulty: CourseDifficulty | null;
+  requiresPro: boolean;
 }
 
 export interface Lesson {
@@ -126,6 +127,8 @@ export interface CourseWithProgress extends Course {
   completedLessons: number;
   percentComplete: number;
   isLocked: boolean;
+  /** Why isLocked is true — 'pro' takes priority over 'progression' in messaging. */
+  lockedReason: 'progression' | 'pro' | null;
 }
 
 export interface UserCourseProgress {
@@ -137,7 +140,9 @@ export interface UserCourseProgress {
   percentComplete: number;
 }
 
-export interface LessonWithCompletion extends Lesson {
+export interface LessonWithCompletion extends Omit<Lesson, 'content'> {
+  /** Omitted by the API when the course is Pro-gated and the user isn't Pro. */
+  content?: Lesson['content'];
   completed: boolean;
 }
 

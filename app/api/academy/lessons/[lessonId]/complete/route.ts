@@ -13,6 +13,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
+import { getTier, isPro } from '@/lib/billing/tier';
 import { applyActivityAndXp } from '@/lib/academy/streak';
 
 const BodySchema = z.object({
@@ -41,17 +42,40 @@ async function handler(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any;
 
-  // ── Load the lesson (need its xp_reward and course_id) ───────────────────
+  // ── Load the lesson (need its xp_reward, course_id, and the course's gate) ──
   const { data: lesson } = await supabase
     .from('academy_lessons')
-    .select('id, course_id, xp_reward')
+    .select('id, course_id, xp_reward, academy_courses!inner(requires_pro)')
     .eq('id', lessonId)
-    .maybeSingle<{ id: string; course_id: string; xp_reward: number }>();
+    .maybeSingle<{
+      id: string;
+      course_id: string;
+      xp_reward: number;
+      academy_courses: { requires_pro: boolean } | { requires_pro: boolean }[];
+    }>();
 
   if (!lesson) {
     return addSecurityHeaders(
       NextResponse.json({ success: false, error: 'Lesson not found' }, { status: 404 })
     );
+  }
+
+  // Supabase returns the joined row as an object for a to-one FK, but the
+  // client's TS types don't always narrow that — handle both shapes defensively.
+  const courseGate = Array.isArray(lesson.academy_courses)
+    ? lesson.academy_courses[0]
+    : lesson.academy_courses;
+
+  // ── Security backstop: server-side Pro gate, independent of the UI ───────
+  // Protects XP/leaderboard integrity — a free user must never be able to
+  // award themselves Pro-course XP by calling this route directly.
+  if (courseGate?.requires_pro) {
+    const tier = await getTier(session.userId);
+    if (!isPro(tier)) {
+      return addSecurityHeaders(
+        NextResponse.json({ success: false, error: 'Pro subscription required' }, { status: 403 })
+      );
+    }
   }
 
   // ── Idempotency: was this lesson already completed? ──────────────────────

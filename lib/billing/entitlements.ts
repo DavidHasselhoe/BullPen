@@ -34,7 +34,8 @@ export type ProFeature =
   | 'unlimited_watchlists'
   | 'dividend_hub'          // future flagship
   | 'portfolio_checkup'     // future flagship
-  | 'brokerage';            // SnapTrade brokerage connection — costs us per connected user
+  | 'brokerage'             // SnapTrade brokerage connection — costs us per connected user
+  | 'academy_pro';          // intermediate/advanced Academy courses
 
 export interface Entitlements {
   tier: Tier;
@@ -105,7 +106,8 @@ export const PLAN_COMPARISON: ComparisonGroup[] = [
     title: 'Data & learning',
     rows: [
       { label: 'CSV / PDF exports', free: false, pro: true },
-      { label: 'Academy + daily challenge', free: true, pro: true },
+      { label: 'Academy: beginner courses + daily challenge', free: true, pro: true },
+      { label: 'Academy: intermediate & advanced courses', free: false, pro: true, hint: 'Valuation, financial statements, portfolio risk, and more' },
       { label: 'Community & leaderboards', free: true, pro: true },
       { label: 'Priority support', free: false, pro: true },
     ],

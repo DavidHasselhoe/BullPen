@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
+import { getTier, isPro } from '@/lib/billing/tier';
 import type { Course, LessonType, LessonWithCompletion } from '@/types/academy';
 
 interface CourseRow {
@@ -17,6 +18,7 @@ interface CourseRow {
   color: string | null;
   order_index: number;
   difficulty: 'beginner' | 'intermediate' | 'advanced' | null;
+  requires_pro: boolean;
 }
 
 interface LessonRow {
@@ -40,7 +42,7 @@ async function handler(
 
   const { data: course } = await supabase
     .from('academy_courses')
-    .select('id, slug, title, description, icon, color, order_index, difficulty')
+    .select('id, slug, title, description, icon, color, order_index, difficulty, requires_pro')
     .eq('slug', slug)
     .eq('is_published', true)
     .maybeSingle<CourseRow>();
@@ -50,6 +52,9 @@ async function handler(
       NextResponse.json({ success: false, error: 'Course not found' }, { status: 404 })
     );
   }
+
+  const tier = await getTier(session.userId);
+  const locked = course.requires_pro && !isPro(tier);
 
   const [lessonsRes, lessonProgressRes, courseProgressRes] = await Promise.all([
     supabase
@@ -74,6 +79,8 @@ async function handler(
     (lessonProgressRes.data ?? []).map((r: { lesson_id: string }) => r.lesson_id)
   );
 
+  // Locked (Pro-gated, non-Pro viewer): titles/types/XP stay visible as a
+  // teaser, but the actual content never crosses the wire.
   const lessons: LessonWithCompletion[] = lessonRows.map((l) => ({
     id: l.id,
     courseId: l.course_id,
@@ -82,7 +89,7 @@ async function handler(
     type: l.type,
     orderIndex: l.order_index,
     xpReward: l.xp_reward,
-    content: l.content as LessonWithCompletion['content'],
+    ...(locked ? {} : { content: l.content as LessonWithCompletion['content'] }),
     completed: completedIds.has(l.id),
   }));
 
@@ -95,6 +102,7 @@ async function handler(
     color: course.color ?? 'emerald',
     orderIndex: course.order_index,
     difficulty: course.difficulty,
+    requiresPro: course.requires_pro,
   };
 
   return addSecurityHeaders(
@@ -102,6 +110,7 @@ async function handler(
       success: true,
       course: courseDto,
       lessons,
+      locked,
       progress: courseProgressRes.data ?? null,
     })
   );

@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
+import { getTier, isPro } from '@/lib/billing/tier';
 import type { CourseWithProgress } from '@/types/academy';
 
 interface CourseRow {
@@ -18,6 +19,7 @@ interface CourseRow {
   color: string | null;
   order_index: number;
   difficulty: 'beginner' | 'intermediate' | 'advanced' | null;
+  requires_pro: boolean;
 }
 
 async function handler(
@@ -27,10 +29,10 @@ async function handler(
 ): Promise<NextResponse> {
   const supabase = createServerClient();
 
-  const [coursesRes, lessonsRes, lessonProgressRes, courseProgressRes] = await Promise.all([
+  const [coursesRes, lessonsRes, lessonProgressRes, courseProgressRes, tier] = await Promise.all([
     supabase
       .from('academy_courses')
-      .select('id, slug, title, description, icon, color, order_index, difficulty')
+      .select('id, slug, title, description, icon, color, order_index, difficulty, requires_pro')
       .eq('is_published', true)
       .order('order_index'),
     supabase
@@ -44,7 +46,10 @@ async function handler(
       .from('academy_user_course_progress')
       .select('course_id, completed_at')
       .eq('user_id', session.userId),
+    getTier(session.userId),
   ]);
+
+  const userIsPro = isPro(tier);
 
   const courses = (coursesRes.data ?? []) as CourseRow[];
   const lessons = (lessonsRes.data ?? []) as Array<{ id: string; course_id: string }>;
@@ -74,7 +79,15 @@ async function handler(
     // Sequential unlock: course at idx 0 always unlocked; course N unlocked once
     // course N-1 is fully completed.
     const prevCourse = idx > 0 ? courses[idx - 1] : null;
-    const isLocked = prevCourse !== null && !completedCourseIds.has(prevCourse.id);
+    const progressionLocked = prevCourse !== null && !completedCourseIds.has(prevCourse.id);
+    const proLocked = c.requires_pro && !userIsPro;
+    // 'pro' wins the messaging even if progression would also lock it — upgrading
+    // is the action that actually unblocks the user, so that's what we tell them.
+    const lockedReason: 'progression' | 'pro' | null = proLocked
+      ? 'pro'
+      : progressionLocked
+        ? 'progression'
+        : null;
 
     return {
       id: c.id,
@@ -85,10 +98,12 @@ async function handler(
       color: c.color ?? 'emerald',
       orderIndex: c.order_index,
       difficulty: c.difficulty,
+      requiresPro: c.requires_pro,
       totalLessons: total,
       completedLessons: done,
       percentComplete,
-      isLocked,
+      isLocked: lockedReason !== null,
+      lockedReason,
     };
   });
 
