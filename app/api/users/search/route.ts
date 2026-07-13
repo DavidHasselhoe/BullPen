@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withRateLimit, withAuth, addSecurityHeaders } from '@/lib/security/api-security';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
+import { createServerClient } from '@/lib/supabase/client';
 
 /** Public profile columns — never include email, settings, role, last_login_at */
 const PUBLIC_PROFILE_COLUMNS =
@@ -62,33 +61,17 @@ async function attachHoldingCounts(
   });
 }
 
-async function handler(
-  request: NextRequest,
-  _context: unknown,
-  _session: { userId: string }
-): Promise<NextResponse> {
+// Public profile browsing/search — deliberately unauthenticated. The columns
+// selected and the isProfilePublic filter below already restrict this to data
+// its owners chose to make public; rate limiting is the right protection here,
+// not a login wall on a page titled "Browse Members."
+async function handler(request: NextRequest): Promise<NextResponse> {
   const q = request.nextUrl.searchParams.get('q')?.trim() ?? '';
   const limitParam = request.nextUrl.searchParams.get('limit');
   const limit = Math.min(Math.max(parseInt(limitParam ?? '20', 10) || 20, 1), 50);
 
   try {
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll: () => cookieStore.getAll(),
-          setAll: (cookiesToSet) => {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) =>
-                cookieStore.set(name, value, options)
-              );
-            } catch {}
-          },
-        },
-      }
-    );
+    const supabase = createServerClient();
 
     let rows: Record<string, unknown>[] | null = null;
     let error: { message: string } | null = null;
@@ -135,7 +118,4 @@ async function handler(
   }
 }
 
-export const GET = withRateLimit(
-  withAuth(handler),
-  { windowMs: 60 * 1000, maxRequests: 60 }
-);
+export const GET = withRateLimit(handler, { windowMs: 60 * 1000, maxRequests: 60 });
