@@ -5,9 +5,9 @@ import { Eye, EyeOff, GripVertical, RotateCcw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import {
-  DASHBOARD_WIDGETS,
   DEFAULT_ORDER,
   getWidget,
+  mergeNewWidgets,
 } from '@/lib/dashboard/widgets';
 
 interface Props {
@@ -19,10 +19,7 @@ interface Props {
 export function HomepageLayoutEditor({ order, hidden, onChange }: Props) {
   // Always include every known widget in the editor, even if a saved order
   // is missing some (newly added widgets). Drop unknown ids.
-  const known = order.filter((id) => getWidget(id));
-  for (const w of DASHBOARD_WIDGETS) {
-    if (!known.includes(w.id)) known.push(w.id);
-  }
+  const known = mergeNewWidgets(order.filter((id) => getWidget(id)));
 
   const hiddenSet = new Set(hidden);
 

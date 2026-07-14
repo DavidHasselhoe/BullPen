@@ -25,9 +25,37 @@ export function getWidget(id: string): DashboardWidget | undefined {
 }
 
 /**
+ * Insert widgets that aren't in `known` yet (e.g. a widget added to
+ * DASHBOARD_WIDGETS after a user last customized their layout) right after
+ * their nearest canonical predecessor that IS present — not blindly at the
+ * end. Otherwise a brand-new widget gets buried below everything a user
+ * already reordered, including low-priority items like the investing quote,
+ * for every account that customized their layout before the widget existed.
+ */
+export function mergeNewWidgets(known: string[]): string[] {
+  const result = [...known];
+  const present = new Set(known);
+  for (let i = 0; i < DASHBOARD_WIDGETS.length; i++) {
+    const id = DASHBOARD_WIDGETS[i].id;
+    if (present.has(id)) continue;
+    let insertAfterId: string | null = null;
+    for (let j = i - 1; j >= 0; j--) {
+      if (present.has(DASHBOARD_WIDGETS[j].id)) {
+        insertAfterId = DASHBOARD_WIDGETS[j].id;
+        break;
+      }
+    }
+    const insertIndex = insertAfterId ? result.indexOf(insertAfterId) + 1 : 0;
+    result.splice(insertIndex, 0, id);
+    present.add(id);
+  }
+  return result;
+}
+
+/**
  * Apply persisted order/hidden against the canonical widget list:
  *  - drop unknown ids (resilience to renames/removals)
- *  - append new widgets the user hasn't seen yet (to the bottom)
+ *  - merge in new widgets the user hasn't seen yet, near their canonical position
  *  - drop hidden ids
  */
 export function resolveWidgetOrder(
@@ -36,9 +64,7 @@ export function resolveWidgetOrder(
 ): string[] {
   const order = Array.isArray(storedOrder) && storedOrder.length > 0 ? storedOrder : DEFAULT_ORDER;
   const known = order.filter((id) => WIDGETS_BY_ID.has(id));
-  for (const w of DASHBOARD_WIDGETS) {
-    if (!known.includes(w.id)) known.push(w.id);
-  }
+  const merged = mergeNewWidgets(known);
   const hiddenSet = new Set(hidden ?? []);
-  return known.filter((id) => !hiddenSet.has(id));
+  return merged.filter((id) => !hiddenSet.has(id));
 }
