@@ -19,15 +19,9 @@ import {
   getBalanceSheet,
   getCashFlow,
   getCompanyProfile as getTwelveDataProfile,
-  withRateLimitRetry,
   TwelveDataRateLimitError,
-  type CompanyStatistics,
-  type IncomeStatementPeriod,
-  type BalanceSheetPeriod,
-  type CashFlowPeriod,
 } from '@/lib/twelvedata/twelvedata-client';
-import { getCached, setCached } from '@/lib/cache/market-data-cache';
-import { computeHealthScore } from '@/lib/finance/health-score';
+import { getHealthScoreForSymbol } from '@/lib/finance/get-health-score';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -981,9 +975,6 @@ const getEarningsData = tool({
   },
 });
 
-const STATS_TTL = 60 * 60;
-const FINANCIALS_TTL = 24 * 60 * 60;
-
 const getHealthScore = tool({
   description:
     'Fetch BullPen\'s computed Financial Health score (0-100, grade A-F) for a stock — the same score ' +
@@ -1001,28 +992,7 @@ const getHealthScore = tool({
   execute: async ({ ticker }) => {
     const symbol = ticker.toUpperCase();
     try {
-      let stats = await getCached<CompanyStatistics>(`stats:${symbol}`);
-      if (!stats) {
-        stats = await getStatistics(symbol);
-        void setCached(`stats:${symbol}`, symbol, 'statistics', stats, STATS_TTL).catch(() => {});
-      }
-
-      const [income, balance, cashflow] = await Promise.all([
-        getCached<IncomeStatementPeriod[]>(`financials:${symbol}:income:quarterly`).then(
-          (c) => c ?? withRateLimitRetry(() => getIncomeStatement(symbol, 'quarterly')).catch(() => [] as IncomeStatementPeriod[])
-        ),
-        getCached<BalanceSheetPeriod[]>(`financials:${symbol}:balance:quarterly`).then(
-          (c) => c ?? withRateLimitRetry(() => getBalanceSheet(symbol, 'quarterly')).catch(() => [] as BalanceSheetPeriod[])
-        ),
-        getCached<CashFlowPeriod[]>(`financials:${symbol}:cashflow:quarterly`).then(
-          (c) => c ?? withRateLimitRetry(() => getCashFlow(symbol, 'quarterly')).catch(() => [] as CashFlowPeriod[])
-        ),
-      ]);
-      if (income.length)   void setCached(`financials:${symbol}:income:quarterly`,   symbol, 'financials', income,   FINANCIALS_TTL).catch(() => {});
-      if (balance.length)  void setCached(`financials:${symbol}:balance:quarterly`,  symbol, 'financials', balance,  FINANCIALS_TTL).catch(() => {});
-      if (cashflow.length) void setCached(`financials:${symbol}:cashflow:quarterly`, symbol, 'financials', cashflow, FINANCIALS_TTL).catch(() => {});
-
-      const hs = computeHealthScore(stats, income, balance, cashflow);
+      const { healthScore: hs } = await getHealthScoreForSymbol(symbol);
       return {
         ticker: symbol,
         score: hs.score,

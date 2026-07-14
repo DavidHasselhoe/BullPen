@@ -14,7 +14,8 @@ import {
   type CashFlowPeriod, type CompanyProfile,
 } from '@/lib/twelvedata/twelvedata-client';
 import { getCached } from '@/lib/cache/market-data-cache';
-import { computeHealthScore, type HealthScore } from '@/lib/finance/health-score';
+import type { HealthScore } from '@/lib/finance/health-score';
+import { computeAndSyncHealthScore } from '@/lib/finance/get-health-score';
 
 interface EarningsRow {
   period: string;
@@ -89,7 +90,7 @@ export async function gatherDeepDiveData(symbol: string): Promise<DeepDiveData> 
 
   const health =
     stats && (income.length || balance.length || cashflow.length)
-      ? computeHealthScore(stats, income, balance, cashflow)
+      ? (await computeAndSyncHealthScore(sym, stats, income, balance, cashflow, false)).healthScore
       : null;
 
   const dataAsOf = income[0]?.fiscal_date || balance[0]?.fiscal_date || null;

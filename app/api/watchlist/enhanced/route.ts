@@ -2,14 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
 import { getCached } from '@/lib/cache/market-data-cache';
-import { computeHealthScore } from '@/lib/finance/health-score';
 import { getEarningsCalendar } from '@/lib/finnhub/finnhub-client';
-import type {
-  CompanyStatistics,
-  IncomeStatementPeriod,
-  BalanceSheetPeriod,
-  CashFlowPeriod,
-} from '@/lib/twelvedata/twelvedata-client';
+import type { CompanyStatistics } from '@/lib/twelvedata/twelvedata-client';
+
+function gradeLabel(grade: string): string {
+  switch (grade) {
+    case 'A': return 'Strong';
+    case 'B': return 'Good';
+    case 'C': return 'Fair';
+    case 'D': return 'Weak';
+    default: return 'At Risk';
+  }
+}
 
 type EarningsItem = {
   date: string;
@@ -33,7 +37,9 @@ interface EnhancedData {
  * POST /api/watchlist/enhanced
  * Body: { symbols: string[] }
  *
- * Health/financials: read-only from market_data_cache (populated on stock page visits).
+ * Health score: read from screener_stats — the same persisted, synced value
+ * shown on the stock page and screener, rather than recomputed here from
+ * whatever happens to be cached (which could disagree with those surfaces).
  * Earnings: cache first, falls back to a single Finnhub calendar call (free tier).
  * Market cap / P/E: from stats cache when available.
  */
@@ -82,17 +88,31 @@ async function handler(
     }
   }
 
-  // ── Read all caches in parallel ───────────────────────────────────────────
+  // ── Canonical health scores (single query, matches stock page + screener) ──
+  const { data: healthRows } = await supabase
+    .from('screener_stats')
+    .select('ticker, health_score, health_score_grade')
+    .in('ticker', symbols);
+
+  const healthMap = new Map<string, EnhancedData['healthScore']>();
+  for (const row of healthRows ?? []) {
+    if (row.health_score != null && row.health_score_grade) {
+      healthMap.set(row.ticker, {
+        score: row.health_score,
+        grade: row.health_score_grade,
+        label: gradeLabel(row.health_score_grade),
+      });
+    }
+  }
+
+  // ── Read remaining caches in parallel ─────────────────────────────────────
   const cacheResults = await Promise.all(
     symbols.map(async (sym) => {
-      const [stats, income, balance, cashflow, earnings] = await Promise.all([
+      const [stats, earnings] = await Promise.all([
         getCached<CompanyStatistics>(`stats:${sym}`),
-        getCached<IncomeStatementPeriod[]>(`financials:${sym}:income:quarterly`),
-        getCached<BalanceSheetPeriod[]>(`financials:${sym}:balance:quarterly`),
-        getCached<CashFlowPeriod[]>(`financials:${sym}:cashflow:quarterly`),
         getCached<EarningsItem[]>(`snap-earnings:${sym}`),
       ]);
-      return { sym, stats, income, balance, cashflow, earnings };
+      return { sym, stats, earnings };
     })
   );
 
@@ -120,13 +140,8 @@ async function handler(
   // ── Build results ─────────────────────────────────────────────────────────
   const results: Record<string, EnhancedData> = {};
 
-  for (const { sym, stats, income, balance, cashflow, earnings } of cacheResults) {
-    // Health score
-    let healthScore: EnhancedData['healthScore'] = null;
-    if (stats && income && balance && cashflow) {
-      const hs = computeHealthScore(stats, income, balance, cashflow);
-      healthScore = { score: hs.score, grade: hs.grade, label: hs.label };
-    }
+  for (const { sym, stats, earnings } of cacheResults) {
+    const healthScore = healthMap.get(sym) ?? null;
 
     // Earnings — cache first, Finnhub fallback
     let nextEarningsDate: string | null = null;
