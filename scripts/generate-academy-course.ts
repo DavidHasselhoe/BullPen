@@ -66,20 +66,20 @@ interface CourseOutline {
 // Example: course #2 in the roadmap. Replace freely.
 
 const DEFAULT_OUTLINE: CourseOutline = {
-  slug: 'portfolio-diversification',
-  title: 'Building a Portfolio: Diversification & Risk',
+  slug: 'dividends-income',
+  title: 'Dividends & Passive Income',
   description:
-    'One stock is a bet. A portfolio is a strategy. Learn diversification, position sizing, and risk before you build yours.',
-  icon: 'PieChart',
-  color: 'emerald',
-  orderIndex: 5,
+    'Some stocks pay you to hold them. Learn how dividend yield, payout ratio, and ex-dividend dates actually work.',
+  icon: 'Wallet',
+  color: 'blue',
+  orderIndex: 6,
   difficulty: 'beginner',
   lessons: [
-    { slug: 'why-diversification-matters', title: 'Why Diversification Matters', type: 'read', topic: 'What diversification means and why concentration risk (having too much in one stock or sector) is dangerous. Explain correlation in plain English — why owning 10 tech stocks isn\'t as diversified as it sounds.', xpReward: 10 },
-    { slug: 'position-sizing-and-risk', title: 'Position Sizing & Risk', type: 'read', topic: 'How much of a portfolio a single position should reasonably be, and the basics of risk tolerance — why a beginner\'s risk tolerance might differ from an experienced investor\'s.', xpReward: 10 },
-    { slug: 'portfolio-basics-quiz', title: 'Quick Check: Portfolio Basics', type: 'quiz', topic: 'Test understanding of diversification, correlation, and position sizing from the previous two lessons. 3 questions.', xpReward: 20 },
-    { slug: 'portfolio-terms-match', title: 'Match the Portfolio Terms', type: 'match', topic: 'Match portfolio terms (Diversification, Correlation, Position Size, Asset Allocation) to their plain-English definitions.', xpReward: 15 },
-    { slug: 'building-your-first-portfolio', title: 'Building Your First Portfolio', type: 'scenario', topic: 'A beginner shows their portfolio: 80% in three tech stocks, 20% in one friend\'s stock tip. They must decide whether this is well-diversified and what, if anything, to change. Reward recognizing concentration risk over chasing more winners.', xpReward: 25 },
+    { slug: 'what-is-a-dividend', title: 'What is a Dividend?', type: 'read', topic: 'What a dividend is (a cash payment to shareholders), how dividend yield is calculated, and why not every company pays one (e.g. growth companies reinvesting profit instead).', xpReward: 10 },
+    { slug: 'payout-ratio-and-sustainability', title: 'Payout Ratio & Sustainability', type: 'read', topic: 'What the payout ratio is (dividends paid ÷ net income) and how to use it to judge whether a dividend looks safe or is at risk of being cut.', xpReward: 10 },
+    { slug: 'dividends-quiz', title: 'Quick Check: Dividends', type: 'quiz', topic: 'Test understanding of dividend yield, payout ratio, and ex-dividend date. 3 questions.', xpReward: 20 },
+    { slug: 'dividend-terms-match', title: 'Match the Dividend Terms', type: 'match', topic: 'Match dividend terms (Dividend Yield, Payout Ratio, Ex-Dividend Date, Dividend Aristocrat) to their plain-English definitions.', xpReward: 15 },
+    { slug: 'too-good-to-be-true', title: 'Too Good to Be True?', type: 'scenario', topic: 'A beginner finds a stock with an unusually high dividend yield (e.g. 15%) and is excited about the income. They must investigate the payout ratio and recent price decline before deciding whether it\'s a genuine opportunity or a yield trap. Reward checking payout ratio and business health over chasing yield alone.', xpReward: 25 },
   ],
 };
 
