@@ -1,5 +1,22 @@
 [
   {
+    "date": "2026-07-14",
+    "entries": [
+      { "type": "new", "text": "Sign-up now starts with a few quick questions about your investing experience, risk tolerance, timeframe, and goals — so the app and AI assistant feel tailored to you right away" },
+      { "type": "new", "text": "You can now browse past Daily Briefs and step back and forth through them, so missing a morning doesn't mean missing the brief" },
+      { "type": "new", "text": "Added four new Academy courses — Company Fundamentals, Building a Portfolio, Dividends & Passive Income, and Beyond Stocks: ETFs & Crypto" },
+      { "type": "improved", "text": "Renamed the Reading a Stock Price course to Why Stocks Move and refreshed its content so it no longer overlaps with Reading a Stock Quote" },
+      { "type": "improved", "text": "Simplified the holdings performance chart by removing the confusing \"Since Purchase\" timeframe, since MAX already showed the same numbers" },
+      { "type": "improved", "text": "Sped up the stock screener's live price updates" },
+      { "type": "fixed", "text": "Fixed new dashboard widgets getting buried at the bottom if you'd already customized your homepage layout" },
+      { "type": "fixed", "text": "Fixed the Academy lesson-complete celebration taking several seconds to appear, and made the bull mascot easier to see" },
+      { "type": "fixed", "text": "Fixed the AI assistant occasionally showing a raw technical error message instead of a plain one when it hit a rate limit" },
+      { "type": "fixed", "text": "Fixed recently-viewed stocks not updating for tickers not yet in our database" },
+      { "type": "fixed", "text": "Fixed the Academy welcome banner popping up at the wrong time, and added a loading placeholder for the daily challenge" },
+      { "type": "fixed", "text": "Fixed Financial Health scores occasionally showing different values on different pages for the same stock" }
+    ]
+  },
+  {
     "date": "2026-07-13",
     "entries": [
       { "type": "new", "text": "Added a new Academy course, Reading a Stock Quote, covering price, bid/ask spreads, and trading volume" },
