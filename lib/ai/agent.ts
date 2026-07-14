@@ -79,6 +79,11 @@ export async function runAgent(
     // Default stopWhen: stepCountIs(1) stops after the first turn (tool calls) before the model
     // gets a second turn to incorporate tool results into its response.
     stopWhen: stepCountIs(5),
+    // OpenAI 429s (tokens-per-minute) are marked isRetryable by the SDK and
+    // typically clear within a few seconds as the rolling per-minute window
+    // advances — a couple of extra retries with backoff meaningfully cuts how
+    // often a transient org-wide TPM spike reaches the user as a hard error.
+    maxRetries: 3,
   });
 
   return result;

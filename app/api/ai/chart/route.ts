@@ -10,6 +10,7 @@ import { withAuth } from '@/lib/security/api-security';
 import { checkRateLimit } from '@/lib/security/rate-limiter';
 import { checkQuota } from '@/lib/billing/quotas';
 import { logAiCall } from '@/lib/billing/log-ai-call';
+import { toSafeErrorMessage } from '@/lib/ai/error-utils';
 
 async function handler(
   req: NextRequest,
@@ -32,19 +33,24 @@ async function handler(
   const experienceLevel = (body?.experienceLevel as 'beginner' | 'intermediate' | 'advanced') ?? null;
   const language = (body?.language as string) ?? null;
 
-  const result = await runChartAgent(messages, snapshot, experienceLevel, language);
+  try {
+    const result = await runChartAgent(messages, snapshot, experienceLevel, language);
 
-  void result.usage.then((usage) => {
-    void logAiCall({
-      userId: session.userId,
-      feature: 'chat',
-      model: 'gpt-4o',
-      inputTokens: usage.inputTokens,
-      outputTokens: usage.outputTokens,
-    });
-  }).catch(() => { /* logging never blocks */ });
+    void result.usage.then((usage) => {
+      void logAiCall({
+        userId: session.userId,
+        feature: 'chat',
+        model: 'gpt-4o',
+        inputTokens: usage.inputTokens,
+        outputTokens: usage.outputTokens,
+      });
+    }).catch(() => { /* logging never blocks */ });
 
-  return result.toUIMessageStreamResponse();
+    return result.toUIMessageStreamResponse({ onError: toSafeErrorMessage });
+  } catch (err) {
+    console.error('[ai/chart] request failed before streaming started:', err);
+    return NextResponse.json({ error: 'ai_unavailable' }, { status: 503 });
+  }
 }
 
 export const POST = withAuth(handler);

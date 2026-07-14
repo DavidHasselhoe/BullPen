@@ -10,6 +10,7 @@ import { withAuth } from '@/lib/security/api-security';
 import { checkRateLimit } from '@/lib/security/rate-limiter';
 import { checkQuota } from '@/lib/billing/quotas';
 import { logAiCall } from '@/lib/billing/log-ai-call';
+import { toSafeErrorMessage } from '@/lib/ai/error-utils';
 
 async function handler(
   req: NextRequest,
@@ -37,20 +38,31 @@ async function handler(
   const investmentHorizon = (body?.investmentHorizon as 'short' | 'medium' | 'long') ?? null;
   const responseStyle = (body?.responseStyle as 'concise' | 'balanced' | 'detailed') ?? null;
 
-  const result = await runAgent(messages, context, experienceLevel, language, riskProfile, investmentHorizon, responseStyle);
+  try {
+    const result = await runAgent(messages, context, experienceLevel, language, riskProfile, investmentHorizon, responseStyle);
 
-  // Log usage when stream finishes (non-blocking — response streams immediately).
-  void result.usage.then((usage) => {
-    void logAiCall({
-      userId: session.userId,
-      feature: 'chat',
-      model: 'gpt-4o',
-      inputTokens: usage.inputTokens,
-      outputTokens: usage.outputTokens,
-    });
-  }).catch(() => { /* logging never blocks */ });
+    // Log usage when stream finishes (non-blocking — response streams immediately).
+    void result.usage.then((usage) => {
+      void logAiCall({
+        userId: session.userId,
+        feature: 'chat',
+        model: 'gpt-4o',
+        inputTokens: usage.inputTokens,
+        outputTokens: usage.outputTokens,
+      });
+    }).catch(() => { /* logging never blocks */ });
 
-  return result.toUIMessageStreamResponse();
+    // onError sanitizes any error that surfaces while the stream is being
+    // consumed (e.g. an OpenAI rate limit hit mid-generation) — without this,
+    // the SDK's default formatter forwards error.message verbatim, which for
+    // APICallError includes the raw upstream response body.
+    return result.toUIMessageStreamResponse({ onError: toSafeErrorMessage });
+  } catch (err) {
+    // Covers failures before streaming could even start (e.g. the initial
+    // request to OpenAI is rejected outright).
+    console.error('[ai/chat] request failed before streaming started:', err);
+    return NextResponse.json({ error: 'ai_unavailable' }, { status: 503 });
+  }
 }
 
 export const POST = withAuth(handler);

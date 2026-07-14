@@ -71,6 +71,21 @@ function extractClientActions(message: { parts?: Array<{ type?: string; state?: 
   return actions;
 }
 
+// Defense-in-depth: the server sanitizes AI stream errors before they reach
+// the client, but this catches anything that slips through a different path
+// (a raw fetch/network failure, a future regression) so a provider's internal
+// error payload — org IDs, rate-limit internals, stack-shaped text — never
+// renders directly to a user.
+function friendlyChatError(message: string | undefined): string {
+  if (!message) return 'Something went wrong. Please try again.';
+  const looksTechnical =
+    message.length > 160 ||
+    /"(type|code|error)"\s*:/i.test(message) ||
+    /\borg-[a-zA-Z0-9]+\b/.test(message) ||
+    /rate[_ ]limit/i.test(message);
+  return looksTechnical ? 'Something went wrong. Please try again.' : message;
+}
+
 const MARKDOWN_CLS = cn(
   'break-words',
   '[&_h1]:text-base [&_h1]:font-bold [&_h1]:mt-2 [&_h1]:mb-1 [&_h1]:first:mt-0',
@@ -546,7 +561,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
       {/* Error bar */}
       {error && (
         <div className="mx-3 mb-1 px-3 py-2 rounded-lg bg-destructive/10 text-destructive text-xs flex items-center justify-between gap-2">
-          <span className="truncate">{error.message}</span>
+          <span className="truncate">{friendlyChatError(error.message)}</span>
           <div className="flex items-center gap-3 shrink-0">
             <button
               onClick={() => {

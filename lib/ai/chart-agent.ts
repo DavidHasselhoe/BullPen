@@ -125,5 +125,8 @@ export async function runChartAgent(
     messages: modelMessages,
     tools: ALL_TOOLS,
     stopWhen: stepCountIs(8),
+    // See lib/ai/agent.ts — OpenAI 429s (tokens-per-minute) are retryable and
+    // typically clear within a few seconds as the rolling window advances.
+    maxRetries: 3,
   });
 }
