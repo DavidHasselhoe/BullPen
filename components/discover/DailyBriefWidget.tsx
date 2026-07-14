@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { X, ArrowUpRight } from 'lucide-react';
+import { X, ArrowUpRight, ChevronLeft, ChevronRight, History } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
 
@@ -82,6 +82,12 @@ function formatRelativeTime(isoString: string): string {
 function formatPublishedDate(dateStr: string): string {
   return new Date(dateStr + 'T12:00:00Z').toLocaleDateString(undefined, {
     weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC',
+  });
+}
+
+function formatShortDate(dateStr: string): string {
+  return new Date(dateStr + 'T12:00:00Z').toLocaleDateString(undefined, {
+    month: 'short', day: 'numeric', timeZone: 'UTC',
   });
 }
 
@@ -305,24 +311,76 @@ function SectionTOC({
 
 function BriefReader({
   brief,
-  isToday,
   open,
   onOpenChange,
 }: {
   brief: DailyBrief;
-  isToday: boolean;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const sections = useMemo(() => parseSections(brief.content), [brief.content]);
-  const readingMinutes = useMemo(() => estimateReadingTime(brief.content), [brief.content]);
+  const { data: history } = useQuery({
+    queryKey: ['daily-briefs-list'],
+    queryFn: async (): Promise<DailyBrief[]> => {
+      const res = await fetch('/api/briefs/list');
+      if (!res.ok) throw new Error('Failed to fetch brief history');
+      const json = await res.json();
+      if (!json.success || !Array.isArray(json.briefs)) throw new Error('Failed to fetch brief history');
+      return json.briefs as DailyBrief[];
+    },
+    enabled: open,
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+
+  const [manualIndex, setManualIndex] = useState<number | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
+
+  // Reset navigation whenever the reader opens fresh (e.g. reopened later
+  // with a new "today" brief after the day rolled over). Deferred via
+  // requestAnimationFrame, matching the scroll-reset effect below.
+  useEffect(() => {
+    if (open) {
+      requestAnimationFrame(() => {
+        setManualIndex(null);
+        setHistoryOpen(false);
+      });
+    }
+  }, [open, brief.id]);
+
+  const historyIndexOfCurrent = useMemo(() => {
+    if (!history) return -1;
+    return history.findIndex((b) => b.published_date === brief.published_date);
+  }, [history, brief.published_date]);
+
+  const activeIndex = manualIndex ?? historyIndexOfCurrent;
+  const displayedBrief = activeIndex >= 0 && history ? history[activeIndex] : brief;
+
+  const canGoOlder = !!history && activeIndex >= 0 && activeIndex < history.length - 1;
+  const canGoNewer = !!history && activeIndex > 0;
+
+  function goOlder() {
+    if (!history || activeIndex < 0) return;
+    if (activeIndex + 1 < history.length) setManualIndex(activeIndex + 1);
+  }
+  function goNewer() {
+    if (!history || activeIndex <= 0) return;
+    setManualIndex(activeIndex - 1);
+  }
+  function selectBrief(index: number) {
+    setManualIndex(index);
+    setHistoryOpen(false);
+  }
+
+  const sections = useMemo(() => parseSections(displayedBrief.content), [displayedBrief.content]);
+  const readingMinutes = useMemo(() => estimateReadingTime(displayedBrief.content), [displayedBrief.content]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
   const [activeSlug, setActiveSlug] = useState<string | null>(sections[0]?.slug ?? null);
   const [progress, setProgress] = useState(0);
 
 
-  // Reset scroll + progress when reopening
+  // Reset scroll + progress when the reader opens, OR when the displayed
+  // brief changes (reopening, or navigating via prev/next/history panel).
   useEffect(() => {
     if (open) {
       requestAnimationFrame(() => {
@@ -331,7 +389,7 @@ function BriefReader({
         setActiveSlug(sections[0]?.slug ?? null);
       });
     }
-  }, [open, sections]);
+  }, [open, displayedBrief.published_date, sections]);
 
   function handleScroll() {
     const el = scrollRef.current;
@@ -362,7 +420,7 @@ function BriefReader({
     root.scrollTo({ top: target.offsetTop - 16, behavior: 'smooth' });
   }
 
-  const topTickers = (brief.featured_tickers ?? [])
+  const topTickers = (displayedBrief.featured_tickers ?? [])
     .filter((t) => t.length >= 1 && t.length <= 5)
     .slice(0, 6);
 
@@ -387,7 +445,7 @@ function BriefReader({
             'md:animate-brief-modal-in'
           )}
         >
-          <DialogPrimitive.Title className="sr-only">{brief.title}</DialogPrimitive.Title>
+          <DialogPrimitive.Title className="sr-only">{displayedBrief.title}</DialogPrimitive.Title>
 
           {/* Reading progress bar */}
           <div className="absolute top-0 left-0 right-0 h-[2px] bg-border/15 z-20 overflow-hidden">
@@ -408,26 +466,68 @@ function BriefReader({
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary/75">
-                    {isToday ? 'Daily Brief' : "Yesterday's Brief"}
+                    Daily Brief
                   </span>
                 </div>
-                <h2 className="text-xl md:text-[26px] font-semibold text-foreground leading-tight tracking-tight pr-10">
-                  {brief.title}
+                <h2 className="text-xl md:text-[26px] font-semibold text-foreground leading-tight tracking-tight pr-28 md:pr-32">
+                  {displayedBrief.title}
                 </h2>
                 <div className="flex items-center flex-wrap gap-x-2 gap-y-1 mt-3 text-[11px] text-muted-foreground/70 font-mono">
-                  <span>{formatPublishedDate(brief.published_date)}</span>
+                  <span>{formatPublishedDate(displayedBrief.published_date)}</span>
                   <span className="text-muted-foreground/30">·</span>
                   <span>{readingMinutes} min read</span>
                   <span className="text-muted-foreground/30">·</span>
-                  <span>Generated {formatRelativeTime(brief.generated_at)}</span>
+                  <span>Generated {formatRelativeTime(displayedBrief.generated_at)}</span>
                 </div>
               </div>
-              <DialogPrimitive.Close
-                className="absolute top-5 right-5 md:top-7 md:right-7 text-muted-foreground/50 hover:text-foreground transition-all duration-150 p-1.5 rounded-lg hover:bg-muted/40 active:scale-95"
-                aria-label="Close"
-              >
-                <X className="h-4 w-4" />
-              </DialogPrimitive.Close>
+
+              <div className="absolute top-5 right-5 md:top-7 md:right-7 flex items-center gap-1">
+                {history && history.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={goOlder}
+                      disabled={!canGoOlder}
+                      aria-label="Older brief"
+                      title="Older brief"
+                      className="text-muted-foreground/50 hover:text-foreground transition-all duration-150 p-1.5 rounded-lg hover:bg-muted/40 active:scale-95 disabled:opacity-30 disabled:pointer-events-none disabled:hover:bg-transparent"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={goNewer}
+                      disabled={!canGoNewer}
+                      aria-label="Newer brief"
+                      title="Newer brief"
+                      className="text-muted-foreground/50 hover:text-foreground transition-all duration-150 p-1.5 rounded-lg hover:bg-muted/40 active:scale-95 disabled:opacity-30 disabled:pointer-events-none disabled:hover:bg-transparent"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setHistoryOpen((v) => !v)}
+                      aria-expanded={historyOpen}
+                      aria-label="Past briefs"
+                      title="Past briefs"
+                      className={cn(
+                        'transition-all duration-150 p-1.5 rounded-lg active:scale-95',
+                        historyOpen
+                          ? 'text-primary bg-primary/10'
+                          : 'text-muted-foreground/50 hover:text-foreground hover:bg-muted/40'
+                      )}
+                    >
+                      <History className="h-4 w-4" />
+                    </button>
+                  </>
+                )}
+                <DialogPrimitive.Close
+                  className="text-muted-foreground/50 hover:text-foreground transition-all duration-150 p-1.5 rounded-lg hover:bg-muted/40 active:scale-95"
+                  aria-label="Close"
+                >
+                  <X className="h-4 w-4" />
+                </DialogPrimitive.Close>
+              </div>
             </div>
 
             {topTickers.length > 0 && (
@@ -440,6 +540,27 @@ function BriefReader({
                   >
                     ${ticker}
                   </Link>
+                ))}
+              </div>
+            )}
+
+            {historyOpen && history && (
+              <div className="absolute top-14 right-5 md:top-16 md:right-7 z-30 w-72 max-h-80 overflow-y-auto rounded-lg border border-border/40 bg-background shadow-lg py-1.5">
+                {history.map((b, i) => (
+                  <button
+                    key={b.id}
+                    type="button"
+                    onClick={() => selectBrief(i)}
+                    className={cn(
+                      'w-full text-left px-3 py-2 text-xs transition-colors hover:bg-muted/40',
+                      i === activeIndex && 'bg-muted/30'
+                    )}
+                  >
+                    <span className="block font-mono text-[10px] text-muted-foreground/60">
+                      {formatShortDate(b.published_date)}
+                    </span>
+                    <span className="block text-foreground/90 truncate">{b.title}</span>
+                  </button>
                 ))}
               </div>
             )}
@@ -600,7 +721,7 @@ export function DailyBriefWidget() {
         </button>
       </div>
 
-      <BriefReader brief={brief} isToday={isToday} open={isOpen} onOpenChange={setIsOpen} />
+      <BriefReader brief={brief} open={isOpen} onOpenChange={setIsOpen} />
     </>
   );
 }
