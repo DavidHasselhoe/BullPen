@@ -10,8 +10,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export default function AcademyHomePage() {
   const { data: courses, isLoading } = useAcademyCourses();
-  const { data: stats } = useAcademyStats();
-  const isFirstVisit = (stats?.totalXp ?? 0) === 0;
+  const { data: stats, isLoading: isStatsLoading } = useAcademyStats();
+  // Gate on isStatsLoading, not just totalXp — while stats is still in flight,
+  // stats is undefined and totalXp falls back to 0, which would misfire the
+  // "new to Academy" banner for returning users on every load.
+  const isFirstVisit = !isStatsLoading && (stats?.totalXp ?? 0) === 0;
 
   return (
     <div className="space-y-6 pt-2">
@@ -56,7 +59,11 @@ export default function AcademyHomePage() {
 
       {/* Course grid */}
       {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div
+          className="grid grid-cols-1 sm:grid-cols-2 gap-3"
+          role="status"
+          aria-label="Loading courses"
+        >
           {[0, 1, 2, 3].map((i) => (
             <Skeleton key={i} className="h-44 rounded-2xl" />
           ))}

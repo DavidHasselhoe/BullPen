@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Check, X, Flame, CalendarClock, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useDailyChallenge, type DailySubmitResult } from '@/hooks/use-daily-challenge';
+import { Skeleton } from '@/components/ui/skeleton';
 
 /** Hours:minutes until the next ET midnight, for the "resets in" copy. */
 function timeUntilEtMidnight(): string {
@@ -24,7 +25,36 @@ export function DailyChallengeCard() {
   const [result, setResult] = useState<DailySubmitResult | null>(null);
 
   if (isLoading) {
-    return <div className="h-40 rounded-2xl border border-border/40 bg-card/40 animate-pulse" />;
+    return (
+      <div
+        className="rounded-2xl border border-border/40 bg-card/40 p-5"
+        role="status"
+        aria-label="Loading daily challenge"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-7 w-7 rounded-lg shrink-0" />
+            <div className="space-y-1.5">
+              <Skeleton className="h-2.5 w-24" />
+              <Skeleton className="h-2.5 w-28" />
+            </div>
+          </div>
+          <Skeleton className="h-3 w-14" />
+        </div>
+
+        {/* Question */}
+        <Skeleton className="h-4 w-full max-w-[85%] mb-2" />
+        <Skeleton className="h-4 w-2/3 mb-4" />
+
+        {/* Options */}
+        <div className="grid gap-2">
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-11 w-full rounded-xl" />
+          ))}
+        </div>
+      </div>
+    );
   }
 
   // No challenge configured for today — hide entirely.

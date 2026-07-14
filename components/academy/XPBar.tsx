@@ -6,6 +6,7 @@ import { useAcademyStats } from '@/hooks/use-academy-stats';
 import { xpToNextLevel } from '@/types/academy';
 import { LevelBadge } from './LevelBadge';
 import { StreakBadge } from './StreakBadge';
+import { Skeleton } from '@/components/ui/skeleton';
 
 /**
  * Sticky XP / level / streak bar. Lives at the top of the Academy section.
@@ -13,7 +14,7 @@ import { StreakBadge } from './StreakBadge';
  * completion) using framer-motion's `animate(motionValue, ...)`.
  */
 export function XPBar() {
-  const { data: stats } = useAcademyStats();
+  const { data: stats, isLoading } = useAcademyStats();
 
   const totalXp = stats?.totalXp ?? 0;
   const { current, needed, level } = xpToNextLevel(totalXp);
@@ -22,6 +23,9 @@ export function XPBar() {
   const progress = useMotionValue(target);
   const widthPct = useTransform(progress, (v) => `${v * 100}%`);
   const displayedXp = useMotionValue(totalXp);
+  // Hoisted above the isLoading early return — must stay unconditional, same
+  // as every other hook here, or React throws on the loading -> loaded switch.
+  const roundedXp = useTransform(displayedXp, (v) => Math.round(v));
 
   useEffect(() => {
     const c1 = animate(progress, target, { duration: 0.8, ease: 'easeOut' });
@@ -32,6 +36,28 @@ export function XPBar() {
     };
   }, [target, totalXp, progress, displayedXp]);
 
+  // Same footprint as the loaded bar so nothing reflows once real data arrives —
+  // only the level number, XP count, fill width, and streak are placeholder-y.
+  if (isLoading) {
+    return (
+      <div
+        className="flex items-center gap-3 rounded-2xl border border-border/40 bg-card/50 backdrop-blur-sm px-3 py-2"
+        role="status"
+        aria-label="Loading progress"
+      >
+        <Skeleton className="h-6 w-6 rounded-full shrink-0" />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-baseline justify-between gap-2 mb-1">
+            <Skeleton className="h-2.5 w-12" />
+            <Skeleton className="h-2.5 w-10" />
+          </div>
+          <Skeleton className="h-1.5 w-full rounded-full" />
+        </div>
+        <Skeleton className="h-4 w-9 rounded-full shrink-0" />
+      </div>
+    );
+  }
+
   return (
     <div className="flex items-center gap-3 rounded-2xl border border-border/40 bg-card/50 backdrop-blur-sm px-3 py-2">
       <LevelBadge level={level} />
@@ -41,7 +67,7 @@ export function XPBar() {
             Level {level}
           </span>
           <span className="text-[11px] font-mono tabular-nums text-muted-foreground/70">
-            <motion.span>{useTransform(displayedXp, (v) => Math.round(v))}</motion.span>
+            <motion.span>{roundedXp}</motion.span>
             {' XP'}
           </span>
         </div>
