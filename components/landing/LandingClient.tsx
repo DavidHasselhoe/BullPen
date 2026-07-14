@@ -33,10 +33,7 @@ export function LandingClient() {
 
   const openSignUp = () => {
     if (isAuthenticated) { router.push('/dashboard'); return; }
-    setRedirectTo('/dashboard');
-    setAuthMode('signup');
-    setAuthMounted(true);
-    setAuthOpen(true);
+    router.push('/get-started');
   };
   const openSignIn = () => {
     if (isAuthenticated) { router.push('/dashboard'); return; }

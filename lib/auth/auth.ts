@@ -14,7 +14,7 @@ export interface AuthUser {
   bio: string | null;
   experience_level: 'beginner' | 'intermediate' | 'advanced' | null;
   market_focus: 'US' | 'EU' | 'BOTH' | null;
-  risk_profile: 'conservative' | 'moderate' | 'aggressive' | null;
+  risk_profile: 'conservative' | 'balanced' | 'aggressive' | null;
   // INTEGER in DB (migration 026): 1 = free, 2 = admin/staff, 3 = paid Pro.
   // Use `tierFromInt()` / `isPro()` from `lib/billing/tier.ts` instead of comparing this directly.
   account_tier: number | null;

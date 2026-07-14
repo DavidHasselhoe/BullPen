@@ -22,6 +22,7 @@ import {
 import type { Session } from '@supabase/supabase-js';
 import { createBrowserClient } from '@/lib/supabase/client';
 import type { AuthUser } from '@/lib/auth/auth';
+import { flushPendingOnboardingData } from '@/lib/onboarding/flush';
 
 interface AuthContextValue {
   user: AuthUser | null;
@@ -75,6 +76,10 @@ async function loadUserFromSession(
     } catch {
       lastErrorRef.current = Date.now();
     }
+    // Write any pre-signup quiz answers now that the account exists. Covers
+    // both the email and Google OAuth paths, since both funnel through this
+    // same SIGNED_IN handler. Never throws — a no-op when nothing is pending.
+    await flushPendingOnboardingData(session.user.id).catch(() => {});
   }
   return fetchUserProfile(supabase, session.user.id, lastErrorRef);
 }

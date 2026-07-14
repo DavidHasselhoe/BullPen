@@ -12,9 +12,16 @@ import { signUp } from '@/lib/auth/auth';
 interface AuthFormSignupProps {
   onSuccess?: () => void;
   onError?: (error: string) => void;
+  submitLabel?: string;
+  submitLoadingLabel?: string;
 }
 
-export function AuthFormSignup({ onSuccess, onError }: AuthFormSignupProps) {
+export function AuthFormSignup({
+  onSuccess,
+  onError,
+  submitLabel = 'Create account',
+  submitLoadingLabel = 'Creating account...',
+}: AuthFormSignupProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -171,10 +178,10 @@ export function AuthFormSignup({ onSuccess, onError }: AuthFormSignupProps) {
         {isLoading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Creating account...
+            {submitLoadingLabel}
           </>
         ) : (
-          'Create account'
+          submitLabel
         )}
       </Button>
     </motion.form>

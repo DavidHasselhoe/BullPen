@@ -12,7 +12,7 @@ import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { AIPanelProvider } from "@/components/ai/AIPanelProvider";
 import { AIPanelToggle } from "@/components/ai/AIPanelToggle";
 import { CommandPaletteProvider } from "@/components/command-palette/CommandPaletteProvider";
-import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
+import { PendingOnboardingFlush } from "@/components/onboarding/PendingOnboardingFlush";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -98,7 +98,7 @@ export default function RootLayout({
               <CommandPaletteProvider>
                 <BackgroundProvider />
                 <AuthNavigation />
-                <OnboardingModal />
+                <PendingOnboardingFlush />
                 {children}
                 <AIPanelToggle />
                 {process.env.VERCEL === '1' && (
