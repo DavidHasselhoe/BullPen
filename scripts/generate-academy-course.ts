@@ -66,20 +66,20 @@ interface CourseOutline {
 // Example: course #2 in the roadmap. Replace freely.
 
 const DEFAULT_OUTLINE: CourseOutline = {
-  slug: 'dividends-income',
-  title: 'Dividends & Passive Income',
+  slug: 'etfs-and-crypto',
+  title: 'Beyond Stocks: ETFs & Crypto',
   description:
-    'Some stocks pay you to hold them. Learn how dividend yield, payout ratio, and ex-dividend dates actually work.',
-  icon: 'Wallet',
-  color: 'blue',
-  orderIndex: 6,
+    'Stocks aren\'t the only asset on BullPen. Learn what ETFs are, how they differ from picking individual stocks, and the basics of crypto and commodities.',
+  icon: 'Layers',
+  color: 'emerald',
+  orderIndex: 7,
   difficulty: 'beginner',
   lessons: [
-    { slug: 'what-is-a-dividend', title: 'What is a Dividend?', type: 'read', topic: 'What a dividend is (a cash payment to shareholders), how dividend yield is calculated, and why not every company pays one (e.g. growth companies reinvesting profit instead).', xpReward: 10 },
-    { slug: 'payout-ratio-and-sustainability', title: 'Payout Ratio & Sustainability', type: 'read', topic: 'What the payout ratio is (dividends paid ÷ net income) and how to use it to judge whether a dividend looks safe or is at risk of being cut.', xpReward: 10 },
-    { slug: 'dividends-quiz', title: 'Quick Check: Dividends', type: 'quiz', topic: 'Test understanding of dividend yield, payout ratio, and ex-dividend date. 3 questions.', xpReward: 20 },
-    { slug: 'dividend-terms-match', title: 'Match the Dividend Terms', type: 'match', topic: 'Match dividend terms (Dividend Yield, Payout Ratio, Ex-Dividend Date, Dividend Aristocrat) to their plain-English definitions.', xpReward: 15 },
-    { slug: 'too-good-to-be-true', title: 'Too Good to Be True?', type: 'scenario', topic: 'A beginner finds a stock with an unusually high dividend yield (e.g. 15%) and is excited about the income. They must investigate the payout ratio and recent price decline before deciding whether it\'s a genuine opportunity or a yield trap. Reward checking payout ratio and business health over chasing yield alone.', xpReward: 25 },
+    { slug: 'what-is-an-etf', title: 'What is an ETF?', type: 'read', topic: 'What an ETF (exchange-traded fund) is — a basket of stocks or bonds bought as a single share — how it differs from picking individual stocks, and what an expense ratio is.', xpReward: 10 },
+    { slug: 'intro-crypto-commodities', title: 'Intro to Crypto & Commodities', type: 'read', topic: 'What a cryptocurrency represents differently from equity ownership (no company, no earnings), why crypto tends to be more volatile, and why BullPen also tracks commodities like gold and oil.', xpReward: 10 },
+    { slug: 'beyond-stocks-quiz', title: 'Quick Check: Beyond Stocks', type: 'quiz', topic: 'Test understanding of ETFs, expense ratio, and crypto basics from the previous two lessons. 3 questions.', xpReward: 20 },
+    { slug: 'asset-terms-match', title: 'Match the Asset Terms', type: 'match', topic: 'Match asset terms (ETF, Expense Ratio, Index Fund, Cryptocurrency, Commodity) to their plain-English definitions.', xpReward: 15 },
+    { slug: 'stock-etf-or-both', title: 'Stock, ETF, or Both?', type: 'scenario', topic: 'A beginner wants broad exposure to the tech sector without picking individual winners and losers, and is deciding between buying one tech stock they like, a tech-sector ETF, or both. Reward matching the vehicle to the actual goal (broad exposure vs individual conviction).', xpReward: 25 },
   ],
 };
 
