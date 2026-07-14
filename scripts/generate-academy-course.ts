@@ -66,21 +66,21 @@ interface CourseOutline {
 // Example: course #2 in the roadmap. Replace freely.
 
 const DEFAULT_OUTLINE: CourseOutline = {
-  slug: 'reading-a-stock-quote',
-  title: 'Reading a Stock Quote',
+  slug: 'company-fundamentals',
+  title: 'Company Fundamentals',
   description:
-    'Decode everything on a stock quote — price, bid/ask, volume, market cap, and the day range — so the numbers stop being noise.',
-  icon: 'LineChart',
-  color: 'emerald',
-  orderIndex: 1,
+    'Screener filters by revenue, margin, EPS, and debt — this course teaches what those numbers actually mean before you touch the filters.',
+  icon: 'BarChart3',
+  color: 'blue',
+  orderIndex: 4,
   difficulty: 'beginner',
   lessons: [
-    { slug: 'anatomy-of-a-quote', title: 'Anatomy of a Quote', type: 'read', topic: 'The core fields on any stock quote: last price, change, % change, previous close, day range. Explain what each means in plain English.', xpReward: 10 },
-    { slug: 'bid-ask-spread', title: 'Bid, Ask & Spread', type: 'read', topic: 'What the bid and ask prices are, why there is a gap (the spread), and what a tight vs wide spread tells you about liquidity.', xpReward: 10 },
-    { slug: 'quote-quiz', title: 'Quick Check: Quote Fields', type: 'quiz', topic: 'Test understanding of price, change %, bid/ask, spread, and volume from the previous two lessons. 3 questions.', xpReward: 20 },
-    { slug: 'quote-vocab-match', title: 'Match the Quote Terms', type: 'match', topic: 'Match quote-related terms (Bid, Ask, Spread, Volume, Market Cap, Day Range) to their plain-English definitions.', xpReward: 15 },
-    { slug: 'reading-volume', title: 'What Volume Tells You', type: 'read', topic: 'Trading volume and average volume — why a volume spike matters and how it signals unusual interest in a stock.', xpReward: 10 },
-    { slug: 'quote-scenario', title: 'Make the Call', type: 'scenario', topic: 'A beginner sees a stock down 3% on huge volume after earnings and must decide how to interpret the quote before acting. Reward reading the full picture over reacting to the red number.', xpReward: 25 },
+    { slug: 'revenue-profit-margins', title: 'Revenue, Profit & Margins', type: 'read', topic: 'The difference between revenue and net income (profit), and what profit margin (%) means. Explain why margin percentage matters more than raw profit dollars when comparing companies of different sizes.', xpReward: 10 },
+    { slug: 'eps-and-pe-ratio', title: 'EPS & the P/E Ratio', type: 'read', topic: 'What earnings per share (EPS) is and how it is calculated, then what the price-to-earnings (P/E) ratio is and what a high or low P/E can signal. Include the caveat that there is no single "good" P/E in isolation — it depends on growth and industry.', xpReward: 10 },
+    { slug: 'fundamentals-quiz', title: 'Quick Check: Fundamentals', type: 'quiz', topic: 'Test understanding of revenue vs net income, profit margin, EPS, and P/E ratio from the previous two lessons. 3 questions.', xpReward: 20 },
+    { slug: 'fundamentals-match', title: 'Match the Fundamentals', type: 'match', topic: 'Match fundamentals terms (Revenue, Net Income, Profit Margin, EPS, P/E Ratio) to their plain-English definitions.', xpReward: 15 },
+    { slug: 'cash-flow-and-debt', title: 'Cash Flow & Debt', type: 'read', topic: 'Why a company\'s cash flow can differ from its reported profit (e.g. non-cash expenses, timing), and what the debt-to-equity ratio signals about financial risk.', xpReward: 10 },
+    { slug: 'cheap-or-expensive', title: 'Cheap or Expensive?', type: 'scenario', topic: 'A beginner is looking at two companies with very different P/E ratios and must decide which one is actually the better value, using margin trends and debt level as context rather than the P/E number alone. Reward looking at the full financial picture over a single ratio.', xpReward: 25 },
   ],
 };
 
