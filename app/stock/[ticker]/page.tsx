@@ -181,19 +181,24 @@ export default function StockDetailPage() {
     return () => setAIContext(null);
   }, [ticker, displayName, setAIContext]);
 
-  useEffect(() => {
-    if (company?.ticker && displayName) {
-      const instrType = snapshotAssetType !== 'unknown' ? snapshotAssetType : undefined;
-      addRecentlyViewed(company.ticker, displayName, company.logo_url, instrType);
-    }
-  }, [company?.ticker, displayName, company?.logo_url, snapshotAssetType, addRecentlyViewed]);
-
   // A real symbol resolves at least one of: a Supabase company row, a TwelveData
   // profile, or a live quote (price > 0). The snapshot request returns
   // success:true even for a bogus ticker, so key off actual quote data, not the
   // request flag. If, once everything has settled, none of the three know the
   // symbol, it isn't a real ticker → show not-found.
   const hasRealQuote = (snapshot.data?.quote?.price ?? 0) > 0;
+  // Companies with no row in the Supabase `companies` table (long-tail tickers
+  // TwelveData still knows about) render fine here from profile/quote data
+  // alone — gating on company?.ticker meant those visits never made it into
+  // "recently viewed" even though the page displayed real data for them.
+  const confirmedReal = company != null || !!profileData?.profile || hasRealQuote;
+  useEffect(() => {
+    if (confirmedReal && displayName) {
+      const instrType = snapshotAssetType !== 'unknown' ? snapshotAssetType : undefined;
+      addRecentlyViewed(ticker, displayName, company?.logo_url, instrType);
+    }
+  }, [confirmedReal, ticker, displayName, company?.logo_url, snapshotAssetType, addRecentlyViewed]);
+
   const isNotFound =
     !companyLoading && !profileLoading && !snapshot.isLoading &&
     company === null &&
@@ -208,7 +213,6 @@ export default function StockDetailPage() {
   const recordedVisitTicker = useRef<string | null>(null);
   useEffect(() => {
     if (!ticker || recordedVisitTicker.current === ticker) return;
-    const confirmedReal = company != null || !!profileData?.profile || hasRealQuote;
     if (!confirmedReal) return;
     recordedVisitTicker.current = ticker;
     let cancelled = false;
@@ -223,7 +227,7 @@ export default function StockDetailPage() {
       }
     })();
     return () => { cancelled = true; };
-  }, [ticker, company, profileData?.profile, hasRealQuote, queryClient]);
+  }, [ticker, confirmedReal, queryClient]);
 
   const navSections: StockNavSection[] = [
     { id: 'nav-overview',    label: 'Overview' },

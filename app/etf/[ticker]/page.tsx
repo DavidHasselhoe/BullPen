@@ -139,15 +139,20 @@ export default function EtfDetailPage() {
     return () => setAIContext(null);
   }, [ticker, displayName, setAIContext]);
 
-  useEffect(() => {
-    if (company?.ticker && displayName) {
-      addRecentlyViewed(company.ticker, displayName, company.logo_url, 'ETF');
-    }
-  }, [company?.ticker, displayName, company?.logo_url, addRecentlyViewed]);
-
   // Key off a real quote (price > 0), not snapshot.data.success — the batch
   // request returns success:true even for a bogus symbol.
   const hasRealQuote = (snapshot.data?.quote?.price ?? 0) > 0;
+  // Companies with no row in the Supabase `companies` table (long-tail tickers
+  // TwelveData still knows about) render fine here from profile/quote data
+  // alone — gating on company?.ticker meant those visits never made it into
+  // "recently viewed" even though the page displayed real data for them.
+  const confirmedReal = company != null || !!profileData?.profile || hasRealQuote;
+  useEffect(() => {
+    if (confirmedReal && displayName) {
+      addRecentlyViewed(ticker, displayName, company?.logo_url, 'ETF');
+    }
+  }, [confirmedReal, ticker, displayName, company?.logo_url, addRecentlyViewed]);
+
   const isNotFound =
     !companyLoading && !profileLoading && !snapshot.isLoading &&
     company === null &&
@@ -161,7 +166,6 @@ export default function EtfDetailPage() {
   const recordedVisitTicker = useRef<string | null>(null);
   useEffect(() => {
     if (!ticker || recordedVisitTicker.current === ticker) return;
-    const confirmedReal = company != null || !!profileData?.profile || hasRealQuote;
     if (!confirmedReal) return;
     recordedVisitTicker.current = ticker;
     let cancelled = false;
@@ -174,7 +178,7 @@ export default function EtfDetailPage() {
       } catch { /* ignore */ }
     })();
     return () => { cancelled = true; };
-  }, [ticker, company, profileData?.profile, hasRealQuote, queryClient]);
+  }, [ticker, confirmedReal, queryClient]);
 
   if (isNotFound) {
     return (
