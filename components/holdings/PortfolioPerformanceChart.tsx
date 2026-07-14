@@ -15,12 +15,10 @@ import type { CurrencyCode } from '@/lib/currency/currency-conversion';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type ApiRange = '1W' | '1M' | '6M' | '1Y' | '3Y' | '5Y' | '10Y' | 'MAX';
-type Range = 'SINCE' | ApiRange;
+type Range = '1W' | '1M' | '6M' | '1Y' | '3Y' | '5Y' | '10Y' | 'MAX';
 
-const RANGES: Range[] = ['SINCE', '1W', '1M', '6M', '1Y', '3Y', '5Y', '10Y', 'MAX'];
+const RANGES: Range[] = ['1W', '1M', '6M', '1Y', '3Y', '5Y', '10Y', 'MAX'];
 const RANGE_LABELS: Record<Range, string> = {
-  SINCE: 'Since Purchase',
   '1W': '1W', '1M': '1M', '6M': '6M', '1Y': '1Y',
   '3Y': '3Y', '5Y': '5Y', '10Y': '10Y', 'MAX': 'MAX',
 };
@@ -31,21 +29,9 @@ interface HoldingCandle { holding: HoldingWithPrice; candles: CandleData | null 
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function minRangeForDate(date: Date): ApiRange {
-  const days = (Date.now() - date.getTime()) / 86_400_000;
-  if (days <= 8)    return '1W';
-  if (days <= 32)   return '1M';
-  if (days <= 185)  return '6M';
-  if (days <= 367)  return '1Y';
-  if (days <= 1096) return '3Y';
-  if (days <= 1827) return '5Y';
-  if (days <= 3653) return '10Y';
-  return 'MAX';
-}
-
 function fmtLabel(ts: number, range: Range): string {
   const d = new Date(ts * 1000);
-  if (range === 'SINCE' || range === '1W' || range === '1M') {
+  if (range === '1W' || range === '1M') {
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   }
   if (range === '6M' || range === '1Y') {
@@ -93,7 +79,7 @@ interface Props {
 }
 
 export function PortfolioPerformanceChart({ holdings, currency = 'USD', isLoading: holdingsLoading }: Props) {
-  const [range, setRange]           = useState<Range>('SINCE');
+  const [range, setRange]           = useState<Range>('MAX');
   const [showBenchmark, setShowBenchmark] = useState(false);
 
   const eligible = useMemo(
@@ -101,36 +87,20 @@ export function PortfolioPerformanceChart({ holdings, currency = 'USD', isLoadin
     [holdings]
   );
 
-  const totalCostBasis = useMemo(
-    () => eligible.reduce((sum, h) => sum + (h.avg_price! * h.quantity!), 0),
-    [eligible]
-  );
-
-  const sinceApiRange = useMemo<ApiRange>(() => {
-    const dates = eligible.map((h) => {
-      const raw = h.date_purchased ?? h.created_at;
-      return raw ? new Date(raw) : new Date();
-    });
-    const oldest = dates.reduce((min, d) => d < min ? d : min, new Date());
-    return minRangeForDate(oldest);
-  }, [eligible]);
-
   const holdingsKey = useMemo(
     () => eligible.map((h) => `${h.symbol}:${h.avg_price}:${h.quantity}:${h.date_purchased ?? h.created_at}`).join(','),
     [eligible]
   );
 
-  const apiRange: ApiRange = range === 'SINCE' ? sinceApiRange : range;
-
   // Portfolio candles
   const { data: candleResults, isLoading, isError } = useQuery<HoldingCandle[]>({
-    queryKey: ['portfolio-performance', holdingsKey, apiRange],
+    queryKey: ['portfolio-performance', holdingsKey, range],
     queryFn: async () => {
       if (eligible.length === 0) return [];
       return Promise.all(
         eligible.map(async (h) => {
           try {
-            const res = await fetch(`/api/stock/${encodeURIComponent(h.symbol)}/candles?range=${apiRange}`);
+            const res = await fetch(`/api/stock/${encodeURIComponent(h.symbol)}/candles?range=${range}`);
             if (!res.ok) return { holding: h, candles: null };
             const json = await res.json();
             return { holding: h, candles: (json.candles ?? null) as CandleData | null };
@@ -147,10 +117,10 @@ export function PortfolioPerformanceChart({ holdings, currency = 'USD', isLoadin
 
   // SPY benchmark candles — only fetched when toggle is on
   const { data: spyCandles, isLoading: spyLoading } = useQuery<CandleData | null>({
-    queryKey: ['spy-benchmark', apiRange],
+    queryKey: ['spy-benchmark', range],
     queryFn: async () => {
       try {
-        const res = await fetch(`/api/stock/SPY/candles?range=${apiRange}`);
+        const res = await fetch(`/api/stock/SPY/candles?range=${range}`);
         if (!res.ok) return null;
         const json = await res.json();
         return (json.candles ?? null) as CandleData | null;
@@ -179,29 +149,23 @@ export function PortfolioPerformanceChart({ holdings, currency = 'USD', isLoadin
 
       const { t, c } = candles;
 
-      if (range === 'SINCE') {
-        for (let i = 0; i < t.length; i++) {
-          if (t[i] * 1000 < holdingStart) continue;
-          const pl = (c[i] - holding.avg_price) * holding.quantity;
-          plByTime.set(t[i], (plByTime.get(t[i]) ?? 0) + pl);
-        }
-      } else {
-        const periodStartMs = t.length > 0 ? t[0] * 1000 : 0;
-        const boughtDuringPeriod = holdingStart > periodStartMs;
-        const basePrice = boughtDuringPeriod ? holding.avg_price : c[0];
-        periodBasis += basePrice * holding.quantity;
+      // Basis is avg_price whenever the holding was bought during the
+      // selected window (the common case — and for MAX, effectively always,
+      // since the window predates any realistic purchase date), otherwise
+      // the period's opening price for a true windowed return.
+      const periodStartMs = t.length > 0 ? t[0] * 1000 : 0;
+      const boughtDuringPeriod = holdingStart > periodStartMs;
+      const basePrice = boughtDuringPeriod ? holding.avg_price : c[0];
+      periodBasis += basePrice * holding.quantity;
 
-        for (let i = 0; i < t.length; i++) {
-          if (t[i] * 1000 < holdingStart) continue;
-          const pl = (c[i] - basePrice) * holding.quantity;
-          plByTime.set(t[i], (plByTime.get(t[i]) ?? 0) + pl);
-        }
+      for (let i = 0; i < t.length; i++) {
+        if (t[i] * 1000 < holdingStart) continue;
+        const pl = (c[i] - basePrice) * holding.quantity;
+        plByTime.set(t[i], (plByTime.get(t[i]) ?? 0) + pl);
       }
     }
 
-    const basis = range === 'SINCE'
-      ? (totalCostBasis > 0 ? totalCostBasis : 1)
-      : (periodBasis > 0 ? periodBasis : 1);
+    const basis = periodBasis > 0 ? periodBasis : 1;
 
     return Array.from(plByTime.entries())
       .sort(([a], [b]) => a - b)
@@ -211,7 +175,7 @@ export function PortfolioPerformanceChart({ holdings, currency = 'USD', isLoadin
         pl,
         plPct: (pl / basis) * 100,
       }));
-  }, [candleResults, range, totalCostBasis]);
+  }, [candleResults, range]);
 
   // Enrich chart points with SPY % return, normalized from the first portfolio timestamp
   const enrichedData = useMemo<ChartPoint[]>(() => {
@@ -337,7 +301,7 @@ export function PortfolioPerformanceChart({ holdings, currency = 'USD', isLoadin
                   ({fmtPct(currentPlPct)})
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  {range === 'SINCE' ? 'unrealized P/L' : 'period return'}
+                  {range === 'MAX' ? 'unrealized P/L' : 'period return'}
                 </span>
               </div>
             )}
