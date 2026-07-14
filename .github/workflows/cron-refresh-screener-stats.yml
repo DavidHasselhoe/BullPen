@@ -16,12 +16,17 @@ jobs:
     steps:
       - name: Chain through all screener refresh batches
         env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
           APP_URL: ${{ vars.APP_URL || 'https://bullpen.no' }}
         run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::CRON_SECRET secret is not configured in repo settings"
+            exit 1
+          fi
           echo "Starting screener refresh…"
           for batch in $(seq 0 60); do
             echo "→ Batch $batch"
-            RESPONSE=$(curl -fsS -X POST "${APP_URL}/api/screener/refresh?batch=${batch}") || {
+            RESPONSE=$(curl -fsS -X POST -H "Authorization: Bearer ${CRON_SECRET}" "${APP_URL}/api/screener/refresh?batch=${batch}") || {
               echo "Batch $batch failed (rate limit or network error) — stopping"
               break
             }

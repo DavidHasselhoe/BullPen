@@ -17,12 +17,18 @@
  *   batch index needed.
  *
  * Credits per call: 10 × 50 = 500. Rate limit 610/min → ~1 call/min with headroom.
+ *
+ * Auth: requires either a `CRON_SECRET` bearer header (GitHub Actions crons)
+ * or an admin user session (the screener page's "Refresh Data" button, which
+ * is only rendered for admins). Non-admin/anonymous callers get a 404, same
+ * as the other admin-only routes.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
-import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
+import { withRateLimit, addSecurityHeaders, getSessionForApiRoute } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
+import { getTier, isAdmin } from '@/lib/billing/tier';
 import {
   getActiveUniverse,
   getDiscoveryBatch,
@@ -59,7 +65,32 @@ async function stampUniverse(rows: { ticker: string; market_cap: number | null }
   }
 }
 
-async function handler(request: NextRequest) {
+/**
+ * Two callers hit this route: the nightly/extended GitHub Actions crons (no
+ * user session — authenticate via CRON_SECRET bearer header) and the "Refresh
+ * Data" button on the screener page (a real user session — must be admin).
+ * This triggers a live TwelveData /statistics fetch (500 credits per call)
+ * and was previously reachable by anyone, including signed-out callers.
+ */
+async function isAuthorized(request: NextRequest): Promise<boolean> {
+  const cronSecret = process.env.CRON_SECRET;
+  const authHeader = request.headers.get('authorization');
+  if (cronSecret && authHeader === `Bearer ${cronSecret}`) return true;
+
+  const session = await getSessionForApiRoute();
+  if (!session) return false;
+  return isAdmin(await getTier(session.userId));
+}
+
+async function handler(request: NextRequest): Promise<NextResponse> {
+  // Same 404 strategy as other admin-only routes so it's invisible to
+  // non-admins (anonymous, free, or pro users) rather than a visible 403.
+  if (!(await isAuthorized(request))) {
+    return addSecurityHeaders(
+      NextResponse.json({ error: 'not_found' }, { status: 404 })
+    );
+  }
+
   const sp = request.nextUrl.searchParams;
   const mode = sp.get('mode') === 'discovery' ? 'discovery' : 'active';
   const batchIndex = parseInt(sp.get('batch') ?? '0', 10);

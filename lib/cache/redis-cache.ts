@@ -28,6 +28,28 @@ export async function rget<T>(key: string): Promise<T | null> {
 }
 
 /**
+ * Batch read — one round trip for many keys instead of N parallel GETs.
+ * Returns a Map of only the keys that hit (missing/expired keys are absent).
+ * Falls back to empty (never throws) when Redis isn't configured or errors.
+ */
+export async function rmget<T>(keys: string[]): Promise<Map<string, T>> {
+  const result = new Map<string, T>();
+  if (keys.length === 0) return result;
+  const c = client();
+  if (!c) return result;
+  try {
+    const values = await c.mget<(T | null)[]>(...keys);
+    for (let i = 0; i < keys.length; i++) {
+      const v = values[i];
+      if (v != null) result.set(keys[i], v);
+    }
+  } catch {
+    // non-fatal — callers treat missing keys as cache misses
+  }
+  return result;
+}
+
+/**
  * Write a value with a TTL. Fire-and-forget safe — await it or void it,
  * never let its failure propagate to the caller.
  */

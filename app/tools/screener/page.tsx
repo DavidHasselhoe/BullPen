@@ -25,6 +25,8 @@ import { useHeatmapStream } from '@/hooks/use-heatmap-stream';
 import { useWatchlist, useWatchlistItems } from '@/hooks/use-watchlist';
 import { useHoldings } from '@/hooks/use-holdings';
 import { useScreenerViews, useUpdateScreenerView, type ScreenerView } from '@/hooks/use-screener-views';
+import { useAuth } from '@/hooks/use-auth';
+import { isAdmin, tierFromUser } from '@/lib/billing/tier';
 import type { ScreenerRow } from '@/app/api/screener/route';
 
 export const dynamic = 'force-dynamic';
@@ -84,6 +86,8 @@ function paramToView(param: string | null, customViews: ScreenerView[]): ActiveV
 function ScreenerContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { user } = useAuth();
+  const userIsAdmin = isAdmin(tierFromUser(user?.account_tier, user?.role));
 
   const [filters, setFilters] = useState<ScreenerFilterValues>(() => filtersFromParams(searchParams));
   // Debounced copy — drives the query key and URL so typing doesn't re-fetch on every keystroke
@@ -365,15 +369,17 @@ function ScreenerContent() {
           <div className="ml-auto flex items-center gap-2">
             {refreshStatus && <span className="text-xs text-muted-foreground">{refreshStatus}</span>}
             <ColumnChooser columns={screenerColumns} />
-            <Button
-              variant="outline" size="sm"
-              onClick={() => { setRefreshStatus('Starting refresh…'); triggerRefresh(0); }}
-              disabled={isRefreshing}
-              className="gap-1.5 h-8 text-xs"
-            >
-              <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
-              {isRefreshing ? 'Refreshing…' : 'Refresh Data'}
-            </Button>
+            {userIsAdmin && (
+              <Button
+                variant="outline" size="sm"
+                onClick={() => { setRefreshStatus('Starting refresh…'); triggerRefresh(0); }}
+                disabled={isRefreshing}
+                className="gap-1.5 h-8 text-xs"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+                {isRefreshing ? 'Refreshing…' : 'Refresh Data'}
+              </Button>
+            )}
           </div>
         </div>
         <p className="text-sm text-muted-foreground">

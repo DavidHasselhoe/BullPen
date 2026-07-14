@@ -9,8 +9,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withRateLimit } from '@/lib/security/api-security';
 import { WsManager } from '@/lib/market-data/ws-manager';
 import type { PriceTick } from '@/lib/market-data/ws-manager';
+import { seedPrices } from '@/lib/market-data/seed-prices';
 import { SP500_TICKERS } from '@/lib/market-data/sp500';
-import { getStockQuotes } from '@/lib/twelvedata/twelvedata-client';
 
 export type Session = 'pre' | 'regular' | 'post' | 'closed';
 
@@ -67,15 +67,13 @@ async function streamHandler(request: NextRequest) {
   const listenerId = crypto.randomUUID();
   const EMIT_INTERVAL_MS = 5_000;
 
-  // Seed with a REST snapshot for initial prices. We batch in groups of 20
-  // to stay within TwelveData request limits; do this async so the SSE
-  // connection opens immediately.
   const priceMap = new Map<string, HeatmapPriceEntry>();
 
   const stream = new ReadableStream({
-    async start(controller) {
+    start(controller) {
       let closed = false;
       let lastEmitAt = 0;
+      let flushScheduled = false;
 
       function emitPrices() {
         if (closed || priceMap.size === 0) return;
@@ -87,44 +85,25 @@ async function streamHandler(request: NextRequest) {
           ),
           () => closed
         );
-      }
-
-      // Pre-seed prevClose + initial price map via REST so the first WS ticks
-      // can compute day change and tiles immediately show prices.
-      const BATCH_SIZE = 20;
-      const seedBatches: string[][] = [];
-      for (let i = 0; i < SP500_TICKERS.length; i += BATCH_SIZE) {
-        seedBatches.push(SP500_TICKERS.slice(i, i + BATCH_SIZE));
-      }
-
-      // Fire batches in parallel (TwelveData Venture plan allows this)
-      try {
-        const session = getCurrentSession();
-        const usePrepost = session === 'pre' || session === 'post';
-        const batchResults = await Promise.allSettled(
-          seedBatches.map((batch) => getStockQuotes(batch, { prepost: usePrepost }))
-        );
-        for (const result of batchResults) {
-          if (result.status !== 'fulfilled') continue;
-          for (const [sym, q] of result.value.entries()) {
-            if (!q || q.c <= 0) continue;
-            WsManager.seedPrevClose(sym, q.pc);
-            priceMap.set(sym, {
-              price: q.c,
-              change: q.d ?? 0,
-              changePercent: q.dp ?? 0,
-              previousClose: q.pc,
-              ...(q.volume ? { volume: q.volume } : {}),
-            });
-          }
-        }
-        // Emit initial snapshot immediately so the client renders on connect
-        emitPrices();
         lastEmitAt = Date.now();
-      } catch {
-        // Non-fatal — stream still works from WS ticks alone
       }
 
+      // Coalesces synchronous onSeed calls within the same resolved chunk into
+      // a single emit, while still letting each chunk (or Redis-cache batch)
+      // flush the moment IT lands — instead of blocking every symbol on the
+      // single slowest chunk like a single Promise.allSettled(...) would.
+      function scheduleFlush() {
+        if (flushScheduled) return;
+        flushScheduled = true;
+        queueMicrotask(() => {
+          flushScheduled = false;
+          emitPrices();
+        });
+      }
+
+      // Register the WS listener FIRST so live ticks aren't dropped while the
+      // REST seed (below) is still in flight — a tick for a symbol can arrive
+      // and populate the board before its own REST seed chunk even resolves.
       const listener = {
         id: listenerId,
         symbols: new Set(SP500_TICKERS),
@@ -145,12 +124,26 @@ async function streamHandler(request: NextRequest) {
 
           const now = Date.now();
           if (now - lastEmitAt < EMIT_INTERVAL_MS) return;
-          lastEmitAt = now;
           emitPrices();
         },
       };
 
       WsManager.addListener(listener);
+
+      // Seed initial prices in the background (WsManager/Redis first, TwelveData
+      // for the remainder) — each symbol/chunk flushes to the client as soon as
+      // it resolves rather than waiting for every symbol to be ready.
+      void seedPrices(SP500_TICKERS, (sym, q) => {
+        if (closed) return;
+        priceMap.set(sym, {
+          price: q.price,
+          change: q.change ?? 0,
+          changePercent: q.changePercent ?? 0,
+          previousClose: q.previousClose,
+          ...(q.volume ? { volume: q.volume } : {}),
+        });
+        scheduleFlush();
+      });
 
       // Keep-alive ping every 15s
       const pingInterval = setInterval(() => {

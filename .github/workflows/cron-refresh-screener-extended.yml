@@ -20,12 +20,17 @@ jobs:
     steps:
       - name: Refresh remaining active universe (batches 61–115)
         env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
           APP_URL: ${{ vars.APP_URL || 'https://bullpen.no' }}
         run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::CRON_SECRET secret is not configured in repo settings"
+            exit 1
+          fi
           echo "Extended active refresh…"
           for batch in $(seq 61 115); do
             echo "→ Active batch $batch"
-            RESPONSE=$(curl -fsS -X POST "${APP_URL}/api/screener/refresh?batch=${batch}") || {
+            RESPONSE=$(curl -fsS -X POST -H "Authorization: Bearer ${CRON_SECRET}" "${APP_URL}/api/screener/refresh?batch=${batch}") || {
               echo "Batch $batch failed (rate limit or network) — stopping active phase"
               break
             }
@@ -40,12 +45,17 @@ jobs:
 
       - name: Discovery sweep over the long tail (tier-0)
         env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
           APP_URL: ${{ vars.APP_URL || 'https://bullpen.no' }}
         run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::CRON_SECRET secret is not configured in repo settings"
+            exit 1
+          fi
           echo "Discovery sweep…"
           for i in $(seq 1 15); do
             echo "→ Discovery $i"
-            RESPONSE=$(curl -fsS -X POST "${APP_URL}/api/screener/refresh?mode=discovery") || {
+            RESPONSE=$(curl -fsS -X POST -H "Authorization: Bearer ${CRON_SECRET}" "${APP_URL}/api/screener/refresh?mode=discovery") || {
               echo "Discovery $i failed (rate limit or network) — stopping"
               break
             }
