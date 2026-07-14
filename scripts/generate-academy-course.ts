@@ -66,21 +66,20 @@ interface CourseOutline {
 // Example: course #2 in the roadmap. Replace freely.
 
 const DEFAULT_OUTLINE: CourseOutline = {
-  slug: 'company-fundamentals',
-  title: 'Company Fundamentals',
+  slug: 'portfolio-diversification',
+  title: 'Building a Portfolio: Diversification & Risk',
   description:
-    'Screener filters by revenue, margin, EPS, and debt — this course teaches what those numbers actually mean before you touch the filters.',
-  icon: 'BarChart3',
-  color: 'blue',
-  orderIndex: 4,
+    'One stock is a bet. A portfolio is a strategy. Learn diversification, position sizing, and risk before you build yours.',
+  icon: 'PieChart',
+  color: 'emerald',
+  orderIndex: 5,
   difficulty: 'beginner',
   lessons: [
-    { slug: 'revenue-profit-margins', title: 'Revenue, Profit & Margins', type: 'read', topic: 'The difference between revenue and net income (profit), and what profit margin (%) means. Explain why margin percentage matters more than raw profit dollars when comparing companies of different sizes.', xpReward: 10 },
-    { slug: 'eps-and-pe-ratio', title: 'EPS & the P/E Ratio', type: 'read', topic: 'What earnings per share (EPS) is and how it is calculated, then what the price-to-earnings (P/E) ratio is and what a high or low P/E can signal. Include the caveat that there is no single "good" P/E in isolation — it depends on growth and industry.', xpReward: 10 },
-    { slug: 'fundamentals-quiz', title: 'Quick Check: Fundamentals', type: 'quiz', topic: 'Test understanding of revenue vs net income, profit margin, EPS, and P/E ratio from the previous two lessons. 3 questions.', xpReward: 20 },
-    { slug: 'fundamentals-match', title: 'Match the Fundamentals', type: 'match', topic: 'Match fundamentals terms (Revenue, Net Income, Profit Margin, EPS, P/E Ratio) to their plain-English definitions.', xpReward: 15 },
-    { slug: 'cash-flow-and-debt', title: 'Cash Flow & Debt', type: 'read', topic: 'Why a company\'s cash flow can differ from its reported profit (e.g. non-cash expenses, timing), and what the debt-to-equity ratio signals about financial risk.', xpReward: 10 },
-    { slug: 'cheap-or-expensive', title: 'Cheap or Expensive?', type: 'scenario', topic: 'A beginner is looking at two companies with very different P/E ratios and must decide which one is actually the better value, using margin trends and debt level as context rather than the P/E number alone. Reward looking at the full financial picture over a single ratio.', xpReward: 25 },
+    { slug: 'why-diversification-matters', title: 'Why Diversification Matters', type: 'read', topic: 'What diversification means and why concentration risk (having too much in one stock or sector) is dangerous. Explain correlation in plain English — why owning 10 tech stocks isn\'t as diversified as it sounds.', xpReward: 10 },
+    { slug: 'position-sizing-and-risk', title: 'Position Sizing & Risk', type: 'read', topic: 'How much of a portfolio a single position should reasonably be, and the basics of risk tolerance — why a beginner\'s risk tolerance might differ from an experienced investor\'s.', xpReward: 10 },
+    { slug: 'portfolio-basics-quiz', title: 'Quick Check: Portfolio Basics', type: 'quiz', topic: 'Test understanding of diversification, correlation, and position sizing from the previous two lessons. 3 questions.', xpReward: 20 },
+    { slug: 'portfolio-terms-match', title: 'Match the Portfolio Terms', type: 'match', topic: 'Match portfolio terms (Diversification, Correlation, Position Size, Asset Allocation) to their plain-English definitions.', xpReward: 15 },
+    { slug: 'building-your-first-portfolio', title: 'Building Your First Portfolio', type: 'scenario', topic: 'A beginner shows their portfolio: 80% in three tech stocks, 20% in one friend\'s stock tip. They must decide whether this is well-diversified and what, if anything, to change. Reward recognizing concentration risk over chasing more winners.', xpReward: 25 },
   ],
 };
 
