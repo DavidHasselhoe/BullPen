@@ -18,10 +18,9 @@ function prefersReducedMotion(): boolean {
 
 export function CompletionCelebration({ xpEarned, durationMs = 1600, onDismiss }: Props) {
   const [visible, setVisible] = useState(true);
+  const [reduced] = useState(prefersReducedMotion);
 
   useEffect(() => {
-    const reduced = prefersReducedMotion();
-
     if (!reduced) {
       // Two angled bursts so the screen feels symmetrically full
       confetti({
@@ -49,7 +48,7 @@ export function CompletionCelebration({ xpEarned, durationMs = 1600, onDismiss }
       onDismiss?.();
     }, durationMs);
     return () => clearTimeout(t);
-  }, [durationMs, onDismiss]);
+  }, [durationMs, onDismiss, reduced]);
 
   if (!visible) return null;
 
@@ -71,15 +70,28 @@ export function CompletionCelebration({ xpEarned, durationMs = 1600, onDismiss }
         transition={{ type: 'spring', stiffness: 240, damping: 18 }}
         className="text-center select-none"
       >
-        <motion.img
-          src="/illustrations/bull-celebrate.png"
-          alt=""
-          aria-hidden
+        <motion.div
           initial={{ scale: 0.5, opacity: 0, y: 10 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           transition={{ type: 'spring', stiffness: 260, damping: 16, delay: 0.1 }}
-          className="mx-auto mb-2 h-auto w-24 sm:w-28 opacity-95 dark:invert"
-        />
+          className="relative mx-auto mb-1 flex h-40 w-40 sm:h-48 sm:w-48 items-center justify-center"
+        >
+          {/* Glow gives the thin line-art mascot enough visual weight to read
+              against the scrim — the overlay background is always dark
+              (hardcoded rgba black above), so contrast can't rely on theme. */}
+          <div
+            aria-hidden
+            className="absolute inset-0 rounded-full bg-emerald-400/30 blur-3xl"
+          />
+          <motion.img
+            src="/illustrations/bull-celebrate.png"
+            alt=""
+            aria-hidden
+            animate={reduced ? undefined : { y: [0, -6, 0] }}
+            transition={reduced ? undefined : { duration: 1.1, repeat: 2, ease: 'easeInOut', delay: 0.5 }}
+            className="relative h-auto w-36 sm:w-44 invert"
+          />
+        </motion.div>
         <motion.div
           initial={{ scale: 0.8 }}
           animate={{ scale: [0.8, 1.15, 1] }}

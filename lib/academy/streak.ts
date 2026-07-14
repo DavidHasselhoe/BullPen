@@ -26,6 +26,29 @@ export function daysBetween(earlier: string, later: string): number {
   return Math.round((Date.parse(later) - Date.parse(earlier)) / 86_400_000);
 }
 
+type StatsRow = {
+  total_xp: number;
+  current_streak: number;
+  longest_streak: number;
+  last_activity_date: string | null;
+} | null;
+
+interface FetchStatsArgs {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any;
+  userId: string;
+}
+
+/** Reads the raw academy_user_stats row, with no side effects — callers can fetch this in parallel with other independent reads before calling applyActivityAndXp. */
+export async function fetchStatsRow({ supabase, userId }: FetchStatsArgs): Promise<StatsRow> {
+  const { data } = await supabase
+    .from('academy_user_stats')
+    .select('total_xp, current_streak, longest_streak, last_activity_date')
+    .eq('user_id', userId)
+    .maybeSingle();
+  return data ?? null;
+}
+
 interface ApplyActivityArgs {
   /** Service-role Supabase client (academy routes use createServerClient). */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -33,11 +56,13 @@ interface ApplyActivityArgs {
   userId: string;
   /** XP to add this call. Pass 0 to tick the streak without awarding XP. */
   xpToAdd: number;
+  /** Pre-fetched via fetchStatsRow, e.g. alongside other reads in a Promise.all. Fetched here if omitted. */
+  statsRow?: StatsRow;
 }
 
 /**
- * Reads the user's academy_user_stats, advances the daily streak (once per ET
- * day), adds XP, recomputes level, upserts, and returns the fresh stats.
+ * Advances the daily streak (once per ET day), adds XP, recomputes level,
+ * upserts, and returns the fresh stats.
  *
  * Streak rules:
  *   - first ever activity            → streak = 1
@@ -49,12 +74,9 @@ export async function applyActivityAndXp({
   supabase,
   userId,
   xpToAdd,
+  statsRow: providedStatsRow,
 }: ApplyActivityArgs): Promise<AcademyStats> {
-  const { data: statsRow } = await supabase
-    .from('academy_user_stats')
-    .select('total_xp, current_streak, longest_streak, last_activity_date')
-    .eq('user_id', userId)
-    .maybeSingle();
+  const statsRow = providedStatsRow !== undefined ? providedStatsRow : await fetchStatsRow({ supabase, userId });
 
   const today = todayInET();
   const prevXp: number = statsRow?.total_xp ?? 0;

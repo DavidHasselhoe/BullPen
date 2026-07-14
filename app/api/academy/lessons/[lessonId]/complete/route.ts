@@ -14,7 +14,7 @@ import { z } from 'zod';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
 import { getTier, isPro } from '@/lib/billing/tier';
-import { applyActivityAndXp } from '@/lib/academy/streak';
+import { applyActivityAndXp, fetchStatsRow } from '@/lib/academy/streak';
 
 const BodySchema = z.object({
   score: z.number().min(0).max(1).optional(),
@@ -42,17 +42,30 @@ async function handler(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any;
 
-  // ── Load the lesson (need its xp_reward, course_id, and the course's gate) ──
-  const { data: lesson } = await supabase
-    .from('academy_lessons')
-    .select('id, course_id, xp_reward, academy_courses!inner(requires_pro)')
-    .eq('id', lessonId)
-    .maybeSingle<{
-      id: string;
-      course_id: string;
-      xp_reward: number;
-      academy_courses: { requires_pro: boolean } | { requires_pro: boolean }[];
-    }>();
+  // ── Load everything the rest of this handler needs, in one round trip ────
+  // Lesson info, idempotency check, and current stats are all independent
+  // reads (none needs another's result), so fire them together instead of
+  // awaiting one at a time — this is the single biggest lever on this
+  // route's latency, since serverless → Supabase round trips dominate it.
+  const [{ data: lesson }, { data: existing }, statsRow] = await Promise.all([
+    supabase
+      .from('academy_lessons')
+      .select('id, course_id, xp_reward, academy_courses!inner(requires_pro)')
+      .eq('id', lessonId)
+      .maybeSingle<{
+        id: string;
+        course_id: string;
+        xp_reward: number;
+        academy_courses: { requires_pro: boolean } | { requires_pro: boolean }[];
+      }>(),
+    supabase
+      .from('academy_user_lesson_progress')
+      .select('id, xp_earned')
+      .eq('user_id', session.userId)
+      .eq('lesson_id', lessonId)
+      .maybeSingle<{ id: string; xp_earned: number }>(),
+    fetchStatsRow({ supabase: db, userId: session.userId }),
+  ]);
 
   if (!lesson) {
     return addSecurityHeaders(
@@ -78,32 +91,25 @@ async function handler(
     }
   }
 
-  // ── Idempotency: was this lesson already completed? ──────────────────────
-  const { data: existing } = await supabase
-    .from('academy_user_lesson_progress')
-    .select('id, xp_earned')
-    .eq('user_id', session.userId)
-    .eq('lesson_id', lessonId)
-    .maybeSingle<{ id: string; xp_earned: number }>();
-
   const isFirstCompletion = existing === null;
   const xpAwarded = isFirstCompletion ? lesson.xp_reward : 0;
 
-  if (isFirstCompletion) {
-    await db.from('academy_user_lesson_progress').insert({
-      user_id: session.userId,
-      lesson_id: lessonId,
-      score: body.score ?? null,
-      xp_earned: lesson.xp_reward,
-    });
-  }
+  // ── Record the lesson completion and fetch the course's lesson list in
+  // parallel — the insert doesn't depend on knowing the other lessons, and
+  // the lesson list only needs course_id, which we already have. ──────────
+  const [, { data: allLessonIds }] = await Promise.all([
+    isFirstCompletion
+      ? db.from('academy_user_lesson_progress').insert({
+          user_id: session.userId,
+          lesson_id: lessonId,
+          score: body.score ?? null,
+          xp_earned: lesson.xp_reward,
+        })
+      : Promise.resolve(),
+    supabase.from('academy_lessons').select('id').eq('course_id', lesson.course_id),
+  ]);
 
-  // ── Course progress: upsert + mark complete if all lessons done ──────────
-  const { data: allLessonIds } = await supabase
-    .from('academy_lessons')
-    .select('id')
-    .eq('course_id', lesson.course_id);
-
+  // ── Course progress: mark complete if all lessons are now done ───────────
   const { data: completedRows } = await supabase
     .from('academy_user_lesson_progress')
     .select('lesson_id')
@@ -114,9 +120,9 @@ async function handler(
   const totalCount = allLessonIds?.length ?? 0;
   const courseNowComplete = totalCount > 0 && completedCount >= totalCount;
 
-  await db
-    .from('academy_user_course_progress')
-    .upsert(
+  // ── Course progress upsert + stats upsert are independent writes ─────────
+  const [, stats] = await Promise.all([
+    db.from('academy_user_course_progress').upsert(
       {
         user_id: session.userId,
         course_id: lesson.course_id,
@@ -124,10 +130,9 @@ async function handler(
         ...(courseNowComplete ? { completed_at: new Date().toISOString() } : {}),
       },
       { onConflict: 'user_id,course_id' }
-    );
-
-  // ── Stats: recompute XP + streak + level (shared with the daily challenge) ──
-  const stats = await applyActivityAndXp({ supabase: db, userId: session.userId, xpToAdd: xpAwarded });
+    ),
+    applyActivityAndXp({ supabase: db, userId: session.userId, xpToAdd: xpAwarded, statsRow }),
+  ]);
 
   return addSecurityHeaders(
     NextResponse.json({

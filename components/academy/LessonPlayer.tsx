@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Zap } from 'lucide-react';
@@ -46,6 +46,7 @@ export function LessonPlayer({ lesson, courseSlug }: Props) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [celebrating, setCelebrating] = useState(false);
+  const pendingCompletion = useRef<Promise<CompleteResponse> | null>(null);
 
   // Validate the JSONB content against its lesson type's schema.
   const validatedContent = useMemo(() => {
@@ -73,23 +74,36 @@ export function LessonPlayer({ lesson, courseSlug }: Props) {
       queryClient.setQueryData<AcademyStats>(ACADEMY_STATS_QUERY_KEY, data.stats);
       queryClient.invalidateQueries({ queryKey: ['academy-courses'] });
       queryClient.invalidateQueries({ queryKey: ['academy-progress', courseSlug] });
-
-      setCelebrating(true);
-      // After the celebration overlay, route to the completion screen
-      setTimeout(() => {
-        const params = new URLSearchParams({
-          courseSlug,
-          xp: String(data.xpAwarded),
-          streak: String(data.stats.currentStreak),
-          courseDone: data.courseCompleted ? '1' : '0',
-        });
-        router.push(`/academy/complete?${params.toString()}`);
-      }, 1600);
     },
   });
 
   function handleLessonComplete(score?: number) {
-    completeMutation.mutate({ score });
+    // Show the celebration immediately — the XP value is already known
+    // client-side (lesson.xpReward), so there's no reason to block the
+    // overlay on the completion request's round-trip to Supabase.
+    setCelebrating(true);
+    pendingCompletion.current = completeMutation.mutateAsync({ score });
+  }
+
+  // Fires once the celebration overlay's own display timer elapses. Awaits
+  // the (very likely already-resolved, by then) completion request so the
+  // next screen always gets real stats instead of guessed ones.
+  async function handleCelebrationDismiss() {
+    try {
+      const data = await pendingCompletion.current;
+      if (!data) return;
+      const params = new URLSearchParams({
+        courseSlug,
+        xp: String(data.xpAwarded),
+        streak: String(data.stats.currentStreak),
+        courseDone: data.courseCompleted ? '1' : '0',
+      });
+      router.push(`/academy/complete?${params.toString()}`);
+    } catch {
+      // Completion failed to save — don't strand the user on a screen
+      // celebrating progress that wasn't recorded.
+      router.push(`/academy/${courseSlug}`);
+    }
   }
 
   if (!validatedContent?.success) {
@@ -161,7 +175,9 @@ export function LessonPlayer({ lesson, courseSlug }: Props) {
         />
       )}
 
-      {celebrating && <CompletionCelebration xpEarned={lesson.xpReward} />}
+      {celebrating && (
+        <CompletionCelebration xpEarned={lesson.xpReward} onDismiss={handleCelebrationDismiss} />
+      )}
     </div>
   );
 }
