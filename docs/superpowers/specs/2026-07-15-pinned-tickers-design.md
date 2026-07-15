@@ -22,6 +22,7 @@ Let users pin a small number of stocks/assets (crypto, commodities — anything 
 - **Independent from Watchlist.** Own `pinned_tickers: string[]` setting; no coupling to watchlist add/remove.
 - **Live prices fetched only while the popover/sheet is open** (or has been opened at least once this page load) — not an always-on subscription mounted globally in `app/layout.tsx`. The trigger icon itself stays static (no live-updating badge/dot). This is a deliberate simplicity choice: avoids a permanent SSE connection for every signed-in user on every page load for a feature most won't have open at any given moment.
 - **Works for any asset type** (stock, ETF, crypto, commodity) — reuses `TickerSelector`'s existing search (already asset-type-agnostic) and `slugToAssetPath()` for correct routing (`/stock/` vs `/asset/`).
+- **Second entry point: a pin toggle button directly on the stock/asset detail page**, alongside the existing `AddToListPicker`/`AlertDialog`/"Ask AI" action buttons — so pinning doesn't require opening the nav panel and searching for the ticker you're already looking at.
 
 ## Architecture
 
@@ -45,9 +46,18 @@ Navigation.tsx (desktop)              MobileTabBar.tsx (mobile, "More" sheet)
   (pinnedTickers,   (pinnedTickers  (add-ticker
    updatePinned     when panel is    search input,
    Tickers)          open, else [])  reused as-is)
+        ▲
+        │  same hook, second consumer
+        │
+  PinToggleButton (components/navigation/PinToggleButton.tsx)
+        │  mounted in the header action row of:
+        ├─ app/stock/[ticker]/page.tsx
+        └─ app/asset/[slug]/page.tsx
 ```
 
 One shared presentational component (`PinnedTickersPanel`) renders the row list + add-ticker input; it's mounted inside a `Popover` on desktop and inside the mobile "More" `Sheet` on mobile — same component, different containers, so the row-rendering/remove/add logic isn't duplicated.
+
+A second, much smaller component (`PinToggleButton`) reads/writes the exact same `useUserSettings().pinnedTickers`/`updatePinnedTickers` — both entry points operate on one shared piece of state, so pinning from a stock page and unpinning from the nav panel stay in sync with no extra plumbing.
 
 ## Components
 
@@ -88,6 +98,45 @@ Add a `Pin` (lucide-react) icon `Button` + `Popover` in the right-side icon clus
 
 Add a `MoreSection title="Pinned"` block inside the existing "More" sheet content (`:87-116`), rendering `<PinnedTickersPanel />` directly (no extra `Popover` wrapper needed — it's already inside the sheet).
 
+### `components/navigation/PinToggleButton.tsx` (new)
+
+A simple binary toggle, not a picker — no popover, no search. Props: `{ symbol: string }`.
+
+```tsx
+const MAX_PINNED = 5;
+
+export function PinToggleButton({ symbol }: { symbol: string }) {
+  const { pinnedTickers, updatePinnedTickers } = useUserSettings();
+  const upper = symbol.toUpperCase();
+  const isPinned = pinnedTickers.includes(upper);
+  const atLimit = !isPinned && pinnedTickers.length >= MAX_PINNED;
+
+  function toggle() {
+    if (isPinned) updatePinnedTickers(pinnedTickers.filter((s) => s !== upper));
+    else if (!atLimit) updatePinnedTickers([...pinnedTickers, upper]);
+  }
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={toggle}
+      disabled={atLimit}
+      title={atLimit ? `You can pin up to ${MAX_PINNED} tickers` : isPinned ? 'Unpin' : 'Pin'}
+      className="gap-2"
+    >
+      <Pin className={cn('h-4 w-4', isPinned && 'fill-current text-primary')} />
+    </Button>
+  );
+}
+```
+
+Filled + `text-primary` icon = pinned, outline/muted = not — **deliberately not emerald**: DESIGN.md's One Signal Rule reserves emerald/red exclusively for gain/loss direction, and "pinned" is a UI selection state, not a financial signal, so it uses the same neutral `primary` token the nav already uses for its own active-link state (`Navigation.tsx`'s `bg-primary/10 text-primary` pattern). The `title` attribute for the disabled/limit state matches the existing icon-button tooltip convention (e.g. `ScreenerResults`' alert-bell buttons use the same plain-`title` approach, no dedicated `Tooltip` wrapper needed for a single-line hint).
+
+**Mounted in:**
+- `app/stock/[ticker]/page.tsx` — header action row (alongside `AddToListPicker`, `AlertDialog`, "Ask AI"), passing the page's `ticker`.
+- `app/asset/[slug]/page.tsx` — same action row, passing `symbol`.
+
 ## Data flow / edge cases
 
 - **Unauthenticated users**: not a real case to design for. `AuthNavigation.tsx` never renders `Navigation`/`MobileTabBar` on public/marketing routes (`NO_APP_NAV_ROUTES`), and every other route requires an authenticated session — confirmed `NotificationBell` has no auth guard for the same reason. The pin icon and panel can assume `user` is always present, no logged-out empty state needed.
@@ -100,9 +149,10 @@ Add a `MoreSection title="Pinned"` block inside the existing "More" sheet conten
 - Reordering pinned tickers (fixed insertion order — no drag handles, matching the "visibility-only" simplicity precedent from the recent Market Context Cards work).
 - Multiple pin "lists" or categories (Watchlist already covers that need).
 - A live-updating badge/dot on the trigger icon itself.
-- Any change to `/api/academy/explain`-style dedicated backend — this feature needs no new API route; it's entirely existing hooks (`useUserSettings`, `useLivePrices`) plus one new settings key.
+- Any new API route or Supabase table — entirely existing hooks (`useUserSettings`, `useLivePrices`) plus one new settings key.
 
 ## Testing
 
 - Manual: pin/unpin from the panel on desktop and the mobile "More" sheet; confirm the 5-cap disables the add input; confirm live prices start ticking only after the popover/sheet opens (network tab: no `/api/market/prices/stream` request before first open); confirm pinning a crypto/commodity symbol routes to `/asset/[slug]`, a stock/ETF to `/stock/[ticker]`.
+- Manual: pin a ticker via `PinToggleButton` on its stock/asset page, then confirm it appears in the nav panel without a refresh (both consumers read the same `useUserSettings()` state); unpin from the nav panel and confirm the stock page's button reverts to its unpinned state; hit the 5-cap via the stock page button and confirm it disables with the limit `title` tooltip, matching the nav panel's own disabled-input state.
 - No new automated test framework in this repo (per CLAUDE.md, `npm run lint` is the primary gate) — verify via `npm run lint` and a manual click-through per the `verify`/UI-testing conventions already used in this session's other changes.
