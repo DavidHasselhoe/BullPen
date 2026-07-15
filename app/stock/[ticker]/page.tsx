@@ -22,6 +22,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import AnimatedContent from '@/components/ui/AnimatedContent';
 import { useBackground } from '@/hooks/use-background';
 import { AddToListPicker } from '@/components/watchlist/AddToListPicker';
+import { PinToggleButton } from '@/components/navigation/PinToggleButton';
 import { ThesisSection } from '@/components/social/ThesisSection';
 import { useStockSnapshot } from '@/hooks/use-stock-snapshot';
 import dynamic from 'next/dynamic';
@@ -347,6 +348,7 @@ export default function StockDetailPage() {
                         </div>
                         <div className="flex shrink-0 items-center gap-2 flex-wrap justify-end">
                           <ExperienceLevelToggle />
+                          <PinToggleButton symbol={ticker} />
                           <AddToListPicker symbol={ticker} companyName={displayName} />
                           <AlertDialog symbol={ticker} companyName={displayName} />
                           <Button variant="outline" size="sm" onClick={() => openAIPanel()} className="gap-2">

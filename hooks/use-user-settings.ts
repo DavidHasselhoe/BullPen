@@ -53,6 +53,12 @@ export function useUserSettings() {
     ? (settings.tools_shortcuts as string[])
     : DEFAULT_TOOL_SHORTCUTS;
 
+  // Tickers the user has pinned for quick access. Raw symbols (e.g. "AAPL",
+  // "BTC/USD"), same convention as watchlist — not URL slugs.
+  const pinnedTickers: string[] = Array.isArray(settings.pinned_tickers)
+    ? (settings.pinned_tickers as string[])
+    : [];
+
   const updateToolsShortcuts = useCallback(
     async (ids: string[]) => {
       if (!user?.id) return;
@@ -87,6 +93,28 @@ export function useUserSettings() {
       if (fetchError) return;
       const existing = (row?.settings as Record<string, unknown>) || {};
       const merged = { ...existing, market_hours_exchanges: codes };
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ settings: merged })
+        .eq('id', user.id);
+      if (updateError) return;
+      window.dispatchEvent(new Event('auth:refresh'));
+    },
+    [user]
+  );
+
+  const updatePinnedTickers = useCallback(
+    async (symbols: string[]) => {
+      if (!user?.id) return;
+      const supabase = createBrowserClient();
+      const { data: row, error: fetchError } = await supabase
+        .from('users')
+        .select('settings')
+        .eq('id', user.id)
+        .single();
+      if (fetchError) return;
+      const existing = (row?.settings as Record<string, unknown>) || {};
+      const merged = { ...existing, pinned_tickers: symbols };
       const { error: updateError } = await supabase
         .from('users')
         .update({ settings: merged })
@@ -135,5 +163,7 @@ export function useUserSettings() {
     marketContextHidden,
     toolsShortcuts,
     updateToolsShortcuts,
+    pinnedTickers,
+    updatePinnedTickers,
   };
 }
