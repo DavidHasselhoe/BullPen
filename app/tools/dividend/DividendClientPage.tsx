@@ -149,7 +149,30 @@ function loadStoredPortfolio(): Holding[] | null {
 
 const EMPTY_ROW: Holding = { id: 'seed', stock: null, mode: 'amount', value: '10,000' };
 
-export default function DividendClientPage() {
+export interface DividendSeedHolding {
+  ticker: string;
+  name: string;
+  mode: 'amount' | 'shares';
+  value: string;
+}
+
+interface DividendClientPageProps {
+  /** Preload the portfolio (e.g. from an Academy demo). When set, localStorage is neither read nor written. */
+  initialHoldings?: DividendSeedHolding[];
+  /** Preselect the projection period. */
+  initialYears?: number;
+  /** Render without page chrome (back link, hero, full-screen background) for embedding in a demo shell. */
+  embedded?: boolean;
+  /** Fired after a calculation attempt completes (used to gate the demo tour). */
+  onCalculated?: () => void;
+}
+
+export default function DividendClientPage({
+  initialHoldings,
+  initialYears,
+  embedded = false,
+  onCalculated,
+}: DividendClientPageProps = {}) {
   const { hasAnimatedBackground } = useBackground();
   const { user } = useAuth();
   const { roundNumbers } = useUserSettings();
@@ -170,10 +193,19 @@ export default function DividendClientPage() {
   const idRef = useRef(0);
   const makeId = () => `h-${idRef.current++}`;
 
-  const [holdings, setHoldings] = useState<Holding[]>(() =>
-    typeof window !== 'undefined' ? loadStoredPortfolio() ?? [EMPTY_ROW] : [EMPTY_ROW]
-  );
-  const [years, setYears] = useState(10);
+  const [holdings, setHoldings] = useState<Holding[]>(() => {
+    // Demo/embedded mode seeds from props and never touches the user's saved portfolio.
+    if (initialHoldings && initialHoldings.length > 0) {
+      return initialHoldings.map((h, i) => ({
+        id: `seed-${i}`,
+        stock: minimalStock(h.ticker, h.name),
+        mode: h.mode,
+        value: h.value,
+      }));
+    }
+    return typeof window !== 'undefined' ? loadStoredPortfolio() ?? [EMPTY_ROW] : [EMPTY_ROW];
+  });
+  const [years, setYears] = useState(initialYears ?? 10);
   const [drip, setDrip] = useState(true);
   const [result, setResult] = useState<DividendResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -281,14 +313,17 @@ export default function DividendClientPage() {
       return { ticker: h.stock!.ticker, sharesOrAmount, mode: h.mode };
     });
 
-    try {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify(
-          validHoldings.map((h) => ({ ticker: h.stock!.ticker, name: h.stock!.name, mode: h.mode, value: h.value }))
-        )
-      );
-    } catch { /* storage unavailable */ }
+    // Embedded/demo runs are ephemeral — never overwrite the user's saved portfolio.
+    if (!embedded) {
+      try {
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify(
+            validHoldings.map((h) => ({ ticker: h.stock!.ticker, name: h.stock!.name, mode: h.mode, value: h.value }))
+          )
+        );
+      } catch { /* storage unavailable */ }
+    }
 
     setIsLoading(true);
     setResult(null);
@@ -304,40 +339,46 @@ export default function DividendClientPage() {
       setResult({ success: false, error: e instanceof Error ? e.message : 'Request failed' });
     } finally {
       setIsLoading(false);
+      onCalculated?.();
     }
   };
 
-  return (
-    <div className={cn('min-h-screen', hasAnimatedBackground ? '' : 'bg-background')}>
-      <div className="fixed inset-0 -z-10 bg-gradient-to-br from-background via-background to-primary/5 pointer-events-none" />
+  // Page chrome (back link + hero) is suppressed when embedded in a demo shell,
+  // which supplies its own header. The form + results below are shared verbatim.
+  const header = embedded ? null : (
+    <>
+      <Link
+        href="/tools"
+        className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-6 group"
+      >
+        <ArrowLeft className="h-3 w-3 transition-transform group-hover:-translate-x-0.5" />
+        All tools
+      </Link>
 
-      <main className="container mx-auto max-w-4xl py-10 px-4 sm:px-6 lg:px-8">
-        <Link
-          href="/tools"
-          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-6 group"
-        >
-          <ArrowLeft className="h-3 w-3 transition-transform group-hover:-translate-x-0.5" />
-          All tools
-        </Link>
-
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="mb-8"
-        >
-          <div className="flex items-center gap-3 mb-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
-              <Wallet className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-foreground">Dividend Calculator</h1>
-              <p className="text-muted-foreground text-sm mt-0.5">
-                Build a dividend portfolio and project income, reinvestment growth, and break-even
-              </p>
-            </div>
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="mb-8"
+      >
+        <div className="flex items-center gap-3 mb-2">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+            <Wallet className="h-5 w-5 text-primary" />
           </div>
-        </motion.div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Dividend Calculator</h1>
+            <p className="text-muted-foreground text-sm mt-0.5">
+              Build a dividend portfolio and project income, reinvestment growth, and break-even
+            </p>
+          </div>
+        </div>
+      </motion.div>
+    </>
+  );
+
+  const inner = (
+    <>
+      {header}
 
         {/* Inputs */}
         <motion.form
@@ -391,7 +432,7 @@ export default function DividendClientPage() {
           </div>
 
           {/* Portfolio rows */}
-          <div className="space-y-3">
+          <div data-tour="dividend-holdings" className="space-y-3">
             <div className="flex items-center justify-between flex-wrap gap-2">
               <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 Your portfolio
@@ -493,7 +534,7 @@ export default function DividendClientPage() {
           <div className="my-6 h-px bg-border/50" />
 
           {/* Year presets */}
-          <div className="space-y-3">
+          <div data-tour="dividend-settings" className="space-y-3">
             <label className="text-sm font-medium">Projection period</label>
             <div className="flex flex-wrap gap-1 p-1 rounded-xl bg-muted/50 border border-border/50 w-fit">
               {YEAR_PRESETS.map((y) => (
@@ -544,6 +585,7 @@ export default function DividendClientPage() {
 
           <Button
             type="submit"
+            data-tour="dividend-calculate"
             disabled={!isValid || isLoading}
             className={cn(
               'mt-6 w-full h-12 text-base font-semibold',
@@ -578,6 +620,7 @@ export default function DividendClientPage() {
           {!isLoading && result && (
             <motion.div
               key="result"
+              data-tour="dividend-results"
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
@@ -610,6 +653,18 @@ export default function DividendClientPage() {
             </motion.div>
           )}
         </AnimatePresence>
+    </>
+  );
+
+  if (embedded) {
+    return <div className="w-full">{inner}</div>;
+  }
+
+  return (
+    <div className={cn('min-h-screen', hasAnimatedBackground ? '' : 'bg-background')}>
+      <div className="fixed inset-0 -z-10 bg-gradient-to-br from-background via-background to-primary/5 pointer-events-none" />
+      <main className="container mx-auto max-w-4xl py-10 px-4 sm:px-6 lg:px-8">
+        {inner}
       </main>
     </div>
   );

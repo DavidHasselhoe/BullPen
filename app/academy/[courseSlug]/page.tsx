@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, BookOpen, HelpCircle, Shuffle, GitFork, CandlestickChart, Check, Zap, Lock } from 'lucide-react';
+import { ArrowLeft, BookOpen, HelpCircle, Shuffle, GitFork, CandlestickChart, PlayCircle, Check, Zap, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ProGate } from '@/components/billing/ProGate';
@@ -16,6 +16,7 @@ const TYPE_META: Record<LessonType, { label: string; icon: React.ComponentType<{
   match:       { label: 'Match',      icon: Shuffle },
   scenario:    { label: 'Scenario',   icon: GitFork },
   'chart-tour': { label: 'Chart Tour', icon: CandlestickChart },
+  demo:        { label: 'Demo',       icon: PlayCircle },
 };
 
 export default function CourseOverviewPage() {

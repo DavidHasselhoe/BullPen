@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 // ─── Lesson type enum ────────────────────────────────────────────────────────
 
-export const LessonTypeSchema = z.enum(['read', 'quiz', 'match', 'scenario', 'chart-tour']);
+export const LessonTypeSchema = z.enum(['read', 'quiz', 'match', 'scenario', 'chart-tour', 'demo']);
 export type LessonType = z.infer<typeof LessonTypeSchema>;
 
 // ─── Per-lesson content schemas ─────────────────────────────────────────────
@@ -74,6 +74,50 @@ export const ChartTourContentSchema = z.object({
 });
 export type ChartTourContent = z.infer<typeof ChartTourContentSchema>;
 
+// ─── Demo mode ───────────────────────────────────────────────────────────────
+// A guided walkthrough that opens a REAL app surface (stock statistics, a demo
+// portfolio, the dividend calculator) fullscreen and spotlights each step.
+// Unlike chart-tour (whose target/action are a fixed chart-toolbar enum), demo
+// steps use free-form string targets so each surface can define its own anchors.
+
+export const DemoTourStepSchema = z.object({
+  id: z.string(),
+  /** Value of the `data-tour` attribute to spotlight. 'none' centers the tooltip with no cutout. */
+  target: z.string(),
+  title: z.string(),
+  body: z.string(),
+  /** Surface-scoped action id the user must perform before Next unlocks. 'none' = no gate. */
+  requiredAction: z.string().default('none'),
+});
+export type DemoTourStep = z.infer<typeof DemoTourStepSchema>;
+
+const DemoDividendHoldingSchema = z.object({
+  ticker: z.string(),
+  name: z.string(),
+  mode: z.enum(['amount', 'shares']),
+  value: z.string(),
+});
+
+export const DemoContentSchema = z.discriminatedUnion('surface', [
+  z.object({
+    surface: z.literal('stock-stats'),
+    ticker: z.string(),
+    steps: z.array(DemoTourStepSchema).min(1),
+  }),
+  z.object({
+    surface: z.literal('demo-portfolio'),
+    fixtureId: z.string().default('starter-three-stock'),
+    steps: z.array(DemoTourStepSchema).min(1),
+  }),
+  z.object({
+    surface: z.literal('dividend-calculator'),
+    holdings: z.array(DemoDividendHoldingSchema).min(1),
+    years: z.number().int().min(1).max(40).default(10),
+    steps: z.array(DemoTourStepSchema).min(1),
+  }),
+]);
+export type DemoContent = z.infer<typeof DemoContentSchema>;
+
 /**
  * Discriminated union over lesson type + its content payload.
  * Use this at the API boundary to validate before sending to the player.
@@ -84,6 +128,7 @@ export const LessonContentSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('match'), data: MatchContentSchema }),
   z.object({ type: z.literal('scenario'), data: ScenarioContentSchema }),
   z.object({ type: z.literal('chart-tour'), data: ChartTourContentSchema }),
+  z.object({ type: z.literal('demo'), data: DemoContentSchema }),
 ]);
 export type LessonContent = z.infer<typeof LessonContentSchema>;
 
@@ -111,7 +156,7 @@ export interface Lesson {
   type: LessonType;
   orderIndex: number;
   xpReward: number;
-  content: ReadContent | QuizContent | MatchContent | ScenarioContent | ChartTourContent;
+  content: ReadContent | QuizContent | MatchContent | ScenarioContent | ChartTourContent | DemoContent;
 }
 
 export interface AcademyStats {

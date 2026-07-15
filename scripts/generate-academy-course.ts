@@ -32,6 +32,11 @@ import {
 import { GLOSSARY, getGlossaryEntry } from '../lib/finance/glossary';
 import { z } from 'zod';
 
+// This generator only drafts AI-authorable text lessons. Interactive lesson
+// types (chart-tour, demo) are hand-authored in their own migrations, so they
+// are intentionally excluded from the schema/prompt maps below.
+type GeneratableLessonType = Extract<LessonType, 'read' | 'quiz' | 'match' | 'scenario'>;
+
 // ─── Model + retries ──────────────────────────────────────────────────────────
 // Use a strong model for content quality (per CLAUDE.md). Override with argv flag if needed.
 const MODEL = 'claude-opus-4-8';
@@ -44,7 +49,7 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 interface LessonSpec {
   slug: string;
   title: string;
-  type: LessonType;
+  type: GeneratableLessonType;
   topic: string;        // what this lesson should teach — the prompt seed
   xpReward: number;
 }
@@ -85,7 +90,7 @@ const DEFAULT_OUTLINE: CourseOutline = {
 
 // ─── Per-type schema + prompt ──────────────────────────────────────────────────
 
-const SCHEMA_BY_TYPE: Record<LessonType, z.ZodTypeAny> = {
+const SCHEMA_BY_TYPE: Record<GeneratableLessonType, z.ZodTypeAny> = {
   read: ReadContentSchema,
   quiz: QuizContentSchema,
   match: MatchContentSchema,
@@ -94,13 +99,13 @@ const SCHEMA_BY_TYPE: Record<LessonType, z.ZodTypeAny> = {
 
 const GLOSSARY_TERMS = Object.keys(GLOSSARY);
 
-function systemPromptFor(type: LessonType): string {
+function systemPromptFor(type: GeneratableLessonType): string {
   const base =
     'You are a senior investing educator writing for absolute beginners in a Duolingo-style app. ' +
     'Tone: warm, plain-English, concrete, no jargon without explaining it. ' +
     'Return ONLY raw JSON — no markdown, no code fences, no prose around it.';
 
-  const shapes: Record<LessonType, string> = {
+  const shapes: Record<GeneratableLessonType, string> = {
     read:
       'Shape: {"sections":[{"text":string,"highlightedTerms":[{"term":string,"definition":string}]}],"funFact"?:string}. ' +
       '2–4 sections, each 2–4 sentences. Highlight 1–3 key terms per section. ' +

@@ -86,9 +86,14 @@ function SignalDot({ signal }: { signal: SignalValue }) {
   );
 }
 
+/** Label → stable `data-tour` anchor id, e.g. "P/E (TTM)" → "stat-pe-ttm". */
+function statTourId(label: string): string {
+  return 'stat-' + label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+
 function StatCell({ label, value, highlight, signal, ticker, onAskAI }: StatRow & { signal?: SignalValue; ticker?: string; onAskAI?: (q: string) => void }) {
   return (
-    <div className="flex items-center justify-between gap-2 py-2.5 border-b border-border/50 last:border-0">
+    <div data-tour={statTourId(label)} className="flex items-center justify-between gap-2 py-2.5 border-b border-border/50 last:border-0">
       <span className={cn('text-xs', highlight ? 'text-foreground/70' : 'text-muted-foreground')}>
         <TermTooltip term={label} ticker={ticker} onAskAI={onAskAI} />
       </span>
@@ -103,11 +108,15 @@ function StatCell({ label, value, highlight, signal, ticker, onAskAI }: StatRow 
 export function StatisticsGrid({
   ticker,
   signals,
+  forceFull = false,
 }: {
   ticker: string;
   signals?: Record<string, SignalValue>;
+  /** Always show all metrics regardless of experience level (e.g. the Academy fundamentals demo). */
+  forceFull?: boolean;
 }) {
-  const { isSimplified, setLevel } = useExperienceLevel();
+  const { isSimplified: rawSimplified, setLevel } = useExperienceLevel();
+  const isSimplified = forceFull ? false : rawSimplified;
   const { open: openAIPanel } = useAIPanel();
   const handleAskAI = useCallback((q: string) => openAIPanel({ query: q }), [openAIPanel]);
 
