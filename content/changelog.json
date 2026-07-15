@@ -1,5 +1,18 @@
 [
   {
+    "date": "2026-07-16",
+    "entries": [
+      { "type": "new", "text": "You can now pin your favorite stocks and assets for quick access — pin from any stock page, then see their live prices anytime from a new button in the top navigation" },
+      { "type": "improved", "text": "The AI assistant got a friendlier new look and is now called Ask Bull, with a waving bull mascot welcoming you in" },
+      { "type": "improved", "text": "You can now hide individual cards inside Market Context on your dashboard, instead of having to remove the whole section" },
+      { "type": "improved", "text": "Highlighted terms in Academy lessons now open the full AI assistant when you ask for more, so you can keep asking follow-up questions" },
+      { "type": "improved", "text": "The 5-day stock chart now includes pre-market and after-hours price moves, so you always see the latest action" },
+      { "type": "fixed", "text": "Fixed live prices sometimes failing to load on the screener, watchlist, heatmap, and stock pages" },
+      { "type": "fixed", "text": "Fixed some valid stocks, like ExxonMobil, occasionally showing a \"not found\" page by mistake" },
+      { "type": "fixed", "text": "Fixed the \"Build your portfolio\" prompt appearing on the wrong pages and for people who already have holdings" }
+    ]
+  },
+  {
     "date": "2026-07-14",
     "entries": [
       { "type": "new", "text": "Sign-up now starts with a few quick questions about your investing experience, risk tolerance, timeframe, and goals — so the app and AI assistant feel tailored to you right away" },
