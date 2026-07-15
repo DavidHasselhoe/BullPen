@@ -2,7 +2,7 @@
 
 import { lazy, Suspense, useEffect, useRef, useState, useCallback } from 'react';
 import Image from 'next/image';
-import { Bot, X, PanelRightClose, Settings } from 'lucide-react';
+import { X, PanelRightClose, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
@@ -10,6 +10,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { BullAiIcon } from './BullAiIcon';
 import type { BullpenChatHandle } from './BullpenChat';
 
 // The chat stack (AI SDK transport, react-markdown, tool result cards) is heavy
@@ -46,9 +47,7 @@ const spring = { type: 'spring' as const, stiffness: 280, damping: 28, restDelta
 function AuthGate() {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-5 px-6 py-8 text-center">
-      <div className="rounded-full bg-primary/10 p-4">
-        <Bot className="h-8 w-8 text-primary" />
-      </div>
+      <BullAiIcon pose="wave" size={112} />
       <div className="space-y-1.5">
         <p className="text-sm font-semibold text-foreground">Sign in to use BullPen AI</p>
         <p className="text-xs text-muted-foreground max-w-[220px] leading-relaxed">
