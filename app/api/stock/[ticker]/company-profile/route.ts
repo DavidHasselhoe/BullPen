@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCompanyProfile, getKeyExecutives, TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
+import { getCompanyProfile, getKeyExecutives, withRateLimitRetry, TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
 import { getCached, setCached } from '@/lib/cache/market-data-cache';
 import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
 import { translateText } from '@/lib/i18n/translate';
@@ -34,10 +34,14 @@ async function handler(
       );
     }
 
-    // Fetch profile and executives in parallel.
+    // Fetch profile and executives in parallel. getCompanyProfile is retry-wrapped because
+    // a transient network blip here (common intermittently on Vercel's outbound TwelveData
+    // calls — see withRateLimitRetry) would otherwise surface as "no profile", which the
+    // stock page treats as a signal the ticker doesn't exist for symbols with no Supabase
+    // companies row.
     // /key_executives may be Ultra/Enterprise only on some plan configs — always degrade gracefully.
     const [profile, executives] = await Promise.all([
-      getCompanyProfile(sym),
+      withRateLimitRetry(() => getCompanyProfile(sym)),
       getKeyExecutives(sym).catch((err: unknown) => {
         const msg = err instanceof Error ? err.message : String(err);
         if (/plan|enterprise|higher tier|not available|access/i.test(msg)) return [];

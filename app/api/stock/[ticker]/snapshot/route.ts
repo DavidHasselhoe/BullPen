@@ -7,7 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { batchFetch, TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
+import { batchFetch, withRateLimitRetry, TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
 import { getCached, getCachedWithMeta, setCached } from '@/lib/cache/market-data-cache';
 import { withRateLimit, withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { slugToSymbol, inferAssetType, hasEarnings } from '@/lib/assets/asset-type';
@@ -67,7 +67,10 @@ async function handler(
     if (!cachedStats) requests.statistics = `/statistics?symbol=${sym}&apikey=${key}`;
     if (!cachedEarnings && hasEarnings(assetType)) requests.earnings = `/earnings?symbol=${sym}&outputsize=8&apikey=${key}`;
 
-    const raw = await batchFetch<Record<string, unknown>>(requests);
+    // Retry-wrapped: a transient network blip here (common intermittently on Vercel's
+    // outbound TwelveData calls) would otherwise leave quote null, which the stock page
+    // treats as a signal the ticker doesn't exist for symbols with no Supabase companies row.
+    const raw = await withRateLimitRetry(() => batchFetch<Record<string, unknown>>(requests));
 
     // ---- Quote (always fresh) ----
     let quote: {
