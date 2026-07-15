@@ -1,14 +1,14 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, X, ArrowRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { useAddOrUpdateHolding } from '@/hooks/use-holdings';
+import { useAddOrUpdateHolding, useHoldings } from '@/hooks/use-holdings';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { flushPendingOnboardingData } from '@/lib/onboarding/flush';
 import { readPendingQuizAnswers } from '@/lib/onboarding/pending-onboarding';
@@ -20,6 +20,9 @@ import { readPendingQuizAnswers } from '@/lib/onboarding/pending-onboarding';
  *     that ran before `user` settled into state, or failed outright.
  *  2. A single, dismissable (not blocking) starter-ticker prompt — shown
  *     once per account, never gates app usage the way the old modal did.
+ *     Only makes sense on the dashboard (the "start here" surface) and only
+ *     for accounts that don't already hold anything — an existing holder
+ *     doesn't need a starter-ticker nudge.
  */
 
 const STARTER_STOCKS: { ticker: string; name: string }[] = [
@@ -38,6 +41,8 @@ export function PendingOnboardingFlush() {
   const { user, isLoading, refresh } = useAuth();
   const addHolding = useAddOrUpdateHolding();
   const router = useRouter();
+  const pathname = usePathname();
+  const { data: holdings, isLoading: holdingsLoading } = useHoldings();
 
   const [dismissed, setDismissed] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -52,7 +57,10 @@ export function PendingOnboardingFlush() {
   }, [isLoading, user, refresh]);
 
   const promptShown = (user?.settings as Record<string, unknown> | null)?.starter_tickers_prompted === true;
-  const isOpen = !isLoading && !!user && !promptShown && !dismissed;
+  const isDashboard = pathname === '/dashboard';
+  const hasHoldings = (holdings?.length ?? 0) > 0;
+  const isOpen =
+    isDashboard && !isLoading && !!user && !promptShown && !dismissed && !holdingsLoading && !hasHoldings;
 
   const markPrompted = useCallback(async () => {
     if (!user) return;
@@ -107,7 +115,8 @@ export function PendingOnboardingFlush() {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 16, scale: 0.98 }}
         transition={{ duration: 0.2 }}
-        className="fixed bottom-4 right-4 z-40 w-[340px] max-w-[calc(100vw-2rem)] rounded-2xl border border-border bg-background shadow-2xl"
+        // bottom-24 clears the AIPanelToggle button (fixed bottom-4, h-14) with a gap
+        className="fixed bottom-24 right-4 z-40 w-[340px] max-w-[calc(100vw-2rem)] rounded-2xl border border-border bg-background shadow-2xl"
       >
         <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
           <p className="text-sm font-semibold">Build your portfolio</p>
