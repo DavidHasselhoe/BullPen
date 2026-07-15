@@ -21,7 +21,7 @@
  */
 
 import { WsManager } from './ws-manager';
-import { getStockQuotes, isExtendedHoursET } from '@/lib/twelvedata/twelvedata-client';
+import { getStockQuotes, isExtendedHoursET, withRateLimitRetry } from '@/lib/twelvedata/twelvedata-client';
 import { rmget, rset } from '@/lib/cache/redis-cache';
 
 export interface SeededQuote {
@@ -106,6 +106,12 @@ export async function seedPrices(
 
   // Level 2: fetch the true remainder from TwelveData in chunks. Each chunk's
   // failure is isolated — one bad chunk won't block or blank the others.
+  // withRateLimitRetry absorbs the transient network errors (ECONNRESET,
+  // truncated JSON bodies) seen intermittently on Vercel's outbound TwelveData
+  // calls — without it, a blip here permanently blanks that chunk's ~100
+  // symbols for the life of the SSE connection, since seeding only runs once
+  // at connect time and un-ticked symbols (e.g. pre-market) never get a
+  // second chance.
   const chunks: string[][] = [];
   for (let i = 0; i < stillNeeded.length; i += SEED_CHUNK) {
     chunks.push(stillNeeded.slice(i, i + SEED_CHUNK));
@@ -114,7 +120,7 @@ export async function seedPrices(
   await Promise.all(
     chunks.map(async (chunk) => {
       try {
-        const quotes = await getStockQuotes(chunk, { prepost });
+        const quotes = await withRateLimitRetry(() => getStockQuotes(chunk, { prepost }));
         for (const [sym, quote] of quotes.entries()) {
           if (!quote || quote.c <= 0) continue;
           const prevClose = quote.pc > 0 ? quote.pc : quote.c;
