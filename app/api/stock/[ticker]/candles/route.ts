@@ -68,9 +68,16 @@ async function handler(
     ? new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' }) // "YYYY-MM-DD"
     : undefined;
   const from = is1D ? now - 24 * 60 * 60 : now - (config.daysBack + padDays) * 24 * 60 * 60;
+  // 1W/1M use intraday bars (15min/1h) — include pre/post market candles so
+  // today's extended-hours move shows as part of the line instead of stopping
+  // at the prior regular close (daily/weekly-bar ranges don't need this: a
+  // single end-of-day bar isn't meaningful to split into sessions).
+  const includeExtendedHours = !isCrypto24h && (range === '1W' || range === '1M');
   const candleOptions = is1D && todayDateET
     ? { extendedHours: true, startDate: `${todayDateET} 04:00:00`, endDate: `${todayDateET} 23:59:00` }
-    : undefined;
+    : includeExtendedHours
+      ? { extendedHours: true }
+      : undefined;
 
   // ── Server-side cache ─────────────────────────────────────────────────────
   // 1D bars: clients poll every 60 s, so we cache in Redis with a session-aware

@@ -355,9 +355,12 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
     return pts;
   }, [candleData, range, sma50Data, sma200Data, ema20Data, bbandsData, rsiData, macdData]);
 
-  // Append live tick so chart always ends at current price
+  // Append live tick so chart always ends at current price — 1D, and also 1W/1M
+  // (5D/1M use intraday bars too, so without this the line stops at the last
+  // fetched candle instead of reaching today's live pre/post-market price).
+  const isIntradayRange = range === '1D' || range === '1W' || range === '1M';
   const displayData = useMemo<ChartPoint[]>(() => {
-    if (range !== '1D' || !isLive || !live || !chartData.length) return chartData;
+    if (!isIntradayRange || !isLive || !live || !chartData.length) return chartData;
     // eslint-disable-next-line react-hooks/purity
     const nowSec = Math.floor(Date.now() / 1000);
     const last = chartData[chartData.length - 1];
@@ -369,14 +372,14 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
     const liveSession: 'pre' | 'regular' | 'post' = etMins < 570 ? 'pre' : etMins >= 960 ? 'post' : 'regular';
 
     const livePt: ChartPoint = {
-      time: nowSec, label: fmtLabel(nowSec, '1D'), price: live.price, volume: 0, session: liveSession,
+      time: nowSec, label: fmtLabel(nowSec, range), price: live.price, volume: 0, session: liveSession,
     };
     if (chartData[0]?.session !== undefined) {
       if (liveSession === 'regular') livePt.regularPrice = live.price;
       else livePt.extPrice = live.price;
     }
     return [...chartData, livePt];
-  }, [chartData, range, isLive, live]);
+  }, [chartData, range, isIntradayRange, isLive, live]);
 
   const sessionBoundaries = useMemo(() => {
     if (range !== '1D') return { openTime: undefined, closeTime: undefined };
