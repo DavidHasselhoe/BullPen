@@ -155,16 +155,8 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
       >
         {/* Header */}
         <div className="flex h-16 shrink-0 items-center justify-between px-4 border-b border-border/50 bg-muted/30">
-          <div className="flex items-center gap-2.5 flex-1 min-w-0">
-            <div className="rounded-full bg-primary/15 p-1.5 shrink-0">
-              <Bot className="h-4 w-4 text-primary" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold leading-none">Ask Bull</p>
-              <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
-                {aiContext?.label ?? 'BullPen AI'}
-              </p>
-            </div>
+          <div className="flex items-center flex-1 min-w-0">
+            <p className="text-sm font-semibold leading-none truncate">Ask Bull</p>
           </div>
           <div className="flex items-center gap-2">
             {isAuthenticated && user && (

@@ -392,7 +392,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
       <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-4 space-y-4 scrollbar-hide">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full gap-3 py-8 text-center">
-            <BullAiIcon pose="wave" size={56} />
+            <BullAiIcon pose="wave" size={128} />
             <div>
               <p className="text-sm font-medium text-foreground">BullPen AI</p>
               <p className="text-xs text-muted-foreground mt-1 max-w-[220px]">

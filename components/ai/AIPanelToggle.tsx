@@ -38,18 +38,23 @@ export function AIPanelToggle() {
       title="Ask Bull"
       className={cn(
         'fixed bottom-4 right-4 z-50',
-        'h-14 px-4 rounded-full shadow-lg shadow-black/25',
-        'flex items-center gap-2',
+        'h-16 pl-2 pr-5 rounded-full shadow-lg shadow-black/25',
+        'flex items-center gap-2.5',
         'bg-primary text-primary-foreground',
         'hover:bg-primary/90 active:scale-[0.98]',
         'transition-all duration-200'
       )}
     >
-      {/* bg-primary is an ink-swapped fill (near-black in light mode, near-white
-          in dark mode) — the opposite of the page background, so the icon's
-          invert needs to run backwards from the usual dark:invert convention. */}
-      <BullAiIcon pose="glass" size={22} className="invert dark:invert-0" />
-      <span className="text-sm font-medium hidden sm:inline">Ask Bull</span>
+      {/* A solid bg-background badge behind the icon, rather than inverting the
+          line art against bg-primary's ink-swapped fill directly — thin strokes
+          inverted onto a solid color read as faint/washed out. bg-background
+          tracks the same light/dark polarity as the page, so the icon can use
+          the standard dark:invert (BullAiIcon's default) and always contrasts
+          cleanly against the badge regardless of theme. */}
+      <span className="flex items-center justify-center rounded-full bg-background p-2 shrink-0">
+        <BullAiIcon pose="glass" size={36} />
+      </span>
+      <span className="text-base font-semibold hidden sm:inline">Ask Bull</span>
     </button>
   );
 }
