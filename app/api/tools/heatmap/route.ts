@@ -5,6 +5,8 @@ import { SP500_TICKERS } from '@/lib/market-data/sp500';
 import { SP500_SECTORS } from '@/lib/market-data/sp500-sectors';
 import { logger } from '@/lib/utils/logger';
 import { getCached, setCached } from '@/lib/cache/market-data-cache';
+import { seedPrices, type SeededQuote } from '@/lib/market-data/seed-prices';
+import { isExtendedHoursET } from '@/lib/twelvedata/twelvedata-client';
 import type { Session } from '@/app/api/market/heatmap/stream/route';
 
 export const dynamic = 'force-dynamic';
@@ -35,21 +37,12 @@ export interface HeatmapResponse {
   error?: string;
 }
 
-interface TwelveDataQuote {
-  close?: string;
-  percent_change?: string;
-  previous_close?: string;
-  extended_price?: string;
-  extended_percent_change?: string;
-  is_market_open?: boolean;
-  name?: string;
-  status?: string;
-}
-
-type BatchQuoteResponse = Record<string, TwelveDataQuote>;
-
 const HEATMAP_CACHE_KEY = 'heatmap:v2';
 const HEATMAP_CACHE_TTL_SECONDS = 3 * 60;
+
+// Shown to the user for any data-fetch failure — never leaks provider names,
+// HTTP status codes, or other internals a visitor can't act on.
+const GENERIC_LOAD_ERROR = 'Live prices are temporarily unavailable. Please try again in a moment.';
 
 function getCurrentSession(): Session {
   const etStr = new Date().toLocaleTimeString('en-US', {
@@ -67,27 +60,6 @@ function getCurrentSession(): Session {
   if (etMins >= 570 && etMins < 960) return 'regular';
   if (etMins >= 960 && etMins < 1200) return 'post';
   return 'closed';
-}
-
-async function fetchBatchQuotes(
-  tickers: string[],
-  prepost: boolean
-): Promise<BatchQuoteResponse> {
-  const apiKey = process.env.TWELVE_DATA_API_KEY;
-  if (!apiKey) throw new Error('TWELVE_DATA_API_KEY not configured');
-
-  const prepostParam = prepost ? '&prepost=true' : '';
-  const url = `https://api.twelvedata.com/quote?symbol=${encodeURIComponent(tickers.join(','))}&apikey=${apiKey}${prepostParam}`;
-  const res = await fetch(url, { cache: 'no-store' });
-  if (!res.ok) throw new Error(`TwelveData responded ${res.status}`);
-
-  const json = await res.json() as BatchQuoteResponse | TwelveDataQuote;
-
-  if (tickers.length === 1 && json && typeof json === 'object' && !(tickers[0] in json)) {
-    return { [tickers[0]]: json as TwelveDataQuote };
-  }
-
-  return json as BatchQuoteResponse;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -134,34 +106,32 @@ async function heatmapHandler(_req: NextRequest): Promise<NextResponse> {
     const BASE_CAP = 3_000_000_000_000;
     const universeRank = new Map(SP500_TICKERS.map((t, i) => [t, i]));
 
-    const usePrepost = session === 'pre' || session === 'post';
+    // Session-level extended-hours flag — every S&P 500 name has extended
+    // quotes available on TwelveData in practice, so this is an acceptable
+    // simplification of the old per-stock `extended_price != null` check.
+    const isExtended = isExtendedHoursET();
 
-    const BATCH_SIZE = 20;
-    const batches: string[][] = [];
-    for (let i = 0; i < SP500_TICKERS.length; i += BATCH_SIZE) {
-      batches.push(SP500_TICKERS.slice(i, i + BATCH_SIZE));
-    }
-
-    const batchResults = await Promise.all(
-      batches.map((b) => fetchBatchQuotes(b, usePrepost))
-    );
-    const quoteMap: BatchQuoteResponse = Object.assign({}, ...batchResults);
+    // Route through the shared, Redis-backed, chunk-isolated seeding pipeline
+    // (same one the live heatmap stream uses) instead of hand-rolled raw
+    // fetches: this shares warm cache with the live stream, batches requests
+    // in TwelveData-safe chunks of 100 instead of 26 concurrent unbatched
+    // calls, and — critically — isolates each chunk's failures so one
+    // rate-limited chunk only drops its own symbols instead of aborting the
+    // whole page.
+    const quoteMap = new Map<string, SeededQuote>();
+    await seedPrices(SP500_TICKERS, (ticker, quote) => {
+      quoteMap.set(ticker, quote);
+    });
 
     const sectorMap = new Map<string, HeatmapStock[]>();
 
     for (const ticker of SP500_TICKERS) {
-      const quote = quoteMap[ticker];
-      if (!quote || quote.status === 'error') continue;
+      const quote = quoteMap.get(ticker);
+      if (!quote || !isFinite(quote.price) || quote.price <= 0) continue;
 
-      // Use extended price when in pre/post session and available
-      const isExtended = usePrepost && quote.extended_price != null;
-      const rawPrice = isExtended ? quote.extended_price : quote.close;
-      const rawChange = isExtended ? quote.extended_percent_change : quote.percent_change;
-
-      const price = parseFloat(rawPrice ?? '0');
-      const change = parseFloat(rawChange ?? '0');
-      const previousClose = parseFloat(quote.previous_close ?? '0');
-      if (!isFinite(price) || !isFinite(change) || price <= 0) continue;
+      const price = quote.price;
+      const change = quote.changePercent ?? 0;
+      const previousClose = quote.previousClose;
 
       // Sector: static map → DB → 'Other'
       const sectorName =
@@ -169,8 +139,8 @@ async function heatmapHandler(_req: NextRequest): Promise<NextResponse> {
         dbSectorMap.get(ticker)?.trim() ??
         'Other';
 
-      // Name: DB → TwelveData quote → ticker
-      const name = dbNameMap.get(ticker) ?? quote.name ?? ticker;
+      // Name: DB → ticker (TwelveData quotes don't carry a company name)
+      const name = dbNameMap.get(ticker) ?? ticker;
 
       const realCap = marketCapMap.get(ticker);
       const rank = universeRank.get(ticker) ?? SP500_TICKERS.length;
@@ -190,6 +160,14 @@ async function heatmapHandler(_req: NextRequest): Promise<NextResponse> {
       const existing = sectorMap.get(sectorName) ?? [];
       existing.push(stock);
       sectorMap.set(sectorName, existing);
+    }
+
+    if (sectorMap.size === 0) {
+      // Every symbol failed to resolve — Redis cold and TwelveData
+      // unavailable at the same time. Rare, but tell the user something
+      // they can act on rather than an empty grid or a raw error.
+      logger.error('Heatmap API: zero symbols resolved from seedPrices');
+      return NextResponse.json({ success: false, error: GENERIC_LOAD_ERROR });
     }
 
     const SECTOR_ORDER = [
@@ -233,9 +211,10 @@ async function heatmapHandler(_req: NextRequest): Promise<NextResponse> {
 
     return NextResponse.json(response);
   } catch (err) {
+    // Log the real cause server-side; the client only ever sees a generic,
+    // provider-agnostic message — no status codes, no vendor names.
     logger.error('Heatmap API error', err);
-    const msg = err instanceof Error ? err.message : 'Unexpected error';
-    return NextResponse.json({ success: false, error: msg }, { status: 500 });
+    return NextResponse.json({ success: false, error: GENERIC_LOAD_ERROR });
   }
 }
 
