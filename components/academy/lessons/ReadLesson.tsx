@@ -2,10 +2,11 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, Loader2 } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import type { ReadContent } from '@/types/academy';
 
 interface Props {
@@ -19,61 +20,20 @@ interface HighlightedTermProps {
 }
 
 function HighlightedTerm({ term, definition }: HighlightedTermProps) {
-  const [aiText, setAiText] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [errored, setErrored] = useState(false);
+  const [open, setOpen] = useState(false);
+  const { open: openAIPanel } = useAIPanel();
 
-  async function askAI() {
-    if (loading || aiText) return;
-    setLoading(true);
-    setErrored(false);
-    setAiText('');
-
-    try {
-      const res = await fetch('/api/academy/explain', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ term, context: definition }),
-      });
-      if (!res.ok || !res.body) {
-        setErrored(true);
-        setLoading(false);
-        return;
-      }
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let acc = '';
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const events = buffer.split('\n\n');
-        buffer = events.pop() ?? '';
-        for (const e of events) {
-          if (!e.startsWith('data: ')) continue;
-          try {
-            const parsed = JSON.parse(e.slice(6)) as { type: string; delta?: string };
-            if (parsed.type === 'text' && parsed.delta) {
-              acc += parsed.delta;
-              setAiText(acc);
-            } else if (parsed.type === 'error') {
-              setErrored(true);
-            }
-          } catch {
-            /* skip malformed */
-          }
-        }
-      }
-    } catch {
-      setErrored(true);
-    } finally {
-      setLoading(false);
-    }
+  // Deeper explanations go through the global AI Assistant instead of an inline
+  // fetch — same surface as the rest of the app, and lets the user ask follow-ups.
+  function askAI() {
+    setOpen(false);
+    openAIPanel({
+      query: `Can you explain "${term}" in more depth, with a simple example? Quick definition I already have: "${definition}"`,
+    });
   }
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
           type="button"
@@ -90,39 +50,16 @@ function HighlightedTerm({ term, definition }: HighlightedTermProps) {
           <p className="text-sm text-foreground leading-relaxed">{definition}</p>
         </div>
 
-        {aiText !== null && (
-          <div className="rounded-md bg-muted/40 border border-border/40 px-2.5 py-2 text-xs leading-relaxed text-muted-foreground">
-            {errored ? (
-              <span className="text-red-400">Couldn&apos;t reach the AI. Try again.</span>
-            ) : (
-              <>
-                <span className="text-emerald-500/80 font-medium">AI: </span>
-                {aiText}
-                {loading && (
-                  <span className="inline-block w-1.5 h-3 ml-0.5 align-middle bg-emerald-500/60 animate-pulse" />
-                )}
-              </>
-            )}
-          </div>
-        )}
-
-        {aiText === null && (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={askAI}
-            disabled={loading}
-            className="w-full gap-1.5 text-xs h-7"
-          >
-            {loading ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
-              <Sparkles className="h-3 w-3 text-emerald-500" />
-            )}
-            Ask AI for more
-          </Button>
-        )}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={askAI}
+          className="w-full gap-1.5 text-xs h-7"
+        >
+          <Sparkles className="h-3 w-3 text-emerald-500" />
+          Ask AI for more
+        </Button>
       </PopoverContent>
     </Popover>
   );
