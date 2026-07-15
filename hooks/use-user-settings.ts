@@ -41,6 +41,12 @@ export function useUserSettings() {
     ? (settings.market_hours_exchanges as string[])
     : null;
 
+  // Ids of Market Context sub-cards (market_hours, tools_shortcuts, top_movers,
+  // market_news) the user has individually hidden — visibility only, no order.
+  const marketContextHidden: string[] = Array.isArray(settings.market_context_hidden)
+    ? (settings.market_context_hidden as string[])
+    : [];
+
   // User-picked one-click tool shortcuts shown on the home page. Defaults to a
   // useful starter set; an explicit empty array means the user removed them all.
   const toolsShortcuts: string[] = Array.isArray(settings.tools_shortcuts)
@@ -126,6 +132,7 @@ export function useUserSettings() {
     homepageWidgetHidden,
     marketHoursExchanges,
     updateMarketHoursExchanges,
+    marketContextHidden,
     toolsShortcuts,
     updateToolsShortcuts,
   };

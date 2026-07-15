@@ -32,10 +32,17 @@ export function MarketContextSection() {
     updateMarketContextMode,
     marketHoursExchanges,
     updateMarketHoursExchanges,
+    marketContextHidden,
     toolsShortcuts,
     updateToolsShortcuts,
   } = useUserSettings();
   const holdingsMode = marketContextMode === 'holdings';
+
+  const showMarketHours = !marketContextHidden.includes('market_hours');
+  const showToolsShortcuts = !marketContextHidden.includes('tools_shortcuts');
+  const showTopMovers = !marketContextHidden.includes('top_movers');
+  const showMarketNews = !marketContextHidden.includes('market_news');
+  const showLeftColumn = showMarketHours || showToolsShortcuts;
 
   const tickers = (holdings ?? [])
     .map((h) => h.symbol?.toUpperCase())
@@ -65,6 +72,11 @@ export function MarketContextSection() {
     data: marketNews,
     isLoading: isLoadingNews,
   } = useMarketNews('general', 5, newsSymbols);
+
+  // Every card individually hidden — nothing left to show, including the header.
+  if (!showMarketHours && !showToolsShortcuts && !showTopMovers && !showMarketNews) {
+    return null;
+  }
 
   return (
     <section className="space-y-4 min-w-0 overflow-hidden">
@@ -107,73 +119,83 @@ export function MarketContextSection() {
       </div>
 
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 min-w-0">
-        <AnimatedContent reverse={true} className="min-w-0">
-          <div className="space-y-4 min-w-0">
-            <MarketHoursCard
-              exchangeCodes={
-                effectiveHoldingsMode && exchangeCodes.length > 0
-                  ? exchangeCodes
-                  : customExchanges
-              }
-              // Editing only makes sense in "all markets" mode — holdings mode
-              // derives the list from the portfolio so manual edits would fight
-              // that derivation on the next render.
-              editable={isAuthenticated && !effectiveHoldingsMode}
-              onExchangesChange={(codes) => updateMarketHoursExchanges?.(codes)}
-            />
-            <ToolsShortcutCard
-              toolIds={toolsShortcuts}
-              editable={isAuthenticated}
-              onToolsChange={(ids) => updateToolsShortcuts?.(ids)}
-            />
-          </div>
-        </AnimatedContent>
-        <AnimatedContent reverse={true} delay={0.05} className="min-w-0">
-          {effectiveHoldingsMode && tickers.length === 0 ? (
-            <Card className="border-border/50 min-w-0">
-              <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-                <Briefcase className="h-10 w-10 text-muted-foreground/50 mb-3" />
-                <p className="text-sm font-medium text-foreground">No holdings yet</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Add stocks to see portfolio movers
-                </p>
-                <Button variant="link" size="sm" className="mt-2" asChild>
-                  <a href="/holdings">Go to My Holdings</a>
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <TopMoversCard
-              gainers={topMovers?.gainers || []}
-              losers={topMovers?.losers || []}
-              isLoading={isLoadingMovers}
-              isHoldingsMode={!!effectiveHoldingsMode}
-            />
-          )}
-        </AnimatedContent>
-        <AnimatedContent reverse={true} delay={0.1} className="min-w-0">
-          {effectiveHoldingsMode && tickers.length === 0 ? (
-            <Card className="border-border/50 min-w-0">
-              <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-                <Briefcase className="h-10 w-10 text-muted-foreground/50 mb-3" />
-                <p className="text-sm font-medium text-foreground">No holdings yet</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Add stocks to see portfolio news
-                </p>
-                <Button variant="link" size="sm" className="mt-2" asChild>
-                  <a href="/holdings">Go to My Holdings</a>
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <MarketNewsCard
-              news={marketNews || []}
-              isLoading={isLoadingNews}
-              limit={5}
-              isHoldingsMode={!!effectiveHoldingsMode}
-            />
-          )}
-        </AnimatedContent>
+        {showLeftColumn && (
+          <AnimatedContent reverse={true} className="min-w-0">
+            <div className="space-y-4 min-w-0">
+              {showMarketHours && (
+                <MarketHoursCard
+                  exchangeCodes={
+                    effectiveHoldingsMode && exchangeCodes.length > 0
+                      ? exchangeCodes
+                      : customExchanges
+                  }
+                  // Editing only makes sense in "all markets" mode — holdings mode
+                  // derives the list from the portfolio so manual edits would fight
+                  // that derivation on the next render.
+                  editable={isAuthenticated && !effectiveHoldingsMode}
+                  onExchangesChange={(codes) => updateMarketHoursExchanges?.(codes)}
+                />
+              )}
+              {showToolsShortcuts && (
+                <ToolsShortcutCard
+                  toolIds={toolsShortcuts}
+                  editable={isAuthenticated}
+                  onToolsChange={(ids) => updateToolsShortcuts?.(ids)}
+                />
+              )}
+            </div>
+          </AnimatedContent>
+        )}
+        {showTopMovers && (
+          <AnimatedContent reverse={true} delay={0.05} className="min-w-0">
+            {effectiveHoldingsMode && tickers.length === 0 ? (
+              <Card className="border-border/50 min-w-0">
+                <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                  <Briefcase className="h-10 w-10 text-muted-foreground/50 mb-3" />
+                  <p className="text-sm font-medium text-foreground">No holdings yet</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Add stocks to see portfolio movers
+                  </p>
+                  <Button variant="link" size="sm" className="mt-2" asChild>
+                    <a href="/holdings">Go to My Holdings</a>
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <TopMoversCard
+                gainers={topMovers?.gainers || []}
+                losers={topMovers?.losers || []}
+                isLoading={isLoadingMovers}
+                isHoldingsMode={!!effectiveHoldingsMode}
+              />
+            )}
+          </AnimatedContent>
+        )}
+        {showMarketNews && (
+          <AnimatedContent reverse={true} delay={0.1} className="min-w-0">
+            {effectiveHoldingsMode && tickers.length === 0 ? (
+              <Card className="border-border/50 min-w-0">
+                <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                  <Briefcase className="h-10 w-10 text-muted-foreground/50 mb-3" />
+                  <p className="text-sm font-medium text-foreground">No holdings yet</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Add stocks to see portfolio news
+                  </p>
+                  <Button variant="link" size="sm" className="mt-2" asChild>
+                    <a href="/holdings">Go to My Holdings</a>
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <MarketNewsCard
+                news={marketNews || []}
+                isLoading={isLoadingNews}
+                limit={5}
+                isHoldingsMode={!!effectiveHoldingsMode}
+              />
+            )}
+          </AnimatedContent>
+        )}
       </div>
     </section>
   );

@@ -18,6 +18,24 @@ export const DASHBOARD_WIDGETS: DashboardWidget[] = [
 
 export const DEFAULT_ORDER: string[] = DASHBOARD_WIDGETS.map((w) => w.id);
 
+export interface MarketContextItem {
+  id: string;
+  label: string;
+}
+
+/**
+ * The "Market Context" widget bundles four cards. Unlike the top-level
+ * DASHBOARD_WIDGETS, these are visibility-only (no reordering) — Market Hours
+ * and Tool Shortcuts share a layout column, and Top Movers/Market News share
+ * a holdings-derived data mode, so a free drag order isn't meaningful here.
+ */
+export const MARKET_CONTEXT_ITEMS: MarketContextItem[] = [
+  { id: 'market_hours',    label: 'Market Hours' },
+  { id: 'tools_shortcuts', label: 'Tool Shortcuts' },
+  { id: 'top_movers',      label: 'Top Movers' },
+  { id: 'market_news',     label: 'Market News' },
+];
+
 const WIDGETS_BY_ID = new Map(DASHBOARD_WIDGETS.map((w) => [w.id, w]));
 
 export function getWidget(id: string): DashboardWidget | undefined {
