@@ -160,7 +160,7 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
               <Bot className="h-4 w-4 text-primary" />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-semibold leading-none">AI Assistant</p>
+              <p className="text-sm font-semibold leading-none">Ask Bull</p>
               <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
                 {aiContext?.label ?? 'BullPen AI'}
               </p>

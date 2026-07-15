@@ -1,8 +1,8 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { Bot } from 'lucide-react';
 import { useAIPanel } from './AIPanelProvider';
+import { BullAiIcon } from './BullAiIcon';
 import { cn } from '@/lib/utils';
 
 // Public marketing/support pages — no app context (tickers, portfolio, etc.) for the
@@ -34,8 +34,8 @@ export function AIPanelToggle() {
   return (
     <button
       onClick={toggle}
-      aria-label="Open AI Assistant"
-      title="Ask BullPen AI"
+      aria-label="Ask Bull — open AI Assistant"
+      title="Ask Bull"
       className={cn(
         'fixed bottom-4 right-4 z-50',
         'h-14 px-4 rounded-full shadow-lg shadow-black/25',
@@ -45,8 +45,11 @@ export function AIPanelToggle() {
         'transition-all duration-200'
       )}
     >
-      <Bot className="h-5 w-5 shrink-0" />
-      <span className="text-sm font-medium hidden sm:inline">AI Assistant</span>
+      {/* bg-primary is an ink-swapped fill (near-black in light mode, near-white
+          in dark mode) — the opposite of the page background, so the icon's
+          invert needs to run backwards from the usual dark:invert convention. */}
+      <BullAiIcon pose="glass" size={22} className="invert dark:invert-0" />
+      <span className="text-sm font-medium hidden sm:inline">Ask Bull</span>
     </button>
   );
 }

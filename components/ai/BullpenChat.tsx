@@ -20,6 +20,7 @@ import { AiPaywallDialog } from '@/components/billing/AiPaywallDialog';
 import { useInvalidateQuota } from '@/hooks/use-quota';
 import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import { ToolResultCard } from '@/components/ai/ToolResultCard';
+import { BullAiIcon } from '@/components/ai/BullAiIcon';
 import { getActiveToolName, getToolStatusLabel, getCompletedToolCalls, getFollowups, extractTickers } from '@/lib/ai/tool-ux';
 
 const DEFAULT_STARTER_PROMPTS = [
@@ -391,9 +392,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
       <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-4 space-y-4 scrollbar-hide">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full gap-3 py-8 text-center">
-            <div className="rounded-full bg-primary/10 p-3">
-              <Bot className="h-6 w-6 text-primary" />
-            </div>
+            <BullAiIcon pose="wave" size={56} />
             <div>
               <p className="text-sm font-medium text-foreground">BullPen AI</p>
               <p className="text-xs text-muted-foreground mt-1 max-w-[220px]">
@@ -513,9 +512,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
             transition={{ duration: 0.2, ease: 'easeOut' }}
             className="flex items-end gap-2 justify-start"
           >
-            <div className="shrink-0 rounded-full bg-primary/10 p-1.5 mb-0.5">
-              <Bot className="h-3.5 w-3.5 text-primary" />
-            </div>
+            <BullAiIcon pose="think" size={28} className="mb-0.5" />
             <div className="bg-muted rounded-2xl rounded-bl-sm px-3.5 py-2.5 flex items-center gap-2">
               {toolStatusLabel && <span className="text-xs text-muted-foreground">{toolStatusLabel}</span>}
               <span className="flex gap-1.5 items-center">
