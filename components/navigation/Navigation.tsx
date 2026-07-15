@@ -8,7 +8,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { UserMenu } from './UserMenu';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Settings, Wrench, ChevronDown, Users } from 'lucide-react';
+import { Settings, Wrench, ChevronDown, Users, Pin } from 'lucide-react';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { SettingsModal } from '@/components/user/SettingsModal';
 import { useCommandPalette } from '@/components/command-palette/CommandPaletteProvider';
@@ -20,6 +20,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { PinnedTickersPanel } from './PinnedTickersPanel';
 import { TOOLS } from '@/lib/tools/tools-config';
 import { NAV_ITEMS as navigation, COMMUNITY_LINKS } from '@/lib/navigation/nav-items';
 
@@ -30,6 +32,7 @@ export function Navigation() {
   const searchShortcut = useSearchShortcut();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [activeSettingsTab, setActiveSettingsTab] = useState<string | undefined>(undefined);
+  const [pinnedOpen, setPinnedOpen] = useState(false);
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -246,6 +249,22 @@ export function Navigation() {
               <span className="hidden md:inline">Search...</span>
               <kbd className="hidden lg:inline-flex h-5 items-center rounded border px-1.5 text-[10px]">{searchShortcut}</kbd>
             </button>
+            <Popover open={pinnedOpen} onOpenChange={setPinnedOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="transition-all hover:scale-105"
+                  aria-label="Pinned tickers"
+                  title="Pinned tickers"
+                >
+                  <Pin className="h-5 w-5" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end">
+                <PinnedTickersPanel active={pinnedOpen} onNavigate={() => setPinnedOpen(false)} />
+              </PopoverContent>
+            </Popover>
             <Button
               variant="ghost"
               size="icon"

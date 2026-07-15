@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { COMMUNITY_LINKS } from '@/lib/navigation/nav-items';
 import { TOOLS } from '@/lib/tools/tools-config';
+import { PinnedTickersPanel } from './PinnedTickersPanel';
 
 const TABS = [
   { name: 'Home', href: '/dashboard', icon: Home },
@@ -85,6 +86,10 @@ export function MobileTabBar() {
           </SheetHeader>
 
           <div className="space-y-6 px-4 py-4" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
+            <MoreSection title="Pinned">
+              <PinnedTickersPanel active={moreOpen} onNavigate={close} />
+            </MoreSection>
+
             {/* Academy */}
             <MoreRow href="/academy" name="Academy" description="Learn investing, earn XP" icon={GraduationCap} onClick={close} />
 
