@@ -9,7 +9,11 @@
       { "type": "improved", "text": "The 5-day stock chart now includes pre-market and after-hours price moves, so you always see the latest action" },
       { "type": "fixed", "text": "Fixed live prices sometimes failing to load on the screener, watchlist, heatmap, and stock pages" },
       { "type": "fixed", "text": "Fixed some valid stocks, like ExxonMobil, occasionally showing a \"not found\" page by mistake" },
-      { "type": "fixed", "text": "Fixed the \"Build your portfolio\" prompt appearing on the wrong pages and for people who already have holdings" }
+      { "type": "fixed", "text": "Fixed the \"Build your portfolio\" prompt appearing on the wrong pages and for people who already have holdings" },
+      { "type": "new", "text": "Ask Bull now remembers your past conversations — open the history icon in the chat panel to pick up where you left off" },
+      { "type": "new", "text": "The Beyond Stocks: ETFs & Crypto Academy course can now be skipped if you're not interested, without blocking later courses" },
+      { "type": "improved", "text": "More Ask Bull polish: a bigger, easier-to-read chat icon, clearer status messages while it's working, and smoother text as answers come in" },
+      { "type": "new", "text": "Ask Bull now shows a quick one-time screen the first time you chat, explaining how your messages are used" }
     ]
   },
   {
