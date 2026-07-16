@@ -1,19 +1,51 @@
 name: Cron — Prefetch Market Data
 
-# Daily at 05:00 UTC. Pre-caches S&P 500 + NASDAQ 100 stats/financials so
-# the morning's first dashboard loads are free hits from market_data_cache.
-# Was a Vercel cron, moved here to fit within Hobby plan's 2-cron limit.
+# Daily at 05:00 UTC. Pre-caches stats + earnings for all S&P 500 + NASDAQ 100
+# tickers (market_data_cache + screener_stats), then financials for whichever
+# are still missing them.
+#
+# Stats+earnings are paced one batch (5 symbols, ~350 credits) every 75s —
+# ~107 batches × 75s ≈ 2h15m total — to keep this cron's *sustained* usage
+# around ~280 credits/min, well under TwelveData's 610/min plan cap, so live
+# user traffic always has headroom during the run instead of getting starved
+# by a burst. Financials are cheap (~1 credit/statement) and safe to run as a
+# single pass.
 on:
   schedule:
     - cron: '0 5 * * *'
   workflow_dispatch:
 
 jobs:
-  trigger:
+  prefetch:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 180
     steps:
-      - name: POST /api/cron/prefetch-market-data
+      - name: Refresh stats + earnings (paced batches)
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          APP_URL: ${{ vars.APP_URL || 'https://bullpen.no' }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::CRON_SECRET secret is not configured in repo settings"
+            exit 1
+          fi
+          echo "Starting stats+earnings prefetch…"
+          for batch in $(seq 0 120); do
+            echo "→ Batch $batch"
+            RESPONSE=$(curl -fsS -X GET -H "Authorization: Bearer ${CRON_SECRET}" "${APP_URL}/api/cron/prefetch-market-data?phase=stats&batch=${batch}") || {
+              echo "Batch $batch failed (rate limit or network error) — stopping"
+              break
+            }
+            echo "$RESPONSE"
+            DONE=$(echo "$RESPONSE" | jq -r '.done // false')
+            if [ "$DONE" = "true" ]; then
+              echo "All stats batches complete."
+              break
+            fi
+            sleep 75
+          done
+
+      - name: Refresh financials (single lightweight pass)
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
           APP_URL: ${{ vars.APP_URL || 'https://bullpen.no' }}
@@ -24,4 +56,4 @@ jobs:
           fi
           curl -fsS -X GET \
             -H "Authorization: Bearer ${CRON_SECRET}" \
-            "${APP_URL}/api/cron/prefetch-market-data"
+            "${APP_URL}/api/cron/prefetch-market-data?phase=financials"

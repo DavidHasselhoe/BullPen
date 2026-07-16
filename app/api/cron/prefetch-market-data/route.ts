@@ -1,21 +1,30 @@
 /**
  * Market Data Prefetch Cron
- * GET /api/cron/prefetch-market-data
+ * GET /api/cron/prefetch-market-data?phase=stats&batch=N
+ * GET /api/cron/prefetch-market-data?phase=financials
  *
- * Runs daily at 5 AM UTC, seeding market_data_cache for all SIGNIFICANT_TICKERS
- * (~550 S&P 500 + NASDAQ 100 stocks) so watchlist enrichment, health scores, and
- * any future screener work without requiring individual stock page visits.
+ * Seeds market_data_cache (+ screener_stats) for all SIGNIFICANT_TICKERS
+ * (~530 S&P 500 + NASDAQ 100 stocks) so watchlist enrichment, health scores,
+ * and any future screener work run without requiring individual stock page
+ * visits.
  *
- * Phase 1 — Stats + Earnings: all significant tickers, batched 15 at a time.
- *   Skips symbols refreshed in the last 12h (idempotent re-runs).
+ * phase=stats — one batch (STATS_BATCH_SIZE symbols) of /statistics +
+ *   /earnings per call. A single batch costs ~5 × 70 = 350 credits, comfortably
+ *   under the 610/min plan cap on its own. The GitHub Actions workflow calls
+ *   this once per `batch` index with a ~75s sleep between calls (see
+ *   .github/workflows/cron-prefetch-market-data.yml), which keeps the
+ *   *sustained* rate around ~280 credits/min — well under the cap, leaving
+ *   real headroom for concurrent live user traffic for the ~2h the sweep
+ *   takes. Symbol→batch mapping is computed off the stable SIGNIFICANT_TICKERS
+ *   order (not the shrinking "needs refresh" list), so batch indices stay
+ *   valid across the whole run even as earlier batches write fresh data.
+ *   Freshness (skip if refreshed in the last 12h) is checked per-batch on
+ *   just that batch's symbols, so re-running the workflow mid-day is cheap.
  *
- * Phase 2 — Financials: rotating batch of up to 75 symbols per run, prioritising
- *   those with no cached income/balance/cashflow. At 75/day the full universe
- *   rotates every ~8 days, which is fine for quarterly data.
- *
- * At 610 credits/min (Venture plan) the credit cost is not the binding constraint —
- * Vercel's maxDuration (300s) is. Phase 1 typically completes in ~60s; Phase 2 in
- * ~120s, comfortably within the window.
+ * phase=financials — up to 75 symbols needing income/balance/cashflow
+ *   (1 credit each = ~225 credits worst case), run as a single call. Cheap
+ *   enough not to need batching; kept as-is from the previous single-pass
+ *   design.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -30,13 +39,13 @@ import {
 import { setCached } from '@/lib/cache/market-data-cache';
 import { SIGNIFICANT_TICKERS } from '@/lib/market-data/significant-tickers';
 
-export const maxDuration = 300;
+export const maxDuration = 60;
 
 const APIKEY = () => process.env.TWELVE_DATA_API_KEY ?? '';
 
 const STATS_TTL = 24 * 60 * 60;           // 24h — price-dependent, refresh daily
 const FINANCIALS_TTL = 7 * 24 * 60 * 60;  // 7 days — quarterly reports, slow-moving
-const STATS_BATCH_SIZE = 15;              // symbols per batchFetch call (15 × 2 = 30 sub-requests)
+const STATS_BATCH_SIZE = 5;               // symbols per batch (5 × 70 credits ≈ 350/call)
 const FINANCIALS_PER_RUN = 75;            // max stocks to refresh financials per invocation
 const FINANCIALS_CONCURRENCY = 5;         // parallel stocks in financials phase
 
@@ -164,137 +173,158 @@ function parseEarnings(raw: RawEarnings | undefined) {
   });
 }
 
-// ── Handler ───────────────────────────────────────────────────────────────────
+// ── Phase: stats + earnings (one batch) ────────────────────────────────────
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
-  const cronSecret = process.env.CRON_SECRET;
-  const authHeader = request.headers.get('authorization');
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+async function handleStatsBatch(
+  supabase: ReturnType<typeof createServerClient>,
+  key: string,
+  allSymbols: string[],
+  batchIndex: number
+): Promise<NextResponse> {
+  const totalBatches = Math.ceil(allSymbols.length / STATS_BATCH_SIZE);
+
+  if (batchIndex < 0 || batchIndex >= totalBatches) {
+    return NextResponse.json({
+      success: true,
+      phase: 'stats',
+      batch: batchIndex,
+      totalBatches,
+      refreshed: 0,
+      earningsRefreshed: 0,
+      done: true,
+    });
   }
 
-  const startMs = Date.now();
-  const supabase = createServerClient();
-  const key = APIKEY();
-  const allSymbols = Array.from(SIGNIFICANT_TICKERS);
+  const syms = allSymbols.slice(batchIndex * STATS_BATCH_SIZE, (batchIndex + 1) * STATS_BATCH_SIZE);
+  const nextBatch = batchIndex + 1 < totalBatches ? batchIndex + 1 : null;
 
-  const summary = {
-    total: allSymbols.length,
-    statsSkipped: 0,
-    statsRefreshed: 0,
-    earningsRefreshed: 0,
-    financialsNeeded: 0,
-    financialsRefreshed: 0,
-    errors: [] as string[],
-  };
-
-  // ── Determine stale stats (one DB query instead of N getCached calls) ──────
-  // Skip symbols whose snap_statistics was written in the last 12h — makes
-  // the cron idempotent if triggered multiple times in the same day.
+  // Freshness check scoped to just this batch's symbols — cheap, and immune
+  // to earlier batches in the same run shrinking a shared "needs refresh" list.
   const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
   const { data: recentStatsRows } = await supabase
     .from('market_data_cache')
     .select('ticker')
     .eq('data_type', 'snap_statistics')
+    .in('ticker', syms)
     .gt('fetched_at', twelveHoursAgo);
 
   const freshSymbols = new Set((recentStatsRows ?? []).map(r => r.ticker as string));
-  const needsStats = allSymbols.filter(sym => !freshSymbols.has(sym));
-  summary.statsSkipped = allSymbols.length - needsStats.length;
+  const needsStats = syms.filter(sym => !freshSymbols.has(sym));
 
-  // Pre-load company metadata for screener_stats upsert (one query, used in Phase 1 loop)
+  if (needsStats.length === 0) {
+    return NextResponse.json({
+      success: true,
+      phase: 'stats',
+      batch: batchIndex,
+      totalBatches,
+      refreshed: 0,
+      earningsRefreshed: 0,
+      skipped: syms.length,
+      nextBatch,
+      done: nextBatch === null,
+    });
+  }
+
   const { data: companyRows } = await supabase
     .from('companies')
     .select('ticker, name, sector, industry, logo_url')
-    .in('ticker', allSymbols);
+    .in('ticker', needsStats);
   const companyMap = new Map(
     (companyRows ?? []).map((c) => [c.ticker as string, c as {
       name: string; sector: string | null; industry: string | null; logo_url: string | null;
     }])
   );
 
-  // ── Phase 1: Stats + Earnings — batched batchFetch calls ─────────────────
-  let rateLimited = false;
-
-  for (const syms of intoChunks(needsStats, STATS_BATCH_SIZE)) {
-    if (rateLimited) break;
-    try {
-      const requests: Record<string, string> = {};
-      for (const sym of syms) {
-        requests[`${sym}_s`] = `/statistics?symbol=${sym}&apikey=${key}`;
-        requests[`${sym}_e`] = `/earnings?symbol=${sym}&outputsize=8&apikey=${key}`;
-      }
-
-      const raw = await batchFetch<Record<string, unknown>>(requests);
-
-      const screenerRowsBatch: Array<Record<string, unknown>> = [];
-      for (const sym of syms) {
-        const writes: Promise<void>[] = [];
-
-        const stats = parseStats(sym, raw[`${sym}_s`] as RawStats | undefined);
-        if (stats) {
-          // Write to both cache keys — 'stats:*' is used by health-score and the
-          // statistics route; 'snap-stats:*' is used by the snapshot route.
-          writes.push(
-            setCached(`stats:${sym}`, sym, 'statistics', stats, STATS_TTL),
-            setCached(`snap-stats:${sym}`, sym, 'snap_statistics', stats, STATS_TTL),
-          );
-          summary.statsRefreshed++;
-        }
-
-        const earnings = parseEarnings(raw[`${sym}_e`] as RawEarnings | undefined);
-        if (earnings && earnings.length > 0) {
-          writes.push(
-            setCached(`snap-earnings:${sym}`, sym, 'snap_earnings', earnings, earningsTtl(earnings)),
-          );
-          summary.earningsRefreshed++;
-        }
-
-        await Promise.all(writes);
-
-        // Build screener row from the same raw stats for screener_stats upsert
-        const screenerRow = buildScreenerRow(sym, raw[`${sym}_s`] as RawStats | undefined);
-        if (screenerRow) {
-          const co = companyMap.get(sym);
-          screenerRowsBatch.push({
-            ...screenerRow,
-            name: co?.name ?? sym,
-            sector: co?.sector ?? null,
-            industry: co?.industry ?? null,
-            logo_url: co?.logo_url ?? null,
-          });
-        }
-      }
-
-      // Upsert all parsed stats for this batch into screener_stats
-      if (screenerRowsBatch.length > 0) {
-        await supabase
-          .from('screener_stats')
-          .upsert(screenerRowsBatch, { onConflict: 'ticker' });
-      }
-    } catch (err) {
-      if (err instanceof TwelveDataRateLimitError) {
-        rateLimited = true;
-        break;
-      }
-      const msg = err instanceof Error ? err.message : String(err);
-      summary.errors.push(`stats-batch[${syms[0]}…]: ${msg}`);
+  try {
+    const requests: Record<string, string> = {};
+    for (const sym of needsStats) {
+      requests[`${sym}_s`] = `/statistics?symbol=${sym}&apikey=${key}`;
+      requests[`${sym}_e`] = `/earnings?symbol=${sym}&outputsize=8&apikey=${key}`;
     }
-  }
 
-  if (rateLimited) {
+    const raw = await batchFetch<Record<string, unknown>>(requests);
+
+    let statsRefreshed = 0;
+    let earningsRefreshed = 0;
+    const screenerRowsBatch: Array<Record<string, unknown>> = [];
+
+    for (const sym of needsStats) {
+      const writes: Promise<void>[] = [];
+
+      const stats = parseStats(sym, raw[`${sym}_s`] as RawStats | undefined);
+      if (stats) {
+        writes.push(
+          setCached(`stats:${sym}`, sym, 'statistics', stats, STATS_TTL),
+          setCached(`snap-stats:${sym}`, sym, 'snap_statistics', stats, STATS_TTL),
+        );
+        statsRefreshed++;
+      }
+
+      const earnings = parseEarnings(raw[`${sym}_e`] as RawEarnings | undefined);
+      if (earnings && earnings.length > 0) {
+        writes.push(
+          setCached(`snap-earnings:${sym}`, sym, 'snap_earnings', earnings, earningsTtl(earnings)),
+        );
+        earningsRefreshed++;
+      }
+
+      await Promise.all(writes);
+
+      const screenerRow = buildScreenerRow(sym, raw[`${sym}_s`] as RawStats | undefined);
+      if (screenerRow) {
+        const co = companyMap.get(sym);
+        screenerRowsBatch.push({
+          ...screenerRow,
+          name: co?.name ?? sym,
+          sector: co?.sector ?? null,
+          industry: co?.industry ?? null,
+          logo_url: co?.logo_url ?? null,
+        });
+      }
+    }
+
+    if (screenerRowsBatch.length > 0) {
+      await supabase.from('screener_stats').upsert(screenerRowsBatch, { onConflict: 'ticker' });
+    }
+
     return NextResponse.json({
       success: true,
-      partial: true,
-      rateLimited: true,
-      durationMs: Date.now() - startMs,
-      ...summary,
+      phase: 'stats',
+      batch: batchIndex,
+      totalBatches,
+      refreshed: statsRefreshed,
+      earningsRefreshed,
+      nextBatch,
+      done: nextBatch === null,
     });
+  } catch (err) {
+    if (err instanceof TwelveDataRateLimitError) {
+      return NextResponse.json(
+        { success: false, phase: 'stats', batch: batchIndex, totalBatches, error: 'rate_limited' },
+        { status: 429 }
+      );
+    }
+    const msg = err instanceof Error ? err.message : String(err);
+    return NextResponse.json(
+      { success: false, phase: 'stats', batch: batchIndex, totalBatches, error: msg },
+      { status: 500 }
+    );
   }
+}
 
-  // ── Determine which symbols need financials (one DB query) ────────────────
-  // Use the income statement as a proxy: if it exists and isn't expired, all
-  // three statements (income / balance / cashflow) were written together.
+// ── Phase: financials (single pass — cheap, ~1 credit/statement) ───────────
+
+async function handleFinancials(
+  supabase: ReturnType<typeof createServerClient>,
+  allSymbols: string[]
+): Promise<NextResponse> {
+  const summary = {
+    financialsNeeded: 0,
+    financialsRefreshed: 0,
+    errors: [] as string[],
+    rateLimited: false,
+  };
+
   const { data: existingFinRows } = await supabase
     .from('market_data_cache')
     .select('ticker')
@@ -308,8 +338,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   const toProcess = needsFinancials.slice(0, FINANCIALS_PER_RUN);
 
-  // ── Phase 2: Financials — 5 symbols at a time, income+balance+cashflow in
-  //    parallel per symbol ────────────────────────────────────────────────────
   for (const syms of intoChunks(toProcess, FINANCIALS_CONCURRENCY)) {
     const results = await Promise.allSettled(
       syms.map(async sym => {
@@ -328,6 +356,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     );
 
     if (results.some(r => r.status === 'rejected' && r.reason instanceof TwelveDataRateLimitError)) {
+      summary.rateLimited = true;
       break;
     }
 
@@ -341,9 +370,27 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     }
   }
 
-  return NextResponse.json({
-    success: true,
-    durationMs: Date.now() - startMs,
-    ...summary,
-  });
+  return NextResponse.json({ success: true, phase: 'financials', ...summary });
+}
+
+// ── Handler ───────────────────────────────────────────────────────────────────
+
+export async function GET(request: NextRequest): Promise<NextResponse> {
+  const cronSecret = process.env.CRON_SECRET;
+  const authHeader = request.headers.get('authorization');
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const supabase = createServerClient();
+  const allSymbols = Array.from(SIGNIFICANT_TICKERS);
+  const sp = request.nextUrl.searchParams;
+  const phase = sp.get('phase') === 'financials' ? 'financials' : 'stats';
+
+  if (phase === 'financials') {
+    return handleFinancials(supabase, allSymbols);
+  }
+
+  const batchIndex = parseInt(sp.get('batch') ?? '0', 10);
+  return handleStatsBatch(supabase, APIKEY(), allSymbols, batchIndex);
 }
