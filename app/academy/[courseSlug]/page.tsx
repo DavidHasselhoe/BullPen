@@ -1,7 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, BookOpen, HelpCircle, Shuffle, GitFork, CandlestickChart, PlayCircle, Check, Zap, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -22,8 +24,10 @@ const TYPE_META: Record<LessonType, { label: string; icon: React.ComponentType<{
 export default function CourseOverviewPage() {
   const params = useParams<{ courseSlug: string }>();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const courseSlug = params?.courseSlug ?? null;
   const { data, isLoading } = useUserProgress(courseSlug);
+  const [skipping, setSkipping] = useState(false);
 
   if (isLoading || !data) {
     return (
@@ -46,6 +50,22 @@ export default function CourseOverviewPage() {
     (progress?.last_lesson_id && lessons.find((l) => l.id === progress.last_lesson_id && !l.completed)) ||
     lessons.find((l) => !l.completed) ||
     lessons[0];
+  const canSkip = course.isOptional && !locked && completedCount < lessons.length;
+
+  const handleSkip = async () => {
+    if (skipping) return;
+    setSkipping(true);
+    try {
+      const res = await fetch(`/api/academy/courses/${course.slug}/skip`, { method: 'POST' });
+      if (!res.ok) return;
+      const json: { nextCourseSlug: string | null } = await res.json();
+      queryClient.invalidateQueries({ queryKey: ['academy-courses'] });
+      queryClient.invalidateQueries({ queryKey: ['academy-progress', course.slug] });
+      router.push(json.nextCourseSlug ? `/academy/${json.nextCourseSlug}` : '/academy');
+    } finally {
+      setSkipping(false);
+    }
+  };
 
   return (
     <div className="space-y-6 pt-2">
@@ -60,7 +80,14 @@ export default function CourseOverviewPage() {
       </Button>
 
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{course.title}</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{course.title}</h1>
+          {course.isOptional && (
+            <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-500 shrink-0">
+              Optional
+            </span>
+          )}
+        </div>
         <p className="text-sm text-muted-foreground/75 mt-2 leading-relaxed">
           {course.description}
         </p>
@@ -141,6 +168,16 @@ export default function CourseOverviewPage() {
                 {completedCount === 0 ? 'Start course' : 'Continue'}
               </Button>
             </Link>
+            {canSkip && (
+              <button
+                type="button"
+                onClick={handleSkip}
+                disabled={skipping}
+                className="mt-2.5 w-full text-center text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors disabled:opacity-50"
+              >
+                {skipping ? 'Skipping…' : "Skip this course — I'm not interested"}
+              </button>
+            )}
           </div>
         )
       )}

@@ -20,6 +20,7 @@ interface CourseRow {
   order_index: number;
   difficulty: 'beginner' | 'intermediate' | 'advanced' | null;
   requires_pro: boolean;
+  is_optional: boolean;
 }
 
 async function handler(
@@ -32,7 +33,7 @@ async function handler(
   const [coursesRes, lessonsRes, lessonProgressRes, courseProgressRes, tier] = await Promise.all([
     supabase
       .from('academy_courses')
-      .select('id, slug, title, description, icon, color, order_index, difficulty, requires_pro')
+      .select('id, slug, title, description, icon, color, order_index, difficulty, requires_pro, is_optional')
       .eq('is_published', true)
       .order('order_index'),
     supabase
@@ -99,11 +100,13 @@ async function handler(
       orderIndex: c.order_index,
       difficulty: c.difficulty,
       requiresPro: c.requires_pro,
+      isOptional: c.is_optional,
       totalLessons: total,
       completedLessons: done,
       percentComplete,
       isLocked: lockedReason !== null,
       lockedReason,
+      isCompleted: completedCourseIds.has(c.id),
     };
   });
 

@@ -108,6 +108,11 @@ export function CourseCard({ course }: Props) {
             {course.difficulty}
           </span>
         )}
+        {course.isOptional && (
+          <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-500">
+            Optional
+          </span>
+        )}
         <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-muted-foreground/50">
           {course.completedLessons}/{course.totalLessons} lessons
         </span>

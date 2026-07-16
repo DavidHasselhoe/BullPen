@@ -146,6 +146,8 @@ export interface Course {
   orderIndex: number;
   difficulty: CourseDifficulty | null;
   requiresPro: boolean;
+  /** Can be skipped without completing its lessons — see /academy/[slug]/skip. */
+  isOptional: boolean;
 }
 
 export interface Lesson {
@@ -174,6 +176,8 @@ export interface CourseWithProgress extends Course {
   isLocked: boolean;
   /** Why isLocked is true — 'pro' takes priority over 'progression' in messaging. */
   lockedReason: 'progression' | 'pro' | null;
+  /** This course's own completed_at is set — via lessons or a skip. */
+  isCompleted: boolean;
 }
 
 export interface UserCourseProgress {
