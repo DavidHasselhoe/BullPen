@@ -11,6 +11,8 @@ import { checkRateLimit } from '@/lib/security/rate-limiter';
 import { checkQuota } from '@/lib/billing/quotas';
 import { logAiCall } from '@/lib/billing/log-ai-call';
 import { toSafeErrorMessage } from '@/lib/ai/error-utils';
+import { saveConversation } from '@/lib/ai/conversations';
+import { validateUUID } from '@/lib/security/input-validation';
 
 async function handler(
   req: NextRequest,
@@ -32,6 +34,9 @@ async function handler(
   const body = await req.json().catch(() => ({}));
   const messages = body?.messages ?? [];
   const context = body?.context ?? null;
+  const conversationId = typeof body?.conversationId === 'string' && validateUUID(body.conversationId)
+    ? body.conversationId
+    : null;
   const experienceLevel = (body?.experienceLevel as 'beginner' | 'intermediate' | 'advanced') ?? null;
   const language = (body?.language as string) ?? null;
   const riskProfile = (body?.riskProfile as 'conservative' | 'balanced' | 'aggressive') ?? null;
@@ -56,7 +61,18 @@ async function handler(
     // consumed (e.g. an OpenAI rate limit hit mid-generation) — without this,
     // the SDK's default formatter forwards error.message verbatim, which for
     // APICallError includes the raw upstream response body.
-    return result.toUIMessageStreamResponse({ onError: toSafeErrorMessage });
+    return result.toUIMessageStreamResponse({
+      onError: toSafeErrorMessage,
+      // Persistence mode: pass the incoming messages so the callback's `messages`
+      // is the full conversation (history + this turn), not just the new reply.
+      originalMessages: messages,
+      onFinish: conversationId
+        ? async ({ messages: fullMessages, isAborted }) => {
+            if (isAborted) return;
+            await saveConversation(conversationId, session.userId, fullMessages);
+          }
+        : undefined,
+    });
   } catch (err) {
     // Covers failures before streaming could even start (e.g. the initial
     // request to OpenAI is rejected outright).

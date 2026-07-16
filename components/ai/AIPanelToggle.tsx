@@ -37,24 +37,37 @@ export function AIPanelToggle() {
       aria-label="Ask Bull — open AI Assistant"
       title="Ask Bull"
       className={cn(
-        'fixed bottom-4 right-4 z-50',
-        'h-16 pl-2 pr-5 rounded-full shadow-lg shadow-black/25',
-        'flex items-center gap-2.5',
-        'bg-primary text-primary-foreground',
-        'hover:bg-primary/90 active:scale-[0.98]',
-        'transition-all duration-200'
+        'fixed right-5 z-50 group',
+        // Below md, MobileTabBar occupies ~3.5rem + safe-area at the bottom
+        // (see .has-mobile-tabbar in globals.css) — clear it instead of overlapping.
+        'bottom-5 max-md:[bottom:calc(3.5rem+1.25rem+env(safe-area-inset-bottom))]',
+        'flex flex-col items-center gap-1.5',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-2xl'
       )}
     >
-      {/* A solid bg-background badge behind the icon, rather than inverting the
-          line art against bg-primary's ink-swapped fill directly — thin strokes
-          inverted onto a solid color read as faint/washed out. bg-background
-          tracks the same light/dark polarity as the page, so the icon can use
-          the standard dark:invert (BullAiIcon's default) and always contrasts
-          cleanly against the badge regardless of theme. */}
-      <span className="flex items-center justify-center rounded-full bg-background p-2 shrink-0">
-        <BullAiIcon pose="glass" size={36} />
+      {/* A single bg-background circle — tracks the same light/dark polarity as
+          the page, so the icon can use the standard dark:invert (BullAiIcon's
+          default) and always contrasts cleanly. A thin border + shadow give it
+          definition against arbitrary page content instead of a heavy filled ring. */}
+      <span
+        className={cn(
+          'flex items-center justify-center h-24 w-24 rounded-full shrink-0',
+          'bg-background border border-border/60 shadow-lg shadow-black/20',
+          'group-hover:border-primary/40 group-hover:shadow-xl group-active:scale-[0.96]',
+          'transition-all duration-200'
+        )}
+      >
+        <BullAiIcon pose="glass" size={72} />
       </span>
-      <span className="text-base font-semibold hidden sm:inline">Ask Bull</span>
+      <span
+        className={cn(
+          'text-sm font-semibold text-foreground px-3 py-1 rounded-full',
+          'bg-background/90 backdrop-blur-sm border border-border/60 shadow-sm',
+          'group-hover:border-primary/30 transition-colors duration-200'
+        )}
+      >
+        Ask Bull
+      </span>
     </button>
   );
 }

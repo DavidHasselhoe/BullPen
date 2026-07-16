@@ -2,15 +2,19 @@
 
 import { lazy, Suspense, useEffect, useRef, useState, useCallback } from 'react';
 import Image from 'next/image';
-import { X, PanelRightClose, Settings } from 'lucide-react';
+import { X, PanelRightClose, Settings, History, SquarePen } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
+import type { UIMessage } from 'ai';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { BullAiIcon } from './BullAiIcon';
+import { AiTermsGate } from './AiTermsGate';
+import { useAiTerms } from '@/hooks/use-ai-terms';
 import type { BullpenChatHandle } from './BullpenChat';
 
 // The chat stack (AI SDK transport, react-markdown, tool result cards) is heavy
@@ -44,6 +48,16 @@ const PANEL_WIDTH = 480;
 // Spring: well-damped, natural drawer feel
 const spring = { type: 'spring' as const, stiffness: 280, damping: 28, restDelta: 0.5 };
 
+interface ConversationSummary {
+  id: string;
+  title: string;
+  updated_at: string;
+}
+
+function formatShortDate(iso: string): string {
+  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
 function AuthGate() {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-5 px-6 py-8 text-center">
@@ -74,6 +88,7 @@ function AuthGate() {
 
 export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumedQuery }: AISidePanelProps) {
   const { user, isLoading, isAuthenticated } = useAuth();
+  const { hasAccepted: hasAcceptedAiTerms } = useAiTerms();
   const isMobile = useIsMobile();
   // Full-screen chat on phones (480px would collapse the page content beside it).
   const panelWidth = isMobile ? '100vw' : PANEL_WIDTH;
@@ -82,6 +97,58 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
   // mounted afterwards so the conversation survives close/reopen.
   const [hasOpened, setHasOpened] = useState(open);
   if (open && !hasOpened) setHasOpened(true);
+
+  // Chat history: each turn is auto-saved server-side under `conversationId` (see
+  // /api/ai/chat's onFinish). Changing it remounts BullpenChat (via `key` below)
+  // with fresh initialMessages, the same "swap the whole reader" approach BriefReader
+  // uses for past daily briefs.
+  const [conversationId, setConversationId] = useState<string>(() => crypto.randomUUID());
+  const [initialMessages, setInitialMessages] = useState<UIMessage[] | undefined>(undefined);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [loadingConversationId, setLoadingConversationId] = useState<string | null>(null);
+
+  const { data: history, isLoading: historyLoading } = useQuery({
+    queryKey: ['ai-conversations-list'],
+    queryFn: async () => {
+      const res = await fetch('/api/ai/conversations');
+      if (!res.ok) throw new Error('Failed to load chat history');
+      const json = await res.json();
+      return (json.conversations ?? []) as ConversationSummary[];
+    },
+    enabled: historyOpen,
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+
+  const selectConversation = useCallback(async (id: string) => {
+    if (id === conversationId) {
+      setHistoryOpen(false);
+      return;
+    }
+    setLoadingConversationId(id);
+    try {
+      const res = await fetch(`/api/ai/conversations/${id}`);
+      if (!res.ok) return;
+      const json = await res.json();
+      setInitialMessages(json.conversation?.messages ?? []);
+      setConversationId(id);
+      setHistoryOpen(false);
+    } finally {
+      setLoadingConversationId(null);
+    }
+  }, [conversationId]);
+
+  const startNewChat = useCallback(() => {
+    setConversationId(crypto.randomUUID());
+    setInitialMessages(undefined);
+    setHistoryOpen(false);
+  }, []);
+
+  // Collapse the dropdown when the panel itself closes, so reopening later
+  // doesn't flash it back open.
+  useEffect(() => {
+    if (!open) setHistoryOpen(false);
+  }, [open]);
 
   const handleClose = useCallback(() => {
     onClose();
@@ -163,6 +230,38 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
+                      onClick={startNewChat}
+                      aria-label="New chat"
+                      title="New chat"
+                      className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                    >
+                      <SquarePen className="h-4 w-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">New chat</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setHistoryOpen((v) => !v)}
+                      aria-expanded={historyOpen}
+                      aria-label="Chat history"
+                      title="Chat history"
+                      className={cn(
+                        'rounded-md p-1.5 transition-colors',
+                        historyOpen
+                          ? 'text-primary bg-primary/10'
+                          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                      )}
+                    >
+                      <History className="h-4 w-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">Chat history</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
                       onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { tab: 'ai' } }))}
                       aria-label="AI settings"
                       className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
@@ -199,6 +298,35 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
           </div>
         </div>
 
+        {/* Chat history dropdown */}
+        {historyOpen && (
+          <div className="absolute top-16 right-4 z-30 w-72 max-h-80 overflow-y-auto rounded-lg border border-border/40 bg-background shadow-lg py-1.5">
+            {historyLoading ? (
+              <div className="px-3 py-4 text-xs text-muted-foreground text-center">Loading…</div>
+            ) : !history || history.length === 0 ? (
+              <div className="px-3 py-4 text-xs text-muted-foreground text-center">No past conversations yet</div>
+            ) : (
+              history.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => selectConversation(c.id)}
+                  disabled={loadingConversationId === c.id}
+                  className={cn(
+                    'w-full text-left px-3 py-2 text-xs transition-colors hover:bg-muted/40 disabled:opacity-50',
+                    c.id === conversationId && 'bg-muted/30'
+                  )}
+                >
+                  <span className="block font-mono text-[10px] text-muted-foreground/60">
+                    {formatShortDate(c.updated_at)}
+                  </span>
+                  <span className="block text-foreground/90 truncate">{c.title}</span>
+                </button>
+              ))
+            )}
+          </div>
+        )}
+
         {/* Body */}
         <div className="flex flex-1 min-h-0 flex-col overflow-hidden scrollbar-hide">
           {isLoading ? (
@@ -207,6 +335,8 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
             </div>
           ) : !isAuthenticated ? (
             <AuthGate />
+          ) : !hasAcceptedAiTerms ? (
+            <AiTermsGate />
           ) : hasOpened ? (
             <Suspense
               fallback={
@@ -216,6 +346,7 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
               }
             >
               <BullpenChat
+                key={conversationId}
                 ref={chatRef}
                 compact
                 user={user}
@@ -224,6 +355,8 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
                 initialQuery={initialQuery ?? undefined}
                 aiContext={aiContext ?? undefined}
                 onConsumedQuery={onConsumedQuery}
+                conversationId={conversationId}
+                initialMessages={initialMessages}
               />
             </Suspense>
           ) : null}

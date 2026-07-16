@@ -2,6 +2,7 @@
 
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
+import type { UIMessage } from 'ai';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { useEffect, useRef, useState, forwardRef, useImperativeHandle, memo } from 'react';
@@ -10,7 +11,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Send, Square, Bot, User } from 'lucide-react';
+import { Send, Square, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AuthUser } from '@/lib/auth/auth';
 import type { QuotaState } from '@/lib/billing/quotas';
@@ -49,6 +50,16 @@ interface BullpenChatProps {
   aiContext?: AIContextProp;
   /** Called after initial query has been sent */
   onConsumedQuery?: () => void;
+  /**
+   * Stable id for this conversation, used to save/resume chat history. When
+   * omitted, one is generated on mount (still saved server-side, just not
+   * resumable from a history UI that doesn't know the id). Callers that offer
+   * a history dropdown (e.g. AISidePanel) own this and pass it in explicitly,
+   * remounting BullpenChat (via `key`) when switching conversations.
+   */
+  conversationId?: string;
+  /** Messages to seed the chat with when resuming a past conversation. */
+  initialMessages?: UIMessage[];
 }
 
 type ClientAction =
@@ -103,39 +114,36 @@ const MARKDOWN_CLS = cn(
 );
 
 /**
- * Fades in only the text that has arrived since the last completed animation.
+ * Word-by-word fade-in reveal for streamed text.
  *
- * `stable` = the portion already confirmed as fully visible (opacity 1).
- * `fresh`  = everything since then — rendered in a motion.span that fades in.
- *
- * When the fade finishes, `stable` advances to the current full text so the
- * next batch of tokens gets its own fresh fade. Fast streaming batches multiple
- * tokens into one smooth reveal; slow streaming fades each token individually.
+ * Splitting on whitespace (keeping the separators as their own tokens) gives
+ * each word a stable index as long as new text is only appended — which is
+ * always true for a token stream. React reuses the same span for words already
+ * on screen (their animation never restarts, even as the trailing word grows
+ * character-by-character), and only genuinely new words mount with a fresh
+ * fade. That avoids the flash/jitter of re-fading an entire growing block of
+ * text on every token.
  */
 function StreamingText({ text }: { text: string }) {
-  const [stable, setStable] = useState('');
-  const fresh = text.slice(stable.length);
-
+  const words = text.split(/(\s+)/);
   return (
     <>
-      {stable}
-      {fresh && (
+      {words.map((word, i) => (
         <motion.span
-          key={stable.length}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.25, ease: 'easeOut' }}
-          onAnimationComplete={() => setStable(text)}
+          key={i}
+          initial={{ opacity: 0, y: 2 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.18, ease: 'easeOut' }}
         >
-          {fresh}
+          {word}
         </motion.span>
-      )}
+      ))}
     </>
   );
 }
 
 /**
- * During streaming: plain-text chunk-fade for smooth reveal.
+ * During streaming: plain-text word-by-word fade for a smooth, natural reveal.
  * After streaming: full ReactMarkdown with formatting.
  * Memoized so completed messages skip re-renders on every incoming token.
  */
@@ -174,7 +182,7 @@ export interface BullpenChatHandle {
 }
 
 export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(function BullpenChat(
-  { compact = false, user, starterPrompts = DEFAULT_STARTER_PROMPTS, open, initialQuery, aiContext, onConsumedQuery },
+  { compact = false, user, starterPrompts = DEFAULT_STARTER_PROMPTS, open, initialQuery, aiContext, onConsumedQuery, conversationId, initialMessages },
   ref
 ) {
   const router = useRouter();
@@ -189,6 +197,10 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
   const inputRef = useRef('');
   const initialQuerySentRef = useRef(false);
   const [paywallQuota, setPaywallQuota] = useState<QuotaState | null>(null);
+  // Stable for the lifetime of this mount — callers that want a switchable
+  // history (AISidePanel) pass conversationId explicitly and remount via `key`.
+  const [ownConversationId] = useState(() => conversationId ?? crypto.randomUUID());
+  const activeConversationId = conversationId ?? ownConversationId;
 
   useImperativeHandle(ref, () => ({
     focusInput: () => textareaRef.current?.focus(),
@@ -208,11 +220,14 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
     error,
     clearError,
   } = useChat({
+    id: activeConversationId,
+    messages: initialMessages,
     transport: new DefaultChatTransport({
       api: '/api/ai/chat',
       // Include the current page context (ticker + label) so the server-side agent
       // knows which stock/comparison the user is viewing without requiring them to type it.
       body: {
+        conversationId: activeConversationId,
         ...(effectiveContext ? { context: effectiveContext } : {}),
         ...(user?.experience_level ? { experienceLevel: user.experience_level } : {}),
         language: i18n.language,
@@ -281,8 +296,13 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
     lastMessage.parts.some((p) => p.type === 'text' && p.text.trim().length > 0);
   // While a tool is running and the assistant hasn't started writing text yet, show what
   // it's doing ("Checking financial health…") instead of a generic "thinking" indicator.
+  // Before the first tool call fires, or between tool calls while the model plans the next
+  // step, fall back to a state label so there's always a real word on screen, not just dots.
   const toolStatusLabel = isStreaming && !lastMessageHasText
     ? getToolStatusLabel(getActiveToolName(lastMessage))
+    : null;
+  const thinkingLabel = isStreaming && !lastMessageHasText
+    ? toolStatusLabel ?? (status === 'submitted' ? 'Thinking…' : 'Reasoning…')
     : null;
   const followups = !isStreaming && lastMessage?.role === 'assistant' ? getFollowups(lastMessage) : [];
 
@@ -391,18 +411,18 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
       {/* Messages */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-4 space-y-4 scrollbar-hide">
         {messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full gap-3 py-8 text-center">
-            <BullAiIcon pose="wave" size={128} />
-            <div>
-              <p className="text-sm font-medium text-foreground">BullPen AI</p>
-              <p className="text-xs text-muted-foreground mt-1 max-w-[220px]">
+          <div className="flex flex-col items-center justify-center h-full gap-4 py-8 text-center">
+            <BullAiIcon pose="wave" size={132} />
+            <div className="space-y-1">
+              <p className="text-base font-semibold text-foreground">I&apos;m Bull</p>
+              <p className="text-xs text-muted-foreground max-w-[260px] leading-relaxed">
                 {aiContext?.label
-                  ? `Context: ${aiContext.label}`
-                  : 'Ask about SEC filings, financial metrics, or investment concepts.'}
+                  ? `Your personal research assistant. Ask me anything about ${aiContext.label}.`
+                  : 'Your personal research assistant — ask about filings, financial metrics, or any stock you’re watching.'}
               </p>
             </div>
             <motion.div
-              className="flex flex-wrap gap-2.5 justify-center mt-3"
+              className="flex flex-wrap gap-2 justify-center mt-2 max-w-[340px]"
               initial="hidden"
               animate="visible"
               variants={{ visible: { transition: { staggerChildren: 0.06 } }, hidden: {} }}
@@ -418,7 +438,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
                     sendMessage({ parts: [{ type: 'text', text: suggestion }] });
                     refocusInput();
                   }}
-                  className="text-xs px-4 py-2 rounded-full border border-border bg-muted/40 hover:bg-muted/80 hover:border-primary/30 text-muted-foreground hover:text-foreground transition-all duration-200 hover:shadow-sm"
+                  className="inline-flex items-center text-xs px-4 min-h-[44px] rounded-full border border-border bg-muted/40 hover:bg-muted/80 hover:border-primary/30 text-muted-foreground hover:text-foreground transition-all duration-200 hover:shadow-sm active:scale-[0.97]"
                 >
                   {suggestion}
                 </motion.button>
@@ -437,11 +457,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
               transition={{ duration: 0.2, ease: 'easeOut' }}
               className={cn('flex items-end gap-2', isUser ? 'justify-end' : 'justify-start')}
             >
-              {!isUser && (
-                <div className="shrink-0 rounded-full bg-primary/10 p-1.5 mb-0.5">
-                  <Bot className="h-3.5 w-3.5 text-primary" />
-                </div>
-              )}
+              {!isUser && <BullAiIcon pose="idle" size={32} className="mb-0.5" />}
               <div
                 className={cn(
                   'max-w-[82%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed',
@@ -482,20 +498,20 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
                 )}
               </div>
               {isUser && (
-                <div className="shrink-0 rounded-full overflow-hidden mb-0.5 h-7 w-7 ring-2 ring-primary/30">
+                <div className="shrink-0 rounded-full overflow-hidden mb-0.5 h-8 w-8 ring-2 ring-primary/30">
                   {user?.avatar_url ? (
                     <Image
                       src={user.avatar_url}
                       alt={user.full_name ?? user.email}
-                      width={28}
-                      height={28}
+                      width={32}
+                      height={32}
                       className="object-cover"
                     />
                   ) : (
-                    <div className="h-full w-full flex items-center justify-center bg-primary text-primary-foreground text-xs font-semibold">
+                    <div className="h-full w-full flex items-center justify-center bg-primary text-primary-foreground text-sm font-semibold">
                       {user
                         ? (user.full_name ?? user.email).charAt(0).toUpperCase()
-                        : <User className="h-3.5 w-3.5" />}
+                        : <User className="h-4 w-4" />}
                     </div>
                   )}
                 </div>
@@ -504,27 +520,26 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
           );
         })}
 
-        {/* Thinking / tool-status indicator */}
-        {isStreaming && !lastMessageHasText && (
+        {/* Thinking / tool-status indicator — shows the actual state (tool label,
+            "Thinking…", "Reasoning…") instead of a generic loading affordance. */}
+        {isStreaming && !lastMessageHasText && thinkingLabel && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
             className="flex items-end gap-2 justify-start"
           >
-            <BullAiIcon pose="think" size={28} className="mb-0.5" />
-            <div className="bg-muted rounded-2xl rounded-bl-sm px-3.5 py-2.5 flex items-center gap-2">
-              {toolStatusLabel && <span className="text-xs text-muted-foreground">{toolStatusLabel}</span>}
-              <span className="flex gap-1.5 items-center">
-                {[0, 1, 2].map((i) => (
-                  <motion.span
-                    key={i}
-                    className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60"
-                    animate={{ scale: [1, 1.35, 1], opacity: [0.5, 1, 0.5] }}
-                    transition={{ duration: 1, repeat: Infinity, delay: i * 0.2, ease: 'easeInOut' }}
-                  />
-                ))}
-              </span>
+            <BullAiIcon pose="think" size={32} className="mb-0.5" />
+            <div className="bg-muted rounded-2xl rounded-bl-sm px-3.5 py-2.5">
+              <motion.span
+                key={thinkingLabel}
+                className="text-xs text-muted-foreground"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: [0.55, 1, 0.55] }}
+                transition={{ opacity: { duration: 1.6, repeat: Infinity, ease: 'easeInOut' } }}
+              >
+                {thinkingLabel}
+              </motion.span>
             </div>
           </motion.div>
         )}
@@ -535,7 +550,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="flex flex-wrap gap-2 pl-9"
+            className="flex flex-wrap gap-2 pl-10"
           >
             {followups.map((s) => (
               <button
@@ -544,7 +559,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
                   sendMessage({ parts: [{ type: 'text', text: s }] });
                   refocusInput();
                 }}
-                className="text-xs px-3 py-1.5 rounded-full border border-border bg-muted/40 hover:bg-muted/80 hover:border-primary/30 text-muted-foreground hover:text-foreground transition-all duration-200"
+                className="inline-flex items-center text-xs px-3.5 min-h-[44px] rounded-full border border-border bg-muted/40 hover:bg-muted/80 hover:border-primary/30 text-muted-foreground hover:text-foreground transition-all duration-200 active:scale-[0.97]"
               >
                 {s}
               </button>
@@ -609,20 +624,20 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
               stop();
               refocusInput();
             }}
-            className="shrink-0 h-10 w-10 rounded-xl"
+            className="shrink-0 h-11 w-11 rounded-xl"
             title="Stop generating"
           >
-            <Square className="h-3.5 w-3.5" />
+            <Square className="h-4 w-4" />
           </Button>
         ) : (
           <Button
             type="submit"
             size="icon"
             onMouseDown={(e) => e.preventDefault()}
-            className="shrink-0 h-10 w-10 rounded-xl"
+            className="shrink-0 h-11 w-11 rounded-xl"
             title="Send message"
           >
-            <Send className="h-3.5 w-3.5" />
+            <Send className="h-4 w-4" />
           </Button>
         )}
       </form>
