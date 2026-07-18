@@ -22,8 +22,6 @@ import {
   TwelveDataRateLimitError,
 } from '@/lib/twelvedata/twelvedata-client';
 import { getHealthScoreForSymbol } from '@/lib/finance/get-health-score';
-import { getTier, isPro } from '@/lib/billing/tier';
-import { AlertTypeSchema, alertTypeLabel, describeAlert, FREE_ACTIVE_ALERT_LIMIT, type AlertType } from '@/types/alerts';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -760,92 +758,6 @@ export const removeHolding = tool({
     };
   },
 });
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Tool: Create Alert (client action — frontend executes with user context)
-//
-// Unlike the other client-action tools, this one is a factory that closes
-// over `userId` and re-checks the free-tier active-alerts cap server-side
-// (the exact same check /api/alerts' POST route enforces) before returning
-// the clientAction. Without this, the model would tell the user "done" as
-// soon as it decides to call the tool — the actual mutation only happens
-// client-side after the assistant's text has already finished streaming, so
-// a limit hit there would silently contradict what was already said. This
-// tool is what lets the assistant know synchronously, in the same turn.
-// ─────────────────────────────────────────────────────────────────────────────
-
-const ALERT_TYPE_VALUES = AlertTypeSchema.options;
-
-export function createAlertTool(userId: string) {
-  return tool({
-    description:
-      'Create a price or metric alert for a stock. Use when the user asks to be notified, alerted, or pinged: ' +
-      '"alert me when NVDA hits $200", "notify me if AAPL drops 5% in a day", "let me know when TSLA is near its 52-week high", ' +
-      '"tell me if MSFT closes at a new all-time high". ' +
-      'Free accounts are capped at 5 stocks with active alerts (adding a second alert TYPE to an already-alerted stock ' +
-      'does not use another slot). If the user is at that limit, this tool returns limitReached: true instead of creating ' +
-      "the alert — explain the limit and suggest pausing an existing alert or upgrading to Pro. Never claim an alert was " +
-      'created when the tool result has limitReached or error set.',
-    inputSchema: jsonSchema<{ ticker: string; alertType: AlertType; threshold: number }>({
-      type: 'object',
-      properties: {
-        ticker: { type: 'string', description: 'Stock ticker symbol, e.g. NVDA, AAPL' },
-        alertType: {
-          type: 'string',
-          enum: [...ALERT_TYPE_VALUES],
-          description:
-            'price_above / price_below: fires once the price crosses threshold (raw dollars). ' +
-            'pct_change_up / pct_change_down: fires on a single-day move of at least threshold (decimal fraction — 0.05 = 5%). ' +
-            'near_52w_high / near_52w_low: fires when price is within threshold of the 52-week extreme (decimal fraction — 0.02 = within 2%). ' +
-            'all_time_high: fires on any new all-time-high close — threshold is unused.',
-        },
-        threshold: {
-          type: 'number',
-          minimum: 0,
-          description: 'Meaning depends on alertType — see its description. Pass 0 for all_time_high.',
-        },
-      },
-      required: ['ticker', 'alertType', 'threshold'],
-      additionalProperties: false,
-    }),
-    execute: async ({ ticker, alertType, threshold }) => {
-      const symbol = ticker.toUpperCase();
-      const companyName = await resolveCompanyName(symbol);
-
-      const tier = await getTier(userId);
-      if (!isPro(tier)) {
-        const db = supabase();
-        const { data: activeRows } = await db
-          .from('user_alerts')
-          .select('symbol')
-          .eq('user_id', userId)
-          .eq('is_active', true);
-        const activeSymbols = new Set(((activeRows ?? []) as { symbol: string }[]).map((r) => r.symbol));
-        const isNewSymbol = !activeSymbols.has(symbol);
-        if (isNewSymbol && activeSymbols.size >= FREE_ACTIVE_ALERT_LIMIT) {
-          return {
-            limitReached: true,
-            error:
-              `Cannot create this alert — the user's free plan is limited to ${FREE_ACTIVE_ALERT_LIMIT} stocks with ` +
-              'active alerts, and they are already at that limit. Tell them plainly, suggest pausing/removing an alert ' +
-              'on another stock to free a slot (or upgrading to Pro for unlimited alerts), and do NOT say the alert was created.',
-          };
-        }
-      }
-
-      return {
-        ...clientAction({
-          type: 'createAlert',
-          ticker: symbol,
-          companyName,
-          alertType,
-          threshold,
-        }),
-        creating: `${alertTypeLabel(alertType)} alert for ${companyName} (${symbol}) — ${describeAlert({ alertType, threshold })}`,
-      };
-    },
-  });
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TwelveData live tools
