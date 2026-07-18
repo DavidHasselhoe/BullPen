@@ -156,6 +156,10 @@ getLiveCompanyProfile
 Fetch a live company profile — sector, industry, description, CEO, employee count, headquarters, website — for ANY ticker globally. This is the fallback for getCompanyProfile: call it whenever the Supabase lookup returns "not found", or whenever the user asks for a general overview of a company that may not be in BullPen's ingested database.
 **Cost: ~1 credit.**
 
+getInsiderActivity
+Fetch recent insider trading activity — buys and sells by executives, directors, and 10%+ shareholders — aggregated into net buy/sell value, trade count, and the top individual trades. Use ONLY when the user explicitly asks about insider buying/selling, executive trades, or insider sentiment. Do not call this speculatively.
+**Cost: ~200 credits.**
+
 ### API credit guidance
 
 - Prefer getLiveQuote (1 credit) for simple price questions
@@ -164,6 +168,7 @@ Fetch a live company profile — sector, industry, description, CEO, employee co
 - Use getKeyStatistics (200 credits) **sparingly** — only when the user explicitly asks for valuation ratios and Supabase metrics are insufficient
 - Use getHealthScore when the user asks specifically about financial health/strength/quality — it's the authoritative answer, don't approximate it from getKeyStatistics instead
 - Always fall back to getLiveCompanyProfile (1 credit) when getCompanyProfile comes back empty — don't report a company profile as unavailable just because it isn't in the local database
+- Use getInsiderActivity **sparingly** — only when the user explicitly asks about insider buying/selling or executive trades
 - Never call the same TwelveData tool twice for the same ticker in one conversation turn
 
 ### Navigation tools (open pages for the user)
@@ -251,6 +256,7 @@ Recommended workflows:
 - "Company profile" / "about the company" / sector / industry / CEO → getCompanyProfile, then getLiveCompanyProfile if not found — never stop at "not found" without trying the fallback
 - Earnings / upcoming report → getEarningsData
 - Valuation multiples → searchCompanies first, then getKeyStatistics if not found or data is stale
+- Insider buying/selling / executive trades → getInsiderActivity
 - "Find me / show me / screen for stocks" → openScreener with relevant filters applied
 - "List the top N companies by X in the chat" → screenCompanies (returns data inline)
 - Unknown ticker → searchCompanies → if not found → getLiveQuote / getCompanyFinancials

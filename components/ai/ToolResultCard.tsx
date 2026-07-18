@@ -8,6 +8,7 @@ import { CompanyFinancialsResultCard, type CompanyFinancialsRow } from './cards/
 import { EarningsResultCard, type EarningsRow } from './cards/EarningsResultCard';
 import { ScreenerResultCard, type ScreenerOutput } from './cards/ScreenerResultCard';
 import { CompanyMetricsResultCard, type CompanyMetricsOutput } from './cards/CompanyMetricsResultCard';
+import { InsiderActivityResultCard, type InsiderActivityOutput } from './cards/InsiderActivityResultCard';
 
 /**
  * Dispatches a completed AI tool call to its matching visual card instead of
@@ -87,6 +88,11 @@ export function ToolResultCard({
       const o = output as Partial<CompanyMetricsOutput>;
       if (!Array.isArray(o.rows) || o.rows.length === 0) return null;
       return <CompanyMetricsResultCard output={o as CompanyMetricsOutput} />;
+    }
+    case 'getInsiderActivity': {
+      const o = output as Partial<InsiderActivityOutput>;
+      if (!o.tradeCount) return null;
+      return <InsiderActivityResultCard output={o as InsiderActivityOutput} />;
     }
     default:
       return null;

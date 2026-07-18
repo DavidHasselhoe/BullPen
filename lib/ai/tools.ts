@@ -19,6 +19,7 @@ import {
   getBalanceSheet,
   getCashFlow,
   getCompanyProfile as getTwelveDataProfile,
+  getInsiderTransactions,
   TwelveDataRateLimitError,
 } from '@/lib/twelvedata/twelvedata-client';
 import { getHealthScoreForSymbol } from '@/lib/finance/get-health-score';
@@ -980,6 +981,66 @@ const getEarningsData = tool({
   },
 });
 
+const getInsiderActivity = tool({
+  description:
+    'Fetch recent insider trading activity for a stock — buys and sells by executives, directors, and ' +
+    '10%+ shareholders, aggregated into net buy/sell value plus the top individual trades. ' +
+    'Use only when the user explicitly asks about insider buying/selling, executive trades, or insider ' +
+    'sentiment — do not call this speculatively. Costs ~200 API credits.',
+  inputSchema: jsonSchema<{ ticker: string }>({
+    type: 'object',
+    properties: {
+      ticker: { type: 'string', description: 'Stock ticker symbol' },
+    },
+    required: ['ticker'],
+  }),
+  execute: async ({ ticker }) => {
+    try {
+      const symbol = ticker.toUpperCase();
+      const transactions = await getInsiderTransactions(symbol);
+      if (transactions.length === 0) {
+        return { ticker: symbol, tradeCount: 0, note: 'No recent insider transactions found.' };
+      }
+
+      const buys = transactions.filter((t) => t.transaction_type === 'buy');
+      const sells = transactions.filter((t) => t.transaction_type === 'sell');
+      const buyValueRaw = buys.reduce((sum, t) => sum + Math.abs(t.value || 0), 0);
+      const sellValueRaw = sells.reduce((sum, t) => sum + Math.abs(t.value || 0), 0);
+      const netValueRaw = buyValueRaw - sellValueRaw;
+      const sentiment: 'bullish' | 'bearish' | 'neutral' =
+        netValueRaw > 0 ? 'bullish' : netValueRaw < 0 ? 'bearish' : 'neutral';
+
+      const topTransactions = transactions
+        .slice()
+        .sort((a, b) => Math.abs(b.value || 0) - Math.abs(a.value || 0))
+        .slice(0, 3)
+        .map((t) => ({
+          name: t.full_name,
+          position: t.position,
+          type: t.transaction_type,
+          value: fmt(Math.abs(t.value)),
+          date: t.date_reported,
+        }));
+
+      return {
+        ticker: symbol,
+        buyValue: fmt(buyValueRaw),
+        sellValue: fmt(sellValueRaw),
+        netValue: `${netValueRaw >= 0 ? '+' : '-'}${fmt(Math.abs(netValueRaw))}`,
+        buyValueRaw,
+        sellValueRaw,
+        netValueRaw,
+        tradeCount: transactions.length,
+        sentiment,
+        topTransactions,
+      };
+    } catch (err) {
+      if (err instanceof TwelveDataRateLimitError) return { error: 'Rate limit reached. Try again shortly.' };
+      return { error: `Could not fetch insider activity for ${ticker}: ${(err as Error).message}` };
+    }
+  },
+});
+
 const getHealthScore = tool({
   description:
     'Fetch BullPen\'s computed Financial Health score (0-100, grade A-F) for a stock — the same score ' +
@@ -1069,6 +1130,7 @@ export const BULLPEN_TOOLS = {
   getEarningsData,
   getHealthScore,
   getLiveCompanyProfile,
+  getInsiderActivity,
 };
 
 export const CLIENT_ACTION_KEY = '__clientAction';
