@@ -1,5 +1,13 @@
 [
   {
+    "date": "2026-07-19",
+    "entries": [
+      { "type": "improved", "text": "Ask Bull's answers are now much more visual — health scores, prices, key stats, financials, earnings, screener results, and more now show as charts and cards instead of plain text" },
+      { "type": "new", "text": "Ask Bull can now check a stock's recent insider buying and selling activity" },
+      { "type": "improved", "text": "When you ask Bull to add, update, or remove a holding, or create a price alert, you'll now see a clear confirmation it worked — or a clear error with a retry button if it didn't" }
+    ]
+  },
+  {
     "date": "2026-07-18",
     "entries": [
       { "type": "improved", "text": "Stock pages got a big visual upgrade — Key Numbers, Earnings, Financials, and Insider Transactions now show as charts, meters, and range bars instead of plain tables, each with a plain-language takeaway" },
