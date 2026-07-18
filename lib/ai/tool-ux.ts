@@ -6,6 +6,8 @@
  *  - extracting ticker symbols mentioned in tool calls (for cross-surface context)
  */
 
+import type { AlertType } from '@/types/alerts';
+
 /** Minimal shape of a `tool-*` UIMessage part — loosely typed like the rest of this codebase's message-part helpers. */
 export interface ToolPart {
   type?: string;
@@ -16,6 +18,20 @@ export interface ToolPart {
 
 interface MessageLike {
   parts?: ToolPart[];
+}
+
+/** A tool result's embedded `__clientAction` — an instruction the frontend executes after the message finishes streaming. */
+export type ClientAction =
+  | { type: 'navigate'; path: string }
+  | { type: 'addHolding'; ticker: string; company_name: string; quantity?: number | null; avg_price?: number | null; date_purchased?: string | null }
+  | { type: 'updateHolding'; ticker: string; quantity?: number | null; avg_price?: number | null }
+  | { type: 'removeHolding'; ticker: string }
+  | { type: 'createAlert'; ticker: string; companyName: string; alertType: AlertType; threshold: number };
+
+/** The real-time outcome of a client action, tracked client-side once its mutation actually runs. */
+export interface ActionOutcome {
+  status: 'pending' | 'success' | 'error';
+  message?: string;
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -44,6 +60,7 @@ const STATUS_LABELS: Record<string, string> = {
   addHolding: 'Adding to your holdings…',
   updateHolding: 'Updating your holding…',
   removeHolding: 'Removing holding…',
+  createAlert: 'Setting up your alert…',
   // Chart controls (chart assistant only)
   setTimeframe: 'Changing timeframe…',
   setChartType: 'Changing chart type…',
@@ -92,14 +109,23 @@ export function getToolStatusLabel(toolName: string | null): string | null {
   return STATUS_LABELS[toolName] ?? 'Working…';
 }
 
-/** All completed tool calls (name + output) on a message, in order. */
-export function getCompletedToolCalls(message: MessageLike | undefined): Array<{ toolName: string; output: unknown }> {
+/** All completed tool calls (name + output) on a message, in order. Parses each output's `__clientAction` (if present) too. */
+export function getCompletedToolCalls(
+  message: MessageLike | undefined
+): Array<{ toolName: string; output: unknown; clientAction?: ClientAction }> {
   if (!message?.parts) return [];
-  const out: Array<{ toolName: string; output: unknown }> = [];
+  const out: Array<{ toolName: string; output: unknown; clientAction?: ClientAction }> = [];
   for (const part of message.parts) {
     const name = toolNameFromPart(part);
     if (!name || part.state !== 'output-available') continue;
-    out.push({ toolName: name, output: part.output });
+    let clientAction: ClientAction | undefined;
+    if (part.output && typeof part.output === 'object') {
+      const raw = part.output as { __clientAction?: unknown };
+      if (raw.__clientAction && typeof (raw.__clientAction as { type?: unknown }).type === 'string') {
+        clientAction = raw.__clientAction as ClientAction;
+      }
+    }
+    out.push({ toolName: name, output: part.output, clientAction });
   }
   return out;
 }
