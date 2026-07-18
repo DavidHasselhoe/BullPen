@@ -598,8 +598,7 @@
 
 /* ─── Changelog activity heatmap ────────────────────────────────────────── */
 .bullpen-landing-root .activity-heatmap {
-  max-width: 780px;
-  margin: 0 auto 56px;
+  margin: 0 0 56px;
 }
 
 .bullpen-landing-root .activity-heatmap-headline {
@@ -618,11 +617,19 @@
   padding-bottom: 4px;
 }
 
-.bullpen-landing-root .activity-heatmap-grid {
+/* Shares one natural width (driven by the grid, its widest child) so the
+   legend below can right-align to the grid's actual right edge instead of
+   a container width that may be wider than the rendered content. */
+.bullpen-landing-root .activity-heatmap-inner {
   display: inline-flex;
   flex-direction: column;
+  gap: 8px;
+}
+
+.bullpen-landing-root .activity-heatmap-grid {
+  display: flex;
+  flex-direction: column;
   gap: 4px;
-  min-width: 100%;
 }
 
 .bullpen-landing-root .activity-heatmap-months {
@@ -705,7 +712,6 @@
   align-items: center;
   justify-content: flex-end;
   gap: 4px;
-  margin-top: 8px;
   font-size: 11px;
   color: var(--fg-dim);
 }

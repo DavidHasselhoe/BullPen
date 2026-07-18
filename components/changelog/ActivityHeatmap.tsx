@@ -69,48 +69,50 @@ export function ActivityHeatmap({ data }: ActivityHeatmapProps) {
         <strong>{data.totalCommits.toLocaleString()}</strong> commits shipped since launch
       </p>
       <div className="activity-heatmap-scroll">
-        <div className="activity-heatmap-grid" role="img" aria-label={summary}>
-          <div className="activity-heatmap-months">
-            {monthLabels.map((label, i) => (
-              <span key={i} className="activity-heatmap-month">
-                {label ?? ''}
-              </span>
-            ))}
-          </div>
-          <div className="activity-heatmap-body">
-            <div className="activity-heatmap-daylabels">
-              {DAY_LABELS.map((label, i) => (
-                <span key={i} className="activity-heatmap-daylabel">
-                  {label}
+        <div className="activity-heatmap-inner">
+          <div className="activity-heatmap-grid" role="img" aria-label={summary}>
+            <div className="activity-heatmap-months">
+              {monthLabels.map((label, i) => (
+                <span key={i} className="activity-heatmap-month">
+                  {label ?? ''}
                 </span>
               ))}
             </div>
-            <div className="activity-heatmap-weeks">
-              {weeks.map((week, wi) => (
-                <div className="activity-heatmap-week" key={wi}>
-                  {week.map((day, di) =>
-                    day ? (
-                      <span
-                        key={di}
-                        className={`activity-heatmap-cell activity-heatmap-cell--${tierFor(day.count)}`}
-                        title={formatTooltip(day)}
-                      />
-                    ) : (
-                      <span key={di} className="activity-heatmap-cell activity-heatmap-cell--pad" aria-hidden="true" />
-                    )
-                  )}
-                </div>
-              ))}
+            <div className="activity-heatmap-body">
+              <div className="activity-heatmap-daylabels">
+                {DAY_LABELS.map((label, i) => (
+                  <span key={i} className="activity-heatmap-daylabel">
+                    {label}
+                  </span>
+                ))}
+              </div>
+              <div className="activity-heatmap-weeks">
+                {weeks.map((week, wi) => (
+                  <div className="activity-heatmap-week" key={wi}>
+                    {week.map((day, di) =>
+                      day ? (
+                        <span
+                          key={di}
+                          className={`activity-heatmap-cell activity-heatmap-cell--${tierFor(day.count)}`}
+                          title={formatTooltip(day)}
+                        />
+                      ) : (
+                        <span key={di} className="activity-heatmap-cell activity-heatmap-cell--pad" aria-hidden="true" />
+                      )
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
+          <div className="activity-heatmap-legend" aria-hidden="true">
+            <span>Less</span>
+            {([0, 1, 2, 3, 4] as const).map((tier) => (
+              <span key={tier} className={`activity-heatmap-cell activity-heatmap-cell--${tier}`} />
+            ))}
+            <span>More</span>
+          </div>
         </div>
-      </div>
-      <div className="activity-heatmap-legend" aria-hidden="true">
-        <span>Less</span>
-        {([0, 1, 2, 3, 4] as const).map((tier) => (
-          <span key={tier} className={`activity-heatmap-cell activity-heatmap-cell--${tier}`} />
-        ))}
-        <span>More</span>
       </div>
     </div>
   );
