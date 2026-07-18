@@ -1,5 +1,12 @@
 [
   {
+    "date": "2026-07-18",
+    "entries": [
+      { "type": "improved", "text": "Stock pages got a big visual upgrade — Key Numbers, Earnings, Financials, and Insider Transactions now show as charts, meters, and range bars instead of plain tables, each with a plain-language takeaway" },
+      { "type": "fixed", "text": "Fixed the Earnings section's \"Recent Reports\" almost always showing empty — past earnings now actually appear" }
+    ]
+  },
+  {
     "date": "2026-07-16",
     "entries": [
       { "type": "new", "text": "You can now pin your favorite stocks and assets for quick access — pin from any stock page, then see their live prices anytime from a new button in the top navigation" },
