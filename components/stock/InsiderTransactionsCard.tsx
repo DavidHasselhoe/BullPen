@@ -1,5 +1,14 @@
 'use client';
 
+/**
+ * InsiderTransactionsCard — net-flow-first insider activity.
+ *
+ * Leads with a FlowBar of total $ bought vs $ sold + one insight sentence.
+ * The sentiment pill is value-based (dollars), not count-based — ten small
+ * buys no longer read as "bullish" against one massive sale. Counts remain
+ * as secondary text.
+ */
+
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { useExperienceLevel } from '@/hooks/use-experience-level';
 import { TrendingUp, TrendingDown, Minus, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { FlowBar } from '@/components/viz/FlowBar';
 import type { InsiderTransaction } from '@/lib/twelvedata/twelvedata-client';
 
 interface InsiderResponse {
@@ -21,7 +31,7 @@ function fmtValue(v: number): string {
   if (v >= 1_000_000_000) return `$${(v / 1_000_000_000).toFixed(2)}B`;
   if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(2)}M`;
   if (v >= 1_000) return `$${(v / 1_000).toFixed(0)}K`;
-  return `$${v.toLocaleString()}`;
+  return `$${v.toLocaleString('en-US')}`;
 }
 
 function fmtShares(v: number): string {
@@ -122,7 +132,8 @@ export function InsiderTransactionsCard({ ticker }: { ticker: string }) {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {Array.from({ length: 5 }).map((_, i) => (
+          <Skeleton className="h-14 w-full rounded-lg" />
+          {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="flex items-center justify-between gap-4">
               <div className="space-y-1.5">
                 <Skeleton className="h-3.5 w-36" />
@@ -131,7 +142,6 @@ export function InsiderTransactionsCard({ ticker }: { ticker: string }) {
               <div className="flex items-center gap-3">
                 <Skeleton className="h-5 w-16 rounded-full" />
                 <Skeleton className="h-3.5 w-20" />
-                <Skeleton className="h-3.5 w-16" />
               </div>
             </div>
           ))}
@@ -140,20 +150,29 @@ export function InsiderTransactionsCard({ ticker }: { ticker: string }) {
     );
   }
 
-  if (!data?.success) {
-    if (data?.error === 'plan_restricted') return null;
-    return null;
-  }
+  if (!data?.success) return null;
 
   const transactions = data.data ?? [];
   if (transactions.length === 0) return null;
 
   const visible = showAll ? transactions : transactions.slice(0, INITIAL_SHOW);
 
-  // Summary counts for the header
-  const buyCount = transactions.filter((t) => t.transaction_type === 'buy').length;
-  const sellCount = transactions.filter((t) => t.transaction_type === 'sell').length;
-  const sentiment = buyCount > sellCount ? 'bullish' : sellCount > buyCount ? 'bearish' : 'neutral';
+  // Value-based flow summary
+  const buys = transactions.filter((t) => t.transaction_type === 'buy');
+  const sells = transactions.filter((t) => t.transaction_type === 'sell');
+  const buyValue = buys.reduce((sum, t) => sum + Math.abs(t.value || 0), 0);
+  const sellValue = sells.reduce((sum, t) => sum + Math.abs(t.value || 0), 0);
+  const net = buyValue - sellValue;
+  const sentiment = net > 0 ? 'bullish' : net < 0 ? 'bearish' : 'neutral';
+  const netAbs = fmtValue(Math.abs(net));
+  const tradeCount = buys.length + sells.length;
+
+  const insight =
+    tradeCount === 0
+      ? null
+      : net === 0
+        ? `Insider buying and selling roughly balanced across ${tradeCount} trades`
+        : `Insiders net ${net > 0 ? 'bought' : 'sold'} ${netAbs} of stock across ${tradeCount} recent trades`;
 
   return (
     <Card className="mb-8">
@@ -174,22 +193,36 @@ export function InsiderTransactionsCard({ ticker }: { ticker: string }) {
               </p>
             )}
           </div>
-          {/* Sentiment summary pill */}
+          {/* Value-based sentiment pill */}
           <div className="flex items-center gap-2 text-xs">
             <span className={cn(
-              'flex items-center gap-1 rounded-full border px-2.5 py-1 font-medium',
+              'flex items-center gap-1 rounded-full border px-2.5 py-1 font-medium tabular-nums',
               sentiment === 'bullish' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
               sentiment === 'bearish' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
               'bg-muted text-muted-foreground border-border'
             )}>
               {sentiment === 'bullish' ? <TrendingUp className="h-3 w-3" /> : sentiment === 'bearish' ? <TrendingDown className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
-              {buyCount}B / {sellCount}S
+              {sentiment === 'neutral' ? 'Balanced' : `Net ${net > 0 ? '+' : '−'}${netAbs}`}
             </span>
           </div>
         </div>
       </CardHeader>
 
       <CardContent className="pt-0">
+        {/* Money-flow summary */}
+        {(buyValue > 0 || sellValue > 0) && (
+          <div className="mb-4 rounded-lg border border-border/50 bg-accent/20 px-4 py-3">
+            <FlowBar
+              inflow={buyValue}
+              inLabel={`Bought ${buyValue > 0 ? fmtValue(buyValue) : '$0'} (${buys.length})`}
+              outflow={sellValue}
+              outLabel={`Sold ${sellValue > 0 ? fmtValue(sellValue) : '$0'} (${sells.length})`}
+              srLabel={`Insiders bought ${fmtValue(buyValue)} and sold ${fmtValue(sellValue)}`}
+            />
+            {insight && <p className="mt-2 text-xs text-muted-foreground">{insight}</p>}
+          </div>
+        )}
+
         {/* Table header */}
         <div className="grid grid-cols-[1fr_auto] sm:grid-cols-[1fr_80px_100px_90px] items-center gap-x-4 pb-2 border-b border-border text-xs font-medium text-muted-foreground">
           <span>Insider</span>
@@ -243,7 +276,6 @@ export function InsiderTransactionsCard({ ticker }: { ticker: string }) {
                   <span className={cn('text-sm font-semibold tabular-nums', cfg.color)}>
                     {fmtValue(Math.abs(t.value))}
                   </span>
-                  {/* Mobile-only type indicator */}
                   <div className="sm:hidden mt-0.5">
                     <Badge
                       variant="outline"

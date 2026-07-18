@@ -56,6 +56,10 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     plainLabel: 'Bearish Pressure Score',
     description: 'How many days it would take all short-sellers (investors betting the price falls) to cover their positions. High values can signal extra selling pressure.',
   },
+  '52W Range': {
+    plainLabel: 'Price Range This Year',
+    description: 'The lowest and highest prices this stock has traded at over the past year, and where the price sits between them right now.',
+  },
   '52W High': {
     plainLabel: '52-Week High Price',
     description: 'The highest price this stock has traded at in the past year. Useful for understanding how far it is from its recent best.',

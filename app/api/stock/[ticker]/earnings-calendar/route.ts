@@ -17,12 +17,16 @@ export async function GET(
   }
 
   try {
-    const from = new Date();
-    const to = new Date();
-    to.setDate(to.getDate() + 90);
+    // Honor caller-supplied range (e.g. EarningsCalendar requests ~15 months
+    // back for its "Recent Reports" history); default to today → +90d.
+    const fromParam = request.nextUrl.searchParams.get('from');
+    const toParam = request.nextUrl.searchParams.get('to');
 
-    const fromStr = from.toISOString().split('T')[0];
-    const toStr = to.toISOString().split('T')[0];
+    const defaultTo = new Date();
+    defaultTo.setDate(defaultTo.getDate() + 90);
+
+    const fromStr = fromParam || new Date().toISOString().split('T')[0];
+    const toStr = toParam || defaultTo.toISOString().split('T')[0];
 
     const earnings = await getEarningsCalendar(fromStr, toStr, ticker);
 

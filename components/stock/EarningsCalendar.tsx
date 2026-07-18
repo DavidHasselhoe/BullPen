@@ -1,10 +1,21 @@
 'use client';
 
+/**
+ * EarningsCalendar — beat/miss made visible.
+ *
+ * Fetches ~15 months of history under its own queryKey (distinct from the
+ * upcoming-only snapshot seed) so "Recent Reports" has data to show. Next
+ * report leads with a countdown; past quarters render a DeltaBar (actual vs
+ * estimate) instead of two bare numbers.
+ */
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { useQuery } from '@tanstack/react-query';
-import { Calendar as CalendarIcon, TrendingUp, TrendingDown } from 'lucide-react';
+import { Calendar as CalendarIcon } from 'lucide-react';
+import { useExperienceLevel } from '@/hooks/use-experience-level';
+import { DeltaBar } from '@/components/viz/DeltaBar';
 import type { EarningsCalendar as EarningsItem } from '@/lib/finnhub/finnhub-client';
 
 interface EarningsCalendarResponse {
@@ -21,52 +32,33 @@ function formatDate(dateStr: string): string {
 
 function formatHour(hour: string): string {
   const h = hour.toLowerCase();
-  if (h === 'pre market') return 'Pre Market';
-  if (h === 'after hours') return 'After Hours';
-  if (h === 'amc' || h === 'after-market-close') return 'After Hours';
-  if (h === 'bmo' || h === 'before-market-open') return 'Pre Market';
+  if (h === 'pre market' || h === 'bmo' || h === 'before-market-open') return 'Pre Market';
+  if (h === 'after hours' || h === 'amc' || h === 'after-market-close') return 'After Hours';
   return '';
 }
 
-function EPSBar({ actual, estimate }: { actual: number | null; estimate: number | null }) {
-  const beat = actual !== null && estimate !== null ? actual >= estimate : null;
-  return (
-    <div className="flex items-center gap-3 text-sm">
-      {estimate !== null && (
-        <div className="flex items-center gap-1.5">
-          <span className="text-xs text-muted-foreground">Est.</span>
-          <span className="tabular-nums font-medium">${estimate.toFixed(2)}</span>
-        </div>
-      )}
-      {actual !== null && (
-        <div className="flex items-center gap-1.5">
-          <span className="text-xs text-muted-foreground">Act.</span>
-          <span className={`tabular-nums font-semibold ${beat ? 'text-green-500' : 'text-red-500'}`}>
-            ${actual.toFixed(2)}
-          </span>
-          {beat !== null && (
-            beat
-              ? <TrendingUp className="h-3.5 w-3.5 text-green-500" />
-              : <TrendingDown className="h-3.5 w-3.5 text-red-500" />
-          )}
-        </div>
-      )}
-    </div>
-  );
+function daysUntil(dateStr: string): number {
+  const target = new Date(dateStr + 'T12:00:00Z').getTime();
+  return Math.max(0, Math.ceil((target - Date.now()) / 86_400_000));
 }
 
 export function EarningsCalendar({ ticker }: { ticker: string }) {
+  const { isSimplified } = useExperienceLevel();
   const today = new Date().toISOString().split('T')[0];
 
   const { data, isLoading } = useQuery<EarningsItem[]>({
-    queryKey: ['earnings-calendar', ticker],
+    queryKey: ['earnings-history', ticker],
     queryFn: async () => {
-      const from = new Date().toISOString().split('T')[0];
-      const to = new Date(Date.now() + 90 * 86400000).toISOString().split('T')[0];
-      const res = await fetch(`/api/stock/${ticker}/earnings-calendar?from=${from}&to=${to}`);
+      const historyFrom = new Date(Date.now() - 455 * 86_400_000).toISOString().split('T')[0];
+      const to = new Date(Date.now() + 120 * 86_400_000).toISOString().split('T')[0];
+      const res = await fetch(`/api/stock/${ticker}/earnings-calendar?from=${historyFrom}&to=${to}`);
       if (!res.ok) return [];
       const result: EarningsCalendarResponse = await res.json();
-      return result.success && result.earnings ? result.earnings : [];
+      if (!result.success || !result.earnings) return [];
+      // Finnhub returns a company's full earnings history when `symbol` is set,
+      // ignoring from/to — clip to the requested window ourselves so a stray
+      // decade-old record (seen on some ETFs) can't slip into "Recent Reports".
+      return result.earnings.filter((e) => e.date >= historyFrom);
     },
     enabled: !!ticker,
     staleTime: 1000 * 60 * 60 * 6,
@@ -82,11 +74,9 @@ export function EarningsCalendar({ ticker }: { ticker: string }) {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
+          <Skeleton className="h-16 w-full rounded-lg" />
           {[1, 2, 3].map((i) => (
-            <div key={i} className="flex items-center justify-between">
-              <Skeleton className="h-4 w-28" />
-              <Skeleton className="h-4 w-40" />
-            </div>
+            <Skeleton key={i} className="h-9 w-full rounded-md" />
           ))}
         </CardContent>
       </Card>
@@ -108,9 +98,31 @@ export function EarningsCalendar({ ticker }: { ticker: string }) {
     );
   }
 
-  const upcoming = data.filter(e => e.date >= today);
-  const past = data.filter(e => e.date < today);
+  const upcoming = data.filter((e) => e.date >= today).sort((a, b) => a.date.localeCompare(b.date));
+  // Finnhub can return several rows for the same fiscal quarter (later rows are
+  // revisions/placeholders). Keep one per quarter: the earliest row that has an
+  // actual EPS — that's the real report date.
+  const pastAll = data.filter((e) => e.date < today).sort((a, b) => a.date.localeCompare(b.date));
+  const seen = new Map<string, EarningsItem>();
+  for (const e of pastAll) {
+    const key = e.quarter && e.year ? `${e.year}-Q${e.quarter}` : e.date;
+    const existing = seen.get(key);
+    if (!existing || (existing.epsActual == null && e.epsActual != null)) seen.set(key, e);
+  }
+  const past = Array.from(seen.values()).sort((a, b) => b.date.localeCompare(a.date));
   const nextEvent = upcoming[0] ?? null;
+
+  const recent = past.slice(0, 5);
+  const scored = recent.filter((e) => e.epsActual != null && e.epsEstimate != null);
+  const beats = scored.filter((e) => (e.epsActual as number) >= (e.epsEstimate as number)).length;
+  const streakLine =
+    scored.length >= 2
+      ? beats > scored.length / 2
+        ? { text: `Beat expectations ${beats} of the last ${scored.length} quarters`, glyph: '▲', cls: 'text-emerald-500' }
+        : beats < scored.length / 2
+          ? { text: `Missed expectations ${scored.length - beats} of the last ${scored.length} quarters`, glyph: '▼', cls: 'text-red-500' }
+          : { text: `Beat expectations ${beats} of the last ${scored.length} quarters`, glyph: '●', cls: 'text-muted-foreground' }
+      : null;
 
   return (
     <Card className="mb-8">
@@ -118,24 +130,32 @@ export function EarningsCalendar({ ticker }: { ticker: string }) {
         <CardTitle className="flex items-center gap-2 text-base font-semibold">
           <CalendarIcon className="h-4 w-4" /> Earnings
         </CardTitle>
+        {isSimplified && (
+          <p className="text-xs text-muted-foreground mt-1">
+            Every three months, companies report how much they earned. Beating what analysts expected is usually good news for the stock.
+          </p>
+        )}
       </CardHeader>
       <CardContent className="pt-2 space-y-5">
 
-        {/* Next earnings date */}
+        {/* Next earnings — countdown leads */}
         {nextEvent && (
           <div>
             <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-2">Next Report</p>
             <div className="flex items-center justify-between rounded-lg border border-border/50 bg-accent/30 px-4 py-3">
               <div>
-                <p className="font-semibold text-sm">{formatDate(nextEvent.date)}</p>
-                {nextEvent.quarter && nextEvent.year && (
-                  <p className="text-xs text-muted-foreground mt-0.5">Q{nextEvent.quarter} {nextEvent.year}</p>
-                )}
+                <p className="text-xl font-semibold tabular-nums leading-none">
+                  {daysUntil(nextEvent.date) === 0 ? 'Today' : `In ${daysUntil(nextEvent.date)} days`}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  {formatDate(nextEvent.date)}
+                  {nextEvent.quarter && nextEvent.year && ` · Q${nextEvent.quarter} ${nextEvent.year}`}
+                </p>
               </div>
               <div className="flex items-center gap-2">
                 {nextEvent.epsEstimate !== null && (
                   <div className="text-right">
-                    <p className="text-xs text-muted-foreground">EPS Est.</p>
+                    <p className="text-xs text-muted-foreground">{isSimplified ? 'Expected profit/share' : 'EPS Est.'}</p>
                     <p className="text-sm font-medium tabular-nums">${nextEvent.epsEstimate.toFixed(2)}</p>
                   </div>
                 )}
@@ -149,23 +169,45 @@ export function EarningsCalendar({ ticker }: { ticker: string }) {
           </div>
         )}
 
-        {/* Past earnings */}
-        {past.length > 0 && (
+        {/* Upcoming date not announced yet — say so instead of a silent gap */}
+        {!nextEvent && recent.length > 0 && (
+          <p className="text-xs text-muted-foreground">
+            The next report date hasn&apos;t been announced yet.
+          </p>
+        )}
+
+        {/* Past earnings — actual vs estimate bars */}
+        {recent.length > 0 && (
           <div>
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-2">Recent Reports</p>
+            <div className="mb-2 flex items-baseline justify-between gap-3">
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Recent Reports</p>
+              {streakLine && (
+                <p className="text-xs text-muted-foreground">
+                  <span className={streakLine.cls} aria-hidden>{streakLine.glyph}</span> {streakLine.text}
+                </p>
+              )}
+            </div>
             <div className="space-y-1">
-              {past.slice(0, 5).map((e, i) => (
+              {recent.map((e, i) => (
                 <div
                   key={i}
-                  className="flex items-center justify-between py-2 px-3 rounded-md hover:bg-muted/40 transition-colors"
+                  className="flex items-center justify-between gap-4 py-2 px-3 rounded-md hover:bg-muted/40 transition-colors"
                 >
-                  <div>
+                  <div className="min-w-0 shrink-0">
                     <span className="text-sm font-medium">{formatDate(e.date)}</span>
                     {e.quarter && e.year && (
                       <span className="text-xs text-muted-foreground ml-2">Q{e.quarter} {e.year}</span>
                     )}
                   </div>
-                  <EPSBar actual={e.epsActual} estimate={e.epsEstimate} />
+                  <DeltaBar
+                    estimate={e.epsEstimate}
+                    actual={e.epsActual}
+                    srLabel={
+                      e.epsActual != null && e.epsEstimate != null
+                        ? `Earned $${e.epsActual.toFixed(2)} per share vs $${e.epsEstimate.toFixed(2)} expected`
+                        : `Estimate $${e.epsEstimate?.toFixed(2) ?? '—'} per share`
+                    }
+                  />
                 </div>
               ))}
             </div>

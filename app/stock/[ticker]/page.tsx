@@ -230,17 +230,19 @@ export default function StockDetailPage() {
     return () => { cancelled = true; };
   }, [ticker, confirmedReal, queryClient]);
 
+  // Visuals lead: data sections come first, prose (Profile) trails just
+  // before Community — see PRODUCT.md "visual, not text-and-numbers" goal.
   const navSections: StockNavSection[] = [
     { id: 'nav-overview',    label: 'Overview' },
-    { id: 'nav-profile',     label: 'Profile' },
     ...(showFundamentals ? [{ id: 'nav-health', label: 'Health Score' }] : []),
-    { id: 'nav-statistics',  label: 'Statistics' },
+    { id: 'nav-statistics',  label: 'Key Numbers' },
     ...(showFundamentals ? [
       { id: 'nav-financials', label: 'Financials' },
       { id: 'nav-revenue',    label: 'Revenue' },
       { id: 'nav-earnings',   label: 'Earnings' },
       { id: 'nav-insiders',   label: 'Insiders' },
     ] : []),
+    { id: 'nav-profile',    label: 'Profile' },
     { id: 'nav-community', label: 'Community' },
   ];
 
@@ -382,31 +384,26 @@ export default function StockDetailPage() {
               </AnimatedContent>
             </div>
 
-            {/* Company Profile (TwelveData: description, executives, facts) */}
-            <div id="nav-profile" className="scroll-mt-20">
-              <StockSectionBoundary>
-                <AnimatedContent reverse={true} delay={0.08}>
-                  <CompanyProfileCard ticker={ticker} />
-                </AnimatedContent>
-              </StockSectionBoundary>
-            </div>
-
             {/* Financial Health Score — only for stocks with financials */}
             {showFundamentals && (
               <div id="nav-health" className="scroll-mt-20">
                 <StockSectionBoundary>
-                  <AnimatedContent reverse={true} delay={0.12}>
+                  <AnimatedContent reverse={true} delay={0.08}>
                     <HealthScoreCard ticker={ticker} onSignalsReady={setMetricSignals} />
                   </AnimatedContent>
                 </StockSectionBoundary>
               </div>
             )}
 
-            {/* Statistics (TwelveData) — available for both stocks and ETFs */}
+            {/* Key Numbers (TwelveData statistics) — available for both stocks and ETFs */}
             <div id="nav-statistics" className="scroll-mt-20">
               <StockSectionBoundary>
-                <AnimatedContent reverse={true} delay={0.15}>
-                  <StatisticsGrid ticker={ticker} signals={metricSignals} />
+                <AnimatedContent reverse={true} delay={0.12}>
+                  <StatisticsGrid
+                    ticker={ticker}
+                    signals={metricSignals}
+                    currentPrice={snapshot.data?.quote?.price ?? null}
+                  />
                 </AnimatedContent>
               </StockSectionBoundary>
             </div>
@@ -416,7 +413,7 @@ export default function StockDetailPage() {
               <>
                 <div id="nav-financials" className="scroll-mt-20">
                   <StockSectionBoundary>
-                    <AnimatedContent reverse={true} delay={0.2}>
+                    <AnimatedContent reverse={true} delay={0.16}>
                       <FinancialsSection ticker={ticker} />
                     </AnimatedContent>
                   </StockSectionBoundary>
@@ -424,7 +421,7 @@ export default function StockDetailPage() {
 
                 <div id="nav-revenue" className="scroll-mt-20">
                   <StockSectionBoundary>
-                    <AnimatedContent reverse={true} delay={0.22}>
+                    <AnimatedContent reverse={true} delay={0.2}>
                       <SankeyCard ticker={ticker} />
                     </AnimatedContent>
                   </StockSectionBoundary>
@@ -432,7 +429,7 @@ export default function StockDetailPage() {
 
                 <div id="nav-earnings" className="scroll-mt-20">
                   <StockSectionBoundary>
-                    <AnimatedContent reverse={true} delay={0.24}>
+                    <AnimatedContent reverse={true} delay={0.22}>
                       <EarningsCalendar ticker={ticker} />
                     </AnimatedContent>
                   </StockSectionBoundary>
@@ -440,13 +437,22 @@ export default function StockDetailPage() {
 
                 <div id="nav-insiders" className="scroll-mt-20">
                   <StockSectionBoundary>
-                    <AnimatedContent reverse={true} delay={0.26}>
+                    <AnimatedContent reverse={true} delay={0.24}>
                       <InsiderTransactionsCard ticker={ticker} />
                     </AnimatedContent>
                   </StockSectionBoundary>
                 </div>
               </>
             )}
+
+            {/* Company Profile (TwelveData: description, executives, facts) — prose trails the data */}
+            <div id="nav-profile" className="scroll-mt-20">
+              <StockSectionBoundary>
+                <AnimatedContent reverse={true} delay={0.26}>
+                  <CompanyProfileCard ticker={ticker} />
+                </AnimatedContent>
+              </StockSectionBoundary>
+            </div>
 
             {/* Community theses */}
             <div id="nav-community" className="scroll-mt-20">

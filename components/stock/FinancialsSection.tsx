@@ -1,5 +1,14 @@
 'use client';
 
+/**
+ * FinancialsSection — chart-first Financials.
+ *
+ * Each statement tab leads with a FinancialsTrendChart answering one
+ * question (growth & profit / owns vs owes / real cash / dividend growth /
+ * split history). Tables stay below for full detail, with the "Trend"
+ * column showing TrendBars micro bars instead of a bare percentage.
+ */
+
 import { useState, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +17,8 @@ import { TermTooltip } from '@/components/ui/TermTooltip';
 import { useExperienceLevel } from '@/hooks/use-experience-level';
 import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+import { FinancialsTrendChart, type TrendPoint } from './FinancialsTrendChart';
+import { TrendBars } from '@/components/viz/TrendBars';
 import type {
   IncomeStatementPeriod,
   BalanceSheetPeriod,
@@ -40,18 +51,18 @@ function fmtNum(v: number | null | undefined): string {
   return `${sign}$${v.toFixed(2)}`;
 }
 
-function fmtPct(v: number | null | undefined): string {
+function fmtEps(v: number | null | undefined): string {
   if (v === null || v === undefined || isNaN(v as number)) return '—';
   return `$${v.toFixed(2)}`;
 }
 
+/** $0.2050 → "$0.205", $0.2700 → "$0.27" — precise but not noisy. */
+function fmtDividend(v: number): string {
+  return `$${v.toFixed(4).replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '')}`;
+}
+
 // ---- Trend helpers ----
 
-/**
- * Compares the most-recent value against the oldest visible period.
- * Returns a short label + color class to show directional trend.
- * For "cost" metrics (expenses, debt) an increase is negative.
- */
 function getTrend(
   values: (number | null | undefined)[],
   costMetric = false
@@ -72,14 +83,32 @@ function getTrend(
   return { label: `-${Math.abs(pct).toFixed(0)}%`, cls: 'text-red-500' };
 }
 
-// ---- Sub-components ----
+// ---- Chart mapping ----
+
+function toPoints<T extends Record<string, unknown>>(
+  data: T[],
+  dateKey: keyof T,
+  primaryKey: keyof T,
+  secondaryKey?: keyof T
+): TrendPoint[] {
+  return data
+    .slice(0, 5)
+    .slice()
+    .reverse()
+    .map((row) => ({
+      label: String(row[dateKey]).slice(0, 7),
+      primary: (row[primaryKey] as number | null) ?? null,
+      secondary: secondaryKey ? ((row[secondaryKey] as number | null) ?? null) : undefined,
+    }));
+}
+
+// ---- Table ----
 
 interface TableRow<T> {
   label: string;
   key: keyof T;
   fmt: (v: T[keyof T]) => string;
   highlight?: boolean;
-  /** Set true for expense/debt rows where growth = bad */
   costMetric?: boolean;
 }
 
@@ -108,8 +137,7 @@ function FinancialTable<T extends Record<string, unknown>>({ rows, data, dateKey
             <th className="py-2.5 text-left font-medium text-muted-foreground w-44 min-w-[160px]">
               Period
             </th>
-            {/* Trend column */}
-            <th className="py-2.5 text-center font-medium text-muted-foreground px-3 min-w-[60px]">
+            <th className="py-2.5 text-center font-medium text-muted-foreground px-3 min-w-[96px]">
               Trend
             </th>
             {cols.map((col, i) => (
@@ -123,6 +151,11 @@ function FinancialTable<T extends Record<string, unknown>>({ rows, data, dateKey
           {rows.map(({ label, key, fmt: fmtFn, highlight, costMetric }) => {
             const allValues = cols.map((col) => col[key] as number | null | undefined);
             const trend = getTrend(allValues, costMetric);
+            const barValues = allValues
+              .slice()
+              .reverse()
+              .map((v) => (v == null || isNaN(v as number) ? null : (v as number)));
+            const hasBars = barValues.filter((v) => v != null).length >= 2;
 
             return (
               <tr
@@ -134,13 +167,23 @@ function FinancialTable<T extends Record<string, unknown>>({ rows, data, dateKey
                 <td className={`py-2.5 pr-4 ${highlight ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>
                   {label}
                 </td>
-                {/* Trend cell */}
-                <td className="py-2.5 text-center px-3">
-                  {trend ? (
-                    <span className={`font-medium tabular-nums ${trend.cls}`}>{trend.label}</span>
-                  ) : (
-                    <span className="text-muted-foreground/30">—</span>
-                  )}
+                <td className="py-2.5 px-3">
+                  <div className="flex items-center justify-center gap-2">
+                    {hasBars && (
+                      <TrendBars
+                        values={barValues}
+                        height={16}
+                        signed
+                        srLabel={`${label} trend across ${barValues.length} periods`}
+                        className="text-foreground"
+                      />
+                    )}
+                    {trend ? (
+                      <span className={`font-medium tabular-nums ${trend.cls}`}>{trend.label}</span>
+                    ) : (
+                      <span className="text-muted-foreground/30">—</span>
+                    )}
+                  </div>
                 </td>
                 {cols.map((col, i) => {
                   const val = col[key];
@@ -173,8 +216,8 @@ function IncomeTable({ data }: { data: IncomeStatementPeriod[] }) {
     { label: 'Operating Income', key: 'operating_income',                          fmt: (v) => fmtNum(v as number) },
     { label: 'EBITDA',           key: 'ebitda',                                    fmt: (v) => fmtNum(v as number) },
     { label: 'Net Income',       key: 'net_income',                                fmt: (v) => fmtNum(v as number), highlight: true },
-    { label: 'EPS (Diluted)',    key: 'eps_diluted',                               fmt: (v) => fmtPct(v as number) },
-    { label: 'EPS (Basic)',      key: 'eps_basic',                                 fmt: (v) => fmtPct(v as number) },
+    { label: 'EPS (Diluted)',    key: 'eps_diluted',                               fmt: (v) => fmtEps(v as number) },
+    { label: 'EPS (Basic)',      key: 'eps_basic',                                 fmt: (v) => fmtEps(v as number) },
     { label: 'R&D Expenses',     key: 'r_and_d_expenses',                          fmt: (v) => fmtNum(v as number), costMetric: true },
     { label: 'SG&A Expenses',    key: 'selling_general_administrative_expenses',   fmt: (v) => fmtNum(v as number), costMetric: true },
     { label: 'Interest Expense', key: 'interest_expense',                          fmt: (v) => fmtNum(v as number), costMetric: true },
@@ -220,12 +263,17 @@ function DividendsTable({ data }: { data: DividendItem[] }) {
       </div>
     );
   }
+  // The payment-date column is often entirely null from the API — drop it then.
+  const hasPaymentDates = data.some((d) => d.payment_date);
+  const headers = hasPaymentDates
+    ? ['Ex-Dividend Date', 'Payment Date', 'Amount', 'Currency']
+    : ['Ex-Dividend Date', 'Amount', 'Currency'];
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-xs">
         <thead>
           <tr className="border-b border-border">
-            {['Ex-Dividend Date', 'Payment Date', 'Amount', 'Currency'].map((h) => (
+            {headers.map((h) => (
               <th key={h} className="py-2.5 text-left font-medium text-muted-foreground pr-4 first:pl-0">{h}</th>
             ))}
           </tr>
@@ -234,13 +282,60 @@ function DividendsTable({ data }: { data: DividendItem[] }) {
           {data.map((d, i) => (
             <tr key={i} className="border-b border-border/40 last:border-0 hover:bg-muted/30 transition-colors">
               <td className="py-2.5 pr-4 text-foreground/80">{d.ex_dividend_date}</td>
-              <td className="py-2.5 pr-4 text-muted-foreground">{d.payment_date ?? '—'}</td>
-              <td className="py-2.5 pr-4 font-medium tabular-nums">${d.amount.toFixed(4)}</td>
+              {hasPaymentDates && <td className="py-2.5 pr-4 text-muted-foreground">{d.payment_date ?? '—'}</td>}
+              <td className="py-2.5 pr-4 font-medium tabular-nums">{fmtDividend(d.amount)}</td>
               <td className="py-2.5 text-muted-foreground">{d.currency}</td>
             </tr>
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+/**
+ * SplitsTimeline — splits as a story, not a table: a dot-timeline of each
+ * split with its ratio, led by the cumulative "1 share then → N shares now".
+ */
+function SplitsTimeline({ data }: { data: SplitItem[] }) {
+  if (data.length === 0) return null;
+  const sorted = data.slice().sort((a, b) => a.date.localeCompare(b.date));
+  // TwelveData semantics (verified against AAPL's 2020 4-for-1 split, which it
+  // returns as from_factor=4, to_factor=1, ratio=0.25): shares multiplier is
+  // from/to, and "from-for-to" reads as the conventional split name.
+  const multiplier = (s: SplitItem) => (s.to_factor > 0 ? s.from_factor / s.to_factor : 1);
+  const factor = sorted.reduce((f, s) => f * multiplier(s), 1);
+  const firstYear = sorted[0].date.slice(0, 4);
+  const fmtFactor = (f: number) => (Number.isInteger(f) ? f.toLocaleString('en-US') : f.toFixed(1));
+
+  return (
+    <div className="mb-5">
+      {factor > 1 && (
+        <p className="mb-4 text-sm font-medium text-foreground/80">
+          1 share held since {firstYear} would be <span className="tabular-nums">{fmtFactor(factor)}</span> shares today
+        </p>
+      )}
+      <ol className="relative ml-1.5 border-l border-border/60 pl-5">
+        {sorted.map((s, i) => {
+          const m = multiplier(s);
+          return (
+            <li key={i} className="relative pb-4 last:pb-0">
+              <span className="absolute -left-[26px] top-1 h-2.5 w-2.5 rounded-full border border-border bg-muted" aria-hidden />
+              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                <span className="text-sm font-medium text-foreground/80">{s.date}</span>
+                <span className="rounded-full border border-border bg-muted/50 px-2.5 py-0.5 text-xs font-medium tabular-nums">
+                  {s.from_factor}-for-{s.to_factor} {m < 1 ? 'reverse split' : 'split'}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {m >= 1
+                    ? `each share became ${fmtFactor(m)}`
+                    : `every ${s.to_factor} shares became ${s.from_factor}`}
+                </span>
+              </div>
+            </li>
+          );
+        })}
+      </ol>
     </div>
   );
 }
@@ -366,6 +461,80 @@ export function FinancialsSection({ ticker }: { ticker: string }) {
     staleTime: 15 * 60 * 1000,
   });
 
+  // ── Chart-first lead per statement tab ─────────────────────────────────
+  let chart: React.ReactNode = null;
+  if (!isLoading && data?.success && data.data) {
+    if (activeTab === 'income') {
+      chart = (
+        <FinancialsTrendChart
+          points={toPoints(data.data as IncomeStatementPeriod[], 'fiscal_date', 'revenue', 'net_income')}
+          primaryLabel="Revenue"
+          secondaryLabel="Net Income"
+          question="Is the company growing — and keeping profit?"
+          format={fmtNum}
+          signColorSecondary
+        />
+      );
+    } else if (activeTab === 'balance') {
+      chart = (
+        <FinancialsTrendChart
+          points={toPoints(data.data as BalanceSheetPeriod[], 'fiscal_date', 'total_assets', 'total_liabilities')}
+          primaryLabel="Assets"
+          secondaryLabel="Liabilities"
+          question="Does it own more than it owes?"
+          format={fmtNum}
+        />
+      );
+    } else if (activeTab === 'cashflow') {
+      chart = (
+        <FinancialsTrendChart
+          points={toPoints(data.data as CashFlowPeriod[], 'fiscal_date', 'operating_cash_flow', 'free_cash_flow')}
+          primaryLabel="Operating Cash Flow"
+          secondaryLabel="Free Cash Flow"
+          question="Is real cash coming in?"
+          format={fmtNum}
+          signColorSecondary
+        />
+      );
+    } else if (activeTab === 'dividends') {
+      const items = (data.data as DividendItem[])
+        .slice()
+        .sort((a, b) => a.ex_dividend_date.localeCompare(b.ex_dividend_date));
+      if (items.length >= 2) {
+        const first = items[0];
+        const last = items[items.length - 1];
+        const growthPct = first.amount > 0 ? ((last.amount - first.amount) / first.amount) * 100 : null;
+        const raises = items.filter((d, i) => i > 0 && d.amount > items[i - 1].amount).length;
+        const insight =
+          growthPct != null && Math.abs(growthPct) >= 1
+            ? growthPct > 0
+              ? `Raised ${raises} time${raises === 1 ? '' : 's'} since ${first.ex_dividend_date.slice(0, 4)} — up ${Math.round(growthPct)}% overall`
+              : `Down ${Math.round(Math.abs(growthPct))}% since ${first.ex_dividend_date.slice(0, 4)}`
+            : `Held steady since ${first.ex_dividend_date.slice(0, 4)}`;
+        chart = (
+          <div>
+            <FinancialsTrendChart
+              points={items.map((d, i) => ({
+                // Label only the first payout of each year to keep the axis quiet
+                label:
+                  i === 0 || d.ex_dividend_date.slice(0, 4) !== items[i - 1].ex_dividend_date.slice(0, 4)
+                    ? d.ex_dividend_date.slice(0, 4)
+                    : '',
+                primary: d.amount,
+              }))}
+              primaryLabel="Dividend per share"
+              question="Is the dividend growing?"
+              format={fmtDividend}
+            />
+            <p className="-mt-3 mb-5 text-xs text-muted-foreground">{insight}</p>
+          </div>
+        );
+      }
+    } else if (activeTab === 'splits') {
+      chart = <SplitsTimeline data={data.data as SplitItem[]} />;
+    }
+  }
+
   return (
     <Card className="mb-8">
       <CardHeader className="pb-0">
@@ -411,22 +580,27 @@ export function FinancialsSection({ ticker }: { ticker: string }) {
 
       <CardContent className="pt-4">
         {isLoading && (
-          <div className="space-y-2">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-4">
-                <Skeleton className="h-4 w-40" />
-                <div className="flex gap-6 ml-auto">
-                  {Array.from({ length: 4 }).map((_, j) => (
-                    <Skeleton key={j} className="h-4 w-16" />
-                  ))}
+          <div className="space-y-4">
+            <Skeleton className="h-[180px] w-full rounded-lg" />
+            <div className="space-y-2">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-4">
+                  <Skeleton className="h-4 w-40" />
+                  <div className="flex gap-6 ml-auto">
+                    {Array.from({ length: 4 }).map((_, j) => (
+                      <Skeleton key={j} className="h-4 w-16" />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         )}
 
         {!isLoading && data?.success && data.data && (
           <>
+            {chart}
+
             {/* ── Simple mode: Key Takeaways + optional full breakdown ──── */}
             {isSimplified && !showFullBreakdown && (activeTab === 'income' || activeTab === 'balance' || activeTab === 'cashflow') && (
               <>
@@ -527,4 +701,3 @@ export function FinancialsSection({ ticker }: { ticker: string }) {
     </Card>
   );
 }
-
