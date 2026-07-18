@@ -7,6 +7,7 @@ import { CompanyProfileResultCard, type CompanyProfileOutput } from './cards/Com
 import { CompanyFinancialsResultCard, type CompanyFinancialsRow } from './cards/CompanyFinancialsResultCard';
 import { EarningsResultCard, type EarningsRow } from './cards/EarningsResultCard';
 import { ScreenerResultCard, type ScreenerOutput } from './cards/ScreenerResultCard';
+import { CompanyMetricsResultCard, type CompanyMetricsOutput } from './cards/CompanyMetricsResultCard';
 
 /**
  * Dispatches a completed AI tool call to its matching visual card instead of
@@ -81,6 +82,11 @@ export function ToolResultCard({
       const o = output as Partial<ScreenerOutput>;
       if (!Array.isArray(o.companies)) return null;
       return <ScreenerResultCard output={o as ScreenerOutput} />;
+    }
+    case 'getCompanyMetrics': {
+      const o = output as Partial<CompanyMetricsOutput>;
+      if (!Array.isArray(o.rows) || o.rows.length === 0) return null;
+      return <CompanyMetricsResultCard output={o as CompanyMetricsOutput} />;
     }
     default:
       return null;
