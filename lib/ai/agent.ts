@@ -10,7 +10,7 @@ import { streamText, convertToModelMessages, stepCountIs } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import type { UIMessage } from 'ai';
 import { SYSTEM_PROMPT } from './systemPrompt';
-import { BULLPEN_TOOLS } from './tools';
+import { BULLPEN_TOOLS, createAlertTool } from './tools';
 import { languageName } from '@/lib/i18n/language-names';
 
 interface AIContext {
@@ -26,6 +26,7 @@ export async function runAgent(
   riskProfile?: 'conservative' | 'balanced' | 'aggressive' | null,
   investmentHorizon?: 'short' | 'medium' | 'long' | null,
   responseStyle?: 'concise' | 'balanced' | 'detailed' | null,
+  userId?: string | null,
 ) {
   const modelMessages = await convertToModelMessages(messages);
 
@@ -68,11 +69,18 @@ export async function runAgent(
     ? `[Current page context: The user is viewing "${contextLabel}" (${context.tickers.join(', ')}). Unless the user specifies a different company, answer questions about ${context.tickers.join(' and ')} first.]\n\n`
     : '';
 
+  // createAlert needs userId to check the free-tier alert limit server-side —
+  // it's built per-request rather than living in the static BULLPEN_TOOLS map.
+  // Omitted entirely when userId is unavailable so the model never sees it.
+  const tools = userId
+    ? { ...BULLPEN_TOOLS, createAlert: createAlertTool(userId) }
+    : BULLPEN_TOOLS;
+
   const result = streamText({
     model: openai('gpt-4o'),
     system: languagePrefix + experiencePrefix + riskPrefix + horizonPrefix + stylePrefix + contextPrefix + SYSTEM_PROMPT,
     messages: modelMessages,
-    tools: BULLPEN_TOOLS,
+    tools,
     maxSteps: 5,
     maxTokens: 2048,
     // Allow up to 5 steps so the model can call tools, receive results, and generate text.

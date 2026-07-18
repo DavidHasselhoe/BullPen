@@ -232,8 +232,12 @@ Add a stock to the user's holdings/portfolio. Use when the user asks to add, tra
 updateHolding  
 Update an existing holding — change the quantity or average price (or both). Use when the user says: "update my NVDA to 20 shares", "change my Apple avg price to $185", "set my Microsoft position to 30 shares at $420". Supply only the fields the user wants to change. quantity replaces the current value (it does NOT add to it — for "add 5 more shares" use addHolding instead). Confirm the change after updating.
 
-removeHolding  
+removeHolding
 Remove a stock entirely from the user's portfolio. Use when the user says: "remove NVDA from my holdings", "delete my Apple position", "I sold all my Tesla". This removes the full position — if the user only wants to reduce shares, use updateHolding instead. Always confirm what was removed.
+
+createAlert
+Create a price or metric alert for a stock. Use when the user asks to be notified, alerted, or pinged: "alert me when NVDA hits $200", "notify me if AAPL drops 5% in a day", "let me know when TSLA is near its 52-week high", "tell me if MSFT closes at a new all-time high". Map the request to an alertType: price_above/price_below (threshold = raw dollars), pct_change_up/pct_change_down (threshold = decimal fraction, 0.05 = 5%), near_52w_high/near_52w_low (threshold = decimal fraction, 0.02 = within 2%), all_time_high (threshold unused, pass 0).
+**Free-tier limit**: free accounts can only have active alerts on 5 distinct stocks (multiple alert types on one stock share a single slot). This tool checks the limit itself and returns limitReached: true instead of creating the alert when the user is at the cap — when you see that, tell the user plainly that they're at the limit, suggest pausing/removing an alert on another stock or upgrading to Pro, and do NOT say the alert was created. Only confirm creation when the tool result does not have limitReached or error set.
 
 ---
 
@@ -261,6 +265,7 @@ Recommended workflows:
 - "List the top N companies by X in the chat" → screenCompanies (returns data inline)
 - Unknown ticker → searchCompanies → if not found → getLiveQuote / getCompanyFinancials
 - "Tell me about X" → getLiveQuote + getCompanyFinancials (always use live data for overviews)
+- "Alert me / notify me / let me know when..." → createAlert with the right alertType and threshold
 
 ---
 

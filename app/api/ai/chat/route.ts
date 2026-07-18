@@ -44,7 +44,7 @@ async function handler(
   const responseStyle = (body?.responseStyle as 'concise' | 'balanced' | 'detailed') ?? null;
 
   try {
-    const result = await runAgent(messages, context, experienceLevel, language, riskProfile, investmentHorizon, responseStyle);
+    const result = await runAgent(messages, context, experienceLevel, language, riskProfile, investmentHorizon, responseStyle, session.userId);
 
     // Log usage when stream finishes (non-blocking — response streams immediately).
     void result.usage.then((usage) => {
