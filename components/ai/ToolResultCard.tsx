@@ -6,6 +6,7 @@ import { KeyStatisticsResultCard, type KeyStatisticsOutput } from './cards/KeySt
 import { CompanyProfileResultCard, type CompanyProfileOutput } from './cards/CompanyProfileResultCard';
 import { CompanyFinancialsResultCard, type CompanyFinancialsRow } from './cards/CompanyFinancialsResultCard';
 import { EarningsResultCard, type EarningsRow } from './cards/EarningsResultCard';
+import { ScreenerResultCard, type ScreenerOutput } from './cards/ScreenerResultCard';
 
 /**
  * Dispatches a completed AI tool call to its matching visual card instead of
@@ -75,6 +76,11 @@ export function ToolResultCard({
     case 'getEarningsData': {
       if (!Array.isArray(output)) return null;
       return <EarningsResultCard output={output as EarningsRow[]} />;
+    }
+    case 'screenCompanies': {
+      const o = output as Partial<ScreenerOutput>;
+      if (!Array.isArray(o.companies)) return null;
+      return <ScreenerResultCard output={o as ScreenerOutput} />;
     }
     default:
       return null;
