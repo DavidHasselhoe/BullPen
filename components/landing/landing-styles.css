@@ -19,6 +19,10 @@
   --accent-soft: oklch(0.72 0.17 152 / 0.15);
   --accent-glow: oklch(0.72 0.17 152 / 0.35);
   --accent-ink: oklch(0.18 0.04 152);
+  /* Activity heatmap intensity tiers — same accent hue, ascending alpha */
+  --accent-heat-1: oklch(0.72 0.17 152 / 0.25);
+  --accent-heat-2: oklch(0.72 0.17 152 / 0.45);
+  --accent-heat-3: oklch(0.72 0.17 152 / 0.7);
 
   /* Semantic tickers */
   --up: oklch(0.72 0.17 152);
@@ -590,4 +594,123 @@
 .bullpen-landing-root .changelog-pill--fixed {
   color: var(--warn);
   background: var(--warn-soft);
+}
+
+/* ─── Changelog activity heatmap ────────────────────────────────────────── */
+.bullpen-landing-root .activity-heatmap {
+  max-width: 780px;
+  margin: 0 auto 56px;
+}
+
+.bullpen-landing-root .activity-heatmap-headline {
+  font-size: 14px;
+  color: var(--fg-muted);
+  margin-bottom: 14px;
+}
+
+.bullpen-landing-root .activity-heatmap-headline strong {
+  color: var(--fg);
+  font-weight: 600;
+}
+
+.bullpen-landing-root .activity-heatmap-scroll {
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.bullpen-landing-root .activity-heatmap-grid {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 100%;
+}
+
+.bullpen-landing-root .activity-heatmap-months {
+  display: flex;
+  gap: 3px;
+  padding-left: 28px;
+}
+
+.bullpen-landing-root .activity-heatmap-month {
+  width: 14px;
+  font-size: 11px;
+  color: var(--fg-dim);
+  flex-shrink: 0;
+}
+
+.bullpen-landing-root .activity-heatmap-body {
+  display: flex;
+  gap: 6px;
+}
+
+.bullpen-landing-root .activity-heatmap-daylabels {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 22px;
+  flex-shrink: 0;
+}
+
+.bullpen-landing-root .activity-heatmap-daylabel {
+  height: 11px;
+  font-size: 10px;
+  line-height: 11px;
+  color: var(--fg-dim);
+}
+
+.bullpen-landing-root .activity-heatmap-weeks {
+  display: flex;
+  gap: 3px;
+}
+
+.bullpen-landing-root .activity-heatmap-week {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.bullpen-landing-root .activity-heatmap-cell {
+  width: 11px;
+  height: 11px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.bullpen-landing-root .activity-heatmap-cell--pad {
+  background: transparent;
+}
+
+.bullpen-landing-root .activity-heatmap-cell--0 {
+  background: var(--border);
+}
+
+.bullpen-landing-root .activity-heatmap-cell--1 {
+  background: var(--accent-heat-1);
+}
+
+.bullpen-landing-root .activity-heatmap-cell--2 {
+  background: var(--accent-heat-2);
+}
+
+.bullpen-landing-root .activity-heatmap-cell--3 {
+  background: var(--accent-heat-3);
+}
+
+.bullpen-landing-root .activity-heatmap-cell--4 {
+  background: var(--accent);
+}
+
+.bullpen-landing-root .activity-heatmap-legend {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--fg-dim);
+}
+
+.bullpen-landing-root .activity-heatmap-legend .activity-heatmap-cell {
+  width: 10px;
+  height: 10px;
 }
