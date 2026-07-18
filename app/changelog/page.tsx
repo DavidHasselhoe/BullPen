@@ -4,6 +4,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Logo } from '@/components/landing/Atoms';
 import { Footer } from '@/components/landing/Footer';
+import { getCommitActivity } from '@/lib/github/commit-activity';
+import { ActivityHeatmap } from '@/components/changelog/ActivityHeatmap';
 import '@/components/landing/landing-styles.css';
 
 export const metadata: Metadata = {
@@ -44,8 +46,9 @@ function formatDate(isoDate: string): string {
   });
 }
 
-export default function ChangelogPage() {
+export default async function ChangelogPage() {
   const groups = readChangelog();
+  const activity = await getCommitActivity();
 
   return (
     <div className="bullpen-landing-root">
@@ -66,6 +69,8 @@ export default function ChangelogPage() {
           <p style={{ color: 'var(--fg-muted)', marginBottom: 48 }}>
             What&apos;s new, improved, and fixed in BullPen.
           </p>
+
+          {activity && <ActivityHeatmap data={activity} />}
 
           <div className="changelog-list">
             {groups.map((group) => (
