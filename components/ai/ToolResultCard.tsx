@@ -16,7 +16,33 @@ import { EarningsResultCard, type EarningsRow } from './cards/EarningsResultCard
  * Shared by BullpenChat and the in-chart AI assistant so tool results look
  * the same regardless of which surface the user is on.
  */
-export function ToolResultCard({ toolName, output }: { toolName: string; output: unknown }) {
+
+interface SiblingCall {
+  toolName: string;
+  output: unknown;
+}
+
+/** Finds a live price for `ticker` from a sibling getLiveQuote call in the same message, if any. */
+function resolveLivePrice(siblingCalls: SiblingCall[] | undefined, ticker: string | undefined): number | null {
+  if (!siblingCalls || !ticker) return null;
+  for (const call of siblingCalls) {
+    if (call.toolName !== 'getLiveQuote') continue;
+    const o = call.output as { ticker?: string; priceRaw?: number | null } | null;
+    if (o && o.ticker === ticker && typeof o.priceRaw === 'number') return o.priceRaw;
+  }
+  return null;
+}
+
+export function ToolResultCard({
+  toolName,
+  output,
+  siblingCalls,
+}: {
+  toolName: string;
+  output: unknown;
+  /** Every completed tool call in the same message — used for cross-call lookups. */
+  siblingCalls?: SiblingCall[];
+}) {
   if (!output || typeof output !== 'object') return null;
   if ('error' in (output as Record<string, unknown>)) return null;
 
@@ -32,9 +58,9 @@ export function ToolResultCard({ toolName, output }: { toolName: string; output:
       return <LiveQuoteResultCard output={o as LiveQuoteOutput} />;
     }
     case 'getKeyStatistics': {
-      const o = output as Partial<KeyStatisticsOutput>;
+      const o = output as Partial<KeyStatisticsOutput> & { ticker?: string };
       if (!o.marketCap) return null;
-      return <KeyStatisticsResultCard output={o as KeyStatisticsOutput} />;
+      return <KeyStatisticsResultCard output={o as KeyStatisticsOutput} livePrice={resolveLivePrice(siblingCalls, o.ticker)} />;
     }
     case 'getCompanyProfile':
     case 'getLiveCompanyProfile': {

@@ -9,6 +9,7 @@ export interface LiveQuoteOutput {
   price: string;
   change: string;
   changePercent: string;
+  priceRaw?: number | null;
   open?: string;
   high?: string;
   low?: string;
