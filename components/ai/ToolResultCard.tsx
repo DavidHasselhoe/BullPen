@@ -9,6 +9,8 @@ import { EarningsResultCard, type EarningsRow } from './cards/EarningsResultCard
 import { ScreenerResultCard, type ScreenerOutput } from './cards/ScreenerResultCard';
 import { CompanyMetricsResultCard, type CompanyMetricsOutput } from './cards/CompanyMetricsResultCard';
 import { InsiderActivityResultCard, type InsiderActivityOutput } from './cards/InsiderActivityResultCard';
+import { ActionReceiptCard, type ActionableClientAction } from './cards/ActionReceiptCard';
+import type { ClientAction, ActionOutcome } from '@/lib/ai/tool-ux';
 
 /**
  * Dispatches a completed AI tool call to its matching visual card instead of
@@ -40,12 +42,32 @@ export function ToolResultCard({
   toolName,
   output,
   siblingCalls,
+  clientAction,
+  actionOutcome,
+  isHistorical,
+  onRetryAction,
 }: {
   toolName: string;
   output: unknown;
   /** Every completed tool call in the same message — used for cross-call lookups. */
   siblingCalls?: SiblingCall[];
+  /** Present only when this call is a write-action (addHolding/updateHolding/removeHolding/createAlert/navigate). */
+  clientAction?: ClientAction;
+  actionOutcome?: ActionOutcome;
+  isHistorical?: boolean;
+  onRetryAction?: () => void;
 }) {
+  if (clientAction && clientAction.type !== 'navigate') {
+    return (
+      <ActionReceiptCard
+        action={clientAction as ActionableClientAction}
+        outcome={actionOutcome}
+        isHistorical={!!isHistorical}
+        onRetry={onRetryAction}
+      />
+    );
+  }
+
   if (!output || typeof output !== 'object') return null;
   if ('error' in (output as Record<string, unknown>)) return null;
 

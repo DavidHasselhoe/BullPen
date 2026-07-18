@@ -5,7 +5,7 @@ import { DefaultChatTransport } from 'ai';
 import type { UIMessage } from 'ai';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
-import { useEffect, useRef, useState, forwardRef, useImperativeHandle, memo } from 'react';
+import { useEffect, useRef, useState, useCallback, forwardRef, useImperativeHandle, memo } from 'react';
 import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -23,7 +23,7 @@ import { useInvalidateQuota } from '@/hooks/use-quota';
 import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import { ToolResultCard } from '@/components/ai/ToolResultCard';
 import { BullAiIcon } from '@/components/ai/BullAiIcon';
-import { getActiveToolName, getToolStatusLabel, getCompletedToolCalls, getFollowups, extractTickers, type ClientAction } from '@/lib/ai/tool-ux';
+import { getActiveToolName, getToolStatusLabel, getCompletedToolCalls, getFollowups, extractTickers, type ClientAction, type ActionOutcome } from '@/lib/ai/tool-ux';
 
 const DEFAULT_STARTER_PROMPTS = [
   'What is EBITDA?',
@@ -182,6 +182,10 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
   // history (AISidePanel) pass conversationId explicitly and remount via `key`.
   const [ownConversationId] = useState(() => conversationId ?? crypto.randomUUID());
   const activeConversationId = conversationId ?? ownConversationId;
+  const [actionOutcomes, setActionOutcomes] = useState<Record<string, ActionOutcome>>({});
+  // Message ids present when this chat mounted (i.e. loaded from a saved conversation) —
+  // anything appended afterward is "live" and gets real pending/success/error tracking.
+  const [historicalMessageIds] = useState(() => new Set((initialMessages ?? []).map((m) => m.id)));
 
   useImperativeHandle(ref, () => ({
     focusInput: () => textareaRef.current?.focus(),
@@ -192,6 +196,58 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
   // e.g. opening the widget from Discover or Holdings right after asking the
   // chart assistant about a company.
   const effectiveContext = aiContext ?? (lastTicker ? { tickers: [lastTicker], label: `${lastTicker} (previously discussed)` } : undefined);
+
+  const runClientAction = useCallback(
+    async (action: ClientAction, key: string) => {
+      if (action.type === 'navigate') {
+        if (action.path) router.push(action.path);
+        return;
+      }
+
+      setActionOutcomes((prev) => ({ ...prev, [key]: { status: 'pending' } }));
+
+      try {
+        if (action.type === 'addHolding') {
+          await addHoldingMutation.mutateAsync({
+            symbol: action.ticker,
+            company_name: action.company_name,
+            quantity: action.quantity ?? null,
+            avg_price: action.avg_price ?? null,
+            date_purchased: action.date_purchased ?? null,
+          });
+          setActionOutcomes((prev) => ({ ...prev, [key]: { status: 'success' } }));
+        } else if (action.type === 'updateHolding') {
+          await updateHoldingMutation.mutateAsync({
+            symbol: action.ticker,
+            quantity: action.quantity ?? undefined,
+            avg_price: action.avg_price ?? undefined,
+          });
+          setActionOutcomes((prev) => ({ ...prev, [key]: { status: 'success' } }));
+        } else if (action.type === 'removeHolding') {
+          await removeHoldingMutation.mutateAsync(action.ticker);
+          setActionOutcomes((prev) => ({ ...prev, [key]: { status: 'success' } }));
+        } else if (action.type === 'createAlert') {
+          const result = await createAlert({
+            symbol: action.ticker,
+            companyName: action.companyName,
+            alertType: action.alertType,
+            threshold: action.threshold,
+          });
+          if (result.ok) {
+            setActionOutcomes((prev) => ({ ...prev, [key]: { status: 'success' } }));
+          } else {
+            setActionOutcomes((prev) => ({ ...prev, [key]: { status: 'error', message: result.error } }));
+          }
+        }
+      } catch (err) {
+        setActionOutcomes((prev) => ({
+          ...prev,
+          [key]: { status: 'error', message: err instanceof Error ? err.message : 'Something went wrong.' },
+        }));
+      }
+    },
+    [router, addHoldingMutation, updateHoldingMutation, removeHoldingMutation, createAlert]
+  );
 
   const {
     messages,
@@ -235,57 +291,11 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
       invalidateQuota('chat');
       const tickers = extractTickers(message);
       if (tickers.length) noteTicker(tickers[tickers.length - 1]);
-      for (const call of getCompletedToolCalls(message)) {
-        const action: ClientAction | undefined = call.clientAction;
-        if (!action) continue;
-        if (action.type === 'navigate' && action.path) {
-          router.push(action.path);
-        } else if (action.type === 'addHolding') {
-          try {
-            await addHoldingMutation.mutateAsync({
-              symbol: action.ticker,
-              company_name: action.company_name,
-              quantity: action.quantity ?? null,
-              avg_price: action.avg_price ?? null,
-              date_purchased: action.date_purchased ?? null,
-            });
-          } catch {
-            // Silently skip — user may not be logged in or holding already exists
-          }
-        } else if (action.type === 'updateHolding') {
-          try {
-            await updateHoldingMutation.mutateAsync({
-              symbol: action.ticker,
-              quantity: action.quantity ?? undefined,
-              avg_price: action.avg_price ?? undefined,
-            });
-          } catch {
-            // Silently skip — holding may not exist
-          }
-        } else if (action.type === 'removeHolding') {
-          try {
-            await removeHoldingMutation.mutateAsync(action.ticker);
-          } catch {
-            // Silently skip — holding may not exist
-          }
-        } else if (action.type === 'createAlert') {
-          // The createAlert tool already re-checked the free-tier limit
-          // server-side before returning this action, so failure here should
-          // be rare (e.g. a race with another tab) — silently skip, matching
-          // the holding actions above, rather than surfacing a second error
-          // path on top of what the assistant's text already said.
-          try {
-            await createAlert({
-              symbol: action.ticker,
-              companyName: action.companyName,
-              alertType: action.alertType,
-              threshold: action.threshold,
-            });
-          } catch {
-            // Silently skip
-          }
+      getCompletedToolCalls(message).forEach((call, i) => {
+        if (call.clientAction) {
+          void runClientAction(call.clientAction, `${message.id}::${i}`);
         }
-      }
+      });
     },
   });
 
@@ -480,14 +490,21 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
                   </div>
                 ) : (
                   <>
-                    {getCompletedToolCalls(message).map((call, i) => (
-                      <ToolResultCard
-                        key={`${message.id}-tool-${i}`}
-                        toolName={call.toolName}
-                        output={call.output}
-                        siblingCalls={getCompletedToolCalls(message)}
-                      />
-                    ))}
+                    {getCompletedToolCalls(message).map((call, i) => {
+                      const actionKey = `${message.id}::${i}`;
+                      return (
+                        <ToolResultCard
+                          key={`${message.id}-tool-${i}`}
+                          toolName={call.toolName}
+                          output={call.output}
+                          siblingCalls={getCompletedToolCalls(message)}
+                          clientAction={call.clientAction}
+                          actionOutcome={call.clientAction ? actionOutcomes[actionKey] : undefined}
+                          isHistorical={historicalMessageIds.has(message.id)}
+                          onRetryAction={call.clientAction ? () => runClientAction(call.clientAction!, actionKey) : undefined}
+                        />
+                      );
+                    })}
                     <AssistantMessageContent
                       text={message.parts
                         .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
