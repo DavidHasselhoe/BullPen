@@ -490,21 +490,24 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
                   </div>
                 ) : (
                   <>
-                    {getCompletedToolCalls(message).map((call, i) => {
-                      const actionKey = `${message.id}::${i}`;
-                      return (
-                        <ToolResultCard
-                          key={`${message.id}-tool-${i}`}
-                          toolName={call.toolName}
-                          output={call.output}
-                          siblingCalls={getCompletedToolCalls(message)}
-                          clientAction={call.clientAction}
-                          actionOutcome={call.clientAction ? actionOutcomes[actionKey] : undefined}
-                          isHistorical={historicalMessageIds.has(message.id)}
-                          onRetryAction={call.clientAction ? () => runClientAction(call.clientAction!, actionKey) : undefined}
-                        />
-                      );
-                    })}
+                    {(() => {
+                      const toolCalls = getCompletedToolCalls(message);
+                      return toolCalls.map((call, i) => {
+                        const actionKey = `${message.id}::${i}`;
+                        return (
+                          <ToolResultCard
+                            key={`${message.id}-tool-${i}`}
+                            toolName={call.toolName}
+                            output={call.output}
+                            siblingCalls={toolCalls}
+                            clientAction={call.clientAction}
+                            actionOutcome={call.clientAction ? actionOutcomes[actionKey] : undefined}
+                            isHistorical={historicalMessageIds.has(message.id)}
+                            onRetryAction={call.clientAction ? () => runClientAction(call.clientAction!, actionKey) : undefined}
+                          />
+                        );
+                      });
+                    })()}
                     <AssistantMessageContent
                       text={message.parts
                         .filter((p): p is { type: 'text'; text: string } => p.type === 'text')

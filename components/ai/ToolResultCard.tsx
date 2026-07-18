@@ -9,7 +9,7 @@ import { EarningsResultCard, type EarningsRow } from './cards/EarningsResultCard
 import { ScreenerResultCard, type ScreenerOutput } from './cards/ScreenerResultCard';
 import { CompanyMetricsResultCard, type CompanyMetricsOutput } from './cards/CompanyMetricsResultCard';
 import { InsiderActivityResultCard, type InsiderActivityOutput } from './cards/InsiderActivityResultCard';
-import { ActionReceiptCard, type ActionableClientAction } from './cards/ActionReceiptCard';
+import { ActionReceiptCard } from './cards/ActionReceiptCard';
 import type { ClientAction, ActionOutcome } from '@/lib/ai/tool-ux';
 
 /**
@@ -60,7 +60,7 @@ export function ToolResultCard({
   if (clientAction && clientAction.type !== 'navigate') {
     return (
       <ActionReceiptCard
-        action={clientAction as ActionableClientAction}
+        action={clientAction}
         outcome={actionOutcome}
         isHistorical={!!isHistorical}
         onRetry={onRetryAction}
