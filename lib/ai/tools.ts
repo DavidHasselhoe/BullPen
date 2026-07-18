@@ -967,6 +967,8 @@ const getEarningsData = tool({
           period: e.period,
           epsActual: e.actual?.toFixed(2) ?? 'N/A',
           epsEstimate: e.estimate?.toFixed(2) ?? 'N/A',
+          epsActualRaw: e.actual ?? null,
+          epsEstimateRaw: e.estimate ?? null,
           result: beat,
           surprise: e.surprisePercent != null ? `${e.surprisePercent > 0 ? '+' : ''}${e.surprisePercent.toFixed(1)}%` : 'N/A',
         };
