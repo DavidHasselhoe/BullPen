@@ -16,7 +16,6 @@ import { cn } from '@/lib/utils';
 import type { AuthUser } from '@/lib/auth/auth';
 import type { QuotaState } from '@/lib/billing/quotas';
 import { useAddOrUpdateHolding, useUpdateHoldingBySymbol, useRemoveHoldingBySymbol } from '@/hooks/use-holdings';
-import { useAlerts } from '@/hooks/use-alerts';
 import { QuotaIndicator } from '@/components/billing/QuotaIndicator';
 import { AiPaywallDialog } from '@/components/billing/AiPaywallDialog';
 import { useInvalidateQuota } from '@/hooks/use-quota';
@@ -24,7 +23,6 @@ import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import { ToolResultCard } from '@/components/ai/ToolResultCard';
 import { BullAiIcon } from '@/components/ai/BullAiIcon';
 import { getActiveToolName, getToolStatusLabel, getCompletedToolCalls, getFollowups, extractTickers } from '@/lib/ai/tool-ux';
-import type { AlertType } from '@/types/alerts';
 
 const DEFAULT_STARTER_PROMPTS = [
   'What is EBITDA?',
@@ -68,8 +66,7 @@ type ClientAction =
   | { type: 'navigate'; path: string }
   | { type: 'addHolding'; ticker: string; company_name: string; quantity?: number | null; avg_price?: number | null; date_purchased?: string | null }
   | { type: 'updateHolding'; ticker: string; quantity?: number | null; avg_price?: number | null }
-  | { type: 'removeHolding'; ticker: string }
-  | { type: 'createAlert'; ticker: string; companyName: string; alertType: AlertType; threshold: number };
+  | { type: 'removeHolding'; ticker: string };
 
 function extractClientActions(message: { parts?: Array<{ type?: string; state?: string; output?: unknown; result?: unknown }> }): ClientAction[] {
   const actions: ClientAction[] = [];
@@ -193,7 +190,6 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
   const addHoldingMutation = useAddOrUpdateHolding();
   const updateHoldingMutation = useUpdateHoldingBySymbol();
   const removeHoldingMutation = useRemoveHoldingBySymbol();
-  const { create: createAlert } = useAlerts();
   const invalidateQuota = useInvalidateQuota();
   const { lastTicker, noteTicker } = useAIPanel();
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -288,22 +284,6 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
             await removeHoldingMutation.mutateAsync(action.ticker);
           } catch {
             // Silently skip — holding may not exist
-          }
-        } else if (action.type === 'createAlert') {
-          // The createAlert tool already re-checked the free-tier limit
-          // server-side before returning this action, so failure here should
-          // be rare (e.g. a race with another tab) — silently skip, matching
-          // the holding actions above, rather than surfacing a second error
-          // path on top of what the assistant's text already said.
-          try {
-            await createAlert({
-              symbol: action.ticker,
-              companyName: action.companyName,
-              alertType: action.alertType,
-              threshold: action.threshold,
-            });
-          } catch {
-            // Silently skip
           }
         }
       }
