@@ -28,7 +28,7 @@ import { getActiveToolName, getToolStatusLabel, getCompletedToolCalls, getFollow
 const DEFAULT_STARTER_PROMPTS = [
   'How healthy is AAPL financially?',
   'Any insider buying in NVDA lately?',
-  'Companies with accelerating revenue',
+  'Find me some growth stocks',
 ];
 
 export interface AIContextProp {

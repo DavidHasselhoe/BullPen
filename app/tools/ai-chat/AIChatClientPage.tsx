@@ -10,7 +10,7 @@ const STARTER_PROMPTS = [
   'Add 10 shares of AAPL to my holdings',
   'Any insider buying in NVDA lately?',
   'How healthy is AAPL financially?',
-  'Compare NVIDIA and AMD',
+  "Show me AAPL's recent earnings",
 ];
 
 export default function AIChatClientPage() {

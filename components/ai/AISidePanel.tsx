@@ -39,8 +39,8 @@ const STARTER_PROMPTS = [
   'Alert me if TSLA drops below $200',
   'Any insider buying in NVDA lately?',
   'How healthy is AAPL financially?',
-  'Companies with accelerating revenue',
-  'Compare NVIDIA and AMD',
+  'Find me some growth stocks',
+  "Show me AAPL's recent earnings",
 ];
 
 const PANEL_WIDTH = 480;
