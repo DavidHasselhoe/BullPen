@@ -26,9 +26,9 @@ import { BullAiIcon } from '@/components/ai/BullAiIcon';
 import { getActiveToolName, getToolStatusLabel, getCompletedToolCalls, getFollowups, extractTickers, type ClientAction, type ActionOutcome } from '@/lib/ai/tool-ux';
 
 const DEFAULT_STARTER_PROMPTS = [
-  'What is EBITDA?',
-  'Explain P/E ratio',
-  'What are 10-K filings?',
+  'How healthy is AAPL financially?',
+  'Any insider buying in NVDA lately?',
+  'Companies with accelerating revenue',
 ];
 
 export interface AIContextProp {
@@ -427,7 +427,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
               <p className="text-xs text-muted-foreground max-w-[260px] leading-relaxed">
                 {aiContext?.label
                   ? `Your personal research assistant. Ask me anything about ${aiContext.label}.`
-                  : 'Your personal research assistant — ask about filings, financial metrics, or any stock you’re watching.'}
+                  : 'Your personal research assistant — research any stock, manage your holdings, or set price alerts, all from chat.'}
               </p>
             </div>
             <motion.div

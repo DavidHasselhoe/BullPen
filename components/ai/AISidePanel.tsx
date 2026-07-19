@@ -35,12 +35,12 @@ interface AISidePanelProps {
 }
 
 const STARTER_PROMPTS = [
-  'What is EBITDA?',
-  'Explain the P/E ratio',
-  'What are 10-K filings?',
-  'Compare NVIDIA and AMD',
-  'Open NVIDIA filings',
+  'Add 10 shares of AAPL to my holdings',
+  'Alert me if TSLA drops below $200',
+  'Any insider buying in NVDA lately?',
+  'How healthy is AAPL financially?',
   'Companies with accelerating revenue',
+  'Compare NVIDIA and AMD',
 ];
 
 const PANEL_WIDTH = 480;

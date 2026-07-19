@@ -7,9 +7,9 @@ import { useAuth } from '@/hooks/use-auth';
 import { useAiTerms } from '@/hooks/use-ai-terms';
 
 const STARTER_PROMPTS = [
-  'What is EBITDA?',
-  'Explain the P/E ratio',
-  'What are 10-K filings?',
+  'Add 10 shares of AAPL to my holdings',
+  'Any insider buying in NVDA lately?',
+  'How healthy is AAPL financially?',
   'Compare NVIDIA and AMD',
 ];
 
