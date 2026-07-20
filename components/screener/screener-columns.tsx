@@ -102,29 +102,51 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
   },
 
   // ── Price ──
+  // Falls back to the last quoted price/change (`row.last_price`/`last_change_pct`,
+  // hydrated server-side in /api/screener) whenever the live SSE stream has no
+  // tick yet — market closed, or between sessions before pre-market data arrives.
+  // Rendered dimmed with a tooltip so it reads as "last close", not live.
   {
     key: 'price',
     label: 'Price',
-    tip: 'Live price',
+    tip: 'Live price (last close when the market is closed)',
     group: 'price',
     defaultVisible: true,
     width: 92,
-    getValue: (_r, live) => live?.price ?? null,
-    render: (_r, live) => (live ? fmtPrice(live.price) : '—'),
+    getValue: (row, live) => live?.price ?? row.last_price ?? null,
+    render: (row, live) => {
+      if (live) return fmtPrice(live.price);
+      if (row.last_price != null) {
+        return (
+          <span className="text-muted-foreground/70" title="Last close — live price unavailable until the market reopens">
+            {fmtPrice(row.last_price)}
+          </span>
+        );
+      }
+      return '—';
+    },
   },
   {
     key: 'change_pct',
     label: '% Chg',
-    tip: 'Day change %',
+    tip: "Day change % (previous trading day's when the market is closed)",
     group: 'price',
     defaultVisible: true,
     width: 84,
-    getValue: (_r, live) => live?.changePercent ?? null,
-    render: (_r, live) => {
-      if (!live) return '—';
-      const pct = live.changePercent ?? 0;
+    getValue: (row, live) => live?.changePercent ?? row.last_change_pct ?? null,
+    render: (row, live) => {
+      const pct = live?.changePercent ?? row.last_change_pct;
+      if (pct == null) return '—';
+      const isLive = !!live;
       return (
-        <span className={cn(pct > 0 && 'text-emerald-500', pct < 0 && 'text-red-500')}>
+        <span
+          className={cn(
+            'tabular-nums',
+            pct > 0 && (isLive ? 'text-emerald-500' : 'text-emerald-500/60'),
+            pct < 0 && (isLive ? 'text-red-500' : 'text-red-500/60'),
+          )}
+          title={isLive ? undefined : 'At last close — live price unavailable until the market reopens'}
+        >
           {pct > 0 ? '+' : ''}{pct.toFixed(2)}%
         </span>
       );
