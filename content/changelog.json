@@ -7,7 +7,16 @@
       { "type": "improved", "text": "The Financial Health gauge is now easier to read — each category is colour-keyed to its slice of the ring and you can hover any category name for a plain explanation" },
       { "type": "improved", "text": "Crypto and commodity pages now show the same visual stats as stocks, including a 24-hour range bar and plain-language takeaways" },
       { "type": "new", "text": "New to BullPen? A getting-started card now greets brand-new accounts with a few first steps, and disappears on its own once you get going" },
-      { "type": "improved", "text": "The Daily Brief now shows a mini price trend next to each featured stock" }
+      { "type": "improved", "text": "The Daily Brief now shows a mini price trend next to each featured stock" },
+      { "type": "improved", "text": "Financials charts (Income Statement, Balance Sheet, and Cash Flow) are now colour-coded and animate in — the Balance Sheet shows what a company owns versus what it owes at a glance" },
+      { "type": "improved", "text": "The stock price chart is clearer and more accurate, and its indicator legend now shows a live value for each line as you move across the chart" },
+      { "type": "improved", "text": "The screener now falls back to the last known price when the market is closed, instead of showing blanks" },
+      { "type": "improved", "text": "Refreshed Ask Bull's starter prompts to show what it can really do — add a holding, set an alert, check insider activity — and removed ones that led to a broken tool" },
+      { "type": "improved", "text": "The Community page now features an Academy XP leaderboard" },
+      { "type": "fixed", "text": "Fixed the Compare tool, and Ask Bull's company-metrics and company-comparison answers, which had stopped working after an underlying data source was retired" },
+      { "type": "fixed", "text": "Fixed the activity heatmap's month labels drifting out of line with their columns, which could make a month look empty" },
+      { "type": "fixed", "text": "Fixed the stock chart briefly looking empty at the very start of the trading day, before the first prices of the day come in" },
+      { "type": "fixed", "text": "Fixed profile picture uploads failing to save" }
     ]
   },
   {
