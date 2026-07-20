@@ -472,7 +472,7 @@ export function FinancialsSection({ ticker }: { ticker: string }) {
           secondaryLabel="Net Income"
           question="Is the company growing — and keeping profit?"
           format={fmtNum}
-          signColorSecondary
+          colorMode="signSecondary"
         />
       );
     } else if (activeTab === 'balance') {
@@ -483,6 +483,7 @@ export function FinancialsSection({ ticker }: { ticker: string }) {
           secondaryLabel="Liabilities"
           question="Does it own more than it owes?"
           format={fmtNum}
+          colorMode="ownVsOwe"
         />
       );
     } else if (activeTab === 'cashflow') {
@@ -493,7 +494,7 @@ export function FinancialsSection({ ticker }: { ticker: string }) {
           secondaryLabel="Free Cash Flow"
           question="Is real cash coming in?"
           format={fmtNum}
-          signColorSecondary
+          colorMode="signSecondary"
         />
       );
     } else if (activeTab === 'dividends') {

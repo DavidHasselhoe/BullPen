@@ -4,11 +4,10 @@
  * FinancialsTrendChart — the chart-first lead for the Financials section.
  *
  * One paired-bar chart per statement tab, answering a single question
- * (captioned) with up to 5 periods, oldest → newest. Secondary series can be
- * sign-colored (net income / FCF: emerald when positive, red when negative,
- * always alongside the tabular numbers in the table below).
+ * (captioned) with up to 5 periods, oldest → newest.
  */
 
+import { useEffect, useState } from 'react';
 import { BarChart, Bar, XAxis, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 const EMERALD = '#10b981';
@@ -20,6 +19,15 @@ export interface TrendPoint {
   secondary?: number | null;
 }
 
+type ColorMode =
+  /** Both series neutral grayscale — the default when neither series has an inherent signal. */
+  | 'neutral'
+  /** Primary stays neutral; secondary is colored per-period by its own sign (profit/loss, net cash flow). */
+  | 'signSecondary'
+  /** Both series colored as a fixed pair — primary = what's owned/coming in (emerald), secondary = what's
+   *  owed/going out (red). Not a per-period sign flip like signSecondary; a standing own-vs-owe contrast. */
+  | 'ownVsOwe';
+
 interface FinancialsTrendChartProps {
   /** Oldest → newest. */
   points: TrendPoint[];
@@ -28,8 +36,7 @@ interface FinancialsTrendChartProps {
   /** The beginner question this chart answers, e.g. "Is the company growing — and keeping profit?" */
   question: string;
   format: (v: number) => string;
-  /** Color the secondary bars by sign (profit/loss). Default false → neutral. */
-  signColorSecondary?: boolean;
+  colorMode?: ColorMode;
 }
 
 export function FinancialsTrendChart({
@@ -38,10 +45,27 @@ export function FinancialsTrendChart({
   secondaryLabel,
   question,
   format,
-  signColorSecondary = false,
+  colorMode = 'neutral',
 }: FinancialsTrendChartProps) {
   const hasData = points.some((p) => p.primary != null || p.secondary != null);
+  const [reducedMotion, setReducedMotion] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const handler = () => setReducedMotion(mq.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
   if (!hasData) return null;
+
+  const primaryColor = colorMode === 'ownVsOwe' ? EMERALD : 'var(--foreground)';
+  const primaryOpacity = colorMode === 'ownVsOwe' ? 0.7 : 0.45;
+  const secondarySwatchColor =
+    colorMode === 'ownVsOwe' ? RED : colorMode === 'signSecondary' ? EMERALD : 'var(--muted-foreground)';
+  const animation = { isAnimationActive: !reducedMotion, animationDuration: 450, animationEasing: 'ease-out' as const };
 
   return (
     <div className="mb-5" role="img" aria-label={`${question} Chart of ${primaryLabel}${secondaryLabel ? ` and ${secondaryLabel}` : ''} across ${points.length} periods.`}>
@@ -49,16 +73,12 @@ export function FinancialsTrendChart({
         <p className="text-sm font-medium text-foreground/80">{question}</p>
         <div className="flex items-center gap-4 text-xs text-muted-foreground">
           <span className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-[2px] bg-foreground/45" aria-hidden />
+            <span className="h-2 w-2 rounded-[2px]" style={{ backgroundColor: primaryColor, opacity: primaryOpacity }} aria-hidden />
             {primaryLabel}
           </span>
           {secondaryLabel && (
             <span className="flex items-center gap-1.5">
-              <span
-                className="h-2 w-2 rounded-[2px]"
-                style={{ backgroundColor: signColorSecondary ? EMERALD : 'var(--muted-foreground)' }}
-                aria-hidden
-              />
+              <span className="h-2 w-2 rounded-[2px]" style={{ backgroundColor: secondarySwatchColor }} aria-hidden />
               {secondaryLabel}
             </span>
           )}
@@ -84,20 +104,33 @@ export function FinancialsTrendChart({
               }}
               formatter={(value: number | string, name: string) => [format(Number(value)), name]}
             />
-            <Bar dataKey="primary" name={primaryLabel} fill="var(--foreground)" fillOpacity={0.45} radius={[3, 3, 0, 0]} isAnimationActive={false} />
+            <Bar
+              dataKey="primary"
+              name={primaryLabel}
+              fill={primaryColor}
+              fillOpacity={primaryOpacity}
+              radius={[3, 3, 0, 0]}
+              activeBar={{ fillOpacity: Math.min(1, primaryOpacity + 0.3) }}
+              {...animation}
+            />
             {secondaryLabel && (
-              <Bar dataKey="secondary" name={secondaryLabel} radius={[3, 3, 0, 0]} isAnimationActive={false}>
-                {points.map((p, i) => (
-                  <Cell
-                    key={i}
-                    fill={
-                      signColorSecondary
-                        ? (p.secondary ?? 0) < 0 ? RED : EMERALD
-                        : 'var(--muted-foreground)'
-                    }
-                    fillOpacity={signColorSecondary ? 0.85 : 0.5}
-                  />
-                ))}
+              <Bar
+                dataKey="secondary"
+                name={secondaryLabel}
+                radius={[3, 3, 0, 0]}
+                activeBar={{ fillOpacity: 1 }}
+                {...animation}
+              >
+                {points.map((p, i) => {
+                  const fill =
+                    colorMode === 'signSecondary'
+                      ? (p.secondary ?? 0) < 0 ? RED : EMERALD
+                      : colorMode === 'ownVsOwe'
+                        ? RED
+                        : 'var(--muted-foreground)';
+                  const fillOpacity = colorMode === 'neutral' ? 0.5 : colorMode === 'ownVsOwe' ? 0.7 : 0.85;
+                  return <Cell key={i} fill={fill} fillOpacity={fillOpacity} />;
+                })}
               </Bar>
             )}
           </BarChart>
