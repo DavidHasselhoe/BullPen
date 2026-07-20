@@ -112,6 +112,11 @@ export function AdvancedChart({
   const lastFitKey = useRef<string>('');
   const dragRef = useRef<{ x: number; y: number } | null>(null);
   const [measureBox, setMeasureBox] = useState<MeasureBox | null>(null);
+  // Per-line series lookup for the hover legend — keyed by `${instanceId}-${lineKey}`
+  // so a multi-line indicator (BB, MACD) gets one value per line, not one per instance.
+  const lineSeriesRef = useRef<Map<string, ISeriesApi<SeriesType>>>(new Map());
+  const lineValueElsRef = useRef<Map<string, HTMLSpanElement>>(new Map());
+  const [legendLines, setLegendLines] = useState<{ id: string; lineKey: string; label: string; color: string }[]>([]);
 
   // ── Create chart once ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -156,6 +161,7 @@ export function AdvancedChart({
     }
     seriesRef.current = [];
     priceSeriesRef.current = null;
+    lineSeriesRef.current.clear();
 
     // ── Price series ──
     let priceSeries: ISeriesApi<SeriesType>;
@@ -216,6 +222,7 @@ export function AdvancedChart({
     // ── Indicators ──
     let nextPane = 1; // pane 0 is price; oscillators get their own panes
     const smaOutputs: { period: number; values: (number | null)[] }[] = [];
+    const newLegendLines: { id: string; lineKey: string; label: string; color: string }[] = [];
     for (const inst of indicators) {
       const def = getIndicatorDef(inst.type);
       if (!def) continue;
@@ -238,6 +245,7 @@ export function AdvancedChart({
           .filter((d) => d.value != null) as { time: UTCTimestamp; value: number }[];
         if (!data.length) continue;
         const color = line.primary && inst.color ? inst.color : line.color;
+        const rowKey = `${inst.id}-${line.key}`;
 
         if (line.histogram) {
           const hist = chart.addSeries(HistogramSeries, {
@@ -245,6 +253,7 @@ export function AdvancedChart({
           }, paneIndex);
           hist.setData(data.map((d) => ({ ...d, color: d.value >= 0 ? `${UP}99` : `${DOWN}99` })));
           seriesRef.current.push(hist);
+          lineSeriesRef.current.set(rowKey, hist);
           refTarget ??= hist;
         } else {
           const ls = chart.addSeries(LineSeries, {
@@ -253,12 +262,18 @@ export function AdvancedChart({
             lineStyle: line.dashed ? LineStyle.Dashed : LineStyle.Solid,
             priceLineVisible: false,
             lastValueVisible: false,
-            crosshairMarkerVisible: def.group === 'oscillator',
+            // A hover dot on every indicator line (not just oscillators) — the
+            // same "here's exactly where this line is" affordance the price
+            // series already has, now consistent across all of them.
+            crosshairMarkerVisible: true,
           }, paneIndex);
           ls.setData(data);
           seriesRef.current.push(ls);
+          lineSeriesRef.current.set(rowKey, ls);
           refTarget ??= ls;
         }
+        const rowLabel = def.lines.length > 1 ? `${indicatorLabel(inst)} ${line.label}` : indicatorLabel(inst);
+        newLegendLines.push({ id: inst.id, lineKey: line.key, label: rowLabel, color });
       }
 
       if (refTarget && def.refLines) {
@@ -308,6 +323,8 @@ export function AdvancedChart({
       chart.timeScale().fitContent();
       lastFitKey.current = fitKey;
     }
+
+    setLegendLines(newLegendLines);
   }, [candles, points, chartType, indicators, showVolume, fitKey, events]);
 
   // ── Live last-bar update (intraday) ─────────────────────────────────────────
@@ -342,14 +359,22 @@ export function AdvancedChart({
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  // ── Crosshair OHLC legend (written imperatively to avoid re-renders) ─────────
+  // ── Crosshair OHLC + indicator-value legend (written imperatively to avoid
+  //    re-renders — this fires on every pixel of mouse movement) ─────────────
   useEffect(() => {
     const chart = chartRef.current;
     const legend = legendRef.current;
     if (!chart || !legend) return;
+    const clearIndicatorValues = () => {
+      for (const el of lineValueElsRef.current.values()) el.textContent = '';
+    };
     const handler = (param: Parameters<Parameters<IChartApi['subscribeCrosshairMove']>[0]>[0]) => {
       const ps = priceSeriesRef.current;
-      if (!ps || !param.time || !param.seriesData.has(ps)) { legend.textContent = ''; return; }
+      if (!ps || !param.time || !param.seriesData.has(ps)) {
+        legend.textContent = '';
+        clearIndicatorValues();
+        return;
+      }
       const d = param.seriesData.get(ps) as { open?: number; high?: number; low?: number; close?: number; value?: number };
       if (d.open != null && d.close != null) {
         const up = d.close >= d.open;
@@ -361,6 +386,13 @@ export function AdvancedChart({
       } else if (d.value != null) {
         legend.innerHTML = `<span class="text-muted-foreground">Price</span> ${d.value.toFixed(2)}`;
       }
+
+      for (const [key, series] of lineSeriesRef.current.entries()) {
+        const el = lineValueElsRef.current.get(key);
+        if (!el) continue;
+        const ld = param.seriesData.get(series) as { value?: number } | undefined;
+        el.textContent = ld?.value != null ? ld.value.toFixed(2) : '';
+      }
     };
     chart.subscribeCrosshairMove(handler);
     return () => chart.unsubscribeCrosshairMove(handler);
@@ -370,12 +402,6 @@ export function AdvancedChart({
   useEffect(() => {
     if (tool !== 'measure') { setMeasureBox(null); dragRef.current = null; }
   }, [tool]);
-
-  const indicatorLegend = indicators.map((inst) => {
-    const def = getIndicatorDef(inst.type);
-    const color = inst.color ?? def?.lines.find((l) => l.primary)?.color ?? def?.lines[0]?.color ?? '#888';
-    return { id: inst.id, label: indicatorLabel(inst), color };
-  });
 
   // ── Interaction overlay (measure + alert) ──────────────────────────────────
   function localXY(e: { clientX: number; clientY: number }) {
@@ -433,17 +459,30 @@ export function AdvancedChart({
     <div className="relative h-full w-full">
       <div ref={containerRef} className="h-full w-full" />
 
-      {/* Crosshair OHLC + indicator legend */}
-      <div className="pointer-events-none absolute left-3 top-2 z-10 space-y-1">
+      {/* Crosshair OHLC + indicator legend — indicator rows carry a value span
+          that's blank at rest and filled in imperatively on crosshair move
+          (see the subscribeCrosshairMove effect), same pattern as the OHLC
+          line above it so hovering never triggers a React re-render. */}
+      <div className="pointer-events-none absolute left-3 top-2 z-10 min-w-[132px] space-y-1">
         <div ref={legendRef} className="text-xs font-medium tabular-nums text-foreground/90" />
-        {indicatorLegend.length > 0 && (
+        {legendLines.length > 0 && (
           <div className="flex flex-col gap-0.5">
-            {indicatorLegend.map((l) => (
-              <span key={l.id} className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
-                <span className="h-1.5 w-1.5 rounded-full" style={{ background: l.color }} />
-                {l.label}
-              </span>
-            ))}
+            {legendLines.map((l) => {
+              const rowKey = `${l.id}-${l.lineKey}`;
+              return (
+                <span key={rowKey} className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+                  <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: l.color }} />
+                  <span className="truncate">{l.label}</span>
+                  <span
+                    ref={(el) => {
+                      if (el) lineValueElsRef.current.set(rowKey, el);
+                      else lineValueElsRef.current.delete(rowKey);
+                    }}
+                    className="ml-auto shrink-0 tabular-nums text-foreground/80"
+                  />
+                </span>
+              );
+            })}
           </div>
         )}
       </div>
