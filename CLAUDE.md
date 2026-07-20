@@ -46,22 +46,35 @@ Never create feature branches. Work directly on `preview`.
 
 When the user says **"end session"**, run this sequence in order. Stop and report if any step fails.
 
-**1. Lint check**
+**1. Check for uncommitted changes from *any* session**
+```bash
+git status --short
+```
+This step exists because "always commit and push as you go" only holds within a session that reaches its own end — a session that's interrupted, crashes, or is closed early can leave real, finished work sitting uncommitted, and nothing about `git log origin/main..origin/preview` (step 3) ever looks at the working tree, so it stays invisible to every later "end session" run until someone thinks to check.
+
+If `git status --short` is empty, skip to step 2. Otherwise, inspect every changed/untracked file (`git diff` per file, not just the stat line) and sort into:
+- **Real, coherent, finished-looking work** (has a clear purpose, no `TODO`/debug leftovers, reads as complete) — stage and commit each distinct piece of work as its own commit with a real description, same as any other commit in this repo. Don't lump unrelated features into one commit just because they were discovered together.
+- **Ambiguous or partial work** — surface it to the user with a summary of what it looks like; don't guess at intent or silently commit something that might be mid-edit.
+- **Stray files** (unreferenced assets, tool-cache directories, anything that doesn't look like it belongs in the repo) — do not commit. Flag them and ask before doing anything else with them (never auto-delete).
+
+Never commit a whole pile of unrelated uncommitted files as a single sweep — the same care applied to work written in the current session applies here.
+
+**2. Lint check**
 ```bash
 npm run lint
 ```
 Fix any errors before proceeding. Warnings are acceptable.
 
-**2. Confirm preview is ahead of main**
+**3. Confirm preview is ahead of main**
 ```bash
 git log origin/main..origin/preview --oneline
 ```
 If there are no commits ahead, nothing to merge — tell the user and stop.
 
-**3. Generate changelog entry**
+**4. Generate changelog entry**
 Find the last commit that touched the changelog with `git log -1 --format=%H -- content/changelog.json`, then run `git log <that commit>..HEAD --oneline` on `preview` to see everything shipped since. If there's user-facing material in that range — new features, meaningful UX/behavior changes, user-noticeable bug fixes — write one entry dated with today's date to `content/changelog.json` (newest entry first in the array). Use plain, non-technical language: no file paths, no commit/ticket references, no jargon. Each item's `type` is exactly one of `"new" | "improved" | "fixed"`. Exclude pure internal refactors, perf/RLS-only commits, dependency bumps, doc/CLAUDE.md-only changes, and **anything scoped entirely to the public marketing/landing site** (the logged-out homepage and its sections, About/Contact/Roadmap/Glossary/Help Center/Disclosures/Security/Privacy/Changelog pages, footer/nav changes on those pages) — visual redesigns, copy tweaks, and new informational pages there are not product changes. Users only care about what changed in the actual app (dashboard, stock pages, tools, alerts, AI features); the changelog is for that, not the brochure. If nothing in the range qualifies, skip this step silently — do not add an empty or filler entry. Commit the change to `preview` before continuing. If an entry was added, run `npm run post-changelog-discord` to announce it in Discord.
 
-**4. Merge preview → main and push**
+**5. Merge preview → main and push**
 ```bash
 git checkout main
 git pull origin main
@@ -70,7 +83,7 @@ git push origin main
 git checkout preview
 ```
 
-**5. Confirm deployment triggered**
+**6. Confirm deployment triggered**
 Use `mcp__claude_ai_Vercel__list_deployments` to verify a new deployment appeared for `main`. Report the deployment URL to the user.
 
 **Why this matters:** Keeping `main` = what's in production means git history is the source of truth, the `sync-preview` GitHub Action stays a no-op, and there's no drift between the dashboard-promoted build and the actual branch state.
