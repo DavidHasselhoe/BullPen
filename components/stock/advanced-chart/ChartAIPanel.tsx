@@ -4,10 +4,11 @@ import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import { useTranslation } from 'react-i18next';
 import { useEffect, useMemo, useRef, useState, memo } from 'react';
+import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { motion } from 'framer-motion';
-import { Sparkles, Send, Square, X } from 'lucide-react';
+import { Send, Square, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/use-auth';
 import { useInvalidateQuota } from '@/hooks/use-quota';
@@ -15,6 +16,7 @@ import { QuotaIndicator } from '@/components/billing/QuotaIndicator';
 import { AiPaywallDialog } from '@/components/billing/AiPaywallDialog';
 import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import { ToolResultCard } from '@/components/ai/ToolResultCard';
+import { BullAiIcon } from '@/components/ai/BullAiIcon';
 import { getActiveToolName, getToolStatusLabel, getCompletedToolCalls, getFollowups, extractTickers } from '@/lib/ai/tool-ux';
 import type { QuotaState } from '@/lib/billing/quotas';
 import type { ChartAction, ChartSnapshot } from './chart-context';
@@ -194,16 +196,14 @@ export function ChartAIPanel({ symbol, snapshot, onAction, onClose }: Props) {
       transition={{ type: 'tween', duration: 0.22, ease: 'easeOut' }}
       className="absolute inset-y-0 right-0 z-20 flex h-full w-full flex-col border-l border-border/60 bg-background shadow-2xl sm:w-[400px]"
       role="dialog"
-      aria-label={`AI assistant for ${symbol} chart`}
+      aria-label={`Ask Bull about ${symbol} chart`}
     >
       {/* Header */}
       <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border/60 px-4 py-3">
         <div className="flex items-center gap-2">
-          <div className="rounded-full bg-primary/10 p-1.5">
-            <Sparkles className="h-4 w-4 text-primary" />
-          </div>
+          <BullAiIcon pose="idle" size={28} />
           <div className="leading-tight">
-            <p className="text-sm font-semibold text-foreground">Chart AI</p>
+            <p className="text-sm font-semibold text-foreground">Ask Bull</p>
             <p className="text-[11px] text-muted-foreground">Analyzing {symbol.toUpperCase()}</p>
           </div>
         </div>
@@ -224,7 +224,7 @@ export function ChartAIPanel({ symbol, snapshot, onAction, onClose }: Props) {
       <AiPaywallDialog
         open={paywallQuota !== null}
         onOpenChange={(o) => !o && setPaywallQuota(null)}
-        featureName="Chart AI"
+        featureName="Ask Bull"
         quota={paywallQuota ?? undefined}
       />
 
@@ -232,12 +232,10 @@ export function ChartAIPanel({ symbol, snapshot, onAction, onClose }: Props) {
       <div className="flex-1 space-y-4 overflow-y-auto overflow-x-hidden px-4 py-4 scrollbar-hide">
         {messages.length === 0 && (
           <div className="flex h-full flex-col items-center justify-center gap-3 py-6 text-center">
-            <div className="rounded-full bg-primary/10 p-3">
-              <Sparkles className="h-6 w-6 text-primary" />
-            </div>
+            <BullAiIcon pose="wave" size={112} />
             <div>
-              <p className="text-sm font-medium text-foreground">Ask about this chart</p>
-              <p className="mt-1 max-w-[240px] text-xs text-muted-foreground">
+              <p className="text-sm font-semibold text-foreground">I&apos;m Bull</p>
+              <p className="mt-1 max-w-[240px] text-xs text-muted-foreground leading-relaxed">
                 I can read the price action, explain indicators, and change the chart or set alerts for you.
               </p>
             </div>
@@ -271,11 +269,12 @@ export function ChartAIPanel({ symbol, snapshot, onAction, onClose }: Props) {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.18, ease: 'easeOut' }}
-              className={cn('flex', isUser ? 'justify-end' : 'justify-start')}
+              className={cn('flex items-end gap-2', isUser ? 'justify-end' : 'justify-start')}
             >
+              {!isUser && <BullAiIcon pose="idle" size={28} className="mb-0.5" />}
               <div
                 className={cn(
-                  'max-w-[88%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed',
+                  'max-w-[80%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed',
                   isUser
                     ? 'rounded-br-sm bg-primary text-primary-foreground'
                     : 'rounded-bl-sm bg-muted text-foreground',
@@ -294,26 +293,41 @@ export function ChartAIPanel({ symbol, snapshot, onAction, onClose }: Props) {
                   </>
                 )}
               </div>
+              {isUser && (
+                <div className="mb-0.5 h-7 w-7 shrink-0 overflow-hidden rounded-full ring-2 ring-primary/30">
+                  {user?.avatar_url ? (
+                    <Image src={user.avatar_url} alt={user.full_name ?? user.email} width={28} height={28} className="object-cover" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-primary text-xs font-semibold text-primary-foreground">
+                      {(user?.full_name ?? user?.email ?? '?').charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                </div>
+              )}
             </motion.div>
           );
         })}
 
         {isStreaming && !lastMessageHasText && (
-          <div className="flex justify-start">
-            <div className="rounded-2xl rounded-bl-sm bg-muted px-3.5 py-2.5 flex items-center gap-2">
-              {toolStatusLabel && <span className="text-xs text-muted-foreground">{toolStatusLabel}</span>}
-              <span className="flex items-center gap-1.5">
-                {[0, 1, 2].map((i) => (
-                  <motion.span
-                    key={i}
-                    className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60"
-                    animate={{ scale: [1, 1.35, 1], opacity: [0.5, 1, 0.5] }}
-                    transition={{ duration: 1, repeat: Infinity, delay: i * 0.2, ease: 'easeInOut' }}
-                  />
-                ))}
-              </span>
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.18, ease: 'easeOut' }}
+            className="flex items-end gap-2 justify-start"
+          >
+            <BullAiIcon pose="think" size={28} className="mb-0.5" />
+            <div className="rounded-2xl rounded-bl-sm bg-muted px-3.5 py-2.5">
+              <motion.span
+                key={toolStatusLabel ?? 'thinking'}
+                className="text-xs text-muted-foreground"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: [0.55, 1, 0.55] }}
+                transition={{ opacity: { duration: 1.6, repeat: Infinity, ease: 'easeInOut' } }}
+              >
+                {toolStatusLabel ?? (status === 'submitted' ? 'Thinking…' : 'Reasoning…')}
+              </motion.span>
             </div>
-          </div>
+          </motion.div>
         )}
 
         {followups.length > 0 && (

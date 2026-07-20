@@ -1,7 +1,8 @@
 'use client';
 
-import { CandlestickChart, LineChart, AreaChart, BarChart3, CalendarDays, Ruler, BellPlus, Sparkles, X } from 'lucide-react';
+import { CandlestickChart, LineChart, AreaChart, BarChart3, CalendarDays, Ruler, BellPlus, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { BullAiIcon } from '@/components/ai/BullAiIcon';
 import { IndicatorMenu } from './IndicatorMenu';
 import { PresetMenu } from './PresetMenu';
 import type { AdvancedChartType, ChartRange } from '@/hooks/use-chart-prefs';
@@ -125,16 +126,16 @@ export function ChartToolbar({
           type="button"
           onClick={onToggleAI}
           aria-pressed={aiOpen}
-          title="Ask AI about this chart"
+          title="Ask Bull about this chart"
           className={cn(
-            'flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-semibold transition-colors',
+            'flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-semibold transition-colors',
             aiOpen
               ? 'border-primary/40 bg-primary/10 text-primary'
               : 'border-primary/30 bg-primary/5 text-primary hover:bg-primary/10',
           )}
         >
-          <Sparkles className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Ask AI</span>
+          <BullAiIcon pose="idle" size={18} />
+          <span className="hidden sm:inline">Ask Bull</span>
         </button>
         <PresetMenu
           presets={presets}
