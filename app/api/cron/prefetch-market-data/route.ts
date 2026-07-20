@@ -287,6 +287,18 @@ async function handleStatsBatch(
       await supabase.from('screener_stats').upsert(screenerRowsBatch, { onConflict: 'ticker' });
     }
 
+    // After the final batch of the sweep, recompute the per-sector benchmark
+    // medians (migration 087) off the now-fresh screener_stats. Pure SQL
+    // aggregation — no market-data credits. Fire-and-forget: a failure here must
+    // never fail the sweep, and stale benchmarks are harmless (the UI just shows
+    // yesterday's "typical" context).
+    if (nextBatch === null) {
+      const { error: refreshErr } = await supabase.rpc('refresh_sector_metric_stats');
+      if (refreshErr) {
+        console.error('[prefetch] refresh_sector_metric_stats failed:', refreshErr.message);
+      }
+    }
+
     return NextResponse.json({
       success: true,
       phase: 'stats',

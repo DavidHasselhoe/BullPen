@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { formatCurrency, formatPercent, type CurrencyCode } from '@/lib/currency/currency-conversion';
 import { useUserSettings } from '@/hooks/use-user-settings';
 import { Skeleton } from '@/components/ui/skeleton';
+import { TermTooltip } from '@/components/ui/TermTooltip';
 import type { HoldingWithPrice } from './types';
 
 interface PortfolioDashboardProps {
@@ -73,9 +74,12 @@ export function PortfolioDashboard({ holdings, currency = 'USD', isLoading }: Po
     <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
       {/* Total Portfolio Value */}
       <div className="rounded-xl border border-border/50 bg-card p-5">
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-          Total Value
-        </p>
+        <div className="mb-2">
+          <TermTooltip
+            term="Total Value"
+            className="text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+          />
+        </div>
         <p className="text-2xl font-bold text-foreground tabular-nums">
           {fmt(stats.totalValue)}
         </p>
@@ -91,9 +95,12 @@ export function PortfolioDashboard({ holdings, currency = 'USD', isLoading }: Po
           todayPositive ? 'border-green-500/20' : 'border-red-500/20'
         )}
       >
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-          Today
-        </p>
+        <div className="mb-2">
+          <TermTooltip
+            term="Today P&L"
+            className="text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+          />
+        </div>
         <p
           className={cn(
             'text-2xl font-bold tabular-nums',
@@ -131,9 +138,12 @@ export function PortfolioDashboard({ holdings, currency = 'USD', isLoading }: Po
           plPositive ? 'border-green-500/20' : 'border-red-500/20'
         )}
       >
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-          Total P/L
-        </p>
+        <div className="mb-2">
+          <TermTooltip
+            term="Total P/L"
+            className="text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+          />
+        </div>
         <p
           className={cn(
             'text-2xl font-bold tabular-nums',
@@ -159,9 +169,12 @@ export function PortfolioDashboard({ holdings, currency = 'USD', isLoading }: Po
 
       {/* Cost Basis */}
       <div className="rounded-xl border border-border/50 bg-card p-5">
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-          Cost Basis
-        </p>
+        <div className="mb-2">
+          <TermTooltip
+            term="Cost Basis"
+            className="text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+          />
+        </div>
         <p className="text-2xl font-bold text-foreground tabular-nums">
           {fmt(stats.costBasis)}
         </p>

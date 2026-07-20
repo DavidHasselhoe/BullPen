@@ -10,6 +10,7 @@ import { useExperienceLevel } from '@/hooks/use-experience-level';
 import { HelpCircle, X, Sparkles, ArrowUpRight, ArrowDownRight, Minus, History } from 'lucide-react';
 import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import { HealthRing } from '@/components/finance/HealthRing';
+import { TermTooltip } from '@/components/ui/TermTooltip';
 import { HealthScoreHistoryModal, type HealthScoreHistoryPoint } from '@/components/stock/HealthScoreHistoryModal';
 import type { HealthScore, CategoryScore } from '@/lib/finance/health-score';
 
@@ -119,7 +120,11 @@ function CategoryBar({ cat }: { cat: CategoryScore }) {
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between text-xs">
-        <span className="font-medium text-foreground">{cat.name}</span>
+        <span className="flex items-center gap-1.5 font-medium text-foreground">
+          {/* Colour-key the label to its arc band so ring ↔ list is decodable */}
+          <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', unavailable ? 'bg-muted-foreground/30' : scoreBarColor(ratio))} />
+          <TermTooltip term={cat.name} />
+        </span>
         {unavailable ? (
           <span className="text-[11px] font-medium text-muted-foreground/40">N/A</span>
         ) : (
@@ -369,7 +374,10 @@ export function HealthScoreCard({ ticker, onSignalsReady }: HealthScoreCardProps
                 return (
                   <div key={cat.name} className="space-y-1">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-medium text-foreground truncate">{cat.name}</span>
+                      <span className="flex min-w-0 items-center gap-1.5 text-xs font-medium text-foreground">
+                        <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', unavailable ? 'bg-muted-foreground/30' : barColor)} />
+                        <TermTooltip term={cat.name} className="truncate" />
+                      </span>
                       {unavailable ? (
                         <span className="text-[10px] font-medium text-muted-foreground/40 shrink-0">N/A</span>
                       ) : (

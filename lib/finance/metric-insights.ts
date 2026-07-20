@@ -102,9 +102,95 @@ export function growthInsight(growthFraction: number | null): string {
   return 'Sales were roughly flat over the past year';
 }
 
+export function pbInsight(pb: number | null): string {
+  if (pb == null || pb <= 0) return '';
+  return `Priced at ${pb.toFixed(1)}× the company's book value`;
+}
+
+export function evEbitdaInsight(ev: number | null): string {
+  if (ev == null || ev <= 0) return '';
+  return `Valued at ${ev.toFixed(1)}× its yearly operating earnings`;
+}
+
+// ── Sector context ──────────────────────────────────────────────────────────
+// Turns "where does this value sit vs. its sector" into one plain sentence, so
+// a beginner learns whether a number is normal FOR ITS KIND, not just on an
+// absolute scale. Fed by the sector_metric_stats rollup (migration 087).
+
+export interface Distribution {
+  p25: number;
+  median: number;
+  p75: number;
+}
+
+export type SectorMetricKind = 'pe' | 'pb' | 'evEbitda' | 'margin' | 'growth' | 'yield' | 'beta';
+
+function distBand(value: number, d: Distribution): 'low' | 'mid' | 'high' {
+  if (value < d.p25) return 'low';
+  if (value > d.p75) return 'high';
+  return 'mid';
+}
+
+/**
+ * One plain-language sentence placing `value` against its sector distribution,
+ * or '' when there's nothing reliable to compare against. `value` must be in the
+ * same units as the distribution (see sector-benchmarks.ts).
+ */
+export function sectorContext(
+  value: number | null | undefined,
+  dist: Distribution | undefined,
+  kind: SectorMetricKind,
+  sectorLabel: string
+): string {
+  if (value == null || !isFinite(value) || !dist) return '';
+  const s = sectorLabel.trim();
+  if (!s) return '';
+  const b = distBand(value, dist);
+
+  switch (kind) {
+    // Valuation multiples — lower reads as "cheaper".
+    case 'pe':
+    case 'pb':
+    case 'evEbitda':
+      return b === 'low'
+        ? `Cheaper than most ${s} companies`
+        : b === 'high'
+          ? `Pricier than most ${s} companies`
+          : `Around the ${s} average`;
+    case 'margin':
+      return b === 'high'
+        ? `More profitable than most ${s} companies`
+        : b === 'low'
+          ? `Less profitable than most ${s} companies`
+          : `Typical profitability for ${s}`;
+    case 'growth':
+      return b === 'high'
+        ? `Growing faster than most ${s} companies`
+        : b === 'low'
+          ? `Growing slower than most ${s} companies`
+          : `Typical growth for ${s}`;
+    case 'yield':
+      return b === 'high'
+        ? `Pays more than most ${s} companies`
+        : b === 'low'
+          ? `Pays less than most ${s} payers`
+          : `A typical payout for ${s}`;
+    case 'beta':
+      return b === 'high'
+        ? `Swings more than most ${s} companies`
+        : b === 'low'
+          ? `Steadier than most ${s} companies`
+          : `Typical volatility for ${s}`;
+    default:
+      return '';
+  }
+}
+
 // Meter domains (fractions where the metric is a fraction)
 export const PE_DOMAIN = { min: 0, max: 60 };
 export const MARGIN_DOMAIN = { min: -0.1, max: 0.4 };
 export const GROWTH_DOMAIN = { min: -0.2, max: 0.4 };
 export const YIELD_DOMAIN = { min: 0, max: 0.08 };
 export const BETA_DOMAIN = { min: 0, max: 2 };
+export const PB_DOMAIN = { min: 0, max: 10 };
+export const EV_EBITDA_DOMAIN = { min: 0, max: 30 };

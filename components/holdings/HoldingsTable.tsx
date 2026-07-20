@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { TermTooltip } from '@/components/ui/TermTooltip';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { useHoldings, useRemoveHolding } from '@/hooks/use-holdings';
 import { useAuth } from '@/hooks/use-auth';
@@ -856,13 +857,13 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
                   Quantity
                 </th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-                  Avg Price
+                  <TermTooltip term="Avg Price" />
                 </th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
                   Current Price
                 </th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-                  Day Change
+                  <TermTooltip term="Day Change" />
                 </th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
                   <button
@@ -873,7 +874,7 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
                   </button>
                 </th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-                  Unrealized P/L
+                  <TermTooltip term="Unrealized P/L" />
                 </th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
                   <button

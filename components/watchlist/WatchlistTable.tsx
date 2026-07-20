@@ -11,6 +11,8 @@ import { cn } from '@/lib/utils';
 import type { WatchlistItem } from '@/hooks/use-watchlist';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
 import type { EnhancedDataMap } from '@/hooks/use-watchlist-enhanced';
+import { TermTooltip } from '@/components/ui/TermTooltip';
+import { getGlossaryEntry } from '@/lib/finance/glossary';
 
 interface Quote {
   price: number;
@@ -59,9 +61,13 @@ function Col({
 }: {
   label: string; col: SortKey; sortKey: SortKey; sortDir: SortDir; onSort: (col: SortKey) => void;
 }) {
+  // Native title tooltip from the glossary — a lightweight explanation without
+  // nesting a Radix tooltip trigger inside the sort button.
+  const hint = getGlossaryEntry(label)?.description;
   return (
     <button
       onClick={() => onSort(col)}
+      title={hint}
       className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
     >
       {label}
@@ -126,10 +132,10 @@ export function WatchlistTable({ items, quotes, enhancedData, onRemove, isRemovi
             <TableHead><Col sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} label="Price" col="price" /></TableHead>
             <TableHead><Col sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} label="Change" col="changePercent" /></TableHead>
             <TableHead><Col sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} label="Mkt Cap" col="marketCap" /></TableHead>
-            <TableHead className="text-xs font-medium text-muted-foreground">P/E</TableHead>
+            <TableHead className="text-xs font-medium text-muted-foreground"><TermTooltip term="P/E" /></TableHead>
             <TableHead><Col sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} label="Health" col="health" /></TableHead>
             <TableHead><Col sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} label="Earnings" col="earnings" /></TableHead>
-            <TableHead className="text-xs font-medium text-muted-foreground">Thesis</TableHead>
+            <TableHead className="text-xs font-medium text-muted-foreground"><TermTooltip term="Thesis" /></TableHead>
             <TableHead><Col sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} label="Added" col="added_at" /></TableHead>
             <TableHead className="w-10" />
           </TableRow>

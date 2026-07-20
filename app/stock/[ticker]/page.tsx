@@ -403,6 +403,7 @@ export default function StockDetailPage() {
                     ticker={ticker}
                     signals={metricSignals}
                     currentPrice={snapshot.data?.quote?.price ?? null}
+                    sector={company?.sector ?? null}
                   />
                 </AnimatedContent>
               </StockSectionBoundary>

@@ -21,6 +21,8 @@ interface MetricCardProps {
   signal?: SignalValue;
   /** One plain-language sentence, e.g. "Trading 8% below its 1-year high". */
   insight?: string;
+  /** Optional second, quieter line — e.g. sector context ("Cheaper than most Technology companies"). */
+  context?: string;
   /** Stable data-tour anchor (Academy tours target these). */
   tourId?: string;
   ticker?: string;
@@ -36,7 +38,7 @@ const GLYPH: Record<SignalValue, { char: string; cls: string; title: string }> =
   negative: { char: '▼', cls: 'text-red-500', title: 'Watch this metric' },
 };
 
-export function MetricCard({ label, value, signal, insight, tourId, ticker, onAskAI, children, className }: MetricCardProps) {
+export function MetricCard({ label, value, signal, insight, context, tourId, ticker, onAskAI, children, className }: MetricCardProps) {
   const glyph = signal ? GLYPH[signal] : null;
   return (
     <div
@@ -58,7 +60,12 @@ export function MetricCard({ label, value, signal, insight, tourId, ticker, onAs
         )}
       </div>
       {children}
-      {insight && <p className="mt-auto text-xs leading-relaxed text-muted-foreground">{insight}</p>}
+      {(insight || context) && (
+        <div className="mt-auto space-y-0.5">
+          {insight && <p className="text-xs leading-relaxed text-muted-foreground">{insight}</p>}
+          {context && <p className="text-xs leading-relaxed text-muted-foreground/70">{context}</p>}
+        </div>
+      )}
     </div>
   );
 }

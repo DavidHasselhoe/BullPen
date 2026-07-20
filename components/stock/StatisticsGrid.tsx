@@ -29,12 +29,19 @@ import {
   dividendInsight,
   marginInsight,
   growthInsight,
+  sectorContext,
+  pbInsight,
+  evEbitdaInsight,
   PE_DOMAIN,
   MARGIN_DOMAIN,
   GROWTH_DOMAIN,
   YIELD_DOMAIN,
   BETA_DOMAIN,
+  PB_DOMAIN,
+  EV_EBITDA_DOMAIN,
+  type Distribution,
 } from '@/lib/finance/metric-insights';
+import type { SectorBenchmarks } from '@/lib/finance/sector-benchmarks';
 import type { CompanyStatistics } from '@/lib/twelvedata/twelvedata-client';
 import type { SignalValue } from '@/lib/finance/health-score';
 
@@ -113,20 +120,33 @@ interface StatRow {
   value: string;
 }
 
+interface BenchmarksResponse {
+  success: boolean;
+  sector: string | null;
+  benchmarks: SectorBenchmarks;
+}
+
 export function StatisticsGrid({
   ticker,
   signals,
   currentPrice,
+  sector,
   forceFull = false,
 }: {
   ticker: string;
   signals?: Record<string, SignalValue>;
   /** Live/last price for the 52-week range marker (from the page snapshot). */
   currentPrice?: number | null;
+  /** Company sector — drives "typical for its sector" benchmark context. */
+  sector?: string | null;
   forceFull?: boolean;
 }) {
-  const { isSimplified: rawSimplified, setLevel } = useExperienceLevel();
-  const isSimplified = forceFull ? false : rawSimplified;
+  const { isSimplified: rawSimplified } = useExperienceLevel();
+  // Local, non-destructive "show everything" toggle. Expanding the full stats
+  // must NOT rewrite the user's saved experience level (it used to silently call
+  // setLevel('intermediate')) — it's a per-view reveal, not an account change.
+  const [expandedFull, setExpandedFull] = useState(false);
+  const isSimplified = (forceFull || expandedFull) ? false : rawSimplified;
   const { open: openAIPanel } = useAIPanel();
   const handleAskAI = useCallback((q: string) => openAIPanel({ query: q }), [openAIPanel]);
   const [showAll, setShowAll] = useState(forceFull);
@@ -141,6 +161,27 @@ export function StatisticsGrid({
     staleTime: 15 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
   });
+
+  // Sector benchmarks — "typical for its sector" context. Reference data, so
+  // cache long and never refetch on focus; a null/thin sector just yields {}.
+  const { data: benchData } = useQuery<BenchmarksResponse>({
+    queryKey: ['sector-benchmarks', sector ?? ''],
+    queryFn: async () => {
+      const res = await fetch(`/api/sector-benchmarks/${encodeURIComponent(sector!)}`);
+      return res.json();
+    },
+    enabled: !!sector,
+    staleTime: 12 * 60 * 60 * 1000,
+    gcTime: 24 * 60 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+
+  const benchmarks = benchData?.benchmarks;
+  const sectorLabel = benchData?.sector ?? sector ?? '';
+  const dist = (key: keyof SectorBenchmarks): Distribution | undefined => {
+    const b = benchmarks?.[key];
+    return b ? { p25: b.p25, median: b.median, p75: b.p75 } : undefined;
+  };
 
   if (isLoading) {
     return (
@@ -227,6 +268,7 @@ export function StatisticsGrid({
         value={fmt(s.peRatioTTM, 'ratio')}
         signal={sig('peRatioTTM')}
         insight={peInsight(s.peRatioTTM, s.peRatioForward)}
+        context={sectorContext(s.peRatioTTM, dist('pe_ratio'), 'pe', sectorLabel)}
         tourId="stat-p-e-ttm"
         ticker={ticker}
         onAskAI={handleAskAI}
@@ -237,6 +279,7 @@ export function StatisticsGrid({
             min={PE_DOMAIN.min}
             max={PE_DOMAIN.max}
             signal={sig('peRatioTTM')}
+            benchmark={dist('pe_ratio') ? { value: dist('pe_ratio')!.median, label: 'typical' } : undefined}
             srLabel={`P/E ratio ${fmt(s.peRatioTTM, 'ratio')} on a 0 to 60 scale`}
           />
         )}
@@ -259,6 +302,7 @@ export function StatisticsGrid({
         value={fmt(s.profitMargin, 'percent')}
         signal={sig('profitMargin')}
         insight={marginInsight(s.profitMargin) || growthInsight(s.revenueGrowthTTM)}
+        context={sectorContext(s.profitMargin, dist('profit_margin'), 'margin', sectorLabel)}
         tourId="stat-profit-margin"
         ticker={ticker}
         onAskAI={handleAskAI}
@@ -269,6 +313,7 @@ export function StatisticsGrid({
             min={MARGIN_DOMAIN.min}
             max={MARGIN_DOMAIN.max}
             signal={sig('profitMargin')}
+            benchmark={dist('profit_margin') ? { value: dist('profit_margin')!.median, label: 'typical' } : undefined}
             srLabel={`Profit margin ${fmt(s.profitMargin, 'percent')}`}
           />
         )}
@@ -297,6 +342,7 @@ export function StatisticsGrid({
       value={s.dividendYield != null && s.dividendYield > 0 ? fmt(s.dividendYield, 'percent') : 'None'}
       signal={s.dividendYield != null && s.dividendYield > 0 ? sig('dividendYield') : undefined}
       insight={dividendInsight(s.dividendYield)}
+      context={s.dividendYield != null && s.dividendYield > 0 ? sectorContext(s.dividendYield, dist('dividend_yield'), 'yield', sectorLabel) : ''}
       tourId="stat-dividend-yield"
       ticker={ticker}
       onAskAI={handleAskAI}
@@ -307,6 +353,7 @@ export function StatisticsGrid({
           min={YIELD_DOMAIN.min}
           max={YIELD_DOMAIN.max}
           signal={sig('dividendYield')}
+          benchmark={dist('dividend_yield') ? { value: dist('dividend_yield')!.median, label: 'typical' } : undefined}
           srLabel={`Dividend yield ${fmt(s.dividendYield, 'percent')} on a 0 to 8 percent scale`}
         />
       )}
@@ -321,6 +368,7 @@ export function StatisticsGrid({
         value={fmt(s.beta, 'ratio')}
         signal={sig('beta')}
         insight={betaInsight(s.beta)}
+        context={sectorContext(s.beta, dist('beta'), 'beta', sectorLabel)}
         tourId="stat-beta"
         ticker={ticker}
         onAskAI={handleAskAI}
@@ -337,13 +385,62 @@ export function StatisticsGrid({
     );
   }
 
+  // P/B and EV/EBITDA — the valuation multiples beginners understand least, so
+  // they get the full visual treatment (meter + sector "typical" tick + a plain
+  // sentence) instead of being buried as context-free rows in the disclosure.
+  if (!isSimplified && s.pbRatio != null && s.pbRatio > 0) {
+    cards.push(
+      <MetricCard
+        key="pb"
+        label="P/B"
+        value={fmt(s.pbRatio, 'ratio')}
+        insight={pbInsight(s.pbRatio)}
+        context={sectorContext(s.pbRatio, dist('pb_ratio'), 'pb', sectorLabel)}
+        ticker={ticker}
+        onAskAI={handleAskAI}
+      >
+        <MeterBar
+          value={s.pbRatio}
+          min={PB_DOMAIN.min}
+          max={PB_DOMAIN.max}
+          benchmark={dist('pb_ratio') ? { value: dist('pb_ratio')!.median, label: 'typical' } : undefined}
+          srLabel={`Price-to-book ${fmt(s.pbRatio, 'ratio')} on a 0 to 10 scale`}
+        />
+      </MetricCard>
+    );
+  }
+
+  if (!isSimplified && s.evToEbitda != null && s.evToEbitda > 0) {
+    cards.push(
+      <MetricCard
+        key="ev"
+        label="EV/EBITDA"
+        value={fmt(s.evToEbitda, 'ratio')}
+        insight={evEbitdaInsight(s.evToEbitda)}
+        context={sectorContext(s.evToEbitda, dist('ev_to_ebitda'), 'evEbitda', sectorLabel)}
+        ticker={ticker}
+        onAskAI={handleAskAI}
+      >
+        <MeterBar
+          value={s.evToEbitda}
+          min={EV_EBITDA_DOMAIN.min}
+          max={EV_EBITDA_DOMAIN.max}
+          benchmark={dist('ev_to_ebitda') ? { value: dist('ev_to_ebitda')!.median, label: 'typical' } : undefined}
+          srLabel={`EV to EBITDA ${fmt(s.evToEbitda, 'ratio')} on a 0 to 30 scale`}
+        />
+      </MetricCard>
+    );
+  }
+
   // ── Remaining metrics → quiet disclosure rows ────────────────────────────
+  // P/B and EV/EBITDA are promoted to cards above (when present); they only fall
+  // back to a plain row in simplified mode, where the cards are hidden.
   const restRows: StatRow[] = [
     { label: 'Enterprise Value', value: fmt(s.enterpriseValue, 'currency') },
     { label: 'Avg Volume', value: fmt(s.avgVolume, 'volume') },
     { label: 'Shares Float', value: fmt(s.sharesFloat, 'volume') },
-    { label: 'P/B', value: fmt(s.pbRatio, 'ratio') },
-    { label: 'EV/EBITDA', value: fmt(s.evToEbitda, 'ratio') },
+    ...(isSimplified || s.pbRatio == null || s.pbRatio <= 0 ? [{ label: 'P/B', value: fmt(s.pbRatio, 'ratio') }] : []),
+    ...(isSimplified || s.evToEbitda == null || s.evToEbitda <= 0 ? [{ label: 'EV/EBITDA', value: fmt(s.evToEbitda, 'ratio') }] : []),
     { label: 'Short Ratio', value: fmt(s.shortRatio, 'ratio') },
     { label: '52W High', value: fmt(s.week52High, 'currency') },
     { label: '52W Low', value: fmt(s.week52Low, 'currency') },
@@ -363,7 +460,7 @@ export function StatisticsGrid({
           </div>
           {isSimplified && (
             <button
-              onClick={() => setLevel('intermediate')}
+              onClick={() => setExpandedFull(true)}
               className="text-xs text-muted-foreground hover:text-primary transition-colors shrink-0"
             >
               Show full statistics →

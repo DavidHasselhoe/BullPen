@@ -224,6 +224,137 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     plainLabel: 'Trend Momentum Signal',
     description: 'Moving Average Convergence/Divergence — shows the relationship between two moving averages. Used to spot trend changes and momentum shifts.',
   },
+
+  // ── Portfolio / Holdings ───────────────────────────────────────────────────
+
+  'Total Value': {
+    plainLabel: 'Total Value',
+    description: 'The current market value of everything you hold — each position\'s latest price times how many shares you own, added up.',
+  },
+  'Cost Basis': {
+    plainLabel: 'What You Paid',
+    description: 'The total amount you originally spent to buy your holdings. Comparing this to today\'s value tells you if you\'re up or down.',
+  },
+  'Market Value': {
+    plainLabel: 'Current Worth',
+    description: 'What a position is worth right now — the latest price times the number of shares you own.',
+  },
+  'Unrealized P/L': {
+    plainLabel: 'Paper Gain / Loss',
+    description: 'How much you\'re up or down on a holding you still own. It\'s "unrealized" because you only lock it in when you actually sell.',
+  },
+  'Total P/L': {
+    plainLabel: 'Total Gain / Loss',
+    description: 'Your overall profit or loss across all holdings versus what you paid for them — combining every position.',
+  },
+  'Today P&L': {
+    plainLabel: "Today's Gain / Loss",
+    description: 'How much your holdings have gone up or down just today, based on each position\'s price move since yesterday\'s close.',
+  },
+  'Day Change': {
+    plainLabel: "Today's Move",
+    description: 'How much a position has moved today, in both dollars and percent, versus yesterday\'s closing price.',
+  },
+  'Avg Price': {
+    plainLabel: 'Average Buy Price',
+    description: 'The average price you paid per share across all your purchases of this holding.',
+  },
+  'Allocation': {
+    plainLabel: 'Share of Portfolio',
+    description: 'How much of your total portfolio this one holding makes up. Spreading across several holdings lowers the risk from any single one.',
+  },
+
+  // ── Watchlist shorthands (labels differ from the stock page) ────────────────
+
+  'Mkt Cap': {
+    plainLabel: 'Company Size',
+    description: 'Total value of all shares combined. Larger = bigger company. "Large-cap" usually means over $10 billion.',
+  },
+  'P/E': {
+    plainLabel: 'Price vs Earnings',
+    description: 'How much investors pay per $1 of the company\'s yearly profit. Lower often signals better value — but context matters.',
+  },
+  'Health': {
+    plainLabel: 'Financial Health Score',
+    description: 'BullPen\'s A–F grade of a company\'s financial strength, from profitability and debt to growth and valuation. Higher grades = sturdier finances.',
+  },
+  'Earnings': {
+    plainLabel: 'Next Earnings Date',
+    description: 'When the company next reports its quarterly results. Prices often move sharply around earnings dates.',
+  },
+  'Thesis': {
+    plainLabel: 'Your View',
+    description: 'Your saved take on a stock. The colored dot reflects it: green = bullish, red = bearish, grey = neutral.',
+  },
+
+  // ── Health-score categories ─────────────────────────────────────────────────
+
+  'Profitability': {
+    plainLabel: 'How Well It Makes Money',
+    description: 'Whether the company actually turns sales into profit — profit margin, net income, and revenue growth. The single biggest driver of the health score.',
+  },
+  'Financial Strength': {
+    plainLabel: 'How Sturdy Its Finances Are',
+    description: 'Whether the company can pay its bills and isn\'t buried in debt — cash vs. short-term obligations, debt levels, and free cash flow.',
+  },
+  'Valuation': {
+    plainLabel: 'Whether the Price Is Fair',
+    description: 'Whether the stock looks cheap or expensive for what you get — based on P/E, P/B, and EV/EBITDA. A great company can still be a pricey stock.',
+  },
+  'Growth': {
+    plainLabel: 'How Fast It\'s Growing',
+    description: 'How quickly sales and earnings are expanding year over year. Faster growth can justify a higher price.',
+  },
+  'Market Risk': {
+    plainLabel: 'How Bumpy the Ride Is',
+    description: 'How volatile the stock tends to be — its beta versus the market and how heavily it\'s bet against (short interest).',
+  },
+  'Current Ratio': {
+    plainLabel: 'Can It Pay Its Bills?',
+    description: 'Short-term assets divided by short-term bills. Above 1 means the company can cover what it owes over the next year; below 1 can be a warning sign.',
+  },
+  'Debt-to-Equity': {
+    plainLabel: 'How Much It Borrows',
+    description: 'How much debt the company uses compared to shareholders\' own money. Higher means more borrowing — more risk if business slows.',
+  },
+
+  // ── Price panel ─────────────────────────────────────────────────────────────
+
+  'Open': {
+    plainLabel: 'Opening Price',
+    description: 'The price the stock first traded at when the market opened today.',
+  },
+  'High': {
+    plainLabel: 'Day\'s High',
+    description: 'The highest price the stock reached so far today.',
+  },
+  'Low': {
+    plainLabel: 'Day\'s Low',
+    description: 'The lowest price the stock reached so far today.',
+  },
+  'Prev Close': {
+    plainLabel: 'Yesterday\'s Close',
+    description: 'The price the stock finished at during the previous trading day. Today\'s change is measured from here.',
+  },
+
+  // ── Revenue flow (Sankey) ───────────────────────────────────────────────────
+
+  'Cost of Revenue': {
+    plainLabel: 'Cost of Making Sales',
+    description: 'The direct cost of producing what the company sells — materials, manufacturing, and delivery. Revenue minus this is gross profit.',
+  },
+  'Other OpEx': {
+    plainLabel: 'Other Operating Costs',
+    description: 'Day-to-day running costs beyond making the product — things like admin, marketing, and overhead not itemized elsewhere.',
+  },
+  'Tax & Other': {
+    plainLabel: 'Taxes & Other Costs',
+    description: 'Income taxes plus interest and other miscellaneous costs subtracted before arriving at final profit.',
+  },
+  'Total Costs': {
+    plainLabel: 'All Costs Combined',
+    description: 'Every cost the company subtracts from revenue — production, operating expenses, taxes, and interest — before its bottom-line profit.',
+  },
 };
 
 /** Look up a glossary entry, returning undefined if not found. */
