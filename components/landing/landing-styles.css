@@ -641,7 +641,13 @@
 }
 
 .bullpen-landing-root .activity-heatmap-month {
-  width: 14px;
+  /* Must equal .activity-heatmap-cell's width, not just look about right —
+     this row's per-column pitch (width + gap) has to match the week
+     columns' pitch exactly, or the two rows drift apart by a few px per
+     column and compound into a large horizontal offset over many weeks
+     (was 14px vs the cell's 11px: a 3px/column drift that pushed the
+     newest month label ~60px right of its actual column after 6 months). */
+  width: 11px;
   font-size: 11px;
   color: var(--fg-dim);
   flex-shrink: 0;
