@@ -48,7 +48,7 @@ export function Navigation() {
   const toolsCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const communityCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isToolsActive = pathname?.startsWith('/tools');
-  const isCommunityActive = ['/social', '/leaderboard', '/users'].some((p) => pathname?.startsWith(p));
+  const isCommunityActive = ['/social', '/users'].some((p) => pathname?.startsWith(p));
 
   const clearToolsCloseTimer = useCallback(() => {
     if (toolsCloseTimerRef.current) {

@@ -59,6 +59,7 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       { source: '/welcome', destination: '/', permanent: true },
+      { source: '/leaderboard', destination: '/academy/leaderboard', permanent: true },
     ];
   },
 };

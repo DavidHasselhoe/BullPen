@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { Home, Compass, GraduationCap, Briefcase, Bookmark, Rss, Trophy, Users } from 'lucide-react';
+import { Home, Compass, GraduationCap, Briefcase, Bookmark, Rss, Users } from 'lucide-react';
 
 /**
  * Single source of truth for the primary destinations, shared by the desktop
@@ -29,6 +29,5 @@ export const NAV_ITEMS: NavItem[] = [
 
 export const COMMUNITY_LINKS: CommunityLink[] = [
   { id: 'feed', name: 'Feed', href: '/social', icon: Rss, description: 'Activity from investors you follow' },
-  { id: 'leaderboard', name: 'Leaderboard', href: '/leaderboard', icon: Trophy, description: 'Top portfolios by diversity' },
   { id: 'members', name: 'Members', href: '/users', icon: Users, description: 'Browse investor profiles' },
 ];

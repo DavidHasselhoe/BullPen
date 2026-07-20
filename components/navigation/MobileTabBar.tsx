@@ -17,7 +17,7 @@ const TABS = [
   { name: 'Watchlist', href: '/watchlist', icon: Bookmark },
 ];
 
-const MORE_PREFIXES = ['/academy', '/tools', '/social', '/leaderboard', '/users'];
+const MORE_PREFIXES = ['/academy', '/tools', '/social', '/users'];
 
 export function MobileTabBar() {
   const pathname = usePathname() ?? '';
