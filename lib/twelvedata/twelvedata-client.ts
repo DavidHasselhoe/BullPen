@@ -867,13 +867,14 @@ interface TwelveDataIncomeResponse {
 
 export async function getIncomeStatement(
   symbol: string,
-  period: 'quarterly' | 'annual' = 'quarterly'
+  period: 'quarterly' | 'annual' = 'quarterly',
+  outputsize = 4
 ): Promise<IncomeStatementPeriod[]> {
   logUsage('income_statement', symbol);
   const url = buildUrl('/income_statement', {
     symbol: symbol.toUpperCase(),
     period,
-    outputsize: 4,
+    outputsize,
   });
   const response = await fetch(url);
   const data = (await response.json()) as TwelveDataIncomeResponse;
@@ -952,13 +953,14 @@ interface TwelveDataBalanceResponse {
 
 export async function getBalanceSheet(
   symbol: string,
-  period: 'quarterly' | 'annual' = 'quarterly'
+  period: 'quarterly' | 'annual' = 'quarterly',
+  outputsize = 4
 ): Promise<BalanceSheetPeriod[]> {
   logUsage('balance_sheet', symbol);
   const url = buildUrl('/balance_sheet', {
     symbol: symbol.toUpperCase(),
     period,
-    outputsize: 4,
+    outputsize,
   });
   const response = await fetch(url);
   const data = (await response.json()) as TwelveDataBalanceResponse;
@@ -1026,13 +1028,14 @@ interface TwelveDataCashFlowResponse {
 
 export async function getCashFlow(
   symbol: string,
-  period: 'quarterly' | 'annual' = 'quarterly'
+  period: 'quarterly' | 'annual' = 'quarterly',
+  outputsize = 4
 ): Promise<CashFlowPeriod[]> {
   logUsage('cash_flow', symbol);
   const url = buildUrl('/cash_flow', {
     symbol: symbol.toUpperCase(),
     period,
-    outputsize: 4,
+    outputsize,
   });
   const response = await fetch(url);
   const data = (await response.json()) as TwelveDataCashFlowResponse;
