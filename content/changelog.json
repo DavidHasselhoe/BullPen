@@ -1,5 +1,16 @@
 [
   {
+    "date": "2026-07-21",
+    "entries": [
+      { "type": "improved", "text": "Key Numbers on stock pages now tell you whether a stock's P/E, profit margin, dividend, and volatility are high or low for its sector — with a \"typical\" marker on each meter and a plain-language note like \"Cheaper than most Technology companies\"" },
+      { "type": "improved", "text": "Added plain-language explanations across your portfolio and watchlist — hover a metric label like Unrealized P/L, Cost Basis, P/E, or a Financial Health category to see what it means" },
+      { "type": "improved", "text": "The Financial Health gauge is now easier to read — each category is colour-keyed to its slice of the ring and you can hover any category name for a plain explanation" },
+      { "type": "improved", "text": "Crypto and commodity pages now show the same visual stats as stocks, including a 24-hour range bar and plain-language takeaways" },
+      { "type": "new", "text": "New to BullPen? A getting-started card now greets brand-new accounts with a few first steps, and disappears on its own once you get going" },
+      { "type": "improved", "text": "The Daily Brief now shows a mini price trend next to each featured stock" }
+    ]
+  },
+  {
     "date": "2026-07-19",
     "entries": [
       { "type": "improved", "text": "Ask Bull's answers are now much more visual — health scores, prices, key stats, financials, earnings, screener results, and more now show as charts and cards instead of plain text" },
