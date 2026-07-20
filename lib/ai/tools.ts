@@ -411,7 +411,7 @@ const COMPARE_METRIC_VALUES = [
 export const compareCompanies = tool({
   description:
     'Compare multiple companies side-by-side on key financial metrics. ' +
-    'Use when the user asks to compare two or more companies.',
+    'Use when the user asks to compare two or more companies. Costs ~1 API credit per company.',
   inputSchema: jsonSchema<{
     tickers: string[];
     metric?: typeof COMPARE_METRIC_VALUES[number];
@@ -442,35 +442,31 @@ export const compareCompanies = tool({
     additionalProperties: false,
   }),
   execute: async ({ tickers, metric = 'revenue', period = 'annual' }) => {
-    const db = supabase();
+    const isMonetary = metric !== 'eps_diluted';
 
     const results = await Promise.all(
       tickers.map(async (ticker) => {
-        const company = await resolveCompanyId(ticker);
-        if (!company) return { ticker, error: 'Not found' };
-
-        const { data: fmData } = await db
-          .from('financial_metrics')
-          .select('value, period_end_date, fiscal_year, fiscal_quarter')
-          .eq('company_id', company.companyId)
-          .eq('metric_type', metric)
-          .eq('period_type', period)
-          .order('period_end_date', { ascending: false })
-          .limit(4);
-
-        type FmRow = { value: number | null; period_end_date: string; fiscal_year: number; fiscal_quarter: number };
-        const isMonetary = !['eps_diluted', 'eps_basic', 'shares_outstanding'].includes(metric);
-        return {
-          ticker: ticker.toUpperCase(),
-          company: company.name,
-          metric: METRIC_LABELS[metric] ?? metric,
-          period,
-          data: ((fmData ?? []) as FmRow[]).map((r) => ({
-            period: period === 'annual' ? `FY${r.fiscal_year}` : `Q${r.fiscal_quarter} FY${r.fiscal_year}`,
-            value: r.value,
-            formatted: isMonetary ? fmt(r.value) : `$${Number(r.value).toFixed(4)}`,
-          })),
-        };
+        const sym = ticker.toUpperCase();
+        try {
+          const [company, periods] = await Promise.all([
+            resolveCompanyId(sym),
+            fetchMetricPeriods(sym, metric, period, 4),
+          ]);
+          return {
+            ticker: sym,
+            company: company?.name ?? sym,
+            metric: METRIC_LABELS[metric] ?? metric,
+            period,
+            data: periods.map((p) => ({
+              period: p.fiscalDate,
+              value: p.value,
+              formatted: isMonetary ? fmt(p.value) : p.value != null ? `$${p.value.toFixed(2)}` : 'N/A',
+            })),
+          };
+        } catch (err) {
+          if (err instanceof TwelveDataRateLimitError) return { ticker: sym, error: 'Rate limit reached. Try again shortly.' };
+          return { ticker: sym, error: (err as Error).message };
+        }
       }),
     );
 
