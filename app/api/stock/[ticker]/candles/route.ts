@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withRateLimit, withAuth, addSecurityHeaders } from '@/lib/security/api-security';
-import { getStockCandles, withRateLimitRetry, TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
+import { getStockCandles, withRateLimitRetry, TwelveDataRateLimitError, type StockCandles } from '@/lib/twelvedata/twelvedata-client';
 import { slugToSymbol, inferAssetType, has24hTrading } from '@/lib/assets/asset-type';
 import { getCached, setCached } from '@/lib/cache/market-data-cache';
 import { rget, rset, candleTtlSeconds } from '@/lib/cache/redis-cache';
+
+// "Today" (ET) has no candles yet before pre-market opens at 4am, and TwelveData
+// returns no_data for weekends/holidays too. Walk backward a few calendar days so
+// the 1D chart falls back to the most recent completed session instead of going
+// blank — once today's own pre-market candle exists, the first attempt succeeds
+// and this never runs.
+function etDateDaysAgo(daysAgo: number): string {
+  const d = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000);
+  return d.toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+}
 
 type Range = '1D' | '1W' | '1M' | '6M' | '1Y' | 'YTD' | '5Y' | 'MAX';
 type Interval = '1min' | '5min' | '15min' | '1h' | '4h' | '1day' | '1week';
@@ -126,7 +136,28 @@ async function handler(
     // withRateLimitRetry also covers transient socket errors seen intermittently on
     // this route in production ("TypeError: terminated", "SocketError: other side
     // closed") — those aren't rate-limit hits, but retrying once clears them.
-    const candles = await withRateLimitRetry(() => getStockCandles(symbol, from, now, resolution, candleOptions));
+    let candles: StockCandles | null = null;
+
+    if (is1D && todayDateET) {
+      for (let daysBack = 0; daysBack < 6; daysBack++) {
+        const dateET = daysBack === 0 ? todayDateET : etDateDaysAgo(daysBack);
+        const attemptOptions = { extendedHours: true, startDate: `${dateET} 04:00:00`, endDate: `${dateET} 23:59:00` };
+        try {
+          const attempt = await withRateLimitRetry(() => getStockCandles(symbol, from, now, resolution, attemptOptions));
+          if (attempt.s !== 'no_data' && attempt.t.length > 0) {
+            candles = attempt;
+            break;
+          }
+        } catch (attemptErr) {
+          // TwelveData throws (rather than returning s:'no_data') for a date
+          // range with nothing in it yet — e.g. "today" before pre-market
+          // opens. Treat that the same as no_data and try the previous day.
+          if (attemptErr instanceof TwelveDataRateLimitError) throw attemptErr;
+        }
+      }
+    } else {
+      candles = await withRateLimitRetry(() => getStockCandles(symbol, from, now, resolution, candleOptions));
+    }
 
     if (!candles || candles.s === 'no_data' || candles.t.length === 0) {
       // Don't cache empty results — could be transient (weekend crypto edge, fresh listing)
