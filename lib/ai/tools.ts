@@ -21,6 +21,9 @@ import {
   getCompanyProfile as getTwelveDataProfile,
   getInsiderTransactions,
   TwelveDataRateLimitError,
+  type IncomeStatementPeriod,
+  type BalanceSheetPeriod,
+  type CashFlowPeriod,
 } from '@/lib/twelvedata/twelvedata-client';
 import { getHealthScoreForSymbol } from '@/lib/finance/get-health-score';
 import { getTier, isPro } from '@/lib/billing/tier';
@@ -91,7 +94,7 @@ async function resolveCompanyName(ticker: string): Promise<string> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Tool: Get Company Financial Metrics
+// Shared: financial statement metric extraction (TwelveData-backed)
 // ─────────────────────────────────────────────────────────────────────────────
 
 const METRIC_LABELS: Record<string, string> = {
@@ -107,21 +110,68 @@ const METRIC_LABELS: Record<string, string> = {
   total_assets: 'Total Assets',
   total_liabilities: 'Total Liabilities',
   shareholders_equity: "Shareholders' Equity",
-  shares_outstanding: 'Shares Outstanding',
 };
 
 const METRIC_VALUES = [
   'revenue', 'gross_profit', 'operating_income', 'net_income',
   'eps_diluted', 'eps_basic', 'operating_cash_flow', 'free_cash_flow',
   'capital_expenditures', 'total_assets', 'total_liabilities',
-  'shareholders_equity', 'shares_outstanding',
+  'shareholders_equity',
 ] as const;
+
+const INCOME_STATEMENT_METRICS: Record<string, (r: IncomeStatementPeriod) => number | null> = {
+  revenue: (r) => r.revenue,
+  gross_profit: (r) => r.gross_profit,
+  operating_income: (r) => r.operating_income,
+  net_income: (r) => r.net_income,
+  eps_diluted: (r) => r.eps_diluted,
+  eps_basic: (r) => r.eps_basic,
+};
+
+const BALANCE_SHEET_METRICS: Record<string, (r: BalanceSheetPeriod) => number | null> = {
+  total_assets: (r) => r.total_assets,
+  total_liabilities: (r) => r.total_liabilities,
+  shareholders_equity: (r) => r.total_stockholders_equity,
+};
+
+const CASH_FLOW_METRICS: Record<string, (r: CashFlowPeriod) => number | null> = {
+  operating_cash_flow: (r) => r.operating_cash_flow,
+  free_cash_flow: (r) => r.free_cash_flow,
+  capital_expenditures: (r) => r.capital_expenditures,
+};
+
+/** Fetches `outputsize` periods for `metric` from whichever TwelveData statement endpoint carries it. */
+async function fetchMetricPeriods(
+  ticker: string,
+  metric: string,
+  period: 'annual' | 'quarterly',
+  outputsize: number
+): Promise<{ fiscalDate: string; value: number | null }[]> {
+  if (metric in INCOME_STATEMENT_METRICS) {
+    const rows = await getIncomeStatement(ticker, period, outputsize);
+    const extract = INCOME_STATEMENT_METRICS[metric];
+    return rows.map((r) => ({ fiscalDate: r.fiscal_date, value: extract(r) }));
+  }
+  if (metric in BALANCE_SHEET_METRICS) {
+    const rows = await getBalanceSheet(ticker, period, outputsize);
+    const extract = BALANCE_SHEET_METRICS[metric];
+    return rows.map((r) => ({ fiscalDate: r.fiscal_date, value: extract(r) }));
+  }
+  const rows = await getCashFlow(ticker, period, outputsize);
+  const extract = CASH_FLOW_METRICS[metric];
+  return rows.map((r) => ({ fiscalDate: r.fiscal_date, value: extract(r) }));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tool: Get Company Financial Metrics
+// ─────────────────────────────────────────────────────────────────────────────
 
 export const getCompanyMetrics = tool({
   description:
-    'Fetch historical financial metrics for a specific company from the BullPen database. ' +
-    'Use this when the user asks about a company\'s revenue, earnings, EPS, margins, cash flow, ' +
-    'balance sheet items, or any other financial data. Returns up to 8 periods.',
+    'Fetch historical financial metrics for a specific company. Works for any ticker globally, not just ' +
+    'companies in the BullPen database. Use this when the user asks about a company\'s revenue, earnings, ' +
+    'EPS, margins, cash flow, balance sheet items, or any other financial data. Returns up to 6 periods. ' +
+    'Costs ~1 API credit.',
   inputSchema: jsonSchema<{ ticker: string; metric: typeof METRIC_VALUES[number]; period: 'annual' | 'quarterly' }>({
     type: 'object',
     properties: {
@@ -142,56 +192,43 @@ export const getCompanyMetrics = tool({
     additionalProperties: false,
   }),
   execute: async ({ ticker, metric, period = 'annual' }) => {
-    const company = await resolveCompanyId(ticker);
-    if (!company) {
-      return { error: `Company with ticker "${ticker}" not found in the database.` };
-    }
+    try {
+      const sym = ticker.toUpperCase();
+      const company = await resolveCompanyId(sym);
+      const companyName = company?.name ?? sym;
+      const isMonetary = metric !== 'eps_diluted' && metric !== 'eps_basic';
 
-    const db = supabase();
-    const { data, error } = await db
-      .from('financial_metrics')
-      .select('value, period_end_date, fiscal_year, fiscal_quarter, unit')
-      .eq('company_id', company.companyId)
-      .eq('metric_type', metric)
-      .eq('period_type', period)
-      .order('period_end_date', { ascending: false })
-      .limit(8);
+      const periods = await fetchMetricPeriods(sym, metric, period, 6);
 
-    if (error) return { error: error.message };
-    if (!data || data.length === 0) {
+      if (periods.length === 0) {
+        return {
+          ticker: sym,
+          company: companyName,
+          metric: METRIC_LABELS[metric] ?? metric,
+          period,
+          note: 'No data found for this ticker.',
+          rows: [],
+        };
+      }
+
+      const rows = periods.map((p) => ({
+        period: p.fiscalDate,
+        periodEnd: p.fiscalDate,
+        value: p.value,
+        formatted: isMonetary ? fmt(p.value) : p.value != null ? `$${p.value.toFixed(2)}` : 'N/A',
+      }));
+
       return {
-        ticker,
-        company: company.name,
+        ticker: sym,
+        company: companyName,
         metric: METRIC_LABELS[metric] ?? metric,
         period,
-        note: 'No data found. The company may not have been ingested yet.',
-        rows: [],
+        rows,
       };
+    } catch (err) {
+      if (err instanceof TwelveDataRateLimitError) return { error: 'Rate limit reached. Try again shortly.' };
+      return { error: `Could not fetch ${METRIC_LABELS[metric] ?? metric} for ${ticker}: ${(err as Error).message}` };
     }
-
-    type MetricRow = { value: number | null; period_end_date: string; fiscal_year: number; fiscal_quarter: number };
-    const metrics = data as MetricRow[];
-    const isMonetary = !['eps_diluted', 'eps_basic', 'shares_outstanding'].includes(metric);
-    const rows = metrics.map((r) => {
-      const label =
-        period === 'annual'
-          ? `FY${r.fiscal_year}`
-          : `Q${r.fiscal_quarter} FY${r.fiscal_year}`;
-      return {
-        period: label,
-        periodEnd: r.period_end_date,
-        value: r.value,
-        formatted: isMonetary ? fmt(r.value) : metric.startsWith('eps') ? `$${Number(r.value).toFixed(4)}` : String(r.value),
-      };
-    });
-
-    return {
-      ticker: ticker.toUpperCase(),
-      company: company.name,
-      metric: METRIC_LABELS[metric] ?? metric,
-      period,
-      rows,
-    };
   },
 });
 
