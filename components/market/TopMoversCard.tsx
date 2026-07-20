@@ -10,6 +10,7 @@ import { CompanyRowActions } from '@/components/discover/CompanyRowActions';
 import { cn } from '@/lib/utils';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
 import { useExchanges } from '@/hooks/use-market-status';
+import { Sparkline } from '@/components/viz/Sparkline';
 import type { MarketMover } from '@/lib/twelvedata/twelvedata-client';
 
 /**
@@ -99,46 +100,6 @@ function useMoversSparklines(symbols: string[], enabled: boolean) {
   });
 }
 
-/** Renders a real intraday price sparkline, or falls back to a static direction arrow. */
-function MiniSparkline({ prices, isUp, className }: { prices: number[]; isUp: boolean; className?: string }) {
-  const stroke = isUp ? 'rgb(34, 197, 94)' : 'rgb(239, 68, 68)';
-
-  if (prices.length < 2) {
-    // Static fallback arrow
-    const path = isUp ? 'M 2 12 L 6 8 L 10 10 L 14 4' : 'M 2 4 L 6 8 L 10 6 L 14 12';
-    return (
-      <svg viewBox="0 0 16 16" className={className} width={40} height={24} fill="none"
-        strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-        <path d={path} stroke={stroke} />
-      </svg>
-    );
-  }
-
-  const W = 40, H = 22;
-  const min = Math.min(...prices);
-  const max = Math.max(...prices);
-  const range = max - min || 1;
-  const pad = 2;
-
-  const pts = prices.map((p, i) => {
-    const x = (i / (prices.length - 1)) * W;
-    const y = H - pad - ((p - min) / range) * (H - pad * 2);
-    return `${x.toFixed(1)},${y.toFixed(1)}`;
-  });
-
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} className={className} width={40} height={24} fill="none">
-      <polyline
-        points={pts.join(' ')}
-        stroke={stroke}
-        strokeWidth={1.5}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 function MoverItem({
   mover,
   isGainer,
@@ -166,7 +127,16 @@ function MoverItem({
             logoUrl={mover.logoUrl}
             size={32}
           />
-          <MiniSparkline prices={sparkPrices ?? []} isUp={isGainer} className="shrink-0 opacity-80 hidden sm:block" />
+          <Sparkline
+            data={sparkPrices ?? []}
+            direction={isGainer ? 'up' : 'down'}
+            width={40}
+            height={22}
+            fallbackArrow
+            preserveAspectRatio="xMidYMid meet"
+            className="shrink-0 opacity-80 hidden sm:block w-10 h-6"
+            ariaLabel={`${mover.symbol} intraday trend`}
+          />
         </div>
         <div className="min-w-0 overflow-hidden flex flex-col justify-center relative">
           {/* Default: full company name (uses all space when actions are collapsed) */}

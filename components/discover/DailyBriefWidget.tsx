@@ -7,6 +7,7 @@ import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { X, ArrowUpRight, ChevronLeft, ChevronRight, History } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
+import { Sparkline } from '@/components/viz/Sparkline';
 
 interface DailyBrief {
   id: string;
@@ -378,6 +379,29 @@ function BriefReader({
   const [activeSlug, setActiveSlug] = useState<string | null>(sections[0]?.slug ?? null);
   const [progress, setProgress] = useState(0);
 
+  // Featured-ticker sparklines — a beginner reading "$NVDA" gets a quick sense of
+  // what it did. One batched, CDN-cached request for ≤6 symbols, fetched lazily
+  // only once the reader is open.
+  const featuredForSpark = useMemo(
+    () => (displayedBrief.featured_tickers ?? []).filter((t) => t.length >= 1 && t.length <= 5).slice(0, 6),
+    [displayedBrief.featured_tickers]
+  );
+  const sparkKey = featuredForSpark.slice().sort().join(',');
+  const { data: tickerSparklines } = useQuery<Record<string, number[]>>({
+    queryKey: ['brief-ticker-sparklines', sparkKey],
+    queryFn: async () => {
+      if (!sparkKey) return {};
+      const res = await fetch(`/api/market/movers-sparklines?symbols=${encodeURIComponent(sparkKey)}`);
+      if (!res.ok) return {};
+      const json = await res.json();
+      return (json.sparklines as Record<string, number[]>) ?? {};
+    },
+    enabled: open && featuredForSpark.length > 0,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+
 
   // Reset scroll + progress when the reader opens, OR when the displayed
   // brief changes (reopening, or navigating via prev/next/history panel).
@@ -532,15 +556,21 @@ function BriefReader({
 
             {topTickers.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-4">
-                {topTickers.map((ticker) => (
-                  <Link
-                    key={ticker}
-                    href={slugToAssetPath(ticker)}
-                    className="text-[11px] font-mono font-medium text-foreground/80 bg-muted/40 hover:bg-muted/70 hover:text-foreground transition-all duration-150 px-2 py-0.5 rounded border border-border/30 hover:border-border"
-                  >
-                    ${ticker}
-                  </Link>
-                ))}
+                {topTickers.map((ticker) => {
+                  const spark = tickerSparklines?.[ticker];
+                  return (
+                    <Link
+                      key={ticker}
+                      href={slugToAssetPath(ticker)}
+                      className="inline-flex items-center gap-1.5 text-[11px] font-mono font-medium text-foreground/80 bg-muted/40 hover:bg-muted/70 hover:text-foreground transition-all duration-150 px-2 py-0.5 rounded border border-border/30 hover:border-border"
+                    >
+                      ${ticker}
+                      {spark && spark.length > 1 && (
+                        <Sparkline data={spark} width={36} height={12} className="w-9 h-3 shrink-0" />
+                      )}
+                    </Link>
+                  );
+                })}
               </div>
             )}
 

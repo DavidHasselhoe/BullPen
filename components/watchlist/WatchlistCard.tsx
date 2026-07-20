@@ -6,6 +6,7 @@ import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { AlertDialog } from '@/components/alerts/AlertDialog';
 import { cn } from '@/lib/utils';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
+import { Sparkline } from '@/components/viz/Sparkline';
 
 interface Quote {
   price: number;
@@ -30,35 +31,6 @@ interface WatchlistCardProps {
   daysToEarnings?: number | null;
   thesisSentiment?: 'bull' | 'bear' | 'neutral' | null;
   sparkline?: number[];
-}
-
-function Sparkline({ data, isUp, symbol }: { data: number[]; isUp: boolean; symbol: string }) {
-  if (data.length < 2) return null;
-  const min = Math.min(...data);
-  const max = Math.max(...data);
-  const range = max - min || 1;
-  const W = 100;
-  const H = 36;
-  const pts = data.map((v, i) => [
-    (i / (data.length - 1)) * W,
-    H - ((v - min) / range) * (H * 0.85),
-  ]);
-  const linePath = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p[0].toFixed(2)},${p[1].toFixed(2)}`).join(' ');
-  const areaPath = `${linePath} L${W},${H} L0,${H} Z`;
-  const color = isUp ? '#22c55e' : '#ef4444';
-  const gradId = `spark-${symbol}`;
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="w-full h-9">
-      <defs>
-        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity={0.2} />
-          <stop offset="100%" stopColor={color} stopOpacity={0} />
-        </linearGradient>
-      </defs>
-      <path d={areaPath} fill={`url(#${gradId})`} />
-      <path d={linePath} stroke={color} strokeWidth={1.5} fill="none" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
 }
 
 function formatPrice(p: number) {
@@ -173,7 +145,13 @@ export function WatchlistCard({
         {/* Sparkline */}
         {sparkline && sparkline.length > 1 && (
           <div className="-mx-1 -mb-1">
-            <Sparkline data={sparkline} isUp={isUp} symbol={symbol} />
+            <Sparkline
+              data={sparkline}
+              direction={isUp ? 'up' : isDown ? 'down' : 'neutral'}
+              area
+              className="w-full h-9"
+              ariaLabel={`${symbol} recent price trend`}
+            />
           </div>
         )}
 
@@ -181,8 +159,14 @@ export function WatchlistCard({
         {(healthScore || showEarnings) && (
           <div className="flex items-center justify-between mt-0.5">
             {healthScore ? (
-              <span className={cn('text-xs font-semibold px-1.5 py-0.5 rounded', gradeColor(healthScore.grade))}>
-                {healthScore.grade}
+              <span
+                className="flex items-center gap-1.5"
+                title={`Financial health: ${healthScore.label} (${healthScore.grade}, ${healthScore.score}/100)`}
+              >
+                <span className={cn('text-xs font-semibold px-1.5 py-0.5 rounded', gradeColor(healthScore.grade))}>
+                  {healthScore.grade}
+                </span>
+                <span className="text-xs text-muted-foreground">{healthScore.label}</span>
               </span>
             ) : <span />}
 
