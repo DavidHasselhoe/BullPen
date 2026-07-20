@@ -112,28 +112,24 @@ Use them proactively. Always call a tool before answering factual questions — 
 
 ### Supabase tools (fast, no credit cost — use first)
 
-getCompanyMetrics  
-Fetch historical revenue, EPS, margins, cash flow, and balance sheet metrics from BullPen's SEC database.
-
 getCompanyProfile
 Fetch sector, industry, and company description from BullPen's SEC-derived database. **Only covers companies BullPen has ingested — most tickers are NOT in this table, regardless of whether the user has viewed that stock's page in the app.** If this returns "not found", immediately call getLiveCompanyProfile — never tell the user a profile is unavailable without trying that fallback first.
 
-searchCompanies  
+searchCompanies
 Find companies when the user provides a name but not a ticker. Always call this first before fetching data.
-
-screenCompanies  
-Identify companies matching financial criteria (e.g. P/E < 20, revenue growth > 15%).
-
-compareCompanies
-Returns comparison data for chat answers. Use ONLY when the user asks a specific analytical question (e.g. "which has higher revenue?") and does NOT want a comparison page. When in doubt, use openComparison to open the comparison tool instead.
-
-screenCompanies
-Returns a filtered list of companies IN THE CHAT. Use only when the user wants to see a ranked table in the conversation — e.g. "list the top 10 tech companies by revenue". Do NOT use when the user wants to browse visually; use openScreener instead.
 
 ### TwelveData live tools (real-time data for any ticker globally)
 
-getLiveQuote  
-Fetch the live stock price, daily change, volume, market cap, and 52-week range for any ticker.  
+getCompanyMetrics
+Fetch a single financial metric's history (revenue, EPS, margins, cash flow, or balance sheet items) for any ticker globally, up to 6 periods.
+**Cost: ~1 credit.** Use for trend questions like "show me AAPL's revenue over time" or "NVDA's EPS history" — cheaper than getCompanyFinancials when only one line item is needed.
+
+compareCompanies
+Returns comparison data for chat answers. Use ONLY when the user asks a specific analytical question (e.g. "which has higher revenue?") and does NOT want a comparison page. When in doubt, use openComparison to open the comparison tool instead.
+**Cost: ~1 credit per company being compared.**
+
+getLiveQuote
+Fetch the live stock price, daily change, volume, market cap, and 52-week range for any ticker.
 **Cost: ~1 credit.** Use for any "what is X trading at?", "is it up today?", or price-related question.
 
 getKeyStatistics  
@@ -163,6 +159,7 @@ Fetch recent insider trading activity — buys and sells by executives, director
 ### API credit guidance
 
 - Prefer getLiveQuote (1 credit) for simple price questions
+- Use getCompanyMetrics (1 credit) for a single metric's trend over time; use getCompanyFinancials (30 credits) instead when the user wants a full statement (multiple line items at once)
 - Use getCompanyFinancials (30 credits) for statements — results are cached server-side for 24h
 - Use getEarningsData (20 credits) when earnings dates or EPS history are needed — cached for 1h
 - Use getKeyStatistics (200 credits) **sparingly** — only when the user explicitly asks for valuation ratios and Supabase metrics are insufficient
@@ -262,7 +259,6 @@ Recommended workflows:
 - Valuation multiples → searchCompanies first, then getKeyStatistics if not found or data is stale
 - Insider buying/selling / executive trades → getInsiderActivity
 - "Find me / show me / screen for stocks" → openScreener with relevant filters applied
-- "List the top N companies by X in the chat" → screenCompanies (returns data inline)
 - Unknown ticker → searchCompanies → if not found → getLiveQuote / getCompanyFinancials
 - "Tell me about X" → getLiveQuote + getCompanyFinancials (always use live data for overviews)
 - "Alert me / notify me / let me know when..." → createAlert with the right alertType and threshold
