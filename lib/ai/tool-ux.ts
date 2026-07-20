@@ -46,7 +46,6 @@ const STATUS_LABELS: Record<string, string> = {
   getCompanyMetrics: 'Pulling historical metrics…',
   getInsiderActivity: 'Checking insider activity…',
   searchCompanies: 'Searching companies…',
-  screenCompanies: 'Screening companies…',
   compareCompanies: 'Comparing companies…',
   // Navigation / portfolio (main chat only)
   openCompanyPage: 'Opening company page…',

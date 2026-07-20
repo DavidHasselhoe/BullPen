@@ -298,108 +298,6 @@ export const searchCompanies = tool({
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Tool: Screen Companies
-// ─────────────────────────────────────────────────────────────────────────────
-
-export const screenCompanies = tool({
-  description:
-    'Find companies that match financial criteria. Use this when the user asks to find, ' +
-    'list, or compare companies based on metrics like revenue size, margins, EPS, ' +
-    'cash flow, or sector. Returns the top 10 matches sorted by revenue.',
-  inputSchema: jsonSchema<{
-    sector?: string;
-    revenueMinB?: number;
-    revenueMaxB?: number;
-    grossMarginMin?: number;
-    netMarginMin?: number;
-    epsDilutedMin?: number;
-    fcfMinB?: number;
-    revenueGrowthMin?: number;
-    limit?: number;
-  }>({
-    type: 'object',
-    properties: {
-      sector: { type: 'string', description: 'Filter by sector, e.g. "Technology", "Healthcare"' },
-      revenueMinB: { type: 'number', description: 'Minimum annual revenue in billions' },
-      revenueMaxB: { type: 'number', description: 'Maximum annual revenue in billions' },
-      grossMarginMin: { type: 'number', description: 'Minimum gross margin as a percentage, e.g. 50 means 50%' },
-      netMarginMin: { type: 'number', description: 'Minimum net margin as a percentage' },
-      epsDilutedMin: { type: 'number', description: 'Minimum diluted EPS in dollars' },
-      fcfMinB: { type: 'number', description: 'Minimum free cash flow in billions' },
-      revenueGrowthMin: { type: 'number', description: 'Minimum YoY revenue growth as a percentage' },
-      limit: { type: 'number', minimum: 1, maximum: 20, default: 10, description: 'Number of results to return' },
-    },
-    additionalProperties: false,
-  }),
-  execute: async ({
-    sector, revenueMinB, revenueMaxB, grossMarginMin, netMarginMin,
-    epsDilutedMin, fcfMinB, revenueGrowthMin, limit = 10,
-  }) => {
-    const db = supabase();
-    const { data, error } = await db.rpc('get_screener_data');
-    if (error) return { error: error.message };
-
-    type Row = {
-      ticker: string; name: string; sector: string | null;
-      revenue: number | null; gross_profit: number | null;
-      operating_income: number | null; net_income: number | null;
-      eps_diluted: number | null; free_cash_flow: number | null;
-      prev_revenue: number | null;
-    };
-
-    let rows = (data as Row[]) ?? [];
-
-    if (sector) {
-      rows = rows.filter((r) => r.sector?.toLowerCase().includes(sector.toLowerCase()));
-    }
-    if (revenueMinB != null) {
-      rows = rows.filter((r) => r.revenue != null && r.revenue >= revenueMinB * 1e9);
-    }
-    if (revenueMaxB != null) {
-      rows = rows.filter((r) => r.revenue != null && r.revenue <= revenueMaxB * 1e9);
-    }
-    if (grossMarginMin != null) {
-      rows = rows.filter((r) => r.revenue && r.gross_profit != null && (r.gross_profit / r.revenue) * 100 >= grossMarginMin);
-    }
-    if (netMarginMin != null) {
-      rows = rows.filter((r) => r.revenue && r.net_income != null && (r.net_income / r.revenue) * 100 >= netMarginMin);
-    }
-    if (epsDilutedMin != null) {
-      rows = rows.filter((r) => r.eps_diluted != null && r.eps_diluted >= epsDilutedMin);
-    }
-    if (fcfMinB != null) {
-      rows = rows.filter((r) => r.free_cash_flow != null && r.free_cash_flow >= fcfMinB * 1e9);
-    }
-    if (revenueGrowthMin != null) {
-      rows = rows.filter((r) => {
-        if (r.revenue == null || r.prev_revenue == null || r.prev_revenue === 0) return false;
-        return ((r.revenue - r.prev_revenue) / Math.abs(r.prev_revenue)) * 100 >= revenueGrowthMin;
-      });
-    }
-
-    rows.sort((a, b) => (b.revenue ?? 0) - (a.revenue ?? 0));
-    rows = rows.slice(0, limit);
-
-    return {
-      count: rows.length,
-      companies: rows.map((r) => ({
-        ticker: r.ticker,
-        name: r.name,
-        sector: r.sector ?? 'Unknown',
-        revenue: fmt(r.revenue),
-        grossMargin: r.revenue && r.gross_profit != null ? fmtPct((r.gross_profit / r.revenue) * 100) : 'N/A',
-        netMargin: r.revenue && r.net_income != null ? fmtPct((r.net_income / r.revenue) * 100) : 'N/A',
-        epsDiluted: r.eps_diluted != null ? `$${r.eps_diluted.toFixed(2)}` : 'N/A',
-        freeCashFlow: fmt(r.free_cash_flow),
-        revenueGrowth: r.revenue && r.prev_revenue
-          ? fmtPct(((r.revenue - r.prev_revenue) / Math.abs(r.prev_revenue)) * 100)
-          : 'N/A',
-      })),
-    };
-  },
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
 // Tool: Compare Companies
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -537,7 +435,7 @@ export const openScreener = tool({
     '"deep value" → peMax=15 + pbMax=2, "growth stocks" → revenueGrowthMin=15, ' +
     '"high quality" → profitMarginMin=15 + revenueGrowthMin=10, "dividend" → divYieldMin=2.5, ' +
     '"low volatility" → betaMax=0.8, "high volatility" → betaMin=1.5. ' +
-    'Always prefer this over openComparison or screenCompanies when the user wants to browse visually.',
+    'Always prefer this over openComparison when the user wants to browse visually.',
   inputSchema: jsonSchema<{
     sector?: string;
     industry?: string;
@@ -1207,10 +1105,9 @@ const getHealthScore = tool({
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const COMPANY_DATA_TOOLS = {
-  getCompanyMetrics,
   getCompanyProfile,
   searchCompanies,
-  screenCompanies,
+  getCompanyMetrics,
   compareCompanies,
   getLiveQuote,
   getKeyStatistics,
@@ -1226,11 +1123,8 @@ export const COMPANY_DATA_TOOLS = {
 
 export const BULLPEN_TOOLS = {
   // Supabase tools — fast, no API credits, limited to ingested companies
-  getCompanyMetrics,
   getCompanyProfile,
   searchCompanies,
-  screenCompanies,
-  compareCompanies,
   // Navigation
   openCompanyPage,
   openComparison,
@@ -1245,6 +1139,8 @@ export const BULLPEN_TOOLS = {
   updateHolding,
   removeHolding,
   // TwelveData live tools — real-time data for any ticker globally
+  getCompanyMetrics,
+  compareCompanies,
   getLiveQuote,
   getKeyStatistics,
   getCompanyFinancials,

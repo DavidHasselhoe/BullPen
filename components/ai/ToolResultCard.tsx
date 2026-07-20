@@ -6,7 +6,6 @@ import { KeyStatisticsResultCard, type KeyStatisticsOutput } from './cards/KeySt
 import { CompanyProfileResultCard, type CompanyProfileOutput } from './cards/CompanyProfileResultCard';
 import { CompanyFinancialsResultCard, type CompanyFinancialsRow } from './cards/CompanyFinancialsResultCard';
 import { EarningsResultCard, type EarningsRow } from './cards/EarningsResultCard';
-import { ScreenerResultCard, type ScreenerOutput } from './cards/ScreenerResultCard';
 import { CompanyMetricsResultCard, type CompanyMetricsOutput } from './cards/CompanyMetricsResultCard';
 import { InsiderActivityResultCard, type InsiderActivityOutput } from './cards/InsiderActivityResultCard';
 import { ActionReceiptCard } from './cards/ActionReceiptCard';
@@ -100,11 +99,6 @@ export function ToolResultCard({
     case 'getEarningsData': {
       if (!Array.isArray(output)) return null;
       return <EarningsResultCard output={output as EarningsRow[]} />;
-    }
-    case 'screenCompanies': {
-      const o = output as Partial<ScreenerOutput>;
-      if (!Array.isArray(o.companies)) return null;
-      return <ScreenerResultCard output={o as ScreenerOutput} />;
     }
     case 'getCompanyMetrics': {
       const o = output as Partial<CompanyMetricsOutput>;
