@@ -17,6 +17,7 @@ import { WhyTodayWidget } from '@/components/discover/WhyTodayWidget';
 import { QuoteDisplay } from '@/components/ui/QuoteDisplay';
 import { useUserSettings } from '@/hooks/use-user-settings';
 import { CryptoMarketCard } from '@/components/asset/CryptoMarketCard';
+import { GettingStartedCard } from '@/components/onboarding/GettingStartedCard';
 import { resolveWidgetOrder } from '@/lib/dashboard/widgets';
 
 function WidgetSlot({ id }: { id: string }) {
@@ -118,6 +119,14 @@ export default function DiscoverPage() {
             <Pencil className="h-3 w-3" />
             Customize
           </Button>
+        </div>
+
+        {/* Getting-started card — self-hides once the user has any holding or
+            watchlist item, so it only greets genuinely new accounts. */}
+        <div className="mb-16">
+          <AnimatedContent reverse={true}>
+            <GettingStartedCard />
+          </AnimatedContent>
         </div>
 
         {/* Reorderable widget stack */}
