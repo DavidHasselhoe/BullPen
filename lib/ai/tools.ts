@@ -28,6 +28,7 @@ import {
 import { getHealthScoreForSymbol } from '@/lib/finance/get-health-score';
 import { getTier, isPro } from '@/lib/billing/tier';
 import { AlertTypeSchema, alertTypeLabel, describeAlert, FREE_ACTIVE_ALERT_LIMIT, type AlertType } from '@/types/alerts';
+import { DIVIDEND_QUICK_PICKS } from '@/lib/finance/dividend-quick-picks';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -576,6 +577,95 @@ export const openCompanyNews = tool({
     const company = await resolveCompanyId(ticker);
     if (!company) return { error: `Company "${ticker}" not found.` };
     return { ...clientAction({ type: 'navigate', path: `/stock/${ticker.toUpperCase()}#news` }), opened: company.name };
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tool: Open Dividend Calculator (client action — navigate with pre-filled picks)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Default picks when the user doesn't name specific stocks — same set the calculator's own "Quick add" row flags as high-yield. */
+const DEFAULT_DIVIDEND_PICKS: { ticker: string }[] = DIVIDEND_QUICK_PICKS
+  .filter((p) => p.highYield)
+  .map((p) => ({ ticker: p.ticker }));
+
+export const openDividendCalculator = tool({
+  description:
+    'Open the Dividend Calculator pre-filled with stocks. Use when the user wants to build, create, or project ' +
+    'a dividend portfolio — "build me a high yield dividend portfolio", "what would $50k in dividend stocks earn me", ' +
+    '"set up a dividend portfolio with KO, JNJ, and O". If the user names specific stocks, pass them in picks; ' +
+    'otherwise this tool defaults to a curated high-yield set on its own — do not invent tickers yourself. If the ' +
+    'user gives a dollar amount, pass it as totalAmount (split evenly across picks) or set amount on individual picks. ' +
+    'This only pre-fills the page — it does not compute or state projected income itself; the user still needs to ' +
+    'press Calculate, so do not claim specific income numbers from this tool\'s result.',
+  inputSchema: jsonSchema<{
+    picks?: { ticker: string; amount?: number }[];
+    totalAmount?: number;
+    years?: number;
+  }>({
+    type: 'object',
+    properties: {
+      picks: {
+        type: 'array',
+        maxItems: 15,
+        items: {
+          type: 'object',
+          properties: {
+            ticker: { type: 'string', description: 'Stock ticker symbol, e.g. KO, O, VZ' },
+            amount: {
+              type: 'number',
+              minimum: 0,
+              description: 'Dollar amount to invest in this stock (optional — overrides totalAmount/default split for this pick)',
+            },
+          },
+          required: ['ticker'],
+          additionalProperties: false,
+        },
+        description: 'Specific stocks to pre-fill. Omit entirely to use a curated high-yield default set.',
+      },
+      totalAmount: {
+        type: 'number',
+        minimum: 0,
+        description: 'Total dollars to invest, split evenly across the resolved picks. Ignored for picks that set their own amount.',
+      },
+      years: {
+        type: 'number',
+        minimum: 1,
+        maximum: 30,
+        description: "Projection period in years (defaults to the calculator's own default of 10 if omitted)",
+      },
+    },
+    additionalProperties: false,
+  }),
+  execute: async ({ picks, totalAmount, years }) => {
+    const chosen: { ticker: string; amount?: number }[] =
+      picks && picks.length > 0 ? picks.slice(0, 15) : DEFAULT_DIVIDEND_PICKS;
+
+    const perStockAmount = totalAmount != null && totalAmount > 0 ? totalAmount / chosen.length : null;
+
+    const resolved = await Promise.all(
+      chosen.map(async (p) => {
+        const ticker = p.ticker.toUpperCase();
+        const name = await resolveCompanyName(ticker);
+        const amount = p.amount != null ? p.amount : (perStockAmount ?? 10000);
+        return {
+          ticker,
+          name,
+          mode: 'amount' as const,
+          value: String(Math.round(amount)),
+        };
+      })
+    );
+
+    const params = new URLSearchParams();
+    params.set('seed', JSON.stringify(resolved));
+    if (years != null) params.set('years', String(Math.round(years)));
+
+    return {
+      ...clientAction({ type: 'navigate', path: `/tools/dividend?${params.toString()}` }),
+      addedStocks: resolved.map((r) => `${r.ticker} ($${Number(r.value).toLocaleString('en-US')})`),
+      description: `Opened the Dividend Calculator with ${resolved.length} stock(s) pre-filled.`,
+    };
   },
 });
 
@@ -1134,6 +1224,7 @@ export const BULLPEN_TOOLS = {
   openTools,
   openCompanyEarnings,
   openCompanyNews,
+  openDividendCalculator,
   // Portfolio management
   addHolding,
   updateHolding,
