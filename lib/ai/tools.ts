@@ -630,9 +630,8 @@ export const openDividendCalculator = tool({
       },
       years: {
         type: 'number',
-        minimum: 1,
-        maximum: 30,
-        description: "Projection period in years (defaults to the calculator's own default of 10 if omitted)",
+        enum: [1, 5, 10, 20, 30],
+        description: "Projection period in years — must be one of the calculator's preset options: 1, 5, 10, 20, or 30. Defaults to 10 if omitted.",
       },
     },
     additionalProperties: false,
