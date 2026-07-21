@@ -8,7 +8,10 @@
  */
 
 import { NextResponse } from 'next/server';
-import { getStockQuotes, TwelveDataRateLimitError } from '@/lib/market-data';
+// Imported directly from the TwelveData client (not the @/lib/market-data provider
+// barrel) because this route needs `prepost`/`isExtendedHoursET`, which the Finnhub
+// fallback path doesn't support — same precedent as lib/market-data/seed-prices.ts.
+import { getStockQuotes, isExtendedHoursET, TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
 import { rget, rset } from '@/lib/cache/redis-cache';
 import { logger } from '@/lib/utils/logger';
 
@@ -31,7 +34,10 @@ export async function GET() {
       return NextResponse.json({ success: true, quotes: cached }, { headers: CDN_HEADERS });
     }
 
-    const quoteMap = await getStockQuotes(SYMBOLS);
+    // Use pre-/post-market prices when the exchange is in an extended session; the
+    // quote parser itself guarantees `c` falls back to the last close otherwise, so
+    // the hero always has a real price to show instead of a skeleton.
+    const quoteMap = await getStockQuotes(SYMBOLS, { prepost: isExtendedHoursET() });
     const quotes: QuotePayload = {};
     for (const [symbol, q] of quoteMap.entries()) {
       if (q.c > 0) quotes[symbol] = { c: q.c, d: q.d, dp: q.dp };

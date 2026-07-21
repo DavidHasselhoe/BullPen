@@ -201,10 +201,21 @@ function parseQuoteResponse(data: TwelveDataQuoteResponse, symbol: string, useEx
       `Twelve Data resolved ${symbol} to a non-USD listing (${data.currency}) — likely a symbol collision with a foreign stock, not real data for ${symbol}`
     );
   }
-  const close = parseFloat(data.close);
-  const change = parseFloat(data.change || '0');
-  const percentChange = parseFloat(data.percent_change || '0');
-  const pc = parseFloat(data.previous_close || String(close - change));
+  const rawClose = parseFloat(data.close);
+  const rawPrevClose = parseFloat(data.previous_close ?? '');
+  const haveClose = Number.isFinite(rawClose) && rawClose > 0;
+  const havePrevClose = Number.isFinite(rawPrevClose) && rawPrevClose > 0;
+
+  // TwelveData can return an empty/zero `close` in the dead window between the prior
+  // session's extended-hours cutoff and the next session's first trade (nothing has
+  // traded yet today) even though the previous session's close is well known. Fall
+  // back to that last close instead of surfacing an invalid price — callers (e.g. the
+  // landing page hero) would otherwise show a skeleton indefinitely until the first
+  // pre-market trade posts.
+  const close = haveClose ? rawClose : havePrevClose ? rawPrevClose : rawClose;
+  const change = haveClose ? parseFloat(data.change || '0') : 0;
+  const percentChange = haveClose ? parseFloat(data.percent_change || '0') : 0;
+  const pc = havePrevClose ? rawPrevClose : parseFloat(String(close - change));
   const timestamp = data.timestamp ?? Math.floor(Date.now() / 1000);
 
   // When prepost was requested and market is closed, prefer the extended-hours price.
@@ -215,9 +226,9 @@ function parseQuoteResponse(data: TwelveDataQuoteResponse, symbol: string, useEx
         c: extPrice,
         d: parseFloat(data.extended_change ?? '0'),
         dp: parseFloat(data.extended_percent_change ?? '0'),
-        h: parseFloat(data.high || data.close),
-        l: parseFloat(data.low || data.close),
-        o: parseFloat(data.open || data.close),
+        h: parseFloat(data.high || String(close)),
+        l: parseFloat(data.low || String(close)),
+        o: parseFloat(data.open || String(close)),
         pc: close, // regular session close becomes prev-close baseline
         t: timestamp,
       };
@@ -230,9 +241,9 @@ function parseQuoteResponse(data: TwelveDataQuoteResponse, symbol: string, useEx
     c: close,
     d: change,
     dp: percentChange,
-    h: parseFloat(data.high || data.close),
-    l: parseFloat(data.low || data.close),
-    o: parseFloat(data.open || data.close),
+    h: parseFloat(data.high || String(close)),
+    l: parseFloat(data.low || String(close)),
+    o: parseFloat(data.open || String(close)),
     pc,
     t: timestamp,
     ...(volume && volume > 0 ? { volume } : {}),
