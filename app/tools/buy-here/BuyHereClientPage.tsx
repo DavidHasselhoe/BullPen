@@ -247,7 +247,8 @@ export default function BuyHereClientPage() {
   const [result, setResult] = useState<BuyHereResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const currency = ((user?.settings?.default_currency as CurrencyCode | undefined) ?? 'USD');
+  const rawCurrency = user?.settings?.default_currency as string | undefined;
+  const currency: CurrencyCode = (!rawCurrency || rawCurrency === 'exchange') ? 'USD' : (rawCurrency as CurrencyCode);
   const currencySymbol = getCurrencySymbol(currency);
 
   const { data: rates } = useExchangeRates(currency);
