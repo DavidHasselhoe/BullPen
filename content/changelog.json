@@ -3,6 +3,9 @@
     "date": "2026-07-21",
     "entries": [
       { "type": "new", "text": "New Pro courses in Academy — go beyond the basics with intermediate and advanced lessons on valuation, reading financial statements, portfolio risk, and researching with AI, each with hands-on practice inside the real app: filter the screener for cheap stocks, read a real company's numbers, stress-test a portfolio, and research why a stock moved" },
+      { "type": "new", "text": "Ask Bull to build you a dividend portfolio — say something like \"build me a high-yield dividend portfolio\" and Bull opens the dividend calculator already filled in with picks you can edit" },
+      { "type": "improved", "text": "The price alerts page got a visual refresh — each stock now shows its logo, and every alert has a clear icon for its type (price target, daily move, 52-week extreme, or all-time high)" },
+      { "type": "fixed", "text": "Fixed a handful of stocks showing wildly wrong figures in the screener (such as an impossible market cap) caused by a data mix-up with same-named foreign listings" },
       { "type": "improved", "text": "Key Numbers on stock pages now tell you whether a stock's P/E, profit margin, dividend, and volatility are high or low for its sector — with a \"typical\" marker on each meter and a plain-language note like \"Cheaper than most Technology companies\"" },
       { "type": "improved", "text": "Added plain-language explanations across your portfolio and watchlist — hover a metric label like Unrealized P/L, Cost Basis, P/E, or a Financial Health category to see what it means" },
       { "type": "improved", "text": "The Financial Health gauge is now easier to read — each category is colour-keyed to its slice of the ring and you can hover any category name for a plain explanation" },
