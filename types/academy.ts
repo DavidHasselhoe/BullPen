@@ -115,6 +115,22 @@ export const DemoContentSchema = z.discriminatedUnion('surface', [
     years: z.number().int().min(1).max(40).default(10),
     steps: z.array(DemoTourStepSchema).min(1),
   }),
+  // Screener: mounts the REAL screener (S&P 500 scope, read-only) so the learner
+  // filters live fundamentals. Only 'sp500' is allowed — the demo never touches a
+  // user's holdings/watchlist/custom views.
+  z.object({
+    surface: z.literal('screener'),
+    scope: z.literal('sp500').default('sp500'),
+    steps: z.array(DemoTourStepSchema).min(1),
+  }),
+  // AI research: shows a real Why-Today-style sourced answer, but seeded from a
+  // fixture (see lib/academy/ai-research-fixtures.ts) so the lesson is instant,
+  // deterministic, and never burns Anthropic credits or AI quota.
+  z.object({
+    surface: z.literal('ai-research'),
+    fixtureId: z.string().default('nvda-why-today'),
+    steps: z.array(DemoTourStepSchema).min(1),
+  }),
 ]);
 export type DemoContent = z.infer<typeof DemoContentSchema>;
 

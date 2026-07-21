@@ -107,7 +107,7 @@ export const PLAN_COMPARISON: ComparisonGroup[] = [
     rows: [
       { label: 'CSV / PDF exports', free: false, pro: true },
       { label: 'Academy: beginner courses + daily challenge', free: true, pro: true },
-      { label: 'Academy: intermediate & advanced courses', free: false, pro: true, hint: 'Valuation, financial statements, portfolio risk, and more' },
+      { label: 'Academy: intermediate & advanced courses', free: false, pro: true, hint: 'Valuation, financial statements, portfolio risk, and researching with AI' },
       { label: 'Community & leaderboards', free: true, pro: true },
       { label: 'Priority support', free: false, pro: true },
     ],

@@ -10,6 +10,8 @@ import { DemoTour } from './DemoTour';
 const StockStatsDemo = dynamic(() => import('./demo/StockStatsDemo').then((m) => m.StockStatsDemo), { ssr: false });
 const PortfolioDemo = dynamic(() => import('./demo/PortfolioDemo').then((m) => m.PortfolioDemo), { ssr: false });
 const DividendDemo = dynamic(() => import('./demo/DividendDemo').then((m) => m.DividendDemo), { ssr: false });
+const ScreenerDemo = dynamic(() => import('./demo/ScreenerDemo').then((m) => m.ScreenerDemo), { ssr: false });
+const AiResearchDemo = dynamic(() => import('./demo/AiResearchDemo').then((m) => m.AiResearchDemo), { ssr: false });
 
 interface Props {
   content: DemoContent;
@@ -79,6 +81,25 @@ export function DemoLesson({ content, onComplete }: Props) {
         >
           {tour}
         </DividendDemo>
+      );
+    case 'screener':
+      return (
+        <ScreenerDemo
+          onFilterApplied={() => markActionSatisfied('apply-valuation-filter')}
+          onClose={finish}
+        >
+          {tour}
+        </ScreenerDemo>
+      );
+    case 'ai-research':
+      return (
+        <AiResearchDemo
+          fixtureId={content.fixtureId}
+          onResearched={() => markActionSatisfied('run-research')}
+          onClose={finish}
+        >
+          {tour}
+        </AiResearchDemo>
       );
     default:
       return null;

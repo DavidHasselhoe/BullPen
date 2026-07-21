@@ -1,7 +1,9 @@
 /**
  * GET /api/academy/courses
  * Lists published courses with the user's per-course completion percentage
- * and locked state (sequential unlock by order_index).
+ * and locked state. Progression unlock is sequential *within a gating track*
+ * (free vs Pro), so a paying user isn't forced through every free course before
+ * reaching their first Pro course.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -77,10 +79,16 @@ async function handler(
     const done = courseLessonIds.filter((id) => completedLessonIds.has(id)).length;
     const percentComplete = total > 0 ? Math.round((done / total) * 100) : 0;
 
-    // Sequential unlock: course at idx 0 always unlocked; course N unlocked once
-    // course N-1 is fully completed.
-    const prevCourse = idx > 0 ? courses[idx - 1] : null;
-    const progressionLocked = prevCourse !== null && !completedCourseIds.has(prevCourse.id);
+    // Sequential unlock *within a gating track* (free vs Pro): the first course in
+    // each track is always progression-unlocked; a later course unlocks once the
+    // previous course in the SAME track is completed. This keeps the free ladder
+    // and the Pro ladder independent, so a Pro subscriber can start the first Pro
+    // course without finishing every free course first.
+    let prevInTrack: CourseRow | null = null;
+    for (let j = idx - 1; j >= 0; j--) {
+      if (courses[j].requires_pro === c.requires_pro) { prevInTrack = courses[j]; break; }
+    }
+    const progressionLocked = prevInTrack !== null && !completedCourseIds.has(prevInTrack.id);
     const proLocked = c.requires_pro && !userIsPro;
     // 'pro' wins the messaging even if progression would also lock it — upgrading
     // is the action that actually unblocks the user, so that's what we tell them.
