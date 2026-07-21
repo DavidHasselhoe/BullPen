@@ -36,6 +36,13 @@ const CHUNK_SIZE = 10;
 const FINANCIALS_TTL = 24 * 60 * 60;
 
 interface TwelveDataStatisticsRaw {
+  meta?: {
+    symbol?: string;
+    name?: string;
+    currency?: string;
+    exchange?: string;
+    country?: string;
+  };
   statistics?: {
     valuations_metrics?: {
       market_capitalization?: number | null;
@@ -238,6 +245,19 @@ export async function fetchAndUpsertScreenerStats(symbols: string[]): Promise<Sc
     for (const sym of group) {
       const statsRaw = raw[sym];
       if (!statsRaw) continue;
+
+      // The screener universe is US-only (see screener_universe seeding). TwelveData
+      // resolves ambiguous/uncovered symbols to whatever global listing shares that
+      // ticker string (e.g. "CTRA" → an Indonesian stock, not NYSE's Coterra Energy)
+      // without erroring, so a currency mismatch means we got the wrong company's
+      // financials entirely. Skip ingesting rather than persist corrupted numbers.
+      if (statsRaw.meta?.currency && statsRaw.meta.currency !== 'USD') {
+        console.warn(
+          `[screener-stats] skipping ${sym}: TwelveData resolved it to "${statsRaw.meta.name}" ` +
+          `(${statsRaw.meta.exchange}, ${statsRaw.meta.currency}) instead of a USD-listed company`
+        );
+        continue;
+      }
 
       const stats = parseStats(statsRaw, sym);
       const company = companyMap.get(sym);
