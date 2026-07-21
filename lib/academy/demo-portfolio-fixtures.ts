@@ -62,8 +62,22 @@ const STARTER_THREE_STOCK: HoldingWithPrice[] = [
   demoHolding({ symbol: 'XOM', company_name: 'Exxon Mobil Corporation', sector: 'Energy', quantity: 10, avgPrice: 105, currentPrice: 118, dayChangePercent: 0.6 }),
 ];
 
+/**
+ * A deliberately RISKY portfolio for the advanced risk course: ~70% in a single
+ * stock and every holding in the same sector. It exists so the "stress-test"
+ * lesson has a concrete example of concentration risk (one position dominates)
+ * and correlation risk (nothing here moves independently) to point at.
+ * Round market values (70/20/10 of $10k) keep the allocation chart legible.
+ */
+const CONCENTRATED_TECH: HoldingWithPrice[] = [
+  demoHolding({ symbol: 'NVDA', company_name: 'NVIDIA Corporation', sector: 'Technology', quantity: 35, avgPrice: 150, currentPrice: 200, dayChangePercent: 1.4 }),
+  demoHolding({ symbol: 'AAPL', company_name: 'Apple Inc.', sector: 'Technology', quantity: 10, avgPrice: 180, currentPrice: 200, dayChangePercent: -0.4 }),
+  demoHolding({ symbol: 'MSFT', company_name: 'Microsoft Corporation', sector: 'Technology', quantity: 5, avgPrice: 190, currentPrice: 200, dayChangePercent: 0.5 }),
+];
+
 const FIXTURES: Record<string, HoldingWithPrice[]> = {
   'starter-three-stock': STARTER_THREE_STOCK,
+  'concentrated-tech': CONCENTRATED_TECH,
 };
 
 export function getDemoPortfolio(fixtureId: string): HoldingWithPrice[] {

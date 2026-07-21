@@ -28,8 +28,8 @@ export function PortfolioDemo({ fixtureId, onClose, children }: Props) {
   return (
     <DemoSurfaceShell eyebrow="Demo · Building a portfolio" title="An example portfolio" onClose={onClose}>
       <p className="mb-6 text-sm text-muted-foreground">
-        This is a sample portfolio — not your holdings — built from three companies in three
-        different sectors. Watch how BullPen breaks down where your money actually sits.
+        This is a sample portfolio — not your holdings. Watch how BullPen breaks down where the
+        money actually sits, across individual holdings and sectors.
       </p>
 
       <div data-tour="portfolio-overview" className="mb-6">
