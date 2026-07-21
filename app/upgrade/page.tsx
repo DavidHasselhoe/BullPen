@@ -81,7 +81,7 @@ function UpgradeContent() {
             <span className="text-primary">Pro adds your AI analyst.</span>
           </h1>
           <p className="mt-3 text-sm text-muted-foreground sm:text-base">
-            Keep the whole app — advanced charts, full screener, alerts, holdings, Academy — free, with no report caps. Upgrade when you want an analyst that reads the filings, explains the moves, and briefs you every morning.
+            Keep the whole app — advanced charts, full screener, alerts, holdings, and the beginner Academy — free, with no report caps. Upgrade when you want an analyst that reads the filings, explains the moves, and briefs you every morning.
           </p>
         </div>
 
@@ -90,7 +90,7 @@ function UpgradeContent() {
           {[
             { t: 'No report limits', d: 'Research every stock, unlimited — no monthly cap on how much you can look at.' },
             { t: 'An AI analyst, not just charts', d: 'Ask anything and get a full Deep Dive — not a static report.' },
-            { t: 'Learn as you invest', d: 'Academy, streaks, and plain-English explanations on every metric.' },
+            { t: 'Learn as you invest', d: 'Pro unlocks the intermediate & advanced Academy — valuation, financial statements, portfolio risk, and researching with AI — taught hands-on in the real app.' },
           ].map((f) => (
             <div key={f.t} className="rounded-xl border bg-card/50 p-4 text-left">
               <p className="text-sm font-semibold text-foreground">{f.t}</p>
