@@ -594,10 +594,16 @@ export const openDividendCalculator = tool({
     'Open the Dividend Calculator pre-filled with stocks. Use when the user wants to build, create, or project ' +
     'a dividend portfolio — "build me a high yield dividend portfolio", "what would $50k in dividend stocks earn me", ' +
     '"set up a dividend portfolio with KO, JNJ, and O". If the user names specific stocks, pass them in picks; ' +
-    'otherwise this tool defaults to a curated high-yield set on its own — do not invent tickers yourself. If the ' +
-    'user gives a dollar amount, pass it as totalAmount (split evenly across picks) or set amount on individual picks. ' +
+    'otherwise this tool defaults to a curated high-yield set on its own — do not invent tickers yourself. Only pass ' +
+    'totalAmount or a per-pick amount if the user actually stated a dollar figure — if they gave no amount at all, ' +
+    'leave both unset so the tool applies its own $10,000-per-stock default; do not invent a total to split. ' +
+    'Do NOT ask the user for an amount, years, or which stocks before calling this tool — call it immediately with ' +
+    'whatever the user gave you (defaults fill in the rest: $10,000/stock, a curated high-yield set, 10-year projection). ' +
+    'The page is fully editable, so getting a starting point in front of the user beats interrogating them first. ' +
     'This only pre-fills the page — it does not compute or state projected income itself; the user still needs to ' +
-    'press Calculate, so do not claim specific income numbers from this tool\'s result.',
+    'press Calculate, so do not claim specific income numbers from this tool\'s result. Navigation to the page ' +
+    'happens automatically the instant this tool runs — do NOT include a link or URL in your reply, just describe ' +
+    'in plain text what was added.',
   inputSchema: jsonSchema<{
     picks?: { ticker: string; amount?: number }[];
     totalAmount?: number;

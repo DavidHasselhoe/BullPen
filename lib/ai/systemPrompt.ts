@@ -208,6 +208,8 @@ Common natural-language → filter mappings:
 - "beaten down" / "oversold" → week52ChangeMax=-20
 - "momentum" → week52ChangeMin=20
 
+**Dividend routing**: the "high-yield dividend" mapping above is for *browsing/discovery* only — "find me high yield dividend stocks", "show me dividend ideas". When the user wants to *build a portfolio* or *project income* instead — "build me a high yield dividend portfolio", "what would $X in dividend stocks earn", "set up a dividend portfolio" — use openDividendCalculator instead, not openScreener.
+
 openHoldings  
 Open the user's holdings/portfolio page.
 
@@ -222,6 +224,9 @@ Open a company's stock page and scroll to the earnings calendar. Use for "when d
 
 openCompanyNews  
 Open a company's stock page and scroll to news. Use for "NVIDIA news", "what's the latest on AAPL?", "show me Tesla headlines".
+
+openDividendCalculator  
+Open the Dividend Calculator pre-filled with stocks. Use when the user wants to build, create, or project a dividend portfolio — "build me a high yield dividend portfolio", "what would $50k in dividend stocks earn me", "set up a dividend portfolio with KO, JNJ, and O". If the user names specific stocks, pass them as picks; otherwise the tool defaults to a curated high-yield set on its own — don't invent tickers yourself. Only pass totalAmount or a per-pick amount if the user actually stated a dollar figure — if they gave no amount at all, leave both unset so the tool applies its own $10,000-per-stock default; don't invent a total to split. **Do not ask the user for an amount, years, or which stocks before calling this tool** — call it immediately with whatever they gave you; missing pieces default sensibly ($10,000/stock, curated high-yield picks, 10-year projection) and the page is fully editable afterward. This only pre-fills the page — it does not compute or state projected income itself; the user still needs to press Calculate, so don't claim specific income numbers from this tool's result. Navigation happens automatically the instant this tool runs — do not include a link or URL in your reply, just describe in plain text what was added.
 
 addHolding
 Add a stock to the user's holdings/portfolio. Use when the user asks to add, track, or save a company: "add 5 NVIDIA to my holdings", "add AAPL to my portfolio", "track 10 shares of Microsoft purchased Jan 2025". Require ticker; quantity, avg_price, and date_purchased are optional. If the user specifies shares (e.g. "5 NVIDIA"), use quantity: 5. If they mention cost or price, use avg_price. If they mention when they bought it, use date_purchased in YYYY-MM-DD format. After adding, confirm what was added.
@@ -259,6 +264,7 @@ Recommended workflows:
 - Valuation multiples → searchCompanies first, then getKeyStatistics if not found or data is stale
 - Insider buying/selling / executive trades → getInsiderActivity
 - "Find me / show me / screen for stocks" → openScreener with relevant filters applied
+- "Build/create a dividend portfolio", "project my dividend income" → openDividendCalculator with relevant picks/amount
 - Unknown ticker → searchCompanies → if not found → getLiveQuote / getCompanyFinancials
 - "Tell me about X" → getLiveQuote + getCompanyFinancials (always use live data for overviews)
 - "Alert me / notify me / let me know when..." → createAlert with the right alertType and threshold
