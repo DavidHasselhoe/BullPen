@@ -160,6 +160,8 @@ export const POPULAR_STOCKS = [
 
 interface TwelveDataQuoteResponse {
   symbol: string;
+  /** Only present for equities. Crypto/forex quotes omit it entirely. */
+  currency?: string;
   close: string;
   change: string;
   percent_change: string;
@@ -188,6 +190,16 @@ function parseQuoteResponse(data: TwelveDataQuoteResponse, symbol: string, useEx
       /rate.?limit|too many|credits? exceeded|exceeded.*limit/i.test(msg);
     if (isRateLimit) throw new TwelveDataRateLimitError(msg);
     throw new Error(msg);
+  }
+  // Equity requests are always for USD-listed companies (see screener-stats.ts for the
+  // same guard). TwelveData resolves an uncovered/ambiguous ticker to whatever foreign
+  // listing shares that symbol string (e.g. "CTRA" -> an Indonesian stock, "K" -> a TSX
+  // stock) without erroring, so a non-USD currency means we got the wrong company's
+  // quote entirely. Crypto/forex responses omit `currency`, so they're unaffected.
+  if (data.currency && data.currency !== 'USD') {
+    throw new Error(
+      `Twelve Data resolved ${symbol} to a non-USD listing (${data.currency}) — likely a symbol collision with a foreign stock, not real data for ${symbol}`
+    );
   }
   const close = parseFloat(data.close);
   const change = parseFloat(data.change || '0');
