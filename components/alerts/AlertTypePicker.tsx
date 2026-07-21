@@ -4,7 +4,8 @@ import { ArrowUp, ArrowDown, TrendingUp, TrendingDown, ChevronsUp, ChevronsDown,
 import { cn } from '@/lib/utils';
 import { ALERT_TYPE_GROUPS, alertTypeLabel, type AlertType } from '@/types/alerts';
 
-const TYPE_ICON: Record<AlertType, React.ComponentType<{ className?: string }>> = {
+/** Shared per-condition icon language — also used by AlertCard for scannable row glyphs. */
+export const ALERT_TYPE_ICON: Record<AlertType, React.ComponentType<{ className?: string }>> = {
   price_above:     ArrowUp,
   price_below:     ArrowDown,
   pct_change_up:   TrendingUp,
@@ -29,7 +30,7 @@ export function AlertTypePicker({ value, onChange }: Props) {
           </div>
           <div className={cn('grid gap-2', types.length === 1 ? 'grid-cols-1' : 'grid-cols-2')}>
             {types.map((t) => {
-              const Icon = TYPE_ICON[t];
+              const Icon = ALERT_TYPE_ICON[t];
               const selected = value === t;
               return (
                 <button

@@ -5,6 +5,7 @@ import { Loader2, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { TickerSelector, type SearchResult } from '@/components/tools/buy-here/TickerSelector';
 import { AlertTypePicker } from './AlertTypePicker';
 import { describeAlert, type AlertType, type CreateAlertPayload } from '@/types/alerts';
@@ -84,7 +85,8 @@ export function CreateAlertForm({ onCreated, onCancel, onCreate, initialTicker, 
     >
       {/* Step 1 — stock */}
       {initialTicker ? (
-        <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-muted/30 px-3 py-2.5">
+        <div className="flex items-center gap-2.5 rounded-xl border border-border/50 bg-muted/30 px-3 py-2.5">
+          <CompanyLogo name={initialTicker.name} ticker={initialTicker.ticker} logoUrl={null} size={24} className="rounded-md" />
           <span className="font-mono font-bold text-sm text-foreground">{initialTicker.ticker}</span>
           <span className="text-xs text-muted-foreground truncate">{initialTicker.name}</span>
         </div>

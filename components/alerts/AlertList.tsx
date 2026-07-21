@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { AlertCard } from './AlertCard';
+import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { cn } from '@/lib/utils';
 import type { UserAlert } from '@/types/alerts';
 
@@ -97,6 +98,13 @@ export function AlertList({ alerts, onToggle, onDelete }: Props) {
             >
               {/* Stock header */}
               <div className="flex items-center gap-2.5 px-3 py-2.5 border-b border-border/30 bg-muted/20">
+                <CompanyLogo
+                  name={group.companyName ?? group.symbol}
+                  ticker={group.symbol}
+                  logoUrl={null}
+                  size={26}
+                  className="rounded-md"
+                />
                 <span className="font-mono font-bold text-sm text-foreground leading-none">
                   {group.symbol}
                 </span>

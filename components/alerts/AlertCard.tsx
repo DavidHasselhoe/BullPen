@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Pause, Play, Trash2, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ALERT_TYPE_ICON } from './AlertTypePicker';
 import { describeAlert, type UserAlert } from '@/types/alerts';
 
 interface Props {
@@ -43,19 +44,35 @@ export function AlertCard({ alert, onToggle, onDelete }: Props) {
     try { await onDelete(alert.id); } finally { setBusy(null); }
   };
 
+  const TypeIcon = ALERT_TYPE_ICON[alert.alertType];
+
   return (
     <div className={cn('flex items-center gap-2.5 py-2 px-3', !alert.isActive && 'opacity-60')}>
-      {/* Status dot */}
+      {/* Condition icon, doubling as a status indicator via color */}
       <span
         className={cn(
-          'h-1.5 w-1.5 shrink-0 rounded-full',
+          'relative flex h-6 w-6 shrink-0 items-center justify-center rounded-md',
           !alert.isActive
-            ? 'bg-muted-foreground/30'
+            ? 'bg-muted/50'
             : triggeredRecently
-              ? 'bg-amber-400 animate-pulse'
-              : 'bg-emerald-500'
+              ? 'bg-amber-500/10'
+              : 'bg-emerald-500/10'
         )}
-      />
+      >
+        <TypeIcon
+          className={cn(
+            'h-3.5 w-3.5',
+            !alert.isActive
+              ? 'text-muted-foreground/40'
+              : triggeredRecently
+                ? 'text-amber-400'
+                : 'text-emerald-500'
+          )}
+        />
+        {alert.isActive && triggeredRecently && (
+          <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
+        )}
+      </span>
 
       {/* Description + last triggered */}
       <div className="flex-1 min-w-0 flex items-center gap-2 flex-wrap">

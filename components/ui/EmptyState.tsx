@@ -7,7 +7,8 @@ export type MascotPose =
   | 'celebrate'  // success / milestone
   | 'error'      // something went wrong / 404
   | 'locked'     // upgrade to unlock
-  | 'sleeping';  // all quiet / markets closed / nothing to report
+  | 'sleeping'   // all quiet / markets closed / nothing to report
+  | 'alert';     // set up a notification / price alert
 
 const POSE_SRC: Record<MascotPose, string> = {
   shrug: '/illustrations/bull-shrug.png',
@@ -17,6 +18,7 @@ const POSE_SRC: Record<MascotPose, string> = {
   error: '/illustrations/bull-error.png',
   locked: '/illustrations/bull-locked.png',
   sleeping: '/illustrations/bull-sleeping.png',
+  alert: '/illustrations/bull-alert.png',
 };
 
 interface EmptyStateProps {
