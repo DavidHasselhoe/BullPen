@@ -646,11 +646,12 @@ interface TwelveDataEarningsCalendarResponse {
 }
 
 /**
- * TwelveData's `/earnings` endpoint only gives the *report* date, not the fiscal
- * period it covers. Companies report 3-8 weeks after a quarter closes, so the
- * report date always falls one calendar quarter after the period it's reporting
- * on (e.g. a report on Apr 30 covers Q1, which ended Mar 31). Shift back one
- * quarter — with year rollover for Q1 reports, which cover the prior year's Q4.
+ * Best-effort fiscal quarter for a report date when no filed income statement is
+ * available to anchor it to (see getEarningsCalendar). A company's real fiscal
+ * calendar can be offset from the calendar year by any number of quarters (Apple's
+ * starts in October, Microsoft's in July), so this calendar-quarter-minus-one guess
+ * is only ever a fallback, never authoritative — prefer matching against
+ * getIncomeStatement()'s own fiscal_quarter/fiscal_year fields wherever feasible.
  */
 export function reportDateToFiscalQuarter(dateStr: string): { quarter: number; year: number } {
   const [yearStr, monthStr] = dateStr.split('-');
@@ -688,9 +689,61 @@ export async function getEarningsCalendar(
     throw new Error(msg);
   }
 
-  return (data.earnings ?? []).map((item) => {
-    const { quarter, year } = reportDateToFiscalQuarter(item.date);
-    return {
+  const rawItems = data.earnings ?? [];
+
+  // TD's /earnings only gives the report date, not the fiscal period covered, and
+  // (seen on AAPL/GOOGL) occasionally fabricates an "already reported" row with an
+  // eps_actual that doesn't correspond to any real filing. /income_statement is the
+  // authoritative source for both problems: it carries the company's own real
+  // fiscal quarter/year per period (correct even when the fiscal year isn't
+  // calendar-aligned, e.g. Apple/Microsoft), and a genuine report's eps_actual will
+  // always equal that period's own eps_diluted, because both come from the same
+  // filed 10-Q/10-K.
+  let filedPeriods: IncomeStatementPeriod[] = [];
+  if (rawItems.some((item) => item.eps_actual != null)) {
+    try {
+      // 6 quarters (max this plan allows before hitting an Enterprise-only ceiling)
+      // — comfortably covers the ~8 raw /earnings rows, which rarely span more
+      // than ~2 years even with TD's occasional duplicate/noise entries.
+      filedPeriods = await getIncomeStatement(symbol, 'quarterly', 6);
+    } catch {
+      filedPeriods = []; // fall through to the calendar-guess fallback below
+    }
+  }
+  const mostRecentFiled = filedPeriods[0] ?? null;
+
+  return rawItems.flatMap((item) => {
+    const matched =
+      item.eps_actual != null
+        ? filedPeriods.find((p) => {
+            if (p.eps_diluted == null || Math.abs(p.eps_diluted - (item.eps_actual as number)) >= 0.02) return false;
+            // A genuine report always lands 0-100 days *after* the period it covers —
+            // without this, a coincidentally similar EPS from an unrelated period
+            // (seen on GOOGL: 2025-04-24's 2.81 vs 2025-12-31's 2.82) can false-match.
+            const daysSincePeriodEnd =
+              (Date.parse(item.date) - Date.parse(p.fiscal_date)) / 86_400_000;
+            return daysSincePeriodEnd > 0 && daysSincePeriodEnd <= 100;
+          })
+        : null;
+
+    // Claims to already have an actual EPS but no filed statement backs it up —
+    // TD fabricated or prematurely-dated row. Drop it rather than show a fake result.
+    if (item.eps_actual != null && !matched) return [];
+
+    let quarter: number;
+    let year: number;
+    if (matched && matched.fiscal_quarter != null && matched.fiscal_year != null) {
+      quarter = matched.fiscal_quarter;
+      year = matched.fiscal_year;
+    } else if (mostRecentFiled?.fiscal_quarter != null && mostRecentFiled.fiscal_year != null) {
+      // Upcoming/not-yet-filed entry — extrapolate one quarter past the last filing.
+      quarter = mostRecentFiled.fiscal_quarter === 4 ? 1 : mostRecentFiled.fiscal_quarter + 1;
+      year = mostRecentFiled.fiscal_quarter === 4 ? mostRecentFiled.fiscal_year + 1 : mostRecentFiled.fiscal_year;
+    } else {
+      ({ quarter, year } = reportDateToFiscalQuarter(item.date));
+    }
+
+    return [{
       date: item.date,
       epsActual: item.eps_actual ?? null,
       epsEstimate: item.eps_estimate ?? null,
@@ -700,7 +753,7 @@ export async function getEarningsCalendar(
       revenueEstimate: null,
       symbol: symbol.toUpperCase(),
       year,
-    };
+    }];
   });
 }
 
@@ -866,6 +919,9 @@ export async function getStatistics(symbol: string): Promise<CompanyStatistics> 
 
 export interface IncomeStatementPeriod {
   fiscal_date: string;
+  /** Company's own fiscal quarter/year for this period, as TD resolves it (e.g. MSFT's fiscal year starts in July) — not a calendar-quarter guess. */
+  fiscal_quarter: number | null;
+  fiscal_year: number | null;
   revenue: number | null;
   gross_profit: number | null;
   operating_income: number | null;
@@ -881,6 +937,8 @@ export interface IncomeStatementPeriod {
 
 interface TwelveDataIncomeItem {
   fiscal_date?: string;
+  quarter?: number | null;
+  year?: number | null;
   sales?: number | null;
   gross_profit?: number | null;
   operating_income?: number | null;
@@ -927,6 +985,8 @@ export async function getIncomeStatement(
 
   return (data.income_statement ?? []).map((item) => ({
     fiscal_date: item.fiscal_date ?? '',
+    fiscal_quarter: item.quarter ?? null,
+    fiscal_year: item.year ?? null,
     revenue: item.sales ?? null,
     gross_profit: item.gross_profit ?? null,
     operating_income: item.operating_income ?? null,
