@@ -11,6 +11,7 @@ import { gatherDeepDiveData, formatDataBlock } from '@/lib/ai/deep-dive/gather-d
 import { inferArchetype } from '@/lib/ai/deep-dive/archetype';
 import { DEEP_DIVE_SYSTEM_PROMPT, buildUserPrompt } from '@/lib/ai/deep-dive/system-prompt';
 import { parseModelReport, isLens, type DeepDiveLens, type DeepDiveReport } from '@/lib/ai/deep-dive/schema';
+import { classifyAiError, parseFailure } from '@/lib/ai/provider-error';
 
 export const maxDuration = 300;
 
@@ -124,7 +125,9 @@ async function postHandler(
         try {
           model = parseModelReport(buffered);
         } catch (parseErr) {
-          send({ type: 'error', code: 'parse_failed', message: parseErr instanceof Error ? parseErr.message : String(parseErr) });
+          console.error('[deep-dive] parse failed:', parseErr);
+          const safe = parseFailure();
+          send({ type: 'error', code: safe.code, message: safe.message });
           return;
         }
 
@@ -161,14 +164,9 @@ async function postHandler(
 
         send({ type: 'done', report, id });
       } catch (err) {
-        if (process.env.NODE_ENV === 'development') console.error('[deep-dive] Anthropic error:', err);
-        const status = (err as { status?: number })?.status;
-        const code =
-          status === 401 ? 'invalid_key'
-          : status === 402 || (err instanceof Error && err.message.includes('credit')) ? 'payment_required'
-          : status === 429 ? 'rate_limited'
-          : 'unknown';
-        send({ type: 'error', code, message: err instanceof Error ? err.message : 'Unknown error' });
+        console.error('[deep-dive] Anthropic error:', err);
+        const safe = classifyAiError(err);
+        send({ type: 'error', code: safe.code, message: safe.message });
       } finally {
         controller.close();
       }

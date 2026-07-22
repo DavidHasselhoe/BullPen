@@ -268,9 +268,9 @@ function errorTitle(code: ErrorCode): string {
 function errorBody(code: ErrorCode, message: string): string {
   switch (code) {
     case 'rate_limited':     return 'You can run up to 3 deep dives per minute. Wait a moment and try again.';
-    case 'payment_required': return 'Anthropic API credits are required. Add credits at console.anthropic.com.';
-    case 'invalid_key':      return 'The Anthropic API key is missing or invalid. Check ANTHROPIC_API_KEY.';
-    case 'parse_failed':     return message ? `Parse error: ${message}` : 'The model returned an unexpected shape. This is usually transient — try again.';
+    case 'payment_required': return 'This AI feature is temporarily unavailable. Please try again shortly.';
+    case 'invalid_key':      return 'This AI feature is temporarily unavailable. Please try again shortly.';
+    case 'parse_failed':     return 'The model returned an unexpected response. This is usually transient — try again.';
     default:                 return message || 'An unexpected error occurred. Please try again.';
   }
 }

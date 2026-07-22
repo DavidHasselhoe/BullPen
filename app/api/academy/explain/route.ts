@@ -13,6 +13,7 @@ import { checkQuota } from '@/lib/billing/quotas';
 import { checkRateLimit } from '@/lib/security/rate-limiter';
 import { logAiCall } from '@/lib/billing/log-ai-call';
 import { createServerClient } from '@/lib/supabase/client';
+import { classifyAiError } from '@/lib/ai/provider-error';
 
 const MODEL = 'claude-haiku-4-5-20251001';
 
@@ -154,13 +155,9 @@ async function handler(
           /* never block */
         }
       } catch (err) {
-        if (process.env.NODE_ENV === 'development') {
-          console.error('[academy/explain] Anthropic error:', err);
-        }
-        send({
-          type: 'error',
-          message: err instanceof Error ? err.message : 'Unknown error',
-        });
+        console.error('[academy/explain] Anthropic error:', err);
+        const safe = classifyAiError(err);
+        send({ type: 'error', code: safe.code, message: safe.message });
       } finally {
         controller.close();
       }

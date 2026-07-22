@@ -461,9 +461,9 @@ function errorTitle(code: ErrorCode): string {
 function errorBody(code: ErrorCode, message: string): string {
   switch (code) {
     case 'rate_limited':         return "You've hit the per-minute limit (5 generations). Wait a moment and try again.";
-    case 'payment_required':     return 'Anthropic API credits are required. Add credits at console.anthropic.com.';
-    case 'invalid_key':          return 'The Anthropic API key is missing or invalid. Check ANTHROPIC_API_KEY in .env.local.';
-    case 'parse_failed':         return message ? `Parse error: ${message}` : 'The model returned an unexpected response shape. This is usually transient — try again.';
+    case 'payment_required':     return 'This AI feature is temporarily unavailable. Please try again shortly.';
+    case 'invalid_key':          return 'This AI feature is temporarily unavailable. Please try again shortly.';
+    case 'parse_failed':         return 'The model returned an unexpected response. This is usually transient — try again.';
     case 'too_few_valid_tickers': return "Most of the suggested tickers couldn't be verified against our index. Try rephrasing the thesis with more concrete language.";
     default:                     return message || 'An unexpected error occurred. Please try again.';
   }

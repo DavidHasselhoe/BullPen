@@ -15,6 +15,7 @@ import {
 } from '@/lib/ai/portfolio-builder/schema';
 import { validateTickers } from '@/lib/ai/portfolio-builder/validate-tickers';
 import { renormalizeAllocations } from '@/lib/ai/portfolio-builder/renormalize';
+import { classifyAiError, parseFailure } from '@/lib/ai/provider-error';
 import { z } from 'zod';
 
 export const maxDuration = 300;
@@ -127,13 +128,9 @@ async function handler(
         try {
           portfolio = parsePortfolio(buffered);
         } catch (parseErr) {
-          const detail = parseErr instanceof Error ? parseErr.message : String(parseErr);
-          console.error('[portfolio-builder] parse failed:', detail);
-          send({
-            type: 'error',
-            code: 'parse_failed',
-            message: detail,
-          });
+          console.error('[portfolio-builder] parse failed:', parseErr);
+          const safe = parseFailure();
+          send({ type: 'error', code: safe.code, message: safe.message });
           return;
         }
 
@@ -190,23 +187,9 @@ async function handler(
           replacedTickers,
         });
       } catch (err) {
-        if (process.env.NODE_ENV === 'development') {
-          console.error('[portfolio-builder] Anthropic error:', err);
-        }
-        const status = (err as { status?: number })?.status;
-        const code =
-          status === 401
-            ? 'invalid_key'
-            : status === 402 || (err instanceof Error && err.message.includes('credit'))
-            ? 'payment_required'
-            : status === 429
-            ? 'rate_limited'
-            : 'unknown';
-        send({
-          type: 'error',
-          code,
-          message: err instanceof Error ? err.message : 'Unknown error',
-        });
+        console.error('[portfolio-builder] Anthropic error:', err);
+        const safe = classifyAiError(err);
+        send({ type: 'error', code: safe.code, message: safe.message });
       } finally {
         controller.close();
       }

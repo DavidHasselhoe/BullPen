@@ -5,6 +5,7 @@ import { checkRateLimit } from '@/lib/security/rate-limiter';
 import { checkQuota } from '@/lib/billing/quotas';
 import { logAiCall } from '@/lib/billing/log-ai-call';
 import { languageName } from '@/lib/i18n/language-names';
+import { classifyAiError } from '@/lib/ai/provider-error';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -113,17 +114,9 @@ async function handler(
 
         send({ type: 'done' });
       } catch (err) {
-        // Log full error in dev so the terminal shows what Anthropic returned
-        if (process.env.NODE_ENV === 'development') {
-          console.error('[why-today] Anthropic error:', err);
-        }
-        // Surface a human-readable code so the client can show the right message
-        const status = (err as { status?: number })?.status;
-        const code = status === 401 ? 'invalid_key'
-          : status === 402 || (err instanceof Error && err.message.includes('credit')) ? 'payment_required'
-          : status === 429 ? 'rate_limited'
-          : 'unknown';
-        send({ type: 'error', code, message: err instanceof Error ? err.message : 'Unknown error' });
+        console.error('[why-today] Anthropic error:', err);
+        const safe = classifyAiError(err);
+        send({ type: 'error', code: safe.code, message: safe.message });
       } finally {
         controller.close();
       }

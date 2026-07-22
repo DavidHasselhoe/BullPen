@@ -11,6 +11,7 @@ import { logger } from '@/lib/utils/logger';
 import { withAuth, withRateLimit } from '@/lib/security/api-security';
 import { checkQuota } from '@/lib/billing/quotas';
 import { logAiCall } from '@/lib/billing/log-ai-call';
+import { classifyAiError } from '@/lib/ai/provider-error';
 
 const EXPLAIN_SYSTEM = `You are BullPen AI, a financial research analyst. The user has compared companies using SEC filing data. Your task is to provide a concise, interpretive summary of the key differences—focus on what the numbers mean for business quality and competitive positioning. Do NOT simply repeat numbers. Offer insight: pricing power, margin structure, growth trajectory, capital efficiency, scale advantages. Write 2-4 short paragraphs. Be professional and specific.`;
 
@@ -50,9 +51,10 @@ async function handler(req: NextRequest, _context: unknown, session: { userId: s
     return NextResponse.json({ success: true, explanation: result.text });
   } catch (err) {
     logger.error('[compare-explain]', err);
+    const safe = classifyAiError(err);
     return NextResponse.json(
-      { success: false, error: err instanceof Error ? err.message : 'Failed to generate explanation' },
-      { status: 500 }
+      { success: false, error: safe.message, code: safe.code },
+      { status: safe.status }
     );
   }
 }

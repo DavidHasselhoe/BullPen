@@ -14,6 +14,7 @@ import { checkQuota } from '@/lib/billing/quotas';
 import { logAiCall } from '@/lib/billing/log-ai-call';
 import { createServerClient } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/types';
+import { classifyAiError } from '@/lib/ai/provider-error';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -177,11 +178,9 @@ async function handler(req: NextRequest, _context: unknown, session: { userId: s
     );
   } catch (err) {
     console.error('[risk-analysis]', err);
+    const safe = classifyAiError(err);
     return addSecurityHeaders(
-      NextResponse.json(
-        { success: false, error: err instanceof Error ? err.message : 'Failed to generate risk analysis' },
-        { status: 500 }
-      )
+      NextResponse.json({ success: false, error: safe.message, code: safe.code }, { status: safe.status })
     );
   }
 }
