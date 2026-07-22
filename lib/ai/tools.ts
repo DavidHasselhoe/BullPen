@@ -533,7 +533,7 @@ export const openDiscover = tool({
     properties: {},
     additionalProperties: false,
   }),
-  execute: async () => clientAction({ type: 'navigate', path: '/' }),
+  execute: async () => clientAction({ type: 'navigate', path: '/dashboard' }),
 });
 
 export const openTools = tool({
