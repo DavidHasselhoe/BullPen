@@ -5,7 +5,12 @@
       { "type": "new", "text": "New Pro courses in Academy — go beyond the basics with intermediate and advanced lessons on valuation, reading financial statements, portfolio risk, and researching with AI, each with hands-on practice inside the real app: filter the screener for cheap stocks, read a real company's numbers, stress-test a portfolio, and research why a stock moved" },
       { "type": "new", "text": "Ask Bull to build you a dividend portfolio — say something like \"build me a high-yield dividend portfolio\" and Bull opens the dividend calculator already filled in with picks you can edit" },
       { "type": "improved", "text": "The price alerts page got a visual refresh — each stock now shows its logo, and every alert has a clear icon for its type (price target, daily move, 52-week extreme, or all-time high)" },
-      { "type": "fixed", "text": "Fixed a handful of stocks showing wildly wrong figures in the screener (such as an impossible market cap) caused by a data mix-up with same-named foreign listings" },
+      { "type": "fixed", "text": "Fixed a handful of stocks showing wildly wrong figures in the screener (such as an impossible market cap) caused by a data mix-up with same-named foreign listings" }
+    ]
+  },
+  {
+    "date": "2026-07-20",
+    "entries": [
       { "type": "improved", "text": "Key Numbers on stock pages now tell you whether a stock's P/E, profit margin, dividend, and volatility are high or low for its sector — with a \"typical\" marker on each meter and a plain-language note like \"Cheaper than most Technology companies\"" },
       { "type": "improved", "text": "Added plain-language explanations across your portfolio and watchlist — hover a metric label like Unrealized P/L, Cost Basis, P/E, or a Financial Health category to see what it means" },
       { "type": "improved", "text": "The Financial Health gauge is now easier to read — each category is colour-keyed to its slice of the ring and you can hover any category name for a plain explanation" },
@@ -15,12 +20,10 @@
       { "type": "improved", "text": "Financials charts (Income Statement, Balance Sheet, and Cash Flow) are now colour-coded and animate in — the Balance Sheet shows what a company owns versus what it owes at a glance" },
       { "type": "improved", "text": "The stock price chart is clearer and more accurate, and its indicator legend now shows a live value for each line as you move across the chart" },
       { "type": "improved", "text": "The screener now falls back to the last known price when the market is closed, instead of showing blanks" },
-      { "type": "improved", "text": "Refreshed Ask Bull's starter prompts to show what it can really do — add a holding, set an alert, check insider activity — and removed ones that led to a broken tool" },
       { "type": "improved", "text": "The Community page now features an Academy XP leaderboard" },
       { "type": "fixed", "text": "Fixed the Compare tool, and Ask Bull's company-metrics and company-comparison answers, which had stopped working after an underlying data source was retired" },
       { "type": "fixed", "text": "Fixed the activity heatmap's month labels drifting out of line with their columns, which could make a month look empty" },
-      { "type": "fixed", "text": "Fixed the stock chart briefly looking empty at the very start of the trading day, before the first prices of the day come in" },
-      { "type": "fixed", "text": "Fixed profile picture uploads failing to save" }
+      { "type": "fixed", "text": "Fixed the stock chart briefly looking empty at the very start of the trading day, before the first prices of the day come in" }
     ]
   },
   {
@@ -28,7 +31,9 @@
     "entries": [
       { "type": "improved", "text": "Ask Bull's answers are now much more visual — health scores, prices, key stats, financials, earnings, screener results, and more now show as charts and cards instead of plain text" },
       { "type": "new", "text": "Ask Bull can now check a stock's recent insider buying and selling activity" },
-      { "type": "improved", "text": "When you ask Bull to add, update, or remove a holding, or create a price alert, you'll now see a clear confirmation it worked — or a clear error with a retry button if it didn't" }
+      { "type": "improved", "text": "When you ask Bull to add, update, or remove a holding, or create a price alert, you'll now see a clear confirmation it worked — or a clear error with a retry button if it didn't" },
+      { "type": "improved", "text": "Refreshed Ask Bull's starter prompts to show what it can really do — add a holding, set an alert, check insider activity — and removed ones that led to a broken tool" },
+      { "type": "fixed", "text": "Fixed profile picture uploads failing to save" }
     ]
   },
   {
