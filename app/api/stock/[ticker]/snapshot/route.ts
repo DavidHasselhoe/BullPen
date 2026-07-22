@@ -7,7 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { batchFetch, withRateLimitRetry, TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
+import { batchFetch, withRateLimitRetry, TwelveDataRateLimitError, reportDateToFiscalQuarter } from '@/lib/twelvedata/twelvedata-client';
 import { getCached, getCachedWithMeta, setCached } from '@/lib/cache/market-data-cache';
 import { withRateLimit, withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { slugToSymbol, inferAssetType, hasEarnings } from '@/lib/assets/asset-type';
@@ -145,10 +145,7 @@ async function handler(
       const earningsRaw = raw.earnings as EarningsRaw | undefined;
       if (earningsRaw && !earningsRaw.code && earningsRaw.status !== 'error') {
         earnings = (earningsRaw.earnings ?? []).map((e) => {
-          const [yearStr, monthStr] = e.date.split('-');
-          const year = parseInt(yearStr ?? '0', 10);
-          const month = parseInt(monthStr ?? '0', 10);
-          const quarter = month <= 3 ? 1 : month <= 6 ? 2 : month <= 9 ? 3 : 4;
+          const { quarter, year } = reportDateToFiscalQuarter(e.date);
           return {
             date: e.date,
             time: e.time ?? '',

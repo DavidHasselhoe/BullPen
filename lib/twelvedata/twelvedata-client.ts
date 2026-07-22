@@ -645,6 +645,26 @@ interface TwelveDataEarningsCalendarResponse {
   message?: string;
 }
 
+/**
+ * TwelveData's `/earnings` endpoint only gives the *report* date, not the fiscal
+ * period it covers. Companies report 3-8 weeks after a quarter closes, so the
+ * report date always falls one calendar quarter after the period it's reporting
+ * on (e.g. a report on Apr 30 covers Q1, which ended Mar 31). Shift back one
+ * quarter — with year rollover for Q1 reports, which cover the prior year's Q4.
+ */
+export function reportDateToFiscalQuarter(dateStr: string): { quarter: number; year: number } {
+  const [yearStr, monthStr] = dateStr.split('-');
+  let year = parseInt(yearStr || '0', 10);
+  const month = parseInt(monthStr || '0', 10);
+  const reportCalQuarter = month <= 3 ? 1 : month <= 6 ? 2 : month <= 9 ? 3 : 4;
+  let quarter = reportCalQuarter - 1;
+  if (quarter === 0) {
+    quarter = 4;
+    year -= 1;
+  }
+  return { quarter, year };
+}
+
 export async function getEarningsCalendar(
   _from: string,
   _to: string,
@@ -669,10 +689,7 @@ export async function getEarningsCalendar(
   }
 
   return (data.earnings ?? []).map((item) => {
-    const [yearStr, monthStr] = item.date.split('-');
-    const year = parseInt(yearStr || '0', 10);
-    const month = parseInt(monthStr || '0', 10);
-    const quarter = month <= 3 ? 1 : month <= 6 ? 2 : month <= 9 ? 3 : 4;
+    const { quarter, year } = reportDateToFiscalQuarter(item.date);
     return {
       date: item.date,
       epsActual: item.eps_actual ?? null,

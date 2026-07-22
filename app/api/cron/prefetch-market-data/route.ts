@@ -35,6 +35,7 @@ import {
   getBalanceSheet,
   getCashFlow,
   TwelveDataRateLimitError,
+  reportDateToFiscalQuarter,
 } from '@/lib/twelvedata/twelvedata-client';
 import { setCached } from '@/lib/cache/market-data-cache';
 import { SIGNIFICANT_TICKERS } from '@/lib/market-data/significant-tickers';
@@ -158,10 +159,7 @@ function buildScreenerRow(sym: string, raw: RawStats | undefined) {
 function parseEarnings(raw: RawEarnings | undefined) {
   if (!raw || raw.code || raw.status === 'error' || !raw.earnings) return null;
   return raw.earnings.map(e => {
-    const [yearStr, monthStr] = e.date.split('-');
-    const year = parseInt(yearStr ?? '0', 10);
-    const month = parseInt(monthStr ?? '0', 10);
-    const quarter = month <= 3 ? 1 : month <= 6 ? 2 : month <= 9 ? 3 : 4;
+    const { quarter, year } = reportDateToFiscalQuarter(e.date);
     return {
       date: e.date,
       time: e.time ?? '',
