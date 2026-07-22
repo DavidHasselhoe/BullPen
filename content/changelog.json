@@ -1,5 +1,13 @@
 [
   {
+    "date": "2026-07-22",
+    "entries": [
+      { "type": "fixed", "text": "Fixed earnings dates showing the wrong fiscal quarter, and a phantom \"already reported\" earnings entry appearing for some stocks that hadn't actually reported yet" },
+      { "type": "fixed", "text": "Fixed Ask Bull opening the public landing page instead of your dashboard when asked to go home or show market movers" },
+      { "type": "fixed", "text": "Fixed AI features (like Portfolio Risk Analysis) occasionally showing a raw technical error message instead of a normal \"please try again\" message" }
+    ]
+  },
+  {
     "date": "2026-07-21",
     "entries": [
       { "type": "new", "text": "New Pro courses in Academy — go beyond the basics with intermediate and advanced lessons on valuation, reading financial statements, portfolio risk, and researching with AI, each with hands-on practice inside the real app: filter the screener for cheap stocks, read a real company's numbers, stress-test a portfolio, and research why a stock moved" },
