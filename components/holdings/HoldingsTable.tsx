@@ -11,7 +11,7 @@ import { TermTooltip } from '@/components/ui/TermTooltip';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { useHoldings, useRemoveHolding } from '@/hooks/use-holdings';
 import { useAuth } from '@/hooks/use-auth';
-import { Trash2, Edit2, ArrowUpRight, ArrowDownRight, Plus, Search, X, Loader2, Upload, Download } from 'lucide-react';
+import { Trash2, Edit2, DollarSign, ArrowUpRight, ArrowDownRight, Plus, Search, X, Loader2, Upload, Download } from 'lucide-react';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { logger } from '@/lib/utils/logger';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
@@ -60,6 +60,7 @@ function SparklineCell({ prices }: { prices: number[] | null | undefined }) {
 }
 
 import { EditHoldingModal } from './EditHoldingModal';
+import { SellHoldingModal } from './SellHoldingModal';
 import { DeleteHoldingDialog } from './DeleteHoldingDialog';
 import type { HoldingWithPrice } from './types';
 import { getSectorLabel } from './HoldingsPieChart';
@@ -216,6 +217,7 @@ interface HoldingRowProps {
   isEditModalOpen: boolean;
   onEdit: (h: HoldingWithPrice) => void;
   onRemove: (h: { id: string; symbol: string; companyName: string }) => void;
+  onSell: (h: HoldingWithPrice) => void;
 }
 
 const HoldingRow = memo(function HoldingRow({
@@ -232,6 +234,7 @@ const HoldingRow = memo(function HoldingRow({
   isEditModalOpen,
   onEdit,
   onRemove,
+  onSell,
 }: HoldingRowProps) {
   const queryClient = useQueryClient();
   const isPositive = (holding.dayChangePercent ?? 0) >= 0;
@@ -365,6 +368,17 @@ const HoldingRow = memo(function HoldingRow({
           >
             <Edit2 className="h-4 w-4" />
           </Button>
+          {holding.source === 'manual' && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onSell(holding)}
+              disabled={anyPending}
+              title="Sell shares"
+            >
+              <DollarSign className="h-4 w-4" />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="sm"
@@ -410,6 +424,8 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [deletingHolding, setDeletingHolding] = useState<{ id: string; symbol: string; companyName: string } | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [sellingHolding, setSellingHolding] = useState<UserHolding | null>(null);
+  const [isSellModalOpen, setIsSellModalOpen] = useState(false);
 
   // Batch sparklines — one request for all symbols instead of N individual candle fetches.
   const allSymbols = useMemo(
@@ -426,6 +442,10 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
   const handleRemoveRow = useCallback((h: { id: string; symbol: string; companyName: string }) => {
     setDeletingHolding(h);
     setIsDeleteDialogOpen(true);
+  }, []);
+  const handleSellRow = useCallback((h: HoldingWithPrice) => {
+    setSellingHolding(h as unknown as UserHolding);
+    setIsSellModalOpen(true);
   }, []);
 
   // Get user's currency preference
@@ -820,6 +840,11 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
                     <button onClick={() => handleEditRow(holding)} disabled={removeHolding.isPending || isEditModalOpen} title="Edit holding" className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/60 hover:text-foreground">
                       <Edit2 className="h-4 w-4" />
                     </button>
+                    {holding.source === 'manual' && (
+                      <button onClick={() => handleSellRow(holding)} disabled={removeHolding.isPending} title="Sell shares" className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/60 hover:text-foreground">
+                        <DollarSign className="h-4 w-4" />
+                      </button>
+                    )}
                     <button onClick={() => handleRemoveRow({ id: holding.id, symbol: holding.symbol, companyName: holding.company_name })} disabled={removeHolding.isPending} title="Remove holding" className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-red-500/10 hover:text-red-400">
                       {removeHolding.isPending && deletingHolding?.id === holding.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                     </button>
@@ -914,6 +939,7 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
                   isEditModalOpen={isEditModalOpen}
                   onEdit={handleEditRow}
                   onRemove={handleRemoveRow}
+                  onSell={handleSellRow}
                 />
               ))}
               {onAddClick && (
@@ -939,6 +965,12 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
         open={isEditModalOpen}
         onOpenChange={setIsEditModalOpen}
         holding={editingHolding}
+      />
+      <SellHoldingModal
+        open={isSellModalOpen}
+        onOpenChange={setIsSellModalOpen}
+        holding={sellingHolding}
+        currentPrice={sellingHolding ? holdingsWithPrices.find((h) => h.id === sellingHolding.id)?.currentPrice : undefined}
       />
       {deletingHolding && (
         <DeleteHoldingDialog
