@@ -379,6 +379,13 @@ import { addHolding, sellHolding, getHoldingSales, deleteHoldingSale, removeHold
 
 const TEST_USER_ID = process.env.VERIFY_TEST_USER_ID!; // pass a real auth.users id when running
 
+function assertEqual(actual: unknown, expected: unknown, label: string) {
+  if (actual !== expected) {
+    throw new Error(`FAIL ${label}: expected ${expected}, got ${actual}`);
+  }
+  console.log(`PASS ${label}: ${actual}`);
+}
+
 async function main() {
   if (!TEST_USER_ID) throw new Error('Set VERIFY_TEST_USER_ID env var to a real user id before running');
 
@@ -389,28 +396,56 @@ async function main() {
     avg_price: 10,
     asset_type: 'stock',
   } as never);
-  console.log('added:', added);
-  if (!added.success || !added.holding) throw new Error('setup failed');
+  if (!added.success || !added.holding) throw new Error(`setup failed: ${added.error}`);
 
+  // Oversell rejected
+  const oversold = await sellHolding(TEST_USER_ID, added.holding.id, {
+    quantitySold: 1000,
+    salePrice: 15,
+    saleDate: '2026-07-20',
+  });
+  assertEqual(oversold.success, false, 'oversell is rejected');
+
+  // Partial sell
   const sold = await sellHolding(TEST_USER_ID, added.holding.id, {
     quantitySold: 40,
     salePrice: 15,
     saleDate: '2026-07-20',
   });
-  console.log('sold:', sold);
-  if (!sold.success) throw new Error('sell failed');
-  console.log('expected realized_pl = 200, got:', sold.sale?.realized_pl);
-  console.log('expected remaining quantity = 60, got:', sold.holding?.quantity);
+  if (!sold.success) throw new Error(`sell failed: ${sold.error}`);
+  assertEqual(sold.sale?.realized_pl, 200, 'realized_pl on partial sell (40 * (15-10))');
+  assertEqual(sold.holding?.quantity, 60, 'remaining quantity after partial sell');
+  assertEqual(sold.holding?.avg_price, 10, 'avg_price unchanged by a sell');
 
-  const sales = await getHoldingSales(TEST_USER_ID);
-  console.log('sales list length (expect >= 1):', sales.sales?.length);
+  const salesAfterOne = await getHoldingSales(TEST_USER_ID);
+  const found = salesAfterOne.sales?.find((s) => s.id === sold.sale!.id);
+  assertEqual(!!found, true, 'sale appears in getHoldingSales');
+  assertEqual(found?.avg_cost_basis, 10, 'sale snapshots avg_cost_basis');
 
+  // Undo restores the shares and removes the sale record
   const undone = await deleteHoldingSale(TEST_USER_ID, sold.sale!.id);
-  console.log('undone:', undone);
+  assertEqual(undone.success, true, 'undo succeeds');
+
+  const salesAfterUndo = await getHoldingSales(TEST_USER_ID);
+  const stillThere = salesAfterUndo.sales?.some((s) => s.id === sold.sale!.id);
+  assertEqual(stillThere, false, 'undone sale no longer listed');
+
+  // Selling against a non-manual holding is rejected — flip source directly
+  // via a raw update since there's no "add as snaptrade" helper to call.
+  const { createServerClient } = await import('../lib/supabase/client');
+  await createServerClient().from('user_holdings').update({ source: 'snaptrade' }).eq('id', added.holding.id);
+  const snaptradeSell = await sellHolding(TEST_USER_ID, added.holding.id, {
+    quantitySold: 1,
+    salePrice: 15,
+    saleDate: '2026-07-20',
+  });
+  assertEqual(snaptradeSell.success, false, 'sell rejected for source=snaptrade');
 
   // Cleanup
-  await removeHolding(TEST_USER_ID, added.holding.id);
-  console.log('cleanup done');
+  const removed = await removeHolding(TEST_USER_ID, added.holding.id);
+  assertEqual(removed.success, true, 'cleanup: test holding removed');
+
+  console.log('ALL ASSERTIONS PASSED');
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });
@@ -427,7 +462,7 @@ Then run (replace the id):
 ```bash
 VERIFY_TEST_USER_ID=a9ec02c8-ecf5-4a82-9c67-25e387fa22fa npx tsx scripts/_verify-sell-holding.ts
 ```
-Expected output includes `expected realized_pl = 200, got: 200`, `expected remaining quantity = 60, got: 60`, `sales list length (expect >= 1): 1` (or higher if the account already has other sales), and no thrown errors.
+Expected output: a `PASS ...` line for each of the 8 `assertEqual` checks (oversell rejected, realized_pl, remaining quantity, avg_price unchanged, sale appears in list, sale snapshots avg_cost_basis, undo succeeds, undone sale no longer listed, sell rejected for snaptrade source, cleanup removed) followed by `ALL ASSERTIONS PASSED`, exit code 0. Any `FAIL ...` line or thrown error means the task is not done — fix the implementation, not the script.
 
 - [ ] **Step 5: Delete the throwaway script**
 
