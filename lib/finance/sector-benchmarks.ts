@@ -1,7 +1,16 @@
 /**
- * sector-benchmarks — reads the per-sector metric distributions rolled up by
- * migration 087 (sector_metric_stats), so the stock page can show "typical for
- * its sector" context instead of only an absolute scale.
+ * sector-benchmarks — reads the per-industry (preferred) or per-sector
+ * (fallback) metric distributions rolled up by migrations 087/088
+ * (sector_metric_stats / industry_metric_stats), so the stock page can show
+ * "typical for its kind" context instead of only an absolute scale.
+ *
+ * Industry (e.g. "Software", "Electronic Components") is the more honest
+ * peer group than sector (e.g. "Technology") for volatility-sensitive
+ * metrics like beta — a broad sector blends very different risk profiles.
+ * We only use it when the industry bucket has enough companies (>= 5,
+ * enforced by refresh_industry_metric_stats) to be a reliable median;
+ * otherwise we degrade to the coarser sector bucket, and finally to no
+ * context at all if even that is thin/unknown.
  *
  * The medians are computed from screener_stats (the ~530-stock prefetch
  * universe) with zero extra market-data credits. Values are in screener_stats
@@ -32,9 +41,12 @@ export interface SectorBenchmark {
 
 export type SectorBenchmarks = Partial<Record<SectorMetricKey, SectorBenchmark>>;
 
-export interface SectorBenchmarksResult {
-  /** The canonical sector these benchmarks belong to. */
-  sector: string;
+export type BenchmarkGroupType = 'industry' | 'sector';
+
+export interface BenchmarksResult {
+  groupType: BenchmarkGroupType;
+  /** The industry or (canonicalized) sector name the benchmarks belong to. */
+  groupLabel: string;
   benchmarks: SectorBenchmarks;
 }
 
@@ -66,7 +78,7 @@ export function normalizeSector(s: string | null | undefined): string | null {
   }
 }
 
-interface SectorMetricRow {
+interface MetricRow {
   metric: string;
   p25: number | null;
   median: number | null;
@@ -74,26 +86,9 @@ interface SectorMetricRow {
   sample_size: number;
 }
 
-/**
- * Fetch the benchmark distribution for a sector. Returns null when the sector is
- * unknown/thin (no rolled-up rows), so callers degrade to the absolute scale.
- */
-export async function getSectorBenchmarks(
-  sector: string | null | undefined
-): Promise<SectorBenchmarksResult | null> {
-  const canonical = normalizeSector(sector);
-  if (!canonical) return null;
-
-  const supabase = createServerClient();
-  const { data, error } = await supabase
-    .from('sector_metric_stats')
-    .select('metric, p25, median, p75, sample_size')
-    .eq('sector', canonical);
-
-  if (error || !data || data.length === 0) return null;
-
+function toBenchmarks(rows: MetricRow[]): SectorBenchmarks {
   const benchmarks: SectorBenchmarks = {};
-  for (const row of data as SectorMetricRow[]) {
+  for (const row of rows) {
     if (row.median == null || row.p25 == null || row.p75 == null) continue;
     benchmarks[row.metric as SectorMetricKey] = {
       p25: row.p25,
@@ -102,7 +97,47 @@ export async function getSectorBenchmarks(
       sampleSize: row.sample_size,
     };
   }
+  return benchmarks;
+}
 
+/**
+ * Fetch the benchmark distribution for a company, preferring its industry
+ * bucket and falling back to its sector bucket when industry is unknown or
+ * too thin. Returns null when neither yields anything, so callers degrade to
+ * the absolute scale.
+ */
+export async function getBenchmarks(
+  sector: string | null | undefined,
+  industry: string | null | undefined
+): Promise<BenchmarksResult | null> {
+  const supabase = createServerClient();
+
+  const trimmedIndustry = industry?.trim();
+  if (trimmedIndustry) {
+    const { data, error } = await supabase
+      .from('industry_metric_stats')
+      .select('metric, p25, median, p75, sample_size')
+      .eq('industry', trimmedIndustry);
+
+    if (!error && data && data.length > 0) {
+      const benchmarks = toBenchmarks(data as MetricRow[]);
+      if (Object.keys(benchmarks).length > 0) {
+        return { groupType: 'industry', groupLabel: trimmedIndustry, benchmarks };
+      }
+    }
+  }
+
+  const canonical = normalizeSector(sector);
+  if (!canonical) return null;
+
+  const { data, error } = await supabase
+    .from('sector_metric_stats')
+    .select('metric, p25, median, p75, sample_size')
+    .eq('sector', canonical);
+
+  if (error || !data || data.length === 0) return null;
+
+  const benchmarks = toBenchmarks(data as MetricRow[]);
   if (Object.keys(benchmarks).length === 0) return null;
-  return { sector: canonical, benchmarks };
+  return { groupType: 'sector', groupLabel: canonical, benchmarks };
 }

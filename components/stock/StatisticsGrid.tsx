@@ -20,6 +20,7 @@ import { cn } from '@/lib/utils';
 import { MetricCard } from '@/components/viz/MetricCard';
 import { RangeBar } from '@/components/viz/RangeBar';
 import { MeterBar } from '@/components/viz/MeterBar';
+import { VolatilityGauge } from '@/components/stock/VolatilityGauge';
 import {
   week52Insight,
   marketCapBand,
@@ -122,7 +123,8 @@ interface StatRow {
 
 interface BenchmarksResponse {
   success: boolean;
-  sector: string | null;
+  groupType: 'industry' | 'sector' | null;
+  groupLabel: string | null;
   benchmarks: SectorBenchmarks;
 }
 
@@ -131,14 +133,17 @@ export function StatisticsGrid({
   signals,
   currentPrice,
   sector,
+  industry,
   forceFull = false,
 }: {
   ticker: string;
   signals?: Record<string, SignalValue>;
   /** Live/last price for the 52-week range marker (from the page snapshot). */
   currentPrice?: number | null;
-  /** Company sector — drives "typical for its sector" benchmark context. */
+  /** Company sector — benchmark fallback when industry is unknown/thin. */
   sector?: string | null;
+  /** Company industry — preferred "typical for its kind" benchmark peer group. */
+  industry?: string | null;
   forceFull?: boolean;
 }) {
   const { isSimplified: rawSimplified } = useExperienceLevel();
@@ -162,22 +167,27 @@ export function StatisticsGrid({
     gcTime: 30 * 60 * 1000,
   });
 
-  // Sector benchmarks — "typical for its sector" context. Reference data, so
-  // cache long and never refetch on focus; a null/thin sector just yields {}.
+  // Benchmarks — "typical for its kind" context. Prefers the industry peer
+  // group (e.g. "Software"), falling back to the broader sector (e.g.
+  // "Technology") server-side when industry is unknown or too thin. Reference
+  // data, so cache long and never refetch on focus; a null/thin pair just
+  // yields {}.
   const { data: benchData } = useQuery<BenchmarksResponse>({
-    queryKey: ['sector-benchmarks', sector ?? ''],
+    queryKey: ['sector-benchmarks', sector ?? '', industry ?? ''],
     queryFn: async () => {
-      const res = await fetch(`/api/sector-benchmarks/${encodeURIComponent(sector!)}`);
+      const path = encodeURIComponent(sector || industry || '');
+      const qs = industry ? `?industry=${encodeURIComponent(industry)}` : '';
+      const res = await fetch(`/api/sector-benchmarks/${path}${qs}`);
       return res.json();
     },
-    enabled: !!sector,
+    enabled: !!sector || !!industry,
     staleTime: 12 * 60 * 60 * 1000,
     gcTime: 24 * 60 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
 
   const benchmarks = benchData?.benchmarks;
-  const sectorLabel = benchData?.sector ?? sector ?? '';
+  const benchmarkLabel = benchData?.groupLabel ?? industry ?? sector ?? '';
   const dist = (key: keyof SectorBenchmarks): Distribution | undefined => {
     const b = benchmarks?.[key];
     return b ? { p25: b.p25, median: b.median, p75: b.p75 } : undefined;
@@ -268,7 +278,7 @@ export function StatisticsGrid({
         value={fmt(s.peRatioTTM, 'ratio')}
         signal={sig('peRatioTTM')}
         insight={peInsight(s.peRatioTTM, s.peRatioForward)}
-        context={sectorContext(s.peRatioTTM, dist('pe_ratio'), 'pe', sectorLabel)}
+        context={sectorContext(s.peRatioTTM, dist('pe_ratio'), 'pe', benchmarkLabel)}
         tourId="stat-p-e-ttm"
         ticker={ticker}
         onAskAI={handleAskAI}
@@ -302,7 +312,7 @@ export function StatisticsGrid({
         value={fmt(s.profitMargin, 'percent')}
         signal={sig('profitMargin')}
         insight={marginInsight(s.profitMargin) || growthInsight(s.revenueGrowthTTM)}
-        context={sectorContext(s.profitMargin, dist('profit_margin'), 'margin', sectorLabel)}
+        context={sectorContext(s.profitMargin, dist('profit_margin'), 'margin', benchmarkLabel)}
         tourId="stat-profit-margin"
         ticker={ticker}
         onAskAI={handleAskAI}
@@ -342,7 +352,7 @@ export function StatisticsGrid({
       value={s.dividendYield != null && s.dividendYield > 0 ? fmt(s.dividendYield, 'percent') : 'None'}
       signal={s.dividendYield != null && s.dividendYield > 0 ? sig('dividendYield') : undefined}
       insight={dividendInsight(s.dividendYield)}
-      context={s.dividendYield != null && s.dividendYield > 0 ? sectorContext(s.dividendYield, dist('dividend_yield'), 'yield', sectorLabel) : ''}
+      context={s.dividendYield != null && s.dividendYield > 0 ? sectorContext(s.dividendYield, dist('dividend_yield'), 'yield', benchmarkLabel) : ''}
       tourId="stat-dividend-yield"
       ticker={ticker}
       onAskAI={handleAskAI}
@@ -368,18 +378,24 @@ export function StatisticsGrid({
         value={fmt(s.beta, 'ratio')}
         signal={sig('beta')}
         insight={betaInsight(s.beta)}
-        context={sectorContext(s.beta, dist('beta'), 'beta', sectorLabel)}
+        context={sectorContext(s.beta, dist('beta'), 'beta', benchmarkLabel)}
         tourId="stat-beta"
         ticker={ticker}
         onAskAI={handleAskAI}
       >
-        <MeterBar
+        <VolatilityGauge
           value={s.beta}
           min={BETA_DOMAIN.min}
           max={BETA_DOMAIN.max}
-          signal={sig('beta')}
-          benchmark={{ value: 1, label: 'market' }}
-          srLabel={`Beta ${fmt(s.beta, 'ratio')}, where 1 moves with the market`}
+          ticker={ticker}
+          marketValue={1}
+          industryValue={dist('beta')?.median}
+          industryLabel={benchmarkLabel || 'Industry'}
+          srLabel={
+            dist('beta')
+              ? `Beta ${fmt(s.beta, 'ratio')}, versus the market average of 1.0 and the ${benchmarkLabel || 'industry'} average of ${dist('beta')!.median.toFixed(2)}`
+              : `Beta ${fmt(s.beta, 'ratio')}, where 1 moves with the market`
+          }
         />
       </MetricCard>
     );
@@ -395,7 +411,7 @@ export function StatisticsGrid({
         label="P/B"
         value={fmt(s.pbRatio, 'ratio')}
         insight={pbInsight(s.pbRatio)}
-        context={sectorContext(s.pbRatio, dist('pb_ratio'), 'pb', sectorLabel)}
+        context={sectorContext(s.pbRatio, dist('pb_ratio'), 'pb', benchmarkLabel)}
         ticker={ticker}
         onAskAI={handleAskAI}
       >
@@ -417,7 +433,7 @@ export function StatisticsGrid({
         label="EV/EBITDA"
         value={fmt(s.evToEbitda, 'ratio')}
         insight={evEbitdaInsight(s.evToEbitda)}
-        context={sectorContext(s.evToEbitda, dist('ev_to_ebitda'), 'evEbitda', sectorLabel)}
+        context={sectorContext(s.evToEbitda, dist('ev_to_ebitda'), 'evEbitda', benchmarkLabel)}
         ticker={ticker}
         onAskAI={handleAskAI}
       >

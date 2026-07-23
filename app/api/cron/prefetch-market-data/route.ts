@@ -34,10 +34,12 @@ import {
   getIncomeStatement,
   getBalanceSheet,
   getCashFlow,
+  getCompanyProfile,
+  withRateLimitRetry,
   TwelveDataRateLimitError,
   reportDateToFiscalQuarter,
 } from '@/lib/twelvedata/twelvedata-client';
-import { setCached } from '@/lib/cache/market-data-cache';
+import { getCached, setCached } from '@/lib/cache/market-data-cache';
 import { SIGNIFICANT_TICKERS } from '@/lib/market-data/significant-tickers';
 
 export const maxDuration = 60;
@@ -46,6 +48,7 @@ const APIKEY = () => process.env.TWELVE_DATA_API_KEY ?? '';
 
 const STATS_TTL = 24 * 60 * 60;           // 24h — price-dependent, refresh daily
 const FINANCIALS_TTL = 7 * 24 * 60 * 60;  // 7 days — quarterly reports, slow-moving
+const PROFILE_TTL = 7 * 24 * 60 * 60;     // 7 days — sector/industry/name change essentially never
 const STATS_BATCH_SIZE = 5;               // symbols per batch (5 × 70 credits ≈ 350/call)
 const FINANCIALS_PER_RUN = 75;            // max stocks to refresh financials per invocation
 const FINANCIALS_CONCURRENCY = 5;         // parallel stocks in financials phase
@@ -156,6 +159,32 @@ function buildScreenerRow(sym: string, raw: RawStats | undefined) {
   };
 }
 
+/**
+ * Sector/industry/name/logo for a screener_stats row. Sourced from TwelveData's
+ * /profile — NOT the `companies` table, which is scoped to SEC-filing-ingested
+ * companies (requires a real CIK) and only covers a small hand-ingested subset,
+ * nowhere near the ~530-stock SIGNIFICANT_TICKERS universe this cron sweeps.
+ * Shares the same 7-day cache key the stock page's own profile route writes
+ * (`profile:${sym}`), so an organic page visit and this cron reuse one fetch.
+ */
+async function getProfileFields(
+  sym: string
+): Promise<{ name: string | null; sector: string | null; industry: string | null; logoUrl: string | null }> {
+  const cacheKey = `profile:${sym}`;
+  const cached = await getCached<{ profile: Awaited<ReturnType<typeof getCompanyProfile>> }>(cacheKey);
+  if (cached?.profile) {
+    const p = cached.profile;
+    return { name: p.name ?? null, sector: p.sector ?? null, industry: p.industry ?? null, logoUrl: p.logo ?? null };
+  }
+  try {
+    const profile = await withRateLimitRetry(() => getCompanyProfile(sym));
+    void setCached(cacheKey, sym, 'company_profile', { profile, executives: [] }, PROFILE_TTL);
+    return { name: profile.name ?? null, sector: profile.sector ?? null, industry: profile.industry ?? null, logoUrl: profile.logo ?? null };
+  } catch {
+    return { name: null, sector: null, industry: null, logoUrl: null };
+  }
+}
+
 function parseEarnings(raw: RawEarnings | undefined) {
   if (!raw || raw.code || raw.status === 'error' || !raw.earnings) return null;
   return raw.earnings.map(e => {
@@ -223,15 +252,10 @@ async function handleStatsBatch(
     });
   }
 
-  const { data: companyRows } = await supabase
-    .from('companies')
-    .select('ticker, name, sector, industry, logo_url')
-    .in('ticker', needsStats);
-  const companyMap = new Map(
-    (companyRows ?? []).map((c) => [c.ticker as string, c as {
-      name: string; sector: string | null; industry: string | null; logo_url: string | null;
-    }])
+  const profileEntries = await Promise.all(
+    needsStats.map(async (sym) => [sym, await getProfileFields(sym)] as const)
   );
+  const profileMap = new Map(profileEntries);
 
   try {
     const requests: Record<string, string> = {};
@@ -270,13 +294,13 @@ async function handleStatsBatch(
 
       const screenerRow = buildScreenerRow(sym, raw[`${sym}_s`] as RawStats | undefined);
       if (screenerRow) {
-        const co = companyMap.get(sym);
+        const profile = profileMap.get(sym);
         screenerRowsBatch.push({
           ...screenerRow,
-          name: co?.name ?? sym,
-          sector: co?.sector ?? null,
-          industry: co?.industry ?? null,
-          logo_url: co?.logo_url ?? null,
+          name: profile?.name ?? sym,
+          sector: profile?.sector ?? null,
+          industry: profile?.industry ?? null,
+          logo_url: profile?.logoUrl ?? null,
         });
       }
     }
@@ -285,15 +309,19 @@ async function handleStatsBatch(
       await supabase.from('screener_stats').upsert(screenerRowsBatch, { onConflict: 'ticker' });
     }
 
-    // After the final batch of the sweep, recompute the per-sector benchmark
-    // medians (migration 087) off the now-fresh screener_stats. Pure SQL
-    // aggregation — no market-data credits. Fire-and-forget: a failure here must
-    // never fail the sweep, and stale benchmarks are harmless (the UI just shows
-    // yesterday's "typical" context).
+    // After the final batch of the sweep, recompute the per-sector and
+    // per-industry benchmark medians (migrations 087/088) off the now-fresh
+    // screener_stats. Pure SQL aggregation — no market-data credits.
+    // Fire-and-forget: a failure here must never fail the sweep, and stale
+    // benchmarks are harmless (the UI just shows yesterday's "typical" context).
     if (nextBatch === null) {
       const { error: refreshErr } = await supabase.rpc('refresh_sector_metric_stats');
       if (refreshErr) {
         console.error('[prefetch] refresh_sector_metric_stats failed:', refreshErr.message);
+      }
+      const { error: refreshIndustryErr } = await supabase.rpc('refresh_industry_metric_stats');
+      if (refreshIndustryErr) {
+        console.error('[prefetch] refresh_industry_metric_stats failed:', refreshIndustryErr.message);
       }
     }
 

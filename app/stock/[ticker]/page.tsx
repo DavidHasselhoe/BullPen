@@ -151,7 +151,10 @@ export default function StockDetailPage() {
 
   // Fetch TwelveData profile for the short/common company name.
   // Key matches CompanyProfileCard so both share the same cache entry.
-  const { data: profileData, isLoading: profileLoading } = useQuery<{ success: boolean; profile?: { name: string } }>({
+  const { data: profileData, isLoading: profileLoading } = useQuery<{
+    success: boolean;
+    profile?: { name: string; sector: string | null; industry: string | null };
+  }>({
     queryKey: ['company-profile', ticker, i18n.language],
     queryFn: async () => {
       const res = await fetch(`/api/stock/${ticker}/company-profile?lang=${i18n.language}`);
@@ -164,6 +167,13 @@ export default function StockDetailPage() {
 
   // Prefer TwelveData short name over the full legal name in Supabase
   const displayName = profileData?.profile?.name ?? company?.name ?? ticker;
+
+  // Prefer the TwelveData profile for sector/industry — the Supabase `companies`
+  // row is scoped to SEC-filing-ingested companies (a small hand-ingested
+  // subset) and is null for most tickers. Fall back to it only if the profile
+  // fetch itself failed.
+  const resolvedSector = profileData?.profile?.sector ?? company?.sector ?? null;
+  const resolvedIndustry = profileData?.profile?.industry ?? company?.industry ?? null;
 
   // Scroll to hash anchor (e.g. #earnings or #news from AI assistant links)
   useEffect(() => {
@@ -337,10 +347,10 @@ export default function StockDetailPage() {
                                 <Badge variant="outline" className="font-mono text-sm">
                                   {ticker}
                                 </Badge>
-                                {company?.sector && (
+                                {resolvedSector && (
                                   <span className="text-sm text-muted-foreground">
-                                    {company.sector}
-                                    {company.industry && ` • ${company.industry}`}
+                                    {resolvedSector}
+                                    {resolvedIndustry && ` • ${resolvedIndustry}`}
                                   </span>
                                 )}
                               </div>
@@ -403,7 +413,8 @@ export default function StockDetailPage() {
                     ticker={ticker}
                     signals={metricSignals}
                     currentPrice={snapshot.data?.quote?.price ?? null}
-                    sector={company?.sector ?? null}
+                    sector={resolvedSector}
+                    industry={resolvedIndustry}
                   />
                 </AnimatedContent>
               </StockSectionBoundary>
