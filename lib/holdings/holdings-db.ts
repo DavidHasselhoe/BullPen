@@ -2,7 +2,7 @@
 // Server-side database operations for user holdings
 
 import { createServerClient } from '@/lib/supabase/client';
-import type { UserHolding, InsertUserHolding, UpdateUserHolding } from '@/lib/types/database';
+import type { UserHolding, InsertUserHolding, UpdateUserHolding, HoldingSale, InsertHoldingSale } from '@/lib/types/database';
 import { logger } from '@/lib/utils/logger';
 import { getCompanyProfile } from '@/lib/twelvedata/twelvedata-client';
 
@@ -454,5 +454,199 @@ export async function removeHolding(
       success: false,
       error: error instanceof Error ? error.message : 'Internal server error',
     };
+  }
+}
+
+export interface SellHoldingResult {
+  success: boolean;
+  sale?: HoldingSale;
+  holding?: UserHolding;
+  error?: string;
+}
+
+export interface GetHoldingSalesResult {
+  success: boolean;
+  sales?: HoldingSale[];
+  error?: string;
+}
+
+const SELL_EPSILON = 1e-9;
+
+/**
+ * Records a sale against a manually-entered holding: inserts a `holding_sales`
+ * row snapshotting the current avg_price as this sale's cost basis, then
+ * decrements the holding's quantity. avg_price on user_holdings is left
+ * untouched — under average-cost accounting, selling shares never changes
+ * the cost basis of the shares you keep. A full sell brings quantity to 0
+ * but the row is not deleted, so it stays available for chart reconstruction
+ * and the closed-positions list.
+ */
+export async function sellHolding(
+  userId: string,
+  holdingId: string,
+  input: { quantitySold: number; salePrice: number; saleDate: string }
+): Promise<SellHoldingResult> {
+  try {
+    if (!(input.quantitySold > 0)) {
+      return { success: false, error: 'Quantity sold must be greater than zero' };
+    }
+    if (!(input.salePrice > 0)) {
+      return { success: false, error: 'Sale price must be greater than zero' };
+    }
+
+    const supabase = createServerClient();
+
+    const { data: holding, error: lookupErr } = await supabase
+      .from('user_holdings')
+      .select('id, symbol, company_name, quantity, avg_price, source, trading_currency, asset_type')
+      .eq('id', holdingId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (lookupErr || !holding) {
+      return { success: false, error: 'Holding not found or access denied' };
+    }
+    if (holding.source !== 'manual') {
+      return { success: false, error: 'Selling is only available for manually-entered holdings' };
+    }
+    if (holding.avg_price == null) {
+      return { success: false, error: 'This holding has no average cost — edit it to add one before selling' };
+    }
+    const currentQty = holding.quantity ?? 0;
+    if (input.quantitySold > currentQty + SELL_EPSILON) {
+      return { success: false, error: `Cannot sell more than the ${currentQty} shares you hold` };
+    }
+
+    const realizedPl = (input.salePrice - holding.avg_price) * input.quantitySold;
+
+    const saleInsert: Omit<InsertHoldingSale, 'id'> = {
+      user_id: userId,
+      original_holding_id: holding.id,
+      symbol: holding.symbol,
+      company_name: holding.company_name,
+      quantity_sold: input.quantitySold,
+      avg_cost_basis: holding.avg_price,
+      sale_price: input.salePrice,
+      realized_pl: realizedPl,
+      sale_date: input.saleDate,
+      trading_currency: holding.trading_currency ?? null,
+      asset_type: holding.asset_type ?? null,
+    };
+
+    const { data: sale, error: insertErr } = await supabase
+      .from('holding_sales')
+      .insert(saleInsert)
+      .select()
+      .single();
+
+    if (insertErr || !sale) {
+      return { success: false, error: insertErr?.message || 'Failed to record sale' };
+    }
+
+    const newQuantity = Math.max(0, currentQty - input.quantitySold);
+    const { data: updatedHolding, error: updateErr } = await supabase
+      .from('user_holdings')
+      .update({ quantity: newQuantity, updated_at: new Date().toISOString() })
+      .eq('id', holding.id)
+      .eq('user_id', userId)
+      .select()
+      .single();
+
+    if (updateErr) {
+      // Sale is already recorded; surface the error but don't lose the sale record.
+      return { success: false, sale: sale as HoldingSale, error: `Sale recorded, but updating quantity failed: ${updateErr.message}` };
+    }
+
+    return { success: true, sale: sale as HoldingSale, holding: updatedHolding as UserHolding };
+  } catch (error) {
+    logger.error('Error in sellHolding:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Internal server error' };
+  }
+}
+
+/**
+ * Lists this user's recorded sales, newest first.
+ */
+export async function getHoldingSales(userId: string): Promise<GetHoldingSalesResult> {
+  try {
+    const supabase = createServerClient();
+    const { data, error } = await supabase
+      .from('holding_sales')
+      .select('*')
+      .eq('user_id', userId)
+      .order('sale_date', { ascending: false });
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+    return { success: true, sales: (data ?? []) as HoldingSale[] };
+  } catch (error) {
+    logger.error('Error in getHoldingSales:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Internal server error' };
+  }
+}
+
+/**
+ * Deletes a manually-entered sale record and adds the sold quantity back
+ * onto the originating holding — for undoing a data-entry mistake (wrong
+ * price, wrong date). Blocked if the originating holding was itself later
+ * hard-deleted (original_holding_id is null): there's nothing to add the
+ * shares back onto, so the user needs to re-add the holding manually first.
+ */
+export async function deleteHoldingSale(
+  userId: string,
+  saleId: string
+): Promise<RemoveHoldingResult> {
+  try {
+    const supabase = createServerClient();
+
+    const { data: sale, error: lookupErr } = await supabase
+      .from('holding_sales')
+      .select('id, original_holding_id, quantity_sold')
+      .eq('id', saleId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (lookupErr || !sale) {
+      return { success: false, error: 'Sale not found or access denied' };
+    }
+    if (!sale.original_holding_id) {
+      return { success: false, error: 'The original holding no longer exists — re-add it before undoing this sale' };
+    }
+
+    const { data: holding, error: holdingErr } = await supabase
+      .from('user_holdings')
+      .select('id, quantity')
+      .eq('id', sale.original_holding_id)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (holdingErr || !holding) {
+      return { success: false, error: 'The original holding no longer exists — re-add it before undoing this sale' };
+    }
+
+    const { error: updateErr } = await supabase
+      .from('user_holdings')
+      .update({ quantity: (holding.quantity ?? 0) + sale.quantity_sold, updated_at: new Date().toISOString() })
+      .eq('id', holding.id)
+      .eq('user_id', userId);
+
+    if (updateErr) {
+      return { success: false, error: updateErr.message };
+    }
+
+    const { error: deleteErr } = await supabase
+      .from('holding_sales')
+      .delete()
+      .eq('id', saleId)
+      .eq('user_id', userId);
+
+    if (deleteErr) {
+      return { success: false, error: deleteErr.message };
+    }
+    return { success: true };
+  } catch (error) {
+    logger.error('Error in deleteHoldingSale:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Internal server error' };
   }
 }
