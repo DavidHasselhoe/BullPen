@@ -17,6 +17,10 @@ const eslintConfig = defineConfig([
     "**/.next/**",
     // Compiled Vercel output — not source
     ".vercel/**",
+    // Vendored from Bklit UI (components.json @bklit registry) — third-party
+    // source we don't author, trips react-hooks/refs and set-state-in-effect
+    // in its own internals.
+    "components/charts/**",
   ]),
 ]);
 
