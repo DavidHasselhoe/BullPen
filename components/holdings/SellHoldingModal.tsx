@@ -34,14 +34,19 @@ export function SellHoldingModal({ open, onOpenChange, holding, currentPrice }: 
   const sellHolding = useSellHolding();
 
   useEffect(() => {
+    // Deliberately excludes currentPrice from the deps: this page has a live
+    // price feed, so currentPrice ticks every few seconds while the modal is
+    // open. Populate once per open+holding only — including currentPrice
+    // here previously wiped the user's typed quantity/price/date back to
+    // defaults on every live tick, silently discarding in-progress input.
     if (holding && open) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: populate controlled form fields when the holding/open props change
       setQuantity('');
       setSalePrice(currentPrice != null ? String(currentPrice) : (holding.avg_price?.toString() ?? ''));
       setSaleDate(new Date().toISOString().slice(0, 10));
       setSaved(false);
     }
-  }, [holding, open, currentPrice]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- currentPrice intentionally excluded, see comment above
+  }, [holding, open]);
 
   if (!holding) return null;
 
