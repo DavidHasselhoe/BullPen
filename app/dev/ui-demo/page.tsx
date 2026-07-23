@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import AI_Prompt from "@/components/kokonutui/ai-prompt";
+import { AiPromptDemo } from "./ai-prompt-demo";
 import {
   CandlestickChart,
-  Candlestick,
   type OHLCDataPoint,
 } from "@/components/charts/candlestick-chart";
+import { Candlestick } from "@/components/charts/candlestick";
 import { Grid } from "@/components/charts/grid";
 import { XAxis } from "@/components/charts/x-axis";
 import { YAxis } from "@/components/charts/y-axis";
@@ -57,11 +57,7 @@ export default function UiDemoPage() {
           Animated AI input box. Submitting logs to the console — no real request is sent.
         </p>
         <div className="mt-4 flex justify-center">
-          <AI_Prompt
-            headerText="ui-demo"
-            headerAction="Kokonut UI"
-            onSubmit={(value, model) => console.log("[ui-demo] ai-prompt submit", { value, model })}
-          />
+          <AiPromptDemo />
         </div>
       </section>
 
