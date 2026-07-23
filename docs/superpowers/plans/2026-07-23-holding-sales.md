@@ -1397,3 +1397,343 @@ If a `source = 'snaptrade'` test row doesn't already exist, insert one temporari
 - [ ] **Step 4: Final commit (if any cleanup edits were needed)**
 
 Only if Steps 1–3 surfaced something to fix — otherwise this task has nothing to commit.
+
+---
+
+## Addendum: findings from the final whole-branch review
+
+The final review (after Task 10) approved the feature as "ready to merge, with fixes" — the core data model, server-side enforcement, and the default MAX-view chart reconstruction were verified correct, but it found one real correctness gap and two smaller follow-ups, all contained to `components/holdings/PortfolioPerformanceChart.tsx` and the delete flow. These two tasks close them out.
+
+### Task 11: Fix windowed-range realized-gain distortion + stale label + orphaned-symbol chart visibility
+
+**Files:**
+- Modify: `components/holdings/PortfolioPerformanceChart.tsx`
+
+**Interfaces:**
+- Consumes: `useHoldingSales()` (existing, from Task 6), `HoldingSale`/`HoldingWithPrice` types (existing).
+- Produces: no new exports — same component signature, internally more correct.
+
+**The three problems, and why they're related (all live in the same `chartData` useMemo):**
+
+1. **Windowed-range distortion.** `realizedAt(t)` currently adds each sale's *lifetime* `realized_pl` (anchored to the original purchase price via `avg_cost_basis`) regardless of which range is selected. For the default MAX range this is correct (the whole lifetime IS the window). For a shorter range (1Y, 6M, ...) where the position predates the window (`!boughtDuringPeriod`), the unrealized portion is correctly re-based to the window's own opening price (`c[0]`) — but the realized portion isn't re-based at all, so it's measured against a different, wrong baseline than the rest of the chart. For a position fully sold *before* the window even starts, this is worse: it injects a flat lifetime-realized constant into every point of a window where the position contributed 0 shares to `periodBasis`, wildly inflating the percentage return.
+
+2. **Stale label.** `range === 'MAX' ? 'unrealized P/L' : 'period return'` (near the summary stat) is no longer accurate for MAX once realized gains are baked in — it's now realized + unrealized.
+
+3. **Orphaned-symbol chart visibility.** `eligible` is derived by filtering `holdings` (the live `user_holdings` rows). If a user hard-deletes a fully-sold position (the existing "Remove" action, available on any holding regardless of quantity), that symbol no longer has a row in `holdings` at all — so it can never enter `eligible`, and its locked-in realized gains silently vanish from the chart forever, even though the sale records themselves survive (`original_holding_id` → `null`) and still show in the "Sold Positions" list. This undermines the "permanent" guarantee the whole feature exists to provide, for exactly the interaction (delete after selling) the spec's own `ON DELETE SET NULL` design anticipated as a supported user action.
+
+**Fix for 1 — rebase realized gains to the window, and exclude pre-window sales from windowed views:**
+
+Replace the `for (const { holding, candles } of candleResults) { ... }` loop body (currently lines ~167–209) with:
+
+```ts
+    for (const { holding, candles } of candleResults) {
+      if (!candles || holding.avg_price == null) continue;
+
+      const holdingStart = holding.date_purchased
+        ? new Date(holding.date_purchased).getTime()
+        : new Date(holding.created_at).getTime();
+
+      const sales = salesBySymbol.get(holding.symbol) ?? [];
+      const currentQty = holding.quantity ?? 0;
+      const { t, c } = candles;
+
+      // Basis is avg_price whenever the holding was bought during the
+      // selected window (the common case — and for MAX, effectively always,
+      // since the window predates any realistic purchase date), otherwise
+      // the period's opening price for a true windowed return.
+      const periodStartMs = t.length > 0 ? t[0] * 1000 : 0;
+      const boughtDuringPeriod = holdingStart > periodStartMs;
+      const basePrice = boughtDuringPeriod ? holding.avg_price : c[0];
+
+      // Shares still held at time t: current quantity, plus back out every
+      // sale that hadn't happened yet as of t.
+      const sharesHeldAt = (tMs: number): number => {
+        let shares = currentQty;
+        for (const sale of sales) {
+          if (new Date(sale.sale_date).getTime() > tMs) shares += sale.quantity_sold;
+        }
+        return shares;
+      };
+
+      // Realized gain locked in as of time t. When the position's entire
+      // life fits inside the selected window (boughtDuringPeriod), each
+      // sale's own lifetime realized_pl is already consistent with
+      // basePrice (= avg_price) — used as-is, matching MAX's existing
+      // behavior exactly. When the position predates the window, a sale's
+      // LIFETIME realized_pl is anchored to the original purchase price,
+      // not this window's opening price — using it as-is would overstate
+      // (or, for a sale that happened entirely before the window opened,
+      // badly distort) a windowed return. So each such sale is re-expressed
+      // relative to the window's own basePrice instead, and — matching how
+      // sharesHeldAt already treats them — a sale that happened before the
+      // window opened contributes nothing to this window's own story at all.
+      const realizedAt = (tMs: number): number => {
+        let realized = 0;
+        for (const sale of sales) {
+          const saleMs = new Date(sale.sale_date).getTime();
+          if (saleMs > tMs) continue;
+          if (boughtDuringPeriod) {
+            realized += sale.realized_pl;
+          } else if (saleMs >= periodStartMs) {
+            realized += (sale.sale_price - basePrice) * sale.quantity_sold;
+          }
+        }
+        return realized;
+      };
+
+      periodBasis += basePrice * sharesHeldAt(periodStartMs);
+
+      for (let i = 0; i < t.length; i++) {
+        const tsMs = t[i] * 1000;
+        if (tsMs < holdingStart) continue;
+        const shares = sharesHeldAt(tsMs);
+        const pl = (c[i] - basePrice) * shares + realizedAt(tsMs);
+        plByTime.set(t[i], (plByTime.get(t[i]) ?? 0) + pl);
+      }
+    }
+```
+
+Note this is the SAME computation as before for any symbol with zero sales, and the SAME computation as before for the MAX range (`boughtDuringPeriod` always true there) — only the windowed+has-sales combination changes.
+
+**Fix for 2 — relabel:**
+
+Find (near the summary stat, in the JSX):
+```tsx
+{range === 'MAX' ? 'unrealized P/L' : 'period return'}
+```
+Replace with:
+```tsx
+{range === 'MAX' ? 'total P/L' : 'period return'}
+```
+
+**Fix for 3 — synthesize a chart entry for symbols whose holding row is gone but whose sales survive:**
+
+Add this new `useMemo` immediately after the existing `salesBySymbol` one (which ends around line 100), before `eligible`:
+
+```ts
+  // Symbols with sale history but no surviving user_holdings row (the row
+  // was hard-deleted after being fully sold, via the existing Remove
+  // action). Without a synthetic entry here, eligible below would never
+  // include them — since it filters `holdings`, which has no row for a
+  // deleted symbol at all — silently dropping their locked-in realized
+  // gains from the chart even though the sales still show in the
+  // Sold Positions list. quantity is always 0 here: whatever the holding's
+  // remaining share count was at the moment of deletion is not recoverable
+  // (it only ever lived in the now-gone user_holdings row), so only the
+  // realized portion can be reconstructed for these — which is exactly the
+  // portion this feature promises stays permanent.
+  const orphanedEntries = useMemo(() => {
+    const known = new Set(holdings.map((h) => h.symbol));
+    const entries: HoldingWithPrice[] = [];
+    for (const [symbol, sales] of salesBySymbol) {
+      if (known.has(symbol) || sales.length === 0) continue;
+      const last = sales[sales.length - 1]; // salesBySymbol entries are pre-sorted ascending by sale_date
+      entries.push({
+        id: `orphaned:${symbol}`,
+        user_id: last.user_id,
+        symbol,
+        company_name: last.company_name,
+        quantity: 0,
+        avg_price: last.avg_cost_basis,
+        date_purchased: sales[0].sale_date,
+        source: 'manual',
+        brokerage_account_id: null,
+        alerts_enabled: false,
+        asset_type: (last.asset_type as HoldingWithPrice['asset_type']) ?? 'stock',
+        purchase_currency: null,
+        purchase_fx_rate: null,
+        trading_currency: last.trading_currency,
+        created_at: sales[0].sale_date,
+        updated_at: last.sale_date,
+      });
+    }
+    return entries;
+  }, [holdings, salesBySymbol]);
+```
+
+Then change `eligible` from:
+```ts
+  const eligible = useMemo(
+    () => holdings.filter((h) =>
+      h.avg_price != null &&
+      ((h.quantity != null && h.quantity > 0) || (salesBySymbol.get(h.symbol)?.length ?? 0) > 0)
+    ),
+    [holdings, salesBySymbol]
+  );
+```
+to:
+```ts
+  const eligible = useMemo(
+    () => [...holdings, ...orphanedEntries].filter((h) =>
+      h.avg_price != null &&
+      ((h.quantity != null && h.quantity > 0) || (salesBySymbol.get(h.symbol)?.length ?? 0) > 0)
+    ),
+    [holdings, orphanedEntries, salesBySymbol]
+  );
+```
+
+`HoldingWithPrice` needs to be imported as a type in this file if it isn't already (check the existing import from `./types` at the top of the file — it should already be there, since `Props` uses it).
+
+- [ ] **Step 1: Apply all three fixes above to `PortfolioPerformanceChart.tsx`**
+
+- [ ] **Step 2: Verify it compiles/lints clean**
+
+Run: `npm run lint 2>&1 | grep -A 5 "PortfolioPerformanceChart"` — expect no output (no errors or warnings for this file).
+
+- [ ] **Step 3: Manual verification — windowed rebasing**
+
+With the dev server running and signed in as the test account: add a manual test holding on a real, liquid symbol not already held (e.g. a consumer staples stock), with `date_purchased` at least 1 year in the past (insert via Supabase MCP for precise control, same pattern Task 10 used). Sell part of it today. Switch the chart to the "1Y" range and confirm:
+- The line's shape before the sale date is unchanged from what it showed before this fix.
+- The realized bump at the sale date is now proportional to `(sale_price − 1Y-ago price) × quantity_sold`, not `(sale_price − original_avg_price) × quantity_sold` — check this against the numbers directly (compute both by hand, confirm the chart matches the window-relative one, not the lifetime one).
+- Switch back to MAX and confirm the MAX total is unaffected by this change (still the lifetime figure).
+Clean up the test holding and its sale record afterward (delete both via Supabase MCP or the UI, whichever is cleaner given what's left over).
+
+- [ ] **Step 4: Manual verification — orphaned symbol**
+
+Add another manual test holding, sell all of it, confirm it shows in "Sold Positions" and contributes to the chart (per Task 10's existing pattern). Then hard-delete the holding via the existing Remove action. Confirm:
+- The sale still shows in "Sold Positions" (unchanged from before this fix).
+- The chart's MAX total P/L is unchanged after the delete (the realized gain is still counted) — this is the actual regression this fix targets; without it, the total would drop by exactly that sale's realized_pl the moment the row is deleted.
+Clean up the sale record afterward via Supabase MCP (`delete from holding_sales where symbol = '<test symbol>'`), since there's no UI path to delete a sale whose holding is already gone (per `deleteHoldingSale`'s own null-`original_holding_id` guard from Task 3).
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add components/holdings/PortfolioPerformanceChart.tsx
+git commit -m "fix: rebase realized gains to the selected window and keep orphaned sales charted after a holding is deleted"
+```
+
+---
+
+### Task 12: Nudge "Remove" toward "Sell" when the holding still has shares
+
+**Files:**
+- Modify: `components/holdings/DeleteHoldingDialog.tsx`
+- Modify: `components/holdings/HoldingsTable.tsx`
+
+**Interfaces:**
+- Consumes: nothing new.
+- Produces: `DeleteHoldingDialog` gains an optional `hasShares?: boolean` prop. No other file depends on this component beyond `HoldingsTable.tsx`.
+
+**Why:** the spec called for softening the delete dialog's copy to nudge users who actually sold shares toward the new Sell action instead of Remove (which is exactly the old behavior this whole feature exists to move people away from). This was noted in the design but not implemented in the original 10 tasks.
+
+- [ ] **Step 1: Add the prop to `DeleteHoldingDialog.tsx`**
+
+Change:
+```tsx
+interface DeleteHoldingDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: () => void;
+  symbol: string;
+  companyName: string;
+  isLoading?: boolean;
+}
+```
+to:
+```tsx
+interface DeleteHoldingDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: () => void;
+  symbol: string;
+  companyName: string;
+  isLoading?: boolean;
+  /** True when the holding still has shares — nudges toward Sell instead of Remove. */
+  hasShares?: boolean;
+}
+```
+
+Change the function signature:
+```tsx
+export function DeleteHoldingDialog({
+  open,
+  onOpenChange,
+  onConfirm,
+  symbol,
+  companyName,
+  isLoading = false,
+}: DeleteHoldingDialogProps) {
+```
+to:
+```tsx
+export function DeleteHoldingDialog({
+  open,
+  onOpenChange,
+  onConfirm,
+  symbol,
+  companyName,
+  isLoading = false,
+  hasShares = false,
+}: DeleteHoldingDialogProps) {
+```
+
+Change the description JSX:
+```tsx
+          <DialogDescription>
+            Are you sure you want to remove <strong>{symbol}</strong> ({companyName}) from your holdings? This action cannot be undone.
+          </DialogDescription>
+```
+to:
+```tsx
+          <DialogDescription>
+            Are you sure you want to remove <strong>{symbol}</strong> ({companyName}) from your holdings? This action cannot be undone.
+            {hasShares && ' If you actually sold these shares, use Sell instead to keep your performance chart accurate.'}
+          </DialogDescription>
+```
+
+- [ ] **Step 2: Thread `hasShares` through `HoldingsTable.tsx`**
+
+Change the `deletingHolding` state type (currently `useState<{ id: string; symbol: string; companyName: string } | null>(null)`) to include quantity:
+```ts
+const [deletingHolding, setDeletingHolding] = useState<{ id: string; symbol: string; companyName: string; quantity: number } | null>(null);
+```
+
+Change the `onRemove` prop type on `HoldingRowProps` (currently `onRemove: (h: { id: string; symbol: string; companyName: string }) => void;`) to:
+```ts
+onRemove: (h: { id: string; symbol: string; companyName: string; quantity: number }) => void;
+```
+
+Change `handleRemoveRow`'s parameter type (currently `(h: { id: string; symbol: string; companyName: string })`) to match:
+```ts
+const handleRemoveRow = useCallback((h: { id: string; symbol: string; companyName: string; quantity: number }) => {
+```
+
+At the desktop row's call site (`onClick={() => onRemove({ id: holding.id, symbol: holding.symbol, companyName: holding.company_name })}`), add `quantity: holding.quantity ?? 0`:
+```tsx
+onClick={() => onRemove({ id: holding.id, symbol: holding.symbol, companyName: holding.company_name, quantity: holding.quantity ?? 0 })}
+```
+
+At the mobile card's call site (`onClick={() => handleRemoveRow({ id: holding.id, symbol: holding.symbol, companyName: holding.company_name })}`), same addition:
+```tsx
+onClick={() => handleRemoveRow({ id: holding.id, symbol: holding.symbol, companyName: holding.company_name, quantity: holding.quantity ?? 0 })}
+```
+
+At the `<DeleteHoldingDialog ... />` render site, add the prop:
+```tsx
+{deletingHolding && (
+  <DeleteHoldingDialog
+    open={isDeleteDialogOpen}
+    onOpenChange={setIsDeleteDialogOpen}
+    onConfirm={handleConfirmDelete}
+    symbol={deletingHolding.symbol}
+    companyName={deletingHolding.companyName}
+    isLoading={removeHolding.isPending}
+    hasShares={deletingHolding.quantity > 0}
+  />
+)}
+```
+
+- [ ] **Step 3: Verify it compiles/lints clean**
+
+Run: `npm run lint 2>&1 | grep -A 5 "DeleteHoldingDialog\|HoldingsTable"` — expect no output.
+
+- [ ] **Step 4: Manual verification**
+
+With the dev server running: click Remove on a holding with `quantity > 0` — confirm the dialog shows the added nudge sentence. Click Remove on the `quantity = 0` ghost row left over from Task 10/11's testing (if one still exists) or any 0-share row — confirm the dialog does NOT show the nudge sentence (since there's nothing left to sell).
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add components/holdings/DeleteHoldingDialog.tsx components/holdings/HoldingsTable.tsx
+git commit -m "fix: nudge Remove toward Sell when the holding still has shares"
+```
