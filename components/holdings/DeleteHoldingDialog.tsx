@@ -17,6 +17,8 @@ interface DeleteHoldingDialogProps {
   symbol: string;
   companyName: string;
   isLoading?: boolean;
+  /** True when the holding still has shares — nudges toward Sell instead of Remove. */
+  hasShares?: boolean;
 }
 
 export function DeleteHoldingDialog({
@@ -26,6 +28,7 @@ export function DeleteHoldingDialog({
   symbol,
   companyName,
   isLoading = false,
+  hasShares = false,
 }: DeleteHoldingDialogProps) {
   const handleConfirm = () => {
     onConfirm();
@@ -39,6 +42,7 @@ export function DeleteHoldingDialog({
           <DialogTitle>Remove Holding</DialogTitle>
           <DialogDescription>
             Are you sure you want to remove <strong>{symbol}</strong> ({companyName}) from your holdings? This action cannot be undone.
+            {hasShares && ' If you actually sold these shares, use Sell instead to keep your performance chart accurate.'}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>

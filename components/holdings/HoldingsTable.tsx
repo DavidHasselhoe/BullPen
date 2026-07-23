@@ -216,7 +216,7 @@ interface HoldingRowProps {
   anyPending: boolean;
   isEditModalOpen: boolean;
   onEdit: (h: HoldingWithPrice) => void;
-  onRemove: (h: { id: string; symbol: string; companyName: string }) => void;
+  onRemove: (h: { id: string; symbol: string; companyName: string; quantity: number }) => void;
   onSell: (h: HoldingWithPrice) => void;
 }
 
@@ -382,7 +382,7 @@ const HoldingRow = memo(function HoldingRow({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => onRemove({ id: holding.id, symbol: holding.symbol, companyName: holding.company_name })}
+            onClick={() => onRemove({ id: holding.id, symbol: holding.symbol, companyName: holding.company_name, quantity: holding.quantity ?? 0 })}
             disabled={anyPending}
             title={isDeletingThis ? 'Removing…' : 'Remove holding'}
           >
@@ -422,7 +422,7 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [editingHolding, setEditingHolding] = useState<UserHolding | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [deletingHolding, setDeletingHolding] = useState<{ id: string; symbol: string; companyName: string } | null>(null);
+  const [deletingHolding, setDeletingHolding] = useState<{ id: string; symbol: string; companyName: string; quantity: number } | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [sellingHolding, setSellingHolding] = useState<UserHolding | null>(null);
   const [isSellModalOpen, setIsSellModalOpen] = useState(false);
@@ -439,7 +439,7 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
     setEditingHolding(h as unknown as UserHolding);
     setIsEditModalOpen(true);
   }, []);
-  const handleRemoveRow = useCallback((h: { id: string; symbol: string; companyName: string }) => {
+  const handleRemoveRow = useCallback((h: { id: string; symbol: string; companyName: string; quantity: number }) => {
     setDeletingHolding(h);
     setIsDeleteDialogOpen(true);
   }, []);
@@ -845,7 +845,7 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
                         <DollarSign className="h-4 w-4" />
                       </button>
                     )}
-                    <button onClick={() => handleRemoveRow({ id: holding.id, symbol: holding.symbol, companyName: holding.company_name })} disabled={removeHolding.isPending} title="Remove holding" className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-red-500/10 hover:text-red-400">
+                    <button onClick={() => handleRemoveRow({ id: holding.id, symbol: holding.symbol, companyName: holding.company_name, quantity: holding.quantity ?? 0 })} disabled={removeHolding.isPending} title="Remove holding" className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-red-500/10 hover:text-red-400">
                       {removeHolding.isPending && deletingHolding?.id === holding.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                     </button>
                   </div>
@@ -980,6 +980,7 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
           symbol={deletingHolding.symbol}
           companyName={deletingHolding.companyName}
           isLoading={removeHolding.isPending}
+          hasShares={deletingHolding.quantity > 0}
         />
       )}
     </Card>
