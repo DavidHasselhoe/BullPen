@@ -1,17 +1,30 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+export type DivePhase = 'reading_data' | 'searching' | 'reasoning' | 'composing';
+
 interface Props {
-  status: string;
-  thinkingText: string;
+  phase: DivePhase;
   ticker: string;
 }
 
 const STEPS = ['Reading fundamentals', 'Researching the web', 'Reasoning', 'Composing report'];
+const PHASE_INDEX: Record<DivePhase, number> = {
+  reading_data: 0,
+  searching: 1,
+  reasoning: 2,
+  composing: 3,
+};
+const PHASE_LABEL: Record<DivePhase, string> = {
+  reading_data: 'Reading fundamentals…',
+  searching: 'Searching the web for current results…',
+  reasoning: 'Reasoning through the analysis…',
+  composing: 'Composing the report…',
+};
 
 // Rotating hint messages for each step — cycle every 3 s to show the AI is active
 const STEP_HINTS: Record<number, string[]> = {
@@ -45,13 +58,6 @@ const STEP_HINTS: Record<number, string[]> = {
   ],
 };
 
-function stepIndex(status: string): number {
-  if (/compos/i.test(status)) return 3;
-  if (/reason|analy|think/i.test(status)) return 2;
-  if (/search|web|research/i.test(status)) return 1;
-  return 0;
-}
-
 function useElapsed() {
   const [elapsed, setElapsed] = useState(0);
   useEffect(() => {
@@ -73,16 +79,10 @@ function useRotatingHint(stepIdx: number): string {
   return hints[tick % hints.length] ?? hints[0];
 }
 
-export function GenerationProgress({ status, thinkingText, ticker }: Props) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const reached = stepIndex(status);
+export function GenerationProgress({ phase, ticker }: Props) {
+  const reached = PHASE_INDEX[phase];
   const elapsed = useElapsed();
   const hint = useRotatingHint(reached);
-
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  }, [thinkingText]);
 
   return (
     <Card className="overflow-hidden">
@@ -103,7 +103,7 @@ export function GenerationProgress({ status, thinkingText, ticker }: Props) {
                 aria-live="polite"
               >
                 <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-                <span className="truncate">{status}</span>
+                <span className="truncate">{PHASE_LABEL[phase]}</span>
               </p>
             </div>
           </div>
@@ -169,40 +169,25 @@ export function GenerationProgress({ status, thinkingText, ticker }: Props) {
           </p>
         </div>
 
-        {/* Live reasoning stream or skeleton */}
-        {thinkingText ? (
-          <div
-            ref={scrollRef}
-            className="relative max-h-48 overflow-y-auto rounded-lg border border-border/40 bg-muted/20 p-3.5"
-          >
-            <p className="text-xs text-muted-foreground/80 leading-relaxed whitespace-pre-wrap font-mono">
-              {thinkingText}
-              {/* Blinking cursor to show stream is live */}
-              <span
-                className="inline-block ml-0.5 h-3 w-0.5 bg-primary/70 align-middle"
-                style={{ animation: 'cursorBlink 1s step-end infinite' }}
-              />
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {[100, 88, 94].map((w, i) => (
+        {/* Decorative skeleton — replaces the old live token stream, which can't
+            survive the user navigating away (see runDeepDive in the API route). */}
+        <div className="space-y-2">
+          {[100, 88, 94].map((w, i) => (
+            <div
+              key={i}
+              className="relative h-2.5 rounded-full bg-muted overflow-hidden"
+              style={{ width: `${w}%`, animationDelay: `${i * 0.15}s` }}
+            >
               <div
-                key={i}
-                className="relative h-2.5 rounded-full bg-muted overflow-hidden"
-                style={{ width: `${w}%`, animationDelay: `${i * 0.15}s` }}
-              >
-                <div
-                  className="absolute inset-0 bg-gradient-to-r from-transparent via-muted-foreground/15 to-transparent"
-                  style={{ animation: `shimmerSweep ${1.8 + i * 0.2}s ease-in-out ${i * 0.25}s infinite` }}
-                />
-              </div>
-            ))}
-          </div>
-        )}
+                className="absolute inset-0 bg-gradient-to-r from-transparent via-muted-foreground/15 to-transparent"
+                style={{ animation: `shimmerSweep ${1.8 + i * 0.2}s ease-in-out ${i * 0.25}s infinite` }}
+              />
+            </div>
+          ))}
+        </div>
 
         <p className="text-[10px] text-muted-foreground/50 mt-4 text-center">
-          This usually takes 20–40 seconds. We research current results, guidance, and analyst views.
+          This usually takes 20–40 seconds. Feel free to leave this page — we&apos;ll notify you when it&apos;s ready.
         </p>
       </CardContent>
 
@@ -215,10 +200,6 @@ export function GenerationProgress({ status, thinkingText, ticker }: Props) {
         @keyframes barBounce {
           0%, 100% { transform: scaleY(0.4); opacity: 0.5; }
           50%       { transform: scaleY(1);   opacity: 1; }
-        }
-        @keyframes cursorBlink {
-          0%, 100% { opacity: 1; }
-          50%       { opacity: 0; }
         }
       `}</style>
     </Card>

@@ -17,13 +17,24 @@ import { useInvalidateQuota } from '@/hooks/use-quota';
 import { QuotaIndicator } from '@/components/billing/QuotaIndicator';
 import { AiPaywallDialog } from '@/components/billing/AiPaywallDialog';
 import { DeepDiveReport } from '@/components/deep-dive/DeepDiveReport';
-import { GenerationProgress } from '@/components/deep-dive/GenerationProgress';
+import { GenerationProgress, type DivePhase } from '@/components/deep-dive/GenerationProgress';
 import { LensPicker } from '@/components/deep-dive/LensPicker';
 import { isLens, type DeepDiveLens, type DeepDiveReport as Report } from '@/lib/ai/deep-dive/schema';
 import type { QuotaState } from '@/lib/billing/quotas';
 
 type Phase = 'loading' | 'idle' | 'generating' | 'done' | 'error';
 type ErrorCode = 'parse_failed' | 'rate_limited' | 'payment_required' | 'invalid_key' | 'unknown';
+
+const POLL_INTERVAL_MS = 2500;
+
+interface StatusResponse {
+  success: boolean;
+  status?: 'pending' | 'done' | 'error';
+  phase?: DivePhase | null;
+  report?: Report | null;
+  errorCode?: ErrorCode | null;
+  errorMessage?: string | null;
+}
 
 export default function DeepDivePage() {
   const params = useParams();
@@ -49,16 +60,53 @@ export default function DeepDivePage() {
   const [lens, setLens] = useState<DeepDiveLens>(initialLens);
   const [report, setReport] = useState<Report | null>(null);
   const [createdAt, setCreatedAt] = useState<string | null>(null);
-  const [status, setStatus] = useState('Reading fundamentals…');
-  const [thinkingText, setThinkingText] = useState('');
+  const [genPhase, setGenPhase] = useState<DivePhase>('reading_data');
   const [errorCode, setErrorCode] = useState<ErrorCode>('unknown');
   const [errorMessage, setErrorMessage] = useState('');
   const [paywallQuota, setPaywallQuota] = useState<QuotaState | null>(null);
-  const abortRef = useRef<AbortController | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useEffect(() => () => abortRef.current?.abort(), []);
+  const stopPolling = useCallback(() => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+  }, []);
 
-  // Load any saved dive for this symbol on mount (free to view).
+  useEffect(() => () => stopPolling(), [stopPolling]);
+
+  const pollStatus = useCallback((id: string, useLens: DeepDiveLens) => {
+    stopPolling();
+    pollRef.current = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/ai/deep-dive/${rawTicker}?id=${id}`);
+        const data: StatusResponse = await res.json();
+        if (!data.success) return;
+
+        if (data.phase) setGenPhase(data.phase);
+
+        if (data.status === 'done' && data.report) {
+          stopPolling();
+          setReport(data.report);
+          setCreatedAt(data.report.generatedAt ?? null);
+          setLens(data.report.lens ?? useLens);
+          setPhase('done');
+          invalidateQuota('deep_dive');
+          queryClient.invalidateQueries({ queryKey: ['deep-dive-list'] });
+        } else if (data.status === 'error') {
+          stopPolling();
+          setErrorCode(data.errorCode ?? 'unknown');
+          setErrorMessage(data.errorMessage ?? '');
+          setPhase('error');
+        }
+      } catch {
+        // Transient network hiccup — keep polling, the next tick will retry.
+      }
+    }, POLL_INTERVAL_MS);
+  }, [rawTicker, stopPolling, invalidateQuota, queryClient]);
+
+  // On mount: show the latest saved dive, or resume polling if one is still
+  // generating (e.g. the user started it, left, and came back).
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -71,6 +119,10 @@ export default function DeepDivePage() {
           setCreatedAt(data.createdAt ?? null);
           setLens((data.report as Report).lens ?? 'full');
           setPhase('done');
+        } else if (data?.success && data.pendingId) {
+          setGenPhase((data.pendingPhase as DivePhase) ?? 'reading_data');
+          setPhase('generating');
+          pollStatus(data.pendingId, lens);
         } else {
           setPhase('idle');
         }
@@ -79,16 +131,13 @@ export default function DeepDivePage() {
       }
     })();
     return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rawTicker]);
 
   const generate = useCallback(async (useLens: DeepDiveLens) => {
-    abortRef.current?.abort();
-    const ctrl = new AbortController();
-    abortRef.current = ctrl;
-
+    stopPolling();
     setPhase('generating');
-    setThinkingText('');
-    setStatus('Reading fundamentals…');
+    setGenPhase('reading_data');
     setErrorMessage('');
 
     try {
@@ -96,7 +145,6 @@ export default function DeepDivePage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ lens: useLens, experienceLevel: level, holds }),
-        signal: ctrl.signal,
       });
 
       if (res.status === 429) { setErrorCode('rate_limited'); setPhase('error'); return; }
@@ -108,52 +156,15 @@ export default function DeepDivePage() {
       }
       if (!res.ok) { setErrorMessage(`Request failed: ${res.status}`); setErrorCode('unknown'); setPhase('error'); return; }
 
-      const reader = res.body?.getReader();
-      if (!reader) { setPhase('error'); return; }
-      const dec = new TextDecoder();
-      let leftover = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = leftover + dec.decode(value);
-        const lines = chunk.split('\n');
-        leftover = lines.pop() ?? '';
-
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          try {
-            const event = JSON.parse(line.slice(6));
-            if (event.type === 'searching') {
-              setStatus('Searching the web for current results…');
-            } else if (event.type === 'thinking') {
-              setThinkingText((t) => t + event.delta);
-              setStatus((s) => (/compos/i.test(s) ? s : 'Reasoning through the analysis…'));
-            } else if (event.type === 'composing') {
-              setStatus('Composing the report…');
-            } else if (event.type === 'done') {
-              setReport(event.report as Report);
-              setCreatedAt((event.report as Report).generatedAt ?? null);
-              setLens((event.report as Report).lens ?? useLens);
-              setPhase('done');
-              invalidateQuota('deep_dive');
-              queryClient.invalidateQueries({ queryKey: ['deep-dive-list'] });
-            } else if (event.type === 'error') {
-              setErrorCode((event.code as ErrorCode) ?? 'unknown');
-              setErrorMessage(event.message ?? '');
-              setPhase('error');
-            }
-          } catch { /* malformed line */ }
-        }
-      }
+      const data = await res.json();
+      if (!data.id) { setErrorMessage('Failed to start generation'); setErrorCode('unknown'); setPhase('error'); return; }
+      pollStatus(data.id, useLens);
     } catch (err) {
-      if ((err as Error).name !== 'AbortError') {
-        setErrorMessage((err as Error).message ?? '');
-        setErrorCode('unknown');
-        setPhase('error');
-      }
+      setErrorMessage((err as Error).message ?? '');
+      setErrorCode('unknown');
+      setPhase('error');
     }
-  }, [rawTicker, level, holds, report, invalidateQuota, queryClient]);
+  }, [rawTicker, level, holds, report, stopPolling, pollStatus]);
 
   const askAI = useCallback(() => {
     openAIPanel({
@@ -207,7 +218,7 @@ export default function DeepDivePage() {
         )}
 
         {phase === 'generating' && (
-          <GenerationProgress status={status} thinkingText={thinkingText} ticker={symbol} />
+          <GenerationProgress phase={genPhase} ticker={symbol} />
         )}
 
         {phase === 'done' && report && (

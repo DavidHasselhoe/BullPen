@@ -193,27 +193,39 @@ export interface Database {
           symbol: string;
           company_name: string | null;
           lens: string;
-          report: JsonValue;
+          report: JsonValue | null;
           model: string;
           data_as_of: string | null;
+          status: string;
+          phase: string | null;
+          error_code: string | null;
+          error_message: string | null;
           created_at: string;
         };
         Insert: {
           user_id: string;
           symbol: string;
-          report: JsonValue;
           model: string;
+          report?: JsonValue | null;
           company_name?: string | null;
           lens?: string;
           data_as_of?: string | null;
+          status?: string;
+          phase?: string | null;
+          error_code?: string | null;
+          error_message?: string | null;
           id?: string;
           created_at?: string;
         };
         Update: Partial<{
           company_name: string | null;
           lens: string;
-          report: JsonValue;
+          report: JsonValue | null;
           data_as_of: string | null;
+          status: string;
+          phase: string | null;
+          error_code: string | null;
+          error_message: string | null;
         }>;
       };
       market_data_cache: {
