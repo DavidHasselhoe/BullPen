@@ -13,6 +13,7 @@ import { AIPanelProvider } from "@/components/ai/AIPanelProvider";
 import { AIPanelToggle } from "@/components/ai/AIPanelToggle";
 import { CommandPaletteProvider } from "@/components/command-palette/CommandPaletteProvider";
 import { PendingOnboardingFlush } from "@/components/onboarding/PendingOnboardingFlush";
+import { CookieConsentBanner } from "@/components/cookie-consent/CookieConsentBanner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -99,6 +100,7 @@ export default function RootLayout({
                 <BackgroundProvider />
                 <AuthNavigation />
                 <PendingOnboardingFlush />
+                <CookieConsentBanner />
                 {children}
                 <AIPanelToggle />
                 {process.env.VERCEL === '1' && (
