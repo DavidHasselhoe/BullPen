@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Sparkles } from 'lucide-react';
 import { PortfolioBuilderClient } from '@/components/tools/portfolio-builder/PortfolioBuilderClient';
@@ -29,7 +30,9 @@ export default function PortfolioBuilderPage() {
           </div>
         </div>
       </div>
-      <PortfolioBuilderClient />
+      <Suspense fallback={null}>
+        <PortfolioBuilderClient />
+      </Suspense>
     </div>
   );
 }
