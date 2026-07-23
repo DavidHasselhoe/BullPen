@@ -137,6 +137,26 @@ export interface UserHolding {
   updated_at: string;
 }
 
+export interface HoldingSale {
+  id: string;
+  user_id: string;
+  original_holding_id: string | null;
+  symbol: string;
+  company_name: string;
+  quantity_sold: number;
+  avg_cost_basis: number;
+  sale_price: number;
+  realized_pl: number;
+  sale_date: string;
+  trading_currency: string | null;
+  asset_type: string | null;
+  created_at: string;
+}
+
+export type InsertHoldingSale = Omit<HoldingSale, 'id' | 'created_at'> & {
+  id?: string;
+};
+
 export interface WatchlistItem {
   id: string;
   user_id: string;
