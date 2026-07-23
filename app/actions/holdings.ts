@@ -4,8 +4,8 @@
 // Server-side mutations for user holdings with authentication
 
 import { getCurrentUserId } from '@/lib/auth/server-session';
-import { getHoldings, addHolding, addOrUpdateHolding, updateHolding, removeHolding, updateHoldingBySymbol, removeHoldingBySymbol } from '@/lib/holdings/holdings-db';
-import type { UserHolding } from '@/lib/types/database';
+import { getHoldings, addHolding, addOrUpdateHolding, updateHolding, removeHolding, updateHoldingBySymbol, removeHoldingBySymbol, sellHolding, getHoldingSales, deleteHoldingSale } from '@/lib/holdings/holdings-db';
+import type { UserHolding, HoldingSale } from '@/lib/types/database';
 
 export interface AddHoldingInput {
   symbol: string;
@@ -227,4 +227,58 @@ export async function removeHoldingAction(
   }
 
   return await removeHolding(userId, holdingId);
+}
+
+export interface SellHoldingInput {
+  quantitySold: number;
+  salePrice: number;
+  saleDate: string;
+}
+
+/**
+ * Server Action: Record a sale against a manually-entered holding.
+ * userId from session only — never trust client-provided userId.
+ */
+export async function sellHoldingAction(
+  holdingId: string,
+  input: SellHoldingInput
+): Promise<{
+  success: boolean;
+  sale?: HoldingSale;
+  holding?: UserHolding;
+  error?: string;
+}> {
+  const userId = await getCurrentUserId();
+  if (!userId) return { success: false, error: 'Authentication required' };
+  if (!holdingId) return { success: false, error: 'Holding ID is required' };
+
+  return await sellHolding(userId, holdingId, input);
+}
+
+/**
+ * Server Action: List this user's recorded sales, newest first.
+ */
+export async function getHoldingSalesAction(): Promise<{
+  success: boolean;
+  sales?: HoldingSale[];
+  error?: string;
+}> {
+  const userId = await getCurrentUserId();
+  if (!userId) return { success: false, error: 'Authentication required' };
+  return await getHoldingSales(userId);
+}
+
+/**
+ * Server Action: Undo a recorded sale (adds the shares back onto the holding).
+ */
+export async function deleteHoldingSaleAction(
+  saleId: string
+): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  const userId = await getCurrentUserId();
+  if (!userId) return { success: false, error: 'Authentication required' };
+  if (!saleId) return { success: false, error: 'Sale ID is required' };
+  return await deleteHoldingSale(userId, saleId);
 }
