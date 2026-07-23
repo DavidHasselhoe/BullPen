@@ -76,12 +76,20 @@ export function CompletionCelebration({ xpEarned, durationMs = 1600, onDismiss }
           transition={{ type: 'spring', stiffness: 260, damping: 16, delay: 0.1 }}
           className="relative mx-auto mb-1 flex h-40 w-40 sm:h-48 sm:w-48 items-center justify-center"
         >
-          {/* Glow gives the thin line-art mascot enough visual weight to read
-              against the scrim — the overlay background is always dark
-              (hardcoded rgba black above), so contrast can't rely on theme. */}
+          {/* The thin white line-art mascot was disappearing into the scrim,
+              especially mid fade-in when the overlay hasn't reached full
+              opacity yet. A blurred glow alone doesn't give it real contrast,
+              so a solid disc sits behind it — the overlay background is
+              always dark (hardcoded rgba black above), so this can't rely on
+              theme, and doesn't need to: it's a fixed celebration takeover,
+              not a themed surface. */}
           <div
             aria-hidden
-            className="absolute inset-0 rounded-full bg-emerald-400/30 blur-3xl"
+            className="absolute inset-0 rounded-full bg-emerald-400/20 blur-3xl"
+          />
+          <div
+            aria-hidden
+            className="absolute inset-0 rounded-full bg-black/75 ring-1 ring-white/10"
           />
           <motion.img
             src="/illustrations/bull-celebrate.png"
