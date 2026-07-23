@@ -1,9 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
-import { withAuth } from '@/lib/security/api-security';
+import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { checkRateLimit } from '@/lib/security/rate-limiter';
 import { checkQuota } from '@/lib/billing/quotas';
 import { logAiCall } from '@/lib/billing/log-ai-call';
+import { createNotification } from '@/lib/notifications/notifications-db';
+import { createServerClient } from '@/lib/supabase/client';
 import { PORTFOLIO_BUILDER_SYSTEM_PROMPT } from '@/lib/ai/portfolio-builder/system-prompt';
 import {
   parsePortfolio,
@@ -22,6 +24,139 @@ export const maxDuration = 300;
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const MODEL = 'claude-sonnet-4-6';
+const MAX_SAVED = 50;
+
+type BuilderPhase = 'streaming' | 'composing' | 'validating';
+
+/**
+ * Runs the actual generation, persisting progress/result to
+ * `portfolio_generations` as it goes. Scheduled via after() so it keeps
+ * running on the server even if the client navigates away.
+ */
+async function runPortfolioBuilder(params: {
+  id: string;
+  userId: string;
+  thesis: string;
+}): Promise<void> {
+  const { id, userId, thesis } = params;
+  const supabase = createServerClient();
+  const setPhase = (phase: BuilderPhase) => supabase.from('portfolio_generations').update({ phase }).eq('id', id);
+  const markError = (code: string, message: string) =>
+    supabase.from('portfolio_generations').update({ status: 'error', phase: null, error_code: code, error_message: message }).eq('id', id);
+
+  try {
+    const stream = anthropic.messages.stream({
+      model: MODEL,
+      max_tokens: 16000,
+      temperature: 1,
+      thinking: { type: 'enabled', budget_tokens: 8000 },
+      system: [{ type: 'text', text: PORTFOLIO_BUILDER_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
+      messages: [{ role: 'user', content: thesis }],
+    });
+
+    let buffered = '';
+    let textStarted = false;
+    for await (const event of stream) {
+      if (event.type === 'content_block_delta') {
+        const delta = event.delta as { type: string; thinking?: string; text?: string };
+        if (delta.type === 'text_delta' && delta.text) {
+          if (!textStarted) { textStarted = true; await setPhase('composing'); }
+          buffered += delta.text;
+        }
+      }
+    }
+
+    try {
+      const final = await stream.finalMessage();
+      void logAiCall({
+        userId,
+        feature: 'portfolio_builder',
+        model: MODEL,
+        inputTokens: final.usage.input_tokens,
+        outputTokens: final.usage.output_tokens,
+      });
+    } catch { /* never block on logging */ }
+
+    let portfolio: Portfolio;
+    try {
+      portfolio = parsePortfolio(buffered);
+    } catch (parseErr) {
+      console.error('[portfolio-builder] parse failed:', parseErr);
+      const safe = parseFailure();
+      await markError(safe.code, safe.message);
+      return;
+    }
+
+    await setPhase('validating');
+
+    const initialCheck = await validateTickers(portfolio.holdings);
+    let validHoldings = initialCheck.validHoldings;
+    let logoMap = initialCheck.logoMap;
+    const invalidTickers = initialCheck.invalidTickers;
+    const replacedTickers: string[] = [];
+
+    if (invalidTickers.length > 0 && validHoldings.length > 0) {
+      const replacements = await requestReplacements({ previousAssistantTurn: buffered, invalidTickers, thesis });
+      if (replacements.length > 0) {
+        const reCheck = await validateTickers(replacements);
+        replacedTickers.push(...invalidTickers.filter((t) => !reCheck.invalidTickers.includes(t)));
+        validHoldings = [...validHoldings, ...reCheck.validHoldings];
+        logoMap = { ...logoMap, ...reCheck.logoMap };
+      } else {
+        replacedTickers.push(...invalidTickers);
+      }
+    } else if (invalidTickers.length > 0) {
+      replacedTickers.push(...invalidTickers);
+    }
+
+    if (validHoldings.length < 3) {
+      await markError('too_few_valid_tickers', 'Could not assemble enough verified tickers for this thesis. Try rephrasing.');
+      return;
+    }
+
+    const finalHoldings = renormalizeAllocations(validHoldings);
+    const finalPortfolio = { ...portfolio, holdings: finalHoldings };
+
+    await supabase.from('portfolio_generations').update({
+      status: 'done',
+      phase: null,
+      portfolio: finalPortfolio,
+      logo_map: logoMap,
+      replaced_tickers: replacedTickers,
+    }).eq('id', id);
+
+    // Keep only the newest MAX_SAVED completed generations, same trim the
+    // history endpoint used to do on every save.
+    const { data: oldest } = await supabase
+      .from('portfolio_generations')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('status', 'done')
+      .order('created_at', { ascending: false })
+      .range(MAX_SAVED, 999);
+    if (oldest && oldest.length > 0) {
+      await supabase.from('portfolio_generations').delete().in('id', oldest.map((r) => r.id));
+    }
+
+    await createNotification({
+      user_id: userId,
+      type: 'ai_insight',
+      title: 'Your portfolio build is ready',
+      message: finalPortfolio.theme_summary || 'Your AI-generated portfolio has finished — tap to view it.',
+      entity_type: null,
+      entity_id: `portfolio_builder:${id}`,
+      severity: 'info',
+    });
+  } catch (err) {
+    console.error('[portfolio-builder] Anthropic error:', err);
+    const safe = classifyAiError(err);
+    try {
+      await markError(safe.code, safe.message);
+    } catch { /* best effort */ }
+  }
+}
+
+// ─── POST: start a new build (returns immediately, generates in the background) ─
 
 async function handler(
   request: NextRequest,
@@ -40,13 +175,9 @@ async function handler(
   // Monthly free-tier quota (3/mo). Pro users bypass entirely.
   const quota = await checkQuota(session.userId, 'portfolio_builder');
   if (!quota.allowed) {
-    return NextResponse.json(
-      { error: 'quota_exceeded', quota },
-      { status: 402 }
-    );
+    return NextResponse.json({ error: 'quota_exceeded', quota }, { status: 402 });
   }
 
-  // Parse body
   let thesis: string;
   try {
     const body = await request.json();
@@ -61,148 +192,84 @@ async function handler(
     );
   }
 
-  const encoder = new TextEncoder();
+  const supabase = createServerClient();
+  const { data: inserted, error: insertErr } = await supabase
+    .from('portfolio_generations')
+    .insert({
+      user_id: session.userId,
+      thesis,
+      status: 'pending',
+      phase: 'streaming',
+      logo_map: {},
+      replaced_tickers: [],
+    })
+    .select('id')
+    .single();
 
-  const readable = new ReadableStream({
-    async start(controller) {
-      const send = (obj: Record<string, unknown>) =>
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`));
+  if (insertErr || !inserted) {
+    console.error('[portfolio-builder] failed to create pending row:', insertErr?.message);
+    return NextResponse.json({ error: 'Failed to start generation' }, { status: 500 });
+  }
 
-      let buffered = '';
+  const id = inserted.id as string;
 
-      try {
-        const stream = anthropic.messages.stream({
-          model: MODEL,
-          max_tokens: 16000,
-          temperature: 1,
-          thinking: {
-            type: 'enabled',
-            budget_tokens: 8000,
-          },
-          system: [
-            {
-              type: 'text',
-              text: PORTFOLIO_BUILDER_SYSTEM_PROMPT,
-              cache_control: { type: 'ephemeral' },
-            },
-          ],
-          messages: [{ role: 'user', content: thesis }],
-        });
+  after(() => runPortfolioBuilder({ id, userId: session.userId, thesis }));
 
-        // Thinking deltas → stream to client so the "Analyzing thesis" phase
-        // shows live reasoning text. First text_delta signals the model has
-        // started writing JSON → transition client to "composing" phase.
-        let textStarted = false;
-        for await (const event of stream) {
-          if (event.type === 'content_block_delta') {
-            const delta = event.delta as { type: string; thinking?: string; text?: string };
-            if (delta.type === 'thinking_delta' && delta.thinking) {
-              send({ type: 'thinking', delta: delta.thinking });
-            } else if (delta.type === 'text_delta' && delta.text) {
-              if (!textStarted) {
-                textStarted = true;
-                send({ type: 'composing' });
-              }
-              buffered += delta.text;
-            }
-          }
-        }
+  return NextResponse.json({ id, status: 'pending' });
+}
 
-        // Capture token usage and log the call. Logging happens regardless of
-        // downstream parse outcome — the AI call's cost is already incurred.
-        try {
-          const final = await stream.finalMessage();
-          void logAiCall({
-            userId: session.userId,
-            feature: 'portfolio_builder',
-            model: MODEL,
-            inputTokens: final.usage.input_tokens,
-            outputTokens: final.usage.output_tokens,
-          });
-        } catch {
-          // never block the response on logging
-        }
+// ─── GET: poll a specific generation by id, or check for one still pending ────
 
-        // Parse + validate the JSON
-        let portfolio: Portfolio;
-        try {
-          portfolio = parsePortfolio(buffered);
-        } catch (parseErr) {
-          console.error('[portfolio-builder] parse failed:', parseErr);
-          const safe = parseFailure();
-          send({ type: 'error', code: safe.code, message: safe.message });
-          return;
-        }
+async function getStatusHandler(
+  request: NextRequest,
+  _ctx: unknown,
+  session: { userId: string }
+): Promise<NextResponse> {
+  const id = request.nextUrl.searchParams.get('id');
+  const supabase = createServerClient();
 
-        send({ type: 'validating' });
+  if (id) {
+    const { data, error } = await supabase
+      .from('portfolio_generations')
+      .select('id, thesis, status, phase, portfolio, logo_map, replaced_tickers, error_code, error_message, created_at')
+      .eq('id', id)
+      .eq('user_id', session.userId)
+      .maybeSingle();
 
-        // Verify every ticker exists; ask the model to substitute the rest
-        const initialCheck = await validateTickers(portfolio.holdings);
-        let validHoldings = initialCheck.validHoldings;
-        let logoMap = initialCheck.logoMap;
-        const invalidTickers = initialCheck.invalidTickers;
-        const replacedTickers: string[] = [];
+    if (error || !data) {
+      return addSecurityHeaders(NextResponse.json({ success: false, error: 'Not found' }, { status: 404 }));
+    }
 
-        if (invalidTickers.length > 0 && validHoldings.length > 0) {
-          const replacements = await requestReplacements({
-            previousAssistantTurn: buffered,
-            invalidTickers,
-            thesis,
-          });
+    return addSecurityHeaders(NextResponse.json({
+      success: true,
+      id: data.id,
+      thesis: data.thesis,
+      status: data.status,
+      phase: data.phase,
+      portfolio: data.portfolio ?? null,
+      logoMap: data.logo_map ?? {},
+      replacedTickers: data.replaced_tickers ?? [],
+      errorCode: data.error_code ?? null,
+      errorMessage: data.error_message ?? null,
+    }));
+  }
 
-          if (replacements.length > 0) {
-            const reCheck = await validateTickers(replacements);
-            replacedTickers.push(...invalidTickers.filter((t) => !reCheck.invalidTickers.includes(t)));
-            validHoldings = [...validHoldings, ...reCheck.validHoldings];
-            logoMap = { ...logoMap, ...reCheck.logoMap };
-          } else {
-            replacedTickers.push(...invalidTickers);
-          }
-        } else if (invalidTickers.length > 0) {
-          // No valid holdings to anchor a retry — drop and continue
-          replacedTickers.push(...invalidTickers);
-        }
+  // No id: is there a build still running for this user? (resume-on-mount)
+  const { data: pendingRow } = await supabase
+    .from('portfolio_generations')
+    .select('id, thesis, phase')
+    .eq('user_id', session.userId)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
-        if (validHoldings.length < 3) {
-          send({
-            type: 'error',
-            code: 'too_few_valid_tickers',
-            message: 'Could not assemble enough verified tickers for this thesis. Try rephrasing.',
-          });
-          return;
-        }
-
-        // Final renormalization so allocations always sum to exactly 100
-        const finalHoldings = renormalizeAllocations(validHoldings);
-
-        const finalPortfolio = {
-          ...portfolio,
-          holdings: finalHoldings,
-        };
-
-        send({
-          type: 'done',
-          portfolio: finalPortfolio,
-          logoMap,
-          replacedTickers,
-        });
-      } catch (err) {
-        console.error('[portfolio-builder] Anthropic error:', err);
-        const safe = classifyAiError(err);
-        send({ type: 'error', code: safe.code, message: safe.message });
-      } finally {
-        controller.close();
-      }
-    },
-  });
-
-  return new NextResponse(readable, {
-    headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache, no-transform',
-      Connection: 'keep-alive',
-    },
-  });
+  return addSecurityHeaders(NextResponse.json({
+    success: true,
+    pendingId: pendingRow?.id ?? null,
+    pendingThesis: pendingRow?.thesis ?? null,
+    pendingPhase: pendingRow?.phase ?? null,
+  }));
 }
 
 /**
@@ -274,3 +341,4 @@ Return ONLY a JSON array (no other fields, no fences) of replacement holdings, o
 export type { Portfolio, PortfolioHolding };
 
 export const POST = withAuth(handler);
+export const GET = withAuth(getStatusHandler);

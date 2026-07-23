@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ThesisInput } from './ThesisInput';
 import { StreamingThoughts } from './StreamingThoughts';
@@ -19,6 +20,7 @@ import { useInvalidateQuota } from '@/hooks/use-quota';
 
 type Phase = 'idle' | 'streaming' | 'composing' | 'validating' | 'done' | 'error';
 type ErrorCode = 'invalid_key' | 'payment_required' | 'rate_limited' | 'parse_failed' | 'too_few_valid_tickers' | 'quota_exceeded' | 'unknown';
+type BuilderPhase = 'streaming' | 'composing' | 'validating';
 
 interface DoneEvent {
   type: 'done';
@@ -27,21 +29,41 @@ interface DoneEvent {
   replacedTickers: string[];
 }
 
+interface StatusResponse {
+  success: boolean;
+  status?: 'pending' | 'done' | 'error';
+  phase?: BuilderPhase | null;
+  thesis?: string;
+  portfolio?: Portfolio | null;
+  logoMap?: Record<string, string | null>;
+  replacedTickers?: string[];
+  errorCode?: ErrorCode | null;
+  errorMessage?: string | null;
+}
+
 const HISTORY_KEY = ['portfolio-builder-history'];
+const POLL_INTERVAL_MS = 2500;
 
 export function PortfolioBuilderClient() {
+  const searchParams = useSearchParams();
   const [phase, setPhase] = useState<Phase>('idle');
-  const [thinkingText, setThinkingText] = useState('');
   const [result, setResult] = useState<DoneEvent | null>(null);
   const [errorCode, setErrorCode] = useState<ErrorCode>('unknown');
   const [errorMessage, setErrorMessage] = useState('');
   const [thesis, setThesis] = useState('');
   const [paywallQuota, setPaywallQuota] = useState<QuotaState | null>(null);
-  const abortRef = useRef<AbortController | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const queryClient = useQueryClient();
   const invalidateQuota = useInvalidateQuota();
 
-  useEffect(() => () => abortRef.current?.abort(), []);
+  const stopPolling = useCallback(() => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => () => stopPolling(), [stopPolling]);
 
   // History state — expand/collapse + search
   const [historyExpanded, setHistoryExpanded] = useState(false);
@@ -69,17 +91,6 @@ export function PortfolioBuilderClient() {
   const history = historyData?.generations ?? [];
   const historyTotal = historyData?.total ?? history.length;
 
-  // Save mutation
-  const saveMutation = useMutation({
-    mutationFn: (payload: { thesis: string; portfolio: Portfolio; logoMap: Record<string, string | null>; replacedTickers: string[] }) =>
-      fetch('/api/ai/portfolio-builder/history', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: HISTORY_KEY, exact: false }),
-  });
-
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: (id: string) =>
@@ -92,13 +103,12 @@ export function PortfolioBuilderClient() {
   });
 
   const reset = useCallback(() => {
-    abortRef.current?.abort();
+    stopPolling();
     setPhase('idle');
-    setThinkingText('');
     setResult(null);
     setErrorMessage('');
     setThesis('');
-  }, []);
+  }, [stopPolling]);
 
   const restoreGeneration = useCallback((gen: SavedGeneration) => {
     setResult({ type: 'done', portfolio: gen.portfolio, logoMap: gen.logoMap, replacedTickers: gen.replacedTickers });
@@ -106,13 +116,79 @@ export function PortfolioBuilderClient() {
     setPhase('done');
   }, []);
 
-  const submit = async (submittedThesis: string) => {
-    abortRef.current?.abort();
-    const ctrl = new AbortController();
-    abortRef.current = ctrl;
+  const pollStatus = useCallback((id: string) => {
+    stopPolling();
+    pollRef.current = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/ai/portfolio-builder?id=${id}`);
+        const data: StatusResponse = await res.json();
+        if (!data.success) return;
 
+        if (data.phase) setPhase(data.phase);
+
+        if (data.status === 'done' && data.portfolio) {
+          stopPolling();
+          setResult({ type: 'done', portfolio: data.portfolio, logoMap: data.logoMap ?? {}, replacedTickers: data.replacedTickers ?? [] });
+          setPhase('done');
+          invalidateQuota('portfolio_builder');
+          queryClient.invalidateQueries({ queryKey: HISTORY_KEY, exact: false });
+        } else if (data.status === 'error') {
+          stopPolling();
+          setErrorCode(data.errorCode ?? 'unknown');
+          setErrorMessage(data.errorMessage ?? '');
+          setPhase('error');
+        }
+      } catch {
+        // Transient network hiccup — keep polling, the next tick will retry.
+      }
+    }, POLL_INTERVAL_MS);
+  }, [stopPolling, invalidateQuota, queryClient]);
+
+  // On mount: load a specific generation from a notification deep link
+  // (?id=...), or resume polling if the user left mid-build and came back.
+  useEffect(() => {
+    let cancelled = false;
+    const linkedId = searchParams.get('id');
+
+    (async () => {
+      if (linkedId) {
+        try {
+          const res = await fetch(`/api/ai/portfolio-builder?id=${linkedId}`);
+          const data: StatusResponse = await res.json();
+          if (cancelled || !data.success) return;
+          setThesis(data.thesis ?? '');
+          if (data.status === 'done' && data.portfolio) {
+            setResult({ type: 'done', portfolio: data.portfolio, logoMap: data.logoMap ?? {}, replacedTickers: data.replacedTickers ?? [] });
+            setPhase('done');
+          } else if (data.status === 'pending') {
+            setPhase(data.phase ?? 'streaming');
+            pollStatus(linkedId);
+          } else if (data.status === 'error') {
+            setErrorCode(data.errorCode ?? 'unknown');
+            setErrorMessage(data.errorMessage ?? '');
+            setPhase('error');
+          }
+        } catch { /* fall through to idle */ }
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/ai/portfolio-builder');
+        const data = await res.json();
+        if (cancelled || !data?.success || !data.pendingId) return;
+        setThesis(data.pendingThesis ?? '');
+        setPhase((data.pendingPhase as BuilderPhase) ?? 'streaming');
+        pollStatus(data.pendingId);
+      } catch { /* stay idle */ }
+    })();
+
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const submit = async (submittedThesis: string) => {
+    stopPolling();
     setPhase('streaming');
-    setThinkingText('');
     setResult(null);
     setErrorMessage('');
     setThesis(submittedThesis);
@@ -122,7 +198,6 @@ export function PortfolioBuilderClient() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ thesis: submittedThesis }),
-        signal: ctrl.signal,
       });
 
       if (res.status === 429) { setErrorCode('rate_limited'); setPhase('error'); return; }
@@ -140,55 +215,13 @@ export function PortfolioBuilderClient() {
         return;
       }
 
-      const reader = res.body?.getReader();
-      if (!reader) { setPhase('error'); return; }
-
-      const dec = new TextDecoder();
-      let leftover = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = leftover + dec.decode(value);
-        const lines = chunk.split('\n');
-        leftover = lines.pop() ?? '';
-
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          try {
-            const event = JSON.parse(line.slice(6));
-            if (event.type === 'thinking') {
-              setThinkingText((t) => t + event.delta);
-            } else if (event.type === 'composing') {
-              setPhase((p) => (p === 'streaming' ? 'composing' : p));
-            } else if (event.type === 'validating') {
-              setPhase('validating');
-            } else if (event.type === 'done') {
-              const doneEvent = event as DoneEvent;
-              setResult(doneEvent);
-              setPhase('done');
-              invalidateQuota('portfolio_builder');
-              // Persist in background — don't await
-              saveMutation.mutate({
-                thesis: submittedThesis,
-                portfolio: doneEvent.portfolio,
-                logoMap: doneEvent.logoMap,
-                replacedTickers: doneEvent.replacedTickers,
-              });
-            } else if (event.type === 'error') {
-              setErrorCode((event.code as ErrorCode) ?? 'unknown');
-              setErrorMessage(event.message ?? '');
-              setPhase('error');
-            }
-          } catch { /* malformed line */ }
-        }
-      }
+      const data = await res.json();
+      if (!data.id) { setErrorMessage('Failed to start generation'); setErrorCode('unknown'); setPhase('error'); return; }
+      pollStatus(data.id);
     } catch (err) {
-      if ((err as Error).name !== 'AbortError') {
-        setErrorMessage((err as Error).message ?? '');
-        setErrorCode('unknown');
-        setPhase('error');
-      }
+      setErrorMessage((err as Error).message ?? '');
+      setErrorCode('unknown');
+      setPhase('error');
     }
   };
 
@@ -257,12 +290,7 @@ export function PortfolioBuilderClient() {
     );
   }
 
-  return (
-    <StreamingThoughts
-      text={thinkingText}
-      phase={phase as 'streaming' | 'composing' | 'validating'}
-    />
-  );
+  return <StreamingThoughts phase={phase as BuilderPhase} />;
 }
 
 // ── Recent portfolios list ────────────────────────────────────────────────────

@@ -1,12 +1,10 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Brain, Layers, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface Props {
-  text: string;
   phase: 'streaming' | 'composing' | 'validating';
 }
 
@@ -28,15 +26,8 @@ const SKELETON_ROWS = [
   { bar: '44%' }, { bar: '58%' }, { bar: '67%' }, { bar: '52%' },
 ];
 
-export function StreamingThoughts({ text, phase }: Props) {
-  const scrollRef = useRef<HTMLDivElement>(null);
+export function StreamingThoughts({ phase }: Props) {
   const currentStep = PHASE_ORDER[phase];
-
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [text]);
 
   return (
     <div className="relative rounded-2xl border border-border/50 bg-card overflow-hidden shadow-sm">
@@ -115,7 +106,9 @@ export function StreamingThoughts({ text, phase }: Props) {
       {/* Phase-specific content area */}
       <AnimatePresence mode="wait">
 
-        {/* ── Streaming: live AI reasoning text ───────────────────────────── */}
+        {/* ── Streaming: decorative placeholder — no live text, since this now
+             runs as a background job that can outlive the tab (see runPortfolioBuilder
+             in the API route) and can't push live tokens to a closed connection ── */}
         {phase === 'streaming' && (
           <motion.div
             key="streaming"
@@ -143,27 +136,10 @@ export function StreamingThoughts({ text, phase }: Props) {
               </div>
             </div>
 
-            {/* Scrollable thinking stream */}
-            <div
-              ref={scrollRef}
-              className="h-[300px] overflow-y-auto p-4 bg-muted/[0.03] [&::-webkit-scrollbar]:w-0 [scrollbar-width:none]"
-            >
-              <p className="font-mono text-[11.5px] leading-[1.75] text-foreground/55 whitespace-pre-wrap break-words">
-                {text || (
-                  <span className="text-muted-foreground/25 italic">
-                    Decomposing the thesis into investable subsectors…
-                  </span>
-                )}
-                {/* Blinking block cursor */}
-                <motion.span
-                  className="inline-block w-[1.5px] h-[12px] bg-primary/65 ml-px align-text-bottom"
-                  animate={{ opacity: [1, 1, 0, 0] }}
-                  transition={{
-                    duration: 0.9,
-                    repeat: Infinity,
-                    times: [0, 0.4, 0.5, 0.95],
-                  }}
-                />
+            {/* Decorative placeholder in place of the live thinking stream */}
+            <div className="h-[300px] flex items-center justify-center p-4 bg-muted/[0.03]">
+              <p className="font-mono text-[11.5px] leading-[1.75] text-muted-foreground/25 italic text-center">
+                Decomposing the thesis into investable subsectors…
               </p>
             </div>
           </motion.div>
@@ -270,6 +246,10 @@ export function StreamingThoughts({ text, phase }: Props) {
         )}
 
       </AnimatePresence>
+
+      <p className="px-5 pb-4 pt-1 text-center text-[10px] text-muted-foreground/40">
+        Feel free to leave this page — we&apos;ll notify you when it&apos;s ready.
+      </p>
     </div>
   );
 }

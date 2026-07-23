@@ -29,6 +29,7 @@ async function getHandler(
     .from('portfolio_generations')
     .select('id, thesis, portfolio, logo_map, replaced_tickers, created_at')
     .eq('user_id', session.userId)
+    .eq('status', 'done')
     .order('created_at', { ascending: false })
     .limit(all ? MAX_SAVED : PREVIEW_COUNT);
 
@@ -56,58 +57,12 @@ async function getHandler(
     const { count } = await supabase
       .from('portfolio_generations')
       .select('id', { count: 'exact', head: true })
-      .eq('user_id', session.userId);
+      .eq('user_id', session.userId)
+      .eq('status', 'done');
     total = count ?? generations.length;
   }
 
   return addSecurityHeaders(NextResponse.json({ generations, total }));
-}
-
-async function postHandler(
-  req: NextRequest,
-  _ctx: unknown,
-  session: { userId: string }
-): Promise<NextResponse> {
-  const { thesis, portfolio, logoMap, replacedTickers } = await req.json();
-  if (!thesis || !portfolio) {
-    return addSecurityHeaders(NextResponse.json({ error: 'Missing required fields' }, { status: 400 }));
-  }
-
-  const supabase = createServerClient();
-
-  // Insert new generation
-  const { data: inserted, error: insertError } = await supabase
-    .from('portfolio_generations')
-    .insert({
-      user_id: session.userId,
-      thesis,
-      portfolio,
-      logo_map: logoMap ?? {},
-      replaced_tickers: replacedTickers ?? [],
-    })
-    .select('id')
-    .single();
-
-  if (insertError) {
-    return addSecurityHeaders(NextResponse.json({ error: insertError.message }, { status: 500 }));
-  }
-
-  // Trim: keep only the newest MAX_SAVED rows, delete the rest
-  const { data: oldest } = await supabase
-    .from('portfolio_generations')
-    .select('id')
-    .eq('user_id', session.userId)
-    .order('created_at', { ascending: false })
-    .range(MAX_SAVED, 999);
-
-  if (oldest && oldest.length > 0) {
-    await supabase
-      .from('portfolio_generations')
-      .delete()
-      .in('id', oldest.map((r) => r.id));
-  }
-
-  return addSecurityHeaders(NextResponse.json({ id: inserted.id }));
 }
 
 async function deleteHandler(
@@ -129,5 +84,4 @@ async function deleteHandler(
 }
 
 export const GET    = withAuth(getHandler);
-export const POST   = withAuth(postHandler);
 export const DELETE = withAuth(deleteHandler);
