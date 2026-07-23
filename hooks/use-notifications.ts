@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useId } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
 import { createBrowserClient } from '@/lib/supabase/client';
@@ -14,6 +14,12 @@ import type { Notification } from '@/lib/notifications/notifications-db';
 export function useNotifications(limit: number = 50) {
   const { user, isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
+  // This hook mounts several times at once (bell badge, dropdown, toast
+  // listener). Each needs its own Realtime channel — reusing the same topic
+  // name across instances made every later `.subscribe()` immediately kick
+  // the previous one off the socket (phx_join → phx_leave within ms), so only
+  // the last-mounted consumer ever stayed connected.
+  const instanceId = useId();
 
   // Supabase Realtime: invalidate query the moment a new notification is inserted.
   // This makes the unread badge update within ~1s of a cron job creating a notification,
@@ -22,7 +28,7 @@ export function useNotifications(limit: number = 50) {
     if (!user?.id) return;
     const supabase = createBrowserClient();
     const channel = supabase
-      .channel(`notifications:${user.id}`)
+      .channel(`notifications:${user.id}:${instanceId}`)
       .on(
         'postgres_changes',
         {
@@ -39,7 +45,7 @@ export function useNotifications(limit: number = 50) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.id, queryClient]);
+  }, [user?.id, queryClient, instanceId]);
 
   return useQuery({
     queryKey: ['notifications', user?.id, limit],

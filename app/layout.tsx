@@ -13,6 +13,7 @@ import { AIPanelProvider } from "@/components/ai/AIPanelProvider";
 import { AIPanelToggle } from "@/components/ai/AIPanelToggle";
 import { CommandPaletteProvider } from "@/components/command-palette/CommandPaletteProvider";
 import { PendingOnboardingFlush } from "@/components/onboarding/PendingOnboardingFlush";
+import { NotificationToastListener } from "@/components/notifications/NotificationToastListener";
 import { CookieConsentBanner } from "@/components/cookie-consent/CookieConsentBanner";
 
 const geistSans = Geist({
@@ -100,6 +101,7 @@ export default function RootLayout({
                 <BackgroundProvider />
                 <AuthNavigation />
                 <PendingOnboardingFlush />
+                <NotificationToastListener />
                 <CookieConsentBanner />
                 {children}
                 <AIPanelToggle />

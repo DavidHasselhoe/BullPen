@@ -153,6 +153,17 @@ function NotificationIcon({ n }: { n: Notification }) {
  * stock itself — unambiguously what the notification is about.
  */
 function notificationSource(n: Notification): { label: string; href: string } | null {
+  // ai_insight entity_id carries a "kind:value" prefix so these route
+  // before falling into the generic stock/portfolio checks below.
+  if (n.type === 'ai_insight' && n.entity_id?.endsWith(':deep_dive')) {
+    const sym = n.entity_id.replace(/:deep_dive$/, '');
+    return { label: 'Deep Dive', href: `/tools/deep-dive/${sym}` };
+  }
+  if (n.type === 'ai_insight' && n.entity_id?.startsWith('portfolio_builder:')) {
+    const id = n.entity_id.replace(/^portfolio_builder:/, '');
+    return { label: 'Portfolio Builder', href: `/tools/portfolio-builder?id=${id}` };
+  }
+
   // entity_type is typed narrower than runtime — the alert cron writes 'user_alert'.
   const et = n.entity_type as string | null;
   const sym = et === 'stock' && n.entity_id ? n.entity_id.replace(/:.*$/, '') : null;

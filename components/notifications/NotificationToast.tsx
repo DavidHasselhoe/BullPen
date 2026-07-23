@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { X, AlertTriangle, AlertCircle } from 'lucide-react';
+import { X, AlertTriangle, AlertCircle, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { Notification } from '@/lib/notifications/notifications-db';
@@ -30,13 +30,23 @@ export function NotificationToast({ notification, onDismiss }: NotificationToast
     return () => clearTimeout(timer);
   }, [notification.id, onDismiss]);
 
-  // Only show warning and critical notifications as toasts
-  if (notification.severity !== 'warning' && notification.severity !== 'critical') {
+  // Warning/critical notifications always toast (price moves worth interrupting
+  // for). ai_insight also toasts regardless of severity — these are things the
+  // user actively started and is waiting on (a Deep Dive, a portfolio build),
+  // so "info" severity shouldn't mean "quiet"; they should hear about it now,
+  // not just via the bell badge.
+  if (notification.severity !== 'warning' && notification.severity !== 'critical' && notification.type !== 'ai_insight') {
     return null;
   }
 
   // Get link URL based on entity type
   const getLinkUrl = (): string => {
+    if (notification.type === 'ai_insight' && notification.entity_id?.endsWith(':deep_dive')) {
+      return `/tools/deep-dive/${notification.entity_id.replace(/:deep_dive$/, '')}`;
+    }
+    if (notification.type === 'ai_insight' && notification.entity_id?.startsWith('portfolio_builder:')) {
+      return `/tools/portfolio-builder?id=${notification.entity_id.replace(/^portfolio_builder:/, '')}`;
+    }
     if (notification.entity_type === 'stock' && notification.entity_id) {
       return `/stock/${notification.entity_id}`;
     }
@@ -47,31 +57,25 @@ export function NotificationToast({ notification, onDismiss }: NotificationToast
   };
 
   const linkUrl = getLinkUrl();
-  const Icon = notification.severity === 'critical' ? AlertCircle : AlertTriangle;
+  const isAiInsight = notification.type === 'ai_insight';
+  const Icon = isAiInsight ? Sparkles : notification.severity === 'critical' ? AlertCircle : AlertTriangle;
+  const iconColor = isAiInsight ? 'text-violet-400' : notification.severity === 'critical' ? 'text-red-500' : 'text-amber-500';
 
   if (!isVisible) return null;
 
   return (
     <div
       className={cn(
-        'fixed bottom-4 right-4 z-50 w-full max-w-md rounded-lg border bg-background shadow-lg transition-all duration-300',
+        // left-4, not right-4 — the "Ask Bull" toggle (AIPanelToggle) sits fixed
+        // bottom-right with the same z-50 and rendered later in the DOM, so a
+        // right-anchored toast here was getting covered by it. Mobile tab bar
+        // clearance mirrors AIPanelToggle's own offset for the same reason.
+        'fixed bottom-5 left-4 max-md:[bottom:calc(3.5rem+1.25rem+env(safe-area-inset-bottom))] z-50 w-full max-w-md rounded-lg border bg-background shadow-lg transition-all duration-300',
         isVisible ? 'animate-in slide-in-from-bottom-2' : 'animate-out slide-out-to-bottom-2'
       )}
     >
-      <div
-        className={cn(
-          'flex items-start gap-3 p-4 border-l-4',
-          notification.severity === 'critical'
-            ? 'border-l-red-500 bg-red-50/50 dark:bg-red-950/20'
-            : 'border-l-yellow-500 bg-yellow-50/50 dark:bg-yellow-950/20'
-        )}
-      >
-        <Icon
-          className={cn(
-            'h-5 w-5 shrink-0 mt-0.5',
-            notification.severity === 'critical' ? 'text-red-600' : 'text-yellow-600'
-          )}
-        />
+      <div className="flex items-start gap-3 p-4">
+        <Icon className={cn('h-5 w-5 shrink-0 mt-0.5', iconColor)} />
         <div className="flex-1 min-w-0">
           <h4 className="font-medium text-sm mb-1">{notification.title}</h4>
           <p className="text-sm text-muted-foreground">{notification.message}</p>
