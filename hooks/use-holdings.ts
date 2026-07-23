@@ -10,10 +10,14 @@ import {
   removeHoldingAction,
   updateHoldingBySymbolAction,
   removeHoldingBySymbolAction,
+  sellHoldingAction,
+  getHoldingSalesAction,
+  deleteHoldingSaleAction,
   type AddHoldingInput,
   type UpdateHoldingInput,
+  type SellHoldingInput,
 } from '@/app/actions/holdings';
-import type { UserHolding } from '@/lib/types/database';
+import type { UserHolding, HoldingSale } from '@/lib/types/database';
 
 /**
  * TanStack Query hook to fetch user holdings
@@ -201,6 +205,74 @@ export function useRemoveHolding() {
       queryClient.invalidateQueries({ queryKey: ['holdings', user?.id] });
       // Also invalidate quotes query
       queryClient.invalidateQueries({ queryKey: ['holdings-quotes'] });
+    },
+  });
+}
+
+/**
+ * TanStack Query mutation to sell (fully or partially) a manually-entered holding.
+ * Invalidates holdings, quotes, holding-sales, and the performance chart's own
+ * query cache (partial match, since its key also includes the selected range).
+ */
+export function useSellHolding() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ holdingId, input }: { holdingId: string; input: SellHoldingInput }) => {
+      if (!user?.id) throw new Error('Authentication required');
+
+      const result = await sellHoldingAction(holdingId, input);
+      if (result.success) return result;
+      throw new Error(result.error || 'Failed to sell holding');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['holdings', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['holdings-quotes'] });
+      queryClient.invalidateQueries({ queryKey: ['holding-sales', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['portfolio-performance'], exact: false });
+    },
+  });
+}
+
+/**
+ * TanStack Query hook to fetch this user's recorded sales, newest first.
+ */
+export function useHoldingSales() {
+  const { user, isAuthenticated } = useAuth();
+
+  return useQuery({
+    queryKey: ['holding-sales', user?.id],
+    queryFn: async (): Promise<HoldingSale[]> => {
+      if (!isAuthenticated || !user) throw new Error('Authentication required');
+      const result = await getHoldingSalesAction();
+      if (result.success && result.sales) return result.sales;
+      throw new Error(result.error || 'Failed to fetch sales');
+    },
+    enabled: isAuthenticated && !!user,
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
+}
+
+/**
+ * TanStack Query mutation to undo a recorded sale.
+ */
+export function useDeleteHoldingSale() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (saleId: string): Promise<void> => {
+      if (!user?.id) throw new Error('Authentication required');
+      const result = await deleteHoldingSaleAction(saleId);
+      if (!result.success) throw new Error(result.error || 'Failed to undo sale');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['holdings', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['holdings-quotes'] });
+      queryClient.invalidateQueries({ queryKey: ['holding-sales', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['portfolio-performance'], exact: false });
     },
   });
 }
