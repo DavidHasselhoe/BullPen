@@ -10,8 +10,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useHoldingSales } from '@/hooks/use-holdings';
 import type { HoldingWithPrice } from './types';
 import type { CurrencyCode } from '@/lib/currency/currency-conversion';
+import type { HoldingSale } from '@/lib/types/database';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -82,14 +84,36 @@ export function PortfolioPerformanceChart({ holdings, currency = 'USD', isLoadin
   const [range, setRange]           = useState<Range>('MAX');
   const [showBenchmark, setShowBenchmark] = useState(false);
 
+  const { data: allSales } = useHoldingSales();
+
+  const salesBySymbol = useMemo(() => {
+    const map = new Map<string, HoldingSale[]>();
+    for (const sale of allSales ?? []) {
+      const list = map.get(sale.symbol) ?? [];
+      list.push(sale);
+      map.set(sale.symbol, list);
+    }
+    for (const list of map.values()) {
+      list.sort((a, b) => new Date(a.sale_date).getTime() - new Date(b.sale_date).getTime());
+    }
+    return map;
+  }, [allSales]);
+
   const eligible = useMemo(
-    () => holdings.filter((h) => h.avg_price != null && h.quantity != null && h.quantity > 0),
-    [holdings]
+    () => holdings.filter((h) =>
+      h.avg_price != null &&
+      ((h.quantity != null && h.quantity > 0) || (salesBySymbol.get(h.symbol)?.length ?? 0) > 0)
+    ),
+    [holdings, salesBySymbol]
   );
 
   const holdingsKey = useMemo(
-    () => eligible.map((h) => `${h.symbol}:${h.avg_price}:${h.quantity}:${h.date_purchased ?? h.created_at}`).join(','),
-    [eligible]
+    () => eligible.map((h) => {
+      const sales = salesBySymbol.get(h.symbol) ?? [];
+      const salesTag = sales.map((s) => `${s.sale_date}:${s.quantity_sold}:${s.realized_pl}`).join('|');
+      return `${h.symbol}:${h.avg_price}:${h.quantity}:${h.date_purchased ?? h.created_at}:${salesTag}`;
+    }).join(','),
+    [eligible, salesBySymbol]
   );
 
   // Portfolio candles
@@ -141,26 +165,46 @@ export function PortfolioPerformanceChart({ holdings, currency = 'USD', isLoadin
     let periodBasis = 0;
 
     for (const { holding, candles } of candleResults) {
-      if (!candles || holding.avg_price == null || holding.quantity == null) continue;
+      if (!candles || holding.avg_price == null) continue;
 
       const holdingStart = holding.date_purchased
         ? new Date(holding.date_purchased).getTime()
         : new Date(holding.created_at).getTime();
 
+      const sales = salesBySymbol.get(holding.symbol) ?? [];
+      const currentQty = holding.quantity ?? 0;
+
+      // Shares still held at time t: current quantity, plus back out every
+      // sale that hadn't happened yet as of t.
+      const sharesHeldAt = (tMs: number): number => {
+        let shares = currentQty;
+        for (const sale of sales) {
+          if (new Date(sale.sale_date).getTime() > tMs) shares += sale.quantity_sold;
+        }
+        return shares;
+      };
+      // Realized gain locked in as of time t: every sale that had already
+      // happened by t, permanently added to the total from its sale date on.
+      const realizedAt = (tMs: number): number => {
+        let realized = 0;
+        for (const sale of sales) {
+          if (new Date(sale.sale_date).getTime() <= tMs) realized += sale.realized_pl;
+        }
+        return realized;
+      };
+
       const { t, c } = candles;
 
-      // Basis is avg_price whenever the holding was bought during the
-      // selected window (the common case — and for MAX, effectively always,
-      // since the window predates any realistic purchase date), otherwise
-      // the period's opening price for a true windowed return.
       const periodStartMs = t.length > 0 ? t[0] * 1000 : 0;
       const boughtDuringPeriod = holdingStart > periodStartMs;
       const basePrice = boughtDuringPeriod ? holding.avg_price : c[0];
-      periodBasis += basePrice * holding.quantity;
+      periodBasis += basePrice * sharesHeldAt(periodStartMs);
 
       for (let i = 0; i < t.length; i++) {
-        if (t[i] * 1000 < holdingStart) continue;
-        const pl = (c[i] - basePrice) * holding.quantity;
+        const tsMs = t[i] * 1000;
+        if (tsMs < holdingStart) continue;
+        const shares = sharesHeldAt(tsMs);
+        const pl = (c[i] - basePrice) * shares + realizedAt(tsMs);
         plByTime.set(t[i], (plByTime.get(t[i]) ?? 0) + pl);
       }
     }
@@ -175,7 +219,7 @@ export function PortfolioPerformanceChart({ holdings, currency = 'USD', isLoadin
         pl,
         plPct: (pl / basis) * 100,
       }));
-  }, [candleResults, range]);
+  }, [candleResults, range, salesBySymbol]);
 
   // Enrich chart points with SPY % return, normalized from the first portfolio timestamp
   const enrichedData = useMemo<ChartPoint[]>(() => {
