@@ -9,6 +9,7 @@ import { HoldingsPieChart } from '@/components/holdings/HoldingsPieChart';
 import { PortfolioDashboard } from '@/components/holdings/PortfolioDashboard';
 import { PortfolioRiskAnalysis } from '@/components/holdings/PortfolioRiskAnalysis';
 import { PortfolioPerformanceChart } from '@/components/holdings/PortfolioPerformanceChart';
+import { ClosedPositionsList } from '@/components/holdings/ClosedPositionsList';
 import { useHoldings } from '@/hooks/use-holdings';
 import { useAuth } from '@/hooks/use-auth';
 import { useLivePrices } from '@/hooks/use-live-prices';
@@ -367,6 +368,9 @@ export default function HoldingsPage() {
         onImportClick={() => setIsImportModalOpen(true)}
         hoveredSector={hoveredSector}
       />
+
+      {/* Closed positions — renders nothing if there are no recorded sales yet */}
+      <ClosedPositionsList />
 
       {/* AI risk analysis */}
       {throttledHoldings.length > 0 && (
