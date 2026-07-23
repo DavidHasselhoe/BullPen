@@ -1,5 +1,16 @@
 [
   {
+    "date": "2026-07-23",
+    "entries": [
+      { "type": "new", "text": "You can now record selling shares of a manually-tracked holding instead of just deleting it — sell all or part of a position, and your portfolio's performance chart keeps its full history intact instead of rewriting the past. Sold positions show up in a new \"Sold Positions\" list with your locked-in gain or loss, and you can undo a sale if you made a mistake" },
+      { "type": "new", "text": "AI Deep Dive reports and the AI Portfolio Builder now keep generating in the background even if you leave the page — you'll get a notification the moment it's ready, wherever you are in the app" },
+      { "type": "new", "text": "Added a cookie consent banner — choose \"Necessary only\" or \"Accept all\" the first time you visit; we only use cookies to keep you logged in, no ad trackers" },
+      { "type": "improved", "text": "The Volatility (Beta) card on stock pages now shows a clearer low-to-high gauge with your stock's exact spot on it, plus a marker for its industry or sector average" },
+      { "type": "fixed", "text": "Fixed sector and industry benchmark comparisons (the \"typical for its sector\" markers next to Key Numbers) sometimes missing or showing the wrong average — benchmarks now compare against a company's specific industry, not just its broader sector, and are sourced from more accurate company data" },
+      { "type": "fixed", "text": "Fixed the Bull mascot blending into the background when you complete an Academy lesson, making the celebration hard to see in some themes" }
+    ]
+  },
+  {
     "date": "2026-07-22",
     "entries": [
       { "type": "fixed", "text": "Fixed earnings dates showing the wrong fiscal quarter, and a phantom \"already reported\" earnings entry appearing for some stocks that hadn't actually reported yet" },
