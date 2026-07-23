@@ -35,6 +35,7 @@ export function SellHoldingModal({ open, onOpenChange, holding, currentPrice }: 
 
   useEffect(() => {
     if (holding && open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: populate controlled form fields when the holding/open props change
       setQuantity('');
       setSalePrice(currentPrice != null ? String(currentPrice) : (holding.avg_price?.toString() ?? ''));
       setSaleDate(new Date().toISOString().slice(0, 10));
