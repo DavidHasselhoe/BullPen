@@ -99,12 +99,51 @@ export function PortfolioPerformanceChart({ holdings, currency = 'USD', isLoadin
     return map;
   }, [allSales]);
 
+  // Symbols with sale history but no surviving user_holdings row (the row
+  // was hard-deleted after being fully sold, via the existing Remove
+  // action). Without a synthetic entry here, eligible below would never
+  // include them — since it filters `holdings`, which has no row for a
+  // deleted symbol at all — silently dropping their locked-in realized
+  // gains from the chart even though the sales still show in the
+  // Sold Positions list. quantity is always 0 here: whatever the holding's
+  // remaining share count was at the moment of deletion is not recoverable
+  // (it only ever lived in the now-gone user_holdings row), so only the
+  // realized portion can be reconstructed for these — which is exactly the
+  // portion this feature promises stays permanent.
+  const orphanedEntries = useMemo(() => {
+    const known = new Set(holdings.map((h) => h.symbol));
+    const entries: HoldingWithPrice[] = [];
+    for (const [symbol, sales] of salesBySymbol) {
+      if (known.has(symbol) || sales.length === 0) continue;
+      const last = sales[sales.length - 1]; // salesBySymbol entries are pre-sorted ascending by sale_date
+      entries.push({
+        id: `orphaned:${symbol}`,
+        user_id: last.user_id,
+        symbol,
+        company_name: last.company_name,
+        quantity: 0,
+        avg_price: last.avg_cost_basis,
+        date_purchased: sales[0].sale_date,
+        source: 'manual',
+        brokerage_account_id: null,
+        alerts_enabled: false,
+        asset_type: (last.asset_type as HoldingWithPrice['asset_type']) ?? 'stock',
+        purchase_currency: null,
+        purchase_fx_rate: null,
+        trading_currency: last.trading_currency,
+        created_at: sales[0].sale_date,
+        updated_at: last.sale_date,
+      });
+    }
+    return entries;
+  }, [holdings, salesBySymbol]);
+
   const eligible = useMemo(
-    () => holdings.filter((h) =>
+    () => [...holdings, ...orphanedEntries].filter((h) =>
       h.avg_price != null &&
       ((h.quantity != null && h.quantity > 0) || (salesBySymbol.get(h.symbol)?.length ?? 0) > 0)
     ),
-    [holdings, salesBySymbol]
+    [holdings, orphanedEntries, salesBySymbol]
   );
 
   const holdingsKey = useMemo(
@@ -173,6 +212,15 @@ export function PortfolioPerformanceChart({ holdings, currency = 'USD', isLoadin
 
       const sales = salesBySymbol.get(holding.symbol) ?? [];
       const currentQty = holding.quantity ?? 0;
+      const { t, c } = candles;
+
+      // Basis is avg_price whenever the holding was bought during the
+      // selected window (the common case — and for MAX, effectively always,
+      // since the window predates any realistic purchase date), otherwise
+      // the period's opening price for a true windowed return.
+      const periodStartMs = t.length > 0 ? t[0] * 1000 : 0;
+      const boughtDuringPeriod = holdingStart > periodStartMs;
+      const basePrice = boughtDuringPeriod ? holding.avg_price : c[0];
 
       // Shares still held at time t: current quantity, plus back out every
       // sale that hadn't happened yet as of t.
@@ -183,21 +231,33 @@ export function PortfolioPerformanceChart({ holdings, currency = 'USD', isLoadin
         }
         return shares;
       };
-      // Realized gain locked in as of time t: every sale that had already
-      // happened by t, permanently added to the total from its sale date on.
+
+      // Realized gain locked in as of time t. When the position's entire
+      // life fits inside the selected window (boughtDuringPeriod), each
+      // sale's own lifetime realized_pl is already consistent with
+      // basePrice (= avg_price) — used as-is, matching MAX's existing
+      // behavior exactly. When the position predates the window, a sale's
+      // LIFETIME realized_pl is anchored to the original purchase price,
+      // not this window's opening price — using it as-is would overstate
+      // (or, for a sale that happened entirely before the window opened,
+      // badly distort) a windowed return. So each such sale is re-expressed
+      // relative to the window's own basePrice instead, and — matching how
+      // sharesHeldAt already treats them — a sale that happened before the
+      // window opened contributes nothing to this window's own story at all.
       const realizedAt = (tMs: number): number => {
         let realized = 0;
         for (const sale of sales) {
-          if (new Date(sale.sale_date).getTime() <= tMs) realized += sale.realized_pl;
+          const saleMs = new Date(sale.sale_date).getTime();
+          if (saleMs > tMs) continue;
+          if (boughtDuringPeriod) {
+            realized += sale.realized_pl;
+          } else if (saleMs >= periodStartMs) {
+            realized += (sale.sale_price - basePrice) * sale.quantity_sold;
+          }
         }
         return realized;
       };
 
-      const { t, c } = candles;
-
-      const periodStartMs = t.length > 0 ? t[0] * 1000 : 0;
-      const boughtDuringPeriod = holdingStart > periodStartMs;
-      const basePrice = boughtDuringPeriod ? holding.avg_price : c[0];
       periodBasis += basePrice * sharesHeldAt(periodStartMs);
 
       for (let i = 0; i < t.length; i++) {
@@ -345,7 +405,7 @@ export function PortfolioPerformanceChart({ holdings, currency = 'USD', isLoadin
                   ({fmtPct(currentPlPct)})
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  {range === 'MAX' ? 'unrealized P/L' : 'period return'}
+                  {range === 'MAX' ? 'total P/L' : 'period return'}
                 </span>
               </div>
             )}
