@@ -33,6 +33,29 @@ export async function getCached<T>(key: string): Promise<T | null> {
 }
 
 /**
+ * Reads the payload regardless of expiry — a last-resort fallback for when a
+ * live refetch fails, so a transient error reuses the last known-good data
+ * instead of an empty/zeroed result. Returns null only if the key was never
+ * cached at all.
+ */
+export async function getCachedStale<T>(key: string): Promise<T | null> {
+  try {
+    const supabase = createServerClient();
+    const { data, error } = await supabase
+      .from(TABLE)
+      .select('payload')
+      .eq('cache_key', key)
+      .maybeSingle<Pick<MarketDataCacheRow, 'payload'>>();
+
+    if (error || !data) return null;
+    return data.payload as T;
+  } catch (error) {
+    console.error('[market-data-cache] stale read failed:', error);
+    return null;
+  }
+}
+
+/**
  * Like getCached but also returns the fetched_at timestamp.
  * Returns null on miss/expiry; { payload, fetchedAt } on hit.
  */
