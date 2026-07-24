@@ -35,10 +35,15 @@ import {
   MARKET_CAP_PROMOTION_FLOOR,
 } from '@/lib/market-data/screener-universe';
 import { fetchAndUpsertScreenerStats } from '@/lib/market-data/screener-stats';
+import { waitForCronCreditBudget } from '@/lib/twelvedata/credit-budget';
 
 export const dynamic = 'force-dynamic';
 
 const BATCH_SIZE = 10;
+
+/** /statistics costs 50 credits/symbol (guaranteed, no cache); financials add
+ *  up to 3 more/symbol on a full cache miss. Reserve the worst case up front. */
+const CREDITS_PER_SYMBOL = 53;
 
 /** Stamp market_cap + last_refreshed_at onto screener_universe and promote big caps. */
 async function stampUniverse(rows: { ticker: string; market_cap: number | null }[]) {
@@ -120,6 +125,7 @@ async function handler(request: NextRequest): Promise<NextResponse> {
   }
 
   try {
+    await waitForCronCreditBudget(symbols.length * CREDITS_PER_SYMBOL);
     const rows = await fetchAndUpsertScreenerStats(symbols);
     await stampUniverse(rows.map((r) => ({ ticker: r.ticker, market_cap: r.market_cap })));
 
