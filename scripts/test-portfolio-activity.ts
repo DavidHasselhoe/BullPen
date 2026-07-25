@@ -41,33 +41,37 @@ async function main() {
   console.log('4) Recording "closed"...');
   await recordPortfolioActivity(testUserId, TEST_SYMBOL, 'Test Co', 'closed');
 
-  const { data, error } = await supabase
-    .from('portfolio_activity')
-    .select('action, percent_change')
-    .eq('symbol', TEST_SYMBOL)
-    .order('created_at', { ascending: true });
+  let pass = false;
 
-  if (error) {
-    console.error('❌ Query failed:', error.message);
-    process.exit(1);
+  try {
+    const { data, error } = await supabase
+      .from('portfolio_activity')
+      .select('action, percent_change')
+      .eq('symbol', TEST_SYMBOL)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('❌ Query failed:', error.message);
+    } else {
+      console.log('\nRows for', TEST_SYMBOL, ':', JSON.stringify(data, null, 2));
+
+      pass =
+        data?.length === 4 &&
+        data[0].action === 'opened' && data[0].percent_change === null &&
+        data[1].action === 'increased' && data[1].percent_change === 50 &&
+        data[2].action === 'trimmed' && data[2].percent_change === 25 &&
+        data[3].action === 'closed' && data[3].percent_change === null;
+
+      console.log(pass
+        ? '\n✅ PASS — 4 rows in order with correct action/percent_change values.'
+        : '\n❌ FAIL — see rows above.');
+    }
+  } finally {
+    // Clean up (only this test's rows — never touches the real user's own data)
+    // Guaranteed to run even if query or assertion fails
+    await supabase.from('portfolio_activity').delete().eq('symbol', TEST_SYMBOL);
+    console.log('Cleaned up test rows.');
   }
-
-  console.log('\nRows for', TEST_SYMBOL, ':', JSON.stringify(data, null, 2));
-
-  const pass =
-    data?.length === 4 &&
-    data[0].action === 'opened' && data[0].percent_change === null &&
-    data[1].action === 'increased' && data[1].percent_change === 50 &&
-    data[2].action === 'trimmed' && data[2].percent_change === 25 &&
-    data[3].action === 'closed' && data[3].percent_change === null;
-
-  console.log(pass
-    ? '\n✅ PASS — 4 rows in order with correct action/percent_change values.'
-    : '\n❌ FAIL — see rows above.');
-
-  // Clean up (only this test's rows — never touches the real user's own data)
-  await supabase.from('portfolio_activity').delete().eq('symbol', TEST_SYMBOL);
-  console.log('Cleaned up test rows.');
 
   process.exit(pass ? 0 : 1);
 }
