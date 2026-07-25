@@ -6,6 +6,7 @@ import { Maximize2, Sparkles } from 'lucide-react';
 
 import { useQuery } from '@tanstack/react-query';
 import { LineChart, Line } from '@/components/charts/line-chart';
+import { SessionLine, type SessionRegion } from '@/components/charts/session-line';
 import { Grid } from '@/components/charts/grid';
 import { XAxis } from '@/components/charts/x-axis';
 import { ChartTooltip } from '@/components/charts/tooltip';
@@ -75,6 +76,11 @@ function fetchIndicator(ticker: string, opt: IndicatorOption, range: Range): Pro
     for (const [k, v] of Object.entries(opt.params)) params.set(k, String(v));
   }
   return fetch(`/api/stock/${ticker}/indicator?${params}`).then((r) => r.json());
+}
+
+/** Ranges whose candles are session-tagged (pre/regular/post). */
+function hasSessionSplit(range: Range): boolean {
+  return range === '1D' || range === '1W';
 }
 
 // ─── Formatters ───────────────────────────────────────────────────────────────
@@ -287,6 +293,26 @@ export function StockPricePanelBklit({ ticker }: { ticker: string }) {
     })),
     [chartDisplayData]
   );
+
+  // Session regions for SessionLine — consecutive same-session index runs.
+  // Multi-day ranges (1W's 15-min bars) repeat pre→regular→post once per
+  // day, so this is N regions, not just one pre/regular/post cycle. Empty
+  // when extended hours are hidden (chartDisplayData already filters
+  // pre/post out above) or the range doesn't carry session tags at all.
+  const sessionRegions = useMemo<SessionRegion[]>(() => {
+    if (!hasSessionSplit(range)) return [];
+    const regions: SessionRegion[] = [];
+    chartDisplayData.forEach((pt, i) => {
+      if (!pt.session) return;
+      const current = regions[regions.length - 1];
+      if (current && current.session === pt.session) {
+        current.endIndex = i;
+      } else {
+        regions.push({ startIndex: i, endIndex: i, session: pt.session });
+      }
+    });
+    return regions;
+  }, [chartDisplayData, range]);
 
   const lastDisplayPt = displayData.length > 0 ? displayData[displayData.length - 1] : null;
   const lastIsExtended = lastDisplayPt?.session === 'pre' || lastDisplayPt?.session === 'post';
@@ -531,7 +557,11 @@ export function StockPricePanelBklit({ ticker }: { ticker: string }) {
         {hasChart && (
           <LineChart data={bklitData} margin={{ top: 16, right: 28, bottom: 32, left: 28 }} style={{ height: 300 }} zeroBaseline={false}>
             <Grid horizontal />
-            <Line dataKey="price" stroke={lineColor} showMarkers={false} />
+            {sessionRegions.length > 0 ? (
+              <SessionLine dataKey="price" regularStroke={lineColor} regions={sessionRegions} />
+            ) : (
+              <Line dataKey="price" stroke={lineColor} showMarkers={false} />
+            )}
             {activeIndicators.has('sma50') && (
               <Line dataKey="sma50" stroke={INDICATOR_COLORS.sma50} strokeWidth={1.5} showMarkers={false} />
             )}
