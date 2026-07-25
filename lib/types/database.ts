@@ -157,6 +157,20 @@ export type InsertHoldingSale = Omit<HoldingSale, 'id' | 'created_at'> & {
   id?: string;
 };
 
+export interface PortfolioActivity {
+  id: string;
+  user_id: string;
+  symbol: string;
+  company_name: string;
+  action: 'opened' | 'increased' | 'trimmed' | 'closed';
+  percent_change: number | null;
+  created_at: string;
+}
+
+export type InsertPortfolioActivity = Omit<PortfolioActivity, 'id' | 'created_at'> & {
+  id?: string;
+};
+
 export interface WatchlistItem {
   id: string;
   user_id: string;
