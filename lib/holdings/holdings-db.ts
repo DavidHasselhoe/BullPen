@@ -5,6 +5,7 @@ import { createServerClient } from '@/lib/supabase/client';
 import type { UserHolding, InsertUserHolding, UpdateUserHolding, HoldingSale, InsertHoldingSale } from '@/lib/types/database';
 import { logger } from '@/lib/utils/logger';
 import { getCompanyProfile } from '@/lib/twelvedata/twelvedata-client';
+import { recordPortfolioActivity } from '@/lib/holdings/portfolio-activity';
 
 /** Cap how many profiles we resolve per fetch so a fresh portfolio doesn't burst the API. */
 const MAX_CURRENCY_BACKFILL = 25;
@@ -188,6 +189,8 @@ export async function addHolding(
       };
     }
 
+    void recordPortfolioActivity(userId, newHolding.symbol, newHolding.company_name, 'opened');
+
     return {
       success: true,
       holding: newHolding as UserHolding,
@@ -257,6 +260,13 @@ export async function addOrUpdateHolding(
       if (error) {
         return { success: false, error: error.message };
       }
+
+      if (existingQty <= 0) {
+        void recordPortfolioActivity(userId, updated.symbol, updated.company_name, 'opened');
+      } else {
+        void recordPortfolioActivity(userId, updated.symbol, updated.company_name, 'increased', (addQty / existingQty) * 100);
+      }
+
       return { success: true, holding: updated as UserHolding };
     }
 
@@ -555,6 +565,12 @@ export async function sellHolding(
     if (updateErr) {
       // Sale is already recorded; surface the error but don't lose the sale record.
       return { success: false, sale: sale as HoldingSale, error: `Sale recorded, but updating quantity failed: ${updateErr.message}` };
+    }
+
+    if (newQuantity <= SELL_EPSILON) {
+      void recordPortfolioActivity(userId, holding.symbol, holding.company_name, 'closed');
+    } else {
+      void recordPortfolioActivity(userId, holding.symbol, holding.company_name, 'trimmed', (input.quantitySold / currentQty) * 100);
     }
 
     return { success: true, sale: sale as HoldingSale, holding: updatedHolding as UserHolding };
