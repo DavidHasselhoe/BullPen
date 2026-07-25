@@ -8,6 +8,8 @@ import { PublicHoldingsList } from '@/components/user/PublicHoldingsList';
 import { FollowButton } from '@/components/user/FollowButton';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { ActivityFeed } from '@/components/user/ActivityFeed';
 import {
   User,
   Briefcase,
@@ -232,21 +234,36 @@ export default function UserProfilePage() {
           </div>
         )}
 
-        {/* Portfolio */}
-        <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-          <div className="flex items-center gap-2">
-            <Briefcase className="h-4 w-4 text-muted-foreground" />
-            <h2 className="text-sm font-semibold text-foreground">
-              Portfolio
-              {(holdings?.length ?? 0) > 0 && (
-                <span className="ml-1.5 text-xs font-normal text-muted-foreground">
-                  · {holdings!.length} stock{holdings!.length === 1 ? '' : 's'}
-                </span>
-              )}
-            </h2>
-          </div>
-          <PublicHoldingsList holdings={holdings ?? []} />
-        </div>
+        {/* Portfolio / Activity */}
+        <Tabs defaultValue="portfolio">
+          <TabsList>
+            <TabsTrigger value="portfolio">Portfolio</TabsTrigger>
+            <TabsTrigger value="activity">Activity</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="portfolio">
+            <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <Briefcase className="h-4 w-4 text-muted-foreground" />
+                <h2 className="text-sm font-semibold text-foreground">
+                  Portfolio
+                  {(holdings?.length ?? 0) > 0 && (
+                    <span className="ml-1.5 text-xs font-normal text-muted-foreground">
+                      · {holdings!.length} stock{holdings!.length === 1 ? '' : 's'}
+                    </span>
+                  )}
+                </h2>
+              </div>
+              <PublicHoldingsList holdings={holdings ?? []} />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="activity">
+            <div className="rounded-xl border border-border bg-card p-4">
+              <ActivityFeed username={username} />
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
