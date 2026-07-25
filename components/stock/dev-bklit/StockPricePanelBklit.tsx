@@ -7,6 +7,8 @@ import { Maximize2, Sparkles } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { LineChart, Line } from '@/components/charts/line-chart';
 import { SessionLine, type SessionRegion } from '@/components/charts/session-line';
+import { BarChart } from '@/components/charts/bar-chart';
+import { Bar } from '@/components/charts/bar';
 import { Grid } from '@/components/charts/grid';
 import { XAxis } from '@/components/charts/x-axis';
 import { ChartTooltip } from '@/components/charts/tooltip';
@@ -42,7 +44,7 @@ const RANGE_LABEL: Record<Range, string> = {
 
 interface CandleData { t: number[]; c: number[]; o: number[]; h: number[]; l: number[]; v: number[]; session?: Array<'pre' | 'regular' | 'post'> }
 interface ChartPoint {
-  time: number; price: number;
+  time: number; price: number; volume: number;
   session?: 'pre' | 'regular' | 'post';
   sma50?: number; sma200?: number; ema?: number; upper?: number; middle?: number; lower?: number;
 }
@@ -241,8 +243,8 @@ export function StockPricePanelBklit({ ticker }: { ticker: string }) {
   // ── Chart data ────────────────────────────────────────────────────────────
   const chartData = useMemo<ChartPoint[]>(() => {
     if (!candleData?.candles) return [];
-    const { t, c, session } = candleData.candles;
-    const pts: ChartPoint[] = t.map((ts, i) => ({ time: ts, price: c[i], session: session?.[i] }));
+    const { t, c, v, session } = candleData.candles;
+    const pts: ChartPoint[] = t.map((ts, i) => ({ time: ts, price: c[i], volume: v[i], session: session?.[i] }));
 
     function applyIndicator(values: IndicatorValue[], key: Indicator) {
       const map = new Map<string, IndicatorValue>();
@@ -273,7 +275,7 @@ export function StockPricePanelBklit({ ticker }: { ticker: string }) {
     const nowSec = Math.floor(Date.now() / 1000);
     const last = chartData[chartData.length - 1];
     if (Math.abs(last.time - nowSec) < 120) return chartData;
-    return [...chartData, { time: nowSec, price: live.price }];
+    return [...chartData, { time: nowSec, price: live.price, volume: 0 }];
   }, [chartData, isIntradayRange, isLive, live]);
 
   // Strip pre/post candles when extended hours are hidden.
@@ -285,9 +287,11 @@ export function StockPricePanelBklit({ ticker }: { ticker: string }) {
   }, [displayData, range, prefs.showExtendedHours]);
 
   const bklitData = useMemo(
-    () => chartDisplayData.map((pt) => ({
+    () => chartDisplayData.map((pt, i) => ({
       date: new Date(pt.time * 1000),
       price: pt.price,
+      volume: pt.volume,
+      isUp: i === 0 || pt.price >= chartDisplayData[i - 1].price,
       sma50: pt.sma50, sma200: pt.sma200, ema: pt.ema,
       upper: pt.upper, middle: pt.middle, lower: pt.lower,
     })),
@@ -596,6 +600,24 @@ export function StockPricePanelBklit({ ticker }: { ticker: string }) {
           </LineChart>
         )}
       </div>
+
+      {/* ── Volume bars (Bklit UI) ───────────────────────────────────────── */}
+      {hasChart && (
+        <div className="border-t border-border/30">
+          <div className="px-5 pt-2 pb-0.5">
+            <span className="text-[10px] text-muted-foreground/60 font-medium uppercase tracking-widest">
+              Volume
+            </span>
+          </div>
+          <BarChart data={bklitData} xDataKey="date" margin={{ top: 2, right: 28, bottom: 0, left: 28 }} style={{ height: 58 }}>
+            <Bar
+              dataKey="volume"
+              fadedOpacity={0.5}
+              fillAccessor={(d) => (d.isUp ? '#22c55e' : '#ef4444')}
+            />
+          </BarChart>
+        </div>
+      )}
 
       {/* ── Stats bar ────────────────────────────────────────────────────── */}
       {(openPrice > 0 || dayHigh > 0 || dayLow > 0 || prevClose > 0) && (
