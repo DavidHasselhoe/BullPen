@@ -47,9 +47,9 @@ function portfolioSentence(item: ActivityItem): { icon: ReactNode; text: ReactNo
     case 'opened':
       return { icon: <PlusCircle className="h-4 w-4 text-emerald-500" />, text: <>Opened a new position in <SymbolLink symbol={item.symbol} /></> };
     case 'increased':
-      return { icon: <TrendingUp className="h-4 w-4 text-emerald-500" />, text: <>Increased position in <SymbolLink symbol={item.symbol} /> by {pct}%</> };
+      return { icon: <TrendingUp className="h-4 w-4 text-emerald-500" />, text: <>Increased position in <SymbolLink symbol={item.symbol} /> by {pct ?? '—'}%</> };
     case 'trimmed':
-      return { icon: <TrendingDown className="h-4 w-4 text-red-500" />, text: <>Trimmed <SymbolLink symbol={item.symbol} /> position by {pct}%</> };
+      return { icon: <TrendingDown className="h-4 w-4 text-red-500" />, text: <>Trimmed <SymbolLink symbol={item.symbol} /> position by {pct ?? '—'}%</> };
     case 'closed':
       return { icon: <XCircle className="h-4 w-4 text-red-500" />, text: <>Closed their position in <SymbolLink symbol={item.symbol} /></> };
     default:

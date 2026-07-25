@@ -111,16 +111,22 @@ async function handler(
     let replyItems: ActivityItem[] = [];
     if (replies.length > 0) {
       const thesisIds = [...new Set(replies.map((r) => r.thesis_id))];
-      const { data: parentTheses } = await supabase
+      const { data: parentTheses, error: parentThesesError } = await supabase
         .from('stock_theses')
         .select('id, symbol, user_id')
         .in('id', thesisIds);
+      if (parentThesesError) {
+        return addSecurityHeaders(NextResponse.json({ success: false, error: 'Failed to fetch activity' }, { status: 500 }));
+      }
       const parentMap = new Map((parentTheses ?? []).map((t) => [t.id, t]));
 
       const authorIds = [...new Set((parentTheses ?? []).map((t) => t.user_id))];
-      const { data: authorRows } = authorIds.length > 0
+      const { data: authorRows, error: authorRowsError } = authorIds.length > 0
         ? await supabase.from('users').select('id, username').in('id', authorIds)
-        : { data: [] as { id: string; username: string | null }[] };
+        : { data: [] as { id: string; username: string | null }[], error: null };
+      if (authorRowsError) {
+        return addSecurityHeaders(NextResponse.json({ success: false, error: 'Failed to fetch activity' }, { status: 500 }));
+      }
       const authorMap = new Map((authorRows ?? []).map((u) => [u.id, u.username]));
 
       replyItems = replies
@@ -159,6 +165,9 @@ async function handler(
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .slice(0, PAGE_SIZE);
 
+    // Note: uses strict `created_at` less-than for pagination, so two items sharing
+    // the exact same timestamp across a page boundary could have the later one
+    // silently excluded from both pages. Accepted as an extremely unlikely edge case.
     const nextCursor = merged.length === PAGE_SIZE ? merged[merged.length - 1].created_at : null;
 
     return addSecurityHeaders(NextResponse.json({ success: true, items: merged, nextCursor }));
