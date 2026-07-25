@@ -15,8 +15,9 @@ import { WhyTodayPanel } from '@/components/stock/WhyTodayPanel';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLivePrices } from '@/hooks/use-live-prices';
 import { useStockQuote } from '@/hooks/use-stock-price';
+import { useExperienceLevel } from '@/hooks/use-experience-level';
 import { cn } from '@/lib/utils';
-import type { ExtendedHoursQuote } from '@/lib/twelvedata/twelvedata-client';
+import type { ExtendedHoursQuote, IndicatorValue } from '@/lib/twelvedata/twelvedata-client';
 
 // Fullscreen advanced chart is loaded on demand so lightweight-charts stays out
 // of the main bundle — same lazy-load pattern as the production panel.
@@ -42,6 +43,38 @@ interface CandleData { t: number[]; c: number[]; o: number[]; h: number[]; l: nu
 interface ChartPoint {
   time: number; price: number;
   session?: 'pre' | 'regular' | 'post';
+  sma50?: number; sma200?: number; ema?: number; upper?: number; middle?: number; lower?: number;
+}
+
+// Oscillators (RSI/MACD) are a later sub-project — this is overlay indicators only.
+type Indicator = 'sma50' | 'sma200' | 'ema20' | 'bbands';
+interface IndicatorOption { key: Indicator; label: string; type: string; params?: Record<string, number> }
+
+const INDICATORS: IndicatorOption[] = [
+  { key: 'sma50',  label: 'SMA 50',  type: 'sma',    params: { time_period: 50 } },
+  { key: 'sma200', label: 'SMA 200', type: 'sma',    params: { time_period: 200 } },
+  { key: 'ema20',  label: 'EMA 20',  type: 'ema',    params: { time_period: 20 } },
+  { key: 'bbands', label: 'BB',      type: 'bbands', params: { time_period: 20 } },
+];
+
+// Canonical per-indicator colors — same mapping as the production panel, so an
+// indicator always means the same color regardless of which chart renders it.
+const INDICATOR_COLORS: Record<Indicator, string> = {
+  sma50: '#f59e0b', sma200: '#fb923c', ema20: '#a78bfa', bbands: '#60a5fa',
+};
+
+interface IndicatorResponse {
+  success: boolean;
+  data?: IndicatorValue[];
+  error?: string;
+}
+
+function fetchIndicator(ticker: string, opt: IndicatorOption, range: Range): Promise<IndicatorResponse> {
+  const params = new URLSearchParams({ type: opt.type, range });
+  if (opt.params) {
+    for (const [k, v] of Object.entries(opt.params)) params.set(k, String(v));
+  }
+  return fetch(`/api/stock/${ticker}/indicator?${params}`).then((r) => r.json());
 }
 
 // ─── Formatters ───────────────────────────────────────────────────────────────
@@ -67,14 +100,27 @@ function StatItem({ label, value, valueClass }: { label: string; value: string; 
  * Dev-only copy of StockPricePanel with the core price chart swapped from
  * Recharts to Bklit UI's LineChart — see
  * docs/superpowers/specs/2026-07-24-bklit-stock-chart-dev-copy-design.md.
- * Sessions/indicators/oscillators/volume/earnings are intentionally dropped
- * for this first pass. The production StockPricePanel is untouched.
+ * Building up to full parity in ordered sub-projects before this replaces
+ * production (see docs/superpowers/specs/2026-07-24-bklit-chart-indicators-design.md
+ * for sub-project 1, indicators — done here). Still to come: sessions,
+ * volume, oscillators, earnings markers. The production StockPricePanel
+ * is untouched throughout.
  */
 export function StockPricePanelBklit({ ticker }: { ticker: string }) {
   const { prefs, setPref } = useChartPrefs();
   const [range, setRange] = useState<Range>(prefs.defaultRange as Range);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [whyTodayOpen, setWhyTodayOpen] = useState(false);
+  const { isSimplified } = useExperienceLevel();
+
+  const [activeIndicators, setActiveIndicators] = useState<Set<Indicator>>(new Set());
+  function toggleIndicator(key: Indicator) {
+    setActiveIndicators((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  }
 
   // Advanced (fullscreen) chart prefs — unchanged from the production panel,
   // kept only so the "Advanced chart" button below still works as-is.
@@ -175,12 +221,43 @@ export function StockPricePanelBklit({ ticker }: { ticker: string }) {
     refetchInterval: range === '1D' ? 60 * 1000 : false,
   });
 
+  // ── Indicator queries (same endpoint as production — no new TwelveData calls) ──
+  const sma50Query  = useQuery<IndicatorResponse>({ queryKey: ['indicator', ticker, 'sma50',  range], queryFn: () => fetchIndicator(ticker, INDICATORS[0], range), enabled: activeIndicators.has('sma50')  && !!ticker, staleTime: 5 * 60 * 1000 });
+  const sma200Query = useQuery<IndicatorResponse>({ queryKey: ['indicator', ticker, 'sma200', range], queryFn: () => fetchIndicator(ticker, INDICATORS[1], range), enabled: activeIndicators.has('sma200') && !!ticker, staleTime: 5 * 60 * 1000 });
+  const ema20Query  = useQuery<IndicatorResponse>({ queryKey: ['indicator', ticker, 'ema20',  range], queryFn: () => fetchIndicator(ticker, INDICATORS[2], range), enabled: activeIndicators.has('ema20')  && !!ticker, staleTime: 5 * 60 * 1000 });
+  const bbandsQuery = useQuery<IndicatorResponse>({ queryKey: ['indicator', ticker, 'bbands', range], queryFn: () => fetchIndicator(ticker, INDICATORS[3], range), enabled: activeIndicators.has('bbands') && !!ticker, staleTime: 5 * 60 * 1000 });
+
+  const sma50Data  = sma50Query.data?.data;
+  const sma200Data = sma200Query.data?.data;
+  const ema20Data  = ema20Query.data?.data;
+  const bbandsData = bbandsQuery.data?.data;
+
   // ── Chart data ────────────────────────────────────────────────────────────
   const chartData = useMemo<ChartPoint[]>(() => {
     if (!candleData?.candles) return [];
     const { t, c, session } = candleData.candles;
-    return t.map((ts, i) => ({ time: ts, price: c[i], session: session?.[i] }));
-  }, [candleData]);
+    const pts: ChartPoint[] = t.map((ts, i) => ({ time: ts, price: c[i], session: session?.[i] }));
+
+    function applyIndicator(values: IndicatorValue[], key: Indicator) {
+      const map = new Map<string, IndicatorValue>();
+      for (const iv of values) map.set(iv.datetime.slice(0, 10), iv);
+      for (const pt of pts) {
+        const iv = map.get(new Date(pt.time * 1000).toISOString().slice(0, 10));
+        if (!iv) continue;
+        if (key === 'sma50') pt.sma50 = iv.sma as number;
+        if (key === 'sma200') pt.sma200 = iv.sma as number;
+        if (key === 'ema20') pt.ema = iv.ema as number;
+        if (key === 'bbands') { pt.upper = iv.upper_band as number; pt.middle = iv.middle_band as number; pt.lower = iv.lower_band as number; }
+      }
+    }
+
+    if (sma50Data?.length)  applyIndicator(sma50Data,  'sma50');
+    if (sma200Data?.length) applyIndicator(sma200Data, 'sma200');
+    if (ema20Data?.length)  applyIndicator(ema20Data,  'ema20');
+    if (bbandsData?.length) applyIndicator(bbandsData, 'bbands');
+
+    return pts;
+  }, [candleData, sma50Data, sma200Data, ema20Data, bbandsData]);
 
   // Append live tick so the chart always ends at the current price.
   const isIntradayRange = range === '1D' || range === '1W' || range === '1M';
@@ -202,7 +279,12 @@ export function StockPricePanelBklit({ ticker }: { ticker: string }) {
   }, [displayData, range, prefs.showExtendedHours]);
 
   const bklitData = useMemo(
-    () => chartDisplayData.map((pt) => ({ date: new Date(pt.time * 1000), price: pt.price })),
+    () => chartDisplayData.map((pt) => ({
+      date: new Date(pt.time * 1000),
+      price: pt.price,
+      sma50: pt.sma50, sma200: pt.sma200, ema: pt.ema,
+      upper: pt.upper, middle: pt.middle, lower: pt.lower,
+    })),
     [chartDisplayData]
   );
 
@@ -366,7 +448,7 @@ export function StockPricePanelBklit({ ticker }: { ticker: string }) {
               {RANGES.map((r) => (
                 <button
                   key={r}
-                  onClick={() => setRange(r)}
+                  onClick={() => { setRange(r); if (r === '1D') setActiveIndicators(new Set()); }}
                   className={cn(
                     'rounded-md px-2.5 py-1 text-xs font-medium transition-all',
                     range === r
@@ -389,6 +471,34 @@ export function StockPricePanelBklit({ ticker }: { ticker: string }) {
                 </button>
               </div>
             </div>
+
+            {/* Indicators — advanced users, non-1D only (oscillators/RSI/MACD come later) */}
+            {!isSimplified && range !== '1D' && (
+              <div className="flex items-center gap-1 flex-wrap justify-end">
+                {INDICATORS.map(({ key, label }) => (
+                  <button
+                    key={key}
+                    onClick={() => toggleIndicator(key)}
+                    className={cn(
+                      'rounded-full px-2 py-0.5 text-[10px] font-medium transition-all border',
+                      activeIndicators.has(key)
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-transparent text-muted-foreground border-border hover:text-foreground hover:border-foreground/30'
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+                {activeIndicators.size > 0 && (
+                  <button
+                    onClick={() => setActiveIndicators(new Set())}
+                    className="rounded-full px-2 py-0.5 text-[10px] font-medium border border-border text-muted-foreground hover:text-foreground transition-all"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -422,8 +532,35 @@ export function StockPricePanelBklit({ ticker }: { ticker: string }) {
           <LineChart data={bklitData} margin={{ top: 16, right: 28, bottom: 32, left: 28 }} style={{ height: 300 }} zeroBaseline={false}>
             <Grid horizontal />
             <Line dataKey="price" stroke={lineColor} showMarkers={false} />
+            {activeIndicators.has('sma50') && (
+              <Line dataKey="sma50" stroke={INDICATOR_COLORS.sma50} strokeWidth={1.5} showMarkers={false} />
+            )}
+            {activeIndicators.has('sma200') && (
+              <Line dataKey="sma200" stroke={INDICATOR_COLORS.sma200} strokeWidth={1.5} showMarkers={false} />
+            )}
+            {activeIndicators.has('ema20') && (
+              <Line dataKey="ema" stroke={INDICATOR_COLORS.ema20} strokeWidth={1.5} showMarkers={false} />
+            )}
+            {activeIndicators.has('bbands') && (
+              <>
+                <Line dataKey="upper" stroke={INDICATOR_COLORS.bbands} strokeWidth={1} dashArray="4,2" showMarkers={false} />
+                <Line dataKey="middle" stroke={INDICATOR_COLORS.bbands} strokeWidth={1} showMarkers={false} />
+                <Line dataKey="lower" stroke={INDICATOR_COLORS.bbands} strokeWidth={1} dashArray="4,2" showMarkers={false} />
+              </>
+            )}
             <ChartTooltip
-              rows={(point) => [{ label: 'Price', value: fmtPrice(point.price as number), color: lineColor }]}
+              rows={(point) => {
+                const rows = [{ label: 'Price', value: fmtPrice(point.price as number), color: lineColor }];
+                if (activeIndicators.has('sma50') && point.sma50 != null) rows.push({ label: 'SMA 50', value: fmtPrice(point.sma50 as number), color: INDICATOR_COLORS.sma50 });
+                if (activeIndicators.has('sma200') && point.sma200 != null) rows.push({ label: 'SMA 200', value: fmtPrice(point.sma200 as number), color: INDICATOR_COLORS.sma200 });
+                if (activeIndicators.has('ema20') && point.ema != null) rows.push({ label: 'EMA 20', value: fmtPrice(point.ema as number), color: INDICATOR_COLORS.ema20 });
+                if (activeIndicators.has('bbands')) {
+                  if (point.upper != null) rows.push({ label: 'BB Upper', value: fmtPrice(point.upper as number), color: INDICATOR_COLORS.bbands });
+                  if (point.middle != null) rows.push({ label: 'BB Mid', value: fmtPrice(point.middle as number), color: INDICATOR_COLORS.bbands });
+                  if (point.lower != null) rows.push({ label: 'BB Lower', value: fmtPrice(point.lower as number), color: INDICATOR_COLORS.bbands });
+                }
+                return rows;
+              }}
             />
             <XAxis />
           </LineChart>
