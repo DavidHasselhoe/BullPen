@@ -309,20 +309,30 @@ async function handleStatsBatch(
       await supabase.from('screener_stats').upsert(screenerRowsBatch, { onConflict: 'ticker' });
     }
 
-    // After the final batch of the sweep, recompute the per-sector and
-    // per-industry benchmark medians (migrations 087/088) off the now-fresh
-    // screener_stats. Pure SQL aggregation — no market-data credits.
-    // Fire-and-forget: a failure here must never fail the sweep, and stale
-    // benchmarks are harmless (the UI just shows yesterday's "typical" context).
-    if (nextBatch === null) {
-      const { error: refreshErr } = await supabase.rpc('refresh_sector_metric_stats');
-      if (refreshErr) {
-        console.error('[prefetch] refresh_sector_metric_stats failed:', refreshErr.message);
-      }
-      const { error: refreshIndustryErr } = await supabase.rpc('refresh_industry_metric_stats');
-      if (refreshIndustryErr) {
-        console.error('[prefetch] refresh_industry_metric_stats failed:', refreshIndustryErr.message);
-      }
+    // Recompute the per-sector and per-industry benchmark medians (migrations
+    // 087/088) off screener_stats. Pure SQL aggregation — no market-data credits.
+    //
+    // Runs on EVERY batch, not just the last one. Gating this on the final batch
+    // meant a single transient failure anywhere in the ~107-batch sweep — which
+    // cron-prefetch-market-data.yml deliberately `break`s on — left the rollups
+    // untouched for the whole day. That's how sector_metric_stats ended up with
+    // 2 buckets instead of 11 and industry_metric_stats ended up empty, silently
+    // degrading every "typical for its sector" comparison in the app.
+    //
+    // Running it per batch is safe: the sweep upserts into screener_stats rather
+    // than truncating it, so the table is always fully populated and a partial
+    // sweep still yields correct medians — just computed from slightly older
+    // rows for the symbols this run hasn't reached yet. Each call is one
+    // aggregate over ~3k rows, so the cost is noise next to the batch's own I/O.
+    //
+    // Fire-and-forget: a failure here must never fail the sweep.
+    const { error: refreshErr } = await supabase.rpc('refresh_sector_metric_stats');
+    if (refreshErr) {
+      console.error('[prefetch] refresh_sector_metric_stats failed:', refreshErr.message);
+    }
+    const { error: refreshIndustryErr } = await supabase.rpc('refresh_industry_metric_stats');
+    if (refreshIndustryErr) {
+      console.error('[prefetch] refresh_industry_metric_stats failed:', refreshIndustryErr.message);
     }
 
     return NextResponse.json({
