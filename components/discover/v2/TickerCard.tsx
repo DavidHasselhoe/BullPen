@@ -14,10 +14,21 @@ interface Props {
   item: TickerItem;
   /** Optional href override — for non-stock symbols like crypto/commodities where slugToAssetPath needs the canonical symbol */
   href?: string;
+  /**
+   * Show the item's `reason` line instead of the company name. Curated
+   * collections earn their place by carrying why the name is on the list —
+   * "12.4× forward earnings vs 19.8× typical for Technology" is a reason to
+   * click; a company name the reader already knows is not.
+   */
+  showReason?: boolean;
 }
 
+// Pinned to en-US: these are USD prices, and leaving the locale to the runtime
+// means a non-US server/browser locale renders "2 957" (space-grouped) instead
+// of "2,957" for anything over $1,000 — invisible while every listed price was
+// under four digits, but real once a 52-week list surfaces something like AZO.
 function formatPrice(p: number): string {
-  if (p >= 1000) return p.toLocaleString(undefined, { maximumFractionDigits: 0 });
+  if (p >= 1000) return p.toLocaleString('en-US', { maximumFractionDigits: 0 });
   if (p >= 1) return p.toFixed(2);
   if (p >= 0.01) return p.toFixed(4);
   return p.toFixed(6);
@@ -41,7 +52,7 @@ function PriceSkeleton({ wide = false }: { wide?: boolean }) {
   );
 }
 
-export function TickerCard({ item, href }: Props) {
+export function TickerCard({ item, href, showReason = false }: Props) {
   const live = useLivePrice(item.symbol);
   const queryClient = useQueryClient();
   const prefetch = useCallback(() => {
@@ -80,8 +91,10 @@ export function TickerCard({ item, href }: Props) {
       aria-label={label}
       onMouseEnter={prefetch}
       className={cn(
-        'group flex flex-col justify-between shrink-0',
-        'w-[168px] h-[100px] rounded-xl border border-border/50 bg-card/50',
+        // Fluid width: every surface that renders this is now a grid, so the
+        // grid owns the sizing. (It used to be pinned to a 168px rail slot.)
+        'group flex h-full w-full min-w-0 flex-col justify-between',
+        'min-h-[100px] rounded-xl border border-border/50 bg-card/50',
         'p-3 transition-all duration-200',
         'hover:border-border hover:bg-card hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20',
         'active:scale-[0.97] active:shadow-none active:translate-y-0',
@@ -101,9 +114,15 @@ export function TickerCard({ item, href }: Props) {
         </span>
       </div>
 
-      <div className="text-[11px] text-muted-foreground/70 truncate" title={item.name}>
-        {item.name}
-      </div>
+      {showReason && item.reason ? (
+        <div className="text-[11px] leading-tight text-muted-foreground/80 line-clamp-2" title={item.reason}>
+          {item.reason}
+        </div>
+      ) : (
+        <div className="text-[11px] text-muted-foreground/70 truncate" title={item.name}>
+          {item.name}
+        </div>
+      )}
 
       <div className="flex items-baseline justify-between gap-1.5">
         {price != null ? (

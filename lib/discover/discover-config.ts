@@ -1,13 +1,15 @@
 /**
- * Static configuration for the /discover page.
+ * Configuration for the /discover page.
  *
- * The page is intentionally hardcoded rather than DB-driven so it works
- * regardless of how much data has been ingested into `companies` /
- * `screener_stats`. The feed API hydrates `name` and `logoUrl` from the
- * `companies` table where available, falling back to ticker + initials.
+ * Discover's job is: read the market in ten seconds, then find one thing worth
+ * researching. The sector list below drives both halves of that — each entry is
+ * a row in the sector performance chart (priced via its SPDR sector ETF) and,
+ * when expanded, the curated constituent list shown underneath it.
  *
- * To rebalance any rail, edit the ticker list here. Each list is ordered
- * from "most prominent" first.
+ * The tickers are hardcoded rather than DB-driven so the page works regardless
+ * of how much has been ingested into `companies` / `screener_stats`; the feed
+ * API hydrates name and logo from `companies` where available and falls back to
+ * the ticker plus coloured initials.
  */
 
 import type { LucideIcon } from 'lucide-react';
@@ -26,16 +28,20 @@ import {
 } from 'lucide-react';
 
 export interface SectorEntry {
-  /** Stable key used in the feed payload + as the React list key */
+  /** Stable key used in the feed payload, the drill-down route, and as the React key */
   key: string;
-  /** Short display label for the rail header */
+  /** Short display label for the chart row */
   label: string;
-  /** Optional one-line tagline (kept short — UI is dense) */
+  /** Optional one-line tagline, shown in the expanded panel */
   tagline: string;
   icon: LucideIcon;
-  /** Tailwind class for the accent bar on the rail header */
-  accent: string;
-  /** Curated tickers shown in this sector rail (already ordered by prominence) */
+  /**
+   * The SPDR sector ETF used to price this sector's performance. One quote per
+   * sector gives a real, tradeable read on the sector rather than an unweighted
+   * average of whichever constituents we happen to list.
+   */
+  etf: string;
+  /** Curated constituents shown when the row is expanded (ordered by prominence) */
   tickers: string[];
 }
 
@@ -45,7 +51,7 @@ export const SECTOR_DISPLAY_ORDER: SectorEntry[] = [
     label: 'Technology',
     tagline: 'Chips, software, platforms',
     icon: Cpu,
-    accent: 'bg-sky-500',
+    etf: 'XLK',
     tickers: ['NVDA', 'MSFT', 'AAPL', 'AVGO', 'ORCL', 'CSCO', 'AMD', 'ADBE', 'CRM', 'INTC', 'IBM', 'PLTR'],
   },
   {
@@ -53,7 +59,7 @@ export const SECTOR_DISPLAY_ORDER: SectorEntry[] = [
     label: 'Communications',
     tagline: 'Media, telecom, internet',
     icon: Radio,
-    accent: 'bg-indigo-500',
+    etf: 'XLC',
     tickers: ['GOOGL', 'META', 'NFLX', 'DIS', 'TMUS', 'VZ', 'T', 'CMCSA', 'EA', 'TTWO', 'WBD', 'SPOT'],
   },
   {
@@ -61,7 +67,7 @@ export const SECTOR_DISPLAY_ORDER: SectorEntry[] = [
     label: 'Consumer Discretionary',
     tagline: 'Retail, travel, luxury',
     icon: ShoppingBag,
-    accent: 'bg-pink-500',
+    etf: 'XLY',
     tickers: ['AMZN', 'TSLA', 'HD', 'MCD', 'NKE', 'SBUX', 'LOW', 'BKNG', 'TJX', 'CMG', 'ABNB', 'GM'],
   },
   {
@@ -69,7 +75,7 @@ export const SECTOR_DISPLAY_ORDER: SectorEntry[] = [
     label: 'Financials',
     tagline: 'Banks, insurance, payments',
     icon: Landmark,
-    accent: 'bg-emerald-500',
+    etf: 'XLF',
     tickers: ['JPM', 'V', 'MA', 'BAC', 'WFC', 'GS', 'MS', 'AXP', 'BLK', 'SPGI', 'C', 'SCHW'],
   },
   {
@@ -77,7 +83,7 @@ export const SECTOR_DISPLAY_ORDER: SectorEntry[] = [
     label: 'Healthcare',
     tagline: 'Pharma, devices, providers',
     icon: HeartPulse,
-    accent: 'bg-rose-500',
+    etf: 'XLV',
     tickers: ['LLY', 'UNH', 'JNJ', 'MRK', 'ABBV', 'PFE', 'TMO', 'ABT', 'DHR', 'BMY', 'AMGN', 'GILD'],
   },
   {
@@ -85,7 +91,7 @@ export const SECTOR_DISPLAY_ORDER: SectorEntry[] = [
     label: 'Industrials',
     tagline: 'Aerospace, machinery, logistics',
     icon: Factory,
-    accent: 'bg-amber-500',
+    etf: 'XLI',
     tickers: ['CAT', 'GE', 'HON', 'RTX', 'UNP', 'BA', 'LMT', 'UPS', 'DE', 'ETN', 'NOC', 'EMR'],
   },
   {
@@ -93,7 +99,7 @@ export const SECTOR_DISPLAY_ORDER: SectorEntry[] = [
     label: 'Consumer Staples',
     tagline: 'Food, beverages, household',
     icon: Apple,
-    accent: 'bg-lime-500',
+    etf: 'XLP',
     tickers: ['WMT', 'COST', 'PG', 'KO', 'PEP', 'PM', 'MO', 'MDLZ', 'CL', 'KMB', 'TGT', 'GIS'],
   },
   {
@@ -101,7 +107,7 @@ export const SECTOR_DISPLAY_ORDER: SectorEntry[] = [
     label: 'Energy',
     tagline: 'Oil, gas, exploration',
     icon: Flame,
-    accent: 'bg-orange-500',
+    etf: 'XLE',
     tickers: ['XOM', 'CVX', 'COP', 'SLB', 'EOG', 'PSX', 'MPC', 'VLO', 'OXY', 'KMI', 'WMB', 'FANG'],
   },
   {
@@ -109,7 +115,7 @@ export const SECTOR_DISPLAY_ORDER: SectorEntry[] = [
     label: 'Utilities',
     tagline: 'Power, water, renewables',
     icon: Lightbulb,
-    accent: 'bg-yellow-500',
+    etf: 'XLU',
     tickers: ['NEE', 'DUK', 'SO', 'SRE', 'AEP', 'EXC', 'D', 'PCG', 'XEL', 'ED', 'PEG', 'WEC'],
   },
   {
@@ -117,7 +123,7 @@ export const SECTOR_DISPLAY_ORDER: SectorEntry[] = [
     label: 'Real Estate',
     tagline: 'REITs and property',
     icon: Building2,
-    accent: 'bg-teal-500',
+    etf: 'XLRE',
     tickers: ['PLD', 'AMT', 'EQIX', 'WELL', 'SPG', 'PSA', 'O', 'CCI', 'DLR', 'EXR', 'AVB', 'VTR'],
   },
   {
@@ -125,174 +131,64 @@ export const SECTOR_DISPLAY_ORDER: SectorEntry[] = [
     label: 'Materials',
     tagline: 'Chemicals, metals, mining',
     icon: Mountain,
-    accent: 'bg-stone-500',
+    etf: 'XLB',
     tickers: ['LIN', 'SHW', 'APD', 'ECL', 'FCX', 'NEM', 'DOW', 'DD', 'NUE', 'CTVA', 'PPG', 'IFF'],
   },
 ];
 
-export const STOCKS_PER_SECTOR_RAIL = 12;
+export const STOCKS_PER_SECTOR = 12;
+
+/** Fast key → entry lookup for the drill-down route. */
+export const SECTOR_BY_KEY = new Map(SECTOR_DISPLAY_ORDER.map((s) => [s.key, s]));
+
+/** Every SPDR sector ETF, in display order — one batched quote covers the chart. */
+export const SECTOR_ETFS = SECTOR_DISPLAY_ORDER.map((s) => s.etf);
+
+// ── Market pulse ─────────────────────────────────────────────────────────────
+
+export interface IndexEntry {
+  /** Tradeable proxy we actually quote */
+  symbol: string;
+  /** What a reader calls it */
+  label: string;
+  /** One-line explanation, shown as visible micro-copy */
+  hint: string;
+}
+
+// Four different slices of the same market — mega-cap, tech, blue-chip
+// industrial, and small-cap — so the strip reads as a shape rather than four
+// numbers that all move together. Small caps in particular diverge from the
+// S&P often enough to be worth the tile.
+//
+// Deliberately NOT the VIX: plain `VIX` does not resolve on our TwelveData
+// plan (only the VIXY/UVXY futures ETFs do), and an ETF's price is not the
+// VIX level — "21.44" under a "Volatility" label would be actively misleading,
+// since the whole point of the VIX is that the *level* means something.
+//
+// Hints are visible micro-copy rather than hover tooltips: a beginner
+// shouldn't have to discover that a label is hoverable to learn what it means,
+// and hover hints don't exist on touch at all.
+export const MARKET_INDICES: IndexEntry[] = [
+  { symbol: 'SPY', label: 'S&P 500', hint: '500 largest US companies' },
+  { symbol: 'QQQ', label: 'Nasdaq 100', hint: '100 biggest Nasdaq names' },
+  { symbol: 'DIA', label: 'Dow Jones', hint: '30 established US giants' },
+  { symbol: 'IWM', label: 'Russell 2000', hint: 'Smaller US companies' },
+];
 
 /**
- * Fallback list for the "Trending Today" rail when get_hot_picks(24h) returns
- * empty (low traffic, fresh deploy, etc.). Hand-picked names users would
- * recognise.
+ * Fallback for the "Trending" collection when get_hot_picks(24h) returns empty
+ * (low traffic, fresh deploy). Hand-picked names users would recognise.
  */
 export const TRENDING_FALLBACK = [
-  'NVDA', 'TSLA', 'AAPL', 'AMZN', 'META', 'GOOGL', 'MSFT', 'AMD', 'AVGO', 'PLTR', 'COIN', 'NFLX',
+  'NVDA', 'TSLA', 'AAPL', 'AMZN', 'META', 'GOOGL', 'MSFT', 'AMD',
 ] as const;
 
-// ── ETF themes — grouped for discovery ────────────────────────────────────────
-export interface ETFTheme {
-  key: string;
-  label: string;
-  tagline: string;
-  tickers: string[];
-}
-
-export const ETF_THEMES: ETFTheme[] = [
-  {
-    key: 'broad-market',
-    label: 'Broad Market',
-    tagline: 'Track the entire US (or world) market',
-    tickers: ['SPY', 'VOO', 'IVV', 'VTI', 'QQQ', 'DIA', 'VT', 'ACWI'],
-  },
-  {
-    key: 'sector-etfs',
-    label: 'Sector ETFs',
-    tagline: 'Bet on a single GICS sector',
-    tickers: ['XLK', 'XLF', 'XLE', 'XLV', 'XLI', 'XLY', 'XLP', 'XLC', 'XLU', 'XLB', 'XLRE'],
-  },
-  {
-    key: 'thematic',
-    label: 'Thematic',
-    tagline: 'AI, clean energy, semiconductors, biotech',
-    tickers: ['SMH', 'SOXX', 'ARKK', 'ARKG', 'ICLN', 'TAN', 'BOTZ', 'AIQ', 'IBB', 'XBI', 'LIT'],
-  },
-  {
-    key: 'dividend-income',
-    label: 'Dividend & Income',
-    tagline: 'Yield-focused funds',
-    tickers: ['SCHD', 'JEPI', 'JEPQ', 'VIG', 'VYM', 'DGRO', 'DVY', 'HDV', 'SDY'],
-  },
-  {
-    key: 'bonds',
-    label: 'Bonds & Fixed Income',
-    tagline: 'Treasuries, corporate, high yield',
-    tickers: ['AGG', 'BND', 'TLT', 'IEF', 'SHY', 'LQD', 'HYG', 'TIP', 'SGOV'],
-  },
-];
-
-/**
- * Map of ETF ticker → issuer brand domain, used to fetch a logo via logo.dev.
- * If the ticker isn't in this map, the ETF will fall back to coloured initials.
- */
-export const ETF_ISSUER_DOMAINS: Record<string, string> = {
-  // State Street SPDR family
-  SPY: 'ssga.com', DIA: 'ssga.com',
-  XLK: 'ssga.com', XLF: 'ssga.com', XLE: 'ssga.com', XLV: 'ssga.com',
-  XLI: 'ssga.com', XLY: 'ssga.com', XLP: 'ssga.com', XLC: 'ssga.com',
-  XLU: 'ssga.com', XLB: 'ssga.com', XLRE: 'ssga.com',
-  XBI: 'ssga.com', SDY: 'ssga.com',
-  // Vanguard
-  VOO: 'vanguard.com', VTI: 'vanguard.com', VT: 'vanguard.com',
-  VIG: 'vanguard.com', VYM: 'vanguard.com', BND: 'vanguard.com',
-  // iShares (BlackRock)
-  IVV: 'ishares.com', ITOT: 'ishares.com', ACWI: 'ishares.com',
-  IBB: 'ishares.com', SOXX: 'ishares.com', ICLN: 'ishares.com',
-  AGG: 'ishares.com', TLT: 'ishares.com', IEF: 'ishares.com',
-  SHY: 'ishares.com', LQD: 'ishares.com', HYG: 'ishares.com',
-  TIP: 'ishares.com', SGOV: 'ishares.com', DVY: 'ishares.com',
-  HDV: 'ishares.com', DGRO: 'ishares.com',
-  // Invesco
-  QQQ: 'invesco.com', TAN: 'invesco.com',
-  // ARK Invest
-  ARKK: 'ark-funds.com', ARKG: 'ark-funds.com',
-  // Schwab
-  SCHD: 'schwabassetmanagement.com',
-  // VanEck
-  SMH: 'vaneck.com',
-  // Global X
-  BOTZ: 'globalxetfs.com', AIQ: 'globalxetfs.com', LIT: 'globalxetfs.com',
-  // JPMorgan
-  JEPI: 'jpmorgan.com', JEPQ: 'jpmorgan.com',
-};
-
-// ── Commodities (TwelveData canonical symbols) ───────────────────────────────
-export const COMMODITY_SYMBOLS = [
-  { symbol: 'XAU/USD', name: 'Gold' },
-  { symbol: 'XAG/USD', name: 'Silver' },
-  { symbol: 'XPT/USD', name: 'Platinum' },
-  { symbol: 'XPD/USD', name: 'Palladium' },
-  { symbol: 'WTI/USD', name: 'Crude Oil (WTI)' },
-  { symbol: 'XBR/USD', name: 'Brent Crude' },
-];
-
-// ── Crypto majors (TwelveData canonical symbols) ─────────────────────────────
-export const CRYPTO_SYMBOLS = [
-  { symbol: 'BTC/USD', name: 'Bitcoin' },
-  { symbol: 'ETH/USD', name: 'Ethereum' },
-  { symbol: 'SOL/USD', name: 'Solana' },
-  { symbol: 'BNB/USD', name: 'BNB' },
-  { symbol: 'XRP/USD', name: 'XRP' },
-  { symbol: 'DOGE/USD', name: 'Dogecoin' },
-];
-
-/**
- * Public Coingecko CDN URLs for the crypto majors we surface. These are stable
- * and don't require auth.
- */
-export const CRYPTO_LOGO_URLS: Record<string, string> = {
-  'BTC/USD':  'https://assets.coingecko.com/coins/images/1/small/bitcoin.png',
-  'ETH/USD':  'https://assets.coingecko.com/coins/images/279/small/ethereum.png',
-  'SOL/USD':  'https://assets.coingecko.com/coins/images/4128/small/solana.png',
-  'BNB/USD':  'https://assets.coingecko.com/coins/images/825/small/bnb-icon2_2x.png',
-  'XRP/USD':  'https://assets.coingecko.com/coins/images/44/small/xrp-symbol-white-128.png',
-  'DOGE/USD': 'https://assets.coingecko.com/coins/images/5/small/dogecoin.png',
-};
-
-/**
- * Self-hosted commodity logos. SVG source lives in scripts/commodity-logos/.
- * Upload via `npm run upload-commodity-logos`. Bucket is public-readable.
- */
-const SUPABASE_LOGO_BASE =
-  'https://kgqpzuvhslqazurfrqya.supabase.co/storage/v1/object/public/company-logos';
-
-export const COMMODITY_LOGO_URLS: Record<string, string> = {
-  'XAU/USD': `${SUPABASE_LOGO_BASE}/commodity-xau.svg`,
-  'XAG/USD': `${SUPABASE_LOGO_BASE}/commodity-xag.svg`,
-  'XPT/USD': `${SUPABASE_LOGO_BASE}/commodity-xpt.svg`,
-  'XPD/USD': `${SUPABASE_LOGO_BASE}/commodity-xpd.svg`,
-  'WTI/USD': `${SUPABASE_LOGO_BASE}/commodity-wti.svg`,
-  'XBR/USD': `${SUPABASE_LOGO_BASE}/commodity-xbr.svg`,
-};
-
-/**
- * Build a logo.dev URL for an issuer domain. Returns null if LOGO_DEV_KEY
- * is not configured (we'd rather show initials than a broken image).
- */
-export function logoDevUrl(domain: string): string | null {
-  const token = process.env.LOGO_DEV_KEY;
-  if (!token) return null;
-  return `https://img.logo.dev/${domain}?token=${token}&size=128&format=png`;
-}
-
-// ── Shared shape for any card in a rail ───────────────────────────────────────
-export interface DiscoverFeed {
-  forYou: {
-    mode: 'personalized' | 'trending' | 'empty';
-    items: TickerItem[];
-    explanation?: string;
-  };
-  sectors: Record<string, TickerItem[]>;
-  etfs: Record<string, TickerItem[]>;
-  commodities: TickerItem[];
-  crypto: TickerItem[];
-}
+// ── Shared payload shapes ────────────────────────────────────────────────────
 
 export interface TickerItem {
   /** Canonical TwelveData symbol — used for live price subscription */
   symbol: string;
-  /** Display ticker (for stocks usually equals symbol; for crypto e.g. BTC) */
+  /** Display ticker */
   ticker: string;
   name: string;
   logoUrl: string | null;
@@ -302,5 +198,42 @@ export interface TickerItem {
   /** Last known day change percent (seed for the card before SSE ticks arrive) */
   changePercent?: number | null;
   marketCap?: number | null;
-  dividendYield?: number | null;
+  /**
+   * Optional one-line reason this name is in the list it's in — e.g.
+   * "12.4x forward earnings vs 19.8x sector median". The whole point of a
+   * curated collection is that it carries its reason with it.
+   */
+  reason?: string | null;
+}
+
+export interface SectorPerformance {
+  key: string;
+  label: string;
+  etf: string;
+  /** Percent change over the selected timeframe. Null when unavailable. */
+  changePct: number | null;
+}
+
+export type Timeframe = '1D' | '1W' | '1M' | 'YTD';
+
+export const TIMEFRAMES: Timeframe[] = ['1D', '1W', '1M', 'YTD'];
+
+export interface IndexQuote {
+  symbol: string;
+  label: string;
+  hint: string;
+  price: number | null;
+  changePct: number | null;
+}
+
+export interface DiscoverFeed {
+  indices: IndexQuote[];
+  /** Sector performance keyed by timeframe, each already sorted best → worst. */
+  sectors: Record<Timeframe, SectorPerformance[]>;
+  collections: {
+    trending: { items: TickerItem[]; mode: 'personalized' | 'trending'; explanation: string };
+    qualityDiscount: TickerItem[];
+    near52High: TickerItem[];
+    near52Low: TickerItem[];
+  };
 }
