@@ -282,12 +282,17 @@ export function Line({
   }, [lines, dataKey]);
 
   const pathRef = useRef<SVGPathElement>(null);
+  // yScale must be a dep: when not animating (useDataTransitionPath false),
+  // nothing else here tracks the y-domain, so a y-domain recompute that
+  // lands on a later render than renderData's identity change would freeze
+  // this measurement at the pre-rescale positions (see session-line.tsx).
   const { pathLength, pathD } = usePathStrokeMetrics(pathRef, [
     renderData,
     innerWidth,
     dashFromIndex,
     animate,
     useDataTransitionPath ? animatedPathD : null,
+    yScale,
   ]);
 
   const reactId = useId();

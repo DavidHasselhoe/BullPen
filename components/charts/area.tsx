@@ -194,6 +194,9 @@ export function Area({
   }, [lines, dataKey]);
 
   const pathRef = useRef<SVGPathElement>(null);
+  // yScale must be a dep: a y-domain recompute that lands on a later render
+  // than the one that changed renderData's identity would otherwise leave
+  // this measurement frozen at the pre-rescale positions (see session-line.tsx).
   const { pathLength, pathD } = usePathStrokeMetrics(pathRef, [
     renderData,
     innerWidth,
@@ -201,6 +204,7 @@ export function Area({
     showLine,
     showSeriesContent,
     showLoadingPulse,
+    yScale,
   ]);
 
   // Unique IDs for this area

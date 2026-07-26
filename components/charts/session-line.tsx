@@ -93,7 +93,16 @@ export function SessionLine({
   };
 
   const pathRef = useRef<SVGPathElement>(null);
-  const { pathD } = usePathStrokeMetrics(pathRef, [renderData, innerWidth]);
+  // yScale must be a dep here, not just renderData/innerWidth: toggling data
+  // that changes the price range (e.g. extended-hours on/off) can recompute
+  // the y-domain on a later render than the one that updates renderData's
+  // identity. Without yScale in the deps, this measurement effect skips that
+  // later render, freezing the visible stroke at the old (pre-rescale) y
+  // positions while the invisible measurement path — always re-rendered
+  // directly from the current yScale — has already moved on, so the two
+  // silently diverge until something else changes renderData/innerWidth
+  // again (e.g. a page refresh, which computes the correct domain in one pass).
+  const { pathD } = usePathStrokeMetrics(pathRef, [renderData, innerWidth, yScale]);
 
   const segments = useMemo<Segment[]>(() => {
     if (data.length === 0 || regions.length === 0) return [];
