@@ -316,13 +316,19 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
   // Append live tick so the chart always ends at current price — 1D, and also
   // 1W/1M (5D/1M use intraday bars too, so without this the line stops at the
   // last fetched candle instead of reaching today's live pre/post-market price).
+  // Capped to a same-day-ish gap: without this, a weekend/holiday close would
+  // still get a point stamped at the real "now", stretching the chart's time
+  // domain across the whole closed period and squeezing every real trading
+  // day into a fraction of the width for a single meaningless dot.
+  const MAX_LIVE_TICK_GAP_SECONDS = 16 * 60 * 60;
   const isIntradayRange = range === '1D' || range === '1W' || range === '1M';
   const displayData = useMemo<ChartPoint[]>(() => {
     if (!isIntradayRange || !isLive || !live || !chartData.length) return chartData;
     // eslint-disable-next-line react-hooks/purity
     const nowSec = Math.floor(Date.now() / 1000);
     const last = chartData[chartData.length - 1];
-    if (Math.abs(last.time - nowSec) < 120) return chartData;
+    const gap = nowSec - last.time;
+    if (Math.abs(gap) < 120 || gap > MAX_LIVE_TICK_GAP_SECONDS) return chartData;
 
     const etTimeStr = new Date().toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour12: false });
     const [etHStr, etMStr] = etTimeStr.split(':');
