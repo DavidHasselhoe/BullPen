@@ -1,5 +1,26 @@
 [
   {
+    "date": "2026-07-26",
+    "entries": [
+      { "type": "new", "text": "Introducing Bull's Weekly Pick — every Monday, an AI-generated stock pick with a full, permanent public track record. Anyone can check the Track Record page to see how every past pick has done, winners and losers alike; the full reasoning behind each pick is a Pro feature" },
+      { "type": "improved", "text": "The Discover page has been redesigned around a quick market read: how the S&P 500, Nasdaq, Dow, and small caps are doing today, a market mood gauge, which sectors are leading or lagging, and a curated set of names worth a look — including stocks trading cheap for their sector and ones near their 52-week highs and lows" },
+      { "type": "improved", "text": "The stock price chart has been rebuilt for smoother rendering, with a subtle pattern now marking stretches when the market was closed and the intraday tooltip showing the time of day, not just the price. The log/linear price-scale option has been removed" },
+      { "type": "fixed", "text": "Fixed sector and industry benchmark comparisons (the \"typical for its sector\" markers next to Key Numbers) not updating for most sectors after a data refresh issue" }
+    ]
+  },
+  {
+    "date": "2026-07-25",
+    "entries": [
+      { "type": "new", "text": "Added an Activity tab to profile pages — see a feed of portfolio activity alongside the existing Portfolio tab" }
+    ]
+  },
+  {
+    "date": "2026-07-24",
+    "entries": [
+      { "type": "fixed", "text": "Fixed Financial Health Scores not picking up a company's latest quarterly report for many stocks, due to an intermittent data-fetching issue" }
+    ]
+  },
+  {
     "date": "2026-07-23",
     "entries": [
       { "type": "new", "text": "You can now record selling shares of a manually-tracked holding instead of just deleting it — sell all or part of a position, and your portfolio's performance chart keeps its full history intact instead of rewriting the past. Sold positions show up in a new \"Sold Positions\" list with your locked-in gain or loss, and you can undo a sale if you made a mistake" },
