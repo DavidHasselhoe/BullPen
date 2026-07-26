@@ -10,6 +10,7 @@ import { SessionLine, type SessionRegion } from '@/components/charts/session-lin
 import { BarChart } from '@/components/charts/bar-chart';
 import { Bar } from '@/components/charts/bar';
 import { ReferenceLine } from '@/components/charts/reference-line';
+import { EarningsMarker } from '@/components/charts/earnings-marker';
 import { Grid } from '@/components/charts/grid';
 import { XAxis } from '@/components/charts/x-axis';
 import { ChartTooltip } from '@/components/charts/tooltip';
@@ -21,7 +22,7 @@ import { useLivePrices } from '@/hooks/use-live-prices';
 import { useStockQuote } from '@/hooks/use-stock-price';
 import { useExperienceLevel } from '@/hooks/use-experience-level';
 import { cn } from '@/lib/utils';
-import type { ExtendedHoursQuote, IndicatorValue } from '@/lib/twelvedata/twelvedata-client';
+import type { ExtendedHoursQuote, IndicatorValue, CompanyEarnings } from '@/lib/twelvedata/twelvedata-client';
 
 // Fullscreen advanced chart is loaded on demand so lightweight-charts stays out
 // of the main bundle — same lazy-load pattern as the production panel.
@@ -115,10 +116,9 @@ function StatItem({ label, value, valueClass }: { label: string; value: string; 
  * Dev-only copy of StockPricePanel with the core price chart swapped from
  * Recharts to Bklit UI's LineChart — see
  * docs/superpowers/specs/2026-07-24-bklit-stock-chart-dev-copy-design.md.
- * Building up to full parity in ordered sub-projects before this replaces
- * production: indicators, sessions, volume, oscillators (done) — earnings
- * markers still to come. The production StockPricePanel is untouched
- * throughout.
+ * All 5 parity sub-projects are done: indicators, sessions, volume,
+ * oscillators, earnings markers. The production StockPricePanel is
+ * untouched — swapping it over is a separate, later decision.
  */
 export function StockPricePanelBklit({ ticker }: { ticker: string }) {
   const { prefs, setPref } = useChartPrefs();
@@ -250,6 +250,21 @@ export function StockPricePanelBklit({ ticker }: { ticker: string }) {
   const rsiData    = rsiQuery.data?.data;
   const macdData   = macdQuery.data?.data;
 
+  // ── Earnings (for markers) — always fetched/shown in this dev copy;
+  // production gates this behind prefs.showEarnings via a settings panel
+  // this dev copy doesn't have, same precedent as volume. ────────────────
+  const { data: earningsResp } = useQuery<{ success: boolean; earnings: CompanyEarnings[] }>({
+    queryKey: ['company-earnings', ticker],
+    queryFn: async () => {
+      const res = await fetch(`/api/stock/${ticker}/earnings`);
+      return res.json();
+    },
+    enabled: !!ticker,
+    staleTime: 12 * 60 * 60 * 1000,
+    gcTime: 24 * 60 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+
   // ── Chart data ────────────────────────────────────────────────────────────
   const chartData = useMemo<ChartPoint[]>(() => {
     if (!candleData?.candles) return [];
@@ -332,6 +347,21 @@ export function StockPricePanelBklit({ ticker }: { ticker: string }) {
     });
     return regions;
   }, [chartDisplayData, range]);
+
+  // Earnings markers — filtered to dates visible in the current chart window.
+  const earningsMarkers = useMemo<Array<{ date: Date; beat: boolean | null }>>(() => {
+    if (!earningsResp?.earnings?.length || !chartDisplayData.length) return [];
+    const chartStart = chartDisplayData[0].time;
+    const chartEnd   = chartDisplayData[chartDisplayData.length - 1].time;
+    return earningsResp.earnings
+      .map((e) => {
+        const ts = Math.floor(new Date(`${e.period}T12:00:00Z`).getTime() / 1000);
+        const beat = e.actual != null && e.estimate != null ? e.actual >= e.estimate : null;
+        return { ts, beat };
+      })
+      .filter(({ ts }) => ts >= chartStart && ts <= chartEnd)
+      .map(({ ts, beat }) => ({ date: new Date(ts * 1000), beat }));
+  }, [earningsResp, chartDisplayData]);
 
   const lastDisplayPt = displayData.length > 0 ? displayData[displayData.length - 1] : null;
   const lastIsExtended = lastDisplayPt?.session === 'pre' || lastDisplayPt?.session === 'post';
@@ -599,6 +629,13 @@ export function StockPricePanelBklit({ ticker }: { ticker: string }) {
                 <Line dataKey="lower" stroke={INDICATOR_COLORS.bbands} strokeWidth={1} dashArray="4,2" showMarkers={false} />
               </>
             )}
+            {earningsMarkers.map(({ date, beat }) => (
+              <EarningsMarker
+                key={date.getTime()}
+                date={date}
+                stroke={beat === null ? '#f59e0b' : beat ? '#22c55e' : '#ef4444'}
+              />
+            ))}
             <ChartTooltip
               rows={(point) => {
                 const rows = [{ label: 'Price', value: fmtPrice(point.price as number), color: lineColor }];
