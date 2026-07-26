@@ -14,7 +14,7 @@ import {
   useChart,
   useChartStable,
 } from "../chart-context";
-import { weekdayDateFmt } from "../chart-formatters";
+import { shortTimeFmt, weekdayDateFmt } from "../chart-formatters";
 import type { IndicatorFadeEdges } from "../indicator-fade";
 import { DateTicker } from "./date-ticker";
 import { TooltipBox } from "./tooltip-box";
@@ -25,6 +25,14 @@ import { TooltipIndicator } from "./tooltip-indicator";
 export interface ChartTooltipProps {
   /** Whether to show the date pill at bottom. Default: true */
   showDatePill?: boolean;
+  /**
+   * Append a time-of-day to the tooltip title (e.g. "Wed, Jul 22 · 9:35 AM")
+   * instead of just the date. Use for intraday series where a single day
+   * has many points and the date alone doesn't disambiguate them. Ignored
+   * for bar charts (title already comes from the category, not a date).
+   * Default: false
+   */
+  showTime?: boolean;
   /** Whether to show the vertical crosshair line. Default: true */
   showCrosshair?: boolean;
   /** Whether to show dots on the lines. Default: true */
@@ -97,6 +105,7 @@ interface ChartTooltipInnerProps extends ChartTooltipProps {
 
 const ChartTooltipInner = memo(function ChartTooltipInner({
   showDatePill = true,
+  showTime = false,
   showCrosshair = true,
   showDots = true,
   dotVariant = "dot",
@@ -249,8 +258,10 @@ const ChartTooltipInner = memo(function ChartTooltipInner({
       return barXAccessor(tooltipData.point);
     }
     // For line/area charts, use the date
-    return weekdayDateFmt.format(xAccessor(tooltipData.point));
-  }, [tooltipData, barXAccessor, xAccessor]);
+    const date = xAccessor(tooltipData.point);
+    const dateStr = weekdayDateFmt.format(date);
+    return showTime ? `${dateStr} · ${shortTimeFmt.format(date)}` : dateStr;
+  }, [tooltipData, barXAccessor, xAccessor, showTime]);
 
   const tooltipContent = (
     <>

@@ -731,6 +731,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
               />
             ))}
             <ChartTooltip
+              showTime={isIntradayRange}
               rows={(point) => {
                 const rows = [{ label: 'Price', value: fmtPrice(point.price as number), color: lineColor }];
                 if ((point.volume as number) > 0) rows.push({ label: 'Vol', value: fmtVol(point.volume as number), color: 'var(--chart-grid)' });

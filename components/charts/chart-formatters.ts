@@ -16,5 +16,11 @@ export const hmsTimeFmt = new Intl.DateTimeFormat("en-US", {
   hour12: false,
 });
 
+export const shortTimeFmt = new Intl.DateTimeFormat("en-US", {
+  hour: "numeric",
+  minute: "2-digit",
+  hour12: true,
+});
+
 // `Intl.NumberFormat.prototype.format` is a bound getter — safe to extract.
 export const intFmt = new Intl.NumberFormat("en-US").format;
