@@ -71,11 +71,18 @@ export interface LineChartProps {
 
 const DEFAULT_MARGIN: Margin = { top: 40, right: 40, bottom: 40, left: 40 };
 
-/** Series renderers that carry a dataKey but must not drive the shared y-domain. */
+/**
+ * Series renderers that carry a dataKey but must not drive the shared y-domain.
+ * `Area` is deliberately NOT here — it's a fully self-sufficient primary series
+ * (its own stroke/line rendering, not just a decorative fill paired with a
+ * separate domain-driving Line for the same dataKey). Excluding it meant a
+ * chart using only `<Area>` as its price series had zero registered dataKeys,
+ * collapsing the y-domain to its empty-data fallback ([0, 100]-ish) and
+ * placing every real data point far outside the visible plot area.
+ */
 const LINE_DOMAIN_EXCLUDED_NAMES = new Set([
   "ProfitLossLine",
   "LineSeriesTerminalMarker",
-  "Area",
   "SeriesBar",
   "Scatter",
   "Candlestick",
