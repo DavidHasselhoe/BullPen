@@ -1,6 +1,6 @@
 "use client";
 
-import { curveNatural } from "@visx/curve";
+import { curveMonotoneX } from "@visx/curve";
 import { AreaClosed, LinePath } from "@visx/shape";
 import { useId, useMemo, useRef } from "react";
 import { useChartStable, useYScale } from "./chart-context";
@@ -136,9 +136,17 @@ export function SessionLine({
 
   return (
     <>
-      {/* Invisible measurement path — same curve/accessors as the visible segments below. */}
+      {/*
+        Invisible measurement path — same curve/accessors as the visible
+        segments below. `curveMonotoneX` (not `curveNatural`) deliberately:
+        a natural cubic spline can overshoot past a region's local min/max
+        between two points, which reads as a stray hairline poking above the
+        real peak — most visible right at a session boundary (pre → regular
+        → post) where price often jumps abruptly. Monotone interpolation
+        never overshoots.
+      */}
       <LinePath
-        curve={curveNatural}
+        curve={curveMonotoneX}
         data={renderData}
         innerRef={pathRef}
         stroke="transparent"
@@ -174,7 +182,7 @@ export function SessionLine({
               <g clipPath={`url(#${clipId})`}>
                 {withArea && (
                   <AreaClosed
-                    curve={curveNatural}
+                    curve={curveMonotoneX}
                     data={renderData}
                     fill={`url(#${gradientId})`}
                     x={(d) => xScale(xAccessor(d)) ?? 0}

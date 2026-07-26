@@ -734,7 +734,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
               Volume
             </span>
           </div>
-          <BarChart data={bklitData} xDataKey="date" margin={{ top: 2, right: 28, bottom: 0, left: 28 }} style={{ height: 58 }}>
+          <BarChart data={bklitData} xDataKey="date" timeScale margin={{ top: 2, right: 28, bottom: 0, left: 28 }} style={{ height: 58 }}>
             <Bar
               dataKey="volume"
               fadedOpacity={0.5}

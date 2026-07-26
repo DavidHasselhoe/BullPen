@@ -2,7 +2,8 @@
 
 import { localPoint } from "@visx/event";
 import { ParentSize } from "@visx/responsive";
-import { scaleBand, scaleLinear } from "@visx/scale";
+import { scaleBand, scaleLinear, scaleTime } from "@visx/scale";
+import { extent } from "d3-array";
 import type { Transition } from "motion/react";
 import {
   type CSSProperties,
@@ -89,6 +90,16 @@ export interface BarChartProps {
   squareSnap?: { squareGap: number; groupGap?: number; fit?: boolean };
   /** Inline container styles (e.g. a fixed height for a thin sub-panel like a volume strip) — merged over `aspectRatio`. */
   style?: CSSProperties;
+  /**
+   * Position bars by real elapsed time instead of evenly-spaced categories.
+   * Use when this bar chart must line up with a companion `<LineChart>` over
+   * the same date range (e.g. a volume strip under a session-aware price
+   * chart) — the default band scale spaces every data point evenly and
+   * ignores real time gaps (like an overnight market close), so it silently
+   * drifts out of alignment with a continuous time-scaled chart above it.
+   * Default: false.
+   */
+  timeScale?: boolean;
   /** Child components (Bar, Grid, ChartTooltip, etc.). Optional — omit for a
    * pure `status="loading"` skeleton. */
   children?: ReactNode;
@@ -161,6 +172,7 @@ interface ChartInnerProps {
   stacked: boolean;
   stackGap: number;
   squareSnap?: { squareGap: number; groupGap?: number; fit?: boolean };
+  timeScale?: boolean;
   children: ReactNode;
   containerRef: React.RefObject<HTMLDivElement | null>;
   onPhaseChange?: (phase: ChartPhase) => void;
@@ -191,6 +203,7 @@ const ChartCore = memo(function ChartCore({
   stacked,
   stackGap,
   squareSnap,
+  timeScale = false,
   children,
   containerRef,
   onPhaseChange,
@@ -251,8 +264,50 @@ const ChartCore = memo(function ChartCore({
     });
   }, [innerWidth, innerHeight, data, categoryAccessor, barGap, isHorizontal]);
 
+  // Continuous time positioning (opt-in) — places each bar at its real
+  // elapsed-time x-position instead of an evenly-spaced category slot, so a
+  // volume strip lines up with a companion time-scaled `<LineChart>` above
+  // it (including the blank gaps a session-aware price line leaves for a
+  // closed market). Only supported for vertical bars; `isHorizontal` charts
+  // (e.g. horizontal bar rankings) have no time axis to align against.
+  const timeXScale = useMemo(() => {
+    if (!timeScale || isHorizontal || data.length === 0) {
+      return null;
+    }
+    const [minTime, maxTime] = extent(data, (d) => xAccessorDate(d).getTime());
+    if (minTime == null || maxTime == null) {
+      return null;
+    }
+    return scaleTime({ range: [0, innerWidth], domain: [minTime, maxTime] });
+  }, [timeScale, isHorizontal, data, xAccessorDate, innerWidth]);
+
+  const timeBandWidth = useMemo(() => {
+    if (!timeXScale || data.length === 0) {
+      return 0;
+    }
+    const step = innerWidth / data.length;
+    return Math.max(1, step * (1 - barGap));
+  }, [timeXScale, data.length, innerWidth, barGap]);
+
+  const timeCategoryScale = useMemo(() => {
+    if (!timeXScale) {
+      return null;
+    }
+    const posByCategory = new Map<string, number>();
+    for (const d of data) {
+      const centerX = timeXScale(xAccessorDate(d)) ?? 0;
+      posByCategory.set(categoryAccessor(d), centerX - timeBandWidth / 2);
+    }
+    const scale = (key: string) => posByCategory.get(key) ?? 0;
+    scale.bandwidth = () => timeBandWidth;
+    scale.step = () => innerWidth / Math.max(1, data.length);
+    return scale as unknown as ReturnType<typeof scaleBand<string>>;
+  }, [timeXScale, data, categoryAccessor, xAccessorDate, timeBandWidth, innerWidth]);
+
+  const effectiveCategoryScale = timeCategoryScale ?? categoryScale;
+
   // Band width for bars - use prop if provided, otherwise use scale's bandwidth
-  const bandWidth = barWidthProp ?? categoryScale.bandwidth();
+  const bandWidth = barWidthProp ?? effectiveCategoryScale.bandwidth();
 
   // Compute max value considering stacking
   const maxValue = useMemo(() => {
@@ -405,8 +460,26 @@ const ChartCore = memo(function ChartCore({
 
       const pos = isHorizontal ? point.y - margin.top : point.x - margin.left;
 
-      // Find which band the mouse is over
-      const bandIndex = Math.floor(pos / columnWidth);
+      // Find which band the mouse is over. In `timeScale` mode bars aren't
+      // evenly spaced, so a fixed-width division would pick the wrong point
+      // near a real time gap (e.g. an overnight close) — scan for the
+      // nearest bar's actual pixel position instead.
+      let bandIndex: number;
+      if (timeXScale) {
+        let nearest = 0;
+        let nearestDist = Number.POSITIVE_INFINITY;
+        for (let i = 0; i < data.length; i++) {
+          const px = timeXScale(xAccessorDate(data[i])) ?? 0;
+          const dist = Math.abs(px - pos);
+          if (dist < nearestDist) {
+            nearestDist = dist;
+            nearest = i;
+          }
+        }
+        bandIndex = nearest;
+      } else {
+        bandIndex = Math.floor(pos / columnWidth);
+      }
       const clampedIndex = Math.max(0, Math.min(data.length - 1, bandIndex));
       const d = data[clampedIndex];
 
@@ -417,7 +490,7 @@ const ChartCore = memo(function ChartCore({
       // Calculate positions for each bar
       const yPositions: Record<string, number> = {};
       const xPositions: Record<string, number> = {};
-      const barPos = categoryScale(categoryAccessor(d)) ?? 0;
+      const barPos = effectiveCategoryScale(categoryAccessor(d)) ?? 0;
 
       if (isHorizontal) {
         // Horizontal bars: dots at end of bar (x = value), centered vertically in band
@@ -528,7 +601,7 @@ const ChartCore = memo(function ChartCore({
       });
     },
     [
-      categoryScale,
+      effectiveCategoryScale,
       valueScale,
       data,
       lines,
@@ -545,6 +618,8 @@ const ChartCore = memo(function ChartCore({
       primaryYScale,
       squareSnap,
       innerHeight,
+      timeXScale,
+      xAccessorDate,
     ]
   );
 
@@ -616,7 +691,7 @@ const ChartCore = memo(function ChartCore({
     xAccessor: xAccessorDate,
     dateLabels,
     // Bar-specific properties
-    barScale: categoryScale,
+    barScale: effectiveCategoryScale,
     bandWidth,
     hoveredBarIndex,
     barXAccessor: categoryAccessor,
@@ -691,6 +766,7 @@ export function BarChart({
   stacked = false,
   stackGap = 0,
   squareSnap,
+  timeScale = false,
   children,
   onPhaseChange,
   status = "ready",
@@ -724,6 +800,7 @@ export function BarChart({
             stacked={stacked}
             stackGap={stackGap}
             status={status}
+            timeScale={timeScale}
             width={width}
             xDataKey={xDataKey}
           >
