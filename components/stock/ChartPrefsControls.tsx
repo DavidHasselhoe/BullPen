@@ -204,16 +204,6 @@ export function ChartPrefsControls({
           value={prefs.chartStyle}
           onChange={(v) => setPrefTyped('chartStyle', v)}
         />
-
-        <RadioRow
-          label="Price scale"
-          options={[
-            { value: 'linear', label: 'Linear' },
-            { value: 'log',    label: 'Log'    },
-          ]}
-          value={prefs.priceScale}
-          onChange={(v) => setPrefTyped('priceScale', v)}
-        />
       </div>
 
       {/* ── Reset ────────────────────────────────────────────────────── */}

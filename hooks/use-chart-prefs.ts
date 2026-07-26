@@ -20,7 +20,6 @@ export interface ChartPrefs {
   showPrevClose: boolean;
   showExtendedHours: boolean;
   chartStyle: 'area' | 'line';
-  priceScale: 'linear' | 'log';
   // Advanced (fullscreen) chart — persisted so the experience is sticky.
   advancedChartType: AdvancedChartType;
   advancedIndicators: IndicatorInstance[];
@@ -34,7 +33,6 @@ export const CHART_PREF_DEFAULTS: ChartPrefs = {
   showPrevClose: false,
   showExtendedHours: true,
   chartStyle: 'area',
-  priceScale: 'linear',
   advancedChartType: 'candles',
   advancedIndicators: [],
 };

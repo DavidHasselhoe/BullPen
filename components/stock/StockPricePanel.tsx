@@ -1,30 +1,34 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Maximize2, Sparkles } from 'lucide-react';
 
 import { useQuery } from '@tanstack/react-query';
-import {
-  AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  LineChart, Line, ReferenceLine, ReferenceDot,
-  BarChart, Bar, Cell,
-} from 'recharts';
+import { LineChart, Line } from '@/components/charts/line-chart';
+import { Area } from '@/components/charts/area';
+import { SessionLine, type SessionRegion } from '@/components/charts/session-line';
+import { BarChart } from '@/components/charts/bar-chart';
+import { Bar } from '@/components/charts/bar';
+import { ReferenceLine } from '@/components/charts/reference-line';
+import { EarningsMarker } from '@/components/charts/earnings-marker';
+import { Grid } from '@/components/charts/grid';
+import { XAxis } from '@/components/charts/x-axis';
+import { ChartTooltip } from '@/components/charts/tooltip';
 import { useChartPrefs, type AdvancedChartType } from '@/hooks/use-chart-prefs';
 import { getIndicatorDef, defaultParamsFor, INDICATOR_PALETTE, INDICATOR_PRESETS, type IndicatorInstance } from '@/lib/finance/indicators';
 import { ChartSettingsPanel } from './ChartSettingsPanel';
 import { WhyTodayPanel } from './WhyTodayPanel';
-import type { CompanyEarnings } from '@/lib/twelvedata/twelvedata-client';
-import { useTheme } from 'next-themes';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLivePrices } from '@/hooks/use-live-prices';
 import { useStockQuote } from '@/hooks/use-stock-price';
 import { useExperienceLevel } from '@/hooks/use-experience-level';
 import { cn } from '@/lib/utils';
-import type { IndicatorValue, ExtendedHoursQuote } from '@/lib/twelvedata/twelvedata-client';
+import type { ExtendedHoursQuote, IndicatorValue, CompanyEarnings } from '@/lib/twelvedata/twelvedata-client';
 
 // Fullscreen advanced chart is loaded on demand so lightweight-charts stays out
-// of the main bundle (only advanced users who click Expand pay for it).
+// of the main bundle (only advanced users who click Expand pay for it). This
+// is a separate system entirely — untouched by the Bklit UI swap below.
 const AdvancedChartModal = dynamic(
   () => import('./advanced-chart/AdvancedChartModal').then((m) => m.AdvancedChartModal),
   { ssr: false }
@@ -57,19 +61,15 @@ const INDICATORS: IndicatorOption[] = [
   { key: 'macd',   label: 'MACD',    type: 'macd' },
 ];
 
+// Overlay lines render on the main chart; oscillators get their own sub-panel below volume.
 const OSCILLATOR_INDICATORS = new Set<Indicator>(['rsi', 'macd']);
 
 interface CandleData { t: number[]; c: number[]; o: number[]; h: number[]; l: number[]; v: number[]; session?: Array<'pre' | 'regular' | 'post'> }
 interface ChartPoint {
-  time: number; label: string; price: number; volume: number;
+  time: number; price: number; volume: number;
   session?: 'pre' | 'regular' | 'post';
-  regularPrice?: number;
-  prePrice?: number;
-  postPrice?: number;
-  /** Position within chartDisplayData — the x-value for index-based axes (see usesIndexAxis). */
-  idx?: number;
-  sma50?: number; sma200?: number; ema?: number; upper?: number; lower?: number; middle?: number;
-  rsi?: number; macd?: number; signal?: number; hist?: number;
+  sma50?: number; sma200?: number; ema?: number; upper?: number; middle?: number; lower?: number;
+  rsi?: number; macd?: number; signal?: number;
 }
 
 // Canonical per-indicator line colors — shared by the chart lines, the toggle
@@ -79,29 +79,23 @@ const INDICATOR_COLORS: Record<Indicator, string> = {
   rsi: '#f59e0b', macd: '#60a5fa',
 };
 
-/** Ranges whose candles are session-tagged (pre/regular/post) — 1D always, 1W via the extended-hours 15-min bars. */
-function hasSessionSplit(range: Range): boolean {
-  return range === '1D' || range === '1W';
-}
-
-/**
- * Multi-day intraday ranges (1W's 15-min bars, 1M's hourly bars) have real
- * overnight/weekend gaps between trading sessions. A real-time x-axis gives
- * that dead time proportional pixel width, which stretches each day into an
- * isolated "island" with a big blank canyon on either side. Plotting by
- * sequential candle index instead (like Yahoo/Robinhood/most finance apps)
- * collapses non-trading time to zero width. 1D is a single session (no
- * overnight gap) so it keeps the real-time axis; daily/weekly-bar ranges
- * (6M+) have only a negligible weekend gap relative to their span.
- */
-function usesIndexAxis(range: Range): boolean {
-  return range === '1W' || range === '1M';
-}
-
 interface IndicatorResponse {
   success: boolean;
   data?: IndicatorValue[];
   error?: string;
+}
+
+function fetchIndicator(ticker: string, opt: IndicatorOption, range: Range): Promise<IndicatorResponse> {
+  const params = new URLSearchParams({ type: opt.type, range });
+  if (opt.params) {
+    for (const [k, v] of Object.entries(opt.params)) params.set(k, String(v));
+  }
+  return fetch(`/api/stock/${ticker}/indicator?${params}`).then((r) => r.json());
+}
+
+/** Ranges whose candles are session-tagged (pre/regular/post) — 1D always, 1W via the extended-hours 15-min bars. */
+function hasSessionSplit(range: Range): boolean {
+  return range === '1D' || range === '1W';
 }
 
 // ─── Formatters ───────────────────────────────────────────────────────────────
@@ -115,110 +109,6 @@ function fmtVol(v: number): string {
   if (v >= 1e3) return `${(v / 1e3).toFixed(0)}K`;
   return String(v);
 }
-// Market hours are inherently ET-anchored — always format in that timezone,
-// never the viewer's local one (a 6pm CEST label for a noon-ET candle is
-// meaningless on a chart whose sessions are defined in ET).
-const ET_ZONE = 'America/New_York';
-
-function fmtLabel(ts: number, range: Range): string {
-  const d = new Date(ts * 1000);
-  if (range === '1D') return d.toLocaleTimeString('en-US', { timeZone: ET_ZONE, hour: 'numeric', minute: '2-digit', hour12: true });
-  if (range === '1W' || range === '1M') return d.toLocaleDateString('en-US', { timeZone: ET_ZONE, month: 'short', day: 'numeric' });
-  if (range === '6M' || range === '1Y') return d.toLocaleDateString('en-US', { timeZone: ET_ZONE, month: 'short', year: '2-digit' });
-  return d.getFullYear().toString();
-}
-
-// ─── Tooltip ──────────────────────────────────────────────────────────────────
-
-/** A single aligned "● Label  value" row shared by the price tooltip and the oscillator tooltips. */
-function TooltipRow({ label, value, color }: { label: string; value: string; color: string }) {
-  return (
-    <div className="flex items-center gap-1.5">
-      <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: color }} />
-      <span className="text-muted-foreground">{label}</span>
-      <span className="ml-auto font-medium tabular-nums text-foreground">{value}</span>
-    </div>
-  );
-}
-
-function ChartTooltip({ active, payload, basePrice, range, activeIndicators }: {
-  active?: boolean;
-  payload?: Array<{ payload: ChartPoint }>;
-  basePrice: number;
-  range: Range;
-  activeIndicators: Set<Indicator>;
-}) {
-  if (!active || !payload?.length) return null;
-  const pt = payload[0].payload;
-  const diff = pt.price - basePrice;
-  const pct = basePrice ? (diff / basePrice) * 100 : 0;
-  const isPos = diff >= 0;
-  const d = new Date(pt.time * 1000);
-  const dateStr = range === '1D' || range === '1W'
-    ? d.toLocaleString('en-US', { timeZone: ET_ZONE, month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })
-    : d.toLocaleDateString('en-US', { timeZone: ET_ZONE, month: 'short', day: 'numeric', year: 'numeric' });
-  const sessionLabel = hasSessionSplit(range) && pt.session
-    ? pt.session === 'pre' ? 'Pre-market' : pt.session === 'post' ? 'After-hours' : null
-    : null;
-
-  // Overlay indicator values at this point — same colors as their chart lines,
-  // so the tooltip row a user reads maps directly back to the line they're
-  // hovering. Only rendered for indicators actually toggled on.
-  const indicatorRows: { label: string; value: number; color: string }[] = [];
-  if (activeIndicators.has('sma50') && pt.sma50 != null) indicatorRows.push({ label: 'SMA 50', value: pt.sma50, color: INDICATOR_COLORS.sma50 });
-  if (activeIndicators.has('sma200') && pt.sma200 != null) indicatorRows.push({ label: 'SMA 200', value: pt.sma200, color: INDICATOR_COLORS.sma200 });
-  if (activeIndicators.has('ema20') && pt.ema != null) indicatorRows.push({ label: 'EMA 20', value: pt.ema, color: INDICATOR_COLORS.ema20 });
-  if (activeIndicators.has('bbands')) {
-    if (pt.upper != null) indicatorRows.push({ label: 'BB Upper', value: pt.upper, color: INDICATOR_COLORS.bbands });
-    if (pt.middle != null) indicatorRows.push({ label: 'BB Mid', value: pt.middle, color: INDICATOR_COLORS.bbands });
-    if (pt.lower != null) indicatorRows.push({ label: 'BB Lower', value: pt.lower, color: INDICATOR_COLORS.bbands });
-  }
-
-  return (
-    <div className="min-w-[148px] rounded-lg border border-border bg-background/95 px-3 py-2 shadow-lg backdrop-blur-sm text-xs space-y-0.5">
-      <p className="font-semibold text-foreground tabular-nums">{fmtPrice(pt.price)}</p>
-      <p className={cn('tabular-nums', isPos ? 'text-emerald-400' : 'text-red-400')}>
-        {isPos ? '+' : ''}{diff.toFixed(2)} ({isPos ? '+' : ''}{pct.toFixed(2)}%)
-      </p>
-      <p className="text-muted-foreground">{dateStr}</p>
-      {sessionLabel && <p className="text-muted-foreground/70 italic">{sessionLabel}</p>}
-      {pt.volume > 0 && <p className="text-muted-foreground">Vol {fmtVol(pt.volume)}</p>}
-      {indicatorRows.length > 0 && (
-        <div className="mt-1 space-y-0.5 border-t border-border/50 pt-1">
-          {indicatorRows.map((row) => (
-            <TooltipRow key={row.label} label={row.label} value={fmtPrice(row.value)} color={row.color} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// Oscillator panels (RSI/MACD) get the same small aligned tooltip style as the
-// main price chart, instead of Recharts' unstyled default — one visual
-// language for "what's this indicator worth at the hovered point" everywhere.
-function RsiTooltip({ active, payload }: { active?: boolean; payload?: Array<{ payload: ChartPoint }> }) {
-  if (!active || !payload?.length) return null;
-  const pt = payload[0].payload;
-  if (pt.rsi == null) return null;
-  return (
-    <div className="min-w-[110px] rounded-lg border border-border bg-background/95 px-3 py-2 shadow-lg backdrop-blur-sm text-xs">
-      <TooltipRow label="RSI" value={pt.rsi.toFixed(1)} color={INDICATOR_COLORS.rsi} />
-    </div>
-  );
-}
-
-function MacdTooltip({ active, payload }: { active?: boolean; payload?: Array<{ payload: ChartPoint }> }) {
-  if (!active || !payload?.length) return null;
-  const pt = payload[0].payload;
-  if (pt.macd == null) return null;
-  return (
-    <div className="min-w-[110px] rounded-lg border border-border bg-background/95 px-3 py-2 shadow-lg backdrop-blur-sm text-xs space-y-0.5">
-      <TooltipRow label="MACD" value={pt.macd.toFixed(3)} color="#60a5fa" />
-      {pt.signal != null && <TooltipRow label="Signal" value={pt.signal.toFixed(3)} color="#f59e0b" />}
-    </div>
-  );
-}
 
 // ─── Stat item (bottom bar) ───────────────────────────────────────────────────
 
@@ -231,19 +121,9 @@ function StatItem({ label, value, valueClass }: { label: string; value: string; 
   );
 }
 
-function fetchIndicator(ticker: string, opt: IndicatorOption, range: Range): Promise<IndicatorResponse> {
-  const params = new URLSearchParams({ type: opt.type, range });
-  if (opt.params) {
-    for (const [k, v] of Object.entries(opt.params)) params.set(k, String(v));
-  }
-  return fetch(`/api/stock/${ticker}/indicator?${params}`).then(r => r.json());
-}
-
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function StockPricePanel({ ticker }: { ticker: string }) {
-  const { resolvedTheme } = useTheme();
-  const isDark = resolvedTheme === 'dark';
   const { prefs, setPref, setPrefs, reset: resetPrefs } = useChartPrefs();
   const [range, setRange] = useState<Range>(prefs.defaultRange as Range);
 
@@ -253,6 +133,14 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [whyTodayOpen, setWhyTodayOpen] = useState(false);
   const { isSimplified } = useExperienceLevel();
+
+  function toggleIndicator(key: Indicator) {
+    setActiveIndicators((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  }
 
   // Advanced (fullscreen) chart prefs — single source of truth lives here so the
   // experience persists across open/close within a session, then to localStorage/Supabase.
@@ -301,14 +189,6 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
       showVolume: c.showVolume,
       showEarnings: c.showEvents,
     });
-
-  function toggleIndicator(key: Indicator) {
-    setActiveIndicators((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key); else next.add(key);
-      return next;
-    });
-  }
 
   // ── Data sources ─────────────────────────────────────────────────────────
   const livePrices = useLivePrices([ticker]);
@@ -406,32 +286,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
   const chartData = useMemo<ChartPoint[]>(() => {
     if (!candleData?.candles) return [];
     const { t, c, v, session } = candleData.candles;
-    const pts: ChartPoint[] = t.map((ts, i) => ({
-      time: ts, label: fmtLabel(ts, range), price: c[i], volume: v[i],
-      session: session?.[i],
-    }));
-
-    if (hasSessionSplit(range) && session?.length === pts.length) {
-      pts.forEach((pt, i) => {
-        const sess = session[i];
-        const prevSess = i > 0 ? session[i - 1] : null;
-        const nextSess = i < session.length - 1 ? session[i + 1] : null;
-        if (sess === 'regular') {
-          pt.regularPrice = pt.price;
-          // Share the boundary point with the adjacent extended-hours series so
-          // the dashed/dotted line visually connects to the solid line instead
-          // of leaving a gap.
-          if (prevSess === 'pre') pt.prePrice = pt.price;
-          if (nextSess === 'post') pt.postPrice = pt.price;
-        } else if (sess === 'pre') {
-          pt.prePrice = pt.price;
-          if (nextSess === 'regular') pt.regularPrice = pt.price;
-        } else if (sess === 'post') {
-          pt.postPrice = pt.price;
-          if (prevSess === 'regular') pt.regularPrice = pt.price;
-        }
-      });
-    }
+    const pts: ChartPoint[] = t.map((ts, i) => ({ time: ts, price: c[i], volume: v[i], session: session?.[i] }));
 
     function applyIndicator(values: IndicatorValue[], key: Indicator) {
       const map = new Map<string, IndicatorValue>();
@@ -444,7 +299,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
         if (key === 'ema20') pt.ema = iv.ema as number;
         if (key === 'bbands') { pt.upper = iv.upper_band as number; pt.middle = iv.middle_band as number; pt.lower = iv.lower_band as number; }
         if (key === 'rsi') pt.rsi = iv.rsi as number;
-        if (key === 'macd') { pt.macd = iv.macd as number; pt.signal = iv.macd_signal as number; pt.hist = iv.macd_hist as number; }
+        if (key === 'macd') { pt.macd = iv.macd as number; pt.signal = iv.macd_signal as number; }
       }
     }
 
@@ -456,11 +311,11 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
     if (macdData?.length)   applyIndicator(macdData,   'macd');
 
     return pts;
-  }, [candleData, range, sma50Data, sma200Data, ema20Data, bbandsData, rsiData, macdData]);
+  }, [candleData, sma50Data, sma200Data, ema20Data, bbandsData, rsiData, macdData]);
 
-  // Append live tick so chart always ends at current price — 1D, and also 1W/1M
-  // (5D/1M use intraday bars too, so without this the line stops at the last
-  // fetched candle instead of reaching today's live pre/post-market price).
+  // Append live tick so the chart always ends at current price — 1D, and also
+  // 1W/1M (5D/1M use intraday bars too, so without this the line stops at the
+  // last fetched candle instead of reaching today's live pre/post-market price).
   const isIntradayRange = range === '1D' || range === '1W' || range === '1M';
   const displayData = useMemo<ChartPoint[]>(() => {
     if (!isIntradayRange || !isLive || !live || !chartData.length) return chartData;
@@ -469,144 +324,70 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
     const last = chartData[chartData.length - 1];
     if (Math.abs(last.time - nowSec) < 120) return chartData;
 
-    const etTimeStr = new Date().toLocaleTimeString('en-US', { timeZone: ET_ZONE, hour12: false });
+    const etTimeStr = new Date().toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour12: false });
     const [etHStr, etMStr] = etTimeStr.split(':');
     const etMins = parseInt(etHStr) * 60 + parseInt(etMStr);
     const liveSession: 'pre' | 'regular' | 'post' = etMins < 570 ? 'pre' : etMins >= 960 ? 'post' : 'regular';
 
-    const livePt: ChartPoint = {
-      time: nowSec, label: fmtLabel(nowSec, range), price: live.price, volume: 0, session: liveSession,
-    };
-    if (chartData[0]?.session !== undefined) {
-      if (liveSession === 'regular') livePt.regularPrice = live.price;
-      else if (liveSession === 'pre') livePt.prePrice = live.price;
-      else livePt.postPrice = live.price;
-    }
-    return [...chartData, livePt];
+    return [...chartData, { time: nowSec, price: live.price, volume: 0, session: liveSession }];
   }, [chartData, range, isIntradayRange, isLive, live]);
 
-  const sessionBoundaries = useMemo(() => {
-    if (range !== '1D') return { openTime: undefined, closeTime: undefined };
-    let openTime: number | undefined;
-    let closeTime: number | undefined;
-    for (let i = 1; i < chartData.length; i++) {
-      if (!openTime && chartData[i].session === 'regular' && chartData[i - 1]?.session === 'pre') openTime = chartData[i].time;
-      if (!closeTime && chartData[i].session === 'post' && chartData[i - 1]?.session === 'regular') closeTime = chartData[i].time;
-    }
-    return { openTime, closeTime };
-  }, [chartData, range]);
-
-  // When extended hours are hidden, strip pre/post candles so the chart shows
-  // only regular-session data (avoids a jagged gap at market open). Every point
-  // also gets its sequential `idx` attached — the x-value multi-day intraday
-  // ranges plot by instead of real time (see usesIndexAxis).
+  // Strip pre/post candles when extended hours are hidden.
   const chartDisplayData = useMemo(() => {
-    const base = range !== '1D' || prefs.showExtendedHours
-      ? displayData
-      : displayData.some((d) => d.session !== undefined)
-        ? displayData.filter((d) => !d.session || d.session === 'regular')
-        : displayData;
-    return base.map((pt, i) => ({ ...pt, idx: i }));
+    if (range !== '1D' || prefs.showExtendedHours) return displayData;
+    return displayData.some((d) => d.session !== undefined)
+      ? displayData.filter((d) => !d.session || d.session === 'regular')
+      : displayData;
   }, [displayData, range, prefs.showExtendedHours]);
 
-  const indexAxis = usesIndexAxis(range);
+  const bklitData = useMemo(
+    () => chartDisplayData.map((pt, i) => ({
+      date: new Date(pt.time * 1000),
+      price: pt.price,
+      volume: pt.volume,
+      session: pt.session,
+      isUp: i === 0 || pt.price >= chartDisplayData[i - 1].price,
+      sma50: pt.sma50, sma200: pt.sma200, ema: pt.ema,
+      upper: pt.upper, middle: pt.middle, lower: pt.lower,
+      rsi: pt.rsi, macd: pt.macd, signal: pt.signal,
+    })),
+    [chartDisplayData]
+  );
 
-  // X-axis ticks for 1W: exactly two per calendar day — the day's first candle
-  // (labeled with the date) and its candle closest to 12:00 PM ET (labeled with
-  // that time). Deliberately not "every Nth candle evenly spaced" — that lands
-  // on arbitrary within-day times (9:47 PM, 11:12 AM, ...) that read as noise.
-  // A fixed date + a fixed midday time per day is predictable and scannable,
-  // the same pattern Yahoo Finance uses.
-  const { ticks: weekTicks, labels: weekTickLabels } = useMemo(() => {
-    if (range !== '1W' || chartDisplayData.length === 0) return { ticks: undefined as number[] | undefined, labels: new Map<number, string>() };
-    const dayGroups = new Map<string, number[]>();
+  // Session regions for SessionLine — consecutive same-session index runs.
+  // Multi-day ranges (1W's 15-min bars) repeat pre→regular→post once per
+  // day, so this is N regions, not just one pre/regular/post cycle. Empty
+  // when extended hours are hidden (chartDisplayData already filters
+  // pre/post out above) or the range doesn't carry session tags at all.
+  const sessionRegions = useMemo<SessionRegion[]>(() => {
+    if (!hasSessionSplit(range)) return [];
+    const regions: SessionRegion[] = [];
     chartDisplayData.forEach((pt, i) => {
-      const dayKey = new Date(pt.time * 1000).toLocaleDateString('en-CA', { timeZone: ET_ZONE });
-      const group = dayGroups.get(dayKey);
-      if (group) group.push(i); else dayGroups.set(dayKey, [i]);
+      if (!pt.session) return;
+      const current = regions[regions.length - 1];
+      if (current && current.session === pt.session) {
+        current.endIndex = i;
+      } else {
+        regions.push({ startIndex: i, endIndex: i, session: pt.session });
+      }
     });
-
-    const ticks: number[] = [];
-    const labels = new Map<number, string>();
-    for (const idxs of dayGroups.values()) {
-      // Recharts silently drops a tick that lands exactly on the axis origin
-      // (idx 0) — nudge the date tick one candle in so the first day's label
-      // isn't lost. Harmless for every other day (one candle's difference is
-      // imperceptible at this density).
-      const dateIdx = idxs[Math.min(1, idxs.length - 1)];
-      ticks.push(dateIdx);
-      labels.set(dateIdx, new Date(chartDisplayData[dateIdx].time * 1000)
-        .toLocaleDateString('en-US', { timeZone: ET_ZONE, month: 'short', day: 'numeric' }));
-
-      let noonIdx = dateIdx;
-      let bestDiff = Infinity;
-      for (const i of idxs) {
-        const etMinutes = (() => {
-          const [h, m] = new Date(chartDisplayData[i].time * 1000)
-            .toLocaleTimeString('en-US', { timeZone: ET_ZONE, hour12: false })
-            .split(':').map(Number);
-          return h * 60 + m;
-        })();
-        const diff = Math.abs(etMinutes - 12 * 60);
-        if (diff < bestDiff) { bestDiff = diff; noonIdx = i; }
-      }
-      if (noonIdx !== dateIdx) {
-        ticks.push(noonIdx);
-        labels.set(noonIdx, new Date(chartDisplayData[noonIdx].time * 1000)
-          .toLocaleTimeString('en-US', { timeZone: ET_ZONE, hour: 'numeric', minute: '2-digit', hour12: true }));
-      }
-    }
-    return { ticks: ticks.sort((a, b) => a - b), labels };
+    return regions;
   }, [chartDisplayData, range]);
 
-  // X-axis ticks for every other range: explicit, evenly spaced by candle
-  // index rather than left to Recharts/D3's automatic "nice number" tick
-  // generation. That auto-generation targets tickCount as a hint, not a cap —
-  // against a domain of raw Unix-epoch values (~1.7 billion) it can produce a
-  // "nice" step that doesn't divide the range evenly and ends up emitting far
-  // more ticks than asked for (20+ instead of 5). Computing our own tick
-  // positions sidesteps that entirely.
-  const evenTicks = useMemo(() => {
-    if (range === '1W' || chartDisplayData.length === 0) return undefined as number[] | undefined;
-    const n = chartDisplayData.length;
-    const numTicks = Math.min(5, n);
-    const idxSet = new Set<number>();
-    for (let k = 0; k < numTicks; k++) idxSet.add(Math.round((k * (n - 1)) / Math.max(1, numTicks - 1)));
-    const idxs = [...idxSet].sort((a, b) => a - b);
-    return indexAxis ? idxs : idxs.map((i) => chartDisplayData[i].time);
-  }, [chartDisplayData, range, indexAxis]);
-
-  const xAxisTickFormatter = (v: number) => {
-    if (range === '1W') return weekTickLabels.get(Math.round(v)) ?? '';
-    if (indexAxis) return fmtLabel(chartDisplayData[Math.round(v)]?.time ?? 0, range);
-    return fmtLabel(v, range);
-  };
-
-  // Earnings markers — filter to dates visible in the current chart window.
-  // `x` is the actual axis-space value to plot at: the real timestamp for
-  // time-scaled ranges, or the nearest candle's index for index-scaled ones.
-  const earningsMarkers = useMemo<Array<{ ts: number; x: number; beat: boolean | null }>>(() => {
+  // Earnings markers — filtered to dates visible in the current chart window.
+  const earningsMarkers = useMemo<Array<{ date: Date; beat: boolean | null }>>(() => {
     if (!prefs.showEarnings || !earningsResp?.earnings?.length || !chartDisplayData.length) return [];
     const chartStart = chartDisplayData[0].time;
     const chartEnd   = chartDisplayData[chartDisplayData.length - 1].time;
     return earningsResp.earnings
       .map((e) => {
-        // Convert "YYYY-MM-DD" to Unix seconds, using noon UTC so it lands inside the trading day.
         const ts = Math.floor(new Date(`${e.period}T12:00:00Z`).getTime() / 1000);
         const beat = e.actual != null && e.estimate != null ? e.actual >= e.estimate : null;
         return { ts, beat };
       })
       .filter(({ ts }) => ts >= chartStart && ts <= chartEnd)
-      .map(({ ts, beat }) => {
-        if (!indexAxis) return { ts, x: ts, beat };
-        let nearestIdx = 0, nearestDiff = Infinity;
-        for (let i = 0; i < chartDisplayData.length; i++) {
-          const diff = Math.abs(chartDisplayData[i].time - ts);
-          if (diff < nearestDiff) { nearestDiff = diff; nearestIdx = i; }
-        }
-        return { ts, x: nearestIdx, beat };
-      });
-  }, [prefs.showEarnings, earningsResp, chartDisplayData, indexAxis]);
+      .map(({ ts, beat }) => ({ date: new Date(ts * 1000), beat }));
+  }, [prefs.showEarnings, earningsResp, chartDisplayData]);
 
   // Right block (dual mode) — derive extended price from the last candle when it's a
   // pre/post session so the header and chart tooltip always read from the same source.
@@ -632,13 +413,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
   const chartIsPos = chartDiff >= 0;
   // Brighter saturated green to match the reference design
   const lineColor  = chartIsPos ? '#22c55e' : '#ef4444';
-  const gradientId = `pg-${ticker}`;
-
-  const priceMin = chartDisplayData.length ? Math.min(...chartDisplayData.map(d => d.price)) : 0;
-  const priceMax = chartDisplayData.length ? Math.max(...chartDisplayData.map(d => d.price)) : 0;
-  const yPad     = (priceMax - priceMin) * 0.06;
-
-  const textColor    = isDark ? '#3f3f46' : '#c4c4c8';
+  const showArea   = prefs.chartStyle === 'area';
 
   const isLoadingChart  = (candleLoading || isFetching) && !candleData?.candles;
   const hasChart        = chartDisplayData.length > 0;
@@ -870,7 +645,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
         onClose={() => setWhyTodayOpen(false)}
       />
 
-      {/* ── Price chart ──────────────────────────────────────────────────── */}
+      {/* ── Price chart (Bklit UI) ───────────────────────────────────────── */}
       <div className="relative">
         {isLoadingChart && <Skeleton className="h-[300px] w-full" />}
 
@@ -887,194 +662,71 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
         )}
 
         {hasChart && (
-          <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={chartDisplayData} margin={{ top: 8, right: 28, bottom: 0, left: 28 }}>
-              <defs>
-                <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%"   stopColor={lineColor} stopOpacity={prefs.chartStyle === 'area' ? 0.25 : 0} />
-                  <stop offset="55%"  stopColor={lineColor} stopOpacity={prefs.chartStyle === 'area' ? 0.06 : 0} />
-                  <stop offset="100%" stopColor={lineColor} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-
-              <YAxis
-                domain={[Math.max(0.01, priceMin - yPad), priceMax + yPad]}
-                scale={prefs.priceScale === 'log' ? 'log' : 'auto'}
-                hide
+          <LineChart data={bklitData} margin={{ top: 16, right: 28, bottom: 32, left: 28 }} style={{ height: 300 }} zeroBaseline={false}>
+            <Grid horizontal />
+            {sessionRegions.length > 0 ? (
+              <SessionLine
+                dataKey="price"
+                regularStroke={lineColor}
+                regions={sessionRegions}
+                showArea={showArea}
               />
-
-              <XAxis
-                dataKey={indexAxis ? 'idx' : 'time'}
-                type="number"
-                scale="linear"
-                domain={indexAxis ? [0, Math.max(0, chartDisplayData.length - 1)] : ['dataMin', 'dataMax']}
-                ticks={range === '1W' ? weekTicks : evenTicks}
-                tickCount={5}
-                tickFormatter={xAxisTickFormatter}
-                tick={{ fill: textColor, fontSize: 10 }}
-                axisLine={false}
-                tickLine={false}
-                dy={6}
+            ) : (
+              <Area
+                dataKey="price"
+                stroke={lineColor}
+                fill={lineColor}
+                fillOpacity={showArea ? 0.25 : 0}
+                showMarkers={false}
               />
-
-              <Tooltip
-                content={<ChartTooltip basePrice={chartBase} range={range} activeIndicators={activeIndicators} />}
-                cursor={{ stroke: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)', strokeWidth: 1 }}
+            )}
+            {activeIndicators.has('sma50') && (
+              <Line dataKey="sma50" stroke={INDICATOR_COLORS.sma50} strokeWidth={1.5} showMarkers={false} />
+            )}
+            {activeIndicators.has('sma200') && (
+              <Line dataKey="sma200" stroke={INDICATOR_COLORS.sma200} strokeWidth={1.5} showMarkers={false} />
+            )}
+            {activeIndicators.has('ema20') && (
+              <Line dataKey="ema" stroke={INDICATOR_COLORS.ema20} strokeWidth={1.5} showMarkers={false} />
+            )}
+            {activeIndicators.has('bbands') && (
+              <>
+                <Line dataKey="upper" stroke={INDICATOR_COLORS.bbands} strokeWidth={1} dashArray="4,2" showMarkers={false} />
+                <Line dataKey="middle" stroke={INDICATOR_COLORS.bbands} strokeWidth={1} showMarkers={false} />
+                <Line dataKey="lower" stroke={INDICATOR_COLORS.bbands} strokeWidth={1} dashArray="4,2" showMarkers={false} />
+              </>
+            )}
+            {prefs.showPrevClose && chartBase > 0 && (
+              <ReferenceLine y={chartBase} strokeDasharray="4,4" />
+            )}
+            {earningsMarkers.map(({ date, beat }) => (
+              <EarningsMarker
+                key={date.getTime()}
+                date={date}
+                stroke={beat === null ? '#f59e0b' : beat ? '#22c55e' : '#ef4444'}
               />
-
-              {hasSessionSplit(range) && displayData[0]?.session !== undefined ? (
-                <>
-                  {/* Pre-market — dashed, muted */}
-                  <Area
-                    type="monotone"
-                    dataKey="prePrice"
-                    stroke="#6b7280"
-                    strokeWidth={1.5}
-                    strokeDasharray="4 3"
-                    strokeOpacity={0.55}
-                    fill="none"
-                    dot={false}
-                    activeDot={false}
-                    connectNulls={false}
-                    isAnimationActive={false}
-                  />
-                  {/* Regular session — solid, live color */}
-                  <Area
-                    type="monotone"
-                    dataKey="regularPrice"
-                    stroke={lineColor}
-                    strokeWidth={2}
-                    fill={`url(#${gradientId})`}
-                    dot={false}
-                    activeDot={{ r: 4, fill: lineColor, strokeWidth: 0 }}
-                    connectNulls={false}
-                    isAnimationActive={false}
-                  />
-                  {/* After-hours — dotted, muted (distinct pattern from pre-market's dash) */}
-                  <Area
-                    type="monotone"
-                    dataKey="postPrice"
-                    stroke="#6b7280"
-                    strokeWidth={1.5}
-                    strokeDasharray="1 3"
-                    strokeOpacity={0.55}
-                    fill="none"
-                    dot={false}
-                    activeDot={false}
-                    connectNulls={false}
-                    isAnimationActive={false}
-                  />
-                  {range === '1D' && sessionBoundaries.openTime && (
-                    <ReferenceLine
-                      x={sessionBoundaries.openTime}
-                      stroke="#6b7280"
-                      strokeOpacity={0.2}
-                      strokeDasharray="2 4"
-                      strokeWidth={1}
-                      label={{ value: 'Open', position: 'insideTopRight', fontSize: 9, fill: '#9ca3af', dy: 2 }}
-                    />
-                  )}
-                  {range === '1D' && sessionBoundaries.closeTime && (
-                    <ReferenceLine
-                      x={sessionBoundaries.closeTime}
-                      stroke="#6b7280"
-                      strokeOpacity={0.2}
-                      strokeDasharray="2 4"
-                      strokeWidth={1}
-                      label={{ value: 'Close', position: 'insideTopRight', fontSize: 9, fill: '#9ca3af', dy: 2 }}
-                    />
-                  )}
-                </>
-              ) : (
-                <Area
-                  type="monotone"
-                  dataKey="price"
-                  stroke={lineColor}
-                  strokeWidth={2}
-                  fill={`url(#${gradientId})`}
-                  dot={false}
-                  activeDot={{ r: 4, fill: lineColor, strokeWidth: 0 }}
-                  isAnimationActive={false}
-                />
-              )}
-
-              {/* Period open / prev-close reference line */}
-              {prefs.showPrevClose && chartBase > 0 && (
-                <ReferenceLine
-                  y={chartBase}
-                  stroke={isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)'}
-                  strokeDasharray="4 4"
-                  strokeWidth={1}
-                />
-              )}
-
-              {/* Earnings event markers */}
-              {earningsMarkers.map(({ ts, x, beat }) => (
-                <ReferenceLine
-                  key={ts}
-                  x={x}
-                  stroke={beat === null ? '#f59e0b' : beat ? '#22c55e' : '#ef4444'}
-                  strokeOpacity={0.55}
-                  strokeDasharray="3 4"
-                  strokeWidth={1.5}
-                  label={{
-                    value: 'E',
-                    position: 'insideTopLeft',
-                    fontSize: 8,
-                    fill: beat === null ? '#f59e0b' : beat ? '#22c55e' : '#ef4444',
-                    dy: 4,
-                  }}
-                />
-              ))}
-
-              {/* Live dot at trailing edge */}
-              {hasSessionSplit(range) && isLive && chartDisplayData.length > 0 && (
-                <ReferenceDot
-                  x={indexAxis ? chartDisplayData.length - 1 : chartDisplayData[chartDisplayData.length - 1].time}
-                  y={chartDisplayData[chartDisplayData.length - 1].price}
-                  r={5}
-                  fill={lineColor}
-                  stroke={`${lineColor}55`}
-                  strokeWidth={5}
-                />
-              )}
-
-              {activeIndicators.has('sma50') && (
-                <Line type="monotone" dataKey="sma50" stroke={INDICATOR_COLORS.sma50} strokeWidth={1.5} dot={false} isAnimationActive={false} />
-              )}
-              {activeIndicators.has('sma200') && (
-                <Line type="monotone" dataKey="sma200" stroke={INDICATOR_COLORS.sma200} strokeWidth={1.5} dot={false} isAnimationActive={false} />
-              )}
-              {activeIndicators.has('ema20') && (
-                <Line type="monotone" dataKey="ema" stroke={INDICATOR_COLORS.ema20} strokeWidth={1.5} dot={false} isAnimationActive={false} />
-              )}
-              {activeIndicators.has('bbands') && (
-                <>
-                  <Line type="monotone" dataKey="upper"  stroke={INDICATOR_COLORS.bbands} strokeWidth={1} dot={false} strokeDasharray="4 2" isAnimationActive={false} />
-                  <Line type="monotone" dataKey="middle" stroke={INDICATOR_COLORS.bbands} strokeWidth={1} dot={false} isAnimationActive={false} />
-                  <Line type="monotone" dataKey="lower"  stroke={INDICATOR_COLORS.bbands} strokeWidth={1} dot={false} strokeDasharray="4 2" isAnimationActive={false} />
-                </>
-              )}
-            </AreaChart>
-          </ResponsiveContainer>
-        )}
-
-        {/* Floating period high/low labels */}
-        {hasChart && priceMax > 0 && (
-          <div className="pointer-events-none absolute inset-x-3 top-2 flex items-center justify-end gap-1">
-            <span className="text-[9px] text-muted-foreground/30 font-medium uppercase tracking-wider">H</span>
-            <span className="text-[10px] tabular-nums text-muted-foreground/40 font-medium">{fmtPrice(priceMax)}</span>
-          </div>
-        )}
-        {hasChart && priceMin > 0 && (
-          <div className="pointer-events-none absolute inset-x-3 bottom-6 flex items-center justify-end gap-1">
-            <span className="text-[9px] text-muted-foreground/30 font-medium uppercase tracking-wider">L</span>
-            <span className="text-[10px] tabular-nums text-muted-foreground/40 font-medium">{fmtPrice(priceMin)}</span>
-          </div>
+            ))}
+            <ChartTooltip
+              rows={(point) => {
+                const rows = [{ label: 'Price', value: fmtPrice(point.price as number), color: lineColor }];
+                if ((point.volume as number) > 0) rows.push({ label: 'Vol', value: fmtVol(point.volume as number), color: 'var(--chart-grid)' });
+                if (activeIndicators.has('sma50') && point.sma50 != null) rows.push({ label: 'SMA 50', value: fmtPrice(point.sma50 as number), color: INDICATOR_COLORS.sma50 });
+                if (activeIndicators.has('sma200') && point.sma200 != null) rows.push({ label: 'SMA 200', value: fmtPrice(point.sma200 as number), color: INDICATOR_COLORS.sma200 });
+                if (activeIndicators.has('ema20') && point.ema != null) rows.push({ label: 'EMA 20', value: fmtPrice(point.ema as number), color: INDICATOR_COLORS.ema20 });
+                if (activeIndicators.has('bbands')) {
+                  if (point.upper != null) rows.push({ label: 'BB Upper', value: fmtPrice(point.upper as number), color: INDICATOR_COLORS.bbands });
+                  if (point.middle != null) rows.push({ label: 'BB Mid', value: fmtPrice(point.middle as number), color: INDICATOR_COLORS.bbands });
+                  if (point.lower != null) rows.push({ label: 'BB Lower', value: fmtPrice(point.lower as number), color: INDICATOR_COLORS.bbands });
+                }
+                return rows;
+              }}
+            />
+            <XAxis />
+          </LineChart>
         )}
       </div>
 
-      {/* ── Volume bars ──────────────────────────────────────────────────── */}
+      {/* ── Volume bars (Bklit UI) ───────────────────────────────────────── */}
       {prefs.showVolume && hasChart && (
         <div className="border-t border-border/30">
           <div className="px-5 pt-2 pb-0.5">
@@ -1082,61 +734,55 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
               Volume
             </span>
           </div>
-          <ResponsiveContainer width="100%" height={58}>
-            <BarChart data={chartDisplayData} margin={{ top: 2, right: 28, bottom: 0, left: 28 }}>
-              <XAxis dataKey={indexAxis ? 'idx' : 'time'} type="number" scale="linear" domain={indexAxis ? [0, Math.max(0, chartDisplayData.length - 1)] : ['dataMin', 'dataMax']} hide />
-              <YAxis hide />
-              <Bar dataKey="volume" isAnimationActive={false} maxBarSize={6}>
-                {chartDisplayData.map((entry, i) => (
-                  <Cell
-                    key={`vol-${entry.time}`}
-                    fill={i === 0 || entry.price >= chartDisplayData[i - 1].price ? '#22c55e' : '#ef4444'}
-                    fillOpacity={0.5}
-                  />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          <BarChart data={bklitData} xDataKey="date" margin={{ top: 2, right: 28, bottom: 0, left: 28 }} style={{ height: 58 }}>
+            <Bar
+              dataKey="volume"
+              fadedOpacity={0.5}
+              fillAccessor={(d) => (d.isUp ? '#22c55e' : '#ef4444')}
+            />
+          </BarChart>
         </div>
       )}
 
-      {/* ── Oscillator panels (RSI / MACD) ───────────────────────────────── */}
+      {/* ── Oscillator panels (RSI / MACD, Bklit UI) ─────────────────────── */}
       {showOscillator && (
         <div className="border-t border-border/30 mt-1">
-          {activeOscillators.map((osc) => (
-            <div key={osc}>
+          {activeOscillators.includes('rsi') && (
+            <div>
               <div className="px-5 pt-2 pb-1">
-                <span className="text-[10px] text-muted-foreground/60 font-medium uppercase tracking-widest">
-                  {osc.toUpperCase()}
-                </span>
+                <span className="text-[10px] text-muted-foreground/60 font-medium uppercase tracking-widest">RSI</span>
               </div>
-              {osc === 'rsi' && (
-                <ResponsiveContainer width="100%" height={90}>
-                  <LineChart data={chartDisplayData} margin={{ top: 4, right: 28, bottom: 0, left: 28 }}>
-                    <XAxis dataKey={indexAxis ? 'idx' : 'time'} type="number" scale="linear" domain={indexAxis ? [0, Math.max(0, chartDisplayData.length - 1)] : ['dataMin', 'dataMax']} hide />
-                    <YAxis domain={[0, 100]} hide ticks={[30, 50, 70]} />
-                    <Tooltip content={<RsiTooltip />} cursor={{ stroke: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)', strokeWidth: 1 }} />
-                    <ReferenceLine y={70} stroke="#ef4444" strokeOpacity={0.3} strokeDasharray="3 3" strokeWidth={1} />
-                    <ReferenceLine y={30} stroke="#22c55e" strokeOpacity={0.3} strokeDasharray="3 3" strokeWidth={1} />
-                    <ReferenceLine y={50} stroke={textColor} strokeDasharray="2 4" strokeWidth={1} />
-                    <Line type="monotone" dataKey="rsi" stroke={INDICATOR_COLORS.rsi} strokeWidth={1.5} dot={false} isAnimationActive={false} />
-                  </LineChart>
-                </ResponsiveContainer>
-              )}
-              {osc === 'macd' && (
-                <ResponsiveContainer width="100%" height={90}>
-                  <LineChart data={chartDisplayData} margin={{ top: 4, right: 28, bottom: 0, left: 28 }}>
-                    <XAxis dataKey={indexAxis ? 'idx' : 'time'} type="number" scale="linear" domain={indexAxis ? [0, Math.max(0, chartDisplayData.length - 1)] : ['dataMin', 'dataMax']} hide />
-                    <YAxis hide tickFormatter={(v) => v?.toFixed(1)} />
-                    <Tooltip content={<MacdTooltip />} cursor={{ stroke: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)', strokeWidth: 1 }} />
-                    <ReferenceLine y={0} stroke={textColor} strokeDasharray="2 4" strokeWidth={1} />
-                    <Line type="monotone" dataKey="macd"   stroke="#60a5fa" strokeWidth={1.5} dot={false} isAnimationActive={false} />
-                    <Line type="monotone" dataKey="signal" stroke="#f59e0b" strokeWidth={1.5} dot={false} isAnimationActive={false} />
-                  </LineChart>
-                </ResponsiveContainer>
-              )}
+              <LineChart data={bklitData} margin={{ top: 4, right: 28, bottom: 0, left: 28 }} style={{ height: 90 }} fixedYDomain={[0, 100]}>
+                <ReferenceLine y={70} stroke="#ef4444" strokeOpacity={0.3} strokeDasharray="3,3" />
+                <ReferenceLine y={30} stroke="#22c55e" strokeOpacity={0.3} strokeDasharray="3,3" />
+                <ReferenceLine y={50} strokeDasharray="2,4" />
+                <Line dataKey="rsi" stroke={INDICATOR_COLORS.rsi} strokeWidth={1.5} showMarkers={false} />
+                <ChartTooltip
+                  rows={(point) => point.rsi != null ? [{ label: 'RSI', value: (point.rsi as number).toFixed(1), color: INDICATOR_COLORS.rsi }] : []}
+                />
+              </LineChart>
             </div>
-          ))}
+          )}
+          {activeOscillators.includes('macd') && (
+            <div>
+              <div className="px-5 pt-2 pb-1">
+                <span className="text-[10px] text-muted-foreground/60 font-medium uppercase tracking-widest">MACD</span>
+              </div>
+              <LineChart data={bklitData} margin={{ top: 4, right: 28, bottom: 0, left: 28 }} style={{ height: 90 }} zeroBaseline={false}>
+                <ReferenceLine y={0} strokeDasharray="2,4" />
+                <Line dataKey="macd" stroke="#60a5fa" strokeWidth={1.5} showMarkers={false} />
+                <Line dataKey="signal" stroke="#f59e0b" strokeWidth={1.5} showMarkers={false} />
+                <ChartTooltip
+                  rows={(point) => {
+                    const rows: { label: string; value: string; color: string }[] = [];
+                    if (point.macd != null) rows.push({ label: 'MACD', value: (point.macd as number).toFixed(3), color: '#60a5fa' });
+                    if (point.signal != null) rows.push({ label: 'Signal', value: (point.signal as number).toFixed(3), color: '#f59e0b' });
+                    return rows;
+                  }}
+                />
+              </LineChart>
+            </div>
+          )}
         </div>
       )}
 

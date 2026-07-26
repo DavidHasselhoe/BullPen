@@ -1,7 +1,7 @@
 "use client";
 
 import { curveNatural } from "@visx/curve";
-import { LinePath } from "@visx/shape";
+import { AreaClosed, LinePath } from "@visx/shape";
 import { useId, useMemo, useRef } from "react";
 import { useChartStable, useYScale } from "./chart-context";
 import { usePathStrokeMetrics } from "./path-stroke-utils";
@@ -37,11 +37,20 @@ export interface SessionLineProps {
   preDashArray?: string;
   /** Dash pattern for `post` regions. Default: "1,3" */
   postDashArray?: string;
+  /**
+   * Fill `regular` regions with a gradient (matches "Area" chart style).
+   * `pre`/`post` regions never get a fill, regardless — same as the
+   * original Recharts version. Default: false (matches "Line" style).
+   */
+  showArea?: boolean;
+  /** Fill opacity at the top of the area gradient. Default: 0.25 */
+  fillOpacity?: number;
   yAxisId?: string | number;
 }
 
 interface Segment {
   key: string;
+  session: SessionKind;
   clipX: number;
   clipWidth: number;
   stroke: string;
@@ -71,6 +80,8 @@ export function SessionLine({
   mutedOpacity = 0.55,
   preDashArray = "4,3",
   postDashArray = "1,3",
+  showArea = false,
+  fillOpacity = 0.25,
   yAxisId,
 }: SessionLineProps) {
   const { data, renderData, xScale, innerWidth, innerHeight, xAccessor } = useChartStable();
@@ -113,6 +124,7 @@ export function SessionLine({
 
       return {
         key: `${region.session}-${region.startIndex}`,
+        session: region.session,
         clipX: startX,
         clipWidth: Math.max(0, endX - startX),
         ...style,
@@ -137,6 +149,10 @@ export function SessionLine({
       {pathD &&
         segments.map((seg, i) => {
           const clipId = `session-line-clip-${reactId}-${i}`;
+          const gradientId = `session-line-gradient-${reactId}-${i}`;
+          // Only "regular" regions ever get a fill, regardless of style —
+          // same as the original Recharts version (pre/post always fill="none").
+          const withArea = showArea && seg.session === "regular";
           return (
             <g key={seg.key}>
               <defs>
@@ -148,17 +164,34 @@ export function SessionLine({
                     y={-strokeWidth}
                   />
                 </clipPath>
+                {withArea && (
+                  <linearGradient id={gradientId} x1="0" x2="0" y1="0" y2="1">
+                    <stop offset="0%" stopColor={seg.stroke} stopOpacity={fillOpacity} />
+                    <stop offset="100%" stopColor={seg.stroke} stopOpacity={0} />
+                  </linearGradient>
+                )}
               </defs>
-              <path
-                clipPath={`url(#${clipId})`}
-                d={pathD}
-                fill="none"
-                stroke={seg.stroke}
-                strokeDasharray={seg.dashArray}
-                strokeLinecap="round"
-                strokeOpacity={seg.strokeOpacity}
-                strokeWidth={strokeWidth}
-              />
+              <g clipPath={`url(#${clipId})`}>
+                {withArea && (
+                  <AreaClosed
+                    curve={curveNatural}
+                    data={renderData}
+                    fill={`url(#${gradientId})`}
+                    x={(d) => xScale(xAccessor(d)) ?? 0}
+                    y={getY}
+                    yScale={yScale}
+                  />
+                )}
+                <path
+                  d={pathD}
+                  fill="none"
+                  stroke={seg.stroke}
+                  strokeDasharray={seg.dashArray}
+                  strokeLinecap="round"
+                  strokeOpacity={seg.strokeOpacity}
+                  strokeWidth={strokeWidth}
+                />
+              </g>
             </g>
           );
         })}
