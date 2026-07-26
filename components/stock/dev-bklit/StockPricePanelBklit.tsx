@@ -9,6 +9,7 @@ import { LineChart, Line } from '@/components/charts/line-chart';
 import { SessionLine, type SessionRegion } from '@/components/charts/session-line';
 import { BarChart } from '@/components/charts/bar-chart';
 import { Bar } from '@/components/charts/bar';
+import { ReferenceLine } from '@/components/charts/reference-line';
 import { Grid } from '@/components/charts/grid';
 import { XAxis } from '@/components/charts/x-axis';
 import { ChartTooltip } from '@/components/charts/tooltip';
@@ -47,10 +48,10 @@ interface ChartPoint {
   time: number; price: number; volume: number;
   session?: 'pre' | 'regular' | 'post';
   sma50?: number; sma200?: number; ema?: number; upper?: number; middle?: number; lower?: number;
+  rsi?: number; macd?: number; signal?: number;
 }
 
-// Oscillators (RSI/MACD) are a later sub-project — this is overlay indicators only.
-type Indicator = 'sma50' | 'sma200' | 'ema20' | 'bbands';
+type Indicator = 'sma50' | 'sma200' | 'ema20' | 'bbands' | 'rsi' | 'macd';
 interface IndicatorOption { key: Indicator; label: string; type: string; params?: Record<string, number> }
 
 const INDICATORS: IndicatorOption[] = [
@@ -58,12 +59,18 @@ const INDICATORS: IndicatorOption[] = [
   { key: 'sma200', label: 'SMA 200', type: 'sma',    params: { time_period: 200 } },
   { key: 'ema20',  label: 'EMA 20',  type: 'ema',    params: { time_period: 20 } },
   { key: 'bbands', label: 'BB',      type: 'bbands', params: { time_period: 20 } },
+  { key: 'rsi',    label: 'RSI',     type: 'rsi',    params: { time_period: 14 } },
+  { key: 'macd',   label: 'MACD',    type: 'macd' },
 ];
+
+// Overlay lines render on the main chart; oscillators get their own sub-panel below volume.
+const OSCILLATOR_INDICATORS = new Set<Indicator>(['rsi', 'macd']);
 
 // Canonical per-indicator colors — same mapping as the production panel, so an
 // indicator always means the same color regardless of which chart renders it.
 const INDICATOR_COLORS: Record<Indicator, string> = {
   sma50: '#f59e0b', sma200: '#fb923c', ema20: '#a78bfa', bbands: '#60a5fa',
+  rsi: '#f59e0b', macd: '#60a5fa',
 };
 
 interface IndicatorResponse {
@@ -109,10 +116,9 @@ function StatItem({ label, value, valueClass }: { label: string; value: string; 
  * Recharts to Bklit UI's LineChart — see
  * docs/superpowers/specs/2026-07-24-bklit-stock-chart-dev-copy-design.md.
  * Building up to full parity in ordered sub-projects before this replaces
- * production (see docs/superpowers/specs/2026-07-24-bklit-chart-indicators-design.md
- * for sub-project 1, indicators — done here). Still to come: sessions,
- * volume, oscillators, earnings markers. The production StockPricePanel
- * is untouched throughout.
+ * production: indicators, sessions, volume, oscillators (done) — earnings
+ * markers still to come. The production StockPricePanel is untouched
+ * throughout.
  */
 export function StockPricePanelBklit({ ticker }: { ticker: string }) {
   const { prefs, setPref } = useChartPrefs();
@@ -234,11 +240,15 @@ export function StockPricePanelBklit({ ticker }: { ticker: string }) {
   const sma200Query = useQuery<IndicatorResponse>({ queryKey: ['indicator', ticker, 'sma200', range], queryFn: () => fetchIndicator(ticker, INDICATORS[1], range), enabled: activeIndicators.has('sma200') && !!ticker, staleTime: 5 * 60 * 1000 });
   const ema20Query  = useQuery<IndicatorResponse>({ queryKey: ['indicator', ticker, 'ema20',  range], queryFn: () => fetchIndicator(ticker, INDICATORS[2], range), enabled: activeIndicators.has('ema20')  && !!ticker, staleTime: 5 * 60 * 1000 });
   const bbandsQuery = useQuery<IndicatorResponse>({ queryKey: ['indicator', ticker, 'bbands', range], queryFn: () => fetchIndicator(ticker, INDICATORS[3], range), enabled: activeIndicators.has('bbands') && !!ticker, staleTime: 5 * 60 * 1000 });
+  const rsiQuery    = useQuery<IndicatorResponse>({ queryKey: ['indicator', ticker, 'rsi',   range], queryFn: () => fetchIndicator(ticker, INDICATORS[4], range), enabled: activeIndicators.has('rsi')    && !!ticker, staleTime: 5 * 60 * 1000 });
+  const macdQuery   = useQuery<IndicatorResponse>({ queryKey: ['indicator', ticker, 'macd',  range], queryFn: () => fetchIndicator(ticker, INDICATORS[5], range), enabled: activeIndicators.has('macd')   && !!ticker, staleTime: 5 * 60 * 1000 });
 
   const sma50Data  = sma50Query.data?.data;
   const sma200Data = sma200Query.data?.data;
   const ema20Data  = ema20Query.data?.data;
   const bbandsData = bbandsQuery.data?.data;
+  const rsiData    = rsiQuery.data?.data;
+  const macdData   = macdQuery.data?.data;
 
   // ── Chart data ────────────────────────────────────────────────────────────
   const chartData = useMemo<ChartPoint[]>(() => {
@@ -256,6 +266,8 @@ export function StockPricePanelBklit({ ticker }: { ticker: string }) {
         if (key === 'sma200') pt.sma200 = iv.sma as number;
         if (key === 'ema20') pt.ema = iv.ema as number;
         if (key === 'bbands') { pt.upper = iv.upper_band as number; pt.middle = iv.middle_band as number; pt.lower = iv.lower_band as number; }
+        if (key === 'rsi') pt.rsi = iv.rsi as number;
+        if (key === 'macd') { pt.macd = iv.macd as number; pt.signal = iv.macd_signal as number; }
       }
     }
 
@@ -263,9 +275,11 @@ export function StockPricePanelBklit({ ticker }: { ticker: string }) {
     if (sma200Data?.length) applyIndicator(sma200Data, 'sma200');
     if (ema20Data?.length)  applyIndicator(ema20Data,  'ema20');
     if (bbandsData?.length) applyIndicator(bbandsData, 'bbands');
+    if (rsiData?.length)    applyIndicator(rsiData,    'rsi');
+    if (macdData?.length)   applyIndicator(macdData,   'macd');
 
     return pts;
-  }, [candleData, sma50Data, sma200Data, ema20Data, bbandsData]);
+  }, [candleData, sma50Data, sma200Data, ema20Data, bbandsData, rsiData, macdData]);
 
   // Append live tick so the chart always ends at the current price.
   const isIntradayRange = range === '1D' || range === '1W' || range === '1M';
@@ -294,6 +308,7 @@ export function StockPricePanelBklit({ ticker }: { ticker: string }) {
       isUp: i === 0 || pt.price >= chartDisplayData[i - 1].price,
       sma50: pt.sma50, sma200: pt.sma200, ema: pt.ema,
       upper: pt.upper, middle: pt.middle, lower: pt.lower,
+      rsi: pt.rsi, macd: pt.macd, signal: pt.signal,
     })),
     [chartDisplayData]
   );
@@ -339,6 +354,8 @@ export function StockPricePanelBklit({ ticker }: { ticker: string }) {
 
   const isLoadingChart = (candleLoading || isFetching) && !candleData?.candles;
   const hasChart       = chartDisplayData.length > 0;
+  const activeOscillators = [...activeIndicators].filter((i) => OSCILLATOR_INDICATORS.has(i));
+  const showOscillator    = hasChart && !isSimplified && activeOscillators.length > 0;
 
   const perfIsPos = range === '1D' ? (showDual ? extIsPos  : isPositive) : chartIsPos;
   const perfPct   = range === '1D' ? (showDual ? extPct    : changePct)  : chartPct;
@@ -616,6 +633,48 @@ export function StockPricePanelBklit({ ticker }: { ticker: string }) {
               fillAccessor={(d) => (d.isUp ? '#22c55e' : '#ef4444')}
             />
           </BarChart>
+        </div>
+      )}
+
+      {/* ── Oscillator panels (RSI / MACD, Bklit UI) ─────────────────────── */}
+      {showOscillator && (
+        <div className="border-t border-border/30 mt-1">
+          {activeOscillators.includes('rsi') && (
+            <div>
+              <div className="px-5 pt-2 pb-1">
+                <span className="text-[10px] text-muted-foreground/60 font-medium uppercase tracking-widest">RSI</span>
+              </div>
+              <LineChart data={bklitData} margin={{ top: 4, right: 28, bottom: 0, left: 28 }} style={{ height: 90 }} fixedYDomain={[0, 100]}>
+                <ReferenceLine y={70} stroke="#ef4444" strokeOpacity={0.3} strokeDasharray="3,3" />
+                <ReferenceLine y={30} stroke="#22c55e" strokeOpacity={0.3} strokeDasharray="3,3" />
+                <ReferenceLine y={50} strokeDasharray="2,4" />
+                <Line dataKey="rsi" stroke={INDICATOR_COLORS.rsi} strokeWidth={1.5} showMarkers={false} />
+                <ChartTooltip
+                  rows={(point) => point.rsi != null ? [{ label: 'RSI', value: (point.rsi as number).toFixed(1), color: INDICATOR_COLORS.rsi }] : []}
+                />
+              </LineChart>
+            </div>
+          )}
+          {activeOscillators.includes('macd') && (
+            <div>
+              <div className="px-5 pt-2 pb-1">
+                <span className="text-[10px] text-muted-foreground/60 font-medium uppercase tracking-widest">MACD</span>
+              </div>
+              <LineChart data={bklitData} margin={{ top: 4, right: 28, bottom: 0, left: 28 }} style={{ height: 90 }} zeroBaseline={false}>
+                <ReferenceLine y={0} strokeDasharray="2,4" />
+                <Line dataKey="macd" stroke="#60a5fa" strokeWidth={1.5} showMarkers={false} />
+                <Line dataKey="signal" stroke="#f59e0b" strokeWidth={1.5} showMarkers={false} />
+                <ChartTooltip
+                  rows={(point) => {
+                    const rows: { label: string; value: string; color: string }[] = [];
+                    if (point.macd != null) rows.push({ label: 'MACD', value: (point.macd as number).toFixed(3), color: '#60a5fa' });
+                    if (point.signal != null) rows.push({ label: 'Signal', value: (point.signal as number).toFixed(3), color: '#f59e0b' });
+                    return rows;
+                  }}
+                />
+              </LineChart>
+            </div>
+          )}
         </div>
       )}
 

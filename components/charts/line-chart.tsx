@@ -59,6 +59,8 @@ export interface LineChartProps {
   tweenYDomainOnXDomainChange?: boolean;
   /** Force the y-domain to start at 0 when all values are positive. Default: true. Set false for tightly-ranged series (e.g. stock prices). */
   zeroBaseline?: boolean;
+  /** Explicit [min, max] y-domain, bypassing data-driven computation entirely (e.g. RSI's fixed 0–100 scale). */
+  fixedYDomain?: [number, number];
   /** Inline container styles (e.g. fixed height for brush strip). */
   style?: CSSProperties;
   /** Fires when the internal chart phase changes (e.g. OG capture readiness). */
@@ -157,6 +159,7 @@ interface ChartInnerProps {
   xDomainSlotCount?: number;
   tweenYDomainOnXDomainChange?: boolean;
   zeroBaseline?: boolean;
+  fixedYDomain?: [number, number];
   children: ReactNode;
   containerRef: React.RefObject<HTMLDivElement | null>;
   onPhaseChange: (phase: ChartPhase) => void;
@@ -180,6 +183,7 @@ function ChartInner({
   xDomainSlotCount,
   tweenYDomainOnXDomainChange,
   zeroBaseline,
+  fixedYDomain,
   children,
   containerRef,
   onPhaseChange,
@@ -209,6 +213,7 @@ function ChartInner({
       yDomainTween={yDomainTween}
       yDomainTweenDuration={yDomainTweenDuration}
       zeroBaseline={zeroBaseline}
+      fixedYDomain={fixedYDomain}
     >
       {children}
     </TimeSeriesChartInner>
@@ -233,6 +238,7 @@ export function LineChart({
   xDomainSlotCount,
   tweenYDomainOnXDomainChange = false,
   zeroBaseline,
+  fixedYDomain,
   style,
   onPhaseChange,
   children,
@@ -290,6 +296,7 @@ export function LineChart({
             yDomainTween={yDomainTween}
             yDomainTweenDuration={yDomainTweenDuration}
             zeroBaseline={zeroBaseline}
+            fixedYDomain={fixedYDomain}
           >
             {children}
           </ChartInner>

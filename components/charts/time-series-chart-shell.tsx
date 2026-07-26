@@ -159,6 +159,8 @@ export interface TimeSeriesChartInnerProps {
   yScaleDomainMax?: number;
   /** Force the y-domain to start at 0 when all values are positive. Default: true. Set false for tightly-ranged series (e.g. stock prices) so the domain hugs min/max instead. */
   zeroBaseline?: boolean;
+  /** Explicit [min, max] y-domain, bypassing data-driven computation entirely (e.g. RSI's fixed 0–100 scale). Takes priority over `zeroBaseline`/`yScaleDomainMax` when set. */
+  fixedYDomain?: [number, number];
   /** Loading vs ready — drives chart phase until transition orchestration lands. */
   chartStatus?: ChartStatus;
   loadingLabel?: string;
@@ -205,6 +207,7 @@ const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
   composedStackGap,
   yScaleDomainMax,
   zeroBaseline = true,
+  fixedYDomain,
   chartStatus = DEFAULT_CHART_STATUS,
   loadingLabel,
   yDomainTween = true,
@@ -220,6 +223,9 @@ const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
 
   const resolveYDomain = useCallback(
     (sourceData: Record<string, unknown>[], dataKeys: string[]) => {
+      if (fixedYDomain) {
+        return fixedYDomain;
+      }
       const axisGroups = groupLinesByYAxisId(lines);
       const usesDefaultOnly =
         axisGroups.size === 1 && axisGroups.has(DEFAULT_Y_AXIS_ID);
@@ -229,7 +235,7 @@ const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
           : undefined;
       return resolveTimeSeriesYDomain(sourceData, dataKeys, domainMax, zeroBaseline);
     },
-    [lines, yScaleDomainMax, zeroBaseline]
+    [lines, yScaleDomainMax, zeroBaseline, fixedYDomain]
   );
 
   const skeletonData = useMemo(() => {
