@@ -1,0 +1,38 @@
+name: Cron — Generate Weekly Pick
+
+# Mondays at 06:30 UTC (01:30 ET) — published before pre-market, so the first
+# price any reader could act on is that session's open. That open is what the
+# track record uses as the entry price, stamped later by /api/picks/performance.
+#
+# GitHub Actions rather than a Vercel cron: weekly generation tolerates the
+# ~5–15 min scheduling drift, and this leaves the Hobby plan's second cron slot
+# free for something time-critical.
+#
+# The route is idempotent on the pick date, so a manual re-run on the same day
+# is a safe no-op rather than a second pick.
+on:
+  schedule:
+    - cron: '30 6 * * 1'
+  workflow_dispatch:
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: GET /api/cron/generate-weekly-pick
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          APP_URL: ${{ vars.APP_URL || 'https://bullpen.no' }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::CRON_SECRET secret is not configured in repo settings"
+            exit 1
+          fi
+          # Fail loudly: the route deliberately returns 500 when no pick could be
+          # published (hallucinated tickers, nothing surviving grounding, a bad
+          # model response). A missing week should surface as a red run, not pass
+          # silently — that's the signal the pipeline needs attention.
+          curl -fsS -X GET \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "${APP_URL}/api/cron/generate-weekly-pick"

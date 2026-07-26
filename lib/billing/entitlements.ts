@@ -35,7 +35,8 @@ export type ProFeature =
   | 'dividend_hub'          // future flagship
   | 'portfolio_checkup'     // future flagship
   | 'brokerage'             // SnapTrade brokerage connection — costs us per connected user
-  | 'academy_pro';          // intermediate/advanced Academy courses
+  | 'academy_pro'           // intermediate/advanced Academy courses
+  | 'weekly_pick_thesis';   // full thesis behind Bull's Weekly Pick (pick + track record stay free)
 
 export interface Entitlements {
   tier: Tier;
@@ -90,6 +91,12 @@ export const PLAN_COMPARISON: ComparisonGroup[] = [
       { label: 'AI Portfolio Checkup', free: `${QUOTAS.risk_analysis.count}/month`, pro: 'Unlimited' },
       { label: '“Why Today?” move explanations', free: false, pro: true },
       { label: 'Daily Brief (AI market recap)', free: false, pro: true },
+      {
+        label: "Bull's Weekly Pick",
+        free: 'Pick + track record',
+        pro: 'Full thesis',
+        hint: 'One AI stock pick every Monday. The pick and its full performance history are free — Pro unlocks the reasoning, evidence, and risks behind it.',
+      },
     ],
   },
   {

@@ -11,11 +11,16 @@ import { ToolShortcutsBar } from './ToolShortcutsBar';
 import { ForYouRail } from './ForYouRail';
 import { SectorRailsSection } from './SectorRailsSection';
 import { AssetExplorerSection } from './AssetExplorerSection';
+import { WeeklyPickHero, CURRENT_PICK_QUERY } from '@/components/picks/WeeklyPickHero';
 import type { DiscoverFeed } from '@/lib/discover/discover-config';
 
 const FEED_QUERY_KEY = ['discover-feed'];
 
 export function DiscoverClient() {
+  // Shares its query key with WeeklyPickHero, so this is the same single
+  // request — read here only to fold the pick's symbol into the SSE list below.
+  const { data: pickData } = useQuery(CURRENT_PICK_QUERY);
+
   const { data, isLoading, error } = useQuery<{ success: boolean; feed: DiscoverFeed }>({
     queryKey: FEED_QUERY_KEY,
     queryFn: async () => {
@@ -30,8 +35,10 @@ export function DiscoverClient() {
 
   // Collect all unique symbols across every visible rail → single SSE subscription
   const allSymbols = useMemo(() => {
-    if (!data?.feed) return [] as string[];
+    const pickSymbol = pickData?.pick?.symbol;
+    if (!data?.feed) return pickSymbol ? [pickSymbol] : ([] as string[]);
     const set = new Set<string>();
+    if (pickSymbol) set.add(pickSymbol);
     for (const it of data.feed.forYou.items) set.add(it.symbol);
     for (const list of Object.values(data.feed.sectors)) for (const it of list) set.add(it.symbol);
     for (const list of Object.values(data.feed.etfs)) for (const it of list) set.add(it.symbol);
@@ -39,7 +46,7 @@ export function DiscoverClient() {
     for (const it of data.feed.crypto) set.add(it.symbol);
     // SSE endpoint caps at 600; we expect ~200, but slice defensively
     return [...set].slice(0, 600);
-  }, [data]);
+  }, [data, pickData]);
 
   const livePrices = useLivePrices(allSymbols);
 
@@ -64,6 +71,7 @@ export function DiscoverClient() {
   return (
     <LivePriceContext.Provider value={livePrices}>
       <DiscoverHeader />
+      <WeeklyPickHero />
       <ToolShortcutsBar />
 
       <div className="space-y-12">

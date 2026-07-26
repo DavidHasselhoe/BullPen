@@ -46,6 +46,35 @@ export default function DisclosuresPage() {
               any decision.
             </p>
 
+            <h2>Bull&apos;s Weekly Pick and its track record</h2>
+            <p>
+              Bull&apos;s Weekly Pick is a single stock idea selected each week by an AI model from
+              market data, our own health scores and peer benchmarks, and public news. It is research
+              output, not a recommendation, not personal financial advice, and not tailored to your
+              circumstances, goals, or risk tolerance. Conviction ratings express the model&apos;s
+              confidence in its own argument — they are not a probability, a forecast, or an
+              endorsement.
+            </p>
+            <p>
+              The published track record is calculated as follows. Each pick&apos;s entry price is the
+              opening price of the first regular trading session on or after its publication date; it
+              is recorded once and is not restated afterwards. The aggregate figure simulates
+              investing an equal notional amount in every pick on its own entry date, expressed as a
+              cumulative return against the total amount notionally invested, so that adding a new
+              pick does not by itself change the reported return. The S&amp;P 500 comparison applies
+              the identical schedule to SPY. Picks are never removed, closed early, or excluded from
+              the calculation; a pick stops updating only if the security ceases to trade, in which
+              case it is held at its final price.
+            </p>
+            <p>
+              Reported returns are price-only. They exclude dividends, trading commissions, spreads,
+              slippage, taxes, and any difference between the opening price used and the price at
+              which an order would actually have been filled. An actual investor following these
+              picks would very likely experience different results. Past performance is not a
+              reliable indicator of future results, and over a small number of picks the reported
+              figure reflects chance at least as much as it reflects skill.
+            </p>
+
             <h2>Brokerage connections</h2>
             <p>
               When you connect a brokerage account through SnapTrade, the connection is read-only:

@@ -134,6 +134,17 @@
   --chart-scale-04: oklch(0.68 0.02 106);
   --chart-scale-05: oklch(0.55 0.025 106);
   --chart-scale-pattern-color: oklch(0.96 0.005 106);
+  /* Bull's Weekly Pick track-record chart. Unlike --gain/--loss these DO flip by
+     mode: emerald-400 on white measures 1.92:1 contrast and the emerald-600 /
+     slate-500 pair sits at ΔE 14.3 for normal vision, both below the readable
+     floor. These steps were picked by running the pairs through the dataviz
+     palette validator until CVD separation, normal-vision separation, and
+     contrast all passed in each mode. The benchmark is deliberately achromatic
+     (DESIGN.md's One Signal Rule) and is dashed, so identity never rests on
+     colour alone. */
+  --picks-up: #059669;         /* emerald-600 */
+  --picks-down: #dc2626;       /* red-600 */
+  --picks-benchmark: #475569;  /* slate-600 */
 }
 
 .dark {
@@ -186,6 +197,10 @@
   --chart-scale-04: oklch(0.58 0.06 270);
   --chart-scale-05: oklch(0.68 0.07 270);
   --chart-scale-pattern-color: oklch(0.145 0 0);
+  /* Lighter steps for the dark surface — see the :root block for why these flip. */
+  --picks-up: #34d399;         /* emerald-400 */
+  --picks-down: #f87171;       /* red-400 */
+  --picks-benchmark: #94a3b8;  /* slate-400 */
 }
 
 @layer base {
