@@ -67,9 +67,14 @@ async function handler(
           : '';
 
         // web_search_20250305 is a built-in tool — must use anthropic.beta.messages
+        // thinking is explicitly disabled: this route caps max_tokens at 600 for a
+        // tight 2-3 bullet response, and Sonnet 5 runs adaptive thinking by default
+        // when `thinking` is omitted — that would eat into the same token budget
+        // and could truncate the actual bullets.
         const stream = anthropic.beta.messages.stream({
-          model: 'claude-sonnet-4-6',
+          model: 'claude-sonnet-5',
           max_tokens: 600,
+          thinking: { type: 'disabled' },
           betas: ['web-search-2025-03-05'],
           tools: [{ type: 'web_search_20250305', name: 'web_search' }],
           system:
@@ -105,7 +110,7 @@ async function handler(
           void logAiCall({
             userId: session.userId,
             feature: 'why_today',
-            model: 'claude-sonnet-4-6',
+            model: 'claude-sonnet-5',
             inputTokens: final.usage.input_tokens,
             outputTokens: final.usage.output_tokens,
             metadata: { ticker },

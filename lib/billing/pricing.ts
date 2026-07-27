@@ -8,6 +8,8 @@
 
 export const MODEL_PRICING: Record<string, { input: number; output: number }> = {
   // Anthropic Claude — https://www.anthropic.com/pricing
+  // claude-sonnet-5 intro pricing ($2/$10) runs through 2026-08-31, then $3/$15 — update this row after that date.
+  'claude-sonnet-5':             { input: 2.00,  output: 10.00 },
   'claude-sonnet-4-6':           { input: 3.00,  output: 15.00 },
   'claude-sonnet-4-5':           { input: 3.00,  output: 15.00 },
   'claude-opus-4-7':             { input: 15.00, output: 75.00 },
