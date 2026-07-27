@@ -460,6 +460,12 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
 
   const exchangeRates = useExchangeRates(userCurrency);
 
+  // True while we're converting to a non-USD display currency but don't have rates yet.
+  // Guards against showing a raw USD number under a non-USD currency label — currentPrice
+  // is never `undefined` (it defaults to the unconverted USD value), so isLoadingPrices
+  // alone can't catch this: the price "looks loaded" while still mislabeled.
+  const isFxLoading = userCurrency !== null && exchangeRates.isLoading;
+
   // Only run the internal quote fetch when no live data is provided from the parent page.
   // When externalHoldings is present we skip this to avoid duplicate API calls.
   const quotes = useQuery({
@@ -930,7 +936,7 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
                   rowIndex={rowIndex}
                   maxAllocation={maxAllocation}
                   isHighlighted={!hoveredSector || getSectorLabel(holding) === hoveredSector}
-                  showPriceSkeleton={isLoadingPrices && holding.currentPrice === undefined}
+                  showPriceSkeleton={(isLoadingPrices && holding.currentPrice === undefined) || isFxLoading}
                   userCurrency={userCurrency}
                   roundNumbers={roundNumbers}
                   sparklinePrices={sparklines[holding.symbol] ?? null}
