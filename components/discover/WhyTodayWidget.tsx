@@ -1,12 +1,12 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
-import { WhyTodayPanel } from '@/components/stock/WhyTodayPanel';
+import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import { useAuth } from '@/hooks/use-auth';
 import { useHoldings } from '@/hooks/use-holdings';
 import { useWatchlist } from '@/hooks/use-watchlist';
@@ -22,7 +22,7 @@ export function WhyTodayWidget() {
   const { isAuthenticated } = useAuth();
   const { data: holdings } = useHoldings();
   const { data: watchlist } = useWatchlist();
-  const [whyOpen, setWhyOpen] = useState(false);
+  const { openWhyToday } = useAIPanel();
 
   const symbols = useMemo(() => {
     const set = new Set<string>();
@@ -106,26 +106,17 @@ export function WhyTodayWidget() {
             </Link>
             <ChangeBadge changePercent={featured.changePercent} />
             <button
-              onClick={() => setWhyOpen((v) => !v)}
-              aria-expanded={whyOpen}
-              className={cn(
-                'shrink-0 text-xs font-medium rounded-md px-2.5 py-1.5 border transition-colors',
-                whyOpen
-                  ? 'border-primary/40 bg-primary/10 text-primary'
-                  : 'border-border/40 text-muted-foreground hover:text-foreground hover:border-border'
-              )}
+              onClick={() => openWhyToday({
+                ticker: featured.symbol,
+                price: featured.price,
+                change: featured.change,
+                changePct: featured.changePercent,
+              })}
+              className="shrink-0 text-xs font-medium rounded-md px-2.5 py-1.5 border border-border/40 text-muted-foreground transition-colors hover:text-foreground hover:border-border"
             >
               Why?
             </button>
           </div>
-          <WhyTodayPanel
-            ticker={featured.symbol}
-            price={featured.price}
-            change={featured.change}
-            changePct={featured.changePercent}
-            open={whyOpen}
-            onClose={() => setWhyOpen(false)}
-          />
         </div>
       )}
     </div>
