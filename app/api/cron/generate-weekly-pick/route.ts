@@ -4,7 +4,11 @@
  *
  * Runs Mondays at 06:30 UTC (01:30 ET) via GitHub Actions — published before
  * pre-market, so the first price any reader could act on is that session's open.
- * Idempotent on `pick_date`: a second call the same day is a no-op.
+ * Idempotent per calendar week (ET, Monday-anchored): any call between this
+ * week's Monday and the next is a no-op once one pick exists for the week —
+ * not just a same-day retry. Matters because this endpoint also accepts a
+ * manual `workflow_dispatch`/curl trigger, which could otherwise publish a
+ * second real pick inside the same 7 days.
  *
  * Three stages, in this order for a reason (see lib/ai/picks/system-prompt.ts):
  *   1. Scout   — Claude + web search produces 6–10 candidate tickers.
@@ -49,6 +53,14 @@ function toETDateString(date: Date): string {
   return date.toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
 }
 
+/** ET calendar date of the Monday on/before `date` — the start of that date's pick week. */
+function mondayOfWeekET(date: Date): string {
+  const etWeekday = date.toLocaleDateString('en-US', { timeZone: 'America/New_York', weekday: 'short' });
+  const daysSinceMonday = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].indexOf(etWeekday);
+  const monday = new Date(date.getTime() - daysSinceMonday * 86_400_000);
+  return toETDateString(monday);
+}
+
 /**
  * Collect the model's final text output, skipping the narration Claude emits
  * between web-search tool calls. Only the trailing run of text blocks is the
@@ -80,7 +92,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   }
 
   const supabase = createServerClient();
-  const todayET = toETDateString(new Date());
+  const now = new Date();
+  const todayET = toETDateString(now);
+  const weekStartET = mondayOfWeekET(now);
 
   // ── Idempotency ───────────────────────────────────────────────────────────
   // `.returns<>()` throughout this file: the generated Supabase `Database` type
@@ -88,14 +102,16 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   // without an explicit row type. Same pattern as the deep-dive routes.
   const { data: existing } = await supabase
     .from('ai_stock_picks')
-    .select('id, symbol')
-    .eq('pick_date', todayET)
-    .maybeSingle<{ id: string; symbol: string }>();
+    .select('id, symbol, pick_date')
+    .gte('pick_date', weekStartET)
+    .order('pick_date', { ascending: false })
+    .limit(1)
+    .maybeSingle<{ id: string; symbol: string; pick_date: string }>();
 
   if (existing) {
     return NextResponse.json({
       success: true, skipped: true, date: todayET,
-      symbol: existing.symbol, reason: 'already_exists',
+      symbol: existing.symbol, existingPickDate: existing.pick_date, reason: 'already_exists_this_week',
     });
   }
 
