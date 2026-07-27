@@ -1,7 +1,10 @@
 'use client';
 
+import Link from 'next/link';
 import { ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { CompanyLogo } from '@/components/company/CompanyLogo';
+import { slugToAssetPath } from '@/lib/assets/asset-type';
 import { CardShell, StatCell, isNegative } from './CardPrimitives';
 
 export interface LiveQuoteOutput {
@@ -23,11 +26,14 @@ export function LiveQuoteResultCard({ output }: { output: LiveQuoteOutput }) {
   return (
     <CardShell>
       <div className="flex items-center justify-between gap-3">
-        <div>
-          <div className="font-semibold text-foreground">{output.ticker}</div>
-          <div className="text-lg font-semibold tabular-nums text-foreground">{output.price}</div>
-        </div>
-        <div className={cn('flex items-center gap-1 text-sm font-medium tabular-nums', color)}>
+        <Link href={slugToAssetPath(output.ticker)} className="group flex min-w-0 items-center gap-2">
+          <CompanyLogo ticker={output.ticker} name={output.ticker} size={28} />
+          <div className="min-w-0">
+            <div className="font-semibold text-foreground group-hover:underline">{output.ticker}</div>
+            <div className="text-lg font-semibold tabular-nums text-foreground">{output.price}</div>
+          </div>
+        </Link>
+        <div className={cn('flex shrink-0 items-center gap-1 text-sm font-medium tabular-nums', color)}>
           <Icon className="h-3.5 w-3.5" />
           {output.changePercent}
         </div>
