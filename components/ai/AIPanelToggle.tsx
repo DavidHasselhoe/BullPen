@@ -20,6 +20,7 @@ const PUBLIC_ROUTES = new Set([
   '/security',
   '/login',
   '/register',
+  '/get-started',
 ]);
 
 export function AIPanelToggle() {

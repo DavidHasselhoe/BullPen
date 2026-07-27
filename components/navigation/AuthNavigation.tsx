@@ -10,6 +10,7 @@ const NO_APP_NAV_ROUTES = [
   '/',
   '/login',
   '/register',
+  '/get-started',
   '/privacy',
   '/changelog',
   '/about',
