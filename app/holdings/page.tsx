@@ -73,6 +73,17 @@ export default function HoldingsPage() {
 
   const exchangeRates = useExchangeRates(userCurrency);
 
+  // Scalar rate: 1 USD = X userCurrency at today's rates (1 when USD). Hoisted out of
+  // holdingsWithPrices so PortfolioPerformanceChart can convert its own USD-denominated
+  // candle-derived P/L the same way, without duplicating the exchangeRates fetch.
+  const currentFxRate = useMemo(
+    () =>
+      userCurrency === 'USD' || !exchangeRates.data
+        ? 1
+        : convertCurrency(1, 'USD', userCurrency, exchangeRates.data),
+    [userCurrency, exchangeRates.data]
+  );
+
   // Live price stream — updates prices in real time via WsManager SSE
   const holdingSymbols = useMemo(() => (holdings ?? []).map((h) => h.symbol), [holdings]);
   const livePrices = useLivePrices(holdingSymbols);
@@ -175,13 +186,6 @@ export default function HoldingsPage() {
     const quotesMap = quotesData.data?.quotes || {};
     const logosMap = quotesData.data?.logos || {};
     const sectorsMap = quotesData.data?.sectors || {};
-    const rates = exchangeRates.data ?? null;
-
-    // Scalar rate: 1 USD = X userCurrency at today's rates (1 when USD)
-    const currentFxRate =
-      userCurrency === 'USD' || !rates
-        ? 1
-        : convertCurrency(1, 'USD', userCurrency, rates);
 
     const conv = (usd: number) => usd * currentFxRate;
 
@@ -271,7 +275,7 @@ export default function HoldingsPage() {
         sector,
       };
     });
-  }, [holdings, quotesData.data, exchangeRates.data, userCurrency, throttledLivePrices]);
+  }, [holdings, quotesData.data, currentFxRate, throttledLivePrices]);
 
   // Throttle at 3 s so live WebSocket ticks don't thrash the entire UI on every price event.
   // The portfolio value widget updates instantly (it reads livePrices directly via the memo),
@@ -352,7 +356,7 @@ export default function HoldingsPage() {
       {(statsLoading || throttledHoldings.length > 0) && (
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-stretch">
           <div className="xl:col-span-2 flex flex-col">
-            <PortfolioPerformanceChart holdings={throttledHoldings} currency={userCurrency} isLoading={statsLoading} />
+            <PortfolioPerformanceChart holdings={throttledHoldings} currency={userCurrency} fxRate={currentFxRate} isLoading={statsLoading} />
           </div>
           <div className="flex flex-col">
             <HoldingsPieChart holdings={throttledHoldings} currency={userCurrency} onSectorHover={setHoveredSector} isLoading={statsLoading} />

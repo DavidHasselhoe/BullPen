@@ -42,20 +42,12 @@ function fmtLabel(ts: number, range: Range): string {
   return d.getFullYear().toString();
 }
 
-const CURRENCY_SYMBOLS: Partial<Record<CurrencyCode, string>> = {
-  USD: '$', EUR: '€', GBP: '£', JPY: '¥', CAD: 'C$', AUD: 'A$', NZD: 'NZ$',
-  CHF: 'CHF ', NOK: 'NOK ', SEK: 'SEK ', DKK: 'DKK ',
-};
-
 function fmtPL(value: number, currency: CurrencyCode): string {
-  const sym = CURRENCY_SYMBOLS[currency] ?? `${currency} `;
-  const abs = Math.abs(value);
   const sign = value < 0 ? '-' : '+';
-  if (abs >= 1_000_000) return `${sign}${sym}${(abs / 1_000_000).toFixed(2)}M`;
-  if (abs >= 1_000)     return `${sign}${sym}${(abs / 1_000).toFixed(1)}K`;
-  return new Intl.NumberFormat('en-US', {
+  const formatted = new Intl.NumberFormat('en-US', {
     style: 'currency', currency, minimumFractionDigits: 0, maximumFractionDigits: 0,
-  }).format(value).replace(/^-/, sign);
+  }).format(Math.abs(value));
+  return `${sign}${formatted}`;
 }
 
 function fmtPct(pct: number): string {
@@ -77,10 +69,14 @@ function floorLookup(pairs: [number, number][], ts: number): number | undefined 
 interface Props {
   holdings: HoldingWithPrice[];
   currency?: CurrencyCode;
+  /** 1 USD = X `currency` at today's rate (1 for USD). Candle closes are USD-denominated
+   *  (matching how the rest of the holdings page treats quotes), so this scales the
+   *  chart's raw P/L into the user's display currency the same way the header stats do. */
+  fxRate?: number;
   isLoading?: boolean;
 }
 
-export function PortfolioPerformanceChart({ holdings, currency = 'USD', isLoading: holdingsLoading }: Props) {
+export function PortfolioPerformanceChart({ holdings, currency = 'USD', fxRate = 1, isLoading: holdingsLoading }: Props) {
   const [range, setRange]           = useState<Range>('MAX');
   const [showBenchmark, setShowBenchmark] = useState(false);
 
@@ -276,10 +272,12 @@ export function PortfolioPerformanceChart({ holdings, currency = 'USD', isLoadin
       .map(([ts, pl]) => ({
         time: ts,
         label: fmtLabel(ts, range),
-        pl,
+        // fxRate scales display-only — plPct is a ratio of two USD figures, so the
+        // rate cancels out and must stay computed from the unconverted pl/basis.
+        pl: pl * fxRate,
         plPct: (pl / basis) * 100,
       }));
-  }, [candleResults, range, salesBySymbol]);
+  }, [candleResults, range, salesBySymbol, fxRate]);
 
   // Enrich chart points with SPY % return, normalized from the first portfolio timestamp
   const enrichedData = useMemo<ChartPoint[]>(() => {
