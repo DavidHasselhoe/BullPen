@@ -1,5 +1,14 @@
 [
   {
+    "date": "2026-07-27",
+    "entries": [
+      { "type": "fixed", "text": "Fixed \"Why Today?\" restarting from scratch every time a stock's price ticked while you had it open — it now lives inside the Ask Bull panel, where it opens once and stays put" },
+      { "type": "fixed", "text": "Fixed the Holdings performance chart showing the wrong currency and hard-to-read abbreviated numbers (like \"4.8K\") — it now matches your account's currency and shows full numbers, in line with the totals above it" },
+      { "type": "fixed", "text": "Fixed the main navigation bar and Ask Bull button showing up on top of the getting-started signup flow" },
+      { "type": "improved", "text": "Ask Bull's stock price answers now show the company logo, with a link straight through to that stock's page" }
+    ]
+  },
+  {
     "date": "2026-07-26",
     "entries": [
       { "type": "new", "text": "Introducing Bull's Weekly Pick — every Monday, an AI-generated stock pick with a full, permanent public track record. Anyone can check the Track Record page to see how every past pick has done, winners and losers alike; the full reasoning behind each pick is a Pro feature" },
