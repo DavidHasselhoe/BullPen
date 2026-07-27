@@ -19,7 +19,7 @@ import { ChartTooltip } from '@/components/charts/tooltip';
 import { useChartPrefs, type AdvancedChartType } from '@/hooks/use-chart-prefs';
 import { getIndicatorDef, defaultParamsFor, INDICATOR_PALETTE, INDICATOR_PRESETS, type IndicatorInstance } from '@/lib/finance/indicators';
 import { ChartSettingsPanel } from './ChartSettingsPanel';
-import { WhyTodayPanel } from './WhyTodayPanel';
+import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLivePrices } from '@/hooks/use-live-prices';
 import { useStockQuote } from '@/hooks/use-stock-price';
@@ -132,8 +132,8 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
     new Set(prefs.defaultIndicators as Indicator[])
   );
   const [advancedOpen, setAdvancedOpen] = useState(false);
-  const [whyTodayOpen, setWhyTodayOpen] = useState(false);
   const { isSimplified } = useExperienceLevel();
+  const { openWhyToday } = useAIPanel();
 
   function toggleIndicator(key: Indicator) {
     setActiveIndicators((prev) => {
@@ -493,14 +493,8 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
                     </span>
                     <button
                       type="button"
-                      onClick={() => setWhyTodayOpen((v) => !v)}
-                      aria-expanded={whyTodayOpen}
-                      className={cn(
-                        'flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium transition-colors',
-                        whyTodayOpen
-                          ? 'border-primary/40 bg-primary/10 text-primary'
-                          : 'border-border text-muted-foreground hover:text-foreground hover:border-foreground/30'
-                      )}
+                      onClick={() => openWhyToday({ ticker, price, change, changePct })}
+                      className="flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground hover:border-foreground/30"
                     >
                       <Sparkles className="h-3 w-3" />
                       Why?
@@ -547,14 +541,8 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
                   {range === '1D' && (
                     <button
                       type="button"
-                      onClick={() => setWhyTodayOpen((v) => !v)}
-                      aria-expanded={whyTodayOpen}
-                      className={cn(
-                        'flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium transition-colors',
-                        whyTodayOpen
-                          ? 'border-primary/40 bg-primary/10 text-primary'
-                          : 'border-border text-muted-foreground hover:text-foreground hover:border-foreground/30'
-                      )}
+                      onClick={() => openWhyToday({ ticker, price, change, changePct })}
+                      className="flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground hover:border-foreground/30"
                     >
                       <Sparkles className="h-3 w-3" />
                       Why?
@@ -658,15 +646,6 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
           </div>
         </div>
       </div>
-
-      <WhyTodayPanel
-        ticker={ticker}
-        price={price}
-        change={change}
-        changePct={changePct}
-        open={whyTodayOpen}
-        onClose={() => setWhyTodayOpen(false)}
-      />
 
       {/* ── Price chart (Bklit UI) ───────────────────────────────────────── */}
       <div className="relative">
