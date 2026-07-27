@@ -2,7 +2,7 @@
 
 import { lazy, Suspense, useEffect, useRef, useState, useCallback } from 'react';
 import Image from 'next/image';
-import { X, PanelRightClose, Settings, History, SquarePen } from 'lucide-react';
+import { X, PanelRightClose, Settings, History, SquarePen, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
@@ -24,7 +24,8 @@ const BullpenChat = lazy(() => import('./BullpenChat').then((m) => ({ default: m
 import { useAuth } from '@/hooks/use-auth';
 import { useIsMobile } from '@/hooks/use-is-mobile';
 import { cn } from '@/lib/utils';
-import type { AIContext } from './AIPanelProvider';
+import { WhyTodayView } from './WhyTodayView';
+import type { AIContext, WhyTodayPayload } from './AIPanelProvider';
 
 interface AISidePanelProps {
   open: boolean;
@@ -32,6 +33,8 @@ interface AISidePanelProps {
   initialQuery?: string | null;
   aiContext?: AIContext | null;
   onConsumedQuery?: () => void;
+  whyToday?: WhyTodayPayload | null;
+  onCloseWhyToday?: () => void;
 }
 
 const STARTER_PROMPTS = [
@@ -86,7 +89,7 @@ function AuthGate() {
   );
 }
 
-export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumedQuery }: AISidePanelProps) {
+export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumedQuery, whyToday, onCloseWhyToday }: AISidePanelProps) {
   const { user, isLoading, isAuthenticated } = useAuth();
   const { hasAccepted: hasAcceptedAiTerms } = useAiTerms();
   const isMobile = useIsMobile();
@@ -154,12 +157,14 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
     onClose();
   }, [onClose]);
 
-  // Focus input after spring settles (~380ms for stiffness:280 damping:28)
+  // Focus input after spring settles (~380ms for stiffness:280 damping:28).
+  // Skip when opening into Why Today mode — the chat input is hidden then,
+  // and focusing an invisible field is an accessibility trap.
   useEffect(() => {
-    if (!open) return;
+    if (!open || whyToday) return;
     const t = setTimeout(() => chatRef.current?.focusInput?.(), 380);
     return () => clearTimeout(t);
-  }, [open]);
+  }, [open, whyToday]);
 
   // Escape to close
   useEffect(() => {
@@ -221,11 +226,29 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
       >
         {/* Header */}
         <div className="flex h-16 shrink-0 items-center justify-between px-4 border-b border-border/50 bg-muted/30">
-          <div className="flex items-center flex-1 min-w-0">
-            <p className="text-sm font-semibold leading-none truncate">Ask Bull</p>
+          <div className="flex items-center flex-1 min-w-0 gap-1">
+            {whyToday ? (
+              <>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={onCloseWhyToday}
+                      aria-label="Back to chat"
+                      className="rounded-md p-1.5 -ml-1.5 shrink-0 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                    >
+                      <ArrowLeft className="h-4 w-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">Back to chat</TooltipContent>
+                </Tooltip>
+                <p className="text-sm font-semibold leading-none truncate">Why ${whyToday.ticker} moved</p>
+              </>
+            ) : (
+              <p className="text-sm font-semibold leading-none truncate">Ask Bull</p>
+            )}
           </div>
           <div className="flex items-center gap-2">
-            {isAuthenticated && user && (
+            {!whyToday && isAuthenticated && user && (
               <>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -337,29 +360,44 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
             <AuthGate />
           ) : !hasAcceptedAiTerms ? (
             <AiTermsGate />
-          ) : hasOpened ? (
-            <Suspense
-              fallback={
-                <div className="flex flex-1 items-center justify-center">
-                  <span className="h-5 w-5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+          ) : (
+            <>
+              {whyToday && (
+                <WhyTodayView
+                  key={whyToday.requestedAt}
+                  ticker={whyToday.ticker}
+                  price={whyToday.price}
+                  change={whyToday.change}
+                  changePct={whyToday.changePct}
+                />
+              )}
+              {hasOpened && (
+                <div className={cn('flex flex-1 min-h-0 flex-col', whyToday && 'hidden')}>
+                  <Suspense
+                    fallback={
+                      <div className="flex flex-1 items-center justify-center">
+                        <span className="h-5 w-5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                      </div>
+                    }
+                  >
+                    <BullpenChat
+                      key={conversationId}
+                      ref={chatRef}
+                      compact
+                      user={user}
+                      starterPrompts={STARTER_PROMPTS}
+                      open={open}
+                      initialQuery={initialQuery ?? undefined}
+                      aiContext={aiContext ?? undefined}
+                      onConsumedQuery={onConsumedQuery}
+                      conversationId={conversationId}
+                      initialMessages={initialMessages}
+                    />
+                  </Suspense>
                 </div>
-              }
-            >
-              <BullpenChat
-                key={conversationId}
-                ref={chatRef}
-                compact
-                user={user}
-                starterPrompts={STARTER_PROMPTS}
-                open={open}
-                initialQuery={initialQuery ?? undefined}
-                aiContext={aiContext ?? undefined}
-                onConsumedQuery={onConsumedQuery}
-                conversationId={conversationId}
-                initialMessages={initialMessages}
-              />
-            </Suspense>
-          ) : null}
+              )}
+            </>
+          )}
         </div>
       </motion.div>
     </motion.aside>
