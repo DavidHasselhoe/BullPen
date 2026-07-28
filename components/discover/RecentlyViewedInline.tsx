@@ -34,7 +34,7 @@ export function RecentlyViewedInline() {
 
   return (
     <div className="flex items-center gap-3 min-w-0 overflow-hidden">
-      <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/40 shrink-0">
+      <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/80 shrink-0">
         Recent
       </span>
       <div className="flex flex-wrap gap-1.5 min-w-0">

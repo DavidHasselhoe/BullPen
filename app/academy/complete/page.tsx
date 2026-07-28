@@ -28,7 +28,7 @@ export default function LessonCompletePage() {
         <h1 className="text-3xl font-bold tracking-tight">
           {courseDone ? 'Course complete!' : 'Lesson complete'}
         </h1>
-        <p className="text-sm text-muted-foreground/70 mt-1">
+        <p className="text-sm text-muted-foreground/85 mt-1">
           {courseDone
             ? 'You finished every lesson in this course. Nice work.'
             : 'Keep the momentum going. One more lesson today and your streak grows.'}

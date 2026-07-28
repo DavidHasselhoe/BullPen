@@ -69,12 +69,12 @@ export function SectorPerformance({ sectors }: Props) {
         <div className="min-w-0">
           <h2
             id="sectors-heading"
-            className="text-sm font-semibold uppercase tracking-widest text-muted-foreground/60"
+            className="text-sm font-semibold uppercase tracking-widest text-muted-foreground/80"
           >
             Where money moved
           </h2>
           {leader?.changePct != null && laggard?.changePct != null && (
-            <p className="mt-1 text-xs text-muted-foreground/60">
+            <p className="mt-1 text-xs text-muted-foreground/80">
               {leader.label} leading, {laggard.label} lagging · {TIMEFRAME_LABELS[timeframe].toLowerCase()}
             </p>
           )}
@@ -124,7 +124,7 @@ export function SectorPerformance({ sectors }: Props) {
         </ul>
       </div>
 
-      <p className="mt-2 text-[11px] text-muted-foreground/45">
+      <p className="mt-2 text-[11px] text-muted-foreground/80">
         Measured by each sector&apos;s SPDR ETF. Select a sector to see the companies in it.
       </p>
     </section>

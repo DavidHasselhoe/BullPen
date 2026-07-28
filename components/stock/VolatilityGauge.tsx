@@ -67,7 +67,7 @@ export function VolatilityGauge({
         />
       </div>
 
-      <div className="mt-1 flex justify-between text-xs leading-none text-muted-foreground/70">
+      <div className="mt-1 flex justify-between text-xs leading-none text-muted-foreground/85">
         <span>Low</span>
         <span>High</span>
       </div>
@@ -90,7 +90,7 @@ export function VolatilityGauge({
       )}
       <div className="relative mt-1 h-3.5">
         <span
-          className="absolute -translate-x-1/2 whitespace-nowrap text-xs leading-none text-muted-foreground/60"
+          className="absolute -translate-x-1/2 whitespace-nowrap text-xs leading-none text-muted-foreground/80"
           style={{ left: `${clampLabel(marketPct)}%` }}
         >
           {marketLabel}

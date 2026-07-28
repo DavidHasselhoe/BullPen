@@ -326,7 +326,7 @@ export function CSVImportModal({ open, onOpenChange }: Props) {
                     : 'border-border hover:border-border/80 hover:bg-muted/30'
                 )}
               >
-                <FileText className="h-8 w-8 mx-auto mb-3 text-muted-foreground/50" />
+                <FileText className="h-8 w-8 mx-auto mb-3 text-muted-foreground/85" />
                 <p className="text-sm font-medium text-foreground">Drop your CSV file here</p>
                 <p className="text-xs text-muted-foreground mt-1">or click to browse</p>
                 <input
@@ -359,7 +359,7 @@ export function CSVImportModal({ open, onOpenChange }: Props) {
                   ].map(([col, note]) => (
                     <div key={col} className="flex items-baseline gap-1.5">
                       <code className="text-[10px] font-mono text-primary/80 shrink-0">{col}</code>
-                      <span className="text-[10px] text-muted-foreground/60 truncate">{note}</span>
+                      <span className="text-[10px] text-muted-foreground/80 truncate">{note}</span>
                     </div>
                   ))}
                 </div>
@@ -390,7 +390,7 @@ export function CSVImportModal({ open, onOpenChange }: Props) {
                     {invalidCount} invalid (will be skipped)
                   </span>
                 )}
-                <span className="text-xs text-muted-foreground/60 ml-auto">
+                <span className="text-xs text-muted-foreground/80 ml-auto">
                   company names auto-resolved from BullPen database
                 </span>
               </div>
@@ -401,11 +401,11 @@ export function CSVImportModal({ open, onOpenChange }: Props) {
                   <table className="w-full text-xs">
                     <thead className="sticky top-0 bg-muted/60 backdrop-blur-sm border-b border-border/40">
                       <tr>
-                        <th className="text-left px-3 py-2 font-semibold text-muted-foreground/70 uppercase tracking-wider text-[10px]">Symbol</th>
-                        <th className="text-right px-3 py-2 font-semibold text-muted-foreground/70 uppercase tracking-wider text-[10px]">Quantity</th>
-                        <th className="text-right px-3 py-2 font-semibold text-muted-foreground/70 uppercase tracking-wider text-[10px]">Avg Price</th>
-                        <th className="text-left px-3 py-2 font-semibold text-muted-foreground/70 uppercase tracking-wider text-[10px]">Date</th>
-                        <th className="text-left px-3 py-2 font-semibold text-muted-foreground/70 uppercase tracking-wider text-[10px]">Status</th>
+                        <th className="text-left px-3 py-2 font-semibold text-muted-foreground/85 uppercase tracking-wider text-[10px]">Symbol</th>
+                        <th className="text-right px-3 py-2 font-semibold text-muted-foreground/85 uppercase tracking-wider text-[10px]">Quantity</th>
+                        <th className="text-right px-3 py-2 font-semibold text-muted-foreground/85 uppercase tracking-wider text-[10px]">Avg Price</th>
+                        <th className="text-left px-3 py-2 font-semibold text-muted-foreground/85 uppercase tracking-wider text-[10px]">Date</th>
+                        <th className="text-left px-3 py-2 font-semibold text-muted-foreground/85 uppercase tracking-wider text-[10px]">Status</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border/30">
@@ -488,7 +488,7 @@ export function CSVImportModal({ open, onOpenChange }: Props) {
               {result.errors.length > 0 && (
                 <div className="rounded-xl border border-border/40 overflow-hidden max-h-40 overflow-y-auto">
                   <div className="px-3 py-2 bg-muted/40 border-b border-border/40">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">Errors</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/80">Errors</p>
                   </div>
                   {result.errors.map((e, i) => (
                     <div key={i} className="flex items-center gap-2.5 px-3 py-2 border-b border-border/20 last:border-0">

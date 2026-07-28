@@ -72,7 +72,7 @@ export function StreamingThoughts({ phase }: Props) {
                       'relative h-3.5 w-3.5 shrink-0 transition-all duration-500',
                       isDone   && 'text-emerald-400',
                       isActive && 'text-primary',
-                      !isDone && !isActive && 'text-muted-foreground/20',
+                      !isDone && !isActive && 'text-muted-foreground/80',
                     )}
                   />
                 </div>
@@ -81,7 +81,7 @@ export function StreamingThoughts({ phase }: Props) {
                     'text-[10px] font-semibold uppercase tracking-wider whitespace-nowrap transition-colors duration-300',
                     isDone   && 'text-emerald-400/60',
                     isActive && 'text-foreground/75',
-                    !isDone && !isActive && 'text-muted-foreground/20',
+                    !isDone && !isActive && 'text-muted-foreground/80',
                   )}
                 >
                   {step.label}
@@ -124,7 +124,7 @@ export function StreamingThoughts({ phase }: Props) {
                 <div className="w-2 h-2 rounded-full bg-muted/35" />
                 <div className="w-2 h-2 rounded-full bg-muted/35" />
               </div>
-              <span className="ml-1 text-[9px] font-mono uppercase tracking-widest text-muted-foreground/25">
+              <span className="ml-1 text-[9px] font-mono uppercase tracking-widest text-muted-foreground/80">
                 AI Reasoning
               </span>
               <div className="ml-auto">
@@ -138,7 +138,7 @@ export function StreamingThoughts({ phase }: Props) {
 
             {/* Decorative placeholder in place of the live thinking stream */}
             <div className="h-[300px] flex items-center justify-center p-4 bg-muted/[0.03]">
-              <p className="font-mono text-[11.5px] leading-[1.75] text-muted-foreground/25 italic text-center">
+              <p className="font-mono text-[11.5px] leading-[1.75] text-muted-foreground/80 italic text-center">
                 Decomposing the thesis into investable subsectors…
               </p>
             </div>
@@ -172,7 +172,7 @@ export function StreamingThoughts({ phase }: Props) {
                   />
                 ))}
               </div>
-              <span className="text-[11px] text-muted-foreground/45 font-mono">
+              <span className="text-[11px] text-muted-foreground/80 font-mono">
                 Writing portfolio allocations…
               </span>
             </div>
@@ -238,7 +238,7 @@ export function StreamingThoughts({ phase }: Props) {
             </div>
             <div className="text-center">
               <p className="text-sm font-medium text-foreground/55">Verifying tickers</p>
-              <p className="text-[11px] text-muted-foreground/35 mt-0.5">
+              <p className="text-[11px] text-muted-foreground/80 mt-0.5">
                 Cross-referencing NYSE &amp; NASDAQ listings
               </p>
             </div>
@@ -247,7 +247,7 @@ export function StreamingThoughts({ phase }: Props) {
 
       </AnimatePresence>
 
-      <p className="px-5 pb-4 pt-1 text-center text-[10px] text-muted-foreground/40">
+      <p className="px-5 pb-4 pt-1 text-center text-[10px] text-muted-foreground/80">
         Feel free to leave this page — we&apos;ll notify you when it&apos;s ready.
       </p>
     </div>

@@ -63,7 +63,7 @@ export function AlertCard({ alert, onToggle, onDelete }: Props) {
           className={cn(
             'h-3.5 w-3.5',
             !alert.isActive
-              ? 'text-muted-foreground/40'
+              ? 'text-muted-foreground/80'
               : triggeredRecently
                 ? 'text-amber-400'
                 : 'text-emerald-500'
@@ -77,7 +77,7 @@ export function AlertCard({ alert, onToggle, onDelete }: Props) {
       {/* Description + last triggered */}
       <div className="flex-1 min-w-0 flex items-center gap-2 flex-wrap">
         <span className="text-xs font-mono text-foreground/90">{describeAlert(alert)}</span>
-        <span className="text-[10px] text-muted-foreground/45">
+        <span className="text-[10px] text-muted-foreground/80">
           {formatRelativeTime(alert.lastTriggeredAt)}
         </span>
       </div>
@@ -88,7 +88,7 @@ export function AlertCard({ alert, onToggle, onDelete }: Props) {
           type="button"
           onClick={handleToggle}
           disabled={busy !== null}
-          className="h-6 w-6 rounded flex items-center justify-center text-muted-foreground/40 hover:text-foreground hover:bg-muted/60 transition-colors"
+          className="h-6 w-6 rounded flex items-center justify-center text-muted-foreground/80 hover:text-foreground hover:bg-muted/60 transition-colors"
           title={alert.isActive ? 'Pause' : 'Resume'}
         >
           {busy === 'toggle'
@@ -99,7 +99,7 @@ export function AlertCard({ alert, onToggle, onDelete }: Props) {
           type="button"
           onClick={handleDelete}
           disabled={busy !== null}
-          className="h-6 w-6 rounded flex items-center justify-center text-muted-foreground/40 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+          className="h-6 w-6 rounded flex items-center justify-center text-muted-foreground/80 hover:text-red-400 hover:bg-red-500/10 transition-colors"
           title="Delete"
         >
           {busy === 'delete'

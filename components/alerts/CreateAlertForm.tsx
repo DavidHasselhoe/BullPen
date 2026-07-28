@@ -92,7 +92,7 @@ export function CreateAlertForm({ onCreated, onCancel, onCreate, initialTicker, 
         </div>
       ) : (
         <div className="space-y-1.5">
-          <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/55">
+          <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/80">
             Stock
           </label>
           <TickerSelector
@@ -105,7 +105,7 @@ export function CreateAlertForm({ onCreated, onCancel, onCreate, initialTicker, 
 
       {/* Step 2 — condition */}
       <div className="space-y-2">
-        <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/55">
+        <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/80">
           Condition
         </label>
         <AlertTypePicker value={alertType} onChange={setAlertType} />
@@ -114,12 +114,12 @@ export function CreateAlertForm({ onCreated, onCancel, onCreate, initialTicker, 
       {/* Step 3 — threshold (only when needed) */}
       {needsThreshold && (
         <div className="space-y-1.5">
-          <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/55">
+          <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/80">
             {isPriceType ? 'Target price' : 'Threshold (%)'}
           </label>
           <div className="relative">
             {isPriceType && (
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground/60 font-mono pointer-events-none">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground/80 font-mono pointer-events-none">
                 $
               </span>
             )}
@@ -135,7 +135,7 @@ export function CreateAlertForm({ onCreated, onCancel, onCreate, initialTicker, 
               autoFocus
             />
             {isPctType && (
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground/60 font-mono pointer-events-none">
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground/80 font-mono pointer-events-none">
                 %
               </span>
             )}

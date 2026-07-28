@@ -63,7 +63,7 @@ export function MetricCard({ label, value, signal, insight, context, tourId, tic
       {(insight || context) && (
         <div className="mt-auto space-y-0.5">
           {insight && <p className="text-xs leading-relaxed text-muted-foreground">{insight}</p>}
-          {context && <p className="text-xs leading-relaxed text-muted-foreground/70">{context}</p>}
+          {context && <p className="text-xs leading-relaxed text-muted-foreground/85">{context}</p>}
         </div>
       )}
     </div>

@@ -115,7 +115,7 @@ export function MobileTabBar() {
                   <Settings className="h-4 w-4 text-muted-foreground" />
                 </span>
                 <span className="flex-1 text-sm font-medium text-foreground">Settings</span>
-                <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
+                <ChevronRight className="h-4 w-4 text-muted-foreground/85" />
               </button>
             </MoreSection>
           </div>
@@ -128,7 +128,7 @@ export function MobileTabBar() {
 function MoreSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/55">{title}</p>
+      <p className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/80">{title}</p>
       <div className="space-y-0.5">{children}</div>
     </div>
   );
@@ -157,7 +157,7 @@ function MoreRow({
         <span className="block text-sm font-medium text-foreground">{name}</span>
         {description && <span className="block truncate text-xs text-muted-foreground">{description}</span>}
       </span>
-      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/50" />
+      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/85" />
     </Link>
   );
 }

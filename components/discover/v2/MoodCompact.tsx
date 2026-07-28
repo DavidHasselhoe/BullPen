@@ -66,7 +66,7 @@ export function MoodCompact() {
       <div className="flex items-center justify-between gap-3">
         <span className="text-[11px] font-medium text-muted-foreground">Market mood</span>
         <ArrowUpRight
-          className="h-3.5 w-3.5 shrink-0 text-muted-foreground/30 transition-colors group-hover:text-muted-foreground/70"
+          className="h-3.5 w-3.5 shrink-0 text-muted-foreground/80 transition-colors group-hover:text-muted-foreground/85"
           aria-hidden
         />
       </div>
@@ -75,7 +75,7 @@ export function MoodCompact() {
         <span className="font-mono text-2xl font-bold leading-none tabular-nums" style={{ color }}>
           {data.composite}
         </span>
-        <span className="text-[11px] text-muted-foreground/45">/100</span>
+        <span className="text-[11px] text-muted-foreground/80">/100</span>
         <span
           className="text-sm font-semibold"
           style={{ color }}
@@ -102,7 +102,7 @@ export function MoodCompact() {
       </div>
 
       {headline && (
-        <p className="mt-2.5 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground/70">
+        <p className="mt-2.5 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground/85">
           {headline}
         </p>
       )}

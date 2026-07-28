@@ -155,7 +155,7 @@ export function ScreenerSearchBar({ universe, value, onChange }: Props) {
         )}
         onClick={() => inputRef.current?.focus()}
       >
-        <Search className="h-4 w-4 shrink-0 text-muted-foreground/60" aria-hidden />
+        <Search className="h-4 w-4 shrink-0 text-muted-foreground/80" aria-hidden />
 
         {/* Chips */}
         {value.map((ticker) => {
@@ -171,7 +171,7 @@ export function ScreenerSearchBar({ universe, value, onChange }: Props) {
                 type="button"
                 aria-label={`Remove ${meta?.name ?? ticker}`}
                 onClick={(e) => { e.stopPropagation(); onChange(value.filter((t) => t !== ticker)); }}
-                className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground/60 hover:bg-muted hover:text-foreground transition-colors"
+                className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground/80 hover:bg-muted hover:text-foreground transition-colors"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
@@ -197,7 +197,7 @@ export function ScreenerSearchBar({ universe, value, onChange }: Props) {
           aria-activedescendant={
             showDropdown && suggestions.length > 0 ? `screener-search-opt-${activeIndex}` : undefined
           }
-          className="min-w-[140px] flex-1 bg-transparent py-0.5 text-sm outline-none placeholder:text-muted-foreground/40"
+          className="min-w-[140px] flex-1 bg-transparent py-0.5 text-sm outline-none placeholder:text-muted-foreground/80"
         />
 
         {value.length > 0 && (
@@ -238,7 +238,7 @@ export function ScreenerSearchBar({ universe, value, onChange }: Props) {
 
           {/* No-match feedback */}
           {suggestions.length === 0 && (
-            <li className="px-3 py-3 text-xs text-muted-foreground/70" aria-live="polite">
+            <li className="px-3 py-3 text-xs text-muted-foreground/85" aria-live="polite">
               {noMatchAddable ? (
                 <>No company match — press <kbd className="rounded border border-border bg-muted px-1 font-mono text-[10px]">Enter</kbd> to add <span className="font-mono font-semibold text-foreground">{query.trim().toUpperCase()}</span> as a ticker</>
               ) : (

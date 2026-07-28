@@ -26,7 +26,10 @@
 
   /* Semantic tickers */
   --up: oklch(0.72 0.17 152);
-  --down: oklch(0.65 0.22 25);
+  /* L bumped 0.65 → 0.68: at small font sizes (e.g. the hero's floating
+     ticker badges) the original value measured 4.48:1 against --bg-2 —
+     just under WCAG AA's 4.5:1 for normal text. Same hue/chroma. */
+  --down: oklch(0.68 0.22 25);
 
   /* Semantic status colors (changelog pills, etc.) */
   --info: oklch(0.75 0.15 250);
@@ -43,8 +46,11 @@
   --border-strong: oklch(1 0 0 / 0.14);
   --fg: oklch(0.985 0 0);
   --fg-muted: oklch(0.72 0.01 250);
-  /* 0.62 keeps small dim text ≥ 4.5:1 (WCAG AA) on --bg and --surface */
-  --fg-dim: oklch(0.62 0.01 250);
+  /* 0.64 keeps small dim text ≥ 4.5:1 (WCAG AA) on --bg, --surface, and
+     --surface-2 (the lighter elevated-card surface — 0.62 passed on --bg/
+     --surface but measured 4.42:1 on --surface-2, e.g. the hero's
+     "Why Today" bubble list items, confirmed via an axe-core scan). */
+  --fg-dim: oklch(0.64 0.01 250);
   --grid: oklch(1 0 0 / 0.04);
 
   background: var(--bg);

@@ -14,7 +14,7 @@ export function PicksMethodology() {
     <section aria-labelledby="methodology-heading" className="space-y-4">
       <h2
         id="methodology-heading"
-        className="text-sm font-semibold uppercase tracking-widest text-muted-foreground/60"
+        className="text-sm font-semibold uppercase tracking-widest text-muted-foreground/80"
       >
         How this is measured
       </h2>

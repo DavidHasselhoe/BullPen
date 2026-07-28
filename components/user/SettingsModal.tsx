@@ -502,7 +502,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
               {sectionGroups.map((group, gi) => (
                 <div key={gi} className="space-y-1">
                   {group.heading && (
-                    <p className="hidden px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/50 sm:block">
+                    <p className="hidden px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/85 sm:block">
                       {group.heading}
                     </p>
                   )}
@@ -828,7 +828,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                 </SettingsCard>
 
                 <div className="space-y-2">
-                  <p className="px-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/50">
+                  <p className="px-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/85">
                     Coming soon
                   </p>
                   <SettingsCard>

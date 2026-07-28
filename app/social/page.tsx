@@ -117,7 +117,7 @@ export default function SocialFeedPage() {
         ) : isEmpty ? (
           <div className="flex flex-col items-center gap-5 py-20 text-center">
             <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center">
-              <Users className="h-8 w-8 text-muted-foreground/40" />
+              <Users className="h-8 w-8 text-muted-foreground/80" />
             </div>
             <div className="space-y-1">
               <p className="text-base font-medium text-foreground">No activity yet</p>

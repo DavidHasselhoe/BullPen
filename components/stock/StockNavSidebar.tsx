@@ -56,7 +56,7 @@ export function StockNavSidebar({ sections }: { sections: StockNavSection[] }) {
               'group relative text-left text-xs py-1.5 pl-4 pr-2 rounded-r-md transition-colors duration-150',
               isActive
                 ? 'text-foreground font-medium'
-                : 'text-muted-foreground/45 hover:text-muted-foreground/75'
+                : 'text-muted-foreground/80 hover:text-muted-foreground/85'
             )}
           >
             <span

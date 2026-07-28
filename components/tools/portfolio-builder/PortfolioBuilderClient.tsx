@@ -321,12 +321,12 @@ function RecentPortfolios({
   return (
     <div>
       <div className="flex items-center gap-2 mb-3">
-        <Clock className="h-3.5 w-3.5 text-muted-foreground/50" />
-        <span className="text-[10px] uppercase tracking-widest text-muted-foreground/50 font-semibold">
+        <Clock className="h-3.5 w-3.5 text-muted-foreground/85" />
+        <span className="text-[10px] uppercase tracking-widest text-muted-foreground/85 font-semibold">
           {isSearching ? `Matching portfolios` : 'Recent portfolios'}
         </span>
         {total > 0 && (
-          <span className="text-[10px] text-muted-foreground/40 tabular-nums">
+          <span className="text-[10px] text-muted-foreground/80 tabular-nums">
             ({total})
           </span>
         )}
@@ -334,19 +334,19 @@ function RecentPortfolios({
 
       {showSearch && (
         <div className="relative mb-3">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/40 pointer-events-none" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/80 pointer-events-none" />
           <input
             type="text"
             value={query}
             onChange={(e) => onQueryChange(e.target.value)}
             placeholder="Search your portfolios…"
-            className="w-full rounded-lg border border-border/50 bg-card/50 pl-9 pr-9 py-2 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-border focus:bg-card transition-colors"
+            className="w-full rounded-lg border border-border/50 bg-card/50 pl-9 pr-9 py-2 text-sm text-foreground placeholder:text-muted-foreground/80 focus:outline-none focus:border-border focus:bg-card transition-colors"
             autoFocus
           />
           {query && (
             <button
               onClick={() => onQueryChange('')}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/40 hover:text-muted-foreground p-1"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/80 hover:text-muted-foreground p-1"
               aria-label="Clear search"
             >
               <X className="h-3.5 w-3.5" />
@@ -365,7 +365,7 @@ function RecentPortfolios({
           />
         ))}
         {items.length === 0 && isSearching && (
-          <p className="text-xs text-muted-foreground/50 italic px-1 py-3">
+          <p className="text-xs text-muted-foreground/85 italic px-1 py-3">
             No portfolios match &ldquo;{query}&rdquo;.
           </p>
         )}
@@ -374,7 +374,7 @@ function RecentPortfolios({
       {(hasMore || (expanded && !isSearching)) && (
         <button
           onClick={onToggleExpanded}
-          className="mt-3 w-full text-center text-xs text-muted-foreground/60 hover:text-foreground transition-colors py-2 rounded-lg border border-dashed border-border/40 hover:border-border/70"
+          className="mt-3 w-full text-center text-xs text-muted-foreground/80 hover:text-foreground transition-colors py-2 rounded-lg border border-dashed border-border/40 hover:border-border/70"
         >
           {expanded
             ? 'Show less'
@@ -418,7 +418,7 @@ function RecentPortfolioRow({
             {gen.portfolio.theme_summary}
           </span>
         </div>
-        <div className="flex items-center gap-3 text-xs text-muted-foreground/60">
+        <div className="flex items-center gap-3 text-xs text-muted-foreground/80">
           <span className={cn('font-semibold tabular-nums', scoreColor)}>
             {score} confidence
           </span>
@@ -440,7 +440,7 @@ function RecentPortfolioRow({
             </button>
             <button
               onClick={() => setConfirmDelete(false)}
-              className="text-xs text-muted-foreground/50 hover:text-muted-foreground px-2 py-1 transition-colors"
+              className="text-xs text-muted-foreground/85 hover:text-muted-foreground px-2 py-1 transition-colors"
             >
               Cancel
             </button>
@@ -449,12 +449,12 @@ function RecentPortfolioRow({
           <>
             <button
               onClick={() => setConfirmDelete(true)}
-              className="opacity-0 group-hover:opacity-100 text-muted-foreground/40 hover:text-muted-foreground/80 p-1.5 transition-all"
+              className="opacity-0 group-hover:opacity-100 text-muted-foreground/80 hover:text-muted-foreground/80 p-1.5 transition-all"
               aria-label="Delete"
             >
               <Trash2 className="h-3.5 w-3.5" />
             </button>
-            <ChevronRight className="h-4 w-4 text-muted-foreground/30 group-hover:text-muted-foreground/60 transition-colors" />
+            <ChevronRight className="h-4 w-4 text-muted-foreground/80 group-hover:text-muted-foreground/80 transition-colors" />
           </>
         )}
       </div>

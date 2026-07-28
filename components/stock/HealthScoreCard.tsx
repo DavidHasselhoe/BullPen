@@ -80,13 +80,13 @@ function MethodologyPopover({ onClose, anchorRect }: { onClose: () => void; anch
           <div key={m.name} className="flex items-start gap-2">
             <span className="text-xs font-medium text-foreground w-28 shrink-0">{m.name}</span>
             <span className="text-xs text-muted-foreground leading-relaxed">
-              {m.desc} <span className="text-muted-foreground/50">({m.max} pts)</span>
+              {m.desc} <span className="text-muted-foreground/85">({m.max} pts)</span>
             </span>
           </div>
         ))}
       </div>
       <div className="border-t border-border/40 pt-2 space-y-1">
-        <p className="text-[10px] text-muted-foreground/70 font-medium uppercase tracking-wide">Grade thresholds</p>
+        <p className="text-[10px] text-muted-foreground/85 font-medium uppercase tracking-wide">Grade thresholds</p>
         {[
           { grade: 'A', range: '85–100', label: 'Strong' },
           { grade: 'B', range: '70–84', label: 'Good' },
@@ -97,12 +97,12 @@ function MethodologyPopover({ onClose, anchorRect }: { onClose: () => void; anch
           <div key={grade} className="flex items-center gap-2 text-xs text-muted-foreground">
             <span className="w-4 font-semibold text-foreground">{grade}</span>
             <span>{range}</span>
-            <span className="text-muted-foreground/50">—</span>
+            <span className="text-muted-foreground/85">—</span>
             <span>{label}</span>
           </div>
         ))}
       </div>
-      <p className="text-[10px] text-muted-foreground/50 leading-relaxed">
+      <p className="text-[10px] text-muted-foreground/85 leading-relaxed">
         This score is educational and does not constitute investment advice.
       </p>
     </div>,
@@ -126,10 +126,10 @@ function CategoryBar({ cat }: { cat: CategoryScore }) {
           <TermTooltip term={cat.name} />
         </span>
         {unavailable ? (
-          <span className="text-[11px] font-medium text-muted-foreground/40">N/A</span>
+          <span className="text-[11px] font-medium text-muted-foreground/80">N/A</span>
         ) : (
           <span className="tabular-nums text-[11px] font-semibold text-muted-foreground">
-            {cat.score}<span className="font-medium text-muted-foreground/40">/{cat.max}</span>
+            {cat.score}<span className="font-medium text-muted-foreground/80">/{cat.max}</span>
           </span>
         )}
       </div>
@@ -292,7 +292,7 @@ export function HealthScoreCard({ ticker, onSignalsReady }: HealthScoreCardProps
                 setAnchorRect(rect);
                 setShowMethodology((v) => !v);
               }}
-              className="text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+              className="text-muted-foreground/85 hover:text-muted-foreground transition-colors"
               aria-label="How is this score calculated?"
             >
               <HelpCircle className="h-3.5 w-3.5" />
@@ -348,7 +348,7 @@ export function HealthScoreCard({ ticker, onSignalsReady }: HealthScoreCardProps
               showLabel={false}
               className="text-foreground"
             />
-            <span className="text-[10px] text-muted-foreground/50 tracking-wide uppercase">out of 100</span>
+            <span className="text-[10px] text-muted-foreground/85 tracking-wide uppercase">out of 100</span>
           </div>
 
           {/* Pro mode: category progress bars */}
@@ -379,7 +379,7 @@ export function HealthScoreCard({ ticker, onSignalsReady }: HealthScoreCardProps
                         <TermTooltip term={cat.name} className="truncate" />
                       </span>
                       {unavailable ? (
-                        <span className="text-[10px] font-medium text-muted-foreground/40 shrink-0">N/A</span>
+                        <span className="text-[10px] font-medium text-muted-foreground/80 shrink-0">N/A</span>
                       ) : (
                         <span className={cn('text-[10px] font-semibold shrink-0', textColor)}>{sigLabel}</span>
                       )}

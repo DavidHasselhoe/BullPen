@@ -340,7 +340,7 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
                     c.id === conversationId && 'bg-muted/30'
                   )}
                 >
-                  <span className="block font-mono text-[10px] text-muted-foreground/60">
+                  <span className="block font-mono text-[10px] text-muted-foreground/80">
                     {formatShortDate(c.updated_at)}
                   </span>
                   <span className="block text-foreground/90 truncate">{c.title}</span>

@@ -265,7 +265,7 @@ export function PicksPerformanceChart({ series, normalized, className }: Props) 
       </div>
 
       {mode === 'normalized' && hasNormalized && (
-        <p className="px-4 pb-4 text-[11px] leading-relaxed text-muted-foreground/70 sm:px-5">
+        <p className="px-4 pb-4 text-[11px] leading-relaxed text-muted-foreground/85 sm:px-5">
           Fewer picks have run for a long time than a short time, so the right-hand
           side of this curve rests on a smaller sample. Hover any point to see how
           many picks it&apos;s built from.

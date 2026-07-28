@@ -48,11 +48,11 @@ export function ThesisInput({ onSubmit, disabled }: Props) {
             placeholder="e.g. AI inference chip design over the next 5 years, with exposure to memory and advanced packaging."
             rows={5}
             disabled={disabled}
-            className="resize-none text-base leading-relaxed border-0 bg-transparent p-0 shadow-none focus-visible:ring-0 placeholder:text-muted-foreground/40"
+            className="resize-none text-base leading-relaxed border-0 bg-transparent p-0 shadow-none focus-visible:ring-0 placeholder:text-muted-foreground/80"
           />
 
           <div className="mt-3 flex items-center justify-between border-t border-border/40 pt-3">
-            <span className={cn('text-xs text-muted-foreground/50', tooShort && 'text-amber-500')}>
+            <span className={cn('text-xs text-muted-foreground/85', tooShort && 'text-amber-500')}>
               {tooShort ? 'A bit more detail needed (min 10 characters)' : `${thesis.length} / 500`}
             </span>
             <Button
@@ -70,7 +70,7 @@ export function ThesisInput({ onSubmit, disabled }: Props) {
 
       {/* Examples */}
       <div>
-        <p className="text-[10px] uppercase tracking-widest text-muted-foreground/40 font-semibold mb-3 text-center">
+        <p className="text-[10px] uppercase tracking-widest text-muted-foreground/80 font-semibold mb-3 text-center">
           Example theses
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -86,7 +86,7 @@ export function ThesisInput({ onSubmit, disabled }: Props) {
             </button>
           ))}
         </div>
-        <p className="text-[10px] text-muted-foreground/30 text-center mt-6 select-none">
+        <p className="text-[10px] text-muted-foreground/80 text-center mt-6 select-none">
           Powered by Claude Sonnet 4.6 with extended thinking · Not investment advice
         </p>
       </div>

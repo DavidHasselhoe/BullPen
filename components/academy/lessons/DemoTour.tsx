@@ -145,7 +145,7 @@ export function DemoTour({ steps, stepIndex, onStepIndexChange, isActionSatisfie
               type="button"
               onClick={onSkip}
               aria-label="Skip tour"
-              className="text-muted-foreground/60 transition-colors hover:text-foreground"
+              className="text-muted-foreground/80 transition-colors hover:text-foreground"
             >
               <X className="h-4 w-4" />
             </button>

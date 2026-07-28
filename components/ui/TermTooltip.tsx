@@ -51,7 +51,7 @@ export function TermTooltip({ term, className, ticker, onAskAI }: TermTooltipPro
           {displayLabel}
           <HelpCircle
             className={cn(
-              'h-3 w-3 text-muted-foreground/50 shrink-0 transition-opacity',
+              'h-3 w-3 text-muted-foreground/85 shrink-0 transition-opacity',
               isSimplified
                 ? 'opacity-70 group-hover:opacity-100'
                 : 'opacity-0 group-hover:opacity-60'

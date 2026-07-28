@@ -112,7 +112,7 @@ export function ChartToolbar({
             onClick={() => onRange(value)}
             className={cn(
               'shrink-0 rounded-md px-2.5 py-1.5 text-xs font-medium transition-all',
-              range === value ? 'bg-accent text-foreground' : 'text-muted-foreground/60 hover:text-foreground'
+              range === value ? 'bg-accent text-foreground' : 'text-muted-foreground/80 hover:text-foreground'
             )}
           >
             {label}

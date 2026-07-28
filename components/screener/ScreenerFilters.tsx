@@ -173,7 +173,7 @@ export function ScreenerFilters({ filters, sectors, industries, onChange, onRese
 
       {/* Presets */}
       <div className="space-y-1.5">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">Presets</p>
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/85">Presets</p>
         <div className="flex flex-wrap gap-1">
           {PRESETS.map((p) => (
             <button
@@ -238,7 +238,7 @@ export function ScreenerFilters({ filters, sectors, industries, onChange, onRese
         show('pe_ratio', 'peMin', 'peMax') ||
         show('pb_ratio', 'pbMin', 'pbMax')) && (
         <div className="space-y-0.5">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 pb-1">Valuation</p>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/85 pb-1">Valuation</p>
           {show('market_cap', 'marketCapMin', 'marketCapMax') && (
             <RangeFilter label="Market Cap" unit="$B" minKey="marketCapMin" maxKey="marketCapMax" filters={filters} onChange={onChange} step="10" />
           )}
@@ -259,7 +259,7 @@ export function ScreenerFilters({ filters, sectors, industries, onChange, onRese
       {(show('profit_margin', 'profitMarginMin', 'profitMarginMax') ||
         show('revenue_growth_yoy', 'revenueGrowthMin', 'revenueGrowthMax')) && (
         <div className="space-y-0.5">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 pb-1">Profitability</p>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/85 pb-1">Profitability</p>
           {show('profit_margin', 'profitMarginMin', 'profitMarginMax') && (
             <RangeFilter label="Profit Margin" unit="%" minKey="profitMarginMin" maxKey="profitMarginMax" filters={filters} onChange={onChange} step="1" />
           )}
@@ -275,7 +275,7 @@ export function ScreenerFilters({ filters, sectors, industries, onChange, onRese
       {(show('beta', 'betaMin', 'betaMax') ||
         show('dividend_yield', 'divYieldMin', 'divYieldMax')) && (
         <div className="space-y-0.5">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 pb-1">Risk & Income</p>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/85 pb-1">Risk & Income</p>
           {show('beta', 'betaMin', 'betaMax') && (
             <RangeFilter label="Beta" minKey="betaMin" maxKey="betaMax" filters={filters} onChange={onChange} step="0.1" />
           )}
@@ -290,7 +290,7 @@ export function ScreenerFilters({ filters, sectors, industries, onChange, onRese
       {/* 52-Week Range */}
       {show('week52_high', 'week52ChangeMin', 'week52ChangeMax') && (
         <div className="space-y-0.5">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 pb-1">Price Range</p>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/85 pb-1">Price Range</p>
           <RangeFilter label="52W H/L Spread" unit="%" minKey="week52ChangeMin" maxKey="week52ChangeMax" filters={filters} onChange={onChange} step="5" />
         </div>
       )}
@@ -298,7 +298,7 @@ export function ScreenerFilters({ filters, sectors, industries, onChange, onRese
       {/* Volume */}
       {show('rvol', 'rvolMin') && (
         <div className="space-y-1.5">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 pb-1">Volume</p>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/85 pb-1">Volume</p>
           <Label className="text-xs font-medium text-muted-foreground">
             Min Relative Volume <span className="ml-1 opacity-60">(×)</span>
           </Label>
@@ -311,7 +311,7 @@ export function ScreenerFilters({ filters, sectors, industries, onChange, onRese
             step="0.5"
             min="0"
           />
-          <p className="text-[10px] text-muted-foreground/50 leading-snug">
+          <p className="text-[10px] text-muted-foreground/85 leading-snug">
             Today&apos;s volume vs 90-day average. Needs live market data.
           </p>
         </div>

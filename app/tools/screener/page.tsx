@@ -362,7 +362,7 @@ function ScreenerContent() {
             ) : (
               <>
                 <span className="h-2 w-2 rounded-full bg-muted-foreground/40" />
-                <span className="text-muted-foreground/60">Closed</span>
+                <span className="text-muted-foreground/80">Closed</span>
               </>
             )}
           </span>

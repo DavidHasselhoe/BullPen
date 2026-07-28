@@ -33,7 +33,7 @@ function ColumnItem({
       <button
         type="button"
         onPointerDown={(e) => controls.start(e)}
-        className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground touch-none"
+        className="cursor-grab active:cursor-grabbing text-muted-foreground/80 hover:text-muted-foreground touch-none"
         aria-label={`Reorder ${col.label}`}
       >
         <GripVertical className="h-3.5 w-3.5" />
@@ -44,11 +44,11 @@ function ColumnItem({
         onClick={onToggle}
         className="flex flex-1 items-center justify-between gap-2 text-left"
       >
-        <span className={cn('text-xs', hidden ? 'text-muted-foreground/50' : 'text-foreground')}>
+        <span className={cn('text-xs', hidden ? 'text-muted-foreground/85' : 'text-foreground')}>
           {col.label}
         </span>
         {hidden
-          ? <EyeOff className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />
+          ? <EyeOff className="h-3.5 w-3.5 text-muted-foreground/80 shrink-0" />
           : <Eye className="h-3.5 w-3.5 text-primary shrink-0" />}
       </button>
     </Reorder.Item>
@@ -66,14 +66,14 @@ export function ColumnChooser({ columns }: Props) {
         <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs">
           <SlidersHorizontal className="h-3.5 w-3.5" />
           Columns
-          <span className="text-muted-foreground/60">{visibleCount}</span>
+          <span className="text-muted-foreground/80">{visibleCount}</span>
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-64 p-2">
         <div className="flex items-center justify-between px-1.5 pb-2 mb-1 border-b border-border/60">
           <div className="flex flex-col">
             <span className="text-xs font-semibold text-foreground">Columns</span>
-            <span className="text-[10px] text-muted-foreground/60">Drag to reorder · click to show/hide</span>
+            <span className="text-[10px] text-muted-foreground/80">Drag to reorder · click to show/hide</span>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <button

@@ -220,7 +220,7 @@ function SectionBlock({ section, index, isTldr, sectionRef }: SectionBlockProps)
       style={{ animationDelay: `${index * 60}ms` }}
     >
       <div className="flex items-center gap-3 mb-5 min-w-0">
-        <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground/70 shrink-0 max-w-full truncate">
+        <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground/85 shrink-0 max-w-full truncate">
           {section.heading}
         </span>
         <div className="flex-1 h-px bg-border/30" />
@@ -233,7 +233,7 @@ function SectionBlock({ section, index, isTldr, sectionRef }: SectionBlockProps)
 
           if (kind === 'sub-header') {
             return (
-              <p key={i} className="text-[12px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/60 pt-2">
+              <p key={i} className="text-[12px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/80 pt-2">
                 {renderInline(text.replace(/:$/, ''))}
               </p>
             );
@@ -279,7 +279,7 @@ function SectionTOC({
       aria-label="Sections"
       className="hidden md:block w-[180px] shrink-0 border-r border-border/30 px-4 py-7 overflow-y-auto brief-scroll"
     >
-      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/40 mb-3 pl-3">
+      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/80 mb-3 pl-3">
         In this brief
       </p>
       <ul className="space-y-0.5">
@@ -295,7 +295,7 @@ function SectionTOC({
                   'w-full text-left text-[12px] pl-3 pr-2 py-1.5 rounded-r-md border-l-2 transition-all duration-150 truncate',
                   active
                     ? 'border-primary text-foreground bg-muted/30 font-medium'
-                    : 'border-transparent text-muted-foreground/70 hover:text-foreground hover:bg-muted/20'
+                    : 'border-transparent text-muted-foreground/85 hover:text-foreground hover:bg-muted/20'
                 )}
               >
                 {s.heading}
@@ -496,11 +496,11 @@ function BriefReader({
                 <h2 className="text-xl md:text-[26px] font-semibold text-foreground leading-tight tracking-tight pr-28 md:pr-32">
                   {displayedBrief.title}
                 </h2>
-                <div className="flex items-center flex-wrap gap-x-2 gap-y-1 mt-3 text-[11px] text-muted-foreground/70 font-mono">
+                <div className="flex items-center flex-wrap gap-x-2 gap-y-1 mt-3 text-[11px] text-muted-foreground/85 font-mono">
                   <span>{formatPublishedDate(displayedBrief.published_date)}</span>
-                  <span className="text-muted-foreground/30">·</span>
+                  <span className="text-muted-foreground/80">·</span>
                   <span>{readingMinutes} min read</span>
-                  <span className="text-muted-foreground/30">·</span>
+                  <span className="text-muted-foreground/80">·</span>
                   <span>Generated {formatRelativeTime(displayedBrief.generated_at)}</span>
                 </div>
               </div>
@@ -514,7 +514,7 @@ function BriefReader({
                       disabled={!canGoOlder}
                       aria-label="Older brief"
                       title="Older brief"
-                      className="text-muted-foreground/50 hover:text-foreground transition-all duration-150 p-1.5 rounded-lg hover:bg-muted/40 active:scale-95 disabled:opacity-30 disabled:pointer-events-none disabled:hover:bg-transparent"
+                      className="text-muted-foreground/85 hover:text-foreground transition-all duration-150 p-1.5 rounded-lg hover:bg-muted/40 active:scale-95 disabled:opacity-30 disabled:pointer-events-none disabled:hover:bg-transparent"
                     >
                       <ChevronLeft className="h-4 w-4" />
                     </button>
@@ -524,7 +524,7 @@ function BriefReader({
                       disabled={!canGoNewer}
                       aria-label="Newer brief"
                       title="Newer brief"
-                      className="text-muted-foreground/50 hover:text-foreground transition-all duration-150 p-1.5 rounded-lg hover:bg-muted/40 active:scale-95 disabled:opacity-30 disabled:pointer-events-none disabled:hover:bg-transparent"
+                      className="text-muted-foreground/85 hover:text-foreground transition-all duration-150 p-1.5 rounded-lg hover:bg-muted/40 active:scale-95 disabled:opacity-30 disabled:pointer-events-none disabled:hover:bg-transparent"
                     >
                       <ChevronRight className="h-4 w-4" />
                     </button>
@@ -538,7 +538,7 @@ function BriefReader({
                         'transition-all duration-150 p-1.5 rounded-lg active:scale-95',
                         historyOpen
                           ? 'text-primary bg-primary/10'
-                          : 'text-muted-foreground/50 hover:text-foreground hover:bg-muted/40'
+                          : 'text-muted-foreground/85 hover:text-foreground hover:bg-muted/40'
                       )}
                     >
                       <History className="h-4 w-4" />
@@ -546,7 +546,7 @@ function BriefReader({
                   </>
                 )}
                 <DialogPrimitive.Close
-                  className="text-muted-foreground/50 hover:text-foreground transition-all duration-150 p-1.5 rounded-lg hover:bg-muted/40 active:scale-95"
+                  className="text-muted-foreground/85 hover:text-foreground transition-all duration-150 p-1.5 rounded-lg hover:bg-muted/40 active:scale-95"
                   aria-label="Close"
                 >
                   <X className="h-4 w-4" />
@@ -586,7 +586,7 @@ function BriefReader({
                       i === activeIndex && 'bg-muted/30'
                     )}
                   >
-                    <span className="block font-mono text-[10px] text-muted-foreground/60">
+                    <span className="block font-mono text-[10px] text-muted-foreground/80">
                       {formatShortDate(b.published_date)}
                     </span>
                     <span className="block text-foreground/90 truncate">{b.title}</span>
@@ -621,7 +621,7 @@ function BriefReader({
                     }}
                   />
                 ))}
-                <p className="text-[10px] text-muted-foreground/30 tracking-[0.15em] uppercase pt-2 pb-2 select-none">
+                <p className="text-[10px] text-muted-foreground/80 tracking-[0.15em] uppercase pt-2 pb-2 select-none">
                   Generated by Claude · Live web search
                 </p>
               </article>
@@ -661,7 +661,7 @@ export function DailyBriefWidget() {
     return (
       <div className="min-w-0">
         <div className="flex items-center gap-3 mb-3">
-          <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/70 shrink-0">Daily brief</span>
+          <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/85 shrink-0">Daily brief</span>
           <div className="flex-1 h-px bg-border/50" />
         </div>
         <div className="h-4 w-72 animate-shimmer rounded mb-2" />
@@ -674,15 +674,17 @@ export function DailyBriefWidget() {
     return (
       <div className="min-w-0">
         <div className="flex items-center gap-3 mb-3">
-          <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/70 shrink-0">Daily brief</span>
+          <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/85 shrink-0">Daily brief</span>
           <div className="flex-1 h-px bg-border/50" />
         </div>
         <div className="flex items-center justify-between gap-4 p-3 rounded-lg border border-border/30 bg-muted/10">
-          <div className="space-y-1 min-w-0">
+          {/* Illustrative placeholder, not real content — hidden from assistive tech so
+              screen readers land on the "Upgrade" CTA instead of a fake blurred preview. */}
+          <div className="space-y-1 min-w-0" aria-hidden="true">
             <p className="text-sm font-medium text-foreground/30 blur-sm select-none truncate">
               Markets surge as Fed signals pivot — tech leads broad rally
             </p>
-            <p className="text-xs text-muted-foreground/30 blur-sm select-none">TL;DR · The Setup · Earnings Pulse · Movers · Watch Today</p>
+            <p className="text-xs text-muted-foreground/80 blur-sm select-none">TL;DR · The Setup · Earnings Pulse · Movers · Watch Today</p>
           </div>
           <Link
             href="/upgrade"
@@ -699,10 +701,10 @@ export function DailyBriefWidget() {
     return (
       <div className="min-w-0">
         <div className="flex items-center gap-3 mb-3">
-          <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/70 shrink-0">Daily brief</span>
+          <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/85 shrink-0">Daily brief</span>
           <div className="flex-1 h-px bg-border/50" />
         </div>
-        <p className="text-sm text-muted-foreground/50">
+        <p className="text-sm text-muted-foreground/85">
           Today&apos;s brief is generating — check back after {getNextBriefLocalTime()}.
         </p>
       </div>
@@ -717,11 +719,11 @@ export function DailyBriefWidget() {
     <>
       <div className="min-w-0">
         <div className="flex items-center gap-3 mb-3">
-          <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/70 shrink-0">
+          <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/85 shrink-0">
             {isToday ? 'Daily brief' : "Yesterday's brief"}
           </span>
           <div className="flex-1 h-px bg-border/50" />
-          <span className="text-[10px] font-mono text-muted-foreground/35 tracking-wider shrink-0">
+          <span className="text-[10px] font-mono text-muted-foreground/80 tracking-wider shrink-0">
             {formatRelativeTime(brief.generated_at)}
           </span>
         </div>
@@ -739,7 +741,7 @@ export function DailyBriefWidget() {
                 {topTickers.map((ticker) => (
                   <span
                     key={ticker}
-                    className="text-[10px] font-mono font-medium text-muted-foreground/60 bg-muted/40 px-1.5 py-0.5 rounded"
+                    className="text-[10px] font-mono font-medium text-muted-foreground/80 bg-muted/40 px-1.5 py-0.5 rounded"
                   >
                     ${ticker}
                   </span>
@@ -747,7 +749,7 @@ export function DailyBriefWidget() {
               </div>
             )}
           </div>
-          <ArrowUpRight className="h-4 w-4 text-muted-foreground/30 group-hover:text-muted-foreground/60 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 shrink-0 mt-0.5 transition-all duration-150" />
+          <ArrowUpRight className="h-4 w-4 text-muted-foreground/80 group-hover:text-muted-foreground/80 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 shrink-0 mt-0.5 transition-all duration-150" />
         </button>
       </div>
 

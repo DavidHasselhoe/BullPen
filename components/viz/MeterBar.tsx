@@ -62,7 +62,7 @@ export function MeterBar({ value, min, max, signal, benchmark, srLabel, classNam
       {benchmark && (
         <div className="relative mt-1 h-3.5">
           <span
-            className="absolute -translate-x-1/2 text-xs leading-none text-muted-foreground/60"
+            className="absolute -translate-x-1/2 text-xs leading-none text-muted-foreground/80"
             style={{ left: `${pos(benchmark.value, min, max)}%` }}
           >
             {benchmark.label}

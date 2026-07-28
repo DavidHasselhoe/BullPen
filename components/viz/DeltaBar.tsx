@@ -57,7 +57,9 @@ export function DeltaBar({ estimate, actual, format = defaultFormat, srLabel, cl
         >
           {beat ? '▲' : '▼'} {diff >= 0 ? '+' : '−'}{format(Math.abs(diff))}
           {diffPct != null && Math.abs(diffPct) < 1000 && (
-            <span className="opacity-70"> ({diffPct >= 0 ? '+' : '−'}{Math.abs(diffPct).toFixed(0)}%)</span>
+            // 80%, not 70%: at 70% the inherited emerald-500/red-500 color measured
+            // 4.07:1 against the card surface — under WCAG AA's 4.5:1 for text.
+            <span className="opacity-80"> ({diffPct >= 0 ? '+' : '−'}{Math.abs(diffPct).toFixed(0)}%)</span>
           )}
         </span>
       ) : (

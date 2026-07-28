@@ -949,7 +949,7 @@ function CompareContent() {
                                   <td className="py-3 px-4 text-muted-foreground align-middle">
                                     <span className="inline-flex items-center gap-2">
                                       {expandable && (
-                                        <span className="text-muted-foreground/60 shrink-0">
+                                        <span className="text-muted-foreground/80 shrink-0">
                                           {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                                         </span>
                                       )}
@@ -959,7 +959,7 @@ function CompareContent() {
                                           <TooltipTrigger asChild>
                                             <button
                                               type="button"
-                                              className="inline-flex text-muted-foreground/70 hover:text-muted-foreground focus:outline-none"
+                                              className="inline-flex text-muted-foreground/85 hover:text-muted-foreground focus:outline-none"
                                               aria-label={`Info: ${label}`}
                                               onClick={(e) => e.stopPropagation()}
                                             >

@@ -92,7 +92,7 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
     render: (row) => {
       const score = row.health_score;
       const grade = row.health_score_grade;
-      if (score == null || !grade) return <span className="text-muted-foreground/40">—</span>;
+      if (score == null || !grade) return <span className="text-muted-foreground/80">—</span>;
       return (
         <span className="inline-flex items-center" title={`Health ${score}/100 · Grade ${grade}`}>
           <HealthRing score={score} grade={grade as 'A' | 'B' | 'C' | 'D' | 'F'} size={34} className="text-foreground" />
@@ -118,7 +118,7 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
       if (live) return fmtPrice(live.price);
       if (row.last_price != null) {
         return (
-          <span className="text-muted-foreground/70" title="Last close — live price unavailable until the market reopens">
+          <span className="text-muted-foreground/85" title="Last close — live price unavailable until the market reopens">
             {fmtPrice(row.last_price)}
           </span>
         );

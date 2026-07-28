@@ -104,7 +104,7 @@ export function InsiderTransactionsCard({ ticker }: { ticker: string }) {
             <Users className="h-4 w-4 text-muted-foreground shrink-0" />
             <div className="min-w-0">
               <p className="text-sm font-medium text-foreground">Insider Transactions</p>
-              <p className="text-xs text-muted-foreground/70">
+              <p className="text-xs text-muted-foreground/85">
                 {isSimplified
                   ? 'See when executives buy or sell their own stock'
                   : 'SEC Form 4 filings by executives, directors & 10%+ shareholders'}
@@ -249,7 +249,7 @@ export function InsiderTransactionsCard({ ticker }: { ticker: string }) {
                       .join(' ')}
                   </p>
                   <p className="text-xs text-muted-foreground truncate">{t.position}</p>
-                  <p className="text-xs text-muted-foreground/60 mt-0.5">{fmtDate(t.date_reported)}</p>
+                  <p className="text-xs text-muted-foreground/80 mt-0.5">{fmtDate(t.date_reported)}</p>
                 </div>
 
                 {/* Type badge */}

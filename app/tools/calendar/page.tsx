@@ -122,7 +122,7 @@ function DayHeader({ date, today, count }: { date: string; today: string; count:
     <div className={cn('flex items-center gap-2.5 mb-1', isToday ? 'text-primary' : '')}>
       <span className={cn(
         'text-[11px] font-bold uppercase tracking-[0.1em] shrink-0',
-        isToday ? 'text-primary' : 'text-muted-foreground/50',
+        isToday ? 'text-primary' : 'text-muted-foreground/85',
       )}>
         {fmtDayHeader(date)}
       </span>
@@ -132,7 +132,7 @@ function DayHeader({ date, today, count }: { date: string; today: string; count:
         </span>
       )}
       <div className="flex-1 h-px bg-border/40" />
-      <span className="text-[10px] text-muted-foreground/30 tabular-nums shrink-0">{count}</span>
+      <span className="text-[10px] text-muted-foreground/80 tabular-nums shrink-0">{count}</span>
     </div>
   );
 }
@@ -140,7 +140,7 @@ function DayHeader({ date, today, count }: { date: string; today: string; count:
 function EmptyState({ label }: { label: string }) {
   return (
     <div className="flex flex-col items-center justify-center py-16 gap-2 text-center">
-      <CalendarDays className="h-7 w-7 text-muted-foreground/30" aria-hidden />
+      <CalendarDays className="h-7 w-7 text-muted-foreground/80" aria-hidden />
       <p className="text-sm text-muted-foreground">No {label} events this week</p>
     </div>
   );
@@ -228,7 +228,7 @@ function EarningsTab({ from, to }: { from: string; to: string }) {
                     <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                       <TimeTag time={e.time} />
                       {e.fiscal_quarter && (
-                        <span className="text-[9px] text-muted-foreground/40 font-mono leading-none">
+                        <span className="text-[9px] text-muted-foreground/80 font-mono leading-none">
                           {e.fiscal_quarter}
                         </span>
                       )}
@@ -240,7 +240,7 @@ function EarningsTab({ from, to }: { from: string; to: string }) {
                 <div className="text-right text-xs shrink-0 space-y-0.5">
                   {e.eps_estimate != null ? (
                     <div>
-                      <span className="text-muted-foreground/60">EPS est. </span>
+                      <span className="text-muted-foreground/80">EPS est. </span>
                       <span className={cn(
                         'font-semibold tabular-nums',
                         e.eps_estimate < 0 ? 'text-red-400' : 'text-foreground',
@@ -249,10 +249,10 @@ function EarningsTab({ from, to }: { from: string; to: string }) {
                       </span>
                     </div>
                   ) : (
-                    <span className="text-muted-foreground/25">—</span>
+                    <span className="text-muted-foreground/80">—</span>
                   )}
                   {e.revenue_estimate != null && (
-                    <div className="text-[10px] text-muted-foreground/40">
+                    <div className="text-[10px] text-muted-foreground/80">
                       Rev {fmtRevenue(e.revenue_estimate)}
                     </div>
                   )}
@@ -315,7 +315,7 @@ function DividendsTab({ from, to }: { from: string; to: string }) {
                     {d.name && (
                       <p className="text-xs text-muted-foreground truncate">{d.name}</p>
                     )}
-                    <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted-foreground/50 flex-wrap">
+                    <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted-foreground/85 flex-wrap">
                       {d.payment_date && <span>Pay {fmtShortDate(d.payment_date)}</span>}
                       {d.frequency && (
                         <span className="capitalize px-1 bg-muted/60 rounded">{d.frequency}</span>
@@ -460,7 +460,7 @@ function IPOTab({ from, to }: { from: string; to: string }) {
                     {ipo.name && <p className="text-xs text-muted-foreground truncate">{ipo.name}</p>}
                     <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                       {ipo.exchange && (
-                        <span className="text-[10px] text-muted-foreground/40">{ipo.exchange}</span>
+                        <span className="text-[10px] text-muted-foreground/80">{ipo.exchange}</span>
                       )}
                       {ipo.status && (
                         <span className={cn(
@@ -552,7 +552,7 @@ export default function CalendarPage() {
               {WEEK_LABELS[offset]}
             </button>
           ))}
-          <span className="ml-auto text-xs text-muted-foreground/50 tabular-nums font-mono">
+          <span className="ml-auto text-xs text-muted-foreground/85 tabular-nums font-mono">
             {fmtWeekRange(from, to)}
           </span>
         </div>

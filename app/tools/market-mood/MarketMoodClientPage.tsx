@@ -66,7 +66,7 @@ function MoodHero({ score, label, animated }: { score: number; label: string; an
           >
             {score}
           </span>
-          <span className="text-base text-muted-foreground/35 font-mono mb-2">/100</span>
+          <span className="text-base text-muted-foreground/80 font-mono mb-2">/100</span>
         </div>
         <div
           className="text-[11px] font-semibold uppercase mt-3"
@@ -107,9 +107,9 @@ function MoodHero({ score, label, animated }: { score: number; label: string; an
         </div>
 
         {/* End labels */}
-        <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground/45">
+        <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground/80">
           <span>Fear</span>
-          <span className="font-mono tabular-nums text-muted-foreground/30">
+          <span className="font-mono tabular-nums text-muted-foreground/80">
             0&nbsp;·&nbsp;25&nbsp;·&nbsp;50&nbsp;·&nbsp;75&nbsp;·&nbsp;100
           </span>
           <span>Greed</span>
@@ -127,7 +127,7 @@ function SignalCard({ signal }: { signal: MoodSignal }) {
     <div className="rounded-2xl border border-border/40 bg-card/30 px-4 py-4 transition-colors hover:border-border/70">
       {/* Top row: name + state chip */}
       <div className="flex items-start justify-between gap-2 mb-3">
-        <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/55">
+        <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/80">
           {signal.name}
         </span>
         <span
@@ -146,7 +146,7 @@ function SignalCard({ signal }: { signal: MoodSignal }) {
         >
           {signal.score}
         </span>
-        <span className="text-[10px] font-mono text-muted-foreground/30 mb-0.5">/100</span>
+        <span className="text-[10px] font-mono text-muted-foreground/80 mb-0.5">/100</span>
       </div>
 
       {/* Mini spectrum bar */}
@@ -166,7 +166,7 @@ function SignalCard({ signal }: { signal: MoodSignal }) {
         />
       </div>
 
-      <p className="text-[11px] leading-relaxed text-muted-foreground/55">
+      <p className="text-[11px] leading-relaxed text-muted-foreground/80">
         {signal.detail}
       </p>
     </div>
@@ -243,7 +243,7 @@ export default function MarketMoodClientPage() {
             </div>
             <div className="flex items-center gap-2 shrink-0">
               {updatedLabel && (
-                <span className="hidden sm:inline text-xs text-muted-foreground/50 font-mono tabular-nums">
+                <span className="hidden sm:inline text-xs text-muted-foreground/85 font-mono tabular-nums">
                   {updatedLabel}
                 </span>
               )}
@@ -255,7 +255,7 @@ export default function MarketMoodClientPage() {
                 disabled={isFetching}
                 aria-label="Refresh"
               >
-                <RefreshCw className={cn('h-3.5 w-3.5 text-muted-foreground/60', isFetching && 'animate-spin')} />
+                <RefreshCw className={cn('h-3.5 w-3.5 text-muted-foreground/80', isFetching && 'animate-spin')} />
               </Button>
             </div>
           </div>
@@ -266,7 +266,7 @@ export default function MarketMoodClientPage() {
           <MoodSkeleton />
         ) : isError ? (
           <div className="flex flex-col items-center gap-3 py-24 text-center">
-            <AlertCircle className="h-8 w-8 text-muted-foreground/30" />
+            <AlertCircle className="h-8 w-8 text-muted-foreground/80" />
             <p className="text-sm text-muted-foreground">Couldn&apos;t load market data right now.</p>
             <Button variant="outline" size="sm" onClick={() => refetch()}>Try again</Button>
           </div>
@@ -281,14 +281,14 @@ export default function MarketMoodClientPage() {
             <div className="space-y-4">
               <div className="px-1">
                 <div className="flex items-baseline justify-between gap-3">
-                  <h2 className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground/55">
+                  <h2 className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground/80">
                     Signal Breakdown
                   </h2>
-                  <span className="text-[10px] font-mono text-muted-foreground/35 tracking-wider">
+                  <span className="text-[10px] font-mono text-muted-foreground/80 tracking-wider">
                     {data.signals.length} of 4
                   </span>
                 </div>
-                <p className="text-xs text-muted-foreground/40 mt-1">
+                <p className="text-xs text-muted-foreground/80 mt-1">
                   How each input contributes to the composite
                 </p>
               </div>
@@ -305,17 +305,17 @@ export default function MarketMoodClientPage() {
 
             {/* Methodology — quiet, editorial, mono accent on symbol codes */}
             <div className="border-t border-border/30 pt-5 px-1">
-              <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground/45 mb-2">
+              <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground/80 mb-2">
                 Methodology
               </div>
-              <p className="text-[11px] leading-relaxed text-muted-foreground/50">
+              <p className="text-[11px] leading-relaxed text-muted-foreground/85">
                 Composite weighted by{' '}
-                <span className="font-mono text-muted-foreground/75">VIX</span> volatility (35%),{' '}
-                <span className="font-mono text-muted-foreground/75">S&amp;P 500</span> momentum vs 125-day average (30%),{' '}
+                <span className="font-mono text-muted-foreground/85">VIX</span> volatility (35%),{' '}
+                <span className="font-mono text-muted-foreground/85">S&amp;P 500</span> momentum vs 125-day average (30%),{' '}
                 high-yield bond demand{' '}
-                <span className="font-mono text-muted-foreground/75">HYG/LQD</span> (20%),{' '}
+                <span className="font-mono text-muted-foreground/85">HYG/LQD</span> (20%),{' '}
                 and safe-haven flight{' '}
-                <span className="font-mono text-muted-foreground/75">SPY/TLT</span> (15%).
+                <span className="font-mono text-muted-foreground/85">SPY/TLT</span> (15%).
                 A score of <span className="font-mono">0</span> represents extreme fear;{' '}
                 <span className="font-mono">100</span>, extreme greed.
               </p>

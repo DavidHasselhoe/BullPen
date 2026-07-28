@@ -93,7 +93,7 @@ export function DailyChallengeCard() {
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-600 dark:text-emerald-400">
               Daily Challenge
             </p>
-            <p className="text-[11px] text-muted-foreground/70">Keep your streak alive</p>
+            <p className="text-[11px] text-muted-foreground/85">Keep your streak alive</p>
           </div>
         </div>
         <span className="flex items-center gap-1 text-[11px] font-medium text-emerald-600/80 dark:text-emerald-400/80">
@@ -115,7 +115,7 @@ export function DailyChallengeCard() {
             <p className="text-sm font-medium text-foreground">
               {wasCorrect ? 'Solved today — nice work!' : 'Done for today.'}
             </p>
-            <p className="text-[11px] text-muted-foreground/70 flex items-center gap-1 mt-0.5">
+            <p className="text-[11px] text-muted-foreground/85 flex items-center gap-1 mt-0.5">
               <CalendarClock className="h-3 w-3" /> New challenge in {timeUntilEtMidnight()}
             </p>
           </div>
@@ -185,7 +185,7 @@ export function DailyChallengeCard() {
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground leading-relaxed">{result.explanation}</p>
-                <p className="text-[11px] text-muted-foreground/60 flex items-center gap-1 mt-2">
+                <p className="text-[11px] text-muted-foreground/80 flex items-center gap-1 mt-2">
                   <CalendarClock className="h-3 w-3" /> New challenge in {timeUntilEtMidnight()}
                 </p>
               </motion.div>

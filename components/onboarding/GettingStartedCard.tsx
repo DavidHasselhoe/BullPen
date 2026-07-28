@@ -86,7 +86,7 @@ export function GettingStartedCard() {
                   <span className="block text-sm font-medium text-foreground">{step.title}</span>
                   <span className="block text-xs leading-snug text-muted-foreground">{step.desc}</span>
                 </span>
-                <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/50 transition-colors group-hover:text-foreground" />
+                <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/85 transition-colors group-hover:text-foreground" />
               </>
             );
             const cls =

@@ -179,7 +179,7 @@ export function UserMenu({ forceDark = false }: UserMenuProps = {}) {
         {userIsAdmin && (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-semibold">
+            <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-muted-foreground/80 font-semibold">
               Admin
             </DropdownMenuLabel>
             <DropdownMenuItem

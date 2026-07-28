@@ -87,14 +87,14 @@ export default function DeepDiveLanding() {
               className="flex flex-col sm:flex-row gap-2.5"
             >
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/40 pointer-events-none" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/80 pointer-events-none" />
                 <input
                   type="text"
                   value={ticker}
                   onChange={(e) => setTicker(e.target.value.toUpperCase())}
                   placeholder="Enter a ticker — e.g. NVDA"
                   aria-label="Ticker symbol"
-                  className="w-full rounded-lg border border-border bg-background pl-9 pr-3 py-2.5 text-sm font-medium uppercase tracking-wide placeholder:normal-case placeholder:tracking-normal placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-ring transition-shadow"
+                  className="w-full rounded-lg border border-border bg-background pl-9 pr-3 py-2.5 text-sm font-medium uppercase tracking-wide placeholder:normal-case placeholder:tracking-normal placeholder:text-muted-foreground/80 focus:outline-none focus:ring-2 focus:ring-ring transition-shadow"
                 />
               </div>
               <Button type="submit" size="lg" disabled={!ticker.trim()} className="gap-2 shrink-0">
@@ -103,12 +103,12 @@ export default function DeepDiveLanding() {
             </form>
 
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[11px] text-muted-foreground/60">Lens:</span>
+              <span className="text-[11px] text-muted-foreground/80">Lens:</span>
               <LensPicker value={lens} onChange={setLens} />
             </div>
 
             <div className="flex flex-wrap items-center gap-1.5 pt-1">
-              <span className="text-[11px] text-muted-foreground/60">Popular:</span>
+              <span className="text-[11px] text-muted-foreground/80">Popular:</span>
               {POPULAR.map((sym) => (
                 <button
                   key={sym}
@@ -128,9 +128,9 @@ export default function DeepDiveLanding() {
 
         {/* Saved dives */}
         <div className="flex items-center gap-2 mb-3">
-          <Clock className="h-3.5 w-3.5 text-muted-foreground/50" />
-          <span className="text-[10px] uppercase tracking-widest text-muted-foreground/50 font-semibold">Your deep dives</span>
-          {dives.length > 0 && <span className="text-[10px] text-muted-foreground/40 tabular-nums">({dives.length})</span>}
+          <Clock className="h-3.5 w-3.5 text-muted-foreground/85" />
+          <span className="text-[10px] uppercase tracking-widest text-muted-foreground/85 font-semibold">Your deep dives</span>
+          {dives.length > 0 && <span className="text-[10px] text-muted-foreground/80 tabular-nums">({dives.length})</span>}
         </div>
 
         {isLoading ? (
@@ -184,7 +184,7 @@ function SavedDiveRow({ dive: d, onDelete }: { dive: SavedDivePreview; onDelete:
             </button>
             <button
               onClick={() => setConfirm(false)}
-              className="text-xs text-muted-foreground/50 hover:text-muted-foreground px-2 py-1 rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="text-xs text-muted-foreground/85 hover:text-muted-foreground px-2 py-1 rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               Cancel
             </button>
@@ -193,12 +193,12 @@ function SavedDiveRow({ dive: d, onDelete }: { dive: SavedDivePreview; onDelete:
           <>
             <button
               onClick={() => setConfirm(true)}
-              className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 text-muted-foreground/40 hover:text-red-400 p-1.5 rounded transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 text-muted-foreground/80 hover:text-red-400 p-1.5 rounded transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               aria-label={`Delete ${d.symbol} deep dive`}
             >
               <Trash2 className="h-3.5 w-3.5" />
             </button>
-            <ChevronRight className="h-4 w-4 text-muted-foreground/30 group-hover:text-muted-foreground/60 transition-colors" aria-hidden />
+            <ChevronRight className="h-4 w-4 text-muted-foreground/80 group-hover:text-muted-foreground/80 transition-colors" aria-hidden />
           </>
         )}
       </div>

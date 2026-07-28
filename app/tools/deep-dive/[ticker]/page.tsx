@@ -205,7 +205,7 @@ export default function DeepDivePage() {
               </p>
               <div className="mt-6 flex flex-col items-center gap-4">
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/70 mb-2">Choose a lens</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/85 mb-2">Choose a lens</p>
                   <LensPicker value={lens} onChange={setLens} />
                 </div>
                 <Button size="lg" onClick={() => generate(lens)} className="gap-2">
@@ -230,9 +230,9 @@ export default function DeepDivePage() {
               onRegenerate={() => generate(lens)}
             />
             <div className="flex flex-col items-center gap-2 pt-1">
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/60">Try another angle</span>
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/80">Try another angle</span>
               <LensPicker value={lens} onChange={setLens} />
-              <p className="text-center text-[11px] text-muted-foreground/50 max-w-sm">
+              <p className="text-center text-[11px] text-muted-foreground/85 max-w-sm">
                 Pick a lens, then hit Regenerate. Regenerating uses one deep dive from your monthly quota.
               </p>
             </div>

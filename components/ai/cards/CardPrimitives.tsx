@@ -15,7 +15,7 @@ export function CardShell({ children }: { children: React.ReactNode }) {
 export function StatCell({ label, value }: { label: string; value: string }) {
   return (
     <div className="space-y-0.5">
-      <div className="text-[10px] uppercase tracking-wide text-muted-foreground/70">{label}</div>
+      <div className="text-[10px] uppercase tracking-wide text-muted-foreground/85">{label}</div>
       <div className="tabular-nums font-medium text-foreground">{value}</div>
     </div>
   );

@@ -179,7 +179,7 @@ export function ScreenerViewBar({ activeView, onViewChange }: Props) {
                 className="text-xs"
               >
                 All watchlists
-                <span className="ml-auto text-[10px] text-muted-foreground/60">{watchlistItems.length}</span>
+                <span className="ml-auto text-[10px] text-muted-foreground/80">{watchlistItems.length}</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               {watchlistLists.map((list) => (
@@ -190,7 +190,7 @@ export function ScreenerViewBar({ activeView, onViewChange }: Props) {
                 >
                   <span className="h-2 w-2 rounded-full shrink-0" style={{ background: list.color ?? '#888' }} />
                   {list.name}
-                  <span className="ml-auto text-[10px] text-muted-foreground/60">
+                  <span className="ml-auto text-[10px] text-muted-foreground/80">
                     {watchlistItems.filter((i) => i.list_id === list.id).length}
                   </span>
                 </DropdownMenuItem>
@@ -249,7 +249,7 @@ export function ScreenerViewBar({ activeView, onViewChange }: Props) {
                   'h-5 w-5 rounded flex items-center justify-center transition-colors',
                   active
                     ? 'text-primary-foreground/60 hover:text-primary-foreground hover:bg-white/15'
-                    : 'text-muted-foreground/60 hover:text-foreground hover:bg-muted'
+                    : 'text-muted-foreground/80 hover:text-foreground hover:bg-muted'
                 )}
               >
                 <Pencil className="h-2.5 w-2.5" />
@@ -263,7 +263,7 @@ export function ScreenerViewBar({ activeView, onViewChange }: Props) {
                       'h-5 w-5 rounded flex items-center justify-center transition-colors',
                       active
                         ? 'text-primary-foreground/60 hover:text-primary-foreground hover:bg-white/15'
-                        : 'text-muted-foreground/60 hover:text-foreground hover:bg-muted'
+                        : 'text-muted-foreground/80 hover:text-foreground hover:bg-muted'
                     )}
                   >
                     <ChevronDown className="h-2.5 w-2.5" />

@@ -107,7 +107,7 @@ export default function AlertsClientPage() {
                       style={{ width: `${Math.min(100, (activeSymbolCount / FREE_ACTIVE_ALERT_LIMIT) * 100)}%` }}
                     />
                   </div>
-                  <span className="text-[10px] font-mono text-muted-foreground/50 tabular-nums">
+                  <span className="text-[10px] font-mono text-muted-foreground/85 tabular-nums">
                     {activeSymbolCount}/{FREE_ACTIVE_ALERT_LIMIT}
                   </span>
                 </div>
@@ -140,7 +140,7 @@ export default function AlertsClientPage() {
           </div>
         ) : isError ? (
           <div className="flex flex-col items-center gap-3 py-16 text-center">
-            <AlertCircle className="h-8 w-8 text-muted-foreground/30" />
+            <AlertCircle className="h-8 w-8 text-muted-foreground/80" />
             <p className="text-sm text-muted-foreground">{humanizeError(error)}</p>
             <Button variant="outline" size="sm" onClick={() => refetch()}>Try again</Button>
           </div>
@@ -173,13 +173,13 @@ export default function AlertsClientPage() {
 
         {/* About */}
         <div className="border-t border-border/30 pt-5 px-1">
-          <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground/45 mb-2">
+          <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground/80 mb-2">
             About alerts
           </div>
-          <p className="text-[11px] leading-relaxed text-muted-foreground/55">
-            Alerts are checked at <span className="font-mono text-muted-foreground/75">market open</span>{' '}
+          <p className="text-[11px] leading-relaxed text-muted-foreground/80">
+            Alerts are checked at <span className="font-mono text-muted-foreground/85">market open</span>{' '}
             and once every hour through close (Mon–Fri). Each alert can fire at most{' '}
-            <span className="font-mono text-muted-foreground/75">once per 24 hours</span> so you&apos;re never spammed.
+            <span className="font-mono text-muted-foreground/85">once per 24 hours</span> so you&apos;re never spammed.
             Pause one to silence it without losing the configuration.
           </p>
         </div>

@@ -28,7 +28,7 @@ export function CollectionGrid({ title, description, items, showReason, classNam
   return (
     <section className={cn('min-w-0', className)}>
       <h3 className="text-[13px] font-semibold text-foreground">{title}</h3>
-      <p className="mb-3 mt-0.5 text-[11px] leading-relaxed text-muted-foreground/65">{description}</p>
+      <p className="mb-3 mt-0.5 text-[11px] leading-relaxed text-muted-foreground/85">{description}</p>
 
       <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
         {items.map((item) => (

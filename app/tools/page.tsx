@@ -60,7 +60,7 @@ export default function ToolsPage() {
                     {tool.description}
                   </p>
                 </div>
-                <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground/40 mt-0.5 transition-all duration-200 group-hover:text-primary group-hover:translate-x-0.5" />
+                <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground/80 mt-0.5 transition-all duration-200 group-hover:text-primary group-hover:translate-x-0.5" />
               </Link>
             );
           })}

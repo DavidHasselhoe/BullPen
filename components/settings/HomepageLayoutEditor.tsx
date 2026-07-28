@@ -59,7 +59,7 @@ export function HomepageLayoutEditor({ order, hidden, onChange }: Props) {
                 isHidden && 'opacity-50'
               )}
             >
-              <GripVertical className="h-4 w-4 text-muted-foreground/50 shrink-0" />
+              <GripVertical className="h-4 w-4 text-muted-foreground/85 shrink-0" />
               <span className="text-sm flex-1 min-w-0 truncate">{widget.label}</span>
               {widget.requiresPro && (
                 <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">
@@ -70,7 +70,7 @@ export function HomepageLayoutEditor({ order, hidden, onChange }: Props) {
                 type="button"
                 onClick={() => toggleHidden(id)}
                 onPointerDown={(e) => e.stopPropagation()}
-                className="text-muted-foreground/60 hover:text-foreground transition-colors shrink-0 p-1 -m-1 rounded"
+                className="text-muted-foreground/80 hover:text-foreground transition-colors shrink-0 p-1 -m-1 rounded"
                 aria-label={isHidden ? 'Show widget' : 'Hide widget'}
                 title={isHidden ? 'Show widget' : 'Hide widget'}
               >

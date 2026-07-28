@@ -88,10 +88,10 @@ export default function CourseOverviewPage() {
             </span>
           )}
         </div>
-        <p className="text-sm text-muted-foreground/75 mt-2 leading-relaxed">
+        <p className="text-sm text-muted-foreground/85 mt-2 leading-relaxed">
           {course.description}
         </p>
-        <div className="flex items-center gap-3 mt-3 text-[11px] font-mono uppercase tracking-[0.16em] text-muted-foreground/55">
+        <div className="flex items-center gap-3 mt-3 text-[11px] font-mono uppercase tracking-[0.16em] text-muted-foreground/80">
           <span>{lessons.length} lessons</span>
           <span>•</span>
           <span className="text-emerald-500/80 flex items-center gap-1">
@@ -130,7 +130,7 @@ export default function CourseOverviewPage() {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium text-foreground truncate">{lesson.title}</div>
-                <div className="text-[10px] font-mono uppercase tracking-[0.14em] text-muted-foreground/55">
+                <div className="text-[10px] font-mono uppercase tracking-[0.14em] text-muted-foreground/80">
                   {meta.label}
                 </div>
               </div>

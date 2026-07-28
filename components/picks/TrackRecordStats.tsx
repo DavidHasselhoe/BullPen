@@ -61,7 +61,7 @@ export function TrackRecordStats({ summary }: { summary: PerformanceSummary }) {
     <div className="rounded-xl border border-border/50 bg-card/40 px-5 py-5 sm:px-6">
       <dl className="grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-3 lg:grid-cols-5">
         <div>
-          <dt className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/50">
+          <dt className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/85">
             All picks
           </dt>
           <dd
@@ -78,7 +78,7 @@ export function TrackRecordStats({ summary }: { summary: PerformanceSummary }) {
         <Stat label="S&P, same dates" value={fmtPct(summary.benchmarkReturnPct)} />
 
         <div>
-          <dt className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/50">
+          <dt className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/85">
             Difference
           </dt>
           <dd className={cn('mt-1.5 font-mono text-lg font-semibold tabular-nums', DIRECTION_TEXT[outDir])}>
@@ -133,13 +133,13 @@ export function TrackRecordStats({ summary }: { summary: PerformanceSummary }) {
 function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
     <div>
-      <dt className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/50">
+      <dt className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/85">
         {label}
       </dt>
       <dd className="mt-1.5 font-mono text-lg font-semibold tabular-nums text-foreground/90">
         {value}
       </dd>
-      {sub && <p className="mt-0.5 text-[11px] text-muted-foreground/60">{sub}</p>}
+      {sub && <p className="mt-0.5 text-[11px] text-muted-foreground/80">{sub}</p>}
     </div>
   );
 }

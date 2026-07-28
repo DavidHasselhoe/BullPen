@@ -111,7 +111,7 @@ function DayColumn({
         <div className="mb-3 select-none">
           <p className={cn(
             'text-[10px] font-bold uppercase tracking-[0.12em]',
-            isToday ? 'text-primary' : 'text-muted-foreground/60'
+            isToday ? 'text-primary' : 'text-muted-foreground/80'
           )}>
             {dayLabel}
           </p>
@@ -126,7 +126,7 @@ function DayColumn({
         {/* Earnings list */}
         <div className="space-y-1.5 flex-1">
           {visible.length === 0 ? (
-            <p className="text-[11px] text-muted-foreground/20 pt-0.5 select-none">—</p>
+            <p className="text-[11px] text-muted-foreground/80 pt-0.5 select-none">—</p>
           ) : (
             visible.map((row, i) => {
               const tag = timeTag(row.time);
@@ -159,7 +159,7 @@ function DayColumn({
         {overflow > 0 && (
           <Link
             href="/tools/calendar"
-            className="mt-2 text-[10px] text-muted-foreground/40 hover:text-primary transition-colors"
+            className="mt-2 text-[10px] text-muted-foreground/80 hover:text-primary transition-colors"
           >
             +{overflow} more
           </Link>
@@ -270,16 +270,16 @@ export function EarningsCalendarWidget() {
     <div className="space-y-4 min-w-0">
       {/* Editorial section header */}
       <div className="flex items-center gap-3">
-        <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/70 shrink-0">
+        <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/85 shrink-0">
           {isPortfolioMode ? 'Portfolio earnings' : 'Earnings this week'}
         </span>
         <div className="flex-1 h-px bg-border/50" />
-        <span className="text-[10px] font-mono text-muted-foreground/40 hidden sm:block tracking-wider shrink-0">
+        <span className="text-[10px] font-mono text-muted-foreground/80 hidden sm:block tracking-wider shrink-0">
           {fmtWeekRange(weekDates)}
         </span>
         <Link
           href="/tools/calendar"
-          className="text-[10px] font-mono text-muted-foreground/50 hover:text-foreground transition-colors uppercase tracking-wider shrink-0"
+          className="text-[10px] font-mono text-muted-foreground/85 hover:text-foreground transition-colors uppercase tracking-wider shrink-0"
         >
           Full →
         </Link>

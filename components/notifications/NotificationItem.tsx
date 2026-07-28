@@ -119,7 +119,7 @@ function GenericIcon({ type }: { type: Notification['type'] }) {
   );
   return (
     <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted">
-      <Bell className={cn(base, 'text-muted-foreground/60')} />
+      <Bell className={cn(base, 'text-muted-foreground/80')} />
     </div>
   );
 }
@@ -206,16 +206,16 @@ export function NotificationItem({ notification, onMarkRead }: NotificationItemP
               <span className="inline-block ml-1.5 h-1.5 w-1.5 rounded-full bg-primary align-middle" />
             )}
           </p>
-          <span className="text-[10px] text-muted-foreground/50 shrink-0 tabular-nums">
+          <span className="text-[10px] text-muted-foreground/85 shrink-0 tabular-nums">
             {formatRelativeTime(notification.created_at)}
           </span>
         </div>
-        <p className="text-[11px] text-muted-foreground/70 leading-snug line-clamp-2">
+        <p className="text-[11px] text-muted-foreground/85 leading-snug line-clamp-2">
           {notification.message}
         </p>
         {/* Source label — where this notification came from / where the card leads. */}
         {source && (
-          <span className="inline-flex items-center gap-0.5 pt-0.5 text-[10px] font-medium text-muted-foreground/45">
+          <span className="inline-flex items-center gap-0.5 pt-0.5 text-[10px] font-medium text-muted-foreground/80">
             {source.label}
             <ChevronRight className="h-2.5 w-2.5" />
           </span>

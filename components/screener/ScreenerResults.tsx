@@ -224,7 +224,7 @@ export function ScreenerResults({
                   trigger={
                     <button
                       type="button"
-                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-muted-foreground/60 hover:bg-muted/60 hover:text-foreground"
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-muted-foreground/80 hover:bg-muted/60 hover:text-foreground"
                       title={`Set alert for ${row.ticker}`}
                     >
                       <Bell className="h-4 w-4" />
@@ -331,7 +331,7 @@ export function ScreenerResults({
                           trigger={
                             <button
                               type="button"
-                              className="h-6 w-6 rounded flex items-center justify-center text-muted-foreground/50 hover:text-foreground hover:bg-muted/60 transition-colors"
+                              className="h-6 w-6 rounded flex items-center justify-center text-muted-foreground/85 hover:text-foreground hover:bg-muted/60 transition-colors"
                               title={`Set alert for ${row.ticker}`}
                             >
                               <Bell className="h-3.5 w-3.5" />
@@ -367,7 +367,7 @@ export function ScreenerResults({
           <button
             type="button"
             onClick={exportCSV}
-            className="flex items-center gap-1 text-xs text-muted-foreground/60 hover:text-foreground transition-colors"
+            className="flex items-center gap-1 text-xs text-muted-foreground/80 hover:text-foreground transition-colors"
             title={isPro ? 'Export all results to CSV' : 'CSV export is a Pro feature'}
           >
             <Download className="h-3 w-3" />

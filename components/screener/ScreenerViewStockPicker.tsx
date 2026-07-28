@@ -55,7 +55,7 @@ export function ScreenerViewStockPicker({ view, universe, onAdd, hasStocks }: Pr
         onClick={() => { setExpanded(true); setTimeout(() => inputRef.current?.focus(), 50); }}
         className={cn(
           'flex items-center gap-2 w-full px-3 py-2 rounded-md',
-          'text-xs text-muted-foreground/50 hover:text-muted-foreground hover:bg-muted/30',
+          'text-xs text-muted-foreground/85 hover:text-muted-foreground hover:bg-muted/30',
           'border border-dashed border-border/30 hover:border-border/60',
           'transition-colors group mt-2'
         )}
@@ -72,14 +72,14 @@ export function ScreenerViewStockPicker({ view, universe, onAdd, hasStocks }: Pr
     <div className="mt-1 rounded-lg border border-border/50 bg-card overflow-hidden shadow-sm">
       {/* Search input */}
       <div className="flex items-center gap-2 px-3 py-2.5 border-b border-border/30">
-        <Search className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
+        <Search className="h-3.5 w-3.5 text-muted-foreground/85 shrink-0" />
         <input
           ref={inputRef}
           autoFocus
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search by ticker or company name…"
-          className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/40"
+          className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/80"
           onKeyDown={(e) => {
             if (e.key === 'Escape') { setExpanded(false); setQuery(''); }
             if (e.key === 'Enter' && suggestions.length > 0) handleAdd(suggestions[0].ticker);
@@ -88,7 +88,7 @@ export function ScreenerViewStockPicker({ view, universe, onAdd, hasStocks }: Pr
         <button
           type="button"
           onClick={() => { setExpanded(false); setQuery(''); }}
-          className="text-muted-foreground/40 hover:text-muted-foreground transition-colors shrink-0"
+          className="text-muted-foreground/80 hover:text-muted-foreground transition-colors shrink-0"
         >
           <X className="h-3.5 w-3.5" />
         </button>
@@ -121,10 +121,10 @@ export function ScreenerViewStockPicker({ view, universe, onAdd, hasStocks }: Pr
                     <span className="text-xs text-muted-foreground truncate">{s.name}</span>
                   </div>
                   {s.sector && (
-                    <span className="text-[10px] text-muted-foreground/50">{s.sector}</span>
+                    <span className="text-[10px] text-muted-foreground/85">{s.sector}</span>
                   )}
                 </div>
-                <Plus className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />
+                <Plus className="h-3.5 w-3.5 text-muted-foreground/80 shrink-0" />
               </button>
             </li>
           ))}
@@ -133,14 +133,14 @@ export function ScreenerViewStockPicker({ view, universe, onAdd, hasStocks }: Pr
 
       {/* Empty search state */}
       {q.length > 0 && suggestions.length === 0 && (
-        <div className="px-3 py-4 text-xs text-muted-foreground/50 text-center">
+        <div className="px-3 py-4 text-xs text-muted-foreground/85 text-center">
           No S&amp;P 500 stocks match &ldquo;{query}&rdquo;
         </div>
       )}
 
       {/* Hint when no query yet */}
       {q.length === 0 && (
-        <div className="px-3 py-3 text-[11px] text-muted-foreground/40 text-center">
+        <div className="px-3 py-3 text-[11px] text-muted-foreground/80 text-center">
           Type a ticker or company name to search the S&amp;P 500
         </div>
       )}

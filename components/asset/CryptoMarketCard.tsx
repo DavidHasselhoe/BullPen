@@ -85,7 +85,7 @@ export function CryptoMarketCard() {
                   </span>
                 </>
               ) : (
-                <span className="text-xs text-muted-foreground/50">—</span>
+                <span className="text-xs text-muted-foreground/85">—</span>
               )}
             </Link>
           );

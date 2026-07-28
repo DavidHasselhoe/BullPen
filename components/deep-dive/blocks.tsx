@@ -39,7 +39,7 @@ const severityBadge: Record<string, string> = {
 function SectionTitle({ children }: { children: React.ReactNode }) {
   if (!children) return null;
   return (
-    <h3 className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground/70 mb-3">
+    <h3 className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground/85 mb-3">
       {children}
     </h3>
   );
@@ -61,7 +61,7 @@ function KpiGrid({ block }: { block: Extract<Block, { type: 'kpi_grid' }> }) {
               {item.value}
             </p>
             {item.sublabel && (
-              <p className="text-[10px] text-muted-foreground/70 mt-1 leading-tight">{item.sublabel}</p>
+              <p className="text-[10px] text-muted-foreground/85 mt-1 leading-tight">{item.sublabel}</p>
             )}
           </div>
         ))}
@@ -199,7 +199,7 @@ function MetricTable({ block }: { block: Extract<Block, { type: 'metric_table' }
             <span className="text-sm text-muted-foreground shrink-0">{row.label}</span>
             <span className="flex items-baseline gap-2 min-w-0 justify-end text-right">
               <span className="text-sm font-medium tabular-nums text-foreground">{row.value}</span>
-              {row.note && <span className="text-[11px] text-muted-foreground/60 truncate">{row.note}</span>}
+              {row.note && <span className="text-[11px] text-muted-foreground/80 truncate">{row.note}</span>}
             </span>
           </div>
         ))}
@@ -262,7 +262,7 @@ function Catalysts({ block }: { block: Extract<Block, { type: 'catalysts' }> }) 
               <div className="min-w-0">
                 <p className="text-sm font-medium text-foreground">
                   {item.title}
-                  {item.timeframe && <span className="ml-2 text-[10px] text-muted-foreground/60 font-normal">{item.timeframe}</span>}
+                  {item.timeframe && <span className="ml-2 text-[10px] text-muted-foreground/80 font-normal">{item.timeframe}</span>}
                 </p>
                 {item.detail && <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{item.detail}</p>}
               </div>
@@ -322,7 +322,7 @@ function Prose({ block }: { block: Extract<Block, { type: 'prose' }> }) {
         {lines.map((line, i) =>
           line.startsWith('- ') || line.startsWith('• ') ? (
             <div key={i} className="flex gap-2">
-              <span className="text-muted-foreground/50 mt-0.5">•</span>
+              <span className="text-muted-foreground/85 mt-0.5">•</span>
               <span>{renderInline(line.replace(/^[-•]\s+/, ''))}</span>
             </div>
           ) : (

@@ -58,7 +58,7 @@ export function AdminCostsClient() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-xs uppercase tracking-widest text-muted-foreground/60 font-semibold">
+                <CardTitle className="flex items-center gap-2 text-xs uppercase tracking-widest text-muted-foreground/80 font-semibold">
                   <DollarSign className="h-3.5 w-3.5" />
                   Spend, last 7 days
                 </CardTitle>
@@ -69,7 +69,7 @@ export function AdminCostsClient() {
             </Card>
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-xs uppercase tracking-widest text-muted-foreground/60 font-semibold">
+                <CardTitle className="flex items-center gap-2 text-xs uppercase tracking-widest text-muted-foreground/80 font-semibold">
                   <Activity className="h-3.5 w-3.5" />
                   Total AI calls, last 7 days
                 </CardTitle>
@@ -95,7 +95,7 @@ export function AdminCostsClient() {
                     <div key={f.feature}>
                       <div className="flex items-baseline justify-between text-sm mb-1">
                         <span className="font-mono">{f.feature}</span>
-                        <span className="text-muted-foreground/70 tabular-nums">
+                        <span className="text-muted-foreground/85 tabular-nums">
                           {fmtUsd(f.cost_usd)} · {f.calls} calls
                         </span>
                       </div>
@@ -123,7 +123,7 @@ export function AdminCostsClient() {
               ) : (
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="text-[10px] uppercase tracking-widest text-muted-foreground/50 text-left">
+                    <tr className="text-[10px] uppercase tracking-widest text-muted-foreground/85 text-left">
                       <th className="py-2 font-semibold">User</th>
                       <th className="py-2 font-semibold text-right">Calls</th>
                       <th className="py-2 font-semibold text-right">Spend</th>
@@ -157,7 +157,7 @@ export function AdminCostsClient() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead>
-                      <tr className="text-[10px] uppercase tracking-widest text-muted-foreground/50 text-left">
+                      <tr className="text-[10px] uppercase tracking-widest text-muted-foreground/85 text-left">
                         <th className="py-2 font-semibold">When</th>
                         <th className="py-2 font-semibold">Feature</th>
                         <th className="py-2 font-semibold">Model</th>
@@ -169,11 +169,11 @@ export function AdminCostsClient() {
                     <tbody>
                       {data.recent.map((r) => (
                         <tr key={r.id} className="border-t border-border/30">
-                          <td className="py-1.5 font-mono text-muted-foreground/70 whitespace-nowrap">
+                          <td className="py-1.5 font-mono text-muted-foreground/85 whitespace-nowrap">
                             {new Date(r.created_at).toLocaleString()}
                           </td>
                           <td className="py-1.5 font-mono">{r.feature}</td>
-                          <td className="py-1.5 font-mono text-muted-foreground/70">{r.model}</td>
+                          <td className="py-1.5 font-mono text-muted-foreground/85">{r.model}</td>
                           <td className="py-1.5 text-right tabular-nums">{r.input_tokens ?? '—'}</td>
                           <td className="py-1.5 text-right tabular-nums">{r.output_tokens ?? '—'}</td>
                           <td className="py-1.5 text-right tabular-nums">{fmtUsd(r.cost_usd)}</td>

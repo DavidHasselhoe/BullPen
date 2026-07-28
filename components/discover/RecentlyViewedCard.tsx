@@ -55,7 +55,7 @@ export function RecentlyViewedCard() {
                       {isPos ? '+' : ''}{pct.toFixed(2)}%
                     </span>
                   ) : (
-                    <span className="text-xs text-muted-foreground/50 leading-tight">—</span>
+                    <span className="text-xs text-muted-foreground/85 leading-tight">—</span>
                   )}
                 </div>
               </Link>

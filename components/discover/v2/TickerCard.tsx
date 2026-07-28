@@ -78,7 +78,7 @@ export function TickerCard({ item, href, showReason = false }: Props) {
       ? 'text-emerald-400'
       : direction === 'down'
       ? 'text-red-400'
-      : 'text-muted-foreground/60';
+      : 'text-muted-foreground/80';
 
   const DirIcon = direction === 'up' ? ArrowUp : direction === 'down' ? ArrowDown : Minus;
 
@@ -119,7 +119,7 @@ export function TickerCard({ item, href, showReason = false }: Props) {
           {item.reason}
         </div>
       ) : (
-        <div className="text-[11px] text-muted-foreground/70 truncate" title={item.name}>
+        <div className="text-[11px] text-muted-foreground/85 truncate" title={item.name}>
           {item.name}
         </div>
       )}

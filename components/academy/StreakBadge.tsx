@@ -32,7 +32,7 @@ export function StreakBadge({ streak, lastActivityDate }: Props) {
       className={cn(
         'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold tabular-nums shrink-0',
         isDim
-          ? 'bg-muted/30 text-muted-foreground/60'
+          ? 'bg-muted/30 text-muted-foreground/80'
           : isActiveToday
             ? 'bg-orange-500/15 text-orange-400'
             : 'bg-orange-500/10 text-orange-400/70'

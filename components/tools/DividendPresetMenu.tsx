@@ -47,7 +47,7 @@ export function DividendPresetMenu({ presets, onApply, onSave, onDelete }: Props
       <PopoverContent align="end" className="z-[110] w-72 p-0">
         {/* Save current portfolio */}
         <div className="border-b border-border/60 p-2">
-          <p className="px-1 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+          <p className="px-1 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/80">
             Save current portfolio
           </p>
           <div className="flex items-center gap-1.5">
@@ -70,7 +70,7 @@ export function DividendPresetMenu({ presets, onApply, onSave, onDelete }: Props
               Save
             </button>
           </div>
-          <p className="mt-1.5 px-1 text-[10px] leading-relaxed text-muted-foreground/60">
+          <p className="mt-1.5 px-1 text-[10px] leading-relaxed text-muted-foreground/80">
             Captures the stocks and amounts currently in your portfolio below.
           </p>
         </div>
@@ -78,7 +78,7 @@ export function DividendPresetMenu({ presets, onApply, onSave, onDelete }: Props
         {/* Saved presets */}
         <div className="max-h-72 overflow-y-auto p-2">
           {presets.length === 0 ? (
-            <p className="px-1 py-3 text-center text-xs text-muted-foreground/60">
+            <p className="px-1 py-3 text-center text-xs text-muted-foreground/80">
               No presets yet — save a portfolio above.
             </p>
           ) : (
@@ -98,7 +98,7 @@ export function DividendPresetMenu({ presets, onApply, onSave, onDelete }: Props
                     type="button"
                     onClick={() => onDelete(p.id)}
                     aria-label={`Delete ${p.name}`}
-                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground/60 opacity-0 transition-all hover:bg-red-500/10 hover:text-red-400 group-hover:opacity-100"
+                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground/80 opacity-0 transition-all hover:bg-red-500/10 hover:text-red-400 group-hover:opacity-100"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>

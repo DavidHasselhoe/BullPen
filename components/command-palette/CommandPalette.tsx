@@ -186,7 +186,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const itemClass =
     'group gap-3 rounded-lg px-2.5 py-2 text-sm data-[selected=true]:bg-accent';
   const pillClass =
-    'shrink-0 rounded bg-muted px-1.5 py-px text-[10px] font-medium leading-tight text-muted-foreground/70';
+    'shrink-0 rounded bg-muted px-1.5 py-px text-[10px] font-medium leading-tight text-muted-foreground/85';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -200,7 +200,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         </DialogHeader>
         <Command
           shouldFilter={false}
-          className="rounded-2xl bg-popover [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:pt-3 [&_[cmdk-group-heading]]:pb-1 [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-[0.12em] [&_[cmdk-group-heading]]:text-muted-foreground/50 [&_[data-slot=command-input-wrapper]]:h-14 [&_[data-slot=command-input-wrapper]]:gap-3 [&_[data-slot=command-input-wrapper]]:border-border/60 [&_[data-slot=command-input-wrapper]]:px-4 [&_[data-slot=command-input-wrapper]_svg]:size-[18px] [&_[data-slot=command-input-wrapper]_svg]:opacity-100 [&_[data-slot=command-input]]:text-[15px]"
+          className="rounded-2xl bg-popover [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:pt-3 [&_[cmdk-group-heading]]:pb-1 [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-[0.12em] [&_[cmdk-group-heading]]:text-muted-foreground/85 [&_[data-slot=command-input-wrapper]]:h-14 [&_[data-slot=command-input-wrapper]]:gap-3 [&_[data-slot=command-input-wrapper]]:border-border/60 [&_[data-slot=command-input-wrapper]]:px-4 [&_[data-slot=command-input-wrapper]_svg]:size-[18px] [&_[data-slot=command-input-wrapper]_svg]:opacity-100 [&_[data-slot=command-input]]:text-[15px]"
         >
           <div className="relative">
             <CommandInput
@@ -216,7 +216,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
             />
             {/* Inline loading spinner — sits in the input row so the list never reflows */}
             {hasQuery && isSearching && (
-              <Loader2 className="absolute right-4 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground/60" />
+              <Loader2 className="absolute right-4 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground/80" />
             )}
           </div>
 
@@ -242,7 +242,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                     );
                   })}
                 </CommandGroup>
-                <p className="px-3 pt-2 text-center text-xs text-muted-foreground/45">
+                <p className="px-3 pt-2 text-center text-xs text-muted-foreground/80">
                   Search 10,000+ stocks, ETFs, crypto &amp; commodities — or ask in plain English.
                 </p>
               </>
@@ -423,14 +423,14 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                 {(!searchResults || searchResults.length === 0) && (
                   <CommandEmpty>
                     {isSearching ? (
-                      <div className="flex flex-col items-center gap-2 py-12 text-sm text-muted-foreground/70">
-                        <Loader2 className="size-5 animate-spin text-muted-foreground/40" />
+                      <div className="flex flex-col items-center gap-2 py-12 text-sm text-muted-foreground/85">
+                        <Loader2 className="size-5 animate-spin text-muted-foreground/80" />
                         Searching…
                       </div>
                     ) : searchError ? (
                       <div className="py-12 text-center text-sm text-muted-foreground">Search failed — try again.</div>
                     ) : (
-                      <div className="px-6 py-12 text-center text-sm text-muted-foreground/70">
+                      <div className="px-6 py-12 text-center text-sm text-muted-foreground/85">
                         No companies found. Try <span className="font-medium text-foreground">Ask BullPen AI</span> above for natural-language queries.
                       </div>
                     )}
@@ -442,7 +442,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 
           {/* Persistent hint bar — anchors the bottom of the fixed-height stage */}
           <div className="flex shrink-0 items-center justify-between border-t border-border/60 bg-muted/20 px-4 py-2.5">
-            <div className="flex items-center gap-3 text-[11px] text-muted-foreground/70">
+            <div className="flex items-center gap-3 text-[11px] text-muted-foreground/85">
               <span className="flex items-center gap-1">
                 <Kbd>↑</Kbd>
                 <Kbd>↓</Kbd>
@@ -455,7 +455,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                 <span className="ml-0.5">Open</span>
               </span>
             </div>
-            <span className="flex items-center gap-1 text-[11px] text-muted-foreground/70">
+            <span className="flex items-center gap-1 text-[11px] text-muted-foreground/85">
               <Kbd>esc</Kbd>
               <span className="ml-0.5">Close</span>
             </span>

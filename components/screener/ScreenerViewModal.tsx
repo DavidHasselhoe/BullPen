@@ -113,7 +113,7 @@ export function ScreenerViewModal({ open, onOpenChange, editingView, onCreated }
             <h2 className="text-sm font-semibold text-foreground">
               {isEditing ? 'Edit view' : 'New view'}
             </h2>
-            <DialogPrimitive.Close className="text-muted-foreground/50 hover:text-foreground transition-colors p-1 rounded-lg hover:bg-muted/40">
+            <DialogPrimitive.Close className="text-muted-foreground/85 hover:text-foreground transition-colors p-1 rounded-lg hover:bg-muted/40">
               <X className="h-4 w-4" />
             </DialogPrimitive.Close>
           </div>
@@ -121,7 +121,7 @@ export function ScreenerViewModal({ open, onOpenChange, editingView, onCreated }
           <div className="px-5 py-4 space-y-4">
             {/* Name */}
             <div className="space-y-1.5">
-              <label className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground/70">
+              <label className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground/85">
                 Name
               </label>
               <Input
@@ -137,11 +137,11 @@ export function ScreenerViewModal({ open, onOpenChange, editingView, onCreated }
 
             {/* Ticker search */}
             <div className="space-y-1.5">
-              <label className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground/70">
+              <label className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground/85">
                 Stocks
               </label>
               <div className="relative">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50" />
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/85" />
                 <Input
                   value={search}
                   onChange={(e) => dispatch({ type: 'setSearch', search: e.target.value })}
@@ -165,7 +165,7 @@ export function ScreenerViewModal({ open, onOpenChange, editingView, onCreated }
                       onClick={() => dispatch({ type: 'addTicker', ticker: t })}
                       className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted/60 transition-colors text-left"
                     >
-                      <Plus className="h-3 w-3 text-muted-foreground/50 shrink-0" />
+                      <Plus className="h-3 w-3 text-muted-foreground/85 shrink-0" />
                       <span className="font-mono font-semibold text-foreground">{t}</span>
                     </button>
                   ))}
@@ -184,7 +184,7 @@ export function ScreenerViewModal({ open, onOpenChange, editingView, onCreated }
                       <button
                         type="button"
                         onClick={() => dispatch({ type: 'removeTicker', ticker: t })}
-                        className="text-muted-foreground/50 hover:text-foreground transition-colors ml-0.5"
+                        className="text-muted-foreground/85 hover:text-foreground transition-colors ml-0.5"
                       >
                         <X className="h-2.5 w-2.5" />
                       </button>
@@ -194,7 +194,7 @@ export function ScreenerViewModal({ open, onOpenChange, editingView, onCreated }
               )}
 
               {tickers.length === 0 && search.trim() === '' && (
-                <p className="text-[11px] text-muted-foreground/50 pt-0.5">
+                <p className="text-[11px] text-muted-foreground/85 pt-0.5">
                   Search and add stocks from the S&amp;P 500 universe.
                 </p>
               )}
@@ -208,7 +208,7 @@ export function ScreenerViewModal({ open, onOpenChange, editingView, onCreated }
 
           {/* Footer */}
           <div className="flex items-center justify-between gap-3 px-5 pb-5 pt-1">
-            <span className="text-[11px] text-muted-foreground/50 tabular-nums">
+            <span className="text-[11px] text-muted-foreground/85 tabular-nums">
               {tickers.length} stock{tickers.length !== 1 ? 's' : ''}
             </span>
             <div className="flex gap-2">

@@ -27,7 +27,7 @@ export function IdeaCollections({ collections }: { collections: DiscoverFeed['co
     <section aria-labelledby="ideas-heading">
       <h2
         id="ideas-heading"
-        className="mb-4 text-sm font-semibold uppercase tracking-widest text-muted-foreground/60"
+        className="mb-4 text-sm font-semibold uppercase tracking-widest text-muted-foreground/80"
       >
         Worth a look
       </h2>

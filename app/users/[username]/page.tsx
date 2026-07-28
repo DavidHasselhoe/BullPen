@@ -117,7 +117,7 @@ export default function UserProfilePage() {
   if (state.status === 'error') {
     return (
       <div className="max-w-3xl mx-auto px-4 py-20 text-center space-y-3">
-        <User className="h-12 w-12 text-muted-foreground/40 mx-auto" />
+        <User className="h-12 w-12 text-muted-foreground/80 mx-auto" />
         <p className="text-base font-medium text-foreground">{state.error}</p>
         <Link href="/users" className="text-sm text-primary underline">
           Back to member search

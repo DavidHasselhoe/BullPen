@@ -78,7 +78,7 @@ function getTrend(
   const improving = costMetric ? pct < 0 : pct > 0;
   const neutral = Math.abs(pct) < 2;
 
-  if (neutral) return { label: 'Flat', cls: 'text-muted-foreground/60' };
+  if (neutral) return { label: 'Flat', cls: 'text-muted-foreground/80' };
   if (improving) return { label: `+${Math.abs(pct).toFixed(0)}%`, cls: 'text-emerald-500' };
   return { label: `-${Math.abs(pct).toFixed(0)}%`, cls: 'text-red-500' };
 }
@@ -181,7 +181,7 @@ function FinancialTable<T extends Record<string, unknown>>({ rows, data, dateKey
                     {trend ? (
                       <span className={`font-medium tabular-nums ${trend.cls}`}>{trend.label}</span>
                     ) : (
-                      <span className="text-muted-foreground/30">—</span>
+                      <span className="text-muted-foreground/80">—</span>
                     )}
                   </div>
                 </td>
@@ -689,7 +689,7 @@ export function FinancialsSection({ ticker }: { ticker: string }) {
         {!isLoading && !data?.success && data?.error === 'plan_restricted' && (
           <div className="flex flex-col items-center justify-center py-12 gap-1.5 text-center">
             <p className="text-sm text-muted-foreground">Financial statements require an Enterprise plan.</p>
-            <p className="text-xs text-muted-foreground/60">Dividends may still be available — try the Dividends tab.</p>
+            <p className="text-xs text-muted-foreground/80">Dividends may still be available — try the Dividends tab.</p>
           </div>
         )}
 

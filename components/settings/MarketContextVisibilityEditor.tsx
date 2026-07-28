@@ -39,7 +39,7 @@ export function MarketContextVisibilityEditor({ hidden, onChange }: Props) {
             <button
               type="button"
               onClick={() => toggleHidden(item.id)}
-              className="text-muted-foreground/60 hover:text-foreground transition-colors shrink-0 p-1 -m-1 rounded"
+              className="text-muted-foreground/80 hover:text-foreground transition-colors shrink-0 p-1 -m-1 rounded"
               aria-label={isHidden ? `Show ${item.label}` : `Hide ${item.label}`}
               title={isHidden ? `Show ${item.label}` : `Hide ${item.label}`}
             >

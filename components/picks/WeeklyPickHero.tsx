@@ -70,13 +70,13 @@ export function WeeklyPickHero() {
       <div className="flex items-end justify-between mb-3 gap-3">
         <h2
           id="weekly-pick-heading"
-          className="text-sm font-semibold uppercase tracking-widest text-muted-foreground/60"
+          className="text-sm font-semibold uppercase tracking-widest text-muted-foreground/80"
         >
           Bull&apos;s Weekly Pick
         </h2>
         <Link
           href="/picks"
-          className="text-[11px] uppercase tracking-widest text-muted-foreground/50 hover:text-foreground transition-colors flex items-center gap-1 shrink-0 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          className="text-[11px] uppercase tracking-widest text-muted-foreground/85 hover:text-foreground transition-colors flex items-center gap-1 shrink-0 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           Track record <ArrowUpRight className="h-3 w-3" />
         </Link>
@@ -106,7 +106,7 @@ export function WeeklyPickHero() {
                 >
                   {pick.symbol}
                 </Link>
-                <p className="text-xs text-muted-foreground/70 truncate" title={pick.companyName ?? undefined}>
+                <p className="text-xs text-muted-foreground/85 truncate" title={pick.companyName ?? undefined}>
                   {pick.companyName ?? '—'}
                 </p>
               </div>
@@ -135,7 +135,7 @@ export function WeeklyPickHero() {
                 <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
               </Link>
               {pick.locked && (
-                <span className="text-[11px] text-muted-foreground/60">Full thesis is a Pro feature</span>
+                <span className="text-[11px] text-muted-foreground/80">Full thesis is a Pro feature</span>
               )}
             </div>
           </div>
@@ -144,7 +144,7 @@ export function WeeklyPickHero() {
           <div className="shrink-0 lg:w-56 lg:border-l lg:border-border/40 lg:pl-6">
             <dl className="grid grid-cols-3 gap-4 lg:grid-cols-1 lg:gap-3">
               <div>
-                <dt className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/50">
+                <dt className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/85">
                   Picked
                 </dt>
                 <dd className="mt-1 font-mono text-sm tabular-nums text-foreground/90">
@@ -152,19 +152,19 @@ export function WeeklyPickHero() {
                 </dd>
               </div>
               <div>
-                <dt className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/50">
+                <dt className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/85">
                   Entry
                 </dt>
                 <dd className="mt-1 font-mono text-sm tabular-nums text-foreground/90">
                   {pending ? (
-                    <span className="text-muted-foreground/60">Pending</span>
+                    <span className="text-muted-foreground/80">Pending</span>
                   ) : (
                     <>${fmtPrice(pick.entryPrice)}</>
                   )}
                 </dd>
               </div>
               <div>
-                <dt className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/50">
+                <dt className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/85">
                   Since pick
                 </dt>
                 <dd
@@ -182,12 +182,12 @@ export function WeeklyPickHero() {
             </dl>
 
             {pending && (
-              <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground/60">
+              <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground/80">
                 Entry price is set from the first market open after we publish.
               </p>
             )}
             {!pending && pick.benchmarkReturnPct != null && (
-              <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground/60">
+              <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground/80">
                 S&amp;P 500 over the same stretch:{' '}
                 <span className="font-mono tabular-nums text-muted-foreground/80">
                   {fmtPct(pick.benchmarkReturnPct)}

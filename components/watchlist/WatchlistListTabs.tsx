@@ -156,7 +156,7 @@ export function WatchlistListTabs({
                       'h-5 w-5 rounded flex items-center justify-center transition-colors',
                       isActive
                         ? 'text-primary-foreground/60 hover:text-primary-foreground hover:bg-white/15'
-                        : 'text-muted-foreground/60 hover:text-foreground hover:bg-muted'
+                        : 'text-muted-foreground/80 hover:text-foreground hover:bg-muted'
                     )}
                   >
                     <Pencil className="h-2.5 w-2.5" />
@@ -170,7 +170,7 @@ export function WatchlistListTabs({
                       'h-5 w-5 rounded flex items-center justify-center transition-colors',
                       isActive
                         ? 'text-primary-foreground/60 hover:text-red-300 hover:bg-white/15'
-                        : 'text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10'
+                        : 'text-muted-foreground/80 hover:text-destructive hover:bg-destructive/10'
                     )}
                   >
                     <Trash2 className="h-2.5 w-2.5" />

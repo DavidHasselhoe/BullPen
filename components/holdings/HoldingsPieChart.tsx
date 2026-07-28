@@ -66,7 +66,7 @@ export function HoldingsPieChart({ holdings, onSectorHover, isLoading }: Holding
       <Card className="border-border/50 h-full">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-            <LayoutGrid className="h-4 w-4 text-muted-foreground/60" />
+            <LayoutGrid className="h-4 w-4 text-muted-foreground/80" />
             Allocation
           </CardTitle>
         </CardHeader>
@@ -96,7 +96,7 @@ export function HoldingsPieChart({ holdings, onSectorHover, isLoading }: Holding
     <Card className="border-border/50 h-full">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-          <LayoutGrid className="h-4 w-4 text-muted-foreground/60" />
+          <LayoutGrid className="h-4 w-4 text-muted-foreground/80" />
           Allocation
         </CardTitle>
       </CardHeader>

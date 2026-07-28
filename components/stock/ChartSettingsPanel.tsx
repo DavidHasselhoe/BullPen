@@ -16,7 +16,7 @@ export function ChartSettingsPanel({ prefs, setPref, reset, onRangeChange, onInd
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="rounded-md p-1.5 text-muted-foreground/40 hover:text-foreground hover:bg-muted/60 transition-colors"
+          className="rounded-md p-1.5 text-muted-foreground/80 hover:text-foreground hover:bg-muted/60 transition-colors"
           title="Chart settings"
         >
           <Settings2 className="h-3.5 w-3.5" />

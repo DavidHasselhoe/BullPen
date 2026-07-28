@@ -50,7 +50,7 @@ export function CourseCard({ course }: Props) {
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="h-11 w-11 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
           {course.isLocked ? (
-            <Lock className="h-5 w-5 text-muted-foreground/60" />
+            <Lock className="h-5 w-5 text-muted-foreground/80" />
           ) : (
             <CourseIcon name={course.icon} className="h-5 w-5 text-emerald-500" />
           )}
@@ -94,7 +94,7 @@ export function CourseCard({ course }: Props) {
       </div>
 
       <h3 className="text-lg font-bold tracking-tight leading-tight mb-1">{course.title}</h3>
-      <p className="text-sm text-muted-foreground/70 leading-relaxed line-clamp-3">
+      <p className="text-sm text-muted-foreground/85 leading-relaxed line-clamp-3">
         {course.description}
       </p>
       <div className="mt-3 flex items-center gap-2">
@@ -113,7 +113,7 @@ export function CourseCard({ course }: Props) {
             Optional
           </span>
         )}
-        <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-muted-foreground/50">
+        <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-muted-foreground/85">
           {course.completedLessons}/{course.totalLessons} lessons
         </span>
       </div>

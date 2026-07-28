@@ -94,7 +94,7 @@ function metricBarColor(score: number): string {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="mb-3 select-none font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/55">
+    <p className="mb-3 select-none font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/80">
       {children}
     </p>
   );
@@ -176,10 +176,10 @@ function MetricCell({ label, metric, expanded, onToggle }: {
         aria-expanded={expanded}
       >
         <div className="flex items-center justify-between gap-2">
-          <span className="text-[10px] font-mono font-bold uppercase tracking-[0.1em] text-muted-foreground/75 leading-none">{label}</span>
+          <span className="text-[10px] font-mono font-bold uppercase tracking-[0.1em] text-muted-foreground/85 leading-none">{label}</span>
           <div className="flex items-center gap-1.5">
             <span className={cn('text-base font-black tabular-nums leading-none', metricBarColor(metric.score).replace('bg-', 'text-'))}>{metric.score}</span>
-            {expanded ? <ChevronUp className="h-3 w-3 text-muted-foreground/40" /> : <ChevronDown className="h-3 w-3 text-muted-foreground/30 group-hover:text-muted-foreground/50" />}
+            {expanded ? <ChevronUp className="h-3 w-3 text-muted-foreground/80" /> : <ChevronDown className="h-3 w-3 text-muted-foreground/80 group-hover:text-muted-foreground/85" />}
           </div>
         </div>
         <div className="h-1 w-full rounded-full bg-muted/50 overflow-hidden">
@@ -286,8 +286,8 @@ function HistoryPanel({
   return (
     <div className="border-b border-border/20 pb-3 mb-4">
       <div className="flex items-center gap-1.5 mb-2">
-        <Clock className="h-2.5 w-2.5 text-muted-foreground/40" />
-        <span className="text-[9px] font-mono uppercase tracking-[0.25em] text-muted-foreground/40">Saved analyses</span>
+        <Clock className="h-2.5 w-2.5 text-muted-foreground/80" />
+        <span className="text-[9px] font-mono uppercase tracking-[0.25em] text-muted-foreground/80">Saved analyses</span>
       </div>
       <div className="flex flex-wrap gap-1.5">
         {items.map((item) => (
@@ -299,15 +299,15 @@ function HistoryPanel({
               <span className={cn('text-[10px] font-bold', riskTextClass(item.riskLevel))}>
                 {item.overallRiskScore}
               </span>
-              <span className="text-[10px] text-muted-foreground/60">{item.riskLevel}</span>
-              <span className="text-[9px] text-muted-foreground/35 tabular-nums">{formatAgo(item.createdAt)}</span>
+              <span className="text-[10px] text-muted-foreground/80">{item.riskLevel}</span>
+              <span className="text-[9px] text-muted-foreground/80 tabular-nums">{formatAgo(item.createdAt)}</span>
             </button>
             <button
               onClick={() => onDelete(item.id)}
               className="px-1.5 py-1.5 opacity-0 group-hover:opacity-100 hover:bg-red-500/10 transition-all"
               aria-label="Delete"
             >
-              <Trash2 className="h-3 w-3 text-muted-foreground/50 hover:text-red-400" />
+              <Trash2 className="h-3 w-3 text-muted-foreground/85 hover:text-red-400" />
             </button>
           </div>
         ))}
@@ -556,11 +556,11 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
             <div className="py-7 space-y-4">
               <div className="text-center space-y-0.5">
                 <p className="text-sm font-medium text-foreground">Analyzing portfolio…</p>
-                <p className="text-[11px] text-muted-foreground/50">Running 6-dimension risk assessment</p>
+                <p className="text-[11px] text-muted-foreground/85">Running 6-dimension risk assessment</p>
               </div>
               <div className="max-w-[190px] mx-auto space-y-1.5 font-mono text-[11px]">
                 {holdings.slice(0, Math.min(loadingStep, holdings.length)).map((h) => (
-                  <div key={h.symbol} className="flex items-center gap-2 text-muted-foreground/70">
+                  <div key={h.symbol} className="flex items-center gap-2 text-muted-foreground/85">
                     <CheckCircle2 className="h-3 w-3 text-green-500 shrink-0" />
                     <span className="tabular-nums">{h.symbol}</span>
                   </div>
@@ -574,7 +574,7 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
               </div>
               {allSymbolsLoaded && (
                 <div className="flex flex-col items-center gap-2.5 pt-1">
-                  <p className="text-[11px] text-muted-foreground/60 flex items-center gap-1.5">
+                  <p className="text-[11px] text-muted-foreground/80 flex items-center gap-1.5">
                     <span className="h-1.5 w-1.5 rounded-full bg-primary motion-safe:animate-pulse shrink-0" />
                     {ANALYZE_STAGES[analyzeStep]}
                   </p>
@@ -584,7 +584,7 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
                         style={{ animationDelay: `${i * 0.18}s`, animationDuration: '0.9s' }} />
                     ))}
                   </div>
-                  <p className="text-[9px] text-muted-foreground/35 text-center">Typically 15–30 seconds</p>
+                  <p className="text-[9px] text-muted-foreground/80 text-center">Typically 15–30 seconds</p>
                 </div>
               )}
             </div>
@@ -618,7 +618,7 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
                     <span className={cn('text-2xl font-bold tracking-tight', riskTextClass(analysis.riskLevel))}>
                       {analysis.riskLevel} Risk
                     </span>
-                    <span className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/50">
+                    <span className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/85">
                       Overall assessment
                     </span>
                   </div>
@@ -741,7 +741,7 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
 
               {/* Footer */}
               <div className="flex items-center justify-between pt-2 border-t border-border/15">
-                <span className="text-[9px] font-mono text-muted-foreground/25 uppercase tracking-[0.15em] select-none">
+                <span className="text-[9px] font-mono text-muted-foreground/80 uppercase tracking-[0.15em] select-none">
                   {restoredFrom ? `Restored · ${generatedTime}` : `Generated · ${generatedTime}`}
                 </span>
               </div>

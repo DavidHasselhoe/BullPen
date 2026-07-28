@@ -53,7 +53,7 @@ export function DemoSurfaceShell({ title, eyebrow, onClose, children }: Props) {
           </span>
           <div className="min-w-0">
             {eyebrow && (
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/55">{eyebrow}</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/80">{eyebrow}</p>
             )}
             <p className="truncate text-sm font-semibold text-foreground">{title}</p>
           </div>
@@ -62,7 +62,7 @@ export function DemoSurfaceShell({ title, eyebrow, onClose, children }: Props) {
           type="button"
           onClick={onClose}
           aria-label="Exit demo"
-          className="rounded-md p-1.5 text-muted-foreground/70 transition-colors hover:bg-muted hover:text-foreground"
+          className="rounded-md p-1.5 text-muted-foreground/85 transition-colors hover:bg-muted hover:text-foreground"
         >
           <X className="h-5 w-5" />
         </button>

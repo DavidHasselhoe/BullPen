@@ -14,7 +14,7 @@ export function MarketPulse({ indices }: { indices: IndexQuote[] }) {
     <section aria-labelledby="pulse-heading" className="mb-10">
       <h2
         id="pulse-heading"
-        className="mb-3 text-sm font-semibold uppercase tracking-widest text-muted-foreground/60"
+        className="mb-3 text-sm font-semibold uppercase tracking-widest text-muted-foreground/80"
       >
         Market pulse
       </h2>

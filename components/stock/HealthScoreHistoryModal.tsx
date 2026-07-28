@@ -107,7 +107,7 @@ export function HealthScoreHistoryModal({ ticker, open, onOpenChange, history }:
                         </span>
                       )}
                       {delta === 0 && (
-                        <span className="flex items-center text-muted-foreground/50">
+                        <span className="flex items-center text-muted-foreground/85">
                           <Minus className="h-3 w-3" />
                         </span>
                       )}

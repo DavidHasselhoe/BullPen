@@ -151,7 +151,7 @@ export default function NotificationsPage() {
             {grouped.map(([day, items], gi) => (
               <div key={day}>
                 {gi > 0 && <Separator />}
-                <div className="bg-muted/20 px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                <div className="bg-muted/20 px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/85">
                   {day}
                 </div>
                 <div className="divide-y">
