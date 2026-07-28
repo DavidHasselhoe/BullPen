@@ -70,9 +70,10 @@ function Skel({ w, h = 14 }: { w: number; h?: number }) {
   return <span className="hero-skel" style={{ width: w, height: h }} />;
 }
 
-// Deterministic illustrative curve (no Math.random — stable across renders/SSR).
-// Shape evokes a catalyst-driven spike: slow drift, then acceleration late.
-const CHART_POINTS: number[] = (() => {
+// Deterministic placeholder curve (no Math.random — stable across renders/SSR),
+// shown only until the real NVDA chart loads (or if the fetch fails/market has
+// no data yet). Never mixed with real points.
+const FALLBACK_CHART_POINTS: number[] = (() => {
   const n = 20;
   const arr: number[] = [];
   for (let i = 0; i < n; i++) {
@@ -83,6 +84,34 @@ const CHART_POINTS: number[] = (() => {
   }
   return arr;
 })();
+
+// ── Real NVDA 1D chart, shared across all visitors via /api/market/landing-chart ──
+function useNvdaChartPoints(): number[] {
+  const [points, setPoints] = useState<number[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchChart() {
+      if (document.hidden) return;
+      try {
+        const res = await fetch('/api/market/landing-chart');
+        if (!res.ok) return;
+        const data = await res.json() as { success: boolean; points?: number[] };
+        if (cancelled || !data.success || !data.points || data.points.length < 2) return;
+        setPoints(data.points);
+      } catch {
+        // Network hiccup — hero falls back to its placeholder curve.
+      }
+    }
+
+    fetchChart();
+    const id = setInterval(fetchChart, 60_000);
+    return () => { cancelled = true; clearInterval(id); };
+  }, []);
+
+  return points;
+}
 
 // ── Floating ticker card — ambient market pulse, real price via live quotes ────
 function FloatTicker({
@@ -141,7 +170,9 @@ function FloatTicker({
 // ── Hero chart panel — the "why" demo: real NVDA price, animated draw, why-bubble
 // pinned to the actual spike, Daily Brief tucked in as a glance ────────────────
 function HeroChartPanel({ liveQuotes }: { liveQuotes: Record<string, LiveQuote> }) {
-  const { line, area, lastX, lastY } = useMemo(() => buildPath(CHART_POINTS, 400, 170), []);
+  const nvdaPoints = useNvdaChartPoints();
+  const chartPoints = nvdaPoints.length >= 2 ? nvdaPoints : FALLBACK_CHART_POINTS;
+  const { line, area, lastX, lastY } = useMemo(() => buildPath(chartPoints, 400, 170), [chartPoints]);
   const nvda = liveQuotes['NVDA'];
   const whyHeadline = nvda
     ? `NVDA ${nvda.up ? 'gained' : 'fell'} ${nvda.pct.replace(/^[+-]/, '')} on three catalysts:`
