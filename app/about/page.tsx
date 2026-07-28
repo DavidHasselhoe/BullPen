@@ -42,7 +42,7 @@ export default function AboutPage() {
             </p>
             <h2>Who builds it</h2>
             <p>
-              BullPen is built and operated by Hasselø Bullpen, a sole proprietorship (enkeltpersonforetak)
+              BullPen is built and operated by Hasselø BullPen, a sole proprietorship (enkeltpersonforetak)
               registered in Norway.
             </p>
             <p>

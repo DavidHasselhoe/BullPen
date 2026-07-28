@@ -62,7 +62,7 @@ const ORGANIZATION_JSON_LD = {
   "@context": "https://schema.org",
   "@type": "Organization",
   name: "BullPen",
-  legalName: "Hasselø Bullpen",
+  legalName: "Hasselø BullPen",
   url: "https://bullpen.no",
   logo: "https://bullpen.no/icon-light.png",
   description:
