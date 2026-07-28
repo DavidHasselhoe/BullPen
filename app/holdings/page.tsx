@@ -98,7 +98,7 @@ export default function HoldingsPage() {
       if (!holdings || holdings.length === 0) return { quotes: {}, logos: {}, sectors: {} };
 
       const supabase = createBrowserClient();
-      const quoteMap: Record<string, { price: number; change: number; changePercent: number }> = {};
+      const quoteMap: Record<string, { price: number; change: number; changePercent: number; stale?: boolean }> = {};
       const logoMap: Record<string, string | null> = {};
       const sectorMap: Record<string, string | null> = {};
 
@@ -205,6 +205,12 @@ export default function HoldingsPage() {
 
       const currentPriceUSD = liveQuote?.price ?? batchQuote?.price;
 
+      // batchQuote.stale means the REST fetch missed this symbol and it came
+      // from the shared last-price cache instead — only worth flagging when
+      // there's also no live tick (a live tick always wins in currentPriceUSD
+      // above, so the row is truly showing a fresh price either way).
+      const isPriceStale = !liveQuote && !!batchQuote?.stale;
+
       // previousClose anchor — lets us recompute dayChange live as the price moves.
       // Prefer the batch REST quote (price − change); fall back to the live SSE
       // tick's previousClose, which the stream seeds within ~0.5s of page load.
@@ -273,6 +279,7 @@ export default function HoldingsPage() {
         allocation,
         logoUrl,
         sector,
+        isPriceStale,
       };
     });
   }, [holdings, quotesData.data, currentFxRate, throttledLivePrices]);

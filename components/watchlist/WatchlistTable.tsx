@@ -18,6 +18,8 @@ interface Quote {
   price: number;
   change: number;
   changePercent: number;
+  /** From the last-known-price cache, not a fresh quote — render as "last close". */
+  stale?: boolean;
 }
 
 interface WatchlistTableProps {
@@ -159,18 +161,25 @@ export function WatchlistTable({ items, quotes, enhancedData, onRemove, isRemovi
                   </Link>
                 </TableCell>
 
-                <TableCell className="tabular-nums font-medium">
+                <TableCell
+                  className={cn('tabular-nums font-medium', q?.stale && 'text-muted-foreground/85')}
+                  title={q?.stale ? 'Last close — live price unavailable right now' : undefined}
+                >
                   {q ? `$${q.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
                 </TableCell>
 
                 <TableCell>
                   {q ? (
-                    <div className={cn(
-                      'tabular-nums text-sm font-medium leading-tight',
-                      isUp && 'text-emerald-500',
-                      isDown && 'text-red-500',
-                      !isUp && !isDown && 'text-muted-foreground'
-                    )}>
+                    <div
+                      className={cn(
+                        'tabular-nums text-sm font-medium leading-tight',
+                        isUp && 'text-emerald-500',
+                        isDown && 'text-red-500',
+                        !isUp && !isDown && 'text-muted-foreground',
+                        q.stale && 'opacity-60'
+                      )}
+                      title={q.stale ? 'Last close — live price unavailable right now' : undefined}
+                    >
                       <div>{isUp ? '+' : ''}{(q.changePercent ?? 0).toFixed(2)}%</div>
                       <div className="text-xs opacity-70">
                         {isUp ? '+' : ''}{(q.change ?? 0) >= 0 && !isUp ? '' : ''}{(q.change ?? 0).toFixed(2)}

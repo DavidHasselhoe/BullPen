@@ -4,7 +4,7 @@ import { withRateLimit } from '@/lib/security/api-security';
 import { fetchAndUpsertScreenerStats } from '@/lib/market-data/screener-stats';
 import { TwelveDataRateLimitError, getStockQuotes, withRateLimitRetry } from '@/lib/twelvedata/twelvedata-client';
 import { SP500_TICKERS } from '@/lib/market-data/sp500';
-import { rmget, rset } from '@/lib/cache/redis-cache';
+import { getLastPrices, cacheLastPrice, type LastPriceSeed } from '@/lib/market-data/last-price-cache';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,7 +22,6 @@ const ON_DEMAND_CAP = 50;
 // rendered "—" forever. Hydrate every row with the last quoted price/change
 // (Redis-cached, shared across all users) so a value always renders; the live
 // stream still overlays a fresher number the moment a tick arrives.
-const PRICE_CACHE_TTL_S = 3 * 60;
 const PRICE_QUOTE_CHUNK = 100;
 // Bounds worst-case TwelveData credit burst on a cold cache (e.g. the "All"
 // view's ~3000-ticker universe) to roughly one Venture per-minute allowance.
@@ -30,22 +29,12 @@ const PRICE_QUOTE_CHUNK = 100;
 // most likely to actually be viewed.
 const PRICE_HYDRATION_CAP = 600;
 
-interface PriceSeed {
-  price: number;
-  changePercent: number | null;
-}
-
-async function hydrateLastPrices(tickers: string[]): Promise<Map<string, PriceSeed>> {
+async function hydrateLastPrices(tickers: string[]): Promise<Map<string, LastPriceSeed>> {
   const upper = [...new Set(tickers.map((t) => t.toUpperCase()))].slice(0, PRICE_HYDRATION_CAP);
   if (upper.length === 0) return new Map();
 
-  const seeds = new Map<string, PriceSeed>();
-  const cached = await rmget<PriceSeed>(upper.map((t) => `screener-price:${t}`));
-  const missing = upper.filter((t) => {
-    const hit = cached.get(`screener-price:${t}`);
-    if (hit) { seeds.set(t, hit); return false; }
-    return true;
-  });
+  const seeds = await getLastPrices(upper);
+  const missing = upper.filter((t) => !seeds.has(t));
 
   if (missing.length > 0) {
     const chunks: string[][] = [];
@@ -56,10 +45,10 @@ async function hydrateLastPrices(tickers: string[]): Promise<Map<string, PriceSe
         const quotes = await withRateLimitRetry(() => getStockQuotes(chunk));
         for (const [sym, q] of quotes.entries()) {
           if (!q || !isFinite(q.c) || q.c <= 0) continue;
-          const seed: PriceSeed = { price: q.c, changePercent: isFinite(q.dp) ? q.dp : null };
+          const seed: LastPriceSeed = { price: q.c, changePercent: isFinite(q.dp) ? q.dp : null };
           const symUpper = sym.toUpperCase();
           seeds.set(symUpper, seed);
-          void rset(`screener-price:${symUpper}`, seed, PRICE_CACHE_TTL_S);
+          cacheLastPrice(symUpper, seed);
         }
       } catch (err) {
         // Non-fatal — rows just fall back to "—" same as before this existed.

@@ -12,4 +12,8 @@ export interface HoldingWithPrice extends UserHolding {
   allocation?: number;
   logoUrl?: string | null;
   sector?: string | null;
+  /** True when currentPrice/dayChange came from the last-known-price cache
+   *  (no live tick and the REST batch quote missed this symbol), not a fresh
+   *  quote this load — render dimmed as "last close" rather than live. */
+  isPriceStale?: boolean;
 }

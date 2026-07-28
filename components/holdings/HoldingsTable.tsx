@@ -144,11 +144,11 @@ function PriceSkeleton({ wide }: { wide?: boolean }) {
 
 // ─── Mobile card field (label + value row) ───────────────────────────────────
 
-function HoldingField({ label, value, valueClass }: { label: string; value: string; valueClass?: string }) {
+function HoldingField({ label, value, valueClass, title }: { label: string; value: string; valueClass?: string; title?: string }) {
   return (
     <div className="flex items-center justify-between gap-2">
       <span className="text-muted-foreground">{label}</span>
-      <span className={cn('font-medium tabular-nums text-foreground', valueClass)}>{value}</span>
+      <span className={cn('font-medium tabular-nums text-foreground', valueClass)} title={title}>{value}</span>
     </div>
   );
 }
@@ -298,14 +298,23 @@ const HoldingRow = memo(function HoldingRow({
       </td>
       <td className="py-4 px-4 text-sm font-medium text-foreground">
         {showPriceSkeleton ? <PriceSkeleton /> : holding.currentPrice !== undefined ? (
-          <span className="animate-in fade-in duration-300">
+          <span
+            className={cn('animate-in fade-in duration-300', holding.isPriceStale && 'text-muted-foreground/85')}
+            title={holding.isPriceStale ? 'Last close — live price unavailable right now' : undefined}
+          >
             {formatCurrencyValue(holding.currentPrice, currency, roundNumbers ? { round: true } : undefined)}
           </span>
         ) : '—'}
       </td>
       <td className="py-4 px-4">
         {showPriceSkeleton ? <PriceSkeleton /> : holding.dayChangePercent !== undefined ? (
-          <div className={cn('flex items-center gap-1 animate-in fade-in duration-300', dayChangeColor)}>
+          <div
+            className={cn(
+              'flex items-center gap-1 animate-in fade-in duration-300',
+              holding.isPriceStale ? `${dayChangeColor} opacity-60` : dayChangeColor
+            )}
+            title={holding.isPriceStale ? 'Last close — live price unavailable right now' : undefined}
+          >
             {isPositive ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
             <span className="text-sm font-medium">
               {formatPercentUtil(holding.dayChangePercent, roundNumbers)}
@@ -395,6 +404,7 @@ const HoldingRow = memo(function HoldingRow({
 }, (prev, next) =>
   prev.holding.currentPrice === next.holding.currentPrice &&
   prev.holding.dayChangePercent === next.holding.dayChangePercent &&
+  prev.holding.isPriceStale === next.holding.isPriceStale &&
   prev.holding.marketValue === next.holding.marketValue &&
   prev.holding.unrealizedPL === next.holding.unrealizedPL &&
   prev.holding.allocation === next.holding.allocation &&
@@ -857,8 +867,18 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
                   </div>
                 </div>
                 <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
-                  <HoldingField label="Price" value={holding.currentPrice !== undefined ? formatCurrencyValue(holding.currentPrice, ccy, opts) : '—'} />
-                  <HoldingField label="Day" valueClass={isPos ? 'text-green-500' : 'text-red-500'} value={holding.dayChangePercent !== undefined ? formatPercentUtil(holding.dayChangePercent, roundNumbers) : '—'} />
+                  <HoldingField
+                    label="Price"
+                    valueClass={holding.isPriceStale ? 'text-muted-foreground/85' : undefined}
+                    title={holding.isPriceStale ? 'Last close — live price unavailable right now' : undefined}
+                    value={holding.currentPrice !== undefined ? formatCurrencyValue(holding.currentPrice, ccy, opts) : '—'}
+                  />
+                  <HoldingField
+                    label="Day"
+                    valueClass={cn(isPos ? 'text-green-500' : 'text-red-500', holding.isPriceStale && 'opacity-60')}
+                    title={holding.isPriceStale ? 'Last close — live price unavailable right now' : undefined}
+                    value={holding.dayChangePercent !== undefined ? formatPercentUtil(holding.dayChangePercent, roundNumbers) : '—'}
+                  />
                   <HoldingField label="Value" value={holding.marketValue !== undefined ? formatCurrencyValue(holding.marketValue, ccy, opts) : '—'} />
                   <HoldingField label="P/L" valueClass={plPos ? 'text-green-500' : 'text-red-500'} value={holding.unrealizedPL !== undefined ? formatCurrencyValue(holding.unrealizedPL, ccy, opts) : '—'} />
                 </div>

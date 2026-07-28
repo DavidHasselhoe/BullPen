@@ -12,6 +12,8 @@ interface Quote {
   price: number;
   change: number;
   changePercent: number;
+  /** From the last-known-price cache, not a fresh quote — render as "last close". */
+  stale?: boolean;
 }
 
 interface HealthScore {
@@ -123,15 +125,25 @@ export function WatchlistCard({
         {/* Price */}
         {quote ? (
           <div className="flex items-end justify-between">
-            <span className="text-lg font-bold text-foreground tabular-nums">
+            <span
+              className={cn('text-lg font-bold tabular-nums', quote.stale ? 'text-muted-foreground/85' : 'text-foreground')}
+              title={quote.stale ? 'Last close — live price unavailable right now' : undefined}
+            >
               ${formatPrice(quote.price)}
             </span>
-            <div className={cn(
-              'flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full',
-              isUp && 'bg-emerald-500/10 text-emerald-500',
-              isDown && 'bg-red-500/10 text-red-500',
-              !isUp && !isDown && 'bg-muted text-muted-foreground'
-            )}>
+            <div
+              className={cn(
+                'flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full',
+                isUp && 'bg-emerald-500/10 text-emerald-500',
+                // red-400, not red-500: red-500 measured 4.36:1 on this pill's
+                // dark red-tinted background — under WCAG AA. Darker reds get
+                // worse here (closer to the background), so go lighter instead.
+                isDown && 'bg-red-500/10 text-red-400',
+                !isUp && !isDown && 'bg-muted text-muted-foreground',
+                quote.stale && 'opacity-60'
+              )}
+              title={quote.stale ? 'Last close — live price unavailable right now' : undefined}
+            >
               <Icon className="h-3 w-3" />
               {isUp ? '+' : ''}{quote.changePercent.toFixed(2)}%
             </div>

@@ -48,7 +48,7 @@ interface SearchResult {
 }
 
 interface QuoteMap {
-  [symbol: string]: { price: number; change: number; changePercent: number };
+  [symbol: string]: { price: number; change: number; changePercent: number; stale?: boolean };
 }
 
 export default function WatchlistPage() {
