@@ -41,6 +41,7 @@ import {
 } from '@/lib/twelvedata/twelvedata-client';
 import { getCached, setCached } from '@/lib/cache/market-data-cache';
 import { SIGNIFICANT_TICKERS } from '@/lib/market-data/significant-tickers';
+import { waitForCronCreditBudget } from '@/lib/twelvedata/credit-budget';
 
 export const maxDuration = 60;
 
@@ -50,6 +51,11 @@ const STATS_TTL = 24 * 60 * 60;           // 24h — price-dependent, refresh da
 const FINANCIALS_TTL = 7 * 24 * 60 * 60;  // 7 days — quarterly reports, slow-moving
 const PROFILE_TTL = 7 * 24 * 60 * 60;     // 7 days — sector/industry/name change essentially never
 const STATS_BATCH_SIZE = 5;               // symbols per batch (5 × 70 credits ≈ 350/call)
+/** /statistics (~50 credits/symbol) + /earnings (20 credits/symbol), reserved
+ *  worst-case per symbol before firing — same shared per-minute budget
+ *  screener/refresh reserves against, so the two crons can't stack past the
+ *  610/min plan cap if their schedules ever land in the same wall-clock minute. */
+const CREDITS_PER_SYMBOL = 70;
 const FINANCIALS_PER_RUN = 75;            // max stocks to refresh financials per invocation
 const FINANCIALS_CONCURRENCY = 5;         // parallel stocks in financials phase
 
@@ -258,6 +264,8 @@ async function handleStatsBatch(
   const profileMap = new Map(profileEntries);
 
   try {
+    await waitForCronCreditBudget(needsStats.length * CREDITS_PER_SYMBOL);
+
     const requests: Record<string, string> = {};
     for (const sym of needsStats) {
       requests[`${sym}_s`] = `/statistics?symbol=${sym}&apikey=${key}`;

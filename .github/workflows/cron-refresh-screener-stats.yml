@@ -3,7 +3,12 @@ name: Cron — Refresh Screener Financial Data
 # Daily at 22:00 UTC (after US market close + price-moves cron).
 # Chains through all screener batches with 65s delays to stay within
 # TwelveData's 610 credits/min rate limit (each batch = 10 stocks × 50 credits).
-# ~51 batches × 65s ≈ 55 min total — well within the 70-min job timeout.
+# The loop below is `seq 0 60` — 61 batches × 65s ≈ 66 min of sleep alone,
+# before any request latency. A previous 70-min timeout left almost no
+# buffer and the job was getting killed (conclusion "cancelled") mid-run
+# every night — confirmed via the Actions API, jobs consistently ran the
+# full 70:05 before being cut off. 130 min covers 61 batches with real
+# headroom for slow individual requests.
 on:
   schedule:
     - cron: '0 22 * * *'
@@ -12,7 +17,7 @@ on:
 jobs:
   refresh:
     runs-on: ubuntu-latest
-    timeout-minutes: 70
+    timeout-minutes: 130
     steps:
       - name: Chain through all screener refresh batches
         env:
