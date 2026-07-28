@@ -53,7 +53,14 @@ export async function middleware(request: NextRequest) {
   // Content Security Policy (adjust as needed for your app)
   const csp = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
+    // app.termly.io: the official Termly embed script for self-updating legal
+    // policy pages (Terms of Service) — see app/terms/page.tsx. The embed
+    // script renders via an internal iframe (with iFrameResizer for auto
+    // height), so it needs both script-src (to load the script) and
+    // frame-src (to render the iframe it creates) — frame-src falls back to
+    // default-src when unset, which is 'self' and would otherwise block it.
+    "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://app.termly.io",
+    "frame-src https://app.termly.io",
     "style-src 'self' 'unsafe-inline'", // Tailwind requires unsafe-inline
     "img-src 'self' data: https:",
     "font-src 'self' data:",

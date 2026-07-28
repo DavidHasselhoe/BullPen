@@ -6,11 +6,11 @@ import { TermlyEmbed } from '@/components/legal/TermlyEmbed';
 import '@/components/landing/landing-styles.css';
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy — BullPen',
-  description: 'How BullPen collects, uses, and protects your personal information.',
+  title: 'Terms of Service — BullPen',
+  description: 'The terms that govern your use of BullPen.',
 };
 
-export default function PrivacyPolicyPage() {
+export default function TermsOfServicePage() {
   return (
     <div className="bullpen-landing-root">
       <div className="content-layer">
@@ -26,7 +26,7 @@ export default function PrivacyPolicyPage() {
         </header>
 
         <main className="wrap" style={{ padding: '56px 0 96px' }}>
-          <TermlyEmbed policyId="02e65a84-50e5-4e4b-b2b9-7f9d49a82558" />
+          <TermlyEmbed policyId="706edf7e-1212-47bf-8369-e44654bb8f7b" />
         </main>
 
         <Footer />
