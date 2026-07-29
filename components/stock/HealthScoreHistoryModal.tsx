@@ -1,15 +1,18 @@
 'use client';
 
+import { useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
-import { ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Minus, ChevronDown } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import type { CategoryScore } from '@/lib/finance/health-score';
 
 export interface HealthScoreHistoryPoint {
   fiscalDate: string;
   snapshotDate: string;
   score: number;
   grade: string;
+  categories?: CategoryScore[];
 }
 
 interface Props {
@@ -32,7 +35,32 @@ function formatFullDate(dateStr: string): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+function CategoryDiffRow({ current, previous }: { current: CategoryScore; previous?: CategoryScore }) {
+  const delta = previous ? current.score - previous.score : null;
+  return (
+    <div className="flex items-center justify-between gap-2 py-1">
+      <span className="text-muted-foreground">{current.name}</span>
+      <div className="flex items-center gap-2 tabular-nums">
+        <span className="text-foreground">
+          {current.score}<span className="text-muted-foreground/85">/{current.max}</span>
+        </span>
+        {delta !== null && delta !== 0 && (
+          <span className={cn(
+            'flex items-center gap-0.5 font-medium',
+            delta > 0 ? 'text-emerald-500' : 'text-red-500'
+          )}>
+            {delta > 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+            {Math.abs(delta)}
+          </span>
+        )}
+        {delta === 0 && <Minus className="h-3 w-3 text-muted-foreground/85" />}
+      </div>
+    </div>
+  );
+}
+
 export function HealthScoreHistoryModal({ ticker, open, onOpenChange, history }: Props) {
+  const [expandedFiscalDate, setExpandedFiscalDate] = useState<string | null>(null);
   const chartData = history.map((h) => ({ ...h, label: formatQuarterLabel(h.fiscalDate) }));
   const listNewestFirst = [...history].reverse();
 
@@ -88,30 +116,55 @@ export function HealthScoreHistoryModal({ ticker, open, onOpenChange, history }:
               {listNewestFirst.map((pt, i) => {
                 const prev = listNewestFirst[i + 1];
                 const delta = prev ? pt.score - prev.score : null;
+                const canExpand = !!prev && !!pt.categories && !!prev.categories;
+                const isExpanded = expandedFiscalDate === pt.fiscalDate;
                 return (
-                  <div
-                    key={pt.fiscalDate}
-                    className="flex items-center justify-between gap-2 text-xs py-1.5 border-b border-border/40 last:border-0"
-                  >
-                    <span className="text-muted-foreground">{formatFullDate(pt.snapshotDate)}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-foreground tabular-nums">{pt.score}/100</span>
-                      <span className="text-muted-foreground">{pt.grade}</span>
-                      {delta !== null && delta !== 0 && (
-                        <span className={cn(
-                          'flex items-center gap-0.5 font-medium tabular-nums',
-                          delta > 0 ? 'text-emerald-500' : 'text-red-500'
-                        )}>
-                          {delta > 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-                          {Math.abs(delta)}
-                        </span>
+                  <div key={pt.fiscalDate} className="border-b border-border/40 last:border-0">
+                    <button
+                      type="button"
+                      disabled={!canExpand}
+                      onClick={() => setExpandedFiscalDate(isExpanded ? null : pt.fiscalDate)}
+                      className={cn(
+                        'flex w-full items-center justify-between gap-2 text-xs py-1.5',
+                        canExpand ? 'cursor-pointer' : 'cursor-default'
                       )}
-                      {delta === 0 && (
-                        <span className="flex items-center text-muted-foreground/85">
-                          <Minus className="h-3 w-3" />
-                        </span>
-                      )}
-                    </div>
+                    >
+                      <span className="flex items-center gap-1 text-muted-foreground">
+                        {canExpand && (
+                          <ChevronDown className={cn('h-3 w-3 shrink-0 transition-transform', isExpanded && 'rotate-180')} />
+                        )}
+                        {formatFullDate(pt.snapshotDate)}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-foreground tabular-nums">{pt.score}/100</span>
+                        <span className="text-muted-foreground">{pt.grade}</span>
+                        {delta !== null && delta !== 0 && (
+                          <span className={cn(
+                            'flex items-center gap-0.5 font-medium tabular-nums',
+                            delta > 0 ? 'text-emerald-500' : 'text-red-500'
+                          )}>
+                            {delta > 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+                            {Math.abs(delta)}
+                          </span>
+                        )}
+                        {delta === 0 && (
+                          <span className="flex items-center text-muted-foreground/85">
+                            <Minus className="h-3 w-3" />
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                    {canExpand && isExpanded && (
+                      <div className="pb-2 pl-4 pr-1 text-[11px]">
+                        {pt.categories!.map((cat) => (
+                          <CategoryDiffRow
+                            key={cat.name}
+                            current={cat}
+                            previous={prev!.categories!.find((c) => c.name === cat.name)}
+                          />
+                        ))}
+                      </div>
+                    )}
                   </div>
                 );
               })}

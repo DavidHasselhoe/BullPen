@@ -7,6 +7,7 @@ interface HealthScoreHistoryRow {
   snapshot_date: string;
   score: number;
   grade: string;
+  categories: unknown;
 }
 
 async function handler(
@@ -21,7 +22,7 @@ async function handler(
     const supabase = createServerClient();
     const { data, error } = await supabase
       .from('health_score_history')
-      .select('fiscal_date, snapshot_date, score, grade')
+      .select('fiscal_date, snapshot_date, score, grade, categories')
       .eq('ticker', symbol)
       .order('snapshot_date', { ascending: true });
 
@@ -38,6 +39,7 @@ async function handler(
             snapshotDate: r.snapshot_date,
             score: r.score,
             grade: r.grade,
+            categories: r.categories,
           })),
         },
         { headers: { 'Cache-Control': 'private, max-age=3600' } }
