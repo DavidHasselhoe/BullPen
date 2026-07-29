@@ -77,7 +77,11 @@ async function handler(request: NextRequest): Promise<NextResponse> {
     let error: { message: string } | null = null;
 
     if (q.length >= 2) {
-      const pattern = `%${q}%`;
+      // Strip characters meaningful to PostgREST's .or() filter DSL (`,` separates
+      // conditions, `(`/`)` group them) — without this, a search term like
+      // "x,id.eq.<uuid>" would inject an arbitrary additional OR'd condition.
+      const safeQ = q.replace(/[,()]/g, '');
+      const pattern = `%${safeQ}%`;
       const res = await supabase
         .from('users')
         .select(PUBLIC_PROFILE_COLUMNS)

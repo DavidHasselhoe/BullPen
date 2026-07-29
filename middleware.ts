@@ -51,6 +51,12 @@ export async function middleware(request: NextRequest) {
   response.headers.set('Cross-Origin-Opener-Policy', 'same-origin');
 
   // Content Security Policy (adjust as needed for your app)
+  // 'unsafe-eval' is dev-only (Turbopack/webpack HMR relies on eval() for
+  // fast refresh) — production builds don't need it, and it fully defeats
+  // CSP's main XSS mitigation, so it must never ship to real users.
+  const scriptSrc = process.env.NODE_ENV === 'production'
+    ? "script-src 'self' 'unsafe-inline' https://app.termly.io"
+    : "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://app.termly.io";
   const csp = [
     "default-src 'self'",
     // app.termly.io: the official Termly embed script for self-updating legal
@@ -59,7 +65,7 @@ export async function middleware(request: NextRequest) {
     // height), so it needs both script-src (to load the script) and
     // frame-src (to render the iframe it creates) — frame-src falls back to
     // default-src when unset, which is 'self' and would otherwise block it.
-    "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://app.termly.io",
+    scriptSrc,
     "frame-src https://app.termly.io",
     "style-src 'self' 'unsafe-inline'", // Tailwind requires unsafe-inline
     "img-src 'self' data: https:",

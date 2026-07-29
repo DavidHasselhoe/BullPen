@@ -284,10 +284,13 @@ export const searchCompanies = tool({
   }),
   execute: async ({ query }) => {
     const db = supabase();
+    // Strip characters meaningful to PostgREST's .or() filter DSL (`,` separates
+    // conditions, `(`/`)` group them) before interpolating user input.
+    const safeQuery = query.toLowerCase().replace(/[,()]/g, '');
     const { data } = await db
       .from('company_index')
       .select('ticker, name')
-      .or(`normalized_name.ilike.%${query.toLowerCase()}%,normalized_ticker.ilike.%${query.toLowerCase()}%`)
+      .or(`normalized_name.ilike.%${safeQuery}%,normalized_ticker.ilike.%${safeQuery}%`)
       .eq('has_data', true)
       .limit(8);
 

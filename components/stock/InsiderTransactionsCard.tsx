@@ -10,11 +10,14 @@
  */
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { ProBadge } from '@/components/billing/ProBadge';
 import { useExperienceLevel } from '@/hooks/use-experience-level';
+import { useEntitlements } from '@/hooks/use-entitlements';
 import { TrendingUp, TrendingDown, Minus, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { FlowBar } from '@/components/viz/FlowBar';
@@ -81,6 +84,7 @@ const INITIAL_SHOW = 8;
 
 export function InsiderTransactionsCard({ ticker }: { ticker: string }) {
   const { isSimplified } = useExperienceLevel();
+  const { isPro } = useEntitlements();
   const [showAll, setShowAll] = useState(false);
   const [requested, setRequested] = useState(false);
 
@@ -90,20 +94,25 @@ export function InsiderTransactionsCard({ ticker }: { ticker: string }) {
       const res = await fetch(`/api/stock/${ticker}/insider-transactions`);
       return res.json();
     },
-    enabled: requested,
+    enabled: requested && isPro,
     staleTime: 7 * 24 * 60 * 60 * 1000,
     gcTime: 7 * 24 * 60 * 60 * 1000,
   });
 
-  // Gate: show a prompt until the user explicitly requests the data
-  if (!requested) {
+  // Gate: show a prompt until the user explicitly requests the data.
+  // Pro-only feature — the API enforces this too, but a free user shouldn't
+  // even see a "View" button that silently 403s.
+  if (!requested || !isPro) {
     return (
       <Card className="mb-8">
         <CardContent className="flex items-center justify-between gap-4 py-4">
           <div className="flex items-center gap-2.5 min-w-0">
             <Users className="h-4 w-4 text-muted-foreground shrink-0" />
             <div className="min-w-0">
-              <p className="text-sm font-medium text-foreground">Insider Transactions</p>
+              <p className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+                Insider Transactions
+                {!isPro && <ProBadge />}
+              </p>
               <p className="text-xs text-muted-foreground/85">
                 {isSimplified
                   ? 'See when executives buy or sell their own stock'
@@ -111,12 +120,21 @@ export function InsiderTransactionsCard({ ticker }: { ticker: string }) {
               </p>
             </div>
           </div>
-          <button
-            onClick={() => setRequested(true)}
-            className="shrink-0 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors whitespace-nowrap"
-          >
-            View
-          </button>
+          {isPro ? (
+            <button
+              onClick={() => setRequested(true)}
+              className="shrink-0 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors whitespace-nowrap"
+            >
+              View
+            </button>
+          ) : (
+            <Link
+              href="/upgrade"
+              className="shrink-0 rounded-lg border border-primary/30 bg-primary/5 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/10 transition-colors whitespace-nowrap"
+            >
+              Upgrade
+            </Link>
+          )}
         </CardContent>
       </Card>
     );

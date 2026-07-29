@@ -13,6 +13,25 @@ export interface AvatarUploadResult {
 const AVATAR_BUCKET = 'user-avatars';
 
 /**
+ * Confirms the file's actual bytes match a real image format, rather than
+ * trusting the browser-supplied `file.type` (a client-controlled property
+ * that doesn't reflect the file's real content). Checks magic numbers for
+ * the three formats this uploader accepts.
+ */
+async function sniffImageFormat(file: File): Promise<'jpeg' | 'png' | 'webp' | null> {
+  const header = new Uint8Array(await file.slice(0, 12).arrayBuffer());
+
+  if (header[0] === 0xff && header[1] === 0xd8 && header[2] === 0xff) return 'jpeg';
+  if (header[0] === 0x89 && header[1] === 0x50 && header[2] === 0x4e && header[3] === 0x47) return 'png';
+  if (
+    header[0] === 0x52 && header[1] === 0x49 && header[2] === 0x46 && header[3] === 0x46 && // "RIFF"
+    header[8] === 0x57 && header[9] === 0x45 && header[10] === 0x42 && header[11] === 0x50    // "WEBP"
+  ) return 'webp';
+
+  return null;
+}
+
+/**
  * Uploads avatar image to Supabase Storage
  * Supports PNG, JPG, and WebP formats
  */
@@ -38,6 +57,15 @@ export async function uploadAvatarToStorage(
       return {
         success: false,
         error: 'File size exceeds 5 MB limit. Please upload a smaller image.',
+      };
+    }
+
+    // Validate actual file content — `file.type` is just a client-supplied label
+    const sniffed = await sniffImageFormat(file);
+    if (!sniffed) {
+      return {
+        success: false,
+        error: "This file doesn't look like a valid JPEG, PNG, or WebP image.",
       };
     }
 

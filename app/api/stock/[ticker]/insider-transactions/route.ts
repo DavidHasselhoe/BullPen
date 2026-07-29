@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getInsiderTransactions, TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
 import { getCached, setCached } from '@/lib/cache/market-data-cache';
-import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
+import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
+import { getTier, isPro } from '@/lib/billing/tier';
 
 // Form 4 filings are due within 2 business days but insider trading windows
 // only open after earnings (~quarterly), so meaningful new data arrives at most
@@ -10,8 +11,17 @@ const INSIDER_TTL_SECONDS = 7 * 24 * 60 * 60;
 
 async function handler(
   _request: NextRequest,
-  { params }: { params: Promise<{ ticker: string }> }
+  { params }: { params: Promise<{ ticker: string }> },
+  session: { userId: string }
 ) {
+  // Pro-only — also the single most expensive TwelveData endpoint in the app
+  // (200 credits/symbol), so this gate matters for both the paywall and cost control.
+  if (!isPro(await getTier(session.userId))) {
+    return addSecurityHeaders(
+      NextResponse.json({ success: false, error: 'upgrade_required' }, { status: 403 })
+    );
+  }
+
   const { ticker } = await params;
   const symbol = ticker.toUpperCase();
   const cacheKey = `insider:${symbol}`;
@@ -22,7 +32,7 @@ async function handler(
       return addSecurityHeaders(
         NextResponse.json(
           { success: true, data: cached },
-          { headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=600' } }
+          { headers: { 'Cache-Control': 'private, max-age=3600' } }
         )
       );
     }
@@ -54,4 +64,4 @@ async function handler(
   }
 }
 
-export const GET = withRateLimit(handler, { windowMs: 60_000, maxRequests: 30 });
+export const GET = withAuth(handler, { rateLimit: { windowMs: 60_000, maxRequests: 30 } });

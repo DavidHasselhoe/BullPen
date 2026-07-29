@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/client';
 import { getCompanyProfile } from '@/lib/twelvedata/twelvedata-client';
+import { withAuth } from '@/lib/security/api-security';
 
 /**
  * Fetches sector data from TwelveData for tickers that have null sector in the DB,
  * updates the companies table, and returns the resolved sector map.
  * Called by the holdings page when it detects holdings with missing sector data.
+ *
+ * Requires auth (not per-user scoped — companies/ticker_sectors is shared
+ * reference data) purely to stop anonymous callers from burning TwelveData
+ * credits on this route at will.
  */
-export async function POST(request: NextRequest) {
+async function handler(request: NextRequest, _ctx: unknown, _session: { userId: string }) {
   try {
     const body = await request.json();
     const tickers: string[] = Array.isArray(body?.tickers)
@@ -46,3 +51,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ sectors: {} });
   }
 }
+
+export const POST = withAuth(handler, { rateLimit: { windowMs: 60_000, maxRequests: 20 } });

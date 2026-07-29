@@ -45,21 +45,28 @@ export async function createSessionClient() {
 
 /**
  * Get authenticated user ID from Supabase session in Server Actions.
- * Uses cookies to access the session. Returns null if not authenticated.
+ *
+ * Uses `getUser()`, NOT `getSession()` — `getSession()` reads the session
+ * straight out of cookie storage and only checks that a few expected keys are
+ * present, without verifying the JWT signature or contacting the Auth server.
+ * Since that cookie is just base64url(JSON) with no integrity protection, a
+ * request with a hand-crafted `Cookie` header could otherwise impersonate any
+ * user by ID. `getUser()` round-trips to Supabase Auth and cryptographically
+ * validates the token before trusting the returned user.
  */
 export async function getCurrentUserId(): Promise<string | null> {
   try {
     const supabase = await createSessionClient();
     const {
-      data: { session },
+      data: { user },
       error,
-    } = await supabase.auth.getSession();
+    } = await supabase.auth.getUser();
 
-    if (error || !session?.user) {
+    if (error || !user) {
       return null;
     }
 
-    return session.user.id;
+    return user.id;
   } catch {
     return null;
   }
