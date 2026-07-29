@@ -1,5 +1,13 @@
 [
   {
+    "date": "2026-07-29",
+    "entries": [
+      { "type": "new", "text": "Financial Health score history now shows exactly what changed between quarters — expand any entry to see the score change for each of the 5 categories (Profitability, Financial Strength, Valuation, Growth, Market Risk), not just the overall total" },
+      { "type": "new", "text": "Price Alerts: you can now add more conditions to a stock you're already tracking with a \"+\" button, instead of having to delete and recreate the alert" },
+      { "type": "improved", "text": "Clarified that VAT is included in the Pro subscription price shown on the pricing page, not added on top" }
+    ]
+  },
+  {
     "date": "2026-07-28",
     "entries": [
       { "type": "improved", "text": "Improved text contrast throughout the app for easier reading, especially dimmed labels and timestamps on dark backgrounds" },
