@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { Plus } from 'lucide-react';
 import { AlertCard } from './AlertCard';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { cn } from '@/lib/utils';
@@ -12,6 +13,7 @@ interface Props {
   alerts: UserAlert[];
   onToggle: (id: string, isActive: boolean) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  onAddCondition: (symbol: string, companyName: string | null) => void;
 }
 
 interface StockGroup {
@@ -20,7 +22,7 @@ interface StockGroup {
   alerts: UserAlert[];
 }
 
-export function AlertList({ alerts, onToggle, onDelete }: Props) {
+export function AlertList({ alerts, onToggle, onDelete, onAddCondition }: Props) {
   const [filter, setFilter] = useState<Filter>('all');
 
   // Group all alerts by symbol, preserving insertion order of first occurrence
@@ -116,6 +118,15 @@ export function AlertList({ alerts, onToggle, onDelete }: Props) {
                 <span className="ml-auto text-[10px] font-mono text-muted-foreground/80 shrink-0">
                   {group.alerts.length} {group.alerts.length === 1 ? 'condition' : 'conditions'}
                 </span>
+                <button
+                  type="button"
+                  onClick={() => onAddCondition(group.symbol, group.companyName)}
+                  className="h-6 w-6 shrink-0 rounded flex items-center justify-center text-muted-foreground/80 hover:text-foreground hover:bg-muted/60 transition-colors"
+                  title={`Add condition to ${group.symbol}`}
+                  aria-label={`Add condition to ${group.symbol}`}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </button>
               </div>
 
               {/* Sub-alert rows */}

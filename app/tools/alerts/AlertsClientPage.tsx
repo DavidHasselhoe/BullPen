@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Bell, Plus, AlertCircle } from 'lucide-react';
@@ -27,6 +27,25 @@ export default function AlertsClientPage() {
   const prefilledSymbol = searchParams.get('symbol')?.toUpperCase() ?? null;
   const prefilledName = searchParams.get('name') ?? prefilledSymbol ?? null;
   const [composerOpen, setComposerOpen] = useState(() => !!prefilledSymbol);
+  // Which stock the composer's ticker field is locked to — either from the URL
+  // (command palette flow) or from clicking "Add condition" on an existing group.
+  const [lockedTicker, setLockedTicker] = useState<{ ticker: string; name: string } | null>(
+    prefilledSymbol && prefilledName ? { ticker: prefilledSymbol, name: prefilledName } : null
+  );
+  const composerRef = useRef<HTMLDivElement>(null);
+
+  const openComposerFor = (symbol: string, companyName: string | null) => {
+    setLockedTicker({ ticker: symbol, name: companyName ?? symbol });
+    setComposerOpen(true);
+  };
+
+  // Scroll the composer into view when it's opened to add a condition to a
+  // stock further down the list — otherwise it appears off-screen above the fold.
+  useEffect(() => {
+    if (composerOpen && lockedTicker) {
+      composerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [composerOpen, lockedTicker]);
 
   // Optional pre-fill from the chart's alert tool (?price=200&type=price_above).
   const rawType = searchParams.get('type');
@@ -89,7 +108,7 @@ export default function AlertsClientPage() {
               {!composerOpen && (
                 <Button
                   size="sm"
-                  onClick={() => setComposerOpen(true)}
+                  onClick={() => { setLockedTicker(null); setComposerOpen(true); }}
                   className="gap-1.5"
                 >
                   <Plus className="h-3.5 w-3.5" />
@@ -118,16 +137,17 @@ export default function AlertsClientPage() {
 
         {/* Composer */}
         {composerOpen && (
-          <CreateAlertForm
-            onCreated={() => setComposerOpen(false)}
-            onCancel={() => setComposerOpen(false)}
-            onCreate={create}
-            initialTicker={prefilledSymbol && prefilledName
-              ? { ticker: prefilledSymbol, name: prefilledName }
-              : undefined}
-            initialAlertType={initialAlertType}
-            initialThreshold={initialThreshold}
-          />
+          <div ref={composerRef}>
+            <CreateAlertForm
+              key={lockedTicker?.ticker ?? 'blank'}
+              onCreated={() => setComposerOpen(false)}
+              onCancel={() => setComposerOpen(false)}
+              onCreate={create}
+              initialTicker={lockedTicker ?? undefined}
+              initialAlertType={initialAlertType}
+              initialThreshold={initialThreshold}
+            />
+          </div>
         )}
 
         {/* Body */}
@@ -168,7 +188,7 @@ export default function AlertsClientPage() {
             </EmptyState>
           </div>
         ) : (
-          <AlertList alerts={alerts} onToggle={toggle} onDelete={remove} />
+          <AlertList alerts={alerts} onToggle={toggle} onDelete={remove} onAddCondition={openComposerFor} />
         )}
 
         {/* About */}
