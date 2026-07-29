@@ -153,6 +153,7 @@ function UpgradeContent() {
               <span className="text-sm text-muted-foreground">/ month</span>
               {annual && <span className="ml-auto text-[11px] font-mono text-muted-foreground/85">billed ${price * 12}/yr</span>}
             </div>
+            <p className="mt-1 text-[11px] text-muted-foreground/80">VAT included where applicable</p>
             {isPro ? (
               <Button disabled className="mt-5 w-full">You’re on Pro</Button>
             ) : status === 'done' ? (
