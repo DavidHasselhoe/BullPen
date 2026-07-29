@@ -39,6 +39,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: `webhook_error: ${message}` }, { status: 400 });
   }
 
+  // Stripe's own event timestamp — guards against applying a redelivered or
+  // out-of-order event over state a more recent event already established
+  // (e.g. a late-redelivered checkout.session.completed re-granting Pro after
+  // a real, more recent cancellation already processed).
+  const eventCreatedAt = new Date(event.created * 1000);
+
   try {
     switch (event.type) {
       case 'checkout.session.completed': {
@@ -49,7 +55,8 @@ export async function POST(request: NextRequest) {
           session.client_reference_id ||
           (session.metadata?.supabase_user_id as string | undefined) ||
           null;
-        await grantPro(customerId, userId, subscriptionId, 'active');
+        if (await isStaleEvent(customerId, userId, eventCreatedAt)) break;
+        await grantPro(customerId, userId, subscriptionId, 'active', eventCreatedAt);
         break;
       }
 
@@ -59,10 +66,12 @@ export async function POST(request: NextRequest) {
         const sub = event.data.object as Stripe.Subscription;
         const customerId = asId(sub.customer);
         const userId = (sub.metadata?.supabase_user_id as string | undefined) || null;
+        if (await isStaleEvent(customerId, userId, eventCreatedAt)) break;
         const grantsPro = event.type !== 'customer.subscription.deleted' && statusGrantsPro(sub.status);
         await setTier(customerId, userId, grantsPro ? TIER_PRO : TIER_FREE, {
           subscriptionId: sub.id,
           status: sub.status,
+          lastEventAt: eventCreatedAt,
         });
         break;
       }
@@ -85,9 +94,54 @@ async function grantPro(
   customerId: string | null,
   userId: string | null,
   subscriptionId: string | null,
-  status: string
+  status: string,
+  lastEventAt: Date
 ) {
-  await setTier(customerId, userId, TIER_PRO, { subscriptionId, status });
+  await setTier(customerId, userId, TIER_PRO, { subscriptionId, status, lastEventAt });
+}
+
+/**
+ * True if the row this event would update already reflects a MORE RECENT
+ * Stripe event than this one — i.e. this event is a redelivered or
+ * out-of-order webhook and must not be applied over newer state. Ties (two
+ * events sharing the same second) are treated as not-stale so both apply,
+ * since `event.created` is only second-granularity.
+ *
+ * Accepted tradeoff: this is a plain read-then-write, not a single atomic
+ * operation — a small TOCTOU race exists if two deliveries for the same user
+ * are processed concurrently. Low-probability and low-severity (can only
+ * affect ordering between two already-current events, never a revert to
+ * stale data); closing it properly belongs to the later event-ledger work.
+ */
+async function isStaleEvent(
+  customerId: string | null,
+  userId: string | null,
+  eventCreatedAt: Date
+): Promise<boolean> {
+  const supabase = createServerClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = supabase as any;
+
+  let row: { stripe_last_event_at: string | null } | null = null;
+  if (customerId) {
+    const { data } = await db
+      .from('users')
+      .select('stripe_last_event_at')
+      .eq('stripe_customer_id', customerId)
+      .maybeSingle();
+    row = data;
+  }
+  if (!row && userId) {
+    const { data } = await db
+      .from('users')
+      .select('stripe_last_event_at')
+      .eq('id', userId)
+      .maybeSingle();
+    row = data;
+  }
+
+  if (!row?.stripe_last_event_at) return false;
+  return new Date(row.stripe_last_event_at) > eventCreatedAt;
 }
 
 /** Update the owning user row, matching by stripe_customer_id then by user id. */
@@ -95,12 +149,13 @@ async function setTier(
   customerId: string | null,
   userId: string | null,
   tier: number,
-  extra: { subscriptionId?: string | null; status?: string | null }
+  extra: { subscriptionId?: string | null; status?: string | null; lastEventAt?: Date }
 ) {
   const supabase = createServerClient();
   const patch: Record<string, unknown> = { account_tier: tier };
   if (extra.subscriptionId !== undefined) patch.stripe_subscription_id = extra.subscriptionId;
   if (extra.status !== undefined) patch.stripe_status = extra.status;
+  if (extra.lastEventAt !== undefined) patch.stripe_last_event_at = extra.lastEventAt.toISOString();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any;
