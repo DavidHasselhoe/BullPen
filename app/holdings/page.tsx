@@ -49,7 +49,16 @@ function useSessionState(): TradingSession {
 
 export default function HoldingsPage() {
   const { user, isAuthenticated } = useAuth();
-  const { data: holdings, isLoading: holdingsLoading } = useHoldings();
+  const { data: allHoldings, isLoading: holdingsLoading } = useHoldings();
+
+  // Selling down to 0 shares zeroes out quantity rather than deleting the row
+  // (see holdings-db.ts sellHolding) so undo and historical chart reconstruction
+  // still work — but a fully-sold position shouldn't linger in the active table.
+  // A never-set quantity (manually-tracked position with no share count) is kept.
+  const holdings = useMemo(
+    () => (allHoldings ?? []).filter((h) => h.quantity == null || h.quantity > 1e-9),
+    [allHoldings]
+  );
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [hoveredSector, setHoveredSector] = useState<string | null>(null);
