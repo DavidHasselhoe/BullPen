@@ -95,7 +95,7 @@ export function HealthScoreHistoryModal({ ticker, open, onOpenChange, history }:
                     return (
                       <div className="rounded-lg border border-border bg-background/95 px-3 py-2 shadow-lg backdrop-blur-sm text-xs space-y-0.5">
                         <p className="font-semibold text-foreground">{pt.score}/100 · {pt.grade}</p>
-                        <p className="text-muted-foreground">{formatFullDate(pt.snapshotDate)}</p>
+                        <p className="text-muted-foreground">{formatFullDate(pt.fiscalDate)}</p>
                       </div>
                     );
                   }}
@@ -133,7 +133,7 @@ export function HealthScoreHistoryModal({ ticker, open, onOpenChange, history }:
                         {canExpand && (
                           <ChevronDown className={cn('h-3 w-3 shrink-0 transition-transform', isExpanded && 'rotate-180')} />
                         )}
-                        {formatFullDate(pt.snapshotDate)}
+                        {formatFullDate(pt.fiscalDate)}
                       </span>
                       <div className="flex items-center gap-2">
                         <span className="font-semibold text-foreground tabular-nums">{pt.score}/100</span>
