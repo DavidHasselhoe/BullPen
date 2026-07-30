@@ -9,6 +9,15 @@ export const weekdayDateFmt = new Intl.DateTimeFormat("en-US", {
   day: "numeric",
 });
 
+// For ranges spanning a year or more (1Y/5Y/MAX) — "Wed, Jul 22" alone is
+// ambiguous once the hovered point could be from any of several years.
+export const weekdayDateWithYearFmt = new Intl.DateTimeFormat("en-US", {
+  weekday: "short",
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+});
+
 export const hmsTimeFmt = new Intl.DateTimeFormat("en-US", {
   hour: "2-digit",
   minute: "2-digit",

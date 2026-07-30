@@ -38,7 +38,9 @@ const AdvancedChartModal = dynamic(
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type Range = '1D' | '1W' | '1M' | '6M' | '1Y' | 'YTD' | '5Y' | 'MAX';
-const RANGES: Range[] = ['1D', '1W', '1M', '6M', '1Y', 'YTD', '5Y', 'MAX'];
+const RANGES: Range[] = ['1D', '1W', '1M', '6M', 'YTD', '1Y', '5Y', 'MAX'];
+// Ranges spanning a year or more — the tooltip needs a year to disambiguate.
+const YEAR_DISAMBIGUATED_RANGES = new Set<Range>(['1Y', '5Y', 'MAX']);
 
 // Display labels shown on buttons
 const RANGE_DISPLAY: Record<Range, string> = {
@@ -711,6 +713,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
             ))}
             <ChartTooltip
               showTime={isIntradayRange}
+              showYear={YEAR_DISAMBIGUATED_RANGES.has(range)}
               rows={(point) => {
                 const rows = [{ label: 'Price', value: fmtPrice(point.price as number), color: lineColor }];
                 if ((point.volume as number) > 0) rows.push({ label: 'Vol', value: fmtVol(point.volume as number), color: 'var(--chart-grid)' });
@@ -762,6 +765,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
                 <ReferenceLine y={50} strokeDasharray="2,4" />
                 <Line dataKey="rsi" stroke={INDICATOR_COLORS.rsi} strokeWidth={1.5} showMarkers={false} />
                 <ChartTooltip
+                  showYear={YEAR_DISAMBIGUATED_RANGES.has(range)}
                   rows={(point) => point.rsi != null ? [{ label: 'RSI', value: (point.rsi as number).toFixed(1), color: INDICATOR_COLORS.rsi }] : []}
                 />
               </LineChart>
@@ -777,6 +781,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
                 <Line dataKey="macd" stroke="#60a5fa" strokeWidth={1.5} showMarkers={false} />
                 <Line dataKey="signal" stroke="#f59e0b" strokeWidth={1.5} showMarkers={false} />
                 <ChartTooltip
+                  showYear={YEAR_DISAMBIGUATED_RANGES.has(range)}
                   rows={(point) => {
                     const rows: { label: string; value: string; color: string }[] = [];
                     if (point.macd != null) rows.push({ label: 'MACD', value: (point.macd as number).toFixed(3), color: '#60a5fa' });

@@ -14,7 +14,7 @@ import {
   useChart,
   useChartStable,
 } from "../chart-context";
-import { shortTimeFmt, weekdayDateFmt } from "../chart-formatters";
+import { shortTimeFmt, weekdayDateFmt, weekdayDateWithYearFmt } from "../chart-formatters";
 import type { IndicatorFadeEdges } from "../indicator-fade";
 import { DateTicker } from "./date-ticker";
 import { TooltipBox } from "./tooltip-box";
@@ -33,6 +33,13 @@ export interface ChartTooltipProps {
    * Default: false
    */
   showTime?: boolean;
+  /**
+   * Include the year in the tooltip's date title (e.g. "Wed, Jul 22, 2024")
+   * instead of just "Wed, Jul 22" — use for ranges spanning a year or more,
+   * where the hovered point could otherwise be from any of several years.
+   * Default: false
+   */
+  showYear?: boolean;
   /** Whether to show the vertical crosshair line. Default: true */
   showCrosshair?: boolean;
   /** Whether to show dots on the lines. Default: true */
@@ -106,6 +113,7 @@ interface ChartTooltipInnerProps extends ChartTooltipProps {
 const ChartTooltipInner = memo(function ChartTooltipInner({
   showDatePill = true,
   showTime = false,
+  showYear = false,
   showCrosshair = true,
   showDots = true,
   dotVariant = "dot",
@@ -259,9 +267,9 @@ const ChartTooltipInner = memo(function ChartTooltipInner({
     }
     // For line/area charts, use the date
     const date = xAccessor(tooltipData.point);
-    const dateStr = weekdayDateFmt.format(date);
+    const dateStr = (showYear ? weekdayDateWithYearFmt : weekdayDateFmt).format(date);
     return showTime ? `${dateStr} · ${shortTimeFmt.format(date)}` : dateStr;
-  }, [tooltipData, barXAccessor, xAccessor, showTime]);
+  }, [tooltipData, barXAccessor, xAccessor, showTime, showYear]);
 
   const tooltipContent = (
     <>
