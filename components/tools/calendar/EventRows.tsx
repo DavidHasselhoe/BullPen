@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import type { ElementType } from 'react';
-import { TrendingUp, DollarSign, Scissors, Rocket } from 'lucide-react';
+import { TrendingUp, DollarSign, Scissors, Rocket, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
 import { fmtEPS, fmtRevenue, fmtShortDate } from './format';
@@ -40,11 +40,21 @@ const IPO_STATUS_COLORS: Record<string, string> = {
   withdrawn: 'bg-red-500/10 text-red-400',
 };
 
+/** 'beat' / 'miss' / 'inline' vs. estimate — null when there's nothing to compare against. */
+function epsDirection(actual: number, estimate: number | null | undefined): 'beat' | 'miss' | 'inline' | null {
+  if (estimate == null) return null;
+  if (actual > estimate) return 'beat';
+  if (actual < estimate) return 'miss';
+  return 'inline';
+}
+
 // ─── Compact (grid cell) ──────────────────────────────────────────────────────
 
 function compactMetric(event: UnifiedEvent): string | null {
   if (event.type === 'earnings') {
     const e = event.raw as EarningsItem;
+    // Once reported, the actual is more useful than a stale estimate.
+    if (e.eps_actual != null) return fmtEPS(e.eps_actual);
     return e.eps_estimate != null ? fmtEPS(e.eps_estimate) : null;
   }
   if (event.type === 'dividends') {
@@ -100,7 +110,20 @@ export function DetailEventRow({ event }: { event: UnifiedEvent }) {
           </div>
         </div>
         <div className="text-right text-xs shrink-0 space-y-0.5">
-          {e.eps_estimate != null ? (
+          {e.eps_actual != null ? (
+            <div className="flex items-center justify-end gap-1">
+              <span className="text-muted-foreground/80">EPS </span>
+              <span className={cn('font-semibold tabular-nums', e.eps_actual < 0 ? 'text-red-400' : 'text-foreground')}>
+                {fmtEPS(e.eps_actual)}
+              </span>
+              {(() => {
+                const dir = epsDirection(e.eps_actual!, e.eps_estimate);
+                if (dir === 'beat') return <ArrowUpRight className="h-3 w-3 text-emerald-400" aria-label="Beat estimate" />;
+                if (dir === 'miss') return <ArrowDownRight className="h-3 w-3 text-red-400" aria-label="Missed estimate" />;
+                return null;
+              })()}
+            </div>
+          ) : e.eps_estimate != null ? (
             <div>
               <span className="text-muted-foreground/80">EPS est. </span>
               <span className={cn('font-semibold tabular-nums', e.eps_estimate < 0 ? 'text-red-400' : 'text-foreground')}>
@@ -109,6 +132,9 @@ export function DetailEventRow({ event }: { event: UnifiedEvent }) {
             </div>
           ) : (
             <span className="text-muted-foreground/80">—</span>
+          )}
+          {e.eps_actual != null && e.eps_estimate != null && (
+            <div className="text-[10px] text-muted-foreground/80">est. {fmtEPS(e.eps_estimate)}</div>
           )}
           {e.revenue_estimate != null && (
             <div className="text-[10px] text-muted-foreground/80">Rev {fmtRevenue(e.revenue_estimate)}</div>
