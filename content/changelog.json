@@ -1,5 +1,22 @@
 [
   {
+    "date": "2026-07-30",
+    "entries": [
+      { "type": "new", "text": "Completely redesigned the Market Calendar into a personalized weekly grid — see your own holdings and watchlist highlighted on each day, click into any day for full earnings, dividends, splits, and IPO details, and filter by event type" },
+      { "type": "improved", "text": "The Market Calendar now shows a company's actual reported earnings, with a beat/miss indicator, once they're out — instead of just the pre-earnings estimate" },
+      { "type": "improved", "text": "Sold Positions has moved from a card on the Holdings page into a compact \"History\" button, and you can now edit a recorded sale's quantity, price, or date directly instead of undoing it and re-entering it from scratch" },
+      { "type": "improved", "text": "Stock and portfolio charts now show the year in the hover tooltip when viewing a year or more of history, and the YTD tab now comes before 1Y in the range picker" },
+      { "type": "improved", "text": "Made the benchmark bars on stock pages (Profit Margin, Revenue Growth, P/E, and more) easier to read, with clear scale labels and a visible zero line" },
+      { "type": "fixed", "text": "Fixed stock and portfolio performance charts showing an oversized blank gap over weekends and holidays, which made trading days look squeezed together" },
+      { "type": "fixed", "text": "Fixed Google (GOOG/GOOGL) showing up as two separate entries in Market Movers and the Screener — now shown as one" },
+      { "type": "fixed", "text": "Fixed the Sell modal sometimes asking for a sale price in the wrong currency — it now always asks in USD, matching how your cost basis is stored" },
+      { "type": "fixed", "text": "Fixed a fully-sold holding still showing up as a row in your Holdings table" },
+      { "type": "fixed", "text": "Fixed Financial Health score history occasionally showing the wrong quarter's date" },
+      { "type": "fixed", "text": "Fixed the stock pages for CTRA and K sometimes showing data for the wrong company" },
+      { "type": "fixed", "text": "Fixed a stock's after-hours price briefly disappearing overnight before the next trading session started" }
+    ]
+  },
+  {
     "date": "2026-07-29",
     "entries": [
       { "type": "new", "text": "Financial Health score history now shows exactly what changed between quarters — expand any entry to see the score change for each of the 5 categories (Profitability, Financial Strength, Valuation, Growth, Market Risk), not just the overall total" },
