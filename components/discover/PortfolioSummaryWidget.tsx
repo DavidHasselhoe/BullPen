@@ -28,19 +28,19 @@ function usePortfolioSparkline(holdings: UserHolding[]) {
     [eligible]
   );
 
-  const totalCostBasis = useMemo(
-    () => eligible.reduce((sum, h) => sum + (h.avg_price! * h.quantity!), 0),
-    [eligible]
-  );
-
+  // 1-week window — matches the "this week" label under the header stat, so
+  // the chart and the number can never tell two different stories. (Used to
+  // fetch 1M here while the header showed *today's* change — a mismatch on
+  // two counts: wrong window, and a stat computed from a completely
+  // different source (live quotes) than what the chart plotted.)
   const { data, isLoading } = useQuery({
-    queryKey: ['portfolio-sparkline', holdingsKey],
+    queryKey: ['portfolio-sparkline-week', holdingsKey],
     queryFn: async () => {
       if (eligible.length === 0) return [];
       return Promise.all(
         eligible.map(async (h) => {
           try {
-            const res = await fetch(`/api/stock/${encodeURIComponent(h.symbol)}/candles?range=1M`);
+            const res = await fetch(`/api/stock/${encodeURIComponent(h.symbol)}/candles?range=1W`);
             if (!res.ok) return { holding: h, candles: null };
             const json = await res.json();
             return { holding: h, candles: (json.candles ?? null) as CandleData | null };
@@ -55,37 +55,60 @@ function usePortfolioSparkline(holdings: UserHolding[]) {
     retry: false,
   });
 
-  const chartData = useMemo<{ pl: number }[]>(() => {
-    if (!data?.length) return [];
+  const { chartData, weekChangeUSD, weekChangePercent } = useMemo(() => {
+    if (!data?.length) {
+      return { chartData: [] as { pl: number }[], weekChangeUSD: null as number | null, weekChangePercent: null as number | null };
+    }
 
-    const plByTime = new Map<number, number>();
-    let periodBasis = 0;
+    // Dollar P/L and its basis, both keyed by timestamp, so the headline stat
+    // (the last point) is derived from the exact same series the chart draws
+    // — never a separately-sourced number that can drift from what's plotted.
+    const dollarPlByTime = new Map<number, number>();
+    const basisByTime = new Map<number, number>();
+    let sawAnyCandles = false;
 
     for (const { holding, candles } of data) {
-      if (!candles || holding.avg_price == null || holding.quantity == null) continue;
+      if (!candles || holding.avg_price == null || holding.quantity == null || candles.t.length === 0) continue;
+      sawAnyCandles = true;
       const { t, c } = candles;
-      const periodStartMs = t.length > 0 ? t[0] * 1000 : 0;
+      const periodStartMs = t[0] * 1000;
       const holdingStart = holding.date_purchased
         ? new Date(holding.date_purchased).getTime()
         : new Date(holding.created_at).getTime();
+      // Bought mid-week: baseline off the actual purchase price, not the week's
+      // opening price (which predates owning the position).
       const boughtDuringPeriod = holdingStart > periodStartMs;
       const basePrice = boughtDuringPeriod ? holding.avg_price : c[0];
-      periodBasis += basePrice * holding.quantity;
       for (let i = 0; i < t.length; i++) {
         if (t[i] * 1000 < holdingStart) continue;
-        plByTime.set(t[i], (plByTime.get(t[i]) ?? 0) + (c[i] - basePrice) * holding.quantity);
+        dollarPlByTime.set(t[i], (dollarPlByTime.get(t[i]) ?? 0) + (c[i] - basePrice) * holding.quantity);
+        basisByTime.set(t[i], (basisByTime.get(t[i]) ?? 0) + basePrice * holding.quantity);
       }
     }
 
-    const basis = periodBasis > 0 ? periodBasis : totalCostBasis > 0 ? totalCostBasis : 1;
+    if (!sawAnyCandles) {
+      return { chartData: [], weekChangeUSD: null, weekChangePercent: null };
+    }
 
-    return Array.from(plByTime.entries())
-      .sort(([a], [b]) => a - b)
-      .map(([, pl]) => ({ pl: (pl / basis) * 100 }));
-  }, [data, totalCostBasis]);
+    const sortedTimes = Array.from(dollarPlByTime.keys()).sort((a, b) => a - b);
+    const points = sortedTimes.map((t) => {
+      const basis = basisByTime.get(t) ?? 0;
+      return { pl: basis > 0 ? ((dollarPlByTime.get(t) ?? 0) / basis) * 100 : 0 };
+    });
 
-  const isPositive = (chartData[chartData.length - 1]?.pl ?? 0) >= 0;
-  return { chartData, isLoading, isPositive };
+    const lastTime = sortedTimes[sortedTimes.length - 1];
+    const finalDollarPl = dollarPlByTime.get(lastTime) ?? 0;
+    const finalBasis = basisByTime.get(lastTime) ?? 0;
+
+    return {
+      chartData: points,
+      weekChangeUSD: finalDollarPl,
+      weekChangePercent: finalBasis > 0 ? (finalDollarPl / finalBasis) * 100 : 0,
+    };
+  }, [data]);
+
+  const isPositive = (weekChangePercent ?? 0) >= 0;
+  return { chartData, isLoading, isPositive, weekChangeUSD, weekChangePercent };
 }
 
 // ─── Widget ────────────────────────────────────────────────────────────────────
@@ -125,7 +148,13 @@ export function PortfolioSummaryWidget() {
     gcTime: 5 * 60 * 1000,
   });
 
-  const { chartData, isLoading: sparklineLoading, isPositive: sparklinePositive } = usePortfolioSparkline(holdings ?? []);
+  const {
+    chartData,
+    isLoading: sparklineLoading,
+    isPositive: sparklinePositive,
+    weekChangeUSD,
+    weekChangePercent,
+  } = usePortfolioSparkline(holdings ?? []);
 
   const summary = (() => {
     if (!holdings || holdings.length === 0) return null;
@@ -138,20 +167,17 @@ export function PortfolioSummaryWidget() {
       .map((h) => {
         const q = quotes[h.symbol];
         if (!q || !h.quantity) return null;
-        return { holding: h, quote: q, marketValue: q.price * h.quantity, dayChange: q.change * h.quantity };
+        return { holding: h, quote: q, marketValue: q.price * h.quantity };
       })
       .filter((x): x is NonNullable<typeof x> => x !== null);
 
     const totalValueUSD = withPrices.reduce((s, p) => s + p.marketValue, 0);
-    const totalDayChangeUSD = withPrices.reduce((s, p) => s + p.dayChange, 0);
 
     if (withPrices.length === 0) return null;
 
-    const dayChangePercent = totalValueUSD > 0 ? (totalDayChangeUSD / totalValueUSD) * 100 : 0;
     return {
       totalValue: conv(totalValueUSD),
-      totalDayChange: conv(totalDayChangeUSD),
-      dayChangePercent,
+      weekChange: weekChangeUSD != null ? conv(weekChangeUSD) : null,
     };
   })();
 
@@ -192,7 +218,7 @@ export function PortfolioSummaryWidget() {
                   Track your first holding
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5 leading-snug">
-                  Add a stock to see live P/L, day moves, and a 1-month trend.
+                  Add a stock to see live P/L and a weekly trend.
                 </p>
               </div>
               <div className="h-7 w-7 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-emerald-500/20 transition-colors">
@@ -210,7 +236,8 @@ export function PortfolioSummaryWidget() {
   // hide silently rather than show a misleading $0 number.
   if (!summary) return null;
 
-  const isPositive = summary.dayChangePercent >= 0;
+  const hasWeekChange = summary.weekChange != null && weekChangePercent != null;
+  const isPositive = (weekChangePercent ?? 0) >= 0;
   const chartColor = sparklinePositive ? '#10b981' : '#ef4444';
   const gradientId = `sw-grad-${sparklinePositive ? 'pos' : 'neg'}`;
 
@@ -227,16 +254,18 @@ export function PortfolioSummaryWidget() {
               <p className="text-lg font-bold tabular-nums text-foreground truncate">
                 {formatCurrency(summary.totalValue, userCurrency, roundNumbers ? { round: true } : undefined)}
               </p>
-              <p
-                className={`text-xs font-medium tabular-nums flex items-center gap-0.5 ${
-                  isPositive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-                }`}
-              >
-                {isPositive ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-                {summary.dayChangePercent >= 0 ? '+' : ''}
-                {formatCurrency(summary.totalDayChange, userCurrency, roundNumbers ? { round: true } : undefined)}
-                {' '}({summary.dayChangePercent >= 0 ? '+' : ''}{summary.dayChangePercent.toFixed(roundNumbers ? 1 : 2)}%) today
-              </p>
+              {hasWeekChange && (
+                <p
+                  className={`text-xs font-medium tabular-nums flex items-center gap-0.5 ${
+                    isPositive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                  }`}
+                >
+                  {isPositive ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+                  {isPositive ? '+' : ''}
+                  {formatCurrency(summary.weekChange!, userCurrency, roundNumbers ? { round: true } : undefined)}
+                  {' '}({isPositive ? '+' : ''}{weekChangePercent!.toFixed(roundNumbers ? 1 : 2)}%) this week
+                </p>
+              )}
             </div>
             <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground mt-1" />
           </div>
