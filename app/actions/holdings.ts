@@ -4,7 +4,7 @@
 // Server-side mutations for user holdings with authentication
 
 import { getCurrentUserId } from '@/lib/auth/server-session';
-import { getHoldings, addHolding, addOrUpdateHolding, updateHolding, removeHolding, updateHoldingBySymbol, removeHoldingBySymbol, sellHolding, getHoldingSales, deleteHoldingSale } from '@/lib/holdings/holdings-db';
+import { getHoldings, addHolding, addOrUpdateHolding, updateHolding, removeHolding, updateHoldingBySymbol, removeHoldingBySymbol, sellHolding, getHoldingSales, deleteHoldingSale, updateHoldingSale } from '@/lib/holdings/holdings-db';
 import type { UserHolding, HoldingSale } from '@/lib/types/database';
 
 export interface AddHoldingInput {
@@ -281,4 +281,22 @@ export async function deleteHoldingSaleAction(
   if (!userId) return { success: false, error: 'Authentication required' };
   if (!saleId) return { success: false, error: 'Sale ID is required' };
   return await deleteHoldingSale(userId, saleId);
+}
+
+/**
+ * Server Action: Edit a recorded sale's quantity, price, or date in place.
+ */
+export async function updateHoldingSaleAction(
+  saleId: string,
+  input: SellHoldingInput
+): Promise<{
+  success: boolean;
+  sale?: HoldingSale;
+  holding?: UserHolding;
+  error?: string;
+}> {
+  const userId = await getCurrentUserId();
+  if (!userId) return { success: false, error: 'Authentication required' };
+  if (!saleId) return { success: false, error: 'Sale ID is required' };
+  return await updateHoldingSale(userId, saleId, input);
 }

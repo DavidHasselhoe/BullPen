@@ -10,6 +10,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { TermTooltip } from '@/components/ui/TermTooltip';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { useHoldings, useRemoveHolding } from '@/hooks/use-holdings';
+import { SoldPositionsModal } from '@/components/holdings/SoldPositionsModal';
 import { useAuth } from '@/hooks/use-auth';
 import { Trash2, Edit2, DollarSign, ArrowUpRight, ArrowDownRight, Plus, Search, X, Loader2, Upload, Download } from 'lucide-react';
 import { createBrowserClient } from '@/lib/supabase/client';
@@ -805,6 +806,7 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
                 {!isPro && <ProBadge className="ml-0.5" />}
               </button>
             )}
+            <SoldPositionsModal />
           {/* Search */}
           <div className="relative w-full sm:w-56">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />

@@ -666,3 +666,106 @@ export async function deleteHoldingSale(
     return { success: false, error: error instanceof Error ? error.message : 'Internal server error' };
   }
 }
+
+/**
+ * Edits a recorded sale in place — for correcting a data-entry mistake
+ * (wrong price, date, or quantity) without the undo-then-redo round trip.
+ * avg_cost_basis is never touched (it's the cost basis of the shares AT SALE
+ * TIME, not something this form edits); realized_pl is recomputed from it.
+ *
+ * Only touches user_holdings.quantity when quantity_sold actually changes,
+ * shifting it by the delta so the originating holding stays consistent
+ * (more sold now → less held; less sold now → more held). Blocked when the
+ * quantity changes but the originating holding was later hard-deleted —
+ * same restriction as deleteHoldingSale, since there's nothing to shift the
+ * delta onto.
+ */
+export async function updateHoldingSale(
+  userId: string,
+  saleId: string,
+  input: { quantitySold: number; salePrice: number; saleDate: string }
+): Promise<SellHoldingResult> {
+  try {
+    if (!(input.quantitySold > 0)) {
+      return { success: false, error: 'Quantity sold must be greater than zero' };
+    }
+    if (!(input.salePrice > 0)) {
+      return { success: false, error: 'Sale price must be greater than zero' };
+    }
+
+    const supabase = createServerClient();
+
+    const { data: sale, error: lookupErr } = await supabase
+      .from('holding_sales')
+      .select('id, original_holding_id, quantity_sold, avg_cost_basis')
+      .eq('id', saleId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (lookupErr || !sale) {
+      return { success: false, error: 'Sale not found or access denied' };
+    }
+
+    const qtyDelta = input.quantitySold - sale.quantity_sold;
+    let updatedHolding: UserHolding | undefined;
+
+    if (Math.abs(qtyDelta) > SELL_EPSILON) {
+      if (!sale.original_holding_id) {
+        return { success: false, error: 'The original holding no longer exists — changing the quantity sold requires re-adding the holding first' };
+      }
+
+      const { data: holding, error: holdingErr } = await supabase
+        .from('user_holdings')
+        .select('id, quantity')
+        .eq('id', sale.original_holding_id)
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (holdingErr || !holding) {
+        return { success: false, error: 'The original holding no longer exists — changing the quantity sold requires re-adding the holding first' };
+      }
+
+      const newHoldingQty = (holding.quantity ?? 0) - qtyDelta;
+      if (newHoldingQty < -SELL_EPSILON) {
+        const available = (holding.quantity ?? 0) + sale.quantity_sold;
+        return { success: false, error: `Cannot sell more than the ${available} shares available` };
+      }
+
+      const { data: holdingUpdate, error: updateErr } = await supabase
+        .from('user_holdings')
+        .update({ quantity: Math.max(0, newHoldingQty), updated_at: new Date().toISOString() })
+        .eq('id', holding.id)
+        .eq('user_id', userId)
+        .select()
+        .single();
+
+      if (updateErr) {
+        return { success: false, error: updateErr.message };
+      }
+      updatedHolding = holdingUpdate as UserHolding;
+    }
+
+    const realizedPl = (input.salePrice - sale.avg_cost_basis) * input.quantitySold;
+    const { data: updatedSale, error: saleUpdateErr } = await supabase
+      .from('holding_sales')
+      .update({
+        quantity_sold: input.quantitySold,
+        sale_price: input.salePrice,
+        sale_date: input.saleDate,
+        realized_pl: realizedPl,
+      })
+      .eq('id', saleId)
+      .eq('user_id', userId)
+      .select()
+      .single();
+
+    if (saleUpdateErr || !updatedSale) {
+      return { success: false, error: saleUpdateErr?.message || 'Failed to update sale' };
+    }
+
+    return { success: true, sale: updatedSale as HoldingSale, holding: updatedHolding };
+  } catch (error) {
+    logger.error('Error in updateHoldingSale:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Internal server error' };
+  }
+}

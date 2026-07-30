@@ -13,6 +13,7 @@ import {
   sellHoldingAction,
   getHoldingSalesAction,
   deleteHoldingSaleAction,
+  updateHoldingSaleAction,
   type AddHoldingInput,
   type UpdateHoldingInput,
   type SellHoldingInput,
@@ -267,6 +268,29 @@ export function useDeleteHoldingSale() {
       if (!user?.id) throw new Error('Authentication required');
       const result = await deleteHoldingSaleAction(saleId);
       if (!result.success) throw new Error(result.error || 'Failed to undo sale');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['holdings', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['holdings-quotes'] });
+      queryClient.invalidateQueries({ queryKey: ['holding-sales', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['portfolio-performance'], exact: false });
+    },
+  });
+}
+
+/**
+ * TanStack Query mutation to edit a recorded sale's quantity, price, or date.
+ */
+export function useUpdateHoldingSale() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ saleId, input }: { saleId: string; input: SellHoldingInput }): Promise<HoldingSale> => {
+      if (!user?.id) throw new Error('Authentication required');
+      const result = await updateHoldingSaleAction(saleId, input);
+      if (!result.success || !result.sale) throw new Error(result.error || 'Failed to update sale');
+      return result.sale;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['holdings', user?.id] });
