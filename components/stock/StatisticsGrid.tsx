@@ -291,6 +291,8 @@ export function StatisticsGrid({
             signal={sig('peRatioTTM')}
             benchmark={dist('pe_ratio') ? { value: dist('pe_ratio')!.median, label: 'typical' } : undefined}
             srLabel={`P/E ratio ${fmt(s.peRatioTTM, 'ratio')} on a 0 to 60 scale`}
+            minLabel="0"
+            maxLabel="60"
           />
         )}
         {s.peRatioForward != null && (
@@ -325,6 +327,8 @@ export function StatisticsGrid({
             signal={sig('profitMargin')}
             benchmark={dist('profit_margin') ? { value: dist('profit_margin')!.median, label: 'typical' } : undefined}
             srLabel={`Profit margin ${fmt(s.profitMargin, 'percent')}`}
+            minLabel="-10%"
+            maxLabel="40%"
           />
         )}
         {s.revenueGrowthTTM != null && (
@@ -337,6 +341,8 @@ export function StatisticsGrid({
               signal={sig('revenueGrowthTTM')}
               srLabel={`Revenue growth ${fmt(s.revenueGrowthTTM, 'percent')}`}
               className="flex-1"
+              minLabel="-20%"
+              maxLabel="40%"
             />
             <span className="shrink-0 text-xs font-medium tabular-nums">{fmt(s.revenueGrowthTTM, 'percent')}</span>
           </div>
@@ -365,6 +371,8 @@ export function StatisticsGrid({
           signal={sig('dividendYield')}
           benchmark={dist('dividend_yield') ? { value: dist('dividend_yield')!.median, label: 'typical' } : undefined}
           srLabel={`Dividend yield ${fmt(s.dividendYield, 'percent')} on a 0 to 8 percent scale`}
+          minLabel="0%"
+          maxLabel="8%"
         />
       )}
     </MetricCard>
@@ -421,6 +429,8 @@ export function StatisticsGrid({
           max={PB_DOMAIN.max}
           benchmark={dist('pb_ratio') ? { value: dist('pb_ratio')!.median, label: 'typical' } : undefined}
           srLabel={`Price-to-book ${fmt(s.pbRatio, 'ratio')} on a 0 to 10 scale`}
+          minLabel="0"
+          maxLabel="10"
         />
       </MetricCard>
     );
@@ -443,6 +453,8 @@ export function StatisticsGrid({
           max={EV_EBITDA_DOMAIN.max}
           benchmark={dist('ev_to_ebitda') ? { value: dist('ev_to_ebitda')!.median, label: 'typical' } : undefined}
           srLabel={`EV to EBITDA ${fmt(s.evToEbitda, 'ratio')} on a 0 to 30 scale`}
+          minLabel="0"
+          maxLabel="30"
         />
       </MetricCard>
     );
