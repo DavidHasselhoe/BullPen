@@ -2,15 +2,17 @@
 
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import {
-  ComposedChart, Area, Line, XAxis, YAxis, Tooltip,
-  ResponsiveContainer, ReferenceLine,
-} from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useHoldingSales } from '@/hooks/use-holdings';
+import { LineChart, Line } from '@/components/charts/line-chart';
+import { Area } from '@/components/charts/area';
+import { Grid } from '@/components/charts/grid';
+import { ReferenceLine } from '@/components/charts/reference-line';
+import { XAxis } from '@/components/charts/x-axis';
+import { ChartTooltip } from '@/components/charts/tooltip';
 import type { HoldingWithPrice } from './types';
 import type { CurrencyCode } from '@/lib/currency/currency-conversion';
 import type { HoldingSale } from '@/lib/types/database';
@@ -26,21 +28,10 @@ const RANGE_LABELS: Record<Range, string> = {
 };
 
 interface CandleData { t: number[]; c: number[] }
-interface ChartPoint { time: number; label: string; pl: number; plPct: number; spyPct?: number }
+interface ChartPoint { time: number; pl: number; plPct: number; spyPct?: number }
 interface HoldingCandle { holding: HoldingWithPrice; candles: CandleData | null }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function fmtLabel(ts: number, range: Range): string {
-  const d = new Date(ts * 1000);
-  if (range === '1W' || range === '1M') {
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  }
-  if (range === '6M' || range === '1Y') {
-    return d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
-  }
-  return d.getFullYear().toString();
-}
 
 function fmtPL(value: number, currency: CurrencyCode): string {
   const sign = value < 0 ? '-' : '+';
@@ -271,13 +262,12 @@ export function PortfolioPerformanceChart({ holdings, currency = 'USD', fxRate =
       .sort(([a], [b]) => a - b)
       .map(([ts, pl]) => ({
         time: ts,
-        label: fmtLabel(ts, range),
         // fxRate scales display-only — plPct is a ratio of two USD figures, so the
         // rate cancels out and must stay computed from the unconverted pl/basis.
         pl: pl * fxRate,
         plPct: (pl / basis) * 100,
       }));
-  }, [candleResults, range, salesBySymbol, fxRate]);
+  }, [candleResults, salesBySymbol, fxRate]);
 
   // Enrich chart points with SPY % return, normalized from the first portfolio timestamp
   const enrichedData = useMemo<ChartPoint[]>(() => {
@@ -307,7 +297,16 @@ export function PortfolioPerformanceChart({ holdings, currency = 'USD', fxRate =
 
   const isPositive  = currentPL >= 0;
   const lineColor   = isPositive ? '#10b981' : '#ef4444';
-  const gradientId  = `pp-grad-${isPositive ? 'pos' : 'neg'}`;
+
+  const bklitData = useMemo(
+    () => enrichedData.map((pt) => ({
+      date: new Date(pt.time * 1000),
+      pl: pt.pl,
+      plPct: pt.plPct,
+      spyPct: pt.spyPct,
+    })),
+    [enrichedData]
+  );
 
   if (holdingsLoading) {
     return (
@@ -456,104 +455,60 @@ export function PortfolioPerformanceChart({ holdings, currency = 'USD', fxRate =
         )}
 
         {!isLoading && !isError && enrichedData.length > 0 && (
-          <ResponsiveContainer width="100%" height={220}>
-            <ComposedChart data={enrichedData} margin={{ top: 8, right: 8, bottom: 0, left: 8 }}>
-              <defs>
-                <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%"   stopColor={lineColor} stopOpacity={0.22} />
-                  <stop offset="75%"  stopColor={lineColor} stopOpacity={0.04} />
-                  <stop offset="100%" stopColor={lineColor} stopOpacity={0} />
-                </linearGradient>
-              </defs>
+          <LineChart
+            data={bklitData}
+            margin={{ top: 8, right: 8, bottom: 24, left: 8 }}
+            style={{ height: 220 }}
+            zeroBaseline={false}
+          >
+            <Grid horizontal />
+            <ReferenceLine y={0} strokeDasharray="3,3" strokeOpacity={0.45} />
 
-              <YAxis domain={['auto', 'auto']} hide />
-              <XAxis
-                dataKey="label"
-                tick={{ fill: '#71717a', fontSize: 10 }}
-                axisLine={false}
-                tickLine={false}
-                dy={6}
-                interval="preserveStartEnd"
+            {/* Portfolio area — switches dataKey based on benchmark mode */}
+            <Area
+              dataKey={showBenchmark ? 'plPct' : 'pl'}
+              stroke={lineColor}
+              strokeWidth={2}
+              fill={lineColor}
+              fillOpacity={0.22}
+              showMarkers={false}
+            />
+
+            {/* S&P 500 benchmark line — only when toggled on and data is ready */}
+            {benchmarkReady && (
+              <Line
+                dataKey="spyPct"
+                stroke="#94a3b8"
+                strokeWidth={1.5}
+                dashFromIndex={0}
+                dashArray="4,3"
+                showMarkers={false}
               />
+            )}
 
-              <ReferenceLine
-                y={showBenchmark ? 0 : 0}
-                stroke="#71717a"
-                strokeDasharray="3 3"
-                strokeWidth={1}
-                strokeOpacity={0.45}
-              />
-
-              <Tooltip
-                content={({ active, payload }) => {
-                  if (!active || !payload?.length) return null;
-                  const pt = payload[0].payload as ChartPoint;
-                  const dateStr = new Date(pt.time * 1000).toLocaleDateString('en-US', {
-                    month: 'short', day: 'numeric', year: 'numeric',
-                  });
-                  const pos = pt.pl >= 0;
-                  return (
-                    <div className="rounded-lg border border-border bg-background/95 px-3 py-2 shadow-lg backdrop-blur-sm text-xs space-y-1">
-                      {showBenchmark ? (
-                        <>
-                          <div className="flex items-center gap-2">
-                            <span className="h-1.5 w-3 rounded-full" style={{ backgroundColor: lineColor }} />
-                            <span className={cn('font-semibold tabular-nums', pos ? 'text-emerald-500' : 'text-red-500')}>
-                              {fmtPct(pt.plPct)}
-                            </span>
-                            <span className="text-muted-foreground">portfolio</span>
-                          </div>
-                          {pt.spyPct !== undefined && (
-                            <div className="flex items-center gap-2">
-                              <span className="h-px w-3 border-t border-dashed border-slate-400" />
-                              <span className="font-semibold tabular-nums text-slate-400">
-                                {fmtPct(pt.spyPct)}
-                              </span>
-                              <span className="text-muted-foreground">S&P 500</span>
-                            </div>
-                          )}
-                        </>
-                      ) : (
-                        <p className={cn('font-semibold tabular-nums', pos ? 'text-emerald-500' : 'text-red-500')}>
-                          {fmtPL(pt.pl, currency)}
-                          <span className="ml-1.5 font-normal opacity-75">({fmtPct(pt.plPct)})</span>
-                        </p>
-                      )}
-                      <p className="text-muted-foreground">{dateStr}</p>
-                    </div>
-                  );
-                }}
-                cursor={{ stroke: 'rgba(255,255,255,0.08)', strokeWidth: 1 }}
-              />
-
-              {/* Portfolio area — switches dataKey based on benchmark mode */}
-              <Area
-                type="monotone"
-                dataKey={showBenchmark ? 'plPct' : 'pl'}
-                stroke={lineColor}
-                strokeWidth={2}
-                fill={`url(#${gradientId})`}
-                dot={false}
-                activeDot={{ r: 4, fill: lineColor, strokeWidth: 0 }}
-                isAnimationActive={false}
-              />
-
-              {/* S&P 500 benchmark line — only when toggled on and data is ready */}
-              {benchmarkReady && (
-                <Line
-                  type="monotone"
-                  dataKey="spyPct"
-                  stroke="#94a3b8"
-                  strokeWidth={1.5}
-                  strokeDasharray="4 3"
-                  dot={false}
-                  activeDot={{ r: 3, fill: '#94a3b8', strokeWidth: 0 }}
-                  isAnimationActive={false}
-                  connectNulls
-                />
-              )}
-            </ComposedChart>
-          </ResponsiveContainer>
+            <ChartTooltip
+              showYear
+              rows={(point) => {
+                if (showBenchmark) {
+                  const rows = [{
+                    label: 'Portfolio',
+                    value: fmtPct(point.plPct as number),
+                    color: lineColor,
+                  }];
+                  if (point.spyPct != null) {
+                    rows.push({ label: 'S&P 500', value: fmtPct(point.spyPct as number), color: '#94a3b8' });
+                  }
+                  return rows;
+                }
+                return [{
+                  label: 'P/L',
+                  value: `${fmtPL(point.pl as number, currency)} (${fmtPct(point.plPct as number)})`,
+                  color: lineColor,
+                }];
+              }}
+            />
+            <XAxis />
+          </LineChart>
         )}
 
         {!isLoading && !isError && enrichedData.length === 0 && (
