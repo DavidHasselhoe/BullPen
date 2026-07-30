@@ -21,7 +21,7 @@
  */
 
 import { WsManager } from './ws-manager';
-import { getStockQuotes, isExtendedHoursET, withRateLimitRetry } from '@/lib/twelvedata/twelvedata-client';
+import { getStockQuotes, isOutsideRegularSessionET, withRateLimitRetry } from '@/lib/twelvedata/twelvedata-client';
 import { rmget, rset } from '@/lib/cache/redis-cache';
 
 export interface SeededQuote {
@@ -91,9 +91,15 @@ export async function seedPrices(
 
   if (stillNeeded.length === 0) return;
 
-  // During pre-/post-market, request prepost data so `close` reflects the actual
-  // extended-hours price instead of yesterday's regular close.
-  const prepost = isExtendedHoursET();
+  // Outside regular hours (pre-market, post-market, or the overnight/weekend
+  // gap), request prepost data so `close` reflects the actual last extended-
+  // hours print instead of the regular close. Deliberately broader than
+  // isExtendedHoursET() — without it, a fresh page load/reconnect after the
+  // post-market session has ended (but before the next pre-market begins)
+  // seeds the "live" price from the plain close, silently discarding a real
+  // after-hours print until the next WS tick (which may not come until the
+  // next session opens).
+  const prepost = isOutsideRegularSessionET();
 
   // Level 1.5: pre-seed prevClose from the day-stable pc: cache (batched too).
   // Doesn't emit a price, but guarantees the next WS tick computes a correct

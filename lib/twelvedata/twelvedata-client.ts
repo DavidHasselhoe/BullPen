@@ -585,6 +585,29 @@ export function isExtendedHoursET(): boolean {
   return (etMins >= 240 && etMins < 570) || (etMins >= 960 && etMins < 1200);
 }
 
+/**
+ * True whenever the market is outside its 9:30 AM–4:00 PM ET regular session —
+ * pre-market, post-market, AND the fully-closed overnight/weekend gap.
+ *
+ * Unlike isExtendedHoursET() (only true during the narrow 4:00–9:30 AM /
+ * 4:00–8:00 PM windows — right for movers/heatmap, which want to avoid
+ * reflecting stale after-hours drift once trading has actually stopped for
+ * the day), this is for the live stock-page price seed (seed-prices.ts):
+ * TwelveData keeps reporting the last extended print via `extended_price` as
+ * long as `prepost=true` is requested, even hours after that session ended —
+ * we want the price header to keep showing that last print as "the current
+ * price" through the whole overnight gap, until the next pre-market session
+ * supersedes it, rather than silently reverting to the regular close.
+ */
+export function isOutsideRegularSessionET(): boolean {
+  const etStr = new Date().toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour12: false });
+  const [h, m] = etStr.split(':').map(Number);
+  const etMins = h * 60 + m;
+  const day = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })).getDay();
+  if (day === 0 || day === 6) return true;
+  return !(etMins >= 570 && etMins < 960);
+}
+
 export async function getTopMoversForSymbols(
   symbols: string[],
   limit: number = 5
