@@ -4,6 +4,8 @@
  * News is NOT included — use Finnhub or another provider.
  */
 
+import { isDuplicateShareClass } from '@/lib/market-data/dual-class-shares';
+
 const TWELVE_DATA_BASE_URL = 'https://api.twelvedata.com';
 
 /** Thrown when the Twelve Data API rate limit (610 credits/min on the current Venture plan) is exceeded */
@@ -536,6 +538,9 @@ export async function getStockCandlesLongRange(
 
 // Mega-cap stocks (~top 50 by market cap) — ensures movers are always large-cap.
 // A 3% move by NVDA is more important than a 50% move by a $500M-cap company.
+// GOOGL is kept over GOOG (same company, dual share class — see dual-class-shares.ts)
+// so movers doesn't show Alphabet twice; filtered below rather than just omitted from
+// the literal so the exclusion stays visible and in sync with the screener's list.
 const MEGA_CAP_TICKERS = [
   'NVDA', 'AAPL', 'MSFT', 'AMZN', 'GOOGL', 'GOOG', 'META', 'BRK.B',
   'TSLA', 'AVGO', 'LLY', 'JPM', 'WMT', 'V', 'MA', 'UNH', 'XOM',
@@ -543,7 +548,7 @@ const MEGA_CAP_TICKERS = [
   'CRM', 'AMD', 'MRK', 'CVX', 'KO', 'CSCO', 'PEP', 'TMO', 'ADBE',
   'ACN', 'LIN', 'MCD', 'ABT', 'NOW', 'PM', 'TXN', 'NEE', 'GS',
   'IBM', 'RTX', 'ISRG', 'INTU', 'AMGN', 'CAT', 'SPGI',
-];
+].filter((t) => !isDuplicateShareClass(t));
 
 /**
  * Returns today's top gainers/losers from the mega-cap universe.

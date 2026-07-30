@@ -4,6 +4,7 @@ import { withRateLimit } from '@/lib/security/api-security';
 import { fetchAndUpsertScreenerStats } from '@/lib/market-data/screener-stats';
 import { TwelveDataRateLimitError, getStockQuotes, withRateLimitRetry } from '@/lib/twelvedata/twelvedata-client';
 import { SP500_TICKERS } from '@/lib/market-data/sp500';
+import { isDuplicateShareClass } from '@/lib/market-data/dual-class-shares';
 import { getLastPrices, cacheLastPrice, type LastPriceSeed } from '@/lib/market-data/last-price-cache';
 
 export const dynamic = 'force-dynamic';
@@ -197,6 +198,14 @@ async function handler(request: NextRequest) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
     baseRows = (data ?? []) as ScreenerRow[];
+  }
+
+  // Dual-class pairs (GOOG/GOOGL, FOX/FOXA, NWS/NWSA...) are both real index
+  // constituents, so they both land in these broad universes — collapse to one
+  // row per company here. Symbol-scoped views (holdings/watchlist) are exempt:
+  // a user may specifically hold the non-canonical class.
+  if (!symbolAllowlist) {
+    baseRows = baseRows.filter((r) => !isDuplicateShareClass(r.ticker));
   }
 
   let results: ScreenerRow[] = baseRows;
