@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getIPOCalendar, TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
 import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
 import { getCached, setCached } from '@/lib/cache/market-data-cache';
+import { attachMarketCap } from '@/lib/market-data/calendar-market-cap';
 
 // IPO dates are confirmed weeks ahead; same-day changes are rare enough to accept 24h staleness.
 const CACHE_TTL_SECONDS = 24 * 60 * 60;
@@ -23,7 +24,8 @@ async function handler(request: NextRequest) {
   }
 
   try {
-    const data = await getIPOCalendar(from, to);
+    const raw = await getIPOCalendar(from, to);
+    const data = await attachMarketCap(raw);
     void setCached(cacheKey, '_market', 'ipo_calendar', data, CACHE_TTL_SECONDS);
     return addSecurityHeaders(
       NextResponse.json(

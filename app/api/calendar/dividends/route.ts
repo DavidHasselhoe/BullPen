@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDividendsCalendar, TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
 import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
 import { getCached, setCached } from '@/lib/cache/market-data-cache';
+import { SIGNIFICANT_TICKERS } from '@/lib/market-data/significant-tickers';
+import { attachMarketCap } from '@/lib/market-data/calendar-market-cap';
 
 // Ex-dividend dates are published weeks ahead and don't change intraday.
 const CACHE_TTL_SECONDS = 24 * 60 * 60;
@@ -23,7 +25,8 @@ async function handler(request: NextRequest) {
   }
 
   try {
-    const data = await getDividendsCalendar(from, to);
+    const raw = await getDividendsCalendar(from, to);
+    const data = await attachMarketCap(raw.filter((item) => SIGNIFICANT_TICKERS.has(item.symbol)));
     void setCached(cacheKey, '_market', 'dividends_calendar', data, CACHE_TTL_SECONDS);
     return addSecurityHeaders(
       NextResponse.json(

@@ -12,6 +12,7 @@
     "start": "next start",
     "lint": "eslint",
     "test-ai": "tsx scripts/test-ai-analysis.ts",
+    "test-calendar-market-cap": "tsx scripts/test-calendar-market-cap.ts",
     "test-trends": "tsx scripts/test-trends.ts",
     "set-gold-tier": "tsx scripts/set-user-gold-tier.ts",
     "populate-quotes": "tsx scripts/populate-investing-quotes.ts",

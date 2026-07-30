@@ -1862,21 +1862,18 @@ export interface DividendsCalendarItem {
   frequency?: string;
 }
 
+/**
+ * Real /dividends_calendar response is a bare top-level array — no `name`,
+ * `payment_date`, or `frequency` fields (verified live; those stay undefined
+ * on every returned DividendsCalendarItem, which is why they're optional there).
+ */
 interface TwelveDataDivCalItem {
   symbol?: string;
-  name?: string;
-  ex_dividend_date?: string;
-  dividend?: string | number | null;
-  payment_date?: string;
-  frequency?: string;
+  ex_date?: string;
+  amount?: number | string | null;
 }
 
-interface TwelveDataDivCalResponse {
-  dividends?: TwelveDataDivCalItem[];
-  status?: string;
-  code?: number;
-  message?: string;
-}
+type TwelveDataDivCalResponse = TwelveDataDivCalItem[] | { status?: string; code?: number; message?: string };
 
 /**
  * GET /dividends_calendar — upcoming ex-dividend dates.
@@ -1890,19 +1887,15 @@ export async function getDividendsCalendar(
   const url = buildUrl('/dividends_calendar', { start_date: startDate, end_date: endDate });
   const res = await fetch(url, { next: { revalidate: 3600 } });
   const json = (await res.json()) as TwelveDataDivCalResponse;
-  const divFailed = !res.ok || json.status === 'error' || (typeof json.code === 'number' && json.code >= 400);
-  if (divFailed) {
+  if (!Array.isArray(json)) {
     const msg = json.message ?? `dividends_calendar error: ${res.status}`;
     if (/rate.?limit|credits? exceeded/i.test(msg) || json.code === 429) throw new TwelveDataRateLimitError(msg);
     throw new Error(msg);
   }
-  return (json.dividends ?? []).map((d) => ({
+  return json.map((d) => ({
     symbol: d.symbol ?? '',
-    name: d.name,
-    ex_dividend_date: d.ex_dividend_date ?? '',
-    dividend_amount: d.dividend != null ? Number(d.dividend) : null,
-    payment_date: d.payment_date,
-    frequency: d.frequency,
+    ex_dividend_date: d.ex_date ?? '',
+    dividend_amount: d.amount != null ? Number(d.amount) : null,
   }));
 }
 
@@ -1915,19 +1908,22 @@ export interface SplitsCalendarItem {
   to_factor?: number;
 }
 
-interface TwelveDataSplitsCalResponse {
-  splits?: Array<{
-    symbol?: string;
-    name?: string;
-    date?: string;
-    ratio?: string;
-    from_factor?: number | string;
-    to_factor?: number | string;
-  }>;
-  status?: string;
-  code?: number;
-  message?: string;
+/**
+ * Real /splits_calendar response is a bare top-level array with a human-readable
+ * `description` (e.g. "2-for-1 split") instead of any `name` field — verified
+ * live. `ratio` there is a raw decimal (to_factor/from_factor), which reads
+ * poorly on its own, so the parser below prefers `description` for display.
+ */
+interface TwelveDataSplitsCalItem {
+  symbol?: string;
+  date?: string;
+  description?: string;
+  ratio?: number | string;
+  from_factor?: number | string;
+  to_factor?: number | string;
 }
+
+type TwelveDataSplitsCalResponse = TwelveDataSplitsCalItem[] | { status?: string; code?: number; message?: string };
 
 /**
  * GET /splits_calendar — upcoming stock splits.
@@ -1941,17 +1937,15 @@ export async function getSplitsCalendar(
   const url = buildUrl('/splits_calendar', { start_date: startDate, end_date: endDate });
   const res = await fetch(url, { next: { revalidate: 3600 } });
   const json = (await res.json()) as TwelveDataSplitsCalResponse;
-  const splitsFailed = !res.ok || json.status === 'error' || (typeof json.code === 'number' && json.code >= 400);
-  if (splitsFailed) {
+  if (!Array.isArray(json)) {
     const msg = json.message ?? `splits_calendar error: ${res.status}`;
     if (/rate.?limit|credits? exceeded/i.test(msg) || json.code === 429) throw new TwelveDataRateLimitError(msg);
     throw new Error(msg);
   }
-  return (json.splits ?? []).map((s) => ({
+  return json.map((s) => ({
     symbol: s.symbol ?? '',
-    name: s.name,
     date: s.date ?? '',
-    ratio: s.ratio,
+    ratio: s.description ?? (s.ratio != null ? String(s.ratio) : undefined),
     from_factor: s.from_factor != null ? Number(s.from_factor) : undefined,
     to_factor: s.to_factor != null ? Number(s.to_factor) : undefined,
   }));
@@ -1968,20 +1962,31 @@ export interface IPOCalendarItem {
   status?: string;
 }
 
+/**
+ * Real /ipo_calendar response is a date-keyed map — same bucketing as
+ * /earnings_calendar (verified live), not a flat `{ipos: [...]}` array. Each
+ * item's date comes from its bucket key, not a `date` field on the item.
+ * Fields are `price_range_low` / `price_range_high` / `offer_price`, not
+ * `price_from` / `price_to` — a "priced" IPO (single confirmed price) reports
+ * only `offer_price`, so that's used as the from/to fallback. `status` isn't
+ * present in practice; kept optional since it's harmless if TwelveData adds it.
+ */
+interface TwelveDataIPOCalItem {
+  symbol?: string;
+  name?: string;
+  exchange?: string;
+  price_range_low?: string | number | null;
+  price_range_high?: string | number | null;
+  offer_price?: string | number | null;
+  shares?: string | number | null;
+  status?: string;
+}
+
 interface TwelveDataIPOCalResponse {
-  ipos?: Array<{
-    symbol?: string;
-    name?: string;
-    date?: string;
-    exchange?: string;
-    price_from?: string | number | null;
-    price_to?: string | number | null;
-    shares?: string | number | null;
-    status?: string;
-  }>;
   status?: string;
   code?: number;
   message?: string;
+  [date: string]: TwelveDataIPOCalItem[] | string | number | undefined;
 }
 
 /**
@@ -2002,16 +2007,27 @@ export async function getIPOCalendar(
     if (/rate.?limit|credits? exceeded/i.test(msg) || json.code === 429) throw new TwelveDataRateLimitError(msg);
     throw new Error(msg);
   }
-  return (json.ipos ?? []).map((i) => ({
-    symbol: i.symbol ?? '',
-    name: i.name,
-    date: i.date ?? '',
-    exchange: i.exchange,
-    price_from: i.price_from != null ? Number(i.price_from) : null,
-    price_to: i.price_to != null ? Number(i.price_to) : null,
-    shares: i.shares != null ? Number(i.shares) : null,
-    status: i.status,
-  }));
+
+  const items: IPOCalendarItem[] = [];
+  for (const [date, entries] of Object.entries(json)) {
+    if (!Array.isArray(entries)) continue; // skip status/code/message keys
+    for (const i of entries) {
+      const priceFrom = i.price_range_low ?? i.offer_price ?? null;
+      const priceTo = i.price_range_high ?? i.offer_price ?? null;
+      items.push({
+        symbol: i.symbol ?? '',
+        name: i.name,
+        date,
+        exchange: i.exchange,
+        price_from: priceFrom != null ? Number(priceFrom) : null,
+        price_to: priceTo != null ? Number(priceTo) : null,
+        shares: i.shares != null ? Number(i.shares) : null,
+        status: i.status,
+      });
+    }
+  }
+  items.sort((a, b) => a.date.localeCompare(b.date) || a.symbol.localeCompare(b.symbol));
+  return items;
 }
 
 // -------- Pre/After-Market Quotes --------
