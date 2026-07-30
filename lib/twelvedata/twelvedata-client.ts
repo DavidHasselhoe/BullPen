@@ -5,6 +5,7 @@
  */
 
 import { isDuplicateShareClass } from '@/lib/market-data/dual-class-shares';
+import { getTickerOverride } from '@/lib/market-data/ticker-overrides';
 
 const TWELVE_DATA_BASE_URL = 'https://api.twelvedata.com';
 
@@ -879,6 +880,12 @@ interface TwelveDataStatisticsResponse {
 }
 
 export async function getStatistics(symbol: string): Promise<CompanyStatistics> {
+  const override = getTickerOverride(symbol);
+  if (override?.unavailable) {
+    throw new Error(
+      `No reliable data for ${symbol} — Twelve Data resolves this symbol to ${override.collidesWith}, not the intended company`
+    );
+  }
   logUsage('statistics', symbol);
   const url = buildUrl('/statistics', { symbol: symbol.toUpperCase() });
   const response = await fetch(url);
@@ -1273,6 +1280,12 @@ interface TwelveDataProfileResponse {
 }
 
 export async function getCompanyProfile(symbol: string): Promise<CompanyProfile> {
+  const override = getTickerOverride(symbol);
+  if (override?.unavailable) {
+    throw new Error(
+      `No reliable data for ${symbol} — Twelve Data resolves this symbol to ${override.collidesWith}, not the intended company`
+    );
+  }
   logUsage('profile', symbol);
   const url = buildUrl('/profile', { symbol: symbol.toUpperCase() });
   const response = await fetch(url);

@@ -82,11 +82,25 @@ function intoChunks<T>(arr: T[], size: number): T[][] {
 }
 
 type RawStats = {
+  meta?: { symbol?: string; name?: string; currency?: string; exchange?: string };
   statistics?: Record<string, unknown>;
   code?: number;
   status?: string;
   message?: string;
 };
+
+/**
+ * Equity /statistics and /profile requests are always for USD-listed companies —
+ * this sweep only ever runs over SIGNIFICANT_TICKERS (S&P 500 + Nasdaq 100). But
+ * TwelveData resolves an uncovered/ambiguous ticker to whatever foreign listing
+ * shares that symbol string (e.g. "CTRA" -> Ciputra Development, an Indonesian
+ * stock, not Coterra Energy) without erroring — see the same guard in
+ * screener-stats.ts and twelvedata-client.ts's parseQuoteResponse. A non-USD
+ * currency means we got the wrong company's data entirely.
+ */
+function isForeignListing(currency: string | undefined): boolean {
+  return !!currency && currency !== 'USD';
+}
 
 type RawEarningsItem = {
   date: string;
@@ -184,6 +198,15 @@ async function getProfileFields(
   }
   try {
     const profile = await withRateLimitRetry(() => getCompanyProfile(sym));
+    // Same symbol-collision risk as the /statistics fetch (see isForeignListing) —
+    // don't cache or return another company's identity under our ticker.
+    if (isForeignListing(profile.currency)) {
+      console.warn(
+        `[prefetch] skipping profile for ${sym}: TwelveData resolved it to "${profile.name}" ` +
+        `(${profile.exchange}, ${profile.currency}) instead of a USD-listed company`
+      );
+      return { name: null, sector: null, industry: null, logoUrl: null };
+    }
     void setCached(cacheKey, sym, 'company_profile', { profile, executives: [] }, PROFILE_TTL);
     return { name: profile.name ?? null, sector: profile.sector ?? null, industry: profile.industry ?? null, logoUrl: profile.logo ?? null };
   } catch {
@@ -279,9 +302,21 @@ async function handleStatsBatch(
     const screenerRowsBatch: Array<Record<string, unknown>> = [];
 
     for (const sym of needsStats) {
+      const statsRaw = raw[`${sym}_s`] as RawStats | undefined;
+
+      // Skip the whole symbol this cycle rather than persist another company's
+      // stats/earnings under our ticker — see isForeignListing above.
+      if (statsRaw?.meta && isForeignListing(statsRaw.meta.currency)) {
+        console.warn(
+          `[prefetch] skipping ${sym}: TwelveData resolved it to "${statsRaw.meta.name}" ` +
+          `(${statsRaw.meta.exchange}, ${statsRaw.meta.currency}) instead of a USD-listed company`
+        );
+        continue;
+      }
+
       const writes: Promise<void>[] = [];
 
-      const stats = parseStats(sym, raw[`${sym}_s`] as RawStats | undefined);
+      const stats = parseStats(sym, statsRaw);
       if (stats) {
         writes.push(
           setCached(`stats:${sym}`, sym, 'statistics', stats, STATS_TTL),
@@ -300,7 +335,7 @@ async function handleStatsBatch(
 
       await Promise.all(writes);
 
-      const screenerRow = buildScreenerRow(sym, raw[`${sym}_s`] as RawStats | undefined);
+      const screenerRow = buildScreenerRow(sym, statsRaw);
       if (screenerRow) {
         const profile = profileMap.get(sym);
         screenerRowsBatch.push({
