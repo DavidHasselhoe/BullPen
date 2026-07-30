@@ -8,7 +8,6 @@ import { useQuery } from '@tanstack/react-query';
 import { LineChart, Line } from '@/components/charts/line-chart';
 import { Area } from '@/components/charts/area';
 import { SessionLine, type SessionRegion } from '@/components/charts/session-line';
-import { MarketClosedBands, type MarketClosedGap } from '@/components/charts/market-closed-band';
 import { BarChart } from '@/components/charts/bar-chart';
 import { Bar } from '@/components/charts/bar';
 import { ReferenceLine } from '@/components/charts/reference-line';
@@ -383,21 +382,6 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
     return regions;
   }, [chartDisplayData, range]);
 
-  // Market-closed spans — the real time gap between each region and the
-  // next (overnight close, or a weekend/holiday when it's wider). Rendered
-  // as a subtle hatch band so the blank space `SessionLine` already leaves
-  // for these reads as "market closed" instead of looking like missing data.
-  const marketClosedGaps = useMemo<MarketClosedGap[]>(() => {
-    if (sessionRegions.length < 2) return [];
-    const gaps: MarketClosedGap[] = [];
-    for (let i = 0; i < sessionRegions.length - 1; i++) {
-      const curEnd = chartDisplayData[sessionRegions[i].endIndex];
-      const nextStart = chartDisplayData[sessionRegions[i + 1].startIndex];
-      if (!curEnd || !nextStart) continue;
-      gaps.push({ start: new Date(curEnd.time * 1000), end: new Date(nextStart.time * 1000) });
-    }
-    return gaps;
-  }, [sessionRegions, chartDisplayData]);
 
   // Earnings markers — filtered to dates visible in the current chart window.
   const earningsMarkers = useMemo<Array<{ date: Date; beat: boolean | null }>>(() => {
@@ -668,7 +652,6 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
         {hasChart && (
           <LineChart data={bklitData} margin={{ top: 16, right: 28, bottom: 32, left: 28 }} style={{ height: 300 }} zeroBaseline={false}>
             <Grid horizontal />
-            <MarketClosedBands gaps={marketClosedGaps} />
             {sessionRegions.length > 0 ? (
               <SessionLine
                 dataKey="price"

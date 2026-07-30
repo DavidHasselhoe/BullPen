@@ -1,7 +1,12 @@
 "use client";
 
-import { scaleLinear, scaleTime } from "@visx/scale";
-import { bisector, extent } from "d3-array";
+import { scaleLinear } from "@visx/scale";
+import type { scaleTime } from "@visx/scale";
+import { bisector } from "d3-array";
+
+// Matches chart-context.tsx's own local ScaleTime alias — avoids reaching
+// into d3-scale directly (a transitive, undeclared dependency).
+type ScaleTime<Output> = ReturnType<typeof scaleTime<Output>>;
 import type { Transition } from "motion/react";
 import {
   Children,
@@ -47,7 +52,6 @@ import {
 } from "./generate-chart-skeleton-data";
 import {
   extractProjectionLineConfigs,
-  mergeProjectionXDomainMax,
   mergeProjectionYDomain,
 } from "./projection-config";
 import {
@@ -294,24 +298,72 @@ const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
     [children]
   );
 
+  // Index-based, not time-proportional: every plotted point sits an equal
+  // distance from its neighbor regardless of the real elapsed time between
+  // them. A true time scale gives a 2-day weekend the same width as any other
+  // 2-day span, which reads as a large dead gap — squeezing every real
+  // trading day into a fraction of the chart and making the price action
+  // harder to read. Traders don't think in elapsed calendar time here; they
+  // think in trading sessions, so this matches every mainstream stock chart
+  // (Robinhood, TradingView, Yahoo Finance) instead of a literal timeline.
   const xScale = useMemo(() => {
-    const minTime = xDomain
-      ? xDomain[0].getTime()
-      : (extent(plotData, (d) => xAccessor(d).getTime())[0] ?? 0);
-    let maxTime = xDomain
-      ? xDomain[1].getTime()
-      : (extent(plotData, (d) => xAccessor(d).getTime())[1] ?? minTime);
-    // Brush defines the viewport — projection horizon is included via brush
-    // track extent, not by extending past the selection on the main chart.
-    if (!xDomain) {
-      maxTime = mergeProjectionXDomainMax(maxTime, projectionConfigs);
+    const n = plotData.length;
+    if (n === 0) {
+      const empty = ((_value: Date) => 0) as ScaleTime<number>;
+      empty.invert = ((_px: number) => new Date(0)) as ScaleTime<number>["invert"];
+      empty.domain = (() => []) as unknown as ScaleTime<number>["domain"];
+      return empty;
     }
 
-    return scaleTime({
-      range: [0, innerWidth],
-      domain: [minTime, maxTime],
+    const times = plotData.map((d) => xAccessor(d).getTime());
+    const lastIdx = n - 1;
+    const timeToIndex = new Map<number, number>();
+    times.forEach((t, i) => {
+      if (!timeToIndex.has(t)) timeToIndex.set(t, i);
     });
-  }, [innerWidth, plotData, projectionConfigs, xAccessor, xDomain]);
+
+    // Matches columnWidth's own slotCount logic below so bar/candle widths
+    // and point positions never drift apart.
+    const slotCount = xDomain && xDomainSlotCount != null ? xDomainSlotCount : n;
+    const denom = Math.max(slotCount - 1, 1);
+
+    // Only exercised for a date outside the plotted series (e.g. a future
+    // brush/projection date, unused today) — every real data point resolves
+    // via the exact-match map above instead.
+    function locateFractionalIndex(t: number): number {
+      if (t <= times[0]) return 0;
+      if (t >= times[lastIdx]) return lastIdx;
+      let lo = 0;
+      let hi = lastIdx;
+      while (hi - lo > 1) {
+        const mid = (lo + hi) >> 1;
+        if (times[mid] <= t) lo = mid;
+        else hi = mid;
+      }
+      const span = times[hi] - times[lo];
+      return span > 0 ? lo + (t - times[lo]) / span : lo;
+    }
+
+    const scale = ((value: Date) => {
+      const t = value.getTime();
+      const idx = timeToIndex.get(t) ?? locateFractionalIndex(t);
+      return (idx / denom) * innerWidth;
+    }) as ScaleTime<number>;
+
+    scale.invert = ((px: number): Date => {
+      const floatIndex = Math.max(0, Math.min(denom, (px / innerWidth) * denom));
+      const i0 = Math.floor(floatIndex);
+      const i1 = Math.min(i0 + 1, lastIdx);
+      const frac = floatIndex - i0;
+      const t0 = times[i0];
+      const t1 = times[i1];
+      return new Date(t0 + (t1 - t0) * frac);
+    }) as ScaleTime<number>["invert"];
+
+    scale.domain = (() => [new Date(times[0]), new Date(times[lastIdx])]) as unknown as ScaleTime<number>["domain"];
+
+    return scale;
+  }, [innerWidth, plotData, xAccessor, xDomain, xDomainSlotCount]);
 
   // When brushing, keep the full series for path rendering so edge fades stay
   // anchored to the viewport while the line pans through them. Y-domain and
