@@ -594,6 +594,7 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
       return {
         ...holding,
         currentPrice,
+        currentPriceUSD,
         dayChange,
         dayChangePercent,
         marketValue,
@@ -996,7 +997,7 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
         open={isSellModalOpen}
         onOpenChange={setIsSellModalOpen}
         holding={sellingHolding}
-        currentPrice={sellingHolding ? holdingsWithPrices.find((h) => h.id === sellingHolding.id)?.currentPrice : undefined}
+        currentPriceUSD={sellingHolding ? holdingsWithPrices.find((h) => h.id === sellingHolding.id)?.currentPriceUSD : undefined}
       />
       {deletingHolding && (
         <DeleteHoldingDialog
