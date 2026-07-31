@@ -9,6 +9,7 @@ import { HoldingsPieChart } from '@/components/holdings/HoldingsPieChart';
 import { PortfolioDashboard } from '@/components/holdings/PortfolioDashboard';
 import { PortfolioRiskAnalysis } from '@/components/holdings/PortfolioRiskAnalysis';
 import { PortfolioPerformanceChart } from '@/components/holdings/PortfolioPerformanceChart';
+import { PerformanceCalendarCard } from '@/components/holdings/performance-calendar/PerformanceCalendarCard';
 import { useHoldings } from '@/hooks/use-holdings';
 import { useAuth } from '@/hooks/use-auth';
 import { useLivePrices } from '@/hooks/use-live-prices';
@@ -378,6 +379,11 @@ export default function HoldingsPage() {
             <HoldingsPieChart holdings={throttledHoldings} currency={userCurrency} onSectorHover={setHoveredSector} isLoading={statsLoading} />
           </div>
         </div>
+      )}
+
+      {/* Day-by-day performance calendar */}
+      {throttledHoldings.length > 0 && (
+        <PerformanceCalendarCard currency={userCurrency} fxRate={currentFxRate} />
       )}
 
       {/* Holdings table */}

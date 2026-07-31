@@ -6,14 +6,15 @@ export interface DashboardWidget {
 }
 
 export const DASHBOARD_WIDGETS: DashboardWidget[] = [
-  { id: 'recently_viewed',   label: 'Recently viewed' },
-  { id: 'daily_brief',       label: 'Daily Brief', requiresPro: true },
-  { id: 'why_today',         label: 'Why Today?' },
-  { id: 'market_context',    label: 'Market Context' },
-  { id: 'earnings_calendar', label: 'Earnings calendar' },
-  { id: 'hot_picks',         label: 'Hot Picks' },
-  { id: 'crypto_market',     label: 'Crypto & Commodities' },
-  { id: 'investing_quote',   label: 'Investing quote' },
+  { id: 'recently_viewed',      label: 'Recently viewed' },
+  { id: 'performance_calendar', label: 'Daily performance' },
+  { id: 'daily_brief',          label: 'Daily Brief', requiresPro: true },
+  { id: 'why_today',            label: 'Why Today?' },
+  { id: 'market_context',       label: 'Market Context' },
+  { id: 'earnings_calendar',    label: 'Earnings calendar' },
+  { id: 'hot_picks',            label: 'Hot Picks' },
+  { id: 'crypto_market',        label: 'Crypto & Commodities' },
+  { id: 'investing_quote',      label: 'Investing quote' },
 ];
 
 export const DEFAULT_ORDER: string[] = DASHBOARD_WIDGETS.map((w) => w.id);

@@ -18,12 +18,21 @@ import { QuoteDisplay } from '@/components/ui/QuoteDisplay';
 import { useUserSettings } from '@/hooks/use-user-settings';
 import { CryptoMarketCard } from '@/components/asset/CryptoMarketCard';
 import { GettingStartedCard } from '@/components/onboarding/GettingStartedCard';
+import { PerformanceCalendarWidget } from '@/components/discover/PerformanceCalendarWidget';
 import { resolveWidgetOrder } from '@/lib/dashboard/widgets';
 
 function WidgetSlot({ id }: { id: string }) {
   switch (id) {
     case 'recently_viewed':
       return <RecentlyViewedInline />;
+    case 'performance_calendar':
+      return (
+        <section className="min-w-0 overflow-hidden">
+          <AnimatedContent reverse={true}>
+            <PerformanceCalendarWidget />
+          </AnimatedContent>
+        </section>
+      );
     case 'daily_brief':
       return (
         <section className="min-w-0 overflow-hidden">
