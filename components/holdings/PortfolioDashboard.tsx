@@ -7,6 +7,7 @@ import { formatCurrency, formatPercent, type CurrencyCode } from '@/lib/currency
 import { useUserSettings } from '@/hooks/use-user-settings';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TermTooltip } from '@/components/ui/TermTooltip';
+import { ShareSheet } from './ShareSheet';
 import type { HoldingWithPrice } from './types';
 
 interface PortfolioDashboardProps {
@@ -95,11 +96,12 @@ export function PortfolioDashboard({ holdings, currency = 'USD', isLoading }: Po
           todayPositive ? 'border-green-500/20' : 'border-red-500/20'
         )}
       >
-        <div className="mb-2">
+        <div className="mb-2 flex items-center justify-between">
           <TermTooltip
             term="Today P&L"
             className="text-xs font-semibold text-muted-foreground uppercase tracking-wider"
           />
+          <ShareSheet disabled={stats.todayDollar === 0 && stats.todayPct === 0} />
         </div>
         <p
           className={cn(
