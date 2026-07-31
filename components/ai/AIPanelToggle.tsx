@@ -30,7 +30,11 @@ export function AIPanelToggle() {
   const { isOpen, toggle } = useAIPanel();
   const pathname = usePathname();
 
-  if (PUBLIC_ROUTES.has(pathname)) return null;
+  // /share/[id] is dynamic (one per share), same reasoning as the routes
+  // above: a stranger landing on a share link has no portfolio/tickers for
+  // the assistant to act on, and the whole point of that page is one focused
+  // CTA — not a second, unrelated affordance competing for attention.
+  if (PUBLIC_ROUTES.has(pathname) || pathname.startsWith('/share/')) return null;
 
   // Hide when panel is open so it doesn't overlap the input; close via panel X button
   if (isOpen) return null;
