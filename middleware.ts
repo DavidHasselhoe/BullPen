@@ -37,6 +37,19 @@ export async function middleware(request: NextRequest) {
     await supabase.auth.getUser();
   }
 
+  // Attribution: first-touch cookie for the shareable-card growth loop.
+  // Only set if absent, so a user who visits several shared links before
+  // signing up gets credited to whichever one they saw first.
+  const shareMatch = request.nextUrl.pathname.match(/^\/share\/([A-Za-z0-9_-]{6,12})$/);
+  if (shareMatch && !request.cookies.has('bp_ref')) {
+    response.cookies.set('bp_ref', shareMatch[1], {
+      maxAge: 60 * 60 * 24 * 30,
+      httpOnly: false, // read by client-side signUp()/callback code — see lib/auth/share-attribution.ts
+      sameSite: 'lax',
+      path: '/',
+    });
+  }
+
   // Security Headers (OWASP recommended)
   response.headers.set('X-XSS-Protection', '1; mode=block');
   response.headers.set('X-Content-Type-Options', 'nosniff');
