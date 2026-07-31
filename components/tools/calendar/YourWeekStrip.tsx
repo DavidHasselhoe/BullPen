@@ -4,7 +4,7 @@ import Link from 'next/link';
 import type { ElementType } from 'react';
 import { TrendingUp, DollarSign, Scissors, Rocket } from 'lucide-react';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
-import { fmtDayHeader } from './format';
+import { fmtDayHeader } from '@/lib/dates/calendar-format';
 import type { DayModel, EventType } from './types';
 
 const TYPE_LABELS: Record<EventType, string> = {

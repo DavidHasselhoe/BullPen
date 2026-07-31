@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import { CompactEventRow } from './EventRows';
-import { fmtDayHeader } from './format';
+import { fmtDayHeader } from '@/lib/dates/calendar-format';
 import type { DayModel } from './types';
 
 interface DayCellProps {

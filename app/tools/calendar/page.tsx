@@ -10,7 +10,7 @@ import { useBackground } from '@/hooks/use-background';
 import { useHoldings } from '@/hooks/use-holdings';
 import { useWatchlist } from '@/hooks/use-watchlist';
 import { useAuth } from '@/hooks/use-auth';
-import { getWeekRange, todayStr, fmtWeekRange, weekDatesBetween } from '@/components/tools/calendar/format';
+import { getWeekRange, todayStr, fmtWeekRange, weekDatesBetween } from '@/lib/dates/calendar-format';
 import { useCalendarWeek } from '@/components/tools/calendar/useCalendarWeek';
 import { buildDayModel } from '@/components/tools/calendar/day-model';
 import { YourWeekStrip } from '@/components/tools/calendar/YourWeekStrip';

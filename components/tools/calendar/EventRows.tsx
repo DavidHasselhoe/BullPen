@@ -5,7 +5,8 @@ import type { ElementType } from 'react';
 import { TrendingUp, DollarSign, Scissors, Rocket, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
-import { fmtEPS, fmtRevenue, fmtShortDate } from './format';
+import { fmtEPS, fmtRevenue } from './format';
+import { fmtShortDate } from '@/lib/dates/calendar-format';
 import type { UnifiedEvent, EventType, EarningsItem, DividendItem, SplitItem, IPOItem } from './types';
 
 const TYPE_ICONS: Record<EventType, ElementType> = {
