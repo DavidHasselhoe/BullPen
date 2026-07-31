@@ -3,6 +3,7 @@
 
 import { createBrowserClient } from '../supabase/client';
 import type { User } from '../types/database';
+import { maybeClaimShareAttribution } from './share-attribution';
 
 export interface AuthUser {
   id: string;
@@ -168,6 +169,10 @@ export async function signUp(params: SignUpParams): Promise<AuthResult> {
       userProfile = newProfile;
     }
 
+    if (userProfile) {
+      await maybeClaimShareAttribution((userProfile as AuthUser).id);
+    }
+
     return {
       success: true,
       user: userProfile as AuthUser,
@@ -262,6 +267,12 @@ export async function signIn(params: SignInParams): Promise<AuthResult> {
 
     // Update last_login_at
     await supabase.from('users').update({ last_login_at: new Date().toISOString() }).eq('id', userId);
+
+    // Safety net for the "email confirmation required" signup path: signUp()
+    // returns before a session exists there, so it can't claim attribution
+    // itself — the user's first real sign-in does it instead. No-ops
+    // instantly once already attributed, so safe on every sign-in.
+    await maybeClaimShareAttribution(userId);
 
     // Fetch user profile (with retry on abort)
     const { data: userProfile, error: profileError } = await fetchUserProfileWithRetry(supabase, userId);

@@ -12,6 +12,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createBrowserClient } from '@/lib/supabase/client';
+import { maybeClaimShareAttribution } from '@/lib/auth/share-attribution';
 import { Loader2 } from 'lucide-react';
 
 function AuthCallbackContent() {
@@ -60,7 +61,10 @@ function AuthCallbackContent() {
         return;
       }
 
-      if (data.session) redirectHome();
+      if (data.session) {
+        void maybeClaimShareAttribution(data.session.user.id);
+        redirectHome();
+      }
     };
 
     const checkSession = () =>
