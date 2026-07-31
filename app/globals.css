@@ -145,6 +145,17 @@
   --picks-up: #059669;         /* emerald-600 */
   --picks-down: #dc2626;       /* red-600 */
   --picks-benchmark: #475569;  /* slate-600 */
+
+  /* Signed numerals in the daily performance calendar — cells, week totals and
+     the month summary. One step darker than --picks-* in light mode: measured
+     in-browser, emerald-600 lands at 4.0:1 on the plain card and 3.22:1 over a
+     20% emerald tint, both under AA, because a light tint lifts the background
+     toward the text. These steps were checked the same way and clear 4.5:1 on
+     the card and across every tint band. In dark mode a tint darkens rather
+     than lightens the backdrop, so the --picks-* steps already pass and are
+     reused verbatim below. */
+  --cal-up: #047857;           /* emerald-700 */
+  --cal-down: #b91c1c;         /* red-700 */
 }
 
 .dark {
@@ -201,6 +212,11 @@
   --picks-up: #34d399;         /* emerald-400 */
   --picks-down: #f87171;       /* red-400 */
   --picks-benchmark: #94a3b8;  /* slate-400 */
+
+  /* A tint darkens the backdrop in dark mode instead of lifting it toward the
+     text, so the --picks-* steps already clear AA on every band here. */
+  --cal-up: #34d399;           /* emerald-400 */
+  --cal-down: #f87171;         /* red-400 */
 }
 
 @layer base {
