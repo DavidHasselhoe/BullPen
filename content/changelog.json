@@ -1,5 +1,12 @@
 [
   {
+    "date": "2026-07-31",
+    "entries": [
+      { "type": "new", "text": "You can now share your portfolio's daily gain or loss as a link, right from the Holdings page — it shows a preview card with your return and a mini chart, and you choose whether to include the dollar amount or post anonymously" },
+      { "type": "new", "text": "Added a Daily Performance calendar to the Holdings page (and as an optional homepage widget) — see your portfolio's gain or loss for every day of the month at a glance, with the top contributing stocks shown when you click into a day" }
+    ]
+  },
+  {
     "date": "2026-07-30",
     "entries": [
       { "type": "new", "text": "Completely redesigned the Market Calendar into a personalized weekly grid — see your own holdings and watchlist highlighted on each day, click into any day for full earnings, dividends, splits, and IPO details, and filter by event type" },
