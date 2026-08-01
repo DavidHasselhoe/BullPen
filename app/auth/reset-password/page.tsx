@@ -3,9 +3,14 @@
 /**
  * Password Reset Landing Page
  *
- * Supabase redirects here from the password reset email with a ?code= param
- * (PKCE flow, same mechanism as /auth/callback). We exchange it for a recovery
- * session, then let the user set a new password via updateUser().
+ * The reset email links here two possible ways:
+ * - ?token_hash=...&type=recovery — built directly from {{ .SiteURL }}/{{ .TokenHash }}
+ *   in the email template, verified via verifyOtp(). Preferred: bypasses Supabase's
+ *   hosted /verify + redirect_to allowlist entirely, since {{ .SiteURL }} is a raw
+ *   string with no allowlist check.
+ * - ?code=... — Supabase's hosted /verify endpoint (PKCE), same mechanism as
+ *   /auth/callback. Kept as a fallback in case the email template ever reverts to
+ *   {{ .ConfirmationURL }}.
  */
 
 import { Suspense, useEffect, useState, FormEvent } from 'react';
@@ -28,11 +33,20 @@ function ResetPasswordContent() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    const tokenHash = searchParams.get('token_hash');
+    const type = searchParams.get('type');
     const code = searchParams.get('code');
     const supabase = createBrowserClient();
 
+    if (tokenHash && type === 'recovery') {
+      supabase.auth.verifyOtp({ token_hash: tokenHash, type: 'recovery' }).then(({ error: otpErr }) => {
+        setStatus(otpErr ? 'invalid' : 'ready');
+      });
+      return;
+    }
+
     if (!code) {
-      // Page reload after the code was already exchanged still has a valid recovery session.
+      // Page reload after the code/token was already exchanged still has a valid recovery session.
       supabase.auth.getSession().then(({ data: { session } }) => {
         setStatus(session ? 'ready' : 'invalid');
       });
