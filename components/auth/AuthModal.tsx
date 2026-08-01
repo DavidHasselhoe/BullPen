@@ -4,13 +4,13 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
-import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { motion, AnimatePresence } from 'framer-motion';
 import { signInWithGoogle } from '@/lib/auth/auth';
 import { AuthOAuthButtons } from './AuthOAuthButtons';
 import { AuthFormLogin } from './AuthFormLogin';
 import { AuthFormSignup } from './AuthFormSignup';
+import { AuthFormForgotPassword } from './AuthFormForgotPassword';
 
 export type AuthMode = 'login' | 'signup' | 'forgot-password';
 
@@ -164,29 +164,7 @@ export function AuthModal({ open, onOpenChange, initialMode = 'login', redirectT
             )}
 
             {mode === 'forgot-password' && (
-              <motion.div
-                key="forgot-password"
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 8 }}
-                transition={{ duration: 0.2 }}
-              >
-                <div className="space-y-5">
-                  <p className="text-sm text-muted-foreground">
-                    Enter your email address and we&apos;ll send you a link to reset your password.
-                  </p>
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => handleModeChange('login')}
-                  >
-                    Back to sign in
-                  </Button>
-                  <p className="text-xs text-center text-muted-foreground">
-                    Forgot password functionality coming soon
-                  </p>
-                </div>
-              </motion.div>
+              <AuthFormForgotPassword key="forgot-password" onBack={() => handleModeChange('login')} />
             )}
           </AnimatePresence>
 

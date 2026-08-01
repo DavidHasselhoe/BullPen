@@ -153,11 +153,16 @@ if (user) {
 ### `/login`
 
 - Card-based layout with email and password fields
-- "Forgot password?" link (placeholder for future feature)
 - Keyboard-friendly (Enter key submits form)
 - Loading state during submission
 - Supports `?redirect=` query parameter for post-login navigation
 - Link to `/register` page
+
+### `AuthModal` (forgot-password mode)
+
+- Entry point is the "Forgot password?" link in the modal's login form (`components/auth/AuthModal.tsx`)
+- `AuthFormForgotPassword` sends a reset email via `sendPasswordResetEmail()` (`lib/auth/auth.ts`), without revealing whether the address is registered
+- The emailed link lands on `/auth/reset-password`, which exchanges the PKCE code for a recovery session (same mechanism as `/auth/callback`) and lets the user set a new password via `supabase.auth.updateUser({ password })`
 
 ## Security
 
@@ -172,8 +177,6 @@ if (user) {
 ### ❌ Not Implemented (Future)
 
 - Email verification
-- Password reset flow
-- Social login (Google, GitHub, etc.)
 - Two-factor authentication (2FA)
 - Session management UI
 - Role-based permissions
@@ -228,12 +231,7 @@ Create test users via the Supabase Dashboard or by using the `/register` page.
 ## Future Enhancements (Auth v2+)
 
 - Email verification before allowing full access
-- Password reset flow (`/forgot-password`)
-- Profile editing page
-- Avatar upload functionality
-- Social login providers
 - Role-based access control (admin dashboard, etc.)
-- User preferences/settings
 
 ## Constraints
 
@@ -241,7 +239,6 @@ Create test users via the Supabase Dashboard or by using the `/register` page.
 - **No credentials in localStorage** - JWT stored in HTTP-only cookies
 - **No route protection yet** - All pages remain public
 - **No email verification** - Users can sign up and use the site immediately
-- **No password reset** - Users must remember their password (or use Supabase Dashboard)
 
 ## Troubleshooting
 

@@ -404,6 +404,36 @@ export async function getSession() {
 }
 
 /**
+ * Sends a password reset email. The link redirects to /auth/reset-password,
+ * which exchanges the code for a recovery session and lets the user set a new password.
+ * Always returns success (regardless of whether the email is registered) to avoid
+ * leaking account existence.
+ */
+export async function sendPasswordResetEmail(email: string): Promise<{ success: boolean; error?: string }> {
+  const supabase = createBrowserClient();
+
+  try {
+    const redirectTo = new URL('/auth/reset-password', window.location.origin).toString();
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+
+    if (error) {
+      const msg = /fetch|network|timeout/i.test(error.message)
+        ? 'Connection failed. Please check your network and try again.'
+        : error.message;
+      return { success: false, error: msg };
+    }
+
+    return { success: true };
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Unknown error';
+    const friendly = /fetch|network|timeout|abort/i.test(msg)
+      ? 'Connection failed. Please check your network and try again.'
+      : msg;
+    return { success: false, error: friendly };
+  }
+}
+
+/**
  * Signs in with Google OAuth
  * According to Supabase docs: https://supabase.com/docs/guides/auth/social-login/auth-google
  */
