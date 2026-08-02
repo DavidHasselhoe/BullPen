@@ -7,6 +7,8 @@
  * - INITIAL_SESSION: load existing session from storage
  * - SIGNED_IN: set session, ensure profile, load user
  * - TOKEN_REFRESHED: update session
+ * - PASSWORD_RECOVERY: verifyOtp() on /auth/reset-password establishes a session this way, not SIGNED_IN
+ * - USER_UPDATED: fires after updateUser() (e.g. the reset-password / change-password flows)
  * - SIGNED_OUT: clear state
  */
 
@@ -136,7 +138,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let mounted = true;
 
     const handleAuthChange = async (
-      event: 'INITIAL_SESSION' | 'SIGNED_IN' | 'SIGNED_OUT' | 'TOKEN_REFRESHED',
+      event: 'INITIAL_SESSION' | 'SIGNED_IN' | 'SIGNED_OUT' | 'TOKEN_REFRESHED' | 'PASSWORD_RECOVERY' | 'USER_UPDATED',
       session: Session | null
     ) => {
       if (!mounted) return;
@@ -147,7 +149,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      if ((event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
+      if (
+        (event === 'INITIAL_SESSION' ||
+          event === 'SIGNED_IN' ||
+          event === 'TOKEN_REFRESHED' ||
+          event === 'PASSWORD_RECOVERY' ||
+          event === 'USER_UPDATED') &&
+        session?.user
+      ) {
         const isNewSignIn = event === 'SIGNED_IN';
         try {
           const profile = await loadUserFromSession(
@@ -168,7 +177,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       void handleAuthChange(
-        event as 'INITIAL_SESSION' | 'SIGNED_IN' | 'SIGNED_OUT' | 'TOKEN_REFRESHED',
+        event as 'INITIAL_SESSION' | 'SIGNED_IN' | 'SIGNED_OUT' | 'TOKEN_REFRESHED' | 'PASSWORD_RECOVERY' | 'USER_UPDATED',
         session
       );
     });
