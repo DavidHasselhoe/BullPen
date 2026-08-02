@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
-import { canCreateWatchlist, MAX_FREE_WATCHLISTS } from '@/lib/watchlist/limits';
+import { canCreateWatchlist } from '@/lib/watchlist/limits';
 
 /** GET /api/watchlist/lists — return all user's lists with item counts */
 async function getHandler(

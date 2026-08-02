@@ -11,9 +11,9 @@ const TTL = 20 * 60;
 
 async function handler(
   request: NextRequest,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   _ctx: unknown,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   _session: { userId: string }
 ): Promise<NextResponse> {
   const symbols = (new URL(request.url).searchParams.get('symbols') ?? '')

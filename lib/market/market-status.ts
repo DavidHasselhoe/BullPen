@@ -55,11 +55,6 @@ function getTimeInTimezone(date: Date, timezone: string): { hours: number; minut
   const minutes = parseInt(parts.find(p => p.type === 'minute')?.value || '0', 10);
   const day = parseInt(parts.find(p => p.type === 'day')?.value || '1', 10);
   
-  // Get weekday number using a more reliable method
-  // Create a date string in the target timezone and parse it
-  const dateStr = formatter.format(date);
-  const weekdayPart = parts.find(p => p.type === 'weekday')?.value;
-  
   // Use a simpler approach: create a date string in timezone and check day of week
   // Get the day of week by formatting the date in the timezone
   const weekdayFormatter = new Intl.DateTimeFormat('en-US', {

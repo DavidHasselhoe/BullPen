@@ -143,8 +143,8 @@ export async function saveRevenueSegments(
  * For now, this is a placeholder for future AI integration
  */
 export async function extractSegmentsWithAI(
-  filingContent: string,
-  totalRevenue: number
+  _filingContent: string,
+  _totalRevenue: number
 ): Promise<SegmentExtractionResult> {
   // Placeholder for AI extraction
   // This will be implemented when we add Claude Sonnet integration

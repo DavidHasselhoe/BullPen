@@ -67,7 +67,6 @@ export async function createPriceMoveNotification(
 
   const pct = mover.changePercent;
   const absPct = Math.abs(pct);
-  const direction = pct > 0 ? 'up' : 'down';
   const sign = pct > 0 ? '+' : '';
 
   const severity: 'info' | 'warning' | 'critical' =

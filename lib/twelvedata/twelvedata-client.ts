@@ -656,24 +656,6 @@ export async function getTopMoversForSymbols(
 
 // -------- Earnings calendar --------
 
-interface TwelveDataEarningsCalendarItem {
-  date: string;
-  symbol?: string;
-  eps_estimate?: number | null;
-  eps_actual?: number | null;
-  revenue_estimate?: number | null;
-  revenue_actual?: number | null;
-  time?: string;
-}
-
-interface TwelveDataEarningsCalendarResponse {
-  earnings_calendar?: TwelveDataEarningsCalendarItem[];
-  data?: TwelveDataEarningsCalendarItem[];
-  status?: string;
-  code?: number;
-  message?: string;
-}
-
 /**
  * Best-effort fiscal quarter for a report date when no filed income statement is
  * available to anchor it to (see getEarningsCalendar). A company's real fiscal

@@ -16,7 +16,7 @@ interface CompanyRowActionsProps {
  * Quick actions shown on hover for company rows.
  * View company, Compare, Ask AI.
  */
-export function CompanyRowActions({ ticker, name, className }: CompanyRowActionsProps) {
+export function CompanyRowActions({ ticker, className }: CompanyRowActionsProps) {
   const { open: openAIPanel } = useAIPanel();
 
   const handleAskAI = (e: React.MouseEvent) => {

@@ -2,7 +2,6 @@
 // Client-side authentication helpers using Supabase Auth
 
 import { createBrowserClient } from '../supabase/client';
-import type { User } from '../types/database';
 import { maybeClaimShareAttribution } from './share-attribution';
 
 export interface AuthUser {

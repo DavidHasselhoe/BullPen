@@ -12,9 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
 import { User, LogOut, Loader2, Shield, CreditCard, Sparkles } from 'lucide-react';
 import { ProfileModal } from '@/components/user/ProfileModal';
 import { ProfileAvatar } from '@/components/user/ProfileAvatar';

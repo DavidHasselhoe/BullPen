@@ -16,7 +16,7 @@ interface AuthFormLoginProps {
   redirectTo?: string;
 }
 
-export function AuthFormLogin({ onSuccess, onError, onForgotPassword, redirectTo }: AuthFormLoginProps) {
+export function AuthFormLogin({ onSuccess, onError, onForgotPassword }: AuthFormLoginProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/client';
 import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
 
-async function handler(request: NextRequest) {
+async function handler(_request: NextRequest) {
   try {
     const supabase = createServerClient();
 

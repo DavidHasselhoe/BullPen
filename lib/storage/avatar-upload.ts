@@ -82,7 +82,7 @@ export async function uploadAvatarToStorage(
     const fileName = `${userId}.${extension}`;
 
     // Upload to Supabase Storage
-    const { data, error } = await supabase.storage
+    const { error } = await supabase.storage
       .from(AVATAR_BUCKET)
       .upload(fileName, file, {
         contentType: file.type,

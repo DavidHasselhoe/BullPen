@@ -75,7 +75,7 @@ export function useLivePrices(symbols: string[]): LivePriceMap {
       es.close();
       esRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [symbolsKey]);
 
   return prices;

@@ -27,7 +27,7 @@ const CACHE_TTL_SECONDS = 30 * 60;
 async function handler(
   _request: NextRequest,
   _context: unknown,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   _session: { userId: string }
 ): Promise<NextResponse> {
   try {

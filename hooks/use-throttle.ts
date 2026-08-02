@@ -40,7 +40,7 @@ export function useThrottle<T>(value: T, intervalMs: number): T {
       timerRef.current = setTimeout(fire, intervalMs - elapsed);
     }
     // If a timer is already scheduled, leave it — it will fire with latestValue.current.
-  }, [value, intervalMs]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [value, intervalMs]);  
 
   // Cleanup on unmount.
   useEffect(() => {

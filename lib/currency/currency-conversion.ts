@@ -164,7 +164,7 @@ export function formatCurrency(
       currency: currencyMap[currency] || 'USD',
       ...fractionDigits,
     }).format(value);
-  } catch (error) {
+  } catch {
     // Fallback to simple formatting
     const symbol = getCurrencySymbol(currency);
     const digits = options.round ? 0 : 2;

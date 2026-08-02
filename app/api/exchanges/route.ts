@@ -6,7 +6,7 @@ import { createServerClient } from '@/lib/supabase/client';
  * Fetch all exchanges and their upcoming holidays.
  * Response is cached for 1 hour — exchange schedules change at most annually.
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   // Include a 10-day look-back (not just upcoming) so consumers like the market-
   // movers date label can resolve the last trading day even on the weekend after
   // a Friday holiday. Market-status matches holidays by exact date, so extra past

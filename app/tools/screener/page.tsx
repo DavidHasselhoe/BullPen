@@ -281,7 +281,7 @@ function ScreenerContent() {
       if (debouncedFilters[key]) params.set(key, debouncedFilters[key]);
     }
     router.replace(params.toString() ? `?${params.toString()}` : window.location.pathname, { scroll: false });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [debouncedFilters, router]);
 
   const handleFilterChange = useCallback((next: ScreenerFilterValues) => {

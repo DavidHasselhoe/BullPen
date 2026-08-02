@@ -2,7 +2,6 @@
 // Stores and retrieves logo metadata and URLs
 
 import { createServerClient } from '../supabase/client';
-import type { Company } from '../types/database';
 
 export interface LogoMetadata {
   logo_url: string | null;

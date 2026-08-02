@@ -56,11 +56,6 @@ export async function GET() {
       userSecret: snapUser.user_secret,
     });
 
-    // Merge live data into DB records
-    const liveMap = new Map(
-      (Array.isArray(liveAccounts) ? liveAccounts : []).map((a: { id: string; name?: string; number?: string; type?: string }) => [a.id, a])
-    );
-
     // Upsert new accounts we haven't seen before
     for (const acct of Array.isArray(liveAccounts) ? liveAccounts as Array<{ id: string; name?: string; number?: string; type?: string; brokerage_authorization?: { brokerage?: { name?: string; slug?: string } } }> : []) {
       const brokerage = acct.brokerage_authorization?.brokerage;

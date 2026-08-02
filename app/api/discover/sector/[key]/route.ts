@@ -21,7 +21,7 @@ const CACHE_TTL_SECONDS = 5 * 60;
 async function handler(
   _request: NextRequest,
   context: unknown,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   _session: { userId: string }
 ): Promise<NextResponse> {
   const { key } = await (context as { params: Promise<{ key: string }> }).params;

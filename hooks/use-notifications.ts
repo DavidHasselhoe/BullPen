@@ -111,7 +111,7 @@ export function useMarkNotificationRead() {
         throw new Error(error.message);
       }
     },
-    onSuccess: (_, notificationId) => {
+    onSuccess: (_, _notificationId) => {
       // Invalidate notifications queries
       queryClient.invalidateQueries({ queryKey: ['notifications', user?.id] });
       queryClient.invalidateQueries({ queryKey: ['notifications-unread-count', user?.id] });

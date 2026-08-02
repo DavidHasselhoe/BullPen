@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { User, Briefcase, TrendingUp, BarChart2 } from 'lucide-react';
+import { Briefcase, TrendingUp, BarChart2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { PublicUser } from '@/app/api/users/search/route';
 

@@ -3,7 +3,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
 import { Loader2, CheckCircle2, XCircle, FileText, TrendingUp, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -90,7 +89,7 @@ export function IngestionProgress({ ticker, onComplete, onError }: IngestionProg
           }
           eventSource.close();
         }
-      } catch (err) {
+      } catch {
         // SSE parsing error - silently handle
         // Errors will be shown via error state
       }
@@ -198,7 +197,7 @@ export function IngestionProgress({ ticker, onComplete, onError }: IngestionProg
               Steps Completed
             </p>
             <div className="space-y-1.5">
-              {steps.slice(-5).reverse().map((stepItem, index) => (
+              {steps.slice(-5).reverse().map((stepItem) => (
                 <div
                   key={`${stepItem.step}-${stepItem.timestamp}`}
                   className={cn(

@@ -13,7 +13,6 @@ import { ActivityFeed } from '@/components/user/ActivityFeed';
 import {
   User,
   Briefcase,
-  TrendingUp,
   BarChart2,
   Shield,
   Calendar,

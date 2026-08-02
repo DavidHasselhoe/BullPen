@@ -62,7 +62,7 @@ function getCurrentSession(): Session {
   return 'closed';
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 async function heatmapHandler(_req: NextRequest): Promise<NextResponse> {
   const cachedHeatmap = await getCached<HeatmapResponse>(HEATMAP_CACHE_KEY);
   if (cachedHeatmap) {

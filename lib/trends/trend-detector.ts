@@ -2,7 +2,6 @@
 // Deterministic algorithms for analyzing time-series financial metrics
 
 import type { MetricType, PeriodType } from '../types/database';
-import { getMetricsTimeSeries } from '../metrics/metrics-ui';
 
 export type TrendType =
   | 'sustained_growth'
