@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/command';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
+import { ProfileAvatar } from '@/components/user/ProfileAvatar';
 import { useDebounce } from '@/hooks/use-debounce';
 import { fetchWithTimeout } from '@/lib/utils';
 import { Sparkles, Briefcase, Filter, TrendingUp, Scale, Users, Loader2, CornerDownLeft, Microscope, Bell } from 'lucide-react';
@@ -382,17 +383,14 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                           }}
                           className={itemClass}
                         >
-                          {person.avatar_url ? (
-                            <img
-                              src={person.avatar_url}
-                              alt={displayName}
-                              className="h-8 w-8 shrink-0 rounded-full object-cover"
-                            />
-                          ) : (
-                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                              <span className="text-[10px] font-semibold text-primary">{initials}</span>
-                            </div>
-                          )}
+                          <ProfileAvatar
+                            avatarUrl={person.avatar_url}
+                            displayName={displayName}
+                            fallback={initials}
+                            size="sm"
+                            showTooltip={false}
+                            className="shrink-0"
+                          />
                           <div className="min-w-0 flex-1">
                             <span className="font-medium">{displayName}</span>
                             {person.username && (
