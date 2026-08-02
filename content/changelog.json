@@ -1,5 +1,14 @@
 [
   {
+    "date": "2026-08-02",
+    "entries": [
+      { "type": "fixed", "text": "Fixed the password reset flow sometimes leaving you looking signed out right after setting a new password — the session was valid the whole time, but the page didn't know it until you refreshed manually" },
+      { "type": "fixed", "text": "Fixed signing in with Google failing without any error message — you'll now see what went wrong instead of the button just resetting with no explanation" },
+      { "type": "fixed", "text": "Fixed an empty gap that appeared partway down the dashboard homepage for most returning users" },
+      { "type": "fixed", "text": "Fixed stock pages and some dashboard sections not loading properly when browsing without signing in" }
+    ]
+  },
+  {
     "date": "2026-08-01",
     "entries": [
       { "type": "new", "text": "Added a self-service \"Forgot password?\" flow to the sign-in screen — enter your email, get a reset link, and set a new password without needing to contact support" }
