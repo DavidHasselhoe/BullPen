@@ -31,7 +31,7 @@ export function AuthModal({ open, onOpenChange, initialMode = 'login', redirectT
     if (open) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: reset form state when modal opens
       setMode(initialMode);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+       
       setError('');
     }
   }, [open, initialMode]);
@@ -129,6 +129,15 @@ export function AuthModal({ open, onOpenChange, initialMode = 'login', redirectT
                 disabled={false}
               />
             </motion.div>
+          )}
+
+          {error && (
+            <div
+              className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+              role="alert"
+            >
+              {error}
+            </div>
           )}
 
           {/* Divider */}

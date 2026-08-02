@@ -77,6 +77,15 @@ function RegisterContent() {
           disabled={false}
         />
 
+        {error && (
+          <div
+            className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+            role="alert"
+          >
+            {error}
+          </div>
+        )}
+
         {/* Divider */}
         <div className="relative">
           <div className="absolute inset-0 flex items-center">

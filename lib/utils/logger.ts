@@ -3,7 +3,6 @@
 // In production, only logs errors. In development, logs everything.
 
 const isDevelopment = process.env.NODE_ENV === 'development';
-const isProduction = process.env.NODE_ENV === 'production';
 
 type LogLevel = 'info' | 'warn' | 'error' | 'debug';
 
@@ -46,7 +45,7 @@ class Logger {
     if (errorMsg.includes('<!DOCTYPE') || errorMsg.includes('<html') || errorMsg.length > 200) {
       errorMsg = errorMsg.includes('522') ? 'Connection timed out' : 'Request failed';
     }
-    console.error(`[ERROR] ${message}`, { error: errorMsg, ...context });
+    console.error(`[ERROR] ${message}`, { error: errorMsg, ...(stack ? { stack } : {}), ...context });
   }
 
   debug(message: string, context?: LogContext): void {
