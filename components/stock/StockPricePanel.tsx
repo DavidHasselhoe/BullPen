@@ -38,6 +38,11 @@ const AdvancedChartModal = dynamic(
 
 type Range = '1D' | '1W' | '1M' | '6M' | '1Y' | 'YTD' | '5Y' | 'MAX';
 const RANGES: Range[] = ['1D', '1W', '1M', '6M', 'YTD', '1Y', '5Y', 'MAX'];
+
+// Live tick is only appended if the gap since the last candle is under this —
+// otherwise a weekend/holiday close would stretch the chart's time domain
+// across the whole closed period for a single meaningless dot.
+const MAX_LIVE_TICK_GAP_SECONDS = 16 * 60 * 60;
 // Ranges spanning a year or more — the tooltip needs a year to disambiguate.
 const YEAR_DISAMBIGUATED_RANGES = new Set<Range>(['1Y', '5Y', 'MAX']);
 
@@ -318,11 +323,11 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
   // Append live tick so the chart always ends at current price — 1D, and also
   // 1W/1M (5D/1M use intraday bars too, so without this the line stops at the
   // last fetched candle instead of reaching today's live pre/post-market price).
-  // Capped to a same-day-ish gap: without this, a weekend/holiday close would
-  // still get a point stamped at the real "now", stretching the chart's time
-  // domain across the whole closed period and squeezing every real trading
-  // day into a fraction of the width for a single meaningless dot.
-  const MAX_LIVE_TICK_GAP_SECONDS = 16 * 60 * 60;
+  // Capped to a same-day-ish gap (MAX_LIVE_TICK_GAP_SECONDS): without this, a
+  // weekend/holiday close would still get a point stamped at the real "now",
+  // stretching the chart's time domain across the whole closed period and
+  // squeezing every real trading day into a fraction of the width for a
+  // single meaningless dot.
   const isIntradayRange = range === '1D' || range === '1W' || range === '1M';
   const displayData = useMemo<ChartPoint[]>(() => {
     if (!isIntradayRange || !isLive || !live || !chartData.length) return chartData;
@@ -338,7 +343,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
     const liveSession: 'pre' | 'regular' | 'post' = etMins < 570 ? 'pre' : etMins >= 960 ? 'post' : 'regular';
 
     return [...chartData, { time: nowSec, price: live.price, volume: 0, session: liveSession }];
-  }, [chartData, range, isIntradayRange, isLive, live]);
+  }, [chartData, isIntradayRange, isLive, live]);
 
   // Strip pre/post candles when extended hours are hidden.
   const chartDisplayData = useMemo(() => {

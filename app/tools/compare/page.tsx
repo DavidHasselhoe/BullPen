@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
@@ -75,13 +75,6 @@ function formatFiscalYearEnd(fye: string | null): string {
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const m = parseInt(month, 10) - 1;
   return m >= 0 && m < 12 ? `${months[m]} ${parseInt(day, 10)}` : fye;
-}
-
-function formatEmployees(n: number | null): string {
-  if (n == null) return NA;
-  if (n >= 1e6) return `~${(n / 1e6).toFixed(2)}M`;
-  if (n >= 1e3) return `~${(n / 1e3).toFixed(0)}K`;
-  return n.toLocaleString();
 }
 
 function fmtEps(n: number | null): string {
@@ -205,7 +198,6 @@ function buildComparisonSummaryBullets(companies: CompareCompany[]): string[] {
   const bullets: string[] = [];
   if (companies.length < 2) return bullets;
 
-  const metricsKey = 'metrics' as const;
   const revA = companies[0]?.metrics?.revenue ?? null;
   const revB = companies[1]?.metrics?.revenue ?? null;
   const gmA = companies[0]?.metrics?.grossMargin ?? null;
@@ -303,9 +295,10 @@ function CompareContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tickersParam = searchParams.get('tickers');
-  const tickersFromUrl = tickersParam
-    ? tickersParam.split(',').map((t) => t.trim().toUpperCase()).filter(Boolean)
-    : [];
+  const tickersFromUrl = useMemo(
+    () => (tickersParam ? tickersParam.split(',').map((t) => t.trim().toUpperCase()).filter(Boolean) : []),
+    [tickersParam]
+  );
   const tickers = tickersFromUrl;
 
   const [selectedCompanies, setSelectedCompanies] = useState<SearchResult[]>([]);
@@ -359,7 +352,7 @@ function CompareContent() {
   }, [urlCompaniesData, tickersFromUrl.length]);
   useEffect(() => {
     hasInitializedFromUrl.current = false;
-  }, [tickersFromUrl.join(',')]);
+  }, [tickersFromUrl]);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQuery(searchQuery), 300);
@@ -423,7 +416,7 @@ function CompareContent() {
       setAIContext({ tickers, label: `${tickers.join(' vs ')}` });
     }
     return () => setAIContext(null);
-  }, [tickers.join(','), setAIContext]);
+  }, [tickers, setAIContext]);
 
   if (tickers.length < 2) {
     const slots = Math.min(MAX_SLOTS, Math.max(MIN_SLOTS, selectedCompanies.length + 1));
