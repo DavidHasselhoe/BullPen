@@ -1,5 +1,11 @@
 [
   {
+    "date": "2026-08-01",
+    "entries": [
+      { "type": "new", "text": "Added a self-service \"Forgot password?\" flow to the sign-in screen — enter your email, get a reset link, and set a new password without needing to contact support" }
+    ]
+  },
+  {
     "date": "2026-07-31",
     "entries": [
       { "type": "new", "text": "You can now share your portfolio's daily gain or loss as a link, right from the Holdings page — it shows a preview card with your return and a mini chart, and you choose whether to include the dollar amount or post anonymously" },
