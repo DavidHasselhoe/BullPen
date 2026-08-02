@@ -67,7 +67,7 @@ export function GettingStartedCard() {
   ];
 
   return (
-    <Card>
+    <Card className="mb-16">
       <CardContent className="p-5 sm:p-6">
         <p className="text-sm font-semibold text-foreground">New here? Start with one of these</p>
         <p className="mt-0.5 text-xs text-muted-foreground">

@@ -131,12 +131,12 @@ export default function DiscoverPage() {
         </div>
 
         {/* Getting-started card — self-hides once the user has any holding or
-            watchlist item, so it only greets genuinely new accounts. */}
-        <div className="mb-16">
-          <AnimatedContent reverse={true}>
-            <GettingStartedCard />
-          </AnimatedContent>
-        </div>
+            watchlist item, so it only greets genuinely new accounts. Margin
+            lives on the card itself (not this wrapper) so hidden state
+            doesn't leave a dead gap for returning users. */}
+        <AnimatedContent reverse={true}>
+          <GettingStartedCard />
+        </AnimatedContent>
 
         {/* Reorderable widget stack */}
         <div className="space-y-16">
