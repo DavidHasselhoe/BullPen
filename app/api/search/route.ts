@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { symbolSearch } from '@/lib/twelvedata/twelvedata-client';
+import { symbolSearch, TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
 import {
   filterByQueryIntent,
   filterNonUsWhenUsExists,
@@ -141,6 +141,14 @@ async function handler(request: NextRequest) {
       NextResponse.json({ success: true, results: allResults.slice(0, limit) })
     );
   } catch (error) {
+    if (error instanceof TwelveDataRateLimitError) {
+      return addSecurityHeaders(
+        NextResponse.json(
+          { success: false, error: 'Rate limit exceeded' },
+          { status: 429, headers: { 'Retry-After': '60' } }
+        )
+      );
+    }
     logger.error('Symbol search error', error);
     return addSecurityHeaders(
       NextResponse.json({ success: false, error: 'Search failed' }, { status: 500 })

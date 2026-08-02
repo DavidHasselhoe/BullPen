@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getLogoUrl } from '@/lib/twelvedata/twelvedata-client';
+import { getLogoUrl, TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
 import { addSecurityHeaders } from '@/lib/security/api-security';
 
 /**
@@ -34,7 +34,15 @@ async function handler(
         { headers: { 'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=3600' } }
       )
     );
-  } catch {
+  } catch (error) {
+    if (error instanceof TwelveDataRateLimitError) {
+      return addSecurityHeaders(
+        NextResponse.json(
+          { success: false, logoUrl: null, error: 'Rate limit exceeded' },
+          { status: 429, headers: { 'Retry-After': '60' } }
+        )
+      );
+    }
     return addSecurityHeaders(
       NextResponse.json({ success: false, logoUrl: null, error: 'Failed to fetch logo' }, { status: 500 })
     );
