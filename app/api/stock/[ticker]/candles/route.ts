@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withRateLimit, withAuth, addSecurityHeaders } from '@/lib/security/api-security';
+import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
 import { getStockCandles, withRateLimitRetry, TwelveDataRateLimitError, type StockCandles } from '@/lib/twelvedata/twelvedata-client';
 import { slugToSymbol, inferAssetType, has24hTrading } from '@/lib/assets/asset-type';
 import { getCached, setCached } from '@/lib/cache/market-data-cache';
@@ -46,9 +46,7 @@ const INTERVAL_TO_RESOLUTION: Record<Interval, '1' | '5' | '15' | '60' | 'D' | '
 
 async function handler(
   request: NextRequest,
-  context: { params: Promise<{ ticker: string }> },
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _session: { userId: string }
+  context: { params: Promise<{ ticker: string }> }
 ): Promise<NextResponse> {
   const { ticker } = await context.params;
   const symbol = slugToSymbol(ticker).toUpperCase();
@@ -205,4 +203,4 @@ async function handler(
   }
 }
 
-export const GET = withRateLimit(withAuth(handler), { windowMs: 60 * 1000, maxRequests: 120 });
+export const GET = withRateLimit(handler, { windowMs: 60 * 1000, maxRequests: 120 });

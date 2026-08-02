@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getEarningsCalendarRange, TwelveDataRateLimitError, type EarningsCalendarItem } from '@/lib/twelvedata/twelvedata-client';
-import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
+import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
 import { SIGNIFICANT_TICKERS } from '@/lib/market-data/significant-tickers';
 import { NASDAQ100_TICKERS } from '@/lib/market-data/nasdaq100';
 import { getCached, setCached } from '@/lib/cache/market-data-cache';
@@ -66,4 +66,4 @@ async function handler(request: NextRequest): Promise<NextResponse> {
 
 // Auth-gated to keep anonymous scrapers off the 50-credit endpoint. Rate limit
 // stays loose (60/min) since cache hits are virtually free.
-export const GET = withAuth(handler, { rateLimit: { windowMs: 60_000, maxRequests: 60 } });
+export const GET = withRateLimit(handler, { windowMs: 60_000, maxRequests: 60 });

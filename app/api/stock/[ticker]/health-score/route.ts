@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withRateLimit, withAuth, addSecurityHeaders } from '@/lib/security/api-security';
+import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
 import { TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
 import { getHealthScoreForSymbol } from '@/lib/finance/get-health-score';
 
 async function handler(
   _request: NextRequest,
-  context: { params: Promise<{ ticker: string }> },
-  _session: { userId: string }
+  context: { params: Promise<{ ticker: string }> }
 ): Promise<NextResponse> {
   const { ticker } = await context.params;
   const symbol = ticker.toUpperCase();
@@ -43,4 +42,4 @@ async function handler(
   }
 }
 
-export const GET = withRateLimit(withAuth(handler), { windowMs: 60 * 1000, maxRequests: 30 });
+export const GET = withRateLimit(handler, { windowMs: 60 * 1000, maxRequests: 30 });

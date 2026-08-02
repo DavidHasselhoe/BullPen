@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withRateLimit, withAuth, addSecurityHeaders } from '@/lib/security/api-security';
+import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
 import { getCached, setCached } from '@/lib/cache/market-data-cache';
 import {
   getIncomeStatement,
@@ -23,8 +23,7 @@ function ttlForType(type: FinancialType): number {
 
 async function handler(
   request: NextRequest,
-  context: { params: Promise<{ ticker: string }> },
-  _session: { userId: string }
+  context: { params: Promise<{ ticker: string }> }
 ): Promise<NextResponse> {
   const { ticker } = await context.params;
   const symbol = ticker.toUpperCase();
@@ -92,4 +91,4 @@ async function handler(
   }
 }
 
-export const GET = withRateLimit(withAuth(handler), { windowMs: 60 * 1000, maxRequests: 60 });
+export const GET = withRateLimit(handler, { windowMs: 60 * 1000, maxRequests: 60 });
