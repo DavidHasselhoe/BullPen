@@ -4,7 +4,7 @@ import { withRateLimit } from '@/lib/security/api-security';
 import { SP500_TICKERS } from '@/lib/market-data/sp500';
 import { SP500_SECTORS } from '@/lib/market-data/sp500-sectors';
 import { logger } from '@/lib/utils/logger';
-import { getCached, setCached } from '@/lib/cache/market-data-cache';
+import { getCached, getCachedStale, setCached } from '@/lib/cache/market-data-cache';
 import { seedPrices, type SeededQuote } from '@/lib/market-data/seed-prices';
 import { isExtendedHoursET } from '@/lib/twelvedata/twelvedata-client';
 import type { Session } from '@/app/api/market/heatmap/stream/route';
@@ -164,9 +164,17 @@ async function heatmapHandler(_req: NextRequest): Promise<NextResponse> {
 
     if (sectorMap.size === 0) {
       // Every symbol failed to resolve — Redis cold and TwelveData
-      // unavailable at the same time. Rare, but tell the user something
-      // they can act on rather than an empty grid or a raw error.
-      logger.error('Heatmap API: zero symbols resolved from seedPrices');
+      // unavailable at the same time. Rare, but a live-price hiccup shouldn't
+      // blank the page: fall back to the last cached snapshot (however stale)
+      // so the user sees yesterday's close instead of an error card. The
+      // `lastUpdated` timestamp already shown in the header makes the age
+      // honest rather than presenting stale data as live.
+      const stale = await getCachedStale<HeatmapResponse>(HEATMAP_CACHE_KEY);
+      if (stale?.success) {
+        logger.error('Heatmap API: zero symbols resolved from seedPrices, served stale cache');
+        return NextResponse.json(stale);
+      }
+      logger.error('Heatmap API: zero symbols resolved from seedPrices, no stale cache available');
       return NextResponse.json({ success: false, error: GENERIC_LOAD_ERROR });
     }
 
@@ -214,6 +222,11 @@ async function heatmapHandler(_req: NextRequest): Promise<NextResponse> {
     // Log the real cause server-side; the client only ever sees a generic,
     // provider-agnostic message — no status codes, no vendor names.
     logger.error('Heatmap API error', err);
+    const stale = await getCachedStale<HeatmapResponse>(HEATMAP_CACHE_KEY);
+    if (stale?.success) {
+      logger.error('Heatmap API error, served stale cache');
+      return NextResponse.json(stale);
+    }
     return NextResponse.json({ success: false, error: GENERIC_LOAD_ERROR });
   }
 }
