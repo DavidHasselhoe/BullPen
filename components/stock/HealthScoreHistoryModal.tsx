@@ -29,12 +29,6 @@ function formatQuarterLabel(fiscalDate: string): string {
   return `Q${quarter} '${String(d.getFullYear()).slice(2)}`;
 }
 
-function formatFullDate(dateStr: string): string {
-  const d = new Date(dateStr);
-  if (Number.isNaN(d.getTime())) return dateStr;
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-}
-
 function CategoryDiffRow({ current, previous }: { current: CategoryScore; previous?: CategoryScore }) {
   const delta = previous ? current.score - previous.score : null;
   return (
@@ -95,7 +89,7 @@ export function HealthScoreHistoryModal({ ticker, open, onOpenChange, history }:
                     return (
                       <div className="rounded-lg border border-border bg-background/95 px-3 py-2 shadow-lg backdrop-blur-sm text-xs space-y-0.5">
                         <p className="font-semibold text-foreground">{pt.score}/100 · {pt.grade}</p>
-                        <p className="text-muted-foreground">{formatFullDate(pt.fiscalDate)}</p>
+                        <p className="text-muted-foreground">{formatQuarterLabel(pt.fiscalDate)}</p>
                       </div>
                     );
                   }}
@@ -133,7 +127,7 @@ export function HealthScoreHistoryModal({ ticker, open, onOpenChange, history }:
                         {canExpand && (
                           <ChevronDown className={cn('h-3 w-3 shrink-0 transition-transform', isExpanded && 'rotate-180')} />
                         )}
-                        {formatFullDate(pt.fiscalDate)}
+                        {formatQuarterLabel(pt.fiscalDate)}
                       </span>
                       <div className="flex items-center gap-2">
                         <span className="font-semibold text-foreground tabular-nums">{pt.score}/100</span>
