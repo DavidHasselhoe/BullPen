@@ -1,5 +1,16 @@
 [
   {
+    "date": "2026-08-03",
+    "entries": [
+      { "type": "new", "text": "You can now report a bug or suggest a new feature right from your profile menu, no need to leave the app" },
+      { "type": "improved", "text": "The Market Calendar's timeframe options are now This week, This month, and Next month, with a full calendar view for month mode, plus the ability to page back to any previous month to look up past earnings, dividends, splits, and IPOs" },
+      { "type": "improved", "text": "The Daily Performance card on the Holdings page is now compact by default, showing a quick summary strip instead of the full month grid. Click Expand to see the full interactive calendar" },
+      { "type": "fixed", "text": "Fixed the Daily Performance calendar showing blank, unexplained days on market holidays like Memorial Day or Juneteenth. Those days now show which holiday closed the market instead of looking like missing data" },
+      { "type": "fixed", "text": "Fixed the S&P 500 Sector Heatmap showing a hard error message when live prices were briefly unavailable. It now falls back to the last available snapshot instead" },
+      { "type": "fixed", "text": "Fixed the Financial Health history list showing a date that didn't match when the company actually reported earnings. It now shows the quarter instead, matching the chart above it" }
+    ]
+  },
+  {
     "date": "2026-08-02",
     "entries": [
       { "type": "fixed", "text": "Fixed the password reset flow sometimes leaving you looking signed out right after setting a new password — the session was valid the whole time, but the page didn't know it until you refreshed manually" },
