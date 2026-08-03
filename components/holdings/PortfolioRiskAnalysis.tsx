@@ -516,7 +516,7 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
               </span>
             </CardTitle>
             {state === 'idle' && (
-              <Button size="sm" onClick={analyze} className="shrink-0 gap-1.5 h-7 text-xs">
+              <Button size="sm" onClick={analyze} className="shrink-0 gap-1.5 h-7 text-xs animate-ai-sweep">
                 <ShieldAlert className="h-3 w-3" /> Analyze
               </Button>
             )}
@@ -540,7 +540,7 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
               <p className="text-xs text-muted-foreground max-w-xs leading-relaxed">
                 Concentration, sector exposure, correlation, liquidity, and stress scenarios across your {holdings.length} holding{holdings.length !== 1 ? 's' : ''}.
               </p>
-              <Button onClick={analyze} size="sm" className="mt-1 gap-1.5">
+              <Button onClick={analyze} size="sm" className="mt-1 gap-1.5 animate-ai-sweep">
                 <ShieldAlert className="h-3.5 w-3.5" /> Run Analysis
               </Button>
               {history.length > 0 && (
@@ -595,7 +595,7 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
             <div className="flex flex-col items-center py-7 gap-3 text-center">
               <AlertTriangle className="h-7 w-7 text-destructive/80" />
               <p className="text-sm text-destructive/90">{error}</p>
-              <Button variant="outline" size="sm" onClick={analyze} className="gap-1.5">
+              <Button variant="outline" size="sm" onClick={analyze} className="gap-1.5 animate-ai-sweep">
                 <RefreshCw className="h-3 w-3" /> Try Again
               </Button>
             </div>

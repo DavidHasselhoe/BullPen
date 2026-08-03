@@ -208,7 +208,7 @@ export default function DeepDivePage() {
                   <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/85 mb-2">Choose a lens</p>
                   <LensPicker value={lens} onChange={setLens} />
                 </div>
-                <Button size="lg" onClick={() => generate(lens)} className="gap-2">
+                <Button size="lg" onClick={() => generate(lens)} className="gap-2 animate-ai-sweep">
                   <Sparkles className="h-4 w-4" /> Generate Deep Dive
                 </Button>
                 <QuotaIndicator feature="deep_dive" unit={{ singular: 'deep dive', plural: 'deep dives' }} />
@@ -248,7 +248,7 @@ export default function DeepDivePage() {
                   <h3 className="text-sm font-semibold text-foreground mb-1">{errorTitle(errorCode)}</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">{errorBody(errorCode, errorMessage)}</p>
                   <div className="mt-4">
-                    <Button onClick={() => generate(lens)} size="sm" variant="outline">Try again</Button>
+                    <Button onClick={() => generate(lens)} size="sm" variant="outline" className="animate-ai-sweep">Try again</Button>
                   </div>
                 </div>
               </div>

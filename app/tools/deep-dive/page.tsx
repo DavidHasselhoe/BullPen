@@ -97,7 +97,7 @@ export default function DeepDiveLanding() {
                   className="w-full rounded-lg border border-border bg-background pl-9 pr-3 py-2.5 text-sm font-medium uppercase tracking-wide placeholder:normal-case placeholder:tracking-normal placeholder:text-muted-foreground/80 focus:outline-none focus:ring-2 focus:ring-ring transition-shadow"
                 />
               </div>
-              <Button type="submit" size="lg" disabled={!ticker.trim()} className="gap-2 shrink-0">
+              <Button type="submit" size="lg" disabled={!ticker.trim()} className="gap-2 shrink-0 animate-ai-sweep">
                 <Telescope className="h-4 w-4" /> Analyze
               </Button>
             </form>

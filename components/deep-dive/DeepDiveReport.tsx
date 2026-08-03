@@ -68,7 +68,7 @@ export function DeepDiveReport({ report, createdAt, onRegenerate, regenerating, 
                 </Button>
               )}
               {onRegenerate && (
-                <Button variant="outline" size="sm" onClick={onRegenerate} disabled={regenerating} className="h-8 gap-1.5 text-xs">
+                <Button variant="outline" size="sm" onClick={onRegenerate} disabled={regenerating} className="h-8 gap-1.5 text-xs animate-ai-sweep">
                   <RefreshCw className={cn('h-3.5 w-3.5', regenerating && 'animate-spin')} /> Regenerate
                 </Button>
               )}
