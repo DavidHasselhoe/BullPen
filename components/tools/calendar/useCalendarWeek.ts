@@ -11,9 +11,22 @@ import type {
   CalendarResponse,
 } from './types';
 
+/**
+ * Throws on any non-success response (HTTP-level or `{success:false}` in the
+ * body — a 429 from this route's own rate limiter still returns 200-shaped
+ * JSON on some paths) so TanStack Query's default retry/backoff actually
+ * engages. The previous version resolved unconditionally on any JSON body,
+ * so a rate-limited response silently rendered as "no events this month" —
+ * indistinguishable from a genuinely quiet month — with nothing retrying and
+ * nothing telling the user their request failed.
+ */
 async function fetchCalendar<T>(url: string): Promise<CalendarResponse<T>> {
   const res = await fetch(url);
-  return res.json();
+  const body: CalendarResponse<T> = await res.json();
+  if (!res.ok || !body.success) {
+    throw new Error(body.error ?? `Request failed (${res.status})`);
+  }
+  return body;
 }
 
 /**

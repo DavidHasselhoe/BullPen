@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { CalendarDays, ArrowLeft } from 'lucide-react';
+import { CalendarDays, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
@@ -10,29 +11,54 @@ import { useBackground } from '@/hooks/use-background';
 import { useHoldings } from '@/hooks/use-holdings';
 import { useWatchlist } from '@/hooks/use-watchlist';
 import { useAuth } from '@/hooks/use-auth';
-import { getWeekRange, todayStr, fmtWeekRange, weekDatesBetween } from '@/lib/dates/calendar-format';
+import {
+  getWeekRange,
+  todayStr,
+  fmtWeekRange,
+  fmtMonthLabel,
+  weekDatesBetween,
+  currentMonthKey,
+  shiftMonth,
+  monthRange,
+} from '@/lib/dates/calendar-format';
 import { useCalendarWeek } from '@/components/tools/calendar/useCalendarWeek';
 import { buildDayModel } from '@/components/tools/calendar/day-model';
 import { YourWeekStrip } from '@/components/tools/calendar/YourWeekStrip';
 import { TypeFilterChips } from '@/components/tools/calendar/TypeFilterChips';
 import { CalendarGrid } from '@/components/tools/calendar/CalendarGrid';
+import { MonthCalendarGrid, MonthCalendarSkeleton } from '@/components/tools/calendar/MonthCalendarGrid';
 import { DayDetailDialog } from '@/components/tools/calendar/DayDetailDialog';
 import type { EventType } from '@/components/tools/calendar/types';
 
-const WEEK_OFFSETS = [0, 1, 2, 3];
-const WEEK_LABELS = ['This week', 'Next week', '+2w', '+3w'];
+type ViewMode = 'week' | 'month';
+/** Cell event limit — the month grid's rows are shorter than the week grid's. */
+const MONTH_CELL_LIMIT = 2;
 const ALL_TYPES: EventType[] = ['earnings', 'dividends', 'splits', 'ipo'];
 
 export default function CalendarPage() {
   const { hasAnimatedBackground } = useBackground();
   const { isAuthenticated } = useAuth();
-  const [weekOffset, setWeekOffset] = useState(0);
+  const [mode, setMode] = useState<ViewMode>('week');
+  // Independent of `mode` so paging with the chevrons (including into past
+  // months, for looking up prior earnings) doesn't get reset by anything
+  // else on the page — only switching back to week mode and back to month
+  // mode via a pill touches it.
+  const [monthKey, setMonthKey] = useState<string>(() => currentMonthKey());
   const [typeFilter, setTypeFilter] = useState<Set<EventType>>(new Set(ALL_TYPES));
   const [openDate, setOpenDate] = useState<string | null>(null);
 
-  const { from, to } = getWeekRange(weekOffset);
   const today = todayStr();
-  const weekDates = useMemo(() => weekDatesBetween(from, to), [from, to]);
+  const thisMonthKey = currentMonthKey();
+
+  const { from, to } = useMemo(() => {
+    if (mode === 'week') {
+      return getWeekRange(0);
+    }
+    const range = monthRange(monthKey);
+    return { from: range.first, to: range.last };
+  }, [mode, monthKey]);
+
+  const rangeDates = useMemo(() => weekDatesBetween(from, to), [from, to]);
 
   const { events, isLoading } = useCalendarWeek(from, to);
 
@@ -46,8 +72,8 @@ export default function CalendarPage() {
   }, [holdings, watchlist]);
 
   const days = useMemo(
-    () => buildDayModel(events, weekDates, mySymbols, typeFilter),
-    [events, weekDates, mySymbols, typeFilter],
+    () => buildDayModel(events, rangeDates, mySymbols, typeFilter, mode === 'month' ? MONTH_CELL_LIMIT : undefined),
+    [events, rangeDates, mySymbols, typeFilter, mode],
   );
 
   const openModel = days.find((d) => d.date === openDate) ?? null;
@@ -85,27 +111,78 @@ export default function CalendarPage() {
           </div>
         </div>
 
-        {/* Week selector */}
+        {/* Timeframe selector */}
         <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {WEEK_OFFSETS.map((offset) => (
-              <button
-                key={offset}
-                onClick={() => setWeekOffset(offset)}
-                className={cn(
-                  'rounded-lg px-3 py-1.5 text-sm font-medium transition-all border',
-                  weekOffset === offset
-                    ? 'bg-primary text-primary-foreground border-primary'
-                    : 'border-border text-muted-foreground hover:text-foreground hover:border-foreground/20',
-                )}
-              >
-                {WEEK_LABELS[offset]}
-              </button>
-            ))}
+          <div className="flex items-center gap-1.5 flex-wrap" role="group" aria-label="Timeframe">
+            <button
+              onClick={() => setMode('week')}
+              aria-pressed={mode === 'week'}
+              className={cn(
+                'rounded-lg px-3 py-1.5 text-sm font-medium transition-all border',
+                mode === 'week'
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'border-border text-muted-foreground hover:text-foreground hover:border-foreground/20',
+              )}
+            >
+              This week
+            </button>
+            <button
+              onClick={() => { setMode('month'); setMonthKey(thisMonthKey); }}
+              aria-pressed={mode === 'month' && monthKey === thisMonthKey}
+              className={cn(
+                'rounded-lg px-3 py-1.5 text-sm font-medium transition-all border',
+                mode === 'month' && monthKey === thisMonthKey
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'border-border text-muted-foreground hover:text-foreground hover:border-foreground/20',
+              )}
+            >
+              This month
+            </button>
+            <button
+              onClick={() => { setMode('month'); setMonthKey(shiftMonth(thisMonthKey, 1)); }}
+              aria-pressed={mode === 'month' && monthKey === shiftMonth(thisMonthKey, 1)}
+              className={cn(
+                'rounded-lg px-3 py-1.5 text-sm font-medium transition-all border',
+                mode === 'month' && monthKey === shiftMonth(thisMonthKey, 1)
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'border-border text-muted-foreground hover:text-foreground hover:border-foreground/20',
+              )}
+            >
+              Next month
+            </button>
           </div>
-          <span className="text-xs text-muted-foreground/85 tabular-nums font-mono">
-            {fmtWeekRange(from, to)}
-          </span>
+
+          {mode === 'month' ? (
+            <div className="flex items-center gap-0.5">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => setMonthKey((k) => shiftMonth(k, -1))}
+                disabled={isLoading}
+                aria-label={`Previous month, ${fmtMonthLabel(shiftMonth(monthKey, -1))}`}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-xs text-muted-foreground/85 tabular-nums font-mono min-w-[92px] text-center">
+                {fmtMonthLabel(monthKey)}
+              </span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => setMonthKey((k) => shiftMonth(k, 1))}
+                disabled={isLoading}
+                aria-label={`Next month, ${fmtMonthLabel(shiftMonth(monthKey, 1))}`}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          ) : (
+            <span className="text-xs text-muted-foreground/85 tabular-nums font-mono">
+              {fmtWeekRange(from, to)}
+            </span>
+          )}
         </div>
 
         {/* Type filters */}
@@ -119,11 +196,23 @@ export default function CalendarPage() {
         <Card>
           <CardContent className="pt-5 px-4 sm:px-5 pb-5">
             {isLoading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-7 gap-2">
-                {weekDates.map((d) => (
-                  <Skeleton key={d} className="min-h-[104px] rounded-lg" />
-                ))}
-              </div>
+              mode === 'month' ? (
+                <MonthCalendarSkeleton monthKey={monthKey} />
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-7 gap-2">
+                  {rangeDates.map((d) => (
+                    <Skeleton key={d} className="min-h-[104px] rounded-lg" />
+                  ))}
+                </div>
+              )
+            ) : mode === 'month' ? (
+              <MonthCalendarGrid
+                monthKey={monthKey}
+                days={days}
+                today={today}
+                mySymbols={mySymbols}
+                onOpenDay={setOpenDate}
+              />
             ) : (
               <CalendarGrid days={days} today={today} mySymbols={mySymbols} onOpenDay={setOpenDate} />
             )}
