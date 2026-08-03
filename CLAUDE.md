@@ -26,6 +26,15 @@ It runs a methodical final pass — design-system alignment, spacing/alignment a
 
 `PRODUCT.md` and `DESIGN.md` at the repo root capture BullPen's strategic and visual design system (register: product, platform: web). Read them before non-trivial frontend work — `/impeccable` commands load them automatically, but if you're working outside that skill, check them directly. Key points: **Signal Emerald/Red** is the only meaningful color, reserved for gain/loss + the landing brand accent; Bloomberg-terminal density is the named anti-reference; Instrument Serif italic is a one-word marketing-headline accent only, never product UI.
 
+### Writing UI Copy
+
+Never use an em dash or en dash to connect clauses in text a user reads: toasts, dialog copy, empty states, error messages, button labels, Academy lessons, marketing pages, the changelog, anything rendered in the app. It is one of the strongest tells that a sentence was written by an AI, and BullPen's whole positioning is a product that does not feel machine-generated. Split into two sentences, or use a comma or period instead.
+
+- Bad: "Thanks — got it. No need to file it twice — one report is plenty."
+- Good: "Thanks for the report. No need to send it twice."
+
+This is about user-facing copy only. It does not apply to code comments, commit messages, or your own conversational replies to the user.
+
 ## Branch Strategy
 
 Two branches only: `preview` and `main`.
