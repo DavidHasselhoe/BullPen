@@ -10,13 +10,18 @@
  *   mode=active|discovery   (default active)
  *   batch=N                 (active mode only; 0-indexed slice of the active universe)
  *
- * Active mode: refreshes a 10-symbol slice of the tier-1 universe (ordered by
+ * Active mode: refreshes a 5-symbol slice of the tier-1 universe (ordered by
  *   market cap). Used by the daily + extended crons.
- * Discovery mode: refreshes the 10 least-recently-refreshed tier-0 tickers to
+ * Discovery mode: refreshes the 5 least-recently-refreshed tier-0 tickers to
  *   discover their market caps (and promote the big ones). Self-consuming — no
  *   batch index needed.
  *
- * Credits per call: 10 × 50 = 500. Rate limit 610/min → ~1 call/min with headroom.
+ * Credits per call: 5 × 53 = 265. Deliberately half the old 10-symbol batch
+ * (530 credits) — that size left only ~30 credits/min of the 610/min plan cap
+ * for organic user traffic once the shared credit-budget guard reserved its
+ * share, which real per-page-load costs (a single stock snapshot alone runs
+ * ~71 credits) could blow through on its own. See CRON_CREDIT_SHARE in
+ * lib/twelvedata/credit-budget.ts.
  *
  * Auth: requires either a `CRON_SECRET` bearer header (GitHub Actions crons)
  * or an admin user session (the screener page's "Refresh Data" button, which
@@ -39,7 +44,7 @@ import { waitForCronCreditBudget } from '@/lib/twelvedata/credit-budget';
 
 export const dynamic = 'force-dynamic';
 
-const BATCH_SIZE = 10;
+const BATCH_SIZE = 5;
 
 /** /statistics costs 50 credits/symbol (guaranteed, no cache); financials add
  *  up to 3 more/symbol on a full cache miss. Reserve the worst case up front. */
@@ -74,8 +79,8 @@ async function stampUniverse(rows: { ticker: string; market_cap: number | null }
  * Two callers hit this route: the nightly/extended GitHub Actions crons (no
  * user session — authenticate via CRON_SECRET bearer header) and the "Refresh
  * Data" button on the screener page (a real user session — must be admin).
- * This triggers a live TwelveData /statistics fetch (500 credits per call)
- * and was previously reachable by anyone, including signed-out callers.
+ * This triggers a live TwelveData /statistics fetch (up to 265 credits per
+ * call) and was previously reachable by anyone, including signed-out callers.
  */
 async function isAuthorized(request: NextRequest): Promise<boolean> {
   const cronSecret = process.env.CRON_SECRET;
@@ -174,5 +179,7 @@ async function handler(request: NextRequest): Promise<NextResponse> {
   }
 }
 
-// Limit to 5 refresh calls per minute — each costs 500 credits
+// Limit to 5 refresh calls per minute — each costs up to 265 credits. The
+// real per-minute enforcement is the shared credit-budget guard above; this
+// is just an outer ceiling against abuse.
 export const POST = withRateLimit(handler, { windowMs: 60_000, maxRequests: 5 });

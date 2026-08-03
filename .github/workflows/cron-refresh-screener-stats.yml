@@ -1,13 +1,19 @@
 name: Cron — Refresh Screener Financial Data
 
-# Daily at 22:00 UTC (after US market close + price-moves cron).
-# Chains through all screener batches with 65s delays to stay within
-# TwelveData's 610 credits/min rate limit (each batch = 10 stocks × 50 credits).
-# The loop below is `seq 0 60` — 61 batches × 65s ≈ 66 min of sleep alone,
+# Daily at 22:00 UTC (after US market close + price-moves cron). Covers
+# roughly the top half of the active universe by market cap; the 03:00 UTC
+# "Refresh Screener (Extended + Discovery)" job picks up from where this one
+# leaves off. Chains through batches with 65s delays to stay within
+# TwelveData's 610 credits/min rate limit (each batch = 5 stocks × up to 53
+# credits — halved from the original 10-stock/530-credit batch so a single
+# reservation against the shared credit-budget guard, lib/twelvedata/credit-
+# budget.ts, leaves real headroom for organic user traffic in the same
+# minute instead of nearly exhausting the 610 cap on its own).
+# The loop below is `seq 0 121` — 122 batches × 65s ≈ 132 min of sleep alone,
 # before any request latency. A previous 70-min timeout left almost no
 # buffer and the job was getting killed (conclusion "cancelled") mid-run
 # every night — confirmed via the Actions API, jobs consistently ran the
-# full 70:05 before being cut off. 130 min covers 61 batches with real
+# full 70:05 before being cut off. 160 min covers 122 batches with real
 # headroom for slow individual requests.
 on:
   schedule:
@@ -17,9 +23,9 @@ on:
 jobs:
   refresh:
     runs-on: ubuntu-latest
-    timeout-minutes: 130
+    timeout-minutes: 160
     steps:
-      - name: Chain through all screener refresh batches
+      - name: Chain through screener refresh batches (top half of universe)
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
           APP_URL: ${{ vars.APP_URL || 'https://bullpen.no' }}
@@ -29,7 +35,7 @@ jobs:
             exit 1
           fi
           echo "Starting screener refresh…"
-          for batch in $(seq 0 60); do
+          for batch in $(seq 0 121); do
             echo "→ Batch $batch"
             RESPONSE=$(curl -fsS -X POST -H "Authorization: Bearer ${CRON_SECRET}" "${APP_URL}/api/screener/refresh?batch=${batch}") || {
               echo "Batch $batch failed (rate limit or network error) — stopping"

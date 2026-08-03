@@ -2,17 +2,20 @@
  * Shared, Redis-backed guard against TwelveData's account-wide 610
  * credits/minute cap.
  *
- * The screener refresh cron is the one bulk, schedulable consumer of
- * TwelveData credits (up to ~530 credits per 10-symbol batch), but it isn't
- * the only caller sharing the same API key — live user traffic (stock
- * snapshots, quotes, candles) draws from the same per-minute budget and is
- * unpredictable. Pacing cron batches purely on a fixed delay (as the
- * GitHub Actions workflows do) assumes the cron has the full 610 to itself;
- * in practice concurrent user traffic plus the cron's own batches has been
- * observed blowing past 3000+ credits in a single minute on the TwelveData
- * dashboard. This tracks actual reserved usage in a rolling per-minute
- * bucket and only lets the cron proceed within its own conservative share,
- * leaving headroom for organic traffic.
+ * Three callers share this bucket: the screener refresh cron (up to ~265
+ * credits per 5-symbol batch), the prefetch-market-data cron (~350 credits
+ * per 5-symbol batch), and the admin fundamentals-freshness sweep (~5
+ * credits per 5-company batch). None of them is the only caller sharing the
+ * API key, though — live user traffic (stock snapshots, quotes, candles)
+ * draws from the same per-minute budget and is unpredictable: a single stock
+ * snapshot page load alone costs ~71 credits. Pacing cron batches purely on
+ * a fixed delay (as the GitHub Actions workflows do) assumes the cron has
+ * the full 610 to itself; in practice concurrent user traffic plus the
+ * cron's own batches has been observed blowing past 3000+ credits in a
+ * single minute on the TwelveData dashboard. This tracks actual reserved
+ * usage in a rolling per-minute bucket and only lets a cron batch proceed
+ * within the shared conservative share, leaving real headroom for organic
+ * traffic to draw on without either side tripping the account-wide cap.
  */
 
 import { Redis } from '@upstash/redis';
@@ -28,16 +31,20 @@ function client(): Redis | null {
 const WINDOW_SECONDS = 60;
 
 /**
- * The cron's own self-imposed share of the 610/min plan limit. A single
- * 10-symbol batch already costs up to 530 (50/symbol for /statistics + up to
- * 3/symbol for financials), so this must comfortably clear one batch's worst
- * case — its job isn't to shrink a single batch's footprint but to stop a
- * *second* batch (an overlapping cron run, the discovery sweep, or someone
- * clicking "Refresh Data" mid-run) from stacking on top of it in the same
- * minute, which is what actually produces the multi-thousand-credit spikes
- * seen on the TwelveData dashboard.
+ * The crons' own self-imposed share of the 610/min plan limit. The largest
+ * single reservation against this budget is prefetch-market-data's 5-symbol
+ * batch (~350 credits), so 400 comfortably clears any one batch while
+ * leaving ~210 credits/min of real headroom for organic traffic — enough for
+ * several concurrent ~71-credit stock-snapshot loads, unlike the previous
+ * 580/610 split (batches sized for the old 10-symbol/530-credit batch),
+ * which left only ~30/min for everything else sharing the account. Its job
+ * still isn't to shrink a single batch's footprint but to stop a *second*
+ * batch (an overlapping cron run, the discovery sweep, or someone clicking
+ * "Refresh Data" mid-run) from stacking on top of it in the same minute,
+ * which is what actually produces the multi-thousand-credit spikes seen on
+ * the TwelveData dashboard.
  */
-const CRON_CREDIT_SHARE = 580;
+const CRON_CREDIT_SHARE = 400;
 
 function bucketKey(): string {
   const bucket = Math.floor(Date.now() / 1000 / WINDOW_SECONDS);

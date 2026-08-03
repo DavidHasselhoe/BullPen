@@ -3,9 +3,12 @@ import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
 import { getTier, isAdmin } from '@/lib/billing/tier';
 import { checkAndInvalidateFundamentals } from '@/lib/cache/fundamentals-freshness';
+import { waitForCronCreditBudget } from '@/lib/twelvedata/credit-budget';
 
 const BATCH_SIZE = 5;
 const BATCH_DELAY_MS = 1000; // 1 second between batches → ~300 credits/min max, well under 610 limit
+/** 1 credit per company (the /fundamentals/last_changes check this route makes). */
+const CREDITS_PER_COMPANY = 1;
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -80,6 +83,12 @@ async function handler(
 
   for (let i = 0; i < tickers.length; i += BATCH_SIZE) {
     const batch = tickers.slice(i, i + BATCH_SIZE);
+
+    // Shares the same per-minute bucket as the screener-refresh and
+    // prefetch-market-data crons — this route used to pace itself in
+    // isolation, so a manual admin run landing in the same wall-clock minute
+    // as a cron batch could stack on top of it past the 610/min plan cap.
+    await waitForCronCreditBudget(batch.length * CREDITS_PER_COMPANY);
 
     await Promise.all(
       batch.map(async (ticker) => {

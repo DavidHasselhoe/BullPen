@@ -1,13 +1,24 @@
 name: Cron — Refresh Screener (Extended + Discovery)
 
 # Daily at 03:00 UTC. Complements the 22:00 "Refresh Screener Financial Data"
-# job, which covers the top ~600 active names (batches 0–60). This job:
-#   1. Refreshes the remaining mid/small-cap active universe (batches 61–115).
+# job, which covers roughly the top half of the active universe (batches
+# 0–121, ~610 names at the current 5-symbol batch size). This job:
+#   1. Refreshes the rest of the active universe, starting at batch 122.
+#      The upper bound (400) is a generous ceiling, not the real stop
+#      condition — the loop breaks as soon as the API reports `done: true`
+#      (batch index past the end of the active universe). A previous version
+#      hardcoded the ceiling to the universe size at the time (batch 115 at a
+#      10-symbol batch size, ~1160 tickers); the active universe silently
+#      grew past that seam (1219 tickers as of 2026-08) and the tail of the
+#      universe stopped getting refreshed with nothing announcing it. Letting
+#      `done` drive termination means this can't go stale again the same way
+#      — the 400 ceiling just needs to stay ahead of real universe growth.
 #   2. Runs a discovery sweep over the on-demand (tier-0) long tail so newly
 #      significant names get stats and are promoted to the active set when they
 #      clear the market-cap floor.
-# Each batch = 10 stocks × 50 credits, paced 65s apart to stay under the
-# TwelveData 610 credits/min limit.
+# Each batch = 5 stocks × up to 53 credits, paced 65s apart to stay under the
+# TwelveData 610 credits/min limit (halved from the original 10-stock batch —
+# see lib/twelvedata/credit-budget.ts for why).
 on:
   schedule:
     - cron: '0 3 * * *'
@@ -16,9 +27,9 @@ on:
 jobs:
   refresh-extended:
     runs-on: ubuntu-latest
-    timeout-minutes: 85
+    timeout-minutes: 180
     steps:
-      - name: Refresh remaining active universe (batches 61–115)
+      - name: Refresh remaining active universe (batch 122 onward, until done)
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
           APP_URL: ${{ vars.APP_URL || 'https://bullpen.no' }}
@@ -28,7 +39,7 @@ jobs:
             exit 1
           fi
           echo "Extended active refresh…"
-          for batch in $(seq 61 115); do
+          for batch in $(seq 122 400); do
             echo "→ Active batch $batch"
             RESPONSE=$(curl -fsS -X POST -H "Authorization: Bearer ${CRON_SECRET}" "${APP_URL}/api/screener/refresh?batch=${batch}") || {
               echo "Batch $batch failed (rate limit or network) — stopping active phase"
