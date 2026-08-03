@@ -13,10 +13,11 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { User, LogOut, Loader2, Shield, CreditCard, Sparkles } from 'lucide-react';
+import { User, LogOut, Loader2, Shield, CreditCard, Sparkles, MessageSquarePlus, Inbox } from 'lucide-react';
 import { ProfileModal } from '@/components/user/ProfileModal';
 import { ProfileAvatar } from '@/components/user/ProfileAvatar';
 import { ProBadge } from '@/components/billing/ProBadge';
+import { ReportFeedbackDialog } from '@/components/feedback/ReportFeedbackDialog';
 import { isAdmin, isPro, tierFromUser } from '@/lib/billing/tier';
 import { startPortal } from '@/lib/billing/checkout';
 import { cn } from '@/lib/utils';
@@ -34,6 +35,7 @@ export function UserMenu({ forceDark = false }: UserMenuProps = {}) {
   const { user, isLoading, isAuthenticated } = useAuth();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
 
   const handleSignOut = async () => {
@@ -187,9 +189,24 @@ export function UserMenu({ forceDark = false }: UserMenuProps = {}) {
               <Shield className="mr-2 h-4 w-4" />
               <span>AI Costs</span>
             </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => router.push('/admin/feedback')}
+              className="cursor-pointer transition-all hover:translate-x-1"
+            >
+              <Inbox className="mr-2 h-4 w-4" />
+              <span>Feedback</span>
+            </DropdownMenuItem>
           </>
         )}
 
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onClick={() => setFeedbackOpen(true)}
+          className="cursor-pointer transition-all hover:translate-x-1"
+        >
+          <MessageSquarePlus className="mr-2 h-4 w-4" />
+          <span>Report a bug or idea</span>
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={handleSignOut}
@@ -206,6 +223,7 @@ export function UserMenu({ forceDark = false }: UserMenuProps = {}) {
         </DropdownMenuItem>
       </DropdownMenuContent>
       <ProfileModal open={profileOpen} onOpenChange={setProfileOpen} />
+      <ReportFeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} />
     </DropdownMenu>
   );
 }
