@@ -2,16 +2,19 @@
 
 import { useQuery } from '@tanstack/react-query';
 import type { DailyPerformanceDay } from '@/lib/holdings/daily-performance';
+import type { MarketHoliday } from '@/lib/market/exchange-holidays';
 
 interface DailyPerformanceResponse {
   success: boolean;
   month?: string;
   days?: DailyPerformanceDay[];
+  holidays?: MarketHoliday[];
   error?: string;
 }
 
 export interface DailyPerformanceResult {
   days: DailyPerformanceDay[];
+  holidays: MarketHoliday[];
   isLoading: boolean;
   /** True when TwelveData refused the request — render a gated note, not an error. */
   isGated: boolean;
@@ -45,6 +48,7 @@ export function useDailyPerformance(month: string, enabled = true): DailyPerform
 
   return {
     days: query.data?.days ?? [],
+    holidays: query.data?.holidays ?? [],
     isLoading: query.isLoading,
     isGated: query.data?.success === false,
     isError: query.isError,

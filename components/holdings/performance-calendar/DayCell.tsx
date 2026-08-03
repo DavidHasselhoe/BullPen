@@ -1,5 +1,6 @@
 'use client';
 
+import { CalendarOff } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { fmtFullDate } from '@/lib/dates/calendar-format';
@@ -45,10 +46,15 @@ export function DayCell({ model, fxRate, currency, compact, tabIndex, onFocus }:
   // cell with nothing in it the loudest thing on the grid. The primary-coloured
   // day number is marker enough until there's a number to frame.
   if (model.state !== 'data' || !model.data) {
+    const isHoliday = model.state === 'holiday';
     return (
       <div
         data-cal-cell
         role="gridcell"
+        title={isHoliday ? model.holidayLabel! : undefined}
+        aria-label={
+          isHoliday ? `${fmtFullDate(model.date!)}. Market closed for ${model.holidayLabel}.` : undefined
+        }
         className={cn(
           'rounded-lg p-1 sm:p-2 flex flex-col',
           heightClass,
@@ -63,6 +69,17 @@ export function DayCell({ model, fxRate, currency, compact, tabIndex, onFocus }:
         >
           {model.dayOfMonth}
         </span>
+        {/* Names the closure instead of leaving a cell indistinguishable from
+            missing data — sourced from the same exchange_holidays table the
+            Market Hours widget reads, so the two never disagree. */}
+        {isHoliday && (
+          <span className="flex-1 flex flex-col items-center justify-center gap-0.5 min-w-0 text-muted-foreground/60">
+            <CalendarOff className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" aria-hidden="true" />
+            <span className="hidden sm:block text-xs leading-tight text-center truncate w-full">
+              {model.holidayLabel}
+            </span>
+          </span>
+        )}
       </div>
     );
   }

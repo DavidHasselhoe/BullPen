@@ -11,14 +11,20 @@ import {
   type CurrencyCode,
 } from '@/lib/currency/currency-conversion';
 import type { DailyPerformanceDay } from '@/lib/holdings/daily-performance';
+import type { MarketHoliday } from '@/lib/market/exchange-holidays';
 
 export type CellState =
   /** Padding for an adjacent month — renders as empty space. */
   | 'pad'
   /** In this month but hasn't happened yet. */
   | 'future'
-  /** In the past, but nothing the user held traded (weekend, holiday, or the
-   *  position didn't exist yet). Distinct from a 0.00% day. */
+  /** In the past, nothing the user held traded, and the exchange_holidays
+   *  table confirms why: the exchange was closed. Distinct from generic
+   *  `closed` so the UI can name the holiday instead of leaving a cell that
+   *  looks like missing data. */
+  | 'holiday'
+  /** In the past, but nothing the user held traded (weekend, or the position
+   *  didn't exist yet). Distinct from a 0.00% day. */
   | 'closed'
   | 'data';
 
@@ -30,6 +36,8 @@ export interface DayCellModel {
   state: CellState;
   isToday: boolean;
   data: DailyPerformanceDay | null;
+  /** Holiday name, set only when state === 'holiday'. */
+  holidayLabel: string | null;
 }
 
 /**
@@ -40,24 +48,41 @@ export interface DayCellModel {
  */
 export function buildMonthGrid(
   monthKey: string,
-  days: DailyPerformanceDay[]
+  days: DailyPerformanceDay[],
+  holidays: MarketHoliday[] = []
 ): DayCellModel[][] {
   const byDate = new Map(days.map((d) => [d.date, d]));
+  const holidayByDate = new Map(holidays.map((h) => [h.date, h.label]));
   const today = todayET();
 
   return monthWeeks(monthKey).map((week) =>
     week.map((date): DayCellModel => {
       if (date === null) {
-        return { date: null, dayOfMonth: null, state: 'pad', isToday: false, data: null };
+        return {
+          date: null,
+          dayOfMonth: null,
+          state: 'pad',
+          isToday: false,
+          data: null,
+          holidayLabel: null,
+        };
       }
       const data = byDate.get(date) ?? null;
-      const state: CellState = data ? 'data' : date > today ? 'future' : 'closed';
+      const holidayLabel = data ? null : (holidayByDate.get(date) ?? null);
+      const state: CellState = data
+        ? 'data'
+        : date > today
+          ? 'future'
+          : holidayLabel
+            ? 'holiday'
+            : 'closed';
       return {
         date,
         dayOfMonth: Number(date.slice(8, 10)),
         state,
         isToday: date === today,
         data,
+        holidayLabel,
       };
     })
   );
@@ -107,6 +132,16 @@ const BANDS = [0.25, 1, 2.5, 5] as const;
 const GAIN_TINTS = ['bg-gain/10', 'bg-gain/20', 'bg-gain/30', 'bg-gain/45'] as const;
 const LOSS_TINTS = ['bg-loss/10', 'bg-loss/20', 'bg-loss/30', 'bg-loss/45'] as const;
 
+/**
+ * Solid-ish fills for the compact heat-strip preview (PerformanceHeatStrip).
+ * The full grid's cells carry a numeral on top, so `tintClass`'s light tints
+ * keep that text legible; a strip square has no text at all, so a light tint
+ * would just read as invisible at ~14px — these lean much more saturated,
+ * same `--gain`/`--loss` tokens, just further up the opacity ramp.
+ */
+const STRIP_GAIN_FILLS = ['bg-gain/40', 'bg-gain/60', 'bg-gain/80', 'bg-gain'] as const;
+const STRIP_LOSS_FILLS = ['bg-loss/40', 'bg-loss/60', 'bg-loss/80', 'bg-loss'] as const;
+
 function bandFor(pct: number): number {
   const abs = Math.abs(pct);
   if (abs < BANDS[0]) return -1; // flat
@@ -127,6 +162,13 @@ export function tintClass(pct: number): string {
   const band = bandFor(pct);
   if (band < 0) return 'bg-muted/30';
   return pct >= 0 ? GAIN_TINTS[band] : LOSS_TINTS[band];
+}
+
+/** Background class for a heat-strip square — see STRIP_*_FILLS above. */
+export function stripFillClass(pct: number): string {
+  const band = bandFor(pct);
+  if (band < 0) return 'bg-muted-foreground/20';
+  return pct >= 0 ? STRIP_GAIN_FILLS[band] : STRIP_LOSS_FILLS[band];
 }
 
 /**

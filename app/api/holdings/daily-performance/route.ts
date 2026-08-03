@@ -3,6 +3,8 @@ import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { batchFetch, TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
 import { rget, rset } from '@/lib/cache/redis-cache';
 import { createServerClient } from '@/lib/supabase/client';
+import { getExchangesForTickers } from '@/lib/market/ticker-exchange-map';
+import { getClosedHolidays } from '@/lib/market/exchange-holidays';
 import {
   computeDailyPerformance,
   type HoldingInput,
@@ -125,6 +127,12 @@ async function handler(
   const symbolList = [...symbols];
   const ttl = month === currentMonthKey() ? TTL_CURRENT_MONTH : TTL_PAST_MONTH;
 
+  // Same exchange_holidays table and `type === 'closed'` rule the Market Hours
+  // widget uses (see lib/market/market-status.ts), so a blank calendar cell and
+  // "market closed" always agree. Fired alongside the price fetch below rather
+  // than awaited here, since it's independent of it.
+  const holidaysPromise = getClosedHolidays(getExchangesForTickers(symbolList), first, last);
+
   const cacheHits = await Promise.all(
     symbolList.map(async (symbol) => ({
       symbol,
@@ -193,10 +201,11 @@ async function handler(
     from: first,
     to: windowEnd,
   });
+  const holidays = await holidaysPromise;
 
   return addSecurityHeaders(
     NextResponse.json(
-      { success: true, month, days },
+      { success: true, month, days, holidays },
       { headers: { 'Cache-Control': 'private, max-age=60' } }
     )
   );

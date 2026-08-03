@@ -45,9 +45,9 @@ export function PerformanceCalendar({
   const thisMonth = currentMonthKey();
   const [month, setMonth] = useState(thisMonth);
 
-  const { days, isLoading, isGated } = useDailyPerformance(month);
+  const { days, holidays, isLoading, isGated } = useDailyPerformance(month);
 
-  const weeks = useMemo(() => buildMonthGrid(month, days), [month, days]);
+  const weeks = useMemo(() => buildMonthGrid(month, days, holidays), [month, days, holidays]);
   const total = useMemo(() => summarize(days), [days]);
 
   const atCurrentMonth = month === thisMonth;
