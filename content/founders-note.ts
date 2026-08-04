@@ -35,25 +35,31 @@ export interface FoundersNote {
 }
 
 export const FOUNDERS_NOTE: FoundersNote = {
-  published: false,
+  published: true,
 
   heading: 'A note from the founder',
 
+  // David's own words. Edits made when this was pasted in were limited to
+  // capitalising "i", splitting one block into paragraphs, curly quotes and
+  // apostrophes, and one subject added for agreement ("and I have kept
+  // iterating"). Phrasing, rhythm and word choice are untouched, including the
+  // casual register ("just cause", "you guys") — that is the point of the
+  // section. Anyone editing later should hold the same line.
   paragraphs: [
-    '[Introduce yourself. Who you are, and what you were doing before BullPen.]',
+    'Hello! My name is David and I am the founder and developer working on BullPen.',
 
-    '[The concept. What BullPen is in your own words, and what it is meant to do for the person reading this.]',
+    'When I first started investing, I didn’t really have a clue what I was doing. I bought my first shares in a company I knew nothing about, just cause it “looked good”, but there was no conviction or reasoning whatsoever. I lost a lot of money from this and felt like investing wasn’t for me.',
 
-    '[Why you started it. The specific frustration, gap, or moment that made building this feel worth doing.]',
+    'I still kept going and after investing for many years I learned a lot on my own by using several methods; videos, courses, forums and asking tons of questions.',
 
-    '[Your experience. What you bring to it, and just as usefully, what you were still learning when you began.]',
+    'So now I am creating the very platform I wish I had when I was just getting into investing, a platform where I can not only learn, but research and track companies. Combining my 3 years as a systems developer, years of investing and knowledge into one single platform for you guys to utilize when picking your next stock.',
 
-    '[Where it goes. What you want BullPen to be for people, and what you are working towards next.]',
+    'The platform is fairly new, started in November 2025 with the first version, and I have kept iterating to improve it since. The goal is to make a genuinely useful platform where the average person can learn how to invest, because it doesn’t have to be that hard!',
   ],
 
   signature: {
-    name: '[Your name]',
-    role: '[Founder, BullPen]',
+    name: 'David',
+    role: 'Founder and developer, BullPen',
   },
 
   portrait: null,
