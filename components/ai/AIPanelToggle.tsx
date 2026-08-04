@@ -42,7 +42,7 @@ export function AIPanelToggle() {
   return (
     <button
       onClick={toggle}
-      aria-label="Ask Bull — open AI Assistant"
+      aria-label="Ask Bull: open AI Assistant"
       title="Ask Bull"
       className={cn(
         'fixed right-5 z-50 group',

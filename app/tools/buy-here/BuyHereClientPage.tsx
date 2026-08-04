@@ -553,7 +553,7 @@ export default function BuyHereClientPage() {
                         transition={{ delay: 0.05 }}
                         className="rounded-xl border border-border/50 bg-muted/30 p-5"
                       >
-                        <p className="text-sm font-medium text-muted-foreground">SPY — S&P 500</p>
+                        <p className="text-sm font-medium text-muted-foreground">SPY: S&P 500</p>
                         <p className="mt-2 text-2xl font-bold text-foreground">
                           <AnimatedCounter value={result.spy.valueNow} format={fmtCurrency} />
                         </p>

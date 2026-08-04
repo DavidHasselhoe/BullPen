@@ -26,7 +26,7 @@ export default function PortfolioBuilderPage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground">Portfolio Builder</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">Type an investment thesis — get a high-conviction thematic portfolio.</p>
+            <p className="text-sm text-muted-foreground mt-0.5">Type an investment thesis. Get a high-conviction thematic portfolio.</p>
           </div>
         </div>
       </div>

@@ -118,7 +118,7 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
       if (live) return fmtPrice(live.price);
       if (row.last_price != null) {
         return (
-          <span className="text-muted-foreground/85" title="Last close — live price unavailable until the market reopens">
+          <span className="text-muted-foreground/85" title="Last close. Live price unavailable until the market reopens">
             {fmtPrice(row.last_price)}
           </span>
         );

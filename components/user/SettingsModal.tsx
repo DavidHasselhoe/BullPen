@@ -994,7 +994,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                       />
                       <ToggleSetting
                         label="Show portfolio"
-                        description="Show your portfolio stocks (ticker and company name only — no quantities or prices) on your public profile."
+                        description="Show your portfolio stocks (ticker and company name only, no quantities or prices) on your public profile."
                         checked={holdingsPublic}
                         onCheckedChange={setHoldingsPublic}
                         disabled={!profilePublic}

@@ -169,7 +169,7 @@ function UpgradeContent() {
               </p>
             )}
             {status === 'done' && (
-              <p className="mt-2 text-center text-xs text-muted-foreground">Self-serve checkout opens soon — we’ll email you.</p>
+              <p className="mt-2 text-center text-xs text-muted-foreground">Self-serve checkout opens soon. We’ll email you.</p>
             )}
             {status === 'error' && (
               <p className="mt-2 text-center text-xs text-red-400">Something went wrong. Please try again.</p>

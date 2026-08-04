@@ -496,7 +496,7 @@ export function Features() {
             <FeatureCard accent>
               <FeatureKicker icon="bolt" label="Daily Brief" />
               <FeatureTitle>Your market summary, every morning at 6:30.</FeatureTitle>
-              <FeatureDesc>Personalized to what you hold and watch — written by Claude.</FeatureDesc>
+              <FeatureDesc>Personalized to what you hold and watch, written by Claude.</FeatureDesc>
               <BriefVisual />
             </FeatureCard>
           </Reveal>

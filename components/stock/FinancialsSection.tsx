@@ -649,7 +649,7 @@ export function FinancialsSection({ ticker }: { ticker: string }) {
                   if (!latest) return <div className="py-8 text-center text-sm text-muted-foreground">No data available</div>;
                   return (
                     <KeyTakeawaysCard
-                      description="Cash flow shows the actual money moving in and out of the business — harder to manipulate than reported profit."
+                      description="Cash flow shows the actual money moving in and out of the business, harder to manipulate than reported profit."
                       rows={[
                         { term: 'Operating Cash Flow', value: fmtNum(latest.operating_cash_flow), positive: (latest.operating_cash_flow ?? 0) > 0 },
                         { term: 'Capital Expenditures', value: fmtNum(latest.capital_expenditures), positive: null },
@@ -689,7 +689,7 @@ export function FinancialsSection({ ticker }: { ticker: string }) {
         {!isLoading && !data?.success && data?.error === 'plan_restricted' && (
           <div className="flex flex-col items-center justify-center py-12 gap-1.5 text-center">
             <p className="text-sm text-muted-foreground">Financial statements require an Enterprise plan.</p>
-            <p className="text-xs text-muted-foreground/80">Dividends may still be available — try the Dividends tab.</p>
+            <p className="text-xs text-muted-foreground/80">Dividends may still be available. Try the Dividends tab.</p>
           </div>
         )}
 

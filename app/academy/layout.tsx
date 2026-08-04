@@ -19,7 +19,7 @@ export default function AcademyLayout({ children }: { children: React.ReactNode 
       <AuthGate
         icon={<GraduationCap className="h-7 w-7" />}
         title="Sign in to use Academy"
-        description="Bite-sized lessons that teach you how investing actually works — earn XP and build a streak as you go."
+        description="Bite-sized lessons that teach you how investing actually works. Earn XP and build a streak as you go."
         signInHref="/login?redirectTo=/academy"
       />
     );

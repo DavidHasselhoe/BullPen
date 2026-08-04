@@ -155,7 +155,7 @@ export function ChartToolbar({
           type="button"
           onClick={() => onToolChange(tool === 'measure' ? 'none' : 'measure')}
           aria-pressed={tool === 'measure'}
-          title="Measure tool — drag between two points"
+          title="Measure tool: drag between two points"
           className={cn(
             'flex h-8 w-8 items-center justify-center rounded-md border border-border transition-colors',
             tool === 'measure' ? 'bg-accent text-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground'
@@ -167,7 +167,7 @@ export function ChartToolbar({
           type="button"
           onClick={() => onToolChange(tool === 'alert' ? 'none' : 'alert')}
           aria-pressed={tool === 'alert'}
-          title="Set a price alert — click a level on the chart"
+          title="Set a price alert: click a level on the chart"
           className={cn(
             'flex h-8 w-8 items-center justify-center rounded-md border border-border transition-colors',
             tool === 'alert' ? 'bg-accent text-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground'

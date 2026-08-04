@@ -34,7 +34,7 @@ export function ThesisInput({ onSubmit, disabled }: Props) {
         <h1 className="text-3xl font-bold tracking-tight">Portfolio Builder</h1>
         <p className="text-muted-foreground max-w-md mx-auto text-sm leading-relaxed">
           Describe an investment theme in plain language. Claude reasons through subsectors,
-          identifies high-conviction stocks, and assigns allocations — like an institutional analyst would.
+          identifies high-conviction stocks, and assigns allocations, like an institutional analyst would.
         </p>
       </div>
 

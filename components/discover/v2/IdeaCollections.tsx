@@ -48,14 +48,14 @@ export function IdeaCollections({ collections }: { collections: DiscoverFeed['co
 
         <CollectionGrid
           title="Pushing 52-week highs"
-          description="Trading near the top of their yearly range — momentum worth understanding before you chase it."
+          description="Trading near the top of their yearly range, momentum worth understanding before you chase it."
           items={near52High}
           showReason
         />
 
         <CollectionGrid
           title="Near 52-week lows"
-          description="At the bottom of their yearly range. Sometimes that's a bargain and sometimes it's a warning — the point is to go and find out which."
+          description="At the bottom of their yearly range. Sometimes that's a bargain and sometimes it's a warning. The point is to go and find out which."
           items={near52Low}
           showReason
         />

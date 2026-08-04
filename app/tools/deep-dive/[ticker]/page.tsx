@@ -281,7 +281,7 @@ function errorBody(code: ErrorCode, message: string): string {
     case 'rate_limited':     return 'You can run up to 3 deep dives per minute. Wait a moment and try again.';
     case 'payment_required': return 'This AI feature is temporarily unavailable. Please try again shortly.';
     case 'invalid_key':      return 'This AI feature is temporarily unavailable. Please try again shortly.';
-    case 'parse_failed':     return 'The model returned an unexpected response. This is usually transient — try again.';
+    case 'parse_failed':     return 'The model returned an unexpected response. This is usually transient. Try again.';
     default:                 return message || 'An unexpected error occurred. Please try again.';
   }
 }

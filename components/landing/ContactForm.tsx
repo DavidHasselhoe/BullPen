@@ -77,7 +77,7 @@ export function ContactForm() {
           <Icon name="check" size={22} stroke={2.2} />
         </div>
         <p style={{ fontSize: 16, fontWeight: 600, marginBottom: 4 }}>Message sent</p>
-        <p style={{ color: 'var(--fg-muted)', fontSize: 14 }}>Thanks for reaching out — we&apos;ll get back to you soon.</p>
+        <p style={{ color: 'var(--fg-muted)', fontSize: 14 }}>Thanks for reaching out. We&apos;ll get back to you soon.</p>
       </div>
     );
   }

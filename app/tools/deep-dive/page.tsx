@@ -74,7 +74,7 @@ export default function DeepDiveLanding() {
             </div>
             <div>
               <h1 className="text-2xl font-bold tracking-tight">AI Deep Dive</h1>
-              <p className="text-sm text-muted-foreground mt-0.5">Analyst-grade reports — results, guidance, valuation, bull vs bear, risks.</p>
+              <p className="text-sm text-muted-foreground mt-0.5">Analyst-grade reports: results, guidance, valuation, bull vs bear, risks.</p>
             </div>
           </div>
         </div>
@@ -92,7 +92,7 @@ export default function DeepDiveLanding() {
                   type="text"
                   value={ticker}
                   onChange={(e) => setTicker(e.target.value.toUpperCase())}
-                  placeholder="Enter a ticker — e.g. NVDA"
+                  placeholder="Enter a ticker, e.g. NVDA"
                   aria-label="Ticker symbol"
                   className="w-full rounded-lg border border-border bg-background pl-9 pr-3 py-2.5 text-sm font-medium uppercase tracking-wide placeholder:normal-case placeholder:tracking-normal placeholder:text-muted-foreground/80 focus:outline-none focus:ring-2 focus:ring-ring transition-shadow"
                 />

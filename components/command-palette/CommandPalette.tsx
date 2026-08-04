@@ -426,7 +426,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                         Searching…
                       </div>
                     ) : searchError ? (
-                      <div className="py-12 text-center text-sm text-muted-foreground">Search failed — try again.</div>
+                      <div className="py-12 text-center text-sm text-muted-foreground">Search failed. Try again.</div>
                     ) : (
                       <div className="px-6 py-12 text-center text-sm text-muted-foreground/85">
                         No companies found. Try <span className="font-medium text-foreground">Ask BullPen AI</span> above for natural-language queries.

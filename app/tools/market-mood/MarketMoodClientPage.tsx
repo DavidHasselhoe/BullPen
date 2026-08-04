@@ -238,7 +238,7 @@ export default function MarketMoodClientPage() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold tracking-tight text-foreground">Market Mood</h1>
-                <p className="text-sm text-muted-foreground mt-0.5">Fear &amp; Greed Index — composite of 4 market signals</p>
+                <p className="text-sm text-muted-foreground mt-0.5">Fear &amp; Greed Index: composite of 4 market signals</p>
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">

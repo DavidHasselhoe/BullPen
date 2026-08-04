@@ -154,7 +154,7 @@ export default function CourseOverviewPage() {
         <ProGate
           feature="academy_pro"
           title="Unlock this course with Pro"
-          description="Intermediate and advanced Academy courses are a Pro benefit — upgrade to start learning."
+          description="Intermediate and advanced Academy courses are a Pro benefit. Upgrade to start learning."
         />
       ) : (
         nextLesson &&
