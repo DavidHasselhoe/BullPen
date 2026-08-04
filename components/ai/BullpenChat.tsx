@@ -271,6 +271,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
         ...(user?.risk_profile ? { riskProfile: user.risk_profile } : {}),
         ...((user?.settings as Record<string, unknown>)?.investment_horizon ? { investmentHorizon: (user.settings as Record<string, unknown>).investment_horizon } : {}),
         ...((user?.settings as Record<string, unknown>)?.response_style ? { responseStyle: (user.settings as Record<string, unknown>).response_style } : {}),
+        ...((user?.settings as Record<string, unknown>)?.allow_holdings_context === true ? { allowHoldingsContext: true } : {}),
       },
     }),
     onError: (err) => {

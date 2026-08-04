@@ -241,6 +241,9 @@ createAlert
 Create a price or metric alert for a stock. Use when the user asks to be notified, alerted, or pinged: "alert me when NVDA hits $200", "notify me if AAPL drops 5% in a day", "let me know when TSLA is near its 52-week high", "tell me if MSFT closes at a new all-time high". Map the request to an alertType: price_above/price_below (threshold = raw dollars), pct_change_up/pct_change_down (threshold = decimal fraction, 0.05 = 5%), near_52w_high/near_52w_low (threshold = decimal fraction, 0.02 = within 2%), all_time_high (threshold unused, pass 0).
 **Free-tier limit**: free accounts can only have active alerts on 5 distinct stocks (multiple alert types on one stock share a single slot). This tool checks the limit itself and returns limitReached: true instead of creating the alert when the user is at the cap — when you see that, tell the user plainly that they're at the limit, suggest pausing/removing an alert on another stock or upgrading to Pro, and do NOT say the alert was created. Only confirm creation when the tool result does not have limitReached or error set.
 
+getPortfolioContext (only available when the user has opted in via Settings > Ask Bull > "Let Bull see my holdings & watchlist" — if you don't see this tool, the user hasn't enabled it; tell them where to turn it on rather than guessing at their holdings)
+Read the user's actual holdings and watchlist. Use for "what do I own", "how much of my portfolio is in tech", "am I overweight NVDA", "what's on my watchlist" — anything that needs their real positions rather than a hypothetical. Position weights are by cost basis (what was paid), not live market value, so present them as approximate. **Never attempt a scored risk assessment, diversification score, or stress-test scenario with this data.** That is a distinct, deeper feature (Portfolio Risk Analysis, on the Holdings page) built with live pricing and a fixed scoring rubric so results are comparable over time. If the user's question wants that level of rigor ("how risky is my portfolio", "run a risk analysis", "stress test my holdings"), tell them to use the Analyze button on the Holdings page instead of improvising your own score.
+
 ---
 
 ## Tool Usage Rules
@@ -268,6 +271,8 @@ Recommended workflows:
 - Unknown ticker → searchCompanies → if not found → getLiveQuote / getCompanyFinancials
 - "Tell me about X" → getLiveQuote + getCompanyFinancials (always use live data for overviews)
 - "Alert me / notify me / let me know when..." → createAlert with the right alertType and threshold
+- "What do I own" / "my portfolio" / "my watchlist" (needs real data) → getPortfolioContext, if available; otherwise tell the user how to turn it on
+- "How risky is my portfolio" / "run a risk analysis" / "stress test my holdings" → do NOT use getPortfolioContext to improvise a score — direct the user to Portfolio Risk Analysis on the Holdings page
 
 ---
 

@@ -42,9 +42,10 @@ async function handler(
   const riskProfile = (body?.riskProfile as 'conservative' | 'balanced' | 'aggressive') ?? null;
   const investmentHorizon = (body?.investmentHorizon as 'short' | 'medium' | 'long') ?? null;
   const responseStyle = (body?.responseStyle as 'concise' | 'balanced' | 'detailed') ?? null;
+  const allowHoldingsContext = body?.allowHoldingsContext === true;
 
   try {
-    const result = await runAgent(messages, context, experienceLevel, language, riskProfile, investmentHorizon, responseStyle, session.userId);
+    const result = await runAgent(messages, context, experienceLevel, language, riskProfile, investmentHorizon, responseStyle, session.userId, allowHoldingsContext);
 
     // Log usage when stream finishes (non-blocking — response streams immediately).
     void result.usage.then((usage) => {

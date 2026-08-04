@@ -182,7 +182,7 @@ BullpenChat.tsx (UI)
         systemPrompt = experiencePrefix + contextPrefix + SYSTEM_PROMPT
 ```
 
-- `lib/ai/systemPrompt.ts` — 280+ line prompt; documents all 15 tools with credit costs and routing rules
+- `lib/ai/systemPrompt.ts` — 280+ line prompt; documents all 16 tools with credit costs and routing rules. `getPortfolioContext` (read-only holdings/watchlist access) is opt-in — only registered when the user enables it in Settings > Ask Bull, same conditional pattern as `createAlert` needing `userId`
 - `lib/ai/tools.ts` — Vercel AI SDK tools that call Supabase or TwelveData
 - Experience level (`beginner | intermediate | advanced`) is sent from the client via `body.experienceLevel` and prepended as a system instruction
 - Page context (`{tickers, label}`) is injected via `body.context` so the AI knows which stock the user is viewing

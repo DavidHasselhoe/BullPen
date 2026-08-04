@@ -10,7 +10,7 @@ import { streamText, convertToModelMessages, stepCountIs } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import type { UIMessage } from 'ai';
 import { SYSTEM_PROMPT } from './systemPrompt';
-import { BULLPEN_TOOLS, createAlertTool } from './tools';
+import { BULLPEN_TOOLS, createAlertTool, getPortfolioContextTool } from './tools';
 import { languageName } from '@/lib/i18n/language-names';
 
 interface AIContext {
@@ -27,6 +27,7 @@ export async function runAgent(
   investmentHorizon?: 'short' | 'medium' | 'long' | null,
   responseStyle?: 'concise' | 'balanced' | 'detailed' | null,
   userId?: string | null,
+  allowHoldingsContext?: boolean | null,
 ) {
   const modelMessages = await convertToModelMessages(messages);
 
@@ -72,9 +73,13 @@ export async function runAgent(
   // createAlert needs userId to check the free-tier alert limit server-side —
   // it's built per-request rather than living in the static BULLPEN_TOOLS map.
   // Omitted entirely when userId is unavailable so the model never sees it.
-  const tools = userId
-    ? { ...BULLPEN_TOOLS, createAlert: createAlertTool(userId) }
-    : BULLPEN_TOOLS;
+  // getPortfolioContext is opt-in (Settings > Ask Bull) — omitted unless the
+  // user has explicitly allowed Bull to read their holdings/watchlist.
+  const tools = {
+    ...BULLPEN_TOOLS,
+    ...(userId ? { createAlert: createAlertTool(userId) } : {}),
+    ...(userId && allowHoldingsContext ? { getPortfolioContext: getPortfolioContextTool(userId) } : {}),
+  };
 
   const result = streamText({
     model: openai('gpt-4o'),

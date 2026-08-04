@@ -196,6 +196,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
   const [riskProfile, setRiskProfile] = useState<'conservative' | 'balanced' | 'aggressive' | null>(null);
   const [investmentHorizon, setInvestmentHorizon] = useState<'short' | 'medium' | 'long' | null>(null);
   const [responseStyle, setResponseStyle] = useState<'concise' | 'balanced' | 'detailed' | null>(null);
+  const [allowHoldingsContext, setAllowHoldingsContext] = useState(false);
   const [notifications, setNotifications] = useState({
     holdings_earnings: true,
     upcoming_earnings: true,
@@ -262,6 +263,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
       setRiskProfile(user.risk_profile ?? null);
       setInvestmentHorizon((settings.investment_horizon as 'short' | 'medium' | 'long') ?? null);
       setResponseStyle((settings.response_style as 'concise' | 'balanced' | 'detailed') ?? null);
+      setAllowHoldingsContext(settings.allow_holdings_context === true);
       setError(null);
 
       // Allow autosave after a short delay so the above setters don't trigger a spurious save
@@ -299,6 +301,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
         holdings_public: holdingsPublic,
         investment_horizon: investmentHorizon,
         response_style: responseStyle,
+        allow_holdings_context: allowHoldingsContext,
         homepage_widget_order: widgetOrder,
         homepage_widget_hidden: widgetHidden,
         market_context_hidden: marketContextHidden,
@@ -348,7 +351,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
     }, 500);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [defaultCurrency, theme, language, defaultHomepage, showWelcomeText, roundNumbers, notifications, profilePublic, holdingsPublic, riskProfile, investmentHorizon, responseStyle, widgetOrder, widgetHidden, marketContextHidden]);
+  }, [defaultCurrency, theme, language, defaultHomepage, showWelcomeText, roundNumbers, notifications, profilePublic, holdingsPublic, riskProfile, investmentHorizon, responseStyle, allowHoldingsContext, widgetOrder, widgetHidden, marketContextHidden]);
 
   const handleDeleteAccount = async () => {
     if (!user) return;
@@ -459,7 +462,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
         { id: 'preferences', label: t('settings.preferences'), icon: Globe, description: 'Region, currency, language, theme, and your default homepage.' },
         { id: 'notifications', label: t('settings.notifications'), icon: Bell, description: 'Choose which emails and alerts BullPen sends you.' },
         { id: 'customize', label: t('settings.customize'), icon: Settings2, description: 'Tailor your home layout and chart defaults.' },
-        { id: 'ai', label: 'AI', icon: Bot, description: 'How BullPen AI communicates and frames its analysis.' },
+        { id: 'ai', label: 'Ask Bull', icon: Bot, description: 'How BullPen AI communicates and frames its analysis.' },
       ],
     },
     {
@@ -1189,6 +1192,15 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                     ))}
                   </div>
                 </div>
+
+                <Separator />
+
+                <ToggleSetting
+                  label="Let Bull see my holdings & watchlist"
+                  description="Bull can reference what you actually own and watch when you ask about your own portfolio. Off by default; this is separate from the Portfolio Risk Analysis feature on the Holdings page, which stays a deeper, scored report either way."
+                  checked={allowHoldingsContext}
+                  onCheckedChange={setAllowHoldingsContext}
+                />
               </div>
             )}
 

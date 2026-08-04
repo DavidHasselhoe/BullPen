@@ -29,6 +29,7 @@ import { getHealthScoreForSymbol } from '@/lib/finance/get-health-score';
 import { getTier, isPro } from '@/lib/billing/tier';
 import { AlertTypeSchema, alertTypeLabel, describeAlert, FREE_ACTIVE_ALERT_LIMIT, type AlertType } from '@/types/alerts';
 import { DIVIDEND_QUICK_PICKS } from '@/lib/finance/dividend-quick-picks';
+import { getHoldings } from '@/lib/holdings/holdings-db';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -872,6 +873,83 @@ export function createAlertTool(userId: string) {
           threshold,
         }),
         creating: `${alertTypeLabel(alertType)} alert for ${companyName} (${symbol}) — ${describeAlert({ alertType, threshold })}`,
+      };
+    },
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tool: Portfolio Context (read-only — only registered when the user has
+// opted in via Settings > Ask Bull > "Let Bull see my holdings & watchlist")
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Only built and registered when the user opts in (see runAgent in agent.ts).
+ * Deliberately lightweight: cost-basis position sizing from Supabase only, no
+ * TwelveData calls, no scored risk output. The dedicated Portfolio Risk
+ * Analysis feature on the Holdings page (Claude Sonnet, live market values,
+ * a weighted 6-dimension rubric, saved history, Pro-gated) is the deep,
+ * comparable-over-time report — this tool exists so Bull can answer quick
+ * conversational questions about what the user actually owns, not to
+ * reproduce that report. The tool description tells the model to defer to
+ * Risk Analysis for anything wanting that depth.
+ */
+export function getPortfolioContextTool(userId: string) {
+  return tool({
+    description:
+      'Read the user\'s actual holdings and watchlist. Use when the user asks about their own portfolio in a way ' +
+      'that needs the real data — "what do I own", "how much of my portfolio is in tech", "am I overweight NVDA", ' +
+      '"what\'s on my watchlist". Position weights returned here are by COST BASIS (what was paid), not live market ' +
+      'value, so treat them as a rough guide. If the user wants a precise, scored risk assessment (diversification ' +
+      'score, stress-test scenarios, live-priced weights), do NOT attempt that yourself — tell them to run Portfolio ' +
+      'Risk Analysis on the Holdings page instead; that feature is built for exactly that and keeps a history to ' +
+      'compare over time.',
+    inputSchema: jsonSchema<Record<string, never>>({
+      type: 'object',
+      properties: {},
+      additionalProperties: false,
+    }),
+    execute: async () => {
+      const [holdingsResult, watchlistRes] = await Promise.all([
+        getHoldings(userId),
+        supabase()
+          .from('user_watchlist')
+          .select('symbol, company_name')
+          .eq('user_id', userId)
+          .order('added_at', { ascending: false }),
+      ]);
+
+      if (!holdingsResult.success) {
+        return { error: 'Could not load holdings.' };
+      }
+
+      const holdings = holdingsResult.holdings ?? [];
+      const totalCostBasis = holdings.reduce(
+        (sum, h) => sum + (h.quantity ?? 0) * (h.avg_price ?? 0),
+        0
+      );
+
+      const positions = holdings.map((h) => {
+        const costBasis = (h.quantity ?? 0) * (h.avg_price ?? 0);
+        return {
+          ticker: h.symbol,
+          companyName: h.company_name,
+          quantity: h.quantity,
+          avgPrice: h.avg_price,
+          assetType: h.asset_type,
+          approxWeightPct:
+            totalCostBasis > 0 ? Number(((costBasis / totalCostBasis) * 100).toFixed(1)) : null,
+        };
+      });
+
+      return {
+        holdingsCount: positions.length,
+        positions,
+        weightBasis: 'cost' as const,
+        watchlist: ((watchlistRes.data ?? []) as Array<{ symbol: string; company_name: string }>).map((w) => ({
+          ticker: w.symbol,
+          companyName: w.company_name,
+        })),
       };
     },
   });
