@@ -8,8 +8,21 @@ name: Cron — Prefetch Market Data
 # ~107 batches × 75s ≈ 2h15m total — to keep this cron's *sustained* usage
 # around ~280 credits/min, well under TwelveData's 610/min plan cap, so live
 # user traffic always has headroom during the run instead of getting starved
-# by a burst. Financials are cheap (~1 credit/statement) and safe to run as a
-# single pass.
+# by a burst.
+#
+# Financials (income/balance/cash flow) are NOT cheap despite the endpoint
+# names suggesting otherwise: confirmed live against TwelveData's /api_usage
+# on 2026-08-04 that each of the three costs ~101 credits regardless of
+# outputsize/period (~303/symbol total), not the ~1 credit CLAUDE.md's cost
+# table assumes. This used to run as a single unguarded pass over up to 75
+# symbols ("~225 credits worst case" per the old comment) which in reality
+# could fire ~22,725 credits with zero pacing — the dominant contributor to
+# the multi-thousand-credit-per-minute spikes seen on the TwelveData
+# dashboard. Now paced one symbol (~303 credits) every 65s, same as stats.
+# 150 batches is a generous daily ceiling (steady-state need is ~75-80/day
+# once the one-time cold backfill of the full ~530-symbol universe finishes
+# rolling forward over a few days); the loop breaks on `done: true` well
+# before that whenever there's nothing left to refresh.
 on:
   schedule:
     - cron: '0 5 * * *'
@@ -18,7 +31,7 @@ on:
 jobs:
   prefetch:
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 340
     steps:
       - name: Refresh stats + earnings (paced batches)
         env:
@@ -45,7 +58,7 @@ jobs:
             sleep 75
           done
 
-      - name: Refresh financials (single lightweight pass)
+      - name: Refresh financials (paced batches, one symbol each)
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
           APP_URL: ${{ vars.APP_URL || 'https://bullpen.no' }}
@@ -54,6 +67,18 @@ jobs:
             echo "::error::CRON_SECRET secret is not configured in repo settings"
             exit 1
           fi
-          curl -fsS -X GET \
-            -H "Authorization: Bearer ${CRON_SECRET}" \
-            "${APP_URL}/api/cron/prefetch-market-data?phase=financials"
+          echo "Starting financials prefetch…"
+          for batch in $(seq 0 149); do
+            echo "→ Financials batch $batch"
+            RESPONSE=$(curl -fsS -X GET -H "Authorization: Bearer ${CRON_SECRET}" "${APP_URL}/api/cron/prefetch-market-data?phase=financials&batch=${batch}") || {
+              echo "Batch $batch failed (rate limit or network error) — stopping"
+              break
+            }
+            echo "$RESPONSE"
+            DONE=$(echo "$RESPONSE" | jq -r '.done // false')
+            if [ "$DONE" = "true" ]; then
+              echo "All financials batches complete."
+              break
+            fi
+            sleep 65
+          done

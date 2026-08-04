@@ -1,7 +1,7 @@
 /**
  * Market Data Prefetch Cron
  * GET /api/cron/prefetch-market-data?phase=stats&batch=N
- * GET /api/cron/prefetch-market-data?phase=financials
+ * GET /api/cron/prefetch-market-data?phase=financials&batch=N
  *
  * Seeds market_data_cache (+ screener_stats) for all SIGNIFICANT_TICKERS
  * (~530 S&P 500 + NASDAQ 100 stocks) so watchlist enrichment, health scores,
@@ -21,10 +21,20 @@
  *   Freshness (skip if refreshed in the last 12h) is checked per-batch on
  *   just that batch's symbols, so re-running the workflow mid-day is cheap.
  *
- * phase=financials — up to 75 symbols needing income/balance/cashflow
- *   (1 credit each = ~225 credits worst case), run as a single call. Cheap
- *   enough not to need batching; kept as-is from the previous single-pass
- *   design.
+ * phase=financials&batch=N — one symbol needing income/balance/cashflow per
+ *   call. Each of those three endpoints actually costs ~101 credits on this
+ *   plan regardless of outputsize/period (confirmed live against TwelveData's
+ *   /api_usage endpoint on 2026-08-04 — NOT the ~1 credit assumed by
+ *   CLAUDE.md's cost table, which describes the Basic-plan-style flat rate,
+ *   not this plan's full-history fundamentals pricing). That's ~303
+ *   credits/symbol, so unlike /statistics+/earnings this can't be batched
+ *   5-at-a-time; one symbol already uses most of the shared 400-credit cron
+ *   budget. Previously ran as a single unguarded pass over up to 75 symbols
+ *   (assumed "~225 credits worst case"), which in reality could reserve nothing
+ *   and fire up to 75 x 303 = ~22,725 credits with no pacing — the single
+ *   biggest contributor to the multi-thousand-credit-per-minute spikes seen
+ *   on the TwelveData dashboard. Now paced like phase=stats: one guarded
+ *   batch per GitHub Actions loop iteration, 65s apart.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -56,8 +66,11 @@ const STATS_BATCH_SIZE = 5;               // symbols per batch (5 × 70 credits 
  *  screener/refresh reserves against, so the two crons can't stack past the
  *  610/min plan cap if their schedules ever land in the same wall-clock minute. */
 const CREDITS_PER_SYMBOL = 70;
-const FINANCIALS_PER_RUN = 75;            // max stocks to refresh financials per invocation
-const FINANCIALS_CONCURRENCY = 5;         // parallel stocks in financials phase
+const FINANCIALS_BATCH_SIZE = 1;          // symbols per call — see phase=financials doc above for why this can't be 5 like stats
+/** /income_statement + /balance_sheet + /cash_flow, ~101 credits each measured
+ *  live (see phase=financials doc above) — reserved worst-case per symbol
+ *  before firing, against the same shared budget as the stats phase. */
+const CREDITS_PER_FINANCIALS_SYMBOL = 303;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -73,12 +86,6 @@ function earningsTtl(earnings: Array<{ epsActual: unknown; date: string }>): num
   if (days <= 1) return 10 * 60;
   if (days <= 3) return 30 * 60;
   return 6 * 60 * 60;
-}
-
-function intoChunks<T>(arr: T[], size: number): T[][] {
-  const out: T[][] = [];
-  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
-  return out;
 }
 
 type RawStats = {
@@ -403,19 +410,13 @@ async function handleStatsBatch(
   }
 }
 
-// ── Phase: financials (single pass — cheap, ~1 credit/statement) ───────────
+// ── Phase: financials (one guarded symbol per batch — see doc comment above) ──
 
 async function handleFinancials(
   supabase: ReturnType<typeof createServerClient>,
-  allSymbols: string[]
+  allSymbols: string[],
+  batchIndex: number
 ): Promise<NextResponse> {
-  const summary = {
-    financialsNeeded: 0,
-    financialsRefreshed: 0,
-    errors: [] as string[],
-    rateLimited: false,
-  };
-
   const { data: existingFinRows } = await supabase
     .from('market_data_cache')
     .select('ticker')
@@ -425,11 +426,25 @@ async function handleFinancials(
 
   const cachedFinSymbols = new Set((existingFinRows ?? []).map(r => r.ticker as string));
   const needsFinancials = allSymbols.filter(sym => !cachedFinSymbols.has(sym));
-  summary.financialsNeeded = needsFinancials.length;
+  const totalBatches = needsFinancials.length;
 
-  const toProcess = needsFinancials.slice(0, FINANCIALS_PER_RUN);
+  if (batchIndex < 0 || batchIndex >= totalBatches) {
+    return NextResponse.json({
+      success: true,
+      phase: 'financials',
+      batch: batchIndex,
+      totalBatches,
+      financialsRefreshed: 0,
+      done: true,
+    });
+  }
 
-  for (const syms of intoChunks(toProcess, FINANCIALS_CONCURRENCY)) {
+  const syms = needsFinancials.slice(batchIndex * FINANCIALS_BATCH_SIZE, (batchIndex + 1) * FINANCIALS_BATCH_SIZE);
+  const nextBatch = batchIndex + 1 < totalBatches ? batchIndex + 1 : null;
+
+  try {
+    await waitForCronCreditBudget(syms.length * CREDITS_PER_FINANCIALS_SYMBOL);
+
     const results = await Promise.allSettled(
       syms.map(async sym => {
         const [income, balance, cashflow] = await Promise.all([
@@ -442,26 +457,45 @@ async function handleFinancials(
           setCached(`financials:${sym}:balance:quarterly`, sym, 'financials', balance, FINANCIALS_TTL),
           setCached(`financials:${sym}:cashflow:quarterly`, sym, 'financials', cashflow, FINANCIALS_TTL),
         ]);
-        summary.financialsRefreshed++;
       })
     );
 
-    if (results.some(r => r.status === 'rejected' && r.reason instanceof TwelveDataRateLimitError)) {
-      summary.rateLimited = true;
-      break;
-    }
-
+    const errors: string[] = [];
+    let financialsRefreshed = 0;
     for (const [i, r] of results.entries()) {
-      if (r.status === 'rejected') {
+      if (r.status === 'fulfilled') {
+        financialsRefreshed++;
+      } else {
         const msg = r.reason instanceof Error ? r.reason.message : String(r.reason);
         if (!/enterprise plan|higher plan|not available/i.test(msg)) {
-          summary.errors.push(`financials:${syms[i]}: ${msg}`);
+          errors.push(`financials:${syms[i]}: ${msg}`);
         }
       }
     }
-  }
 
-  return NextResponse.json({ success: true, phase: 'financials', ...summary });
+    return NextResponse.json({
+      success: true,
+      phase: 'financials',
+      batch: batchIndex,
+      totalBatches,
+      financialsRefreshed,
+      errors,
+      nextBatch,
+      done: nextBatch === null,
+    });
+  } catch (err) {
+    if (err instanceof TwelveDataRateLimitError) {
+      return NextResponse.json(
+        { success: false, phase: 'financials', batch: batchIndex, totalBatches, error: 'rate_limited' },
+        { status: 429 }
+      );
+    }
+    const msg = err instanceof Error ? err.message : String(err);
+    return NextResponse.json(
+      { success: false, phase: 'financials', batch: batchIndex, totalBatches, error: msg },
+      { status: 500 }
+    );
+  }
 }
 
 // ── Handler ───────────────────────────────────────────────────────────────────
@@ -477,11 +511,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const allSymbols = Array.from(SIGNIFICANT_TICKERS);
   const sp = request.nextUrl.searchParams;
   const phase = sp.get('phase') === 'financials' ? 'financials' : 'stats';
+  const batchIndex = parseInt(sp.get('batch') ?? '0', 10);
 
   if (phase === 'financials') {
-    return handleFinancials(supabase, allSymbols);
+    return handleFinancials(supabase, allSymbols, batchIndex);
   }
 
-  const batchIndex = parseInt(sp.get('batch') ?? '0', 10);
   return handleStatsBatch(supabase, APIKEY(), allSymbols, batchIndex);
 }

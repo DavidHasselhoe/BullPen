@@ -281,9 +281,9 @@ Every TwelveData call costs API credits. The rules below are binding — violati
 | `/earnings` | `getCompanyEarnings()` | 20 per symbol | Supabase 12 h |
 | `/earnings_calendar` | `getEarningsCalendarRange()` | 40 per request | Next.js 24 h |
 | `/statistics` | `getStatistics()` | high (plan-dependent) | Supabase 12 h |
-| `/income_statement` | `getIncomeStatement()` | 1 per request | Supabase 12 h |
-| `/balance_sheet` | `getBalanceSheet()` | 1 per request | Supabase 12 h |
-| `/cash_flow` | `getCashFlow()` | 1 per request | Supabase 12 h |
+| `/income_statement` | `getIncomeStatement()` | **~101 per request** | Supabase 12 h |
+| `/balance_sheet` | `getBalanceSheet()` | **~101 per request** | Supabase 12 h |
+| `/cash_flow` | `getCashFlow()` | **~101 per request** | Supabase 12 h |
 | `/fundamentals/last_changes` | `getFundamentalsLastChange()` | 1 per symbol | no-store (freshness check) |
 | `/profile` | `getCompanyProfile()` | 1 per request | Supabase 24 h |
 | `/logo` | `getLogoUrl()` | 1 per symbol | Next.js 24 h |
@@ -296,6 +296,8 @@ Every TwelveData call costs API credits. The rules below are binding — violati
 | `/ipo_calendar` | `getIPOCalendar()` | 40 per request | Next.js 1 h |
 | `/insider_transactions` | `getInsiderTransactions()` | **200 per symbol** | Next.js 1 h |
 | `/indicator` (SMA/EMA/RSI…) | `getIndicator()` | 1 per request | Next.js 5 min |
+
+**`/income_statement`, `/balance_sheet`, `/cash_flow` are NOT 1-credit calls on this plan** — confirmed live against TwelveData's `/api_usage` endpoint on 2026-08-04 (each cost ~101 credits regardless of `outputsize` or `period`; this plan bills fundamentals at their full-history tier per `docs/twelve-data-venture-analysis.md`). Treat any caller of `getIncomeStatement`/`getBalanceSheet`/`getCashFlow` as expensive: always check cache first, and if it fans out over multiple symbols in one request (a cron batch, a company-compare page), it must reserve against `lib/twelvedata/credit-budget.ts`'s shared guard before firing — `~303 credits per symbol` (all three statements) is enough on its own to blow past the 610/min account cap with just 2 symbols.
 
 ### Golden rules
 

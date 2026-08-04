@@ -85,6 +85,6 @@ The Venture plan is a good fit if you need:
 
 Caveats:
 
-- Income statement / balance sheet / cash flow: full history only on Ultra/Enterprise
+- Income statement / balance sheet / cash flow: full history only on Ultra/Enterprise — confirmed 2026-08-04 this means Venture is billed at ~101 credits per call for all three (measured live against `/api_usage`, not the ~1 credit generic docs suggest), regardless of `outputsize`/`period`. See CLAUDE.md's "Credit costs at a glance" table.
 - ETFs directory: 50 records on Venture; full 40k+ ETFs on Ultra/Enterprise
 - Demo key has restrictions; verify full behavior with a real key before committing

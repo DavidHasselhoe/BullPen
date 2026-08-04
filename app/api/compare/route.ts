@@ -1,7 +1,48 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/client';
 import { getStorageLogoUrl } from '@/lib/logos/logos-storage';
-import { getIncomeStatement, getBalanceSheet, getCashFlow, TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
+import { getCached, setCached } from '@/lib/cache/market-data-cache';
+import {
+  getIncomeStatement,
+  getBalanceSheet,
+  getCashFlow,
+  withRateLimitRetry,
+  TwelveDataRateLimitError,
+} from '@/lib/twelvedata/twelvedata-client';
+import { waitForCronCreditBudget } from '@/lib/twelvedata/credit-budget';
+
+const FINANCIALS_CACHE_TTL_SECONDS = 24 * 60 * 60;
+/** Real measured cost per statement (income/balance/cashflow), not the ~1
+ *  credit CLAUDE.md's table used to assume — see its "Credit costs at a
+ *  glance" section. A cold 2-5 company comparison can fan out to 6-15 of
+ *  these in one request, so each reserves against the shared cron budget
+ *  before firing. Uses a short wait (unlike the crons' 65s default) since
+ *  this blocks an interactive page load, not a background sweep — genuine
+ *  TwelveData-side 429s are still handled by withRateLimitRetry below.
+ */
+const CREDITS_PER_STATEMENT = 101;
+const BUDGET_WAIT_MS = 8_000;
+
+/**
+ * Cache key format matches /api/stock/[ticker]/financials so a comparison and a
+ * stock detail page visit share the same warm entry instead of double-fetching.
+ */
+async function getCachedFinancial<T>(
+  ticker: string,
+  type: 'income' | 'balance' | 'cashflow',
+  fetcher: () => Promise<T>
+): Promise<T> {
+  const cacheKey = `financials:${ticker}:${type}:annual`;
+  const cached = await getCached<T>(cacheKey);
+  if (cached) return cached;
+
+  await waitForCronCreditBudget(CREDITS_PER_STATEMENT, BUDGET_WAIT_MS);
+  const result = await withRateLimitRetry(fetcher);
+  if (Array.isArray(result) ? result.length > 0 : !!result) {
+    void setCached(cacheKey, ticker, 'financials', result, FINANCIALS_CACHE_TTL_SECONDS);
+  }
+  return result;
+}
 
 export const dynamic = 'force-dynamic';
 
@@ -88,9 +129,9 @@ export async function GET(request: NextRequest) {
     const results = await Promise.all(
       tickers.map(async (ticker): Promise<CompareCompany | null> => {
         const [income, balance, cashflow] = await Promise.all([
-          getIncomeStatement(ticker, 'annual', 4),
-          getBalanceSheet(ticker, 'annual', 4),
-          getCashFlow(ticker, 'annual', 4),
+          getCachedFinancial(ticker, 'income', () => getIncomeStatement(ticker, 'annual', 4)),
+          getCachedFinancial(ticker, 'balance', () => getBalanceSheet(ticker, 'annual', 4)),
+          getCachedFinancial(ticker, 'cashflow', () => getCashFlow(ticker, 'annual', 4)),
         ]);
 
         if (income.length === 0) return null;
@@ -165,12 +206,15 @@ export async function GET(request: NextRequest) {
       companies: successfulResults,
     });
   } catch (err) {
+    // Transient (already retried once in getCachedFinancial) and unrelated to plan
+    // tier, so keep it distinct from the real plan_restricted case below.
     if (err instanceof TwelveDataRateLimitError) {
+      return NextResponse.json({ success: false, error: 'rate_limited' }, { status: 200 });
+    }
+    const msg = err instanceof Error ? err.message : String(err);
+    if (/enterprise plan|higher plan|not available.*plan/i.test(msg)) {
       return NextResponse.json({ success: false, error: 'plan_restricted' }, { status: 200 });
     }
-    return NextResponse.json(
-      { success: false, error: err instanceof Error ? err.message : 'Unknown error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: msg }, { status: 500 });
   }
 }
