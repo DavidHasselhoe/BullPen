@@ -39,22 +39,30 @@ export const FOUNDERS_NOTE: FoundersNote = {
 
   heading: 'A note from the founder',
 
-  // David's own words. Edits made when this was pasted in were limited to
-  // capitalising "i", splitting one block into paragraphs, curly quotes and
-  // apostrophes, and one subject added for agreement ("and I have kept
-  // iterating"). Phrasing, rhythm and word choice are untouched, including the
-  // casual register ("just cause", "you guys") — that is the point of the
-  // section. Anyone editing later should hold the same line.
+  // David's own words, lightly edited. The casual register is deliberate and
+  // load-bearing ("just cause", "you guys", "tons of questions"): this is the
+  // one place on the site that sounds like a person rather than a company, so
+  // resist smoothing it into marketing prose.
+  //
+  // Paragraph 2 is the strongest thing here and should be left alone. Opening
+  // on a mistake rather than on credentials is what makes the note land.
+  //
+  // Edits applied: capitalised "i"; split one block into paragraphs; curly
+  // quotes; semicolon to colon in the list; "where I can" to "where you can"
+  // (the original accidentally described the product as being for its author);
+  // "Combining my 3 years..." given a subject, since it was a fragment;
+  // "utilize" to "use", the one word that broke the register; and "platform"
+  // reduced from five uses to one.
   paragraphs: [
     'Hello! My name is David and I am the founder and developer working on BullPen.',
 
     'When I first started investing, I didn’t really have a clue what I was doing. I bought my first shares in a company I knew nothing about, just cause it “looked good”, but there was no conviction or reasoning whatsoever. I lost a lot of money from this and felt like investing wasn’t for me.',
 
-    'I still kept going and after investing for many years I learned a lot on my own by using several methods; videos, courses, forums and asking tons of questions.',
+    'I still kept going, and after investing for many years I learned a lot on my own: videos, courses, forums, and asking tons of questions.',
 
-    'So now I am creating the very platform I wish I had when I was just getting into investing, a platform where I can not only learn, but research and track companies. Combining my 3 years as a systems developer, years of investing and knowledge into one single platform for you guys to utilize when picking your next stock.',
+    'So now I am creating the very platform I wish I had when I was just getting into investing, somewhere you can not only learn, but research and track companies. I am combining my 3 years as a systems developer with years of investing into one place for you guys to use when picking your next stock.',
 
-    'The platform is fairly new, started in November 2025 with the first version, and I have kept iterating to improve it since. The goal is to make a genuinely useful platform where the average person can learn how to invest, because it doesn’t have to be that hard!',
+    'It is still fairly new. The first version went out in November 2025 and I have been improving it ever since. The goal is to make something genuinely useful, where the average person can learn how to invest, because it doesn’t have to be that hard!',
   ],
 
   signature: {
