@@ -289,6 +289,20 @@ function buildTrendSummary(companies: CompareCompany[]): string[] {
   return lines;
 }
 
+/** Friendly copy for known /api/compare error codes. Transient vs. permanent framing matters:
+ *  rate_limited means try again shortly, plan_restricted means the data provider (not the
+ *  user's BullPen plan) doesn't have this data available. */
+const COMPARE_ERROR_COPY: Record<string, { message: string; transient: boolean }> = {
+  rate_limited: {
+    message: 'Market data is temporarily busy. Try again in a moment.',
+    transient: true,
+  },
+  plan_restricted: {
+    message: "Full financial history for one of these companies isn't available from our data provider right now.",
+    transient: false,
+  },
+};
+
 type MetricSort = 'default' | 'diff' | string;
 
 function CompareContent() {
@@ -400,7 +414,7 @@ function CompareContent() {
 
   const { open: openAIPanel, setAIContext } = useAIPanel();
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['compare', tickers.join(',')],
     queryFn: async () => {
       const res = await fetch(`/api/compare?tickers=${tickers.join(',')}`);
@@ -553,6 +567,10 @@ function CompareContent() {
   }
 
   if (error || (data && !data.success)) {
+    const code = (error as Error)?.message;
+    const known = code ? COMPARE_ERROR_COPY[code] : undefined;
+    const message = known?.message ?? 'Could not load comparison. Check that tickers exist in BullPen.';
+
     return (
       <div className="container mx-auto px-4 py-12 max-w-6xl">
         <Link
@@ -562,11 +580,12 @@ function CompareContent() {
           <ArrowLeft className="h-3 w-3 transition-transform group-hover:-translate-x-0.5" />
           All tools
         </Link>
-        <Card className="border-destructive/50">
-          <CardContent className="py-8 text-center">
-            <p className="text-destructive">
-              {(error as Error)?.message ?? 'Could not load comparison. Check that tickers exist in BullPen.'}
-            </p>
+        <Card className={known?.transient ? undefined : 'border-destructive/50'}>
+          <CardContent className="py-8 flex flex-col items-center gap-4 text-center">
+            <p className={known?.transient ? 'text-muted-foreground' : 'text-destructive'}>{message}</p>
+            <Button variant="outline" size="sm" onClick={() => refetch()}>
+              Try again
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -574,7 +593,8 @@ function CompareContent() {
   }
 
   const companies = data?.companies ?? [];
-  const colCount = Math.min(companies.length, 5);
+  // Falls back to tickers.length while loading, since companies is empty until data arrives.
+  const colCount = Math.min(companies.length || tickers.length, 5);
 
   const sortOptions: { value: MetricSort; label: string }[] = [
     { value: 'default', label: 'By category' },
@@ -623,7 +643,7 @@ function CompareContent() {
       {isLoading ? (
         <div className="space-y-8">
           <Skeleton className="h-10 w-64" />
-          <div className="grid gap-6" style={{ gridTemplateColumns: `repeat(${colCount}, 1fr)` }}>
+          <div className="grid gap-6" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))' }}>
             {Array.from({ length: colCount }).map((_, i) => (
               <Skeleton key={i} className="h-96" />
             ))}
@@ -697,7 +717,7 @@ function CompareContent() {
               <p className="text-sm text-muted-foreground mb-4">Company profiles at a glance</p>
               <div
                 className="grid gap-4"
-                style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))` }}
+                style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))' }}
               >
                 {companies.map((c) => (
                   <Link key={c.ticker} href={`/stock/${c.ticker}`}>
@@ -749,7 +769,7 @@ function CompareContent() {
                 </h2>
                 <div
                   className="grid gap-4"
-                  style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))` }}
+                  style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))' }}
                 >
                   {companies.map((c) => (
                     <Card key={c.ticker} className="overflow-hidden">
@@ -781,7 +801,7 @@ function CompareContent() {
                           {biggestDiffs.map((d, i) => (
                             <li key={i} className="flex justify-between items-center">
                               <span className="text-muted-foreground">{d.label}</span>
-                              <span className={d.isPositive ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}>
+                              <span className={d.isPositive ? 'text-emerald-400' : 'text-muted-foreground'}>
                                 {d.str}
                               </span>
                             </li>
@@ -790,7 +810,7 @@ function CompareContent() {
                       </CardContent>
                     </Card>
                   )}
-                  <Card>
+                  <Card className={biggestDiffs.length > 0 ? undefined : 'md:max-w-md'}>
                     <CardHeader className="pb-2">
                       <CardTitle className="text-base font-semibold">Category Leaders</CardTitle>
                       <p className="text-xs text-muted-foreground">Which company leads each category</p>
@@ -981,7 +1001,7 @@ function CompareContent() {
                                 {companies.length === 2 && (
                                   <td
                                     className={`text-right py-3 px-4 font-mono tabular-nums align-middle ${
-                                      diffRes?.isPositive ? 'text-green-600/90 dark:text-green-400/90' : 'text-muted-foreground'
+                                      diffRes?.isPositive ? 'text-emerald-400' : 'text-muted-foreground'
                                     }`}
                                   >
                                     {diffRes?.str ?? NA}
