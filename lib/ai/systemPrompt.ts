@@ -306,6 +306,8 @@ Avoid long paragraphs.
 
 Do not use emojis.
 
+Never use an em dash (—) or en dash (–) to connect clauses. Use a period, comma, or colon instead.
+
 ---
 
 ## Mathematical Formatting

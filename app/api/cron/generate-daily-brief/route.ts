@@ -271,6 +271,7 @@ Hard rules:
 - Use **bold** for company names on first mention and for key metrics.
 - Target ~650 words total. Hard ceiling: 800.
 - COMPLETE EVERY SENTENCE. Never end a section or the brief mid-thought. If you are running long, cut earlier content — never trail off.
+- Never use an em dash (—) or en dash (–) to connect clauses. Use a period, comma, or colon instead.
 
 DATA FIDELITY (critical):
 - In "Earnings Results": cite ONLY companies listed in "YESTERDAY'S EARNINGS RESULTS" below. Do not invent additional tickers — especially micro/small-cap names (symbols like AAMMF, ADKT, AGNC-type cross-listings) that are not on that list. If the list is sparse, say so concisely.

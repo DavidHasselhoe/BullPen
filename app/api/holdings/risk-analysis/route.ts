@@ -61,7 +61,8 @@ Scoring guidelines:
 - sectorBreakdown: classify each symbol into its GICS sector; estimatedWeight = approximate % of portfolio in that sector
 - recommendations: 3-5 concrete, actionable bullet points mentioning specific ticker symbols where relevant
 - portfolioSummary: 2-3 sentence executive-level summary; use the portfolio currency provided; be honest about risk level and key vulnerabilities
-- Use professional financial language; do not sugarcoat high-risk findings`;
+- Use professional financial language; do not sugarcoat high-risk findings
+- In all string fields, never use an em dash (—) or en dash (–) to connect clauses. Use a period, comma, or colon instead.`;
 
 interface HoldingInput {
   symbol: string;

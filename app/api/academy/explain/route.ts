@@ -117,7 +117,8 @@ async function handler(
           system:
             'You are a friendly investing tutor for absolute beginners. ' +
             'Explain terms in plain, conversational English. No jargon. No bullets. ' +
-            'Hard limit: 2 sentences. Never start with "A " followed by the term itself.',
+            'Hard limit: 2 sentences. Never start with "A " followed by the term itself. ' +
+            'Never use an em dash (—) or en dash (–) to connect clauses; use a period or comma instead.',
           messages: [{ role: 'user', content: userPrompt }],
         });
 

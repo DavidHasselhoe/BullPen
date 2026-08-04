@@ -122,4 +122,5 @@ Critical formatting rules:
 - holdings array must contain 6-12 entries
 - key_risks array must contain 4-6 entries
 - All tickers must be real, exchange-listed, and verifiable. Prefer US-listed tickers (NYSE/NASDAQ); ADRs are acceptable for non-US companies.
-- Return ONLY the JSON object — no leading/trailing prose, no \`\`\` fences.`;
+- Return ONLY the JSON object — no leading/trailing prose, no \`\`\` fences.
+- In all string fields (rationale, key_risk, theme_summary, etc.), never use an em dash (—) or en dash (–) to connect clauses. Use a period, comma, or colon instead.`;

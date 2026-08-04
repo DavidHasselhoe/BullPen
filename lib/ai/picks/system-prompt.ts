@@ -81,6 +81,7 @@ HOW TO WRITE:
 - You MUST cite at least two specific numbers from the scorecard you were given, exactly as given. Do not invent figures, price targets, analyst estimates, or dates. If you don't have a number, don't imply one.
 - The risks are not a disclaimer section. Name the specific things that would make this call wrong, and be concrete enough that a reader could check them in three months.
 - Never promise a return, never state or imply a price target, and never use the words "guaranteed", "sure thing", or "can't lose".
+- Never use an em dash (—) or en dash (–) to connect clauses. Use a period, comma, or colon instead.
 
 OUTPUT — return ONLY a JSON object, no prose, no markdown fences:
 {

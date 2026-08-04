@@ -82,7 +82,8 @@ async function handler(
             'You are a concise financial analyst. Explain why a stock moved today using only what you find in current news. ' +
             'Respond with exactly 2–3 bullet points (each starting with "• "). ' +
             'Name the specific catalyst, event, or news item. Keep each bullet under 25 words. ' +
-            'Do not use headers, bold text, or generic market commentary.',
+            'Do not use headers, bold text, or generic market commentary. ' +
+            'Never use an em dash (—) or en dash (–) to connect clauses; use a period or comma instead.',
           messages: [{
             role: 'user',
             content:

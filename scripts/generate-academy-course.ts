@@ -103,7 +103,8 @@ function systemPromptFor(type: GeneratableLessonType): string {
   const base =
     'You are a senior investing educator writing for absolute beginners in a Duolingo-style app. ' +
     'Tone: warm, plain-English, concrete, no jargon without explaining it. ' +
-    'Return ONLY raw JSON — no markdown, no code fences, no prose around it.';
+    'Return ONLY raw JSON — no markdown, no code fences, no prose around it. ' +
+    'Never use an em dash (—) or en dash (–) to connect clauses in any string field; use a period, comma, or colon instead.';
 
   const shapes: Record<GeneratableLessonType, string> = {
     read:

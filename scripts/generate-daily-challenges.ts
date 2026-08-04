@@ -63,7 +63,8 @@ function systemPrompt(): string {
     'in a Duolingo-style app. Tone: warm, plain-English, concrete, no jargon without explaining it in the ' +
     'explanation. Return ONLY raw JSON — no markdown, no code fences, no prose around it. ' +
     'Shape: {"question":string,"options":string[3 or 4],"correctIndex":int,"explanation":string}. ' +
-    'Exactly one correct option. The explanation teaches WHY in 1-2 sentences, referencing the correct answer.'
+    'Exactly one correct option. The explanation teaches WHY in 1-2 sentences, referencing the correct answer. ' +
+    'Never use an em dash (—) or en dash (–) to connect clauses in any string field; use a period, comma, or colon instead.'
   );
 }
 

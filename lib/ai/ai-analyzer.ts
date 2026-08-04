@@ -78,7 +78,8 @@ RULES:
 - Risk flags are explicit risks mentioned (not implied)
 - Confidence should reflect text clarity and completeness
 - Use professional, neutral language
-- Do not speculate beyond what is stated`;
+- Do not speculate beyond what is stated
+- Never use an em dash (—) or en dash (–) to connect clauses; use a period or comma instead`;
 }
 
 /**

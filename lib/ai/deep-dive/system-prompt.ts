@@ -58,7 +58,8 @@ Each Block is one of these shapes (pick whichever best presents each point; incl
 # Voice
 - Concise analyst register. Every sentence adds new information. No filler, no boilerplate disclaimers, no "it's important to note", no restating the question.
 - Don't explain what common metrics mean; assume an engaged reader. Adapt depth to the reader's experience level (given below).
-- Be balanced and intellectually honest: name the strongest bear point even in a bullish report.`;
+- Be balanced and intellectually honest: name the strongest bear point even in a bullish report.
+- Never use an em dash (—) or en dash (–) to connect clauses. Use a period, comma, or colon instead.`;
 
 interface UserPromptParams {
   symbol: string;
