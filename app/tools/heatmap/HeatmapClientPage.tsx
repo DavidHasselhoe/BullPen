@@ -4,35 +4,72 @@ import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Treemap, ResponsiveContainer } from 'recharts';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Grid3X3, RefreshCw, AlertCircle, Search, X } from 'lucide-react';
-import { useBackground } from '@/hooks/use-background';
+import { ArrowLeft, Grid3X3, AlertCircle, Search, X, ListOrdered } from 'lucide-react';
 import { useHeatmapStream } from '@/hooks/use-heatmap-stream';
 import { cn } from '@/lib/utils';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
-import type { HeatmapResponse, HeatmapStock } from '@/app/api/tools/heatmap/route';
+import type { HeatmapResponse, HeatmapStock, HeatmapSector } from '@/app/api/tools/heatmap/route';
 import type { Session } from '@/app/api/market/heatmap/stream/route';
 
-// ─── Color helpers ────────────────────────────────────────────────────────────
+// ─── Color ramp (Signal Emerald / Signal Red — see DESIGN.md) ─────────────────
+// Six steps pulled directly from Tailwind's emerald/red OKLCH scale (the same
+// tokens DESIGN.md names Signal Emerald/Signal Red), not an unrelated hardcoded
+// green/red hex ramp. Text pairing is computed per step for WCAG AA (4.5:1),
+// not a blanket "light change = dark text" heuristic — verified live:
+//   red-700   6.6:1 white   red-500  5.5:1 black   red-300  11.0:1 black
+//   emerald-300 13.8:1 black   emerald-500 8.4:1 black   emerald-700 5.5:1 white
+
+const INK_LIGHT = 'oklch(0.985 0 0)';
+const INK_DARK = 'oklch(0.145 0 0)';
+
+interface RampStep {
+  min: number;
+  fill: string;
+  text: string;
+}
+
+const RAMP: RampStep[] = [
+  { min: -Infinity, fill: 'oklch(0.505 0.213 27.518)', text: INK_LIGHT }, // red-700
+  { min: -3, fill: 'oklch(0.637 0.237 25.331)', text: INK_DARK }, // red-500
+  { min: -1, fill: 'oklch(0.808 0.114 19.571)', text: INK_DARK }, // red-300
+  { min: 0, fill: 'oklch(0.845 0.143 164.978)', text: INK_DARK }, // emerald-300
+  { min: 1, fill: 'oklch(0.696 0.17 162.48)', text: INK_DARK }, // emerald-500
+  { min: 3, fill: 'oklch(0.508 0.118 165.612)', text: INK_LIGHT }, // emerald-700
+];
+
+function rampStep(change: number): RampStep {
+  let step = RAMP[0];
+  for (const s of RAMP) if (change >= s.min) step = s;
+  return step;
+}
+
+function withAlpha(color: string, alpha: number): string {
+  return color.replace(/\)$/, ` / ${alpha})`);
+}
 
 function changeToFill(change: number, dimmed: boolean): string {
-  const base =
-    change > 3 ? '#16a34a' :
-    change > 1 ? '#4ade80' :
-    change >= 0 ? '#86efac' :
-    change >= -1 ? '#fca5a5' :
-    change >= -3 ? '#f87171' :
-    '#dc2626';
-
-  return dimmed ? base + '66' : base;
+  const { fill } = rampStep(change);
+  return dimmed ? withAlpha(fill, 0.35) : fill;
 }
 
 function changeToTextColor(change: number, dimmed: boolean): string {
-  const base = change > 1 || change < -1 ? '#ffffff' : '#111827';
-  return dimmed ? base + '99' : base;
+  const { text } = rampStep(change);
+  return dimmed ? withAlpha(text, 0.65) : text;
+}
+
+const LEGEND_LABELS = ['< −3%', '−3%', '−1%', '0%', '+1%', '> +3%'];
+const LEGEND_STEPS = RAMP.map((step, i) => ({ fill: step.fill, label: LEGEND_LABELS[i] }));
+
+// ─── Session helpers ────────────────────────────────────────────────────────
+
+function sessionLabel(session: Session): string | null {
+  if (session === 'pre') return 'Pre-Market';
+  if (session === 'post') return 'After-Hours';
+  return null;
 }
 
 // ─── Session badge ────────────────────────────────────────────────────────────
@@ -49,25 +86,17 @@ function SessionBadge({ session, connected }: { session: Session; connected: boo
 
   if (session === 'regular') {
     return (
-      <div className="flex items-center gap-1.5 rounded-full border border-green-500/30 bg-green-500/10 px-2.5 py-1 text-xs font-medium text-green-500">
-        <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+      <div className="flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-1 text-xs font-medium text-emerald-400">
+        <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
         Live
       </div>
     );
   }
-  if (session === 'pre') {
+  if (session === 'pre' || session === 'post') {
     return (
       <div className="flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-500">
         <span className="h-2 w-2 rounded-full bg-amber-500" />
-        Pre-Market
-      </div>
-    );
-  }
-  if (session === 'post') {
-    return (
-      <div className="flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-500">
-        <span className="h-2 w-2 rounded-full bg-amber-500" />
-        After-Hours
+        {sessionLabel(session)}
       </div>
     );
   }
@@ -87,7 +116,6 @@ interface TooltipPos {
   stock: Pick<HeatmapStock, 'ticker' | 'name' | 'change' | 'price'> & {
     previousClose?: number;
     volume?: number;
-    isExtended?: boolean;
   };
 }
 
@@ -105,7 +133,6 @@ function renderCell(
   const price = (nodeProps.price as number) ?? 0;
   const previousClose = (nodeProps.previousClose as number | undefined);
   const volume = (nodeProps.volume as number | undefined);
-  const isExtended = (nodeProps.isExtended as boolean | undefined) ?? false;
   const fullName = (nodeProps.fullName as string) ?? (name as string);
   const isHighlighted = (nodeProps.isHighlighted as boolean) ?? false;
   const isSearchActive = searchQuery.length > 0;
@@ -126,7 +153,7 @@ function renderCell(
           fill="transparent"
           stroke="hsl(var(--border) / 0.6)"
           strokeWidth={2}
-          rx={4}
+          rx={6}
         />
         {(height as number) > 18 && (width as number) > 60 && (
           <text
@@ -135,7 +162,8 @@ function renderCell(
             fill="hsl(var(--muted-foreground))"
             fontSize={10}
             fontWeight={600}
-            fontFamily="sans-serif"
+            fontFamily="var(--font-geist-sans), sans-serif"
+            letterSpacing="0.02em"
             style={{ userSelect: 'none', pointerEvents: 'none' }}
           >
             {name as string}
@@ -157,6 +185,12 @@ function renderCell(
   const fontSize = Math.min(13, Math.max(8, Math.floor(w / 5)));
   const pctSize = Math.min(11, Math.max(7, Math.floor(w / 6)));
   const absChange = previousClose ? price - previousClose : null;
+  const numericFont = 'var(--font-geist-mono), ui-monospace, monospace';
+  const numericStyle: React.CSSProperties = {
+    userSelect: 'none',
+    pointerEvents: 'none',
+    fontFeatureSettings: '"tnum"',
+  };
 
   // Vertical text centering — distribute lines
   const lineCount = (showTicker ? 1 : 0) + (showPct ? 1 : 0) + (showAbsChange ? 1 : 0);
@@ -171,7 +205,7 @@ function renderCell(
         onHover({
           x: e.clientX,
           y: e.clientY,
-          stock: { ticker: name as string, name: fullName, change, price, previousClose, volume, isExtended },
+          stock: { ticker: name as string, name: fullName, change, price, previousClose, volume },
         })
       }
       onMouseLeave={() => onHover(null)}
@@ -179,6 +213,7 @@ function renderCell(
       style={{ cursor: 'pointer' }}
     >
       <rect
+        className="heatmap-cell"
         x={(x as number) + 1}
         y={(y as number) + 1}
         width={Math.max(0, w - 2)}
@@ -186,7 +221,7 @@ function renderCell(
         fill={fill}
         stroke={isHighlighted ? '#ffffff' : 'hsl(var(--background))'}
         strokeWidth={isHighlighted ? 2.5 : 1.5}
-        rx={3}
+        rx={4}
       />
       {showTicker && (
         <text
@@ -197,7 +232,7 @@ function renderCell(
           fill={textColor}
           fontSize={fontSize}
           fontWeight={700}
-          fontFamily="sans-serif"
+          fontFamily="var(--font-geist-sans), sans-serif"
           style={{ userSelect: 'none', pointerEvents: 'none' }}
         >
           {name as string}
@@ -212,8 +247,8 @@ function renderCell(
           fill={textColor}
           fontSize={pctSize}
           fontWeight={500}
-          fontFamily="sans-serif"
-          style={{ userSelect: 'none', pointerEvents: 'none' }}
+          fontFamily={numericFont}
+          style={numericStyle}
         >
           {pct}
         </text>
@@ -227,8 +262,8 @@ function renderCell(
           fill={textColor}
           fontSize={pctSize}
           fontWeight={400}
-          fontFamily="sans-serif"
-          style={{ userSelect: 'none', pointerEvents: 'none' }}
+          fontFamily={numericFont}
+          style={numericStyle}
         >
           {absChange >= 0 ? '+' : ''}${Math.abs(absChange).toFixed(2)}
         </text>
@@ -239,23 +274,14 @@ function renderCell(
 
 // ─── Legend ───────────────────────────────────────────────────────────────────
 
-const LEGEND_STEPS = [
-  { color: '#dc2626', label: '< −3%' },
-  { color: '#f87171', label: '−3%' },
-  { color: '#fca5a5', label: '−1%' },
-  { color: '#86efac', label: '0%' },
-  { color: '#4ade80', label: '+1%' },
-  { color: '#16a34a', label: '> +3%' },
-] as const;
-
 function HeatmapLegend() {
   return (
     <div className="flex items-center gap-3 flex-wrap">
       <span className="text-xs text-muted-foreground font-medium shrink-0">Performance:</span>
       <div className="flex items-center gap-1.5 flex-wrap">
         {LEGEND_STEPS.map((s) => (
-          <div key={s.color} className="flex items-center gap-1">
-            <div className="h-3 w-4 rounded-sm" style={{ backgroundColor: s.color }} />
+          <div key={s.label} className="flex items-center gap-1">
+            <div className="h-3 w-4 rounded-sm" style={{ backgroundColor: s.fill }} />
             <span className="text-xs text-muted-foreground">{s.label}</span>
           </div>
         ))}
@@ -264,7 +290,10 @@ function HeatmapLegend() {
   );
 }
 
-// ─── Sector filter strip ──────────────────────────────────────────────────────
+// ─── Sector filter strip (quick access — stays in fixed GICS order rather ────
+// than re-sorting by performance, so pills don't jump around as prices move
+// and stay muscle-memory-findable. The Sector Leaderboard below is the
+// rank-sorted view; the two intentionally serve different jobs. ─────────────
 
 const SECTOR_ORDER = [
   'Information Technology',
@@ -299,7 +328,7 @@ function SectorFilter({
       <button
         onClick={() => onChange(null)}
         className={cn(
-          'rounded-full px-3 py-1 text-xs font-medium transition-all border',
+          'rounded-full px-3 py-1 text-xs font-medium transition-colors border',
           active === null
             ? 'bg-primary text-primary-foreground border-primary'
             : 'border-border text-muted-foreground hover:text-foreground hover:border-foreground/30'
@@ -312,7 +341,7 @@ function SectorFilter({
           key={s}
           onClick={() => onChange(active === s ? null : s)}
           className={cn(
-            'rounded-full px-3 py-1 text-xs font-medium transition-all border whitespace-nowrap',
+            'rounded-full px-3 py-1 text-xs font-medium transition-colors border whitespace-nowrap',
             active === s
               ? 'bg-primary text-primary-foreground border-primary'
               : 'border-border text-muted-foreground hover:text-foreground hover:border-foreground/30'
@@ -327,10 +356,11 @@ function SectorFilter({
 
 // ─── Floating tooltip ─────────────────────────────────────────────────────────
 
-function FloatingTooltip({ pos }: { pos: TooltipPos | null }) {
+function FloatingTooltip({ pos, session }: { pos: TooltipPos | null; session: Session }) {
   if (!pos) return null;
   const { x, y, stock } = pos;
   const pct = `${stock.change >= 0 ? '+' : ''}${stock.change.toFixed(2)}%`;
+  const extended = sessionLabel(session);
   const absChange =
     stock.previousClose != null && stock.previousClose > 0
       ? stock.price - stock.previousClose
@@ -343,9 +373,9 @@ function FloatingTooltip({ pos }: { pos: TooltipPos | null }) {
     >
       <div className="flex items-center gap-2 mb-1">
         <p className="font-bold text-sm text-foreground">{stock.ticker}</p>
-        {stock.isExtended && (
+        {extended && (
           <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-500 border border-amber-500/20">
-            Extended
+            {extended}
           </span>
         )}
       </div>
@@ -355,13 +385,13 @@ function FloatingTooltip({ pos }: { pos: TooltipPos | null }) {
       <div className="mt-2 space-y-1 text-xs">
         <div className="flex justify-between gap-4">
           <span className="text-muted-foreground">Price</span>
-          <span className="font-semibold tabular-nums">
+          <span className="font-mono tabular-nums font-semibold">
             ${stock.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </span>
         </div>
         <div className="flex justify-between gap-4">
           <span className="text-muted-foreground">Change</span>
-          <span className={cn('font-semibold tabular-nums', stock.change >= 0 ? 'text-green-500' : 'text-red-500')}>
+          <span className={cn('font-mono tabular-nums font-semibold', stock.change >= 0 ? 'text-emerald-400' : 'text-red-400')}>
             {pct}
             {absChange != null && (
               <span className="font-normal ml-1 text-muted-foreground">
@@ -373,7 +403,7 @@ function FloatingTooltip({ pos }: { pos: TooltipPos | null }) {
         {stock.previousClose != null && stock.previousClose > 0 && (
           <div className="flex justify-between gap-4">
             <span className="text-muted-foreground">Prev Close</span>
-            <span className="tabular-nums">
+            <span className="font-mono tabular-nums">
               ${stock.previousClose.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
           </div>
@@ -381,7 +411,7 @@ function FloatingTooltip({ pos }: { pos: TooltipPos | null }) {
         {stock.volume != null && stock.volume > 0 && (
           <div className="flex justify-between gap-4">
             <span className="text-muted-foreground">Volume</span>
-            <span className="tabular-nums">
+            <span className="font-mono tabular-nums">
               {stock.volume >= 1_000_000
                 ? `${(stock.volume / 1_000_000).toFixed(1)}M`
                 : stock.volume >= 1_000
@@ -392,6 +422,157 @@ function FloatingTooltip({ pos }: { pos: TooltipPos | null }) {
         )}
       </div>
     </div>
+  );
+}
+
+// ─── Sector Leaderboard ─────────────────────────────────────────────────────
+// Ranked, best-to-worst, mirroring the diverging-bar-around-zero-line language
+// already established on Discover's "Where money moved" (SectorRow.tsx) —
+// same emerald-400/red-400 bars, same signed-percentage-carries-the-meaning
+// approach, same staggered growth-from-zero entrance. Replaces the old flat
+// grid of sector buttons with something that reads as an actual ranking.
+
+interface LeaderboardRow {
+  name: string;
+  avgChange: number;
+}
+
+function SectorLeaderboardRow({
+  row,
+  rank,
+  scale,
+  active,
+  grown,
+  index,
+  onSelect,
+}: {
+  row: LeaderboardRow;
+  rank: number;
+  scale: number;
+  active: boolean;
+  grown: boolean;
+  index: number;
+  onSelect: () => void;
+}) {
+  const positive = row.avgChange >= 0;
+  const width = scale > 0 ? Math.min(50, (Math.abs(row.avgChange) / scale) * 50) : 0;
+  const pct = `${positive ? '+' : ''}${row.avgChange.toFixed(2)}%`;
+
+  return (
+    <li className="border-b border-border/25 last:border-b-0">
+      <button
+        type="button"
+        onClick={onSelect}
+        aria-pressed={active}
+        className={cn(
+          'flex w-full items-center gap-3 px-3 py-2.5 text-left sm:gap-4 sm:px-4',
+          'transition-colors duration-150 hover:bg-muted/25',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary',
+          active && 'bg-primary/10'
+        )}
+      >
+        <span className="w-5 shrink-0 text-right font-mono text-[11px] tabular-nums text-muted-foreground/70">
+          {rank}
+        </span>
+        <span className="min-w-0 shrink-0 basis-[104px] truncate text-[13px] font-medium text-foreground sm:basis-[188px]">
+          {row.name}
+        </span>
+
+        {/* Diverging bar. Decorative — the signed percentage beside it carries
+            the meaning for anyone who can't distinguish the colours. */}
+        <span className="relative h-5 min-w-0 flex-1" aria-hidden>
+          <span className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-border/50" />
+          <span
+            className={cn(
+              'absolute top-1/2 h-2.5 -translate-y-1/2 rounded-sm transition-transform duration-300 ease-out',
+              positive ? 'left-1/2 origin-left bg-emerald-400/85' : 'right-1/2 origin-right bg-red-400/85'
+            )}
+            style={{
+              width: `${width}%`,
+              transform: `scaleX(${grown ? 1 : 0})`,
+              transitionDelay: `${index * 25}ms`,
+            }}
+          />
+        </span>
+
+        <span
+          className={cn(
+            'shrink-0 basis-[68px] text-right font-mono text-[13px] font-semibold tabular-nums',
+            positive ? 'text-emerald-400' : 'text-red-400'
+          )}
+        >
+          {pct}
+        </span>
+      </button>
+    </li>
+  );
+}
+
+function SectorLeaderboard({
+  sectors,
+  livePrices,
+  sectorFilter,
+  onSelect,
+}: {
+  sectors: HeatmapSector[];
+  livePrices: Map<string, { changePercent?: number }>;
+  sectorFilter: string | null;
+  onSelect: (name: string) => void;
+}) {
+  const prefersReducedMotion = useReducedMotion();
+  const [grown, setGrown] = useState(false);
+
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setGrown(true));
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  const rows = useMemo<LeaderboardRow[]>(() => {
+    const computed = sectors.map((sector) => {
+      let sum = 0;
+      let count = 0;
+      for (const stock of sector.stocks) {
+        const live = livePrices.get(stock.ticker);
+        sum += live?.changePercent ?? stock.change;
+        count++;
+      }
+      return { name: sector.name, avgChange: count > 0 ? sum / count : sector.avgChange };
+    });
+    return computed.sort((a, b) => b.avgChange - a.avgChange);
+  }, [sectors, livePrices]);
+
+  const scale = useMemo(() => {
+    const max = Math.max(...rows.map((r) => Math.abs(r.avgChange)), 0);
+    return max > 0 ? max : 1;
+  }, [rows]);
+
+  if (rows.length === 0) return null;
+
+  return (
+    <section aria-labelledby="leaderboard-heading">
+      <div className="mb-3 flex items-center gap-2">
+        <ListOrdered className="h-4 w-4 text-primary" aria-hidden />
+        <h2 id="leaderboard-heading" className="text-lg font-semibold tracking-tight text-foreground">
+          Sector Leaderboard
+        </h2>
+      </div>
+      <div className="overflow-hidden rounded-xl border border-border/50 bg-background/40">
+        <ul>
+          {rows.map((row, i) => (
+            <SectorLeaderboardRow
+              key={row.name}
+              row={row}
+              rank={i + 1}
+              scale={scale}
+              active={sectorFilter === row.name}
+              grown={prefersReducedMotion ? true : grown}
+              index={i}
+              onSelect={() => onSelect(row.name)}
+            />
+          ))}
+        </ul>
+      </div>
+    </section>
   );
 }
 
@@ -411,14 +592,14 @@ function HeatmapSkeleton() {
 
 export default function HeatmapClientPage() {
   const router = useRouter();
-  const { hasAnimatedBackground } = useBackground();
+  const prefersReducedMotion = useReducedMotion();
   const [sectorFilter, setSectorFilter] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const searchRef = useRef<HTMLInputElement>(null);
   const { prices: livePrices, session: liveSession, connected } = useHeatmapStream();
   const [tooltipPos, setTooltipPos] = useState<TooltipPos | null>(null);
 
-  const { data, isLoading, isError, refetch, isFetching } = useQuery<HeatmapResponse>({
+  const { data, isLoading, isError, refetch } = useQuery<HeatmapResponse>({
     queryKey: ['heatmap'],
     queryFn: () => fetch('/api/tools/heatmap').then((r) => r.json()),
     staleTime: 3 * 60_000,
@@ -442,6 +623,10 @@ export default function HeatmapClientPage() {
     },
     [router]
   );
+
+  const handleSectorSelect = useCallback((name: string) => {
+    setSectorFilter((cur) => (cur === name ? null : name));
+  }, []);
 
   // Determine active session: live stream session (once connected) > initial snapshot session
   const session: Session = liveSession !== 'closed' ? liveSession : (data?.session ?? 'closed');
@@ -471,7 +656,6 @@ export default function HeatmapClientPage() {
           price: live?.price ?? stock.price,
           previousClose: live?.previousClose ?? stock.previousClose,
           volume: live?.volume,
-          isExtended: stock.isExtended ?? false,
           isHighlighted: upperSearch ? stock.ticker === upperSearch : false,
         };
       }),
@@ -488,11 +672,13 @@ export default function HeatmapClientPage() {
     ? new Date(data.lastUpdated).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
     : null;
 
-  return (
-    <div className={cn('min-h-screen', hasAnimatedBackground ? '' : 'bg-background')}>
-      <div className="fixed inset-0 -z-10 bg-gradient-to-br from-background via-background to-primary/5 pointer-events-none" />
+  const motionProps = prefersReducedMotion
+    ? {}
+    : { initial: { opacity: 0, y: 8 }, animate: { opacity: 1, y: 0 } };
 
-      <main className="container mx-auto max-w-7xl py-10 px-4 sm:px-6 lg:px-8">
+  return (
+    <div className="min-h-screen">
+      <main className="container mx-auto max-w-7xl pt-10 pb-20 px-4 sm:px-6 lg:px-8">
         <Link
           href="/tools"
           className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-6 group"
@@ -502,8 +688,7 @@ export default function HeatmapClientPage() {
         </Link>
 
         <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
+          {...motionProps}
           transition={{ duration: 0.3 }}
           className="flex items-start justify-between gap-4 flex-wrap mb-5"
         >
@@ -521,27 +706,16 @@ export default function HeatmapClientPage() {
 
           <div className="flex items-center gap-2 flex-wrap">
             <SessionBadge session={session} connected={connected} />
-            {lastUpdated && (
-              <span className="text-xs text-muted-foreground tabular-nums">Snapshot {lastUpdated}</span>
+            {!connected && lastUpdated && (
+              <span className="text-xs text-muted-foreground tabular-nums">As of {lastUpdated}</span>
             )}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => refetch()}
-              disabled={isFetching}
-              className="gap-1.5"
-            >
-              <RefreshCw className={cn('h-3.5 w-3.5', isFetching && 'animate-spin')} />
-              Refresh
-            </Button>
           </div>
         </motion.div>
 
         {/* Legend + search + sector filter */}
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3, delay: 0.05 }}
+          {...motionProps}
+          transition={{ duration: 0.3, delay: prefersReducedMotion ? 0 : 0.05 }}
           className="mb-4 space-y-3"
         >
           <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -582,10 +756,9 @@ export default function HeatmapClientPage() {
         </motion.div>
 
         <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35, delay: 0.1 }}
-          className="rounded-2xl border border-border/50 bg-background/60 backdrop-blur-xl shadow-xl p-4"
+          {...motionProps}
+          transition={{ duration: 0.35, delay: prefersReducedMotion ? 0 : 0.1 }}
+          className="rounded-2xl border border-border/50 bg-background/60 backdrop-blur-xl p-4"
         >
           {isLoading ? (
             <HeatmapSkeleton />
@@ -621,50 +794,28 @@ export default function HeatmapClientPage() {
           )}
         </motion.div>
 
-        {/* Sector summary cards — reflect live changes */}
+        {/* Sector Leaderboard — ranked, reflects live changes */}
         {data?.success && (data.sectors?.length ?? 0) > 0 && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.3, delay: 0.25 }}
-            className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+            {...motionProps}
+            transition={{ duration: 0.3, delay: prefersReducedMotion ? 0 : 0.25 }}
+            className="mt-8"
           >
-            {(data.sectors ?? []).map((sector) => {
-              // Recompute avgChange from live prices where available
-              let sum = 0;
-              let count = 0;
-              for (const stock of sector.stocks) {
-                const live = livePrices.get(stock.ticker);
-                sum += live?.changePercent ?? stock.change;
-                count++;
-              }
-              const avgChange = count > 0 ? sum / count : sector.avgChange;
-              const isPos = avgChange >= 0;
-              const pct = `${isPos ? '+' : ''}${avgChange.toFixed(2)}%`;
-              const isActive = sectorFilter === sector.name;
-              return (
-                <button
-                  key={sector.name}
-                  onClick={() => setSectorFilter(isActive ? null : sector.name)}
-                  className={cn(
-                    'flex items-center justify-between rounded-xl border px-3 py-2 transition-all text-left',
-                    isActive
-                      ? 'border-primary/40 bg-primary/10'
-                      : 'border-border/40 bg-background/40 hover:border-border/70 hover:bg-background/60'
-                  )}
-                >
-                  <span className="text-sm font-medium truncate">{sector.name}</span>
-                  <span className={cn('text-sm font-semibold tabular-nums ml-2 shrink-0', isPos ? 'text-green-500' : 'text-red-500')}>
-                    {pct}
-                  </span>
-                </button>
-              );
-            })}
+            <SectorLeaderboard
+              sectors={data.sectors ?? []}
+              livePrices={livePrices}
+              sectorFilter={sectorFilter}
+              onSelect={handleSectorSelect}
+            />
           </motion.div>
         )}
+
+        <p className="mt-6 text-center text-[11px] text-muted-foreground/70">
+          Prices stream live via WebSocket during market hours. Sector and market-cap classification refresh periodically.
+        </p>
       </main>
 
-      <FloatingTooltip pos={tooltipPos} />
+      <FloatingTooltip pos={tooltipPos} session={session} />
     </div>
   );
 }

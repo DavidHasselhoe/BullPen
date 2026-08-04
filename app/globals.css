@@ -587,6 +587,17 @@ html.animated-background-active [data-slot="dialog-content"] {
     pointer-events: none;
   }
 
+  /* ── Heatmap cell hover (S&P 500 Sector Heatmap) ──────────────────────────
+     CSS-only so hovering across ~500 SVG cells never triggers a React
+     re-render. The global reduced-motion rule below already zeroes this
+     transition's duration. */
+  .heatmap-cell {
+    transition: filter 150ms ease-out;
+  }
+  .heatmap-cell:hover {
+    filter: brightness(1.15);
+  }
+
   /* ── Respect reduced motion preference ───────────────────────────────────
      Snap all durations to near-zero so motion-sensitive users don't see
      animations, while still allowing instant state transitions. */
