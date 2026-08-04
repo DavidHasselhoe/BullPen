@@ -13,8 +13,8 @@
   {
     "date": "2026-08-02",
     "entries": [
-      { "type": "fixed", "text": "Fixed the password reset flow sometimes leaving you looking signed out right after setting a new password — the session was valid the whole time, but the page didn't know it until you refreshed manually" },
-      { "type": "fixed", "text": "Fixed signing in with Google failing without any error message — you'll now see what went wrong instead of the button just resetting with no explanation" },
+      { "type": "fixed", "text": "Fixed the password reset flow sometimes leaving you looking signed out right after setting a new password. The session was valid the whole time, but the page didn't know it until you refreshed manually" },
+      { "type": "fixed", "text": "Fixed signing in with Google failing without any error message. You'll now see what went wrong instead of the button just resetting with no explanation" },
       { "type": "fixed", "text": "Fixed an empty gap that appeared partway down the dashboard homepage for most returning users" },
       { "type": "fixed", "text": "Fixed stock pages and some dashboard sections not loading properly when browsing without signing in" }
     ]
@@ -22,27 +22,27 @@
   {
     "date": "2026-08-01",
     "entries": [
-      { "type": "new", "text": "Added a self-service \"Forgot password?\" flow to the sign-in screen — enter your email, get a reset link, and set a new password without needing to contact support" }
+      { "type": "new", "text": "Added a self-service \"Forgot password?\" flow to the sign-in screen. Enter your email, get a reset link, and set a new password without needing to contact support" }
     ]
   },
   {
     "date": "2026-07-31",
     "entries": [
-      { "type": "new", "text": "You can now share your portfolio's daily gain or loss as a link, right from the Holdings page — it shows a preview card with your return and a mini chart, and you choose whether to include the dollar amount or post anonymously" },
-      { "type": "new", "text": "Added a Daily Performance calendar to the Holdings page (and as an optional homepage widget) — see your portfolio's gain or loss for every day of the month at a glance, with the top contributing stocks shown when you click into a day" }
+      { "type": "new", "text": "You can now share your portfolio's daily gain or loss as a link, right from the Holdings page. It shows a preview card with your return and a mini chart, and you choose whether to include the dollar amount or post anonymously" },
+      { "type": "new", "text": "Added a Daily Performance calendar to the Holdings page (and as an optional homepage widget). See your portfolio's gain or loss for every day of the month at a glance, with the top contributing stocks shown when you click into a day" }
     ]
   },
   {
     "date": "2026-07-30",
     "entries": [
-      { "type": "new", "text": "Completely redesigned the Market Calendar into a personalized weekly grid — see your own holdings and watchlist highlighted on each day, click into any day for full earnings, dividends, splits, and IPO details, and filter by event type" },
-      { "type": "improved", "text": "The Market Calendar now shows a company's actual reported earnings, with a beat/miss indicator, once they're out — instead of just the pre-earnings estimate" },
+      { "type": "new", "text": "Completely redesigned the Market Calendar into a personalized weekly grid. See your own holdings and watchlist highlighted on each day, click into any day for full earnings, dividends, splits, and IPO details, and filter by event type" },
+      { "type": "improved", "text": "The Market Calendar now shows a company's actual reported earnings, with a beat/miss indicator, once they're out, instead of just the pre-earnings estimate" },
       { "type": "improved", "text": "Sold Positions has moved from a card on the Holdings page into a compact \"History\" button, and you can now edit a recorded sale's quantity, price, or date directly instead of undoing it and re-entering it from scratch" },
       { "type": "improved", "text": "Stock and portfolio charts now show the year in the hover tooltip when viewing a year or more of history, and the YTD tab now comes before 1Y in the range picker" },
       { "type": "improved", "text": "Made the benchmark bars on stock pages (Profit Margin, Revenue Growth, P/E, and more) easier to read, with clear scale labels and a visible zero line" },
       { "type": "fixed", "text": "Fixed stock and portfolio performance charts showing an oversized blank gap over weekends and holidays, which made trading days look squeezed together" },
-      { "type": "fixed", "text": "Fixed Google (GOOG/GOOGL) showing up as two separate entries in Market Movers and the Screener — now shown as one" },
-      { "type": "fixed", "text": "Fixed the Sell modal sometimes asking for a sale price in the wrong currency — it now always asks in USD, matching how your cost basis is stored" },
+      { "type": "fixed", "text": "Fixed Google (GOOG/GOOGL) showing up as two separate entries in Market Movers and the Screener. Now shown as one" },
+      { "type": "fixed", "text": "Fixed the Sell modal sometimes asking for a sale price in the wrong currency. It now always asks in USD, matching how your cost basis is stored" },
       { "type": "fixed", "text": "Fixed a fully-sold holding still showing up as a row in your Holdings table" },
       { "type": "fixed", "text": "Fixed Financial Health score history occasionally showing the wrong quarter's date" },
       { "type": "fixed", "text": "Fixed the stock pages for CTRA and K sometimes showing data for the wrong company" },
@@ -52,7 +52,7 @@
   {
     "date": "2026-07-29",
     "entries": [
-      { "type": "new", "text": "Financial Health score history now shows exactly what changed between quarters — expand any entry to see the score change for each of the 5 categories (Profitability, Financial Strength, Valuation, Growth, Market Risk), not just the overall total" },
+      { "type": "new", "text": "Financial Health score history now shows exactly what changed between quarters. Expand any entry to see the score change for each of the 5 categories (Profitability, Financial Strength, Valuation, Growth, Market Risk), not just the overall total" },
       { "type": "new", "text": "Price Alerts: you can now add more conditions to a stock you're already tracking with a \"+\" button, instead of having to delete and recreate the alert" },
       { "type": "improved", "text": "Clarified that VAT is included in the Pro subscription price shown on the pricing page, not added on top" }
     ]
@@ -62,15 +62,15 @@
     "entries": [
       { "type": "improved", "text": "Improved text contrast throughout the app for easier reading, especially dimmed labels and timestamps on dark backgrounds" },
       { "type": "fixed", "text": "Fixed sector and industry benchmark comparisons (the \"typical for its sector\" markers next to Key Numbers) that had been silently failing to update since the feature launched" },
-      { "type": "fixed", "text": "Fixed prices in Holdings and Watchlist going blank if a live quote briefly failed to load — you'll now see the last known price instead, clearly marked as not live" }
+      { "type": "fixed", "text": "Fixed prices in Holdings and Watchlist going blank if a live quote briefly failed to load. You'll now see the last known price instead, clearly marked as not live" }
     ]
   },
   {
     "date": "2026-07-27",
     "entries": [
       { "type": "fixed", "text": "Fixed a brief flash in the Holdings table where a price could appear under the wrong currency label right after switching your display currency, before exchange rates finished loading" },
-      { "type": "fixed", "text": "Fixed \"Why Today?\" restarting from scratch every time a stock's price ticked while you had it open — it now lives inside the Ask Bull panel, where it opens once and stays put" },
-      { "type": "fixed", "text": "Fixed the Holdings performance chart showing the wrong currency and hard-to-read abbreviated numbers (like \"4.8K\") — it now matches your account's currency and shows full numbers, in line with the totals above it" },
+      { "type": "fixed", "text": "Fixed \"Why Today?\" restarting from scratch every time a stock's price ticked while you had it open. It now lives inside the Ask Bull panel, where it opens once and stays put" },
+      { "type": "fixed", "text": "Fixed the Holdings performance chart showing the wrong currency and hard-to-read abbreviated numbers (like \"4.8K\"). It now matches your account's currency and shows full numbers, in line with the totals above it" },
       { "type": "fixed", "text": "Fixed the main navigation bar and Ask Bull button showing up on top of the getting-started signup flow" },
       { "type": "improved", "text": "Ask Bull's stock price answers now show the company logo, with a link straight through to that stock's page" }
     ]
@@ -78,8 +78,8 @@
   {
     "date": "2026-07-26",
     "entries": [
-      { "type": "new", "text": "Introducing Bull's Weekly Pick — every Monday, an AI-generated stock pick with a full, permanent public track record. Anyone can check the Track Record page to see how every past pick has done, winners and losers alike; the full reasoning behind each pick is a Pro feature" },
-      { "type": "improved", "text": "The Discover page has been redesigned around a quick market read: how the S&P 500, Nasdaq, Dow, and small caps are doing today, a market mood gauge, which sectors are leading or lagging, and a curated set of names worth a look — including stocks trading cheap for their sector and ones near their 52-week highs and lows" },
+      { "type": "new", "text": "Introducing Bull's Weekly Pick: every Monday, an AI-generated stock pick with a full, permanent public track record. Anyone can check the Track Record page to see how every past pick has done, winners and losers alike; the full reasoning behind each pick is a Pro feature" },
+      { "type": "improved", "text": "The Discover page has been redesigned around a quick market read: how the S&P 500, Nasdaq, Dow, and small caps are doing today, a market mood gauge, which sectors are leading or lagging, and a curated set of names worth a look, including stocks trading cheap for their sector and ones near their 52-week highs and lows" },
       { "type": "improved", "text": "The stock price chart has been rebuilt for smoother rendering, with a subtle pattern now marking stretches when the market was closed and the intraday tooltip showing the time of day, not just the price. The log/linear price-scale option has been removed" },
       { "type": "fixed", "text": "Fixed sector and industry benchmark comparisons (the \"typical for its sector\" markers next to Key Numbers) not updating for most sectors after a data refresh issue" }
     ]
@@ -87,7 +87,7 @@
   {
     "date": "2026-07-25",
     "entries": [
-      { "type": "new", "text": "Added an Activity tab to profile pages — see a feed of portfolio activity alongside the existing Portfolio tab" }
+      { "type": "new", "text": "Added an Activity tab to profile pages. See a feed of portfolio activity alongside the existing Portfolio tab" }
     ]
   },
   {
@@ -99,11 +99,11 @@
   {
     "date": "2026-07-23",
     "entries": [
-      { "type": "new", "text": "You can now record selling shares of a manually-tracked holding instead of just deleting it — sell all or part of a position, and your portfolio's performance chart keeps its full history intact instead of rewriting the past. Sold positions show up in a new \"Sold Positions\" list with your locked-in gain or loss, and you can undo a sale if you made a mistake" },
-      { "type": "new", "text": "AI Deep Dive reports and the AI Portfolio Builder now keep generating in the background even if you leave the page — you'll get a notification the moment it's ready, wherever you are in the app" },
-      { "type": "new", "text": "Added a cookie consent banner — choose \"Necessary only\" or \"Accept all\" the first time you visit; we only use cookies to keep you logged in, no ad trackers" },
+      { "type": "new", "text": "You can now record selling shares of a manually-tracked holding instead of just deleting it. Sell all or part of a position, and your portfolio's performance chart keeps its full history intact instead of rewriting the past. Sold positions show up in a new \"Sold Positions\" list with your locked-in gain or loss, and you can undo a sale if you made a mistake" },
+      { "type": "new", "text": "AI Deep Dive reports and the AI Portfolio Builder now keep generating in the background even if you leave the page. You'll get a notification the moment it's ready, wherever you are in the app" },
+      { "type": "new", "text": "Added a cookie consent banner. Choose \"Necessary only\" or \"Accept all\" the first time you visit; we only use cookies to keep you logged in, no ad trackers" },
       { "type": "improved", "text": "The Volatility (Beta) card on stock pages now shows a clearer low-to-high gauge with your stock's exact spot on it, plus a marker for its industry or sector average" },
-      { "type": "fixed", "text": "Fixed sector and industry benchmark comparisons (the \"typical for its sector\" markers next to Key Numbers) sometimes missing or showing the wrong average — benchmarks now compare against a company's specific industry, not just its broader sector, and are sourced from more accurate company data" },
+      { "type": "fixed", "text": "Fixed sector and industry benchmark comparisons (the \"typical for its sector\" markers next to Key Numbers) sometimes missing or showing the wrong average. Benchmarks now compare against a company's specific industry, not just its broader sector, and are sourced from more accurate company data" },
       { "type": "fixed", "text": "Fixed the Bull mascot blending into the background when you complete an Academy lesson, making the celebration hard to see in some themes" }
     ]
   },
@@ -118,22 +118,22 @@
   {
     "date": "2026-07-21",
     "entries": [
-      { "type": "new", "text": "New Pro courses in Academy — go beyond the basics with intermediate and advanced lessons on valuation, reading financial statements, portfolio risk, and researching with AI, each with hands-on practice inside the real app: filter the screener for cheap stocks, read a real company's numbers, stress-test a portfolio, and research why a stock moved" },
-      { "type": "new", "text": "Ask Bull to build you a dividend portfolio — say something like \"build me a high-yield dividend portfolio\" and Bull opens the dividend calculator already filled in with picks you can edit" },
-      { "type": "improved", "text": "The price alerts page got a visual refresh — each stock now shows its logo, and every alert has a clear icon for its type (price target, daily move, 52-week extreme, or all-time high)" },
+      { "type": "new", "text": "New Pro courses in Academy. Go beyond the basics with intermediate and advanced lessons on valuation, reading financial statements, portfolio risk, and researching with AI, each with hands-on practice inside the real app: filter the screener for cheap stocks, read a real company's numbers, stress-test a portfolio, and research why a stock moved" },
+      { "type": "new", "text": "Ask Bull to build you a dividend portfolio. Say something like \"build me a high-yield dividend portfolio\" and Bull opens the dividend calculator already filled in with picks you can edit" },
+      { "type": "improved", "text": "The price alerts page got a visual refresh. Each stock now shows its logo, and every alert has a clear icon for its type (price target, daily move, 52-week extreme, or all-time high)" },
       { "type": "fixed", "text": "Fixed a handful of stocks showing wildly wrong figures in the screener (such as an impossible market cap) caused by a data mix-up with same-named foreign listings" }
     ]
   },
   {
     "date": "2026-07-20",
     "entries": [
-      { "type": "improved", "text": "Key Numbers on stock pages now tell you whether a stock's P/E, profit margin, dividend, and volatility are high or low for its sector — with a \"typical\" marker on each meter and a plain-language note like \"Cheaper than most Technology companies\"" },
-      { "type": "improved", "text": "Added plain-language explanations across your portfolio and watchlist — hover a metric label like Unrealized P/L, Cost Basis, P/E, or a Financial Health category to see what it means" },
-      { "type": "improved", "text": "The Financial Health gauge is now easier to read — each category is colour-keyed to its slice of the ring and you can hover any category name for a plain explanation" },
+      { "type": "improved", "text": "Key Numbers on stock pages now tell you whether a stock's P/E, profit margin, dividend, and volatility are high or low for its sector, with a \"typical\" marker on each meter and a plain-language note like \"Cheaper than most Technology companies\"" },
+      { "type": "improved", "text": "Added plain-language explanations across your portfolio and watchlist. Hover a metric label like Unrealized P/L, Cost Basis, P/E, or a Financial Health category to see what it means" },
+      { "type": "improved", "text": "The Financial Health gauge is now easier to read. Each category is colour-keyed to its slice of the ring and you can hover any category name for a plain explanation" },
       { "type": "improved", "text": "Crypto and commodity pages now show the same visual stats as stocks, including a 24-hour range bar and plain-language takeaways" },
       { "type": "new", "text": "New to BullPen? A getting-started card now greets brand-new accounts with a few first steps, and disappears on its own once you get going" },
       { "type": "improved", "text": "The Daily Brief now shows a mini price trend next to each featured stock" },
-      { "type": "improved", "text": "Financials charts (Income Statement, Balance Sheet, and Cash Flow) are now colour-coded and animate in — the Balance Sheet shows what a company owns versus what it owes at a glance" },
+      { "type": "improved", "text": "Financials charts (Income Statement, Balance Sheet, and Cash Flow) are now colour-coded and animate in. The Balance Sheet shows what a company owns versus what it owes at a glance" },
       { "type": "improved", "text": "The stock price chart is clearer and more accurate, and its indicator legend now shows a live value for each line as you move across the chart" },
       { "type": "improved", "text": "The screener now falls back to the last known price when the market is closed, instead of showing blanks" },
       { "type": "improved", "text": "The Community page now features an Academy XP leaderboard" },
@@ -145,24 +145,24 @@
   {
     "date": "2026-07-19",
     "entries": [
-      { "type": "improved", "text": "Ask Bull's answers are now much more visual — health scores, prices, key stats, financials, earnings, screener results, and more now show as charts and cards instead of plain text" },
+      { "type": "improved", "text": "Ask Bull's answers are now much more visual. Health scores, prices, key stats, financials, earnings, screener results, and more now show as charts and cards instead of plain text" },
       { "type": "new", "text": "Ask Bull can now check a stock's recent insider buying and selling activity" },
-      { "type": "improved", "text": "When you ask Bull to add, update, or remove a holding, or create a price alert, you'll now see a clear confirmation it worked — or a clear error with a retry button if it didn't" },
-      { "type": "improved", "text": "Refreshed Ask Bull's starter prompts to show what it can really do — add a holding, set an alert, check insider activity — and removed ones that led to a broken tool" },
+      { "type": "improved", "text": "When you ask Bull to add, update, or remove a holding, or create a price alert, you'll now see a clear confirmation it worked, or a clear error with a retry button if it didn't" },
+      { "type": "improved", "text": "Refreshed Ask Bull's starter prompts to show what it can really do: add a holding, set an alert, check insider activity, and removed ones that led to a broken tool" },
       { "type": "fixed", "text": "Fixed profile picture uploads failing to save" }
     ]
   },
   {
     "date": "2026-07-18",
     "entries": [
-      { "type": "improved", "text": "Stock pages got a big visual upgrade — Key Numbers, Earnings, Financials, and Insider Transactions now show as charts, meters, and range bars instead of plain tables, each with a plain-language takeaway" },
-      { "type": "fixed", "text": "Fixed the Earnings section's \"Recent Reports\" almost always showing empty — past earnings now actually appear" }
+      { "type": "improved", "text": "Stock pages got a big visual upgrade. Key Numbers, Earnings, Financials, and Insider Transactions now show as charts, meters, and range bars instead of plain tables, each with a plain-language takeaway" },
+      { "type": "fixed", "text": "Fixed the Earnings section's \"Recent Reports\" almost always showing empty. Past earnings now actually appear" }
     ]
   },
   {
     "date": "2026-07-16",
     "entries": [
-      { "type": "new", "text": "You can now pin your favorite stocks and assets for quick access — pin from any stock page, then see their live prices anytime from a new button in the top navigation" },
+      { "type": "new", "text": "You can now pin your favorite stocks and assets for quick access. Pin from any stock page, then see their live prices anytime from a new button in the top navigation" },
       { "type": "improved", "text": "The AI assistant got a friendlier new look and is now called Ask Bull, with a waving bull mascot welcoming you in" },
       { "type": "improved", "text": "You can now hide individual cards inside Market Context on your dashboard, instead of having to remove the whole section" },
       { "type": "improved", "text": "Highlighted terms in Academy lessons now open the full AI assistant when you ask for more, so you can keep asking follow-up questions" },
@@ -170,7 +170,7 @@
       { "type": "fixed", "text": "Fixed live prices sometimes failing to load on the screener, watchlist, heatmap, and stock pages" },
       { "type": "fixed", "text": "Fixed some valid stocks, like ExxonMobil, occasionally showing a \"not found\" page by mistake" },
       { "type": "fixed", "text": "Fixed the \"Build your portfolio\" prompt appearing on the wrong pages and for people who already have holdings" },
-      { "type": "new", "text": "Ask Bull now remembers your past conversations — open the history icon in the chat panel to pick up where you left off" },
+      { "type": "new", "text": "Ask Bull now remembers your past conversations. Open the history icon in the chat panel to pick up where you left off" },
       { "type": "new", "text": "The Beyond Stocks: ETFs & Crypto Academy course can now be skipped if you're not interested, without blocking later courses" },
       { "type": "improved", "text": "More Ask Bull polish: a bigger, easier-to-read chat icon, clearer status messages while it's working, and smoother text as answers come in" },
       { "type": "new", "text": "Ask Bull now shows a quick one-time screen the first time you chat, explaining how your messages are used" }
@@ -179,9 +179,9 @@
   {
     "date": "2026-07-14",
     "entries": [
-      { "type": "new", "text": "Sign-up now starts with a few quick questions about your investing experience, risk tolerance, timeframe, and goals — so the app and AI assistant feel tailored to you right away" },
+      { "type": "new", "text": "Sign-up now starts with a few quick questions about your investing experience, risk tolerance, timeframe, and goals, so the app and AI assistant feel tailored to you right away" },
       { "type": "new", "text": "You can now browse past Daily Briefs and step back and forth through them, so missing a morning doesn't mean missing the brief" },
-      { "type": "new", "text": "Added four new Academy courses — Company Fundamentals, Building a Portfolio, Dividends & Passive Income, and Beyond Stocks: ETFs & Crypto" },
+      { "type": "new", "text": "Added four new Academy courses: Company Fundamentals, Building a Portfolio, Dividends & Passive Income, and Beyond Stocks: ETFs & Crypto" },
       { "type": "improved", "text": "Renamed the Reading a Stock Price course to Why Stocks Move and refreshed its content so it no longer overlaps with Reading a Stock Quote" },
       { "type": "improved", "text": "Simplified the holdings performance chart by removing the confusing \"Since Purchase\" timeframe, since MAX already showed the same numbers" },
       { "type": "improved", "text": "Sped up the stock screener's live price updates" },
@@ -206,7 +206,7 @@
   {
     "date": "2026-07-12",
     "entries": [
-      { "type": "new", "text": "Added a Why Today widget to your dashboard — see the biggest mover in your holdings and watchlist at a glance, and ask why with one click" }
+      { "type": "new", "text": "Added a Why Today widget to your dashboard. See the biggest mover in your holdings and watchlist at a glance, and ask why with one click" }
     ]
   },
   {
