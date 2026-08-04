@@ -543,6 +543,16 @@
   text-decoration: underline;
   text-underline-offset: 2px;
 }
+/* Restores paragraph spacing. The global reset zeroes <p> margins and this
+   block never put them back, so consecutive paragraphs collided into what
+   looked like one block with a stray line break (visible on /about under
+   "Who builds it"). Scoped to direct children so the generated legal HTML
+   injected into .legal-doc on /cookies, which carries its own inline
+   spacing on nested elements, is untouched. */
+.bullpen-landing-root .legal-doc > p {
+  margin: 0 0 14px;
+}
+
 .bullpen-landing-root .legal-doc h1 {
   font-size: 28px;
   margin: 0 0 8px;
@@ -564,6 +574,96 @@
 .bullpen-landing-root .legal-doc li {
   margin: 4px 0;
   color: var(--fg-muted);
+}
+
+/* ─── Founder's note (/about) ───────────────────────────────────────────────
+   Set apart from the surrounding prose because it changes voice: everything
+   else on /about is written in the company's voice, this paragraph block is
+   written in a person's. A full border rather than a left accent stripe, and
+   no card nesting — it sits inside .legal-doc's measure and matches its width. */
+.bullpen-landing-root .founders-note {
+  max-width: 760px;
+  margin: 48px auto 0;
+  padding: 28px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+}
+
+.bullpen-landing-root .founders-note-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+/* Overrides .legal-doc h2's top rule and margin — inside this panel the
+   heading opens the block rather than separating two sections. */
+.bullpen-landing-root .legal-doc .founders-note h2,
+.bullpen-landing-root .founders-note h2 {
+  margin: 0;
+  padding-top: 0;
+  border-top: none;
+  font-size: 19px;
+}
+
+/* Localhost-only marker. Deliberately plain: it is a build affordance, not
+   part of the design, and should not be mistaken for a brand element. */
+.bullpen-landing-root .founders-note-draft {
+  padding: 2px 8px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 99px;
+  color: var(--fg-dim);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: help;
+}
+
+.bullpen-landing-root .founders-note-body p {
+  margin: 0 0 14px;
+  color: var(--fg-muted);
+  font-size: 15px;
+  line-height: 1.7;
+  text-wrap: pretty;
+}
+.bullpen-landing-root .founders-note-body p:last-child {
+  margin-bottom: 0;
+}
+
+.bullpen-landing-root .founders-note-sign {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+
+.bullpen-landing-root .founders-note-portrait {
+  border-radius: 99px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.bullpen-landing-root .founders-note-name {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 22px;
+  line-height: 1.15;
+  color: var(--fg);
+}
+
+.bullpen-landing-root .founders-note-role {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--fg-dim);
+}
+
+@media (max-width: 560px) {
+  .bullpen-landing-root .founders-note { padding: 22px 18px; }
 }
 
 /* ─── Changelog page ────────────────────────────────────────────────────── */

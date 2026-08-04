@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Logo } from '@/components/landing/Atoms';
 import { Footer } from '@/components/landing/Footer';
+import { FoundersNote } from '@/components/about/FoundersNote';
 import '@/components/landing/landing-styles.css';
 
 export const metadata: Metadata = {
@@ -36,10 +37,15 @@ export default function AboutPage() {
             </p>
             <h2>Who it&apos;s for</h2>
             <p>
-              BullPen is built for beginners who don&apos;t want to stay beginners — people who want
+              BullPen is built for beginners who don&apos;t want to stay beginners. People who want
               real financial data and honest explanations, not jargon, and who want to actually
               understand what they&apos;re looking at rather than just being told what to think.
             </p>
+            {/* Sits after "what it is" and "who it's for" so the reader has
+                context before the personal account, and before "Who builds it",
+                which answers the same question in a formal register. */}
+            <FoundersNote />
+
             <h2>Who builds it</h2>
             <p>
               BullPen is built and operated by Hasselø BullPen, a sole proprietorship (enkeltpersonforetak)
