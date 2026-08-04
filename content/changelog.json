@@ -1,5 +1,16 @@
 [
   {
+    "date": "2026-08-04",
+    "entries": [
+      { "type": "new", "text": "Bull can now reference your holdings and watchlist when you ask about your own portfolio, so questions like \"how much of my portfolio is in tech\" work without you listing everything out first. This is off by default and can be turned on in Settings under Ask Bull" },
+      { "type": "improved", "text": "Redesigned the S&P 500 Sector Heatmap. Prices stream live so there is no refresh button to press, the colours now match the rest of the app, and the sector list underneath is a ranked leaderboard showing which parts of the market are leading and lagging" },
+      { "type": "fixed", "text": "Fixed a problem that could make market data across the app slow or briefly unavailable when too many background data requests overlapped" },
+      { "type": "fixed", "text": "Fixed the Company Compare tool showing a raw error code instead of a readable message when it could not load data. It now explains what happened and offers a retry" },
+      { "type": "fixed", "text": "Fixed Company Compare showing an empty screen while loading, and its layout breaking on phones when comparing three or more companies" },
+      { "type": "fixed", "text": "Fixed the heatmap tooltip labelling pre-market and after-hours prices as just \"Extended\" instead of naming the actual trading session" }
+    ]
+  },
+  {
     "date": "2026-08-03",
     "entries": [
       { "type": "new", "text": "You can now report a bug or suggest a new feature right from your profile menu, no need to leave the app" },
