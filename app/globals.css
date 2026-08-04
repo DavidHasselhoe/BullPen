@@ -105,6 +105,29 @@
   --gain: oklch(0.765 0.177 163);
   --loss: oklch(0.704 0.191 22);
   --neutral: oklch(0.78 0.13 80);
+
+  /* ── Brand identity (DESIGN.md "Signal Emerald") ─────────────────────────
+     The single source of truth for BullPen's brand colour, consumed by both
+     the app and the marketing landing (components/landing/landing-styles.css)
+     so the two can't drift apart again. Before this existed the brand reached
+     the screen only through ~317 hardcoded `emerald-*` utility classes across
+     87 files, at three different values — the landing's own oklch(0.72 .17 152),
+     DESIGN.md's documented emerald-400, and emerald-500 (the most-used, and the
+     one nobody had documented). This unifies on the documented value.
+
+     Deliberately shares its value with --gain: per DESIGN.md, Signal Emerald
+     does double duty as the brand accent AND the "up" signal. They are kept as
+     separate tokens because they are separate *jobs* — if the brand ever moves
+     off emerald, --gain must not follow it.
+
+     Light/dark differ: emerald-400 measures 10.1:1 on the dark background but
+     only ~1.9:1 on white, so light mode steps down to emerald-700 (5.45:1 on
+     white). Contrast for every pair below was computed, not estimated. */
+  --brand: oklch(0.508 0.118 165.612);
+  --brand-ink: oklch(0.985 0 0);
+  --brand-soft: oklch(0.508 0.118 165.612 / 0.12);
+  --brand-glow: oklch(0.508 0.118 165.612 / 0.25);
+
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
@@ -179,6 +202,14 @@
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
+  /* Brand, dark mode — emerald-400. Measured 10.10:1 on --background and
+     9.53:1 for --brand-ink on a --brand fill, so it clears AA as both text
+     and a button label. See the light-mode block above for why the two modes
+     use different steps. */
+  --brand: oklch(0.765 0.177 163);
+  --brand-ink: oklch(0.18 0.04 163);
+  --brand-soft: oklch(0.765 0.177 163 / 0.15);
+  --brand-glow: oklch(0.765 0.177 163 / 0.35);
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);

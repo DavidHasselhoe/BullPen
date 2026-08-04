@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { Reveal, SectionHeading } from './Atoms';
 import { Icon } from './Icon';
+import { PRICING, FREE_WATCHLISTS, FREE_ALERT_STOCKS } from '@/lib/billing/entitlements';
+import { QUOTAS } from '@/lib/billing/quotas';
 
 interface Props {
   onSignUp: () => void;
@@ -21,6 +23,19 @@ interface Plan {
   features: string[];
 }
 
+/**
+ * Plan copy is derived from `lib/billing/entitlements.ts` and `quotas.ts` —
+ * the same modules the server-side gates and the /upgrade page read from.
+ *
+ * That file's own header says it exists "so the offer and the marketing copy
+ * can never drift", but this page had been hardcoding its own list, and had
+ * drifted badly: it advertised "20 AI chat messages / month" against a real
+ * limit of 15 *per day* (understating by roughly 20x), described the screener
+ * as capped at "3 saved filters" when 3 is the watchlist limit and the screener
+ * isn't capped at all, and promised "SEC filing alerts & summaries", which is
+ * not an entitlement that exists. Reading the real values means those three
+ * classes of error can't recur.
+ */
 const PLANS: Plan[] = [
   {
     name: 'Free',
@@ -30,31 +45,32 @@ const PLANS: Plan[] = [
     cta: 'Sign up free',
     ctaStyle: 'ghost',
     features: [
-      'Real-time quotes on 10,000+ tickers',
-      'Charts with technical indicators',
-      'Portfolio tracking (manual)',
-      'Watchlist & search',
-      'Stock screener (3 saved filters)',
-      '20 AI chat messages / month',
+      'Live US quotes, charts & indicators',
+      'Unlimited stock, ETF & crypto pages',
+      'Full stock screener & company compare',
+      `${QUOTAS.chat.count} AI chat messages a day`,
+      `${QUOTAS.deep_dive.count} AI Deep Dive & ${QUOTAS.portfolio_builder.count} Portfolio Builder runs a month`,
+      `Holdings tracking, ${FREE_WATCHLISTS} watchlists, alerts on ${FREE_ALERT_STOCKS} stocks`,
+      'Academy beginner courses & daily challenge',
     ],
   },
   {
     name: 'Pro',
     tagline: 'For active investors who want the edge.',
-    monthly: 12,
-    annualMo: 9,
-    cta: 'Start free 14-day trial',
+    monthly: PRICING.proMonthly,
+    annualMo: PRICING.proAnnualPerMonth,
+    cta: `Start free ${PRICING.trialDays}-day trial`,
     ctaStyle: 'primary',
     highlight: true,
     features: [
       'Everything in Free',
-      'Daily Brief — AI summary every morning',
-      '"Why Today?" price explanations',
-      'Unlimited AI chat',
-      'SEC filing alerts & summaries',
-      'Brokerage sync (SnapTrade)',
-      'Price & earnings email alerts',
-      'Priority support',
+      'Daily Brief — AI market recap every morning',
+      '“Why Today?” move explanations',
+      'Unlimited AI chat, Portfolio Builder & Checkup',
+      "Bull's Weekly Pick — full thesis",
+      'Automatic brokerage sync (SnapTrade)',
+      'Unlimited watchlists & price alerts',
+      'Insider transactions, exports & advanced Academy',
     ],
   },
 ];
@@ -65,8 +81,7 @@ export function Pricing({ onSignUp, onSubscribe }: Props) {
   return (
     <section id="pricing" style={{ padding: '120px 0 80px', position: 'relative' }}>
       <div className="wrap">
-        <SectionHeading
-          eyebrow="Pricing"
+        <SectionHeading
           title={
             <>
               Free to start.{' '}
@@ -139,7 +154,7 @@ export function Pricing({ onSignUp, onSubscribe }: Props) {
                     letterSpacing: '0.04em',
                   }}
                 >
-                  −25%
+                  −{Math.round((1 - PRICING.proAnnualPerMonth / PRICING.proMonthly) * 100)}%
                 </span>
               </button>
             </div>
@@ -261,14 +276,34 @@ export function Pricing({ onSignUp, onSubscribe }: Props) {
         </div>
 
         <Reveal delay={3}>
-          <div style={{ marginTop: 36, textAlign: 'center', fontSize: 13, color: 'var(--fg-dim)' }}>
-            Need a team plan?{' '}
-            <a
-              href="mailto:hello@bullpen.app"
-              style={{ color: 'var(--fg)', textDecoration: 'underline', textDecorationColor: 'var(--border-strong)' }}
-            >
-              Get in touch
-            </a>
+          <div
+            style={{
+              marginTop: 36,
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 16,
+              fontSize: 13,
+              color: 'var(--fg-dim)',
+            }}
+          >
+            {/* Both facts come from PRICING in entitlements.ts. The money-back
+                window was previously not mentioned anywhere on this page. */}
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <Icon name="check" size={14} style={{ color: 'var(--accent)' }} />
+              {PRICING.trialDays}-day free trial
+            </span>
+            <span style={{ width: 3, height: 3, background: 'var(--fg-dim)', borderRadius: 99, opacity: 0.5 }} />
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <Icon name="check" size={14} style={{ color: 'var(--accent)' }} />
+              {PRICING.moneyBackDays}-day money-back guarantee
+            </span>
+            <span style={{ width: 3, height: 3, background: 'var(--fg-dim)', borderRadius: 99, opacity: 0.5 }} />
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <Icon name="check" size={14} style={{ color: 'var(--accent)' }} />
+              Cancel anytime
+            </span>
           </div>
         </Reveal>
       </div>

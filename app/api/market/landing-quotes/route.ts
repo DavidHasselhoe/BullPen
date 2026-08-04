@@ -14,9 +14,17 @@ import { NextResponse } from 'next/server';
 import { getStockQuotes, isExtendedHoursET, TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
 import { rget, rset } from '@/lib/cache/redis-cache';
 import { logger } from '@/lib/utils/logger';
+import { LANDING_SYMBOLS } from '@/lib/market-data/landing-symbols';
 
-const SYMBOLS = ['AAPL', 'NVDA', 'TSLA', 'BTC/USD'];
-const CACHE_KEY = 'landing:hero-quotes:v1';
+// Single source of truth shared with the components that render these (see
+// lib/market-data/landing-symbols.ts). Widened from the original 4 so the
+// ticker strip can show real prices instead of hardcoded ones; still one
+// batched call for all landing traffic, so the cost ceiling barely moves.
+const SYMBOLS = LANDING_SYMBOLS;
+// v2: cache key bumped because the symbol set changed — a v1 entry written
+// before this deploy holds only the old 4 and would starve the tape until it
+// expired.
+const CACHE_KEY = 'landing:hero-quotes:v2';
 const REDIS_TTL_SECONDS = 55; // hero polls every 60 s; keep one fetch per window
 
 type QuotePayload = Record<string, { c: number; d: number; dp: number }>;

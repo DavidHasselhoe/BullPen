@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { LandingClient } from '@/components/landing/LandingClient';
+import { getAvailableShots } from '@/lib/landing/screenshots';
 
 export const metadata: Metadata = {
   title: 'BullPen — The market, explained.',
@@ -16,5 +17,7 @@ export const metadata: Metadata = {
 };
 
 export default function LandingPage() {
-  return <LandingClient />;
+  // Resolved on the server so the browser never requests a screenshot that
+  // doesn't exist yet (see lib/landing/screenshots.ts).
+  return <LandingClient shots={getAvailableShots()} />;
 }

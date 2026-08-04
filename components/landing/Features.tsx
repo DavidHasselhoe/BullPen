@@ -128,6 +128,41 @@ function FeatureDesc({ children }: { children: ReactNode }) {
   );
 }
 
+/**
+ * Marks a mockup whose numbers are illustrative rather than live.
+ *
+ * The visuals below are hand-drawn recreations of real screens, so any figure
+ * in them is invented by definition. That's fine for showing *shape* — it is
+ * not fine when a viewer can't tell the difference between a layout demo and a
+ * live readout, especially on a page that also renders genuinely live prices a
+ * few hundred pixels above. Anything containing made-up numbers carries this
+ * tag; anything showing real data (the hero's NVDA quote and chart) must not.
+ */
+function ExampleTag() {
+  return (
+    <span
+      style={{
+        position: 'absolute',
+        top: 12,
+        right: 12,
+        padding: '2px 7px',
+        borderRadius: 99,
+        background: 'var(--surface-2)',
+        border: '1px solid var(--border)',
+        color: 'var(--fg-dim)',
+        fontSize: 9.5,
+        fontWeight: 600,
+        letterSpacing: '0.08em',
+        textTransform: 'uppercase',
+        pointerEvents: 'none',
+        zIndex: 2,
+      }}
+    >
+      Example
+    </span>
+  );
+}
+
 // ── Visuals ───────────────────────────────────────────────────────────────────
 
 function ChatVisual() {
@@ -137,12 +172,17 @@ function ChatVisual() {
     return () => clearInterval(id);
   }, []);
 
+  // Shows the agent *working* rather than a fabricated answer. The previous
+  // version scripted specific claims — a named bank raising a price target to a
+  // specific number, a specific benchmark leak — none of which happened. Those
+  // read as reporting, not illustration. Depicting the tool-use steps is honest,
+  // and it demonstrates the thing that actually differentiates the product.
   const bubbles = [
     { from: 'user', text: 'Why is NVDA up today?' },
-    { from: 'ai', text: 'NVDA gained 4.2% on three catalysts:' },
-    { from: 'ai', text: '1. New Blackwell GPU benchmark leaks…' },
-    { from: 'ai', text: '2. Morgan Stanley raised PT to $1,100' },
-    { from: 'ai', text: '3. Sector rotation back into AI names' },
+    { from: 'ai', text: 'Reading today’s price action…' },
+    { from: 'ai', text: 'Searching news and analyst notes…' },
+    { from: 'ai', text: 'Checking recent SEC filings…' },
+    { from: 'ai', text: 'Here’s what moved it, with sources.' },
   ];
 
   return (
@@ -233,12 +273,12 @@ function BriefVisual() {
         <span style={{ color: 'var(--accent)' }}>● Live</span>
       </div>
       <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)', marginBottom: 8, letterSpacing: '-0.01em' }}>
-        Markets opened mixed as tech leads.
+        What moved overnight, and what to watch today.
       </div>
       <div style={{ fontSize: 12.5, color: 'var(--fg-muted)', lineHeight: 1.55 }}>
-        <span style={{ color: 'var(--fg)' }}>NVDA</span> jumped 4.2% premarket on Blackwell news. In your portfolio:{' '}
-        <span style={{ color: 'var(--up)', fontWeight: 600 }}>AAPL +1.5%</span>,
-        <span style={{ color: 'var(--down)', fontWeight: 600 }}> TSLA -1.4%</span>. Fed minutes drop at 2PM ET.
+        Written fresh each morning around the companies you actually hold and watch: the moves
+        that matter, the earnings landing today, and the macro events worth knowing about before
+        the open.
       </div>
       <div
         style={{
@@ -269,7 +309,8 @@ function PortfolioVisual() {
   let offset = 0;
 
   return (
-    <div style={{ marginTop: 'auto', display: 'flex', gap: 18, alignItems: 'center' }}>
+    <div style={{ position: 'relative', marginTop: 'auto', display: 'flex', gap: 18, alignItems: 'center' }}>
+      <ExampleTag />
       <svg viewBox="0 0 100 100" width="120" height="120" style={{ transform: 'rotate(-90deg)' }}>
         <circle cx={c} cy={c} r={r} fill="none" stroke="var(--bg-2)" strokeWidth="14" />
         {slices.map((s, i) => {
@@ -363,11 +404,16 @@ function ScreenerVisual() {
           <Icon name="plus" size={11} /> Add filter
         </span>
       </div>
-      <div style={{ background: 'var(--bg-2)', border: '1px solid var(--border)', borderRadius: 12, padding: 12, fontSize: 12 }}>
+      <div style={{ position: 'relative', background: 'var(--bg-2)', border: '1px solid var(--border)', borderRadius: 12, padding: 12, fontSize: 12 }}>
+        <ExampleTag />
+        {/* Figures are illustrative and carry the Example tag above. They are
+            deliberately left in rather than blanked, because a screener with an
+            empty results column reads as a broken state rather than a demo —
+            the tag, not the absence of numbers, is what makes it honest. */}
         {[
-          { t: 'NVDA', n: 'NVIDIA Corp', m: '2.21T', pct: '+4.2%' },
-          { t: 'MSFT', n: 'Microsoft', m: '3.26T', pct: '+0.9%' },
-          { t: 'AAPL', n: 'Apple Inc.', m: '3.54T', pct: '+1.5%' },
+          { t: 'NVDA', n: 'NVIDIA Corp', m: '3.1T', pct: '+4.2%' },
+          { t: 'MSFT', n: 'Microsoft', m: '3.4T', pct: '+0.9%' },
+          { t: 'AAPL', n: 'Apple Inc.', m: '3.5T', pct: '+1.5%' },
         ].map((r) => (
           <div
             key={r.t}
@@ -467,8 +513,7 @@ export function Features() {
   return (
     <section id="features" style={{ padding: '120px 0 80px', position: 'relative' }}>
       <div className="wrap">
-        <SectionHeading
-          eyebrow="The core of BullPen"
+        <SectionHeading
           title={
             <>
               Two ways to always{' '}
@@ -521,7 +566,10 @@ export function Features() {
             <FeatureCard compact>
               <FeatureKicker icon="chart" label="Real-time charts" />
               <FeatureTitle>TradingView-grade candles, indicators, alerts.</FeatureTitle>
-              <FeatureDesc>8 timeframes from 1D to ALL. Overlay SMA, EMA, Bollinger Bands, RSI, MACD.</FeatureDesc>
+              {/* Verified against hooks/use-chart-prefs.ts (ChartRange has exactly
+                  8 members, ending MAX not "ALL") and lib/finance/indicators.ts,
+                  which also ships ATR, OBV and Stochastic beyond those named. */}
+              <FeatureDesc>Eight timeframes from 1D to MAX. Overlay SMA, EMA, Bollinger Bands, RSI, MACD and more.</FeatureDesc>
               <CandleVisual />
             </FeatureCard>
           </Reveal>
@@ -551,9 +599,9 @@ export function Features() {
               <FeatureDesc>Email alerts on SEC filings, insider trades, earnings, and price thresholds.</FeatureDesc>
               <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {[
-                  { icon: 'bell' as const, t: 'AAPL filed 10-Q', s: 'Q3 revenue beat by 2.1%', up: true },
-                  { icon: 'arrowUp' as const, t: 'NVDA moved +5.2%', s: 'On Blackwell benchmark leak', up: true },
-                  { icon: 'bolt' as const, t: 'TSLA earnings tomorrow', s: 'Consensus EPS: $0.62', up: null },
+                  { icon: 'bell' as const, t: 'A company you hold files a 10-Q', s: 'Summarised, with what changed', up: true },
+                  { icon: 'arrowUp' as const, t: 'A holding crosses your price target', s: 'Sent the moment it happens', up: true },
+                  { icon: 'bolt' as const, t: 'Earnings land tomorrow', s: 'For anything you hold or watch', up: null },
                 ].map((a, i) => (
                   <div
                     key={i}

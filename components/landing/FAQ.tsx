@@ -66,8 +66,7 @@ export function FAQ() {
   return (
     <section id="faq" style={{ padding: '120px 0 80px' }}>
       <div className="wrap">
-        <SectionHeading
-          eyebrow="FAQ"
+        <SectionHeading
           title={
             <>
               Questions, answered{' '}

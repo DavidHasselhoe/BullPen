@@ -17,12 +17,13 @@ import { HowItWorks } from './HowItWorks';
 import { Peek } from './Peek';
 import { Pricing } from './Pricing';
 import { FAQ } from './FAQ';
-import { Testimonials } from './Testimonials';
+import { Toolkit } from './Toolkit';
 import { FinalCTA } from './FinalCTA';
 import { Footer } from './Footer';
+import type { Shot } from '@/lib/landing/screenshots';
 import './landing-styles.css';
 
-export function LandingClient() {
+export function LandingClient({ shots }: { shots: Shot[] }) {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
   const [authOpen, setAuthOpen] = useState(false);
@@ -75,8 +76,8 @@ export function LandingClient() {
         <TickerStrip />
         <Features />
         <HowItWorks />
-        <Peek />
-        <Testimonials />
+        <Peek shots={shots} />
+        <Toolkit />
         <Pricing onSignUp={openSignUp} onSubscribe={openSubscribe} />
         <FAQ />
         <FinalCTA onSignUp={openSignUp} />

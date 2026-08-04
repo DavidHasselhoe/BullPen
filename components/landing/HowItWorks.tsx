@@ -72,8 +72,11 @@ const STEPS: Step[] = [
         >
           Continue with email →
         </div>
+        {/* Google is the only OAuth provider wired up (lib/auth/auth.ts exports
+            signInWithGoogle and nothing else) — Apple and GitHub were listed
+            here but have never existed. */}
         <div style={{ marginTop: 8, fontSize: 10, color: 'var(--fg-dim)', textAlign: 'center' }}>
-          Or continue with Google · Apple · GitHub
+          Or continue with Google
         </div>
       </div>
     ),
@@ -82,7 +85,7 @@ const STEPS: Step[] = [
     n: '02',
     icon: 'plus',
     title: 'Build your watchlist',
-    desc: 'Search 10,000+ stocks, ETFs, crypto, and commodities — then ask BullPen AI why any of them just moved.',
+    desc: 'Search stocks, ETFs, crypto and commodities — then ask BullPen AI why any of them just moved.',
     visual: (
       <div style={{ background: 'var(--bg-2)', border: '1px solid var(--border)', borderRadius: 12, padding: 14 }}>
         <div
@@ -163,11 +166,13 @@ const STEPS: Step[] = [
           <span style={{ color: 'var(--accent)' }}>● Pro</span>
         </div>
         <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)', marginBottom: 6 }}>
-          Good morning. Markets steady before CPI.
+          Good morning. Here&apos;s your market, in a minute.
         </div>
+        {/* Previously asserted a specific analyst action ("AAPL leads after Citi
+            upgrade to Buy") that never happened. Describes the brief instead. */}
         <div style={{ fontSize: 11.5, color: 'var(--fg-muted)', lineHeight: 1.55, marginBottom: 10 }}>
-          Your watchlist is <span style={{ color: 'var(--up)', fontWeight: 600 }}>up 1.2% premarket</span>. AAPL leads after Citi upgrade to
-          Buy. Fed minutes today at 2PM.
+          How your watchlist moved overnight, which of your holdings report today, and the one
+          macro event worth knowing about before the open.
         </div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {[
@@ -201,8 +206,7 @@ export function HowItWorks() {
   return (
     <section id="how" style={{ padding: '120px 0 80px', position: 'relative' }}>
       <div className="wrap">
-        <SectionHeading
-          eyebrow="Get started"
+        <SectionHeading
           title={
             <>
               From signup to first insight,{' '}

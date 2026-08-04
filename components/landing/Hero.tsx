@@ -174,9 +174,15 @@ function HeroChartPanel({ liveQuotes }: { liveQuotes: Record<string, LiveQuote> 
   const chartPoints = nvdaPoints.length >= 2 ? nvdaPoints : FALLBACK_CHART_POINTS;
   const { line, area, lastX, lastY } = useMemo(() => buildPath(chartPoints, 400, 170), [chartPoints]);
   const nvda = liveQuotes['NVDA'];
+  // Describes what the feature does against the real, live move — it never
+  // asserts *why* the move happened. The previous version paired this real
+  // price with three invented catalysts ("Blackwell benchmarks leak, beat H100
+  // by 2.3x", "Morgan Stanley raised price target"), which read as reporting
+  // rather than illustration. Real data mixed with fabricated specifics is
+  // worse than either alone, so the specifics are gone.
   const whyHeadline = nvda
-    ? `NVDA ${nvda.up ? 'gained' : 'fell'} ${nvda.pct.replace(/^[+-]/, '')} on three catalysts:`
-    : 'NVDA moved today on three catalysts:';
+    ? `NVDA is ${nvda.up ? 'up' : 'down'} ${nvda.pct.replace(/^[+-]/, '')} today.`
+    : 'NVDA moved today.';
 
   return (
     <div
@@ -278,10 +284,10 @@ function HeroChartPanel({ liveQuotes }: { liveQuotes: Record<string, LiveQuote> 
         <div style={{ fontSize: 12.5, fontWeight: 600, marginBottom: 6, lineHeight: 1.4, color: 'var(--fg)' }}>
           {whyHeadline}
         </div>
-        <ul style={{ margin: 0, paddingLeft: 16, fontSize: 11, color: 'var(--fg-dim)', lineHeight: 1.65 }}>
-          <li>Blackwell GPU benchmarks leak, beat H100 by 2.3×</li>
-          <li>Morgan Stanley raised price target</li>
-        </ul>
+        <div style={{ fontSize: 11, color: 'var(--fg-dim)', lineHeight: 1.6 }}>
+          Ask once and BullPen reads the day&apos;s news, filings and analyst moves, then explains the
+          move in plain English with every source linked.
+        </div>
       </div>
       <div className="hero-why-connector" />
 
@@ -325,8 +331,10 @@ function HeroChartPanel({ liveQuotes }: { liveQuotes: Record<string, LiveQuote> 
             6:30 AM
           </span>
         </div>
+        {/* Generic rather than asserting a specific macro event ("Markets steady
+            before CPI") on a card sitting beside genuinely live prices. */}
         <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg)', marginBottom: 8 }}>
-          Good morning. Markets steady before CPI.
+          Good morning. Here&apos;s your market, in a minute.
         </div>
         <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
           {(['AAPL', 'NVDA', 'TSLA'] as const).map((sym) => {
@@ -469,9 +477,13 @@ export function Hero({ onSignUp }: Props) {
                 Free forever plan
               </span>
               <span style={{ width: 3, height: 3, background: 'var(--fg-dim)', borderRadius: 99, opacity: 0.5 }} />
+              {/* Was "10,000+ tickers" — an unverifiable count, and one that
+                  implied real-time coverage across all of it. Real-time is US
+                  equities and ETFs; global equities are end-of-day. Naming the
+                  asset classes is both accurate and more useful. */}
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                 <Icon name="check" size={14} style={{ color: 'var(--accent)' }} />
-                10,000+ tickers
+                Stocks, ETFs, crypto &amp; commodities
               </span>
             </div>
           </Reveal>
@@ -510,7 +522,7 @@ export function Hero({ onSignUp }: Props) {
                 marginBottom: 20,
               }}
             >
-              Powered by best-in-class data
+              The data and models behind BullPen
             </div>
             <div
               style={{
@@ -521,7 +533,13 @@ export function Hero({ onSignUp }: Props) {
                 flexWrap: 'wrap',
               }}
             >
-              {['NASDAQ', 'NYSE', 'TwelveData', 'Finnhub', 'SEC EDGAR', 'Anthropic'].map((b) => (
+              {/* Only vendors BullPen genuinely runs on. Two removals from the
+                  previous list: NASDAQ and NYSE (their data reaches us via
+                  TwelveData — badging the exchanges directly implies a
+                  relationship that doesn't exist), and Finnhub (no commercial
+                  licence to display their data, so advertising them as a source
+                  invites exactly the scrutiny we'd fail). */}
+              {['TwelveData', 'SEC EDGAR', 'Anthropic', 'OpenAI', 'SnapTrade'].map((b) => (
                 <span
                   key={b}
                   style={{
@@ -533,7 +551,7 @@ export function Hero({ onSignUp }: Props) {
                     fontWeight: 600,
                     letterSpacing: '-0.01em',
                     color: 'var(--fg-dim)',
-                    fontFamily: b === 'TwelveData' || b === 'Finnhub' ? 'var(--font-mono)' : 'inherit',
+                    fontFamily: b === 'TwelveData' ? 'var(--font-mono)' : 'inherit',
                   }}
                 >
                   {b}

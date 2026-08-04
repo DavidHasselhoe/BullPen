@@ -14,18 +14,25 @@
   --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", monospace;
   --font-serif: var(--font-instrument-serif), "Times New Roman", serif;
 
-  /* Accent palette — emerald default; can later be swapped via CSS var override */
-  --accent: oklch(0.72 0.17 152);
-  --accent-soft: oklch(0.72 0.17 152 / 0.15);
-  --accent-glow: oklch(0.72 0.17 152 / 0.35);
-  --accent-ink: oklch(0.18 0.04 152);
+  /* Accent palette — inherited from the app's canonical --brand tokens
+     (app/globals.css) rather than redeclared here. This file used to define its
+     own oklch(0.72 0.17 152), which was a third competing emerald alongside
+     DESIGN.md's documented value and the emerald-500 the app actually used
+     most. Marketing and product now resolve to the same colour by construction,
+     so they cannot drift apart again. The --accent-* names are kept because
+     ~200 inline style references across the landing components use them. */
+  --accent: var(--brand);
+  --accent-soft: var(--brand-soft);
+  --accent-glow: var(--brand-glow);
+  --accent-ink: var(--brand-ink);
   /* Activity heatmap intensity tiers — same accent hue, ascending alpha */
-  --accent-heat-1: oklch(0.72 0.17 152 / 0.25);
-  --accent-heat-2: oklch(0.72 0.17 152 / 0.45);
-  --accent-heat-3: oklch(0.72 0.17 152 / 0.7);
+  --accent-heat-1: oklch(0.765 0.177 163 / 0.25);
+  --accent-heat-2: oklch(0.765 0.177 163 / 0.45);
+  --accent-heat-3: oklch(0.765 0.177 163 / 0.7);
 
-  /* Semantic tickers */
-  --up: oklch(0.72 0.17 152);
+  /* Semantic tickers — gain shares the brand value by design (DESIGN.md:
+     Signal Emerald does double duty as brand accent and the "up" signal). */
+  --up: var(--gain);
   /* L bumped 0.65 → 0.68: at small font sizes (e.g. the hero's floating
      ticker badges) the original value measured 4.48:1 against --bg-2 —
      just under WCAG AA's 4.5:1 for normal text. Same hue/chroma. */
@@ -37,20 +44,28 @@
   --warn: oklch(0.78 0.13 80);
   --warn-soft: oklch(0.78 0.13 80 / 0.15);
 
-  /* DARK theme tokens (the only theme we ship publicly) */
-  --bg: oklch(0.155 0.005 250);
-  --bg-2: oklch(0.19 0.008 250);
-  --surface: oklch(0.215 0.01 250);
-  --surface-2: oklch(0.25 0.012 250);
+  /* DARK theme tokens (the only theme we ship publicly).
+     Hue 162 matches the app's own neutral ramp (app/globals.css .dark). These
+     greys were previously tinted to hue 250 — a cool blue pulling against an
+     emerald accent, which is what made the page read as generic dark-slate
+     rather than as BullPen's own. Tinting the neutrals very slightly toward the
+     brand's own hue is what makes a dark theme feel authored instead of
+     defaulted. Lightness values are unchanged, so every contrast guarantee
+     noted below still holds (OKLCH L is perceptual lightness — re-verified
+     after the hue shift). */
+  --bg: oklch(0.145 0.008 162);
+  --bg-2: oklch(0.185 0.008 162);
+  --surface: oklch(0.205 0.007 162);
+  --surface-2: oklch(0.245 0.007 162);
   --border: oklch(1 0 0 / 0.08);
   --border-strong: oklch(1 0 0 / 0.14);
   --fg: oklch(0.985 0 0);
-  --fg-muted: oklch(0.72 0.01 250);
+  --fg-muted: oklch(0.72 0.01 162);
   /* 0.64 keeps small dim text ≥ 4.5:1 (WCAG AA) on --bg, --surface, and
      --surface-2 (the lighter elevated-card surface — 0.62 passed on --bg/
      --surface but measured 4.42:1 on --surface-2, e.g. the hero's
      "Why Today" bubble list items, confirmed via an axe-core scan). */
-  --fg-dim: oklch(0.64 0.01 250);
+  --fg-dim: oklch(0.64 0.01 162);
   --grid: oklch(1 0 0 / 0.04);
 
   background: var(--bg);
@@ -457,6 +472,15 @@
 }
 @media (max-width: 700px) {
   .bullpen-landing-root .pricing-grid { grid-template-columns: 1fr !important; }
+}
+
+/* Toolkit inventory — auto-fit so the four groups reflow 4→2→1 without
+   needing a breakpoint per step. */
+.bullpen-landing-root .toolkit-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 18px;
+  align-items: stretch;
 }
 @media (max-width: 560px) {
   .bullpen-landing-root .footer-grid { grid-template-columns: 1fr !important; }

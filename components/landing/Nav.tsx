@@ -116,6 +116,9 @@ export function Nav({ onSignIn, onSignUp }: Props) {
                   background: 'transparent',
                   border: 'none',
                   cursor: 'pointer',
+                  // Without this the label breaks to "Sign / in" at 390px,
+                  // where it collides with the wordmark.
+                  whiteSpace: 'nowrap',
                 }}
               >
                 Sign in
