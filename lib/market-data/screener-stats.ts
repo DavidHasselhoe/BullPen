@@ -10,8 +10,14 @@
  * One TwelveData /statistics batch POST = ~50 credits per symbol. Keep call
  * sites bounded (the cron paces with delays; the GET route caps on-demand size).
  *
- * Health score is computed alongside stats (+3 credits per cold symbol for
- * income / balance / cash-flow; cache hits cost 0 extra credits).
+ * Health score is computed alongside stats. On a cold symbol this also fetches
+ * income / balance / cash-flow — each of those three costs ~101 credits on
+ * this plan (confirmed live against TwelveData's /api_usage endpoint, see
+ * app/api/cron/prefetch-market-data/route.ts's doc comment for the full story),
+ * NOT the ~1 credit a symbol-count-based estimate would suggest. ~303
+ * credits/cold-symbol is enough on its own to blow past the shared cron
+ * credit-budget, so each statement fetch reserves against it individually
+ * before firing (see fetchFinancials below) — cache hits reserve nothing.
  */
 
 import { createServerClient } from '@/lib/supabase/client';
@@ -29,7 +35,22 @@ import {
 import { getCached, getCachedStale, setCached } from '@/lib/cache/market-data-cache';
 import { computeHealthScore } from '@/lib/finance/health-score';
 import { recordHealthScoreSnapshot } from '@/lib/finance/health-score-history';
+import { waitForCronCreditBudget } from '@/lib/twelvedata/credit-budget';
 import type { ScreenerRow } from '@/app/api/screener/route';
+
+/** Real measured cost of /income_statement, /balance_sheet, /cash_flow on this
+ *  plan (see doc comment above) — reserved against the shared cron credit
+ *  budget before each actual cache-miss fetch, same rule as every other
+ *  fan-out caller of these three endpoints. */
+const CREDITS_PER_FINANCIALS_STATEMENT = 101;
+/** Short wait like app/api/compare/route.ts, not the crons' default 65s —
+ *  this path is shared with the interactive /api/screener on-demand fetch
+ *  (up to ON_DEMAND_CAP symbols in one page load), which must not hang for
+ *  minutes waiting on the shared budget. waitForCronCreditBudget proceeds
+ *  anyway once maxWaitMs elapses (a pacing guard, not a hard cap), so this
+ *  only bounds how long a request waits before firing — it doesn't skip
+ *  the fetch. */
+const FINANCIALS_BUDGET_WAIT_MS = 8_000;
 
 /** Max symbols per TwelveData /batch POST. Stays well under the ~120 cap. */
 const CHUNK_SIZE = 10;
@@ -166,6 +187,7 @@ async function fetchFinancials(sym: string): Promise<{
     getCached<IncomeStatementPeriod[]>(`financials:${sym}:income:quarterly`).then(async (c) => {
       if (c) return c;
       try {
+        await waitForCronCreditBudget(CREDITS_PER_FINANCIALS_STATEMENT, FINANCIALS_BUDGET_WAIT_MS);
         const fresh = await withRateLimitRetry(() => getIncomeStatement(sym, 'quarterly'));
         incomeFresh = true;
         return fresh;
@@ -179,6 +201,7 @@ async function fetchFinancials(sym: string): Promise<{
     getCached<BalanceSheetPeriod[]>(`financials:${sym}:balance:quarterly`).then(async (c) => {
       if (c) return c;
       try {
+        await waitForCronCreditBudget(CREDITS_PER_FINANCIALS_STATEMENT, FINANCIALS_BUDGET_WAIT_MS);
         const fresh = await withRateLimitRetry(() => getBalanceSheet(sym, 'quarterly'));
         balanceFresh = true;
         return fresh;
@@ -192,6 +215,7 @@ async function fetchFinancials(sym: string): Promise<{
     getCached<CashFlowPeriod[]>(`financials:${sym}:cashflow:quarterly`).then(async (c) => {
       if (c) return c;
       try {
+        await waitForCronCreditBudget(CREDITS_PER_FINANCIALS_STATEMENT, FINANCIALS_BUDGET_WAIT_MS);
         const fresh = await withRateLimitRetry(() => getCashFlow(sym, 'quarterly'));
         cashflowFresh = true;
         return fresh;
@@ -258,8 +282,9 @@ export async function fetchAndUpsertScreenerStats(symbols: string[]): Promise<Sc
     }
     const raw = await batchFetch<TwelveDataStatisticsRaw>(requests);
 
-    // Fetch financials for all symbols in this group in parallel.
-    // Cache hits are free; cold symbols cost +3 credits (vs 50 for stats).
+    // Fetch financials for all symbols in this group in parallel. Cache hits
+    // are free; a cold symbol costs up to 303 credits (3 statements x ~101),
+    // each reserved against the shared cron credit budget before it fires.
     const financialsMap = new Map<string, Awaited<ReturnType<typeof fetchFinancials>>>();
     await Promise.all(
       group.map(async (sym) => {
