@@ -131,6 +131,13 @@ export const DemoContentSchema = z.discriminatedUnion('surface', [
     fixtureId: z.string().default('nvda-why-today'),
     steps: z.array(DemoTourStepSchema).min(1),
   }),
+  // Market Mood: mounts the REAL Market Mood tool. Public live data with no
+  // user entanglement (unlike demo-portfolio/dividend-calculator), so no
+  // fixture payload is needed. View-only, no gating action.
+  z.object({
+    surface: z.literal('market-mood'),
+    steps: z.array(DemoTourStepSchema).min(1),
+  }),
 ]);
 export type DemoContent = z.infer<typeof DemoContentSchema>;
 
