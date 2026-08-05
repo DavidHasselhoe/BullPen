@@ -13,6 +13,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { maybeClaimShareAttribution } from '@/lib/auth/share-attribution';
+import { setLastUsedAuthMethod } from '@/lib/auth/last-used-method';
 import { Loader2 } from 'lucide-react';
 
 function AuthCallbackContent() {
@@ -62,6 +63,7 @@ function AuthCallbackContent() {
       }
 
       if (data.session) {
+        setLastUsedAuthMethod('google');
         void maybeClaimShareAttribution(data.session.user.id);
         redirectHome();
       }

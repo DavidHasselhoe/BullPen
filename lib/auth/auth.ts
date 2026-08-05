@@ -3,6 +3,7 @@
 
 import { createBrowserClient } from '../supabase/client';
 import { maybeClaimShareAttribution } from './share-attribution';
+import { setLastUsedAuthMethod } from './last-used-method';
 
 export interface AuthUser {
   id: string;
@@ -283,6 +284,7 @@ export async function signIn(params: SignInParams): Promise<AuthResult> {
       return { success: false, error: errMsg };
     }
 
+    setLastUsedAuthMethod('email');
     return { success: true, user: userProfile };
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Unknown error';
