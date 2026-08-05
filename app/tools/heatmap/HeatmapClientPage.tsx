@@ -8,12 +8,16 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { Treemap, ResponsiveContainer } from 'recharts';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, Grid3X3, AlertCircle, Search, X, ListOrdered } from 'lucide-react';
 import { useHeatmapStream } from '@/hooks/use-heatmap-stream';
+import { useAuth } from '@/components/auth/AuthProvider';
 import { cn } from '@/lib/utils';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
 import type { HeatmapResponse, HeatmapStock, HeatmapSector } from '@/app/api/tools/heatmap/route';
 import type { Session } from '@/app/api/market/heatmap/stream/route';
+
+type HeatmapMode = 'sp500' | 'my-stocks';
 
 // ─── Color ramp (Signal Emerald / Signal Red — see DESIGN.md) ─────────────────
 // Six steps pulled directly from Tailwind's emerald/red OKLCH scale (the same
@@ -593,6 +597,8 @@ function HeatmapSkeleton() {
 export default function HeatmapClientPage() {
   const router = useRouter();
   const prefersReducedMotion = useReducedMotion();
+  const { isAuthenticated } = useAuth();
+  const [mode, setMode] = useState<HeatmapMode>('sp500');
   const [sectorFilter, setSectorFilter] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const searchRef = useRef<HTMLInputElement>(null);
@@ -600,8 +606,8 @@ export default function HeatmapClientPage() {
   const [tooltipPos, setTooltipPos] = useState<TooltipPos | null>(null);
 
   const { data, isLoading, isError, refetch } = useQuery<HeatmapResponse>({
-    queryKey: ['heatmap'],
-    queryFn: () => fetch('/api/tools/heatmap').then((r) => r.json()),
+    queryKey: ['heatmap', mode],
+    queryFn: () => fetch(`/api/tools/heatmap?mode=${mode}`).then((r) => r.json()),
     staleTime: 3 * 60_000,
     refetchInterval: false,
   });
@@ -697,7 +703,9 @@ export default function HeatmapClientPage() {
               <Grid3X3 className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-foreground">S&amp;P 500 Sector Heatmap</h1>
+              <h1 className="text-2xl font-bold tracking-tight text-foreground">
+                {mode === 'my-stocks' ? 'My Stocks Heatmap' : 'S&P 500 Sector Heatmap'}
+              </h1>
               <p className="text-muted-foreground text-sm mt-0.5">
                 Sized by market cap · colored by today&apos;s performance
               </p>
@@ -705,6 +713,14 @@ export default function HeatmapClientPage() {
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
+            {isAuthenticated && (
+              <Tabs value={mode} onValueChange={(v) => setMode(v as HeatmapMode)}>
+                <TabsList>
+                  <TabsTrigger value="sp500">S&amp;P 500</TabsTrigger>
+                  <TabsTrigger value="my-stocks">My Stocks</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            )}
             <SessionBadge session={session} connected={connected} />
             {!connected && lastUpdated && (
               <span className="text-xs text-muted-foreground tabular-nums">As of {lastUpdated}</span>
@@ -776,8 +792,22 @@ export default function HeatmapClientPage() {
               <Button variant="outline" onClick={() => refetch()}>Try again</Button>
             </div>
           ) : treemapData.length === 0 ? (
-            <div className="flex h-[55vh] items-center justify-center text-muted-foreground text-sm sm:h-[65vh]">
-              {sectorFilter ? `No data for ${sectorFilter}` : 'No heatmap data available'}
+            <div className="flex h-[55vh] flex-col items-center justify-center gap-2 text-center text-muted-foreground text-sm sm:h-[65vh]">
+              {mode === 'my-stocks' && !sectorFilter ? (
+                <>
+                  <p>Nothing to show yet — add a stock to your holdings or watchlist to see it here.</p>
+                  <div className="flex gap-3 text-xs">
+                    <Link href="/holdings" className="text-primary underline-offset-4 hover:underline">
+                      Go to Holdings
+                    </Link>
+                    <Link href="/watchlist" className="text-primary underline-offset-4 hover:underline">
+                      Go to Watchlist
+                    </Link>
+                  </div>
+                </>
+              ) : (
+                <p>{sectorFilter ? `No data for ${sectorFilter}` : 'No heatmap data available'}</p>
+              )}
             </div>
           ) : (
             <div className="h-[55vh] w-full sm:h-[65vh]">
