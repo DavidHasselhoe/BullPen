@@ -12,6 +12,7 @@ const PortfolioDemo = dynamic(() => import('./demo/PortfolioDemo').then((m) => m
 const DividendDemo = dynamic(() => import('./demo/DividendDemo').then((m) => m.DividendDemo), { ssr: false });
 const ScreenerDemo = dynamic(() => import('./demo/ScreenerDemo').then((m) => m.ScreenerDemo), { ssr: false });
 const AiResearchDemo = dynamic(() => import('./demo/AiResearchDemo').then((m) => m.AiResearchDemo), { ssr: false });
+const MarketMoodDemo = dynamic(() => import('./demo/MarketMoodDemo').then((m) => m.MarketMoodDemo), { ssr: false });
 
 interface Props {
   content: DemoContent;
@@ -100,6 +101,12 @@ export function DemoLesson({ content, onComplete }: Props) {
         >
           {tour}
         </AiResearchDemo>
+      );
+    case 'market-mood':
+      return (
+        <MarketMoodDemo onClose={finish}>
+          {tour}
+        </MarketMoodDemo>
       );
     default:
       return null;
