@@ -6,7 +6,8 @@
       { "type": "new", "text": "The S&P 500 Heatmap now has a My Stocks view. Switch to it to see your own holdings and watchlist sized by market cap and colored by today's performance, the same way the main heatmap works" },
       { "type": "improved", "text": "The sign-in page now shows a small badge on Continue with Google if that's how you signed in last time, so you don't have to guess whether you used Google or your email and password" },
       { "type": "fixed", "text": "Fixed Ask Bull sometimes answering about a stock from earlier in the conversation, or saying your holdings weren't enabled when you had already turned that on, if you kept chatting for a while" },
-      { "type": "fixed", "text": "Fixed Google (GOOG/GOOGL) showing up as two separate tiles on the S&P 500 Heatmap. Now shown as one" }
+      { "type": "fixed", "text": "Fixed Google (GOOG/GOOGL) showing up as two separate tiles on the S&P 500 Heatmap. Now shown as one" },
+      { "type": "fixed", "text": "Fixed the My Stocks Heatmap still showing a stock you had fully sold" }
     ]
   },
   {
