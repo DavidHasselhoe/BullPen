@@ -232,14 +232,24 @@ async function resolveMyStocks(userId: string): Promise<HeatmapStock[]> {
   const supabase = createServerClient();
 
   const [{ data: holdingsRows }, { data: watchlistRows }] = await Promise.all([
-    supabase.from('user_holdings').select('symbol').eq('user_id', userId),
+    supabase.from('user_holdings').select('symbol, quantity').eq('user_id', userId),
     supabase.from('user_watchlist').select('symbol').eq('user_id', userId),
   ]);
 
+  // A fully sold position keeps its row at quantity = 0 rather than being
+  // deleted (see docs/superpowers/specs/2026-07-23-holding-sales-design.md —
+  // enables sale history / average-cost accounting). Null quantity is a
+  // separate, legitimate case (tracking without portfolio values, per
+  // user_holdings.quantity's column comment) and must stay included — same
+  // "quantity == null || quantity > 0" distinction app/holdings/page.tsx uses.
+  const heldSymbols = (holdingsRows ?? [])
+    .filter((r) => r.quantity == null || (r.quantity as number) > 1e-9)
+    .map((r) => r.symbol as string);
+
   const uniqueSymbols = [
     ...new Set(
-      [...(holdingsRows ?? []), ...(watchlistRows ?? [])]
-        .map((r) => (r.symbol as string).toUpperCase())
+      [...heldSymbols, ...(watchlistRows ?? []).map((r) => r.symbol as string)]
+        .map((sym) => sym.toUpperCase())
         .filter((sym) => {
           const type = inferAssetType(sym);
           return type !== 'crypto' && type !== 'forex';
