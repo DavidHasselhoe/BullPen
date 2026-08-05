@@ -355,6 +355,69 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     plainLabel: 'All Costs Combined',
     description: 'Every cost the company subtracts from revenue — production, operating expenses, taxes, and interest — before its bottom-line profit.',
   },
+
+  // ── Macro / Economy ─────────────────────────────────────────────────────────
+
+  'Federal Reserve': {
+    plainLabel: 'The Fed',
+    description: 'The United States central bank. It sets interest rate policy to try to keep inflation in check and the economy growing at a healthy pace.',
+  },
+  'Interest Rate': {
+    plainLabel: 'Cost of Borrowing Money',
+    description: "What it costs to borrow money, set in large part by the Fed's policy rate. When rates rise, loans, mortgages, and business borrowing all get more expensive.",
+  },
+  'Jobs Report': {
+    plainLabel: 'Monthly Employment Report',
+    description: 'A US government report, released the first Friday of most months, showing how many jobs were added or lost. Markets react to whether the number beats or misses forecasts, not the number itself.',
+  },
+  'Inflation': {
+    plainLabel: 'Rising Prices',
+    description: 'The rate at which prices for goods and services increase over time. High inflation erodes what your money can buy and often pushes the Fed to raise interest rates.',
+  },
+  'CPI': {
+    plainLabel: 'Consumer Price Index',
+    description: 'The most widely watched measure of inflation, tracking how much prices for everyday goods and services have changed. A hotter-than-expected CPI report often moves the whole market.',
+  },
+  'Unemployment Rate': {
+    plainLabel: 'Share of People Out of Work',
+    description: 'The percentage of the labor force actively looking for work but without a job. Released monthly alongside the jobs report.',
+  },
+  'Oil Price': {
+    plainLabel: 'Price of Crude Oil',
+    description: 'The market price of crude oil. It ripples into transportation and manufacturing costs, consumer prices, and energy company profits, sometimes pulling the market in two different directions at once.',
+  },
+  'Discount Rate': {
+    plainLabel: 'How Future Profits Get Valued Today',
+    description: "The rate used to translate a company's future profits into what they're worth today. When interest rates rise, this rate rises too, shrinking the value of profits expected far in the future, which is why growth stocks tend to fall harder than value stocks when rates climb.",
+  },
+  'Growth Stock': {
+    plainLabel: 'Growth Stock',
+    description: "A stock priced mainly on profits expected years from now, not today's earnings. Its value leans heavily on future cash flow, making it more sensitive to rising interest rates.",
+  },
+  'Value Stock': {
+    plainLabel: 'Value Stock',
+    description: 'A stock priced mainly on the cash it already generates today, not a distant growth story. Its value leans less on future cash flow, making it comparatively steadier when interest rates rise.',
+  },
+  'Yield Curve': {
+    plainLabel: 'Yield Curve',
+    description: "A line plotting Treasury bond yields from short-term to long-term. Normally, longer-term yields are higher. When that flips, it's called an inversion.",
+  },
+  'Yield Curve Inversion': {
+    plainLabel: 'Inverted Yield Curve',
+    description: 'When short-term Treasury yields rise above long-term yields. It has historically been one of the more reliable warning signs of a coming recession.',
+  },
+  'Credit Spread': {
+    plainLabel: 'Extra Yield for Riskier Debt',
+    description: 'The extra yield investors demand to hold riskier corporate bonds over safe government debt. Widening spreads signal investors are pricing in more risk of default.',
+  },
+  'Sector Rotation': {
+    plainLabel: 'Money Shifting Between Sectors',
+    description: 'When investors shift money out of some sectors and into others as economic conditions change, for example moving from growth-heavy tech into steadier value sectors as rates rise.',
+  },
+  'Recession': {
+    plainLabel: 'Economic Downturn',
+    description: 'A significant, widespread decline in economic activity lasting more than a few months, typically marked by falling output, employment, and spending.',
+  },
 };
 
 /** Look up a glossary entry, returning undefined if not found. */
