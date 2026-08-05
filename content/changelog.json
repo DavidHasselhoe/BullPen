@@ -1,5 +1,15 @@
 [
   {
+    "date": "2026-08-05",
+    "entries": [
+      { "type": "new", "text": "Added two new Academy courses on how the bigger economy moves the market: the Fed, jobs reports, inflation, and oil prices. The free course covers the basics, and the Pro course goes deeper with a hands-on tour of the Market Mood tool" },
+      { "type": "new", "text": "The S&P 500 Heatmap now has a My Stocks view. Switch to it to see your own holdings and watchlist sized by market cap and colored by today's performance, the same way the main heatmap works" },
+      { "type": "improved", "text": "The sign-in page now shows a small badge on Continue with Google if that's how you signed in last time, so you don't have to guess whether you used Google or your email and password" },
+      { "type": "fixed", "text": "Fixed Ask Bull sometimes answering about a stock from earlier in the conversation, or saying your holdings weren't enabled when you had already turned that on, if you kept chatting for a while" },
+      { "type": "fixed", "text": "Fixed Google (GOOG/GOOGL) showing up as two separate tiles on the S&P 500 Heatmap. Now shown as one" }
+    ]
+  },
+  {
     "date": "2026-08-04",
     "entries": [
       { "type": "new", "text": "Bull can now reference your holdings and watchlist when you ask about your own portfolio, so questions like \"how much of my portfolio is in tech\" work without you listing everything out first. This is off by default and can be turned on in Settings under Ask Bull" },
