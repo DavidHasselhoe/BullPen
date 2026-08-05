@@ -1,9 +1,10 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { signInWithGoogle } from '@/lib/auth/auth';
+import { getLastUsedAuthMethod } from '@/lib/auth/last-used-method';
 import { AuthOAuthButtons } from '@/components/auth/AuthOAuthButtons';
 import { AuthFormLogin } from '@/components/auth/AuthFormLogin';
 import { Separator } from '@/components/ui/separator';
@@ -14,8 +15,16 @@ function LoginContent() {
   const searchParams = useSearchParams();
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState('');
+  const [lastUsedGoogle, setLastUsedGoogle] = useState(false);
 
   const redirectTo = searchParams.get('redirect') || '/';
+
+  // Read on mount only (not SSR-safe to read synchronously — localStorage
+  // doesn't exist on the server, so this must happen post-hydration).
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: sync external localStorage into state on mount
+    setLastUsedGoogle(getLastUsedAuthMethod() === 'google');
+  }, []);
 
   const handleGoogleSignIn = async () => {
     setError('');
@@ -68,6 +77,7 @@ function LoginContent() {
           onGoogleClick={handleGoogleSignIn}
           isLoading={isGoogleLoading}
           disabled={false}
+          lastUsed={lastUsedGoogle}
         />
 
         {error && (

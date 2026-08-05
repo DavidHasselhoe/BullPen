@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -8,6 +9,8 @@ interface AuthOAuthButtonsProps {
   onGoogleClick: () => Promise<void>;
   isLoading?: boolean;
   disabled?: boolean;
+  /** True when this browser's last successful sign-in used Google — shows a small badge. */
+  lastUsed?: boolean;
 }
 
 const GoogleIcon = () => (
@@ -31,7 +34,7 @@ const GoogleIcon = () => (
   </svg>
 );
 
-export function AuthOAuthButtons({ onGoogleClick, isLoading = false, disabled = false }: AuthOAuthButtonsProps) {
+export function AuthOAuthButtons({ onGoogleClick, isLoading = false, disabled = false, lastUsed = false }: AuthOAuthButtonsProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
@@ -55,6 +58,11 @@ export function AuthOAuthButtons({ onGoogleClick, isLoading = false, disabled = 
           <>
             <GoogleIcon />
             <span>Continue with Google</span>
+            {lastUsed && (
+              <Badge variant="secondary" className="ml-auto px-1.5 py-0 font-normal">
+                Last used
+              </Badge>
+            )}
           </>
         )}
       </Button>

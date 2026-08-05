@@ -7,6 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { motion, AnimatePresence } from 'framer-motion';
 import { signInWithGoogle } from '@/lib/auth/auth';
+import { getLastUsedAuthMethod } from '@/lib/auth/last-used-method';
 import { AuthOAuthButtons } from './AuthOAuthButtons';
 import { AuthFormLogin } from './AuthFormLogin';
 import { AuthFormSignup } from './AuthFormSignup';
@@ -26,13 +27,15 @@ export function AuthModal({ open, onOpenChange, initialMode = 'login', redirectT
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState('');
+  const [lastUsedGoogle, setLastUsedGoogle] = useState(false);
 
   useEffect(() => {
     if (open) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: reset form state when modal opens
       setMode(initialMode);
-       
+
       setError('');
+      setLastUsedGoogle(getLastUsedAuthMethod() === 'google');
     }
   }, [open, initialMode]);
 
@@ -127,6 +130,7 @@ export function AuthModal({ open, onOpenChange, initialMode = 'login', redirectT
                 onGoogleClick={handleGoogleAuth}
                 isLoading={isGoogleLoading}
                 disabled={false}
+                lastUsed={lastUsedGoogle}
               />
             </motion.div>
           )}
