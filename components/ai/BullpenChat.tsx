@@ -197,6 +197,38 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
   // chart assistant about a company.
   const effectiveContext = aiContext ?? (lastTicker ? { tickers: [lastTicker], label: `${lastTicker} (previously discussed)` } : undefined);
 
+  // useChat only reconstructs its underlying Chat instance (and the transport
+  // below) when activeConversationId changes — see @ai-sdk/react's useChat,
+  // which keys a chatRef off `id` and reuses it across renders otherwise. A
+  // plain `body: {...}` object would therefore freeze at whatever
+  // effectiveContext/user were when THIS conversation started: a user who
+  // enables "let Bull see my holdings" or navigates to a different stock
+  // mid-conversation would keep sending the stale values for the rest of it
+  // (reported bug: Bull kept answering about a stock from earlier in the
+  // conversation and kept saying holdings access wasn't enabled after the
+  // user had already turned it on). prepareSendMessagesRequest below runs
+  // fresh on every send, so reading through this ref — always updated on
+  // render, unlike the closure captured at construction — keeps every field
+  // live for the conversation's whole lifetime.
+  const requestParamsRef = useRef({
+    effectiveContext,
+    experienceLevel: user?.experience_level ?? null,
+    language: i18n.language,
+    riskProfile: user?.risk_profile ?? null,
+    investmentHorizon: (user?.settings as Record<string, unknown> | null)?.investment_horizon ?? null,
+    responseStyle: (user?.settings as Record<string, unknown> | null)?.response_style ?? null,
+    allowHoldingsContext: (user?.settings as Record<string, unknown> | null)?.allow_holdings_context === true,
+  });
+  requestParamsRef.current = {
+    effectiveContext,
+    experienceLevel: user?.experience_level ?? null,
+    language: i18n.language,
+    riskProfile: user?.risk_profile ?? null,
+    investmentHorizon: (user?.settings as Record<string, unknown> | null)?.investment_horizon ?? null,
+    responseStyle: (user?.settings as Record<string, unknown> | null)?.response_style ?? null,
+    allowHoldingsContext: (user?.settings as Record<string, unknown> | null)?.allow_holdings_context === true,
+  };
+
   const runClientAction = useCallback(
     async (action: ClientAction, key: string) => {
       if (action.type === 'navigate') {
@@ -261,17 +293,29 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
     messages: initialMessages,
     transport: new DefaultChatTransport({
       api: '/api/ai/chat',
-      // Include the current page context (ticker + label) so the server-side agent
-      // knows which stock/comparison the user is viewing without requiring them to type it.
-      body: {
-        conversationId: activeConversationId,
-        ...(effectiveContext ? { context: effectiveContext } : {}),
-        ...(user?.experience_level ? { experienceLevel: user.experience_level } : {}),
-        language: i18n.language,
-        ...(user?.risk_profile ? { riskProfile: user.risk_profile } : {}),
-        ...((user?.settings as Record<string, unknown>)?.investment_horizon ? { investmentHorizon: (user.settings as Record<string, unknown>).investment_horizon } : {}),
-        ...((user?.settings as Record<string, unknown>)?.response_style ? { responseStyle: (user.settings as Record<string, unknown>).response_style } : {}),
-        ...((user?.settings as Record<string, unknown>)?.allow_holdings_context === true ? { allowHoldingsContext: true } : {}),
+      // Build the body fresh on every send instead of a static `body` object —
+      // see the comment on requestParamsRef above for why a static object here
+      // would go stale for the rest of the conversation.
+      prepareSendMessagesRequest: ({ id, messages: reqMessages, trigger, messageId }) => {
+        const p = requestParamsRef.current;
+        return {
+          body: {
+            id,
+            messages: reqMessages,
+            trigger,
+            messageId,
+            conversationId: id,
+            // Current page context (ticker + label) so the server-side agent
+            // knows which stock/comparison the user is viewing without requiring them to type it.
+            ...(p.effectiveContext ? { context: p.effectiveContext } : {}),
+            ...(p.experienceLevel ? { experienceLevel: p.experienceLevel } : {}),
+            language: p.language,
+            ...(p.riskProfile ? { riskProfile: p.riskProfile } : {}),
+            ...(p.investmentHorizon ? { investmentHorizon: p.investmentHorizon } : {}),
+            ...(p.responseStyle ? { responseStyle: p.responseStyle } : {}),
+            ...(p.allowHoldingsContext ? { allowHoldingsContext: true } : {}),
+          },
+        };
       },
     }),
     onError: (err) => {
