@@ -7,6 +7,7 @@ import { logger } from '@/lib/utils/logger';
 import { getCached, getCachedStale, setCached } from '@/lib/cache/market-data-cache';
 import { seedPrices, type SeededQuote } from '@/lib/market-data/seed-prices';
 import { isExtendedHoursET } from '@/lib/twelvedata/twelvedata-client';
+import { isDuplicateShareClass } from '@/lib/market-data/dual-class-shares';
 import type { Session } from '@/app/api/market/heatmap/stream/route';
 
 export const dynamic = 'force-dynamic';
@@ -126,6 +127,11 @@ async function heatmapHandler(_req: NextRequest): Promise<NextResponse> {
     const sectorMap = new Map<string, HeatmapStock[]>();
 
     for (const ticker of SP500_TICKERS) {
+      // One tile per company: GOOG/FOX/NWS are the non-canonical half of a
+      // dual-class pair (GOOGL/FOXA/NWSA is kept) — same rule movers and the
+      // screener already apply, see lib/market-data/dual-class-shares.ts.
+      if (isDuplicateShareClass(ticker)) continue;
+
       const quote = quoteMap.get(ticker);
       if (!quote || !isFinite(quote.price) || quote.price <= 0) continue;
 
