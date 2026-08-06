@@ -2,49 +2,21 @@ import { ImageResponse } from 'next/og';
 import { NextRequest, NextResponse } from 'next/server';
 import { getShareById } from '@/lib/shares/get-share';
 import { formatCurrency, type CurrencyCode } from '@/lib/currency/currency-conversion';
+import { loadGoogleFont } from '@/lib/render/google-fonts';
 
 export const runtime = 'nodejs';
 
 const WIDTH = 1200;
 const HEIGHT = 630;
 
-// Fetched once per cold start, reused across warm invocations — avoids
-// re-fetching the same font bytes on every image render. Keyed by family so
-// both fonts below share one cache without colliding.
-const fontCache = new Map<string, ArrayBuffer>();
-
 /**
  * Both fonts used on this card are already this project's real brand fonts —
  * Geist Mono for numerals (app/layout.tsx imports both via next/font/google),
  * Instrument Serif for the italic lead-in (DESIGN.md: reserved for marketing
  * headlines, which is exactly what a share card is — external-facing content
- * meant to drive a signup, not in-app product UI). Satori (next/og's renderer)
- * can't read next/font's build-time-generated files or the app's CSS
- * variables at all, so the only way to get the real typeface here is to fetch
- * the actual font bytes from Google's CSS2 API at request time, same as any
- * other next/og integration.
+ * meant to drive a signup, not in-app product UI). See lib/render/google-fonts.ts
+ * for why fonts must be fetched as raw bytes here rather than referenced normally.
  */
-// Broad practical charset rather than an exact per-string subset: this font
-// renders several different dynamic strings (a handle, a currency-formatted
-// amount, a date), so subsetting to only one of them would leave the others
-// missing glyphs.
-const SUPPORTED_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-.,%$€£kr·@_ ';
-
-async function loadGoogleFont(family: string, weight: number, italic = false): Promise<ArrayBuffer> {
-  const cacheKey = `${family}:${weight}:${italic}`;
-  const cached = fontCache.get(cacheKey);
-  if (cached) return cached;
-
-  const axis = italic ? `ital,wght@1,${weight}` : `wght@${weight}`;
-  const cssUrl = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family)}:${axis}&text=${encodeURIComponent(SUPPORTED_CHARS)}`;
-  const css = await (await fetch(cssUrl)).text();
-  const match = css.match(/src: url\(([^)]+)\)/);
-  if (!match) throw new Error(`Google Fonts CSS for ${family} did not contain a src url()`);
-  const fontRes = await fetch(match[1]);
-  const data = await fontRes.arrayBuffer();
-  fontCache.set(cacheKey, data);
-  return data;
-}
 
 function sparklinePoints(values: number[], width: number, height: number): string {
   if (values.length < 2) return '';

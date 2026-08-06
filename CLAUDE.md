@@ -262,6 +262,7 @@ Split across two schedulers. All cron routes are protected by the `CRON_SECRET` 
 | `/api/cron/check-earnings-upcoming` | `0 8 * * *` | Email users about upcoming earnings in held/watched stocks |
 | `/api/cron/check-price-moves` | `30 21 * * 1-5` | Email on 5%+ price moves for held/watched stocks |
 | `/api/cron/prefetch-market-data` | `0 5 * * *` | Pre-cache S&P 500 + NASDAQ 100 stats/financials |
+| `/api/cron/instagram-earnings-weekly` | `0 12 * * 0` | Generate + stage next week's earnings-calendar Instagram carousel, notify Discord for review. Does not publish — see `scripts/publish-instagram.ts` and `docs/instagram-setup.md`. |
 
 The GitHub Actions workflows require **`CRON_SECRET`** to be set in repo secrets (Settings → Secrets and variables → Actions). The production URL defaults to `https://bullpen.no` — override with an `APP_URL` repo variable if needed.
 
@@ -391,4 +392,4 @@ OPENAI_API_KEY
 TWELVE_DATA_API_KEY
 ```
 
-Optional but used in production: `FINNHUB_API_KEY`, `RESEND_API_KEY`, `CRON_SECRET`, `LOGO_DEV_KEY`, `NEXT_PUBLIC_APP_URL`, `ANTHROPIC_API_KEY` (Why Today? + Daily Brief), `SNAPTRADE_CLIENT_ID`, `SNAPTRADE_CONSUMER_KEY`, `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`, `DISCORD_CHANGELOG_WEBHOOK_URL` (Discord changelog announcements — see `scripts/post-changelog-discord.ts`).
+Optional but used in production: `FINNHUB_API_KEY`, `RESEND_API_KEY`, `CRON_SECRET`, `LOGO_DEV_KEY`, `NEXT_PUBLIC_APP_URL`, `ANTHROPIC_API_KEY` (Why Today? + Daily Brief), `SNAPTRADE_CLIENT_ID`, `SNAPTRADE_CONSUMER_KEY`, `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`, `DISCORD_CHANGELOG_WEBHOOK_URL` (Discord changelog announcements — see `scripts/post-changelog-discord.ts`), `DISCORD_INSTAGRAM_WEBHOOK_URL`, `INSTAGRAM_ACCESS_TOKEN`, `INSTAGRAM_BUSINESS_ACCOUNT_ID` (automated Instagram content pipeline — see `docs/instagram-setup.md`).

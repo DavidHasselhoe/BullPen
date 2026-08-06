@@ -1,0 +1,30 @@
+name: Cron — Instagram Earnings Calendar
+
+# Sunday 12:00 UTC, ahead of the coming trading week. Generates + stages the
+# carousel and posts a Discord preview for review — it does NOT publish to
+# Instagram itself (see scripts/publish-instagram.ts for that manual step).
+# Time-tolerant (a weekly digest, not a market-hours-sensitive job), so
+# GitHub Actions' lower scheduling precision doesn't matter here — same
+# reasoning as the other non-Vercel crons in this repo.
+on:
+  schedule:
+    - cron: '0 12 * * 0'
+  workflow_dispatch:  # allows manual fire from the Actions tab
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: POST /api/cron/instagram-earnings-weekly
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          APP_URL: ${{ vars.APP_URL || 'https://bullpen.no' }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::CRON_SECRET secret is not configured in repo settings"
+            exit 1
+          fi
+          curl -fsS -X GET \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "${APP_URL}/api/cron/instagram-earnings-weekly"

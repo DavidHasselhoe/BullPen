@@ -53,6 +53,14 @@ LOGO_DEV_KEY=your-logo-dev-key
 # Create an Incoming Webhook: Discord channel Settings → Integrations → Webhooks → New Webhook
 DISCORD_CHANGELOG_WEBHOOK_URL=https://discord.com/api/webhooks/your-changelog-webhook
 
+# Discord notifications (optional) — posts weekly Instagram content previews for review
+# Separate webhook/channel from the changelog one above. See docs/instagram-setup.md.
+DISCORD_INSTAGRAM_WEBHOOK_URL=https://discord.com/api/webhooks/your-instagram-webhook
+
+# Instagram automated posting (optional) — see docs/instagram-setup.md for full setup steps
+INSTAGRAM_ACCESS_TOKEN=your-long-lived-access-token
+INSTAGRAM_BUSINESS_ACCOUNT_ID=your-ig-business-account-id
+
 # Optional: override default sender (default: BullPen <hello@updates.bullpen.no>)
 # RESEND_FROM_EMAIL=BullPen <noreply@updates.bullpen.no>
 
