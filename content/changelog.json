@@ -1,5 +1,13 @@
 [
   {
+    "date": "2026-08-06",
+    "entries": [
+      { "type": "improved", "text": "AI Deep Dive now uses the same ticker search you'll find everywhere else in BullPen, so you can look up a company by name or ticker and see its logo before running an analysis" },
+      { "type": "fixed", "text": "Fixed the Market Calendar and Earnings this week widget showing almost nothing outside of peak earnings season. They now pull from a much wider set of tracked companies, and explain when a week genuinely has no confirmed dates yet instead of just looking empty" },
+      { "type": "fixed", "text": "Fixed a recurring problem where heavy background data traffic could slow down market data across the app or cause price alerts to intermittently not fire" }
+    ]
+  },
+  {
     "date": "2026-08-05",
     "entries": [
       { "type": "new", "text": "Added two new Academy courses on how the bigger economy moves the market: the Fed, jobs reports, inflation, and oil prices. The free course covers the basics, and the Pro course goes deeper with a hands-on tour of the Market Mood tool" },
