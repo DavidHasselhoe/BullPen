@@ -1,6 +1,6 @@
 # BullPen Instagram Content Guide
 
-Reference doc for the automated Instagram pipeline (`lib/instagram/`, see `docs/instagram-setup.md` for account setup). Two inputs: 13 reference screenshots at `docs/instagram-reference/` from accounts posting similar financial content, and external research on what actually drives Instagram performance in 2026. Read this before adding a new content type or touching `lib/instagram/render/slides.tsx`.
+Reference doc for the automated Instagram pipeline (`lib/instagram/`, see `docs/instagram-setup.md` for account setup). Built from 13 reference screenshots at `docs/instagram-reference/`, external research on what actually drives Instagram performance in 2026, and now a shipped, reviewed, approved visual template (see "The approved template" below) — not just a mood board anymore. **Read "The approved template" before adding a new content type or touching `lib/instagram/render/slides.tsx`** — it's the design system every future slide reuses, not a fresh decision each time.
 
 ## What the data says (not just taste)
 
@@ -22,23 +22,50 @@ Pulled from current research on carousel performance, not assumed:
 | Account | Style | Takeaway |
 |---|---|---|
 | **moby.invest** ⭐ | Elegant serif headlines over real photography or clean white backgrounds. A small "stat strip" of Market Cap + sparklines across 1M/3M/6M/1Y/5Y timeframes, color-coded. Alternates dark and white backgrounds by mood. Editorial, magazine-like, restrained color use. | **This is the primary reference.** Closest to BullPen's own brand voice (§7 "Never decorative color" in DESIGN.md) and the one the user explicitly prefers. |
-| investingvisuals | Sankey/flow diagrams, clean white bg, "Not financial advice" printed directly on the graphic, sourced. | On-graphic disclaimer + sourcing is worth copying outright. |
+| investingvisuals | Sankey/flow diagrams, clean white bg, "Not financial advice" printed directly on the graphic, sourced. | Tried on-graphic sourcing on BullPen's own posts (see "The approved template" below) and reversed it after review — noted here as a real option other brands use well, not one that fit this one. |
 | carbonfinance | Big bar-chart comparisons ("Waymo is worth as much as Uber"), dark bg, sources cited at the bottom, explicit "like if you enjoyed" CTA. | Comparison format works well for a single striking number. |
 | watcher.guru | Dramatic real photography (campus/product shots), huge bold sans headline, one company per carousel slide ("Trillion Dollar Club"). | High production value — not realistically achievable without licensed photography (see Constraints below). |
 | einsteinofwallst, daytrading, advicefromtraders, stocksharks | Bold ALL-CAPS sans-serif, high-energy, meme-adjacent, color-highlighted keywords, "SWIPE" cues. | A punchier secondary register for high-energy/breaking-news content, not the default. |
 | stockmarketchasers | Ranked grid with real company logos, humor/relatability illustration. | Real ticker logos in a grid read very clean and are directly reusable — BullPen already has `logo_url` data for this. |
 | invest (HappyStocks) | Category grid ("9 Industries of the Future"), neon-on-dark, ticker badges grouped by theme. | Good model for thematic/educational roundup posts. |
 
-## Style system to adopt
+## The approved template (shipped, locked in)
 
-Extends BullPen's existing brand system (`DESIGN.md`) rather than replacing it — same tokens, moby-inspired composition.
+Built, tested, reviewed, and approved end-to-end on the earnings-calendar carousel — this is now **the** BullPen Instagram visual template, not a proposal. Every future content type reuses this exactly rather than re-deriving a new look. Lives in `lib/instagram/render/slides.tsx`; treat that file as the source of truth if this doc and the code ever disagree.
 
-1. **Lead with Instrument Serif, not just as an accent.** DESIGN.md already reserves this font for marketing headlines — moby's whole visual identity is basically "what if the *One Serif Word Rule* was the whole headline." Current `HookSlide` uses serif only for a small "This week's earnings" eyebrow line with the real headline in bold Geist Sans. Worth testing serif-as-hero-headline for company-spotlight posts specifically (moby's exact composition), keeping Geist Sans bold for list/data-heavy slides where legibility at small sizes matters more.
-2. **Real ticker logos over text-only badges.** `logo_url` is already fetched via TwelveData/logo.dev everywhere else in the app (`CompanyLogo` component). The earnings-list slide currently shows ticker + name as plain text — adding the actual logo per row (like stockmarketchasers' grid or HappyStocks' category boxes) would close a real gap versus these references at near-zero new cost, since the data's already there.
-3. **A light/white background variant, used deliberately.** Every current BullPen Instagram slide is dark (`#070b09`). moby alternates based on content mood — data visualizations and clean comparisons often read better on white (see their Tesla YTD chart, investingvisuals' Sankey diagrams). Not a redesign — an optional second `bg`/`fg` pair for specific content types (comparisons, "how they make money" style breakdowns), same tokens BullPen's light theme already defines in `app/globals.css`.
-4. **The "stat strip"** (Market Cap + 1M/3M/6M/1Y/5Y sparklines, red/blue-coded) is moby's most distinctive, ownable device and BullPen has every input for it already (`getStockCandles`, `getStatistics`). Worth building as a reusable slide component for any single-company spotlight post (earnings reaction, health-score spotlight, milestone post) — not earnings-calendar-specific.
-5. **Cite the source, on the slide.** investingvisuals and carbonfinance both print their data source directly on the graphic ("Source: Bloomberg," "Source: Fiscal AI"). BullPen should do the same — "Source: Twelve Data" or similar, small, bottom corner — it reads as more credible than a source line buried in the caption, and takes zero extra design work.
-6. **Keep the visual system identical across every slide in a carousel.** Every reference account (moby especially) keeps typography/color/spacing locked across all slides in a post — it's what makes a carousel read as one designed object instead of a slideshow. BullPen's `slides.tsx` already does this (shared `BG`/`FG`/font constants across `HookSlide`/`EarningsListSlide`/`CTASlide`) — just don't regress this when adding new templates.
+**Theme — light, not dark.** The original build used a dark canvas (`#070b09`) matching the app's default dark mode. Shipped reality is the opposite: white background, near-black ink, across *all* slide kinds in a carousel together, never mixed. The reason wasn't aesthetic preference — most third-party ticker logos are white/transparent-background PNGs, which forced an isolated light badge on a dark slide and read as an awkward box-in-a-box. White canvas fixes this at the root: a logo just sits on the page with a thin ring, no boxed-in mismatch. Once one slide in a carousel is light, every slide in it has to be (§ "Keep the visual system identical" below is a rule, not a suggestion).
+
+```
+BG          #ffffff   canvas
+FG          #0a0a0a   primary text / ink
+SURFACE     #f7f7f7   card fill (list rows) — separates from pure-white canvas without a hard border
+MUTED       #71717a   secondary text (company names)
+MUTED_DIM   #a1a1aa   tertiary text (dates) — legible at slide viewing size; below strict 4.5:1 AA if held to that bar, a deliberate call for de-emphasized metadata in a promotional graphic, not an oversight
+BORDER      #e4e4e7   hairlines, logo badge ring
+BRAND       #34d399   Signal Emerald (emerald-400) — the one deliberate color per post, per DESIGN.md's One Signal Rule. Never decorative, never a background wash.
+BRAND_INK   #0a0a0a   text/icon on top of BRAND — dark reads better on emerald-400 than white does
+BMO         #0ea5e9   Tailwind sky-500, matches EarningsCalendarWidget's BMO tag elsewhere in the app
+AMC         #f59e0b   Tailwind amber-500, matches EarningsCalendarWidget's AMC tag
+```
+
+**Wordmark.** Icon (`public/BullPenLogo.png`) + lowercase "bullpen", bold, `-0.02em` tracking — matches `components/landing/Atoms.tsx`'s real brand treatment exactly. (First build used spaced-out uppercase text; that was never how the wordmark renders anywhere else in the app.) Default size 36px icon on hook/list slides; 44px on the CTA/closing slide, deliberately the largest brand moment since it's the last thing before the swipe-away. `Wordmark` component takes a `size` prop — reuse it, don't rebuild it.
+
+**Company logo badges.** Circle, thin `BORDER` ring, no fill — logo sits directly on the white canvas. Real logo resolved once at *content-generation* time via `/api/logo/[ticker]` (same self-healing proxy `CompanyLogo` uses in the app), never at render time — Satori has no `onError`, so the fallback (ticker initials) has to be decided before the slide is ever rendered, not during. `CompanyBadge` component, reuse for any content type that lists companies.
+
+**The mascot — one hero moment, not decoration.** `public/illustrations/bull-alert.png` (checking a phone, notification bell) appears on the **hook slide only**, bleeding off the bottom-right corner. It works directly on a light slide because it's black line art on transparent background already — no CSS invert needed the way the app's own dark-mode usage requires. It does not repeat on list/CTA slides — one appearance per carousel keeps it a moment instead of wallpaper. Pick the mascot pose to match the content's actual mood (`bull-alert` = "heads up, something's coming," fits a calendar/schedule format specifically) rather than defaulting to the same pose for every content type — see `public/illustrations/` for the full pose set.
+
+**The stat pill.** Small emerald pill, bold, uppercase, e.g. "6 COMPANIES REPORTING" — sits above the headline on the hook slide, gives an immediate scannable number before the reader even parses the headline text. Generalizes past earnings: "4 STOCKS AT 52-WEEK HIGHS," "$1.2T MARKET CAP," whatever the content type's single most scannable number is. This is the ONE use of `BRAND` color on the hook slide — don't add a second colored element on the same slide, that's what the One Signal Rule is guarding against.
+
+**No on-slide source citation.** Originally added ("Source: Twelve Data," matching investingvisuals/carbonfinance) then explicitly removed after review — decided against it for this brand. Caption-level data-fidelity language stays (see Caption rules below); it just doesn't print on the graphic itself.
+
+**Keep the visual system identical across every slide in a carousel.** Every reference account (moby especially) keeps typography/color/spacing locked across all slides in a post — it's what makes a carousel read as one designed object instead of a slideshow. `slides.tsx` shares its color/font constants and `Wordmark`/`CompanyBadge` components across every slide kind — don't fork a parallel palette or wordmark treatment for a new content type.
+
+### Still open, not yet decided
+
+These were considered during the build but not adopted — worth revisiting for a content type where they fit better than they did here, not assumed settled either way:
+
+- **Serif-as-hero-headline** (moby's exact composition, the whole headline in Instrument Serif rather than bold Geist Sans). Earnings-calendar kept bold sans for legibility on a data-listing format; a single-company spotlight post (health-score spotlight, earnings reaction) is the more natural fit to actually try this.
+- **The "stat strip"** (Market Cap + 1M/3M/6M/1Y/5Y sparklines, red/blue-coded) — moby's most distinctive device. Not needed for a calendar/list format; the natural home is a single-company spotlight slide, same candidates as above.
 
 ### Constraints worth naming honestly
 
@@ -75,7 +102,7 @@ Ordered by how directly they reuse existing data/infrastructure — first few ar
 - First line does the work — assume only the first ~125 characters are ever read before a tap.
 - Every post ends with a specific, low-friction call to action pointed at BullPen (not just "link in bio") — the existing generator already does this correctly.
 - The house style already in `lib/instagram/content/earnings-calendar.ts`'s system prompt stays: no em/en dashes, no hype language, cite only real provided data, fixed non-negotiable disclaimer appended in code (never left to the model). Apply this same prompt shape to every future content-type generator, not just earnings.
-- Cite the data source on caption *and* slide (see Style System §5) — matches how the more credible reference accounts (investingvisuals, carbonfinance) operate, and it's free trust-building.
+- Cite the data source in the caption ("Data from Twelve Data...", already in the fixed disclaimer) — the on-graphic version of this was tried and explicitly dropped, see "The approved template" above; the caption is the sourcing surface, not the slide.
 
 ## Posting cadence
 
