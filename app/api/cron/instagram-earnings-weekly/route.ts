@@ -82,7 +82,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   }
 
   // ── Generate ─────────────────────────────────────────────────────────────
-  let content: EarningsCalendarSlides;
+  let content: EarningsCalendarSlides | null;
   try {
     content = await generateEarningsCalendarContent(weekStart, weekEnd);
   } catch (err) {
@@ -91,6 +91,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       { success: false, error: 'content_generation_failed', detail: err instanceof Error ? err.message : String(err) },
       { status: 500 }
     );
+  }
+
+  // No allowlisted (S&P 500 / Nasdaq 100 / TSM) company has a confirmed
+  // report this week — skip entirely rather than stage a "quiet week"
+  // filler post. No row, no Discord notification, no Claude cost (the
+  // generator already returned before calling Claude in this case).
+  if (content === null) {
+    return NextResponse.json({ success: true, skipped: true, periodKey, reason: 'no_companies' });
   }
 
   // ── Persist ──────────────────────────────────────────────────────────────

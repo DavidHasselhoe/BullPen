@@ -2,11 +2,17 @@
  * Earnings-calendar content for the automated Instagram pipeline.
  *
  * Every fact (ticker, company name, date, time) comes straight from
- * getEarningsCalendarRange() + getActiveUniverse() — the same pair
- * app/api/calendar/earnings/route.ts uses for the in-app Market Calendar.
- * Claude never sees or produces any of that; it only writes the hook
- * headline and caption, grounded in the real list handed to it. This keeps
- * hallucination risk on the facts at zero, not just "low" — there is no
+ * getEarningsCalendarRange(), filtered to SIGNIFICANT_TICKERS (S&P 500 +
+ * Nasdaq 100) plus one manual exception (see INSTAGRAM_ALLOWLIST below).
+ * Deliberately narrower than app/api/calendar/earnings/route.ts's in-app
+ * Market Calendar, which widened to the full ~1200-ticker active screener
+ * universe earlier this session — that's the right call for a browsable
+ * in-app tool, but public Instagram content should only ever name companies
+ * a general audience would actually recognize.
+ *
+ * Claude never sees or produces any of the factual data — it only writes the
+ * hook headline and caption, grounded in the real list handed to it. This
+ * keeps hallucination risk on the facts at zero, not just "low": there is no
  * code path where the model's own knowledge could reach a slide's numbers.
  *
  * Claude cost: a single short, non-web-search call (~$0.01/run) — see
@@ -15,7 +21,7 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import { getEarningsCalendarRange } from '@/lib/twelvedata/twelvedata-client';
-import { getActiveUniverse } from '@/lib/market-data/screener-universe';
+import { SIGNIFICANT_TICKERS } from '@/lib/market-data/significant-tickers';
 import { NASDAQ100_TICKERS } from '@/lib/market-data/nasdaq100';
 import { attachMarketCap } from '@/lib/market-data/calendar-market-cap';
 import { logAiCall } from '@/lib/billing/log-ai-call';
@@ -27,6 +33,19 @@ const MODEL = 'claude-sonnet-4-6';
 /** Companies per carousel — caps the list slides at a sane carousel length
  *  (1 hook + up to this many list rows, paginated in the renderer, + 1 CTA). */
 const MAX_COMPANIES = 24;
+
+/**
+ * SIGNIFICANT_TICKERS (S&P 500 + Nasdaq 100) plus manual, individually-
+ * vetted additions. TSM (Taiwan Semiconductor, NYSE ADR) is neither S&P
+ * 500-eligible (foreign-domiciled) nor Nasdaq 100-eligible (NYSE-listed,
+ * not Nasdaq), but its TwelveData earnings history is clean and reliable,
+ * and it's genuinely market-moving for a tech-focused audience. Checked
+ * live against TwelveData before adding: Samsung's only US data is a thin
+ * OTC pink-sheet ticker (SSNLF) with irregular/unreliable report dates, and
+ * SK Hynix has no usable US ticker at all — neither is a realistic addition
+ * through this data source.
+ */
+const INSTAGRAM_ALLOWLIST: Set<string> = new Set([...SIGNIFICANT_TICKERS, 'TSM']);
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -75,11 +94,13 @@ async function writeHookAndCaption(
   companies: RawEarningsRow[],
   weekLabel: string
 ): Promise<{ headline: string; caption: string }> {
+  // Never called with an empty list — generateEarningsCalendarContent
+  // returns null before reaching here when there's nothing to report.
   const listText = companies
     .map((c) => `- ${c.symbol}${c.name ? ` (${c.name})` : ''} on ${c.date}${c.time ? ` [${c.time}]` : ''}`)
     .join('\n');
 
-  const userPrompt = `Week of ${weekLabel}. Companies reporting earnings (use ONLY these):\n${listText || '(no major companies confirmed yet this week)'}\n\nWrite the headline and caption now.`;
+  const userPrompt = `Week of ${weekLabel}. Companies reporting earnings (use ONLY these):\n${listText}\n\nWrite the headline and caption now.`;
 
   const message = await anthropic.messages.create({
     model: MODEL,
@@ -109,19 +130,20 @@ async function writeHookAndCaption(
 /**
  * Builds the full slide content for a week's earnings-calendar carousel.
  * Real data first, Claude second, grounded in that data — see file header.
+ *
+ * Returns null when no allowlisted company has a confirmed report that
+ * week — the caller skips posting entirely rather than publishing a
+ * "quiet week" filler post. No Claude call is made in that case either,
+ * since there would be nothing real to write about.
  */
 export async function generateEarningsCalendarContent(
   weekStart: string,
   weekEnd: string
-): Promise<EarningsCalendarSlides> {
-  const [raw, activeUniverse] = await Promise.all([
-    getEarningsCalendarRange(weekStart, weekEnd),
-    getActiveUniverse(),
-  ]);
+): Promise<EarningsCalendarSlides | null> {
+  const raw = await getEarningsCalendarRange(weekStart, weekEnd);
 
-  const activeSet = new Set(activeUniverse);
   const filtered = raw
-    .filter((item) => activeSet.has(item.symbol))
+    .filter((item) => INSTAGRAM_ALLOWLIST.has(item.symbol))
     .sort((a, b) => {
       const aTier = NASDAQ100_SET.has(a.symbol) ? 0 : 1;
       const bTier = NASDAQ100_SET.has(b.symbol) ? 0 : 1;
@@ -130,6 +152,8 @@ export async function generateEarningsCalendarContent(
       if (dateCmp !== 0) return dateCmp;
       return a.symbol.localeCompare(b.symbol);
     });
+
+  if (filtered.length === 0) return null;
 
   const withCaps = await attachMarketCap(filtered);
   const shown = withCaps.slice(0, MAX_COMPANIES);
