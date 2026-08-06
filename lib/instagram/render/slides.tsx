@@ -117,7 +117,7 @@ function formatDate(dateStr: string): string {
  *  component exactly (bold, -0.02em tracking, lowercase) rather than the
  *  spaced-out uppercase text used before — that treatment doesn't match
  *  the brand mark anywhere else in the app. */
-function Wordmark({ size = 28 }: { size?: number }) {
+function Wordmark({ size = 36 }: { size?: number }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -305,7 +305,7 @@ export function CTASlide(): any {
       }}
     >
       <div style={{ display: 'flex', marginBottom: 32 }}>
-        <Wordmark size={34} />
+        <Wordmark size={44} />
       </div>
       <div style={{ display: 'flex', fontFamily: 'Instrument Serif', fontStyle: 'italic', fontSize: 52, color: FG, marginBottom: 20, maxWidth: 780 }}>
         Never miss a report again
