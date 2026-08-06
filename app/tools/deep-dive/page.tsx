@@ -8,11 +8,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { Telescope, Search, ChevronRight, Trash2, Clock, ArrowLeft } from 'lucide-react';
+import { Telescope, ChevronRight, Trash2, Clock, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useBackground } from '@/hooks/use-background';
 import { QuotaIndicator } from '@/components/billing/QuotaIndicator';
 import { LensPicker } from '@/components/deep-dive/LensPicker';
+import { TickerSelector, type SearchResult } from '@/components/tools/buy-here/TickerSelector';
 import { LENS_LABELS, type DeepDiveLens, type Verdict } from '@/lib/ai/deep-dive/schema';
 import type { SavedDivePreview } from '@/app/api/ai/deep-dive/route';
 
@@ -29,7 +30,7 @@ export default function DeepDiveLanding() {
   const router = useRouter();
   const { hasAnimatedBackground } = useBackground();
   const queryClient = useQueryClient();
-  const [ticker, setTicker] = useState('');
+  const [selected, setSelected] = useState<SearchResult | null>(null);
   const [lens, setLens] = useState<DeepDiveLens>('full');
 
   const { data, isLoading } = useQuery<{ dives: SavedDivePreview[] }>({
@@ -83,21 +84,16 @@ export default function DeepDiveLanding() {
         <Card className="mb-8">
           <CardContent className="p-5 sm:p-6 space-y-4">
             <form
-              onSubmit={(e) => { e.preventDefault(); go(ticker); }}
+              onSubmit={(e) => { e.preventDefault(); if (selected) go(selected.ticker); }}
               className="flex flex-col sm:flex-row gap-2.5"
             >
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/80 pointer-events-none" />
-                <input
-                  type="text"
-                  value={ticker}
-                  onChange={(e) => setTicker(e.target.value.toUpperCase())}
-                  placeholder="Enter a ticker, e.g. NVDA"
-                  aria-label="Ticker symbol"
-                  className="w-full rounded-lg border border-border bg-background pl-9 pr-3 py-2.5 text-sm font-medium uppercase tracking-wide placeholder:normal-case placeholder:tracking-normal placeholder:text-muted-foreground/80 focus:outline-none focus:ring-2 focus:ring-ring transition-shadow"
-                />
-              </div>
-              <Button type="submit" size="lg" disabled={!ticker.trim()} className="gap-2 shrink-0 animate-ai-sweep">
+              <TickerSelector
+                value={selected}
+                onChange={setSelected}
+                placeholder="Search by ticker or company name..."
+                className="flex-1"
+              />
+              <Button type="submit" size="lg" disabled={!selected} className="gap-2 shrink-0 animate-ai-sweep">
                 <Telescope className="h-4 w-4" /> Analyze
               </Button>
             </form>
