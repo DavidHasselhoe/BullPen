@@ -16,18 +16,20 @@
  *   discover their market caps (and promote the big ones). Self-consuming — no
  *   batch index needed.
  *
- * Credits per call: 5 × 53 = 265 for /statistics, reserved up front here.
- * Deliberately half the old 10-symbol batch (530 credits) — that size left
- * only ~30 credits/min of the 610/min plan cap for organic user traffic once
- * the shared credit-budget guard reserved its share, which real per-page-load
- * costs (a single stock snapshot alone runs ~71 credits) could blow through
- * on its own. See CRON_CREDIT_SHARE in lib/twelvedata/credit-budget.ts.
+ * Credits per call: 5 × 53 = 265 for /statistics. Deliberately half the old
+ * 10-symbol batch (530 credits) — that size left only ~30 credits/min of the
+ * 610/min plan cap for organic user traffic once the shared credit-budget
+ * guard reserved its share, which real per-page-load costs (a single stock
+ * snapshot alone runs ~71 credits) could blow through on its own. See
+ * CRON_CREDIT_SHARE in lib/twelvedata/credit-budget.ts. The reservation for
+ * this itself now happens inside fetchAndUpsertScreenerStats (per chunk,
+ * CHUNK_SIZE=5 there too) rather than here, so the on-demand screener/heatmap
+ * callers of that same function are covered by the same guard.
  *
  * Financials (income/balance/cash-flow, for the health score) are fetched
  * separately inside fetchAndUpsertScreenerStats -> fetchFinancials
  * (lib/market-data/screener-stats.ts) on a per-cold-symbol basis, ~101
- * credits per statement, each reserved against the same shared budget
- * independently of this route's own 265-credit reservation above.
+ * credits per statement, each reserved against the same shared budget.
  *
  * Auth: requires either a `CRON_SECRET` bearer header (GitHub Actions crons)
  * or an admin user session (the screener page's "Refresh Data" button, which
@@ -46,16 +48,10 @@ import {
   MARKET_CAP_PROMOTION_FLOOR,
 } from '@/lib/market-data/screener-universe';
 import { fetchAndUpsertScreenerStats } from '@/lib/market-data/screener-stats';
-import { waitForCronCreditBudget } from '@/lib/twelvedata/credit-budget';
 
 export const dynamic = 'force-dynamic';
 
 const BATCH_SIZE = 5;
-
-/** /statistics costs ~50 credits/symbol (guaranteed, no cache); reserved up
- *  front here. Financials (up to ~303/cold symbol) are reserved separately,
- *  see the file-level doc comment above. */
-const CREDITS_PER_SYMBOL = 53;
 
 /** Stamp market_cap + last_refreshed_at onto screener_universe and promote big caps. */
 async function stampUniverse(rows: { ticker: string; market_cap: number | null }[]) {
@@ -137,7 +133,6 @@ async function handler(request: NextRequest): Promise<NextResponse> {
   }
 
   try {
-    await waitForCronCreditBudget(symbols.length * CREDITS_PER_SYMBOL);
     const rows = await fetchAndUpsertScreenerStats(symbols);
     await stampUniverse(rows.map((r) => ({ ticker: r.ticker, market_cap: r.market_cap })));
 

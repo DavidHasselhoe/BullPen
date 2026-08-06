@@ -3,12 +3,17 @@
  *
  * Used by:
  *  - the daily refresh cron (app/api/screener/refresh) to populate the
- *    actively-tracked universe, and
+ *    actively-tracked universe,
  *  - the screener GET route (app/api/screener) to lazily fetch any ticker a
- *    user references (holdings / watchlist / custom views) that isn't cached yet.
+ *    user references (holdings / watchlist / custom views) that isn't cached
+ *    yet, and
+ *  - the "My Stocks" heatmap route (app/api/tools/heatmap?mode=my-stocks) for
+ *    the same reason.
  *
- * One TwelveData /statistics batch POST = ~50 credits per symbol. Keep call
- * sites bounded (the cron paces with delays; the GET route caps on-demand size).
+ * One TwelveData /statistics batch POST = ~53 credits per symbol, reserved
+ * against the shared cron credit budget (lib/twelvedata/credit-budget.ts)
+ * per chunk before it fires — this covers all three callers above uniformly,
+ * since only the cron used to reserve for this externally.
  *
  * Health score is computed alongside stats. On a cold symbol this also fetches
  * income / balance / cash-flow — each of those three costs ~101 credits on
@@ -18,6 +23,11 @@
  * credits/cold-symbol is enough on its own to blow past the shared cron
  * credit-budget, so each statement fetch reserves against it individually
  * before firing (see fetchFinancials below) — cache hits reserve nothing.
+ * Symbols within a chunk are fetched one at a time, not fanned out: firing a
+ * whole chunk concurrently meant every symbol's statements raced the same
+ * budget independently, mostly lost, and mostly fired unreserved anyway
+ * within the 8s grace window — this was the actual mechanism behind observed
+ * per-minute spikes into the thousands, far past the 610/min plan cap.
  */
 
 import { createServerClient } from '@/lib/supabase/client';
@@ -44,17 +54,40 @@ import type { ScreenerRow } from '@/app/api/screener/route';
  *  fan-out caller of these three endpoints. */
 const CREDITS_PER_FINANCIALS_STATEMENT = 101;
 /** Short wait like app/api/compare/route.ts, not the crons' default 65s —
- *  this path is shared with the interactive /api/screener on-demand fetch
- *  (up to ON_DEMAND_CAP symbols in one page load), which must not hang for
- *  minutes waiting on the shared budget. waitForCronCreditBudget proceeds
- *  anyway once maxWaitMs elapses (a pacing guard, not a hard cap), so this
- *  only bounds how long a request waits before firing — it doesn't skip
- *  the fetch. */
+ *  this path is shared with the interactive /api/screener and heatmap
+ *  on-demand fetches, which must not hang for minutes waiting on the shared
+ *  budget. waitForCronCreditBudget proceeds anyway once maxWaitMs elapses (a
+ *  pacing guard, not a hard cap), so this only bounds how long a request
+ *  waits before firing — it doesn't skip the fetch. This is why
+ *  fetchFinancials is called sequentially per symbol below rather than
+ *  fanned out with Promise.all: firing a whole chunk's worth of symbols at
+ *  once meant every one of them raced this same 8s window independently,
+ *  almost all lost, and almost all fired unreserved anyway — a single cold
+ *  10-symbol chunk could burst 3,000+ credits in under 10 seconds this way. */
 const FINANCIALS_BUDGET_WAIT_MS = 8_000;
 
-/** Max symbols per TwelveData /batch POST. Stays well under the ~120 cap. */
-const CHUNK_SIZE = 10;
-const FINANCIALS_TTL = 24 * 60 * 60;
+/** /statistics costs ~53 credits/symbol (matches app/api/screener/refresh/
+ *  route.ts's CREDITS_PER_SYMBOL) — reserved against the same shared budget
+ *  before each chunk's batchFetch, so every caller of this function is
+ *  covered uniformly (previously only the nightly-cron caller reserved for
+ *  this externally; the on-demand /api/screener and /api/tools/heatmap
+ *  routes fired it completely unguarded). */
+const CREDITS_PER_STATS_SYMBOL = 53;
+
+/** Max symbols per TwelveData /batch POST. Sized so one chunk's /statistics
+ *  reservation (CHUNK_SIZE * CREDITS_PER_STATS_SYMBOL = 265) fits inside the
+ *  400-credit shared budget — CHUNK_SIZE=10 would need 530, which can never
+ *  be reserved and would make the guard a no-op (always time out, always
+ *  fire anyway). Matches BATCH_SIZE already used by screener/refresh and
+ *  STATS_BATCH_SIZE in prefetch-market-data for the same reason. */
+const CHUNK_SIZE = 5;
+/** 7 days, matching prefetch-market-data.ts's FINANCIALS_TTL for the same
+ *  cache keys — quarterly statements don't change daily, so a 24h TTL (the
+ *  previous value here) forced a full re-fetch of the ~101-credit-per-
+ *  statement endpoints for most of the active universe every single night,
+ *  on top of being the source of most cold-symbol churn feeding the burst
+ *  described above. */
+const FINANCIALS_TTL = 7 * 24 * 60 * 60;
 
 interface TwelveDataStatisticsRaw {
   meta?: {
@@ -230,7 +263,7 @@ async function fetchFinancials(sym: string): Promise<{
 
   // Warm the shared cache only with genuinely fresh data — reusing a stale
   // fallback must not reset the TTL, or a persistent fetch failure would look
-  // freshly cached and never get retried again for another 24h.
+  // freshly cached and never get retried again for another 7 days.
   if (incomeFresh)   void setCached(`financials:${sym}:income:quarterly`,   sym, 'financials', income,   FINANCIALS_TTL).catch(() => {});
   if (balanceFresh)  void setCached(`financials:${sym}:balance:quarterly`,  sym, 'financials', balance,  FINANCIALS_TTL).catch(() => {});
   if (cashflowFresh) void setCached(`financials:${sym}:cashflow:quarterly`, sym, 'financials', cashflow, FINANCIALS_TTL).catch(() => {});
@@ -276,22 +309,22 @@ export async function fetchAndUpsertScreenerStats(symbols: string[]): Promise<Sc
   const degradedSymbols = new Set<string>();
 
   for (const group of chunk(uniqueSymbols, CHUNK_SIZE)) {
+    await waitForCronCreditBudget(group.length * CREDITS_PER_STATS_SYMBOL);
+
     const requests: Record<string, string> = {};
     for (const sym of group) {
       requests[sym] = `/statistics?symbol=${encodeURIComponent(sym)}&apikey=${apiKey}`;
     }
     const raw = await batchFetch<TwelveDataStatisticsRaw>(requests);
 
-    // Fetch financials for all symbols in this group in parallel. Cache hits
-    // are free; a cold symbol costs up to 303 credits (3 statements x ~101),
-    // each reserved against the shared cron credit budget before it fires.
+    // Fetch financials one symbol at a time (not fanned out with Promise.all
+    // — see FINANCIALS_BUDGET_WAIT_MS above for why). Cache hits are free; a
+    // cold symbol costs up to 303 credits (3 statements x ~101), reserved
+    // against the shared cron credit budget before it fires.
     const financialsMap = new Map<string, Awaited<ReturnType<typeof fetchFinancials>>>();
-    await Promise.all(
-      group.map(async (sym) => {
-        const financials = await fetchFinancials(sym);
-        financialsMap.set(sym, financials);
-      })
-    );
+    for (const sym of group) {
+      financialsMap.set(sym, await fetchFinancials(sym));
+    }
 
     for (const sym of group) {
       const statsRaw = raw[sym];
