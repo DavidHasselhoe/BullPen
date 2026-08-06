@@ -5,35 +5,45 @@
  * ImageResponse (Satori), Node runtime, brand colors resolved to literal
  * sRGB hex (Satori can't consume CSS custom properties or oklch at all).
  *
- * No mascot image is composited here (unlike the design brief's "bull
- * mascot mark" note) — every existing bull illustration in public/illustrations
- * is black line art on a transparent background, made visible on dark
- * surfaces via a CSS `dark:invert` filter at render time in the real app.
- * Satori does not support the `filter` CSS property, so that trick doesn't
- * work here, and there is no pre-inverted asset to load instead. Rather than
- * add a new image-processing dependency (e.g. sharp) or hand-export a new
- * static asset just for this, the CTA slide uses the same text-only brand
- * mark the existing share card already uses successfully. Swap in a real
- * light-variant mascot PNG later if one gets created.
+ * Light theme (white bg, near-black ink) across all three slide kinds,
+ * not just the list slide — a carousel has to read as one designed object,
+ * and a light background is also what actually fixes the real problem: on
+ * a dark canvas, most third-party ticker logos (white/transparent-background
+ * PNGs) need an isolated light circle behind them, which reads as a
+ * floating badge with awkward padding. On a white canvas the same logos
+ * sit directly on the page with just a thin ring, no boxed-in mismatch.
  *
- * Colors: bg/fg/muted reused verbatim from the share card's own resolved
- * tokens. BMO/AMC tag colors match the sky-500/amber-500 pair
- * components/discover/EarningsCalendarWidget.tsx already uses for the same
- * BMO/AMC distinction in the live app, rather than a fresh derivation.
+ * Wordmark matches the real brand treatment in components/landing/Atoms.tsx
+ * exactly (icon + lowercase "bullpen", bold, tight negative tracking) —
+ * the previous version used plain letter-spaced-out uppercase text, which
+ * isn't how BullPen's wordmark actually renders anywhere else in the app.
+ *
+ * The bull mascot (public/illustrations/bull-alert.png) appears on the hook
+ * slide only, not every slide — reinforces brand identity at the one moment
+ * that matters most for scroll-stopping (research: slide one carries ~80%
+ * of a carousel's swipe-through weight) without turning into visual noise
+ * across the whole carousel. It's usable directly here because it's already
+ * black line art on transparent background — exactly right for a light
+ * slide, unlike the app's own dark-mode usage which needs a CSS invert
+ * Satori can't do.
  */
 
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { loadGoogleFont } from '@/lib/render/google-fonts';
 import type { EarningsSlideCompany } from '@/lib/instagram/content/schema';
 
 export const SLIDE_WIDTH = 1080;
 export const SLIDE_HEIGHT = 1350;
 
-const BG = '#070b09';
-const FG = '#fafafa';
-const MUTED = '#a1a1a1';
-const MUTED_DIM = 'rgba(161, 161, 161, 0.7)';
-const BORDER = 'rgba(255, 255, 255, 0.1)';
-const BRAND = '#34d399'; // Signal Emerald (emerald-400) — same hex the share card uses for a positive move
+const BG = '#ffffff';
+const FG = '#0a0a0a';
+const SURFACE = '#f7f7f7';
+const MUTED = '#71717a';
+const MUTED_DIM = '#a1a1aa';
+const BORDER = '#e4e4e7';
+const BRAND = '#34d399'; // Signal Emerald (emerald-400) — same hex used elsewhere (e.g. app/api/og/share/[id]/route.tsx)
+const BRAND_INK = '#0a0a0a'; // text/icon color on top of BRAND — dark reads better on emerald-400 than white does
 const BMO_COLOR = '#0ea5e9'; // Tailwind sky-500 — matches EarningsCalendarWidget's BMO tag
 const AMC_COLOR = '#f59e0b'; // Tailwind amber-500 — matches EarningsCalendarWidget's AMC tag
 
@@ -75,40 +85,70 @@ export async function loadSlideFonts() {
   ];
 }
 
+// ── Local brand assets, read once and cached as base64 data URIs ──────────
+// More reliable than fetching our own deployed URL: no network round-trip,
+// works identically in local dev and production without needing to know
+// the app's own base URL.
+let brandIconDataUri: string | null = null;
+let mascotDataUri: string | null = null;
+
+function loadLocalImageDataUri(relativePath: string): string {
+  const buf = readFileSync(join(process.cwd(), 'public', relativePath));
+  return `data:image/png;base64,${buf.toString('base64')}`;
+}
+
+function getBrandIcon(): string {
+  if (!brandIconDataUri) brandIconDataUri = loadLocalImageDataUri('BullPenLogo.png');
+  return brandIconDataUri;
+}
+
+function getMascot(): string {
+  if (!mascotDataUri) mascotDataUri = loadLocalImageDataUri('illustrations/bull-alert.png');
+  return mascotDataUri;
+}
+
 function formatDate(dateStr: string): string {
   return new Date(dateStr + 'T12:00:00Z').toLocaleDateString('en-US', {
     weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC',
   });
 }
 
-function Wordmark() {
+/** Icon + "bullpen" wordmark, matching components/landing/Atoms.tsx's Logo
+ *  component exactly (bold, -0.02em tracking, lowercase) rather than the
+ *  spaced-out uppercase text used before — that treatment doesn't match
+ *  the brand mark anywhere else in the app. */
+function Wordmark({ size = 28 }: { size?: number }) {
   return (
-    <div style={{ display: 'flex', fontSize: 22, letterSpacing: 6, color: MUTED, fontFamily: 'Geist' }}>
-      BULLPEN
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={getBrandIcon()} alt="" width={size} height={size} />
+      <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, letterSpacing: '-0.02em', fontSize: size * 0.8, color: FG }}>
+        bullpen
+      </span>
     </div>
   );
 }
 
 /** Circular company mark for a list row. Real logo when logoUrl resolved
- *  (see resolveLogoUrl in earnings-calendar.ts), else ticker initials on a
- *  muted circle — same two-state idea as components/company/CompanyLogo.tsx,
- *  just without the onError swap (Satori has no such event; the fallback
- *  decision is already made at generation time). A light backing circle
- *  sits behind every logo since most are transparent-background PNGs that
- *  would otherwise vanish against the slide's dark backdrop. */
+ *  (see resolveLogoUrl in earnings-calendar.ts), else ticker initials —
+ *  same two-state idea as components/company/CompanyLogo.tsx, just without
+ *  the onError swap (Satori has no such event; the fallback decision is
+ *  already made at generation time). Just a thin ring, no fill — on a white
+ *  slide, a logo (almost always itself on a white/transparent background)
+ *  sits directly on the page with no boxed-in mismatch. */
 function CompanyBadge({ symbol, logoUrl }: { symbol: string; logoUrl: string | null }) {
   const SIZE = 56;
   return (
     <div
       style={{
         display: 'flex', width: SIZE, height: SIZE, borderRadius: 999,
-        backgroundColor: logoUrl ? '#fafafa' : 'rgba(255,255,255,0.08)',
+        border: `1px solid ${BORDER}`, backgroundColor: BG,
         alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0,
       }}
     >
       {logoUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={logoUrl} alt={`${symbol} logo`} width={SIZE - 12} height={SIZE - 12} style={{ objectFit: 'contain' }} />
+        <img src={logoUrl} alt={`${symbol} logo`} width={SIZE - 14} height={SIZE - 14} style={{ objectFit: 'contain' }} />
       ) : (
         <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 18, color: MUTED }}>
           {symbol.slice(0, 2)}
@@ -126,7 +166,7 @@ function TimeBadge({ time }: { time: 'BMO' | 'AMC' | null }) {
       style={{
         display: 'flex', fontSize: 20, fontWeight: 500, color,
         fontFamily: 'Geist', padding: '6px 16px', borderRadius: 999,
-        backgroundColor: `${color}22`,
+        backgroundColor: `${color}1a`,
       }}
     >
       {time === 'BMO' ? 'Before Open' : 'After Close'}
@@ -135,24 +175,44 @@ function TimeBadge({ time }: { time: 'BMO' | 'AMC' | null }) {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function HookSlide({ headline, weekLabel }: { headline: string; weekLabel: string }): any {
+export function HookSlide({ headline, weekLabel, companyCount }: { headline: string; weekLabel: string; companyCount: number }): any {
   return (
     <div
       style={{
         width: '100%', height: '100%', display: 'flex', flexDirection: 'column',
         justifyContent: 'space-between', padding: 96, backgroundColor: BG, color: FG,
+        position: 'relative', overflow: 'hidden',
       }}
     >
+      {/* Mascot bleeds off the bottom-right corner — a hero moment for the
+          one slide where it counts most, not repeated across the carousel. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={getMascot()}
+        alt=""
+        width={520}
+        height={520}
+        style={{ position: 'absolute', bottom: -70, right: -90, opacity: 0.9 }}
+      />
+
       <Wordmark />
-      <div style={{ display: 'flex', flexDirection: 'column' }}>
-        <div style={{ display: 'flex', fontFamily: 'Instrument Serif', fontStyle: 'italic', fontSize: 36, color: MUTED, marginBottom: 20 }}>
-          This week&apos;s earnings
+
+      <div style={{ display: 'flex', flexDirection: 'column', zIndex: 1 }}>
+        <div
+          style={{
+            display: 'flex', alignSelf: 'flex-start', fontFamily: 'Geist', fontWeight: 700, fontSize: 22,
+            letterSpacing: '0.02em', color: BRAND_INK, backgroundColor: BRAND,
+            padding: '10px 20px', borderRadius: 999, marginBottom: 28,
+          }}
+        >
+          {companyCount} {companyCount === 1 ? 'COMPANY' : 'COMPANIES'} REPORTING
         </div>
-        <div style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 88, lineHeight: 1.05, color: FG }}>
+        <div style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 84, lineHeight: 1.05, color: FG, maxWidth: 820 }}>
           {headline}
         </div>
       </div>
-      <div style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: 30, color: MUTED }}>
+
+      <div style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: 28, color: MUTED, zIndex: 1 }}>
         {weekLabel}
       </div>
     </div>
@@ -201,7 +261,7 @@ export function EarningsListSlide({ companies, pageIndex, totalPages, overflowCo
             key={c.symbol}
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '20px 28px', borderRadius: 20, border: `1px solid ${BORDER}`,
+              padding: '20px 28px', borderRadius: 20, backgroundColor: SURFACE,
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
@@ -211,11 +271,11 @@ export function EarningsListSlide({ companies, pageIndex, totalPages, overflowCo
                   <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 34, color: FG }}>
                     {c.symbol}
                   </span>
-                  <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 22, color: MUTED_DIM }}>
+                  <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 22, color: MUTED }}>
                     {c.name}
                   </span>
                 </div>
-                <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: 20, color: MUTED }}>
+                <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: 20, color: MUTED_DIM }}>
                   {formatDate(c.date)}
                 </span>
               </div>
@@ -225,16 +285,11 @@ export function EarningsListSlide({ companies, pageIndex, totalPages, overflowCo
         ))}
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 24 }}>
-        <div style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: 18, color: MUTED_DIM }}>
-          Source: Twelve Data
+      {isLastPage && overflowCount > 0 && (
+        <div style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: 22, color: MUTED, marginTop: 24 }}>
+          +{overflowCount} more this week on BullPen
         </div>
-        {isLastPage && overflowCount > 0 && (
-          <div style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: 22, color: MUTED }}>
-            +{overflowCount} more this week on BullPen
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }
@@ -249,8 +304,8 @@ export function CTASlide(): any {
         backgroundColor: BG, color: FG, textAlign: 'center',
       }}
     >
-      <div style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 30, letterSpacing: 4, color: FG, marginBottom: 28 }}>
-        BULLPEN
+      <div style={{ display: 'flex', marginBottom: 32 }}>
+        <Wordmark size={34} />
       </div>
       <div style={{ display: 'flex', fontFamily: 'Instrument Serif', fontStyle: 'italic', fontSize: 52, color: FG, marginBottom: 20, maxWidth: 780 }}>
         Never miss a report again
@@ -260,7 +315,7 @@ export function CTASlide(): any {
       </div>
       <div
         style={{
-          display: 'flex', fontFamily: 'Geist Mono', fontSize: 24, fontWeight: 500, color: BG,
+          display: 'flex', fontFamily: 'Geist Mono', fontSize: 24, fontWeight: 500, color: BRAND_INK,
           backgroundColor: BRAND, padding: '18px 44px', borderRadius: 999,
         }}
       >

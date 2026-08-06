@@ -79,7 +79,7 @@ export async function GET(
 
   let element: React.ReactElement;
   if (kind === 'hook') {
-    element = <HookSlide headline={slides.headline} weekLabel={slides.weekLabel} />;
+    element = <HookSlide headline={slides.headline} weekLabel={slides.weekLabel} companyCount={companyCount} />;
   } else if (kind === 'cta') {
     element = <CTASlide />;
   } else {
