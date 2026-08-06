@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { CalendarDays, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
+import { CalendarDays, ArrowLeft, ChevronLeft, ChevronRight, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -77,6 +77,15 @@ export default function CalendarPage() {
   );
 
   const openModel = days.find((d) => d.date === openDate) ?? null;
+
+  // Confirmed earnings dates only land 3-6 weeks ahead of the report, so a
+  // range with zero earnings in it is normal outside peak season, not broken
+  // — say so explicitly rather than leaving every cell blank with no context.
+  const earningsCount = useMemo(
+    () => events.filter((e) => e.type === 'earnings').length,
+    [events],
+  );
+  const showEarningsGap = !isLoading && typeFilter.has('earnings') && earningsCount === 0;
 
   function toggleType(type: EventType) {
     setTypeFilter((prev) => {
@@ -189,6 +198,17 @@ export default function CalendarPage() {
         <div className="mb-6">
           <TypeFilterChips active={typeFilter} onToggle={toggleType} />
         </div>
+
+        {/* Quiet-earnings-season context — a blank grid with no explanation
+            reads as broken, not "nothing confirmed yet". */}
+        {showEarningsGap && (
+          <div className="mb-6 flex items-start gap-2 rounded-lg border border-border/50 bg-muted/30 px-3 py-2.5 text-xs text-muted-foreground">
+            <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" aria-hidden />
+            <p>
+              No confirmed earnings dates in this range yet. Companies usually confirm their report date 3 to 6 weeks ahead, so this fills in automatically as new dates are announced.
+            </p>
+          </div>
+        )}
 
         {/* Personalized highlight strip */}
         {isAuthenticated && <YourWeekStrip days={days} />}
