@@ -122,17 +122,20 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   }
 
   if (needsStats) {
-    // getStatistics is per-symbol; fetch in parallel with a small concurrency
-    // cap so we don't blow through rate limits.
-    const statsResults = await Promise.allSettled(
-      symbols.map((s) => getStatistics(s).then((stats) => ({ sym: s, stats })))
-    );
-    for (const r of statsResults) {
-      if (r.status === 'fulfilled' && r.value.stats) {
-        statsMap.set(r.value.sym, {
-          week52High: r.value.stats.week52High,
-          week52Low: r.value.stats.week52Low,
-        });
+    // getStatistics is per-symbol. Despite this comment's previous claim of
+    // "a small concurrency cap," this used to fire every symbol's request via
+    // Promise.allSettled(symbols.map(...)) with no cap at all — the exact
+    // same unbounded-fan-out shape that caused the TwelveData credit-spike
+    // investigation elsewhere this session. Fetching one symbol at a time
+    // means a slow/degraded TwelveData response only ever blocks on one
+    // request instead of dozens piling up concurrently and compounding the
+    // account-wide load that caused them to be slow in the first place.
+    for (const s of symbols) {
+      try {
+        const stats = await getStatistics(s);
+        statsMap.set(s, { week52High: stats.week52High, week52Low: stats.week52Low });
+      } catch (err) {
+        console.error(`[check-user-alerts] statistics fetch failed for ${s}:`, err);
       }
     }
   }
