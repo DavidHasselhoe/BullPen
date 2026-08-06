@@ -89,6 +89,35 @@ function Wordmark() {
   );
 }
 
+/** Circular company mark for a list row. Real logo when logoUrl resolved
+ *  (see resolveLogoUrl in earnings-calendar.ts), else ticker initials on a
+ *  muted circle — same two-state idea as components/company/CompanyLogo.tsx,
+ *  just without the onError swap (Satori has no such event; the fallback
+ *  decision is already made at generation time). A light backing circle
+ *  sits behind every logo since most are transparent-background PNGs that
+ *  would otherwise vanish against the slide's dark backdrop. */
+function CompanyBadge({ symbol, logoUrl }: { symbol: string; logoUrl: string | null }) {
+  const SIZE = 56;
+  return (
+    <div
+      style={{
+        display: 'flex', width: SIZE, height: SIZE, borderRadius: 999,
+        backgroundColor: logoUrl ? '#fafafa' : 'rgba(255,255,255,0.08)',
+        alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0,
+      }}
+    >
+      {logoUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={logoUrl} alt={`${symbol} logo`} width={SIZE - 12} height={SIZE - 12} style={{ objectFit: 'contain' }} />
+      ) : (
+        <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 18, color: MUTED }}>
+          {symbol.slice(0, 2)}
+        </span>
+      )}
+    </div>
+  );
+}
+
 function TimeBadge({ time }: { time: 'BMO' | 'AMC' | null }) {
   if (!time) return null;
   const color = time === 'BMO' ? BMO_COLOR : AMC_COLOR;
@@ -172,32 +201,40 @@ export function EarningsListSlide({ companies, pageIndex, totalPages, overflowCo
             key={c.symbol}
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '24px 28px', borderRadius: 20, border: `1px solid ${BORDER}`,
+              padding: '20px 28px', borderRadius: 20, border: `1px solid ${BORDER}`,
             }}
           >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 14 }}>
-                <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 34, color: FG }}>
-                  {c.symbol}
-                </span>
-                <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 22, color: MUTED_DIM }}>
-                  {c.name}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+              <CompanyBadge symbol={c.symbol} logoUrl={c.logoUrl} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 14 }}>
+                  <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 34, color: FG }}>
+                    {c.symbol}
+                  </span>
+                  <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 22, color: MUTED_DIM }}>
+                    {c.name}
+                  </span>
+                </div>
+                <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: 20, color: MUTED }}>
+                  {formatDate(c.date)}
                 </span>
               </div>
-              <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: 20, color: MUTED }}>
-                {formatDate(c.date)}
-              </span>
             </div>
             <TimeBadge time={c.time} />
           </div>
         ))}
       </div>
 
-      {isLastPage && overflowCount > 0 && (
-        <div style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: 22, color: MUTED, marginTop: 24 }}>
-          +{overflowCount} more this week on BullPen
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 24 }}>
+        <div style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: 18, color: MUTED_DIM }}>
+          Source: Twelve Data
         </div>
-      )}
+        {isLastPage && overflowCount > 0 && (
+          <div style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: 22, color: MUTED }}>
+            +{overflowCount} more this week on BullPen
+          </div>
+        )}
+      </div>
     </div>
   );
 }

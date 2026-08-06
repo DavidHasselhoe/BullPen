@@ -55,6 +55,27 @@ function timeTag(time?: string): 'BMO' | 'AMC' | null {
   return null;
 }
 
+/**
+ * Resolves one ticker's logo via the same self-healing proxy CompanyLogo
+ * uses everywhere else in the app (/api/logo/[ticker] — cache lookup first,
+ * then companies.logo_url, then a 1-credit TwelveData fetch on a true cold
+ * miss). Resolved once here, at generation time, rather than left for the
+ * render route to fetch — the renderer should only ever see a known-good
+ * URL or null, never have to follow a redirect or handle a 404 itself.
+ * Almost always a cache hit in practice: every ticker here is S&P 500/
+ * Nasdaq 100/TSM, the same major names already displayed constantly
+ * elsewhere in the app.
+ */
+async function resolveLogoUrl(appUrl: string, ticker: string): Promise<string | null> {
+  try {
+    const res = await fetch(`${appUrl}/api/logo/${encodeURIComponent(ticker)}`, { redirect: 'follow' });
+    if (!res.ok) return null;
+    return res.url;
+  } catch {
+    return null;
+  }
+}
+
 function formatWeekLabel(weekStart: string, weekEnd: string): string {
   const start = new Date(weekStart + 'T12:00:00Z');
   const end = new Date(weekEnd + 'T12:00:00Z');
@@ -166,12 +187,16 @@ export async function generateEarningsCalendarContent(
     weekLabel
   );
 
-  const companies: EarningsSlideCompany[] = shown.map((c) => ({
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bullpen.no';
+  const logoUrls = await Promise.all(shown.map((c) => resolveLogoUrl(appUrl, c.symbol)));
+
+  const companies: EarningsSlideCompany[] = shown.map((c, i) => ({
     symbol: c.symbol,
     name: c.name ?? c.symbol,
     date: c.date,
     time: timeTag(c.time),
     marketCap: c.market_cap,
+    logoUrl: logoUrls[i],
   }));
 
   return {

@@ -69,6 +69,12 @@ export interface EarningsSlideCompany {
   date: string; // YYYY-MM-DD
   time: 'BMO' | 'AMC' | null;
   marketCap: number | null;
+  /** Resolved once at generation time via /api/logo/[ticker] (the same
+   *  self-healing proxy CompanyLogo uses elsewhere in the app) — null when
+   *  no logo could be resolved. Pre-resolving here means the render route
+   *  only ever sees a known-good URL or null, never has to follow a
+   *  redirect or handle a 404 itself. */
+  logoUrl: string | null;
 }
 
 export interface EarningsCalendarSlides {
