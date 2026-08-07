@@ -44,7 +44,33 @@ const WINDOW_SECONDS = 60;
  * which is what actually produces the multi-thousand-credit spikes seen on
  * the TwelveData dashboard.
  */
-const CRON_CREDIT_SHARE = 400;
+export const CRON_CREDIT_SHARE = 400;
+
+/**
+ * A reservation larger than the whole share can never be granted: every
+ * attempt fails, the caller exhausts its wait, and `waitForCronCreditBudget`
+ * proceeds anyway — so the guard degrades into pure added latency while the
+ * real spend goes unrecorded. That failure mode has now caused the same
+ * production incident three separate times (CHUNK_SIZE=10 needing 530,
+ * screener-stats needing 265+1515 against this 400 share), each time looking
+ * like a "guarded" call site on inspection.
+ *
+ * Any cost above the share is therefore a programming error, not a runtime
+ * condition. Log it loudly rather than failing the request: it surfaces in
+ * Vercel runtime errors where the previous silent leaks did not.
+ * `scripts/test-credit-budget.ts` asserts every caller's constant stays under
+ * the share so this never ships again.
+ */
+function warnIfUnreservable(cost: number): boolean {
+  if (cost <= CRON_CREDIT_SHARE) return false;
+  console.error(
+    `[credit-budget] reservation of ${cost} credits exceeds CRON_CREDIT_SHARE ` +
+    `(${CRON_CREDIT_SHARE}) and can never be granted — this call site will fire ` +
+    `unreserved and blow the account-wide 610/min cap. Split the work into ` +
+    `units of <= ${CRON_CREDIT_SHARE} credits.`
+  );
+  return true;
+}
 
 function bucketKey(): string {
   const bucket = Math.floor(Date.now() / 1000 / WINDOW_SECONDS);
@@ -82,11 +108,39 @@ export async function reserveCronCredits(cost: number): Promise<boolean> {
  * refresh chain — this is a pacing guard, not a hard cap. 65s comfortably
  * spans a full minute-bucket rollover even if the wait starts right after
  * the bucket was created.
+ *
+ * Only safe for reservations that are actually satisfiable (`cost` <=
+ * CRON_CREDIT_SHARE) AND whose callers are naturally staggered. A swarm of
+ * concurrent waiters gives up in lockstep and then all fire at once, which
+ * defeats the pacing entirely — use `tryReserveCredits` and skip the work
+ * instead whenever the caller can tolerate not fetching.
  */
 export async function waitForCronCreditBudget(cost: number, maxWaitMs = 65_000): Promise<void> {
+  warnIfUnreservable(cost);
   const start = Date.now();
   while (!(await reserveCronCredits(cost))) {
     if (Date.now() - start > maxWaitMs) return;
     await new Promise((resolve) => setTimeout(resolve, 3000));
   }
+}
+
+/**
+ * Hard variant of `waitForCronCreditBudget`: returns false instead of
+ * proceeding anyway, so the caller skips the work rather than firing
+ * unreserved. Use this anywhere the fetch is optional — a stale cache entry,
+ * a health score that can keep its previous value, an interactive request
+ * that would rather render slightly older data than contribute to an
+ * account-wide rate-limit breach.
+ *
+ * This is the difference that matters: `waitForCronCreditBudget` can only
+ * ever delay a breach, while this can prevent one.
+ */
+export async function tryReserveCredits(cost: number, maxWaitMs = 8_000): Promise<boolean> {
+  if (warnIfUnreservable(cost)) return false;
+  const start = Date.now();
+  while (!(await reserveCronCredits(cost))) {
+    if (Date.now() - start > maxWaitMs) return false;
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+  }
+  return true;
 }
