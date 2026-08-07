@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/client';
 import { getStorageLogoUrl } from '@/lib/logos/logos-storage';
-import { getCached, setCached } from '@/lib/cache/market-data-cache';
+import { getCached, getCachedStale, setCached } from '@/lib/cache/market-data-cache';
 import {
   getIncomeStatement,
   getBalanceSheet,
@@ -9,17 +9,25 @@ import {
   withRateLimitRetry,
   TwelveDataRateLimitError,
 } from '@/lib/twelvedata/twelvedata-client';
-import { waitForCronCreditBudget } from '@/lib/twelvedata/credit-budget';
+import { tryReserveCredits } from '@/lib/twelvedata/credit-budget';
 
 const FINANCIALS_CACHE_TTL_SECONDS = 24 * 60 * 60;
 /** Real measured cost per statement (income/balance/cashflow), not the ~1
  *  credit CLAUDE.md's table used to assume — see its "Credit costs at a
- *  glance" section. A cold 2-5 company comparison can fan out to 6-15 of
- *  these in one request, so each reserves against the shared cron budget
- *  before firing. Uses a short wait (unlike the crons' 65s default) since
- *  this blocks an interactive page load, not a background sweep — genuine
- *  TwelveData-side 429s are still handled by withRateLimitRetry below.
- */
+ *  glance" section. A cold 5-company comparison fans out to 15 of these in
+ *  one request: 1,515 credits against an account-wide cap of 610/min.
+ *
+ *  This used to call waitForCronCreditBudget, which proceeds anyway once its
+ *  wait elapses. Because all 15 fetches are fired concurrently via Promise.all
+ *  they raced the same budget, at most three could win, and the rest gave up
+ *  in lockstep and fired unreserved about 8 seconds later — the whole 1,515
+ *  credits landing inside one minute while the budget bucket recorded ~300.
+ *  That is the same mechanism that produced the repeated cron spikes (see
+ *  lib/market-data/screener-stats.ts), and a soft guard cannot fix it: a
+ *  swarm of concurrent waiters always gives up together.
+ *
+ *  tryReserveCredits skips instead, so an unreservable statement degrades to
+ *  cached data rather than contributing to a breach. */
 const CREDITS_PER_STATEMENT = 101;
 const BUDGET_WAIT_MS = 8_000;
 
@@ -36,7 +44,19 @@ async function getCachedFinancial<T>(
   const cached = await getCached<T>(cacheKey);
   if (cached) return cached;
 
-  await waitForCronCreditBudget(CREDITS_PER_STATEMENT, BUDGET_WAIT_MS);
+  // Never fetch without a granted reservation. Falling back to an expired
+  // entry shows a comparison built on slightly older annual statements, which
+  // is a far better outcome than a burst that rate-limits the whole account
+  // for everyone. Annual figures change four times a year, so "stale" here is
+  // typically hours old, not meaningfully different.
+  if (!(await tryReserveCredits(CREDITS_PER_STATEMENT, BUDGET_WAIT_MS))) {
+    const stale = await getCachedStale<T>(cacheKey);
+    // Every caller passes an array fetcher and treats an empty income
+    // statement as "omit this company from the comparison", which is the
+    // correct outcome when we have nothing cached and cannot afford a fetch.
+    return stale ?? ([] as unknown as T);
+  }
+
   const result = await withRateLimitRetry(fetcher);
   if (Array.isArray(result) ? result.length > 0 : !!result) {
     void setCached(cacheKey, ticker, 'financials', result, FINANCIALS_CACHE_TTL_SECONDS);
