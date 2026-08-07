@@ -1,6 +1,6 @@
 'use client';
 
-import { CandlestickChart, LineChart, AreaChart, BarChart3, CalendarDays, Ruler, BellPlus, X } from 'lucide-react';
+import { CandlestickChart, LineChart, AreaChart, BarChart3, CalendarDays, Wallet, Ruler, BellPlus, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { BullAiIcon } from '@/components/ai/BullAiIcon';
 import { IndicatorMenu } from './IndicatorMenu';
@@ -48,6 +48,8 @@ interface Props {
   onToggleVolume: () => void;
   showEvents: boolean;
   onToggleEvents: () => void;
+  showTransactions: boolean;
+  onToggleTransactions: () => void;
   tool: 'none' | 'measure' | 'alert';
   onToolChange: (t: 'none' | 'measure' | 'alert') => void;
   aiOpen: boolean;
@@ -59,7 +61,8 @@ export function ChartToolbar({
   symbol, price, changePct, chartType, onChartType, range, onRange,
   indicators, onAddIndicator, onRemoveIndicator, onUpdateIndicator, onApplyPreset, onClearIndicators,
   presets, onApplyUserPreset, onSavePreset, onDeletePreset,
-  showVolume, onToggleVolume, showEvents, onToggleEvents, tool, onToolChange, aiOpen, onToggleAI, onClose,
+  showVolume, onToggleVolume, showEvents, onToggleEvents, showTransactions, onToggleTransactions,
+  tool, onToolChange, aiOpen, onToggleAI, onClose,
 }: Props) {
   const pct = changePct ?? 0;
   const pos = pct >= 0;
@@ -198,6 +201,18 @@ export function ChartToolbar({
           )}
         >
           <CalendarDays className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={onToggleTransactions}
+          aria-pressed={showTransactions}
+          title="Toggle your trades"
+          className={cn(
+            'flex h-8 w-8 items-center justify-center rounded-md border border-border transition-colors',
+            showTransactions ? 'bg-accent text-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+          )}
+        >
+          <Wallet className="h-4 w-4" />
         </button>
         <button
           type="button"

@@ -169,6 +169,12 @@ export function ChartPrefsControls({
             onToggle={() => setPref('showEarnings', !prefs.showEarnings)}
           />
           <ToggleRow
+            label="Your trades"
+            description="Green dot where you bought, red dot where you sold"
+            checked={prefs.showTransactions}
+            onToggle={() => setPref('showTransactions', !prefs.showTransactions)}
+          />
+          <ToggleRow
             label="Period open line"
             description="Horizontal dashed reference at the start of the selected period"
             checked={prefs.showPrevClose}

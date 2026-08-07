@@ -18,6 +18,7 @@ export interface ChartPreset {
   indicators: IndicatorInstance[];
   showVolume: boolean;
   showEvents: boolean;
+  showTransactions: boolean;
 }
 
 function loadLocal(): ChartPreset[] {

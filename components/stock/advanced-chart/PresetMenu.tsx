@@ -17,6 +17,7 @@ function summarize(p: ChartPreset): string {
   if (p.indicators.length) parts.push(`${p.indicators.length} indicator${p.indicators.length === 1 ? '' : 's'}`);
   if (p.showVolume) parts.push('Volume');
   if (p.showEvents) parts.push('Events');
+  if (p.showTransactions) parts.push('Trades');
   return parts.join(' · ');
 }
 

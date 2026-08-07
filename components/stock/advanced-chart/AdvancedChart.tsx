@@ -30,6 +30,8 @@ interface Props {
   fitKey: string;
   /** Past earnings events to mark on the price series (when the Events toggle is on). */
   events?: { ts: number; beat: boolean | null }[];
+  /** This user's buy/sell markers (when the Trades toggle is on). */
+  transactions?: { ts: number; kind: 'buy' | 'sell' }[];
   /** Unix seconds: bars before this are warm-up only (not rendered). */
   displayFrom?: number;
   /** Live price — updates the last (intraday) bar in place. */
@@ -100,7 +102,7 @@ function pricePoints(candles: OHLCV, displayFrom?: number) {
 }
 
 export function AdvancedChart({
-  candles, chartType, indicators, showVolume, isDark, intraday, fitKey, events, displayFrom,
+  candles, chartType, indicators, showVolume, isDark, intraday, fitKey, events, transactions, displayFrom,
   livePrice, tool = 'none', onCreateAlert,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -205,6 +207,31 @@ export function AdvancedChart({
           used.add(best);
           const color = ev.beat === null ? '#f59e0b' : ev.beat ? UP : DOWN;
           markers.push({ time: best as Time, position: 'belowBar', color, shape: 'circle', text: 'E' });
+        }
+      }
+    }
+
+    // ── Buy/sell markers, snapped to the nearest candle ──
+    if (transactions?.length) {
+      const times = points.order.map((i) => candles.t[i]);
+      if (times.length) {
+        const first = times[0];
+        const last = times[times.length - 1];
+        for (const tx of transactions) {
+          if (tx.ts < first - 86_400 || tx.ts > last + 86_400) continue;
+          let best = times[0];
+          let bestDiff = Infinity;
+          for (const t of times) {
+            const diff = Math.abs(t - tx.ts);
+            if (diff < bestDiff) { bestDiff = diff; best = t; }
+          }
+          markers.push({
+            time: best as Time,
+            position: tx.kind === 'buy' ? 'belowBar' : 'aboveBar',
+            color: tx.kind === 'buy' ? UP : DOWN,
+            shape: tx.kind === 'buy' ? 'arrowUp' : 'arrowDown',
+            text: tx.kind === 'buy' ? 'Buy' : 'Sell',
+          });
         }
       }
     }
@@ -325,7 +352,7 @@ export function AdvancedChart({
     }
 
     setLegendLines(newLegendLines);
-  }, [candles, points, chartType, indicators, showVolume, fitKey, events]);
+  }, [candles, points, chartType, indicators, showVolume, fitKey, events, transactions]);
 
   // ── Live last-bar update (intraday) ─────────────────────────────────────────
   useEffect(() => {

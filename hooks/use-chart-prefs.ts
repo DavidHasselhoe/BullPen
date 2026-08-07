@@ -17,6 +17,7 @@ export interface ChartPrefs {
   defaultIndicators: ChartIndicator[];
   showVolume: boolean;
   showEarnings: boolean;
+  showTransactions: boolean;
   showPrevClose: boolean;
   showExtendedHours: boolean;
   chartStyle: 'area' | 'line';
@@ -30,6 +31,7 @@ export const CHART_PREF_DEFAULTS: ChartPrefs = {
   defaultIndicators: [],
   showVolume: false,
   showEarnings: false,
+  showTransactions: false,
   showPrevClose: false,
   showExtendedHours: true,
   chartStyle: 'area',

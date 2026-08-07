@@ -12,6 +12,7 @@ import { BarChart } from '@/components/charts/bar-chart';
 import { Bar } from '@/components/charts/bar';
 import { ReferenceLine } from '@/components/charts/reference-line';
 import { EarningsMarker } from '@/components/charts/earnings-marker';
+import { TransactionMarker } from '@/components/charts/transaction-marker';
 import { Grid } from '@/components/charts/grid';
 import { XAxis } from '@/components/charts/x-axis';
 import { ChartTooltip } from '@/components/charts/tooltip';
@@ -23,6 +24,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useLivePrices } from '@/hooks/use-live-prices';
 import { useStockQuote } from '@/hooks/use-stock-price';
 import { useExperienceLevel } from '@/hooks/use-experience-level';
+import { useHoldings, useHoldingSales } from '@/hooks/use-holdings';
+import { buildTransactionMarkers } from '@/lib/holdings/transaction-markers';
 import { cn } from '@/lib/utils';
 import type { ExtendedHoursQuote, IndicatorValue, CompanyEarnings } from '@/lib/twelvedata/twelvedata-client';
 
@@ -189,12 +192,14 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
     indicators: IndicatorInstance[];
     showVolume: boolean;
     showEvents: boolean;
+    showTransactions: boolean;
   }) =>
     setPrefs({
       advancedChartType: c.chartType,
       advancedIndicators: c.indicators,
       showVolume: c.showVolume,
       showEarnings: c.showEvents,
+      showTransactions: c.showTransactions,
     });
 
   // ── Data sources ─────────────────────────────────────────────────────────
@@ -273,6 +278,18 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
     gcTime: 24 * 60 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
+
+  // ── This user's trades on this ticker (for the buy/sell overlay) ─────────
+  // Cheap Supabase reads (no TwelveData cost) shared across the app via the
+  // same queryKey, so this is fetched unconditionally rather than gated
+  // behind the toggle — flipping the switch on shows markers instantly.
+  const { data: allHoldings } = useHoldings();
+  const { data: allSales } = useHoldingSales();
+  const myHolding = allHoldings?.find((h) => h.symbol.toUpperCase() === ticker.toUpperCase());
+  const mySales = useMemo(
+    () => allSales?.filter((s) => s.symbol.toUpperCase() === ticker.toUpperCase()) ?? [],
+    [allSales, ticker]
+  );
 
   // ── Indicator queries ─────────────────────────────────────────────────────
   const sma50Query  = useQuery<IndicatorResponse>({ queryKey: ['indicator', ticker, 'sma50',  range], queryFn: () => fetchIndicator(ticker, INDICATORS[0], range), enabled: activeIndicators.has('sma50')  && !!ticker, staleTime: 5 * 60 * 1000 });
@@ -402,6 +419,25 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
       .filter(({ ts }) => ts >= chartStart && ts <= chartEnd)
       .map(({ ts, beat }) => ({ date: new Date(ts * 1000), beat }));
   }, [prefs.showEarnings, earningsResp, chartDisplayData]);
+
+  // Buy/sell markers — filtered to dates visible in the current chart window,
+  // same shape as the earnings markers above.
+  const transactionMarkers = useMemo(() => {
+    if (!prefs.showTransactions || !chartDisplayData.length) return [];
+    const chartStart = chartDisplayData[0].time;
+    const chartEnd = chartDisplayData[chartDisplayData.length - 1].time;
+    return buildTransactionMarkers(myHolding, mySales)
+      .filter((m) => m.tsSeconds >= chartStart && m.tsSeconds <= chartEnd)
+      .map((m) => ({
+        date: new Date(m.tsSeconds * 1000),
+        price: m.price,
+        kind: m.kind,
+        title:
+          m.kind === 'buy'
+            ? `Bought at ${fmtPrice(m.price)} avg on ${m.dateStr}`
+            : `Sold ${m.quantity} at ${fmtPrice(m.price)} on ${m.dateStr}`,
+      }));
+  }, [prefs.showTransactions, myHolding, mySales, chartDisplayData]);
 
   // Right block (dual mode) — derive extended price from the last candle when it's a
   // pre/post session so the header and chart tooltip always read from the same source.
@@ -699,6 +735,9 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
                 stroke={beat === null ? '#f59e0b' : beat ? '#22c55e' : '#ef4444'}
               />
             ))}
+            {transactionMarkers.map((m) => (
+              <TransactionMarker key={`${m.kind}-${m.date.getTime()}`} date={m.date} price={m.price} kind={m.kind} title={m.title} />
+            ))}
             <ChartTooltip
               showTime={isIntradayRange}
               showYear={YEAR_DISAMBIGUATED_RANGES.has(range)}
@@ -811,6 +850,10 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
           onToggleVolume={() => setPref('showVolume', !prefs.showVolume)}
           showEvents={prefs.showEarnings}
           onToggleEvents={() => setPref('showEarnings', !prefs.showEarnings)}
+          showTransactions={prefs.showTransactions}
+          onToggleTransactions={() => setPref('showTransactions', !prefs.showTransactions)}
+          holding={myHolding ? { date_purchased: myHolding.date_purchased, avg_price: myHolding.avg_price, quantity: myHolding.quantity } : undefined}
+          sales={mySales}
         />
       )}
     </div>

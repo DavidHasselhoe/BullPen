@@ -13,6 +13,11 @@ import { useLivePrices } from '@/hooks/use-live-prices';
 import { useAlerts } from '@/hooks/use-alerts';
 import type { CompanyEarnings } from '@/lib/twelvedata/twelvedata-client';
 import {
+  buildTransactionMarkers,
+  type TransactionMarkerInput,
+  type SaleMarkerInput,
+} from '@/lib/holdings/transaction-markers';
+import {
   getIndicatorDef,
   defaultParamsFor,
   indicatorLabel,
@@ -69,18 +74,24 @@ interface Props {
     indicators: IndicatorInstance[];
     showVolume: boolean;
     showEvents: boolean;
+    showTransactions: boolean;
   }) => void;
   showVolume: boolean;
   onToggleVolume: () => void;
   showEvents: boolean;
   onToggleEvents: () => void;
+  showTransactions: boolean;
+  onToggleTransactions: () => void;
+  /** This user's holding/sales for `ticker`, already scoped by the caller. */
+  holding?: TransactionMarkerInput;
+  sales: SaleMarkerInput[];
 }
 
 export function AdvancedChartModal({
   ticker, initialRange, onClose,
   chartType, onChartType, onRangeChange, indicators, onAddIndicator, onRemoveIndicator, onUpdateIndicator, onApplyPreset,
   onReplaceIndicators, onApplyConfig,
-  showVolume, onToggleVolume, showEvents, onToggleEvents,
+  showVolume, onToggleVolume, showEvents, onToggleEvents, showTransactions, onToggleTransactions, holding, sales,
 }: Props) {
   const router = useRouter();
   const { resolvedTheme } = useTheme();
@@ -99,7 +110,7 @@ export function AdvancedChartModal({
 
   const handleClearIndicators = () => onReplaceIndicators([]);
   const handleSavePreset = (name: string) =>
-    savePreset({ name, range, chartType, indicators, showVolume, showEvents });
+    savePreset({ name, range, chartType, indicators, showVolume, showEvents, showTransactions });
   const handleApplyPreset = (p: ChartPreset) => {
     handleSetRange(p.range);
     onApplyConfig({
@@ -107,6 +118,8 @@ export function AdvancedChartModal({
       indicators: p.indicators,
       showVolume: p.showVolume,
       showEvents: p.showEvents,
+      // Presets saved before this feature shipped won't have the field.
+      showTransactions: p.showTransactions ?? false,
     });
   };
 
@@ -169,6 +182,14 @@ export function AdvancedChartModal({
       beat: e.actual != null && e.estimate != null ? e.actual >= e.estimate : null,
     }));
   }, [showEvents, earningsResp]);
+
+  // This user's buy/sell markers for `ticker`. holding/sales are already
+  // scoped by the caller (StockPricePanel), so this is a pure derivation —
+  // no extra fetch here.
+  const transactions = useMemo(() => {
+    if (!showTransactions) return undefined;
+    return buildTransactionMarkers(holding, sales).map((m) => ({ ts: m.tsSeconds, kind: m.kind }));
+  }, [showTransactions, holding, sales]);
 
   // Anchor the visible window to the newest loaded bar (avoids Date.now during
   // render). Bars before this are warm-up only so long SMAs cover the window.
@@ -301,6 +322,8 @@ export function AdvancedChartModal({
         onToggleVolume={onToggleVolume}
         showEvents={showEvents}
         onToggleEvents={onToggleEvents}
+        showTransactions={showTransactions}
+        onToggleTransactions={onToggleTransactions}
         tool={tool}
         onToolChange={setTool}
         aiOpen={aiOpen}
@@ -333,6 +356,7 @@ export function AdvancedChartModal({
             intraday={INTRADAY_RANGES.has(range)}
             fitKey={`${range}:${displayFrom ?? 0}`}
             events={events}
+            transactions={transactions}
             displayFrom={displayFrom}
             livePrice={livePrice}
             tool={tool}

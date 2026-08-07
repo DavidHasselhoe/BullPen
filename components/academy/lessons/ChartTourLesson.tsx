@@ -111,6 +111,9 @@ export function ChartTourLesson({ content, onComplete }: Props) {
         onToggleVolume={() => {}}
         showEvents={false}
         onToggleEvents={() => {}}
+        showTransactions={false}
+        onToggleTransactions={() => {}}
+        sales={[]}
       />
       <CourseChartTour
         steps={content.steps}
