@@ -47,11 +47,11 @@ export function marketCapBand(marketCap: number): { band: MarketCapBand; positio
 
 export function marketCapInsight(band: MarketCapBand): string {
   switch (band) {
-    case 'Mega':  return 'A mega-cap — one of the largest public companies in the world';
+    case 'Mega':  return 'A mega-cap, one of the largest public companies in the world';
     case 'Large': return 'A large, established company';
-    case 'Mid':   return 'A mid-size company — established, with room to grow';
-    case 'Small': return 'A smaller company — more growth potential, more risk';
-    case 'Micro': return 'A very small company — prices can swing sharply';
+    case 'Mid':   return 'An established mid-size company, with room to grow';
+    case 'Small': return 'A smaller company with more growth potential and more risk';
+    case 'Micro': return 'A very small company. Prices can swing sharply';
   }
 }
 
@@ -59,29 +59,29 @@ export function marketCapInsight(band: MarketCapBand): string {
 export function peInsight(ttm: number | null, forward: number | null): string {
   if (ttm == null || ttm <= 0) {
     if (forward != null && forward > 0)
-      return `Not yet profitable over the past year — priced at ${Math.round(forward)}× next year's expected earnings`;
-    return 'No earnings to price against — the company isn’t profitable yet';
+      return `Not yet profitable over the past year. Priced at ${Math.round(forward)}× next year's expected earnings`;
+    return 'No earnings to price against, since the company isn’t profitable yet';
   }
   const base = `You pay $${Math.round(ttm)} for every $1 of yearly profit`;
   if (forward != null && forward > 0 && ttm > 0) {
-    if (forward < ttm * 0.93) return `${base} — expected to get cheaper as profits grow`;
-    if (forward > ttm * 1.07) return `${base} — expected to get pricier as profits shrink`;
+    if (forward < ttm * 0.93) return `${base}. Expected to get cheaper as profits grow`;
+    if (forward > ttm * 1.07) return `${base}. Expected to get pricier as profits shrink`;
   }
   return base;
 }
 
 export function betaInsight(beta: number): string {
-  if (beta < 0.2) return 'Barely moves with the market — very steady';
-  if (beta < 0.8) return `Moves about ${beta.toFixed(1)}× the market — a calmer ride`;
+  if (beta < 0.2) return 'Barely moves with the market. Very steady';
+  if (beta < 0.8) return `Moves about ${beta.toFixed(1)}× the market. A calmer ride`;
   if (beta <= 1.2) return 'Moves roughly in line with the overall market';
-  if (beta <= 1.8) return `Moves about ${beta.toFixed(1)}× the market — expect bigger swings`;
-  return `Moves about ${beta.toFixed(1)}× the market — a very bumpy ride`;
+  if (beta <= 1.8) return `Moves about ${beta.toFixed(1)}× the market. Expect bigger swings`;
+  return `Moves about ${beta.toFixed(1)}× the market. A very bumpy ride`;
 }
 
 /** `yieldFraction` is a decimal fraction (0.0044 = 0.44%). */
 export function dividendInsight(yieldFraction: number | null): string {
   if (yieldFraction == null || yieldFraction <= 0)
-    return 'Doesn’t pay a dividend — profits are reinvested into growth instead';
+    return 'Doesn’t pay a dividend. Profits are reinvested into growth instead';
   const perHundred = yieldFraction * 100;
   return `Pays about $${perHundred.toFixed(2)} per year for every $100 invested`;
 }

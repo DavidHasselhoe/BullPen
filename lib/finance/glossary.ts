@@ -38,7 +38,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   'P/E (TTM)': {
     plainLabel: 'Price vs Earnings',
-    description: 'How much investors pay per $1 of profit the company earned in the past 12 months. Lower often signals better value — but context matters.',
+    description: 'How much investors pay per $1 of profit the company earned in the past 12 months. Lower often signals better value, but context matters.',
   },
   'Forward P/E': {
     plainLabel: 'Price vs Expected Earnings',
@@ -50,7 +50,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   'P/B': {
     plainLabel: 'Price vs Book Value',
-    description: 'Compares stock price to what the company\'s assets are worth on paper. Below 1 can indicate the stock is undervalued — or that something is wrong.',
+    description: 'Compares stock price to what the company\'s assets are worth on paper. Below 1 can indicate the stock is undervalued, or that something is wrong.',
   },
   'EV/EBITDA': {
     plainLabel: 'Company Value vs Operating Profit',
@@ -74,7 +74,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   'Dividend Yield': {
     plainLabel: 'Annual Dividend %',
-    description: 'Annual dividend payments as a percentage of the stock price. A 3% yield means you\'d earn $3 per year for every $100 invested — if dividends stay the same.',
+    description: 'Annual dividend payments as a percentage of the stock price. A 3% yield means you\'d earn $3 per year for every $100 invested, if dividends stay the same.',
   },
   'Profit Margin': {
     plainLabel: 'Profit per $1 of Revenue',
@@ -89,7 +89,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
 
   'Revenue': {
     plainLabel: 'Total Sales',
-    description: 'All money the company earned from selling products or services — before any costs are subtracted.',
+    description: 'All money the company earned from selling products or services, before any costs are subtracted.',
   },
   'Gross Profit': {
     plainLabel: 'Sales Profit (Before Expenses)',
@@ -97,7 +97,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   'Operating Income': {
     plainLabel: 'Profit from Core Business',
-    description: 'Profit after deducting operating expenses like salaries and rent — but before taxes and interest. Shows how well the core business runs.',
+    description: 'Profit after deducting operating expenses like salaries and rent, but before taxes and interest. Shows how well the core business runs.',
   },
   'EBITDA': {
     plainLabel: 'Operating Cash Profit',
@@ -105,7 +105,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   'Net Income': {
     plainLabel: 'Bottom-Line Profit',
-    description: 'The final profit after every cost — taxes, interest, and all other expenses — has been subtracted. The "bottom line."',
+    description: 'The final profit after every cost (taxes, interest, and all other expenses) has been subtracted. The "bottom line."',
   },
   'EPS (Diluted)': {
     plainLabel: 'Profit per Share',
@@ -121,7 +121,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   'SG&A Expenses': {
     plainLabel: 'Sales & Admin Costs',
-    description: 'Costs for running the business — marketing, sales staff, and office expenses. Does not include production costs.',
+    description: 'Costs for running the business: marketing, sales staff, and office expenses. Does not include production costs.',
   },
   'Interest Expense': {
     plainLabel: 'Debt Interest Paid',
@@ -136,11 +136,11 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
 
   'Total Assets': {
     plainLabel: 'Everything the Company Owns',
-    description: 'The total value of everything the company owns — cash, buildings, equipment, intellectual property, and more.',
+    description: 'The total value of everything the company owns: cash, buildings, equipment, intellectual property, and more.',
   },
   'Current Assets': {
     plainLabel: 'Short-Term Assets',
-    description: 'Assets the company expects to convert to cash within a year — like inventory, receivables, and cash itself.',
+    description: 'Assets the company expects to convert to cash within a year, like inventory, receivables, and cash itself.',
   },
   'Cash & Equivalents': {
     plainLabel: 'Cash on Hand',
@@ -152,11 +152,11 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   'Total Liabilities': {
     plainLabel: 'Everything the Company Owes',
-    description: 'All money the company owes — short-term bills, long-term loans, and other obligations.',
+    description: 'All money the company owes: short-term bills, long-term loans, and other obligations.',
   },
   'Current Liabilities': {
     plainLabel: 'Bills Due Within a Year',
-    description: 'Obligations the company must pay within the next 12 months — including short-term debt and accounts payable.',
+    description: 'Obligations the company must pay within the next 12 months, including short-term debt and accounts payable.',
   },
   'Long-Term Debt': {
     plainLabel: 'Long-Term Loans',
@@ -191,7 +191,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   'Investing Activities': {
     plainLabel: 'Cash Used for Investments',
-    description: 'Cash spent or received from buying/selling long-term assets and investments — like acquiring another company.',
+    description: 'Cash spent or received from buying/selling long-term assets and investments, like acquiring another company.',
   },
   'Financing Activities': {
     plainLabel: 'Cash from Borrowing & Equity',
@@ -210,7 +210,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   'SMA 200': {
     plainLabel: '200-Day Average Price',
-    description: 'The average closing price over the past 200 trading days. A long-term trend indicator — price above = bullish, below = bearish.',
+    description: 'The average closing price over the past 200 trading days. A long-term trend indicator: price above = bullish, below = bearish.',
   },
   'EMA 20': {
     plainLabel: '20-Day Weighted Average',
@@ -218,22 +218,22 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   'BB': {
     plainLabel: 'Price Range Bands',
-    description: 'Bollinger Bands — upper and lower boundaries that show how far the price deviates from its recent average. Prices near the edges may signal reversal.',
+    description: 'Bollinger Bands: upper and lower boundaries that show how far the price deviates from its recent average. Prices near the edges may signal reversal.',
   },
   'RSI': {
     plainLabel: 'Momentum Meter',
-    description: 'Relative Strength Index — measures how fast the price is moving. Above 70 may mean overbought; below 30 may mean oversold.',
+    description: 'Relative Strength Index: measures how fast the price is moving. Above 70 may mean overbought; below 30 may mean oversold.',
   },
   'MACD': {
     plainLabel: 'Trend Momentum Signal',
-    description: 'Moving Average Convergence/Divergence — shows the relationship between two moving averages. Used to spot trend changes and momentum shifts.',
+    description: 'Moving Average Convergence/Divergence: shows the relationship between two moving averages. Used to spot trend changes and momentum shifts.',
   },
 
   // ── Portfolio / Holdings ───────────────────────────────────────────────────
 
   'Total Value': {
     plainLabel: 'Total Value',
-    description: 'The current market value of everything you hold — each position\'s latest price times how many shares you own, added up.',
+    description: 'The current market value of everything you hold: each position\'s latest price times how many shares you own, added up.',
   },
   'Cost Basis': {
     plainLabel: 'What You Paid',
@@ -241,7 +241,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   'Market Value': {
     plainLabel: 'Current Worth',
-    description: 'What a position is worth right now — the latest price times the number of shares you own.',
+    description: 'What a position is worth right now: the latest price times the number of shares you own.',
   },
   'Unrealized P/L': {
     plainLabel: 'Paper Gain / Loss',
@@ -249,7 +249,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   'Total P/L': {
     plainLabel: 'Total Gain / Loss',
-    description: 'Your overall profit or loss across all holdings versus what you paid for them — combining every position.',
+    description: 'Your overall profit or loss across all holdings versus what you paid for them, combining every position.',
   },
   'Today P&L': {
     plainLabel: "Today's Gain / Loss",
@@ -276,7 +276,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   'P/E': {
     plainLabel: 'Price vs Earnings',
-    description: 'How much investors pay per $1 of the company\'s yearly profit. Lower often signals better value — but context matters.',
+    description: 'How much investors pay per $1 of the company\'s yearly profit. Lower often signals better value, but context matters.',
   },
   'Health': {
     plainLabel: 'Financial Health Score',
@@ -295,15 +295,15 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
 
   'Profitability': {
     plainLabel: 'How Well It Makes Money',
-    description: 'Whether the company actually turns sales into profit — profit margin, net income, and revenue growth. The single biggest driver of the health score.',
+    description: 'Whether the company actually turns sales into profit: profit margin, net income, and revenue growth. The single biggest driver of the health score.',
   },
   'Financial Strength': {
     plainLabel: 'How Sturdy Its Finances Are',
-    description: 'Whether the company can pay its bills and isn\'t buried in debt — cash vs. short-term obligations, debt levels, and free cash flow.',
+    description: 'Whether the company can pay its bills and isn\'t buried in debt: cash vs. short-term obligations, debt levels, and free cash flow.',
   },
   'Valuation': {
     plainLabel: 'Whether the Price Is Fair',
-    description: 'Whether the stock looks cheap or expensive for what you get — based on P/E, P/B, and EV/EBITDA. A great company can still be a pricey stock.',
+    description: 'Whether the stock looks cheap or expensive for what you get, based on P/E, P/B, and EV/EBITDA. A great company can still be a pricey stock.',
   },
   'Growth': {
     plainLabel: 'How Fast It\'s Growing',
@@ -311,7 +311,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   'Market Risk': {
     plainLabel: 'How Bumpy the Ride Is',
-    description: 'How volatile the stock tends to be — its beta versus the market and how heavily it\'s bet against (short interest).',
+    description: 'How volatile the stock tends to be: its beta versus the market and how heavily it\'s bet against (short interest).',
   },
   'Current Ratio': {
     plainLabel: 'Can It Pay Its Bills?',
@@ -319,7 +319,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   'Debt-to-Equity': {
     plainLabel: 'How Much It Borrows',
-    description: 'How much debt the company uses compared to shareholders\' own money. Higher means more borrowing — more risk if business slows.',
+    description: 'How much debt the company uses compared to shareholders\' own money. Higher means more borrowing, more risk if business slows.',
   },
 
   // ── Price panel ─────────────────────────────────────────────────────────────
@@ -345,11 +345,11 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
 
   'Cost of Revenue': {
     plainLabel: 'Cost of Making Sales',
-    description: 'The direct cost of producing what the company sells — materials, manufacturing, and delivery. Revenue minus this is gross profit.',
+    description: 'The direct cost of producing what the company sells: materials, manufacturing, and delivery. Revenue minus this is gross profit.',
   },
   'Other OpEx': {
     plainLabel: 'Other Operating Costs',
-    description: 'Day-to-day running costs beyond making the product — things like admin, marketing, and overhead not itemized elsewhere.',
+    description: 'Day-to-day running costs beyond making the product, things like admin, marketing, and overhead not itemized elsewhere.',
   },
   'Tax & Other': {
     plainLabel: 'Taxes & Other Costs',
@@ -357,7 +357,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   'Total Costs': {
     plainLabel: 'All Costs Combined',
-    description: 'Every cost the company subtracts from revenue — production, operating expenses, taxes, and interest — before its bottom-line profit.',
+    description: 'Every cost the company subtracts from revenue (production, operating expenses, taxes, and interest) before its bottom-line profit.',
   },
 
   // ── Macro / Economy ─────────────────────────────────────────────────────────
