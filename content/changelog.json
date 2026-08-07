@@ -1,5 +1,13 @@
 [
   {
+    "date": "2026-08-07",
+    "entries": [
+      { "type": "new", "text": "Stock charts now show green dots where you bought and red dots where you sold, helping you visualize your trading history at a glance. Turn it on in the Overlays section of the chart settings" },
+      { "type": "fixed", "text": "The Earnings Calendar now shows recent earnings reports that couldn't be immediately verified, instead of going blank. They're marked as unconfirmed so you know they're not official yet" },
+      { "type": "new", "text": "Added Price-to-Sales ratio to the Valuation section on stock detail pages, with automatic adjustment based on the company's sector so you can compare fairly across different industries" }
+    ]
+  },
+  {
     "date": "2026-08-06",
     "entries": [
       { "type": "improved", "text": "AI Deep Dive now uses the same ticker search you'll find everywhere else in BullPen, so you can look up a company by name or ticker and see its logo before running an analysis" },
