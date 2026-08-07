@@ -5,7 +5,7 @@ import { DefaultChatTransport } from 'ai';
 import type { UIMessage } from 'ai';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
-import { useEffect, useRef, useState, useCallback, forwardRef, useImperativeHandle, memo } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo, forwardRef, useImperativeHandle, memo } from 'react';
 import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -24,6 +24,7 @@ import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import { ToolResultCard } from '@/components/ai/ToolResultCard';
 import { BullAiIcon } from '@/components/ai/BullAiIcon';
 import { getActiveToolName, getToolStatusLabel, getCompletedToolCalls, getFollowups, extractTickers, type ClientAction, type ActionOutcome } from '@/lib/ai/tool-ux';
+import posthog from 'posthog-js';
 
 const DEFAULT_STARTER_PROMPTS = [
   'How healthy is AAPL financially?',
@@ -195,7 +196,10 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
   // in-chart assistant) when the page itself doesn't supply explicit context —
   // e.g. opening the widget from Discover or Holdings right after asking the
   // chart assistant about a company.
-  const effectiveContext = aiContext ?? (lastTicker ? { tickers: [lastTicker], label: `${lastTicker} (previously discussed)` } : undefined);
+  const effectiveContext = useMemo(
+    () => aiContext ?? (lastTicker ? { tickers: [lastTicker], label: `${lastTicker} (previously discussed)` } : undefined),
+    [aiContext, lastTicker]
+  );
 
   // useChat only reconstructs its underlying Chat instance (and the transport
   // below) when activeConversationId changes — see @ai-sdk/react's useChat,
@@ -383,9 +387,13 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
   useEffect(() => {
     if (!initialQuery || initialQuerySentRef.current || !open) return;
     initialQuerySentRef.current = true;
+    posthog.capture('ai_chat_message_sent', {
+      entry_point: 'initial_query',
+      has_page_context: Boolean(effectiveContext),
+    });
     sendMessage({ parts: [{ type: 'text', text: initialQuery }] });
     onConsumedQuery?.();
-  }, [initialQuery, open, sendMessage, onConsumedQuery]);
+  }, [initialQuery, open, sendMessage, onConsumedQuery, effectiveContext]);
 
   // Context-aware prompts when viewing a company or comparison
   const contextPrompts = aiContext
@@ -415,6 +423,10 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
     const text = inputRef.current.trim();
     if (!text || isStreaming) return;
 
+    posthog.capture('ai_chat_message_sent', {
+      entry_point: 'composer',
+      has_page_context: Boolean(effectiveContext),
+    });
     sendMessage({ parts: [{ type: 'text', text }] });
 
     inputRef.current = '';
@@ -489,6 +501,10 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
                     visible: { opacity: 1, y: 0, transition: { duration: 0.22, ease: 'easeOut' } },
                   }}
                   onClick={() => {
+                    posthog.capture('ai_chat_message_sent', {
+                      entry_point: 'starter_prompt',
+                      has_page_context: Boolean(effectiveContext),
+                    });
                     sendMessage({ parts: [{ type: 'text', text: suggestion }] });
                     refocusInput();
                   }}
@@ -625,6 +641,10 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
               <button
                 key={s}
                 onClick={() => {
+                  posthog.capture('ai_chat_message_sent', {
+                    entry_point: 'follow_up',
+                    has_page_context: Boolean(effectiveContext),
+                  });
                   sendMessage({ parts: [{ type: 'text', text: s }] });
                   refocusInput();
                 }}
@@ -652,6 +672,10 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
                     ?.find((p) => p.type === 'text')?.text ?? '';
                 if (!lastText) return;
                 clearError();
+                posthog.capture('ai_chat_message_sent', {
+                  entry_point: 'retry',
+                  has_page_context: Boolean(effectiveContext),
+                });
                 sendMessage({ parts: [{ type: 'text', text: lastText }] });
                 refocusInput();
               }}

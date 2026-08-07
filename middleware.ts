@@ -68,8 +68,8 @@ export async function middleware(request: NextRequest) {
   // fast refresh) — production builds don't need it, and it fully defeats
   // CSP's main XSS mitigation, so it must never ship to real users.
   const scriptSrc = process.env.NODE_ENV === 'production'
-    ? "script-src 'self' 'unsafe-inline' https://app.termly.io"
-    : "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://app.termly.io";
+    ? "script-src 'self' 'unsafe-inline' https://app.termly.io https://*.posthog.com"
+    : "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://app.termly.io https://*.posthog.com";
   const csp = [
     "default-src 'self'",
     // app.termly.io: the official Termly embed script for self-updating legal
@@ -84,6 +84,7 @@ export async function middleware(request: NextRequest) {
     "img-src 'self' data: https:",
     "font-src 'self' data:",
     "connect-src 'self' https: wss:",
+    "worker-src 'self' blob:",
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",

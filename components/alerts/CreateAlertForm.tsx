@@ -9,6 +9,7 @@ import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { TickerSelector, type SearchResult } from '@/components/tools/buy-here/TickerSelector';
 import { AlertTypePicker } from './AlertTypePicker';
 import { describeAlert, type AlertType, type CreateAlertPayload } from '@/types/alerts';
+import posthog from 'posthog-js';
 
 interface Props {
   onCreated: () => void;
@@ -70,6 +71,10 @@ export function CreateAlertForm({ onCreated, onCancel, onCreate, initialTicker, 
     });
     setSubmitting(false);
     if (res.ok) {
+      posthog.capture('alert_created', {
+        symbol: ticker.ticker,
+        alert_type: alertType,
+      });
       onCreated();
     } else if (res.code === 'free_limit_reached') {
       setLimitReached(true);

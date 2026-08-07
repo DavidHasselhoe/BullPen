@@ -25,6 +25,7 @@ import type { Session } from '@supabase/supabase-js';
 import { createBrowserClient } from '@/lib/supabase/client';
 import type { AuthUser } from '@/lib/auth/auth';
 import { flushPendingOnboardingData } from '@/lib/onboarding/flush';
+import posthog from 'posthog-js';
 
 interface AuthContextValue {
   user: AuthUser | null;
@@ -90,6 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const lastErrorRef = useRef(0);
+  const identifiedUserIdRef = useRef<string | null>(null);
   const supabase = useMemo(() => createBrowserClient(), []);
 
   const refresh = useCallback(async () => {
@@ -144,6 +146,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!mounted) return;
 
       if (event === 'SIGNED_OUT') {
+        if (identifiedUserIdRef.current) {
+          posthog.reset();
+          identifiedUserIdRef.current = null;
+        }
         setUser(null);
         setIsLoading(false);
         return;
@@ -157,6 +163,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           event === 'USER_UPDATED') &&
         session?.user
       ) {
+        const userId = session.user.id;
+        if (identifiedUserIdRef.current !== userId) {
+          if (identifiedUserIdRef.current) {
+            posthog.reset();
+          }
+          posthog.identify(userId, {
+            email: session.user.email,
+          });
+          identifiedUserIdRef.current = userId;
+        }
+
         const isNewSignIn = event === 'SIGNED_IN';
         try {
           const profile = await loadUserFromSession(
