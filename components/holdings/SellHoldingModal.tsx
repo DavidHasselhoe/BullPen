@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { useSellHolding } from '@/hooks/use-holdings';
 import type { UserHolding } from '@/lib/types/database';
 import { logger } from '@/lib/utils/logger';
+import posthog from 'posthog-js';
 
 interface SellHoldingModalProps {
   open: boolean;
@@ -79,6 +80,10 @@ export function SellHoldingModal({ open, onOpenChange, holding, currentPriceUSD 
       await sellHolding.mutateAsync({
         holdingId: holding.id,
         input: { quantitySold: qtyNum, salePrice: priceNum, saleDate },
+      });
+      posthog.capture('holding_sold', {
+        symbol: holding.symbol,
+        sale_type: qtyNum >= heldQty ? 'full' : 'partial',
       });
       setSaved(true);
       setTimeout(handleClose, 1000);

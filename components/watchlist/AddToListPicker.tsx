@@ -5,6 +5,7 @@ import { Bookmark, BookmarkCheck, ChevronDown, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useWatchlistLists, useAddToWatchlist, useRemoveFromWatchlist, useIsWatched } from '@/hooks/use-watchlist';
+import posthog from 'posthog-js';
 
 interface AddToListPickerProps {
   symbol: string;
@@ -27,10 +28,14 @@ export function AddToListPicker({ symbol, companyName }: AddToListPickerProps) {
         size="sm"
         onClick={() => {
           if (isWatched) {
-            removeFromWatchlist.mutate(symbol);
+            removeFromWatchlist.mutate(symbol, {
+              onSuccess: () => posthog.capture('watchlist_item_removed', { symbol }),
+            });
           } else {
             const listId = lists?.[0]?.id;
-            addToWatchlist.mutate({ symbol, company_name: companyName, listId });
+            addToWatchlist.mutate({ symbol, company_name: companyName, listId }, {
+              onSuccess: () => posthog.capture('watchlist_item_added', { symbol, watchlist_type: 'default' }),
+            });
           }
         }}
         disabled={addToWatchlist.isPending || removeFromWatchlist.isPending}
@@ -52,7 +57,11 @@ export function AddToListPicker({ symbol, companyName }: AddToListPickerProps) {
           variant={isWatched ? 'default' : 'outline'}
           size="sm"
           onClick={() => {
-            if (isWatched) removeFromWatchlist.mutate(symbol);
+            if (isWatched) {
+              removeFromWatchlist.mutate(symbol, {
+                onSuccess: () => posthog.capture('watchlist_item_removed', { symbol }),
+              });
+            }
           }}
           disabled={addToWatchlist.isPending || removeFromWatchlist.isPending}
           className="gap-2 rounded-r-none border-r-0"
@@ -82,7 +91,9 @@ export function AddToListPicker({ symbol, companyName }: AddToListPickerProps) {
               <button
                 key={list.id}
                 onClick={() => {
-                  addToWatchlist.mutate({ symbol, company_name: companyName, listId: list.id });
+                  addToWatchlist.mutate({ symbol, company_name: companyName, listId: list.id }, {
+                    onSuccess: () => posthog.capture('watchlist_item_added', { symbol, watchlist_type: 'named' }),
+                  });
                   setOpen(false);
                 }}
                 className="flex items-center gap-2 w-full px-3 py-2.5 text-left text-sm hover:bg-accent transition-colors"

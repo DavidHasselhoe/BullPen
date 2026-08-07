@@ -27,6 +27,7 @@ import { CheckCircle2 } from 'lucide-react';
 import type { AddHoldingInput } from '@/app/actions/holdings';
 import { inferAssetType } from '@/lib/assets/asset-type';
 import type { CurrencyCode } from '@/lib/currency/currency-conversion';
+import posthog from 'posthog-js';
 
 interface SearchResult {
   ticker: string;
@@ -180,6 +181,13 @@ export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
       };
 
       await addHolding.mutateAsync(input);
+      posthog.capture('holding_added', {
+        symbol: selectedStock.ticker,
+        asset_type: input.asset_type,
+        has_quantity: input.quantity !== null,
+        has_average_price: input.avg_price !== null,
+        purchase_currency: userCurrency,
+      });
 
       // Reset form
       setSelectedStock(null);

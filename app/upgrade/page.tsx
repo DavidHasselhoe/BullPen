@@ -11,6 +11,7 @@ import { useEntitlements } from '@/hooks/use-entitlements';
 import { PRICING, PLAN_COMPARISON } from '@/lib/billing/entitlements';
 import { startCheckout } from '@/lib/billing/checkout';
 import { EmptyState } from '@/components/ui/EmptyState';
+import posthog from 'posthog-js';
 
 const FAQ = [
   { q: `Is there a free trial?`, a: `Yes — Pro starts with a ${PRICING.trialDays}-day free trial, and there's a ${PRICING.moneyBackDays}-day money-back guarantee. No card needed to use the free plan.` },
@@ -38,6 +39,10 @@ function UpgradeContent() {
 
   async function handleUpgrade() {
     const cycle = annual ? 'annual' : 'monthly';
+    posthog.capture('upgrade_checkout_started', {
+      billing_cycle: cycle,
+      authenticated: isAuthenticated,
+    });
     if (!isAuthenticated) {
       // Send them through signup, then back here with the chosen plan to finish checkout.
       const back = `/upgrade?checkout=${cycle}`;

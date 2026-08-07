@@ -17,6 +17,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { useSubmitFeedback } from '@/hooks/use-feedback';
 import type { FeedbackType } from '@/app/api/feedback/route';
+import posthog from 'posthog-js';
 
 interface ReportFeedbackDialogProps {
   open: boolean;
@@ -68,6 +69,9 @@ export function ReportFeedbackDialog({ open, onOpenChange }: ReportFeedbackDialo
         title: title.trim(),
         description: description.trim(),
         pageUrl: pathname,
+      });
+      posthog.capture('feedback_submitted', {
+        feedback_type: type,
       });
       setSubmitted(true);
     } catch {

@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
+import posthog from 'posthog-js';
 import { AlertTriangle, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -13,6 +14,7 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
+    posthog.captureException(error);
     console.error('Unhandled error:', error);
   }, [error]);
 

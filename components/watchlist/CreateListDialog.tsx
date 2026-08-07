@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useCreateWatchlistList } from '@/hooks/use-watchlist';
 import { cn } from '@/lib/utils';
+import posthog from 'posthog-js';
 
 const PRESET_COLORS = ['#6366F1', '#10B981', '#F59E0B', '#EF4444', '#3B82F6', '#8B5CF6'];
 
@@ -28,6 +29,9 @@ export function CreateListDialog({ open, onOpenChange, onCreated }: CreateListDi
 
     const result = await createList.mutateAsync({ name: name.trim(), color });
     if (result.success && result.list) {
+      posthog.capture('watchlist_created', {
+        has_color: color !== null,
+      });
       onCreated?.(result.list.id);
       setName('');
       setColor(null);
