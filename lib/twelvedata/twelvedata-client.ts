@@ -723,6 +723,14 @@ export async function getEarningsCalendar(
   }
   const mostRecentFiled = filedPeriods[0] ?? null;
 
+  // A just-reported quarter routinely isn't in /income_statement yet — 10-Q filing
+  // plus TD's own ingestion lag can take days. Within this window an unmatched
+  // "actual" row is treated as genuine-but-unconfirmed instead of dropped; past
+  // this window it's presumed to be TD fabricating/misdating a row (seen on
+  // AAPL/GOOGL, and pervasively on CEG, where none of five recent /earnings rows
+  // matched any real filed quarter).
+  const UNCONFIRMED_WINDOW_DAYS = 14;
+
   return rawItems.flatMap((item) => {
     const matched =
       item.eps_actual != null
@@ -737,9 +745,13 @@ export async function getEarningsCalendar(
           })
         : null;
 
-    // Claims to already have an actual EPS but no filed statement backs it up —
-    // TD fabricated or prematurely-dated row. Drop it rather than show a fake result.
-    if (item.eps_actual != null && !matched) return [];
+    const isUnverifiedActual = item.eps_actual != null && !matched;
+    const daysSinceReport = (Date.now() - Date.parse(item.date)) / 86_400_000;
+    const unconfirmed = isUnverifiedActual && daysSinceReport >= 0 && daysSinceReport <= UNCONFIRMED_WINDOW_DAYS;
+
+    // Unverifiable and outside the grace window — TD fabricated or misdated row.
+    // Drop it rather than show a fake result.
+    if (isUnverifiedActual && !unconfirmed) return [];
 
     let quarter: number;
     let year: number;
@@ -747,7 +759,7 @@ export async function getEarningsCalendar(
       quarter = matched.fiscal_quarter;
       year = matched.fiscal_year;
     } else if (mostRecentFiled?.fiscal_quarter != null && mostRecentFiled.fiscal_year != null) {
-      // Upcoming/not-yet-filed entry — extrapolate one quarter past the last filing.
+      // Upcoming, or a recent unconfirmed report — extrapolate one quarter past the last filing.
       quarter = mostRecentFiled.fiscal_quarter === 4 ? 1 : mostRecentFiled.fiscal_quarter + 1;
       year = mostRecentFiled.fiscal_quarter === 4 ? mostRecentFiled.fiscal_year + 1 : mostRecentFiled.fiscal_year;
     } else {
@@ -764,6 +776,7 @@ export async function getEarningsCalendar(
       revenueEstimate: null,
       symbol: symbol.toUpperCase(),
       year,
+      unconfirmed,
     }];
   });
 }

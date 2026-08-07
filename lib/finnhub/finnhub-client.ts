@@ -258,6 +258,8 @@ export interface EarningsCalendar {
   revenueEstimate: number | null;
   symbol: string;
   year: number | null;
+  /** Reported recently but not yet cross-checked against a filed income statement. */
+  unconfirmed?: boolean;
 }
 
 /**

@@ -113,7 +113,10 @@ export function EarningsCalendar({ ticker }: { ticker: string }) {
   const nextEvent = upcoming[0] ?? null;
 
   const recent = past.slice(0, 5);
-  const scored = recent.filter((e) => e.epsActual != null && e.epsEstimate != null);
+  // Unconfirmed reports aren't counted toward the beat/miss streak — the actual
+  // EPS hasn't been cross-checked against a filed statement yet, so it shouldn't
+  // feed a confidence-implying stat.
+  const scored = recent.filter((e) => e.epsActual != null && e.epsEstimate != null && !e.unconfirmed);
   const beats = scored.filter((e) => (e.epsActual as number) >= (e.epsEstimate as number)).length;
   const streakLine =
     scored.length >= 2
@@ -198,13 +201,16 @@ export function EarningsCalendar({ ticker }: { ticker: string }) {
                     {e.quarter && e.year && (
                       <span className="text-xs text-muted-foreground ml-2">Q{e.quarter} {e.year}</span>
                     )}
+                    {e.unconfirmed && (
+                      <Badge variant="outline" className="text-xs ml-2">Unconfirmed</Badge>
+                    )}
                   </div>
                   <DeltaBar
                     estimate={e.epsEstimate}
                     actual={e.epsActual}
                     srLabel={
                       e.epsActual != null && e.epsEstimate != null
-                        ? `Earned $${e.epsActual.toFixed(2)} per share vs $${e.epsEstimate.toFixed(2)} expected`
+                        ? `Earned $${e.epsActual.toFixed(2)} per share vs $${e.epsEstimate.toFixed(2)} expected${e.unconfirmed ? ', not yet confirmed against filed financials' : ''}`
                         : `Estimate $${e.epsEstimate?.toFixed(2) ?? '—'} per share`
                     }
                   />
