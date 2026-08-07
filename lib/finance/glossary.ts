@@ -44,6 +44,10 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     plainLabel: 'Price vs Expected Earnings',
     description: 'Like P/E but uses analyst estimates for future earnings. Useful for fast-growing companies where future profits matter more than past ones.',
   },
+  'P/S': {
+    plainLabel: 'Price vs Sales',
+    description: 'How much investors pay per $1 of revenue the company brings in. Useful when a company isn\'t profitable yet, since P/E doesn\'t work without earnings.',
+  },
   'P/B': {
     plainLabel: 'Price vs Book Value',
     description: 'Compares stock price to what the company\'s assets are worth on paper. Below 1 can indicate the stock is undervalued — or that something is wrong.',

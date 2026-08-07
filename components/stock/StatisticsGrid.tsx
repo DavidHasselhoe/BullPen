@@ -547,7 +547,7 @@ export function StatisticsGrid({
         </div>
         {isSimplified && (
           <p className="text-xs text-muted-foreground mt-0.5">
-            The most important numbers to evaluate this company — hover any label for an explanation.
+            The most important numbers to evaluate this company. Hover any label for an explanation.
           </p>
         )}
       </CardHeader>

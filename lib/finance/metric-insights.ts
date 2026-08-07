@@ -116,7 +116,7 @@ export function evEbitdaInsight(ev: number | null): string {
 export function psInsight(ps: number | null, peHidden: boolean): string {
   if (ps == null || ps <= 0) return '';
   const base = `Priced at ${ps.toFixed(1)}× yearly sales`;
-  return peHidden ? `${base} — used instead of P/E since the company isn't profitable yet` : base;
+  return peHidden ? `${base}. Shown instead of P/E since the company isn't profitable yet.` : base;
 }
 
 // ── Sector context ──────────────────────────────────────────────────────────

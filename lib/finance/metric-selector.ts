@@ -48,7 +48,7 @@ export function selectMetrics(input: MetricSelectorInput): MetricSelection {
       primary: ['P/B', ...dividendMetric],
       secondary: ['EV/EBITDA', ...forwardPeMetric],
       hideMetrics: ['P/E'],
-      note: 'P/E is skewed by real estate depreciation — P/B and yield are more reliable here.',
+      note: 'P/E is skewed by real estate depreciation. P/B and yield are more reliable here.',
     };
   }
 
@@ -68,7 +68,7 @@ export function selectMetrics(input: MetricSelectorInput): MetricSelection {
       primary: ['EV/EBITDA', 'P/S'],
       secondary: ['P/B', ...forwardPeMetric],
       hideMetrics: unprofitable ? ['P/E'] : [],
-      note: 'Earnings swing heavily with the commodity/demand cycle — EV/EBITDA and P/S smooth that out.',
+      note: 'Earnings swing heavily with the commodity and demand cycle. EV/EBITDA and P/S smooth that out.',
     };
   }
 
