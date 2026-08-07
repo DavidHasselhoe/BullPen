@@ -1,0 +1,67 @@
+name: Cron — Prefetch Financials
+
+# Daily at 12:00 UTC. Warms income statement / balance sheet / cash flow into
+# market_data_cache for every ticker the app computes a health score for.
+#
+# This workflow is the ONLY thing in the app that fetches those three
+# endpoints across many symbols. lib/market-data/screener-stats.ts reads them
+# straight out of this cache and never fetches them itself — it used to, and
+# that was the cause of four separate rounds of TwelveData rate-limit
+# incidents (see that file's header comment for the full mechanism). A ticker
+# this workflow never reaches is a ticker whose health score never refreshes,
+# so the ceiling below is deliberately generous.
+#
+# Pacing: each of the three endpoints costs ~101 credits on this plan
+# (confirmed live against TwelveData's /api_usage on 2026-08-04), so one
+# symbol is ~303 credits — most of the 400-credit shared cron budget in
+# lib/twelvedata/credit-budget.ts. That's why it's one symbol per call and
+# cannot be batched like stats. One call per 65s holds the sustained rate near
+# ~280 credits/min, leaving real headroom under the 610/min account cap for
+# live user traffic and for whichever other cron happens to overlap after
+# GitHub's scheduling drift.
+#
+# Ceiling: the universe is ~1,400 unique tickers on a 7-day cache TTL, so
+# steady state is ~200 symbols/day. 300 batches × 65s ≈ 5h25m gives real
+# headroom over that; the loop breaks on `done: true` as soon as nothing is
+# left to warm, so a normal day exits early. The first run after a cold start
+# will not clear the whole backlog in one pass — it rolls forward over a few
+# days, oldest-missing first, which is the intended behaviour.
+#
+# Scheduled at 12:00 UTC to sit clear of the two screener-refresh crons
+# (22:00 / 03:00) and the stats prefetch (05:00). GitHub's scheduling queue
+# routinely delays these by 2-3 hours, so the separation is approximate; the
+# shared credit-budget guard is what actually keeps overlapping runs safe.
+on:
+  schedule:
+    - cron: '0 12 * * *'
+  workflow_dispatch:
+
+jobs:
+  financials:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - name: Refresh financials (paced batches, one symbol each)
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          APP_URL: ${{ vars.APP_URL || 'https://bullpen.no' }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::CRON_SECRET secret is not configured in repo settings"
+            exit 1
+          fi
+          echo "Starting financials prefetch…"
+          for batch in $(seq 0 299); do
+            echo "→ Financials batch $batch"
+            RESPONSE=$(curl -fsS -X GET -H "Authorization: Bearer ${CRON_SECRET}" "${APP_URL}/api/cron/prefetch-market-data?phase=financials&batch=${batch}") || {
+              echo "Batch $batch failed (rate limit or network error) — stopping"
+              break
+            }
+            echo "$RESPONSE"
+            DONE=$(echo "$RESPONSE" | jq -r '.done // false')
+            if [ "$DONE" = "true" ]; then
+              echo "All financials batches complete."
+              break
+            fi
+            sleep 65
+          done

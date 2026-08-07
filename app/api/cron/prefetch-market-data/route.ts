@@ -51,6 +51,7 @@ import {
 } from '@/lib/twelvedata/twelvedata-client';
 import { getCached, setCached } from '@/lib/cache/market-data-cache';
 import { SIGNIFICANT_TICKERS } from '@/lib/market-data/significant-tickers';
+import { getActiveUniverse } from '@/lib/market-data/screener-universe';
 import { waitForCronCreditBudget } from '@/lib/twelvedata/credit-budget';
 
 export const maxDuration = 60;
@@ -417,30 +418,49 @@ async function handleFinancials(
   allSymbols: string[],
   batchIndex: number
 ): Promise<NextResponse> {
-  const { data: existingFinRows } = await supabase
-    .from('market_data_cache')
-    .select('ticker')
-    .eq('data_type', 'financials')
-    .like('cache_key', '%:income:quarterly')
-    .gt('expires_at', new Date().toISOString());
+  // Paginate explicitly: PostgREST caps an unbounded select at 1000 rows, and
+  // the warmed set is now larger than that (the full screener universe, ~1200+
+  // tickers). Silently truncating this list would make already-warm symbols
+  // look cold and re-fetch them at 303 credits each.
+  const cachedFinSymbols = new Set<string>();
+  const PAGE = 1000;
+  for (let from = 0; ; from += PAGE) {
+    const { data: page } = await supabase
+      .from('market_data_cache')
+      .select('ticker')
+      .eq('data_type', 'financials')
+      .like('cache_key', '%:income:quarterly')
+      .gt('expires_at', new Date().toISOString())
+      .range(from, from + PAGE - 1);
+    for (const r of page ?? []) cachedFinSymbols.add(r.ticker as string);
+    if (!page || page.length < PAGE) break;
+  }
 
-  const cachedFinSymbols = new Set((existingFinRows ?? []).map(r => r.ticker as string));
   const needsFinancials = allSymbols.filter(sym => !cachedFinSymbols.has(sym));
-  const totalBatches = needsFinancials.length;
+  const remaining = needsFinancials.length;
 
-  if (batchIndex < 0 || batchIndex >= totalBatches) {
+  if (remaining === 0) {
     return NextResponse.json({
       success: true,
       phase: 'financials',
       batch: batchIndex,
-      totalBatches,
+      totalBatches: 0,
       financialsRefreshed: 0,
       done: true,
     });
   }
 
-  const syms = needsFinancials.slice(batchIndex * FINANCIALS_BATCH_SIZE, (batchIndex + 1) * FINANCIALS_BATCH_SIZE);
-  const nextBatch = batchIndex + 1 < totalBatches ? batchIndex + 1 : null;
+  // Self-consuming: always take from the head of the "still needs warming"
+  // list rather than indexing into it by batch number. Each completed batch
+  // drops its symbol out of that list before the next call recomputes it, so
+  // slicing at batchIndex skipped one extra symbol per iteration and then
+  // reported done early — batch 0 warmed the 1st symbol, batch 1 the 3rd,
+  // batch 2 the 5th, and the run ended at the halfway point with most of the
+  // universe never warmed. Harmless while screener-stats was also fetching
+  // financials live; not harmless now that this phase is the only writer.
+  const syms = needsFinancials.slice(0, FINANCIALS_BATCH_SIZE);
+  const nextBatch = remaining > syms.length ? batchIndex + 1 : null;
+  const totalBatches = remaining;
 
   try {
     await waitForCronCreditBudget(syms.length * CREDITS_PER_FINANCIALS_SYMBOL);
@@ -514,7 +534,16 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const batchIndex = parseInt(sp.get('batch') ?? '0', 10);
 
   if (phase === 'financials') {
-    return handleFinancials(supabase, allSymbols, batchIndex);
+    // This phase is the only thing in the app that fetches income/balance/
+    // cash-flow across many symbols, so it has to cover everything that reads
+    // those cache keys — not just SIGNIFICANT_TICKERS. lib/market-data/
+    // screener-stats.ts computes health scores for the whole tier-1 screener
+    // universe straight out of this cache and never fetches on its own (doing
+    // so is what caused the repeated 610/min breaches), so any ticker this
+    // phase skips is a ticker whose health score can never refresh.
+    const universe = await getActiveUniverse();
+    const financialsSymbols = [...new Set([...allSymbols, ...universe])];
+    return handleFinancials(supabase, financialsSymbols, batchIndex);
   }
 
   return handleStatsBatch(supabase, APIKEY(), allSymbols, batchIndex);
