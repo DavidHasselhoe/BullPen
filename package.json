@@ -28,6 +28,7 @@
     "post-changelog-discord": "tsx scripts/post-changelog-discord.ts",
     "test-ai-translate": "tsx scripts/test-ai-translate.ts",
     "test-metric-selector": "tsx scripts/test-metric-selector.ts",
+    "test-statistics-grid-metrics": "tsx scripts/test-statistics-grid-metrics.ts",
     "add-norwegian-locale": "tsx scripts/add-norwegian-locale.ts",
     "verify-picks-math": "tsx scripts/verify-picks-math.ts",
     "trigger-instagram-earnings": "tsx scripts/trigger-instagram-earnings.ts",
