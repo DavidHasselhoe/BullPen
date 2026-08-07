@@ -33,6 +33,7 @@ import {
   sectorContext,
   pbInsight,
   evEbitdaInsight,
+  psInsight,
   PE_DOMAIN,
   MARGIN_DOMAIN,
   GROWTH_DOMAIN,
@@ -40,9 +41,12 @@ import {
   BETA_DOMAIN,
   PB_DOMAIN,
   EV_EBITDA_DOMAIN,
+  PS_DOMAIN,
   type Distribution,
 } from '@/lib/finance/metric-insights';
 import type { SectorBenchmarks } from '@/lib/finance/sector-benchmarks';
+import { selectMetrics, type ValuationMetric } from '@/lib/finance/metric-selector';
+import { showCard, headlineMetric, foldsForwardPe, noteFor } from '@/components/stock/statistics-grid-metrics';
 import type { CompanyStatistics } from '@/lib/twelvedata/twelvedata-client';
 import type { SignalValue } from '@/lib/finance/health-score';
 
@@ -230,6 +234,23 @@ export function StatisticsGrid({
   const hasRange = s.week52High != null && s.week52Low != null && s.week52High > s.week52Low;
   const price = currentPrice ?? null;
 
+  const selection = selectMetrics({
+    profitMargin: s.profitMargin,
+    sector,
+    industry,
+    hasForwardEarnings: s.peRatioForward != null,
+    dividendYield: s.dividendYield,
+  });
+  const headline = headlineMetric(selection, isSimplified);
+  const forwardPeDetail = (metric: ValuationMetric) =>
+    foldsForwardPe(selection, metric) && s.peRatioForward != null ? (
+      <p className="text-xs tabular-nums text-muted-foreground">
+        Forward P/E {fmt(s.peRatioForward, 'ratio')}
+        {s.peRatioTTM != null && s.peRatioForward < s.peRatioTTM && ' ↓'}
+        {s.peRatioTTM != null && s.peRatioForward > s.peRatioTTM && ' ↑'}
+      </p>
+    ) : null;
+
   // ── Metric cards — each answers exactly one question ─────────────────────
   const cards: React.ReactNode[] = [];
 
@@ -270,7 +291,7 @@ export function StatisticsGrid({
     );
   }
 
-  if (s.peRatioTTM != null || s.peRatioForward != null) {
+  if (headline === 'P/E' && (s.peRatioTTM != null || s.peRatioForward != null)) {
     cards.push(
       <MetricCard
         key="pe"
@@ -278,7 +299,7 @@ export function StatisticsGrid({
         value={fmt(s.peRatioTTM, 'ratio')}
         signal={sig('peRatioTTM')}
         insight={peInsight(s.peRatioTTM, s.peRatioForward)}
-        context={sectorContext(s.peRatioTTM, dist('pe_ratio'), 'pe', benchmarkLabel)}
+        context={noteFor(selection, 'P/E') ?? sectorContext(s.peRatioTTM, dist('pe_ratio'), 'pe', benchmarkLabel)}
         tourId="stat-p-e-ttm"
         ticker={ticker}
         onAskAI={handleAskAI}
@@ -295,13 +316,31 @@ export function StatisticsGrid({
             maxLabel="60"
           />
         )}
-        {s.peRatioForward != null && (
-          <p className="text-xs tabular-nums text-muted-foreground">
-            Forward P/E {fmt(s.peRatioForward, 'ratio')}
-            {s.peRatioTTM != null && s.peRatioForward < s.peRatioTTM && ' ↓'}
-            {s.peRatioTTM != null && s.peRatioForward > s.peRatioTTM && ' ↑'}
-          </p>
-        )}
+        {forwardPeDetail('P/E')}
+      </MetricCard>
+    );
+  } else if (headline === 'P/S' && s.psRatio != null && s.psRatio > 0) {
+    cards.push(
+      <MetricCard
+        key="ps"
+        label="P/S"
+        value={fmt(s.psRatio, 'ratio')}
+        insight={psInsight(s.psRatio, selection.hideMetrics.includes('P/E'))}
+        context={noteFor(selection, 'P/S') ?? sectorContext(s.psRatio, dist('ps_ratio'), 'ps', benchmarkLabel)}
+        tourId="stat-p-s"
+        ticker={ticker}
+        onAskAI={handleAskAI}
+      >
+        <MeterBar
+          value={s.psRatio}
+          min={PS_DOMAIN.min}
+          max={PS_DOMAIN.max}
+          benchmark={dist('ps_ratio') ? { value: dist('ps_ratio')!.median, label: 'typical' } : undefined}
+          srLabel={`Price-to-sales ${fmt(s.psRatio, 'ratio')} on a 0 to 20 scale`}
+          minLabel="0"
+          maxLabel="20"
+        />
+        {forwardPeDetail('P/S')}
       </MetricCard>
     );
   }
@@ -412,14 +451,14 @@ export function StatisticsGrid({
   // P/B and EV/EBITDA — the valuation multiples beginners understand least, so
   // they get the full visual treatment (meter + sector "typical" tick + a plain
   // sentence) instead of being buried as context-free rows in the disclosure.
-  if (!isSimplified && s.pbRatio != null && s.pbRatio > 0) {
+  if (showCard(selection, isSimplified, 'P/B') && s.pbRatio != null && s.pbRatio > 0) {
     cards.push(
       <MetricCard
         key="pb"
         label="P/B"
         value={fmt(s.pbRatio, 'ratio')}
         insight={pbInsight(s.pbRatio)}
-        context={sectorContext(s.pbRatio, dist('pb_ratio'), 'pb', benchmarkLabel)}
+        context={noteFor(selection, 'P/B') ?? sectorContext(s.pbRatio, dist('pb_ratio'), 'pb', benchmarkLabel)}
         ticker={ticker}
         onAskAI={handleAskAI}
       >
@@ -432,18 +471,19 @@ export function StatisticsGrid({
           minLabel="0"
           maxLabel="10"
         />
+        {forwardPeDetail('P/B')}
       </MetricCard>
     );
   }
 
-  if (!isSimplified && s.evToEbitda != null && s.evToEbitda > 0) {
+  if (showCard(selection, isSimplified, 'EV/EBITDA') && s.evToEbitda != null && s.evToEbitda > 0) {
     cards.push(
       <MetricCard
         key="ev"
         label="EV/EBITDA"
         value={fmt(s.evToEbitda, 'ratio')}
         insight={evEbitdaInsight(s.evToEbitda)}
-        context={sectorContext(s.evToEbitda, dist('ev_to_ebitda'), 'evEbitda', benchmarkLabel)}
+        context={noteFor(selection, 'EV/EBITDA') ?? sectorContext(s.evToEbitda, dist('ev_to_ebitda'), 'evEbitda', benchmarkLabel)}
         ticker={ticker}
         onAskAI={handleAskAI}
       >
@@ -456,19 +496,29 @@ export function StatisticsGrid({
           minLabel="0"
           maxLabel="30"
         />
+        {forwardPeDetail('EV/EBITDA')}
       </MetricCard>
     );
   }
 
   // ── Remaining metrics → quiet disclosure rows ────────────────────────────
-  // P/B and EV/EBITDA are promoted to cards above (when present); they only fall
-  // back to a plain row in simplified mode, where the cards are hidden.
+  // A metric with a value that isn't shown as a card (selected by selectMetrics
+  // or the simplified-mode headline) falls back to a plain row here — unless
+  // it's in hideMetrics, in which case it's actively misleading and excluded
+  // everywhere, not just demoted.
+  const demotedRow = (metric: ValuationMetric, label: string, value: number | null): StatRow[] =>
+    !selection.hideMetrics.includes(metric) && !showCard(selection, isSimplified, metric)
+      ? [{ label, value: fmt(value, 'ratio') }]
+      : [];
+
   const restRows: StatRow[] = [
     { label: 'Enterprise Value', value: fmt(s.enterpriseValue, 'currency') },
     { label: 'Avg Volume', value: fmt(s.avgVolume, 'volume') },
     { label: 'Shares Float', value: fmt(s.sharesFloat, 'volume') },
-    ...(isSimplified || s.pbRatio == null || s.pbRatio <= 0 ? [{ label: 'P/B', value: fmt(s.pbRatio, 'ratio') }] : []),
-    ...(isSimplified || s.evToEbitda == null || s.evToEbitda <= 0 ? [{ label: 'EV/EBITDA', value: fmt(s.evToEbitda, 'ratio') }] : []),
+    ...demotedRow('P/E', 'P/E (TTM)', s.peRatioTTM),
+    ...demotedRow('P/S', 'P/S', s.psRatio),
+    ...demotedRow('P/B', 'P/B', s.pbRatio),
+    ...demotedRow('EV/EBITDA', 'EV/EBITDA', s.evToEbitda),
     { label: 'Short Ratio', value: fmt(s.shortRatio, 'ratio') },
     { label: '52W High', value: fmt(s.week52High, 'currency') },
     { label: '52W Low', value: fmt(s.week52Low, 'currency') },

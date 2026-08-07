@@ -112,6 +112,13 @@ export function evEbitdaInsight(ev: number | null): string {
   return `Valued at ${ev.toFixed(1)}× its yearly operating earnings`;
 }
 
+/** `peHidden` makes the card self-explanatory even when selectMetrics' `note` is empty. */
+export function psInsight(ps: number | null, peHidden: boolean): string {
+  if (ps == null || ps <= 0) return '';
+  const base = `Priced at ${ps.toFixed(1)}× yearly sales`;
+  return peHidden ? `${base} — used instead of P/E since the company isn't profitable yet` : base;
+}
+
 // ── Sector context ──────────────────────────────────────────────────────────
 // Turns "where does this value sit vs. its sector" into one plain sentence, so
 // a beginner learns whether a number is normal FOR ITS KIND, not just on an
@@ -123,7 +130,7 @@ export interface Distribution {
   p75: number;
 }
 
-export type SectorMetricKind = 'pe' | 'pb' | 'evEbitda' | 'margin' | 'growth' | 'yield' | 'beta';
+export type SectorMetricKind = 'pe' | 'pb' | 'evEbitda' | 'ps' | 'margin' | 'growth' | 'yield' | 'beta';
 
 function distBand(value: number, d: Distribution): 'low' | 'mid' | 'high' {
   if (value < d.p25) return 'low';
@@ -152,6 +159,7 @@ export function sectorContext(
     case 'pe':
     case 'pb':
     case 'evEbitda':
+    case 'ps':
       return b === 'low'
         ? `Cheaper than most ${s} companies`
         : b === 'high'
@@ -194,3 +202,4 @@ export const YIELD_DOMAIN = { min: 0, max: 0.08 };
 export const BETA_DOMAIN = { min: 0, max: 2 };
 export const PB_DOMAIN = { min: 0, max: 10 };
 export const EV_EBITDA_DOMAIN = { min: 0, max: 30 };
+export const PS_DOMAIN = { min: 0, max: 20 };
