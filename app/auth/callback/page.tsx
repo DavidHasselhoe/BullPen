@@ -76,6 +76,14 @@ function AuthCallbackContent() {
       });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      // createBrowserClient() has detectSessionInUrl: true, so the SDK often
+      // exchanges the ?code= itself before runExchange()'s own manual call
+      // below gets to it — that manual call then fails with an "already used"
+      // code error and falls through to its no-op recovery branch, never
+      // reaching the setLastUsedAuthMethod() call in its success path. This
+      // listener fires on SIGNED_IN regardless of which side wins that race,
+      // so it's the reliable place to record it.
+      if (event === 'SIGNED_IN' && session) setLastUsedAuthMethod('google');
       if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) redirectHome();
     });
 
