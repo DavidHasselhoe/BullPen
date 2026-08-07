@@ -835,6 +835,7 @@ export interface CompanyStatistics {
   peRatioForward: number | null;
   pbRatio: number | null;
   evToEbitda: number | null;
+  psRatio: number | null;
   beta: number | null;
   week52High: number | null;
   week52Low: number | null;
@@ -855,6 +856,7 @@ interface TwelveDataStatisticsResponse {
       trailing_pe?: number | null;
       forward_pe?: number | null;
       price_to_book_mrq?: number | null;
+      price_to_sales_ttm?: number | null;
       enterprise_to_ebitda?: number | null;
     };
     stock_statistics?: {
@@ -919,6 +921,7 @@ export async function getStatistics(symbol: string): Promise<CompanyStatistics> 
     peRatioForward: v.forward_pe ?? null,
     pbRatio: v.price_to_book_mrq ?? null,
     evToEbitda: v.enterprise_to_ebitda ?? null,
+    psRatio: v.price_to_sales_ttm ?? null,
     beta: sp.beta ?? null,
     week52High: sp.fifty_two_week_high ?? null,
     week52Low: sp.fifty_two_week_low ?? null,

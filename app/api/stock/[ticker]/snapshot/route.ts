@@ -115,6 +115,7 @@ async function handler(
           peRatioForward: v.forward_pe ?? null,
           pbRatio: v.price_to_book_mrq ?? null,
           evToEbitda: v.enterprise_to_ebitda ?? null,
+          psRatio: v.price_to_sales_ttm ?? null,
           beta: sp.beta ?? null,
           week52High: sp.fifty_two_week_high ?? null,
           week52Low: sp.fifty_two_week_low ?? null,
