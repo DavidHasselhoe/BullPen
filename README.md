@@ -1,6 +1,6 @@
 # BullPen
 
-A stock research and portfolio web app for beginner-to-intermediate investors. Live market data, AI-powered insights, crypto & commodity support, SEC filing analysis, and social features — all in one place.
+A stock research and portfolio web app for beginner-to-intermediate investors. Live market data, AI-powered insights, crypto & commodity support, SEC filing analysis, investing education, and social features — all in one place, with a free tier and a Stripe-powered Pro subscription.
 
 ## Features
 
@@ -35,14 +35,17 @@ A stock research and portfolio web app for beginner-to-intermediate investors. L
 
 ### Discovery & Alerts
 - **Daily Brief** — AI-generated market summary delivered each morning (Pro)
+- **Bull's Weekly Pick** — one AI-selected stock published every Monday pre-market; a three-stage Scout → Ground → Commit pipeline (Claude sources candidates, the app grounds them against real data, Claude commits to one and argues it from the numbers) with performance tracked against the entry price
 - **Market Context** — live movers, market hours countdown
 - **Hot Picks** — trending tickers by visit frequency
 - **Recently Viewed** — quick navigation to past assets
 - **Earnings Calendar Widget** — switches between market-wide and portfolio mode
+- **In-app notification center** — unified feed for alerts, earnings, and academy activity, separate from email
 - **Email notifications** — price alerts (5%+ moves), upcoming earnings, new SEC filings via Resend
 
 ### Investment Tools
-- **BullPen AI** — OpenAI-powered research assistant with 15 tools; context-aware of the current page
+- **BullPen AI** — OpenAI-powered research assistant with 15+ tools; context-aware of the current page
+- **AI Deep Dive** — five analysis lenses (Full, Bull/Bear, Valuation, Risk, For You) generate a structured Claude report on a company (Pro)
 - **Stock Screener** — filter by revenue, margins, EPS, debt-to-equity, ROE, dividend yield
 - **Company Compare** — side-by-side comparison of 2–5 companies
 - **Filing Explorer** — browse 10-K, 10-Q, 20-F, 8-K filings with AI summaries
@@ -50,6 +53,16 @@ A stock research and portfolio web app for beginner-to-intermediate investors. L
 - **"If You Bought Here"** — historical return calculator vs S&P 500 benchmark
 - **Dividend Calculator** — project dividend income over time
 - **S&P 500 Heatmap** — treemap by market cap, colored by daily % change
+
+### BullPen Academy
+- **Courses** — structured investing lessons with progress tracking per user
+- **Daily challenges** — one quiz question a day, streak-tracked
+- **Leaderboard** — ranks users by Academy progress and streaks
+
+### Pro & Billing
+- **Stripe-powered subscriptions** — Free and Pro tiers (`account_tier` in Supabase), self-serve checkout and billing portal
+- **Per-feature quotas** — free-tier usage caps on AI/credit-metered features; Pro bypasses them
+- **Admin role** — separate from billing tier; always has Pro-level access plus an internal admin dashboard (AI cost tracking, user feedback)
 
 ### Search
 - **Command palette** (⌘K / Ctrl+K) — global search across stocks, crypto, and commodities
@@ -60,6 +73,7 @@ A stock research and portfolio web app for beginner-to-intermediate investors. L
 - **Public profiles** — follow/follower graph
 - **Stock theses** — publish and browse investment opinions by ticker
 - **Activity feed** and **leaderboard**
+- **Shareable cards** — public share links (theses, health scores, portfolio performance) viewable without an account
 
 ### AI & Automation
 - **BullPen AI chat** — streaming responses, tool calls to live data (OpenAI GPT-4o)
@@ -71,6 +85,8 @@ A stock research and portfolio web app for beginner-to-intermediate investors. L
 ### UX
 - **Experience level toggle** — Beginner / Intermediate / Advanced; adapts terminology and shown metrics across the whole app
 - **Adaptive terminology** — `TermTooltip` renders plain-language labels for beginners, full finance terms for advanced
+- **Multi-language support** — 7 locales (English, Norwegian, Japanese, French, German, Spanish, Chinese) via i18next, with an AI-assisted translation pipeline for content locales
+- **Guided onboarding** — post-signup flow that captures intent before first use
 - **Animated gradient backgrounds** — 4 themes
 - **Dark / Light theme**
 - **Framer Motion** transitions throughout
@@ -90,12 +106,14 @@ A stock research and portfolio web app for beginner-to-intermediate investors. L
 | **UI** | [Radix UI](https://www.radix-ui.com) / shadcn-ui, [Framer Motion](https://www.framer.com/motion/), [Lucide](https://lucide.dev) icons, cmdk |
 | **Charts** | [Lightweight Charts](https://www.tradingview.com/lightweight-charts/) (TradingView — price charts), [Recharts](https://recharts.org) (financials), [D3](https://d3js.org) + d3-sankey (Sankey diagram) |
 | **AI — chat** | [Vercel AI SDK](https://sdk.vercel.ai/docs) + OpenAI GPT-4o |
-| **AI — analysis** | [Anthropic SDK](https://docs.anthropic.com) — Claude (Why Today?, Daily Brief) |
+| **AI — analysis** | [Anthropic SDK](https://docs.anthropic.com) — Claude (Why Today?, Daily Brief, Deep Dive, Bull's Weekly Pick) |
+| **Billing** | [Stripe](https://stripe.com) — Pro subscription checkout, billing portal, webhooks |
 | **Email** | [Resend](https://resend.com) |
 | **Rate limiting & cache** | [Upstash](https://upstash.com) Redis |
 | **Brokerage OAuth** | [SnapTrade](https://snaptrade.com) TypeScript SDK |
-| **i18n** | [i18next](https://www.i18next.com), react-i18next |
+| **i18n** | [i18next](https://www.i18next.com), react-i18next — 7 locales |
 | **Analytics** | [Vercel Analytics](https://vercel.com/analytics), Speed Insights |
+| **Ops notifications** | Discord webhooks (changelog announcements, cron/error alerts) |
 
 **Primary market data:** TwelveData (quotes, candles, stats, financials, earnings, logos)  
 **News & fallbacks:** Finnhub  
@@ -112,11 +130,14 @@ A stock research and portfolio web app for beginner-to-intermediate investors. L
 | **Finnhub** | Market news, fallback quotes |
 | **SEC EDGAR** | 10-K, 10-Q, 20-F, 8-K filing ingestion |
 | **OpenAI** | BullPen AI research assistant |
-| **Anthropic Claude** | "Why Today?" price explanations, Daily Brief generation |
+| **Anthropic Claude** | "Why Today?" price explanations, Daily Brief, AI Deep Dive reports, Bull's Weekly Pick |
 | **Resend** | Transactional email (price alerts, earnings notifications) |
 | **SnapTrade** | Brokerage OAuth + live holdings sync |
+| **Stripe** | Pro subscription billing |
 | **Upstash Redis** | API rate limiting, market data caching |
-| **Supabase** | User accounts, holdings, watchlists, theses, daily briefs, company index |
+| **Supabase** | User accounts, holdings, watchlists, theses, daily briefs, Academy progress, company index |
+| **Discord** | Changelog announcements, ops/cron alerts (internal webhooks) |
+| **Instagram Graph API** | Automated weekly earnings-calendar content pipeline (staged for manual review, not auto-published) |
 
 ---
 
@@ -160,7 +181,17 @@ SNAPTRADE_CLIENT_ID     # Brokerage OAuth
 SNAPTRADE_CONSUMER_KEY
 UPSTASH_REDIS_REST_URL  # Rate limiting / caching
 UPSTASH_REDIS_REST_TOKEN
+STRIPE_SECRET_KEY       # Pro subscription billing
+STRIPE_WEBHOOK_SECRET
+STRIPE_PRICE_PRO_MONTHLY
+STRIPE_PRICE_PRO_ANNUAL
+DISCORD_CHANGELOG_WEBHOOK_URL  # Discord announcements
+DISCORD_INSTAGRAM_WEBHOOK_URL
+INSTAGRAM_ACCESS_TOKEN         # Automated Instagram content pipeline
+INSTAGRAM_BUSINESS_ACCOUNT_ID
 ```
+
+See **[ENV_SETUP.md](./ENV_SETUP.md)** for the complete, current list.
 
 ### 3. Database
 
@@ -185,31 +216,50 @@ Open [http://localhost:3000](http://localhost:3000).
 ```
 BullPen/
 ├── app/
-│   ├── api/                    # 80+ API route handlers
+│   ├── api/                    # 100+ API route handlers
 │   ├── stock/[ticker]/         # Stock detail page
 │   ├── asset/[slug]/           # Universal crypto/commodity page (BTC-USD, XAU-USD)
+│   ├── etf/[ticker]/           # ETF page
 │   ├── holdings/               # Portfolio dashboard
 │   ├── watchlist/              # Watchlist
-│   ├── tools/                  # AI, screener, compare, filings, calendar, heatmap, …
+│   ├── tools/                  # AI, screener, compare, filings, calendar, heatmap, deep-dive, …
+│   ├── academy/                # Courses, daily challenges, leaderboard
+│   ├── picks/                  # Bull's Weekly Pick archive
+│   ├── pricing/, upgrade/      # Pro subscription pages
+│   ├── dashboard/               # Post-login landing dashboard
+│   ├── notifications/          # In-app notification center
+│   ├── share/[id]/             # Public shareable cards (no auth required)
+│   ├── admin/                  # Internal-only: AI cost tracking, feedback
 │   ├── social/, users/         # Community features
-│   └── (auth routes)
+│   └── (auth, onboarding, brokerage-callback routes)
 ├── components/                 # React components (organised by domain)
 │   ├── asset/                  # Crypto/commodity cards and stats
 │   ├── stock/                  # Stock-specific components
 │   ├── holdings/               # Portfolio components
 │   ├── discover/               # Homepage widgets
+│   ├── academy/                # Course cards, challenge cards
+│   ├── billing/                # Pricing, checkout, entitlements UI
+│   ├── deep-dive/              # AI Deep Dive lens picker and report blocks
+│   ├── picks/                  # Weekly Pick hero and history
 │   ├── watchlist/
 │   ├── ai/                     # AI chat panel
+│   ├── i18n/                   # Language switcher
 │   └── ui/                     # Shared design system
 ├── hooks/                      # Shared React hooks
 ├── lib/
-│   ├── ai/                     # Agent, system prompt, tool definitions
+│   ├── ai/                     # Agent, system prompt, tool definitions; deep-dive/ and picks/ subpipelines
 │   ├── assets/                 # Asset type utilities (slugToSymbol, inferAssetType)
+│   ├── billing/                # Stripe checkout, tiers, quotas, AI cost logging
 │   ├── finance/                # Health score, signals, glossary
 │   ├── twelvedata/             # TwelveData API client
 │   ├── supabase/               # Typed Supabase clients
 │   ├── security/               # Rate limiting, input validation
 │   ├── currency/               # FX conversion
+│   ├── i18n/                   # Locale config + AI translation pipeline
+│   ├── discord/                # Ops webhook posting
+│   ├── instagram/               # Automated content generation/rendering
+│   ├── shares/                 # Public share-link generation
+│   ├── onboarding/              # Post-signup flow state
 │   └── ingestion/              # SEC filing ingestion pipeline
 ├── scripts/                    # One-off CLI utilities
 └── supabase/migrations/        # SQL migrations
@@ -224,24 +274,46 @@ BullPen/
 | `npm run dev` | Development server (localhost:3000) |
 | `npm run build` | Production build |
 | `npm run lint` | ESLint (primary code-quality gate) |
-| `npm run test-ai` | Test AI analysis pipeline |
-| `npm run test-signals` | Test signal generation |
-| `npm run test-score` | Test health score calculation |
-| `npm run trigger-cron` | Manually fire the daily cron |
+| `npm run trigger-cron` | Manually fire the daily brief cron |
+| `npm run trigger-alerts` | Manually fire the user-alerts cron |
+| `npm run trigger-instagram-earnings` | Manually fire the Instagram content-generation cron |
+| `npm run instagram-publish` | Publish a staged Instagram carousel |
+| `npm run test-credit-budget` | Test the shared TwelveData credit-budget guard |
+| `npm run test-trends` | Test trend detection |
+| `npm run verify-picks-math` | Sanity-check Bull's Weekly Pick performance calculations |
+| `npm run generate-daily-challenges` | Draft a reviewable SQL seed of Academy quiz questions |
+| `npm run set-gold-tier` | Set a user's `account_tier` directly (admin utility) |
+| `npm run post-changelog-discord` | Announce a new changelog entry in Discord |
+
+Many more one-off scripts (logo backfills, locale tooling, email/webhook smoke tests) live in `scripts/` — see `package.json` for the full list.
 
 ---
 
 ## Scheduled Jobs
 
+Split across two schedulers. All cron routes require the `CRON_SECRET` bearer header regardless of who triggers them.
+
+**Vercel cron** (`vercel.json`) — time-critical, capped at 2 on the Hobby plan:
+
 | Endpoint | Schedule (UTC) | Purpose |
 |----------|---------------|---------|
-| `/api/cron/update-stale-companies` | 08:00 daily | Re-ingest SEC filings for the 10 stalest companies; send filing alerts |
+| `/api/cron/generate-daily-brief` | 06:30 daily | Generate AI daily brief for Pro users |
+
+**GitHub Actions crons** (`.github/workflows/cron-*.yml`) — time-tolerant, paced in batches to stay under the TwelveData rate limit:
+
+| Endpoint | Schedule (UTC) | Purpose |
+|----------|---------------|---------|
+| `/api/cron/check-user-alerts` | Hourly, 14:30–21:30 weekdays | Evaluate user-defined price/metric alerts through market hours |
 | `/api/cron/check-earnings-upcoming` | 08:00 daily | Email users about upcoming earnings in held/watched stocks |
 | `/api/cron/check-price-moves` | 21:30 weekdays | Email on 5%+ price moves for held/watched stocks |
-| `/api/cron/generate-daily-brief` | 06:30 daily | Generate AI daily brief for Pro users |
-| `/api/cron/prefetch-market-data` | 05:00 daily | Pre-cache S&P 500 + NASDAQ 100 stats/financials |
+| `/api/cron/prefetch-market-data` | 05:00 daily | Pre-cache stats for the active screener universe |
+| `/api/cron/prefetch-market-data?phase=financials` | 12:00 daily | Warm income statement / balance sheet / cash flow into cache, one symbol at a time |
+| `/api/screener/refresh` | 22:00 daily | Refresh screener financial data, top half of the active universe |
+| `/api/screener/refresh` (extended + discovery) | 03:00 daily | Refresh the rest of the active universe; sweep the long tail for newly significant tickers |
+| `/api/cron/generate-weekly-pick` | 06:30 Mondays | Generate and publish Bull's Weekly Pick |
+| `/api/cron/instagram-earnings-weekly` | 12:00 Sundays | Stage next week's earnings-calendar Instagram carousel for review |
 
-All cron endpoints require the `CRON_SECRET` header. Trigger manually with `npm run trigger-cron`.
+Trigger manually with `npm run trigger-cron` (daily brief) or `npm run trigger-alerts` (user alerts).
 
 ---
 
@@ -259,6 +331,9 @@ Only `main` and `preview` branches trigger Vercel builds (configured via Ignored
 
 - [ENV_SETUP.md](./ENV_SETUP.md) — Environment variables and service configuration
 - [SCHEMA_SETUP.md](./SCHEMA_SETUP.md) — Database schema and migrations
+- [PRODUCT.md](./PRODUCT.md) — Product purpose, positioning, and design principles
+- [DESIGN.md](./DESIGN.md) — Visual design system
+- [ROADMAP.md](./ROADMAP.md) — Living roadmap notes
 
 ---
 
