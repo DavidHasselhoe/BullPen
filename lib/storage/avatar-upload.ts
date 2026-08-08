@@ -92,7 +92,7 @@ export async function uploadAvatarToStorage(
 
     if (error) {
       // Check for bucket not found error
-      if (error.message.includes('Bucket not found') || error.message.includes('does not exist') || error.statusCode === '404' || error.status === '404') {
+      if (error.message.includes('Bucket not found') || error.message.includes('does not exist') || error.statusCode === '404' || error.status === 404) {
         return {
           success: false,
           error: `Storage bucket '${AVATAR_BUCKET}' does not exist. Please create it in Supabase Dashboard > Storage.`,
@@ -100,7 +100,7 @@ export async function uploadAvatarToStorage(
       }
 
       // Check for permission errors
-      if (error.message.includes('new row violates row-level security') || error.message.includes('permission denied') || error.statusCode === '401' || error.statusCode === '403' || error.status === '401' || error.status === '403') {
+      if (error.message.includes('new row violates row-level security') || error.message.includes('permission denied') || error.statusCode === '401' || error.statusCode === '403' || error.status === 401 || error.status === 403) {
         return {
           success: false,
           error: `Permission denied. Please check Supabase Storage RLS policies for bucket '${AVATAR_BUCKET}'.`,
