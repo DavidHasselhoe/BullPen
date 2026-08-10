@@ -246,23 +246,29 @@ All API routes live under `app/api/`. They follow these patterns:
 
 ### Scheduled work
 
-Split across two schedulers. All cron routes are protected by the `CRON_SECRET` bearer header regardless of who triggers them. Local manual trigger: `npm run trigger-cron` (or `trigger-alerts`).
+Split across two schedulers. All cron routes are protected by the `CRON_SECRET` bearer header regardless of who triggers them. Local manual trigger: `npm run trigger-cron` (or `trigger-alerts`). Run `npm run test-cron-coverage` after touching any cron route or scheduler — it fails if a route has no scheduler pointing at it, or a scheduler references a route that doesn't exist.
 
-**Vercel crons** (`vercel.json`) — time-critical, capped at 2 by the Hobby plan:
+**Vercel crons** (`vercel.json`) — time-critical, capped at 2 by the Hobby plan, both currently in use:
 
 | Endpoint | Schedule (UTC) | Purpose |
 |---|---|---|
 | `/api/cron/generate-daily-brief` | `30 6 * * *` | Generate AI daily brief for Pro users (Anthropic Claude) |
-| `/api/cron/check-user-alerts` | `30 14-21 * * 1-5` | Evaluate user-defined price/metric alerts hourly through market hours |
+| `/api/cron/generate-weekly-pick` | `30 6 * * 1` | Generate Bull's Weekly Pick, published before pre-market so it's actionable from that session's open |
 
-**GitHub Actions crons** (`.github/workflows/cron-*.yml`) — time-tolerant daily jobs. Each workflow `POST`s to the same Vercel route with `Bearer $CRON_SECRET`, so the route code is unchanged; only the scheduler differs. GH cron has ~5–15 min drift, which is fine for these:
+**GitHub Actions crons** (`.github/workflows/cron-*.yml`) — time-tolerant jobs. Each workflow `POST`s/`GET`s the same Vercel route with `Bearer $CRON_SECRET`, so the route code is unchanged; only the scheduler differs. GH cron drift is usually ~5–15 min but has been observed running hours late during high scheduler load — fine for these, which is why anything timing-sensitive (weekly pick, alerts) lives on Vercel instead:
 
 | Endpoint | Schedule (UTC) | Purpose |
 |---|---|---|
+| `/api/cron/check-user-alerts` | `30 14-21 * * 1-5` | Evaluate user-defined price/metric alerts hourly through market hours (can't be a Vercel cron — Hobby plan only allows once-per-day schedules) |
 | `/api/cron/check-earnings-upcoming` | `0 8 * * *` | Email users about upcoming earnings in held/watched stocks |
 | `/api/cron/check-price-moves` | `30 21 * * 1-5` | Email on 5%+ price moves for held/watched stocks |
-| `/api/cron/prefetch-market-data` | `0 5 * * *` | Pre-cache S&P 500 + NASDAQ 100 stats/financials |
+| `/api/cron/prefetch-market-data` | `0 5 * * *` | Pre-cache S&P 500 + NASDAQ 100 stats/earnings |
+| `/api/cron/prefetch-market-data?phase=financials` | `0 12 * * *` | Pre-cache income/balance/cash-flow for the full screener universe (own workflow, `cron-prefetch-financials.yml`, since it no longer fits in the same job as the stats phase) |
+| `/api/screener/refresh` (active mode) | `0 22 * * *` | Refresh `/statistics` + health score for the top half of the active screener universe by market cap (`cron-refresh-screener-stats.yml`) |
+| `/api/screener/refresh` (active + discovery mode) | `0 3 * * *` | Covers the rest of the active universe, then sweeps tier-0 tickers for promotion (`cron-refresh-screener-extended.yml`). Both this and the 22:00 job skip any ticker whose `screener_stats` row is <12h old, so they don't re-fetch what `prefetch-market-data` just warmed. |
 | `/api/cron/instagram-earnings-weekly` | `0 12 * * 0` | Generate + stage next week's earnings-calendar Instagram carousel, notify Discord for review. Does not publish — see `scripts/publish-instagram.ts` and `docs/instagram-setup.md`. |
+
+`seed-screener-universe.yml` (`/api/screener/seed-universe`) is `workflow_dispatch`-only — a manual/occasional bootstrap for newly-listed tickers, not a recurring schedule.
 
 The GitHub Actions workflows require **`CRON_SECRET`** to be set in repo secrets (Settings → Secrets and variables → Actions). The production URL defaults to `https://bullpen.no` — override with an `APP_URL` repo variable if needed.
 
