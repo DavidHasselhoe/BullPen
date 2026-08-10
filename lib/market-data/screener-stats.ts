@@ -310,10 +310,10 @@ export async function fetchAndUpsertScreenerStats(symbols: string[]): Promise<Sc
       const healthScore = computeHealthScore(companyStats, income, balance, cashflow);
 
       // Fire-and-forget: record a history snapshot only when we have complete,
-      // non-degraded financials AND a real fiscal quarter identifier. The helper's
-      // UNIQUE(ticker, fiscal_date) constraint makes this a no-op if this exact
-      // quarter was already recorded (e.g. by yesterday's cron run, or by a user
-      // visiting the stock page directly — see Task 4).
+      // non-degraded financials AND a real fiscal quarter identifier. This
+      // overwrites the row for the current quarter (see health-score-history.ts)
+      // so it stays in sync whether this cron or a user visiting the stock page
+      // computed it most recently.
       if (!degraded && income[0]?.fiscal_date) {
         void recordHealthScoreSnapshot(sym, healthScore, income[0].fiscal_date);
       }

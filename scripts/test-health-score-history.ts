@@ -1,7 +1,8 @@
 // Test Financial Health Score History
-// Verifies recordHealthScoreSnapshot: inserts a snapshot, inserts the same
-// fiscal quarter again (must no-op, not duplicate), inserts a second distinct
-// quarter (must add a new row), then prints + cleans up the test rows.
+// Verifies recordHealthScoreSnapshot: inserts a snapshot, re-inserts the same
+// fiscal quarter with a new score (must overwrite in place, not duplicate),
+// inserts a second distinct quarter (must add a new row), then prints +
+// cleans up the test rows.
 
 import { config } from 'dotenv';
 import { resolve } from 'path';
@@ -35,7 +36,7 @@ async function main() {
   console.log('1) Inserting Q1 snapshot (score 60)...');
   await recordHealthScoreSnapshot(TEST_TICKER, fakeScore(60, 'C'), '2026-03-31');
 
-  console.log('2) Re-inserting the SAME Q1 quarter with a different score (80) — must NOT create a second row or overwrite...');
+  console.log('2) Re-inserting the SAME Q1 quarter with a different score (80) — must overwrite in place, not add a row...');
   await recordHealthScoreSnapshot(TEST_TICKER, fakeScore(80, 'B'), '2026-03-31');
 
   console.log('3) Inserting a distinct Q2 quarter (score 75)...');
@@ -54,10 +55,10 @@ async function main() {
 
   console.log('\nRows for', TEST_TICKER, ':', JSON.stringify(data, null, 2));
 
-  const pass = data?.length === 2 && data[0].score === 60 && data[1].score === 75;
+  const pass = data?.length === 2 && data[0].score === 80 && data[1].score === 75;
   console.log(pass
-    ? '\n✅ PASS — exactly 2 rows, first quarter kept its original score (80 did not overwrite 60).'
-    : '\n❌ FAIL — expected exactly 2 rows with scores [60, 75].');
+    ? '\n✅ PASS — exactly 2 rows, first quarter\'s score was overwritten in place (60 → 80).'
+    : '\n❌ FAIL — expected exactly 2 rows with scores [80, 75].');
 
   // Clean up
   await supabase.from('health_score_history').delete().eq('ticker', TEST_TICKER);
