@@ -39,6 +39,7 @@ import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { ArrowLeft, Scale, Building2, BarChart3, TrendingUp, Plus, X, Info, ArrowUpDown, ChevronDown, ChevronRight, Sparkles, MessageSquare } from 'lucide-react';
 import type { CompareCompany } from '@/app/api/compare/route';
 import { useAIPanel } from '@/components/ai/AIPanelProvider';
+import { cn } from '@/lib/utils';
 import { Suspense, Fragment } from 'react';
 
 interface SearchResult {
@@ -876,9 +877,9 @@ function CompareContent() {
                       }
                     }}
                     disabled={aiExplainLoading}
-                    className="shrink-0"
+                    className="shrink-0 animate-ai-sweep"
                   >
-                    <Sparkles className="h-4 w-4 mr-2" />
+                    <Sparkles className={cn('h-4 w-4 mr-2', aiExplainLoading && 'animate-pulse')} />
                     {aiExplainLoading ? 'Generating…' : 'Explain Differences'}
                   </Button>
                   <Select value={metricSort} onValueChange={setMetricSort}>
@@ -900,7 +901,7 @@ function CompareContent() {
                 <p className="text-sm text-destructive mb-2">{aiExplainError}</p>
               )}
               {aiExplanation && (
-                <Card className="mb-4 border-primary/20 bg-primary/5">
+                <Card className="mb-4 border-primary/20 bg-primary/5 animate-in fade-in slide-in-from-top-1 duration-500">
                   <CardContent className="pt-4">
                     <p className="text-sm leading-relaxed whitespace-pre-wrap">{aiExplanation}</p>
                   </CardContent>
