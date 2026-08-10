@@ -8,6 +8,9 @@ import {
   getCashFlow,
   withRateLimitRetry,
   TwelveDataRateLimitError,
+  type IncomeStatementPeriod,
+  type BalanceSheetPeriod,
+  type CashFlowPeriod,
 } from '@/lib/twelvedata/twelvedata-client';
 import { tryReserveCredits } from '@/lib/twelvedata/credit-budget';
 
@@ -62,6 +65,72 @@ async function getCachedFinancial<T>(
     void setCached(cacheKey, ticker, 'financials', result, FINANCIALS_CACHE_TTL_SECONDS);
   }
   return result;
+}
+
+/**
+ * "Current" comparison metrics built from the last 4 cached quarters instead
+ * of a live annual fetch. This reads the exact cache keys the nightly
+ * prefetch-financials cron (~1,400 tickers) and the stock page's financials
+ * tab (default period) both write — `financials:<ticker>:<type>:quarterly` —
+ * so for any ticker either of those has already touched, this is a free
+ * Supabase read instead of the ~303 credits/company a cold annual fetch
+ * costs. A 5-company comparison used to be able to fan out to 1,515 credits
+ * in one request; this is the fix for that.
+ *
+ * Income/cash-flow figures are trailing-twelve-month sums of the 4 quarters
+ * (standard TTM). Balance-sheet figures use only the most recent quarter —
+ * a balance sheet is a point-in-time snapshot, not something that sums
+ * across periods, and the latest quarter-end is a fresher number than the
+ * latest annual filing anyway.
+ *
+ * revenueGrowth is deliberately left null here rather than approximated: a
+ * clean YoY figure needs 8 quarters (this cache only ever holds 4), and
+ * comparing a TTM revenue base against an annual period's prior-year figure
+ * would mix two different bases into one number. It's populated by the
+ * annual-fetch fallback below instead, which has real distinct fiscal years
+ * to compare.
+ *
+ * Returns null if any statement has fewer periods than expected — that's
+ * either a genuinely cold cache or a company too newly public to have 4
+ * quarters of history, and the caller falls back to the guarded annual
+ * fetch in both cases rather than show a partial TTM mislabeled as whole.
+ */
+function buildTtmMetrics(
+  income: IncomeStatementPeriod[] | null,
+  balance: BalanceSheetPeriod[] | null,
+  cashflow: CashFlowPeriod[] | null
+): CompareCompany['metrics'] | null {
+  if (!income || income.length < 4 || !cashflow || cashflow.length < 4 || !balance || balance.length === 0) {
+    return null;
+  }
+
+  const sum = (values: Array<number | null>): number | null => {
+    const present = values.filter((v): v is number => v != null);
+    return present.length > 0 ? present.reduce((a, b) => a + b, 0) : null;
+  };
+
+  const rev = sum(income.map((p) => p.revenue));
+  const grossProfit = sum(income.map((p) => p.gross_profit));
+  const operatingIncome = sum(income.map((p) => p.operating_income));
+  const netIncome = sum(income.map((p) => p.net_income));
+  const epsDiluted = sum(income.map((p) => p.eps_diluted));
+  const freeCashFlow = sum(cashflow.map((p) => p.free_cash_flow));
+  const latestBalance = balance[0];
+
+  return {
+    revenue: rev,
+    grossProfit,
+    grossMargin: rev && grossProfit != null ? (grossProfit / rev) * 100 : null,
+    operatingIncome,
+    operatingMargin: rev && operatingIncome != null ? (operatingIncome / rev) * 100 : null,
+    netIncome,
+    netMargin: rev && netIncome != null ? (netIncome / rev) * 100 : null,
+    epsDiluted,
+    freeCashFlow,
+    totalAssets: latestBalance.total_assets,
+    shareholdersEquity: latestBalance.total_stockholders_equity,
+    revenueGrowth: null,
+  };
 }
 
 export const dynamic = 'force-dynamic';
@@ -148,26 +217,29 @@ export async function GET(request: NextRequest) {
 
     const results = await Promise.all(
       tickers.map(async (ticker): Promise<CompareCompany | null> => {
-        const [income, balance, cashflow] = await Promise.all([
+        // Prefer the nightly-cron-warmed quarterly cache for "current"
+        // metrics — a pure Supabase read, zero TwelveData cost. See
+        // buildTtmMetrics above.
+        const [quarterlyIncome, quarterlyBalance, quarterlyCashflow] = await Promise.all([
+          getCached<IncomeStatementPeriod[]>(`financials:${ticker}:income:quarterly`),
+          getCached<BalanceSheetPeriod[]>(`financials:${ticker}:balance:quarterly`),
+          getCached<CashFlowPeriod[]>(`financials:${ticker}:cashflow:quarterly`),
+        ]);
+        const ttmMetrics = buildTtmMetrics(quarterlyIncome, quarterlyBalance, quarterlyCashflow);
+
+        // Financial History always needs real annual periods — a quarterly
+        // cache only ever holds the last 4 quarters, not a multi-year trend.
+        // Balance sheet was never used in history, only in metrics, so this
+        // is 2 guarded statements instead of 3 regardless of which path
+        // metrics took below.
+        const [income, cashflow] = await Promise.all([
           getCachedFinancial(ticker, 'income', () => getIncomeStatement(ticker, 'annual', 4)),
-          getCachedFinancial(ticker, 'balance', () => getBalanceSheet(ticker, 'annual', 4)),
           getCachedFinancial(ticker, 'cashflow', () => getCashFlow(ticker, 'annual', 4)),
         ]);
 
-        if (income.length === 0) return null;
+        if (income.length === 0 && !ttmMetrics) return null;
 
         const c = companyByTicker.get(ticker);
-        const latest = income[0];
-        const prev = income[1];
-        const latestBalance = balance[0];
-        const latestCashflow = cashflow[0];
-
-        const rev = latest.revenue;
-        const prevRev = prev?.revenue ?? null;
-        const revenueGrowth =
-          rev != null && prevRev != null && prevRev !== 0
-            ? ((rev - prevRev) / Math.abs(prevRev)) * 100
-            : null;
 
         const history = income.map((r, i) => {
           const fiscalYear = Number(r.fiscal_date.slice(0, 4));
@@ -182,6 +254,41 @@ export async function GET(request: NextRequest) {
           };
         });
 
+        let metrics: CompareCompany['metrics'];
+        if (ttmMetrics) {
+          metrics = ttmMetrics;
+        } else {
+          // Quarterly cache was cold (a ticker outside the ~1,400-ticker
+          // cron-covered universe) — same guarded annual fetch as before,
+          // only reached for that minority of tickers.
+          const balance = await getCachedFinancial(ticker, 'balance', () => getBalanceSheet(ticker, 'annual', 4));
+          const latest = income[0];
+          const prev = income[1];
+          const latestBalance = balance[0];
+          const latestCashflow = cashflow[0];
+          const rev = latest?.revenue ?? null;
+          const prevRev = prev?.revenue ?? null;
+          const revenueGrowth =
+            rev != null && prevRev != null && prevRev !== 0
+              ? ((rev - prevRev) / Math.abs(prevRev)) * 100
+              : null;
+
+          metrics = {
+            revenue: rev,
+            grossProfit: latest?.gross_profit ?? null,
+            grossMargin: rev && latest?.gross_profit != null ? (latest.gross_profit / rev) * 100 : null,
+            operatingIncome: latest?.operating_income ?? null,
+            operatingMargin: rev && latest?.operating_income != null ? (latest.operating_income / rev) * 100 : null,
+            netIncome: latest?.net_income ?? null,
+            netMargin: rev && latest?.net_income != null ? (latest.net_income / rev) * 100 : null,
+            epsDiluted: latest?.eps_diluted ?? null,
+            freeCashFlow: latestCashflow?.free_cash_flow ?? null,
+            totalAssets: latestBalance?.total_assets ?? null,
+            shareholdersEquity: latestBalance?.total_stockholders_equity ?? null,
+            revenueGrowth,
+          };
+        }
+
         return {
           ticker,
           name: c?.name ?? ticker,
@@ -193,20 +300,7 @@ export async function GET(request: NextRequest) {
           fiscal_year_end: c?.fiscal_year_end ?? null,
           sic_code: c?.sic_code ?? null,
           incorporation_location: c?.incorporation_location ?? null,
-          metrics: {
-            revenue: rev,
-            grossProfit: latest.gross_profit,
-            grossMargin: rev && latest.gross_profit != null ? (latest.gross_profit / rev) * 100 : null,
-            operatingIncome: latest.operating_income,
-            operatingMargin: rev && latest.operating_income != null ? (latest.operating_income / rev) * 100 : null,
-            netIncome: latest.net_income,
-            netMargin: rev && latest.net_income != null ? (latest.net_income / rev) * 100 : null,
-            epsDiluted: latest.eps_diluted,
-            freeCashFlow: latestCashflow?.free_cash_flow ?? null,
-            totalAssets: latestBalance?.total_assets ?? null,
-            shareholdersEquity: latestBalance?.total_stockholders_equity ?? null,
-            revenueGrowth,
-          },
+          metrics,
           history,
         };
       }),

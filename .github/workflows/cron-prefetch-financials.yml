@@ -1,6 +1,6 @@
 name: Cron — Prefetch Financials
 
-# Daily at 12:00 UTC. Warms income statement / balance sheet / cash flow into
+# Daily at 07:30 UTC. Warms income statement / balance sheet / cash flow into
 # market_data_cache for every ticker the app computes a health score for.
 #
 # This workflow is the ONLY thing in the app that fetches those three
@@ -27,13 +27,18 @@ name: Cron — Prefetch Financials
 # will not clear the whole backlog in one pass — it rolls forward over a few
 # days, oldest-missing first, which is the intended behaviour.
 #
-# Scheduled at 12:00 UTC to sit clear of the two screener-refresh crons
-# (22:00 / 03:00) and the stats prefetch (05:00). GitHub's scheduling queue
-# routinely delays these by 2-3 hours, so the separation is approximate; the
-# shared credit-budget guard is what actually keeps overlapping runs safe.
+# Scheduled at 07:30 UTC, right after the stats prefetch (05:00-07:30) hands
+# off — clears (steady-state ~3h37m, worst case ~5h25m) well before the US
+# market opens at 13:30 UTC (9:30am ET, EDT). The previous 12:00 UTC start
+# meant this job was often still running past market open, competing with
+# real user traffic for the same 400-credit shared budget during the day's
+# highest-traffic hour. GitHub's scheduling queue routinely delays these by
+# 2-3 hours, so the separation from the other crons is approximate either
+# way; the shared credit-budget guard is what actually keeps overlapping
+# runs safe.
 on:
   schedule:
-    - cron: '0 12 * * *'
+    - cron: '30 7 * * *'
   workflow_dispatch:
 
 jobs:
