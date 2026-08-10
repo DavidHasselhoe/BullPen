@@ -20,6 +20,7 @@ import {
   ChevronLeft,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { tierLabel } from '@/lib/billing/tier';
 import type { PublicUser } from '@/app/api/users/search/route';
 
 interface ProfileResponse {
@@ -29,10 +30,9 @@ interface ProfileResponse {
   error?: string;
 }
 
-const TIER_LABELS: Record<number, { label: string; className: string }> = {
-  1: { label: 'Member', className: 'bg-muted text-muted-foreground border-0' },
-  2: { label: 'Pro', className: 'bg-primary/10 text-primary border-primary/20' },
-  3: { label: 'Enterprise', className: 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20' },
+const TIER_BADGE_CLASS: Record<'Member' | 'Pro', string> = {
+  Member: 'bg-muted text-muted-foreground border-0',
+  Pro: 'bg-primary/10 text-primary border-primary/20',
 };
 
 const EXPERIENCE_LABELS: Record<string, string> = {
@@ -130,7 +130,8 @@ export default function UserProfilePage() {
 
   const displayName = profile.full_name || profile.username || 'Anonymous';
   const initials = displayName.slice(0, 2).toUpperCase();
-  const tier = profile.account_tier ? TIER_LABELS[profile.account_tier] : null;
+  const tierLabelValue = tierLabel(profile.account_tier);
+  const tier = tierLabelValue ? { label: tierLabelValue, className: TIER_BADGE_CLASS[tierLabelValue] } : null;
 
   return (
     <div className="min-h-screen bg-background">

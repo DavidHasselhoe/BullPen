@@ -6,12 +6,12 @@ import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Trophy, GraduationCap, Flame } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { tierLabel } from '@/lib/billing/tier';
 import type { LeaderboardEntry } from '@/app/api/social/leaderboard/route';
 
-const TIER_LABELS: Record<number, { label: string; className: string }> = {
-  1: { label: 'Member', className: 'bg-muted text-muted-foreground' },
-  2: { label: 'Pro', className: 'bg-primary/10 text-primary' },
-  3: { label: 'Enterprise', className: 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400' },
+const TIER_BADGE_CLASS: Record<'Member' | 'Pro', string> = {
+  Member: 'bg-muted text-muted-foreground',
+  Pro: 'bg-primary/10 text-primary',
 };
 
 const RANK_STYLES = [
@@ -80,7 +80,8 @@ export default function AcademyLeaderboardPage() {
               const displayName = entry.full_name || entry.username || 'Anonymous';
               const initials = displayName.slice(0, 2).toUpperCase();
               const href = entry.username ? `/users/${encodeURIComponent(entry.username)}` : '#';
-              const tier = entry.account_tier ? TIER_LABELS[entry.account_tier] : null;
+              const tierLabelValue = tierLabel(entry.account_tier);
+              const tier = tierLabelValue ? { label: tierLabelValue, className: TIER_BADGE_CLASS[tierLabelValue] } : null;
 
               return (
                 <Link

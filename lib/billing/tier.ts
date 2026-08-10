@@ -42,6 +42,20 @@ export function isPro(t: Tier | null | undefined): boolean {
   return t === 'pro' || t === 'admin';
 }
 
+/**
+ * Display label for a raw account_tier as shown to OTHER users (Browse
+ * Members, public profiles, Academy leaderboard) — role isn't available on
+ * those public-facing queries (deliberately excluded, see
+ * app/api/users/search/route.ts), so this only has account_tier to work
+ * with. Migration 026 retired the old 'free'/'premium'/'enterprise' text
+ * tiers in favor of an integer scale where 1-2 are both free and only 3 is
+ * paid — this app calls that paid tier "Pro", never "Enterprise".
+ */
+export function tierLabel(accountTier: number | null | undefined): 'Member' | 'Pro' | null {
+  if (accountTier == null) return null;
+  return accountTier >= 3 ? 'Pro' : 'Member';
+}
+
 /** True only for admin — for routes/UI that should be invisible to paying users. */
 export function isAdmin(t: Tier | null | undefined): boolean {
   return t === 'admin';
