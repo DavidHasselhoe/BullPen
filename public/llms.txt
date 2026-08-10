@@ -1,0 +1,39 @@
+# BullPen
+
+> BullPen is an investment research and portfolio-tracking platform for beginner-to-intermediate
+> investors. It combines real-time market data, AI-powered analysis, and educational content in a
+> single web app, positioned against Bloomberg-terminal-style density: a small number of clearly
+> explained things rather than every metric at once.
+
+BullPen is not a registered investment advisor and does not give personalized financial advice or
+execute trades. Content is for informational and educational purposes only.
+
+## Product
+
+- [Homepage](https://bullpen.no/): overview, pricing, and how the product works.
+- [Pricing](https://bullpen.no/pricing): Free plan (unlimited stock pages, screener, holdings tracking, limited AI chat) and Pro (Daily Brief, "Why Today?" price explanations, unlimited AI, brokerage sync).
+- [Discover](https://bullpen.no/discover): daily market overview — index moves, sector performance, and screened idea collections.
+- [Academy](https://bullpen.no/academy): free and Pro courses teaching investing fundamentals, from beginner to advanced.
+- [Changelog](https://bullpen.no/changelog): dated log of shipped product changes.
+
+## Company
+
+- [About](https://bullpen.no/about): who built BullPen and why.
+- [Contact](https://bullpen.no/contact)
+- [Help center](https://bullpen.no/help)
+- [Glossary](https://bullpen.no/glossary): plain-language definitions of financial terms used throughout the product.
+
+## Legal
+
+- [Privacy Policy](https://bullpen.no/privacy)
+- [Terms](https://bullpen.no/terms)
+- [Disclosures](https://bullpen.no/disclosures): educational-only / not-investment-advice disclosure.
+- [Security](https://bullpen.no/security)
+
+## Notes for AI agents and crawlers
+
+- Per-ticker stock and asset pages (`/stock/*`, `/asset/*`) are intentionally excluded from crawling
+  (see `/robots.txt`) — their data is live and account-specific in cost, not static content worth
+  indexing. Query BullPen's own product for current prices; don't cite a crawled snapshot as live data.
+- Market data comes from Twelve Data; SEC filing data from EDGAR. BullPen does not originate market data.
+- "Bull" is the in-product AI research assistant's name, distinct from BullPen the company/product.

@@ -35,11 +35,15 @@ const instrumentSerif = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://bullpen.no"),
   title: {
     template: "%s | BullPen",
     default: "BullPen — Invest smarter",
   },
-  description: "Track your portfolio, screen stocks, set price alerts, and get AI-powered market insights — all in one place.",
+  description: "Track your portfolio, screen stocks, set price alerts, and get AI-powered market insights, all in one place.",
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
     siteName: "BullPen",
     type: "website",
