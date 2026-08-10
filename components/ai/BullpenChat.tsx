@@ -458,7 +458,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
       <AiPaywallDialog
         open={paywallQuota !== null}
         onOpenChange={(o) => !o && setPaywallQuota(null)}
-        featureName="BullPen AI"
+        featureName="Ask Bull"
         quota={paywallQuota ?? undefined}
       />
 
@@ -472,7 +472,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
               <p className="text-xs text-muted-foreground max-w-[260px] leading-relaxed">
                 {aiContext?.label
                   ? `Your personal research assistant. Ask me anything about ${aiContext.label}.`
-                  : 'Your personal research assistant — research any stock, manage your holdings, or set price alerts, all from chat.'}
+                  : 'Your personal research assistant. Research any stock, manage your holdings, or set price alerts, all from chat.'}
               </p>
             </div>
             <motion.div

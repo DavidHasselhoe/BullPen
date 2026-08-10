@@ -462,7 +462,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
         { id: 'preferences', label: t('settings.preferences'), icon: Globe, description: 'Region, currency, language, theme, and your default homepage.' },
         { id: 'notifications', label: t('settings.notifications'), icon: Bell, description: 'Choose which emails and alerts BullPen sends you.' },
         { id: 'customize', label: t('settings.customize'), icon: Settings2, description: 'Tailor your home layout and chart defaults.' },
-        { id: 'ai', label: 'Ask Bull', icon: Bot, description: 'How BullPen AI communicates and frames its analysis.' },
+        { id: 'ai', label: 'Ask Bull', icon: Bot, description: 'How Bull communicates and frames its analysis.' },
       ],
     },
     {

@@ -2,7 +2,7 @@
 
 import { BullpenChat } from '@/components/ai/BullpenChat';
 import { AiTermsGate } from '@/components/ai/AiTermsGate';
-import { MessageSquare } from 'lucide-react';
+import { BullAiIcon } from '@/components/ai/BullAiIcon';
 import { useAuth } from '@/hooks/use-auth';
 import { useAiTerms } from '@/hooks/use-ai-terms';
 
@@ -24,11 +24,11 @@ export default function AIChatClientPage() {
     <div className="container mx-auto max-w-3xl py-8 px-4">
       <div className="mb-8">
         <h1 className="text-2xl font-semibold text-foreground flex items-center gap-2">
-          <MessageSquare className="h-6 w-6" />
-          BullPen AI
+          <BullAiIcon pose="idle" size={24} />
+          Ask Bull
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Investment research assistant — ask about SEC filings, metrics, or concepts
+          Investment research assistant. Ask about SEC filings, metrics, or concepts
         </p>
       </div>
       {needsAiTermsGate ? (

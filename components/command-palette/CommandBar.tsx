@@ -20,7 +20,7 @@ export function CommandBar() {
     >
       <Search className="h-5 w-5 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
       <span className="flex-1 text-base text-muted-foreground group-hover:text-foreground transition-colors">
-        Search companies, filings, metrics, or ask BullPen AI
+        Search companies, filings, metrics, or ask Bull
       </span>
       <kbd className="hidden sm:inline-flex h-7 items-center gap-0.5 rounded border bg-muted/80 px-2 text-xs font-medium text-muted-foreground">
         {searchShortcut}

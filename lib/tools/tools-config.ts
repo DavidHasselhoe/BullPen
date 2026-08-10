@@ -4,7 +4,7 @@ import {
   Wallet,
   Gauge,
   Grid3X3,
-  MessageSquare,
+  Bot,
   Filter,
   Scale,
   CalendarDays,
@@ -25,10 +25,10 @@ export interface ToolConfig {
 export const TOOLS: ToolConfig[] = [
   {
     id: 'ai-chat',
-    name: 'BullPen AI',
+    name: 'Ask Bull',
     description: 'Investment research assistant. Ask about SEC filings, financial metrics, and concepts.',
     href: '/tools/ai-chat',
-    icon: MessageSquare,
+    icon: Bot,
     status: 'available',
   },
   {

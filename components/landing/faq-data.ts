@@ -21,7 +21,7 @@ export const FAQ_ITEMS = [
     // Deliberately no tool count: the previous "15-tool agent" was accurate when
     // written and silently wrong the next time a tool was added or removed.
     q: 'Is the AI just summarizing news?',
-    a: 'No. BullPen AI is a tool-using agent — it calls live market data, reads SEC filings, runs screeners, and can reference your own holdings if you let it. "Why Today?" uses Claude with web search to explain price moves, and every answer cites its sources.',
+    a: 'No. Bull is a tool-using agent that calls live market data, reads SEC filings, runs screeners, and can reference your own holdings if you let it. "Why Today?" uses Claude with web search to explain price moves, and every answer cites its sources.',
   },
   {
     q: 'Is my financial data safe?',

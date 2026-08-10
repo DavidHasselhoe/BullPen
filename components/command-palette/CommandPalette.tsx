@@ -15,11 +15,18 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { ProfileAvatar } from '@/components/user/ProfileAvatar';
+import { BullAiIcon } from '@/components/ai/BullAiIcon';
 import { useDebounce } from '@/hooks/use-debounce';
 import { fetchWithTimeout } from '@/lib/utils';
-import { Sparkles, Briefcase, Filter, TrendingUp, Scale, Users, Loader2, CornerDownLeft, Microscope, Bell } from 'lucide-react';
+import { Briefcase, Filter, TrendingUp, Scale, Users, Loader2, CornerDownLeft, Microscope, Bell } from 'lucide-react';
 import { slugToAssetPath, inferAssetType } from '@/lib/assets/asset-type';
 import type { PublicUser } from '@/app/api/users/search/route';
+
+/** Matches the LucideIcon call signature (`<Icon className="..." />`) so it
+ * drops into the same generic render loops as every other quick-action icon. */
+function AskBullIcon({ className }: { className?: string }) {
+  return <BullAiIcon pose="idle" size={16} className={className} />;
+}
 
 interface SearchResult {
   ticker: string;
@@ -41,7 +48,7 @@ interface SearchResponse {
 
 
 const QUICK_ACTIONS = [
-  { id: 'ai', label: 'Ask BullPen AI', href: '/tools/ai-chat', icon: Sparkles, opensAIPanel: true },
+  { id: 'ai', label: 'Ask Bull', href: '/tools/ai-chat', icon: AskBullIcon, opensAIPanel: true },
   { id: 'holdings', label: 'My Holdings', href: '/holdings', icon: Briefcase },
   { id: 'screener', label: 'Stock Screener', href: '/tools/screener', icon: Filter },
   { id: 'discover', label: 'Discover', href: '/', icon: TrendingUp },
@@ -205,7 +212,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         >
           <div className="relative">
             <CommandInput
-              placeholder="Search companies, filings, metrics, or ask BullPen AI"
+              placeholder="Search companies, filings, metrics, or ask Bull"
               value={searchQuery}
               onValueChange={setSearchQuery}
               onKeyDown={(e) => {
@@ -244,7 +251,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                   })}
                 </CommandGroup>
                 <p className="px-3 pt-2 text-center text-xs text-muted-foreground/80">
-                  Search 10,000+ stocks, ETFs, crypto &amp; commodities — or ask in plain English.
+                  Search 10,000+ stocks, ETFs, crypto &amp; commodities, or ask in plain English.
                 </p>
               </>
             ) : (
@@ -330,9 +337,9 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                           )}
                           <CommandItem value="ask-about-first" onSelect={() => handleAskAI(`Tell me about ${first.ticker}`)} className={itemClass}>
                             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted/60 text-muted-foreground group-data-[selected=true]:bg-primary/10 group-data-[selected=true]:text-foreground">
-                              <Sparkles className="h-4 w-4" />
+                              <AskBullIcon className="h-4 w-4" />
                             </span>
-                            <span className="flex-1">Ask AI about <span className="font-medium">{first.ticker}</span></span>
+                            <span className="flex-1">Ask Bull about <span className="font-medium">{first.ticker}</span></span>
                             <ReturnHint />
                           </CommandItem>
                           <CommandItem value="alert-first" onSelect={() => handlePriceAlert(first.ticker, first.name)} className={itemClass}>
@@ -348,18 +355,18 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                   </>
                 ) : null}
 
-                {/* Ask AI — at the bottom so stocks are always first */}
-                <CommandGroup heading="Ask AI">
+                {/* Ask Bull — at the bottom so stocks are always first */}
+                <CommandGroup heading="Ask Bull">
                   <CommandItem
                     value="ask-ai"
                     onSelect={() => handleAskAI()}
                     className={`${itemClass} data-[selected=true]:bg-primary/10`}
                   >
                     <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary transition-colors group-data-[selected=true]:bg-primary/20">
-                      <Sparkles className="h-4 w-4" />
+                      <AskBullIcon className="h-4 w-4" />
                     </span>
                     <span className="flex-1 truncate">
-                      Ask BullPen AI <span className="text-muted-foreground">about</span>{' '}
+                      Ask Bull <span className="text-muted-foreground">about</span>{' '}
                       <span className="font-medium">&ldquo;{searchQuery}&rdquo;</span>
                     </span>
                     <ReturnHint />
@@ -429,7 +436,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                       <div className="py-12 text-center text-sm text-muted-foreground">Search failed. Try again.</div>
                     ) : (
                       <div className="px-6 py-12 text-center text-sm text-muted-foreground/85">
-                        No companies found. Try <span className="font-medium text-foreground">Ask BullPen AI</span> above for natural-language queries.
+                        No companies found. Try <span className="font-medium text-foreground">Ask Bull</span> above for natural-language queries.
                       </div>
                     )}
                   </CommandEmpty>

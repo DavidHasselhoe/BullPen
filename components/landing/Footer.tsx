@@ -10,7 +10,7 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
       { label: 'Features', href: '#features' },
       { label: 'Pricing', href: '#pricing' },
       { label: 'Daily Brief', href: '#daily-brief' },
-      { label: 'BullPen AI', href: '#bullpen-ai' },
+      { label: 'Ask Bull', href: '#bullpen-ai' },
       { label: 'Screener', href: '#screener' },
       { label: 'Roadmap', href: '/roadmap' },
       { label: 'Changelog', href: '/changelog' },

@@ -66,7 +66,7 @@ function AuthGate() {
     <div className="flex flex-1 flex-col items-center justify-center gap-5 px-6 py-8 text-center">
       <BullAiIcon pose="wave" size={112} />
       <div className="space-y-1.5">
-        <p className="text-sm font-semibold text-foreground">Sign in to use BullPen AI</p>
+        <p className="text-sm font-semibold text-foreground">Sign in to ask Bull</p>
         <p className="text-xs text-muted-foreground max-w-[220px] leading-relaxed">
           Get instant answers about SEC filings, financial metrics, and investment research.
         </p>

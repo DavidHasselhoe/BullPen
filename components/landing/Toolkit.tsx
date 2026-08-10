@@ -39,7 +39,7 @@ const GROUPS: Group[] = [
     title: 'AI analyst',
     blurb: 'Claude and GPT wired directly to live market data, filings and your own portfolio.',
     items: [
-      { label: 'BullPen AI chat' },
+      { label: 'Ask Bull' },
       { label: 'AI Deep Dive reports' },
       { label: 'AI Portfolio Builder' },
       { label: 'AI Portfolio Checkup' },
