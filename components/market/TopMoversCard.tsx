@@ -283,7 +283,7 @@ export function TopMoversCard({ gainers, losers, isLoading, isHoldingsMode }: To
               ))
             ) : (
               <p className="text-sm text-muted-foreground py-4 text-center">
-                No data available
+                {isHoldingsMode ? 'None of your holdings are up right now' : 'No data available'}
               </p>
             )}
           </div>
@@ -308,7 +308,7 @@ export function TopMoversCard({ gainers, losers, isLoading, isHoldingsMode }: To
               ))
             ) : (
               <p className="text-sm text-muted-foreground py-4 text-center">
-                No data available
+                {isHoldingsMode ? 'None of your holdings are down right now' : 'No data available'}
               </p>
             )}
           </div>
