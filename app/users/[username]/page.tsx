@@ -18,7 +18,6 @@ import {
   Calendar,
   Globe,
   ChevronLeft,
-  Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { tierLabel } from '@/lib/billing/tier';
@@ -36,6 +35,12 @@ interface ProfileResponse {
 const TIER_BADGE_CLASS: Record<'Member' | 'Pro', string> = {
   Member: 'bg-muted text-muted-foreground border-0',
   Pro: 'border-amber-400/30 bg-amber-400/10 text-amber-600 dark:text-amber-400',
+};
+
+// Same amber as the badge, carried onto the avatar ring.
+const AVATAR_RING_CLASS: Record<'Member' | 'Pro', string> = {
+  Member: 'ring-border',
+  Pro: 'ring-amber-400/70',
 };
 
 const EXPERIENCE_LABELS: Record<string, string> = {
@@ -135,6 +140,7 @@ export default function UserProfilePage() {
   const initials = displayName.slice(0, 2).toUpperCase();
   const tierLabelValue = tierLabel(profile.account_tier);
   const tier = tierLabelValue ? { label: tierLabelValue, className: TIER_BADGE_CLASS[tierLabelValue] } : null;
+  const ringClass = AVATAR_RING_CLASS[tierLabelValue ?? 'Member'];
 
   return (
     <div className="min-h-screen bg-background">
@@ -157,10 +163,10 @@ export default function UserProfilePage() {
               alt={displayName}
               width={80}
               height={80}
-              className="rounded-full object-cover ring-2 ring-border shrink-0"
+              className={cn('rounded-full object-cover ring-2 shrink-0', ringClass)}
             />
           ) : (
-            <div className="h-20 w-20 rounded-full bg-primary/10 ring-2 ring-border flex items-center justify-center shrink-0">
+            <div className={cn('h-20 w-20 rounded-full bg-primary/10 ring-2 flex items-center justify-center shrink-0', ringClass)}>
               <span className="text-xl font-bold text-primary">{initials}</span>
             </div>
           )}
@@ -170,7 +176,6 @@ export default function UserProfilePage() {
               <h1 className="text-xl font-bold text-foreground">{displayName}</h1>
               {tier && (
                 <Badge variant="outline" className={cn('text-[10px] font-semibold', tier.className)}>
-                  {tierLabelValue === 'Pro' && <Sparkles />}
                   {tier.label}
                 </Badge>
               )}

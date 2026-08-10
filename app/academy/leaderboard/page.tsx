@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Trophy, GraduationCap, Flame, Sparkles } from 'lucide-react';
+import { Trophy, GraduationCap, Flame } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { tierLabel } from '@/lib/billing/tier';
 import type { LeaderboardEntry } from '@/app/api/social/leaderboard/route';
@@ -15,6 +15,10 @@ const TIER_BADGE_CLASS: Record<'Member' | 'Pro', string> = {
   Member: 'bg-muted text-muted-foreground',
   Pro: 'border border-amber-400/30 bg-amber-400/10 text-amber-600 dark:text-amber-400',
 };
+
+// Same amber as the badge, added to the avatar ring only for Pro — Member
+// avatars stay ring-less here, matching this list's existing plain look.
+const PRO_AVATAR_RING = 'ring-2 ring-amber-400/70';
 
 const RANK_STYLES = [
   'text-yellow-500 font-bold text-lg',  // #1
@@ -102,10 +106,10 @@ export default function AcademyLeaderboardPage() {
                       alt={displayName}
                       width={36}
                       height={36}
-                      className="rounded-full object-cover shrink-0"
+                      className={cn('rounded-full object-cover shrink-0', tierLabelValue === 'Pro' && PRO_AVATAR_RING)}
                     />
                   ) : (
-                    <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <div className={cn('h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0', tierLabelValue === 'Pro' && PRO_AVATAR_RING)}>
                       <span className="text-xs font-semibold text-primary">{initials}</span>
                     </div>
                   )}
@@ -118,8 +122,7 @@ export default function AcademyLeaderboardPage() {
                   </div>
 
                   {tier && tier.label !== 'Member' && (
-                    <span className={cn('inline-flex items-center gap-0.5 text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0', tier.className)}>
-                      <Sparkles className="h-2.5 w-2.5" />
+                    <span className={cn('inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0', tier.className)}>
                       {tier.label}
                     </span>
                   )}

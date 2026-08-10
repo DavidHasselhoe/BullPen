@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { Briefcase, TrendingUp, BarChart2, Sparkles } from 'lucide-react';
+import { Briefcase, TrendingUp, BarChart2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { tierLabel } from '@/lib/billing/tier';
 import type { PublicUser } from '@/app/api/users/search/route';
@@ -21,6 +21,13 @@ interface PublicProfileCardProps {
 const TIER_BADGE_CLASS: Record<'Member' | 'Pro', string> = {
   Member: 'bg-muted text-muted-foreground',
   Pro: 'border border-amber-400/30 bg-amber-400/10 text-amber-600 dark:text-amber-400',
+};
+
+// Same amber used on the badge above, carried onto the avatar ring so the two
+// read as one signal rather than two unrelated colors.
+const AVATAR_RING_CLASS: Record<'Member' | 'Pro', string> = {
+  Member: 'ring-border group-hover:ring-primary/40',
+  Pro: 'ring-amber-400/70 group-hover:ring-amber-400',
 };
 
 const EXPERIENCE_LABELS: Record<string, string> = {
@@ -42,6 +49,7 @@ export function PublicProfileCard({ user, className }: PublicProfileCardProps) {
   const href = profileSlug ? `/users/${profileSlug}` : '#';
   const tierLabelValue = tierLabel(user.account_tier);
   const tier = tierLabelValue ? { label: tierLabelValue, className: TIER_BADGE_CLASS[tierLabelValue] } : null;
+  const ringClass = AVATAR_RING_CLASS[tierLabelValue ?? 'Member'];
   const initials = displayName.slice(0, 2).toUpperCase();
 
   return (
@@ -62,10 +70,10 @@ export function PublicProfileCard({ user, className }: PublicProfileCardProps) {
               alt={displayName}
               width={44}
               height={44}
-              className="rounded-full object-cover ring-2 ring-border group-hover:ring-primary/40 transition-all"
+              className={cn('rounded-full object-cover ring-2 transition-all', ringClass)}
             />
           ) : (
-            <div className="h-11 w-11 rounded-full bg-primary/10 flex items-center justify-center ring-2 ring-border group-hover:ring-primary/40 transition-all">
+            <div className={cn('h-11 w-11 rounded-full bg-primary/10 flex items-center justify-center ring-2 transition-all', ringClass)}>
               <span className="text-sm font-semibold text-primary">{initials}</span>
             </div>
           )}
@@ -78,8 +86,7 @@ export function PublicProfileCard({ user, className }: PublicProfileCardProps) {
             <p className="text-xs text-muted-foreground truncate">@{user.username}</p>
           )}
           {tier && (
-            <span className={cn('inline-flex items-center gap-0.5 mt-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full', tier.className)}>
-              {tierLabelValue === 'Pro' && <Sparkles className="h-2.5 w-2.5" />}
+            <span className={cn('inline-block mt-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full', tier.className)}>
               {tier.label}
             </span>
           )}
