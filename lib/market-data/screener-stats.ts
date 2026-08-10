@@ -250,11 +250,29 @@ export async function fetchAndUpsertScreenerStats(symbols: string[]): Promise<Sc
 
   const supabase = createServerClient();
 
+  // Skip tickers whose screener_stats row was written within the last 12h —
+  // the documented /statistics cache TTL (see CLAUDE.md's credit-costs table).
+  // Without this, the 22:00/03:00 active-universe crons unconditionally
+  // refetch every SIGNIFICANT_TICKERS symbol that cron-prefetch-market-data.yml
+  // (05:00 UTC) already refreshed hours earlier — same ~530 large-cap tickers,
+  // same endpoint, same table, for data that can't have meaningfully changed.
+  // A ticker missing from screener_stats entirely (no row yet) has no
+  // updated_at to match against, so first-time fetches are never skipped.
+  const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
+  const { data: freshStatsRows } = await supabase
+    .from('screener_stats')
+    .select('ticker')
+    .in('ticker', uniqueSymbols)
+    .gt('updated_at', twelveHoursAgo);
+  const freshSet = new Set((freshStatsRows ?? []).map((r) => (r as { ticker: string }).ticker));
+  const symbolsToFetch = uniqueSymbols.filter((s) => !freshSet.has(s));
+  if (symbolsToFetch.length === 0) return [];
+
   // Company metadata (name / sector / industry / logo) for all symbols in one query.
   const { data: companies } = await supabase
     .from('companies')
     .select('ticker, name, sector, industry, logo_url')
-    .in('ticker', uniqueSymbols);
+    .in('ticker', symbolsToFetch);
   const companyMap = new Map(
     (companies ?? []).map((c) => [(c as { ticker: string }).ticker, c as {
       ticker: string; name: string | null; sector: string | null; industry: string | null; logo_url: string | null;
@@ -264,7 +282,7 @@ export async function fetchAndUpsertScreenerStats(symbols: string[]): Promise<Sc
   const rows: ScreenerRow[] = [];
   const degradedSymbols = new Set<string>();
 
-  for (const group of chunk(uniqueSymbols, CHUNK_SIZE)) {
+  for (const group of chunk(symbolsToFetch, CHUNK_SIZE)) {
     await waitForCronCreditBudget(group.length * CREDITS_PER_STATS_SYMBOL);
 
     const requests: Record<string, string> = {};
