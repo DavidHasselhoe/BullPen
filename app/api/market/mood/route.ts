@@ -112,7 +112,7 @@ async function handler(_request: NextRequest): Promise<NextResponse> {
       name: 'Market Volatility',
       score,
       label: scoreToLabel(score),
-      detail: `VIX at ${vixQ.c.toFixed(2)} (${vixQ.dp >= 0 ? '+' : ''}${vixQ.dp.toFixed(1)}% today) — ${vixQ.c < 15 ? 'low volatility, investors are complacent' : vixQ.c < 25 ? 'moderate market uncertainty' : 'elevated fear and risk aversion'}`,
+      detail: `VIX at ${vixQ.c.toFixed(2)} (${vixQ.dp >= 0 ? '+' : ''}${vixQ.dp.toFixed(1)}% today). ${vixQ.c < 15 ? 'Low volatility, investors are complacent.' : vixQ.c < 25 ? 'Moderate market uncertainty.' : 'Elevated fear and risk aversion.'}`,
       raw: { vix: vixQ.c, change: vixQ.dp },
     });
   }
@@ -125,8 +125,8 @@ async function handler(_request: NextRequest): Promise<NextResponse> {
       score,
       label: scoreToLabel(score),
       detail: smaValue
-        ? `SPY $${spyQ.c.toFixed(2)} is ${momentumPct >= 0 ? '+' : ''}${momentumPct.toFixed(1)}% ${momentumPct >= 0 ? 'above' : 'below'} its 125-day moving average — ${momentumPct > 5 ? 'strong bullish trend' : momentumPct > 0 ? 'mild bullish bias' : momentumPct > -5 ? 'mild bearish pressure' : 'bearish momentum'}`
-        : `SPY at $${spyQ.c.toFixed(2)} — 125-day average unavailable`,
+        ? `SPY $${spyQ.c.toFixed(2)} is ${momentumPct >= 0 ? '+' : ''}${momentumPct.toFixed(1)}% ${momentumPct >= 0 ? 'above' : 'below'} its 125-day moving average. ${momentumPct > 5 ? 'Strong bullish trend.' : momentumPct > 0 ? 'Mild bullish bias.' : momentumPct > -5 ? 'Mild bearish pressure.' : 'Bearish momentum.'}`
+        : `SPY at $${spyQ.c.toFixed(2)}, 125-day average unavailable`,
       raw: { price: spyQ.c, sma125: smaValue ?? 0, pctFromSma: momentumPct },
     });
   }
@@ -138,7 +138,7 @@ async function handler(_request: NextRequest): Promise<NextResponse> {
       name: 'Junk Bond Demand',
       score,
       label: scoreToLabel(score),
-      detail: `HYG ${hygQ.dp >= 0 ? '+' : ''}${hygQ.dp.toFixed(2)}% vs LQD ${lqdQ.dp >= 0 ? '+' : ''}${lqdQ.dp.toFixed(2)}% — ${hygQ.dp > lqdQ.dp ? 'investors chasing yield signals risk appetite' : 'flight to quality bonds signals caution'}`,
+      detail: `HYG ${hygQ.dp >= 0 ? '+' : ''}${hygQ.dp.toFixed(2)}% vs LQD ${lqdQ.dp >= 0 ? '+' : ''}${lqdQ.dp.toFixed(2)}%. ${hygQ.dp > lqdQ.dp ? 'Investors chasing yield signals risk appetite.' : 'Flight to quality bonds signals caution.'}`,
       raw: { hyg: hygQ.dp, lqd: lqdQ.dp, spread: hygQ.dp - lqdQ.dp },
     });
   }
@@ -150,7 +150,7 @@ async function handler(_request: NextRequest): Promise<NextResponse> {
       name: 'Safe Haven Demand',
       score,
       label: scoreToLabel(score),
-      detail: `SPY ${spyQ.dp >= 0 ? '+' : ''}${spyQ.dp.toFixed(2)}% vs TLT ${tltQ.dp >= 0 ? '+' : ''}${tltQ.dp.toFixed(2)}% — ${spyQ.dp > tltQ.dp ? 'equities outperforming treasuries, risk-on sentiment' : 'treasuries outperforming equities, defensive positioning'}`,
+      detail: `SPY ${spyQ.dp >= 0 ? '+' : ''}${spyQ.dp.toFixed(2)}% vs TLT ${tltQ.dp >= 0 ? '+' : ''}${tltQ.dp.toFixed(2)}%. ${spyQ.dp > tltQ.dp ? 'Equities outperforming treasuries, risk-on sentiment.' : 'Treasuries outperforming equities, defensive positioning.'}`,
       raw: { spy: spyQ.dp, tlt: tltQ.dp, divergence: spyQ.dp - tltQ.dp },
     });
   }

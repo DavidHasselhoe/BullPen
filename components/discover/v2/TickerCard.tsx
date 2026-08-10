@@ -83,7 +83,7 @@ export function TickerCard({ item, href, showReason = false }: Props) {
   const DirIcon = direction === 'up' ? ArrowUp : direction === 'down' ? ArrowDown : Minus;
 
   const computedHref = href ?? slugToAssetPath(item.ticker);
-  const label = `${item.ticker} — ${item.name}${changePct != null ? `, ${formatPct(changePct)}` : ''}`;
+  const label = `${item.ticker}, ${item.name}${changePct != null ? `, ${formatPct(changePct)}` : ''}`;
 
   return (
     <Link

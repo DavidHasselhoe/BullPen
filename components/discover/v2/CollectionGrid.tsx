@@ -6,8 +6,6 @@ import { TickerCard } from './TickerCard';
 
 interface Props {
   title: string;
-  /** Why this list exists. Not decoration — it's what makes the list a list. */
-  description: string;
   items: TickerItem[];
   /** Render each card's `reason` in place of the company name. */
   showReason?: boolean;
@@ -19,16 +17,18 @@ interface Props {
  *
  * Deliberately not a carousel. Auto-advancing rails measure ~1% engagement and
  * train users to tune the region out entirely, which is what nineteen of them
- * did to this page. Six cards that hold still and say why they're there beat
- * twelve that slide past.
+ * did to this page. Six cards that hold still beat twelve that slide past.
+ *
+ * The "why this list exists" copy that used to run under the title now lives
+ * in the collapsed CollectionFAQ below the grids — always-on prose competed
+ * with the tickers for attention; a closed-by-default answer doesn't.
  */
-export function CollectionGrid({ title, description, items, showReason, className }: Props) {
+export function CollectionGrid({ title, items, showReason, className }: Props) {
   if (items.length === 0) return null;
 
   return (
     <section className={cn('min-w-0', className)}>
-      <h3 className="text-[13px] font-semibold text-foreground">{title}</h3>
-      <p className="mb-3 mt-0.5 text-[11px] leading-relaxed text-muted-foreground/85">{description}</p>
+      <h3 className="mb-3 text-[13px] font-semibold text-foreground">{title}</h3>
 
       <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
         {items.map((item) => (

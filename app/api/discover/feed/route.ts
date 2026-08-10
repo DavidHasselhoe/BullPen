@@ -124,7 +124,7 @@ async function buildTrending(userId: string | null): Promise<DiscoverFeed['colle
           const meta = await fetchCompanyMeta(items);
           return {
             mode: 'personalized',
-            explanation: `More from the sectors you follow — ${userSectors.slice(0, 2).map((s) => s.label).join(' and ')}`,
+            explanation: `More from the sectors you follow: ${userSectors.slice(0, 2).map((s) => s.label).join(' and ')}`,
             items: items.map((t) => ({
               symbol: t,
               ticker: t,

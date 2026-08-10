@@ -12,7 +12,7 @@ export function DiscoverHeader() {
         <h1 className="text-2xl font-bold tracking-tight text-foreground">Discover</h1>
       </div>
       <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-        A read on the market in ten seconds — where money moved today, how the mood
+        A read on the market in ten seconds: where money moved today, how the mood
         is sitting, and a handful of companies worth a closer look.
       </p>
     </header>
