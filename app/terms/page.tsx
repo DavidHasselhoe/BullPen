@@ -6,7 +6,7 @@ import { TermlyEmbed } from '@/components/legal/TermlyEmbed';
 import '@/components/landing/landing-styles.css';
 
 export const metadata: Metadata = {
-  title: 'Terms of Service — BullPen',
+  title: 'Terms of Service',
   description: 'The terms that govern your use of BullPen.',
 };
 

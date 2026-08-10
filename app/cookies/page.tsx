@@ -7,7 +7,7 @@ import { Footer } from '@/components/landing/Footer';
 import '@/components/landing/landing-styles.css';
 
 export const metadata: Metadata = {
-  title: 'Cookie Policy — BullPen',
+  title: 'Cookie Policy',
   description: 'How BullPen uses cookies and similar tracking technologies.',
 };
 

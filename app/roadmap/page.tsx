@@ -7,7 +7,7 @@ import { Footer } from '@/components/landing/Footer';
 import '@/components/landing/landing-styles.css';
 
 export const metadata: Metadata = {
-  title: 'Roadmap — BullPen',
+  title: 'Roadmap',
   description: "Where BullPen has been, and what's next.",
 };
 

@@ -6,7 +6,7 @@ import { GLOSSARY } from '@/lib/finance/glossary';
 import '@/components/landing/landing-styles.css';
 
 export const metadata: Metadata = {
-  title: 'Glossary — BullPen',
+  title: 'Glossary',
   description: 'Plain-English explanations of financial terms used throughout BullPen.',
 };
 

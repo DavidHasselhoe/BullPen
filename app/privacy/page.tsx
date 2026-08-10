@@ -6,7 +6,7 @@ import { TermlyEmbed } from '@/components/legal/TermlyEmbed';
 import '@/components/landing/landing-styles.css';
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy — BullPen',
+  title: 'Privacy Policy',
   description: 'How BullPen collects, uses, and protects your personal information.',
 };
 

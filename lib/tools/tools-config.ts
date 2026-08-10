@@ -34,7 +34,7 @@ export const TOOLS: ToolConfig[] = [
   {
     id: 'deep-dive',
     name: 'AI Deep Dive',
-    description: 'Analyst-grade report on any stock — latest results, guidance, valuation, bull vs bear, catalysts, and risks. Powered by Claude.',
+    description: 'Analyst-grade report on any stock: latest results, guidance, valuation, bull vs bear, catalysts, and risks. Powered by Claude.',
     href: '/tools/deep-dive',
     icon: Telescope,
     status: 'available',
@@ -112,3 +112,19 @@ export const TOOLS: ToolConfig[] = [
     status: 'available',
   },
 ];
+
+/**
+ * Page metadata for a tool's route, sourced from this same canonical
+ * name/description every other surface (nav dropdown, tools grid, homepage
+ * picker) already uses — one source instead of hand-duplicated copy in each
+ * tool's layout.tsx. Every /tools/* page (except portfolio-builder, which
+ * isn't a client component and exports its own directly) is 'use client',
+ * so a sibling server layout.tsx is the only way to give it real metadata;
+ * without this, all ten fell back to the parent /tools layout's generic
+ * "Tools" title — confirmed live, /tools/compare, /tools/screener, etc. all
+ * rendered the identical title regardless of which tool it was.
+ */
+export function getToolMetadata(id: string): { title: string; description: string } | undefined {
+  const tool = TOOLS.find((t) => t.id === id);
+  return tool ? { title: tool.name, description: tool.description } : undefined;
+}

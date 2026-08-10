@@ -5,7 +5,7 @@ import { Footer } from '@/components/landing/Footer';
 import '@/components/landing/landing-styles.css';
 
 export const metadata: Metadata = {
-  title: 'Disclosures — BullPen',
+  title: 'Disclosures',
   description: 'Important disclosures about BullPen\'s data, AI features, and brokerage connections.',
 };
 

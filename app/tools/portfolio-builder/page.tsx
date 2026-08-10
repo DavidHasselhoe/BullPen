@@ -4,7 +4,7 @@ import { ArrowLeft, Sparkles } from 'lucide-react';
 import { PortfolioBuilderClient } from '@/components/tools/portfolio-builder/PortfolioBuilderClient';
 
 export const metadata = {
-  title: 'Portfolio Builder · BullPen',
+  title: 'Portfolio Builder',
   description: 'Type an investment thesis. Get a high-conviction thematic portfolio.',
 };
 

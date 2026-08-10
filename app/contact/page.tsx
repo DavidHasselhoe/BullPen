@@ -6,7 +6,7 @@ import { ContactForm } from '@/components/landing/ContactForm';
 import '@/components/landing/landing-styles.css';
 
 export const metadata: Metadata = {
-  title: 'Contact — BullPen',
+  title: 'Contact',
   description: 'Get in touch with the BullPen team.',
 };
 

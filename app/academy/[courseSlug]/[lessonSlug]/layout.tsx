@@ -1,7 +1,13 @@
 import type { Metadata } from 'next';
 import { createServerClient } from '@/lib/supabase/client';
 
-/** Same reasoning as the course-level layout one segment up. */
+/**
+ * Same reasoning as the course-level layout one segment up: real metadata,
+ * but not a real SEO surface today — see that file for why (the parent
+ * academy layout is a client component gated on useAuth(), so an
+ * anonymous/crawler request never sees actual content, just an empty
+ * shell under a correct <title>).
+ */
 export async function generateMetadata({
   params,
 }: {

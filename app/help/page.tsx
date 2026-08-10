@@ -6,7 +6,7 @@ import { FAQ_ITEMS } from '@/components/landing/faq-data';
 import '@/components/landing/landing-styles.css';
 
 export const metadata: Metadata = {
-  title: 'Help Center — BullPen',
+  title: 'Help Center',
   description: 'Answers to common questions about BullPen.',
 };
 

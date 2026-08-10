@@ -9,7 +9,7 @@ import { ActivityHeatmap } from '@/components/changelog/ActivityHeatmap';
 import '@/components/landing/landing-styles.css';
 
 export const metadata: Metadata = {
-  title: 'Changelog — BullPen',
+  title: 'Changelog',
   description: "What's new in BullPen — features, improvements, and fixes.",
 };
 

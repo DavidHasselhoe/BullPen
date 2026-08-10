@@ -6,7 +6,7 @@ import { TermlyEmbed } from '@/components/legal/TermlyEmbed';
 import '@/components/landing/landing-styles.css';
 
 export const metadata: Metadata = {
-  title: 'Accessibility Statement — BullPen',
+  title: 'Accessibility Statement',
   description: 'Our commitment to accessibility and how to reach us about it.',
 };
 
