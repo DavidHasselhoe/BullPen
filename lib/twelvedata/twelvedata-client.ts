@@ -1738,9 +1738,51 @@ interface TwelveDataEarningsCalResponse {
 }
 
 /**
+ * Observed maximum number of rows /earnings_calendar will return in one
+ * response. See the cap warning on getEarningsCalendarRange below.
+ */
+const EARNINGS_CALENDAR_ROW_CAP = 1200;
+/** Close enough to the cap that the response was almost certainly truncated. */
+const EARNINGS_CALENDAR_TRUNCATION_THRESHOLD = 1150;
+
+/** Count of Mon-Fri days in an inclusive YYYY-MM-DD range (earnings only land on weekdays). */
+function weekdaysInRange(startDate: string, endDate: string): number {
+  const start = Date.parse(`${startDate}T12:00:00Z`);
+  const end = Date.parse(`${endDate}T12:00:00Z`);
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) return 0;
+  let count = 0;
+  for (let t = start; t <= end; t += 86_400_000) {
+    const dow = new Date(t).getUTCDay();
+    if (dow !== 0 && dow !== 6) count++;
+  }
+  return count;
+}
+
+/**
  * GET /earnings_calendar — upcoming earnings announcements across all stocks.
  * Cost: 40 credits per request. Available on Venture+.
  * Response shape: { earnings: { "YYYY-MM-DD": [...items] }, status: "ok" }
+ *
+ * ⚠️ HARD CAP — DO NOT REQUEST MULTI-DAY RANGES FROM THIS FUNCTION.
+ *
+ * TwelveData truncates this endpoint at exactly 1200 rows and *silently drops
+ * whole date buckets* to fit. It fills from the LATEST date backwards, so a
+ * multi-day range loses its EARLIEST days with no error, no flag, and a
+ * `status: "ok"` body.
+ *
+ * Verified live 2026-08-10:
+ *   2026-08-03..2026-08-07 → 1200 rows covering only Aug 4-7. Aug 3 absent.
+ *   2026-08-03..2026-08-03 → 141 rows including PLTR, SNAP, VRTX, MAR, TSN.
+ *   Per-day counts that week: Aug 3=141, 4=203, 5=444, 6=486, 7=67.
+ *   Deterministic across repeat calls. Dropping `country` makes it worse
+ *   (loses two days rather than one).
+ *
+ * A single day never approaches the cap, so per-day requests are always safe.
+ * Route every caller through `lib/market-data/calendar-days.ts`, which fetches
+ * one day at a time and caches per day. This function stays a single request
+ * on purpose: it is documented as 40 credits in CLAUDE.md, and fanning out
+ * internally would silently multiply every caller's cost behind a name that
+ * reads as one call.
  */
 export async function getEarningsCalendarRange(
   startDate: string,
@@ -1753,7 +1795,11 @@ export async function getEarningsCalendarRange(
     end_date: endDate,
     country,
   });
-  const res = await fetch(url, { next: { revalidate: 86400 } }); // cache 24 h — earnings calendars are set in advance
+  // Deliberately not `next: { revalidate }`. That put an invisible second
+  // cache layer under our own explicit per-day Supabase cache, so a response
+  // captured weeks ago (when few of a day's companies had confirmed dates)
+  // kept being served as current. TTL policy lives in calendar-days.ts alone.
+  const res = await fetch(url, { cache: 'no-store' });
   const json = (await res.json()) as TwelveDataEarningsCalResponse;
 
   const apiFailed =
@@ -1790,11 +1836,48 @@ export async function getEarningsCalendarRange(
     }
   }
 
+  // Truncation detection — turns silent data loss into a visible runtime error.
+  const bucketCount = Object.keys(earningsMap).length;
+  if (earningsResponseLooksTruncated(raw.length, bucketCount, startDate, endDate)) {
+    console.error(
+      `[twelvedata] /earnings_calendar response for ${startDate}..${endDate} looks TRUNCATED: ` +
+      `${raw.length} rows (cap ${EARNINGS_CALENDAR_ROW_CAP}), ${bucketCount} date buckets for ` +
+      `${weekdaysInRange(startDate, endDate)} weekdays. Whole days are missing. Fetch one day at ` +
+      `a time via lib/market-data/calendar-days.ts.`
+    );
+  }
+
   const items = deduplicateEarnings(raw);
 
   // Sort chronologically then alphabetically by symbol
   items.sort((a, b) => a.date.localeCompare(b.date) || a.symbol.localeCompare(b.symbol));
   return items;
+}
+
+/**
+ * True when a multi-day response looks truncated by the 1200-row cap.
+ *
+ * Row count is the only reliable signal. A "fewer date buckets than weekdays"
+ * heuristic looks tempting but is wrong for any sparse feed: most days
+ * genuinely have zero IPOs or splits, so that test flags every normal sparse
+ * response as truncated. It is used here only as a secondary signal, and only
+ * when the response is already large enough for the cap to be plausible.
+ */
+export function earningsResponseLooksTruncated(
+  rowCount: number,
+  bucketCount: number,
+  startDate: string,
+  endDate: string
+): boolean {
+  if (startDate === endDate) return false;
+  if (rowCount >= EARNINGS_CALENDAR_TRUNCATION_THRESHOLD) return true;
+  // Secondary: a big-but-not-capped response missing whole weekdays.
+  const expectedWeekdays = weekdaysInRange(startDate, endDate);
+  return (
+    rowCount >= EARNINGS_CALENDAR_TRUNCATION_THRESHOLD / 2 &&
+    expectedWeekdays > 1 &&
+    bucketCount < expectedWeekdays
+  );
 }
 
 /**
@@ -1876,13 +1959,31 @@ type TwelveDataDivCalResponse = TwelveDataDivCalItem[] | { status?: string; code
 /**
  * GET /dividends_calendar — upcoming ex-dividend dates.
  * Cost: 40 credits per request. Available on Venture+.
+ *
+ * ⚠️ Defaults to only 100 rows, and this feed is GLOBAL (unlike
+ * /earnings_calendar it takes no `country`), so a single weekday genuinely has
+ * thousands of ex-dividend events worldwide. At the default, a request is
+ * dominated by foreign listings and can contain none of our ~1,200-ticker US
+ * universe at all. Verified 2026-08-10: 2026-08-03 returns exactly `outputsize`
+ * rows at 500/1000/2000, i.e. always truncated; a Sunday returns 6, so the date
+ * filter itself is honoured.
+ *
+ * `outputsize` raises the cap, so callers should pass one. Note this is NOT
+ * true of the sibling endpoints: /earnings_calendar ignores outputsize
+ * entirely (still 1200), and /splits_calendar returns ZERO rows when it is
+ * supplied. Per-endpoint quirks, do not generalise.
  */
 export async function getDividendsCalendar(
   startDate: string,
-  endDate: string
+  endDate: string,
+  outputsize?: number
 ): Promise<DividendsCalendarItem[]> {
   logUsage('/dividends_calendar', `${startDate}..${endDate}`);
-  const url = buildUrl('/dividends_calendar', { start_date: startDate, end_date: endDate });
+  const url = buildUrl('/dividends_calendar', {
+    start_date: startDate,
+    end_date: endDate,
+    ...(outputsize ? { outputsize } : {}),
+  });
   const res = await fetch(url, { next: { revalidate: 3600 } });
   const json = (await res.json()) as TwelveDataDivCalResponse;
   if (!Array.isArray(json)) {
@@ -1926,6 +2027,10 @@ type TwelveDataSplitsCalResponse = TwelveDataSplitsCalItem[] | { status?: string
 /**
  * GET /splits_calendar — upcoming stock splits.
  * Cost: 40 credits per request. Available on Venture+.
+ *
+ * ⚠️ Do NOT pass `outputsize` here. Verified 2026-08-10: supplying it makes
+ * this endpoint return zero rows, where the default returns 100. Splits are
+ * low-volume enough that the default is not a practical constraint.
  */
 export async function getSplitsCalendar(
   startDate: string,

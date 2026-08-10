@@ -33,6 +33,63 @@ export async function getCached<T>(key: string): Promise<T | null> {
 }
 
 /**
+ * Batched `getCached` — one round trip for many keys instead of one per key.
+ *
+ * Built for the calendar's per-day cache (lib/market-data/calendar-days.ts),
+ * where a month view needs 31 day-entries at once; issuing 31 sequential
+ * `getCached` calls would dominate the request's latency budget. Keys absent
+ * from the returned Map are misses (never cached, or expired), same contract
+ * as `getCached` returning null.
+ */
+export async function getCachedMany<T>(keys: string[]): Promise<Map<string, T>> {
+  const out = new Map<string, T>();
+  if (keys.length === 0) return out;
+  try {
+    const supabase = createServerClient();
+    const { data, error } = await supabase
+      .from(TABLE)
+      .select('cache_key, payload, expires_at')
+      .in('cache_key', keys)
+      .returns<Pick<MarketDataCacheRow, 'cache_key' | 'payload' | 'expires_at'>[]>();
+
+    if (error || !data) return out;
+    const now = Date.now();
+    for (const row of data) {
+      if (Date.parse(row.expires_at) <= now) continue;
+      out.set(row.cache_key, row.payload as T);
+    }
+    return out;
+  } catch (error) {
+    console.error('[market-data-cache] batched read failed:', error);
+    return out;
+  }
+}
+
+/**
+ * Batched `getCachedStale` — ignores expiry. Same last-resort role: when a
+ * live refetch fails, reuse the last known-good day rather than render it empty.
+ */
+export async function getCachedManyStale<T>(keys: string[]): Promise<Map<string, T>> {
+  const out = new Map<string, T>();
+  if (keys.length === 0) return out;
+  try {
+    const supabase = createServerClient();
+    const { data, error } = await supabase
+      .from(TABLE)
+      .select('cache_key, payload')
+      .in('cache_key', keys)
+      .returns<Pick<MarketDataCacheRow, 'cache_key' | 'payload'>[]>();
+
+    if (error || !data) return out;
+    for (const row of data) out.set(row.cache_key, row.payload as T);
+    return out;
+  } catch (error) {
+    console.error('[market-data-cache] batched stale read failed:', error);
+    return out;
+  }
+}
+
+/**
  * Reads the payload regardless of expiry — a last-resort fallback for when a
  * live refetch fails, so a transient error reuses the last known-good data
  * instead of an empty/zeroed result. Returns null only if the key was never
