@@ -10,6 +10,7 @@ import remarkGfm from 'remark-gfm';
 import { motion } from 'framer-motion';
 import { Send, Square, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-is-mobile';
 import { useAuth } from '@/hooks/use-auth';
 import { useInvalidateQuota } from '@/hooks/use-quota';
 import { QuotaIndicator } from '@/components/billing/QuotaIndicator';
@@ -88,7 +89,11 @@ const AssistantContent = memo(function AssistantContent({ text, isStreaming }: {
   );
 });
 
+const PANEL_WIDTH = 400;
+
 export function ChartAIPanel({ symbol, snapshot, onAction, onClose }: Props) {
+  const isMobile = useIsMobile();
+  const panelWidth = isMobile ? '100%' : PANEL_WIDTH;
   const { user } = useAuth();
   const { i18n } = useTranslation();
   const invalidateQuota = useInvalidateQuota();
@@ -189,15 +194,19 @@ export function ChartAIPanel({ symbol, snapshot, onAction, onClose }: Props) {
   };
 
   return (
+    // Real flex sibling (not an absolute overlay) — width animates so the chart
+    // beside it reflows via its `autoSize` ResizeObserver instead of being
+    // covered, keeping the price axis visible while Ask Bull is open.
     <motion.aside
-      initial={{ x: '100%', opacity: 0.4 }}
-      animate={{ x: 0, opacity: 1 }}
-      exit={{ x: '100%', opacity: 0.4 }}
+      initial={{ width: 0, opacity: 0.4 }}
+      animate={{ width: panelWidth, opacity: 1 }}
+      exit={{ width: 0, opacity: 0.4 }}
       transition={{ type: 'tween', duration: 0.22, ease: 'easeOut' }}
-      className="absolute inset-y-0 right-0 z-20 flex h-full w-full flex-col border-l border-border/60 bg-background shadow-2xl sm:w-[400px]"
+      className="relative z-20 h-full shrink-0 overflow-hidden border-l border-border/60 bg-background shadow-2xl"
       role="dialog"
       aria-label={`Ask Bull about ${symbol} chart`}
     >
+    <div className="absolute inset-y-0 right-0 flex h-full flex-col" style={{ width: isMobile ? '100vw' : PANEL_WIDTH }}>
       {/* Header */}
       <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border/60 px-4 py-3">
         <div className="flex items-center gap-2">
@@ -397,6 +406,7 @@ export function ChartAIPanel({ symbol, snapshot, onAction, onClose }: Props) {
           </button>
         )}
       </form>
+    </div>
     </motion.aside>
   );
 }

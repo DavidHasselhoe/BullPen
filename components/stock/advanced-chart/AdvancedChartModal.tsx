@@ -331,38 +331,43 @@ export function AdvancedChartModal({
         onClose={onClose}
       />
 
-      <div className="relative min-h-0 flex-1">
-        {isLoading && !hasData && (
-          <div className="flex h-full items-center justify-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Loading chart…
-          </div>
-        )}
+      {/* flex row (not an absolute overlay) so the AI panel reserves real width —
+          the chart's `autoSize: true` reacts to the resulting reflow and keeps its
+          price axis visible beside the panel, instead of rendering underneath it. */}
+      <div className="flex min-h-0 flex-1">
+        <div className="relative min-w-0 flex-1">
+          {isLoading && !hasData && (
+            <div className="flex h-full items-center justify-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading chart…
+            </div>
+          )}
 
-        {!isLoading && (isError || !hasData) && (
-          <div className="flex h-full flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
-            <AlertCircle className="h-6 w-6 text-muted-foreground/80" />
-            {isError ? 'Market data is rate-limited — try again in a moment.' : 'No chart data available.'}
-          </div>
-        )}
+          {!isLoading && (isError || !hasData) && (
+            <div className="flex h-full flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
+              <AlertCircle className="h-6 w-6 text-muted-foreground/80" />
+              {isError ? 'Market data is rate-limited — try again in a moment.' : 'No chart data available.'}
+            </div>
+          )}
 
-        {hasData && (
-          <AdvancedChart
-            candles={candles}
-            chartType={chartType}
-            indicators={indicators}
-            showVolume={showVolume}
-            isDark={isDark}
-            intraday={INTRADAY_RANGES.has(range)}
-            fitKey={`${range}:${displayFrom ?? 0}`}
-            events={events}
-            transactions={transactions}
-            displayFrom={displayFrom}
-            livePrice={livePrice}
-            tool={tool}
-            onCreateAlert={handleCreateAlert}
-          />
-        )}
+          {hasData && (
+            <AdvancedChart
+              candles={candles}
+              chartType={chartType}
+              indicators={indicators}
+              showVolume={showVolume}
+              isDark={isDark}
+              intraday={INTRADAY_RANGES.has(range)}
+              fitKey={`${range}:${displayFrom ?? 0}`}
+              events={events}
+              transactions={transactions}
+              displayFrom={displayFrom}
+              livePrice={livePrice}
+              tool={tool}
+              onCreateAlert={handleCreateAlert}
+            />
+          )}
+        </div>
 
         <AnimatePresence>
           {aiOpen && (
