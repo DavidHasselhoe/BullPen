@@ -53,6 +53,13 @@ function toETDateString(date: Date): string {
   return date.toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
 }
 
+/** True once the regular session has opened (9:30 ET) on `date`'s ET calendar day. */
+function isPastMarketOpenET(date: Date): boolean {
+  const etTime = date.toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour12: false });
+  const [h, m] = etTime.split(':').map(Number);
+  return h * 60 + m >= 9 * 60 + 30;
+}
+
 /** ET calendar date of the Monday on/before `date` — the start of that date's pick week. */
 function mondayOfWeekET(date: Date): string {
   const etWeekday = date.toLocaleDateString('en-US', { timeZone: 'America/New_York', weekday: 'short' });
@@ -118,6 +125,23 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const todayFormatted = new Date(`${todayET}T12:00:00Z`).toLocaleDateString('en-US', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC',
   });
+
+  // ── Timing guard ──────────────────────────────────────────────────────────
+  // entry_price is always stamped later from the real historical open (see
+  // header), so a late run doesn't corrupt that number. But the "published
+  // before pre-market" premise this cron is scheduled around can still slip —
+  // GitHub Actions has been observed delaying a scheduled run by hours (not
+  // just the ~5-15 min usually assumed), and a pick generated after the open
+  // no longer reflects what a same-day reader could have acted on. Surfacing
+  // this loudly (rather than publishing silently) is why this cron moved to
+  // Vercel's cron infra, which doesn't have GitHub's queueing drift — this
+  // stays as a backstop in case the schedule itself ever slips.
+  const lateGeneration = isPastMarketOpenET(now);
+  if (lateGeneration) {
+    console.warn(
+      `[weekly-pick] generating after 9:30 ET market open — scheduler drift, not a code bug. now=${now.toISOString()}`
+    );
+  }
 
   // ── Recent picks (do-not-repeat list) ─────────────────────────────────────
   const { data: recent } = await supabase
@@ -285,5 +309,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     conviction: pick.conviction,
     shortlist: survivors.map((s) => s.symbol),
     rejected,
+    lateGeneration,
   });
 }

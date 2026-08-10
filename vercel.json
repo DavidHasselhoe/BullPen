@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/generate-daily-brief",
       "schedule": "30 6 * * *"
+    },
+    {
+      "path": "/api/cron/generate-weekly-pick",
+      "schedule": "30 6 * * 1"
     }
   ]
 }

@@ -1,18 +1,20 @@
 name: Cron — Generate Weekly Pick
 
-# Mondays at 06:30 UTC (01:30 ET) — published before pre-market, so the first
-# price any reader could act on is that session's open. That open is what the
-# track record uses as the entry price, stamped later by /api/picks/performance.
+# Scheduling moved to Vercel (vercel.json, same "30 6 * * 1" — Mondays 06:30
+# UTC / 01:30 ET) so publication happens before pre-market with Vercel's
+# tighter timing instead of GitHub's queueing drift, which has been observed
+# delaying other crons in this repo by hours, not just the ~5-15 min usually
+# assumed. That timing matters here specifically: the published pick is meant
+# to be actionable from that session's open, stamped later by
+# /api/picks/performance. The route itself also has a same-day guard
+# (isPastMarketOpenET) that logs loudly if it ever runs past 9:30 ET, as a
+# backstop in case Vercel's own schedule slips.
 #
-# GitHub Actions rather than a Vercel cron: weekly generation tolerates the
-# ~5–15 min scheduling drift, and this leaves the Hobby plan's second cron slot
-# free for something time-critical.
-#
-# The route is idempotent on the pick date, so a manual re-run on the same day
-# is a safe no-op rather than a second pick.
+# This workflow is now workflow_dispatch-only — a manual re-run trigger from
+# the Actions tab, not a second scheduler. The route is idempotent on the pick
+# date, so a manual re-run on the same day is a safe no-op rather than a
+# second pick.
 on:
-  schedule:
-    - cron: '30 6 * * 1'
   workflow_dispatch:
 
 jobs:
