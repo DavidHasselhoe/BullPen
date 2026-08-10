@@ -513,7 +513,7 @@ export function Features() {
   return (
     <section id="features" style={{ padding: '120px 0 80px', position: 'relative' }}>
       <div className="wrap">
-        <SectionHeading
+        <SectionHeading
           title={
             <>
               Two ways to always{' '}
@@ -565,7 +565,7 @@ export function Features() {
           <Reveal delay={2} style={{ gridColumn: 'span 4' }}>
             <FeatureCard compact>
               <FeatureKicker icon="chart" label="Real-time charts" />
-              <FeatureTitle>TradingView-grade candles, indicators, alerts.</FeatureTitle>
+              <FeatureTitle>Professional-grade candles, indicators, alerts.</FeatureTitle>
               {/* Verified against hooks/use-chart-prefs.ts (ChartRange has exactly
                   8 members, ending MAX not "ALL") and lib/finance/indicators.ts,
                   which also ships ATR, OBV and Stochastic beyond those named. */}
@@ -595,11 +595,11 @@ export function Features() {
           <Reveal delay={2} style={{ gridColumn: 'span 12' }}>
             <FeatureCard compact>
               <FeatureKicker icon="shield" label="Alerts & filings" />
-              <FeatureTitle>Never miss a 10-K, an earnings beat, or a 5% move.</FeatureTitle>
+              <FeatureTitle>Never miss an earnings report or a 5% move.</FeatureTitle>
               <FeatureDesc>Email alerts on SEC filings, insider trades, earnings, and price thresholds.</FeatureDesc>
               <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {[
-                  { icon: 'bell' as const, t: 'A company you hold files a 10-Q', s: 'Summarised, with what changed', up: true },
+                  { icon: 'bell' as const, t: 'A company you hold reports earnings', s: 'Summarised, with what changed', up: true },
                   { icon: 'arrowUp' as const, t: 'A holding crosses your price target', s: 'Sent the moment it happens', up: true },
                   { icon: 'bolt' as const, t: 'Earnings land tomorrow', s: 'For anything you hold or watch', up: null },
                 ].map((a, i) => (
