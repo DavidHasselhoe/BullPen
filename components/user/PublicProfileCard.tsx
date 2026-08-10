@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { Briefcase, TrendingUp, BarChart2 } from 'lucide-react';
+import { Briefcase, TrendingUp, BarChart2, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { tierLabel } from '@/lib/billing/tier';
 import type { PublicUser } from '@/app/api/users/search/route';
@@ -12,9 +12,15 @@ interface PublicProfileCardProps {
   className?: string;
 }
 
+// Pro gets a warmer, more distinct treatment than the neutral ProBadge used in
+// account chrome (components/billing/ProBadge.tsx) — this one does social
+// signaling work on a public surface, so it's allowed to stand out more than a
+// badge sitting quietly next to your own name in a dropdown. Amber/gold reads
+// as "premium" and is DESIGN.md's sanctioned third color for status pills
+// (never used for gain/loss, which stays exclusively Signal Emerald/Red).
 const TIER_BADGE_CLASS: Record<'Member' | 'Pro', string> = {
   Member: 'bg-muted text-muted-foreground',
-  Pro: 'bg-primary/10 text-primary',
+  Pro: 'border border-amber-400/30 bg-amber-400/10 text-amber-600 dark:text-amber-400',
 };
 
 const EXPERIENCE_LABELS: Record<string, string> = {
@@ -72,7 +78,8 @@ export function PublicProfileCard({ user, className }: PublicProfileCardProps) {
             <p className="text-xs text-muted-foreground truncate">@{user.username}</p>
           )}
           {tier && (
-            <span className={cn('inline-block mt-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full', tier.className)}>
+            <span className={cn('inline-flex items-center gap-0.5 mt-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full', tier.className)}>
+              {tierLabelValue === 'Pro' && <Sparkles className="h-2.5 w-2.5" />}
               {tier.label}
             </span>
           )}

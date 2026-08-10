@@ -4,14 +4,16 @@ import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Trophy, GraduationCap, Flame } from 'lucide-react';
+import { Trophy, GraduationCap, Flame, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { tierLabel } from '@/lib/billing/tier';
 import type { LeaderboardEntry } from '@/app/api/social/leaderboard/route';
 
+// See components/user/PublicProfileCard.tsx for why Pro gets a warmer amber
+// treatment here instead of the neutral ProBadge used in account chrome.
 const TIER_BADGE_CLASS: Record<'Member' | 'Pro', string> = {
   Member: 'bg-muted text-muted-foreground',
-  Pro: 'bg-primary/10 text-primary',
+  Pro: 'border border-amber-400/30 bg-amber-400/10 text-amber-600 dark:text-amber-400',
 };
 
 const RANK_STYLES = [
@@ -116,7 +118,8 @@ export default function AcademyLeaderboardPage() {
                   </div>
 
                   {tier && tier.label !== 'Member' && (
-                    <span className={cn('inline-block text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0', tier.className)}>
+                    <span className={cn('inline-flex items-center gap-0.5 text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0', tier.className)}>
+                      <Sparkles className="h-2.5 w-2.5" />
                       {tier.label}
                     </span>
                   )}

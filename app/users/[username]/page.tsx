@@ -18,6 +18,7 @@ import {
   Calendar,
   Globe,
   ChevronLeft,
+  Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { tierLabel } from '@/lib/billing/tier';
@@ -30,9 +31,11 @@ interface ProfileResponse {
   error?: string;
 }
 
+// See components/user/PublicProfileCard.tsx for why Pro gets a warmer amber
+// treatment here instead of the neutral ProBadge used in account chrome.
 const TIER_BADGE_CLASS: Record<'Member' | 'Pro', string> = {
   Member: 'bg-muted text-muted-foreground border-0',
-  Pro: 'bg-primary/10 text-primary border-primary/20',
+  Pro: 'border-amber-400/30 bg-amber-400/10 text-amber-600 dark:text-amber-400',
 };
 
 const EXPERIENCE_LABELS: Record<string, string> = {
@@ -166,7 +169,8 @@ export default function UserProfilePage() {
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-xl font-bold text-foreground">{displayName}</h1>
               {tier && (
-                <Badge variant="outline" className={cn('text-[10px] font-medium', tier.className)}>
+                <Badge variant="outline" className={cn('text-[10px] font-semibold', tier.className)}>
+                  {tierLabelValue === 'Pro' && <Sparkles />}
                   {tier.label}
                 </Badge>
               )}
