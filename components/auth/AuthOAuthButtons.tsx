@@ -1,8 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Check } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface AuthOAuthButtonsProps {
@@ -45,7 +44,7 @@ export function AuthOAuthButtons({ onGoogleClick, isLoading = false, disabled = 
       <Button
         type="button"
         variant="outline"
-        className="h-11 w-full gap-3 border-2 transition-all hover:bg-accent/50 hover:border-accent-foreground/20"
+        className="relative h-11 w-full gap-3 border-2 transition-all hover:bg-accent/50 hover:border-accent-foreground/20"
         onClick={onGoogleClick}
         disabled={disabled || isLoading}
       >
@@ -59,9 +58,10 @@ export function AuthOAuthButtons({ onGoogleClick, isLoading = false, disabled = 
             <GoogleIcon />
             <span>Continue with Google</span>
             {lastUsed && (
-              <Badge variant="secondary" className="ml-auto px-1.5 py-0 font-normal">
+              <span className="absolute -top-2 -right-2 inline-flex items-center gap-1 rounded-full border border-blue-400/40 bg-blue-400/15 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-blue-600 ring-2 ring-background dark:text-blue-400">
+                <Check className="size-2.5" strokeWidth={3} />
                 Last used
-              </Badge>
+              </span>
             )}
           </>
         )}
