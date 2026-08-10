@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Logo } from './Atoms';
 import { Icon } from './Icon';
@@ -14,13 +14,20 @@ interface Props {
 
 export function Nav({ onSignIn, onSignUp }: Props) {
   const [scrolled, setScrolled] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement>(null);
   const { isAuthenticated, isLoading } = useAuth();
 
+  // Not a `window` scroll listener: this page's app shell scrolls an inner
+  // wrapper div, not the window, so `window.scrollY` never changes here and a
+  // scroll listener on `window` never fires. A 1px sentinel pinned to the true
+  // top of the page, watched with IntersectionObserver, detects the scroll
+  // regardless of which ancestor actually owns it.
   useEffect(() => {
-    const on = () => setScrolled(window.scrollY > 8);
-    on();
-    window.addEventListener('scroll', on, { passive: true });
-    return () => window.removeEventListener('scroll', on);
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(([entry]) => setScrolled(!entry.isIntersecting));
+    observer.observe(sentinel);
+    return () => observer.disconnect();
   }, []);
 
   const links = [
@@ -31,19 +38,28 @@ export function Nav({ onSignIn, onSignUp }: Props) {
   ];
 
   return (
-    <nav
-      style={{
-        position: 'sticky',
-        top: 0,
-        zIndex: 50,
-        padding: '14px 0',
-        background: scrolled ? 'oklch(from var(--bg) l c h / 0.72)' : 'transparent',
-        backdropFilter: scrolled ? 'blur(16px) saturate(140%)' : 'none',
-        WebkitBackdropFilter: scrolled ? 'blur(16px) saturate(140%)' : 'none',
-        borderBottom: scrolled ? '1px solid var(--border)' : '1px solid transparent',
-        transition: 'background 200ms, border-color 200ms, backdrop-filter 200ms',
-      }}
-    >
+    <>
+      {/* Absolutely positioned against `.content-layer` (the nearest
+          `position: relative` ancestor), so it marks the page's true top
+          regardless of the nav's own `position: sticky`. */}
+      <div
+        ref={sentinelRef}
+        aria-hidden
+        style={{ position: 'absolute', top: 0, left: 0, width: 1, height: 1, pointerEvents: 'none' }}
+      />
+      <nav
+        style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 50,
+          padding: '14px 0',
+          background: scrolled ? 'oklch(from var(--bg) l c h / 0.72)' : 'transparent',
+          backdropFilter: scrolled ? 'blur(16px) saturate(140%)' : 'none',
+          WebkitBackdropFilter: scrolled ? 'blur(16px) saturate(140%)' : 'none',
+          borderBottom: scrolled ? '1px solid var(--border)' : '1px solid transparent',
+          transition: 'background 200ms, border-color 200ms, backdrop-filter 200ms',
+        }}
+      >
       <div className="wrap" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
         <a href="#top" style={{ display: 'inline-flex' }}>
           <Logo />
@@ -136,6 +152,7 @@ export function Nav({ onSignIn, onSignUp }: Props) {
           )}
         </div>
       </div>
-    </nav>
+      </nav>
+    </>
   );
 }
