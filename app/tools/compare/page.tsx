@@ -39,6 +39,8 @@ import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { ArrowLeft, Scale, Building2, BarChart3, TrendingUp, Plus, X, Info, ArrowUpDown, ChevronDown, ChevronRight, Sparkles, MessageSquare } from 'lucide-react';
 import type { CompareCompany } from '@/app/api/compare/route';
 import { useAIPanel } from '@/components/ai/AIPanelProvider';
+import { useRecentlyCompared } from '@/hooks/use-recently-compared';
+import { RecentlyComparedCard } from '@/components/tools/compare/RecentlyComparedCard';
 import { cn } from '@/lib/utils';
 import { Suspense, Fragment } from 'react';
 
@@ -414,6 +416,7 @@ function CompareContent() {
   }, [selectedCompanies, router]);
 
   const { open: openAIPanel, setAIContext } = useAIPanel();
+  const { add: addRecentComparison } = useRecentlyCompared();
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['compare', tickers.join(',')],
@@ -432,6 +435,16 @@ function CompareContent() {
     }
     return () => setAIContext(null);
   }, [tickers, setAIContext]);
+
+  // Record a successful comparison as a "recently compared" quick action —
+  // only once real company data has loaded, not on every ticker-param change.
+  useEffect(() => {
+    if (data?.success && data.companies?.length >= 2) {
+      addRecentComparison(
+        data.companies.map((c) => ({ ticker: c.ticker, name: c.name, logo_url: c.logo_url }))
+      );
+    }
+  }, [data, addRecentComparison]);
 
   if (tickers.length < 2) {
     const slots = Math.min(MAX_SLOTS, Math.max(MIN_SLOTS, selectedCompanies.length + 1));
@@ -459,6 +472,7 @@ function CompareContent() {
             </div>
           </div>
         </div>
+        <RecentlyComparedCard />
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-4 md:grid-cols-5">
           {Array.from({ length: slots }).map((_, i) => (
             <div key={i}>
