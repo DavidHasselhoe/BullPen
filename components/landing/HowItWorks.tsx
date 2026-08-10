@@ -102,7 +102,7 @@ const STEPS: Step[] = [
         >
           <Icon name="search" size={14} style={{ color: 'var(--fg-dim)' }} />
           <span style={{ fontSize: 13, color: 'var(--fg)' }}>nvi</span>
-          <span style={{ width: 1, height: 14, background: 'var(--accent)', animation: 'bp-blink 1s infinite' }} />
+          <span style={{ width: 7, height: 14, background: 'var(--accent)', animation: 'bp-blink 1s infinite' }} />
           <span style={{ marginLeft: 'auto', fontSize: 10, color: 'var(--fg-dim)', fontFamily: 'var(--font-mono)' }}>⌘K</span>
         </div>
         {[
@@ -206,7 +206,7 @@ export function HowItWorks() {
   return (
     <section id="how" style={{ padding: '120px 0 80px', position: 'relative' }}>
       <div className="wrap">
-        <SectionHeading
+        <SectionHeading
           title={
             <>
               From signup to first insight,{' '}
