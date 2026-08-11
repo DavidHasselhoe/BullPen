@@ -13,7 +13,9 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/client';
-import { getEarningsCalendarRange, TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
+import type { EarningsCalendarItem } from '@/lib/twelvedata/twelvedata-client';
+import { getCalendarDay } from '@/lib/market-data/calendar-days';
+import { todayET } from '@/lib/dates/calendar-format';
 import {
   createEarningsUpcomingNotification,
   type EarningsItem,
@@ -79,19 +81,23 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     }
 
     // ── 3. Fetch earnings calendar for today only (ONE call for all users) ──
-    const todayStr = new Date().toISOString().slice(0, 10);
+    // Reads the shared per-day cache, which the 04:00 prefetch-calendar cron
+    // warms hours before this runs — so this is normally free rather than
+    // 40 credits. todayET (not UTC) so it asks for the same day the warm plan
+    // cached; they agree at this cron's 08:00 UTC slot, but not if it drifts.
+    const todayStr = todayET();
     let earningsEvents: Array<{ symbol: string; date: string }> = [];
 
-    try {
-      const calendar = await getEarningsCalendarRange(todayStr, todayStr);
+    // `[]` means the day genuinely has no earnings; `null` means it could not
+    // be filled (fetch failed, or the credit budget was exhausted). Collapsing
+    // those two would turn an outage into a silent "no earnings today" and
+    // skip everyone's email with no error recorded.
+    const calendar = await getCalendarDay<EarningsCalendarItem>('earnings', todayStr);
+    if (calendar) {
       earningsEvents = calendar.map((e) => ({ symbol: e.symbol, date: e.date }));
       summary.earningsFound = earningsEvents.length;
-    } catch (e) {
-      if (e instanceof TwelveDataRateLimitError) {
-        summary.errors.push(`Twelve Data rate limit hit: ${String(e)}`);
-      } else {
-        summary.errors.push(`Twelve Data earnings calendar failed: ${String(e)}`);
-      }
+    } else {
+      summary.errors.push(`Earnings calendar unavailable for ${todayStr} (fetch failed or budget exhausted)`);
       return NextResponse.json(summary);
     }
 

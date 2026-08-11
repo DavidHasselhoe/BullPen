@@ -13,7 +13,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { createServerClient } from '@/lib/supabase/client';
-import { getEarningsCalendarRange } from '@/lib/twelvedata/twelvedata-client';
+import type { EarningsCalendarItem } from '@/lib/twelvedata/twelvedata-client';
+import { getCalendarDay } from '@/lib/market-data/calendar-days';
 import { getTopMovers, getStockQuotes } from '@/lib/market-data';
 import { logAiCall } from '@/lib/billing/log-ai-call';
 
@@ -185,9 +186,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     yesterdayBrief,
     marketContextResult,
   ] = await Promise.allSettled([
-    getEarningsCalendarRange(yesterdayET, yesterdayET),
-    getEarningsCalendarRange(todayET, todayET),
-    getEarningsCalendarRange(tomorrowET, tomorrowET),
+    // Shared per-day cache, warmed by the 04:00 prefetch-calendar cron two
+    // hours before this runs — normally three cache hits instead of 120
+    // credits. Resolves with null (rather than rejecting) when a day cannot
+    // be filled; see the `?? []` on the unwrap below.
+    getCalendarDay<EarningsCalendarItem>('earnings', yesterdayET),
+    getCalendarDay<EarningsCalendarItem>('earnings', todayET),
+    getCalendarDay<EarningsCalendarItem>('earnings', tomorrowET),
     getTopMovers(5),
     supabase
       .from('daily_briefs')
@@ -197,9 +202,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     fetchMarketContext(),
   ]);
 
-  const yesterdayEarningsData = yesterdayEarnings.status === 'fulfilled' ? yesterdayEarnings.value : [];
-  const todayEarningsData = todayEarnings.status === 'fulfilled' ? todayEarnings.value : [];
-  const tomorrowEarningsData = tomorrowEarnings.status === 'fulfilled' ? tomorrowEarnings.value : [];
+  // `?? []` matters: getCalendarDay resolves with null (rather than rejecting)
+  // when a day cannot be filled, so `status === 'fulfilled'` alone would let a
+  // null through into the .filter() calls below.
+  const yesterdayEarningsData = (yesterdayEarnings.status === 'fulfilled' ? yesterdayEarnings.value : []) ?? [];
+  const todayEarningsData = (todayEarnings.status === 'fulfilled' ? todayEarnings.value : []) ?? [];
+  const tomorrowEarningsData = (tomorrowEarnings.status === 'fulfilled' ? tomorrowEarnings.value : []) ?? [];
   const movers = moversResult.status === 'fulfilled' ? moversResult.value : { gainers: [], losers: [] };
   const prevBrief = yesterdayBrief.status === 'fulfilled' ? yesterdayBrief.value.data : null;
   const marketCtx = marketContextResult.status === 'fulfilled' ? marketContextResult.value : { vix: null, treasury10y: null };

@@ -1,9 +1,10 @@
 /**
  * Earnings-calendar content for the automated Instagram pipeline.
  *
- * Every fact (ticker, company name, date, time) comes straight from
- * getEarningsCalendarRange(), filtered to SIGNIFICANT_TICKERS (S&P 500 +
- * Nasdaq 100) plus one manual exception (see INSTAGRAM_ALLOWLIST below).
+ * Every fact (ticker, company name, date) comes straight from the shared
+ * per-day calendar cache (lib/market-data/calendar-days.ts), filtered to
+ * SIGNIFICANT_TICKERS (S&P 500 + Nasdaq 100) plus one manual exception (see
+ * INSTAGRAM_ALLOWLIST below).
  * Deliberately narrower than app/api/calendar/earnings/route.ts's in-app
  * Market Calendar, which widened to the full ~1200-ticker active screener
  * universe earlier this session — that's the right call for a browsable
@@ -20,7 +21,8 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
-import { getEarningsCalendarRange } from '@/lib/twelvedata/twelvedata-client';
+import type { EarningsCalendarItem } from '@/lib/twelvedata/twelvedata-client';
+import { getCalendarRange } from '@/lib/market-data/calendar-days';
 import { SIGNIFICANT_TICKERS } from '@/lib/market-data/significant-tickers';
 import { NASDAQ100_TICKERS } from '@/lib/market-data/nasdaq100';
 import { attachMarketCap } from '@/lib/market-data/calendar-market-cap';
@@ -161,7 +163,14 @@ export async function generateEarningsCalendarContent(
   weekStart: string,
   weekEnd: string
 ): Promise<EarningsCalendarSlides | null> {
-  const raw = await getEarningsCalendarRange(weekStart, weekEnd);
+  // Per-day cache rather than one range request. /earnings_calendar caps at
+  // 1200 rows and drops whole days from a multi-day range, which this builder
+  // could not see: a truncated response looked like a genuine result, so the
+  // "quiet week, skip posting" branch below was firing on weeks that really
+  // did have qualifying companies. The 04:00 prefetch-calendar cron warms this
+  // window, so a Sunday run normally costs nothing.
+  const { byDate } = await getCalendarRange<EarningsCalendarItem>('earnings', weekStart, weekEnd);
+  const raw = [...byDate.values()].flat();
 
   const filtered = raw
     .filter((item) => INSTAGRAM_ALLOWLIST.has(item.symbol))
