@@ -12,6 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { DatePicker } from '@/components/ui/date-picker';
 import {
   Command,
   CommandEmpty,
@@ -322,12 +323,12 @@ export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
           {/* Date Purchased (Optional) */}
           <div className="space-y-2">
             <Label htmlFor="date-purchased">Date Purchased (Optional)</Label>
-            <Input
+            <DatePicker
               id="date-purchased"
-              type="date"
               max={new Date().toISOString().slice(0, 10)}
               value={datePurchased}
-              onChange={(e) => setDatePurchased(e.target.value)}
+              onChange={setDatePurchased}
+              placeholder="Select a date"
             />
             {datePurchased && userCurrency !== 'USD' ? (
               <p className="text-xs text-muted-foreground">

@@ -12,6 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { DatePicker } from '@/components/ui/date-picker';
 import { useHoldingSales, useDeleteHoldingSale, useUpdateHoldingSale } from '@/hooks/use-holdings';
 import type { HoldingSale } from '@/lib/types/database';
 import { logger } from '@/lib/utils/logger';
@@ -91,13 +92,12 @@ function SoldPositionRow({ sale }: { sale: HoldingSale }) {
           </div>
           <div className="space-y-1">
             <Label htmlFor={`date-${sale.id}`} className="text-xs text-muted-foreground">Date</Label>
-            <Input
+            <DatePicker
               id={`date-${sale.id}`}
-              type="date"
               max={new Date().toISOString().slice(0, 10)}
               value={saleDate}
-              onChange={(e) => setSaleDate(e.target.value)}
-              className="h-8"
+              onChange={setSaleDate}
+              size="sm"
             />
           </div>
         </div>

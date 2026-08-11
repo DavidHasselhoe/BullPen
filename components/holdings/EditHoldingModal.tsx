@@ -12,6 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { DatePicker } from '@/components/ui/date-picker';
 import { useUpdateHolding } from '@/hooks/use-holdings';
 import type { UserHolding } from '@/lib/types/database';
 import type { UpdateHoldingInput } from '@/app/actions/holdings';
@@ -129,12 +130,12 @@ export function EditHoldingModal({ open, onOpenChange, holding }: EditHoldingMod
           {/* Date Purchased (Optional) */}
           <div className="space-y-2">
             <Label htmlFor="date-purchased">Date Purchased (Optional)</Label>
-            <Input
+            <DatePicker
               id="date-purchased"
-              type="date"
               max={new Date().toISOString().slice(0, 10)}
               value={datePurchased}
-              onChange={(e) => setDatePurchased(e.target.value)}
+              onChange={setDatePurchased}
+              placeholder="Select a date"
             />
             <p className="text-xs text-muted-foreground">
               Used to chart your P/L from the day you opened this position.

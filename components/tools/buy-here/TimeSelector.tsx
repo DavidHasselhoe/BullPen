@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { DatePicker } from '@/components/ui/date-picker';
 
 export const PRESETS = [
   { label: '1 year', years: 1 },
@@ -72,11 +73,11 @@ export function TimeSelector({
           exit={{ opacity: 0, height: 0 }}
           className="overflow-hidden"
         >
-          <input
-            type="date"
+          <DatePicker
             value={customDate}
-            onChange={(e) => onCustomDateChange?.(e.target.value)}
-            className="flex h-10 w-full max-w-xs rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            onChange={(date) => onCustomDateChange?.(date)}
+            max={new Date().toISOString().slice(0, 10)}
+            className="max-w-xs h-10 rounded-lg"
           />
         </motion.div>
       )}

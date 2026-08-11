@@ -12,6 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { DatePicker } from '@/components/ui/date-picker';
 import { useSellHolding } from '@/hooks/use-holdings';
 import type { UserHolding } from '@/lib/types/database';
 import { logger } from '@/lib/utils/logger';
@@ -139,12 +140,11 @@ export function SellHoldingModal({ open, onOpenChange, holding, currentPriceUSD 
 
           <div className="space-y-2">
             <Label htmlFor="sell-date">Sale date</Label>
-            <Input
+            <DatePicker
               id="sell-date"
-              type="date"
               max={new Date().toISOString().slice(0, 10)}
               value={saleDate}
-              onChange={(e) => setSaleDate(e.target.value)}
+              onChange={setSaleDate}
             />
           </div>
 
