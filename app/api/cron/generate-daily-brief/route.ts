@@ -112,6 +112,36 @@ function trimIncomplete(text: string): string {
   return trimmed.slice(0, lastPeriod + 1).trimEnd();
 }
 
+interface BriefSource {
+  url: string;
+  title: string;
+  domain: string;
+}
+
+function extractDomain(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return url;
+  }
+}
+
+/**
+ * Dedupe web-search citations by exact URL (a source cited for two different
+ * sentences should appear once), attach the display domain, and cap the list
+ * so a heavily-cited brief doesn't balloon the stored payload.
+ */
+function dedupeSources(raw: Array<{ url: string; title: string }>): BriefSource[] {
+  const seen = new Set<string>();
+  const out: BriefSource[] = [];
+  for (const c of raw) {
+    if (seen.has(c.url)) continue;
+    seen.add(c.url);
+    out.push({ url: c.url, title: c.title || extractDomain(c.url), domain: extractDomain(c.url) });
+  }
+  return out.slice(0, 20);
+}
+
 /**
  * Compute the EPS beat rate (%) from yesterday's earnings with confirmed actuals.
  * Returns null when there's insufficient data (<3 companies with both actual+estimate).
@@ -289,6 +319,11 @@ DATA FIDELITY (critical):
 Sector analysis:
 - When citing a sector gain or loss in "Movers & Stories", add one sentence explaining the specific catalyst (not just "on strong earnings" — why did that sector move relative to others today?).
 
+Sourcing and originality (critical):
+- When search results turn up multiple articles on the same story, read across all of them and write your own synthesis. Pull the specific facts and numbers you need, then explain them in your own words and your own structure.
+- Never lift a single article's paragraph order, framing, or sentence-by-sentence structure and lightly reword it. That is still a copy even with zero direct quotes and different word choices. If a section of your draft is tracking one source that closely, stop and rewrite it from the underlying facts instead of editing the borrowed sentence.
+- Never quote source text directly, even in scare quotes.
+
 Banned phrases (do not use): "investors are watching", "in a sign that", "as the saying goes", "remains to be seen", "only time will tell", "amid", "on the heels of", "broader market", "risk-on", "risk-off", "Wall Street".`;
 
   const userPrompt = `Write today's Daily Market Brief for ${todayFormatted}.
@@ -329,6 +364,7 @@ ${marketContextBlock}${avoidanceSection}
 Use live web search to verify the latest news for "Movers & Stories", "Watch Today", and "Next 24 Hours". Cite specific events, not generic narratives.`;
 
   let fullText = '';
+  let sources: BriefSource[] = [];
   try {
     const stream = anthropic.beta.messages.stream({
       model: 'claude-sonnet-4-6',
@@ -347,15 +383,25 @@ Use live web search to verify the latest news for "Movers & Stories", "Watch Tod
     const final = await stream.finalMessage();
 
     const tail: string[] = [];
+    const rawCitations: Array<{ url: string; title: string }> = [];
     for (let i = final.content.length - 1; i >= 0; i--) {
       const block = final.content[i];
       if (block.type === 'text') {
         tail.unshift(block.text);
+        // Citations attach only to the text that actually made it into the
+        // published brief — a block's citations describe exactly what backs
+        // that block's sentences, so this is the honest "sources" list.
+        for (const citation of block.citations ?? []) {
+          if (citation.type === 'web_search_result_location') {
+            rawCitations.push({ url: citation.url, title: citation.title ?? '' });
+          }
+        }
       } else {
         break;
       }
     }
     fullText = tail.join('').trim();
+    sources = dedupeSources(rawCitations.reverse());
 
     // Log the cron run's cost (no user → null user_id)
     try {
@@ -401,6 +447,7 @@ Use live web search to verify the latest news for "Movers & Stories", "Watch Tod
     title: titleLine,
     content,
     featured_tickers: featured,
+    sources,
   });
 
   if (insertError) {
@@ -414,5 +461,6 @@ Use live web search to verify the latest news for "Movers & Stories", "Watch Tod
     title: titleLine,
     length: processedText.length,
     featured_tickers: featured,
+    sources: sources.length,
   });
 }

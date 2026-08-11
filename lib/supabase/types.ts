@@ -151,6 +151,7 @@ export interface Database {
           title: string;
           content: string;
           featured_tickers: string[] | null;
+          sources: JsonValue;
           generated_at: string;
         };
         Insert: {
@@ -158,6 +159,7 @@ export interface Database {
           title: string;
           content: string;
           featured_tickers?: string[] | null;
+          sources?: JsonValue;
           id?: string;
           generated_at?: string;
         };
@@ -165,6 +167,7 @@ export interface Database {
           title: string;
           content: string;
           featured_tickers: string[] | null;
+          sources: JsonValue;
         }>;
       };
       risk_analyses: {
