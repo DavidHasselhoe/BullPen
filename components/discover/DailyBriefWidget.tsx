@@ -204,7 +204,6 @@ function SectionBlock({ section, index, isTldr, sectionRef }: SectionBlockProps)
         style={{ animationDelay: `${index * 60}ms` }}
       >
         <div className="relative rounded-2xl border border-primary/15 bg-primary/[0.04] px-5 py-4 md:px-6 md:py-5 overflow-hidden">
-          <div className="absolute left-0 top-3 bottom-3 w-[3px] rounded-full bg-primary/50" />
           <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary/80 mb-2.5">
             TL;DR
           </div>
