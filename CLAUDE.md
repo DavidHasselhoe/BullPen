@@ -264,6 +264,7 @@ Split across two schedulers. All cron routes are protected by the `CRON_SECRET` 
 | `/api/cron/check-price-moves` | `30 21 * * 1-5` | Email on 5%+ price moves for held/watched stocks |
 | `/api/cron/prefetch-market-data` | `0 5 * * *` | Pre-cache S&P 500 + NASDAQ 100 stats/earnings |
 | `/api/cron/prefetch-market-data?phase=financials` | `30 7 * * *` | Pre-cache income/balance/cash-flow for the full screener universe (own workflow, `cron-prefetch-financials.yml`, since it no longer fits in the same job as the stats phase). Runs right after the stats prefetch hands off, so it clears before market open instead of competing with peak organic traffic. |
+| `/api/cron/prefetch-calendar` | `0 4 * * *` | Warm the per-day market-calendar caches (earnings, dividends, splits, IPOs) over a rolling today-7 to today+45 window. Serves the calendar tool, the Discover earnings widget, the daily brief, the earnings-upcoming email and the Instagram carousel from one cache. Scheduled at 04:00 so it clears before the 06:30 daily brief and 08:00 earnings email, making both free cache hits. |
 | `/api/screener/refresh` (active mode) | `0 22 * * *` | Refresh `/statistics` + health score for the top half of the active screener universe by market cap (`cron-refresh-screener-stats.yml`) |
 | `/api/screener/refresh` (active + discovery mode) | `0 3 * * *` | Covers the rest of the active universe, then sweeps tier-0 tickers for promotion (`cron-refresh-screener-extended.yml`). Both this and the 22:00 job skip any ticker whose `screener_stats` row is <12h old, so they don't re-fetch what `prefetch-market-data` just warmed. |
 | `/api/cron/instagram-earnings-weekly` | `0 12 * * 0` | Generate + stage next week's earnings-calendar Instagram carousel, notify Discord for review. Does not publish — see `scripts/publish-instagram.ts` and `docs/instagram-setup.md`. |
@@ -286,7 +287,7 @@ Every TwelveData call costs API credits. The rules below are binding — violati
 | `/batch` | `batchFetch()` | Σ individual costs | — |
 | `/time_series` | `getStockCandles()` | 1 per request | Redis 10–300 s (1D) · Supabase 30 min–6 h |
 | `/earnings` | `getCompanyEarnings()` | 20 per symbol | Supabase 12 h |
-| `/earnings_calendar` | `getEarningsCalendarRange()` | 40 per request | Next.js 24 h |
+| `/earnings_calendar` | `getEarningsCalendarRange()` | 40 per request | per-day, see below |
 | `/statistics` | `getStatistics()` | high (plan-dependent) | Supabase 12 h |
 | `/income_statement` | `getIncomeStatement()` | **~101 per request** | Supabase 12 h |
 | `/balance_sheet` | `getBalanceSheet()` | **~101 per request** | Supabase 12 h |
@@ -307,6 +308,11 @@ Every TwelveData call costs API credits. The rules below are binding — violati
 **`/income_statement`, `/balance_sheet`, `/cash_flow` are NOT 1-credit calls on this plan** — confirmed live against TwelveData's `/api_usage` endpoint on 2026-08-04 (each cost ~101 credits regardless of `outputsize` or `period`; this plan bills fundamentals at their full-history tier per `docs/twelve-data-venture-analysis.md`). Treat any caller of `getIncomeStatement`/`getBalanceSheet`/`getCashFlow` as expensive: always check cache first, and if it fans out over multiple symbols in one request (a cron batch, a company-compare page), it must reserve against `lib/twelvedata/credit-budget.ts`'s shared guard before firing — `~303 credits per symbol` (all three statements) is enough on its own to blow past the 610/min account cap with just 2 symbols.
 
 ### Golden rules
+
+**0. Never request a multi-day range from `/earnings_calendar` or `/dividends_calendar`.**
+Both silently truncate and drop whole days, with no error and a `status: "ok"` body. `/earnings_calendar` caps at 1200 rows and fills from the *latest* date backwards, so a range loses its **earliest** days — verified 2026-08-10: `2026-08-03..2026-08-07` returned 1200 rows covering only Aug 4-7, while Aug 3 alone returned 141 rows including PLTR, SNAP and VRTX. The Market Calendar was showing 2 rows for a week that really had hundreds. `/dividends_calendar` is worse: it is a *global* feed (no `country` param) with thousands of events a day, defaults to 100 rows, and collapsed the same range onto a single day.
+
+Go through **`lib/market-data/calendar-days.ts`**, which fetches those two one day at a time and caches per day. Per-endpoint quirks that do not generalise: `outputsize` is ignored by `/earnings_calendar`, required by `/dividends_calendar`, and makes `/splits_calendar` return **zero** rows. `/earnings_calendar` also reports a genuinely empty day as an **error** (`"No earning were found between..."`) rather than an empty payload — treat that as `[]`, or every weekend re-fetches at 40 credits forever.
 
 **1. Always batch quotes — never call `getStockQuote` in a loop.**
 `getStockQuotes(symbols[])` sends one `/batch` POST. N individual `/quote` GETs cost the same credits but use N round-trips and are far more likely to hit the per-minute rate limit. The batch cap is ~120 requests per POST; use `SEED_CHUNK = 100` as the safe limit.

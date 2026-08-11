@@ -1,0 +1,66 @@
+name: Cron — Prefetch Market Calendar
+
+# Daily at 04:00 UTC. Warms the per-day calendar caches (earnings, dividends,
+# splits, IPOs) over a rolling today-7 .. today+45 window.
+#
+# WHY: TwelveData's /earnings_calendar caps at 1200 rows and silently drops
+# whole days, so earnings must be fetched one day at a time (see
+# lib/market-data/calendar-days.ts). At 40 credits a day, an un-warmed month
+# opened in the browser fills only a bounded number of days per request and
+# takes a couple of minutes to converge. This makes that invisible: every
+# reader hits cache instead.
+#
+# Serves the calendar tool, the Discover earnings widget, the daily brief, the
+# earnings-upcoming email cron and the Instagram carousel from one warm cache.
+#
+# Timing: 04:00 UTC finishes (~04:20) before the Vercel generate-daily-brief
+# cron at 06:30 and check-earnings-upcoming at 08:00, so both of those become
+# free cache hits rather than paying for their own fetches. It also lands
+# before the 05:00 stats prefetch. GitHub's scheduler routinely drifts by
+# hours, so this ordering is an optimisation, not a correctness requirement —
+# the shared credit-budget guard is what actually keeps overlapping runs safe.
+#
+# Pacing: 4 units per call (160 credits, inside the 400-credit shared cron
+# share) with 65s between calls holds the sustained rate near ~150 credits/min
+# against the 610/min account cap.
+#
+# A fully cold sweep is 108 units (53 days of earnings + 53 of dividends, both
+# of which must be per-day, plus one splits and one IPO unit for the whole
+# window) = 27 batches ≈ 29 minutes, hence the 45-minute timeout. That is the
+# worst case: settled past days carry a 90-day TTL and the route skips any
+# unit whose days are all still fresh, so a normal day only fetches the
+# newly-uncovered forward edge and the loop breaks early on `done`.
+on:
+  schedule:
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+
+jobs:
+  prefetch-calendar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Warm per-day calendar caches (paced batches)
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          APP_URL: ${{ vars.APP_URL || 'https://bullpen.no' }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::CRON_SECRET secret is not configured in repo settings"
+            exit 1
+          fi
+          echo "Starting market-calendar prefetch…"
+          for batch in $(seq 0 39); do
+            echo "→ Batch $batch"
+            RESPONSE=$(curl -fsS -X GET -H "Authorization: Bearer ${CRON_SECRET}" "${APP_URL}/api/cron/prefetch-calendar?batch=${batch}") || {
+              echo "Batch $batch failed (rate limit or network error) — stopping"
+              break
+            }
+            echo "$RESPONSE"
+            DONE=$(echo "$RESPONSE" | jq -r '.done // false')
+            if [ "$DONE" = "true" ]; then
+              echo "All calendar batches complete."
+              break
+            fi
+            sleep 65
+          done

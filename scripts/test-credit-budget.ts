@@ -57,6 +57,8 @@ function constant(src: string, name: string, file: string): number {
 const budgetSrc = read('lib/twelvedata/credit-budget.ts');
 const screenerSrc = read('lib/market-data/screener-stats.ts');
 const prefetchSrc = read('app/api/cron/prefetch-market-data/route.ts');
+const calendarDaysSrc = read('lib/market-data/calendar-days.ts');
+const calendarCronSrc = read('app/api/cron/prefetch-calendar/route.ts');
 
 const SHARE = constant(budgetSrc, 'CRON_CREDIT_SHARE', 'credit-budget.ts');
 
@@ -86,6 +88,20 @@ const reservations: { label: string; cost: number; where: string }[] = [
       constant(prefetchSrc, 'FINANCIALS_BATCH_SIZE', 'prefetch-market-data') *
       constant(prefetchSrc, 'CREDITS_PER_FINANCIALS_SYMBOL', 'prefetch-market-data'),
     where: 'app/api/cron/prefetch-market-data/route.ts',
+  },
+  {
+    label: 'prefetch-calendar warm batch',
+    cost:
+      constant(calendarCronSrc, 'UNITS_PER_BATCH', 'prefetch-calendar') *
+      constant(calendarDaysSrc, 'CALENDAR_CREDITS_PER_REQUEST', 'calendar-days.ts'),
+    where: 'app/api/cron/prefetch-calendar/route.ts',
+  },
+  {
+    label: 'calendar interactive live fill',
+    cost:
+      constant(calendarDaysSrc, 'MAX_LIVE_DAYS_PER_REQUEST', 'calendar-days.ts') *
+      constant(calendarDaysSrc, 'CALENDAR_CREDITS_PER_REQUEST', 'calendar-days.ts'),
+    where: 'lib/market-data/calendar-days.ts',
   },
 ];
 
