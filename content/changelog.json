@@ -2,6 +2,10 @@
   {
     "date": "2026-08-11",
     "entries": [
+      { "type": "improved", "text": "The Market Calendar's week view now uses bigger, clearer tiles with the ticker shown under each logo instead of squeezed beside it, and opening a day's full list now shows a logo for every stock too" },
+      { "type": "fixed", "text": "Fixed the Last used badge on the Google sign-in button being too faint to read" },
+      { "type": "new", "text": "The Daily Brief now shows its sources. Tap the source icons at the bottom of a brief to see and open the original articles it was built from" },
+      { "type": "improved", "text": "Date pickers throughout the app (adding or editing a holding, the Buy Here tool) now use a proper calendar dropdown with quick year and month selection, instead of your browser's plain date field" },
       { "type": "improved", "text": "Redesigned the Market Calendar with a company logo next to every ticker, ranked by market cap so the biggest companies show first. Added new List and Week views alongside the existing Month view" }
     ]
   },
