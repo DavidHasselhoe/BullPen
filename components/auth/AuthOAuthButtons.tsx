@@ -58,7 +58,7 @@ export function AuthOAuthButtons({ onGoogleClick, isLoading = false, disabled = 
             <GoogleIcon />
             <span>Continue with Google</span>
             {lastUsed && (
-              <span className="absolute -top-2 -right-2 inline-flex items-center gap-1 rounded-full border border-blue-400/40 bg-blue-400/15 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-blue-600 ring-2 ring-background dark:text-blue-400">
+              <span className="absolute -top-2 -right-2 inline-flex items-center gap-1 rounded-full bg-blue-600 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-white shadow-sm ring-2 ring-background">
                 <Check className="size-2.5" strokeWidth={3} />
                 Last used
               </span>
