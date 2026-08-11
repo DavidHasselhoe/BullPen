@@ -9,6 +9,14 @@ export interface CompanyLogoProps {
   logoUrl?: string | null;
   size?: number;
   className?: string;
+  /**
+   * Defaults to 'lazy' so nothing existing changes. Surfaces that render many
+   * logos at once above the fold (the market calendar's tile grids) pass
+   * 'eager': combined with a direct storage `logoUrl` — no /api/logo redirect
+   * chain — that is what makes a grid appear in one wave instead of filling in
+   * tile by tile as the browser gets round to each deferred request.
+   */
+  loading?: 'lazy' | 'eager';
 }
 
 function getInitialsColor(ticker: string): string {
@@ -20,7 +28,7 @@ function getInitialsColor(ticker: string): string {
   return `hsl(${hue}, 35%, 45%)`;
 }
 
-export function CompanyLogo({ name, ticker, logoUrl, size = 40, className }: CompanyLogoProps) {
+export function CompanyLogo({ name, ticker, logoUrl, size = 40, className, loading = 'lazy' }: CompanyLogoProps) {
   const [imageError, setImageError] = useState(false);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -66,8 +74,9 @@ export function CompanyLogo({ name, ticker, logoUrl, size = 40, className }: Com
           alt={`${name} logo`}
           width={size}
           height={size}
-          loading="lazy"
+          loading={loading}
           decoding="async"
+          fetchPriority={loading === 'eager' ? 'high' : undefined}
           className="h-full w-full object-cover object-center"
           onError={handleImageError}
         />

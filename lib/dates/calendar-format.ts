@@ -38,6 +38,30 @@ export function todayStr(): string {
 }
 
 /**
+ * The Monday-Sunday week containing `date` (`YYYY-MM-DD`).
+ *
+ * Unlike `getWeekRange(offsetWeeks)`, which is always relative to "now", this
+ * takes an explicit anchor — which is what lets the calendar page to an
+ * arbitrary week rather than only the current one. Parses at noon UTC like
+ * every other helper here, so a timezone offset can't roll the day over.
+ */
+export function weekRangeOf(date: string): { from: string; to: string } {
+  const d = new Date(`${date}T12:00:00Z`);
+  const dow = d.getUTCDay(); // 0 = Sun
+  const daysSinceMonday = dow === 0 ? 6 : dow - 1;
+  const monday = new Date(Date.UTC(
+    d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - daysSinceMonday,
+  ));
+  const sunday = new Date(Date.UTC(
+    monday.getUTCFullYear(), monday.getUTCMonth(), monday.getUTCDate() + 6,
+  ));
+  return {
+    from: monday.toISOString().slice(0, 10),
+    to: sunday.toISOString().slice(0, 10),
+  };
+}
+
+/**
  * Today's date in US market time (`YYYY-MM-DD`).
  *
  * Prefer this over `todayStr()` anywhere "today" means a *trading* day. UTC

@@ -2,8 +2,10 @@
 
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { monthWeeks, WEEKDAY_LABELS } from '@/lib/dates/calendar-format';
+import { monthWeeks } from '@/lib/dates/calendar-format';
 import { DayCell } from './DayCell';
+import { WeekdayHeader } from './CalendarGrid';
+import { useGridKeyboardNav } from './useGridKeyboardNav';
 import type { DayModel } from './types';
 
 interface MonthCalendarGridProps {
@@ -16,38 +18,44 @@ interface MonthCalendarGridProps {
 
 const EMPTY_DAY = (date: string): DayModel => ({
   date, mine: [], others: [], shown: [], moreCount: 0, total: 0,
+  typeCounts: { earnings: 0, dividends: 0, splits: 0, ipo: 0 },
 });
 
 /**
- * Real Monday-first month grid — weeks stacked, leading/trailing pad cells so
- * weekday columns line up like a traditional calendar. Cells render `compact`
- * (day number, not "Mon, Aug 3"; fewer events) since a month spans 5-6 rows
- * where the single-week grid only ever spans one.
+ * Monday-first month grid — weeks stacked, leading/trailing pad cells so the
+ * weekday columns line up like a traditional calendar.
+ *
+ * Holds seven columns at EVERY breakpoint. It used to collapse to
+ * `grid-cols-1` below `sm`, which turns a month into a 31-item vertical stack;
+ * the performance calendar states the rule directly, that stacking a month
+ * into a list is the one layout that destroys the point of a calendar. On a
+ * phone the cells drop content instead (one logo, no ticker) rather than
+ * dropping the shape.
  */
 export function MonthCalendarGrid({ monthKey, days, today, mySymbols, onOpenDay }: MonthCalendarGridProps) {
   const byDate = new Map(days.map((d) => [d.date, d]));
   const weeks = monthWeeks(monthKey);
+  const { gridRef, onKeyDown, activeDate } = useGridKeyboardNav(7);
+
+  const firstWithEvents = days.find((d) => d.total > 0)?.date ?? null;
+  const tabStop = activeDate ?? firstWithEvents;
 
   return (
     <div className="flex flex-col gap-1.5">
-      <div className="hidden sm:grid grid-cols-7 gap-1.5 mb-0.5" role="row">
-        {WEEKDAY_LABELS.map((label) => (
-          <div
-            key={label}
-            role="columnheader"
-            className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground/60 text-center"
-          >
-            {label}
-          </div>
-        ))}
-      </div>
+      <WeekdayHeader className="grid grid-cols-7 gap-1 sm:gap-1.5 mb-0.5" />
 
-      <div className="flex flex-col gap-1.5" role="grid" aria-label="Month calendar">
+      <div
+        ref={gridRef}
+        className="flex flex-col gap-1 sm:gap-1.5"
+        role="grid"
+        aria-label="Month calendar"
+        onKeyDown={onKeyDown}
+      >
         {weeks.map((week, i) => (
-          <div key={i} className="grid grid-cols-1 sm:grid-cols-7 gap-1.5" role="row">
+          <div key={i} className="grid grid-cols-7 gap-1 sm:gap-1.5" role="row">
             {week.map((date, j) =>
               date === null ? (
-                <div key={`pad-${i}-${j}`} className="hidden sm:block" aria-hidden="true" />
+                <div key={`pad-${i}-${j}`} aria-hidden="true" />
               ) : (
                 <DayCell
                   key={date}
@@ -56,6 +64,7 @@ export function MonthCalendarGrid({ monthKey, days, today, mySymbols, onOpenDay 
                   mySymbols={mySymbols}
                   onOpenDay={onOpenDay}
                   compact
+                  tabIndex={date === tabStop ? 0 : -1}
                 />
               )
             )}
@@ -71,13 +80,13 @@ export function MonthCalendarGrid({ monthKey, days, today, mySymbols, onOpenDay 
 export function MonthCalendarSkeleton({ monthKey }: { monthKey: string }) {
   const weeks = monthWeeks(monthKey);
   return (
-    <div className="flex flex-col gap-1.5" aria-hidden="true">
+    <div className="flex flex-col gap-1 sm:gap-1.5" aria-hidden="true">
       {weeks.map((week, i) => (
-        <div key={i} className="grid grid-cols-1 sm:grid-cols-7 gap-1.5">
+        <div key={i} className="grid grid-cols-7 gap-1 sm:gap-1.5">
           {week.map((date, j) => (
             <Skeleton
               key={j}
-              className={cn('rounded-lg min-h-[64px] sm:min-h-[76px]', date === null && 'hidden sm:block')}
+              className={cn('rounded-lg min-h-[52px] sm:min-h-[100px]', date === null && 'invisible')}
             />
           ))}
         </div>

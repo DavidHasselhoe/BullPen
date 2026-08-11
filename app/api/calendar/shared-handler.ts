@@ -80,13 +80,26 @@ export async function handleCalendarRequest(
 
     // Cap per day, and report each day's true total so the UI's "+N more"
     // reflects reality rather than the truncated array length.
+    //
+    // Also collapses repeats of the same ticker on the same day. The dividends
+    // feed lists preferred share classes under the parent's base ticker, so
+    // Citigroup arrives as four separate "C" rows with different amounts —
+    // which, ranked by the parent's market cap, filled the top of a day's cell
+    // with the same logo four times and pushed out four genuinely different
+    // companies. One row per company per day; the day dialog is where the
+    // individual records belong.
     const dayTotals: Record<string, number> = {};
     const perDayCount: Record<string, number> = {};
+    const seen = new Set<string>();
     const data: typeof enriched = [];
 
     for (const row of enriched) {
       const day = (row as unknown as Record<string, string>)[opts.dateField];
       if (!day) continue;
+      const dedupeKey = row.symbol ? `${day}|${row.symbol}` : '';
+      if (dedupeKey && seen.has(dedupeKey)) continue;
+      if (dedupeKey) seen.add(dedupeKey);
+
       dayTotals[day] = (dayTotals[day] ?? 0) + 1;
       if ((perDayCount[day] ?? 0) >= perDay) continue;
       perDayCount[day] = (perDayCount[day] ?? 0) + 1;

@@ -1811,6 +1811,13 @@ export async function getEarningsCalendarRange(
     if (/rate.?limit|credits? exceeded/i.test(msg) || json.code === 429) {
       throw new TwelveDataRateLimitError(msg);
     }
+    // A day with no earnings is reported as an ERROR, not an empty payload:
+    // "No earning were found between 2026-08-12 and 2026-08-12. Try to set
+    // another dates." Every weekend and every quiet weekday hits this. Treating
+    // it as a failure meant the caller cached nothing, so the day stayed
+    // permanently "missing" and was re-fetched at 40 credits on every single
+    // view — forever. It is a legitimately empty result; return one.
+    if (/no earnings? (were |was )?found/i.test(msg)) return [];
     throw new Error(msg);
   }
 

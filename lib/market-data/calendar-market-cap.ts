@@ -29,14 +29,30 @@ async function getUniverseMetaMap(): Promise<Map<string, UniverseMetaRow>> {
   if (cached) return new Map(Object.entries(cached));
 
   const supabase = createServerClient();
-  const { data } = await supabase
-    .from('screener_stats')
-    .select('ticker, market_cap, name')
-    .returns<MarketCapRow[]>();
 
+  // Paginated on purpose: PostgREST caps an unbounded select at 1000 rows, and
+  // screener_stats is larger than that. Without this the map silently held only
+  // the first page, so every ticker past it resolved to market_cap: null and
+  // sank to the bottom of a market-cap-ranked view — PLTR (the single largest
+  // company on its day) was ranking below sub-$5B names. Same trap already
+  // documented in app/api/cron/prefetch-market-data/route.ts.
   const obj: Record<string, UniverseMetaRow> = {};
-  for (const row of data ?? []) {
-    obj[row.ticker.toUpperCase()] = [row.market_cap, row.name];
+  const PAGE = 1000;
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabase
+      .from('screener_stats')
+      .select('ticker, market_cap, name')
+      .range(from, from + PAGE - 1)
+      .returns<MarketCapRow[]>();
+
+    if (error) {
+      console.error('[calendar-meta] universe map page failed:', error.message);
+      break;
+    }
+    for (const row of data ?? []) {
+      obj[row.ticker.toUpperCase()] = [row.market_cap, row.name];
+    }
+    if (!data || data.length < PAGE) break;
   }
 
   if (Object.keys(obj).length > 0) {

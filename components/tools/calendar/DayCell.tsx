@@ -1,9 +1,10 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { CompactEventRow } from './EventRows';
-import { fmtDayHeader } from '@/lib/dates/calendar-format';
-import type { DayModel } from './types';
+import { LogoTile, TYPE_ICONS } from './LogoTile';
+import { compactMetric } from './EventRows';
+import { fmtDayHeader, fmtFullDate } from '@/lib/dates/calendar-format';
+import type { DayModel, EventType } from './types';
 
 interface DayCellProps {
   model: DayModel;
@@ -13,23 +14,61 @@ interface DayCellProps {
   /** Month-grid context: shorter cell, day-of-month number instead of the
    *  full "Mon, Aug 3" header (the weekday is already the column it's in). */
   compact?: boolean;
+  /** Roving-tabindex: only the active cell is in the tab order. */
+  tabIndex?: number;
 }
 
-export function DayCell({ model, today, mySymbols, onOpenDay, compact }: DayCellProps) {
+/** Types other than earnings, in the order the footer strip lists them. */
+const SECONDARY_TYPES: EventType[] = ['dividends', 'splits', 'ipo'];
+
+/**
+ * Counts for dividends/splits/IPOs on this day.
+ *
+ * Needed because ranking is purely by market cap and earnings outnumbers
+ * everything else by an order of magnitude, so on a busy day the other three
+ * types would never appear in a capped cell at all. A count strip keeps them
+ * discoverable without giving them tiles they'd lose anyway.
+ */
+function TypeCountStrip({ counts }: { counts: Record<EventType, number> }) {
+  const present = SECONDARY_TYPES.filter((t) => counts[t] > 0);
+  if (present.length === 0) return null;
+
+  return (
+    <span className="mt-auto flex items-center gap-2 pt-1">
+      {present.map((type) => {
+        const Icon = TYPE_ICONS[type];
+        return (
+          <span key={type} className="flex items-center gap-0.5 text-xs leading-none text-muted-foreground/70">
+            <Icon className="h-2.5 w-2.5" aria-hidden />
+            <span className="tabular-nums">{counts[type]}</span>
+          </span>
+        );
+      })}
+    </span>
+  );
+}
+
+export function DayCell({ model, today, mySymbols, onOpenDay, compact, tabIndex }: DayCellProps) {
   const isToday = model.date === today;
-  const heightClass = compact ? 'min-h-[64px] sm:min-h-[76px]' : 'min-h-[104px]';
-  const paddingClass = compact ? 'p-1.5' : 'p-2';
+  // Taller than the pre-redesign cell: logo tiles are 22px rather than an
+  // 11px text row, so the old 104px/64px heights would clip at the same count.
+  const heightClass = compact ? 'min-h-[52px] sm:min-h-[100px]' : 'min-h-[136px]';
+  const paddingClass = compact ? 'p-1 sm:p-1.5' : 'p-2';
   const dayLabel = compact ? String(Number(model.date.slice(8, 10))) : fmtDayHeader(model.date);
+
+  const headerClass = cn(
+    'text-xs font-bold uppercase tracking-wide leading-none',
+    isToday ? 'text-primary' : 'text-muted-foreground/70',
+  );
 
   if (model.total === 0) {
     return (
-      <div className={cn('flex flex-col gap-1 rounded-lg', paddingClass, heightClass)}>
-        <span className={cn(
-          'text-[10px] font-bold uppercase tracking-wide',
-          isToday ? 'text-primary' : 'text-muted-foreground/70',
-        )}>
-          {dayLabel}
-        </span>
+      <div
+        data-cal-cell
+        data-date={model.date}
+        className={cn('flex flex-col gap-1 rounded-lg', paddingClass, heightClass)}
+      >
+        <span className={headerClass}>{dayLabel}</span>
       </div>
     );
   }
@@ -37,33 +76,60 @@ export function DayCell({ model, today, mySymbols, onOpenDay, compact }: DayCell
   return (
     <button
       type="button"
+      data-cal-cell
+      tabIndex={tabIndex}
       onClick={() => onOpenDay(model.date)}
+      aria-label={`${fmtFullDate(model.date)}, ${model.total} event${model.total === 1 ? '' : 's'}`}
       className={cn(
-        'flex flex-col gap-1.5 rounded-lg text-left border transition-all hover:shadow-md hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+        'flex flex-col gap-1.5 rounded-lg text-left border transition-all',
+        'hover:shadow-md hover:-translate-y-0.5 motion-reduce:hover:translate-y-0',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         paddingClass, heightClass,
         isToday ? 'bg-primary/[0.06] border-primary/30' : 'border-border/50 hover:border-border',
       )}
     >
-      <span className={cn(
-        'text-[10px] font-bold uppercase tracking-wide',
-        isToday ? 'text-primary' : 'text-muted-foreground/70',
-      )}>
-        {dayLabel}
-      </span>
-      <div className="flex flex-col gap-1">
-        {model.shown.map((event, i) => (
-          <CompactEventRow
-            key={`${event.type}-${event.symbol}-${i}`}
-            event={event}
-            isMine={mySymbols.has(event.symbol.toUpperCase())}
-          />
-        ))}
-      </div>
-      {model.moreCount > 0 && (
-        <span className="text-[10px] text-muted-foreground/80 font-medium mt-auto pt-0.5">
-          +{model.moreCount} more
+      <span className={headerClass}>{dayLabel}</span>
+
+      {compact ? (
+        // Wrapped tile cluster, logo only. 4 per row at 20px + 4px gap = 92px,
+        // inside the ~114px a month column gives.
+        <span className="flex flex-wrap items-center gap-1">
+          {model.shown.map((event, i) => (
+            <LogoTile
+              key={`${event.type}-${event.symbol}-${i}`}
+              event={event}
+              size="sm"
+              showTicker={false}
+              isMine={mySymbols.has(event.symbol.toUpperCase())}
+              className={cn(i > 0 && 'hidden sm:flex')}
+            />
+          ))}
+        </span>
+      ) : (
+        <span className="flex flex-col gap-1">
+          {model.shown.map((event, i) => (
+            <LogoTile
+              key={`${event.type}-${event.symbol}-${i}`}
+              event={event}
+              size="md"
+              metric={compactMetric(event)}
+              isMine={mySymbols.has(event.symbol.toUpperCase())}
+            />
+          ))}
         </span>
       )}
+
+      {model.moreCount > 0 && (
+        <span className={cn(
+          'text-xs font-medium leading-none text-muted-foreground/80',
+          model.moreCount > 0 && !compact && 'mt-auto pt-0.5',
+        )}>
+          +{model.moreCount}
+          <span className="hidden sm:inline"> more</span>
+        </span>
+      )}
+
+      {!compact && <TypeCountStrip counts={model.typeCounts} />}
     </button>
   );
 }

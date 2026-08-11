@@ -1,38 +1,21 @@
 'use client';
 
 import Link from 'next/link';
-import type { ElementType } from 'react';
-import { TrendingUp, DollarSign, Scissors, Rocket, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
 import { fmtEPS, fmtRevenue } from './format';
 import { fmtShortDate } from '@/lib/dates/calendar-format';
-import type { UnifiedEvent, EventType, EarningsItem, DividendItem, SplitItem, IPOItem } from './types';
+import type { UnifiedEvent, EarningsItem, DividendItem, SplitItem, IPOItem } from './types';
 
-const TYPE_ICONS: Record<EventType, ElementType> = {
-  earnings: TrendingUp,
-  dividends: DollarSign,
-  splits: Scissors,
-  ipo: Rocket,
-};
+// TYPE_ICONS moved to ./LogoTile, which is now the shared owner of type
+// iconography across tiles, the day-cell count strip and the list rows.
 
-function TimeTag({ time }: { time?: string }) {
-  if (time === 'BMO' || time === 'pre_market') {
-    return (
-      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-400 uppercase tracking-wide leading-none">
-        BMO
-      </span>
-    );
-  }
-  if (time === 'AMC' || time === 'after_close') {
-    return (
-      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 uppercase tracking-wide leading-none">
-        AMC
-      </span>
-    );
-  }
-  return null;
-}
+// A BMO/AMC (before-open / after-close) badge used to render here. Removed as
+// dead code: TwelveData returns `time: ""` on 100% of rows, verified live
+// 2026-08-10 against BOTH /earnings_calendar and the per-symbol /earnings
+// endpoint. Nothing could ever populate it, so it only implied we had report
+// timing we do not. Revisit if a future data provider supplies the field.
 
 const IPO_STATUS_COLORS: Record<string, string> = {
   expected: 'bg-sky-500/10 text-sky-400',
@@ -51,7 +34,7 @@ function epsDirection(actual: number, estimate: number | null | undefined): 'bea
 
 // ─── Compact (grid cell) ──────────────────────────────────────────────────────
 
-function compactMetric(event: UnifiedEvent): string | null {
+export function compactMetric(event: UnifiedEvent): string | null {
   if (event.type === 'earnings') {
     const e = event.raw as EarningsItem;
     // Once reported, the actual is more useful than a stale estimate.
@@ -71,19 +54,10 @@ function compactMetric(event: UnifiedEvent): string | null {
   return null;
 }
 
-/** One-line row for a compact grid cell (DayCell). */
-export function CompactEventRow({ event, isMine }: { event: UnifiedEvent; isMine: boolean }) {
-  const Icon = TYPE_ICONS[event.type];
-  const metric = compactMetric(event);
-  return (
-    <div className="flex items-center gap-1.5 text-[11px] min-w-0">
-      {isMine && <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shrink-0" aria-hidden />}
-      <Icon className="h-3 w-3 text-muted-foreground/70 shrink-0" aria-hidden />
-      <span className="font-bold font-mono text-foreground truncate">{event.symbol}</span>
-      {metric && <span className="ml-auto text-muted-foreground/85 tabular-nums shrink-0">{metric}</span>}
-    </div>
-  );
-}
+// CompactEventRow lived here. Replaced by LogoTile — grid cells now render a
+// company logo rather than a type glyph and a ticker string. Its emerald
+// "this is yours" dot is gone with it: DESIGN.md's One Signal Rule reserves
+// emerald for gain/loss, so ownership is a primary-colored ring on the tile.
 
 // ─── Detail (day dialog) ──────────────────────────────────────────────────────
 
@@ -100,14 +74,13 @@ export function DetailEventRow({ event }: { event: UnifiedEvent }) {
           >
             {e.symbol}
           </Link>
+          {/* A BMO/AMC badge and a fiscal-quarter chip used to sit under the
+              name. Both were unreachable: /earnings_calendar returns an empty
+              `time` on every row, and getEarningsCalendarRange hardcodes
+              `fiscal_quarter: undefined` because the endpoint does not return
+              it either. The wrapper rendered an empty div on every row. */}
           <div className="min-w-0 flex-1">
             {e.name && <p className="text-xs text-muted-foreground truncate leading-tight">{e.name}</p>}
-            <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-              <TimeTag time={e.time} />
-              {e.fiscal_quarter && (
-                <span className="text-[9px] text-muted-foreground/80 font-mono leading-none">{e.fiscal_quarter}</span>
-              )}
-            </div>
           </div>
         </div>
         <div className="text-right text-xs shrink-0 space-y-0.5">
