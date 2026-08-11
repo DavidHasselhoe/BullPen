@@ -72,6 +72,11 @@ export function DatePicker({
   if (minDate) disabledMatchers.push({ before: minDate })
   if (maxDate) disabledMatchers.push({ after: maxDate })
 
+  // Bound the year/month dropdowns to a 50-year window anchored on max (or
+  // today) so the year select stays a reasonable length by default.
+  const endMonth = maxDate ?? new Date()
+  const startMonth = minDate ?? new Date(endMonth.getFullYear() - 50, 0, 1)
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -97,6 +102,9 @@ export function DatePicker({
       <PopoverContent className="w-auto p-0" align="start">
         <Calendar
           mode="single"
+          captionLayout="dropdown"
+          startMonth={startMonth}
+          endMonth={endMonth}
           selected={selected}
           defaultMonth={selected}
           onSelect={(date) => {
