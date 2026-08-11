@@ -27,20 +27,26 @@ export const TYPE_LABELS: Record<EventType, string> = {
  * ~114px. Mobile at 375px leaves only ~33px per column, which is why `xs`
  * exists and why the mobile month cell shows a single tile.
  */
-export type TileSize = 'xs' | 'sm' | 'md' | 'lg';
+export type TileSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
-const LOGO_PX: Record<TileSize, number> = { xs: 16, sm: 20, md: 22, lg: 32 };
+export const LOGO_PX: Record<TileSize, number> = { xs: 16, sm: 20, md: 22, lg: 32, xl: 40 };
 
 interface LogoTileProps {
   event: UnifiedEvent;
   size?: TileSize;
-  /** Show the ticker beside the logo. Off in dense month cells. */
+  /** Show the ticker beside (or under, in `stack`) the logo. Off in dense month cells. */
   showTicker?: boolean;
-  /** Right-aligned metric (EPS, dividend amount, split ratio). */
+  /** Metric (EPS, dividend amount, split ratio) — right-aligned in `row`, centered under the ticker in `stack`. */
   metric?: string | null;
   /** In the user's holdings or watchlist. */
   isMine?: boolean;
   className?: string;
+  /**
+   * `row` (default): logo beside the ticker — the month grid and dense
+   * contexts. `stack`: logo on top, ticker as a bold hero label underneath —
+   * the week grid's larger cards, where a cell has room to spare vertically.
+   */
+  orientation?: 'row' | 'stack';
 }
 
 /**
@@ -65,6 +71,7 @@ export function LogoTile({
   metric,
   isMine = false,
   className,
+  orientation = 'row',
 }: LogoTileProps) {
   const px = LOGO_PX[size];
   const Icon = TYPE_ICONS[event.type];
@@ -72,31 +79,57 @@ export function LogoTile({
     isMine ? '. In your portfolio' : ''
   }`;
 
-  return (
-    <span className={cn('flex items-center gap-1.5 min-w-0', className)} title={label}>
-      <span className="relative shrink-0 leading-none">
-        <CompanyLogo
-          name={event.name || event.symbol}
-          ticker={event.symbol}
-          logoUrl={event.logoUrl}
-          size={px}
-          loading="eager"
-          className={cn(
-            'rounded-md ring-1 ring-border/40',
-            isMine && 'ring-2 ring-primary',
-          )}
-        />
-        {/* Non-earnings types get a tiny corner glyph so the tile grid stays
-            readable when a day mixes types — colour alone would not do it. */}
-        {event.type !== 'earnings' && (
-          <span
-            aria-hidden
-            className="absolute -bottom-0.5 -right-0.5 flex h-2.5 w-2.5 items-center justify-center rounded-full bg-background ring-1 ring-border/60"
-          >
-            <Icon className="h-[7px] w-[7px] text-muted-foreground" />
+  const logo = (
+    <span className="relative shrink-0 leading-none">
+      <CompanyLogo
+        name={event.name || event.symbol}
+        ticker={event.symbol}
+        logoUrl={event.logoUrl}
+        size={px}
+        loading="eager"
+        className={cn(
+          orientation === 'stack' ? 'rounded-lg ring-1 ring-border/40' : 'rounded-md ring-1 ring-border/40',
+          isMine && 'ring-2 ring-primary',
+        )}
+      />
+      {/* Non-earnings types get a tiny corner glyph so the tile grid stays
+          readable when a day mixes types — colour alone would not do it. */}
+      {event.type !== 'earnings' && (
+        <span
+          aria-hidden
+          className="absolute -bottom-0.5 -right-0.5 flex h-2.5 w-2.5 items-center justify-center rounded-full bg-background ring-1 ring-border/60"
+        >
+          <Icon className="h-[7px] w-[7px] text-muted-foreground" />
+        </span>
+      )}
+    </span>
+  );
+
+  if (orientation === 'stack') {
+    // The week grid's larger cards: logo on top, ticker as a bold hero label
+    // underneath, metric below that. Centered, since the tile stands alone in
+    // its own grid cell rather than sharing a row with siblings.
+    return (
+      <span className={cn('flex flex-col items-center gap-1 text-center', className)} title={label}>
+        {logo}
+        {showTicker && (
+          <span className="max-w-full truncate font-mono text-xs font-bold leading-none text-foreground">
+            {event.symbol}
           </span>
         )}
+        {metric && (
+          <span className="max-w-full truncate font-mono text-xs leading-none text-muted-foreground/85 tabular-nums">
+            {metric}
+          </span>
+        )}
+        <span className="sr-only">{label}</span>
       </span>
+    );
+  }
+
+  return (
+    <span className={cn('flex items-center gap-1.5 min-w-0', className)} title={label}>
+      {logo}
 
       {/* text-xs (0.75rem) is DESIGN.md's smallest documented step — the
           "Label" size. Deliberately not shrunk below it to fit more in: a

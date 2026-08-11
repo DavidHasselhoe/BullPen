@@ -1,7 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { LogoTile, TYPE_ICONS } from './LogoTile';
+import { LogoTile, LOGO_PX, TYPE_ICONS } from './LogoTile';
 import { compactMetric } from './EventRows';
 import { fmtDayHeader, fmtFullDate } from '@/lib/dates/calendar-format';
 import type { DayModel, EventType } from './types';
@@ -50,10 +50,11 @@ function TypeCountStrip({ counts }: { counts: Record<EventType, number> }) {
 
 export function DayCell({ model, today, mySymbols, onOpenDay, compact, tabIndex }: DayCellProps) {
   const isToday = model.date === today;
-  // Taller than the pre-redesign cell: logo tiles are 22px rather than an
-  // 11px text row, so the old 104px/64px heights would clip at the same count.
-  const heightClass = compact ? 'min-h-[52px] sm:min-h-[100px]' : 'min-h-[136px]';
-  const paddingClass = compact ? 'p-1 sm:p-1.5' : 'p-2';
+  // Week cells no longer force a fixed height: hero tiles are big enough that
+  // a quiet day and a busy day should read as visibly different heights,
+  // rather than every column padded out to match the busiest one.
+  const heightClass = compact ? 'min-h-[52px] sm:min-h-[100px]' : 'min-h-[92px]';
+  const paddingClass = compact ? 'p-1 sm:p-1.5' : 'p-2.5';
   const dayLabel = compact ? String(Number(model.date.slice(8, 10))) : fmtDayHeader(model.date);
 
   const headerClass = cn(
@@ -106,24 +107,37 @@ export function DayCell({ model, today, mySymbols, onOpenDay, compact, tabIndex 
           ))}
         </span>
       ) : (
-        <span className="flex flex-col gap-1">
+        // Hero tiles: logo on top, ticker below, two per row. Fewer, bigger
+        // tiles than the old one-per-row list — the day cell now grows to fit
+        // its own content (see heightClass) instead of every column matching
+        // the busiest day's fixed height.
+        <span className="grid grid-cols-2 gap-1.5">
           {model.shown.map((event, i) => (
             <LogoTile
               key={`${event.type}-${event.symbol}-${i}`}
               event={event}
-              size="md"
+              size="xl"
+              orientation="stack"
               metric={compactMetric(event)}
               isMine={mySymbols.has(event.symbol.toUpperCase())}
             />
           ))}
+          {model.moreCount > 0 && (
+            <span className="flex flex-col items-center gap-1 text-center">
+              <span
+                className="flex items-center justify-center rounded-lg bg-muted/60 font-mono text-xs font-bold text-muted-foreground"
+                style={{ width: LOGO_PX.xl, height: LOGO_PX.xl }}
+              >
+                +{model.moreCount}
+              </span>
+              <span className="text-xs font-medium leading-none text-muted-foreground/80">more</span>
+            </span>
+          )}
         </span>
       )}
 
-      {model.moreCount > 0 && (
-        <span className={cn(
-          'text-xs font-medium leading-none text-muted-foreground/80',
-          model.moreCount > 0 && !compact && 'mt-auto pt-0.5',
-        )}>
+      {compact && model.moreCount > 0 && (
+        <span className="text-xs font-medium leading-none text-muted-foreground/80">
           +{model.moreCount}
           <span className="hidden sm:inline"> more</span>
         </span>
