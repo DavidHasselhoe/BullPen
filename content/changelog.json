@@ -1,5 +1,33 @@
 [
   {
+    "date": "2026-08-11",
+    "entries": [
+      { "type": "improved", "text": "Redesigned the Market Calendar with a company logo next to every ticker, ranked by market cap so the biggest companies show first. Added new List and Week views alongside the existing Month view" }
+    ]
+  },
+  {
+    "date": "2026-08-10",
+    "entries": [
+      { "type": "new", "text": "Added a Recently compared quick action to Company Compare, so you can reopen a past comparison in one click instead of picking the companies again" },
+      { "type": "improved", "text": "The Pro badge now stands out more clearly on Members, public profiles, and the Academy leaderboard" },
+      { "type": "improved", "text": "Compare's Explain Differences button now shows a loading animation while it works, and the AI explanation fades in instead of popping in instantly" },
+      { "type": "improved", "text": "The Last used badge on the Google sign-in button got a cleaner, more visible design" },
+      { "type": "improved", "text": "The AI chat assistant is now called Ask Bull everywhere in the app, including the command palette and search, instead of the old BullPen AI name" },
+      { "type": "improved", "text": "Cleaned up the Discover page: the explanation for each Worth a look collection now lives in an expandable FAQ instead of always taking up space on screen" },
+      { "type": "fixed", "text": "Fixed paid accounts being labeled Enterprise instead of Pro on the Academy leaderboard, public profiles, and Members" },
+      { "type": "fixed", "text": "Fixed the portfolio movers card saying No data available when you simply had no holdings up or down that day, instead of saying so directly" },
+      { "type": "fixed", "text": "Fixed your Financial Health Score history sometimes showing an outdated score for the current quarter instead of the latest one" },
+      { "type": "fixed", "text": "Fixed the full screen stock chart's Ask Bull panel covering part of the price axis" },
+      { "type": "fixed", "text": "Fixed the Market Calendar sometimes showing far fewer earnings, dividends, splits, and IPOs than were actually scheduled for a busy week, including entire days going missing. It now fetches and caches each day individually so nothing gets silently dropped" }
+    ]
+  },
+  {
+    "date": "2026-08-08",
+    "entries": [
+      { "type": "fixed", "text": "Fixed avatar upload failures showing a generic error message instead of explaining what actually went wrong, like a missing photo or a permissions issue" }
+    ]
+  },
+  {
     "date": "2026-08-07",
     "entries": [
       { "type": "new", "text": "Stock charts now show green dots where you bought and red dots where you sold, helping you visualize your trading history at a glance. Turn it on in the Overlays section of the chart settings" },
