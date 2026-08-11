@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
 import { fmtEPS, fmtRevenue } from './format';
 import { fmtShortDate } from '@/lib/dates/calendar-format';
@@ -68,6 +69,13 @@ export function DetailEventRow({ event }: { event: UnifiedEvent }) {
     return (
       <div className="flex items-center justify-between gap-2 sm:gap-4 py-2.5 px-2 -mx-2 rounded-lg hover:bg-muted/20 transition-colors group">
         <div className="flex items-center gap-3 min-w-0">
+          <CompanyLogo
+            name={event.name || event.symbol}
+            ticker={event.symbol}
+            logoUrl={event.logoUrl}
+            size={28}
+            className="ring-1 ring-border/40"
+          />
           <Link
             href={slugToAssetPath(e.symbol)}
             className="font-bold text-sm font-mono text-foreground hover:text-primary transition-colors shrink-0 w-14 focus-visible:ring-2 focus-visible:ring-ring rounded"
@@ -123,6 +131,13 @@ export function DetailEventRow({ event }: { event: UnifiedEvent }) {
     return (
       <div className="flex items-center justify-between gap-2 sm:gap-4 py-2.5 px-2 -mx-2 rounded-lg hover:bg-muted/20 transition-colors group">
         <div className="flex items-center gap-3 min-w-0">
+          <CompanyLogo
+            name={event.name || event.symbol}
+            ticker={event.symbol}
+            logoUrl={event.logoUrl}
+            size={28}
+            className="ring-1 ring-border/40"
+          />
           <Link
             href={slugToAssetPath(d.symbol)}
             className="font-bold text-sm font-mono text-foreground hover:text-primary transition-colors shrink-0 w-14 focus-visible:ring-2 focus-visible:ring-ring rounded"
@@ -151,6 +166,13 @@ export function DetailEventRow({ event }: { event: UnifiedEvent }) {
     return (
       <div className="flex items-center justify-between gap-2 sm:gap-4 py-2.5 px-2 -mx-2 rounded-lg hover:bg-muted/20 transition-colors">
         <div className="flex items-center gap-3 min-w-0">
+          <CompanyLogo
+            name={event.name || event.symbol}
+            ticker={event.symbol}
+            logoUrl={event.logoUrl}
+            size={28}
+            className="ring-1 ring-border/40"
+          />
           <Link
             href={slugToAssetPath(s.symbol)}
             className="font-bold text-sm font-mono text-foreground hover:text-primary transition-colors shrink-0 w-14 focus-visible:ring-2 focus-visible:ring-ring rounded"
@@ -174,12 +196,21 @@ export function DetailEventRow({ event }: { event: UnifiedEvent }) {
     <div className="flex items-center justify-between gap-2 sm:gap-4 py-2.5 px-2 -mx-2 rounded-lg hover:bg-muted/20 transition-colors">
       <div className="flex items-center gap-3 min-w-0">
         {ipo.symbol ? (
-          <Link
-            href={slugToAssetPath(ipo.symbol)}
-            className="font-bold text-sm font-mono text-foreground hover:text-primary transition-colors shrink-0 w-14 focus-visible:ring-2 focus-visible:ring-ring rounded"
-          >
-            {ipo.symbol}
-          </Link>
+          <>
+            <CompanyLogo
+              name={event.name || event.symbol}
+              ticker={event.symbol}
+              logoUrl={event.logoUrl}
+              size={28}
+              className="ring-1 ring-border/40"
+            />
+            <Link
+              href={slugToAssetPath(ipo.symbol)}
+              className="font-bold text-sm font-mono text-foreground hover:text-primary transition-colors shrink-0 w-14 focus-visible:ring-2 focus-visible:ring-ring rounded"
+            >
+              {ipo.symbol}
+            </Link>
+          </>
         ) : (
           <span className="font-bold text-sm font-mono text-muted-foreground shrink-0 w-14">—</span>
         )}
