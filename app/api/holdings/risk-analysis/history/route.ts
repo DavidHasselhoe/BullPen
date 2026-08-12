@@ -24,6 +24,7 @@ async function getHandler(
     .from('risk_analyses')
     .select('id, currency, holdings_count, created_at, analysis')
     .eq('user_id', session.userId)
+    .eq('status', 'done')
     .order('created_at', { ascending: false })
     .limit(10)
     .returns<RiskRow[]>();

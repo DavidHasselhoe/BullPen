@@ -8,11 +8,13 @@ import {
 import { Button } from '@/components/ui/button';
 import {
   ShieldAlert, RefreshCw, AlertTriangle, Info, CheckCircle2,
-  Crown, Trash2, Clock, ChevronDown, ChevronUp,
+  Crown, Trash2, Clock, ChevronDown, ChevronUp, Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AiPaywallDialog } from '@/components/billing/AiPaywallDialog';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { useAuth } from '@/hooks/use-auth';
+import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import type { QuotaState } from '@/lib/billing/quotas';
 import type { HoldingWithPrice } from './types';
 import type { SavedRiskAnalysis } from '@/app/api/holdings/risk-analysis/history/route';
@@ -50,9 +52,23 @@ interface RiskAnalysis {
   portfolioSummary: string;
 }
 
+type ErrorCode = 'invalid_key' | 'payment_required' | 'rate_limited' | 'parse_failed' | 'unknown';
+
+interface StatusResponse {
+  success: boolean;
+  status?: 'pending' | 'done' | 'error';
+  phase?: 'analyzing' | null;
+  analysis?: RiskAnalysis | null;
+  errorCode?: ErrorCode | null;
+  errorMessage?: string | null;
+}
+
 interface PortfolioRiskAnalysisProps {
   holdings: HoldingWithPrice[];
 }
+
+const POLL_INTERVAL_MS = 2500;
+const HISTORY_KEY = ['risk-analysis-history'];
 
 // ─── Color & style helpers ─────────────────────────────────────────────────────
 
@@ -88,6 +104,23 @@ function metricBarColor(score: number): string {
   if (score >= 50) return 'bg-orange-500';
   if (score >= 30) return 'bg-amber-500';
   return 'bg-green-500';
+}
+
+// ─── Ask Bull query builder ────────────────────────────────────────────────────
+// [display:...] is stripped in BullpenChat before rendering — the full prompt still reaches the AI.
+
+function buildAskBullQuery(analysis: RiskAnalysis, holdings: HoldingWithPrice[]): string {
+  const tickers = holdings.map((h) => h.symbol).join(', ');
+  const topRisks = analysis.topRisks
+    ?.slice(0, 3)
+    .map((r) => `- ${r.factor} (${r.severity}): ${r.description}`)
+    .join('\n') ?? '';
+  const recommendations = analysis.recommendations
+    ?.slice(0, 3)
+    .map((r) => `- ${r}`)
+    .join('\n') ?? '';
+
+  return `[display:Explain my portfolio risk analysis]\nA risk analysis just ran on my portfolio (${tickers}). Overall risk: ${analysis.riskLevel} (${analysis.overallRiskScore}/100).\n\nTop risk factors:\n${topRisks}\n\nRecommendations given:\n${recommendations}\n\nCan you walk me through what this means in plain terms, and tell me which recommendation to prioritize first?`;
 }
 
 // ─── Section label (terminal-style ALL CAPS micro-typography) ─────────────────
@@ -284,7 +317,7 @@ function HistoryPanel({
 }) {
   if (items.length === 0) return null;
   return (
-    <div className="border-b border-border/20 pb-3 mb-4">
+    <div>
       <div className="flex items-center gap-1.5 mb-2">
         <Clock className="h-2.5 w-2.5 text-muted-foreground/80" />
         <span className="text-[9px] font-mono uppercase tracking-[0.25em] text-muted-foreground/80">Saved analyses</span>
@@ -323,6 +356,7 @@ type State = 'idle' | 'loading' | 'loaded' | 'error';
 export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { open: openAIPanel } = useAIPanel();
 
   // Derive user's display currency from settings
   const userCurrency = useMemo((): string => {
@@ -335,12 +369,15 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
   const [state, setState] = useState<State>('idle');
   const [analysis, setAnalysis] = useState<RiskAnalysis | null>(null);
   const [restoredFrom, setRestoredFrom] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState('');
   const [animated, setAnimated] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
   const [paywallQuota, setPaywallQuota] = useState<QuotaState | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Sequential loading (Phase 1: symbol tick-off)
+  // Sequential loading (Phase 1: symbol tick-off) — purely decorative; the
+  // underlying Claude call is a single non-streaming request with no real
+  // granular progress to report, same as the server's single 'analyzing' phase.
   const [loadingStep, setLoadingStep] = useState(0);
   const loadingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const analyzeTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -423,9 +460,8 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
   }, [state, analysis]);
 
   // Saved analyses history
-  const historyKey = ['risk-analysis-history'];
   const { data: historyData } = useQuery<{ analyses: SavedRiskAnalysis[] }>({
-    queryKey: historyKey,
+    queryKey: HISTORY_KEY,
     queryFn: () => fetch('/api/holdings/risk-analysis/history').then((r) => r.json()),
     staleTime: 30_000,
   });
@@ -438,7 +474,7 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id }),
       }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: historyKey }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: HISTORY_KEY }),
   });
 
   const restoreAnalysis = useCallback(async (id: string) => {
@@ -453,9 +489,64 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
     }
   }, []);
 
+  const stopPolling = useCallback(() => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => () => stopPolling(), [stopPolling]);
+
+  const pollStatus = useCallback((id: string) => {
+    stopPolling();
+    pollRef.current = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/holdings/risk-analysis?id=${id}`);
+        const data: StatusResponse = await res.json();
+        if (!data.success) return;
+
+        if (data.status === 'done' && data.analysis) {
+          stopPolling();
+          setAnalysis(data.analysis);
+          setRestoredFrom(null);
+          setState('loaded');
+          requestAnimationFrame(() => setTimeout(() => setAnimated(true), 50));
+          queryClient.invalidateQueries({ queryKey: HISTORY_KEY });
+        } else if (data.status === 'error') {
+          stopPolling();
+          setErrorMessage(data.errorMessage || 'Something went wrong analyzing your portfolio.');
+          setState('error');
+        }
+        // status === 'pending': keep polling, nothing to update — the analysis
+        // is a single non-streaming call so there's no finer-grained phase.
+      } catch {
+        // Transient network hiccup — keep polling, the next tick will retry.
+      }
+    }, POLL_INTERVAL_MS);
+  }, [stopPolling, queryClient]);
+
+  // On mount: resume polling if an analysis was started and the user left
+  // mid-run and came back (or just reloaded the page).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/holdings/risk-analysis');
+        const data = await res.json();
+        if (cancelled || !data?.success || !data.pendingId) return;
+        setState('loading');
+        pollStatus(data.pendingId);
+      } catch { /* stay idle */ }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function analyze() {
+    stopPolling();
     setState('loading');
-    setError(null);
+    setErrorMessage('');
     setAnimated(false);
     setDisplayedSummary('');
     setRestoredFrom(null);
@@ -473,14 +564,17 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
         setState('idle');
         return;
       }
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setErrorMessage(data.error || `Request failed: ${res.status}`);
+        setState('error');
+        return;
+      }
       const data = await res.json();
-      if (!data.success) throw new Error(data.error ?? 'Analysis failed');
-      setAnalysis(data.analysis);
-      setState('loaded');
-      requestAnimationFrame(() => setTimeout(() => setAnimated(true), 50));
-      queryClient.invalidateQueries({ queryKey: historyKey });
+      if (!data.id) throw new Error('Failed to start analysis');
+      pollStatus(data.id);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to analyze portfolio');
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to analyze portfolio');
       setState('error');
     }
   }
@@ -515,11 +609,6 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
                 <Crown className="h-2 w-2" /> Pro
               </span>
             </CardTitle>
-            {state === 'idle' && (
-              <Button size="sm" onClick={analyze} className="shrink-0 gap-1.5 h-7 text-xs animate-ai-sweep">
-                <ShieldAlert className="h-3 w-3" /> Analyze
-              </Button>
-            )}
             {state === 'loaded' && (
               <Button size="sm" variant="ghost" onClick={analyze}
                 className="shrink-0 gap-1.5 h-7 text-xs text-muted-foreground hover:text-foreground">
@@ -532,19 +621,23 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
         <CardContent className="pt-4">
           {/* ── Idle ───────────────────────────────────────────────────────── */}
           {state === 'idle' && (
-            <div className="flex flex-col items-center justify-center py-8 gap-3 text-center">
-              <div className="rounded-full bg-primary/8 p-3.5">
-                <ShieldAlert className="h-6 w-6 text-primary" />
-              </div>
-              <p className="text-sm font-medium text-foreground">AI-Powered Risk Assessment</p>
-              <p className="text-xs text-muted-foreground max-w-xs leading-relaxed">
-                Concentration, sector exposure, correlation, liquidity, and stress scenarios across your {holdings.length} holding{holdings.length !== 1 ? 's' : ''}.
-              </p>
-              <Button onClick={analyze} size="sm" className="mt-1 gap-1.5 animate-ai-sweep">
-                <ShieldAlert className="h-3.5 w-3.5" /> Run Analysis
-              </Button>
+            <div className="space-y-6 py-2">
+              <EmptyState
+                pose="thinking"
+                title="AI-Powered Risk Assessment"
+                description={`Concentration, sector exposure, correlation, liquidity, and stress scenarios across your ${holdings.length} holding${holdings.length !== 1 ? 's' : ''}.`}
+                imageSize={112}
+                className="py-2"
+              >
+                <div className="flex justify-center">
+                  <Button onClick={analyze} size="sm" className="gap-1.5 animate-ai-sweep">
+                    <ShieldAlert className="h-3.5 w-3.5" /> Run Analysis
+                  </Button>
+                </div>
+              </EmptyState>
+
               {history.length > 0 && (
-                <div className="w-full max-w-sm mt-2">
+                <div className="border-t border-border/20 pt-4">
                   <HistoryPanel items={history} onRestore={restoreAnalysis} onDelete={(id) => deleteMutation.mutate(id)} />
                 </div>
               )}
@@ -584,9 +677,11 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
                         style={{ animationDelay: `${i * 0.18}s`, animationDuration: '0.9s' }} />
                     ))}
                   </div>
-                  <p className="text-[9px] text-muted-foreground/80 text-center">Typically 15–30 seconds</p>
                 </div>
               )}
+              <p className="text-[10px] text-muted-foreground/85 text-center max-w-xs mx-auto leading-relaxed">
+                Typically 15–30 seconds. Feel free to leave this page. We&apos;ll notify you when it&apos;s ready.
+              </p>
             </div>
           )}
 
@@ -594,7 +689,7 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
           {state === 'error' && (
             <div className="flex flex-col items-center py-7 gap-3 text-center">
               <AlertTriangle className="h-7 w-7 text-destructive/80" />
-              <p className="text-sm text-destructive/90">{error}</p>
+              <p className="text-sm text-destructive/90">{errorMessage || 'Something went wrong analyzing your portfolio.'}</p>
               <Button variant="outline" size="sm" onClick={analyze} className="gap-1.5 animate-ai-sweep">
                 <RefreshCw className="h-3 w-3" /> Try Again
               </Button>
@@ -740,10 +835,20 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
               )}
 
               {/* Footer */}
-              <div className="flex items-center justify-between pt-2 border-t border-border/15">
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-border/15">
                 <span className="text-[9px] font-mono text-muted-foreground/80 uppercase tracking-[0.15em] select-none">
                   {restoredFrom ? `Restored · ${generatedTime}` : `Generated · ${generatedTime}`}
                 </span>
+                <button
+                  onClick={() => openAIPanel({
+                    query: buildAskBullQuery(analysis, holdings),
+                    context: { tickers: holdings.map((h) => h.symbol), label: 'Your portfolio' },
+                  })}
+                  className="flex items-center gap-1.5 rounded-lg border border-border bg-muted/40 px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                >
+                  <Sparkles className="h-3 w-3" />
+                  Ask Bull about this
+                </button>
               </div>
             </div>
           )}

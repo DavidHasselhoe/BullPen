@@ -1,22 +1,32 @@
 /**
  * Portfolio Risk Analysis API
  *
- * Accepts a holdings payload, sends it to Claude Sonnet 4.6 with a specialized
- * risk-analyst system prompt, and returns a structured JSON risk report.
- * Saves the result to risk_analyses so users can revisit without regenerating.
+ * Accepts a holdings payload and runs it through Claude Sonnet 4.6 with a
+ * specialized risk-analyst system prompt to produce a structured JSON risk
+ * report. POST inserts a `pending` row and returns immediately; the actual
+ * generation runs in the background via Next.js after() so it finishes even
+ * if the client navigates away or closes the tab — same pattern as AI Deep
+ * Dive and Portfolio Builder (see migration 089 / 104). The client polls GET
+ * ?id= for status, and a notification fires on completion either way.
  * Quota: 1 free run/month for free users, unlimited for Pro.
  */
 
 import Anthropic from '@anthropic-ai/sdk';
-import { NextRequest, NextResponse } from 'next/server';
-import { withAuth, withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
+import { NextRequest, NextResponse, after } from 'next/server';
+import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
+import { checkRateLimit } from '@/lib/security/rate-limiter';
 import { checkQuota } from '@/lib/billing/quotas';
 import { logAiCall } from '@/lib/billing/log-ai-call';
+import { createNotification } from '@/lib/notifications/notifications-db';
 import { createServerClient } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/types';
-import { classifyAiError } from '@/lib/ai/provider-error';
+import { classifyAiError, parseFailure } from '@/lib/ai/provider-error';
+
+export const maxDuration = 300;
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const MODEL = 'claude-sonnet-4-6';
+const MAX_SAVED = 10;
 
 const RISK_ANALYST_SYSTEM_PROMPT = `You are a senior portfolio risk analyst at a top-tier institutional investment firm. Your task is to produce a rigorous, structured risk assessment of a retail investor's stock portfolio.
 
@@ -83,7 +93,127 @@ function currencyPrefix(code: string): string {
   return CURRENCY_PREFIXES[code] ?? `${code} `;
 }
 
-async function handler(req: NextRequest, _context: unknown, session: { userId: string }) {
+function buildPrompt(holdings: HoldingInput[], currency: string): string {
+  const prefix = currencyPrefix(currency);
+  const totalValue = holdings.reduce((sum, h) => sum + (h.marketValue ?? 0), 0);
+
+  const lines = holdings.map((h) => {
+    const parts: string[] = [`${h.symbol} (${h.company_name})`];
+    if (h.allocation != null) parts.push(`allocation: ${h.allocation.toFixed(1)}%`);
+    if (h.marketValue != null) parts.push(`value: ${prefix}${h.marketValue.toFixed(0)}`);
+    if (h.quantity != null) parts.push(`shares: ${h.quantity}`);
+    if (h.dayChangePercent != null)
+      parts.push(`today: ${h.dayChangePercent >= 0 ? '+' : ''}${h.dayChangePercent.toFixed(2)}%`);
+    if (h.unrealizedPLPercent != null)
+      parts.push(`unrealized P/L: ${h.unrealizedPLPercent >= 0 ? '+' : ''}${h.unrealizedPLPercent.toFixed(2)}%`);
+    return parts.join(', ');
+  });
+
+  const currencyNote = currency !== 'USD' ? `\nAll portfolio values are in ${currency}.` : '';
+  return `Analyze this portfolio${totalValue > 0 ? ` (total value: ${prefix}${totalValue.toFixed(0)})` : ''}:${currencyNote}\n\n${lines.join('\n')}`;
+}
+
+/**
+ * Runs the actual analysis, persisting the result to risk_analyses as it
+ * goes. Scheduled via after() so it keeps running on the server even if the
+ * client that started it navigates away or closes the tab.
+ */
+async function runRiskAnalysis(params: {
+  id: string;
+  userId: string;
+  holdings: HoldingInput[];
+  currency: string;
+}): Promise<void> {
+  const { id, userId, holdings, currency } = params;
+  const supabase = createServerClient();
+  const markError = (code: string, message: string) =>
+    supabase.from('risk_analyses').update({ status: 'error', phase: null, error_code: code, error_message: message }).eq('id', id);
+
+  try {
+    const prompt = buildPrompt(holdings, currency);
+
+    const msg = await anthropic.messages.create({
+      model: MODEL,
+      max_tokens: 4096,
+      system: RISK_ANALYST_SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: prompt }],
+    });
+
+    void logAiCall({
+      userId,
+      feature: 'risk_analysis',
+      model: MODEL,
+      inputTokens: msg.usage.input_tokens,
+      outputTokens: msg.usage.output_tokens,
+      metadata: { holdingsCount: holdings.length, currency },
+    });
+
+    const rawText = msg.content[0].type === 'text' ? msg.content[0].text : '';
+    const cleaned = rawText.trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '');
+
+    let analysis: Record<string, unknown>;
+    try {
+      analysis = JSON.parse(cleaned);
+    } catch (parseErr) {
+      console.error('[risk-analysis] parse failed:', parseErr);
+      const safe = parseFailure();
+      await markError(safe.code, safe.message);
+      return;
+    }
+    analysis.generatedAt = new Date().toISOString();
+
+    type RiskUpdate = Database['public']['Tables']['risk_analyses']['Update'];
+    await supabase.from('risk_analyses').update({
+      status: 'done',
+      phase: null,
+      analysis: analysis as unknown as RiskUpdate['analysis'],
+    }).eq('id', id);
+
+    // Keep only the MAX_SAVED most recent completed analyses per user (cost control).
+    const { data: oldest } = await supabase
+      .from('risk_analyses')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('status', 'done')
+      .order('created_at', { ascending: false })
+      .range(MAX_SAVED, 999);
+    if (oldest && oldest.length > 0) {
+      await supabase.from('risk_analyses').delete().in('id', oldest.map((r) => (r as { id: string }).id));
+    }
+
+    const riskLevel = typeof analysis.riskLevel === 'string' ? analysis.riskLevel : 'Unknown';
+    const score = typeof analysis.overallRiskScore === 'number' ? analysis.overallRiskScore : null;
+
+    await createNotification({
+      user_id: userId,
+      type: 'ai_insight',
+      title: 'Your portfolio risk analysis is ready',
+      message: score != null
+        ? `Overall risk: ${riskLevel} (${score}/100). Tap to view the full breakdown.`
+        : 'Your risk assessment has finished. Tap to view it.',
+      entity_type: 'portfolio',
+      entity_id: `risk_analysis:${id}`,
+      severity: 'info',
+    });
+  } catch (err) {
+    console.error('[risk-analysis] Anthropic error:', err);
+    const safe = classifyAiError(err);
+    try {
+      await markError(safe.code, safe.message);
+    } catch { /* best effort */ }
+  }
+}
+
+// ─── POST: start a new analysis (returns immediately, runs in the background) ─
+
+async function postHandler(req: NextRequest, _context: unknown, session: { userId: string }) {
+  const limit = await checkRateLimit(`risk-analysis:${session.userId}`, { windowMs: 60_000, maxRequests: 10 });
+  if (!limit.allowed) {
+    return addSecurityHeaders(
+      NextResponse.json({ error: 'Rate limit exceeded. Please try again in a minute.' }, { status: 429 })
+    );
+  }
+
   const quota = await checkQuota(session.userId, 'risk_analysis');
   if (!quota.allowed) {
     return addSecurityHeaders(
@@ -91,10 +221,12 @@ async function handler(req: NextRequest, _context: unknown, session: { userId: s
     );
   }
 
+  let holdings: HoldingInput[];
+  let currency: string;
   try {
     const body = await req.json();
-    const holdings: HoldingInput[] = body.holdings;
-    const currency: string = (typeof body.currency === 'string' && body.currency.length > 0)
+    holdings = body.holdings;
+    currency = (typeof body.currency === 'string' && body.currency.length > 0)
       ? body.currency.toUpperCase()
       : 'USD';
 
@@ -103,87 +235,85 @@ async function handler(req: NextRequest, _context: unknown, session: { userId: s
         NextResponse.json({ success: false, error: 'No holdings provided' }, { status: 400 })
       );
     }
-
-    const prefix = currencyPrefix(currency);
-    const totalValue = holdings.reduce((sum, h) => sum + (h.marketValue ?? 0), 0);
-
-    const lines = holdings.map((h) => {
-      const parts: string[] = [`${h.symbol} (${h.company_name})`];
-      if (h.allocation != null) parts.push(`allocation: ${h.allocation.toFixed(1)}%`);
-      if (h.marketValue != null) parts.push(`value: ${prefix}${h.marketValue.toFixed(0)}`);
-      if (h.quantity != null) parts.push(`shares: ${h.quantity}`);
-      if (h.dayChangePercent != null)
-        parts.push(`today: ${h.dayChangePercent >= 0 ? '+' : ''}${h.dayChangePercent.toFixed(2)}%`);
-      if (h.unrealizedPLPercent != null)
-        parts.push(`unrealized P/L: ${h.unrealizedPLPercent >= 0 ? '+' : ''}${h.unrealizedPLPercent.toFixed(2)}%`);
-      return parts.join(', ');
-    });
-
-    const currencyNote = currency !== 'USD' ? `\nAll portfolio values are in ${currency}.` : '';
-    const prompt = `Analyze this portfolio${totalValue > 0 ? ` (total value: ${prefix}${totalValue.toFixed(0)})` : ''}:${currencyNote}\n\n${lines.join('\n')}`;
-
-    const msg = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 4096,
-      system: RISK_ANALYST_SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: prompt }],
-    });
-
-    void logAiCall({
-      userId: session.userId,
-      feature: 'risk_analysis',
-      model: 'claude-sonnet-4-6',
-      inputTokens: msg.usage.input_tokens,
-      outputTokens: msg.usage.output_tokens,
-      metadata: { holdingsCount: holdings.length, currency },
-    });
-
-    const rawText = msg.content[0].type === 'text' ? msg.content[0].text : '';
-    const cleaned = rawText.trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '');
-    const analysis = JSON.parse(cleaned);
-    analysis.generatedAt = new Date().toISOString();
-
-    // Persist the analysis so users can revisit without regenerating.
-    let savedId: string | null = null;
-    try {
-      type RiskInsert = Database['public']['Tables']['risk_analyses']['Insert'];
-      const supabase = createServerClient();
-      const { data: inserted } = await supabase
-        .from('risk_analyses')
-        .insert({
-          user_id: session.userId,
-          analysis: analysis as unknown as RiskInsert['analysis'],
-          currency,
-          holdings_count: holdings.length,
-        } satisfies Omit<RiskInsert, 'id' | 'created_at'>)
-        .select('id')
-        .single();
-      savedId = inserted?.id ?? null;
-
-      // Keep only the 10 most recent analyses per user (cost control).
-      const { data: oldest } = await supabase
-        .from('risk_analyses')
-        .select('id')
-        .eq('user_id', session.userId)
-        .order('created_at', { ascending: false })
-        .range(10, 999);
-      if (oldest && oldest.length > 0) {
-        await supabase.from('risk_analyses').delete().in('id', oldest.map((r) => (r as { id: string }).id));
-      }
-    } catch {
-      // Never block the response on a save failure.
-    }
-
+  } catch {
     return addSecurityHeaders(
-      NextResponse.json({ success: true, analysis, savedId })
-    );
-  } catch (err) {
-    console.error('[risk-analysis]', err);
-    const safe = classifyAiError(err);
-    return addSecurityHeaders(
-      NextResponse.json({ success: false, error: safe.message, code: safe.code }, { status: safe.status })
+      NextResponse.json({ success: false, error: 'Invalid request body' }, { status: 400 })
     );
   }
+
+  const supabase = createServerClient();
+  const { data: inserted, error: insertErr } = await supabase
+    .from('risk_analyses')
+    .insert({
+      user_id: session.userId,
+      currency,
+      holdings_count: holdings.length,
+      status: 'pending',
+      phase: 'analyzing',
+    })
+    .select('id')
+    .single();
+
+  if (insertErr || !inserted) {
+    console.error('[risk-analysis] failed to create pending row:', insertErr?.message);
+    return addSecurityHeaders(NextResponse.json({ error: 'Failed to start analysis' }, { status: 500 }));
+  }
+
+  const id = inserted.id as string;
+
+  after(() => runRiskAnalysis({ id, userId: session.userId, holdings, currency }));
+
+  return addSecurityHeaders(NextResponse.json({ id, status: 'pending' }));
 }
 
-export const POST = withRateLimit(withAuth(handler), { windowMs: 60 * 1000, maxRequests: 10 });
+// ─── GET: poll a specific analysis by id, or check for one still pending ──────
+
+async function getStatusHandler(req: NextRequest, _context: unknown, session: { userId: string }) {
+  const id = req.nextUrl.searchParams.get('id');
+  const supabase = createServerClient();
+
+  if (id) {
+    const { data, error } = await supabase
+      .from('risk_analyses')
+      .select('id, status, phase, analysis, currency, holdings_count, error_code, error_message, created_at')
+      .eq('id', id)
+      .eq('user_id', session.userId)
+      .maybeSingle();
+
+    if (error || !data) {
+      return addSecurityHeaders(NextResponse.json({ success: false, error: 'Not found' }, { status: 404 }));
+    }
+
+    return addSecurityHeaders(NextResponse.json({
+      success: true,
+      id: data.id,
+      status: data.status,
+      phase: data.phase,
+      analysis: data.analysis ?? null,
+      currency: data.currency,
+      holdingsCount: data.holdings_count,
+      errorCode: data.error_code ?? null,
+      errorMessage: data.error_message ?? null,
+      createdAt: data.created_at,
+    }));
+  }
+
+  // No id: is there an analysis still running for this user? (resume-on-mount)
+  const { data: pendingRow } = await supabase
+    .from('risk_analyses')
+    .select('id, phase')
+    .eq('user_id', session.userId)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  return addSecurityHeaders(NextResponse.json({
+    success: true,
+    pendingId: pendingRow?.id ?? null,
+    pendingPhase: pendingRow?.phase ?? null,
+  }));
+}
+
+export const POST = withAuth(postHandler);
+export const GET = withAuth(getStatusHandler);

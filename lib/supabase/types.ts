@@ -174,20 +174,36 @@ export interface Database {
         Row: {
           id: string;
           user_id: string;
-          analysis: JsonValue;
+          analysis: JsonValue | null;
           currency: string;
           holdings_count: number | null;
+          status: string;
+          phase: string | null;
+          error_code: string | null;
+          error_message: string | null;
           created_at: string;
         };
         Insert: {
           user_id: string;
-          analysis: JsonValue;
+          analysis?: JsonValue | null;
           currency?: string;
           holdings_count?: number | null;
+          status?: string;
+          phase?: string | null;
+          error_code?: string | null;
+          error_message?: string | null;
           id?: string;
           created_at?: string;
         };
-        Update: Partial<{ currency: string; holdings_count: number | null }>;
+        Update: Partial<{
+          analysis: JsonValue | null;
+          currency: string;
+          holdings_count: number | null;
+          status: string;
+          phase: string | null;
+          error_code: string | null;
+          error_message: string | null;
+        }>;
       };
       stock_deep_dives: {
         Row: {
