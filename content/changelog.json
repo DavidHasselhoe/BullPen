@@ -1,5 +1,17 @@
 [
   {
+    "date": "2026-08-12",
+    "entries": [
+      { "type": "improved", "text": "Portfolio Risk Analysis now keeps running in the background if you leave the page. You'll get notified when it's done, and it picks back up automatically if you return while it's still working" },
+      { "type": "fixed", "text": "Fixed Top Market Movers occasionally showing none of your holdings up or down when it had actually failed to load your data, instead of showing an error you could retry" },
+      { "type": "improved", "text": "If You Bought Here now shows how much you gained or lost in your currency, not just the percent. Hovering over a holding's day change in My Holdings shows the same" },
+      { "type": "improved", "text": "The How this is measured section on Bull's Weekly Pick is now a set of expandable questions instead of five paragraphs shown all at once" },
+      { "type": "improved", "text": "Academy course cards now use a distinct color per course instead of every card looking the same" },
+      { "type": "improved", "text": "Heatmap and Market Mood now show a clearer message when there's no data or something goes wrong, instead of a plain error icon" },
+      { "type": "improved", "text": "Ask Bull inside the full screen stock chart now remembers your conversation if you close and reopen the panel, as long as the chart stays open" }
+    ]
+  },
+  {
     "date": "2026-08-11",
     "entries": [
       { "type": "improved", "text": "The Market Calendar's week view now uses bigger, clearer tiles with the ticker shown under each logo instead of squeezed beside it, and opening a day's full list now shows a logo for every stock too" },
