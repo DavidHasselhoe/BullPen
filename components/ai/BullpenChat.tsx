@@ -176,7 +176,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const inputRef = useRef('');
-  const initialQuerySentRef = useRef(false);
+  const lastSentInitialQueryRef = useRef<string | null>(null);
   const [paywallQuota, setPaywallQuota] = useState<QuotaState | null>(null);
   // Stable for the lifetime of this mount — callers that want a switchable
   // history (AISidePanel) pass conversationId explicitly and remount via `key`.
@@ -373,16 +373,17 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
     return () => clearTimeout(id);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Reset the sent-guard whenever a new initialQuery arrives so each distinct
-  // query (e.g. "Explain NVDA score" then "Explain AAPL score") is fired.
+  // Send initial query when opened with one (e.g. from command palette), exactly
+  // once per distinct query value. Comparing against the last-sent *value*
+  // (rather than a boolean flag reset by a separate effect) keeps this safe
+  // under React StrictMode's dev-only double-invocation of mount effects —
+  // a flag-plus-reset-effect pair re-arms the guard on the synthetic second
+  // pass and fires sendMessage() twice, which races the AI SDK's Chat instance
+  // (two concurrent sendMessage calls on one Chat corrupt its internal
+  // activeResponse state) and throws deep inside the SDK.
   useEffect(() => {
-    initialQuerySentRef.current = false;
-  }, [initialQuery]);
-
-  // Send initial query when opened with one (e.g. from command palette)
-  useEffect(() => {
-    if (!initialQuery || initialQuerySentRef.current || !open) return;
-    initialQuerySentRef.current = true;
+    if (!initialQuery || !open || lastSentInitialQueryRef.current === initialQuery) return;
+    lastSentInitialQueryRef.current = initialQuery;
     sendMessage({ parts: [{ type: 'text', text: initialQuery }] });
     onConsumedQuery?.();
   }, [initialQuery, open, sendMessage, onConsumedQuery]);
