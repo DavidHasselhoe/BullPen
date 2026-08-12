@@ -1,6 +1,12 @@
 'use client';
 
 import { MIN_PICKS_FOR_HEADLINE } from '@/lib/picks/types';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 
 /**
  * How the record is measured, and the disclaimer.
@@ -8,10 +14,15 @@ import { MIN_PICKS_FOR_HEADLINE } from '@/lib/picks/types';
  * Written in full sentences rather than legal boilerplate: a track record that
  * hides its own methodology is a marketing asset, not a record. Anyone should
  * be able to read this and reproduce the number from public prices.
+ *
+ * Collapsed by default behind an accordion — five paragraphs of always-visible
+ * methodology text reads as a wall of clutter on a page that's mostly a chart
+ * and a list of picks. Closed, this is one line; anyone who wants the detail
+ * opens the row that answers their actual question instead of scanning all five.
  */
 export function PicksMethodology() {
   return (
-    <section aria-labelledby="methodology-heading" className="space-y-4">
+    <section aria-labelledby="methodology-heading" className="space-y-3">
       <h2
         id="methodology-heading"
         className="text-sm font-semibold uppercase tracking-widest text-muted-foreground/80"
@@ -19,59 +30,70 @@ export function PicksMethodology() {
         How this is measured
       </h2>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <MethodCard title="The entry price is the first price you could have paid">
-          Each pick publishes before the market opens. Its entry is the{' '}
-          <em>opening price of the next regular session</em> — not the previous close,
-          and not a price we chose afterwards. It&apos;s stamped once and the database
-          rejects any attempt to change it later.
-        </MethodCard>
+      <Accordion type="single" collapsible className="rounded-xl border border-border/50 bg-card/40 px-4">
+        <AccordionItem value="entry-price">
+          <AccordionTrigger className="text-sm font-semibold text-foreground">
+            The entry price is the first price you could have paid
+          </AccordionTrigger>
+          <AccordionContent className="text-[12px] leading-relaxed text-muted-foreground">
+            Each pick publishes before the market opens. Its entry is the{' '}
+            <em>opening price of the next regular session</em> — not the previous close,
+            and not a price we chose afterwards. It&apos;s stamped once and the database
+            rejects any attempt to change it later.
+          </AccordionContent>
+        </AccordionItem>
 
-        <MethodCard title="Every pick counts $100, once">
-          The chart simulates putting $100 into each pick on its own entry date. New
-          money enters the cost basis at the same moment it enters the value, so
-          adding a pick never lifts the line on its own — the line only moves when
-          the picks do.
-        </MethodCard>
+        <AccordionItem value="hundred-once">
+          <AccordionTrigger className="text-sm font-semibold text-foreground">
+            Every pick counts $100, once
+          </AccordionTrigger>
+          <AccordionContent className="text-[12px] leading-relaxed text-muted-foreground">
+            The chart simulates putting $100 into each pick on its own entry date. New
+            money enters the cost basis at the same moment it enters the value, so
+            adding a pick never lifts the line on its own — the line only moves when
+            the picks do.
+          </AccordionContent>
+        </AccordionItem>
 
-        <MethodCard title="The benchmark buys on the same days">
-          The S&amp;P comparison isn&apos;t the index over the same window. It&apos;s
-          $100 into SPY on each pick&apos;s own entry date, so it answers the harder
-          question: would you have done better just buying the index on the days we
-          made a call?
-        </MethodCard>
+        <AccordionItem value="benchmark">
+          <AccordionTrigger className="text-sm font-semibold text-foreground">
+            The benchmark buys on the same days
+          </AccordionTrigger>
+          <AccordionContent className="text-[12px] leading-relaxed text-muted-foreground">
+            The S&amp;P comparison isn&apos;t the index over the same window. It&apos;s
+            $100 into SPY on each pick&apos;s own entry date, so it answers the harder
+            question: would you have done better just buying the index on the days we
+            made a call?
+          </AccordionContent>
+        </AccordionItem>
 
-        <MethodCard title="Nothing is ever removed">
-          Picks are never closed early, deleted, or quietly dropped. A pick only stops
-          moving if the company is acquired or delisted, and it stays in the record at
-          that final price. Every loser above is a loser we published.
-        </MethodCard>
-      </div>
+        <AccordionItem value="nothing-removed">
+          <AccordionTrigger className="text-sm font-semibold text-foreground">
+            Nothing is ever removed
+          </AccordionTrigger>
+          <AccordionContent className="text-[12px] leading-relaxed text-muted-foreground">
+            Picks are never closed early, deleted, or quietly dropped. A pick only stops
+            moving if the company is acquired or delisted, and it stays in the record at
+            that final price. Every loser above is a loser we published.
+          </AccordionContent>
+        </AccordionItem>
 
-      <div className="rounded-xl border border-border/40 bg-muted/20 px-5 py-4">
-        <p className="max-w-prose text-[12px] leading-relaxed text-muted-foreground">
-          <strong className="font-semibold text-foreground/80">
-            This is research, not advice.
-          </strong>{' '}
-          Bull&apos;s Weekly Pick is generated by an AI model from market data and public
-          news. It is not a recommendation to buy or sell anything, it is not personal
-          financial advice, and it takes no account of your situation, goals, or risk
-          tolerance. Past performance says nothing reliable about future returns — and
-          below {MIN_PICKS_FOR_HEADLINE} picks it says almost nothing at all. Returns
-          shown are price-only: they exclude dividends, fees, taxes, and any difference
-          between the opening price and the price you would actually have been filled at.
-          Do your own research before acting on anything here.
-        </p>
-      </div>
+        <AccordionItem value="disclaimer" className="last:border-b-0">
+          <AccordionTrigger className="text-sm font-semibold text-foreground">
+            This is research, not advice
+          </AccordionTrigger>
+          <AccordionContent className="text-[12px] leading-relaxed text-muted-foreground">
+            Bull&apos;s Weekly Pick is generated by an AI model from market data and public
+            news. It is not a recommendation to buy or sell anything, it is not personal
+            financial advice, and it takes no account of your situation, goals, or risk
+            tolerance. Past performance says nothing reliable about future returns — and
+            below {MIN_PICKS_FOR_HEADLINE} picks it says almost nothing at all. Returns
+            shown are price-only: they exclude dividends, fees, taxes, and any difference
+            between the opening price and the price you would actually have been filled at.
+            Do your own research before acting on anything here.
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </section>
-  );
-}
-
-function MethodCard({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-xl border border-border/50 bg-card/40 px-4 py-4">
-      <h3 className="text-[13px] font-semibold leading-snug text-foreground">{title}</h3>
-      <p className="mt-1.5 text-[12px] leading-relaxed text-muted-foreground">{children}</p>
-    </div>
   );
 }

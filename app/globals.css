@@ -618,6 +618,25 @@ html.animated-background-active [data-slot="dialog-content"] {
     pointer-events: none;
   }
 
+  /* ── Accordion expand/collapse (shadcn Accordion primitive) ──────────────
+     Radix exposes the measured content height as --radix-accordion-content-height;
+     animating `height` against it (rather than a fixed value) is what lets this
+     work for accordion panels of any length. */
+  @keyframes accordion-down {
+    from { height: 0; }
+    to { height: var(--radix-accordion-content-height); }
+  }
+  @keyframes accordion-up {
+    from { height: var(--radix-accordion-content-height); }
+    to { height: 0; }
+  }
+  .animate-accordion-down {
+    animation: accordion-down 0.2s ease-out;
+  }
+  .animate-accordion-up {
+    animation: accordion-up 0.2s ease-out;
+  }
+
   /* ── Heatmap cell hover (S&P 500 Sector Heatmap) ──────────────────────────
      CSS-only so hovering across ~500 SVG cells never triggers a React
      re-render. The global reduced-motion rule below already zeroes this

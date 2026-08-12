@@ -186,9 +186,11 @@ The landing page's defining move: a bold Geist Sans headline with exactly one wo
 - **Do** keep cards and containers flat at rest; let `shadow-md` + hover lift be the only depth cue.
 - **Do** use `rounded-full` pills only for the landing CTA and status pills — `rounded-md`/`rounded-xl` everywhere else.
 - **Do** use the italic Instrument Serif accent for at most one word per marketing headline.
+- **Do** put explanatory/methodology copy (how a number is calculated, disclaimers, "how this works") behind an `Accordion` (`components/ui/accordion.tsx`), collapsed by default. A reader who wants the detail opens the row that answers their actual question; everyone else sees one line, not a paragraph.
 
 ### Don't:
 - **Don't** build Bloomberg-terminal density — dense, cryptic, jargon-heavy screens that assume professional training. This is BullPen's named anti-reference from PRODUCT.md; every screen should favor a small number of clearly hierarchized things over showing everything at once.
+- **Don't** render several paragraphs of always-visible explanatory text as a grid of static cards — it reads as clutter no matter how cleanly each card is styled. If it takes more than 2-3 sentences to explain, it belongs in a collapsed accordion (see the Do above), not a wall of always-on prose.
 - **Don't** use `border-left`/`border-right` colored stripes as a card or list-item accent.
 - **Don't** apply `background-clip: text` gradient text for emphasis — use Signal Emerald or weight/size instead.
 - **Don't** introduce a third "meaningful" UI color beyond Signal Emerald/Red — Info Blue and Warn Amber are for status pills only, not general accents.
