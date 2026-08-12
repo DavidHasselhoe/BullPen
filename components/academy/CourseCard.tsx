@@ -14,6 +14,27 @@ interface Props {
 const RING_R = 22;
 const RING_C = 2 * Math.PI * RING_R;
 
+// Per-course accent, keyed by the `color` column on academy_courses (already
+// populated per course, previously unused — every card rendered identical
+// emerald regardless of topic). Tailwind needs the full class string present
+// verbatim in source to pick it up in the build, so this is a static map
+// rather than `bg-${color}-500/10` interpolation.
+interface ColorStyle {
+  iconBg: string;
+  iconText: string;
+  gradient: string;
+  hoverBorder: string;
+}
+
+const COLOR_STYLES: Record<string, ColorStyle> = {
+  emerald: { iconBg: 'bg-emerald-500/10', iconText: 'text-emerald-500', gradient: 'from-emerald-500/[0.04]', hoverBorder: 'hover:border-emerald-500/30' },
+  blue:    { iconBg: 'bg-blue-500/10',    iconText: 'text-blue-500',    gradient: 'from-blue-500/[0.04]',    hoverBorder: 'hover:border-blue-500/30' },
+  sky:     { iconBg: 'bg-sky-500/10',     iconText: 'text-sky-500',     gradient: 'from-sky-500/[0.04]',     hoverBorder: 'hover:border-sky-500/30' },
+  indigo:  { iconBg: 'bg-indigo-500/10',  iconText: 'text-indigo-500',  gradient: 'from-indigo-500/[0.04]',  hoverBorder: 'hover:border-indigo-500/30' },
+  violet:  { iconBg: 'bg-violet-500/10',  iconText: 'text-violet-500',  gradient: 'from-violet-500/[0.04]',  hoverBorder: 'hover:border-violet-500/30' },
+  amber:   { iconBg: 'bg-amber-500/10',   iconText: 'text-amber-500',   gradient: 'from-amber-500/[0.04]',   hoverBorder: 'hover:border-amber-500/30' },
+};
+
 function CourseIcon({ name, className }: { name: string; className?: string }) {
   // Cast Icons to a record so we can look up by name; fallback to BookOpen
   const map = Icons as unknown as Record<string, React.FC<{ className?: string }>>;
@@ -26,6 +47,7 @@ export function CourseCard({ course }: Props) {
   const dashOffset = RING_C * (1 - pct / 100);
   const isProLocked = course.lockedReason === 'pro';
   const isProgressionLocked = course.lockedReason === 'progression';
+  const colorStyle = COLOR_STYLES[course.color] ?? COLOR_STYLES.emerald;
 
   const content = (
     <motion.div
@@ -34,11 +56,12 @@ export function CourseCard({ course }: Props) {
       transition={{ duration: 0.15 }}
       className={cn(
         'group relative rounded-2xl border p-5 sm:p-6',
-        'bg-gradient-to-br from-emerald-500/[0.04] to-transparent',
+        'bg-gradient-to-br to-transparent',
+        colorStyle.gradient,
         'border-border/40',
         isProgressionLocked && 'opacity-55 cursor-not-allowed',
         isProLocked && 'hover:border-amber-400/40 cursor-pointer transition-colors',
-        !course.isLocked && 'hover:border-emerald-500/30 cursor-pointer transition-colors'
+        !course.isLocked && cn(colorStyle.hoverBorder, 'cursor-pointer transition-colors')
       )}
     >
       {isProLocked && (
@@ -48,11 +71,11 @@ export function CourseCard({ course }: Props) {
       )}
 
       <div className="flex items-start justify-between gap-3 mb-3">
-        <div className="h-11 w-11 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
+        <div className={cn('h-11 w-11 rounded-xl flex items-center justify-center shrink-0', colorStyle.iconBg)}>
           {course.isLocked ? (
             <Lock className="h-5 w-5 text-muted-foreground/80" />
           ) : (
-            <CourseIcon name={course.icon} className="h-5 w-5 text-emerald-500" />
+            <CourseIcon name={course.icon} className={cn('h-5 w-5', colorStyle.iconText)} />
           )}
         </div>
 
