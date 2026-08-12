@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Logo } from '@/components/landing/Atoms';
 import { Footer } from '@/components/landing/Footer';
+import { PageMascot } from '@/components/legal/PageMascot';
 import '@/components/landing/landing-styles.css';
 
 export const metadata: Metadata = {
@@ -26,6 +27,7 @@ export default function SecurityPage() {
 
         <main className="wrap" style={{ padding: '56px 0 96px' }}>
           <div className="legal-doc">
+            <PageMascot pose="locked" className="mb-3" />
             <h1>Security</h1>
             <p>
               We take protecting your data seriously. Here&apos;s what&apos;s actually in place —

@@ -3,9 +3,10 @@
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, RefreshCw, AlertCircle, Gauge } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Gauge } from 'lucide-react';
 import { useBackground } from '@/hooks/use-background';
 import { cn } from '@/lib/utils';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { MoodHero, SignalCard, MoodSkeleton } from '@/components/market/MarketMoodDisplay';
 import type { MarketMoodData } from '@/app/api/market/mood/route';
 
@@ -83,11 +84,16 @@ export default function MarketMoodClientPage() {
         {isLoading ? (
           <MoodSkeleton />
         ) : isError ? (
-          <div className="flex flex-col items-center gap-3 py-24 text-center">
-            <AlertCircle className="h-8 w-8 text-muted-foreground/80" />
-            <p className="text-sm text-muted-foreground">Couldn&apos;t load market data right now.</p>
-            <Button variant="outline" size="sm" onClick={() => refetch()}>Try again</Button>
-          </div>
+          <EmptyState
+            pose="error"
+            title="Couldn't load market data right now"
+            imageSize={120}
+            className="py-16"
+          >
+            <div className="flex justify-center">
+              <Button variant="outline" size="sm" onClick={() => refetch()}>Try again</Button>
+            </div>
+          </EmptyState>
         ) : data ? (
           <>
             <div className="pt-2 pb-2">

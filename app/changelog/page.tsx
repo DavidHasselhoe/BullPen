@@ -6,6 +6,7 @@ import { Logo } from '@/components/landing/Atoms';
 import { Footer } from '@/components/landing/Footer';
 import { getCommitActivity } from '@/lib/github/commit-activity';
 import { ActivityHeatmap } from '@/components/changelog/ActivityHeatmap';
+import { PageMascot } from '@/components/legal/PageMascot';
 import '@/components/landing/landing-styles.css';
 
 export const metadata: Metadata = {
@@ -65,6 +66,7 @@ export default async function ChangelogPage() {
         </header>
 
         <main className="wrap" style={{ padding: '56px 0 96px' }}>
+          <PageMascot pose="alert" className="mb-3" />
           <h1 style={{ fontSize: 32, marginBottom: 8 }}>Changelog</h1>
           <p style={{ color: 'var(--fg-muted)', marginBottom: 48 }}>
             What&apos;s new, improved, and fixed in BullPen.

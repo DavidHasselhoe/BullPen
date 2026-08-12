@@ -4,6 +4,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Logo } from '@/components/landing/Atoms';
 import { Footer } from '@/components/landing/Footer';
+import { PageMascot } from '@/components/legal/PageMascot';
 import '@/components/landing/landing-styles.css';
 
 export const metadata: Metadata = {
@@ -68,6 +69,7 @@ export default function RoadmapPage() {
         </header>
 
         <main className="wrap" style={{ padding: '56px 0 96px' }}>
+          <PageMascot pose="thinking" className="mb-3" />
           <h1 style={{ fontSize: 32, marginBottom: 8 }}>Roadmap</h1>
           <p style={{ color: 'var(--fg-muted)', marginBottom: 16 }}>Where we&apos;ve been, and what&apos;s next.</p>
 

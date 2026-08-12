@@ -10,7 +10,7 @@ export type MascotPose =
   | 'sleeping'   // all quiet / markets closed / nothing to report
   | 'alert';     // set up a notification / price alert
 
-const POSE_SRC: Record<MascotPose, string> = {
+export const POSE_SRC: Record<MascotPose, string> = {
   shrug: '/illustrations/bull-shrug.png',
   search: '/illustrations/bull-search.png',
   thinking: '/illustrations/bull-thinking.png',

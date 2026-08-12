@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Logo } from '@/components/landing/Atoms';
 import { Footer } from '@/components/landing/Footer';
 import { FAQ_ITEMS } from '@/components/landing/faq-data';
+import { PageMascot } from '@/components/legal/PageMascot';
 import '@/components/landing/landing-styles.css';
 
 export const metadata: Metadata = {
@@ -27,6 +28,7 @@ export default function HelpCenterPage() {
 
         <main className="wrap" style={{ padding: '56px 0 96px' }}>
           <div className="legal-doc">
+            <PageMascot pose="search" className="mb-3" />
             <h1>Help Center</h1>
             <p>Answers to the questions we hear most.</p>
             {FAQ_ITEMS.map((item, i) => (

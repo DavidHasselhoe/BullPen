@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Logo } from '@/components/landing/Atoms';
 import { Footer } from '@/components/landing/Footer';
 import { FoundersNote } from '@/components/about/FoundersNote';
+import { PageMascot } from '@/components/legal/PageMascot';
 import '@/components/landing/landing-styles.css';
 
 export const metadata: Metadata = {
@@ -27,6 +28,7 @@ export default function AboutPage() {
 
         <main className="wrap" style={{ padding: '56px 0 96px' }}>
           <div className="legal-doc">
+            <PageMascot pose="shrug" className="mb-3" />
             <h1>About BullPen</h1>
             <p>
               BullPen is an investment research and portfolio-tracking platform for everyday investors.

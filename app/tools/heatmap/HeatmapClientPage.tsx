@@ -9,6 +9,7 @@ import { Treemap, ResponsiveContainer } from 'recharts';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { ArrowLeft, Grid3X3, AlertCircle, Search, X, ListOrdered } from 'lucide-react';
 import { useHeatmapStream } from '@/hooks/use-heatmap-stream';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -792,11 +793,15 @@ export default function HeatmapClientPage() {
               <Button variant="outline" onClick={() => refetch()}>Try again</Button>
             </div>
           ) : treemapData.length === 0 ? (
-            <div className="flex h-[55vh] flex-col items-center justify-center gap-2 text-center text-muted-foreground text-sm sm:h-[65vh]">
+            <div className="flex h-[55vh] items-center justify-center sm:h-[65vh]">
               {mode === 'my-stocks' && !sectorFilter ? (
-                <>
-                  <p>Nothing to show yet — add a stock to your holdings or watchlist to see it here.</p>
-                  <div className="flex gap-3 text-xs">
+                <EmptyState
+                  pose="shrug"
+                  title="Nothing to show yet"
+                  description="Add a stock to your holdings or watchlist to see it here."
+                  imageSize={120}
+                >
+                  <div className="flex justify-center gap-3 text-xs">
                     <Link href="/holdings" className="text-primary underline-offset-4 hover:underline">
                       Go to Holdings
                     </Link>
@@ -804,9 +809,13 @@ export default function HeatmapClientPage() {
                       Go to Watchlist
                     </Link>
                   </div>
-                </>
+                </EmptyState>
               ) : (
-                <p>{sectorFilter ? `No data for ${sectorFilter}` : 'No heatmap data available'}</p>
+                <EmptyState
+                  pose="shrug"
+                  title={sectorFilter ? `No data for ${sectorFilter}` : 'No heatmap data available'}
+                  imageSize={120}
+                />
               )}
             </div>
           ) : (
