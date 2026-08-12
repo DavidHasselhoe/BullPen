@@ -71,6 +71,15 @@ function formatPercent(value: number): string {
   return `${sign}${value.toFixed(2)}%`;
 }
 
+// Dollar gain/loss alongside the percent — valueNow minus what was actually
+// put in (shares × entry price), so it stays consistent with the shares/price
+// figures shown just below it, rather than the originally-typed amount which
+// can differ slightly after fractional-share rounding.
+function formatSignedGain(valueNow: number, shares: number, priceAtStart: number, fmtCurrency: (v: number) => string): string {
+  const gain = valueNow - shares * priceAtStart;
+  return `${gain >= 0 ? '+' : ''}${fmtCurrency(gain)}`;
+}
+
 // Always format with en-US commas so parseFormattedAmount can reliably strip them.
 function formatAmountInput(value: string): string {
   const num = value.replace(/[^0-9]/g, '');
@@ -540,6 +549,9 @@ export default function BuyHereClientPage() {
                         )}
                       >
                         {formatPercent(result.stock.returnPct)} return
+                        <span className="font-normal text-muted-foreground">
+                          {' '}({formatSignedGain(result.stock.valueNow, result.stock.shares, result.stock.priceAtStart, fmtCurrency)})
+                        </span>
                       </p>
                       <p className="text-xs text-muted-foreground mt-2">
                         {result.stock.shares.toFixed(2)} shares @ {fmtCurrency(result.stock.priceAtStart)} →{' '}
@@ -564,6 +576,9 @@ export default function BuyHereClientPage() {
                           )}
                         >
                           {formatPercent(result.spy.returnPct)} return
+                          <span className="font-normal text-muted-foreground">
+                            {' '}({formatSignedGain(result.spy.valueNow, result.spy.shares, result.spy.priceAtStart, fmtCurrency)})
+                          </span>
                         </p>
                         <p className="text-xs text-muted-foreground mt-2">
                           Same amount invested in SPY

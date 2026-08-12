@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { TermTooltip } from '@/components/ui/TermTooltip';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { useHoldings, useRemoveHolding } from '@/hooks/use-holdings';
 import { SoldPositionsModal } from '@/components/holdings/SoldPositionsModal';
@@ -199,6 +200,60 @@ function SkeletonTableRow({ index }: { index: number }) {
   );
 }
 
+// ─── Day change cell ────────────────────────────────────────────────────────
+// The column shows percent (compact, sortable-by-eye across rows); hovering
+// reveals the actual currency amount so users don't have to do the math from
+// market value × percent themselves to see how much a position moved today.
+
+function DayChangeCell({
+  dayChangePercent,
+  dayChange,
+  isPositive,
+  colorClass,
+  isPriceStale,
+  currency,
+  roundNumbers,
+}: {
+  dayChangePercent: number;
+  dayChange: number | undefined;
+  isPositive: boolean;
+  colorClass: string;
+  isPriceStale: boolean | undefined;
+  currency: CurrencyCode;
+  roundNumbers: boolean;
+}) {
+  const trigger = (
+    <div className={cn('flex items-center gap-1 animate-in fade-in duration-300', colorClass)}>
+      {isPositive ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+      <span className="text-sm font-medium">
+        {formatPercentUtil(dayChangePercent, roundNumbers)}
+      </span>
+    </div>
+  );
+
+  if (dayChange === undefined) {
+    return (
+      <div title={isPriceStale ? 'Last close — live price unavailable right now' : undefined}>
+        {trigger}
+      </div>
+    );
+  }
+
+  const opts = roundNumbers ? { round: true } : undefined;
+  const signedAmount = `${dayChange >= 0 ? '+' : ''}${formatCurrencyValue(dayChange, currency, opts)}`;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div className="cursor-default">{trigger}</div>
+      </TooltipTrigger>
+      <TooltipContent>
+        {signedAmount} today{isPriceStale ? ' · Last close' : ''}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
 // ─── Memoized table row ───────────────────────────────────────────────────────
 // Prevents re-rendering unchanged rows on every live-price tick.
 // Only volatile price/state fields are in the comparator — static props like
@@ -309,18 +364,15 @@ const HoldingRow = memo(function HoldingRow({
       </td>
       <td className="py-4 px-4">
         {showPriceSkeleton ? <PriceSkeleton /> : holding.dayChangePercent !== undefined ? (
-          <div
-            className={cn(
-              'flex items-center gap-1 animate-in fade-in duration-300',
-              holding.isPriceStale ? `${dayChangeColor} opacity-60` : dayChangeColor
-            )}
-            title={holding.isPriceStale ? 'Last close — live price unavailable right now' : undefined}
-          >
-            {isPositive ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-            <span className="text-sm font-medium">
-              {formatPercentUtil(holding.dayChangePercent, roundNumbers)}
-            </span>
-          </div>
+          <DayChangeCell
+            dayChangePercent={holding.dayChangePercent}
+            dayChange={holding.dayChange}
+            isPositive={isPositive}
+            colorClass={holding.isPriceStale ? `${dayChangeColor} opacity-60` : dayChangeColor}
+            isPriceStale={holding.isPriceStale}
+            currency={currency}
+            roundNumbers={roundNumbers}
+          />
         ) : <span className="text-sm text-muted-foreground">—</span>}
       </td>
       <td className="py-4 px-4 text-sm font-medium text-foreground">
