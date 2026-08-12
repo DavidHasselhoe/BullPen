@@ -23,6 +23,10 @@ import type { QuotaState } from '@/lib/billing/quotas';
 import type { ChartAction, ChartSnapshot } from './chart-context';
 
 interface Props {
+  /** Always mounted — this just controls the width/visibility animation
+   *  (see the component body) rather than gating whether it renders, so the
+   *  conversation survives closing and reopening the panel. */
+  open: boolean;
   symbol: string;
   /** Live snapshot of the chart — re-read on every message so the AI sees the current state. */
   snapshot: ChartSnapshot;
@@ -91,7 +95,7 @@ const AssistantContent = memo(function AssistantContent({ text, isStreaming }: {
 
 const PANEL_WIDTH = 400;
 
-export function ChartAIPanel({ symbol, snapshot, onAction, onClose }: Props) {
+export function ChartAIPanel({ open, symbol, snapshot, onAction, onClose }: Props) {
   const isMobile = useIsMobile();
   const panelWidth = isMobile ? '100%' : PANEL_WIDTH;
   const { user } = useAuth();
@@ -148,10 +152,13 @@ export function ChartAIPanel({ symbol, snapshot, onAction, onClose }: Props) {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Panel stays mounted now, so this needs to re-fire whenever it opens
+  // (not just once on true mount) to still focus the input each time.
   useEffect(() => {
+    if (!open) return;
     const id = setTimeout(() => textareaRef.current?.focus(), 60);
     return () => clearTimeout(id);
-  }, []);
+  }, [open]);
 
   // Read the freshest chart snapshot + user prefs at send time (event handler, not render).
   const send = (text: string) => {
@@ -197,13 +204,19 @@ export function ChartAIPanel({ symbol, snapshot, onAction, onClose }: Props) {
     // Real flex sibling (not an absolute overlay) — width animates so the chart
     // beside it reflows via its `autoSize` ResizeObserver instead of being
     // covered, keeping the price axis visible while Ask Bull is open.
+    //
+    // Always mounted; `open` drives the width/opacity animation instead of
+    // an AnimatePresence enter/exit. This is what makes the conversation
+    // survive closing and reopening the panel — unmounting would reset
+    // useChat's in-memory messages every time.
     <motion.aside
-      initial={{ width: 0, opacity: 0.4 }}
-      animate={{ width: panelWidth, opacity: 1 }}
-      exit={{ width: 0, opacity: 0.4 }}
+      initial={false}
+      animate={{ width: open ? panelWidth : 0, opacity: open ? 1 : 0.4 }}
       transition={{ type: 'tween', duration: 0.22, ease: 'easeOut' }}
+      inert={!open}
       className="relative z-20 h-full shrink-0 overflow-hidden border-l border-border/60 bg-background shadow-2xl"
       role="dialog"
+      aria-hidden={!open}
       aria-label={`Ask Bull about ${symbol} chart`}
     >
     <div className="absolute inset-y-0 right-0 flex h-full flex-col" style={{ width: isMobile ? '100vw' : PANEL_WIDTH }}>

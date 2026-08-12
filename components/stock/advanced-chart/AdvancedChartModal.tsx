@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { useTheme } from 'next-themes';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import type { AdvancedChartType, ChartRange } from '@/hooks/use-chart-prefs';
 import { useStockQuote } from '@/hooks/use-stock-price';
@@ -369,17 +369,19 @@ export function AdvancedChartModal({
           )}
         </div>
 
-        <AnimatePresence>
-          {aiOpen && (
-            <ChartAIPanel
-              key="chart-ai"
-              symbol={ticker}
-              snapshot={snapshot}
-              onAction={dispatchChartAction}
-              onClose={() => setAiOpen(false)}
-            />
-          )}
-        </AnimatePresence>
+        {/* Always mounted (never conditionally rendered) — width animates to 0
+            when closed instead of unmounting, so the useChat conversation
+            state survives closing/reopening the panel while this fullscreen
+            chart stays open. Matches AISidePanel's own pattern for the same
+            reason. Resets when the chart modal itself closes (fresh mount
+            next time) — conversations aren't persisted server-side here. */}
+        <ChartAIPanel
+          open={aiOpen}
+          symbol={ticker}
+          snapshot={snapshot}
+          onAction={dispatchChartAction}
+          onClose={() => setAiOpen(false)}
+        />
       </div>
     </motion.div>,
     document.body
