@@ -74,6 +74,7 @@ interface TopMoversCardProps {
   gainers: MarketMover[];
   losers: MarketMover[];
   isLoading?: boolean;
+  isError?: boolean;
   isHoldingsMode?: boolean;
 }
 
@@ -185,7 +186,7 @@ function MoverItem({
   );
 }
 
-export function TopMoversCard({ gainers, losers, isLoading, isHoldingsMode }: TopMoversCardProps) {
+export function TopMoversCard({ gainers, losers, isLoading, isError, isHoldingsMode }: TopMoversCardProps) {
   const dateLabel = useMoversDateLabel();
   const allTickers = [...(gainers || []), ...(losers || [])].map((m) => m.symbol);
 
@@ -247,6 +248,22 @@ export function TopMoversCard({ gainers, losers, isLoading, isHoldingsMode }: To
               ))}
             </div>
           </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Card className="border-border/50 min-w-0 overflow-hidden">
+        <CardHeader>
+          <CardTitle>Top Market Movers</CardTitle>
+          <p className="text-xs text-muted-foreground">{dateLabel}</p>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground py-8 text-center">
+            Couldn&apos;t load market movers. Try again in a moment.
+          </p>
         </CardContent>
       </Card>
     );

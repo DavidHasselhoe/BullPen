@@ -66,6 +66,7 @@ export function MarketContextSection() {
   const {
     data: topMovers,
     isLoading: isLoadingMovers,
+    error: moversError,
   } = useTopMoversWithStream(5, moversSymbols);
 
   const {
@@ -166,6 +167,7 @@ export function MarketContextSection() {
                 gainers={topMovers?.gainers || []}
                 losers={topMovers?.losers || []}
                 isLoading={isLoadingMovers}
+                isError={!isLoadingMovers && !topMovers && !!moversError}
                 isHoldingsMode={!!effectiveHoldingsMode}
               />
             )}
