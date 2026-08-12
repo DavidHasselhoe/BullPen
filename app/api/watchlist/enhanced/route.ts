@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
 import { getCached } from '@/lib/cache/market-data-cache';
-import { getEarningsCalendar } from '@/lib/finnhub/finnhub-client';
 import type { CompanyStatistics } from '@/lib/twelvedata/twelvedata-client';
 
 function gradeLabel(grade: string): string {
@@ -40,7 +39,10 @@ interface EnhancedData {
  * Health score: read from screener_stats — the same persisted, synced value
  * shown on the stock page and screener, rather than recomputed here from
  * whatever happens to be cached (which could disagree with those surfaces).
- * Earnings: cache first, falls back to a single Finnhub calendar call (free tier).
+ * Earnings: read from the cached TwelveData /earnings payload only — no Finnhub
+ * fallback, since BullPen isn't licensed to display Finnhub data (news + fallback
+ * prices are the only permitted uses). A symbol with no cached upcoming date from
+ * TD simply shows no earnings badge.
  * Market cap / P/E: from stats cache when available.
  */
 async function handler(
@@ -116,34 +118,13 @@ async function handler(
     })
   );
 
-  // ── Finnhub earnings fallback for symbols with no cached upcoming date ────
-  const needEarnings = cacheResults
-    .filter(r => !r.earnings?.some(e => e.epsActual === null && Date.parse(e.date) > now))
-    .map(r => r.sym);
-
-  const finnhubNext: Record<string, string> = {};
-  if (needEarnings.length > 0) {
-    try {
-      const from = new Date().toISOString().slice(0, 10);
-      const to = new Date(now + 60 * 86_400_000).toISOString().slice(0, 10); // next 60 days
-      const items = await getEarningsCalendar(from, to);
-      for (const item of items) {
-        if (needEarnings.includes(item.symbol) && item.date && !finnhubNext[item.symbol]) {
-          finnhubNext[item.symbol] = item.date;
-        }
-      }
-    } catch {
-      // Non-fatal — earnings column will just remain empty
-    }
-  }
-
   // ── Build results ─────────────────────────────────────────────────────────
   const results: Record<string, EnhancedData> = {};
 
   for (const { sym, stats, earnings } of cacheResults) {
     const healthScore = healthMap.get(sym) ?? null;
 
-    // Earnings — cache first, Finnhub fallback
+    // Earnings — TD cache only (see doc comment above on why there's no fallback)
     let nextEarningsDate: string | null = null;
     let daysToEarnings: number | null = null;
 
@@ -155,10 +136,6 @@ async function handler(
       if (upcoming.length > 0) {
         nextEarningsDate = upcoming[0];
       }
-    }
-
-    if (!nextEarningsDate && finnhubNext[sym]) {
-      nextEarningsDate = finnhubNext[sym];
     }
 
     if (nextEarningsDate) {
