@@ -6,7 +6,10 @@
  * Generates one shared brief per calendar date for all pro users.
  * Idempotent: skips generation if today's brief already exists.
  *
- * Claude prompt credit cost: ~$0.05–0.10 per run (web search + 800-word response).
+ * Claude prompt credit cost: dominated by web search input tokens, not output — the
+ * ~650-word brief is ~2K output tokens. `web_search_20260209` (dynamic filtering) plus
+ * a `max_uses` cap keeps raw search-result content from ballooning the resent context
+ * across searches; without both, a run can spike to 150K+ input tokens.
  * TwelveData credit cost: ~60–100 credits (earnings calendar x3 + movers + market quotes).
  */
 
@@ -366,11 +369,10 @@ Use live web search to verify the latest news for "Movers & Stories", "Watch Tod
   let fullText = '';
   let sources: BriefSource[] = [];
   try {
-    const stream = anthropic.beta.messages.stream({
+    const stream = anthropic.messages.stream({
       model: 'claude-sonnet-4-6',
       max_tokens: 1500,
-      betas: ['web-search-2025-03-05'],
-      tools: [{ type: 'web_search_20250305' as const, name: 'web_search' }],
+      tools: [{ type: 'web_search_20260209', name: 'web_search', max_uses: 8 }],
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }],
     });
