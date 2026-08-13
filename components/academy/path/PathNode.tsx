@@ -34,7 +34,7 @@ export function PathNode({ course, isCurrent, offset, align, circleRef }: Props)
         'relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-[1.5px] transition-colors',
         course.isCompleted && 'border-emerald-500 bg-emerald-500',
         isCurrent && 'border-2 border-emerald-500 bg-card shadow-[0_0_0_4px_rgba(34,197,94,0.12)] academy-current-pulse',
-        (isProgressionLocked || isProLocked) && 'border-border bg-muted/50'
+        (isProgressionLocked || isProLocked) && 'border-border bg-muted'
       )}
     >
       {course.isCompleted ? (
