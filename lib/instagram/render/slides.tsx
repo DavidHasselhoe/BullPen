@@ -47,8 +47,14 @@ const BRAND_INK = '#0a0a0a'; // text/icon color on top of BRAND — dark reads b
 const BMO_COLOR = '#0ea5e9'; // Tailwind sky-500 — matches EarningsCalendarWidget's BMO tag
 const AMC_COLOR = '#f59e0b'; // Tailwind amber-500 — matches EarningsCalendarWidget's AMC tag
 
-/** Companies per list-page — keeps each slide readable, not cramped. */
-export const COMPANIES_PER_LIST_SLIDE = 6;
+/**
+ * Companies per list-page. Set comfortably above MAX_COMPANIES
+ * (lib/instagram/content/earnings-calendar.ts) so a week's full list always
+ * fits on ONE slide — EarningsListSlide scales row size down as the count
+ * grows (see rowMetrics below) rather than spilling into a second page for
+ * a single leftover company, which read as an awkward near-empty slide.
+ */
+export const COMPANIES_PER_LIST_SLIDE = 30;
 
 export type SlideKind = 'hook' | 'list' | 'cta';
 
@@ -129,6 +135,54 @@ function Wordmark({ size = 36 }: { size?: number }) {
   );
 }
 
+interface RowMetrics {
+  badgeSize: number;
+  rowPaddingV: number;
+  rowPaddingH: number;
+  rowGap: number;
+  rowRadius: number;
+  symbolFontSize: number;
+  nameFontSize: number;
+  dateFontSize: number;
+  timeFontSize: number;
+  timePaddingV: number;
+  timePaddingH: number;
+  headerMarginBottom: number;
+}
+
+/** Linear interpolation from a "spacious" value (<=6 companies, today's
+ *  typical week) down to a "compact" value (>=18, a busy peak-earnings
+ *  week), clamped outside that range. */
+function lerp(n: number, spacious: number, compact: number): number {
+  const t = Math.min(1, Math.max(0, (n - 6) / (18 - 6)));
+  return spacious + (compact - spacious) * t;
+}
+
+/**
+ * Row sizing scales down smoothly as the week's company count grows, so
+ * every week fits on ONE list slide (see COMPANIES_PER_LIST_SLIDE above)
+ * instead of spilling a single leftover company onto an awkward
+ * near-empty second page. Tuned against SLIDE_HEIGHT (1350px) minus the
+ * fixed page padding and header: comfortable at <=6 companies, still
+ * legible down to ~18-20.
+ */
+function rowMetrics(n: number): RowMetrics {
+  return {
+    badgeSize: Math.round(lerp(n, 56, 40)),
+    rowPaddingV: Math.round(lerp(n, 20, 8)),
+    rowPaddingH: Math.round(lerp(n, 28, 18)),
+    rowGap: Math.round(lerp(n, 20, 8)),
+    rowRadius: Math.round(lerp(n, 20, 14)),
+    symbolFontSize: Math.round(lerp(n, 34, 22)),
+    nameFontSize: Math.round(lerp(n, 22, 15)),
+    dateFontSize: Math.round(lerp(n, 20, 14)),
+    timeFontSize: Math.round(lerp(n, 20, 13)),
+    timePaddingV: Math.round(lerp(n, 6, 4)),
+    timePaddingH: Math.round(lerp(n, 16, 10)),
+    headerMarginBottom: Math.round(lerp(n, 48, 28)),
+  };
+}
+
 /** Circular company mark for a list row. Real logo when logoUrl resolved
  *  (see resolveLogoUrl in earnings-calendar.ts), else ticker initials —
  *  same two-state idea as components/company/CompanyLogo.tsx, just without
@@ -136,21 +190,20 @@ function Wordmark({ size = 36 }: { size?: number }) {
  *  already made at generation time). Just a thin ring, no fill — on a white
  *  slide, a logo (almost always itself on a white/transparent background)
  *  sits directly on the page with no boxed-in mismatch. */
-function CompanyBadge({ symbol, logoUrl }: { symbol: string; logoUrl: string | null }) {
-  const SIZE = 56;
+function CompanyBadge({ symbol, logoUrl, size }: { symbol: string; logoUrl: string | null; size: number }) {
   return (
     <div
       style={{
-        display: 'flex', width: SIZE, height: SIZE, borderRadius: 999,
+        display: 'flex', width: size, height: size, borderRadius: 999,
         border: `1px solid ${BORDER}`, backgroundColor: BG,
         alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0,
       }}
     >
       {logoUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={logoUrl} alt={`${symbol} logo`} width={SIZE - 14} height={SIZE - 14} style={{ objectFit: 'contain' }} />
+        <img src={logoUrl} alt={`${symbol} logo`} width={size - 14} height={size - 14} style={{ objectFit: 'contain' }} />
       ) : (
-        <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 18, color: MUTED }}>
+        <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: Math.round(size * 0.32), color: MUTED }}>
           {symbol.slice(0, 2)}
         </span>
       )}
@@ -158,14 +211,14 @@ function CompanyBadge({ symbol, logoUrl }: { symbol: string; logoUrl: string | n
   );
 }
 
-function TimeBadge({ time }: { time: 'BMO' | 'AMC' | null }) {
+function TimeBadge({ time, fontSize, paddingV, paddingH }: { time: 'BMO' | 'AMC' | null; fontSize: number; paddingV: number; paddingH: number }) {
   if (!time) return null;
   const color = time === 'BMO' ? BMO_COLOR : AMC_COLOR;
   return (
     <div
       style={{
-        display: 'flex', fontSize: 20, fontWeight: 500, color,
-        fontFamily: 'Geist', padding: '6px 16px', borderRadius: 999,
+        display: 'flex', fontSize, fontWeight: 500, color,
+        fontFamily: 'Geist', padding: `${paddingV}px ${paddingH}px`, borderRadius: 999,
         backgroundColor: `${color}1a`,
       }}
     >
@@ -230,6 +283,7 @@ interface EarningsListSlideProps {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function EarningsListSlide({ companies, pageIndex, totalPages, overflowCount = 0 }: EarningsListSlideProps): any {
   const isLastPage = pageIndex === totalPages - 1;
+  const m = rowMetrics(companies.length);
   return (
     <div
       style={{
@@ -237,7 +291,7 @@ export function EarningsListSlide({ companies, pageIndex, totalPages, overflowCo
         padding: 80, backgroundColor: BG, color: FG,
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 48 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: m.headerMarginBottom }}>
         <Wordmark />
         {totalPages > 1 && (
           <div style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: 20, color: MUTED }}>
@@ -246,7 +300,7 @@ export function EarningsListSlide({ companies, pageIndex, totalPages, overflowCo
         )}
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: 20 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: m.rowGap }}>
         {companies.length === 0 ? (
           <div style={{ display: 'flex', flex: 1, flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
             <div style={{ display: 'flex', fontFamily: 'Instrument Serif', fontStyle: 'italic', fontSize: 44, color: FG, marginBottom: 20 }}>
@@ -261,26 +315,26 @@ export function EarningsListSlide({ companies, pageIndex, totalPages, overflowCo
             key={c.symbol}
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '20px 28px', borderRadius: 20, backgroundColor: SURFACE,
+              padding: `${m.rowPaddingV}px ${m.rowPaddingH}px`, borderRadius: m.rowRadius, backgroundColor: SURFACE,
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-              <CompanyBadge symbol={c.symbol} logoUrl={c.logoUrl} />
+              <CompanyBadge symbol={c.symbol} logoUrl={c.logoUrl} size={m.badgeSize} />
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 14 }}>
-                  <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 34, color: FG }}>
+                  <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: m.symbolFontSize, color: FG }}>
                     {c.symbol}
                   </span>
-                  <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 22, color: MUTED }}>
+                  <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: m.nameFontSize, color: MUTED }}>
                     {c.name}
                   </span>
                 </div>
-                <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: 20, color: MUTED_DIM }}>
+                <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: m.dateFontSize, color: MUTED_DIM }}>
                   {formatDate(c.date)}
                 </span>
               </div>
             </div>
-            <TimeBadge time={c.time} />
+            <TimeBadge time={c.time} fontSize={m.timeFontSize} paddingV={m.timePaddingV} paddingH={m.timePaddingH} />
           </div>
         ))}
       </div>
