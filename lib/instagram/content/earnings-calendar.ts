@@ -63,11 +63,41 @@ const MAX_COMPANIES = 24;
  * - CRWV (CoreWeave) and NBIS (Nebius Group): both real, sizable
  *   companies ($58B/$66B market cap as of 2026-08-13, per screener_stats —
  *   larger than plenty of S&P 500 constituents) at the center of the AI
- *   infrastructure trade, too recently public to be index members yet.
- *   Confirmed clean name/market-cap coverage in screener_stats before
- *   adding (2026-08-13).
+ *   infrastructure trade. NOTE: both were added to the real Nasdaq 100 in
+ *   the June 2026 rebalance, but lib/market-data/nasdaq100.ts hasn't been
+ *   refreshed to reflect that yet (confirmed missing from that file
+ *   2026-08-13) — kept in this manual list until it is, otherwise they'd
+ *   silently drop out again. Worth re-checking after nasdaq100.ts is next
+ *   updated; if these are in SIGNIFICANT_TICKERS by then, they're
+ *   redundant here (harmless either way — this is a Set).
+ * - A wider batch added 2026-08-13, all confirmed to have real name +
+ *   market-cap coverage in screener_stats before adding (several needed a
+ *   one-off fix first — either the row was missing entirely, tier-0 and
+ *   never refreshed, or had name literally equal to its own ticker
+ *   symbol, the same bug already found and fixed for TGT). Grouped by
+ *   theme purely for readability, not a functional distinction:
+ *   - Fintech: SOFI, AFRM, CRCL
+ *   - EV / mobility: RIVN, LCID, JOBY, ACHR
+ *   - Consumer / social: RDDT, RBLX, CVNA, CAVA, OPEN
+ *   - Betting / gaming: DKNG
+ *   - Crypto-adjacent: BMNR, MARA, RIOT, CLSK
+ *   - AI / speculative tech: IONQ, RGTI, QBTS, SYM
+ *   - Software / cloud: SNOW, U
+ *   Deliberately NOT added: MSTR and ARM are both already in
+ *   lib/market-data/nasdaq100.ts, so SIGNIFICANT_TICKERS already covers
+ *   them — adding them here too would just be redundant.
  */
-const INSTAGRAM_ALLOWLIST: Set<string> = new Set([...SIGNIFICANT_TICKERS, 'TSM', 'CRWV', 'NBIS']);
+const INSTAGRAM_ALLOWLIST: Set<string> = new Set([
+  ...SIGNIFICANT_TICKERS,
+  'TSM', 'CRWV', 'NBIS',
+  'SOFI', 'AFRM', 'CRCL',
+  'RIVN', 'LCID', 'JOBY', 'ACHR',
+  'RDDT', 'RBLX', 'CVNA', 'CAVA', 'OPEN',
+  'DKNG',
+  'BMNR', 'MARA', 'RIOT', 'CLSK',
+  'IONQ', 'RGTI', 'QBTS', 'SYM',
+  'SNOW', 'U',
+]);
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
