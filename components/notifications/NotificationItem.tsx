@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowUpRight, ArrowDownRight, BarChart2, Sparkles, Bell, ChevronRight, Coins, GraduationCap } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, BarChart2, Sparkles, Bell, ChevronRight, Coins, GraduationCap, HeartPulse, Star, Newspaper } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import type { Notification } from '@/lib/notifications/notifications-db';
@@ -117,6 +117,21 @@ function GenericIcon({ type }: { type: Notification['type'] }) {
       <GraduationCap className={cn(base, 'text-amber-400')} />
     </div>
   );
+  if (type === 'health_score') return (
+    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-rose-500/10">
+      <HeartPulse className={cn(base, 'text-rose-400')} />
+    </div>
+  );
+  if (type === 'weekly_pick') return (
+    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-500/10">
+      <Star className={cn(base, 'text-amber-400')} />
+    </div>
+  );
+  if (type === 'daily_brief') return (
+    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-500/10">
+      <Newspaper className={cn(base, 'text-blue-400')} />
+    </div>
+  );
   return (
     <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted">
       <Bell className={cn(base, 'text-muted-foreground/80')} />
@@ -162,6 +177,13 @@ function notificationSource(n: Notification): { label: string; href: string } | 
   if (n.type === 'ai_insight' && n.entity_id?.startsWith('portfolio_builder:')) {
     const id = n.entity_id.replace(/^portfolio_builder:/, '');
     return { label: 'Portfolio Builder', href: `/tools/portfolio-builder?id=${id}` };
+  }
+  if (n.type === 'weekly_pick' && n.entity_id?.startsWith('weekly_pick:')) {
+    const date = n.entity_id.replace(/^weekly_pick:/, '');
+    return { label: "Bull's Pick", href: `/picks/${date}` };
+  }
+  if (n.type === 'daily_brief') {
+    return { label: 'Daily Brief', href: '/dashboard' };
   }
 
   // entity_type is typed narrower than runtime — the alert cron writes 'user_alert'.

@@ -262,6 +262,7 @@ Split across two schedulers. All cron routes are protected by the `CRON_SECRET` 
 | `/api/cron/check-user-alerts` | `30 14-21 * * 1-5` | Evaluate user-defined price/metric alerts hourly through market hours (can't be a Vercel cron — Hobby plan only allows once-per-day schedules) |
 | `/api/cron/check-earnings-upcoming` | `0 8 * * *` | Email users about upcoming earnings in held/watched stocks |
 | `/api/cron/check-price-moves` | `30 21 * * 1-5` | Email on 5%+ price moves for held/watched stocks |
+| `/api/cron/check-dividends-upcoming` | `0 8 * * *` | Notify users about held/watched stocks going ex-dividend in 3 days |
 | `/api/cron/prefetch-market-data` | `0 5 * * *` | Pre-cache S&P 500 + NASDAQ 100 stats/earnings |
 | `/api/cron/prefetch-market-data?phase=financials` | `30 7 * * *` | Pre-cache income/balance/cash-flow for the full screener universe (own workflow, `cron-prefetch-financials.yml`, since it no longer fits in the same job as the stats phase). Runs right after the stats prefetch hands off, so it clears before market open instead of competing with peak organic traffic. |
 | `/api/cron/prefetch-calendar` | `0 4 * * *` | Warm the per-day market-calendar caches (earnings, dividends, splits, IPOs) over a rolling today-7 to today+45 window. Serves the calendar tool, the Discover earnings widget, the daily brief, the earnings-upcoming email and the Instagram carousel from one cache. Scheduled at 04:00 so it clears before the 06:30 daily brief and 08:00 earnings email, making both free cache hits. |

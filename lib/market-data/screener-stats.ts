@@ -56,6 +56,7 @@ import { getCached, getCachedStale } from '@/lib/cache/market-data-cache';
 import { computeHealthScore } from '@/lib/finance/health-score';
 import { recordHealthScoreSnapshot } from '@/lib/finance/health-score-history';
 import { waitForCronCreditBudget } from '@/lib/twelvedata/credit-budget';
+import { notifyHealthScoreChanges, type HealthScoreChange } from '@/lib/notifications/notification-creators';
 import type { ScreenerRow } from '@/app/api/screener/route';
 
 /** /statistics costs ~53 credits/symbol (matches app/api/screener/refresh/
@@ -349,24 +350,57 @@ export async function fetchAndUpsertScreenerStats(symbols: string[]): Promise<Sc
     }
   }
 
-  // For symbols whose financials fetch was rate-limited/errored (even after retry),
-  // the freshly-computed health score is unreliable — restore the previously
-  // persisted score instead of overwriting a good one with a falsely low one.
-  if (degradedSymbols.size > 0) {
+  // Read prior scores for every fetched symbol — used both to restore a
+  // degraded fetch's health score (below) and to detect real grade changes
+  // (e.g. B → C) worth notifying holders/watchers about. A single query
+  // covers both uses instead of the degraded-only lookup this replaced.
+  if (rows.length > 0) {
     const { data: priorRows } = await supabase
       .from('screener_stats')
       .select('ticker, health_score, health_score_grade')
-      .in('ticker', [...degradedSymbols]);
+      .in('ticker', rows.map((r) => r.ticker));
     const priorMap = new Map(
       (priorRows ?? []).map((r) => [(r as { ticker: string }).ticker, r as { health_score: number | null; health_score_grade: string | null }])
     );
+
+    const gradeChanges: HealthScoreChange[] = [];
+
     for (const row of rows) {
-      if (!degradedSymbols.has(row.ticker)) continue;
       const prior = priorMap.get(row.ticker);
-      if (prior && prior.health_score != null) {
-        row.health_score = prior.health_score;
-        row.health_score_grade = prior.health_score_grade as ScreenerRow['health_score_grade'];
+
+      // For symbols whose financials fetch was rate-limited/errored (even after
+      // retry), the freshly-computed health score is unreliable — restore the
+      // previously persisted score instead of overwriting a good one with a
+      // falsely low one. Degraded rows never count as a real grade change.
+      if (degradedSymbols.has(row.ticker)) {
+        if (prior && prior.health_score != null) {
+          row.health_score = prior.health_score;
+          row.health_score_grade = prior.health_score_grade as ScreenerRow['health_score_grade'];
+        }
+        continue;
       }
+
+      if (
+        prior?.health_score_grade != null &&
+        row.health_score_grade != null &&
+        prior.health_score_grade !== row.health_score_grade
+      ) {
+        gradeChanges.push({
+          symbol: row.ticker,
+          oldGrade: prior.health_score_grade,
+          newGrade: row.health_score_grade,
+          oldScore: prior.health_score ?? 0,
+          newScore: row.health_score ?? 0,
+        });
+      }
+    }
+
+    // Fire-and-forget: notifying holders/watchers must never fail or slow
+    // down the screener refresh itself.
+    if (gradeChanges.length > 0) {
+      void notifyHealthScoreChanges(gradeChanges).catch((err) =>
+        console.error('[screener-stats] health-score notification fan-out failed:', err)
+      );
     }
   }
 

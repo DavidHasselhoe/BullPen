@@ -6,7 +6,7 @@ import { createServerClient } from '@/lib/supabase/client';
 export interface Notification {
   id: string;
   user_id: string;
-  type: 'price_move' | 'earnings' | 'ai_insight' | 'market' | 'dividend' | 'academy';
+  type: 'price_move' | 'earnings' | 'ai_insight' | 'market' | 'dividend' | 'academy' | 'health_score' | 'weekly_pick' | 'daily_brief';
   title: string;
   message: string;
   entity_type: 'stock' | 'portfolio' | 'market' | null;
@@ -24,7 +24,7 @@ export interface NotificationDBResult<T> {
 
 export interface CreateNotificationInput {
   user_id: string;
-  type: 'price_move' | 'earnings' | 'ai_insight' | 'market' | 'dividend' | 'academy';
+  type: 'price_move' | 'earnings' | 'ai_insight' | 'market' | 'dividend' | 'academy' | 'health_score' | 'weekly_pick' | 'daily_brief';
   title: string;
   message: string;
   entity_type?: 'stock' | 'portfolio' | 'market' | null;
@@ -118,6 +118,7 @@ export async function createNotification(
 export async function isNotificationEnabled(
   userId: string,
   key: 'ai_insights' | 'portfolio_recap' | 'upcoming_earnings' | 'price_alerts'
+    | 'health_score_change' | 'weekly_pick' | 'daily_brief_ready' | 'dividend_reminder'
 ): Promise<boolean> {
   const supabase = createServerClient();
   const { data } = await supabase

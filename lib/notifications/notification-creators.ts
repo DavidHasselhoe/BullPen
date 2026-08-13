@@ -35,7 +35,7 @@ export interface EarningsItem {
  */
 async function alreadyNotifiedToday(
   userId: string,
-  type: 'price_move' | 'earnings' | 'ai_insight' | 'market',
+  type: 'price_move' | 'earnings' | 'ai_insight' | 'market' | 'dividend' | 'health_score' | 'weekly_pick' | 'daily_brief',
   entityId: string
 ): Promise<boolean> {
   const supabase = createServerClient();
@@ -215,6 +215,193 @@ export async function createUserAlertNotification(
     title: `${alert.symbol} hit ${priceStr}`,
     message: `${name} — your alert "${describeAlert(alert)}" was triggered.`,
     entity_type: 'user_alert',
+    entity_id: dedupeId,
+    severity: 'info',
+  };
+
+  const result = await createNotification(input);
+  return result.success;
+}
+
+// ─── Health score change notifications ───────────────────────────────────────
+
+export interface HealthScoreChange {
+  symbol: string;
+  companyName?: string;
+  oldGrade: string;
+  newGrade: string;
+  oldScore: number;
+  newScore: number;
+}
+
+/**
+ * Create a notification when a held/watched stock's BullPen health score
+ * crosses a letter grade (e.g. B → C). Deliberately gated on grade, not raw
+ * score, so day-to-day point wobble doesn't spam users — this only fires on
+ * a change worth noticing.
+ */
+export async function createHealthScoreChangeNotification(
+  userId: string,
+  change: HealthScoreChange
+): Promise<boolean> {
+  const dedupeId = `${change.symbol}:health_score`;
+  if (await alreadyNotifiedToday(userId, 'health_score', dedupeId)) return false;
+
+  const improved = change.newScore >= change.oldScore;
+  const name = change.companyName || change.symbol;
+
+  const input: CreateNotificationInput = {
+    user_id: userId,
+    type: 'health_score',
+    title: `${change.symbol} health score ${improved ? 'improved' : 'dropped'} to ${change.newGrade}`,
+    message: `${name} moved from ${change.oldGrade} (${change.oldScore}) to ${change.newGrade} (${change.newScore}).`,
+    entity_type: 'stock',
+    entity_id: dedupeId,
+    severity: improved ? 'info' : 'warning',
+  };
+
+  const result = await createNotification(input);
+  return result.success;
+}
+
+/**
+ * Fan-out for a batch of grade changes detected in one screener-stats refresh
+ * run (see lib/market-data/screener-stats.ts). Finds every user who holds or
+ * watches an affected ticker with alerts enabled, filters to those who have
+ * health_score_change notifications on, and creates one notification per
+ * user per changed ticker they track. Fire-and-forget from the caller — a
+ * failure here must never fail the screener refresh itself.
+ */
+export async function notifyHealthScoreChanges(changes: HealthScoreChange[]): Promise<void> {
+  if (changes.length === 0) return;
+  const supabase = createServerClient();
+  const symbols = changes.map((c) => c.symbol);
+
+  const [watchlistRes, holdingsRes] = await Promise.all([
+    supabase.from('user_watchlist').select('user_id, symbol, company_name').in('symbol', symbols).eq('alerts_enabled', true) as unknown as
+      Promise<{ data: Array<{ user_id: string; symbol: string; company_name: string | null }> | null }>,
+    supabase.from('user_holdings').select('user_id, symbol, company_name').in('symbol', symbols).eq('alerts_enabled', true) as unknown as
+      Promise<{ data: Array<{ user_id: string; symbol: string; company_name: string | null }> | null }>,
+  ]);
+
+  const userSymbols = new Map<string, Set<string>>();
+  const companyNames = new Map<string, string>();
+  for (const row of [...(watchlistRes.data ?? []), ...(holdingsRes.data ?? [])]) {
+    if (!userSymbols.has(row.user_id)) userSymbols.set(row.user_id, new Set());
+    userSymbols.get(row.user_id)!.add(row.symbol);
+    if (row.company_name && !companyNames.has(row.symbol)) companyNames.set(row.symbol, row.company_name);
+  }
+  if (userSymbols.size === 0) return;
+
+  const { data: users } = await supabase
+    .from('users')
+    .select('id, settings')
+    .in('id', [...userSymbols.keys()]) as unknown as
+    { data: Array<{ id: string; settings: { notifications?: Record<string, boolean> } | null }> | null };
+  const enabledUserIds = new Set(
+    (users ?? [])
+      .filter((u) => u.settings?.notifications?.health_score_change !== false)
+      .map((u) => u.id)
+  );
+
+  const changeMap = new Map(changes.map((c) => [c.symbol, c]));
+  for (const [userId, symbolSet] of userSymbols) {
+    if (!enabledUserIds.has(userId)) continue;
+    for (const symbol of symbolSet) {
+      const change = changeMap.get(symbol);
+      if (!change) continue;
+      await createHealthScoreChangeNotification(userId, { ...change, companyName: companyNames.get(symbol) ?? change.companyName });
+    }
+  }
+}
+
+// ─── Weekly Pick ready ────────────────────────────────────────────────────────
+
+/**
+ * Create a notification that Bull's Weekly Pick has been published. The pick
+ * itself is global content (one per week, not per-user) — the caller fans
+ * this out to every eligible user after generation. Ticker/headline/entry are
+ * free-tier content (only the thesis is Pro-gated), so this isn't Pro-only.
+ */
+export async function createWeeklyPickNotification(
+  userId: string,
+  pick: { symbol: string; headline: string; pickDate: string }
+): Promise<boolean> {
+  const dedupeId = `weekly_pick:${pick.pickDate}`;
+  if (await alreadyNotifiedToday(userId, 'weekly_pick', dedupeId)) return false;
+
+  const result = await createNotification({
+    user_id: userId,
+    type: 'weekly_pick',
+    title: `Bull's Weekly Pick: $${pick.symbol}`,
+    message: pick.headline,
+    entity_type: 'stock',
+    entity_id: dedupeId,
+    severity: 'info',
+  });
+  return result.success;
+}
+
+// ─── Daily Brief ready ────────────────────────────────────────────────────────
+
+/**
+ * Create a notification that today's Daily Brief is ready. The brief itself
+ * is global content — the caller fans this out to Pro users (the only users
+ * who can actually read it) after generation.
+ */
+export async function createDailyBriefReadyNotification(
+  userId: string,
+  brief: { title: string; publishedDate: string }
+): Promise<boolean> {
+  const dedupeId = `daily_brief:${brief.publishedDate}`;
+  if (await alreadyNotifiedToday(userId, 'daily_brief', dedupeId)) return false;
+
+  const result = await createNotification({
+    user_id: userId,
+    type: 'daily_brief',
+    title: 'Your Daily Brief is ready',
+    message: brief.title,
+    entity_type: 'market',
+    entity_id: dedupeId,
+    severity: 'info',
+  });
+  return result.success;
+}
+
+// ─── Ex-dividend reminder notifications ──────────────────────────────────────
+
+export interface DividendItem {
+  symbol: string;
+  companyName?: string;
+  exDate: string; // YYYY-MM-DD
+}
+
+/**
+ * Create a notification when tracked stocks are about to go ex-dividend.
+ * Groups all tickers into a single notification per user per day, same
+ * shape as the earnings-upcoming digest.
+ */
+export async function createDividendReminderNotification(
+  userId: string,
+  items: DividendItem[]
+): Promise<boolean> {
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const dedupeId = `portfolio:dividend_reminder:${todayStr}`;
+  if (await alreadyNotifiedToday(userId, 'dividend', dedupeId)) return false;
+
+  const count = items.length;
+  const tickerList = items
+    .slice(0, 5)
+    .map((d) => d.symbol)
+    .join(', ');
+  const suffix = count > 5 ? ` +${count - 5} more` : '';
+
+  const input: CreateNotificationInput = {
+    user_id: userId,
+    type: 'dividend',
+    title: `${count} tracked stock${count === 1 ? '' : 's'} go${count === 1 ? 'es' : ''} ex-dividend soon`,
+    message: tickerList + suffix,
+    entity_type: 'portfolio',
     entity_id: dedupeId,
     severity: 'info',
   };

@@ -202,6 +202,10 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
     price_alerts: true,
     portfolio_recap: true,
     ai_insights: true,
+    health_score_change: true,
+    weekly_pick: true,
+    daily_brief_ready: true,
+    dividend_reminder: true,
   });
 
   // Jump to initialTab when modal opens (e.g. from AI panel gear icon)
@@ -242,6 +246,10 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
         price_alerts: settings.notifications?.price_alerts !== false,
         portfolio_recap: settings.notifications?.portfolio_recap !== false,
         ai_insights: settings.notifications?.ai_insights !== false,
+        health_score_change: settings.notifications?.health_score_change !== false,
+        weekly_pick: settings.notifications?.weekly_pick !== false,
+        daily_brief_ready: settings.notifications?.daily_brief_ready !== false,
+        dividend_reminder: settings.notifications?.dividend_reminder !== false,
       });
       const dh = (settings.default_homepage as string) || '/dashboard';
       setDefaultHomepage(dh);
@@ -807,8 +815,8 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
               <div className="space-y-6 max-w-2xl">
                 <SettingsCard>
                   <ToggleSetting
-                    label="Upcoming Earnings Reminders"
-                    description="Get notified 7 days before a tracked stock reports earnings"
+                    label="Earnings Today"
+                    description="Get notified the morning a tracked stock reports earnings"
                     checked={notifications.upcoming_earnings}
                     onCheckedChange={(checked) => setNotifications({ ...notifications, upcoming_earnings: checked })}
                   />
@@ -829,6 +837,30 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                     description="Get notified when a Deep Dive, Portfolio Builder, or Risk Analysis finishes running"
                     checked={notifications.ai_insights}
                     onCheckedChange={(checked) => setNotifications({ ...notifications, ai_insights: checked })}
+                  />
+                  <ToggleSetting
+                    label="Health Score Changes"
+                    description="Get notified when a tracked stock's BullPen health score crosses a letter grade"
+                    checked={notifications.health_score_change}
+                    onCheckedChange={(checked) => setNotifications({ ...notifications, health_score_change: checked })}
+                  />
+                  <ToggleSetting
+                    label="Ex-Dividend Reminders"
+                    description="Get notified a few days before a tracked stock goes ex-dividend"
+                    checked={notifications.dividend_reminder}
+                    onCheckedChange={(checked) => setNotifications({ ...notifications, dividend_reminder: checked })}
+                  />
+                  <ToggleSetting
+                    label="Daily Brief Ready"
+                    description="Get notified when today's AI market brief is published"
+                    checked={notifications.daily_brief_ready}
+                    onCheckedChange={(checked) => setNotifications({ ...notifications, daily_brief_ready: checked })}
+                  />
+                  <ToggleSetting
+                    label="Weekly Pick"
+                    description="Get notified when Bull publishes the week's featured stock pick"
+                    checked={notifications.weekly_pick}
+                    onCheckedChange={(checked) => setNotifications({ ...notifications, weekly_pick: checked })}
                   />
                 </SettingsCard>
               </div>

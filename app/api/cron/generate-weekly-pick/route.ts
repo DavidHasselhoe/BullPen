@@ -25,11 +25,12 @@
  * the shortlist, plus at most 2 rescue fetches.
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { createServerClient } from '@/lib/supabase/client';
 import { logAiCall } from '@/lib/billing/log-ai-call';
 import { getLogoUrl } from '@/lib/twelvedata/twelvedata-client';
+import { createWeeklyPickNotification } from '@/lib/notifications/notification-creators';
 import {
   SCOUT_SYSTEM_PROMPT,
   buildScoutPrompt,
@@ -299,6 +300,31 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     console.error('[weekly-pick] insert failed:', insertError);
     return NextResponse.json({ success: false, stage: 'persist', error: insertError.message }, { status: 500 });
   }
+
+  // ── Fan out: notify users who want to know when the pick drops ────────────
+  // Ticker/headline/entry are free-tier content (only the thesis is
+  // Pro-gated — see /api/picks/current), so this goes to everyone, not just
+  // Pro. Scheduled via after() so it runs post-response without risking the
+  // published pick over a notification failure; a run-summary success has
+  // already been earned by this point regardless of fan-out outcome.
+  after(async () => {
+    try {
+      const { data: eligibleUsers } = await supabase
+        .from('users')
+        .select('id')
+        .or('settings->notifications->weekly_pick.is.null,settings->notifications->weekly_pick.eq.true') as unknown as
+        { data: Array<{ id: string }> | null };
+      for (const u of eligibleUsers ?? []) {
+        await createWeeklyPickNotification(u.id, {
+          symbol: chosen.symbol,
+          headline: pick.headline,
+          pickDate: todayET,
+        });
+      }
+    } catch (err) {
+      console.error('[weekly-pick] notification fan-out failed:', err);
+    }
+  });
 
   return NextResponse.json({
     success: true,

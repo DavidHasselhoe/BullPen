@@ -13,13 +13,14 @@
  * TwelveData credit cost: ~60–100 credits (earnings calendar x3 + movers + market quotes).
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { createServerClient } from '@/lib/supabase/client';
 import type { EarningsCalendarItem } from '@/lib/twelvedata/twelvedata-client';
 import { getCalendarDay } from '@/lib/market-data/calendar-days';
 import { getTopMovers, getStockQuotes } from '@/lib/market-data';
 import { logAiCall } from '@/lib/billing/log-ai-call';
+import { createDailyBriefReadyNotification } from '@/lib/notifications/notification-creators';
 
 export const maxDuration = 120;
 
@@ -456,6 +457,26 @@ Use live web search to verify the latest news for "Movers & Stories", "Watch Tod
     console.error('[generate-daily-brief] Supabase insert error:', insertError);
     return NextResponse.json({ success: false, error: insertError.message }, { status: 500 });
   }
+
+  // ── Fan out: notify Pro users the brief is ready ───────────────────────────
+  // Only Pro/admin can actually read it (see /api/briefs/today's isPro gate),
+  // so non-Pro users would just hit a paywall from the notification.
+  // Scheduled via after() so it runs post-response, never risking the
+  // published brief over a notification failure.
+  after(async () => {
+    try {
+      const { data: proUsers } = await supabase
+        .from('users')
+        .select('id')
+        .or('role.eq.admin,account_tier.gte.3') as unknown as
+        { data: Array<{ id: string }> | null };
+      for (const u of proUsers ?? []) {
+        await createDailyBriefReadyNotification(u.id, { title: titleLine, publishedDate: todayET });
+      }
+    } catch (err) {
+      console.error('[generate-daily-brief] notification fan-out failed:', err);
+    }
+  });
 
   return NextResponse.json({
     success: true,
