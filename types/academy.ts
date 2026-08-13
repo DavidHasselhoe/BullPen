@@ -171,6 +171,8 @@ export interface Course {
   requiresPro: boolean;
   /** Can be skipped without completing its lessons — see /academy/[slug]/skip. */
   isOptional: boolean;
+  /** Presentational grouping for the /academy path UI — see lib/academy/path-chapters.ts. */
+  unitLabel: string | null;
 }
 
 export interface Lesson {

@@ -20,6 +20,7 @@ interface CourseRow {
   difficulty: 'beginner' | 'intermediate' | 'advanced' | null;
   requires_pro: boolean;
   is_optional: boolean;
+  unit_label: string | null;
 }
 
 interface LessonRow {
@@ -43,7 +44,7 @@ async function handler(
 
   const { data: course } = await supabase
     .from('academy_courses')
-    .select('id, slug, title, description, icon, color, order_index, difficulty, requires_pro, is_optional')
+    .select('id, slug, title, description, icon, color, order_index, difficulty, requires_pro, is_optional, unit_label')
     .eq('slug', slug)
     .eq('is_published', true)
     .maybeSingle<CourseRow>();
@@ -105,6 +106,7 @@ async function handler(
     difficulty: course.difficulty,
     requiresPro: course.requires_pro,
     isOptional: course.is_optional,
+    unitLabel: course.unit_label,
   };
 
   return addSecurityHeaders(

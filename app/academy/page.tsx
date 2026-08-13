@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { GraduationCap, Trophy, ChevronRight } from 'lucide-react';
-import { CourseCard } from '@/components/academy/CourseCard';
+import { AcademyPath } from '@/components/academy/path/AcademyPath';
 import { DailyChallengeCard } from '@/components/academy/DailyChallengeCard';
 import { UpgradeCTA } from '@/components/billing/UpgradeCTA';
 import { useAcademyCourses } from '@/hooks/use-user-progress';
@@ -104,36 +104,15 @@ export default function AcademyHomePage() {
         </motion.div>
       )}
 
-      {/* Course grid */}
+      {/* Course path */}
       {isLoading ? (
-        <div
-          className="grid grid-cols-1 sm:grid-cols-2 gap-3"
-          role="status"
-          aria-label="Loading courses"
-        >
+        <div className="flex flex-col items-center gap-4 py-4" role="status" aria-label="Loading courses">
           {[0, 1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-44 rounded-2xl" />
+            <Skeleton key={i} className="h-14 w-14 rounded-full" />
           ))}
         </div>
       ) : courses && courses.length > 0 ? (
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={{ visible: { transition: { staggerChildren: 0.06 } } }}
-          className="grid grid-cols-1 sm:grid-cols-2 gap-3"
-        >
-          {courses.map((course) => (
-            <motion.div
-              key={course.id}
-              variants={{
-                hidden: { opacity: 0, y: 12 },
-                visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: 'easeOut' } },
-              }}
-            >
-              <CourseCard course={course} />
-            </motion.div>
-          ))}
-        </motion.div>
+        <AcademyPath courses={courses} />
       ) : (
         <div className="py-20 text-center text-sm text-muted-foreground">
           No courses available yet.
