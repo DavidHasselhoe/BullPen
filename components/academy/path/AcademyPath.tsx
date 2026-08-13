@@ -104,6 +104,19 @@ export function AcademyPath({ courses }: Props) {
     };
   }, [measure]);
 
+  useEffect(() => {
+    // The entrance stagger (staggerChildren below) can still be sliding/
+    // fading a node in when the ResizeObserver's initial measurement runs,
+    // which bakes that node's mid-animation position into the connector
+    // path — the line then stays visibly offset from the settled node even
+    // though the node itself finishes fine. One extra measure, timed just
+    // past the last node's animation, corrects it without depending on
+    // framer-motion's own completion callback.
+    const settleMs = 40 * Math.max(0, courses.length - 1) + 250 + 100;
+    const id = setTimeout(measure, settleMs);
+    return () => clearTimeout(id);
+  }, [courses, measure]);
+
   return (
     <div ref={shellRef} className="relative">
       <svg
