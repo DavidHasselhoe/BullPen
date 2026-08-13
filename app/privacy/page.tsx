@@ -26,7 +26,7 @@ export default function PrivacyPolicyPage() {
         </header>
 
         <main className="wrap" style={{ padding: '56px 0 96px' }}>
-          <TermlyEmbed policyId="02e65a84-50e5-4e4b-b2b9-7f9d49a82558" />
+          <TermlyEmbed policyId="02e65a84-50e5-4e4b-b2b9-7f9d49a82558" height={20000} />
         </main>
 
         <Footer />

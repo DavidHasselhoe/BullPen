@@ -26,7 +26,7 @@ export default function TermsOfServicePage() {
         </header>
 
         <main className="wrap" style={{ padding: '56px 0 96px' }}>
-          <TermlyEmbed policyId="706edf7e-1212-47bf-8369-e44654bb8f7b" />
+          <TermlyEmbed policyId="706edf7e-1212-47bf-8369-e44654bb8f7b" height={16000} />
         </main>
 
         <Footer />

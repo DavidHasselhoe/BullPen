@@ -68,17 +68,20 @@ export async function middleware(request: NextRequest) {
   // fast refresh) — production builds don't need it, and it fully defeats
   // CSP's main XSS mitigation, so it must never ship to real users.
   const scriptSrc = process.env.NODE_ENV === 'production'
-    ? "script-src 'self' 'unsafe-inline' https://app.termly.io"
-    : "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://app.termly.io";
+    ? "script-src 'self' 'unsafe-inline'"
+    : "script-src 'self' 'unsafe-eval' 'unsafe-inline'";
   const csp = [
     "default-src 'self'",
-    // app.termly.io: the official Termly embed script for self-updating legal
-    // policy pages (Terms of Service) — see app/terms/page.tsx. The embed
-    // script renders via an internal iframe (with iFrameResizer for auto
-    // height), so it needs both script-src (to load the script) and
-    // frame-src (to render the iframe it creates) — frame-src falls back to
-    // default-src when unset, which is 'self' and would otherwise block it.
     scriptSrc,
+    // app.termly.io: legal policy pages (/privacy, /terms, /accessibility —
+    // see components/legal/TermlyEmbed.tsx) render Termly's hosted policy
+    // viewer directly in an iframe, not their JS embed script — deliberately,
+    // since that script calls eval() internally and 'unsafe-eval' can't be
+    // scoped to one script's origin in CSP, so allowing it here would open
+    // eval-based XSS for every script on the page, not just Termly's. Only
+    // frame-src is needed for this approach; nothing loads from Termly via
+    // script-src. frame-src falls back to default-src ('self') when unset,
+    // which would otherwise block the iframe.
     "frame-src https://app.termly.io",
     "style-src 'self' 'unsafe-inline'", // Tailwind requires unsafe-inline
     "img-src 'self' data: https:",

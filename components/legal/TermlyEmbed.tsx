@@ -1,39 +1,39 @@
-import Script from 'next/script';
-
 interface TermlyEmbedProps {
   policyId: string;
+  /** Iframe height in px. Policies vary a lot in length (Privacy runs long,
+   * Terms/Accessibility are shorter) — tune per page rather than sharing one
+   * value, since a too-short iframe would truncate the document instead of
+   * just leaving blank space. */
+  height?: number;
 }
 
 /**
- * Termly's official policy embed — fetches the current published policy (and
- * theme) at runtime, so edits made in the Termly dashboard show up here
- * automatically with no redeploy. Requires app.termly.io in middleware.ts's
- * CSP (script-src + frame-src) — the embed renders via an internal iframe.
+ * Termly's hosted policy viewer, in a plain iframe — renders the same
+ * live, dashboard-editable policy as Termly's official JS embed
+ * (`embed-policy.min.js`), without needing that script.
  *
- * The embed loads Weglot for translation, which auto-detects the visitor's
- * browser locale and can silently translate the whole legal document out of
- * English — confirmed happening for a Norwegian-locale visitor. These are
- * legal terms; the authored, authoritative language must not vary by visitor.
- * Force it back to English once Weglot initializes (polled, since Weglot's
- * own async init isn't guaranteed to be ready the instant the script tag's
- * `onLoad` fires).
+ * The JS embed calls eval() internally, which broke in production once
+ * middleware.ts's CSP stopped allowing 'unsafe-eval' (2026-07-29, a
+ * deliberate security fix — see git history). CSP's 'unsafe-eval' can't be
+ * scoped to one script's origin, so re-adding it to unblock Termly would
+ * have reopened eval-based XSS for every script on the page, not just
+ * theirs. This iframe sidesteps the whole problem: content renders inside
+ * Termly's own origin/CSP context (app.termly.io), which our script-src
+ * never needs to touch — only `frame-src https://app.termly.io` in
+ * middleware.ts, which was already required and unaffected by the eval fix.
+ *
+ * `&lang=en` best-effort forces English — unverified against a non-English
+ * browser locale, but the JS embed this replaced needed an explicit fix for
+ * Weglot auto-translating the (authoritative, must-not-vary) legal text out
+ * of English, so defaulting defensively here rather than assuming the
+ * hosted viewer is immune to the same class of issue.
  */
-export function TermlyEmbed({ policyId }: TermlyEmbedProps) {
+export function TermlyEmbed({ policyId, height = 3000 }: TermlyEmbedProps) {
   return (
-    <>
-      <div className="legal-doc" name="termly-embed" data-id={policyId} />
-      <Script src="https://app.termly.io/embed-policy.min.js" strategy="afterInteractive" />
-      <Script id={`termly-force-english-${policyId}`} strategy="afterInteractive">
-        {`
-          (function poll(attemptsLeft) {
-            if (window.Weglot && typeof window.Weglot.switchTo === 'function') {
-              window.Weglot.switchTo('en');
-              return;
-            }
-            if (attemptsLeft > 0) setTimeout(function () { poll(attemptsLeft - 1); }, 200);
-          })(25);
-        `}
-      </Script>
-    </>
+    <iframe
+      src={`https://app.termly.io/policy-viewer/policy.html?policyUUID=${policyId}&lang=en`}
+      title="Legal policy"
+      style={{ width: '100%', height, border: 'none' }}
+    />
   );
 }

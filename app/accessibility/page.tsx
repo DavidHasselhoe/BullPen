@@ -26,7 +26,7 @@ export default function AccessibilityStatementPage() {
         </header>
 
         <main className="wrap" style={{ padding: '56px 0 96px' }}>
-          <TermlyEmbed policyId="d8ff288f-2379-4bf2-97c4-47bfe5f5a3d7" />
+          <TermlyEmbed policyId="d8ff288f-2379-4bf2-97c4-47bfe5f5a3d7" height={2800} />
         </main>
 
         <Footer />
