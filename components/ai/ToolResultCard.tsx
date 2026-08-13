@@ -7,6 +7,7 @@ import { CompanyProfileResultCard, type CompanyProfileOutput } from './cards/Com
 import { CompanyFinancialsResultCard, type CompanyFinancialsRow } from './cards/CompanyFinancialsResultCard';
 import { EarningsResultCard, type EarningsRow } from './cards/EarningsResultCard';
 import { CompanyMetricsResultCard, type CompanyMetricsOutput } from './cards/CompanyMetricsResultCard';
+import { ComparisonResultCard, type ComparisonOutput } from './cards/ComparisonResultCard';
 import { InsiderActivityResultCard, type InsiderActivityOutput } from './cards/InsiderActivityResultCard';
 import { ActionReceiptCard } from './cards/ActionReceiptCard';
 import type { ClientAction, ActionOutcome } from '@/lib/ai/tool-ux';
@@ -104,6 +105,11 @@ export function ToolResultCard({
       const o = output as Partial<CompanyMetricsOutput>;
       if (!Array.isArray(o.rows) || o.rows.length === 0) return null;
       return <CompanyMetricsResultCard output={o as CompanyMetricsOutput} />;
+    }
+    case 'compareCompanies': {
+      const o = output as Partial<ComparisonOutput>;
+      if (!Array.isArray(o.comparison) || o.comparison.length === 0) return null;
+      return <ComparisonResultCard output={o as ComparisonOutput} />;
     }
     case 'getInsiderActivity': {
       const o = output as Partial<InsiderActivityOutput>;
