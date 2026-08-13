@@ -1,5 +1,19 @@
 [
   {
+    "date": "2026-08-13",
+    "entries": [
+      { "type": "new", "text": "Academy courses are now shown as a path — each course unlocks once you finish the one before it, instead of a flat list of everything at once" },
+      { "type": "new", "text": "Notification settings have been reorganized and expanded. You can now turn on alerts for Financial Health Score changes, Bull's Weekly Pick, your Daily Brief, and upcoming ex-dividend dates" },
+      { "type": "new", "text": "Asking Bull to compare companies now shows a visual comparison card instead of just a text answer" },
+      { "type": "new", "text": "Added a hover price preview when placing an alert on the full screen chart" },
+      { "type": "new", "text": "Added a reminder email before your Pro subscription renews and charges automatically" },
+      { "type": "new", "text": "Ask Bull now offers supportive resources if a conversation touches on personal crisis topics" },
+      { "type": "fixed", "text": "Fixed Company Compare sometimes failing to load a comparison" },
+      { "type": "fixed", "text": "Fixed share links showing a generic error instead of a clear No trades yet message when appropriate" },
+      { "type": "fixed", "text": "Deleting your account now also removes your profile picture" }
+    ]
+  },
+  {
     "date": "2026-08-12",
     "entries": [
       { "type": "improved", "text": "Portfolio Risk Analysis now keeps running in the background if you leave the page. You'll get notified when it's done, and it picks back up automatically if you return while it's still working" },
