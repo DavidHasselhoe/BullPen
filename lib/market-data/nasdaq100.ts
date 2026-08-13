@@ -1,17 +1,20 @@
 /**
- * Nasdaq-100 constituent tickers.
- * Source: Nasdaq NDX index as of early 2026.
- * Updated periodically — index rebalances quarterly.
+ * Nasdaq 100 constituent tickers.
+ * Source: Nasdaq's own official Nasdaq-100 constituents API.
+ * Auto-synced weekly by scripts/sync-index-constituents.ts — do not hand-edit,
+ * changes will be overwritten on the next sync run.
+ * Last synced: 2026-08-13
  */
 export const NASDAQ100_TICKERS: string[] = [
-  'AAPL', 'MSFT', 'NVDA', 'AMZN', 'META', 'TSLA', 'GOOGL', 'GOOG', 'AVGO', 'COST',
-  'NFLX', 'AMD', 'QCOM', 'TMUS', 'AMGN', 'INTU', 'AMAT', 'BKNG', 'ISRG', 'ADP',
-  'ADI', 'PANW', 'CSCO', 'MU', 'REGN', 'LRCX', 'KLAC', 'SNPS', 'CDNS', 'ASML',
-  'MELI', 'ORLY', 'NXPI', 'PCAR', 'CRWD', 'FTNT', 'CTAS', 'MAR', 'ROST', 'KDP',
-  'DXCM', 'PAYX', 'MNST', 'AEP', 'ODFL', 'EA', 'IDXX', 'BIIB', 'EXC', 'ON',
-  'DLTR', 'XEL', 'ANSS', 'VRSK', 'TEAM', 'FAST', 'CTSH', 'CPRT', 'DDOG', 'ENPH',
-  'ABNB', 'ZS', 'MRVL', 'ILMN', 'WDAY', 'GEHC', 'GFS', 'FSLR', 'BKR', 'TTD',
-  'SMCI', 'FANG', 'PDD', 'AZN', 'MCHP', 'VRTX', 'ROP', 'ADSK', 'MTCH', 'LCID',
-  'WBD', 'SIRI', 'ZBRA', 'SPLK', 'OKTA', 'DOCU', 'ZM', 'PTON', 'RIVN', 'HOOD',
-  'ARM', 'CEG', 'GEHC', 'MSTR', 'APP', 'PLTR', 'COIN', 'RBLX', 'NET', 'SNOW',
+  'AAPL', 'ABNB', 'ADBE', 'ADI', 'ADP', 'ADSK', 'AEP', 'ALAB', 'ALNY', 'AMAT',
+  'AMD', 'AMGN', 'AMZN', 'APP', 'ARM', 'ASML', 'AVGO', 'AXON', 'BKNG', 'BKR',
+  'CCEP', 'CDNS', 'CEG', 'CMCSA', 'COST', 'CPRT', 'CRWD', 'CRWV', 'CSCO', 'CSX',
+  'CTAS', 'DASH', 'DDOG', 'DXCM', 'EXC', 'FANG', 'FAST', 'FER', 'FTNT', 'GEHC',
+  'GILD', 'GOOG', 'GOOGL', 'HON', 'HONA', 'IDXX', 'INTC', 'INTU', 'ISRG', 'KDP',
+  'KHC', 'KLAC', 'LIN', 'LITE', 'LRCX', 'MAR', 'MCHP', 'MDLZ', 'MELI', 'META',
+  'MNST', 'MPWR', 'MRVL', 'MSFT', 'MSTR', 'MU', 'NBIS', 'NFLX', 'NVDA', 'NXPI',
+  'ODFL', 'ORLY', 'PANW', 'PAYX', 'PCAR', 'PDD', 'PEP', 'PLTR', 'PYPL', 'QCOM',
+  'REGN', 'RKLB', 'ROP', 'ROST', 'SBUX', 'SHOP', 'SNDK', 'SNPS', 'SPCX', 'STX',
+  'TER', 'TMUS', 'TRI', 'TSLA', 'TTWO', 'TXN', 'VRTX', 'WBD', 'WDAY', 'WDC',
+  'WMT', 'XEL',
 ];

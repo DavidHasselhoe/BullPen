@@ -1,0 +1,54 @@
+name: Cron — Sync Index Constituents
+
+# Monday 05:00 UTC, ahead of market open and the other Monday-morning crons.
+# Refreshes lib/market-data/sp500.ts and nasdaq100.ts against real index
+# membership (SPY's daily holdings disclosure for the S&P 500, Nasdaq's own
+# API for the Nasdaq-100 — see lib/market-data/index-sync.ts). Both sources
+# are official/fund-mandated, so a genuine diff is committed straight to
+# preview, no manual review gate — see scripts/sync-index-constituents.ts's
+# header for the reasoning. A Discord notification fires only when something
+# actually changed, matching the "no news is fine, don't spam" pattern used
+# by the other content crons in this repo.
+on:
+  schedule:
+    - cron: '0 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: preview
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Sync index constituents
+        env:
+          DISCORD_INDEX_SYNC_WEBHOOK_URL: ${{ secrets.DISCORD_INDEX_SYNC_WEBHOOK_URL }}
+        run: npm run sync-index-constituents
+
+      - name: Commit and push if changed
+        run: |
+          if git diff --quiet -- lib/market-data/sp500.ts lib/market-data/nasdaq100.ts; then
+            echo "No index membership changes this week."
+            exit 0
+          fi
+          git config user.name "bullpen-bot"
+          git config user.email "actions@github.com"
+          git add lib/market-data/sp500.ts lib/market-data/nasdaq100.ts
+          git commit -m "chore: sync S&P 500 / Nasdaq 100 constituents
+
+Automated weekly sync against SPY holdings + Nasdaq's official API.
+See scripts/sync-index-constituents.ts."
+          git push origin HEAD:preview

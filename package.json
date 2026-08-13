@@ -34,7 +34,8 @@
     "add-norwegian-locale": "tsx scripts/add-norwegian-locale.ts",
     "verify-picks-math": "tsx scripts/verify-picks-math.ts",
     "trigger-instagram-earnings": "tsx scripts/trigger-instagram-earnings.ts",
-    "instagram-publish": "tsx scripts/publish-instagram.ts"
+    "instagram-publish": "tsx scripts/publish-instagram.ts",
+    "sync-index-constituents": "tsx scripts/sync-index-constituents.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.33",
@@ -95,6 +96,7 @@
     "stripe": "^22.3.0",
     "tailwind-merge": "^3.4.0",
     "ws": "^8.19.0",
+    "xlsx": "^0.18.5",
     "zod": "^3.25.76"
   },
   "devDependencies": {
