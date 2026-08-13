@@ -18,6 +18,7 @@ export function ShareSheet({ disabled }: ShareSheetProps) {
   const [includeAmount, setIncludeAmount] = useState(false);
   const [anonymous, setAnonymous] = useState(false);
   const [phase, setPhase] = useState<Phase>('idle');
+  const [errorCode, setErrorCode] = useState<string | null>(null);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [copyLabel, setCopyLabel] = useState('Copy link');
 
@@ -31,12 +32,14 @@ export function ShareSheet({ disabled }: ShareSheetProps) {
       });
       const json = await res.json();
       if (!json.success) {
+        setErrorCode(typeof json.error === 'string' ? json.error : null);
         setPhase('error');
         return;
       }
       setShareUrl(json.url);
       setPhase('ready');
     } catch {
+      setErrorCode(null);
       setPhase('error');
     }
   };
@@ -87,7 +90,9 @@ export function ShareSheet({ disabled }: ShareSheetProps) {
 
         {phase === 'error' && (
           <p className="text-sm text-muted-foreground py-4 text-center">
-            Couldn&apos;t create a share link right now. Try again in a moment.
+            {errorCode === 'no_data_yet'
+              ? "No trades yet today. Try again once the market opens."
+              : "Couldn't create a share link right now. Try again in a moment."}
           </p>
         )}
 
