@@ -114,6 +114,7 @@ export function AdvancedChart({
   const lastFitKey = useRef<string>('');
   const dragRef = useRef<{ x: number; y: number } | null>(null);
   const [measureBox, setMeasureBox] = useState<MeasureBox | null>(null);
+  const [alertHoverPrice, setAlertHoverPrice] = useState<{ y: number; price: number } | null>(null);
   // Per-line series lookup for the hover legend — keyed by `${instanceId}-${lineKey}`
   // so a multi-line indicator (BB, MACD) gets one value per line, not one per instance.
   const lineSeriesRef = useRef<Map<string, ISeriesApi<SeriesType>>>(new Map());
@@ -425,9 +426,10 @@ export function AdvancedChart({
     return () => chart.unsubscribeCrosshairMove(handler);
   }, []);
 
-  // Clear the measure box when leaving the tool.
+  // Clear tool-specific overlay state when leaving that tool.
   useEffect(() => {
     if (tool !== 'measure') { setMeasureBox(null); dragRef.current = null; }
+    if (tool !== 'alert') setAlertHoverPrice(null);
   }, [tool]);
 
   // ── Interaction overlay (measure + alert) ──────────────────────────────────
@@ -466,11 +468,20 @@ export function AdvancedChart({
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
   };
   const onPointerMove = (e: React.PointerEvent) => {
-    if (tool !== 'measure' || !dragRef.current) return;
-    const { x, y } = localXY(e);
-    setMeasureBox(computeBox(dragRef.current.x, dragRef.current.y, x, y));
+    if (tool === 'measure') {
+      if (!dragRef.current) return;
+      const { x, y } = localXY(e);
+      setMeasureBox(computeBox(dragRef.current.x, dragRef.current.y, x, y));
+      return;
+    }
+    if (tool === 'alert') {
+      const { y } = localXY(e);
+      const price = priceSeriesRef.current?.coordinateToPrice(y);
+      setAlertHoverPrice(price != null ? { y, price: price as number } : null);
+    }
   };
   const onPointerUp = () => { if (tool === 'measure') dragRef.current = null; };
+  const onPointerLeave = () => { if (tool === 'alert') setAlertHoverPrice(null); };
   const onClick = (e: React.MouseEvent) => {
     if (tool !== 'alert' || !onCreateAlert) return;
     const { y } = localXY(e);
@@ -481,6 +492,16 @@ export function AdvancedChart({
   const span = measureBox
     ? measureBox.days >= 1 ? `${Math.round(measureBox.days)}d` : `${Math.round(measureBox.days * 24)}h`
     : '';
+
+  // Reference price for the alert-tool hover badge's color (above current = bullish
+  // alert, below = bearish) — same up/down comparison the modal makes when it turns
+  // the clicked price into price_above/price_below. Neutral gray (not a third
+  // accent color) for the rare case there's no reference price yet — DESIGN.md
+  // reserves emerald/red as the only meaningful colors.
+  const alertRefPrice = livePrice ?? lastBarRef.current?.close ?? null;
+  const alertBadgeColor = alertHoverPrice && alertRefPrice != null
+    ? (alertHoverPrice.price >= alertRefPrice ? UP : DOWN)
+    : '#71717a';
 
   return (
     <div className="relative h-full w-full">
@@ -527,8 +548,28 @@ export function AdvancedChart({
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
+        onPointerLeave={onPointerLeave}
         onClick={onClick}
       >
+        {/* Alert-tool hover preview — a dashed line + price badge that tracks the
+            cursor so the exact price about to be set is always visible before
+            clicking. Colored against the last known price the same way the modal
+            classifies the click as price_above/price_below. */}
+        {tool === 'alert' && alertHoverPrice && (
+          <>
+            <div
+              className="absolute left-0 right-0 border-t border-dashed"
+              style={{ top: alertHoverPrice.y, borderColor: alertBadgeColor }}
+            />
+            <div
+              className="absolute right-2 -translate-y-1/2 whitespace-nowrap rounded-md px-2 py-1 text-[11px] font-semibold tabular-nums text-white shadow-lg"
+              style={{ top: alertHoverPrice.y, background: alertBadgeColor }}
+            >
+              Set alert @ ${alertHoverPrice.price.toFixed(2)}
+            </div>
+          </>
+        )}
+
         {measureBox && (
           <>
             <div
