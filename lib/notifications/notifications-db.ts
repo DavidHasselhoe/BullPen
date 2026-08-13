@@ -110,6 +110,26 @@ export async function createNotification(
 }
 
 /**
+ * Whether a user has opted into a given notification type. Missing/null means
+ * enabled by default — only an explicit `false` in `users.settings.notifications`
+ * opts out. Used by notification producers that don't already have the user's
+ * settings in scope (e.g. background AI-generation jobs).
+ */
+export async function isNotificationEnabled(
+  userId: string,
+  key: 'ai_insights' | 'portfolio_recap' | 'upcoming_earnings' | 'price_alerts'
+): Promise<boolean> {
+  const supabase = createServerClient();
+  const { data } = await supabase
+    .from('users')
+    .select('settings')
+    .eq('id', userId)
+    .maybeSingle();
+  const settings = data?.settings as { notifications?: Record<string, boolean> } | null;
+  return settings?.notifications?.[key] !== false;
+}
+
+/**
  * Gets notifications for a user
  */
 export async function getUserNotifications(

@@ -3,10 +3,12 @@
  * GET /api/cron/check-price-moves
  *
  * Runs after US market close (9:30 PM UTC / 4:30 PM ET + buffer), Mon–Fri.
- * For every user who has price_alerts enabled in their settings:
+ * Drives two independently-toggleable notifications — price_alerts (movers) and
+ * portfolio_recap (daily P/L) — for every user who has at least one enabled:
  *   1. Collects all their tracked stocks (watchlist + holdings) with alerts_enabled = true
  *   2. Batch-fetches quotes for all unique symbols (shared across all users — very credit-efficient)
- *   3. Creates a grouped or individual notification for stocks that moved ≥5%
+ *   3. If portfolio_recap is on: creates the daily portfolio recap notification
+ *   4. If price_alerts is on: creates a grouped or individual notification for stocks that moved ≥5%
  *
  * Credit cost: ~1 credit per 20 unique symbols across ALL users combined.
  * For 500 unique symbols: 25 batch calls = 25 credits per day.
@@ -77,17 +79,29 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   };
 
   try {
-    // ── 1. Fetch all users with price_alerts enabled ────────────────────────
-    // settings is a JSONB column; NULL or missing key both mean "enabled by default"
+    // ── 1. Fetch all users with price_alerts and/or portfolio_recap enabled ──
+    // settings is a JSONB column; NULL or missing key both mean "enabled by default".
+    // price_alerts (movers) and portfolio_recap (daily P/L) are independent toggles,
+    // so a user only needs one of the two on to be worth fetching here — the per-user
+    // gate below decides which of the two notifications they actually get.
     const { data: users, error: usersErr } = await supabase
       .from('users')
       .select('id, settings')
-      .or('settings->notifications->price_alerts.is.null,settings->notifications->price_alerts.eq.true') as unknown as
+      .or(
+        'settings->notifications->price_alerts.is.null,settings->notifications->price_alerts.eq.true,' +
+        'settings->notifications->portfolio_recap.is.null,settings->notifications->portfolio_recap.eq.true'
+      ) as unknown as
       { data: Array<{ id: string; settings: Record<string, unknown> | null }> | null; error: unknown };
 
     if (usersErr || !users?.length) {
       return NextResponse.json({ ...summary, error: 'No eligible users or query failed' });
     }
+
+    const userSettings = new Map(users.map((u) => [u.id, u.settings]));
+    const wantsPriceAlerts = (userId: string) =>
+      (userSettings.get(userId) as { notifications?: Record<string, boolean> } | null)?.notifications?.price_alerts !== false;
+    const wantsPortfolioRecap = (userId: string) =>
+      (userSettings.get(userId) as { notifications?: Record<string, boolean> } | null)?.notifications?.portfolio_recap !== false;
 
     // ── 2. Collect (userId → symbol[]) from watchlist + holdings ──────────
     const [watchlistRes, holdingsRes] = await Promise.all([
@@ -188,7 +202,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       }
 
       // ── Daily portfolio recap (runs regardless of the 5% mover threshold) ──
-      const holdings = userHoldings.get(userId);
+      const holdings = wantsPortfolioRecap(userId) ? userHoldings.get(userId) : undefined;
       if (holdings?.length) {
         let prevValue = 0;
         let dayChange = 0;
@@ -218,7 +232,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         }
       }
 
-      if (movers.length === 0) continue;
+      if (movers.length === 0 || !wantsPriceAlerts(userId)) continue;
 
       let created = false;
       if (movers.length >= 3) {

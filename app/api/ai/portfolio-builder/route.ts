@@ -4,7 +4,7 @@ import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { checkRateLimit } from '@/lib/security/rate-limiter';
 import { checkQuota } from '@/lib/billing/quotas';
 import { logAiCall } from '@/lib/billing/log-ai-call';
-import { createNotification } from '@/lib/notifications/notifications-db';
+import { createNotification, isNotificationEnabled } from '@/lib/notifications/notifications-db';
 import { createServerClient } from '@/lib/supabase/client';
 import { PORTFOLIO_BUILDER_SYSTEM_PROMPT } from '@/lib/ai/portfolio-builder/system-prompt';
 import {
@@ -138,15 +138,17 @@ async function runPortfolioBuilder(params: {
       await supabase.from('portfolio_generations').delete().in('id', oldest.map((r) => r.id));
     }
 
-    await createNotification({
-      user_id: userId,
-      type: 'ai_insight',
-      title: 'Your portfolio build is ready',
-      message: finalPortfolio.theme_summary || 'Your AI-generated portfolio has finished — tap to view it.',
-      entity_type: null,
-      entity_id: `portfolio_builder:${id}`,
-      severity: 'info',
-    });
+    if (await isNotificationEnabled(userId, 'ai_insights')) {
+      await createNotification({
+        user_id: userId,
+        type: 'ai_insight',
+        title: 'Your portfolio build is ready',
+        message: finalPortfolio.theme_summary || 'Your AI-generated portfolio has finished — tap to view it.',
+        entity_type: null,
+        entity_id: `portfolio_builder:${id}`,
+        severity: 'info',
+      });
+    }
   } catch (err) {
     console.error('[portfolio-builder] Anthropic error:', err);
     const safe = classifyAiError(err);

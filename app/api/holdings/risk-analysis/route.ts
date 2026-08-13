@@ -17,7 +17,7 @@ import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { checkRateLimit } from '@/lib/security/rate-limiter';
 import { checkQuota } from '@/lib/billing/quotas';
 import { logAiCall } from '@/lib/billing/log-ai-call';
-import { createNotification } from '@/lib/notifications/notifications-db';
+import { createNotification, isNotificationEnabled } from '@/lib/notifications/notifications-db';
 import { createServerClient } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/types';
 import { classifyAiError, parseFailure } from '@/lib/ai/provider-error';
@@ -184,17 +184,19 @@ async function runRiskAnalysis(params: {
     const riskLevel = typeof analysis.riskLevel === 'string' ? analysis.riskLevel : 'Unknown';
     const score = typeof analysis.overallRiskScore === 'number' ? analysis.overallRiskScore : null;
 
-    await createNotification({
-      user_id: userId,
-      type: 'ai_insight',
-      title: 'Your portfolio risk analysis is ready',
-      message: score != null
-        ? `Overall risk: ${riskLevel} (${score}/100). Tap to view the full breakdown.`
-        : 'Your risk assessment has finished. Tap to view it.',
-      entity_type: 'portfolio',
-      entity_id: `risk_analysis:${id}`,
-      severity: 'info',
-    });
+    if (await isNotificationEnabled(userId, 'ai_insights')) {
+      await createNotification({
+        user_id: userId,
+        type: 'ai_insight',
+        title: 'Your portfolio risk analysis is ready',
+        message: score != null
+          ? `Overall risk: ${riskLevel} (${score}/100). Tap to view the full breakdown.`
+          : 'Your risk assessment has finished. Tap to view it.',
+        entity_type: 'portfolio',
+        entity_id: `risk_analysis:${id}`,
+        severity: 'info',
+      });
+    }
   } catch (err) {
     console.error('[risk-analysis] Anthropic error:', err);
     const safe = classifyAiError(err);

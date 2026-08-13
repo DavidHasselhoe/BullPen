@@ -198,12 +198,10 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
   const [responseStyle, setResponseStyle] = useState<'concise' | 'balanced' | 'detailed' | null>(null);
   const [allowHoldingsContext, setAllowHoldingsContext] = useState(false);
   const [notifications, setNotifications] = useState({
-    holdings_earnings: true,
     upcoming_earnings: true,
     price_alerts: true,
-    breaking_news: false,
-    insider_trades: false,
-    signal_threshold_crossed: false,
+    portfolio_recap: true,
+    ai_insights: true,
   });
 
   // Jump to initialTab when modal opens (e.g. from AI panel gear icon)
@@ -240,12 +238,10 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
       setTheme(resolvedTheme);
 
       setNotifications({
-        holdings_earnings: settings.notifications?.holdings_earnings !== false,
         upcoming_earnings: settings.notifications?.upcoming_earnings !== false,
         price_alerts: settings.notifications?.price_alerts !== false,
-        breaking_news: settings.notifications?.breaking_news || false,
-        insider_trades: settings.notifications?.insider_trades || false,
-        signal_threshold_crossed: settings.notifications?.signal_threshold_crossed || false,
+        portfolio_recap: settings.notifications?.portfolio_recap !== false,
+        ai_insights: settings.notifications?.ai_insights !== false,
       });
       const dh = (settings.default_homepage as string) || '/dashboard';
       setDefaultHomepage(dh);
@@ -460,7 +456,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
     {
       items: [
         { id: 'preferences', label: t('settings.preferences'), icon: Globe, description: 'Region, currency, language, theme, and your default homepage.' },
-        { id: 'notifications', label: t('settings.notifications'), icon: Bell, description: 'Choose which emails and alerts BullPen sends you.' },
+        { id: 'notifications', label: t('settings.notifications'), icon: Bell, description: 'Choose which alerts BullPen sends you.' },
         { id: 'customize', label: t('settings.customize'), icon: Settings2, description: 'Tailor your home layout and chart defaults.' },
         { id: 'ai', label: 'Ask Bull', icon: Bot, description: 'How Bull communicates and frames its analysis.' },
       ],
@@ -811,12 +807,6 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
               <div className="space-y-6 max-w-2xl">
                 <SettingsCard>
                   <ToggleSetting
-                    label="Earnings Alerts"
-                    description="Email when companies in your holdings file new 10-K or 10-Q reports"
-                    checked={notifications.holdings_earnings}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, holdings_earnings: checked })}
-                  />
-                  <ToggleSetting
                     label="Upcoming Earnings Reminders"
                     description="Get notified 7 days before a tracked stock reports earnings"
                     checked={notifications.upcoming_earnings}
@@ -828,36 +818,19 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                     checked={notifications.price_alerts}
                     onCheckedChange={(checked) => setNotifications({ ...notifications, price_alerts: checked })}
                   />
+                  <ToggleSetting
+                    label="Daily Portfolio Recap"
+                    description="A daily summary of how your holdings moved and what drove it"
+                    checked={notifications.portfolio_recap}
+                    onCheckedChange={(checked) => setNotifications({ ...notifications, portfolio_recap: checked })}
+                  />
+                  <ToggleSetting
+                    label="AI Insights Ready"
+                    description="Get notified when a Deep Dive, Portfolio Builder, or Risk Analysis finishes running"
+                    checked={notifications.ai_insights}
+                    onCheckedChange={(checked) => setNotifications({ ...notifications, ai_insights: checked })}
+                  />
                 </SettingsCard>
-
-                <div className="space-y-2">
-                  <p className="px-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/85">
-                    Coming soon
-                  </p>
-                  <SettingsCard>
-                    <ToggleSetting
-                      label="Breaking News"
-                      description="Receive alerts for important market news"
-                      checked={notifications.breaking_news}
-                      onCheckedChange={(checked) => setNotifications({ ...notifications, breaking_news: checked })}
-                      disabled
-                    />
-                    <ToggleSetting
-                      label="Insider Trades"
-                      description="Notifications for significant insider trading activity"
-                      checked={notifications.insider_trades}
-                      onCheckedChange={(checked) => setNotifications({ ...notifications, insider_trades: checked })}
-                      disabled
-                    />
-                    <ToggleSetting
-                      label="Signal Threshold Crossed"
-                      description="Alerts when signals cross your configured thresholds"
-                      checked={notifications.signal_threshold_crossed}
-                      onCheckedChange={(checked) => setNotifications({ ...notifications, signal_threshold_crossed: checked })}
-                      disabled
-                    />
-                  </SettingsCard>
-                </div>
               </div>
             )}
 

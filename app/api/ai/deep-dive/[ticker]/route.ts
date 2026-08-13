@@ -4,7 +4,7 @@ import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { checkRateLimit } from '@/lib/security/rate-limiter';
 import { checkQuota } from '@/lib/billing/quotas';
 import { logAiCall } from '@/lib/billing/log-ai-call';
-import { createNotification } from '@/lib/notifications/notifications-db';
+import { createNotification, isNotificationEnabled } from '@/lib/notifications/notifications-db';
 import { createServerClient } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/types';
 import { slugToSymbol } from '@/lib/assets/asset-type';
@@ -130,15 +130,17 @@ async function runDeepDive(params: {
       data_as_of: data.dataAsOf,
     }).eq('id', id);
 
-    await createNotification({
-      user_id: userId,
-      type: 'ai_insight',
-      title: `Your ${symbol} deep dive is ready`,
-      message: `The AI analysis of ${report.companyName} has finished — tap to read it.`,
-      entity_type: 'stock',
-      entity_id: `${symbol}:deep_dive`,
-      severity: 'info',
-    });
+    if (await isNotificationEnabled(userId, 'ai_insights')) {
+      await createNotification({
+        user_id: userId,
+        type: 'ai_insight',
+        title: `Your ${symbol} deep dive is ready`,
+        message: `The AI analysis of ${report.companyName} has finished — tap to read it.`,
+        entity_type: 'stock',
+        entity_id: `${symbol}:deep_dive`,
+        severity: 'info',
+      });
+    }
   } catch (err) {
     console.error('[deep-dive] Anthropic error:', err);
     const safe = classifyAiError(err);
