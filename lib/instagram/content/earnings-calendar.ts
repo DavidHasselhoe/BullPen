@@ -1,31 +1,40 @@
 /**
  * Earnings-calendar content for the automated Instagram pipeline.
  *
- * Every fact (ticker, company name, date) comes straight from the shared
- * per-day calendar cache (lib/market-data/calendar-days.ts), filtered to
- * SIGNIFICANT_TICKERS (S&P 500 + Nasdaq 100) plus one manual exception (see
- * INSTAGRAM_ALLOWLIST below).
+ * WHICH companies report and WHEN comes from Claude's web search (see
+ * earnings-web-search.ts) rather than TwelveData's /earnings_calendar —
+ * that endpoint only carries dates TwelveData has confirmed, which lags
+ * 3-6 weeks behind for most companies, routinely later than this post's
+ * one-week-ahead publish schedule. See earnings-web-search.ts's file
+ * header for the full reasoning, including source-legitimacy notes.
+ *
+ * Everything else — company name, logo, market cap — still comes from
+ * BullPen's own data (screener_stats via attachCalendarMeta, the logo
+ * proxy), never from Claude. The result is filtered to SIGNIFICANT_TICKERS
+ * (S&P 500 + Nasdaq 100) plus one manual exception (see INSTAGRAM_ALLOWLIST
+ * below), same scope as before.
  * Deliberately narrower than app/api/calendar/earnings/route.ts's in-app
  * Market Calendar, which widened to the full ~1200-ticker active screener
  * universe earlier this session — that's the right call for a browsable
  * in-app tool, but public Instagram content should only ever name companies
  * a general audience would actually recognize.
  *
- * Claude never sees or produces any of the factual data — it only writes the
- * hook headline and caption, grounded in the real list handed to it. This
- * keeps hallucination risk on the facts at zero, not just "low": there is no
- * code path where the model's own knowledge could reach a slide's numbers.
+ * Claude never produces the hook/caption's factual data either — that call
+ * only writes copy, grounded in the real list already resolved above. This
+ * keeps hallucination risk on the slide's numbers at zero, not just "low":
+ * there is no code path where the model's own knowledge could reach them.
  *
- * Claude cost: a single short, non-web-search call (~$0.01/run) — see
- * lib/billing/log-ai-call.ts for where this is logged (feature: 'instagram_content').
+ * Claude cost: the web-search lookup (~a few cents/run, see
+ * earnings-web-search.ts) plus a short, non-web-search hook/caption call
+ * (~$0.01/run) — see lib/billing/log-ai-call.ts for where both are logged
+ * (feature: 'instagram_content').
  */
 
 import Anthropic from '@anthropic-ai/sdk';
-import type { EarningsCalendarItem } from '@/lib/twelvedata/twelvedata-client';
-import { getCalendarRange } from '@/lib/market-data/calendar-days';
+import { fetchConfirmedEarnings } from './earnings-web-search';
 import { SIGNIFICANT_TICKERS } from '@/lib/market-data/significant-tickers';
 import { NASDAQ100_TICKERS } from '@/lib/market-data/nasdaq100';
-import { attachMarketCap } from '@/lib/market-data/calendar-market-cap';
+import { attachCalendarMeta } from '@/lib/market-data/calendar-market-cap';
 import { logAiCall } from '@/lib/billing/log-ai-call';
 import { parseHookAndCaption } from './schema';
 import type { EarningsCalendarSlides, EarningsSlideCompany } from './schema';
@@ -50,12 +59,6 @@ const MAX_COMPANIES = 24;
 const INSTAGRAM_ALLOWLIST: Set<string> = new Set([...SIGNIFICANT_TICKERS, 'TSM']);
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
-function timeTag(time?: string): 'BMO' | 'AMC' | null {
-  if (time === 'BMO' || time === 'pre_market' || time === 'before-market-open') return 'BMO';
-  if (time === 'AMC' || time === 'after_close' || time === 'after-market-close') return 'AMC';
-  return null;
-}
 
 /**
  * Resolves one ticker's logo via the same self-healing proxy CompanyLogo
@@ -91,7 +94,7 @@ function formatWeekLabel(weekStart: string, weekEnd: string): string {
     : `${startMonth} ${startDay} - ${endMonth} ${endDay}, ${year}`;
 }
 
-const FIXED_DISCLAIMER = 'Not financial advice. Data from Twelve Data, current as of posting. Dates can change; always confirm before the market moves.';
+const FIXED_DISCLAIMER = 'Not financial advice. Report dates gathered from public sources as of posting. Dates can change; always confirm before the market moves.';
 
 const SYSTEM_PROMPT = `You write short, punchy Instagram copy for BullPen, a financial app for beginner-to-intermediate investors.
 
@@ -109,7 +112,7 @@ interface RawEarningsRow {
   symbol: string;
   name?: string;
   date: string;
-  time?: string;
+  time: 'BMO' | 'AMC' | null;
   market_cap: number | null;
 }
 
@@ -163,16 +166,13 @@ export async function generateEarningsCalendarContent(
   weekStart: string,
   weekEnd: string
 ): Promise<EarningsCalendarSlides | null> {
-  // Per-day cache rather than one range request. /earnings_calendar caps at
-  // 1200 rows and drops whole days from a multi-day range, which this builder
-  // could not see: a truncated response looked like a genuine result, so the
-  // "quiet week, skip posting" branch below was firing on weeks that really
-  // did have qualifying companies. The 04:00 prefetch-calendar cron warms this
-  // window, so a Sunday run normally costs nothing.
-  const { byDate } = await getCalendarRange<EarningsCalendarItem>('earnings', weekStart, weekEnd);
-  const raw = [...byDate.values()].flat();
+  // WHICH companies + WHEN comes from Claude's web search, not TwelveData —
+  // see earnings-web-search.ts's file header for why. Claude supplies only
+  // symbol/date/time; name and market cap are hydrated below from BullPen's
+  // own screener_stats, never trusted from the model.
+  const hits = await fetchConfirmedEarnings(weekStart, weekEnd);
 
-  const filtered = raw
+  const filtered = hits
     .filter((item) => INSTAGRAM_ALLOWLIST.has(item.symbol))
     .sort((a, b) => {
       const aTier = NASDAQ100_SET.has(a.symbol) ? 0 : 1;
@@ -185,9 +185,9 @@ export async function generateEarningsCalendarContent(
 
   if (filtered.length === 0) return null;
 
-  const withCaps = await attachMarketCap(filtered);
-  const shown = withCaps.slice(0, MAX_COMPANIES);
-  const overflowCount = Math.max(0, withCaps.length - shown.length);
+  const withMeta = await attachCalendarMeta(filtered);
+  const shown = withMeta.slice(0, MAX_COMPANIES);
+  const overflowCount = Math.max(0, withMeta.length - shown.length);
 
   const weekLabel = formatWeekLabel(weekStart, weekEnd);
 
@@ -203,7 +203,7 @@ export async function generateEarningsCalendarContent(
     symbol: c.symbol,
     name: c.name ?? c.symbol,
     date: c.date,
-    time: timeTag(c.time),
+    time: c.time,
     marketCap: c.market_cap,
     logoUrl: logoUrls[i],
   }));
