@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import type Stripe from 'stripe';
 import { createServerClient } from '@/lib/supabase/client';
 import { getStripe, statusGrantsPro, TIER_PRO, TIER_FREE } from '@/lib/billing/stripe';
+import { sendRenewalReminderEmail } from '@/lib/email/billing-reminder';
 
 // Stripe needs the raw request body to verify the signature — never cache/parse.
 export const runtime = 'nodejs';
@@ -14,7 +15,13 @@ export const dynamic = 'force-dynamic';
  *   active | trialing  → 3 (Pro)
  *   anything else      → 1 (Free)
  *
- * Register this endpoint in the Stripe dashboard (or `stripe listen`) and put the
+ * Also sends a renewal reminder email on `invoice.upcoming` (see
+ * lib/email/billing-reminder.ts). How many days ahead that event fires is a
+ * Stripe Dashboard setting (Settings > Billing > Automatic > "Upcoming
+ * renewal events"), not something this route controls.
+ *
+ * Register this endpoint in the Stripe dashboard (or `stripe listen`), enable
+ * the events this switch handles (including `invoice.upcoming`), and put the
  * signing secret in STRIPE_WEBHOOK_SECRET.
  */
 export async function POST(request: NextRequest) {
@@ -73,6 +80,28 @@ export async function POST(request: NextRequest) {
           status: sub.status,
           lastEventAt: eventCreatedAt,
         });
+        break;
+      }
+
+      case 'invoice.upcoming': {
+        const invoice = event.data.object as Stripe.Invoice;
+        const customerId = asId(invoice.customer);
+        // Only subscription renewals — one-off invoices (e.g. a manual
+        // correction) don't need a "your subscription renews" email.
+        const subscriptionId = invoice.parent?.subscription_details?.subscription;
+        if (customerId && subscriptionId && invoice.next_payment_attempt) {
+          try {
+            await sendRenewalReminderEmail(
+              customerId,
+              invoice.amount_due,
+              invoice.currency,
+              invoice.next_payment_attempt
+            );
+          } catch (err) {
+            // Best-effort — a failed reminder email must never fail the webhook.
+            console.error('[stripe webhook] renewal reminder email failed', err);
+          }
+        }
         break;
       }
 
