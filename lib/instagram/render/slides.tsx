@@ -97,6 +97,7 @@ export async function loadSlideFonts() {
 // the app's own base URL.
 let brandIconDataUri: string | null = null;
 let mascotDataUri: string | null = null;
+let chalkboardMascotDataUri: string | null = null;
 
 function loadLocalImageDataUri(relativePath: string): string {
   const buf = readFileSync(join(process.cwd(), 'public', relativePath));
@@ -111,6 +112,11 @@ function getBrandIcon(): string {
 function getMascot(): string {
   if (!mascotDataUri) mascotDataUri = loadLocalImageDataUri('illustrations/bull-alert.png');
   return mascotDataUri;
+}
+
+function getChalkboardMascot(): string {
+  if (!chalkboardMascotDataUri) chalkboardMascotDataUri = loadLocalImageDataUri('illustrations/bull-chalkboard.png');
+  return chalkboardMascotDataUri;
 }
 
 function formatDate(dateStr: string): string {
@@ -294,9 +300,22 @@ export function EarningsListSlide({ companies, pageIndex, totalPages, overflowCo
     <div
       style={{
         width: '100%', height: '100%', display: 'flex', flexDirection: 'column',
-        padding: 80, backgroundColor: BG, color: FG,
+        padding: 80, backgroundColor: BG, color: FG, position: 'relative', overflow: 'hidden',
       }}
     >
+      {/* Small corner accent, not a hero moment like the hook slide's mascot —
+          placed first in DOM order (behind the header/row cards, which have
+          opaque backgrounds) so a busy week's rows simply paint over it
+          instead of needing conditional logic to avoid overlap. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={getChalkboardMascot()}
+        alt=""
+        width={260}
+        height={260}
+        style={{ position: 'absolute', bottom: -30, right: -35, opacity: 0.9 }}
+      />
+
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: m.headerMarginBottom }}>
         <Wordmark />
         {totalPages > 1 && (
