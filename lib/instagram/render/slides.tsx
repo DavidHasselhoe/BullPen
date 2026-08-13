@@ -119,6 +119,12 @@ function formatDate(dateStr: string): string {
   });
 }
 
+/** "$1.58" / "-$0.30" — sign goes before the dollar sign, not after it like a raw toFixed() would produce. */
+function formatEps(v: number): string {
+  const sign = v < 0 ? '-' : '';
+  return `${sign}$${Math.abs(v).toFixed(2)}`;
+}
+
 /** Icon + "bullpen" wordmark, matching components/landing/Atoms.tsx's Logo
  *  component exactly (bold, -0.02em tracking, lowercase) rather than the
  *  spaced-out uppercase text used before — that treatment doesn't match
@@ -331,6 +337,7 @@ export function EarningsListSlide({ companies, pageIndex, totalPages, overflowCo
                 </div>
                 <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: m.dateFontSize, color: MUTED_DIM }}>
                   {formatDate(c.date)}
+                  {c.epsEstimate != null ? ` · Est. EPS ${formatEps(c.epsEstimate)}` : ''}
                 </span>
               </div>
             </div>

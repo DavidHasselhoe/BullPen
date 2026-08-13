@@ -68,6 +68,11 @@ export interface EarningsSlideCompany {
   name: string;
   date: string; // YYYY-MM-DD
   time: 'BMO' | 'AMC' | null;
+  /** Consensus/analyst EPS estimate for this report, sourced the same way
+   *  as date/time (Claude web search, grounded in real analyst estimates —
+   *  see earnings-web-search.ts) — never the model's own guess. Null when
+   *  no estimate could be confirmed. */
+  epsEstimate: number | null;
   marketCap: number | null;
   /** Resolved once at generation time via /api/logo/[ticker] (the same
    *  self-healing proxy CompanyLogo uses elsewhere in the app) — null when

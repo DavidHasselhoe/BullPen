@@ -32,34 +32,44 @@ import Anthropic from '@anthropic-ai/sdk';
 import { logAiCall } from '@/lib/billing/log-ai-call';
 
 const MODEL = 'claude-sonnet-5';
-const MAX_SEARCHES = 6;
+// Bumped from 6: finding both a confirmed date AND a consensus EPS estimate
+// per company plausibly takes one or two more searches than date alone.
+const MAX_SEARCHES = 8;
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 export interface WebSearchEarningsHit {
   symbol: string;
   /** Never populated by this module — Claude is never trusted for company
-   *  identity, only the report date/time. Declared so downstream enrichment
-   *  (attachCalendarMeta, which backfills from screener_stats) type-checks. */
+   *  identity, only the report date/time/EPS estimate. Declared so
+   *  downstream enrichment (attachCalendarMeta, which backfills from
+   *  screener_stats) type-checks. */
   name?: string;
   date: string; // YYYY-MM-DD
   time: 'BMO' | 'AMC' | null;
+  /** Consensus/analyst EPS estimate in dollars (e.g. 1.25, or -0.30 for an
+   *  expected loss), sourced the same way as date/time — grounded in a real
+   *  analyst-estimate source, never Claude's own guess. Null if unconfirmed. */
+  epsEstimate: number | null;
 }
 
 const SYSTEM_PROMPT = `You research upcoming corporate earnings report dates for a financial app.
 
 You will be given today's date and a Monday-Friday date range. Your first move should be to directly search a known earnings-calendar aggregator for that week — e.g. "nasdaq.com earnings calendar [date]", "[date] earnings calendar", or similar — rather than reasoning abstractly about when companies "usually" confirm dates. These aggregators (Nasdaq, Yahoo Finance, Zacks, MarketBeat, etc.) only list a date once it is reasonably confirmed, so a company appearing on one of them for a specific day in the range IS the confirmation — trust it directly rather than requiring a second source. Company IR pages and mainstream financial news (Reuters, Bloomberg, CNBC) are also valid sources.
 
+For each confirmed company, also look for the consensus/analyst EPS estimate for that report (Zacks, Yahoo Finance "Analyst Estimates", Nasdaq, and MarketBeat all commonly show this next to the date). Use it if you find it; leave it null if you don't — do not estimate or calculate one yourself.
+
 Only look for large, well-known publicly traded US companies (the kind that would be in the S&P 500 or Nasdaq 100).
 
 Rules:
 - Trust what a reputable earnings-calendar aggregator or IR page shows for the specific date range you were given.
-- Do not invent tickers or dates, and do not include a company you found no source for.
+- Do not invent tickers, dates, or EPS estimates, and do not include a company you found no date source for.
 - "time" is "BMO" (before market open), "AMC" (after market close), or null if you can't confirm timing.
+- "epsEstimate" is the consensus EPS figure as a plain number (e.g. 1.25, -0.30), or null if you can't find one — never your own calculation or guess.
 - An empty result is fine if your searches genuinely turn up nothing, but check at least once before concluding that.
 
 Output ONLY a JSON array, nothing else, no markdown fences, no commentary:
-[{"symbol": "AAPL", "date": "2026-08-19", "time": "AMC"}, ...]`;
+[{"symbol": "AAPL", "date": "2026-08-19", "time": "AMC", "epsEstimate": 1.58}, ...]`;
 
 function isValidHit(value: unknown, weekStart: string, weekEnd: string): value is WebSearchEarningsHit {
   if (!value || typeof value !== 'object') return false;
@@ -68,6 +78,10 @@ function isValidHit(value: unknown, weekStart: string, weekEnd: string): value i
   if (typeof v.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(v.date)) return false;
   if (v.date < weekStart || v.date > weekEnd) return false;
   if (v.time !== 'BMO' && v.time !== 'AMC' && v.time !== null && v.time !== undefined) return false;
+  if (
+    v.epsEstimate !== null && v.epsEstimate !== undefined &&
+    (typeof v.epsEstimate !== 'number' || !Number.isFinite(v.epsEstimate) || Math.abs(v.epsEstimate) > 1000)
+  ) return false;
   return true;
 }
 
@@ -142,7 +156,7 @@ export async function fetchConfirmedEarnings(
     const symbol = item.symbol.toUpperCase();
     const existing = bySymbol.get(symbol);
     if (!existing || item.date < existing.date) {
-      bySymbol.set(symbol, { symbol, date: item.date, time: item.time ?? null });
+      bySymbol.set(symbol, { symbol, date: item.date, time: item.time ?? null, epsEstimate: item.epsEstimate ?? null });
     }
   }
 

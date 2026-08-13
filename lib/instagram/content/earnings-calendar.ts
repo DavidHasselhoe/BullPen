@@ -204,6 +204,7 @@ export async function generateEarningsCalendarContent(
     name: c.name ?? c.symbol,
     date: c.date,
     time: c.time,
+    epsEstimate: c.epsEstimate ?? null,
     marketCap: c.market_cap,
     logoUrl: logoUrls[i],
   }));
