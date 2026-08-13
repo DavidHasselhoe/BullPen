@@ -86,19 +86,28 @@ export function PathNode({ course, isCurrent, offset, align, circleRef }: Props)
     </div>
   );
 
+  // The horizontal zigzag offset is a plain, static transform on the OUTER
+  // element; the hover/tap bounce is a separate framer-motion `y`/`scale` on
+  // an INNER element. Framer Motion takes exclusive ownership of `transform`
+  // on whichever element animates x/y/scale, so combining the static offset
+  // and the hover animation on the same node silently dropped the offset
+  // every time the hover animation ran — the node would jump back to center.
   const content = (
-    <motion.div
-      whileHover={isInteractive ? { y: -2 } : undefined}
-      whileTap={isInteractive ? { scale: 0.98 } : undefined}
-      transition={{ duration: 0.15 }}
+    <div
       style={{ transform: `translateX(${offset}px)` }}
-      className={cn('flex max-w-[13.5rem] items-center gap-3 sm:max-w-[21rem]', align === 'left' && 'flex-row-reverse')}
       data-path-node
       data-completed={course.isCompleted}
     >
-      {circle}
-      {label}
-    </motion.div>
+      <motion.div
+        whileHover={isInteractive ? { y: -2 } : undefined}
+        whileTap={isInteractive ? { scale: 0.98 } : undefined}
+        transition={{ duration: 0.15 }}
+        className={cn('flex max-w-[13.5rem] items-center gap-3 sm:max-w-[21rem]', align === 'left' && 'flex-row-reverse')}
+      >
+        {circle}
+        {label}
+      </motion.div>
+    </div>
   );
 
   if (!isInteractive) {
