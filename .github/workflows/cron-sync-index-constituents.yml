@@ -47,8 +47,6 @@ jobs:
           git config user.name "bullpen-bot"
           git config user.email "actions@github.com"
           git add lib/market-data/sp500.ts lib/market-data/nasdaq100.ts
-          git commit -m "chore: sync S&P 500 / Nasdaq 100 constituents
-
-Automated weekly sync against SPY holdings + Nasdaq's official API.
-See scripts/sync-index-constituents.ts."
+          git commit -m "chore: sync S&P 500 / Nasdaq 100 constituents" \
+            -m "Automated weekly sync against SPY holdings + Nasdaq's official API. See scripts/sync-index-constituents.ts."
           git push origin HEAD:preview
