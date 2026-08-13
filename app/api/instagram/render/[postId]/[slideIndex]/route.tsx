@@ -79,12 +79,19 @@ export async function GET(
 
   let element: React.ReactElement;
   if (kind === 'hook') {
-    element = <HookSlide headline={slides.headline} weekLabel={slides.weekLabel} companyCount={companyCount} />;
+    element = (
+      <HookSlide
+        headline={slides.headline}
+        weekLabel={slides.weekLabel}
+        companyCount={companyCount}
+        slideIndex={slideIndex}
+        totalSlides={total}
+      />
+    );
   } else if (kind === 'cta') {
-    element = <CTASlide />;
+    element = <CTASlide slideIndex={slideIndex} totalSlides={total} />;
   } else {
     const listSlideIdx = slideIndex - 1;
-    const totalListSlides = Math.max(1, Math.ceil(companyCount / COMPANIES_PER_LIST_SLIDE));
     const pageCompanies = slides.companies.slice(
       listSlideIdx * COMPANIES_PER_LIST_SLIDE,
       (listSlideIdx + 1) * COMPANIES_PER_LIST_SLIDE
@@ -92,9 +99,9 @@ export async function GET(
     element = (
       <EarningsListSlide
         companies={pageCompanies}
-        pageIndex={listSlideIdx}
-        totalPages={totalListSlides}
         overflowCount={slides.overflowCount}
+        slideIndex={slideIndex}
+        totalSlides={total}
       />
     );
   }

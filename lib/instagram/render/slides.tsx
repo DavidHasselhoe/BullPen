@@ -18,14 +18,19 @@
  * the previous version used plain letter-spaced-out uppercase text, which
  * isn't how BullPen's wordmark actually renders anywhere else in the app.
  *
+ * COLOR SYSTEM (deliberately restrained): emerald is the only brand/CTA
+ * accent; sky/amber differentiate Before Open vs After Close, matching
+ * EarningsCalendarWidget's tags elsewhere in the app. No per-company or
+ * per-badge color coding — DESIGN.md's One Signal Rule reserves emerald/red
+ * for gain/loss only, and red specifically would risk a ticker badge
+ * reading as "this company's earnings are bad." Company identity is
+ * already carried by real logos, not a color-coded initial badge.
+ *
  * The bull mascot (public/illustrations/bull-alert.png) appears on the hook
- * slide only, not every slide — reinforces brand identity at the one moment
- * that matters most for scroll-stopping (research: slide one carries ~80%
- * of a carousel's swipe-through weight) without turning into visual noise
- * across the whole carousel. It's usable directly here because it's already
- * black line art on transparent background — exactly right for a light
- * slide, unlike the app's own dark-mode usage which needs a CSS invert
- * Satori can't do.
+ * and CTA slides — the two moments built to earn a scroll-stop and a tap,
+ * respectively — not the data-dense list slide, which gets its own small
+ * corner accent (bull-chalkboard.png) instead so it never competes with
+ * the actual company rows.
  */
 
 import { readFileSync } from 'fs';
@@ -42,6 +47,7 @@ const SURFACE = '#f7f7f7';
 const MUTED = '#71717a';
 const MUTED_DIM = '#a1a1aa';
 const BORDER = '#e4e4e7';
+const BORDER_STRONG = '#d4d4d8';
 const BRAND = '#34d399'; // Signal Emerald (emerald-400) — same hex used elsewhere (e.g. app/api/og/share/[id]/route.tsx)
 const BRAND_INK = '#0a0a0a'; // text/icon color on top of BRAND — dark reads better on emerald-400 than white does
 const BMO_COLOR = '#0ea5e9'; // Tailwind sky-500 — matches EarningsCalendarWidget's BMO tag
@@ -119,16 +125,33 @@ function getChalkboardMascot(): string {
   return chalkboardMascotDataUri;
 }
 
-function formatDate(dateStr: string): string {
+function formatDateHeader(dateStr: string): string {
   return new Date(dateStr + 'T12:00:00Z').toLocaleDateString('en-US', {
     weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC',
-  });
+  }).toUpperCase();
 }
 
 /** "$1.58" / "-$0.30" — sign goes before the dollar sign, not after it like a raw toFixed() would produce. */
 function formatEps(v: number): string {
   const sign = v < 0 ? '-' : '';
   return `${sign}$${Math.abs(v).toFixed(2)}`;
+}
+
+/** Groups companies by report date, in chronological order — robust to
+ *  whatever primary sort the caller used (earnings-calendar.ts currently
+ *  sorts Nasdaq-100 names first, then date), since it buckets by date
+ *  across the WHOLE list rather than assuming same-day entries are already
+ *  consecutive. Within a date, original relative order is preserved. */
+function groupByDate(companies: EarningsSlideCompany[]): { date: string; items: EarningsSlideCompany[] }[] {
+  const map = new Map<string, EarningsSlideCompany[]>();
+  for (const c of companies) {
+    const arr = map.get(c.date) ?? [];
+    arr.push(c);
+    map.set(c.date, arr);
+  }
+  return [...map.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([date, items]) => ({ date, items }));
 }
 
 /** Icon + "bullpen" wordmark, matching components/landing/Atoms.tsx's Logo
@@ -147,6 +170,17 @@ function Wordmark({ size = 36 }: { size?: number }) {
   );
 }
 
+/** "N / total" — shown on every slide (not just multi-page lists) so a
+ *  viewer mid-scroll on Explore recognizes it's one carousel and knows
+ *  how much is left, per the cross-slide consistency feedback. */
+function SlideIndicator({ index, total }: { index: number; total: number }) {
+  return (
+    <div style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: 20, color: MUTED, letterSpacing: '0.02em' }}>
+      {index + 1} / {total}
+    </div>
+  );
+}
+
 interface RowMetrics {
   badgeSize: number;
   rowPaddingV: number;
@@ -159,7 +193,10 @@ interface RowMetrics {
   timeFontSize: number;
   timePaddingV: number;
   timePaddingH: number;
+  epsLabelFontSize: number;
+  epsValueFontSize: number;
   headerMarginBottom: number;
+  dateHeaderFontSize: number;
 }
 
 /** Linear interpolation from a "spacious" value (<=6 companies, today's
@@ -191,7 +228,10 @@ function rowMetrics(n: number): RowMetrics {
     timeFontSize: Math.round(lerp(n, 20, 13)),
     timePaddingV: Math.round(lerp(n, 6, 4)),
     timePaddingH: Math.round(lerp(n, 16, 10)),
-    headerMarginBottom: Math.round(lerp(n, 48, 28)),
+    epsLabelFontSize: Math.round(lerp(n, 13, 11)),
+    epsValueFontSize: Math.round(lerp(n, 22, 16)),
+    headerMarginBottom: Math.round(lerp(n, 40, 24)),
+    dateHeaderFontSize: Math.round(lerp(n, 20, 15)),
   };
 }
 
@@ -239,8 +279,41 @@ function TimeBadge({ time, fontSize, paddingV, paddingH }: { time: 'BMO' | 'AMC'
   );
 }
 
+/** Its own visual element rather than buried inline with the date — EPS is
+ *  the second most important number on the slide after the ticker. Always
+ *  rendered, even when unconfirmed ("N/A"), so a missing estimate reads as
+ *  a real state, not a layout gap that looks like a bug. */
+function EpsStat({ value, labelFontSize, valueFontSize }: { value: number | null; labelFontSize: number; valueFontSize: number }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+      <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontWeight: 700, fontSize: labelFontSize, letterSpacing: '0.06em', color: MUTED_DIM }}>
+        EST. EPS
+      </span>
+      <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontWeight: 700, fontSize: valueFontSize, color: value != null ? FG : MUTED_DIM }}>
+        {value != null ? formatEps(value) : 'N/A'}
+      </span>
+    </div>
+  );
+}
+
+/** "TUE, AUG 18 ────" — groups the list by report day (see groupByDate)
+ *  instead of one undifferentiated stack, which read as random when a
+ *  Nasdaq-100 name from Wednesday could sort ahead of an S&P name from
+ *  Tuesday. No color accent — a plain rule line stays inside the
+ *  restrained color system (see file header). */
+function DateHeader({ dateStr, fontSize }: { dateStr: string; fontSize: number }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+      <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontWeight: 700, fontSize, letterSpacing: '0.06em', color: MUTED }}>
+        {formatDateHeader(dateStr)}
+      </span>
+      <div style={{ display: 'flex', flex: 1, height: 1, backgroundColor: BORDER }} />
+    </div>
+  );
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function HookSlide({ headline, weekLabel, companyCount }: { headline: string; weekLabel: string; companyCount: number }): any {
+export function HookSlide({ headline, weekLabel, companyCount, slideIndex, totalSlides }: { headline: string; weekLabel: string; companyCount: number; slideIndex: number; totalSlides: number }): any {
   return (
     <div
       style={{
@@ -260,7 +333,10 @@ export function HookSlide({ headline, weekLabel, companyCount }: { headline: str
         style={{ position: 'absolute', bottom: -70, right: -90, opacity: 0.9 }}
       />
 
-      <Wordmark />
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 1 }}>
+        <Wordmark />
+        <SlideIndicator index={slideIndex} total={totalSlides} />
+      </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', zIndex: 1 }}>
         <div
@@ -286,16 +362,16 @@ export function HookSlide({ headline, weekLabel, companyCount }: { headline: str
 
 interface EarningsListSlideProps {
   companies: EarningsSlideCompany[];
-  pageIndex: number;
-  totalPages: number;
-  /** Only shown on the final list page, if the real week had more companies than fit across all pages. */
+  /** Only shown when the real week had more companies than fit on this slide. */
   overflowCount?: number;
+  slideIndex: number;
+  totalSlides: number;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function EarningsListSlide({ companies, pageIndex, totalPages, overflowCount = 0 }: EarningsListSlideProps): any {
-  const isLastPage = pageIndex === totalPages - 1;
+export function EarningsListSlide({ companies, overflowCount = 0, slideIndex, totalSlides }: EarningsListSlideProps): any {
   const m = rowMetrics(companies.length);
+  const groups = groupByDate(companies);
   return (
     <div
       style={{
@@ -303,10 +379,10 @@ export function EarningsListSlide({ companies, pageIndex, totalPages, overflowCo
         padding: 80, backgroundColor: BG, color: FG, position: 'relative', overflow: 'hidden',
       }}
     >
-      {/* Small corner accent, not a hero moment like the hook slide's mascot —
-          placed first in DOM order (behind the header/row cards, which have
-          opaque backgrounds) so a busy week's rows simply paint over it
-          instead of needing conditional logic to avoid overlap. */}
+      {/* Small corner accent, not a hero moment like the hook/CTA slides'
+          mascot — placed first in DOM order (behind the header/row cards,
+          which have opaque backgrounds) so a busy week's rows simply paint
+          over it instead of needing conditional logic to avoid overlap. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={getChalkboardMascot()}
@@ -318,11 +394,7 @@ export function EarningsListSlide({ companies, pageIndex, totalPages, overflowCo
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: m.headerMarginBottom }}>
         <Wordmark />
-        {totalPages > 1 && (
-          <div style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: 20, color: MUTED }}>
-            {pageIndex + 1} / {totalPages}
-          </div>
-        )}
+        <SlideIndicator index={slideIndex} total={totalSlides} />
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: m.rowGap }}>
@@ -335,64 +407,148 @@ export function EarningsListSlide({ companies, pageIndex, totalPages, overflowCo
               Big companies usually confirm their earnings date 3 to 6 weeks ahead. Check back on BullPen as the week gets closer.
             </div>
           </div>
-        ) : companies.map((c) => (
-          <div
-            key={c.symbol}
-            style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: `${m.rowPaddingV}px ${m.rowPaddingH}px`, borderRadius: m.rowRadius, backgroundColor: SURFACE,
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-              <CompanyBadge symbol={c.symbol} logoUrl={c.logoUrl} size={m.badgeSize} />
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 14 }}>
-                  <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: m.symbolFontSize, color: FG }}>
-                    {c.symbol}
-                  </span>
-                  <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: m.nameFontSize, color: MUTED }}>
-                    {c.name}
-                  </span>
+        ) : (
+          groups.map((group) => (
+            <div key={group.date} style={{ display: 'flex', flexDirection: 'column', gap: m.rowGap }}>
+              <DateHeader dateStr={group.date} fontSize={m.dateHeaderFontSize} />
+              {group.items.map((c) => (
+                <div
+                  key={c.symbol}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: `${m.rowPaddingV}px ${m.rowPaddingH}px`, borderRadius: m.rowRadius,
+                    backgroundColor: SURFACE, border: `1px solid ${BORDER_STRONG}`,
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+                    <CompanyBadge symbol={c.symbol} logoUrl={c.logoUrl} size={m.badgeSize} />
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 14 }}>
+                      <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: m.symbolFontSize, color: FG }}>
+                        {c.symbol}
+                      </span>
+                      <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: m.nameFontSize, color: MUTED }}>
+                        {c.name}
+                      </span>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 22 }}>
+                    <EpsStat value={c.epsEstimate} labelFontSize={m.epsLabelFontSize} valueFontSize={m.epsValueFontSize} />
+                    <TimeBadge time={c.time} fontSize={m.timeFontSize} paddingV={m.timePaddingV} paddingH={m.timePaddingH} />
+                  </div>
                 </div>
-                <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: m.dateFontSize, color: MUTED_DIM }}>
-                  {formatDate(c.date)}
-                  {c.epsEstimate != null ? ` · Est. EPS ${formatEps(c.epsEstimate)}` : ''}
-                </span>
-              </div>
+              ))}
             </div>
-            <TimeBadge time={c.time} fontSize={m.timeFontSize} paddingV={m.timePaddingV} paddingH={m.timePaddingH} />
-          </div>
-        ))}
+          ))
+        )}
       </div>
 
-      {isLastPage && overflowCount > 0 && (
-        <div style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: 22, color: MUTED, marginTop: 24 }}>
-          +{overflowCount} more this week on BullPen
+      {companies.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 24 }}>
+          {overflowCount > 0 && (
+            <div style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: 22, color: MUTED }}>
+              +{overflowCount} more this week on BullPen
+            </div>
+          )}
+          <div style={{ display: 'flex', fontFamily: 'Geist', fontSize: 20, color: MUTED_DIM }}>
+            Swipe for the full calendar →
+          </div>
         </div>
       )}
     </div>
   );
 }
 
+function BellIcon({ size }: { size: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={FG} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+      <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+    </svg>
+  );
+}
+
+function ChartIcon({ size }: { size: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={FG} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 3v18h18" />
+      <path d="M7 14l4-4 3 3 5-6" />
+    </svg>
+  );
+}
+
+function WalletIcon({ size }: { size: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={FG} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 7a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" />
+      <path d="M17 12h2" />
+    </svg>
+  );
+}
+
+/** Earnings/Prices/Portfolio — a secondary punch replacing the single gray
+ *  description sentence, so the value prop reads at a glance instead of
+ *  needing to be read. Icons are hand-drawn inline SVG (not lucide-react —
+ *  no precedent for it working inside next/og's Satori renderer anywhere
+ *  else in the app), same thin-stroke language as the rest of the slide. */
+function FeatureRow() {
+  const items: { Icon: (p: { size: number }) => React.ReactElement; label: string }[] = [
+    { Icon: BellIcon, label: 'Earnings' },
+    { Icon: ChartIcon, label: 'Prices' },
+    { Icon: WalletIcon, label: 'Portfolio' },
+  ];
+  return (
+    <div style={{ display: 'flex', gap: 48, marginBottom: 44 }}>
+      {items.map(({ Icon, label }) => (
+        <div key={label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+          <div
+            style={{
+              display: 'flex', width: 56, height: 56, borderRadius: 999,
+              border: `1px solid ${BORDER}`, alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            <Icon size={24} />
+          </div>
+          <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 18, color: MUTED }}>{label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function CTASlide(): any {
+export function CTASlide({ slideIndex, totalSlides }: { slideIndex: number; totalSlides: number }): any {
   return (
     <div
       style={{
         width: '100%', height: '100%', display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center', padding: 96,
-        backgroundColor: BG, color: FG, textAlign: 'center',
+        backgroundColor: BG, color: FG, textAlign: 'center', position: 'relative',
       }}
     >
-      <div style={{ display: 'flex', marginBottom: 32 }}>
-        <Wordmark size={44} />
+      <div style={{ position: 'absolute', top: 56, right: 56, display: 'flex' }}>
+        <SlideIndicator index={slideIndex} total={totalSlides} />
       </div>
+
+      <div style={{ display: 'flex', marginBottom: 20 }}>
+        <Wordmark size={40} />
+      </div>
+
+      {/* The mascot's actual pose (checking a phone with an alert bell)
+          pairs directly with the headline below it — this is the
+          conversion slide, so it gets the same hero treatment as the hook
+          slide's mascot instead of no mascot at all. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={getMascot()} alt="" width={300} height={300} style={{ marginBottom: 8 }} />
+
       <div style={{ display: 'flex', fontFamily: 'Instrument Serif', fontStyle: 'italic', fontSize: 52, color: FG, marginBottom: 20, maxWidth: 780 }}>
         Never miss a report again
       </div>
-      <div style={{ display: 'flex', fontFamily: 'Geist', fontSize: 26, color: MUTED, marginBottom: 48, maxWidth: 700, textAlign: 'center' }}>
+      <div style={{ display: 'flex', fontFamily: 'Geist', fontSize: 26, color: MUTED, marginBottom: 44, maxWidth: 700, textAlign: 'center' }}>
         Track earnings, prices, and your whole portfolio in one place.
       </div>
+
+      <FeatureRow />
+
       <div
         style={{
           display: 'flex', fontFamily: 'Geist Mono', fontSize: 24, fontWeight: 500, color: BRAND_INK,
