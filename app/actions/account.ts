@@ -18,6 +18,19 @@ export async function deleteAccount(): Promise<{ success: boolean; error?: strin
 
     const supabase = createServerClient();
 
+    // Delete the user's avatar from Storage — not covered by the DB cascade below,
+    // since it lives in `user-avatars`, not a table. Filename is `{userId}.{ext}`
+    // (see lib/storage/avatar-upload.ts) and only one extension is ever present at
+    // a time (upload always upserts), so try all three; Supabase Storage's remove()
+    // is a no-op for paths that don't exist rather than erroring. Best-effort — a
+    // storage hiccup must never block the user from deleting their account.
+    const { error: avatarError } = await supabase.storage
+      .from('user-avatars')
+      .remove(['jpg', 'png', 'webp'].map((ext) => `${userId}.${ext}`));
+    if (avatarError) {
+      console.error(`[deleteAccount] avatar cleanup failed for ${userId}:`, avatarError.message);
+    }
+
     // Delete user data (cascade handles related rows if FK is set up, but be explicit)
     const { error: holdingsError } = await supabase
       .from('user_holdings')
