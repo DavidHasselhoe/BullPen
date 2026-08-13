@@ -47,16 +47,27 @@ const MAX_COMPANIES = 24;
 
 /**
  * SIGNIFICANT_TICKERS (S&P 500 + Nasdaq 100) plus manual, individually-
- * vetted additions. TSM (Taiwan Semiconductor, NYSE ADR) is neither S&P
- * 500-eligible (foreign-domiciled) nor Nasdaq 100-eligible (NYSE-listed,
- * not Nasdaq), but its TwelveData earnings history is clean and reliable,
- * and it's genuinely market-moving for a tech-focused audience. Checked
- * live against TwelveData before adding: Samsung's only US data is a thin
- * OTC pink-sheet ticker (SSNLF) with irregular/unreliable report dates, and
- * SK Hynix has no usable US ticker at all — neither is a realistic addition
- * through this data source.
+ * vetted additions — index membership alone misses genuinely relevant
+ * names that are simply too newly public to be index-eligible yet.
+ * Deliberately a curated list, not a dynamic trending feed: precise and
+ * auditable, at the cost of needing a human to add the next one.
+ *
+ * - TSM (Taiwan Semiconductor, NYSE ADR): neither S&P 500-eligible
+ *   (foreign-domiciled) nor Nasdaq 100-eligible (NYSE-listed, not Nasdaq),
+ *   but its TwelveData earnings history is clean and reliable, and it's
+ *   genuinely market-moving for a tech-focused audience. Checked live
+ *   against TwelveData before adding: Samsung's only US data is a thin
+ *   OTC pink-sheet ticker (SSNLF) with irregular/unreliable report dates,
+ *   and SK Hynix has no usable US ticker at all — neither is a realistic
+ *   addition through this data source.
+ * - CRWV (CoreWeave) and NBIS (Nebius Group): both real, sizable
+ *   companies ($58B/$66B market cap as of 2026-08-13, per screener_stats —
+ *   larger than plenty of S&P 500 constituents) at the center of the AI
+ *   infrastructure trade, too recently public to be index members yet.
+ *   Confirmed clean name/market-cap coverage in screener_stats before
+ *   adding (2026-08-13).
  */
-const INSTAGRAM_ALLOWLIST: Set<string> = new Set([...SIGNIFICANT_TICKERS, 'TSM']);
+const INSTAGRAM_ALLOWLIST: Set<string> = new Set([...SIGNIFICANT_TICKERS, 'TSM', 'CRWV', 'NBIS']);
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
