@@ -313,7 +313,7 @@ export function EarningsListSlide({ companies, pageIndex, totalPages, overflowCo
         alt=""
         width={260}
         height={260}
-        style={{ position: 'absolute', bottom: -30, right: -35, opacity: 0.9 }}
+        style={{ position: 'absolute', bottom: -30, right: 25, opacity: 0.9 }}
       />
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: m.headerMarginBottom }}>
