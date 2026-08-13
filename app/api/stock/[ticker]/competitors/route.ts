@@ -70,6 +70,7 @@ async function handler(
     });
 
     // Extract [...] defensively in case model prepends explanation text
+    const jsonStr = result.text.match(/\[[\s\S]*\]/)?.[0] ?? result.text.trim();
     const parsed: unknown = JSON.parse(jsonStr);
     if (!Array.isArray(parsed)) throw new Error('Not an array');
 
