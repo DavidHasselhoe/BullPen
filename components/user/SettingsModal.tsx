@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, type ComponentType } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/use-auth';
 import {
@@ -23,8 +23,7 @@ import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
-import { Loader2, Globe, DollarSign, Moon, Bell, Shield, AlertTriangle, Trash2, Download, Check, Settings2, Eye, EyeOff, Home, Hash, Search, LayoutGrid, LineChart, Wrench, ChevronDown, Sparkles, Crown, type LucideIcon } from 'lucide-react';
-import { BullAiIcon } from '@/components/ai/BullAiIcon';
+import { Loader2, Globe, DollarSign, Moon, Bell, Shield, AlertTriangle, Trash2, Download, Check, Settings2, Eye, EyeOff, Home, Hash, Search, Bot, LayoutGrid, LineChart, Wrench, ChevronDown, Sparkles, Crown, type LucideIcon } from 'lucide-react';
 import { useEntitlements } from '@/hooks/use-entitlements';
 import { UpgradeCTA } from '@/components/billing/UpgradeCTA';
 import {
@@ -79,11 +78,6 @@ const VALID_THEMES: ThemeValue[] = ['dark', 'light', 'gradient-purple', 'gradien
 function minimalStockPick(ticker: string): SearchResult {
   const t = ticker.toUpperCase();
   return { ticker: t, name: t, cik: '', has_data: false };
-}
-
-/** Bull mascot in place of a generic "AI" icon — same convention as CommandPalette's AskBullIcon. */
-function AskBullIcon({ className }: { className?: string }) {
-  return <BullAiIcon pose="idle" size={16} className={className} />;
 }
 
 /** A single label + description + switch row. Shared across tabs for consistency. */
@@ -464,8 +458,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
     id: SettingsSection;
     label: string;
     description: string;
-    // AskBullIcon (the bull mascot) isn't a LucideIcon — it only takes className.
-    icon: LucideIcon | ComponentType<{ className?: string }>;
+    icon: LucideIcon;
   }
   const sectionGroups: Array<{ heading?: string; items: SectionMeta[] }> = [
     {
@@ -473,7 +466,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
         { id: 'preferences', label: t('settings.preferences'), icon: Globe, description: 'Region, currency, language, theme, and your default homepage.' },
         { id: 'notifications', label: t('settings.notifications'), icon: Bell, description: 'Choose which alerts BullPen sends you.' },
         { id: 'customize', label: t('settings.customize'), icon: Settings2, description: 'Tailor your home layout and chart defaults.' },
-        { id: 'ai', label: 'Ask Bull', icon: AskBullIcon, description: 'How Bull communicates and frames its analysis.' },
+        { id: 'ai', label: 'Ask Bull', icon: Bot, description: 'How Bull communicates and frames its analysis.' },
       ],
     },
     {
