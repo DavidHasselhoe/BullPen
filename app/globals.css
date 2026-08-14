@@ -667,9 +667,27 @@ html.animated-background-active [data-slot="dialog-content"] {
      literal rounded-rect perimeter regardless of aspect ratio, so it's
      the correct primitive here, not a CSS trick. The stroke lives in the
      accompanying inline SVG (see the Button in PortfolioRiskAnalysis.tsx),
-     this class only holds the base fill/text. */
+     this class only holds the base fill/text.
+
+     Follow-up after live feedback ("barely visible", "hover does
+     nothing"): a flat 1.5px stroke at full opacity reads as a thin line,
+     not a glow — a real drop-shadow blur behind the stroke is what makes
+     it read as light rather than ink. Hover adds a second, bigger blur
+     layer, a thicker stroke, a lift + ambient shadow on the button itself
+     (the shadow stays hover-only, not resting, keeping DESIGN.md's
+     Earned-Depth Rule intact for the button's own surface — only the
+     trace's glow is a permanent fixture), and a small icon tilt so
+     there's an actual response to interacting with it. */
   .animate-ai-border-trace {
     position: relative;
+    transition: transform 180ms ease, box-shadow 180ms ease;
+  }
+  .animate-ai-border-trace:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 22px -8px var(--brand-glow);
+  }
+  .animate-ai-border-trace:active {
+    transform: translateY(0);
   }
   .ai-border-trace-svg {
     position: absolute;
@@ -682,14 +700,29 @@ html.animated-background-active [data-slot="dialog-content"] {
   .ai-border-trace-svg rect {
     fill: none;
     stroke: var(--brand);
-    stroke-width: 1.5;
+    stroke-width: 2;
     stroke-linecap: round;
     vector-effect: non-scaling-stroke;
-    stroke-dasharray: 26 600;
-    animation: ai-border-dash 3.6s linear infinite;
+    stroke-dasharray: 32 600;
+    filter: drop-shadow(0 0 1.5px var(--brand)) drop-shadow(0 0 5px var(--brand-glow));
+    animation: ai-border-dash 3s linear infinite;
+    transition: stroke-width 200ms ease, filter 200ms ease;
+  }
+  .animate-ai-border-trace:hover .ai-border-trace-svg rect {
+    stroke-width: 2.75;
+    filter:
+      drop-shadow(0 0 2px var(--brand))
+      drop-shadow(0 0 8px var(--brand-glow))
+      drop-shadow(0 0 14px var(--brand-glow));
+  }
+  .ai-border-trace-icon {
+    transition: transform 200ms ease;
+  }
+  .animate-ai-border-trace:hover .ai-border-trace-icon {
+    transform: rotate(-8deg) scale(1.1);
   }
   @keyframes ai-border-dash {
-    to { stroke-dashoffset: -626; }
+    to { stroke-dashoffset: -632; }
   }
 
   /* ── Academy path "current node" pulse ───────────────────────────────────

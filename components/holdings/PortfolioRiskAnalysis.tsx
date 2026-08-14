@@ -638,7 +638,7 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
                     <svg className="ai-border-trace-svg" style={{ width: '100%', height: '100%' }} aria-hidden="true">
                       <rect x="0" y="0" width="100%" height="100%" rx="7" />
                     </svg>
-                    <ShieldAlert className="h-3.5 w-3.5" /> Run Analysis
+                    <ShieldAlert className="h-3.5 w-3.5 ai-border-trace-icon" /> Run Analysis
                   </Button>
                 </div>
               </EmptyState>
