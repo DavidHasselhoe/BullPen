@@ -938,7 +938,7 @@ function CompareContent() {
                       }
                     }}
                     disabled={aiExplainLoading}
-                    className="shrink-0 animate-ai-sweep"
+                    className="shrink-0 animate-ai-sweep animate-ai-glow"
                   >
                     <Sparkles className={cn('h-4 w-4 mr-2', aiExplainLoading && 'animate-pulse')} />
                     {aiExplainLoading ? 'Generating…' : 'Explain Differences'}

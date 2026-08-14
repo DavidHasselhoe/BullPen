@@ -586,19 +586,34 @@ html.animated-background-active [data-slot="dialog-content"] {
     animation: shimmer 1.6s ease-in-out infinite;
   }
 
-  /* ── AI action sweep ──────────────────────────────────────────────────────
-     Subtle diagonal shine for buttons that trigger a noticeable AI
-     generation/analysis (Risk Analysis, Deep Dive, Why Today?, etc.) — a
-     toned-down relative of the landing CTA's shimmer (bp-shimmer in
-     landing-styles.css): same transform-only sweep mechanic, no glow, no
-     lift, restrained to the product register's "precise, not showy" button
-     language. `mix-blend-mode: overlay` makes the same band read as a shine
-     whether the button underneath is dark-filled, light-filled, or
-     accent-filled, so one utility works across every Button variant without
-     per-button colour tuning. Compositor-only (transform on a pseudo-element)
-     — cost is effectively zero regardless of how many are mounted at once.
-     The global prefers-reduced-motion rule below already snaps this to a
-     single static frame; no separate override needed. */
+  /* ── AI action sweep + glow ───────────────────────────────────────────────
+     DESIGN.md's One Signal Rule reserves Signal Emerald for gain/loss plus
+     one earned exception: the landing CTA's shimmer/glow, granted because
+     it's a rare top-of-funnel moment. AI generation actions (Risk Analysis,
+     Deep Dive, Portfolio Builder, "Explain Differences") are judged a second
+     earned exception — Bull/AI generation is as central to this product as
+     the landing page, so its primary trigger buttons borrow the landing
+     CTA's decorative language (see DESIGN.md §5 Buttons). Scope stays
+     deliberate: only the primary "start generation" buttons get
+     `.animate-ai-glow`; secondary retry/regenerate actions keep the sweep
+     alone so emerald doesn't spread past the moments that earn it.
+
+     The sweep band is painted with plain alpha compositing (no
+     mix-blend-mode) — the previous version used `mix-blend-mode: overlay`,
+     which collapses to near-invisible on both near-black (light mode
+     `default` button) and near-white (dark mode `default` button) bases,
+     which is exactly why it read as "barely visible." A directly-composited
+     green→white→green gradient shows on any fill because its own alpha does
+     the work instead of relying on base luminance. Colour comes entirely
+     from the canonical --brand/--brand-glow/--brand-soft tokens (defined
+     above, already the single source of truth the landing page itself
+     consumes) rather than new literals, so light/dark contrast stays
+     pre-vetted and there's exactly one place the brand colour can drift.
+     Compositor-only (transform on a pseudo-element) — cost is effectively
+     zero regardless of how many are mounted at once. The global
+     prefers-reduced-motion rule below already snaps the sweep to a single
+     static frame; the glow is a static box-shadow already, so it needs no
+     override. */
   @keyframes ai-sweep {
     to { transform: translateX(120%); }
   }
@@ -611,11 +626,27 @@ html.animated-background-active [data-slot="dialog-content"] {
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(105deg, transparent 40%, oklch(1 0 0 / 0.45) 50%, transparent 60%);
-    mix-blend-mode: overlay;
+    background: linear-gradient(
+      105deg,
+      transparent 32%,
+      var(--brand-glow) 44%,
+      color-mix(in oklch, var(--brand) 55%, white) 50%,
+      var(--brand-glow) 56%,
+      transparent 68%
+    );
     transform: translateX(-120%);
-    animation: ai-sweep 3.6s ease-in-out infinite;
+    animation: ai-sweep 2.8s ease-in-out infinite;
     pointer-events: none;
+  }
+  .animate-ai-glow {
+    box-shadow:
+      0 8px 24px -8px var(--brand-glow),
+      0 0 0 1px var(--brand-soft);
+  }
+  .animate-ai-glow:hover {
+    box-shadow:
+      0 10px 28px -6px var(--brand-glow),
+      0 0 0 1px var(--brand-soft);
   }
 
   /* ── Academy path "current node" pulse ───────────────────────────────────

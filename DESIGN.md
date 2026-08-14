@@ -101,7 +101,7 @@ This system explicitly rejects Bloomberg-terminal density: dense, cryptic, jargo
 The palette is almost entirely achromatic — a grayscale ramp doing the structural work — with color spent only where it's meaningful: gains, losses, and the landing page's brand moment.
 
 ### Primary
-- **Signal Emerald** (`oklch(0.765 0.177 163)` in product surfaces / `oklch(0.72 0.17 152)` as the landing page's tuned variant): the one color allowed to mean "good." Used for positive price/portfolio movement (`text-emerald-400` on stock and holdings surfaces), the landing hero's accent word, the primary CTA fill, and live-price pulse indicators. The two OKLCH values are intentionally close, not identical — the landing page's is hand-tuned for its glow/gradient treatment; product surfaces use Tailwind's stock `emerald-400`. Treat them as the same signal, not two colors.
+- **Signal Emerald** (`oklch(0.765 0.177 163)` in product surfaces / `oklch(0.72 0.17 152)` as the landing page's tuned variant): the one color allowed to mean "good." Used for positive price/portfolio movement (`text-emerald-400` on stock and holdings surfaces), the landing hero's accent word, the primary CTA fill, live-price pulse indicators, and the AI-action glow/shimmer described below. The two OKLCH values are intentionally close, not identical — the landing page's is hand-tuned for its glow/gradient treatment; product surfaces use Tailwind's stock `emerald-400`. Treat them as the same signal, not two colors.
 
 ### Secondary
 - **Info Blue** (`oklch(0.75 0.15 250)`): status pills and neutral informational callouts (e.g. changelog "improved" tags). Used sparingly, never as a CTA color.
@@ -115,7 +115,7 @@ The palette is almost entirely achromatic — a grayscale ramp doing the structu
 - **Border** (`oklch(1 0 0 / 10%)` dark / `oklch(0.922 0 0)` light): the quietest possible separator; borders should almost disappear at rest and only sharpen slightly on hover.
 
 ### Named Rules
-**The One Signal Rule.** Emerald and red are reserved exclusively for financial direction (gain/loss) and the landing brand accent. They never appear as decoration, illustration fill, or a third UI state color — if something needs a new color for its own sake, it's a sign the design is reaching for effect instead of clarity.
+**The One Signal Rule.** Emerald and red are reserved exclusively for financial direction (gain/loss), the landing brand accent, and primary AI-generation buttons (see §5 Buttons — "AI action buttons"). They never appear as decoration, illustration fill, or a general UI state color beyond those earned exceptions — if something needs a new color for its own sake, it's a sign the design is reaching for effect instead of clarity.
 
 **The Never-Color-Alone Rule.** Gains and losses are never conveyed by color alone. Direction is always reinforced with an icon, sign (+/−), or label, since red-green colorblindness is common among traders — this is a stated PRODUCT.md accessibility requirement, not a nice-to-have.
 
@@ -147,17 +147,19 @@ Flat by default. Cards sit on a one-step-lighter surface with a barely-visible b
 ### Shadow Vocabulary
 - **Resting card** (`shadow-sm`, border `oklch(1 0 0 / 10%)`): the default state for every card/container. Reads as barely-there.
 - **Hover card** (`shadow-md` + `shadow-black/20`, border sharpened to full opacity, `translateY(-2px)`, 200ms ease): the interactive response, not the default.
-- **CTA glow** (`0 12px 32px -10px var(--accent-glow), inset 0 1px 0 oklch(1 0 0 / 0.3)`): reserved for the landing page's single primary CTA button. Not for product-surface buttons.
+- **CTA glow** (`0 12px 32px -10px var(--accent-glow), inset 0 1px 0 oklch(1 0 0 / 0.3)`): the landing page's single primary CTA button.
+- **AI action glow** (`.animate-ai-glow` in `globals.css`: `0 8px 24px -8px var(--brand-glow), 0 0 0 1px var(--brand-soft)`): the product-register counterpart, toned down (no inset highlight) and using the same `--brand`/`--brand-glow`/`--brand-soft` tokens as the landing CTA. Reserved for primary "start generation" AI buttons (Risk Analysis, Deep Dive, Portfolio Builder, Compare's "Explain Differences") — not secondary retry/regenerate actions, which keep the shimmer alone.
 
 ### Named Rules
-**The Earned-Depth Rule.** Shadows exist to answer "what happens when I touch this," not to decorate a surface at rest. If a shadow is visible before any interaction and it isn't the landing CTA, it's wrong.
+**The Earned-Depth Rule.** Shadows exist to answer "what happens when I touch this," not to decorate a surface at rest. If a shadow is visible before any interaction and it isn't the landing CTA or a primary AI-action button, it's wrong.
 
 ## 5. Components
 
 ### Buttons
-Two distinct button languages by register, and that split is intentional, not an inconsistency.
+Three button languages by register, and the split is intentional, not an inconsistency.
 - **Product buttons** (`rounded-md`, 8px): compact, `h-9` default height, tight `active:scale-[0.97]` press feedback, 150-200ms transitions. Variants: `default` (solid ink-colored fill), `outline`, `secondary`, `ghost`, `link`, `destructive`. Feel: precise and responsive — fast, engineered feedback with no bounce.
-- **Landing CTA buttons** (`rounded-full`, pill, 999px): looser and more physical — `translateY(-1px)` lift on hover, `translateY(1px) scale(0.99)` on press, a continuous subtle shimmer sweep on the primary variant, genuine glow shadow. This is the one place BullPen allows itself to feel a little showy, because it's a single, rare, top-of-funnel moment.
+- **Landing CTA buttons** (`rounded-full`, pill, 999px): looser and more physical — `translateY(-1px)` lift on hover, `translateY(1px) scale(0.99)` on press, a continuous subtle shimmer sweep on the primary variant, genuine glow shadow. This is the first place BullPen allows itself to feel a little showy, because it's a single, rare, top-of-funnel moment.
+- **AI action buttons** (`.animate-ai-sweep` + `.animate-ai-glow` in `globals.css`, applied on top of a normal `rounded-md` product button — shape doesn't change, only color/glow do): the second earned exception to the One Signal Rule. A green→white→white→green diagonal shimmer (2.8s, plain alpha-composited gradient, not a blend mode — blend modes read as invisible on both near-black and near-white `default`-variant fills, which was a real bug in the first version) plus a static `--brand-glow` ring, both sourced from the same canonical `--brand`/`--brand-glow`/`--brand-soft` tokens the landing CTA uses. Reserved for primary "start generation" buttons only (Risk Analysis, Deep Dive, Portfolio Builder, Compare's "Explain Differences") — secondary retry/regenerate buttons get `.animate-ai-sweep` alone (visible shimmer, no glow), so emerald doesn't spread past the moments that earn it. Rationale: Bull/AI generation is as central to this product as the landing page's top-of-funnel moment, so it earns the same decorative language on the specific buttons that trigger it.
 
 ### Cards / Containers
 - **Corner Style:** `rounded-xl` (14px) for cards; `rounded-md` (8px) for inputs and buttons; `rounded-full` reserved for pills and the landing CTA.
@@ -180,7 +182,7 @@ The landing page's defining move: a bold Geist Sans headline with exactly one wo
 ## 6. Do's and Don'ts
 
 ### Do:
-- **Do** spend Signal Emerald / Signal Red only on financial direction (gains/losses) and the one landing brand moment — everything else stays neutral.
+- **Do** spend Signal Emerald / Signal Red only on financial direction (gains/losses), the landing brand moment, and primary AI-action buttons (see §5 Buttons) — everything else stays neutral.
 - **Do** pair every gain/loss color with an icon, sign, or label — never color alone (PRODUCT.md accessibility requirement).
 - **Do** render every price, percentage, and financial statistic in Geist Mono with tabular figures.
 - **Do** keep cards and containers flat at rest; let `shadow-md` + hover lift be the only depth cue.

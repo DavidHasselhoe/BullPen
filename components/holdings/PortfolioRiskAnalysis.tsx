@@ -630,7 +630,7 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
                 className="py-2"
               >
                 <div className="flex justify-center">
-                  <Button onClick={analyze} size="sm" className="gap-1.5 animate-ai-sweep">
+                  <Button onClick={analyze} size="sm" className="gap-1.5 animate-ai-sweep animate-ai-glow">
                     <ShieldAlert className="h-3.5 w-3.5" /> Run Analysis
                   </Button>
                 </div>

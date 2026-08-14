@@ -93,7 +93,7 @@ export default function DeepDiveLanding() {
                 placeholder="Search by ticker or company name..."
                 className="flex-1"
               />
-              <Button type="submit" size="lg" disabled={!selected} className="gap-2 shrink-0 animate-ai-sweep">
+              <Button type="submit" size="lg" disabled={!selected} className="gap-2 shrink-0 animate-ai-sweep animate-ai-glow">
                 <Telescope className="h-4 w-4" /> Analyze
               </Button>
             </form>

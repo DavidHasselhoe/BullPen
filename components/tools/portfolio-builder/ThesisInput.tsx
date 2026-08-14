@@ -59,7 +59,7 @@ export function ThesisInput({ onSubmit, disabled }: Props) {
               onClick={() => onSubmit(thesis.trim())}
               disabled={!valid || disabled}
               size="sm"
-              className="gap-2 px-4 animate-ai-sweep"
+              className="gap-2 px-4 animate-ai-sweep animate-ai-glow"
             >
               Construct Portfolio
               <ArrowRight className="h-3.5 w-3.5" />
