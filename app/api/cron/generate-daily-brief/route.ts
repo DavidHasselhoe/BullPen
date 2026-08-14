@@ -437,24 +437,34 @@ Use live web search to verify the latest news for "Movers & Stories", "Watch Tod
       messages: [{ role: 'user' as const, content: userPrompt }],
     };
 
-    // 2026-08-14: this cron timed out twice in a row, each time at exactly
-    // the function's own maxDuration (120s, then 300s after we raised it) —
-    // evidence the web_search tool loop has unbounded worst-case latency
-    // rather than a fixed amount of work that barely didn't fit. Left alone,
-    // Vercel hard-kills the function with zero logs from inside this route,
-    // so a stuck call is completely invisible. Bound each call explicitly so
-    // it fails fast and loud (caught below, logged, 500 returned) well
-    // before Vercel's hard kill, and turn off the SDK's own retry-on-timeout
-    // (default 2) since it would otherwise silently re-multiply the wait.
-    // Budget: 180s initial + 90s resume = 270s, leaving ~30s of the 300s
-    // ceiling for data-gathering (already done above) and the Supabase write.
-    const INITIAL_CALL_TIMEOUT_MS = 180_000;
-    const RESUME_CALL_TIMEOUT_MS = 90_000;
+    // 2026-08-14, three incidents in a row: this cron timed out at exactly
+    // the function's own maxDuration each time (120s, then 300s after we
+    // raised it, then 300s again after adding the SDK's own `timeout`
+    // option to .stream()). Live logs from the third run proved the SDK
+    // timeout does NOT bound this call: data gathering finished in 1.4s,
+    // "starting initial Anthropic call" logged at 16:39:52.898, then
+    // nothing — no resume log, no caught-error log — until Vercel's own
+    // hard kill at 16:44:51, 298s later. The SDK's `timeout` on a streaming
+    // request is very likely an idle/per-chunk timer, not a wall-clock
+    // deadline, so a web_search tool loop that keeps trickling SSE activity
+    // (even sparsely) can reset it indefinitely and never fire. Bounding
+    // this call for real therefore requires our own withTimeout() — a plain
+    // Promise.race + setTimeout is an absolute deadline that fires
+    // regardless of what the raced promise is doing internally. The SDK
+    // `timeout` option is kept as a harmless secondary hint; withTimeout()
+    // is what actually enforces the budget now.
+    // Budget: 150s initial + 100s resume = 250s, leaving 50s of the 300s
+    // ceiling for data-gathering, prompt building, and the Supabase write.
+    const INITIAL_CALL_TIMEOUT_MS = 150_000;
+    const RESUME_CALL_TIMEOUT_MS = 100_000;
 
     console.log('[generate-daily-brief] starting initial Anthropic call');
-    let final = await anthropic.messages
-      .stream(requestParams, { timeout: INITIAL_CALL_TIMEOUT_MS, maxRetries: 0 })
-      .finalMessage();
+    let final = await withTimeout(
+      anthropic.messages
+        .stream(requestParams, { timeout: INITIAL_CALL_TIMEOUT_MS, maxRetries: 0 })
+        .finalMessage(),
+      INITIAL_CALL_TIMEOUT_MS
+    );
     console.log(`[generate-daily-brief] initial call finished, stop_reason=${final.stop_reason}`);
 
     // Server-side tool loops cap at 10 iterations internally; a request that
@@ -464,15 +474,18 @@ Use live web search to verify the latest news for "Movers & Stories", "Watch Tod
     // trailing server_tool_use block, no extra prompting needed.
     if (final.stop_reason === 'pause_turn') {
       console.log('[generate-daily-brief] pause_turn — resuming');
-      final = await anthropic.messages
-        .stream(
-          {
-            ...requestParams,
-            messages: [...requestParams.messages, { role: 'assistant', content: final.content }],
-          },
-          { timeout: RESUME_CALL_TIMEOUT_MS, maxRetries: 0 }
-        )
-        .finalMessage();
+      final = await withTimeout(
+        anthropic.messages
+          .stream(
+            {
+              ...requestParams,
+              messages: [...requestParams.messages, { role: 'assistant', content: final.content }],
+            },
+            { timeout: RESUME_CALL_TIMEOUT_MS, maxRetries: 0 }
+          )
+          .finalMessage(),
+        RESUME_CALL_TIMEOUT_MS
+      );
       console.log(`[generate-daily-brief] resume call finished, stop_reason=${final.stop_reason}`);
     }
 
