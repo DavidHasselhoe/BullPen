@@ -400,7 +400,7 @@ function FloatingTooltip({ pos, session }: { pos: TooltipPos | null; session: Se
             {pct}
             {absChange != null && (
               <span className="font-normal ml-1 text-muted-foreground">
-                ({absChange >= 0 ? '+' : ''}${Math.abs(absChange).toFixed(2)})
+                ({absChange >= 0 ? '+' : '-'}${Math.abs(absChange).toFixed(2)})
               </span>
             )}
           </span>
