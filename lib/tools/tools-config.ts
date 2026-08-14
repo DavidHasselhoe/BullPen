@@ -4,7 +4,6 @@ import {
   Wallet,
   Gauge,
   Grid3X3,
-  Bot,
   Filter,
   Scale,
   CalendarDays,
@@ -12,6 +11,7 @@ import {
   Bell,
   Telescope,
 } from 'lucide-react';
+import { BullHornsIcon } from '@/components/icons/BullHornsIcon';
 
 export interface ToolConfig {
   id: string;
@@ -28,7 +28,7 @@ export const TOOLS: ToolConfig[] = [
     name: 'Ask Bull',
     description: 'Investment research assistant. Ask about SEC filings, financial metrics, and concepts.',
     href: '/tools/ai-chat',
-    icon: Bot,
+    icon: BullHornsIcon,
     status: 'available',
   },
   {
