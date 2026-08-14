@@ -459,10 +459,18 @@ Use live web search to verify the latest news for "Movers & Stories", "Watch Tod
     // at the deadline, so the SDK actually tears down the connection (not
     // just our promise chain). withTimeout() is kept as a backstop in case
     // the abort itself doesn't propagate a rejection promptly.
-    // Budget: 150s initial + 100s resume = 250s, leaving 50s of the 300s
+    // Confirmed live 2026-08-14: the AbortSignal fix works — a run that hit
+    // the 150s initial-call budget returned a real, fast 500 ({"error":
+    // "Claude generation failed", "detail": "Request was aborted."})
+    // instead of hanging to Vercel's 300s kill. So the infra hang is fixed;
+    // that run's failure was just genuine — 150s isn't enough wall time for
+    // this prompt's web_search generation to finish. Since cancellation is
+    // now provably reliable (worst case is a clean early return, never a
+    // silent hang), give the initial call most of the remaining budget.
+    // Budget: 240s initial + 40s resume = 280s, leaving ~20s of the 300s
     // ceiling for data-gathering, prompt building, and the Supabase write.
-    const INITIAL_CALL_TIMEOUT_MS = 150_000;
-    const RESUME_CALL_TIMEOUT_MS = 100_000;
+    const INITIAL_CALL_TIMEOUT_MS = 240_000;
+    const RESUME_CALL_TIMEOUT_MS = 40_000;
 
     console.log('[generate-daily-brief] starting initial Anthropic call');
     let final = await withTimeout(
