@@ -402,7 +402,25 @@ Use live web search to verify the latest news for "Movers & Stories", "Watch Tod
       messages: [{ role: 'user' as const, content: userPrompt }],
     };
 
-    let final = await anthropic.messages.stream(requestParams).finalMessage();
+    // 2026-08-14: this cron timed out twice in a row, each time at exactly
+    // the function's own maxDuration (120s, then 300s after we raised it) —
+    // evidence the web_search tool loop has unbounded worst-case latency
+    // rather than a fixed amount of work that barely didn't fit. Left alone,
+    // Vercel hard-kills the function with zero logs from inside this route,
+    // so a stuck call is completely invisible. Bound each call explicitly so
+    // it fails fast and loud (caught below, logged, 500 returned) well
+    // before Vercel's hard kill, and turn off the SDK's own retry-on-timeout
+    // (default 2) since it would otherwise silently re-multiply the wait.
+    // Budget: 180s initial + 90s resume = 270s, leaving ~30s of the 300s
+    // ceiling for data-gathering (already done above) and the Supabase write.
+    const INITIAL_CALL_TIMEOUT_MS = 180_000;
+    const RESUME_CALL_TIMEOUT_MS = 90_000;
+
+    console.log('[generate-daily-brief] starting initial Anthropic call');
+    let final = await anthropic.messages
+      .stream(requestParams, { timeout: INITIAL_CALL_TIMEOUT_MS, maxRetries: 0 })
+      .finalMessage();
+    console.log(`[generate-daily-brief] initial call finished, stop_reason=${final.stop_reason}`);
 
     // Server-side tool loops cap at 10 iterations internally; a request that
     // hits the cap comes back with stop_reason: "pause_turn" instead of the
@@ -410,12 +428,17 @@ Use live web search to verify the latest news for "Movers & Stories", "Watch Tod
     // per Anthropic's docs the server picks up where it left off from the
     // trailing server_tool_use block, no extra prompting needed.
     if (final.stop_reason === 'pause_turn') {
+      console.log('[generate-daily-brief] pause_turn — resuming');
       final = await anthropic.messages
-        .stream({
-          ...requestParams,
-          messages: [...requestParams.messages, { role: 'assistant', content: final.content }],
-        })
+        .stream(
+          {
+            ...requestParams,
+            messages: [...requestParams.messages, { role: 'assistant', content: final.content }],
+          },
+          { timeout: RESUME_CALL_TIMEOUT_MS, maxRetries: 0 }
+        )
         .finalMessage();
+      console.log(`[generate-daily-brief] resume call finished, stop_reason=${final.stop_reason}`);
     }
 
     // Web search produces interleaved text blocks: brief commentary between
