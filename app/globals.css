@@ -723,12 +723,15 @@ html.animated-background-active [data-slot="dialog-content"] {
     vector-effect: non-scaling-stroke;
     /* A single 48px soft highlight (~16% of this button's actual traced
        perimeter, ~292.54px — measured via getBBox at real render size:
-       122.28 × 30, rx 7) orbiting once per 12s. dashoffset's total still
-       equals the full perimeter so the loop is seamless, same reasoning
-       as the previous version, just one dash instead of two. */
+       122.28 × 30, rx 7) orbiting once per 7s (down from an initial 12s
+       that read as too slow live). dashoffset's total still equals the
+       full perimeter so the loop is seamless, same reasoning as the
+       previous version, just one dash instead of two. Kept off the
+       breathing halo's 5.5s period (not a shared/multiple value) so the
+       two layers still don't lock into one obviously-repeating pattern. */
     stroke-dasharray: 48 244.54;
     filter: drop-shadow(0 0 3px var(--brand-glow));
-    animation: ai-halo-orbit 12s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+    animation: ai-halo-orbit 7s cubic-bezier(0.65, 0, 0.35, 1) infinite;
     transition: filter 200ms ease;
   }
   .animate-ai-signal-halo:hover .ai-halo-svg rect {
