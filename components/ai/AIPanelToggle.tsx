@@ -65,7 +65,7 @@ export function AIPanelToggle() {
           'transition-all duration-200'
         )}
       >
-        <BullAiIcon pose="glass" size={72} />
+        <BullAiIcon pose="glass" size={92} />
       </span>
       <span
         className={cn(
