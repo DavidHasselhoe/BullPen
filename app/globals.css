@@ -661,21 +661,31 @@ html.animated-background-active [data-slot="dialog-content"] {
   .animate-ai-pill-shine {
     position: relative;
     transition: transform 200ms ease;
-    background: var(--brand);
-    color: var(--brand-ink);
+    background: var(--brand) !important;
+    color: var(--brand-ink) !important;
     border: 2px solid oklch(1 0 0 / 0.3);
     overflow: hidden;
   }
-  /* Button's cva base always includes `bg-primary text-primary-foreground
-     hover:bg-primary/90` unconditionally. Consumers must pass a
-     conflicting Tailwind utility (e.g. `bg-transparent hover:bg-transparent
-     text-white`) alongside this class so twMerge actually removes those
-     three from the merged className — this class's own `background`/
-     `color` above only wins once nothing in the classList still carries
-     `hover:bg-primary/90`, which has higher specificity than a plain
-     `:hover` rule here regardless of source order and silently shifted
-     the fill toward near-white on hover otherwise, confirmed live via
-     getComputedStyle. See the Button call sites for the exact classes. */
+  /* !important on background/color, not decoration: Button's cva base
+     always includes `bg-primary text-primary-foreground hover:bg-primary/90`
+     unconditionally. The first fix attempt tried to make twMerge strip
+     those three out of the merged className by passing a conflicting
+     `bg-transparent hover:bg-transparent text-white` alongside this class
+     — that shipped, looked right in spot checks, then broke silently:
+     Tailwind v4's own utilities apparently land later in the compiled
+     "utilities" layer than this hand-written block regardless of this
+     file's source order, so `bg-transparent`/`text-white` kept winning
+     over this rule's plain background/color — the button rendered
+     transparent with white text, invisible on light backgrounds and
+     outline-only on dark. Confirmed via a real screenshot after a full
+     page reload (getComputedStyle briefly reported a stale value
+     immediately after live style injection during diagnosis — don't
+     trust it there without a fresh navigation first). !important is the
+     deliberate, permanent fix: this class is the sole source of truth for
+     this button's fill, so it must always win regardless of Tailwind's
+     internal layer ordering. Consumers no longer need to pass any
+     neutralizing bg-*/text-* utility alongside this class — !important
+     makes that unnecessary, so the call sites were simplified back down. */
   .animate-ai-pill-shine:hover {
     transform: scale(1.05);
   }

@@ -208,7 +208,7 @@ export default function DeepDivePage() {
                   <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/85 mb-2">Choose a lens</p>
                   <LensPicker value={lens} onChange={setLens} />
                 </div>
-                <Button size="lg" onClick={() => generate(lens)} className="gap-2 rounded-full bg-transparent hover:bg-transparent text-white animate-ai-pill-shine">
+                <Button size="lg" onClick={() => generate(lens)} className="gap-2 rounded-full animate-ai-pill-shine">
                   <Sparkles className="h-4 w-4" /> Generate Deep Dive
                 </Button>
                 <QuotaIndicator feature="deep_dive" unit={{ singular: 'deep dive', plural: 'deep dives' }} />

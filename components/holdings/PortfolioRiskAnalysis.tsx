@@ -633,7 +633,7 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
                   <Button
                     onClick={analyze}
                     size="sm"
-                    className="gap-1.5 rounded-full bg-transparent hover:bg-transparent text-white animate-ai-pill-shine"
+                    className="gap-1.5 rounded-full animate-ai-pill-shine"
                   >
                     <ShieldAlert className="h-3.5 w-3.5" /> Run Analysis
                   </Button>
