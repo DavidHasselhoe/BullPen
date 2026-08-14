@@ -437,22 +437,28 @@ Use live web search to verify the latest news for "Movers & Stories", "Watch Tod
       messages: [{ role: 'user' as const, content: userPrompt }],
     };
 
-    // 2026-08-14, three incidents in a row: this cron timed out at exactly
-    // the function's own maxDuration each time (120s, then 300s after we
-    // raised it, then 300s again after adding the SDK's own `timeout`
-    // option to .stream()). Live logs from the third run proved the SDK
-    // timeout does NOT bound this call: data gathering finished in 1.4s,
-    // "starting initial Anthropic call" logged at 16:39:52.898, then
-    // nothing — no resume log, no caught-error log — until Vercel's own
-    // hard kill at 16:44:51, 298s later. The SDK's `timeout` on a streaming
-    // request is very likely an idle/per-chunk timer, not a wall-clock
-    // deadline, so a web_search tool loop that keeps trickling SSE activity
-    // (even sparsely) can reset it indefinitely and never fire. Bounding
-    // this call for real therefore requires our own withTimeout() — a plain
-    // Promise.race + setTimeout is an absolute deadline that fires
-    // regardless of what the raced promise is doing internally. The SDK
-    // `timeout` option is kept as a harmless secondary hint; withTimeout()
-    // is what actually enforces the budget now.
+    // 2026-08-14, four incidents in a row, each timing out at exactly the
+    // function's own maxDuration (120s, then 300s x3 after raising it and
+    // after two different mitigations). Live logs proved data gathering
+    // finishes in ~1.4s and the initial Anthropic call starts logging
+    // normally, then produces nothing — no resume log, no caught-error log
+    // — until Vercel's own hard kill. Two mitigations were tried and both
+    // failed to change the outcome:
+    //   1. The SDK's `timeout` option on .stream() — evidence points to
+    //      this being an idle/per-chunk timer that a web_search tool loop's
+    //      sparse SSE activity keeps resetting, so it likely never fires.
+    //   2. A local withTimeout() (Promise.race + setTimeout) so OUR code
+    //      stops waiting after N ms. This makes our own control flow move
+    //      on, but it does not cancel the underlying HTTP/SSE connection —
+    //      the abandoned request keeps running. Node/Vercel's runtime can
+    //      hold the invocation open until outstanding I/O handles settle,
+    //      so even though our code "gave up" on the promise, the function
+    //      itself may still be blocked from actually returning, and
+    //      Vercel's platform-level maxDuration kills it regardless.
+    // The real fix is genuine cancellation: pass an AbortSignal that fires
+    // at the deadline, so the SDK actually tears down the connection (not
+    // just our promise chain). withTimeout() is kept as a backstop in case
+    // the abort itself doesn't propagate a rejection promptly.
     // Budget: 150s initial + 100s resume = 250s, leaving 50s of the 300s
     // ceiling for data-gathering, prompt building, and the Supabase write.
     const INITIAL_CALL_TIMEOUT_MS = 150_000;
@@ -461,7 +467,11 @@ Use live web search to verify the latest news for "Movers & Stories", "Watch Tod
     console.log('[generate-daily-brief] starting initial Anthropic call');
     let final = await withTimeout(
       anthropic.messages
-        .stream(requestParams, { timeout: INITIAL_CALL_TIMEOUT_MS, maxRetries: 0 })
+        .stream(requestParams, {
+          timeout: INITIAL_CALL_TIMEOUT_MS,
+          maxRetries: 0,
+          signal: AbortSignal.timeout(INITIAL_CALL_TIMEOUT_MS),
+        })
         .finalMessage(),
       INITIAL_CALL_TIMEOUT_MS
     );
@@ -481,7 +491,11 @@ Use live web search to verify the latest news for "Movers & Stories", "Watch Tod
               ...requestParams,
               messages: [...requestParams.messages, { role: 'assistant', content: final.content }],
             },
-            { timeout: RESUME_CALL_TIMEOUT_MS, maxRetries: 0 }
+            {
+              timeout: RESUME_CALL_TIMEOUT_MS,
+              maxRetries: 0,
+              signal: AbortSignal.timeout(RESUME_CALL_TIMEOUT_MS),
+            }
           )
           .finalMessage(),
         RESUME_CALL_TIMEOUT_MS
