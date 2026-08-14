@@ -1,5 +1,19 @@
 [
   {
+    "date": "2026-08-14",
+    "entries": [
+      { "type": "new", "text": "Added a reminder to help you keep your Academy streak alive if you haven't done today's challenge yet, with an on/off toggle in Settings > Notifications" },
+      { "type": "improved", "text": "Company Compare now shows real loading progress with the bull mascot while it fetches each company's data, instead of a plain skeleton screen" },
+      { "type": "improved", "text": "Refreshed the Risk Analysis, Deep Dive, Portfolio Builder, and Explain Differences buttons with a bolder emerald style and a subtle shine effect" },
+      { "type": "improved", "text": "The Ask Bull icon in the bottom corner now fills its circle properly instead of looking small and padded" },
+      { "type": "fixed", "text": "Fixed the Financials charts (Income Statement, Balance Sheet, Cash Flow) showing periods in the opposite order from the table right below them" },
+      { "type": "fixed", "text": "Fixed some stocks' dividend history showing a dividend amount from a different country's stock listing, in the wrong currency" },
+      { "type": "fixed", "text": "Fixed stock peer and competitor suggestions sometimes showing unrelated companies from the wrong industry" },
+      { "type": "fixed", "text": "Fixed the heatmap tooltip showing a positive dollar amount next to a negative percentage change" },
+      { "type": "fixed", "text": "Fixed an issue that could cause the Daily Brief to fail to generate for some Pro users" }
+    ]
+  },
+  {
     "date": "2026-08-13",
     "entries": [
       { "type": "new", "text": "Academy courses are now shown as a path — each course unlocks once you finish the one before it, instead of a flat list of everything at once" },
