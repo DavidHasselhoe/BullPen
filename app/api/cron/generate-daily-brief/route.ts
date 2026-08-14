@@ -22,7 +22,11 @@ import { getTopMovers, getStockQuotes } from '@/lib/market-data';
 import { logAiCall } from '@/lib/billing/log-ai-call';
 import { createDailyBriefReadyNotification } from '@/lib/notifications/notification-creators';
 
-export const maxDuration = 120;
+// Bumped from 120s after the 2026-08-13 web_search_20260209 switch — dynamic
+// filtering adds server-side work per search round, and worst-case latency
+// with max_uses:8 could exceed the old ceiling (confirmed live: the first
+// production run on the new tool timed out at exactly 120s, 2026-08-14).
+export const maxDuration = 300;
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -370,21 +374,40 @@ Use live web search to verify the latest news for "Movers & Stories", "Watch Tod
   let fullText = '';
   let sources: BriefSource[] = [];
   try {
-    const stream = anthropic.messages.stream({
-      model: 'claude-sonnet-4-6',
+    // max_uses lowered from 8 to 5 (2026-08-14) — each round now does more
+    // server-side work under web_search_20260209's dynamic filtering, so 8
+    // sequential rounds pushed worst-case latency past the function's
+    // duration budget. 5 still comfortably covers this prompt's 3 search
+    // topics (Movers & Stories, Watch Today, Next 24 Hours).
+    const requestParams = {
+      model: 'claude-sonnet-4-6' as const,
       max_tokens: 1500,
-      tools: [{ type: 'web_search_20260209', name: 'web_search', max_uses: 8 }],
+      tools: [{ type: 'web_search_20260209' as const, name: 'web_search' as const, max_uses: 5 }],
       system: systemPrompt,
-      messages: [{ role: 'user', content: userPrompt }],
-    });
+      messages: [{ role: 'user' as const, content: userPrompt }],
+    };
+
+    let final = await anthropic.messages.stream(requestParams).finalMessage();
+
+    // Server-side tool loops cap at 10 iterations internally; a request that
+    // hits the cap comes back with stop_reason: "pause_turn" instead of the
+    // finished brief. Resume once by re-sending the conversation so far —
+    // per Anthropic's docs the server picks up where it left off from the
+    // trailing server_tool_use block, no extra prompting needed.
+    if (final.stop_reason === 'pause_turn') {
+      final = await anthropic.messages
+        .stream({
+          ...requestParams,
+          messages: [...requestParams.messages, { role: 'assistant', content: final.content }],
+        })
+        .finalMessage();
+    }
 
     // Web search produces interleaved text blocks: brief commentary between
     // tool calls ("Let me search for...", "Now I have everything I need...")
     // followed by the FINAL synthesized brief in the last text block(s).
     // We must only keep the trailing run of text blocks — anything before a
     // tool_use / web_search_tool_result block is orchestration narration.
-    const final = await stream.finalMessage();
-
     const tail: string[] = [];
     const rawCitations: Array<{ url: string; title: string }> = [];
     for (let i = final.content.length - 1; i >= 0; i--) {
