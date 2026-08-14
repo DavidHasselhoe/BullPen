@@ -649,95 +649,98 @@ html.animated-background-active [data-slot="dialog-content"] {
       0 0 0 1px var(--brand-soft);
   }
 
-  /* ── AI action border trace ───────────────────────────────────────────────
-     A one-off, non-theme-adaptive treatment (white fill, thin near-black
-     border, fixed regardless of light/dark) requested for the holdings
-     Risk Assessment "Run Analysis" button specifically — not the general
-     AI-action language above, which stays theme-adaptive. A thin emerald
-     point of light circles the border continuously instead of crossing the
-     fill.
+  /* ── Signal Halo (holdings Risk Assessment CTA) ──────────────────────────
+     Full redesign per explicit art direction: the previous two-dash
+     "chasing lights" treatment (bright, opaque, hard-edged, linear speed)
+     read as gaming-neon rather than premium fintech. Replaced with two
+     independent, slow, low-amplitude motion layers that together read as
+     "quietly alive" rather than "animating":
 
-     Two earlier CSS-only attempts (a two-disc conic-gradient cutout, then
-     a mask-composite: exclude ring) both broke on this button's actual
-     aspect ratio: a conic-gradient's brightness/reveal follows a circle,
-     not a rounded rectangle, and this button is a short, wide pill (~124
-     × 32px) — so both produced a blob/spike bleeding outside the button
-     instead of a clean traced line, confirmed live. An SVG <rect> stroke
-     with an animated dash doesn't have this mismatch — it draws along the
-     literal rounded-rect perimeter regardless of aspect ratio, so it's
-     the correct primitive here, not a CSS trick. The stroke lives in the
-     accompanying inline SVG (see the Button in PortfolioRiskAnalysis.tsx),
-     this class only holds the base fill/text.
+     1. A single soft highlight orbiting the border — not a flat-color
+        dash but a stroke painted with a radial-faded gradient (transparent
+        → brand → transparent), so it has no hard start/end edge, more
+        like light catching a beveled surface than a drawn line. Eased
+        with a slow custom cubic-bezier instead of linear, so its speed
+        very subtly breathes across one lap instead of ticking at a
+        constant rate like a clock hand.
+     2. An ambient box-shadow behind the whole button breathing on its own
+        5.5s cycle — independent period from the 12s orbit, so the two
+        never lock into a visibly repeating combined pattern on any normal
+        viewing timescale.
 
-     Follow-up after live feedback ("barely visible", "hover does
-     nothing"): a flat 1.5px stroke at full opacity reads as a thin line,
-     not a glow — a real drop-shadow blur behind the stroke is what makes
-     it read as light rather than ink. Hover adds a second, bigger blur
-     layer, a thicker stroke, a lift + ambient shadow on the button itself,
-     and a small icon tilt so there's an actual response to interacting
-     with it.
+     Fixed white fill / near-black border stays (that base look was
+     reviewed and approved separately — only the light language changed
+     here). Still a deliberate, explained exception to DESIGN.md's
+     Earned-Depth Rule: this button is a conversion lever for Pro, not a
+     routine action, which is the kind of meaning that rule protects room
+     for rather than forbids.
 
-     Second follow-up: this button is a deliberate conversion lever (the
-     "Pro" gate sits one click behind it), so unlike every other product
-     button it's allowed a resting ambient glow, not just a hover one —
-     DESIGN.md's Earned-Depth Rule exists to keep shadows meaningful, and
-     "entice a free user to click and discover Pro" is exactly the kind
-     of meaning that rule is protecting room for, not an exception to it. */
-  .animate-ai-border-trace {
+     The gradient stops live in the accompanying inline SVG <defs> (see
+     the Button in PortfolioRiskAnalysis.tsx) but get their actual color
+     from here via .ai-halo-stop-* classes — not as raw stopColor/
+     stopOpacity XML attributes, which don't reliably resolve var() in
+     this app's rendering (confirmed earlier the same class of bug with
+     calc() in a raw SVG attribute); routing color through an actual CSS
+     rule sidesteps that.
+
+     Chose plain CSS over Framer Motion for both layers: this is a
+     perpetual, state-independent ambient animation with no interaction
+     logic driving it, exactly the case where a compositor-driven CSS
+     keyframe is cheaper and simpler than mounting a JS-driven animation
+     library for something that never needs to respond to app state. */
+  .animate-ai-signal-halo {
     position: relative;
-    transition: transform 180ms ease, box-shadow 180ms ease;
-    box-shadow: 0 6px 20px -8px var(--brand-glow), 0 0 26px -6px var(--brand-glow);
+    transition: transform 200ms ease;
+    animation: ai-halo-breathe 5.5s cubic-bezier(0.45, 0, 0.55, 1) infinite;
   }
-  .animate-ai-border-trace:hover {
+  .animate-ai-signal-halo:hover {
     transform: translateY(-1px);
-    box-shadow: 0 10px 28px -8px var(--brand-glow), 0 0 40px -4px var(--brand-glow);
+    animation-name: ai-halo-breathe-active;
   }
-  .animate-ai-border-trace:active {
+  .animate-ai-signal-halo:active {
     transform: translateY(0);
   }
-  .ai-border-trace-svg {
+  @keyframes ai-halo-breathe {
+    0%, 100% { box-shadow: 0 4px 16px -8px var(--brand-glow), 0 0 16px -10px var(--brand-glow); }
+    50%       { box-shadow: 0 6px 22px -8px var(--brand-glow), 0 0 24px -8px var(--brand-glow); }
+  }
+  @keyframes ai-halo-breathe-active {
+    0%, 100% { box-shadow: 0 6px 20px -8px var(--brand-glow), 0 0 22px -8px var(--brand-glow); }
+    50%       { box-shadow: 0 9px 28px -8px var(--brand-glow), 0 0 32px -6px var(--brand-glow); }
+  }
+  .ai-halo-svg {
     position: absolute;
     inset: 0;
-    width: 100%;
-    height: 100%;
     overflow: visible;
     pointer-events: none;
   }
-  .ai-border-trace-svg rect {
+  .ai-halo-stop-fade { stop-color: var(--brand); stop-opacity: 0; }
+  .ai-halo-stop-peak { stop-color: var(--brand); stop-opacity: 0.85; }
+  .ai-halo-svg rect {
     fill: none;
-    stroke: var(--brand);
-    stroke-width: 2.25;
+    stroke-width: 1.5;
     stroke-linecap: round;
     vector-effect: non-scaling-stroke;
-    /* Two 20px dashes with equal gaps between them (126.27px each) so
-       they sit exactly opposite one another and orbit symmetrically,
-       rather than one chasing close behind the other. The four values
-       must still sum to this button's actual traced perimeter (~292.54px,
-       measured via getBBox at the real rendered size: 122.28 × 30, rx 7)
-       — see below for why that sum matters for a seamless loop. */
-    stroke-dasharray: 20 126.27 20 126.27;
-    filter:
-      drop-shadow(0 0 2px var(--brand))
-      drop-shadow(0 0 7px var(--brand-glow))
-      drop-shadow(0 0 14px var(--brand-glow));
-    animation: ai-border-dash 6s linear infinite;
-    transition: stroke-width 200ms ease, filter 200ms ease;
+    /* A single 48px soft highlight (~16% of this button's actual traced
+       perimeter, ~292.54px — measured via getBBox at real render size:
+       122.28 × 30, rx 7) orbiting once per 12s. dashoffset's total still
+       equals the full perimeter so the loop is seamless, same reasoning
+       as the previous version, just one dash instead of two. */
+    stroke-dasharray: 48 244.54;
+    filter: drop-shadow(0 0 3px var(--brand-glow));
+    animation: ai-halo-orbit 12s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+    transition: filter 200ms ease;
   }
-  .animate-ai-border-trace:hover .ai-border-trace-svg rect {
-    stroke-width: 3;
-    filter:
-      drop-shadow(0 0 2.5px var(--brand))
-      drop-shadow(0 0 10px var(--brand-glow))
-      drop-shadow(0 0 18px var(--brand-glow))
-      drop-shadow(0 0 28px var(--brand-glow));
+  .animate-ai-signal-halo:hover .ai-halo-svg rect {
+    filter: drop-shadow(0 0 4.5px var(--brand-glow));
   }
-  .ai-border-trace-icon {
+  .ai-halo-icon {
     transition: transform 200ms ease;
   }
-  .animate-ai-border-trace:hover .ai-border-trace-icon {
-    transform: rotate(-8deg) scale(1.1);
+  .animate-ai-signal-halo:hover .ai-halo-icon {
+    transform: scale(1.05);
   }
-  @keyframes ai-border-dash {
+  @keyframes ai-halo-orbit {
     to { stroke-dashoffset: -292.54; }
   }
 

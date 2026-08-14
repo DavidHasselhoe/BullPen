@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback, useId } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Card, CardContent, CardHeader, CardTitle,
@@ -357,6 +357,7 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { open: openAIPanel } = useAIPanel();
+  const haloGradientId = useId();
 
   // Derive user's display currency from settings
   const userCurrency = useMemo((): string => {
@@ -633,12 +634,19 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
                   <Button
                     onClick={analyze}
                     size="sm"
-                    className="gap-1.5 bg-white text-black hover:bg-neutral-50 border border-black/85 animate-ai-border-trace"
+                    className="gap-1.5 bg-white text-black hover:bg-neutral-50 border border-black/85 animate-ai-signal-halo"
                   >
-                    <svg className="ai-border-trace-svg" style={{ width: '100%', height: '100%' }} aria-hidden="true">
-                      <rect x="0" y="0" width="100%" height="100%" rx="7" />
+                    <svg className="ai-halo-svg" style={{ width: '100%', height: '100%' }} aria-hidden="true">
+                      <defs>
+                        <linearGradient id={haloGradientId} x1="0" y1="0" x2="1" y2="0">
+                          <stop offset="0%" className="ai-halo-stop-fade" />
+                          <stop offset="50%" className="ai-halo-stop-peak" />
+                          <stop offset="100%" className="ai-halo-stop-fade" />
+                        </linearGradient>
+                      </defs>
+                      <rect x="0" y="0" width="100%" height="100%" rx="7" stroke={`url(#${haloGradientId})`} />
                     </svg>
-                    <ShieldAlert className="h-3.5 w-3.5 ai-border-trace-icon" /> Run Analysis
+                    <ShieldAlert className="h-3.5 w-3.5 ai-halo-icon" /> Run Analysis
                   </Button>
                 </div>
               </EmptyState>
