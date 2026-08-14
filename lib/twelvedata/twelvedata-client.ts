@@ -1242,15 +1242,26 @@ export async function getDividends(symbol: string): Promise<DividendItem[]> {
     throw new Error(msg);
   }
 
-  return (data.dividends ?? []).map((item) => ({
-    // The API returns `ex_date`; older responses used `ex_dividend_date`.
-    ex_dividend_date: item.ex_date ?? item.ex_dividend_date ?? '',
-    payment_date: item.payment_date ?? null,
-    record_date: item.record_date ?? null,
-    declaration_date: item.declaration_date ?? null,
-    amount: item.amount ?? 0,
-    currency: item.currency ?? 'USD',
-  }));
+  // TwelveData support confirmed (2026-08-14 ticket): /dividends can return a
+  // record from an unrelated foreign cross-listing of the same symbol — e.g.
+  // TGT's $72.09 dividend was real, but for TGT on XBUE (Buenos Aires) in ARS,
+  // not the NYSE listing this app shows. The API does distinguish it via
+  // `currency`; we just weren't checking it, so fmtDividend's hardcoded `$`
+  // prefix silently mislabeled an ARS amount as USD. Every stock this app
+  // covers is priced in USD elsewhere on the page (quotes, candles, financials),
+  // so any dividend record not explicitly in USD belongs to a listing we're not
+  // displaying and must be dropped rather than shown or converted.
+  return (data.dividends ?? [])
+    .filter((item) => (item.currency ?? 'USD') === 'USD')
+    .map((item) => ({
+      // The API returns `ex_date`; older responses used `ex_dividend_date`.
+      ex_dividend_date: item.ex_date ?? item.ex_dividend_date ?? '',
+      payment_date: item.payment_date ?? null,
+      record_date: item.record_date ?? null,
+      declaration_date: item.declaration_date ?? null,
+      amount: item.amount ?? 0,
+      currency: item.currency ?? 'USD',
+    }));
 }
 
 // -------- Company Profile --------
