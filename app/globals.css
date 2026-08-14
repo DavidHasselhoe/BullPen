@@ -703,9 +703,19 @@ html.animated-background-active [data-slot="dialog-content"] {
     stroke-width: 2;
     stroke-linecap: round;
     vector-effect: non-scaling-stroke;
-    stroke-dasharray: 32 600;
+    /* Two dashes (20px each) separated by a short 42px gap, then one long
+       212.54px gap before the pattern repeats — reads as two lights
+       chasing each other around the loop, with a trailing dark stretch.
+       The four values must sum to this button's actual traced perimeter
+       (~292.54px, measured via getBBox at the real rendered size: 122.28
+       × 30, rx 7) — the previous "32 600" pattern summed to far more than
+       the ~292px perimeter, so the dash spent most of each cycle already
+       exited into the oversized gap and invisible, reading as "stops for
+       a few seconds." dashoffset below animates by exactly the same sum,
+       so lap N+1 starts exactly where lap N ended: no seam, no pause. */
+    stroke-dasharray: 20 42 20 210.54;
     filter: drop-shadow(0 0 1.5px var(--brand)) drop-shadow(0 0 5px var(--brand-glow));
-    animation: ai-border-dash 3s linear infinite;
+    animation: ai-border-dash 6s linear infinite;
     transition: stroke-width 200ms ease, filter 200ms ease;
   }
   .animate-ai-border-trace:hover .ai-border-trace-svg rect {
@@ -722,7 +732,7 @@ html.animated-background-active [data-slot="dialog-content"] {
     transform: rotate(-8deg) scale(1.1);
   }
   @keyframes ai-border-dash {
-    to { stroke-dashoffset: -632; }
+    to { stroke-dashoffset: -292.54; }
   }
 
   /* ── Academy path "current node" pulse ───────────────────────────────────
