@@ -649,6 +649,49 @@ html.animated-background-active [data-slot="dialog-content"] {
       0 0 0 1px var(--brand-soft);
   }
 
+  /* ── AI action border trace ───────────────────────────────────────────────
+     A one-off, non-theme-adaptive treatment (white fill, thin near-black
+     border, fixed regardless of light/dark) requested for the holdings
+     Risk Assessment "Run Analysis" button specifically — not the general
+     AI-action language above, which stays theme-adaptive. A thin emerald
+     point of light circles the border continuously instead of crossing the
+     fill.
+
+     Two earlier CSS-only attempts (a two-disc conic-gradient cutout, then
+     a mask-composite: exclude ring) both broke on this button's actual
+     aspect ratio: a conic-gradient's brightness/reveal follows a circle,
+     not a rounded rectangle, and this button is a short, wide pill (~124
+     × 32px) — so both produced a blob/spike bleeding outside the button
+     instead of a clean traced line, confirmed live. An SVG <rect> stroke
+     with an animated dash doesn't have this mismatch — it draws along the
+     literal rounded-rect perimeter regardless of aspect ratio, so it's
+     the correct primitive here, not a CSS trick. The stroke lives in the
+     accompanying inline SVG (see the Button in PortfolioRiskAnalysis.tsx),
+     this class only holds the base fill/text. */
+  .animate-ai-border-trace {
+    position: relative;
+  }
+  .ai-border-trace-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    pointer-events: none;
+  }
+  .ai-border-trace-svg rect {
+    fill: none;
+    stroke: var(--brand);
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    vector-effect: non-scaling-stroke;
+    stroke-dasharray: 26 600;
+    animation: ai-border-dash 3.6s linear infinite;
+  }
+  @keyframes ai-border-dash {
+    to { stroke-dashoffset: -626; }
+  }
+
   /* ── Academy path "current node" pulse ───────────────────────────────────
      Marks the one open door on the /academy progression path — the ring
      opacity breathes, nothing scales or moves, so it stays "precise", not
