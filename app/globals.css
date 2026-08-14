@@ -649,108 +649,56 @@ html.animated-background-active [data-slot="dialog-content"] {
       0 0 0 1px var(--brand-soft);
   }
 
-  /* ── Signal Halo (holdings Risk Assessment CTA) ──────────────────────────
-     Full redesign per explicit art direction: the previous two-dash
-     "chasing lights" treatment (bright, opaque, hard-edged, linear speed)
-     read as gaming-neon rather than premium fintech. Replaced with two
-     independent, slow, low-amplitude motion layers that together read as
-     "quietly alive" rather than "animating":
-
-     1. A single soft highlight orbiting the border — not a flat-color
-        dash but a stroke painted with a radial-faded gradient (transparent
-        → brand → transparent), so it has no hard start/end edge, more
-        like light catching a beveled surface than a drawn line. Eased
-        with a slow custom cubic-bezier instead of linear, so its speed
-        very subtly breathes across one lap instead of ticking at a
-        constant rate like a clock hand.
-     2. An ambient box-shadow behind the whole button breathing on its own
-        5.5s cycle — independent period from the 12s orbit, so the two
-        never lock into a visibly repeating combined pattern on any normal
-        viewing timescale.
-
-     Fixed white fill / near-black border stays (that base look was
-     reviewed and approved separately — only the light language changed
-     here). Still a deliberate, explained exception to DESIGN.md's
-     Earned-Depth Rule: this button is a conversion lever for Pro, not a
-     routine action, which is the kind of meaning that rule protects room
-     for rather than forbids.
-
-     The gradient stops live in the accompanying inline SVG <defs> (see
-     the Button in PortfolioRiskAnalysis.tsx) but get their actual color
-     from here via .ai-halo-stop-* classes — not as raw stopColor/
-     stopOpacity XML attributes, which don't reliably resolve var() in
-     this app's rendering (confirmed earlier the same class of bug with
-     calc() in a raw SVG attribute); routing color through an actual CSS
-     rule sidesteps that.
-
-     Chose plain CSS over Framer Motion for both layers: this is a
-     perpetual, state-independent ambient animation with no interaction
-     logic driving it, exactly the case where a compositor-driven CSS
-     keyframe is cheaper and simpler than mounting a JS-driven animation
-     library for something that never needs to respond to app state. */
-  .animate-ai-signal-halo {
+  /* ── AI pill shine (holdings Risk Assessment CTA) ────────────────────────
+     Replaces the earlier Signal Halo treatment entirely — reviewed a set
+     of button-motion options side by side (a Uiverse.io reference button,
+     recolored to BullPen's tokens) and this pill-shine style was the
+     preferred one: a solid Signal Emerald fill instead of a white/black
+     base, explicitly wanted for more "popping color" on the page. Fill
+     uses --brand/--brand-ink (the same contrast-vetted pairing the
+     landing CTA uses on its emerald fill, not plain white — --brand-ink
+     flips per theme so text stays readable on both the light-mode deep
+     emerald and dark-mode bright emerald). `rounded-full` overrides the
+     product register's usual `rounded-md` — a deliberate pill shape for
+     this one conversion-lever button, not a general product button change. */
+  .animate-ai-pill-shine {
     position: relative;
-    transition: transform 200ms ease;
-    animation: ai-halo-breathe 5.5s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+    transition: transform 200ms ease, border-color 200ms ease;
+    background: var(--brand);
+    color: var(--brand-ink);
+    border: 2px solid oklch(1 0 0 / 0.3);
+    overflow: hidden;
   }
-  .animate-ai-signal-halo:hover {
-    transform: translateY(-1px);
-    animation-name: ai-halo-breathe-active;
+  .animate-ai-pill-shine:hover {
+    transform: scale(1.05);
+    border-color: oklch(1 0 0 / 0.55);
   }
-  .animate-ai-signal-halo:active {
-    transform: translateY(0);
+  .animate-ai-pill-shine:active {
+    transform: scale(1.02);
   }
-  @keyframes ai-halo-breathe {
-    0%, 100% { box-shadow: 0 4px 16px -8px var(--brand-glow), 0 0 16px -10px var(--brand-glow); }
-    50%       { box-shadow: 0 6px 22px -8px var(--brand-glow), 0 0 24px -8px var(--brand-glow); }
-  }
-  @keyframes ai-halo-breathe-active {
-    0%, 100% { box-shadow: 0 6px 20px -8px var(--brand-glow), 0 0 22px -8px var(--brand-glow); }
-    50%       { box-shadow: 0 9px 28px -8px var(--brand-glow), 0 0 32px -6px var(--brand-glow); }
-  }
-  .ai-halo-svg {
+  .animate-ai-pill-shine::before {
+    content: '';
     position: absolute;
-    /* Outset 4px past the button's own box on every side — the stroke
-       below traces this larger box, not the button's actual border, so
-       the light orbits just outside the black outline instead of sitting
-       on top of it. A translucent stroke centered on the border pixel
-       barely shows against solid black (same underlying issue as the
-       very first "barely visible" shimmer bug this session: low-alpha
-       color over near-black reads as almost nothing) — floating the ring
-       in the open space beyond the border sidesteps that instead of
-       fighting it with more opacity. */
-    inset: -4px;
-    overflow: visible;
+    width: 48px;
+    height: 100%;
+    background-image: linear-gradient(
+      120deg,
+      oklch(1 0 0 / 0) 30%,
+      oklch(1 0 0 / 0.8),
+      oklch(1 0 0 / 0) 70%
+    );
+    top: 0;
+    left: -48px;
+    opacity: 0.6;
     pointer-events: none;
   }
-  .ai-halo-stop-fade { stop-color: var(--brand); stop-opacity: 0; }
-  .ai-halo-stop-peak { stop-color: var(--brand); stop-opacity: 0.85; }
-  .ai-halo-svg rect {
-    fill: none;
-    stroke-width: 1.5;
-    stroke-linecap: round;
-    vector-effect: non-scaling-stroke;
-    /* A single 48px soft highlight orbiting once per 7s. dashoffset's
-       total must equal this outset rect's actual traced perimeter for a
-       seamless loop — recompute both (dasharray gap + keyframe offset)
-       whenever the inset/rx above changes; see the live getBBox()
-       measurement noted at the call site in PortfolioRiskAnalysis.tsx. */
-    stroke-dasharray: 48 269.67;
-    filter: drop-shadow(0 0 3px var(--brand-glow));
-    animation: ai-halo-orbit 7s cubic-bezier(0.65, 0, 0.35, 1) infinite;
-    transition: filter 200ms ease;
+  .animate-ai-pill-shine:hover::before {
+    animation: ai-pill-shine 1.5s ease-out infinite;
   }
-  .animate-ai-signal-halo:hover .ai-halo-svg rect {
-    filter: drop-shadow(0 0 4.5px var(--brand-glow));
-  }
-  .ai-halo-icon {
-    transition: transform 200ms ease;
-  }
-  .animate-ai-signal-halo:hover .ai-halo-icon {
-    transform: scale(1.05);
-  }
-  @keyframes ai-halo-orbit {
-    to { stroke-dashoffset: -317.67; }
+  @keyframes ai-pill-shine {
+    0%  { left: -48px; }
+    60% { left: 100%; }
+    to  { left: 100%; }
   }
 
   /* ── Academy path "current node" pulse ───────────────────────────────────
