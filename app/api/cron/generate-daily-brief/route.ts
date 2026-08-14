@@ -20,6 +20,7 @@ import type { EarningsCalendarItem } from '@/lib/twelvedata/twelvedata-client';
 import { getCalendarDay } from '@/lib/market-data/calendar-days';
 import { getTopMovers, getStockQuotes } from '@/lib/market-data';
 import { logAiCall } from '@/lib/billing/log-ai-call';
+import { checkAnthropicDailySpend } from '@/lib/billing/anthropic-spend-guard';
 import { createDailyBriefReadyNotification } from '@/lib/notifications/notification-creators';
 
 // Bumped from 120s after the 2026-08-13 web_search_20260209 switch — dynamic
@@ -213,6 +214,20 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   if (existing) {
     return NextResponse.json({ success: true, skipped: true, date: todayET, reason: 'already_exists' });
+  }
+
+  // ── Anthropic spend guard ────────────────────────────────────────────────
+  // Checked before gathering data too, so a blocked run doesn't also burn
+  // TwelveData credits on a brief that won't get generated.
+  const spend = await checkAnthropicDailySpend();
+  if (!spend.allowed) {
+    console.error(
+      `[generate-daily-brief] skipped — today's Anthropic spend ($${spend.spentTodayUsd.toFixed(2)}) already at/above the $${spend.capUsd} daily cap`
+    );
+    return NextResponse.json(
+      { success: false, skipped: true, date: todayET, reason: 'anthropic_spend_cap' },
+      { status: 200 }
+    );
   }
 
   // ── Gather context data in parallel ──────────────────────────────────────

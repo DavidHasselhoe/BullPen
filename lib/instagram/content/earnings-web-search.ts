@@ -21,15 +21,18 @@
  * earnings-calendar.ts, exactly as before. Claude only ever supplies the one
  * fact TwelveData is late on: which day a given ticker reports.
  *
- * COST: `max_uses` caps this at 6 searches per run. At Anthropic's hosted
- * web-search pricing plus a few hundred tokens of search-result content,
- * one run costs low-single-digit cents; this only runs once a week (see
- * app/api/cron/instagram-earnings-weekly/route.ts), so the monthly cost is
- * negligible. Logged via logAiCall like every other AI call in the app.
+ * COST: `max_uses` caps search *count* at 8 per run, but real search-result
+ * pages are large — observed cost is $0.19-0.69/run (100K-300K input
+ * tokens), not the "low-single-digit cents" originally assumed here. This
+ * still runs once a week (see app/api/cron/instagram-earnings-weekly/route.ts)
+ * so the scheduled cost is fine; the real risk is repeated manual runs
+ * during development with no backpressure — see checkAnthropicDailySpend.
+ * Logged via logAiCall like every other AI call in the app.
  */
 
 import Anthropic from '@anthropic-ai/sdk';
 import { logAiCall } from '@/lib/billing/log-ai-call';
+import { checkAnthropicDailySpend } from '@/lib/billing/anthropic-spend-guard';
 
 const MODEL = 'claude-sonnet-5';
 // Bumped from 6: finding both a confirmed date AND a consensus EPS estimate
@@ -96,6 +99,14 @@ export async function fetchConfirmedEarnings(
   weekStart: string,
   weekEnd: string
 ): Promise<WebSearchEarningsHit[]> {
+  const spend = await checkAnthropicDailySpend();
+  if (!spend.allowed) {
+    console.error(
+      `[earnings-web-search] skipped — today's Anthropic spend ($${spend.spentTodayUsd.toFixed(2)}) already at/above the $${spend.capUsd} daily cap`
+    );
+    return [];
+  }
+
   // thinking disabled + allowed_callers: ['direct'] — without both, this
   // spiraled into an open-ended agentic loop (extended thinking + web search
   // routed through code execution, web_search_20260209's default caller)
