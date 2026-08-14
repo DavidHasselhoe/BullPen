@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueries } from '@tanstack/react-query';
 import Link from 'next/link';
 import {
   Dialog,
@@ -41,6 +41,7 @@ import type { CompareCompany } from '@/app/api/compare/route';
 import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import { useRecentlyCompared } from '@/hooks/use-recently-compared';
 import { RecentlyComparedCard } from '@/components/tools/compare/RecentlyComparedCard';
+import { CompareLoadingState } from '@/components/tools/compare/CompareLoadingState';
 import { cn } from '@/lib/utils';
 import { Suspense, Fragment } from 'react';
 
@@ -330,7 +331,10 @@ function CompareContent() {
   const [aiExplainError, setAiExplainError] = useState<string | null>(null);
   const [aiExplanation, setAiExplanation] = useState<string | null>(null);
 
-  // When arriving with tickers in URL (e.g. from Compare quick action), fetch company info and prefill slots
+  // When arriving with tickers in URL (e.g. from Compare quick action), fetch company info and prefill slots.
+  // Also runs for the 2+ ticker comparison view (not just the <2 prefill case) — it's a cheap
+  // Supabase-only lookup that gives the loading state real company names to show while the
+  // (much slower) per-company financial data is still in flight below.
   const { data: urlCompaniesData } = useQuery({
     queryKey: ['companies-batch', tickersFromUrl.join(',')],
     queryFn: async (): Promise<SearchResult[]> => {
@@ -350,9 +354,13 @@ function CompareContent() {
         logo_url: c.logo_url ?? null,
       }));
     },
-    enabled: tickersFromUrl.length >= 1 && tickersFromUrl.length < 2,
+    enabled: tickersFromUrl.length >= 1,
     staleTime: 60_000,
   });
+  const nameByTicker = useMemo(
+    () => new Map((urlCompaniesData ?? []).map((c) => [c.ticker, c.name])),
+    [urlCompaniesData]
+  );
 
   const hasInitializedFromUrl = useRef(false);
   useEffect(() => {
@@ -418,16 +426,38 @@ function CompareContent() {
   const { open: openAIPanel, setAIContext } = useAIPanel();
   const { add: addRecentComparison } = useRecentlyCompared();
 
-  const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['compare', tickers.join(',')],
-    queryFn: async () => {
-      const res = await fetch(`/api/compare?tickers=${tickers.join(',')}`);
-      const json = await res.json();
-      if (!json.success) throw new Error(json.error || 'Failed to fetch');
-      return json as { success: boolean; companies: CompareCompany[] };
-    },
-    enabled: tickers.length >= 2,
+  // One query per company instead of one batched request — lets the loading
+  // state show real per-company progress (which ticker is still in flight)
+  // instead of an all-or-nothing wait on the slowest one. See
+  // CompareLoadingState and /api/compare/company.
+  const compareQueries = useQueries({
+    queries: tickers.map((ticker) => ({
+      queryKey: ['compare-company', ticker],
+      queryFn: async (): Promise<CompareCompany | null> => {
+        const res = await fetch(`/api/compare/company?ticker=${ticker}`);
+        const json = await res.json();
+        if (!json.success) throw new Error(json.error || 'Failed to fetch');
+        return json.company as CompareCompany | null;
+      },
+      enabled: tickers.length >= 2,
+    })),
   });
+
+  const allSettled = compareQueries.every((q) => !q.isLoading);
+  const isLoading = tickers.length >= 2 && !allSettled;
+  // Not memoized: useQueries returns a fresh result array each render, so a
+  // useMemo keyed on it would recompute (and produce a new array) every
+  // render anyway — memoizing bought nothing but false confidence.
+  const companies = compareQueries.map((q) => q.data).filter((c): c is CompareCompany => c != null);
+  const firstQueryError = compareQueries.find((q) => q.error)?.error as Error | undefined;
+  const refetchAll = useCallback(() => {
+    compareQueries.forEach((q) => q.refetch());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tickers.join(',')]);
+  const progressItems = tickers.map((ticker, i) => ({
+    label: compareQueries[i]?.data?.name ?? nameByTicker.get(ticker) ?? ticker,
+    done: !compareQueries[i]?.isLoading,
+  }));
 
   useEffect(() => {
     if (tickers.length >= 2) {
@@ -437,14 +467,21 @@ function CompareContent() {
   }, [tickers, setAIContext]);
 
   // Record a successful comparison as a "recently compared" quick action —
-  // only once real company data has loaded, not on every ticker-param change.
+  // only once every per-company fetch has settled, not on every ticker-param
+  // change. Depends on primitives (not `companies`, a fresh array every
+  // render from useQueries) — an array/object dependency here re-fires the
+  // effect on every render once the condition is true, since it never
+  // reference-equals the previous render's array. That looped with
+  // addRecentComparison's own state update: "Maximum update depth exceeded",
+  // confirmed live before this fix.
   useEffect(() => {
-    if (data?.success && data.companies?.length >= 2) {
+    if (allSettled && companies.length >= 2) {
       addRecentComparison(
-        data.companies.map((c) => ({ ticker: c.ticker, name: c.name, logo_url: c.logo_url }))
+        companies.map((c) => ({ ticker: c.ticker, name: c.name, logo_url: c.logo_url }))
       );
     }
-  }, [data, addRecentComparison]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allSettled, companies.length, tickers.join(',')]);
 
   if (tickers.length < 2) {
     const slots = Math.min(MAX_SLOTS, Math.max(MIN_SLOTS, selectedCompanies.length + 1));
@@ -581,8 +618,8 @@ function CompareContent() {
     );
   }
 
-  if (error || (data && !data.success)) {
-    const code = (error as Error)?.message;
+  if (allSettled && tickers.length >= 2 && companies.length === 0) {
+    const code = firstQueryError?.message;
     const known = code ? COMPARE_ERROR_COPY[code] : undefined;
     const message = known?.message ?? 'Could not load comparison. Check that tickers exist in BullPen.';
 
@@ -598,7 +635,7 @@ function CompareContent() {
         <Card className={known?.transient ? undefined : 'border-destructive/50'}>
           <CardContent className="py-8 flex flex-col items-center gap-4 text-center">
             <p className={known?.transient ? 'text-muted-foreground' : 'text-destructive'}>{message}</p>
-            <Button variant="outline" size="sm" onClick={() => refetch()}>
+            <Button variant="outline" size="sm" onClick={refetchAll}>
               Try again
             </Button>
           </CardContent>
@@ -606,10 +643,6 @@ function CompareContent() {
       </div>
     );
   }
-
-  const companies = data?.companies ?? [];
-  // Falls back to tickers.length while loading, since companies is empty until data arrives.
-  const colCount = Math.min(companies.length || tickers.length, 5);
 
   const sortOptions: { value: MetricSort; label: string }[] = [
     { value: 'default', label: 'By category' },
@@ -656,14 +689,7 @@ function CompareContent() {
       </Link>
 
       {isLoading ? (
-        <div className="space-y-8">
-          <Skeleton className="h-10 w-64" />
-          <div className="grid gap-6" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))' }}>
-            {Array.from({ length: colCount }).map((_, i) => (
-              <Skeleton key={i} className="h-96" />
-            ))}
-          </div>
-        </div>
+        <CompareLoadingState items={progressItems} />
       ) : (
         <>
           <div className="mb-8">
