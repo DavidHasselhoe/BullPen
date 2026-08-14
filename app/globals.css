@@ -586,17 +586,16 @@ html.animated-background-active [data-slot="dialog-content"] {
     animation: shimmer 1.6s ease-in-out infinite;
   }
 
-  /* ── AI action sweep + glow ───────────────────────────────────────────────
+  /* ── AI action sweep ───────────────────────────────────────────────────────
      DESIGN.md's One Signal Rule reserves Signal Emerald for gain/loss plus
      one earned exception: the landing CTA's shimmer/glow, granted because
-     it's a rare top-of-funnel moment. AI generation actions (Risk Analysis,
-     Deep Dive, Portfolio Builder, "Explain Differences") are judged a second
-     earned exception — Bull/AI generation is as central to this product as
-     the landing page, so its primary trigger buttons borrow the landing
-     CTA's decorative language (see DESIGN.md §5 Buttons). Scope stays
-     deliberate: only the primary "start generation" buttons get
-     `.animate-ai-glow`; secondary retry/regenerate actions keep the sweep
-     alone so emerald doesn't spread past the moments that earn it.
+     it's a rare top-of-funnel moment. AI generation actions are judged a
+     second earned exception — Bull/AI generation is as central to this
+     product as the landing page (see DESIGN.md §5 Buttons). Primary
+     "start generation" buttons now use `.animate-ai-pill-shine` below;
+     this sweep-only class is what's left for secondary retry/regenerate
+     actions (Regenerate, Try Again), which stay lower-emphasis on purpose
+     so emerald doesn't spread past the moments that earn it.
 
      The sweep band is painted with plain alpha compositing (no
      mix-blend-mode) — the previous version used `mix-blend-mode: overlay`,
@@ -638,40 +637,47 @@ html.animated-background-active [data-slot="dialog-content"] {
     animation: ai-sweep 2.8s ease-in-out infinite;
     pointer-events: none;
   }
-  .animate-ai-glow {
-    box-shadow:
-      0 8px 24px -8px var(--brand-glow),
-      0 0 0 1px var(--brand-soft);
-  }
-  .animate-ai-glow:hover {
-    box-shadow:
-      0 10px 28px -6px var(--brand-glow),
-      0 0 0 1px var(--brand-soft);
-  }
+  /* ── AI pill shine — primary AI-generation buttons ───────────────────────
+     Started as a one-off on holdings Risk Assessment (reviewed a set of
+     button-motion options side by side, a Uiverse.io reference button
+     recolored to BullPen's tokens, and this pill-shine style was the
+     preferred one — solid Signal Emerald instead of white/black, wanted
+     for more "popping color"), then rolled out to every primary "start
+     generation" button: Risk Analysis, Deep Dive, Portfolio Builder,
+     Compare's "Explain Differences". Secondary retry/regenerate buttons
+     stay on the plain `.animate-ai-sweep` above, unchanged.
 
-  /* ── AI pill shine (holdings Risk Assessment CTA) ────────────────────────
-     Replaces the earlier Signal Halo treatment entirely — reviewed a set
-     of button-motion options side by side (a Uiverse.io reference button,
-     recolored to BullPen's tokens) and this pill-shine style was the
-     preferred one: a solid Signal Emerald fill instead of a white/black
-     base, explicitly wanted for more "popping color" on the page. Fill
-     uses --brand/--brand-ink (the same contrast-vetted pairing the
+     Fill uses --brand/--brand-ink (the same contrast-vetted pairing the
      landing CTA uses on its emerald fill, not plain white — --brand-ink
      flips per theme so text stays readable on both the light-mode deep
      emerald and dark-mode bright emerald). `rounded-full` overrides the
      product register's usual `rounded-md` — a deliberate pill shape for
-     this one conversion-lever button, not a general product button change. */
+     this specific "AI action" button language, not a general product
+     button change.
+
+     Hover is scale + shine only, no color/border change — asked
+     explicitly not to shift color on hover since the zoom and the shine
+     sweep already read as a clear response on their own. */
   .animate-ai-pill-shine {
     position: relative;
-    transition: transform 200ms ease, border-color 200ms ease;
+    transition: transform 200ms ease;
     background: var(--brand);
     color: var(--brand-ink);
     border: 2px solid oklch(1 0 0 / 0.3);
     overflow: hidden;
   }
+  /* Button's cva base always includes `bg-primary text-primary-foreground
+     hover:bg-primary/90` unconditionally. Consumers must pass a
+     conflicting Tailwind utility (e.g. `bg-transparent hover:bg-transparent
+     text-white`) alongside this class so twMerge actually removes those
+     three from the merged className — this class's own `background`/
+     `color` above only wins once nothing in the classList still carries
+     `hover:bg-primary/90`, which has higher specificity than a plain
+     `:hover` rule here regardless of source order and silently shifted
+     the fill toward near-white on hover otherwise, confirmed live via
+     getComputedStyle. See the Button call sites for the exact classes. */
   .animate-ai-pill-shine:hover {
     transform: scale(1.05);
-    border-color: oklch(1 0 0 / 0.55);
   }
   .animate-ai-pill-shine:active {
     transform: scale(1.02);

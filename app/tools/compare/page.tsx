@@ -904,7 +904,6 @@ function CompareContent() {
                 </div>
                 <div className="flex items-center gap-3">
                   <Button
-                    variant="outline"
                     size="sm"
                     onClick={async () => {
                       setAiExplainLoading(true);
@@ -938,7 +937,7 @@ function CompareContent() {
                       }
                     }}
                     disabled={aiExplainLoading}
-                    className="shrink-0 animate-ai-sweep animate-ai-glow"
+                    className="shrink-0 rounded-full bg-transparent hover:bg-transparent text-white animate-ai-pill-shine"
                   >
                     <Sparkles className={cn('h-4 w-4 mr-2', aiExplainLoading && 'animate-pulse')} />
                     {aiExplainLoading ? 'Generating…' : 'Explain Differences'}
