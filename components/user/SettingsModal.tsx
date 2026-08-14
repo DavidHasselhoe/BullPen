@@ -206,6 +206,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
     weekly_pick: true,
     daily_brief_ready: true,
     dividend_reminder: true,
+    daily_challenge_reminder: true,
   });
 
   // Jump to initialTab when modal opens (e.g. from AI panel gear icon)
@@ -250,6 +251,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
         weekly_pick: settings.notifications?.weekly_pick !== false,
         daily_brief_ready: settings.notifications?.daily_brief_ready !== false,
         dividend_reminder: settings.notifications?.dividend_reminder !== false,
+        daily_challenge_reminder: settings.notifications?.daily_challenge_reminder !== false,
       });
       const dh = (settings.default_homepage as string) || '/dashboard';
       setDefaultHomepage(dh);
@@ -861,6 +863,12 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                     description="Get notified when Bull publishes the week's featured stock pick"
                     checked={notifications.weekly_pick}
                     onCheckedChange={(checked) => setNotifications({ ...notifications, weekly_pick: checked })}
+                  />
+                  <ToggleSetting
+                    label="Daily Challenge Reminder"
+                    description="An evening nudge to keep your Academy streak alive if you haven't done today's challenge yet"
+                    checked={notifications.daily_challenge_reminder}
+                    onCheckedChange={(checked) => setNotifications({ ...notifications, daily_challenge_reminder: checked })}
                   />
                 </SettingsCard>
               </div>

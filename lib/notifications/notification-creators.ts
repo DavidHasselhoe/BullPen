@@ -35,7 +35,7 @@ export interface EarningsItem {
  */
 async function alreadyNotifiedToday(
   userId: string,
-  type: 'price_move' | 'earnings' | 'ai_insight' | 'market' | 'dividend' | 'health_score' | 'weekly_pick' | 'daily_brief',
+  type: 'price_move' | 'earnings' | 'ai_insight' | 'market' | 'dividend' | 'academy' | 'health_score' | 'weekly_pick' | 'daily_brief',
   entityId: string
 ): Promise<boolean> {
   const supabase = createServerClient();
@@ -407,6 +407,35 @@ export async function createDividendReminderNotification(
   };
 
   const result = await createNotification(input);
+  return result.success;
+}
+
+// ─── Academy daily challenge streak reminder ─────────────────────────────────
+
+/**
+ * Create a reminder for a user whose Academy streak is active but who hasn't
+ * done anything in Academy yet today (lesson or daily challenge) — a nudge to
+ * protect the streak before the ET day ends. Targeting (active streak +
+ * no activity today) happens in the cron; this only handles the notification
+ * itself. Fires at most once per ET day per user via the standard 12h dedup.
+ */
+export async function createDailyChallengeReminderNotification(
+  userId: string,
+  currentStreak: number
+): Promise<boolean> {
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const dedupeId = `academy:streak_reminder:${todayStr}`;
+  if (await alreadyNotifiedToday(userId, 'academy', dedupeId)) return false;
+
+  const result = await createNotification({
+    user_id: userId,
+    type: 'academy',
+    title: `Keep your ${currentStreak}-day streak alive`,
+    message: "Today's Academy challenge is still waiting — takes about a minute.",
+    entity_type: 'market',
+    entity_id: dedupeId,
+    severity: 'info',
+  });
   return result.success;
 }
 
