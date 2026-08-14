@@ -673,18 +673,24 @@ html.animated-background-active [data-slot="dialog-content"] {
      nothing"): a flat 1.5px stroke at full opacity reads as a thin line,
      not a glow — a real drop-shadow blur behind the stroke is what makes
      it read as light rather than ink. Hover adds a second, bigger blur
-     layer, a thicker stroke, a lift + ambient shadow on the button itself
-     (the shadow stays hover-only, not resting, keeping DESIGN.md's
-     Earned-Depth Rule intact for the button's own surface — only the
-     trace's glow is a permanent fixture), and a small icon tilt so
-     there's an actual response to interacting with it. */
+     layer, a thicker stroke, a lift + ambient shadow on the button itself,
+     and a small icon tilt so there's an actual response to interacting
+     with it.
+
+     Second follow-up: this button is a deliberate conversion lever (the
+     "Pro" gate sits one click behind it), so unlike every other product
+     button it's allowed a resting ambient glow, not just a hover one —
+     DESIGN.md's Earned-Depth Rule exists to keep shadows meaningful, and
+     "entice a free user to click and discover Pro" is exactly the kind
+     of meaning that rule is protecting room for, not an exception to it. */
   .animate-ai-border-trace {
     position: relative;
     transition: transform 180ms ease, box-shadow 180ms ease;
+    box-shadow: 0 6px 20px -8px var(--brand-glow), 0 0 26px -6px var(--brand-glow);
   }
   .animate-ai-border-trace:hover {
     transform: translateY(-1px);
-    box-shadow: 0 10px 22px -8px var(--brand-glow);
+    box-shadow: 0 10px 28px -8px var(--brand-glow), 0 0 40px -4px var(--brand-glow);
   }
   .animate-ai-border-trace:active {
     transform: translateY(0);
@@ -700,30 +706,30 @@ html.animated-background-active [data-slot="dialog-content"] {
   .ai-border-trace-svg rect {
     fill: none;
     stroke: var(--brand);
-    stroke-width: 2;
+    stroke-width: 2.25;
     stroke-linecap: round;
     vector-effect: non-scaling-stroke;
-    /* Two dashes (20px each) separated by a short 42px gap, then one long
-       212.54px gap before the pattern repeats — reads as two lights
-       chasing each other around the loop, with a trailing dark stretch.
-       The four values must sum to this button's actual traced perimeter
-       (~292.54px, measured via getBBox at the real rendered size: 122.28
-       × 30, rx 7) — the previous "32 600" pattern summed to far more than
-       the ~292px perimeter, so the dash spent most of each cycle already
-       exited into the oversized gap and invisible, reading as "stops for
-       a few seconds." dashoffset below animates by exactly the same sum,
-       so lap N+1 starts exactly where lap N ended: no seam, no pause. */
-    stroke-dasharray: 20 42 20 210.54;
-    filter: drop-shadow(0 0 1.5px var(--brand)) drop-shadow(0 0 5px var(--brand-glow));
+    /* Two 20px dashes with equal gaps between them (126.27px each) so
+       they sit exactly opposite one another and orbit symmetrically,
+       rather than one chasing close behind the other. The four values
+       must still sum to this button's actual traced perimeter (~292.54px,
+       measured via getBBox at the real rendered size: 122.28 × 30, rx 7)
+       — see below for why that sum matters for a seamless loop. */
+    stroke-dasharray: 20 126.27 20 126.27;
+    filter:
+      drop-shadow(0 0 2px var(--brand))
+      drop-shadow(0 0 7px var(--brand-glow))
+      drop-shadow(0 0 14px var(--brand-glow));
     animation: ai-border-dash 6s linear infinite;
     transition: stroke-width 200ms ease, filter 200ms ease;
   }
   .animate-ai-border-trace:hover .ai-border-trace-svg rect {
-    stroke-width: 2.75;
+    stroke-width: 3;
     filter:
-      drop-shadow(0 0 2px var(--brand))
-      drop-shadow(0 0 8px var(--brand-glow))
-      drop-shadow(0 0 14px var(--brand-glow));
+      drop-shadow(0 0 2.5px var(--brand))
+      drop-shadow(0 0 10px var(--brand-glow))
+      drop-shadow(0 0 18px var(--brand-glow))
+      drop-shadow(0 0 28px var(--brand-glow));
   }
   .ai-border-trace-icon {
     transition: transform 200ms ease;
