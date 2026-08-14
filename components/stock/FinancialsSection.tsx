@@ -93,8 +93,6 @@ function toPoints<T extends Record<string, unknown>>(
 ): TrendPoint[] {
   return data
     .slice(0, 5)
-    .slice()
-    .reverse()
     .map((row) => ({
       label: String(row[dateKey]).slice(0, 7),
       primary: (row[primaryKey] as number | null) ?? null,

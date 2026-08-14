@@ -4,7 +4,8 @@
  * FinancialsTrendChart — the chart-first lead for the Financials section.
  *
  * One paired-bar chart per statement tab, answering a single question
- * (captioned) with up to 5 periods, oldest → newest.
+ * (captioned) with up to 5 periods, newest → oldest — matching the
+ * period columns in the detailed table directly below it, left to right.
  */
 
 import { useEffect, useState } from 'react';
@@ -29,7 +30,7 @@ type ColorMode =
   | 'ownVsOwe';
 
 interface FinancialsTrendChartProps {
-  /** Oldest → newest. */
+  /** Newest → oldest, matching the table below. */
   points: TrendPoint[];
   primaryLabel: string;
   secondaryLabel?: string;
