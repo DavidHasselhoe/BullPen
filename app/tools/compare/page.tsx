@@ -444,7 +444,28 @@ function CompareContent() {
   });
 
   const allSettled = compareQueries.every((q) => !q.isLoading);
-  const isLoading = tickers.length >= 2 && !allSettled;
+  // Hold on the loading screen briefly after everything actually finishes,
+  // showing a distinct "done" state, instead of cutting straight to the
+  // table the instant the last query settles. `holding` is entered as a
+  // state adjustment during render (React's supported pattern for reacting
+  // to a derived value changing) rather than inside a useEffect — an effect
+  // fires one render *after* allSettled flips true, so the real table would
+  // render (and paint) for one frame before the hold screen appeared. Doing
+  // it during render means isLoading is already correct on the same render
+  // allSettled changes, so there's no flash.
+  const [prevAllSettled, setPrevAllSettled] = useState(false);
+  const [holding, setHolding] = useState(false);
+  if (allSettled !== prevAllSettled) {
+    setPrevAllSettled(allSettled);
+    if (allSettled && tickers.length >= 2) setHolding(true);
+    if (!allSettled) setHolding(false);
+  }
+  useEffect(() => {
+    if (!holding) return;
+    const t = setTimeout(() => setHolding(false), 600);
+    return () => clearTimeout(t);
+  }, [holding]);
+  const isLoading = tickers.length >= 2 && (!allSettled || holding);
   // Not memoized: useQueries returns a fresh result array each render, so a
   // useMemo keyed on it would recompute (and produce a new array) every
   // render anyway — memoizing bought nothing but false confidence.
@@ -689,7 +710,7 @@ function CompareContent() {
       </Link>
 
       {isLoading ? (
-        <CompareLoadingState items={progressItems} />
+        <CompareLoadingState items={progressItems} complete={allSettled} />
       ) : (
         <>
           <div className="mb-8">
