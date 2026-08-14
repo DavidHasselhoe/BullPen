@@ -165,6 +165,28 @@ function computeBeatRate(earningsData: Array<{ eps_actual?: number | null; eps_e
 }
 
 /**
+ * Race a promise against a hard deadline. Root cause of the 2026-08-14
+ * incident: none of twelvedata-client.ts's ~20 fetch() calls set a timeout
+ * or AbortSignal, so a stalled TwelveData response (or network path) hangs
+ * a plain `await fetch(url)` indefinitely — Node's native fetch has no
+ * default request timeout. That call sat inside the Promise.allSettled
+ * block below, which waits for every branch regardless of how long one
+ * takes, consuming the entire 300s function budget before the Anthropic
+ * call was ever reached (confirmed: zero log output from anywhere in this
+ * route despite a full-duration run). Every branch below already has a
+ * documented empty/null fallback, so timing one out early is a pure
+ * latency win, not a behavior change. The proper fix — a client-side
+ * timeout on every twelvedata-client.ts fetch call — is a separate, larger
+ * change; this bounds the blast radius for this route in the meantime.
+ */
+function withTimeout<T>(promise: PromiseLike<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error(`timed out after ${ms}ms`)), ms)),
+  ]);
+}
+
+/**
  * Fetch VIX (volatility index) and TNX (10-year Treasury yield) as supplemental
  * market-context data. Both are optional — failures are silently swallowed so
  * the cron never blocks on these quotes.
@@ -197,6 +219,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  console.log('[generate-daily-brief] invocation started');
   const supabase = createServerClient();
 
   // ── Date math (ET) ────────────────────────────────────────────────────────
@@ -230,7 +253,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     );
   }
 
+  console.log('[generate-daily-brief] idempotency + spend guard passed, gathering data');
+
   // ── Gather context data in parallel ──────────────────────────────────────
+  const DATA_GATHER_TIMEOUT_MS = 25_000;
   const [
     yesterdayEarnings,
     todayEarnings,
@@ -242,18 +268,27 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     // Shared per-day cache, warmed by the 04:00 prefetch-calendar cron two
     // hours before this runs — normally three cache hits instead of 120
     // credits. Resolves with null (rather than rejecting) when a day cannot
-    // be filled; see the `?? []` on the unwrap below.
-    getCalendarDay<EarningsCalendarItem>('earnings', yesterdayET),
-    getCalendarDay<EarningsCalendarItem>('earnings', todayET),
-    getCalendarDay<EarningsCalendarItem>('earnings', tomorrowET),
-    getTopMovers(5),
-    supabase
-      .from('daily_briefs')
-      .select('title, content')
-      .eq('published_date', yesterdayET)
-      .maybeSingle(),
-    fetchMarketContext(),
+    // be filled; see the `?? []` on the unwrap below. Each wrapped in
+    // withTimeout() so a stalled upstream fetch can't block this cron for
+    // its full duration budget — see withTimeout's doc comment.
+    withTimeout<EarningsCalendarItem[] | null>(getCalendarDay<EarningsCalendarItem>('earnings', yesterdayET), DATA_GATHER_TIMEOUT_MS),
+    withTimeout<EarningsCalendarItem[] | null>(getCalendarDay<EarningsCalendarItem>('earnings', todayET), DATA_GATHER_TIMEOUT_MS),
+    withTimeout<EarningsCalendarItem[] | null>(getCalendarDay<EarningsCalendarItem>('earnings', tomorrowET), DATA_GATHER_TIMEOUT_MS),
+    withTimeout<Awaited<ReturnType<typeof getTopMovers>>>(getTopMovers(5), DATA_GATHER_TIMEOUT_MS),
+    withTimeout<{ data: { title: string; content: string } | null }>(
+      (async () =>
+        supabase
+          .from('daily_briefs')
+          .select('title, content')
+          .eq('published_date', yesterdayET)
+          .maybeSingle())(),
+      DATA_GATHER_TIMEOUT_MS
+    ),
+    withTimeout<Awaited<ReturnType<typeof fetchMarketContext>>>(fetchMarketContext(), DATA_GATHER_TIMEOUT_MS),
   ]);
+  console.log(
+    `[generate-daily-brief] data gathering done: ${[yesterdayEarnings, todayEarnings, tomorrowEarnings, moversResult, yesterdayBrief, marketContextResult].map((r) => r.status).join(',')}`
+  );
 
   // `?? []` matters: getCalendarDay resolves with null (rather than rejecting)
   // when a day cannot be filled, so `status === 'fulfilled'` alone would let a
