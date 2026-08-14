@@ -21,6 +21,7 @@ import {
   type CashFlowPeriod,
 } from '@/lib/twelvedata/twelvedata-client';
 import { getCached, getCachedStale, setCached } from '@/lib/cache/market-data-cache';
+import { coalesce } from '@/lib/cache/request-coalesce';
 import { computeHealthScore, type HealthScore } from '@/lib/finance/health-score';
 import { recordHealthScoreSnapshot } from '@/lib/finance/health-score-history';
 import { createServerClient } from '@/lib/supabase/client';
@@ -113,7 +114,12 @@ export async function getHealthScoreForSymbol(symbol: string): Promise<HealthSco
 
   let stats = await getCached<CompanyStatistics>(`stats:${sym}`);
   if (!stats) {
-    stats = await getStatistics(sym);
+    // /snapshot seeds snap-stats:<sym> from the same /batch call — reuse it
+    // before hitting TwelveData again, same pattern as /statistics.
+    stats = (await getCached<CompanyStatistics>(`snap-stats:${sym}`)) ?? null;
+    if (!stats) {
+      stats = await coalesce(`stats:${sym}`, () => getStatistics(sym));
+    }
     await setCached(`stats:${sym}`, sym, 'statistics', stats, STATS_TTL).catch(() => {});
   }
 
@@ -128,7 +134,7 @@ export async function getHealthScoreForSymbol(symbol: string): Promise<HealthSco
     getCached<IncomeStatementPeriod[]>(`financials:${sym}:income:quarterly`).then(async (cached) => {
       if (cached) return cached;
       try {
-        const fresh = await withRateLimitRetry(() => getIncomeStatement(sym, 'quarterly'));
+        const fresh = await coalesce(`financials:${sym}:income:quarterly`, () => withRateLimitRetry(() => getIncomeStatement(sym, 'quarterly')));
         incomeFresh = true;
         return fresh;
       } catch (err) {
@@ -141,7 +147,7 @@ export async function getHealthScoreForSymbol(symbol: string): Promise<HealthSco
     getCached<BalanceSheetPeriod[]>(`financials:${sym}:balance:quarterly`).then(async (cached) => {
       if (cached) return cached;
       try {
-        const fresh = await withRateLimitRetry(() => getBalanceSheet(sym, 'quarterly'));
+        const fresh = await coalesce(`financials:${sym}:balance:quarterly`, () => withRateLimitRetry(() => getBalanceSheet(sym, 'quarterly')));
         balanceFresh = true;
         return fresh;
       } catch (err) {
@@ -154,7 +160,7 @@ export async function getHealthScoreForSymbol(symbol: string): Promise<HealthSco
     getCached<CashFlowPeriod[]>(`financials:${sym}:cashflow:quarterly`).then(async (cached) => {
       if (cached) return cached;
       try {
-        const fresh = await withRateLimitRetry(() => getCashFlow(sym, 'quarterly'));
+        const fresh = await coalesce(`financials:${sym}:cashflow:quarterly`, () => withRateLimitRetry(() => getCashFlow(sym, 'quarterly')));
         cashflowFresh = true;
         return fresh;
       } catch (err) {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
 import { getStatistics, TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
 import { getCachedWithMeta, setCached } from '@/lib/cache/market-data-cache';
+import { coalesce } from '@/lib/cache/request-coalesce';
 
 const STATS_TTL_SECONDS = 24 * 60 * 60;
 
@@ -28,7 +29,7 @@ async function handler(
     }
 
     const fetchedAt = new Date().toISOString();
-    const stats = await getStatistics(symbol);
+    const stats = await coalesce(cacheKey, () => getStatistics(symbol));
     await setCached(cacheKey, symbol, 'statistics', stats, STATS_TTL_SECONDS);
     return addSecurityHeaders(NextResponse.json({ success: true, stats, fetchedAt }));
   } catch (err) {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
 import { getCached, setCached } from '@/lib/cache/market-data-cache';
+import { coalesce } from '@/lib/cache/request-coalesce';
 import {
   getIncomeStatement,
   getBalanceSheet,
@@ -45,13 +46,15 @@ async function handler(
     let result;
     switch (type) {
       case 'income':
-        result = await withRateLimitRetry(() => getIncomeStatement(symbol, period));
+        // Coalesced on cacheKey — HealthScoreCard reads the same key and may
+        // already have this in flight on a cold stock page load.
+        result = await coalesce(cacheKey, () => withRateLimitRetry(() => getIncomeStatement(symbol, period)));
         break;
       case 'balance':
-        result = await withRateLimitRetry(() => getBalanceSheet(symbol, period));
+        result = await coalesce(cacheKey, () => withRateLimitRetry(() => getBalanceSheet(symbol, period)));
         break;
       case 'cashflow':
-        result = await withRateLimitRetry(() => getCashFlow(symbol, period));
+        result = await coalesce(cacheKey, () => withRateLimitRetry(() => getCashFlow(symbol, period)));
         break;
       case 'dividends':
         result = await withRateLimitRetry(() => getDividends(symbol));

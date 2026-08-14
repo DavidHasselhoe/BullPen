@@ -112,11 +112,17 @@ async function handler(
     }
   }
 
+  // Non-1D TTL scales with how often the underlying bar resolution actually
+  // changes: 1W/1M use intraday bars (15min/1h) so they stay short; 6M/1Y/YTD
+  // are daily bars that only gain a new point once a session closes; 5Y/MAX
+  // are weekly bars, effectively static within a day.
   const cacheTtlSeconds = is1D
     ? null
     : (range === '1W' || range === '1M')
     ? 30 * 60
-    : 6 * 60 * 60;
+    : (range === '5Y' || range === 'MAX')
+    ? 24 * 60 * 60
+    : 12 * 60 * 60;
   const cacheKey = cacheTtlSeconds != null
     ? (padDays > 0 ? `candles:${symbol}:${range}:p${padDays}` : `candles:${symbol}:${range}`)
     : null;

@@ -31,6 +31,7 @@ import type { SignalValue } from '@/lib/finance/health-score';
 import { HOT_PICKS_QUERY_KEY } from '@/lib/discover/hot-picks-query';
 import { postStockVisit } from '@/lib/discover/post-stock-visit';
 import { StockSectionBoundary } from '@/components/stock/StockSectionBoundary';
+import { LazySection } from '@/components/stock/LazySection';
 import { StockNavSidebar, type StockNavSection } from '@/components/stock/StockNavSidebar';
 import { slugToSymbol, inferAssetType, hasFinancials } from '@/lib/assets/asset-type';
 
@@ -397,11 +398,13 @@ export default function StockDetailPage() {
             {/* Financial Health Score — only for stocks with financials */}
             {showFundamentals && (
               <div id="nav-health" className="scroll-mt-20">
-                <StockSectionBoundary>
-                  <AnimatedContent reverse={true} delay={0.08}>
-                    <HealthScoreCard ticker={ticker} onSignalsReady={setMetricSignals} />
-                  </AnimatedContent>
-                </StockSectionBoundary>
+                <LazySection key={`health-${ticker}`} minHeight={220}>
+                  <StockSectionBoundary>
+                    <AnimatedContent reverse={true} delay={0.08}>
+                      <HealthScoreCard ticker={ticker} onSignalsReady={setMetricSignals} />
+                    </AnimatedContent>
+                  </StockSectionBoundary>
+                </LazySection>
               </div>
             )}
 
@@ -424,59 +427,71 @@ export default function StockDetailPage() {
             {showFundamentals && (
               <>
                 <div id="nav-financials" className="scroll-mt-20">
-                  <StockSectionBoundary>
-                    <AnimatedContent reverse={true} delay={0.16}>
-                      <FinancialsSection ticker={ticker} />
-                    </AnimatedContent>
-                  </StockSectionBoundary>
+                  <LazySection key={`financials-${ticker}`} minHeight={400}>
+                    <StockSectionBoundary>
+                      <AnimatedContent reverse={true} delay={0.16}>
+                        <FinancialsSection ticker={ticker} />
+                      </AnimatedContent>
+                    </StockSectionBoundary>
+                  </LazySection>
                 </div>
 
                 <div id="nav-revenue" className="scroll-mt-20">
-                  <StockSectionBoundary>
-                    <AnimatedContent reverse={true} delay={0.2}>
-                      <SankeyCard ticker={ticker} />
-                    </AnimatedContent>
-                  </StockSectionBoundary>
+                  <LazySection key={`sankey-${ticker}`} minHeight={300}>
+                    <StockSectionBoundary>
+                      <AnimatedContent reverse={true} delay={0.2}>
+                        <SankeyCard ticker={ticker} />
+                      </AnimatedContent>
+                    </StockSectionBoundary>
+                  </LazySection>
                 </div>
 
                 <div id="nav-earnings" className="scroll-mt-20">
-                  <StockSectionBoundary>
-                    <AnimatedContent reverse={true} delay={0.22}>
-                      <EarningsCalendar ticker={ticker} />
-                    </AnimatedContent>
-                  </StockSectionBoundary>
+                  <LazySection key={`earnings-${ticker}`} minHeight={300}>
+                    <StockSectionBoundary>
+                      <AnimatedContent reverse={true} delay={0.22}>
+                        <EarningsCalendar ticker={ticker} />
+                      </AnimatedContent>
+                    </StockSectionBoundary>
+                  </LazySection>
                 </div>
 
                 <div id="nav-insiders" className="scroll-mt-20">
-                  <StockSectionBoundary>
-                    <AnimatedContent reverse={true} delay={0.24}>
-                      <InsiderTransactionsCard ticker={ticker} />
-                    </AnimatedContent>
-                  </StockSectionBoundary>
+                  <LazySection key={`insiders-${ticker}`} minHeight={300}>
+                    <StockSectionBoundary>
+                      <AnimatedContent reverse={true} delay={0.24}>
+                        <InsiderTransactionsCard ticker={ticker} />
+                      </AnimatedContent>
+                    </StockSectionBoundary>
+                  </LazySection>
                 </div>
               </>
             )}
 
             {/* Company Profile (TwelveData: description, executives, facts) — prose trails the data */}
             <div id="nav-profile" className="scroll-mt-20">
-              <StockSectionBoundary>
-                <AnimatedContent reverse={true} delay={0.26}>
-                  <CompanyProfileCard ticker={ticker} />
-                </AnimatedContent>
-              </StockSectionBoundary>
+              <LazySection key={`profile-${ticker}`} minHeight={300}>
+                <StockSectionBoundary>
+                  <AnimatedContent reverse={true} delay={0.26}>
+                    <CompanyProfileCard ticker={ticker} />
+                  </AnimatedContent>
+                </StockSectionBoundary>
+              </LazySection>
             </div>
 
             {/* Community theses */}
             <div id="nav-community" className="scroll-mt-20">
-              <StockSectionBoundary>
-                <AnimatedContent reverse={true} delay={0.3}>
-                  <Card>
-                    <CardContent className="pt-6">
-                      <ThesisSection symbol={ticker} />
-                    </CardContent>
-                  </Card>
-                </AnimatedContent>
-              </StockSectionBoundary>
+              <LazySection key={`community-${ticker}`} minHeight={200}>
+                <StockSectionBoundary>
+                  <AnimatedContent reverse={true} delay={0.3}>
+                    <Card>
+                      <CardContent className="pt-6">
+                        <ThesisSection symbol={ticker} />
+                      </CardContent>
+                    </Card>
+                  </AnimatedContent>
+                </StockSectionBoundary>
+              </LazySection>
             </div>
 
           </div>
