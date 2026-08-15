@@ -86,10 +86,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark h-full">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} antialiased h-full min-h-screen overflow-x-hidden scrollbar-hide`}
-      >
+    <html
+      lang="en"
+      className={`dark h-full ${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable}`}
+    >
+      <body className="antialiased h-full min-h-screen overflow-x-hidden scrollbar-hide">
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(ORGANIZATION_JSON_LD) }}
