@@ -684,7 +684,7 @@ html.animated-background-active [data-slot="dialog-content"] {
      deliberate, permanent fix: this class is the sole source of truth for
      this button's fill, so it must always win regardless of Tailwind's
      internal layer ordering. Consumers no longer need to pass any
-     neutralizing bg-*/text-* utility alongside this class — !important
+     neutralizing bg-* / text-* utility alongside this class — !important
      makes that unnecessary, so the call sites were simplified back down. */
   .animate-ai-pill-shine:hover {
     transform: scale(1.05);
