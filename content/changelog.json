@@ -1,5 +1,13 @@
 [
   {
+    "date": "2026-08-15",
+    "entries": [
+      { "type": "fixed", "text": "Fixed the Daily Brief not generating for the last couple of days" },
+      { "type": "fixed", "text": "Fixed text across the app rendering in a plain system font instead of BullPen's actual typeface, which made it look softer and blurrier than intended" },
+      { "type": "improved", "text": "Increased the size of small, hard-to-read text in badges and labels throughout the app" }
+    ]
+  },
+  {
     "date": "2026-08-14",
     "entries": [
       { "type": "new", "text": "Added a reminder to help you keep your Academy streak alive if you haven't done today's challenge yet, with an on/off toggle in Settings > Notifications" },
@@ -10,7 +18,8 @@
       { "type": "fixed", "text": "Fixed some stocks' dividend history showing a dividend amount from a different country's stock listing, in the wrong currency" },
       { "type": "fixed", "text": "Fixed stock peer and competitor suggestions sometimes showing unrelated companies from the wrong industry" },
       { "type": "fixed", "text": "Fixed the heatmap tooltip showing a positive dollar amount next to a negative percentage change" },
-      { "type": "fixed", "text": "Fixed an issue that could cause the Daily Brief to fail to generate for some Pro users" }
+      { "type": "fixed", "text": "Fixed an issue that could cause the Daily Brief to fail to generate for some Pro users" },
+      { "type": "fixed", "text": "Fixed the Risk Analysis, Deep Dive, Portfolio Builder, and Explain Differences buttons sometimes rendering invisible" }
     ]
   },
   {
