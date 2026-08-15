@@ -24,10 +24,10 @@ export function CompanyProfileResultCard({ output }: { output: CompanyProfileOut
       {(output.sector || output.industry) && (
         <div className="mb-1.5 flex flex-wrap gap-1.5">
           {output.sector && (
-            <span className="rounded-full border border-border/60 bg-muted/40 px-2 py-0.5 text-[10px] text-muted-foreground">{output.sector}</span>
+            <span className="rounded-full border border-border/60 bg-muted/40 px-2 py-0.5 text-[11px] text-muted-foreground">{output.sector}</span>
           )}
           {output.industry && (
-            <span className="rounded-full border border-border/60 bg-muted/40 px-2 py-0.5 text-[10px] text-muted-foreground">{output.industry}</span>
+            <span className="rounded-full border border-border/60 bg-muted/40 px-2 py-0.5 text-[11px] text-muted-foreground">{output.industry}</span>
           )}
         </div>
       )}

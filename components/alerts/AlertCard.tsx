@@ -77,7 +77,7 @@ export function AlertCard({ alert, onToggle, onDelete }: Props) {
       {/* Description + last triggered */}
       <div className="flex-1 min-w-0 flex items-center gap-2 flex-wrap">
         <span className="text-xs font-mono text-foreground/90">{describeAlert(alert)}</span>
-        <span className="text-[10px] text-muted-foreground/80">
+        <span className="text-[11px] text-muted-foreground/80">
           {formatRelativeTime(alert.lastTriggeredAt)}
         </span>
       </div>

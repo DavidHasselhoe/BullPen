@@ -57,10 +57,10 @@ export function AlertList({ alerts, onToggle, onDelete, onAddCondition }: Props)
       {/* Section header + filter chips */}
       <div className="flex items-center justify-between gap-3 px-1">
         <div className="flex items-baseline gap-2">
-          <h2 className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground/80">
+          <h2 className="text-[11px] font-bold uppercase tracking-[0.22em] text-muted-foreground/80">
             Your alerts
           </h2>
-          <span className="text-[10px] font-mono text-muted-foreground/80">
+          <span className="text-[11px] font-mono text-muted-foreground/80">
             {activeStockCount} {activeStockCount === 1 ? 'stock' : 'stocks'}
             {totalConditions > 0 && ` · ${totalConditions} ${totalConditions === 1 ? 'condition' : 'conditions'}`}
           </span>
@@ -72,7 +72,7 @@ export function AlertList({ alerts, onToggle, onDelete, onAddCondition }: Props)
               type="button"
               onClick={() => setFilter(f)}
               className={cn(
-                'text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 rounded transition-colors',
+                'text-[11px] font-medium uppercase tracking-wider px-2 py-0.5 rounded transition-colors',
                 filter === f
                   ? 'bg-foreground/10 text-foreground'
                   : 'text-muted-foreground/80 hover:text-foreground'
@@ -115,7 +115,7 @@ export function AlertList({ alerts, onToggle, onDelete, onAddCondition }: Props)
                     {group.companyName}
                   </span>
                 )}
-                <span className="ml-auto text-[10px] font-mono text-muted-foreground/80 shrink-0">
+                <span className="ml-auto text-[11px] font-mono text-muted-foreground/80 shrink-0">
                   {group.alerts.length} {group.alerts.length === 1 ? 'condition' : 'conditions'}
                 </span>
                 <button

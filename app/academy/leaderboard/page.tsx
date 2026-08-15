@@ -122,7 +122,7 @@ export default function AcademyLeaderboardPage() {
                   </div>
 
                   {tier && tier.label !== 'Member' && (
-                    <span className={cn('inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0', tier.className)}>
+                    <span className={cn('inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full shrink-0', tier.className)}>
                       {tier.label}
                     </span>
                   )}
@@ -134,7 +134,7 @@ export default function AcademyLeaderboardPage() {
                         {entry.current_streak}
                       </span>
                     )}
-                    <span className="inline-block text-[10px] font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary shrink-0">
+                    <span className="inline-block text-[11px] font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary shrink-0">
                       Lvl {entry.level ?? 1}
                     </span>
                     <div className="flex items-center gap-1.5 text-sm">

@@ -90,7 +90,7 @@ export function DailyChallengeCard() {
             <Flame className="h-4 w-4 text-emerald-500" />
           </span>
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-600 dark:text-emerald-400">
+            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-emerald-600 dark:text-emerald-400">
               Daily Challenge
             </p>
             <p className="text-[11px] text-muted-foreground/85">Keep your streak alive</p>
@@ -176,7 +176,7 @@ export function DailyChallengeCard() {
                 )}
               >
                 <div className={cn(
-                  'text-[10px] font-bold uppercase tracking-[0.18em] mb-1 flex items-center justify-between',
+                  'text-[11px] font-bold uppercase tracking-[0.18em] mb-1 flex items-center justify-between',
                   result.wasCorrect ? 'text-emerald-500' : 'text-amber-500',
                 )}>
                   <span>{result.wasCorrect ? 'Correct!' : 'Not quite'}</span>

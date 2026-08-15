@@ -98,7 +98,7 @@ export function MarketContextSection() {
                     updateMarketContextMode(holdingsMode ? 'all' : 'holdings')
                   }
                   disabled={!hasHoldings}
-                  className="h-6 gap-1.5 px-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/80 hover:text-foreground"
+                  className="h-6 gap-1.5 px-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground/80 hover:text-foreground"
                 >
                   {holdingsMode ? (
                     <><Briefcase className="h-3 w-3" />My portfolio</>

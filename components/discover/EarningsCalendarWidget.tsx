@@ -110,7 +110,7 @@ function DayColumn({
         {/* Day header */}
         <div className="mb-3 select-none">
           <p className={cn(
-            'text-[10px] font-bold uppercase tracking-[0.12em]',
+            'text-[11px] font-bold uppercase tracking-[0.12em]',
             isToday ? 'text-primary' : 'text-muted-foreground/80'
           )}>
             {dayLabel}
@@ -141,7 +141,7 @@ function DayColumn({
                   </span>
                   {tag && (
                     <span className={cn(
-                      'text-[8px] font-bold px-1 py-0.5 rounded uppercase tracking-wide shrink-0 leading-none',
+                      'text-[11px] font-bold px-1 py-0.5 rounded uppercase tracking-wide shrink-0 leading-none',
                       tag === 'BMO'
                         ? 'bg-sky-500/10 text-sky-500/70'
                         : 'bg-amber-500/10 text-amber-500/70'
@@ -159,7 +159,7 @@ function DayColumn({
         {overflow > 0 && (
           <Link
             href="/tools/calendar"
-            className="mt-2 text-[10px] text-muted-foreground/80 hover:text-primary transition-colors"
+            className="mt-2 text-[11px] text-muted-foreground/80 hover:text-primary transition-colors"
           >
             +{overflow} more
           </Link>
@@ -274,12 +274,12 @@ export function EarningsCalendarWidget() {
           {isPortfolioMode ? 'Portfolio earnings' : 'Earnings this week'}
         </span>
         <div className="flex-1 h-px bg-border/50" />
-        <span className="text-[10px] font-mono text-muted-foreground/80 hidden sm:block tracking-wider shrink-0">
+        <span className="text-[11px] font-mono text-muted-foreground/80 hidden sm:block tracking-wider shrink-0">
           {fmtWeekRange(weekDates)}
         </span>
         <Link
           href="/tools/calendar"
-          className="text-[10px] font-mono text-muted-foreground/85 hover:text-foreground transition-colors uppercase tracking-wider shrink-0"
+          className="text-[11px] font-mono text-muted-foreground/85 hover:text-foreground transition-colors uppercase tracking-wider shrink-0"
         >
           Full →
         </Link>

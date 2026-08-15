@@ -108,7 +108,7 @@ export function MoodHero({ score, label, animated }: { score: number; label: str
         </div>
 
         {/* End labels */}
-        <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground/80">
+        <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-[0.22em] text-muted-foreground/80">
           <span>Fear</span>
           <span className="font-mono tabular-nums text-muted-foreground/80">
             0&nbsp;·&nbsp;25&nbsp;·&nbsp;50&nbsp;·&nbsp;75&nbsp;·&nbsp;100
@@ -131,11 +131,11 @@ export function SignalCard({ signal }: { signal: MoodSignal }) {
     >
       {/* Top row: name + state chip */}
       <div className="flex items-start justify-between gap-2 mb-3">
-        <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/80">
+        <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground/80">
           {signal.name}
         </span>
         <span
-          className="text-[9px] font-bold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded shrink-0 leading-none"
+          className="text-[11px] font-bold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded shrink-0 leading-none"
           style={{ color, background: `${color}14` }}
         >
           {signal.label}
@@ -150,7 +150,7 @@ export function SignalCard({ signal }: { signal: MoodSignal }) {
         >
           {signal.score}
         </span>
-        <span className="text-[10px] font-mono text-muted-foreground/80 mb-0.5">/100</span>
+        <span className="text-[11px] font-mono text-muted-foreground/80 mb-0.5">/100</span>
       </div>
 
       {/* Mini spectrum bar */}

@@ -333,7 +333,7 @@ const HoldingRow = memo(function HoldingRow({
                 {holding.symbol}
               </span>
               {holding.source === 'snaptrade' && (
-                <span className="inline-flex items-center rounded-full bg-blue-500/10 px-1.5 py-0 text-[10px] font-medium text-blue-400 border border-blue-500/20">
+                <span className="inline-flex items-center rounded-full bg-blue-500/10 px-1.5 py-0 text-[11px] font-medium text-blue-400 border border-blue-500/20">
                   synced
                 </span>
               )}

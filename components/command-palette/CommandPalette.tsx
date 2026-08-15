@@ -58,7 +58,7 @@ const QUICK_ACTIONS = [
 /** Small keycap used in the footer hint bar. */
 function Kbd({ children }: { children: React.ReactNode }) {
   return (
-    <kbd className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded border border-border/70 bg-muted/60 px-1 font-sans text-[10px] font-medium text-muted-foreground">
+    <kbd className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded border border-border/70 bg-muted/60 px-1 font-sans text-[11px] font-medium text-muted-foreground">
       {children}
     </kbd>
   );
@@ -67,7 +67,7 @@ function Kbd({ children }: { children: React.ReactNode }) {
 /** The ↵ affordance that fades in on the currently-selected row. */
 function ReturnHint() {
   return (
-    <kbd className="ml-auto hidden h-[18px] items-center gap-0.5 rounded border border-border/70 bg-background/60 px-1 text-[10px] text-muted-foreground group-data-[selected=true]:flex">
+    <kbd className="ml-auto hidden h-[18px] items-center gap-0.5 rounded border border-border/70 bg-background/60 px-1 text-[11px] text-muted-foreground group-data-[selected=true]:flex">
       <CornerDownLeft className="h-2.5 w-2.5" />
     </kbd>
   );
@@ -194,7 +194,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const itemClass =
     'group gap-3 rounded-lg px-2.5 py-2 text-sm data-[selected=true]:bg-accent';
   const pillClass =
-    'shrink-0 rounded bg-muted px-1.5 py-px text-[10px] font-medium leading-tight text-muted-foreground/85';
+    'shrink-0 rounded bg-muted px-1.5 py-px text-[11px] font-medium leading-tight text-muted-foreground/85';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -208,7 +208,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         </DialogHeader>
         <Command
           shouldFilter={false}
-          className="rounded-2xl bg-popover [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:pt-3 [&_[cmdk-group-heading]]:pb-1 [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-[0.12em] [&_[cmdk-group-heading]]:text-muted-foreground/85 [&_[data-slot=command-input-wrapper]]:h-14 [&_[data-slot=command-input-wrapper]]:gap-3 [&_[data-slot=command-input-wrapper]]:border-border/60 [&_[data-slot=command-input-wrapper]]:px-4 [&_[data-slot=command-input-wrapper]_svg]:size-[18px] [&_[data-slot=command-input-wrapper]_svg]:opacity-100 [&_[data-slot=command-input]]:text-[15px]"
+          className="rounded-2xl bg-popover [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:pt-3 [&_[cmdk-group-heading]]:pb-1 [&_[cmdk-group-heading]]:text-[11px] [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-[0.12em] [&_[cmdk-group-heading]]:text-muted-foreground/85 [&_[data-slot=command-input-wrapper]]:h-14 [&_[data-slot=command-input-wrapper]]:gap-3 [&_[data-slot=command-input-wrapper]]:border-border/60 [&_[data-slot=command-input-wrapper]]:px-4 [&_[data-slot=command-input-wrapper]_svg]:size-[18px] [&_[data-slot=command-input-wrapper]_svg]:opacity-100 [&_[data-slot=command-input]]:text-[15px]"
         >
           <div className="relative">
             <CommandInput

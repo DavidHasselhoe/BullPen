@@ -29,7 +29,7 @@ export function ScenarioLesson({ content, onComplete }: Props) {
       )}
 
       <div className="rounded-2xl border border-border/40 bg-gradient-to-br from-emerald-500/[0.04] to-transparent p-5 sm:p-6">
-        <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-500/80 mb-2">
+        <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-500/80 mb-2">
           Scenario
         </div>
         <p className="text-base sm:text-lg leading-relaxed text-foreground">{content.setup}</p>
@@ -81,7 +81,7 @@ export function ScenarioLesson({ content, onComplete }: Props) {
           >
             <div
               className={cn(
-                'flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.18em] mb-2',
+                'flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.18em] mb-2',
                 choice.isCorrect ? 'text-emerald-500' : 'text-amber-400'
               )}
             >

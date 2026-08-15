@@ -61,7 +61,7 @@ function KpiGrid({ block }: { block: Extract<Block, { type: 'kpi_grid' }> }) {
               {item.value}
             </p>
             {item.sublabel && (
-              <p className="text-[10px] text-muted-foreground/85 mt-1 leading-tight">{item.sublabel}</p>
+              <p className="text-[11px] text-muted-foreground/85 mt-1 leading-tight">{item.sublabel}</p>
             )}
           </div>
         ))}
@@ -86,7 +86,7 @@ function BarChartBlock({ block }: { block: Extract<Block, { type: 'bar_chart' }>
   return (
     <section>
       <SectionTitle>{block.title}</SectionTitle>
-      <div className="flex items-center gap-4 mb-2 text-[10px] text-muted-foreground">
+      <div className="flex items-center gap-4 mb-2 text-[11px] text-muted-foreground">
         <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-[#3b82f6]" /> Actual</span>
         {block.series.some((s) => s.projected) && (
           <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-[#3b82f6]/40" /> Guidance / projected</span>
@@ -154,7 +154,7 @@ function KvTable({ block }: { block: Extract<Block, { type: 'kv_table' }> }) {
             <span className="flex items-center gap-2 shrink-0">
               <span className="text-sm font-medium tabular-nums text-foreground text-right">{row.value}</span>
               {row.badge && (
-                <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded leading-none', toneBadge(row.badge.tone))}>
+                <span className={cn('text-[11px] font-bold px-1.5 py-0.5 rounded leading-none', toneBadge(row.badge.tone))}>
                   {row.badge.text}
                 </span>
               )}
@@ -262,7 +262,7 @@ function Catalysts({ block }: { block: Extract<Block, { type: 'catalysts' }> }) 
               <div className="min-w-0">
                 <p className="text-sm font-medium text-foreground">
                   {item.title}
-                  {item.timeframe && <span className="ml-2 text-[10px] text-muted-foreground/80 font-normal">{item.timeframe}</span>}
+                  {item.timeframe && <span className="ml-2 text-[11px] text-muted-foreground/80 font-normal">{item.timeframe}</span>}
                 </p>
                 {item.detail && <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{item.detail}</p>}
               </div>
@@ -288,7 +288,7 @@ function Risks({ block }: { block: Extract<Block, { type: 'risks' }> }) {
               <p className="flex items-center gap-2 text-sm font-medium text-foreground">
                 {item.title}
                 {item.severity && (
-                  <span className={cn('text-[9px] font-bold px-1.5 py-0.5 rounded uppercase leading-none', severityBadge[item.severity])}>
+                  <span className={cn('text-[11px] font-bold px-1.5 py-0.5 rounded uppercase leading-none', severityBadge[item.severity])}>
                     {item.severity}
                   </span>
                 )}

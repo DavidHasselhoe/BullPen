@@ -125,8 +125,8 @@ export default function DeepDiveLanding() {
         {/* Saved dives */}
         <div className="flex items-center gap-2 mb-3">
           <Clock className="h-3.5 w-3.5 text-muted-foreground/85" />
-          <span className="text-[10px] uppercase tracking-widest text-muted-foreground/85 font-semibold">Your deep dives</span>
-          {dives.length > 0 && <span className="text-[10px] text-muted-foreground/80 tabular-nums">({dives.length})</span>}
+          <span className="text-[11px] uppercase tracking-widest text-muted-foreground/85 font-semibold">Your deep dives</span>
+          {dives.length > 0 && <span className="text-[11px] text-muted-foreground/80 tabular-nums">({dives.length})</span>}
         </div>
 
         {isLoading ? (

@@ -90,7 +90,7 @@ function IndexTile({ index, series }: { index: IndexQuote; series?: number[] }) 
         </span>
       </div>
 
-      <p className="mt-1 text-[10px] leading-tight text-muted-foreground/80">{index.hint}</p>
+      <p className="mt-1 text-[11px] leading-tight text-muted-foreground/80">{index.hint}</p>
     </div>
   );
 }

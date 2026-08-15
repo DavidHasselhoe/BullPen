@@ -175,7 +175,7 @@ export default function UserProfilePage() {
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-xl font-bold text-foreground">{displayName}</h1>
               {tier && (
-                <Badge variant="outline" className={cn('text-[10px] font-semibold', tier.className)}>
+                <Badge variant="outline" className={cn('text-[11px] font-semibold', tier.className)}>
                   {tier.label}
                 </Badge>
               )}

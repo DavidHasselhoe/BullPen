@@ -67,10 +67,10 @@ export function AllocationBars({ holdings }: Props) {
         return (
           <div key={section.role}>
             <div className="flex items-center justify-between mb-2.5">
-              <span className="text-[10px] uppercase tracking-widest text-muted-foreground/80 font-semibold">
+              <span className="text-[11px] uppercase tracking-widest text-muted-foreground/80 font-semibold">
                 {ROLE_LABEL[section.role]} · {section.items.length} {section.items.length === 1 ? 'position' : 'positions'}
               </span>
-              <span className="text-[10px] tabular-nums text-muted-foreground/80 font-semibold">
+              <span className="text-[11px] tabular-nums text-muted-foreground/80 font-semibold">
                 {sectionTotal}%
               </span>
             </div>

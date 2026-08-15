@@ -123,7 +123,7 @@ function ChartTooltip({ active, payload, label, fmtCurrency, sharesByName }: Cha
               <span className="font-semibold tabular-nums text-foreground">{fmtCurrency(entry.value)}</span>
             </div>
             {perShare !== undefined && (
-              <div className="flex justify-end text-[10px] text-muted-foreground/80 tabular-nums">
+              <div className="flex justify-end text-[11px] text-muted-foreground/80 tabular-nums">
                 {fmtCurrency(perShare)}/share
               </div>
             )}

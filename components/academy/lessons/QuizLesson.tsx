@@ -127,7 +127,7 @@ export function QuizLesson({ content, onComplete }: Props) {
           >
             <div
               className={cn(
-                'text-[10px] font-bold uppercase tracking-[0.18em] mb-1.5',
+                'text-[11px] font-bold uppercase tracking-[0.18em] mb-1.5',
                 isCorrect ? 'text-emerald-500' : 'text-amber-400'
               )}
             >

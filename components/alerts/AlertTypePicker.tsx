@@ -25,7 +25,7 @@ export function AlertTypePicker({ value, onChange }: Props) {
     <div className="space-y-3">
       {ALERT_TYPE_GROUPS.map(({ group, types }) => (
         <div key={group}>
-          <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/85 mb-1.5 px-0.5">
+          <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground/85 mb-1.5 px-0.5">
             {group}
           </div>
           <div className={cn('grid gap-2', types.length === 1 ? 'grid-cols-1' : 'grid-cols-2')}>

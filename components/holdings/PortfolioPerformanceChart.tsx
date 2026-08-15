@@ -371,7 +371,7 @@ export function PortfolioPerformanceChart({ holdings, currency = 'USD', fxRate =
                   <svg width="18" height="8" className="shrink-0">
                     <line x1="0" y1="4" x2="18" y2="4" stroke={lineColor} strokeWidth="2" />
                   </svg>
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-foreground/50">
+                  <span className="text-[11px] font-bold uppercase tracking-widest text-foreground/50">
                     Your Portfolio
                   </span>
                   <span className={cn('text-[11px] font-bold tabular-nums', isPositive ? 'text-emerald-500' : 'text-red-500')}>
@@ -384,7 +384,7 @@ export function PortfolioPerformanceChart({ holdings, currency = 'USD', fxRate =
                     <svg width="18" height="8" className="shrink-0">
                       <line x1="0" y1="4" x2="18" y2="4" stroke="#94a3b8" strokeWidth="1.5" strokeDasharray="3 2" />
                     </svg>
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-foreground/50">
+                    <span className="text-[11px] font-bold uppercase tracking-widest text-foreground/50">
                       S&P 500
                     </span>
                     <span className="text-[11px] font-bold tabular-nums text-slate-400">

@@ -23,7 +23,7 @@ function SentimentPill({ sentiment }: { sentiment: Thesis['sentiment'] }) {
   const s = SENTIMENTS.find((x) => x.key === sentiment)!;
   const Icon = s.icon;
   return (
-    <span className={cn('inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border', s.bg)}>
+    <span className={cn('inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border', s.bg)}>
       <Icon className="h-2.5 w-2.5" />
       {s.label}
     </span>
@@ -184,7 +184,7 @@ function ThesisReplies({ thesisId, replyCount, defaultOpen = false }: ThesisRepl
                       <Link href={profileHref} className="text-xs font-semibold text-foreground hover:text-primary transition-colors">
                         {name}
                       </Link>
-                      <span className="text-[10px] text-muted-foreground">{timeAgo(reply.created_at)}</span>
+                      <span className="text-[11px] text-muted-foreground">{timeAgo(reply.created_at)}</span>
                     </div>
                     {isEditing ? (
                       <div className="mt-1 space-y-1.5">
@@ -196,7 +196,7 @@ function ThesisReplies({ thesisId, replyCount, defaultOpen = false }: ThesisRepl
                           autoFocus
                         />
                         <div className="flex items-center justify-between">
-                          <span className="text-[10px] text-muted-foreground">{editContent.length}/280</span>
+                          <span className="text-[11px] text-muted-foreground">{editContent.length}/280</span>
                           <div className="flex gap-1.5">
                             <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={cancelEdit} disabled={isBusy}>
                               Cancel
@@ -253,7 +253,7 @@ function ThesisReplies({ thesisId, replyCount, defaultOpen = false }: ThesisRepl
                 autoFocus
               />
               <div className="flex items-center justify-between">
-                <span className="text-[10px] text-muted-foreground">{content.length}/280</span>
+                <span className="text-[11px] text-muted-foreground">{content.length}/280</span>
                 <div className="flex gap-1.5">
                   <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => { setShowForm(false); setContent(''); }}>
                     Cancel

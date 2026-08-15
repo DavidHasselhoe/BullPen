@@ -109,7 +109,7 @@ function PickBody({
     <article>
       {/* ── Header ───────────────────────────────────────────────────────────── */}
       <header className="mb-6">
-        <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-primary/75">
+        <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.2em] text-primary/75">
           Bull&apos;s Weekly Pick · {fmtDateLong(pick.pickDate)}
         </p>
 
@@ -153,7 +153,7 @@ function PickBody({
       <section aria-label="Performance since the pick" className="mb-8">
         <dl className="grid grid-cols-2 gap-4 rounded-xl border border-border/50 bg-card/40 px-5 py-4 sm:grid-cols-4">
           <div>
-            <dt className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/85">Entry</dt>
+            <dt className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/85">Entry</dt>
             <dd className="mt-1 font-mono text-sm tabular-nums text-foreground/90">
               {pick.entryPrice == null ? (
                 <span className="text-muted-foreground/80">Pending open</span>
@@ -163,13 +163,13 @@ function PickBody({
             </dd>
           </div>
           <div>
-            <dt className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/85">Now</dt>
+            <dt className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/85">Now</dt>
             <dd className="mt-1 font-mono text-sm tabular-nums text-foreground/90">
               {pick.currentPrice == null ? '—' : `$${fmtPrice(pick.currentPrice)}`}
             </dd>
           </div>
           <div>
-            <dt className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/85">
+            <dt className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/85">
               Since pick
             </dt>
             <dd
@@ -184,7 +184,7 @@ function PickBody({
             <p className="mt-0.5 text-[11px] text-muted-foreground/80">over {heldFor(pick.pickDate)}</p>
           </div>
           <div>
-            <dt className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/85">
+            <dt className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/85">
               vs S&amp;P 500
             </dt>
             <dd className={cn('mt-1 font-mono text-sm font-semibold tabular-nums', DIRECTION_TEXT[directionOf(vsBenchmark)])}>

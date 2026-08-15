@@ -105,10 +105,10 @@ export default function MarketMoodClientPage() {
             <div className="space-y-4">
               <div className="px-1">
                 <div className="flex items-baseline justify-between gap-3">
-                  <h2 className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground/80">
+                  <h2 className="text-[11px] font-bold uppercase tracking-[0.22em] text-muted-foreground/80">
                     Signal Breakdown
                   </h2>
-                  <span className="text-[10px] font-mono text-muted-foreground/80 tracking-wider">
+                  <span className="text-[11px] font-mono text-muted-foreground/80 tracking-wider">
                     {data.signals.length} of 4
                   </span>
                 </div>
@@ -129,7 +129,7 @@ export default function MarketMoodClientPage() {
 
             {/* Methodology — quiet, editorial, mono accent on symbol codes */}
             <div className="border-t border-border/30 pt-5 px-1">
-              <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground/80 mb-2">
+              <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-muted-foreground/80 mb-2">
                 Methodology
               </div>
               <p className="text-[11px] leading-relaxed text-muted-foreground/85">

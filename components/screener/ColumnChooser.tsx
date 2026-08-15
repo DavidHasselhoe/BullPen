@@ -73,7 +73,7 @@ export function ColumnChooser({ columns }: Props) {
         <div className="flex items-center justify-between px-1.5 pb-2 mb-1 border-b border-border/60">
           <div className="flex flex-col">
             <span className="text-xs font-semibold text-foreground">Columns</span>
-            <span className="text-[10px] text-muted-foreground/80">Drag to reorder · click to show/hide</span>
+            <span className="text-[11px] text-muted-foreground/80">Drag to reorder · click to show/hide</span>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <button

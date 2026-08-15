@@ -73,16 +73,16 @@ function AccountCard({
               {account.brokerage_name ?? account.brokerage_slug ?? 'Brokerage'}
             </span>
             {account.account_type && (
-              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">
+              <Badge variant="secondary" className="text-[11px] px-1.5 py-0 h-4">
                 {account.account_type}
               </Badge>
             )}
             {account.is_active ? (
-              <Badge className="text-[10px] px-1.5 py-0 h-4 bg-emerald-500/15 text-emerald-500 border-0">
+              <Badge className="text-[11px] px-1.5 py-0 h-4 bg-emerald-500/15 text-emerald-500 border-0">
                 Active
               </Badge>
             ) : (
-              <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-4">
+              <Badge variant="destructive" className="text-[11px] px-1.5 py-0 h-4">
                 Inactive
               </Badge>
             )}

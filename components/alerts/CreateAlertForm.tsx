@@ -92,7 +92,7 @@ export function CreateAlertForm({ onCreated, onCancel, onCreate, initialTicker, 
         </div>
       ) : (
         <div className="space-y-1.5">
-          <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/80">
+          <label className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground/80">
             Stock
           </label>
           <TickerSelector
@@ -105,7 +105,7 @@ export function CreateAlertForm({ onCreated, onCancel, onCreate, initialTicker, 
 
       {/* Step 2 — condition */}
       <div className="space-y-2">
-        <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/80">
+        <label className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground/80">
           Condition
         </label>
         <AlertTypePicker value={alertType} onChange={setAlertType} />
@@ -114,7 +114,7 @@ export function CreateAlertForm({ onCreated, onCancel, onCreate, initialTicker, 
       {/* Step 3 — threshold (only when needed) */}
       {needsThreshold && (
         <div className="space-y-1.5">
-          <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/80">
+          <label className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground/80">
             {isPriceType ? 'Target price' : 'Threshold (%)'}
           </label>
           <div className="relative">
@@ -147,7 +147,7 @@ export function CreateAlertForm({ onCreated, onCancel, onCreate, initialTicker, 
       {preview && (
         <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/[0.04] px-3 py-2">
           <p className="text-xs text-foreground/85 leading-relaxed">
-            <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-500/80 mr-1.5">Preview</span>
+            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-500/80 mr-1.5">Preview</span>
             {preview}
           </p>
         </div>

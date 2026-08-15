@@ -86,7 +86,7 @@ function MethodologyPopover({ onClose, anchorRect }: { onClose: () => void; anch
         ))}
       </div>
       <div className="border-t border-border/40 pt-2 space-y-1">
-        <p className="text-[10px] text-muted-foreground/85 font-medium uppercase tracking-wide">Grade thresholds</p>
+        <p className="text-[11px] text-muted-foreground/85 font-medium uppercase tracking-wide">Grade thresholds</p>
         {[
           { grade: 'A', range: '85–100', label: 'Strong' },
           { grade: 'B', range: '70–84', label: 'Good' },
@@ -102,7 +102,7 @@ function MethodologyPopover({ onClose, anchorRect }: { onClose: () => void; anch
           </div>
         ))}
       </div>
-      <p className="text-[10px] text-muted-foreground/85 leading-relaxed">
+      <p className="text-[11px] text-muted-foreground/85 leading-relaxed">
         This score is educational and does not constitute investment advice.
       </p>
     </div>,
@@ -348,7 +348,7 @@ export function HealthScoreCard({ ticker, onSignalsReady }: HealthScoreCardProps
               showLabel={false}
               className="text-foreground"
             />
-            <span className="text-[10px] text-muted-foreground/85 tracking-wide uppercase">out of 100</span>
+            <span className="text-[11px] text-muted-foreground/85 tracking-wide uppercase">out of 100</span>
           </div>
 
           {/* Pro mode: category progress bars */}
@@ -379,9 +379,9 @@ export function HealthScoreCard({ ticker, onSignalsReady }: HealthScoreCardProps
                         <TermTooltip term={cat.name} className="truncate" />
                       </span>
                       {unavailable ? (
-                        <span className="text-[10px] font-medium text-muted-foreground/80 shrink-0">N/A</span>
+                        <span className="text-[11px] font-medium text-muted-foreground/80 shrink-0">N/A</span>
                       ) : (
-                        <span className={cn('text-[10px] font-semibold shrink-0', textColor)}>{sigLabel}</span>
+                        <span className={cn('text-[11px] font-semibold shrink-0', textColor)}>{sigLabel}</span>
                       )}
                     </div>
                     <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">

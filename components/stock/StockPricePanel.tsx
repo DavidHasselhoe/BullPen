@@ -125,7 +125,7 @@ function fmtVol(v: number): string {
 function StatItem({ label, value, valueClass }: { label: string; value: string; valueClass?: string }) {
   return (
     <div className="flex items-center gap-1.5 min-w-0">
-      <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/85 shrink-0">{label}</span>
+      <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/85 shrink-0">{label}</span>
       <span className={cn('text-xs font-medium tabular-nums text-foreground truncate', valueClass)}>{value}</span>
     </div>
   );
@@ -515,7 +515,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
                     {closeIsPos ? '+' : ''}{fmtPrice(closeChange)} ({closeIsPos ? '+' : ''}{closePct.toFixed(2)}%)
                   </div>
                   <div className="flex items-center gap-2 mt-1.5">
-                    <span className="text-[10px] uppercase tracking-widest text-muted-foreground/80 font-semibold">
+                    <span className="text-[11px] uppercase tracking-widest text-muted-foreground/80 font-semibold">
                       At Close
                     </span>
                     <button
@@ -547,7 +547,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
                     {isLive && (
                       <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                     )}
-                    <span className="text-[10px] uppercase tracking-widest text-muted-foreground/80 font-semibold">
+                    <span className="text-[11px] uppercase tracking-widest text-muted-foreground/80 font-semibold">
                       {extHours!.pre_or_post === 'pre' ? 'Pre-Market' : 'After-Hours'}
                     </span>
                   </div>
@@ -651,7 +651,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
                     key={key}
                     onClick={() => toggleIndicator(key)}
                     className={cn(
-                      'rounded-full px-2 py-0.5 text-[10px] font-medium transition-all border',
+                      'rounded-full px-2 py-0.5 text-[11px] font-medium transition-all border',
                       activeIndicators.has(key)
                         ? 'bg-primary text-primary-foreground border-primary'
                         : 'bg-transparent text-muted-foreground border-border hover:text-foreground hover:border-foreground/30'
@@ -663,7 +663,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
                 {activeIndicators.size > 0 && (
                   <button
                     onClick={() => setActiveIndicators(new Set())}
-                    className="rounded-full px-2 py-0.5 text-[10px] font-medium border border-border text-muted-foreground hover:text-foreground transition-all"
+                    className="rounded-full px-2 py-0.5 text-[11px] font-medium border border-border text-muted-foreground hover:text-foreground transition-all"
                   >
                     ✕
                   </button>
@@ -764,7 +764,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
       {prefs.showVolume && hasChart && (
         <div className="border-t border-border/30">
           <div className="px-5 pt-2 pb-0.5">
-            <span className="text-[10px] text-muted-foreground/80 font-medium uppercase tracking-widest">
+            <span className="text-[11px] text-muted-foreground/80 font-medium uppercase tracking-widest">
               Volume
             </span>
           </div>
@@ -784,7 +784,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
           {activeOscillators.includes('rsi') && (
             <div>
               <div className="px-5 pt-2 pb-1">
-                <span className="text-[10px] text-muted-foreground/80 font-medium uppercase tracking-widest">RSI</span>
+                <span className="text-[11px] text-muted-foreground/80 font-medium uppercase tracking-widest">RSI</span>
               </div>
               <LineChart data={bklitData} margin={{ top: 4, right: 28, bottom: 0, left: 28 }} style={{ height: 90 }} fixedYDomain={[0, 100]}>
                 <ReferenceLine y={70} stroke="#ef4444" strokeOpacity={0.3} strokeDasharray="3,3" />
@@ -801,7 +801,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
           {activeOscillators.includes('macd') && (
             <div>
               <div className="px-5 pt-2 pb-1">
-                <span className="text-[10px] text-muted-foreground/80 font-medium uppercase tracking-widest">MACD</span>
+                <span className="text-[11px] text-muted-foreground/80 font-medium uppercase tracking-widest">MACD</span>
               </div>
               <LineChart data={bklitData} margin={{ top: 4, right: 28, bottom: 0, left: 28 }} style={{ height: 90 }} zeroBaseline={false}>
                 <ReferenceLine y={0} strokeDasharray="2,4" />

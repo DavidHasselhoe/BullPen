@@ -213,7 +213,7 @@ export function ScreenerResults({
                     <div className="flex items-center gap-1.5">
                       <span className="text-sm font-semibold text-foreground">{row.ticker}</span>
                       {stale && <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-400/70" title={stale} />}
-                      {row.sector && <Badge variant="outline" className="px-1 py-0 text-[10px]">{row.sector}</Badge>}
+                      {row.sector && <Badge variant="outline" className="px-1 py-0 text-[11px]">{row.sector}</Badge>}
                     </div>
                     <span className="block truncate text-xs text-muted-foreground">{row.name}</span>
                   </div>
@@ -317,7 +317,7 @@ export function ScreenerResults({
                           </span>
                           {row.sector && (
                             <div>
-                              <Badge variant="outline" className="text-[10px] px-1 py-0 mt-0.5">
+                              <Badge variant="outline" className="text-[11px] px-1 py-0 mt-0.5">
                                 {row.sector}
                               </Badge>
                             </div>

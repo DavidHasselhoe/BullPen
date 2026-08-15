@@ -116,10 +116,10 @@ export function DetailEventRow({ event }: { event: UnifiedEvent }) {
             <span className="text-muted-foreground/80">—</span>
           )}
           {e.eps_actual != null && e.eps_estimate != null && (
-            <div className="text-[10px] text-muted-foreground/80">est. {fmtEPS(e.eps_estimate)}</div>
+            <div className="text-[11px] text-muted-foreground/80">est. {fmtEPS(e.eps_estimate)}</div>
           )}
           {e.revenue_estimate != null && (
-            <div className="text-[10px] text-muted-foreground/80">Rev {fmtRevenue(e.revenue_estimate)}</div>
+            <div className="text-[11px] text-muted-foreground/80">Rev {fmtRevenue(e.revenue_estimate)}</div>
           )}
         </div>
       </div>
@@ -146,7 +146,7 @@ export function DetailEventRow({ event }: { event: UnifiedEvent }) {
           </Link>
           <div className="min-w-0">
             {d.name && <p className="text-xs text-muted-foreground truncate">{d.name}</p>}
-            <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted-foreground/85 flex-wrap">
+            <div className="flex items-center gap-2 mt-0.5 text-[11px] text-muted-foreground/85 flex-wrap">
               {d.payment_date && <span>Pay {fmtShortDate(d.payment_date)}</span>}
               {d.frequency && <span className="capitalize px-1 bg-muted/60 rounded">{d.frequency}</span>}
             </div>
@@ -217,10 +217,10 @@ export function DetailEventRow({ event }: { event: UnifiedEvent }) {
         <div className="min-w-0">
           {ipo.name && <p className="text-xs text-muted-foreground truncate">{ipo.name}</p>}
           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-            {ipo.exchange && <span className="text-[10px] text-muted-foreground/80">{ipo.exchange}</span>}
+            {ipo.exchange && <span className="text-[11px] text-muted-foreground/80">{ipo.exchange}</span>}
             {ipo.status && (
               <span className={cn(
-                'text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide leading-none capitalize',
+                'text-[11px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide leading-none capitalize',
                 IPO_STATUS_COLORS[ipo.status.toLowerCase()] ?? 'bg-muted/60 text-muted-foreground',
               )}>
                 {ipo.status}

@@ -121,7 +121,7 @@ function UpgradeContent() {
               className={cn('flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-colors', annual ? 'bg-background text-foreground shadow' : 'text-muted-foreground')}
             >
               Annual
-              <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-500">−25%</span>
+              <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[11px] font-semibold text-emerald-500">−25%</span>
             </button>
           </div>
         </div>
@@ -145,7 +145,7 @@ function UpgradeContent() {
 
           {/* Pro */}
           <div className="relative flex flex-col rounded-2xl border border-primary bg-gradient-to-b from-primary/[0.06] to-transparent p-6 shadow-lg shadow-primary/10">
-            <span className="absolute -top-3 right-5 rounded-full bg-primary px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary-foreground">Most popular</span>
+            <span className="absolute -top-3 right-5 rounded-full bg-primary px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-primary-foreground">Most popular</span>
             <span className="flex items-center gap-1.5 text-lg font-bold"><Sparkles className="h-4 w-4 text-primary" /> Pro</span>
             <p className="mt-1 text-sm text-muted-foreground">Your AI analyst + unlimited everything.</p>
             <div className="mt-4 flex items-baseline gap-1.5">
@@ -188,7 +188,7 @@ function UpgradeContent() {
             </div>
             {PLAN_COMPARISON.map((group) => (
               <div key={group.title}>
-                <div className="bg-muted/10 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/80">{group.title}</div>
+                <div className="bg-muted/10 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80">{group.title}</div>
                 {group.rows.map((row) => (
                   <div key={row.label} className="grid grid-cols-[1fr_5rem_5rem] items-center gap-2 border-t px-4 py-2.5">
                     <div className="min-w-0">

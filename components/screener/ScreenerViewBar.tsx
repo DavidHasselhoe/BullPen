@@ -157,7 +157,7 @@ export function ScreenerViewBar({ activeView, onViewChange }: Props) {
           className={cn(pillBase, isActive({ type: 'holdings' }) ? pillActive : pillInactive)}
         >
           My Holdings
-          <span className={cn('text-[10px] opacity-60', isActive({ type: 'holdings' }) ? 'text-primary-foreground' : 'text-muted-foreground')}>
+          <span className={cn('text-[11px] opacity-60', isActive({ type: 'holdings' }) ? 'text-primary-foreground' : 'text-muted-foreground')}>
             {holdings.length}
           </span>
         </button>
@@ -179,7 +179,7 @@ export function ScreenerViewBar({ activeView, onViewChange }: Props) {
                 className="text-xs"
               >
                 All watchlists
-                <span className="ml-auto text-[10px] text-muted-foreground/80">{watchlistItems.length}</span>
+                <span className="ml-auto text-[11px] text-muted-foreground/80">{watchlistItems.length}</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               {watchlistLists.map((list) => (
@@ -190,7 +190,7 @@ export function ScreenerViewBar({ activeView, onViewChange }: Props) {
                 >
                   <span className="h-2 w-2 rounded-full shrink-0" style={{ background: list.color ?? '#888' }} />
                   {list.name}
-                  <span className="ml-auto text-[10px] text-muted-foreground/80">
+                  <span className="ml-auto text-[11px] text-muted-foreground/80">
                     {watchlistItems.filter((i) => i.list_id === list.id).length}
                   </span>
                 </DropdownMenuItem>
@@ -229,7 +229,7 @@ export function ScreenerViewBar({ activeView, onViewChange }: Props) {
             >
               {view.name}
               {view.tickers.length > 0 && (
-                <span className={cn('text-[10px] opacity-60', active ? 'text-primary-foreground' : 'text-muted-foreground')}>
+                <span className={cn('text-[11px] opacity-60', active ? 'text-primary-foreground' : 'text-muted-foreground')}>
                   {view.tickers.length}
                 </span>
               )}

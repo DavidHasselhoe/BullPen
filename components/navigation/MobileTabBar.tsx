@@ -56,7 +56,7 @@ export function MobileTabBar() {
                 href={href}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'flex min-h-[56px] flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors',
+                  'flex min-h-[56px] flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors',
                   active ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
                 )}
               >
@@ -69,7 +69,7 @@ export function MobileTabBar() {
             type="button"
             onClick={() => setMoreOpen(true)}
             className={cn(
-              'flex min-h-[56px] flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors',
+              'flex min-h-[56px] flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors',
               moreActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
             )}
           >
@@ -128,7 +128,7 @@ export function MobileTabBar() {
 function MoreSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/80">{title}</p>
+      <p className="px-2 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80">{title}</p>
       <div className="space-y-0.5">{children}</div>
     </div>
   );

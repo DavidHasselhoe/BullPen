@@ -147,7 +147,7 @@ export function ExchangePicker({ selectedCodes, onAdd }: Props) {
                   <span className="text-sm font-medium text-foreground flex-1 truncate">
                     {countryName}
                   </span>
-                  <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground/80 shrink-0">
+                  <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground/80 shrink-0">
                     {ex.code}
                   </span>
                 </button>

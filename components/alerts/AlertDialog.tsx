@@ -54,7 +54,7 @@ export function AlertDialog({ symbol, companyName, trigger }: Props) {
       <Bell className="h-4 w-4" />
       Alert
       {activeCount > 0 && (
-        <span className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-emerald-500 text-[10px] font-bold text-white flex items-center justify-center">
+        <span className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-emerald-500 text-[11px] font-bold text-white flex items-center justify-center">
           {activeCount}
         </span>
       )}

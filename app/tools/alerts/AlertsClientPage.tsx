@@ -126,7 +126,7 @@ export default function AlertsClientPage() {
                       style={{ width: `${Math.min(100, (activeSymbolCount / FREE_ACTIVE_ALERT_LIMIT) * 100)}%` }}
                     />
                   </div>
-                  <span className="text-[10px] font-mono text-muted-foreground/85 tabular-nums">
+                  <span className="text-[11px] font-mono text-muted-foreground/85 tabular-nums">
                     {activeSymbolCount}/{FREE_ACTIVE_ALERT_LIMIT}
                   </span>
                 </div>
@@ -193,7 +193,7 @@ export default function AlertsClientPage() {
 
         {/* About */}
         <div className="border-t border-border/30 pt-5 px-1">
-          <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground/80 mb-2">
+          <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-muted-foreground/80 mb-2">
             About alerts
           </div>
           <p className="text-[11px] leading-relaxed text-muted-foreground/80">

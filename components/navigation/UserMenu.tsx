@@ -132,7 +132,7 @@ export function UserMenu({ forceDark = false }: UserMenuProps = {}) {
               {userIsPro ? (
                 <ProBadge />
               ) : (
-                <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                   Free
                 </span>
               )}
@@ -179,7 +179,7 @@ export function UserMenu({ forceDark = false }: UserMenuProps = {}) {
         {userIsAdmin && (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-muted-foreground/80 font-semibold">
+            <DropdownMenuLabel className="text-[11px] uppercase tracking-widest text-muted-foreground/80 font-semibold">
               Admin
             </DropdownMenuLabel>
             <DropdownMenuItem

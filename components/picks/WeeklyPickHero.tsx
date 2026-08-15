@@ -144,7 +144,7 @@ export function WeeklyPickHero() {
           <div className="shrink-0 lg:w-56 lg:border-l lg:border-border/40 lg:pl-6">
             <dl className="grid grid-cols-3 gap-4 lg:grid-cols-1 lg:gap-3">
               <div>
-                <dt className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/85">
+                <dt className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/85">
                   Picked
                 </dt>
                 <dd className="mt-1 font-mono text-sm tabular-nums text-foreground/90">
@@ -152,7 +152,7 @@ export function WeeklyPickHero() {
                 </dd>
               </div>
               <div>
-                <dt className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/85">
+                <dt className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/85">
                   Entry
                 </dt>
                 <dd className="mt-1 font-mono text-sm tabular-nums text-foreground/90">
@@ -164,7 +164,7 @@ export function WeeklyPickHero() {
                 </dd>
               </div>
               <div>
-                <dt className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/85">
+                <dt className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/85">
                   Since pick
                 </dt>
                 <dd

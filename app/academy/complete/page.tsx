@@ -49,7 +49,7 @@ export default function LessonCompletePage() {
           <div className="text-4xl font-mono font-black tabular-nums text-emerald-400">
             +{xp}
           </div>
-          <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-500/70 mt-1">
+          <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-500/70 mt-1">
             XP earned
           </div>
         </motion.div>
@@ -62,7 +62,7 @@ export default function LessonCompletePage() {
           <div className="text-4xl font-mono font-black tabular-nums text-orange-400">
             {streak}
           </div>
-          <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-orange-500/70 mt-1">
+          <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-orange-500/70 mt-1">
             Day streak
           </div>
         </motion.div>

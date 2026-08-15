@@ -96,7 +96,7 @@ export function HotPicksCard() {
           Trending this week
         </span>
         <div className="flex-1 h-px bg-border/50" />
-        <span className="text-[10px] font-mono text-foreground/50 uppercase tracking-wider shrink-0">
+        <span className="text-[11px] font-mono text-foreground/50 uppercase tracking-wider shrink-0">
           by views
         </span>
       </div>

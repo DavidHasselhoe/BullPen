@@ -51,7 +51,7 @@ export default function ToolsPage() {
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-sm font-semibold text-foreground">{tool.name}</span>
                     {isComingSoon && (
-                      <span className="rounded-full border border-border px-2 py-0.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+                      <span className="rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
                         Soon
                       </span>
                     )}

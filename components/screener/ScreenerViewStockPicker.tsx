@@ -121,7 +121,7 @@ export function ScreenerViewStockPicker({ view, universe, onAdd, hasStocks }: Pr
                     <span className="text-xs text-muted-foreground truncate">{s.name}</span>
                   </div>
                   {s.sector && (
-                    <span className="text-[10px] text-muted-foreground/85">{s.sector}</span>
+                    <span className="text-[11px] text-muted-foreground/85">{s.sector}</span>
                   )}
                 </div>
                 <Plus className="h-3.5 w-3.5 text-muted-foreground/80 shrink-0" />

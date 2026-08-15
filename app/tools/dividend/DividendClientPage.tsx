@@ -413,7 +413,7 @@ export default function DividendClientPage({
                     <CompanyLogo size={22} ticker={pick.ticker} name={pick.name} logoUrl={null} className="shrink-0" />
                     <span className="font-medium">{pick.ticker}</span>
                     {pick.highYield && (
-                      <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-emerald-500">
+                      <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-emerald-500">
                         High yield
                       </span>
                     )}

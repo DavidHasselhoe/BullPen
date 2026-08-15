@@ -240,7 +240,7 @@ export function ScreenerSearchBar({ universe, value, onChange }: Props) {
           {suggestions.length === 0 && (
             <li className="px-3 py-3 text-xs text-muted-foreground/85" aria-live="polite">
               {noMatchAddable ? (
-                <>No company match, press <kbd className="rounded border border-border bg-muted px-1 font-mono text-[10px]">Enter</kbd> to add <span className="font-mono font-semibold text-foreground">{query.trim().toUpperCase()}</span> as a ticker</>
+                <>No company match, press <kbd className="rounded border border-border bg-muted px-1 font-mono text-[11px]">Enter</kbd> to add <span className="font-mono font-semibold text-foreground">{query.trim().toUpperCase()}</span> as a ticker</>
               ) : (
                 <>No matches for &ldquo;{query.trim()}&rdquo;</>
               )}

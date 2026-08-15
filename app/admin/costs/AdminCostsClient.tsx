@@ -123,7 +123,7 @@ export function AdminCostsClient() {
               ) : (
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="text-[10px] uppercase tracking-widest text-muted-foreground/85 text-left">
+                    <tr className="text-[11px] uppercase tracking-widest text-muted-foreground/85 text-left">
                       <th className="py-2 font-semibold">User</th>
                       <th className="py-2 font-semibold text-right">Calls</th>
                       <th className="py-2 font-semibold text-right">Spend</th>
@@ -157,7 +157,7 @@ export function AdminCostsClient() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead>
-                      <tr className="text-[10px] uppercase tracking-widest text-muted-foreground/85 text-left">
+                      <tr className="text-[11px] uppercase tracking-widest text-muted-foreground/85 text-left">
                         <th className="py-2 font-semibold">When</th>
                         <th className="py-2 font-semibold">Feature</th>
                         <th className="py-2 font-semibold">Model</th>

@@ -70,7 +70,7 @@ export function ThesisInput({ onSubmit, disabled }: Props) {
 
       {/* Examples */}
       <div>
-        <p className="text-[10px] uppercase tracking-widest text-muted-foreground/80 font-semibold mb-3 text-center">
+        <p className="text-[11px] uppercase tracking-widest text-muted-foreground/80 font-semibold mb-3 text-center">
           Example theses
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -86,7 +86,7 @@ export function ThesisInput({ onSubmit, disabled }: Props) {
             </button>
           ))}
         </div>
-        <p className="text-[10px] text-muted-foreground/80 text-center mt-6 select-none">
+        <p className="text-[11px] text-muted-foreground/80 text-center mt-6 select-none">
           Powered by Claude Sonnet 4.6 with extended thinking · Not investment advice
         </p>
       </div>

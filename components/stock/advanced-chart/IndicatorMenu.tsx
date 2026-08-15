@@ -40,7 +40,7 @@ export function IndicatorMenu({ indicators, onAdd, onRemove, onUpdate, onApplyPr
           <LineChartIcon className="h-3.5 w-3.5" />
           Indicators
           {indicators.length > 0 && (
-            <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
+            <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[11px] font-semibold text-primary-foreground">
               {indicators.length}
             </span>
           )}
@@ -51,7 +51,7 @@ export function IndicatorMenu({ indicators, onAdd, onRemove, onUpdate, onApplyPr
       <PopoverContent align="end" className="z-[130] w-80 p-0">
         {/* Presets */}
         <div className="border-b border-border/60 p-2">
-          <p className="px-1 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/80">
+          <p className="px-1 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80">
             Presets
           </p>
           <div className="flex flex-wrap gap-1.5">
@@ -73,11 +73,11 @@ export function IndicatorMenu({ indicators, onAdd, onRemove, onUpdate, onApplyPr
         {indicators.length > 0 && (
           <div className="border-b border-border/60 p-2">
             <div className="flex items-center justify-between px-1 pb-1.5">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/80">Active</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80">Active</p>
               <button
                 type="button"
                 onClick={onClear}
-                className="text-[10px] font-medium text-muted-foreground/85 transition-colors hover:text-red-400"
+                className="text-[11px] font-medium text-muted-foreground/85 transition-colors hover:text-red-400"
               >
                 Clear all
               </button>
@@ -147,7 +147,7 @@ function AddGroup({
 }) {
   return (
     <div className={className}>
-      <p className="px-1 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/80">
+      <p className="px-1 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80">
         {title}
       </p>
       <div className="space-y-0.5">

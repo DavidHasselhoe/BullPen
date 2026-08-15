@@ -379,7 +379,7 @@ function FloatingTooltip({ pos, session }: { pos: TooltipPos | null; session: Se
       <div className="flex items-center gap-2 mb-1">
         <p className="font-bold text-sm text-foreground">{stock.ticker}</p>
         {extended && (
-          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-500 border border-amber-500/20">
+          <span className="text-[11px] font-medium px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-500 border border-amber-500/20">
             {extended}
           </span>
         )}

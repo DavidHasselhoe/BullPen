@@ -127,7 +127,7 @@ function buildAskBullQuery(analysis: RiskAnalysis, holdings: HoldingWithPrice[])
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="mb-3 select-none font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/80">
+    <p className="mb-3 select-none font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground/80">
       {children}
     </p>
   );
@@ -209,7 +209,7 @@ function MetricCell({ label, metric, expanded, onToggle }: {
         aria-expanded={expanded}
       >
         <div className="flex items-center justify-between gap-2">
-          <span className="text-[10px] font-mono font-bold uppercase tracking-[0.1em] text-muted-foreground/85 leading-none">{label}</span>
+          <span className="text-[11px] font-mono font-bold uppercase tracking-[0.1em] text-muted-foreground/85 leading-none">{label}</span>
           <div className="flex items-center gap-1.5">
             <span className={cn('text-base font-black tabular-nums leading-none', metricBarColor(metric.score).replace('bg-', 'text-'))}>{metric.score}</span>
             {expanded ? <ChevronUp className="h-3 w-3 text-muted-foreground/80" /> : <ChevronDown className="h-3 w-3 text-muted-foreground/80 group-hover:text-muted-foreground/85" />}
@@ -276,7 +276,7 @@ function StressScenarioList({ scenarios }: { scenarios: StressScenario[] }) {
             <span className={cn('absolute inset-y-0 left-0 w-1', severityStripe(s.severity))} aria-hidden />
             <div className="mb-2 flex items-start justify-between gap-3">
               <span className="text-sm font-semibold text-foreground">{s.scenario}</span>
-              <span className={cn('mt-0.5 shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide', severityChip(s.severity))}>
+              <span className={cn('mt-0.5 shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide', severityChip(s.severity))}>
                 {s.severity}
               </span>
             </div>
@@ -320,7 +320,7 @@ function HistoryPanel({
     <div>
       <div className="flex items-center gap-1.5 mb-2">
         <Clock className="h-2.5 w-2.5 text-muted-foreground/80" />
-        <span className="text-[9px] font-mono uppercase tracking-[0.25em] text-muted-foreground/80">Saved analyses</span>
+        <span className="text-[11px] font-mono uppercase tracking-[0.25em] text-muted-foreground/80">Saved analyses</span>
       </div>
       <div className="flex flex-wrap gap-1.5">
         {items.map((item) => (
@@ -329,11 +329,11 @@ function HistoryPanel({
               onClick={() => onRestore(item.id)}
               className="flex items-center gap-1.5 px-2.5 py-1.5 hover:bg-muted/40 transition-colors"
             >
-              <span className={cn('text-[10px] font-bold', riskTextClass(item.riskLevel))}>
+              <span className={cn('text-[11px] font-bold', riskTextClass(item.riskLevel))}>
                 {item.overallRiskScore}
               </span>
-              <span className="text-[10px] text-muted-foreground/80">{item.riskLevel}</span>
-              <span className="text-[9px] text-muted-foreground/80 tabular-nums">{formatAgo(item.createdAt)}</span>
+              <span className="text-[11px] text-muted-foreground/80">{item.riskLevel}</span>
+              <span className="text-[11px] text-muted-foreground/80 tabular-nums">{formatAgo(item.createdAt)}</span>
             </button>
             <button
               onClick={() => onDelete(item.id)}
@@ -605,7 +605,7 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
             <CardTitle className="flex items-center gap-2 text-sm font-semibold">
               <ShieldAlert className="h-4 w-4 text-primary" />
               Portfolio Risk Analysis
-              <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.14em] text-primary/80 bg-primary/10 px-1.5 py-0.5 rounded-full">
+              <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-[0.14em] text-primary/80 bg-primary/10 px-1.5 py-0.5 rounded-full">
                 <Crown className="h-2 w-2" /> Pro
               </span>
             </CardTitle>
@@ -683,7 +683,7 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
                   </div>
                 </div>
               )}
-              <p className="text-[10px] text-muted-foreground/85 text-center max-w-xs mx-auto leading-relaxed">
+              <p className="text-[11px] text-muted-foreground/85 text-center max-w-xs mx-auto leading-relaxed">
                 Typically 15–30 seconds. Feel free to leave this page. We&apos;ll notify you when it&apos;s ready.
               </p>
             </div>
@@ -717,7 +717,7 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
                     <span className={cn('text-2xl font-bold tracking-tight', riskTextClass(analysis.riskLevel))}>
                       {analysis.riskLevel} Risk
                     </span>
-                    <span className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/85">
+                    <span className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground/85">
                       Overall assessment
                     </span>
                   </div>
@@ -777,7 +777,7 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
                           </div>
                           <div className="flex flex-wrap gap-1">
                             {s.symbols.map((sym) => (
-                              <span key={sym} className="rounded bg-muted/50 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground/80">
+                              <span key={sym} className="rounded bg-muted/50 px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground/80">
                                 {sym}
                               </span>
                             ))}
@@ -810,7 +810,7 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
                           <div className="min-w-0">
                             <div className="flex items-center gap-2 flex-wrap mb-1">
                               <span className="text-[13px] font-bold text-foreground">{risk.factor}</span>
-                              <span className={cn('text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded', severityChip(risk.severity))}>
+                              <span className={cn('text-[11px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded', severityChip(risk.severity))}>
                                 {risk.severity}
                               </span>
                             </div>
@@ -840,7 +840,7 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
 
               {/* Footer */}
               <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-border/15">
-                <span className="text-[9px] font-mono text-muted-foreground/80 uppercase tracking-[0.15em] select-none">
+                <span className="text-[11px] font-mono text-muted-foreground/80 uppercase tracking-[0.15em] select-none">
                   {restoredFrom ? `Restored · ${generatedTime}` : `Generated · ${generatedTime}`}
                 </span>
                 <button

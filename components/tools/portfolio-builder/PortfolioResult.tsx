@@ -119,7 +119,7 @@ function ConfidenceRing({ score }: { score: number }) {
         <span className="text-2xl font-bold tabular-nums leading-none" style={{ color }}>
           {score}
         </span>
-        <span className="text-[9px] uppercase tracking-widest text-muted-foreground/85 font-semibold mt-0.5">
+        <span className="text-[11px] uppercase tracking-widest text-muted-foreground/85 font-semibold mt-0.5">
           score
         </span>
       </div>
@@ -197,10 +197,10 @@ export function PortfolioResult({ portfolio, logoMap, replacedTickers, thesis, o
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1.5 min-w-0">
-                <Badge variant="outline" className="text-[10px] font-semibold tracking-widest uppercase max-w-[200px] truncate block shrink-0">
+                <Badge variant="outline" className="text-[11px] font-semibold tracking-widest uppercase max-w-[200px] truncate block shrink-0">
                   {portfolio.investment_horizon}
                 </Badge>
-                <span className="text-[10px] text-muted-foreground/85 uppercase tracking-widest font-semibold">
+                <span className="text-[11px] text-muted-foreground/85 uppercase tracking-widest font-semibold">
                   Thematic Portfolio
                 </span>
               </div>
@@ -216,7 +216,7 @@ export function PortfolioResult({ portfolio, logoMap, replacedTickers, thesis, o
             </div>
             <div className="flex flex-col items-center shrink-0">
               <ConfidenceRing score={portfolio.confidence_score} />
-              <span className="text-[9px] uppercase tracking-widest text-muted-foreground/85 font-semibold mt-1">
+              <span className="text-[11px] uppercase tracking-widest text-muted-foreground/85 font-semibold mt-1">
                 Confidence
               </span>
             </div>
@@ -225,7 +225,7 @@ export function PortfolioResult({ portfolio, logoMap, replacedTickers, thesis, o
           {/* Confidence rationale — moved out of micro-italic into a readable callout */}
           <div className="mt-4 rounded-lg border border-border/40 bg-muted/20 px-3.5 py-2.5">
             <div className="flex items-center gap-1.5 mb-1">
-              <span className="text-[10px] uppercase tracking-widest text-muted-foreground/80 font-semibold">
+              <span className="text-[11px] uppercase tracking-widest text-muted-foreground/80 font-semibold">
                 Why this confidence score
               </span>
             </div>
@@ -291,7 +291,7 @@ export function PortfolioResult({ portfolio, logoMap, replacedTickers, thesis, o
               >
                 <div className="flex items-start justify-between gap-2 mb-1.5">
                   <h4 className="text-sm font-semibold text-foreground">{risk.title}</h4>
-                  <span className={cn('text-[9px] uppercase tracking-widest font-semibold px-1.5 py-0.5 rounded border shrink-0 whitespace-nowrap', SEVERITY_STYLES[risk.severity])}>
+                  <span className={cn('text-[11px] uppercase tracking-widest font-semibold px-1.5 py-0.5 rounded border shrink-0 whitespace-nowrap', SEVERITY_STYLES[risk.severity])}>
                     {isSimplified ? SEVERITY_PLAIN_LABEL[risk.severity] : risk.severity}
                   </span>
                 </div>
@@ -299,7 +299,7 @@ export function PortfolioResult({ portfolio, logoMap, replacedTickers, thesis, o
                 {risk.affected_holdings.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {risk.affected_holdings.map((tk) => (
-                      <span key={tk} className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-muted/50 text-muted-foreground/85">
+                      <span key={tk} className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-muted/50 text-muted-foreground/85">
                         {tk}
                       </span>
                     ))}
@@ -359,7 +359,7 @@ export function PortfolioResult({ portfolio, logoMap, replacedTickers, thesis, o
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <Compass className="h-4 w-4 text-muted-foreground/80" />
-                <span className="text-[10px] uppercase tracking-widest text-muted-foreground/85 font-semibold">
+                <span className="text-[11px] uppercase tracking-widest text-muted-foreground/85 font-semibold">
                   {isSimplified ? 'How balanced is this?' : 'Diversification'}
                 </span>
               </div>
@@ -368,7 +368,7 @@ export function PortfolioResult({ portfolio, logoMap, replacedTickers, thesis, o
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <RefreshCw className="h-4 w-4 text-muted-foreground/80" />
-                <span className="text-[10px] uppercase tracking-widest text-muted-foreground/85 font-semibold">
+                <span className="text-[11px] uppercase tracking-widest text-muted-foreground/85 font-semibold">
                   {isSimplified ? 'When to revisit' : 'Rebalance Trigger'}
                 </span>
               </div>
@@ -377,7 +377,7 @@ export function PortfolioResult({ portfolio, logoMap, replacedTickers, thesis, o
           </div>
 
           <div className="mt-6 flex items-center justify-between flex-wrap gap-3 pt-4 border-t border-border/30">
-            <p className="text-[10px] text-muted-foreground/80 select-none flex-1 min-w-[200px]">
+            <p className="text-[11px] text-muted-foreground/80 select-none flex-1 min-w-[200px]">
               Constructed by Claude Sonnet 4.6. Not investment advice — independent research is required.
             </p>
             <div className="flex items-center gap-2 flex-wrap">
@@ -483,7 +483,7 @@ function HoldingRow({
                 {holding.ticker}
               </Link>
               <span
-                className={cn('text-[9px] uppercase tracking-widest font-semibold px-1.5 py-0.5 rounded border whitespace-nowrap', ROLE_STYLES[holding.role])}
+                className={cn('text-[11px] uppercase tracking-widest font-semibold px-1.5 py-0.5 rounded border whitespace-nowrap', ROLE_STYLES[holding.role])}
                 title={!isSimplified ? undefined : holding.role}
               >
                 {isSimplified ? ROLE_PLAIN_LABEL[holding.role] : holding.role}
@@ -506,9 +506,9 @@ function HoldingRow({
                 </div>
                 <TermTooltip
                   term="Thesis exposure"
-                  className="text-[9px] text-muted-foreground/80 tabular-nums"
+                  className="text-[11px] text-muted-foreground/80 tabular-nums"
                 />
-                <span className="text-[9px] text-muted-foreground/80 tabular-nums">
+                <span className="text-[11px] text-muted-foreground/80 tabular-nums">
                   {holding.thesis_exposure_score}/10
                 </span>
               </div>
@@ -544,17 +544,17 @@ function HoldingRow({
         {expanded && (
           <div className="mt-3.5 pt-3.5 border-t border-border/30 space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
             <div>
-              <p className="text-[10px] uppercase tracking-widest text-muted-foreground/85 font-semibold mb-1.5">
+              <p className="text-[11px] uppercase tracking-widest text-muted-foreground/85 font-semibold mb-1.5">
                 {isSimplified ? 'Why this stock' : 'Rationale'}
               </p>
               <p className="text-sm text-foreground/80 leading-relaxed">{holding.rationale}</p>
             </div>
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <p className="text-[10px] uppercase tracking-widest text-muted-foreground/85 font-semibold">
+                <p className="text-[11px] uppercase tracking-widest text-muted-foreground/85 font-semibold">
                   {isSimplified ? 'Main risk' : 'Key Risk'}
                 </p>
-                <span className={cn('text-[9px] uppercase tracking-widest font-semibold px-1.5 py-0.5 rounded border whitespace-nowrap', SEVERITY_STYLES[holding.risk_level])}>
+                <span className={cn('text-[11px] uppercase tracking-widest font-semibold px-1.5 py-0.5 rounded border whitespace-nowrap', SEVERITY_STYLES[holding.risk_level])}>
                   {isSimplified ? SEVERITY_PLAIN_LABEL[holding.risk_level] : holding.risk_level}
                 </span>
               </div>
@@ -562,7 +562,7 @@ function HoldingRow({
             </div>
             {holding.subsector_exposure.length > 0 && (
               <div>
-                <p className="text-[10px] uppercase tracking-widest text-muted-foreground/85 font-semibold mb-1.5">
+                <p className="text-[11px] uppercase tracking-widest text-muted-foreground/85 font-semibold mb-1.5">
                   {isSimplified ? 'Areas of the market' : 'Subsector Exposure'}
                 </p>
                 <div className="flex flex-wrap gap-1.5">

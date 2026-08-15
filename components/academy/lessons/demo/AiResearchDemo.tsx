@@ -130,7 +130,7 @@ export function AiResearchDemo({ fixtureId, onResearched, onClose, children }: P
 
             {/* Sources — the teachable point: an answer you can verify */}
             <div data-tour="ai-sources">
-              <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground/80">
+              <p className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground/80">
                 Sources
               </p>
               <div className="flex flex-wrap gap-1.5">

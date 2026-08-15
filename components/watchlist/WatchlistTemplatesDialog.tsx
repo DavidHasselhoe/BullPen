@@ -95,13 +95,13 @@ export function WatchlistTemplatesDialog({ open, onOpenChange, onCreated }: Prop
                     {preview.map((s) => (
                       <span
                         key={s.symbol}
-                        className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground tabular-nums"
+                        className="rounded-md bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground tabular-nums"
                       >
                         {s.symbol}
                       </span>
                     ))}
                     {extra > 0 && (
-                      <span className="px-1 py-0.5 text-[10px] font-medium text-muted-foreground/80">
+                      <span className="px-1 py-0.5 text-[11px] font-medium text-muted-foreground/80">
                         +{extra} more
                       </span>
                     )}

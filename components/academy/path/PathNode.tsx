@@ -45,7 +45,7 @@ export function PathNode({ course, isCurrent, offset, align, circleRef }: Props)
         <Lock className="h-5 w-5 text-muted-foreground/70" />
       )}
       {isProLocked && (
-        <span className="absolute -bottom-1 -right-1 rounded bg-amber-400/15 px-1 py-0.5 text-[8px] font-bold tracking-wide text-amber-500 border border-card">
+        <span className="absolute -bottom-1 -right-1 rounded bg-amber-400/15 px-1 py-0.5 text-[11px] font-bold tracking-wide text-amber-500 border border-card">
           PRO
         </span>
       )}
@@ -64,21 +64,21 @@ export function PathNode({ course, isCurrent, offset, align, circleRef }: Props)
       </div>
       <div className={cn('mt-1 flex flex-wrap items-center gap-1.5', align === 'left' && 'justify-end')}>
         {course.difficulty && (
-          <span className="text-[9px] font-mono font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-muted/50 text-muted-foreground/80">
+          <span className="text-[11px] font-mono font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-muted/50 text-muted-foreground/80">
             {course.difficulty}
           </span>
         )}
         {course.isOptional && (
-          <span className="text-[9px] font-mono font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+          <span className="text-[11px] font-mono font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
             Optional
           </span>
         )}
-        <span className="text-[10px] font-mono text-muted-foreground/70 tabular-nums">
+        <span className="text-[11px] font-mono text-muted-foreground/70 tabular-nums">
           {course.completedLessons}/{course.totalLessons} lessons
         </span>
       </div>
       {isCurrent && (
-        <div className={cn('mt-1.5 inline-flex items-center gap-1 text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-500', align === 'left' && 'flex-row-reverse')}>
+        <div className={cn('mt-1.5 inline-flex items-center gap-1 text-[11px] font-mono font-bold uppercase tracking-wider text-emerald-500', align === 'left' && 'flex-row-reverse')}>
           <Play className="h-2.5 w-2.5 fill-current" />
           {course.completedLessons > 0 ? 'Continue' : 'Start'}
         </div>

@@ -228,7 +228,7 @@ export function NotificationItem({ notification, onMarkRead }: NotificationItemP
               <span className="inline-block ml-1.5 h-1.5 w-1.5 rounded-full bg-primary align-middle" />
             )}
           </p>
-          <span className="text-[10px] text-muted-foreground/85 shrink-0 tabular-nums">
+          <span className="text-[11px] text-muted-foreground/85 shrink-0 tabular-nums">
             {formatRelativeTime(notification.created_at)}
           </span>
         </div>
@@ -237,7 +237,7 @@ export function NotificationItem({ notification, onMarkRead }: NotificationItemP
         </p>
         {/* Source label — where this notification came from / where the card leads. */}
         {source && (
-          <span className="inline-flex items-center gap-0.5 pt-0.5 text-[10px] font-medium text-muted-foreground/80">
+          <span className="inline-flex items-center gap-0.5 pt-0.5 text-[11px] font-medium text-muted-foreground/80">
             {source.label}
             <ChevronRight className="h-2.5 w-2.5" />
           </span>

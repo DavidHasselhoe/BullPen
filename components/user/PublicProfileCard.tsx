@@ -86,7 +86,7 @@ export function PublicProfileCard({ user, className }: PublicProfileCardProps) {
             <p className="text-xs text-muted-foreground truncate">@{user.username}</p>
           )}
           {tier && (
-            <span className={cn('inline-block mt-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full', tier.className)}>
+            <span className={cn('inline-block mt-1 text-[11px] font-semibold px-1.5 py-0.5 rounded-full', tier.className)}>
               {tier.label}
             </span>
           )}
@@ -101,19 +101,19 @@ export function PublicProfileCard({ user, className }: PublicProfileCardProps) {
       {/* Meta badges */}
       <div className="flex flex-wrap gap-1.5 mt-auto">
         {user.experience_level && (
-          <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+          <span className="flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
             <BarChart2 className="h-2.5 w-2.5" />
             {EXPERIENCE_LABELS[user.experience_level]}
           </span>
         )}
         {user.market_focus && (
-          <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+          <span className="flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
             <TrendingUp className="h-2.5 w-2.5" />
             {MARKET_LABELS[user.market_focus]}
           </span>
         )}
         {(user.holdings_count ?? 0) > 0 && (
-          <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+          <span className="flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
             <Briefcase className="h-2.5 w-2.5" />
             {user.holdings_count} stock{user.holdings_count === 1 ? '' : 's'}
           </span>

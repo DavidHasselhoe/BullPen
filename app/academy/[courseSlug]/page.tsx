@@ -83,7 +83,7 @@ export default function CourseOverviewPage() {
         <div className="flex items-center gap-2">
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{course.title}</h1>
           {course.isOptional && (
-            <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-500 shrink-0">
+            <span className="text-[11px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-500 shrink-0">
               Optional
             </span>
           )}
@@ -130,7 +130,7 @@ export default function CourseOverviewPage() {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium text-foreground truncate">{lesson.title}</div>
-                <div className="text-[10px] font-mono uppercase tracking-[0.14em] text-muted-foreground/80">
+                <div className="text-[11px] font-mono uppercase tracking-[0.14em] text-muted-foreground/80">
                   {meta.label}
                 </div>
               </div>
@@ -184,7 +184,7 @@ export default function CourseOverviewPage() {
 
       {completedCount === lessons.length && lessons.length > 0 && (
         <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/[0.06] p-4 text-center">
-          <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-emerald-500 mb-1">
+          <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-emerald-500 mb-1">
             Course complete
           </div>
           <p className="text-sm text-muted-foreground">

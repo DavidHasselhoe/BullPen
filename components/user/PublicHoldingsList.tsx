@@ -42,7 +42,7 @@ export function PublicHoldingsList({ holdings, className }: PublicHoldingsListPr
           />
           <div className="flex flex-col">
             <span className="text-xs font-semibold leading-none text-foreground">{h.symbol}</span>
-            <span className="text-[10px] text-muted-foreground truncate max-w-[120px]">{h.company_name}</span>
+            <span className="text-[11px] text-muted-foreground truncate max-w-[120px]">{h.company_name}</span>
           </div>
         </Link>
       ))}

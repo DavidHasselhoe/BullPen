@@ -42,20 +42,20 @@ function StatusBadge({ status, type }: { status: FeedbackStatus; type: FeedbackT
   const label = statusLabel(status, type);
   if (status === 'pending') {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full border border-border/50 bg-muted/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+      <span className="inline-flex items-center gap-1 rounded-full border border-border/50 bg-muted/40 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
         <Circle className="h-2.5 w-2.5" /> {label}
       </span>
     );
   }
   if (status === 'in_progress') {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full border border-blue-500/25 bg-blue-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-400">
+      <span className="inline-flex items-center gap-1 rounded-full border border-blue-500/25 bg-blue-500/15 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-blue-400">
         <Clock className="h-2.5 w-2.5" /> {label}
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 rounded-full border border-border/50 bg-muted/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-foreground">
+    <span className="inline-flex items-center gap-1 rounded-full border border-border/50 bg-muted/40 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-foreground">
       <CheckCircle2 className="h-2.5 w-2.5" /> {label}
     </span>
   );
@@ -280,7 +280,7 @@ export function AdminFeedbackClient() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="text-[10px] uppercase tracking-widest text-muted-foreground/85 text-left">
+                      <tr className="text-[11px] uppercase tracking-widest text-muted-foreground/85 text-left">
                         <th className="pb-2 font-semibold">Type</th>
                         <th className="pb-2 font-semibold">Title</th>
                         <th className="pb-2 font-semibold">Reporter</th>

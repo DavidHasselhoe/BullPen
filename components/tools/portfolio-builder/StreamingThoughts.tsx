@@ -78,7 +78,7 @@ export function StreamingThoughts({ phase }: Props) {
                 </div>
                 <span
                   className={cn(
-                    'text-[10px] font-semibold uppercase tracking-wider whitespace-nowrap transition-colors duration-300',
+                    'text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap transition-colors duration-300',
                     isDone   && 'text-emerald-400/60',
                     isActive && 'text-foreground/75',
                     !isDone && !isActive && 'text-muted-foreground/80',
@@ -124,7 +124,7 @@ export function StreamingThoughts({ phase }: Props) {
                 <div className="w-2 h-2 rounded-full bg-muted/35" />
                 <div className="w-2 h-2 rounded-full bg-muted/35" />
               </div>
-              <span className="ml-1 text-[9px] font-mono uppercase tracking-widest text-muted-foreground/80">
+              <span className="ml-1 text-[11px] font-mono uppercase tracking-widest text-muted-foreground/80">
                 AI Reasoning
               </span>
               <div className="ml-auto">
@@ -247,7 +247,7 @@ export function StreamingThoughts({ phase }: Props) {
 
       </AnimatePresence>
 
-      <p className="px-5 pb-4 pt-1 text-center text-[10px] text-muted-foreground/80">
+      <p className="px-5 pb-4 pt-1 text-center text-[11px] text-muted-foreground/80">
         Feel free to leave this page — we&apos;ll notify you when it&apos;s ready.
       </p>
     </div>

@@ -53,7 +53,7 @@ export function DemoSurfaceShell({ title, eyebrow, onClose, children }: Props) {
           </span>
           <div className="min-w-0">
             {eyebrow && (
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/80">{eyebrow}</p>
+              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground/80">{eyebrow}</p>
             )}
             <p className="truncate text-sm font-semibold text-foreground">{title}</p>
           </div>

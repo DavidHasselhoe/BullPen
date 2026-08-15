@@ -99,7 +99,7 @@ function ToggleSetting({
           {Icon && <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />}
           <span className="text-sm font-medium text-foreground">{label}</span>
           {badge && (
-            <Badge variant="secondary" className="h-4 px-1.5 text-[10px] font-medium">{badge}</Badge>
+            <Badge variant="secondary" className="h-4 px-1.5 text-[11px] font-medium">{badge}</Badge>
           )}
         </div>
         {description && (
@@ -511,7 +511,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
               {sectionGroups.map((group, gi) => (
                 <div key={gi} className="space-y-1">
                   {group.heading && (
-                    <p className="hidden px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/85 sm:block">
+                    <p className="hidden px-3 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/85 sm:block">
                       {group.heading}
                     </p>
                   )}
@@ -558,7 +558,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-xs font-medium text-foreground">{user.email}</p>
-                  <p className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                  <p className="flex items-center gap-1 text-[11px] text-muted-foreground">
                     {saveStatus === 'saving' ? (
                       <><Loader2 className="h-2.5 w-2.5 animate-spin" />Saving…</>
                     ) : saveStatus === 'saved' ? (

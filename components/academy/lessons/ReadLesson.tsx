@@ -108,7 +108,7 @@ export function ReadLesson({ content, onComplete }: Props) {
           transition={{ duration: 0.25, delay: content.sections.length * 0.06 }}
           className="rounded-2xl border border-amber-400/20 bg-amber-400/[0.04] p-4 sm:p-5"
         >
-          <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-400/70 mb-1.5">
+          <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-amber-400/70 mb-1.5">
             Fun fact
           </div>
           <p className="text-sm text-muted-foreground leading-relaxed">{content.funFact}</p>

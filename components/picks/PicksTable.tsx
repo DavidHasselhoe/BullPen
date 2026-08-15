@@ -202,7 +202,7 @@ export function PicksTable({ picks }: Props) {
 // ─── Headers ─────────────────────────────────────────────────────────────────
 
 const HEADER_BASE =
-  'px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground/80';
+  'px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground/80';
 
 function PlainHeader({ label, className }: { label: string; className?: string }) {
   return <th scope="col" className={cn(HEADER_BASE, 'text-right', className)}>{label}</th>;

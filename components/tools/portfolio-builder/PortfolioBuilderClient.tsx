@@ -322,11 +322,11 @@ function RecentPortfolios({
     <div>
       <div className="flex items-center gap-2 mb-3">
         <Clock className="h-3.5 w-3.5 text-muted-foreground/85" />
-        <span className="text-[10px] uppercase tracking-widest text-muted-foreground/85 font-semibold">
+        <span className="text-[11px] uppercase tracking-widest text-muted-foreground/85 font-semibold">
           {isSearching ? `Matching portfolios` : 'Recent portfolios'}
         </span>
         {total > 0 && (
-          <span className="text-[10px] text-muted-foreground/80 tabular-nums">
+          <span className="text-[11px] text-muted-foreground/80 tabular-nums">
             ({total})
           </span>
         )}

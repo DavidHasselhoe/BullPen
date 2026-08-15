@@ -137,7 +137,7 @@ export function GenerationProgress({ phase, ticker }: Props) {
                   )}
                 </div>
                 <p className={cn(
-                  'text-[9px] mt-1 truncate transition-colors duration-300',
+                  'text-[11px] mt-1 truncate transition-colors duration-300',
                   isDone ? 'text-muted-foreground' : isActive ? 'text-foreground/70' : 'text-muted-foreground/80',
                 )}>
                   {label}
@@ -186,7 +186,7 @@ export function GenerationProgress({ phase, ticker }: Props) {
           ))}
         </div>
 
-        <p className="text-[10px] text-muted-foreground/85 mt-4 text-center">
+        <p className="text-[11px] text-muted-foreground/85 mt-4 text-center">
           This usually takes 20–40 seconds. Feel free to leave this page — we&apos;ll notify you when it&apos;s ready.
         </p>
       </CardContent>

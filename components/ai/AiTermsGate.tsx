@@ -48,7 +48,7 @@ export function AiTermsGate({ onAccept }: AiTermsGateProps) {
       <div className="space-y-1.5">
         <div className="flex items-center justify-center gap-2">
           <p className="text-sm font-semibold text-foreground">Ask Bull</p>
-          <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-500">
+          <span className="text-[11px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-500">
             Beta
           </span>
         </div>

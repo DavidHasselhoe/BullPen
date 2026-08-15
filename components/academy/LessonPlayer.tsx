@@ -140,7 +140,7 @@ export function LessonPlayer({ lesson, courseSlug }: Props) {
       </div>
 
       <div>
-        <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground/80 mb-1.5">
+        <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-muted-foreground/80 mb-1.5">
           {lesson.type}
         </div>
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight leading-tight">
