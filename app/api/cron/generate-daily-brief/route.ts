@@ -7,9 +7,9 @@
  * Idempotent: skips generation if today's brief already exists.
  *
  * Claude prompt credit cost: dominated by web search input tokens, not output — the
- * ~650-word brief is ~2K output tokens. `web_search_20260209` (dynamic filtering) plus
- * a `max_uses` cap keeps raw search-result content from ballooning the resent context
- * across searches; without both, a run can spike to 150K+ input tokens.
+ * ~650-word brief is ~2K output tokens. Each search round resends the accumulated
+ * context, so cost scales with the NUMBER of searches: uncapped runs measured
+ * ~194–277K input tokens ($0.61–0.86). `max_uses` is the lever that bounds it.
  * TwelveData credit cost: ~60–100 credits (earnings calendar x3 + movers + market quotes).
  */
 
@@ -23,10 +23,10 @@ import { logAiCall } from '@/lib/billing/log-ai-call';
 import { checkAnthropicDailySpend } from '@/lib/billing/anthropic-spend-guard';
 import { createDailyBriefReadyNotification } from '@/lib/notifications/notification-creators';
 
-// Bumped from 120s after the 2026-08-13 web_search_20260209 switch — dynamic
-// filtering adds server-side work per search round, and worst-case latency
-// with max_uses:8 could exceed the old ceiling (confirmed live: the first
-// production run on the new tool timed out at exactly 120s, 2026-08-14).
+// 300s is Vercel's ceiling and the hard limit this route lives inside. Under
+// web_search_20250305 the whole invocation historically finished well within
+// 120s, so this is headroom, not a target — see INITIAL_CALL_TIMEOUT_MS below,
+// which deliberately cuts a doomed run off long before this fires.
 export const maxDuration = 300;
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -184,6 +184,55 @@ function withTimeout<T>(promise: PromiseLike<T>, ms: number): Promise<T> {
     promise,
     new Promise<T>((_, reject) => setTimeout(() => reject(new Error(`timed out after ${ms}ms`)), ms)),
   ]);
+}
+
+interface StreamUsage {
+  inputTokens: number;
+  outputTokens: number;
+}
+
+/**
+ * Accumulate token usage off the raw stream events as they arrive.
+ *
+ * Root cause of the 2026-08-14 credit drain: logAiCall() only ran on the
+ * success path, at the end of the try block. Anthropic bills a cancelled
+ * streaming request for everything it consumed before the abort — and this
+ * prompt's server-side web_search loop resends its accumulated context on
+ * every round, so a run that dies at the deadline has already burned ~200K
+ * input tokens (~$0.60). Every one of those runs wrote $0.00 to ai_usage.
+ * checkAnthropicDailySpend() sums that table, so the circuit breaker added
+ * specifically to stop this drain saw zero spend all day and waved through
+ * the next attempt. Six failed runs later the account balance was gone with
+ * no record of where it went.
+ *
+ * Reading usage off the stream (rather than off the final message, which an
+ * aborted call never produces) is what makes the failure path accountable.
+ * `message_start` carries the message's input tokens; `message_delta` carries
+ * output tokens cumulatively *per message*, so we difference successive
+ * deltas to stay correct across the initial + resume pair and to keep a
+ * partial count when the abort lands mid-message.
+ */
+function trackStreamUsage(
+  stream: { on(event: 'streamEvent', handler: (event: unknown) => void): unknown },
+  usage: StreamUsage,
+): void {
+  let lastOutput = 0;
+  stream.on('streamEvent', (event) => {
+    const e = event as {
+      type?: string;
+      message?: { usage?: { input_tokens?: number } };
+      usage?: { output_tokens?: number };
+    };
+    if (e.type === 'message_start') {
+      usage.inputTokens += e.message?.usage?.input_tokens ?? 0;
+      lastOutput = 0;
+      return;
+    }
+    if (e.type === 'message_delta' && typeof e.usage?.output_tokens === 'number') {
+      usage.outputTokens += e.usage.output_tokens - lastOutput;
+      lastOutput = e.usage.output_tokens;
+    }
+  });
 }
 
 /**
@@ -423,16 +472,31 @@ Use live web search to verify the latest news for "Movers & Stories", "Watch Tod
 
   let fullText = '';
   let sources: BriefSource[] = [];
+  const usage: StreamUsage = { inputTokens: 0, outputTokens: 0 };
   try {
-    // max_uses lowered from 8 to 5 (2026-08-14) — each round now does more
-    // server-side work under web_search_20260209's dynamic filtering, so 8
-    // sequential rounds pushed worst-case latency past the function's
-    // duration budget. 5 still comfortably covers this prompt's 3 search
-    // topics (Movers & Stories, Watch Today, Next 24 Hours).
+    // Reverted from web_search_20260209 back to web_search_20250305 on
+    // 2026-08-15. The 08-13 switch was a cost optimization, and it cost us
+    // three days of briefs instead: dynamic filtering runs server-side code
+    // execution on every search round, which trims context but adds wall
+    // clock this route does not have. Evidence — the last brief in
+    // daily_briefs is 2026-08-13, generated at 06:30 UTC that morning, hours
+    // BEFORE the 13:04 switch; every run afterwards died at whatever ceiling
+    // was in place that hour (120s, then 150s, 240s, 300s). Raising the
+    // budget was never going to work, because the real ceiling is Vercel's
+    // 300s function limit, not ours.
+    //
+    // max_uses is kept at 5, which is what we actually wanted from the
+    // switch. Cost here scales with search count (each round resends the
+    // accumulated context), and the old tool supports the cap too — it was
+    // simply never set. 5 covers this prompt's 3 search topics (Movers &
+    // Stories, Watch Today, Next 24 Hours) with room to spare, and should
+    // land under the ~194K uncapped baseline. Verify against ai_usage after
+    // the first successful run rather than assuming.
     const requestParams = {
       model: 'claude-sonnet-4-6' as const,
       max_tokens: 1500,
-      tools: [{ type: 'web_search_20260209' as const, name: 'web_search' as const, max_uses: 5 }],
+      betas: ['web-search-2025-03-05'],
+      tools: [{ type: 'web_search_20250305' as const, name: 'web_search' as const, max_uses: 5 }],
       system: systemPrompt,
       messages: [{ role: 'user' as const, content: userPrompt }],
     };
@@ -460,30 +524,32 @@ Use live web search to verify the latest news for "Movers & Stories", "Watch Tod
     // just our promise chain). withTimeout() is kept as a backstop in case
     // the abort itself doesn't propagate a rejection promptly.
     // Confirmed live 2026-08-14: the AbortSignal fix works — a run that hit
-    // the 150s initial-call budget returned a real, fast 500 ({"error":
-    // "Claude generation failed", "detail": "Request was aborted."})
-    // instead of hanging to Vercel's 300s kill. So the infra hang is fixed;
-    // that run's failure was just genuine — 150s isn't enough wall time for
-    // this prompt's web_search generation to finish. Since cancellation is
-    // now provably reliable (worst case is a clean early return, never a
-    // silent hang), give the initial call most of the remaining budget.
-    // Budget: 240s initial + 40s resume = 280s, leaving ~20s of the 300s
-    // ceiling for data-gathering, prompt building, and the Supabase write.
-    const INITIAL_CALL_TIMEOUT_MS = 240_000;
+    // its budget returned a real, fast 500 ({"error": "Claude generation
+    // failed", "detail": "Request was aborted."}) instead of hanging to
+    // Vercel's 300s kill. That fix stays; it is the reason a bad run now
+    // fails cleanly instead of silently.
+    //
+    // Budget deliberately tightened back from 240s to 180s. Under this tool
+    // the whole invocation historically finished inside a 120s maxDuration,
+    // so 180s is generous headroom for the Anthropic call alone. The reason
+    // not to spend the full remaining budget: a timeout is not free. Anthropic
+    // bills every token consumed before the abort, so a doomed run costs
+    // strictly more the longer we let it sit. 240s bought no extra chance of
+    // success and ~$0.60 of billed tokens per attempt.
+    const INITIAL_CALL_TIMEOUT_MS = 180_000;
     const RESUME_CALL_TIMEOUT_MS = 40_000;
 
     console.log('[generate-daily-brief] starting initial Anthropic call');
-    let final = await withTimeout(
-      anthropic.messages
-        .stream(requestParams, {
-          timeout: INITIAL_CALL_TIMEOUT_MS,
-          maxRetries: 0,
-          signal: AbortSignal.timeout(INITIAL_CALL_TIMEOUT_MS),
-        })
-        .finalMessage(),
-      INITIAL_CALL_TIMEOUT_MS
+    const initialStream = anthropic.beta.messages.stream(requestParams, {
+      timeout: INITIAL_CALL_TIMEOUT_MS,
+      maxRetries: 0,
+      signal: AbortSignal.timeout(INITIAL_CALL_TIMEOUT_MS),
+    });
+    trackStreamUsage(initialStream, usage);
+    let final = await withTimeout(initialStream.finalMessage(), INITIAL_CALL_TIMEOUT_MS);
+    console.log(
+      `[generate-daily-brief] initial call finished, stop_reason=${final.stop_reason}, in=${usage.inputTokens}, out=${usage.outputTokens}`
     );
-    console.log(`[generate-daily-brief] initial call finished, stop_reason=${final.stop_reason}`);
 
     // Server-side tool loops cap at 10 iterations internally; a request that
     // hits the cap comes back with stop_reason: "pause_turn" instead of the
@@ -492,22 +558,19 @@ Use live web search to verify the latest news for "Movers & Stories", "Watch Tod
     // trailing server_tool_use block, no extra prompting needed.
     if (final.stop_reason === 'pause_turn') {
       console.log('[generate-daily-brief] pause_turn — resuming');
-      final = await withTimeout(
-        anthropic.messages
-          .stream(
-            {
-              ...requestParams,
-              messages: [...requestParams.messages, { role: 'assistant', content: final.content }],
-            },
-            {
-              timeout: RESUME_CALL_TIMEOUT_MS,
-              maxRetries: 0,
-              signal: AbortSignal.timeout(RESUME_CALL_TIMEOUT_MS),
-            }
-          )
-          .finalMessage(),
-        RESUME_CALL_TIMEOUT_MS
+      const resumeStream = anthropic.beta.messages.stream(
+        {
+          ...requestParams,
+          messages: [...requestParams.messages, { role: 'assistant', content: final.content }],
+        },
+        {
+          timeout: RESUME_CALL_TIMEOUT_MS,
+          maxRetries: 0,
+          signal: AbortSignal.timeout(RESUME_CALL_TIMEOUT_MS),
+        }
       );
+      trackStreamUsage(resumeStream, usage);
+      final = await withTimeout(resumeStream.finalMessage(), RESUME_CALL_TIMEOUT_MS);
       console.log(`[generate-daily-brief] resume call finished, stop_reason=${final.stop_reason}`);
     }
 
@@ -537,21 +600,44 @@ Use live web search to verify the latest news for "Movers & Stories", "Watch Tod
     fullText = tail.join('').trim();
     sources = dedupeSources(rawCitations.reverse());
 
-    // Log the cron run's cost (no user → null user_id)
+    // Log the cron run's cost (no user → null user_id).
+    // Uses the streamed tally rather than final.usage: on a pause_turn resume,
+    // `final` is only the second message, so final.usage undercounts the run
+    // by whatever the initial call burned.
     try {
       void logAiCall({
         userId: null,
         feature: 'daily_brief',
         model: 'claude-sonnet-4-6',
-        inputTokens: final.usage.input_tokens,
-        outputTokens: final.usage.output_tokens,
-        metadata: { date: todayET },
+        inputTokens: usage.inputTokens,
+        outputTokens: usage.outputTokens,
+        metadata: { date: todayET, searchRounds: requestParams.tools[0].max_uses },
       });
     } catch { /* never block cron on logging */ }
   } catch (err) {
-    console.error('[generate-daily-brief] Anthropic error:', err);
+    const detail = err instanceof Error ? err.message : 'unknown';
+    console.error(
+      `[generate-daily-brief] Anthropic error (billed in=${usage.inputTokens}, out=${usage.outputTokens}):`,
+      err
+    );
+
+    // Awaited, not fire-and-forget: this is the last thing the invocation does
+    // before returning, and a `void` write can lose the race with the function
+    // freezing. Recording the spend is the whole point of this branch — a
+    // failed run that bills tokens but logs nothing is what emptied the
+    // account on 2026-08-14. See trackStreamUsage() above.
+    await logAiCall({
+      userId: null,
+      feature: 'daily_brief',
+      model: 'claude-sonnet-4-6',
+      inputTokens: usage.inputTokens,
+      outputTokens: usage.outputTokens,
+      status: 'error',
+      metadata: { date: todayET, detail },
+    });
+
     return NextResponse.json(
-      { success: false, error: 'Claude generation failed', detail: err instanceof Error ? err.message : 'unknown' },
+      { success: false, error: 'Claude generation failed', detail },
       { status: 500 }
     );
   }
