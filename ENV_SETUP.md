@@ -58,8 +58,10 @@ DISCORD_CHANGELOG_WEBHOOK_URL=https://discord.com/api/webhooks/your-changelog-we
 DISCORD_INSTAGRAM_WEBHOOK_URL=https://discord.com/api/webhooks/your-instagram-webhook
 
 # Instagram automated posting (optional) — see docs/instagram-setup.md for full setup steps
+INSTAGRAM_APP_ID=your-instagram-app-id
+INSTAGRAM_APP_SECRET=your-instagram-app-secret
 INSTAGRAM_ACCESS_TOKEN=your-long-lived-access-token
-INSTAGRAM_BUSINESS_ACCOUNT_ID=your-ig-business-account-id
+INSTAGRAM_USER_ID=your-instagram-scoped-user-id
 
 # Discord notifications (optional) — announces S&P 500 / Nasdaq 100 constituent changes
 # picked up by the weekly index-sync cron. See scripts/sync-index-constituents.ts.

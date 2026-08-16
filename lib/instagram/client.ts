@@ -1,9 +1,17 @@
 /**
- * Instagram (Meta Graph API) publishing client.
+ * Instagram (Instagram Platform API, "Business Login for Instagram") publishing client.
  *
  * Plain fetch() calls, no SDK — matches lib/discord/post-message.ts's
  * precedent for external-platform publishing rather than adding a new
  * dependency for what's a handful of REST calls.
+ *
+ * Deliberately uses the Facebook-Page-free auth path (graph.instagram.com +
+ * an Instagram-scoped user id from Instagram Login) rather than the older
+ * Graph API path that publishes through a linked Facebook Page — this
+ * pipeline only ever needs to publish, never ads/Business Manager features,
+ * so the lighter path is a strict win. See docs/instagram-setup.md for the
+ * one-time OAuth setup and app/api/instagram/oauth/callback/route.ts for the
+ * helper that turns an authorization code into these env vars.
  *
  * Carousel publish is a 3-step async flow (Meta's own design, not ours):
  *   1. One "item container" per image (POST .../media, is_carousel_item=true)
@@ -16,29 +24,29 @@
  * Unlike that client, publishCarousel() does NOT throw when unconfigured —
  * it returns a dry-run result instead, so the rest of the pipeline
  * (generation, rendering, staging, review) is fully testable before real
- * Meta credentials exist. See docs/instagram-setup.md for account setup.
+ * Meta credentials exist.
  */
 
-const GRAPH_API_BASE = 'https://graph.facebook.com/v21.0';
+const GRAPH_API_BASE = 'https://graph.instagram.com/v21.0';
 
 export function isInstagramConfigured(): boolean {
-  return !!(process.env.INSTAGRAM_ACCESS_TOKEN && process.env.INSTAGRAM_BUSINESS_ACCOUNT_ID);
+  return !!(process.env.INSTAGRAM_ACCESS_TOKEN && process.env.INSTAGRAM_USER_ID);
 }
 
 interface InstagramConfig {
   accessToken: string;
-  businessAccountId: string;
+  userId: string;
 }
 
 function getConfig(): InstagramConfig {
   const accessToken = process.env.INSTAGRAM_ACCESS_TOKEN;
-  const businessAccountId = process.env.INSTAGRAM_BUSINESS_ACCOUNT_ID;
-  if (!accessToken || !businessAccountId) {
+  const userId = process.env.INSTAGRAM_USER_ID;
+  if (!accessToken || !userId) {
     throw new Error(
-      'Instagram not configured. Add INSTAGRAM_ACCESS_TOKEN and INSTAGRAM_BUSINESS_ACCOUNT_ID to your environment — see docs/instagram-setup.md.'
+      'Instagram not configured. Add INSTAGRAM_ACCESS_TOKEN and INSTAGRAM_USER_ID to your environment — see docs/instagram-setup.md.'
     );
   }
-  return { accessToken, businessAccountId };
+  return { accessToken, userId };
 }
 
 interface GraphApiError {
@@ -106,12 +114,12 @@ export async function publishCarousel(params: PublishCarouselParams): Promise<Pu
   if (!isInstagramConfigured()) {
     return { dryRun: true };
   }
-  const { accessToken, businessAccountId } = getConfig();
+  const { accessToken, userId } = getConfig();
 
   const childIds: string[] = [];
   for (const imageUrl of params.imageUrls) {
     const item = await graphPost(
-      `/${businessAccountId}/media`,
+      `/${userId}/media`,
       { image_url: imageUrl, is_carousel_item: 'true' },
       accessToken
     );
@@ -119,7 +127,7 @@ export async function publishCarousel(params: PublishCarouselParams): Promise<Pu
   }
 
   const carousel = await graphPost(
-    `/${businessAccountId}/media`,
+    `/${userId}/media`,
     { media_type: 'CAROUSEL', children: childIds.join(','), caption: params.caption },
     accessToken
   );
@@ -128,7 +136,7 @@ export async function publishCarousel(params: PublishCarouselParams): Promise<Pu
   await waitForContainerReady(containerId, accessToken);
 
   const published = await graphPost(
-    `/${businessAccountId}/media_publish`,
+    `/${userId}/media_publish`,
     { creation_id: containerId },
     accessToken
   );

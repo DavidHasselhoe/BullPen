@@ -187,8 +187,10 @@ STRIPE_PRICE_PRO_MONTHLY
 STRIPE_PRICE_PRO_ANNUAL
 DISCORD_CHANGELOG_WEBHOOK_URL  # Discord announcements
 DISCORD_INSTAGRAM_WEBHOOK_URL
-INSTAGRAM_ACCESS_TOKEN         # Automated Instagram content pipeline
-INSTAGRAM_BUSINESS_ACCOUNT_ID
+INSTAGRAM_APP_ID               # Automated Instagram content pipeline
+INSTAGRAM_APP_SECRET
+INSTAGRAM_ACCESS_TOKEN
+INSTAGRAM_USER_ID
 ```
 
 See **[ENV_SETUP.md](./ENV_SETUP.md)** for the complete, current list.

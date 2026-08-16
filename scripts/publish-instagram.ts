@@ -8,7 +8,7 @@
  *
  * Usage: npm run instagram-publish -- --id=<postId>
  *
- * If INSTAGRAM_ACCESS_TOKEN / INSTAGRAM_BUSINESS_ACCOUNT_ID aren't set yet
+ * If INSTAGRAM_ACCESS_TOKEN / INSTAGRAM_USER_ID aren't set yet
  * (see docs/instagram-setup.md), this runs as a dry run: prints what would
  * have been published and exits cleanly without touching the row's status,
  * so the whole pipeline is testable before real Meta credentials exist.
@@ -42,7 +42,7 @@ async function main() {
       process.exit(1);
       break;
     case 'dry_run':
-      console.log('Instagram is not configured (INSTAGRAM_ACCESS_TOKEN / INSTAGRAM_BUSINESS_ACCOUNT_ID unset) — dry run only.\n');
+      console.log('Instagram is not configured (INSTAGRAM_ACCESS_TOKEN / INSTAGRAM_USER_ID unset) — dry run only.\n');
       console.log('Would publish:');
       console.log(`  Caption:\n${result.caption}\n`);
       console.log('  Slides:');
