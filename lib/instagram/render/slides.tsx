@@ -392,12 +392,12 @@ export function EarningsListSlide({ companies, overflowCount = 0, slideIndex, to
         style={{ position: 'absolute', bottom: -30, right: 25, opacity: 0.9 }}
       />
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: m.headerMarginBottom }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: m.headerMarginBottom, zIndex: 1 }}>
         <Wordmark />
         <SlideIndicator index={slideIndex} total={totalSlides} />
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: m.rowGap }}>
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: m.rowGap, zIndex: 1 }}>
         {companies.length === 0 ? (
           <div style={{ display: 'flex', flex: 1, flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
             <div style={{ display: 'flex', fontFamily: 'Instrument Serif', fontStyle: 'italic', fontSize: 44, color: FG, marginBottom: 20 }}>
