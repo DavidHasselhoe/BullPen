@@ -34,6 +34,7 @@
     "add-norwegian-locale": "tsx scripts/add-norwegian-locale.ts",
     "verify-picks-math": "tsx scripts/verify-picks-math.ts",
     "trigger-instagram-earnings": "tsx scripts/trigger-instagram-earnings.ts",
+    "trigger-instagram-earnings-publish": "tsx scripts/trigger-instagram-earnings-publish.ts",
     "instagram-publish": "tsx scripts/publish-instagram.ts",
     "sync-index-constituents": "tsx scripts/sync-index-constituents.ts"
   },

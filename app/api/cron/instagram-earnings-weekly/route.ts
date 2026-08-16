@@ -5,9 +5,10 @@
  * Runs Sunday, ahead of the coming trading week (see
  * .github/workflows/cron-instagram-earnings.yml). Generates the earnings-
  * calendar carousel for next Monday-Friday, stages it in instagram_posts
- * (status: 'ready'), and posts a Discord preview so a human can review
- * before anything actually publishes — see scripts/publish-instagram.ts for
- * that step. This route never calls the Instagram API itself.
+ * (status: 'ready'), and posts a Discord preview. Monday morning,
+ * app/api/cron/instagram-earnings-publish auto-publishes whatever is still
+ * 'ready' — the Discord preview is the review window, not a manual gate
+ * anymore. This route itself never calls the Instagram API.
  *
  * Idempotent per ISO week (period_key): skips if a row already exists.
  *
@@ -20,21 +21,12 @@ import { createServerClient } from '@/lib/supabase/client';
 import { generateEarningsCalendarContent } from '@/lib/instagram/content/earnings-calendar';
 import { totalSlideCount } from '@/lib/instagram/render/slides';
 import { postToDiscord } from '@/lib/discord/post-message';
+import { isoWeekKey } from '@/lib/instagram/period-key';
 import type { EarningsCalendarSlides } from '@/lib/instagram/content/schema';
 
 export const maxDuration = 60;
 
 const CONTENT_TYPE = 'earnings_calendar';
-
-/** ISO 8601 week key, e.g. "2026-W33" — the cron's idempotency key. */
-function isoWeekKey(date: Date): string {
-  const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
-  const dayNum = d.getUTCDay() || 7; // Sunday (0) -> 7
-  d.setUTCDate(d.getUTCDate() + 4 - dayNum); // Thursday of the same ISO week
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  const weekNum = Math.ceil((((d.getTime() - yearStart.getTime()) / 86_400_000) + 1) / 7);
-  return `${d.getUTCFullYear()}-W${String(weekNum).padStart(2, '0')}`;
-}
 
 /**
  * The upcoming Monday-Friday relative to `reference`. Always jumps to a

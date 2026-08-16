@@ -1,6 +1,8 @@
 # Instagram Setup — Automated Content Pipeline
 
-Prerequisite steps to take on Meta's side before `npm run instagram-publish` can actually post anything. Until these are done, the pipeline runs in dry-run mode: content still generates, renders, and stages on schedule (see `app/api/cron/instagram-earnings-weekly/route.ts`), and `scripts/publish-instagram.ts` prints what it would have posted instead of calling the real API.
+Prerequisite steps to take on Meta's side before anything can actually post. Until these are done, the pipeline runs in dry-run mode: content still generates, renders, and stages on schedule (see `app/api/cron/instagram-earnings-weekly/route.ts`), and both the Monday auto-publish cron (`app/api/cron/instagram-earnings-publish/route.ts`) and the manual `scripts/publish-instagram.ts` print what they would have posted instead of calling the real API.
+
+**Once these are set, publishing is automatic** — every Sunday 12:00 UTC stages next week's carousel and posts a Discord preview; every Monday 11:00 UTC publishes whatever is still `status: 'ready'`. There's no manual approval step in between, so the Sunday Discord preview is the only window to catch something wrong before it goes live (delete the row, or run the earnings-web-search step again, before Monday morning).
 
 ## 1. Convert the target account to Business or Creator
 
