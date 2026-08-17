@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
-import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
+import { withAuth, addSecurityHeaders, rejectIfTooLarge } from '@/lib/security/api-security';
 import { checkRateLimit } from '@/lib/security/rate-limiter';
 import { checkQuota } from '@/lib/billing/quotas';
 import { logAiCall } from '@/lib/billing/log-ai-call';
@@ -14,6 +14,9 @@ async function handler(
   _ctx: unknown,
   session: { userId: string }
 ): Promise<NextResponse> {
+  const tooLarge = rejectIfTooLarge(request, 20 * 1024);
+  if (tooLarge) return tooLarge;
+
   // Pro-only feature. The quota config has count=0 for free → returns reason: 'pro_only'.
   // (Historical bug: this route used `account_tier === 'free'` against an INT column,
   //  which never matched. Free users had been slipping through.)

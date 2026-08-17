@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse, after } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
-import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
+import { withAuth, addSecurityHeaders, rejectIfTooLarge } from '@/lib/security/api-security';
 import { checkRateLimit } from '@/lib/security/rate-limiter';
 import { checkQuota } from '@/lib/billing/quotas';
 import { logAiCall } from '@/lib/billing/log-ai-call';
@@ -159,6 +159,9 @@ async function postHandler(
   context: { params: Promise<{ ticker: string }> },
   session: { userId: string }
 ): Promise<NextResponse> {
+  const tooLarge = rejectIfTooLarge(request, 20 * 1024);
+  if (tooLarge) return tooLarge;
+
   const { ticker } = await context.params;
   const symbol = slugToSymbol(ticker).toUpperCase();
 

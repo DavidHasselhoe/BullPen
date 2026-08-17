@@ -6,7 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { runAgent } from '@/lib/ai/agent';
-import { withAuth } from '@/lib/security/api-security';
+import { withAuth, rejectIfTooLarge } from '@/lib/security/api-security';
 import { checkRateLimit } from '@/lib/security/rate-limiter';
 import { checkQuota } from '@/lib/billing/quotas';
 import { logAiCall } from '@/lib/billing/log-ai-call';
@@ -19,6 +19,9 @@ async function handler(
   _ctx: unknown,
   session: { userId: string }
 ) {
+  const tooLarge = rejectIfTooLarge(req, 200 * 1024);
+  if (tooLarge) return tooLarge;
+
   // Spam protection (per-minute)
   const rl = await checkRateLimit(`ai-chat:${session.userId}`, { windowMs: 60_000, maxRequests: 20 });
   if (!rl.allowed) {

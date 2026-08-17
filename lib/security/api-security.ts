@@ -56,6 +56,25 @@ export function withRateLimit(
 }
 
 /**
+ * Rejects a request whose declared Content-Length exceeds maxBytes, before
+ * the body is parsed. Vercel Functions accept up to 100MB by default — fine
+ * for most routes, but AI endpoints turn body size directly into LLM
+ * input-token cost, so they need a tighter budget than the platform default.
+ * Missing Content-Length (some non-browser clients omit it) falls through to
+ * that platform default rather than being blocked outright.
+ */
+export function rejectIfTooLarge(request: NextRequest, maxBytes: number): NextResponse | null {
+  const contentLength = request.headers.get('content-length');
+  if (contentLength && Number(contentLength) > maxBytes) {
+    return NextResponse.json(
+      { error: `Request body too large. Max ${Math.floor(maxBytes / 1024)}KB.` },
+      { status: 413 }
+    );
+  }
+  return null;
+}
+
+/**
  * Validates ticker parameter from route
  */
 export function validateTickerParam(ticker: string | undefined): { valid: boolean; normalized?: string; error?: string } {

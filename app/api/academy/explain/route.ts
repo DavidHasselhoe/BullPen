@@ -8,7 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
-import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
+import { withAuth, addSecurityHeaders, rejectIfTooLarge } from '@/lib/security/api-security';
 import { checkQuota } from '@/lib/billing/quotas';
 import { checkRateLimit } from '@/lib/security/rate-limiter';
 import { logAiCall } from '@/lib/billing/log-ai-call';
@@ -33,6 +33,9 @@ async function handler(
   _ctx: unknown,
   session: { userId: string }
 ): Promise<NextResponse> {
+  const tooLarge = rejectIfTooLarge(req, 10 * 1024);
+  if (tooLarge) return tooLarge;
+
   // ── Per-user daily quota (30/day, applies to all tiers since cache absorbs repeats) ──
   const quota = await checkQuota(session.userId, 'academy_explain');
   if (!quota.allowed) {

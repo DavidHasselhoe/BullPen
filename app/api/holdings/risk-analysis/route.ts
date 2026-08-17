@@ -13,7 +13,7 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import { NextRequest, NextResponse, after } from 'next/server';
-import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
+import { withAuth, addSecurityHeaders, rejectIfTooLarge } from '@/lib/security/api-security';
 import { checkRateLimit } from '@/lib/security/rate-limiter';
 import { checkQuota } from '@/lib/billing/quotas';
 import { logAiCall } from '@/lib/billing/log-ai-call';
@@ -209,6 +209,9 @@ async function runRiskAnalysis(params: {
 // ─── POST: start a new analysis (returns immediately, runs in the background) ─
 
 async function postHandler(req: NextRequest, _context: unknown, session: { userId: string }) {
+  const tooLarge = rejectIfTooLarge(req, 100 * 1024);
+  if (tooLarge) return tooLarge;
+
   const limit = await checkRateLimit(`risk-analysis:${session.userId}`, { windowMs: 60_000, maxRequests: 10 });
   if (!limit.allowed) {
     return addSecurityHeaders(
