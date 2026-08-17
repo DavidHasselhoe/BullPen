@@ -7,6 +7,15 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_MESSAGE_LENGTH = 5000;
 const MAX_NAME_LENGTH = 200;
 
+function escapeHtml(input: string): string {
+  return input
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 async function handler(req: NextRequest): Promise<NextResponse> {
   const body = await req.json().catch(() => null);
 
@@ -41,10 +50,14 @@ async function handler(req: NextRequest): Promise<NextResponse> {
   }
 
   // Fire-and-forget — a failed notification email must never lose the stored submission.
+  // name/email/message are unescaped user input — escape before interpolating into HTML.
+  const safeName = escapeHtml(name);
+  const safeEmail = escapeHtml(email);
+  const safeMessage = escapeHtml(message).replace(/\n/g, '<br>');
   sendEmail({
     to: 'david@hasselo.no',
     subject: `New contact form submission from ${name}`,
-    html: `<p><strong>From:</strong> ${name} (${email})</p><p>${message.replace(/\n/g, '<br>')}</p>`,
+    html: `<p><strong>From:</strong> ${safeName} (${safeEmail})</p><p>${safeMessage}</p>`,
   }).catch((err) => {
     console.error('[contact] notification email failed:', err instanceof Error ? err.message : err);
   });
