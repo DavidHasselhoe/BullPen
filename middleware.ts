@@ -84,9 +84,14 @@ export async function middleware(request: NextRequest) {
   // 'unsafe-eval' is dev-only (Turbopack/webpack HMR relies on eval() for
   // fast refresh) — production builds don't need it, and it fully defeats
   // CSP's main XSS mitigation, so it must never ship to real users.
+  // PostHog's array.js loader lazy-loads its config plus recorder/surveys/
+  // web-vitals sub-bundles from this asset host at init time regardless of
+  // which features are actually enabled — same-origin script-src alone
+  // blocks that fetch outright (not just the unused extras), so it needs an
+  // explicit allowance rather than a client-side config flag.
   const scriptSrc = process.env.NODE_ENV === 'production'
-    ? "script-src 'self' 'unsafe-inline'"
-    : "script-src 'self' 'unsafe-eval' 'unsafe-inline'";
+    ? "script-src 'self' 'unsafe-inline' https://us-assets.i.posthog.com"
+    : "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://us-assets.i.posthog.com";
   const csp = [
     "default-src 'self'",
     scriptSrc,

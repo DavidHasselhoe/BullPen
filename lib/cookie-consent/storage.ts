@@ -7,6 +7,10 @@ interface StoredConsent {
 
 const STORAGE_KEY = 'bullpen_cookie_consent';
 
+/** Fired on `window` whenever consent is set, so listeners (e.g. the PostHog
+ * provider) can react without a page reload — `detail` is the new value. */
+export const COOKIE_CONSENT_CHANGE_EVENT = 'bullpen:cookie-consent-change';
+
 export function getStoredConsent(): CookieConsentValue | null {
   if (typeof window === 'undefined') return null;
   try {
@@ -29,4 +33,5 @@ export function setStoredConsent(value: CookieConsentValue): void {
     // localStorage unavailable (private browsing, quota, disabled) — fail
     // silently; the banner will simply reappear next visit.
   }
+  window.dispatchEvent(new CustomEvent<CookieConsentValue>(COOKIE_CONSENT_CHANGE_EVENT, { detail: value }));
 }

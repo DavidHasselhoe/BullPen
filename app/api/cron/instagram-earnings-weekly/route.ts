@@ -23,6 +23,7 @@ import { generateEarningsCalendarContent } from '@/lib/instagram/content/earning
 import { totalSlideCount } from '@/lib/instagram/render/slides';
 import { postToDiscord } from '@/lib/discord/post-message';
 import { isoWeekKey } from '@/lib/instagram/period-key';
+import { instagramBioLink } from '@/lib/instagram/utm-link';
 import type { EarningsCalendarSlides } from '@/lib/instagram/content/schema';
 
 export const maxDuration = 60;
@@ -122,6 +123,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     `[Slide ${i + 1}](${appUrl}/api/instagram/render/${postId}/${i})`
   ).join(' · ');
 
+  const bioLink = instagramBioLink(CONTENT_TYPE, periodKey);
+
   const webhookUrl = process.env.DISCORD_INSTAGRAM_WEBHOOK_URL;
   if (webhookUrl) {
     try {
@@ -133,6 +136,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
             color: 0x34d399,
             fields: [
               { name: 'Publish', value: `\`npm run instagram-publish -- --id=${postId}\`` },
+              { name: '⚠️ Update bio link before Monday', value: bioLink },
             ],
             timestamp: new Date().toISOString(),
           },

@@ -15,6 +15,7 @@ import { CommandPaletteProvider } from "@/components/command-palette/CommandPale
 import { PendingOnboardingFlush } from "@/components/onboarding/PendingOnboardingFlush";
 import { NotificationToastListener } from "@/components/notifications/NotificationToastListener";
 import { CookieConsentBanner } from "@/components/cookie-consent/CookieConsentBanner";
+import { PostHogProvider } from "@/components/analytics/PostHogProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -108,6 +109,7 @@ export default function RootLayout({
                 <PendingOnboardingFlush />
                 <NotificationToastListener />
                 <CookieConsentBanner />
+                <PostHogProvider />
                 {children}
                 <AIPanelToggle />
                 {process.env.VERCEL === '1' && (

@@ -67,6 +67,12 @@ INSTAGRAM_USER_ID=your-instagram-scoped-user-id
 # picked up by the weekly index-sync cron. See scripts/sync-index-constituents.ts.
 DISCORD_INDEX_SYNC_WEBHOOK_URL=https://discord.com/api/webhooks/your-index-sync-webhook
 
+# PostHog (optional) — product analytics, gated behind the cookie consent banner.
+# Only loads client-side after a visitor clicks "Accept all". Get the project API
+# key at https://us.posthog.com → Project settings → Project API key.
+NEXT_PUBLIC_POSTHOG_KEY=phc_your-project-api-key
+NEXT_PUBLIC_POSTHOG_HOST=https://us.posthog.com
+
 # Optional: override default sender (default: BullPen <hello@updates.bullpen.no>)
 # RESEND_FROM_EMAIL=BullPen <noreply@updates.bullpen.no>
 

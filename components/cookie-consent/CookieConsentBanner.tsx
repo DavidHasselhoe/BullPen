@@ -44,7 +44,7 @@ export function CookieConsentBanner() {
           className="fixed bottom-5 left-4 max-md:[bottom:calc(3.5rem+1.25rem+env(safe-area-inset-bottom))] z-50 w-[calc(100vw-2rem)] max-w-sm rounded-2xl border bg-background p-4 shadow-lg"
         >
           <p className="text-sm text-foreground">
-            {'🍪'} Just the cookies that keep you logged in — no ad trackers here.{' '}
+            {'🍪'} Cookies that keep you logged in, plus optional analytics if you accept.{' '}
             <Link href="/privacy" className="underline underline-offset-2 hover:text-foreground">
               Learn more
             </Link>
