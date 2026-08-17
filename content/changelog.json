@@ -1,5 +1,13 @@
 [
   {
+    "date": "2026-08-17",
+    "entries": [
+      { "type": "new", "text": "Added a temporary lock on your account after several failed login attempts, which lifts automatically after a short wait" },
+      { "type": "improved", "text": "If You Bought Here now lets you set a custom end date instead of always calculating your return through today" },
+      { "type": "improved", "text": "Changing your password now automatically signs you out of your other devices" }
+    ]
+  },
+  {
     "date": "2026-08-15",
     "entries": [
       { "type": "fixed", "text": "Fixed the Daily Brief not generating for the last couple of days" },
