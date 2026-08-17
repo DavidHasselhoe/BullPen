@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { Logo } from '@/components/landing/Atoms';
 import { Footer } from '@/components/landing/Footer';
 import { ContactForm } from '@/components/landing/ContactForm';
-import { PageMascot } from '@/components/legal/PageMascot';
 import '@/components/landing/landing-styles.css';
 
 export const metadata: Metadata = {
@@ -28,7 +27,6 @@ export default function ContactPage() {
 
         <main className="wrap" style={{ padding: '56px 0 96px' }}>
           <div style={{ maxWidth: 480, margin: '0 auto' }}>
-            <PageMascot pose="shrug" className="mb-3" />
             <h1 style={{ fontSize: 32, marginBottom: 8 }}>Contact</h1>
             <p style={{ color: 'var(--fg-muted)', marginBottom: 32 }}>
               Questions, feedback, or something broken? Send us a message.
