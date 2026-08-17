@@ -61,6 +61,15 @@ export async function rset<T>(key: string, value: T, ttlSeconds: number): Promis
   }
 }
 
+/** Delete a cached value. Never throws. */
+export async function rdel(key: string): Promise<void> {
+  try {
+    await client()?.del(key);
+  } catch {
+    // non-fatal
+  }
+}
+
 // ── Market-session-aware TTL for 1D candles ───────────────────────────────────
 
 type MarketSession = 'regular' | 'extended' | 'closed';

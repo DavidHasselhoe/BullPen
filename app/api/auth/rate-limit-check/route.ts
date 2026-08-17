@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { checkRateLimit, getClientIdentifier } from '@/lib/security/rate-limiter';
 import { addSecurityHeaders } from '@/lib/security/api-security';
 import { logSecurityEvent } from '@/lib/security/security-events';
+import { isLockedOut } from '@/lib/security/login-lockout';
 
 /**
  * Login/signup/password-reset all call the Supabase JS SDK directly from the
@@ -27,6 +28,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const limits = LIMITS[action];
   if (!limits || !identifier) {
     return addSecurityHeaders(NextResponse.json({ error: 'Invalid request' }, { status: 400 }));
+  }
+
+  if (action === 'login' && (await isLockedOut(identifier))) {
+    return addSecurityHeaders(
+      NextResponse.json(
+        { allowed: false, error: 'Too many failed attempts. Please wait 15 minutes and try again.' },
+        { status: 429 }
+      )
+    );
   }
 
   const ip = getClientIdentifier(request);

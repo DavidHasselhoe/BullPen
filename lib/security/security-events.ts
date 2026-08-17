@@ -4,7 +4,7 @@
 
 import { createServerClient } from '@/lib/supabase/client';
 
-export type SecurityEventType = 'admin_access_denied' | 'cron_secret_mismatch' | 'auth_rate_limited';
+export type SecurityEventType = 'admin_access_denied' | 'cron_secret_mismatch' | 'auth_rate_limited' | 'account_lockout';
 
 export function logSecurityEvent(
   eventType: SecurityEventType,

@@ -67,6 +67,19 @@ async function checkAuthThrottle(action: 'login' | 'signup' | 'reset', identifie
 }
 
 /**
+ * Records a login outcome for the soft-lockout mechanism (see
+ * lib/security/login-lockout.ts) — fire-and-forget, never blocks the login
+ * flow on its own network round-trip.
+ */
+function reportLoginOutcome(email: string, outcome: 'success' | 'failure'): void {
+  fetch('/api/auth/report-failed-login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ identifier: email, outcome }),
+  }).catch(() => {});
+}
+
+/**
  * Signs up a new user with email and password
  * Creates user in Supabase Auth and public.users table
  */
@@ -310,15 +323,19 @@ export async function signIn(params: SignInParams): Promise<AuthResult> {
     });
 
     if (authError) {
-      const msg = /fetch|network|timeout|abort|signal/i.test(authError.message)
-        ? 'Connection failed. Please check your network and try again.'
-        : authError.message;
+      const isNetworkError = /fetch|network|timeout|abort|signal/i.test(authError.message);
+      // Only count genuine credential failures toward lockout — a dropped
+      // connection isn't evidence of a guessed password.
+      if (!isNetworkError) reportLoginOutcome(params.email, 'failure');
+      const msg = isNetworkError ? 'Connection failed. Please check your network and try again.' : authError.message;
       return { success: false, error: msg };
     }
 
     if (!authData.user) {
       return { success: false, error: 'Failed to sign in' };
     }
+
+    reportLoginOutcome(params.email, 'success');
 
     const userId = authData.user.id;
     const email = authData.user.email ?? params.email;
