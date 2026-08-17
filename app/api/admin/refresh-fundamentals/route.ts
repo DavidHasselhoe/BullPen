@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
 import { getTier, isAdmin } from '@/lib/billing/tier';
+import { logSecurityEvent } from '@/lib/security/security-events';
 import { checkAndInvalidateFundamentals } from '@/lib/cache/fundamentals-freshness';
 import { waitForCronCreditBudget } from '@/lib/twelvedata/credit-budget';
 
@@ -42,6 +43,7 @@ async function handler(
   // Admin-only — same 404 strategy as /admin/costs so the route is invisible
   // to non-admins (anonymous, free, or pro users).
   if (!isAdmin(await getTier(session.userId))) {
+    logSecurityEvent('admin_access_denied', { userId: session.userId, path: '/api/admin/refresh-fundamentals' });
     return addSecurityHeaders(
       NextResponse.json({ error: 'not_found' }, { status: 404 })
     );

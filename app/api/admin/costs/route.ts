@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
 import { getTier, isAdmin } from '@/lib/billing/tier';
+import { logSecurityEvent } from '@/lib/security/security-events';
 
 export interface CostsResponse {
   totalUsd7d: number;
@@ -41,6 +42,7 @@ async function handler(
   // Admin-only. Return 404 so the route is indistinguishable from a missing one
   // — same UX as the page-level `notFound()` guard.
   if (!isAdmin(await getTier(session.userId))) {
+    logSecurityEvent('admin_access_denied', { userId: session.userId, path: '/api/admin/costs' });
     return addSecurityHeaders(NextResponse.json({ error: 'not_found' }, { status: 404 }));
   }
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
 import { getTier, isAdmin } from '@/lib/billing/tier';
+import { logSecurityEvent } from '@/lib/security/security-events';
 import type { FeedbackStatus } from '../route';
 
 const VALID_STATUSES: FeedbackStatus[] = ['pending', 'in_progress', 'resolved'];
@@ -18,6 +19,7 @@ async function handler(
   session: { userId: string }
 ): Promise<NextResponse> {
   if (!isAdmin(await getTier(session.userId))) {
+    logSecurityEvent('admin_access_denied', { userId: session.userId, path: '/api/admin/feedback/[id]' });
     return addSecurityHeaders(NextResponse.json({ error: 'not_found' }, { status: 404 }));
   }
 
