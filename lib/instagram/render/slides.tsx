@@ -227,7 +227,14 @@ function lerp(n: number, spacious: number, compact: number): number {
  */
 function rowMetrics(n: number): RowMetrics {
   return {
-    badgeSize: Math.round(lerp(n, 62, 40)),
+    // NOT bumped alongside the logo fill-fix (2026-08-17) — tried 62/40 and
+    // it ate into the overflow-fix's height margin enough that the last
+    // row's card started touching the mascot's fixed-position corner
+    // illustration (verified via a cropped full-res render). The `cover`
+    // fill change alone already makes logos read as bigger since they now
+    // fill the whole circle instead of floating small inside it — that's
+    // the fix "bigger logos" actually needed, not a larger circle.
+    badgeSize: Math.round(lerp(n, 56, 34)),
     rowPaddingV: Math.round(lerp(n, 20, 6)),
     rowPaddingH: Math.round(lerp(n, 28, 16)),
     rowGap: Math.round(lerp(n, 20, 6)),
