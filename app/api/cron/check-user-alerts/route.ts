@@ -15,6 +15,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { logSecurityEvent } from '@/lib/security/security-events';
 import { createServerClient } from '@/lib/supabase/client';
 import { getStockQuotes, getStatistics } from '@/lib/twelvedata/twelvedata-client';
 import { createUserAlertNotification } from '@/lib/notifications/notification-creators';
@@ -83,6 +84,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const cronSecret = process.env.CRON_SECRET;
   const authHeader = request.headers.get('authorization');
   if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+    logSecurityEvent('cron_secret_mismatch', { path: '/api/cron/check-user-alerts' });
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

@@ -17,6 +17,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { logSecurityEvent } from '@/lib/security/security-events';
 import { createServerClient } from '@/lib/supabase/client';
 import { generateEarningsCalendarContent } from '@/lib/instagram/content/earnings-calendar';
 import { totalSlideCount } from '@/lib/instagram/render/slides';
@@ -50,6 +51,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const cronSecret = process.env.CRON_SECRET;
   const authHeader = request.headers.get('authorization');
   if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+    logSecurityEvent('cron_secret_mismatch', { path: '/api/cron/instagram-earnings-weekly' });
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

@@ -14,6 +14,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { logSecurityEvent } from '@/lib/security/security-events';
 import { createServerClient } from '@/lib/supabase/client';
 import { getUsStocksList, TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
 import { SP500_TICKERS } from '@/lib/market-data/sp500';
@@ -36,6 +37,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const cronSecret = process.env.CRON_SECRET;
   const authHeader = request.headers.get('authorization');
   if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+    logSecurityEvent('cron_secret_mismatch', { path: '/api/screener/seed-universe' });
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

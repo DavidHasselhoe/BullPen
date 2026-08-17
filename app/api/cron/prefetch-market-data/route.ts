@@ -39,6 +39,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/client';
+import { logSecurityEvent } from '@/lib/security/security-events';
 import {
   batchFetch,
   getIncomeStatement,
@@ -524,6 +525,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const cronSecret = process.env.CRON_SECRET;
   const authHeader = request.headers.get('authorization');
   if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+    logSecurityEvent('cron_secret_mismatch', { path: '/api/cron/prefetch-market-data' });
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
