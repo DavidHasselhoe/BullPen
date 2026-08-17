@@ -227,7 +227,7 @@ function lerp(n: number, spacious: number, compact: number): number {
  */
 function rowMetrics(n: number): RowMetrics {
   return {
-    badgeSize: Math.round(lerp(n, 56, 34)),
+    badgeSize: Math.round(lerp(n, 62, 40)),
     rowPaddingV: Math.round(lerp(n, 20, 6)),
     rowPaddingH: Math.round(lerp(n, 28, 16)),
     rowGap: Math.round(lerp(n, 20, 6)),
@@ -249,9 +249,14 @@ function rowMetrics(n: number): RowMetrics {
  *  (see resolveLogoUrl in earnings-calendar.ts), else ticker initials —
  *  same two-state idea as components/company/CompanyLogo.tsx, just without
  *  the onError swap (Satori has no such event; the fallback decision is
- *  already made at generation time). Just a thin ring, no fill — on a white
- *  slide, a logo (almost always itself on a white/transparent background)
- *  sits directly on the page with no boxed-in mismatch. */
+ *  already made at generation time).
+ *
+ *  Fills the circle edge-to-edge (`cover`, sized to the full badge) rather
+ *  than floating small and letterboxed inside it (`contain` at size-14) —
+ *  the avatar-crop treatment users actually recognize from every social app,
+ *  per direct feedback that the old inset read as a mismatched square stuck
+ *  inside a circle rather than a filled logo mark. The parent's
+ *  `overflow: hidden` + full border-radius does the actual circular clip. */
 function CompanyBadge({ symbol, logoUrl, size }: { symbol: string; logoUrl: string | null; size: number }) {
   return (
     <div
@@ -263,7 +268,7 @@ function CompanyBadge({ symbol, logoUrl, size }: { symbol: string; logoUrl: stri
     >
       {logoUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={logoUrl} alt={`${symbol} logo`} width={size - 14} height={size - 14} style={{ objectFit: 'contain' }} />
+        <img src={logoUrl} alt={`${symbol} logo`} width={size} height={size} style={{ objectFit: 'cover' }} />
       ) : (
         <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: Math.round(size * 0.32), color: MUTED }}>
           {symbol.slice(0, 2)}
@@ -452,16 +457,9 @@ export function EarningsListSlide({ companies, overflowCount = 0, slideIndex, to
         )}
       </div>
 
-      {companies.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 24 }}>
-          {overflowCount > 0 && (
-            <div style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: 22, color: MUTED }}>
-              +{overflowCount} more this week on BullPen
-            </div>
-          )}
-          <div style={{ display: 'flex', fontFamily: 'Geist', fontSize: 20, color: MUTED_DIM }}>
-            Swipe for the full calendar →
-          </div>
+      {overflowCount > 0 && (
+        <div style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: 22, color: MUTED, marginTop: 24 }}>
+          +{overflowCount} more this week on BullPen
         </div>
       )}
     </div>
