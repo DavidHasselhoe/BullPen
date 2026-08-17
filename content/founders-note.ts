@@ -39,41 +39,21 @@ export const FOUNDERS_NOTE: FoundersNote = {
 
   heading: 'A note from the founder',
 
-  // David's own words, lightly edited. The casual register is deliberate and
-  // load-bearing ("just cause", "you guys", "tons of questions"): this is the
-  // one place on the site that sounds like a person rather than a company, so
-  // resist smoothing it into marketing prose.
-  //
-  // Paragraph 2 is the strongest thing here and should be left alone. Opening
-  // on a mistake rather than on credentials is what makes the note land.
-  //
-  // Edits applied: capitalised "i"; split one block into paragraphs; curly
-  // quotes; semicolon to colon in the list; "where I can" to "where you can"
-  // (the original accidentally described the product as being for its author);
-  // "Combining my 3 years..." given a subject, since it was a fragment;
-  // "utilize" to "use", the one word that broke the register; and "platform"
-  // reduced from five uses to one.
-  //
-  // Two ordering decisions worth preserving:
-  //   · Investing leads the credentials, the developer years follow. Attaching
-  //     the precise number ("3 years") to the dev work while investing got a
-  //     vague "years of" made the wrong one read as the headline stat, on a
-  //     page whose readers care about the investing.
-  //   · The launch date stays, "it is still fairly new" is gone. The date is a
-  //     fact that stays true; a claim about being new is an assessment that
-  //     expires, and nobody will remember to update it. Readers date it
-  //     themselves, which is more credible anyway. Don't reintroduce
-  //     time-relative phrasing here.
+  // David's own words. The casual register is deliberate and load-bearing:
+  // this is the one place on the site that sounds like a person rather than
+  // a company, so resist smoothing it into marketing prose. No em dashes,
+  // per the site-wide rule against them in user-facing copy (CLAUDE.md); the
+  // clauses they'd normally join are recast with a comma or a colon instead.
   paragraphs: [
-    'Hello! My name is David and I am the founder and developer working on BullPen.',
+    'Hello! I’m David, founder and developer of BullPen.',
 
-    'When I first started investing, I didn’t really have a clue what I was doing. I bought my first shares in a company I knew nothing about, just cause it “looked good”, but there was no conviction or reasoning whatsoever. I lost a lot of money from this and felt like investing wasn’t for me.',
+    'When I started investing, I bought my first shares in a company I knew absolutely nothing about, just because the name looked promising. I lost a significant chunk of money on that single mistake, and it felt like investing wasn’t for me.',
 
-    'I still kept going, and after investing for many years I learned a lot on my own: videos, courses, forums, and asking tons of questions.',
+    'But I kept going. Over the next five years, I learned from YouTube videos, courses, forums, and a lot of trial and error. The frustrating part? I had to piece it together from five different places: learning here, tracking there, researching somewhere else entirely. It was fragmented and exhausting.',
 
-    'So now I am creating the very platform I wish I had when I was just getting into investing, somewhere you can not only learn, but research and track companies. I am combining years of investing with my 3 years as a systems developer into one place for you guys to use when picking your next stock.',
+    'That’s why I built BullPen. For the past three years as a systems developer, I’ve been obsessed with building tools that actually work for real people. And now I’m combining everything I learned as an investor into one platform where you can learn the fundamentals, research companies properly, and track your portfolio, without the clutter or confusion.',
 
-    'The first version went out in November 2025 and I have been improving it ever since. The goal is to make something genuinely useful, where the average person can learn how to invest, because it doesn’t have to be that hard!',
+    'The first version launched in November 2025. Since then, I’ve been rebuilding it based on what users actually need. Because here’s the thing: investing doesn’t have to be complicated. You just need the right tools and the right knowledge to start.',
   ],
 
   signature: {
