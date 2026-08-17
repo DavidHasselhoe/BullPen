@@ -76,6 +76,18 @@ function ResetPasswordContent() {
       return;
     }
 
+    // Revoke any other active sessions — this flow runs when a user suspects
+    // their account is compromised, so a stolen session on another device
+    // shouldn't survive the reset. Best-effort: the password is already set.
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.access_token) {
+      fetch('/api/auth/invalidate-other-sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accessToken: session.access_token }),
+      }).catch(() => {});
+    }
+
     setStatus('done');
     setTimeout(() => router.replace('/dashboard'), 1800);
   };

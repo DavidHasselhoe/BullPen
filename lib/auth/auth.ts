@@ -42,6 +42,30 @@ export interface AuthResult {
   requiresEmailConfirmation?: boolean;
 }
 
+const RATE_LIMITED_ERROR = 'Too many attempts. Please wait a few minutes and try again.';
+
+/**
+ * Server-side throttle check for login/signup/reset (see
+ * app/api/auth/rate-limit-check/route.ts for why this exists as a separate
+ * gate rather than being built into Supabase's own client call). Fails open
+ * on network error — a throttle check that can't reach our own server
+ * shouldn't block auth entirely, and Supabase has its own platform-level
+ * rate limits as a backstop.
+ */
+async function checkAuthThrottle(action: 'login' | 'signup' | 'reset', identifier: string): Promise<boolean> {
+  try {
+    const res = await fetch('/api/auth/rate-limit-check', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, identifier }),
+    });
+    if (res.status === 429) return false;
+    return true;
+  } catch {
+    return true;
+  }
+}
+
 /**
  * Signs up a new user with email and password
  * Creates user in Supabase Auth and public.users table
@@ -50,6 +74,10 @@ export async function signUp(params: SignUpParams): Promise<AuthResult> {
   const supabase = createBrowserClient();
 
   try {
+    if (!(await checkAuthThrottle('signup', params.email))) {
+      return { success: false, error: RATE_LIMITED_ERROR };
+    }
+
     // Step 1: Create user in Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: params.email,
@@ -57,6 +85,35 @@ export async function signUp(params: SignUpParams): Promise<AuthResult> {
     });
 
     if (authError) {
+      // Supabase reports a duplicate signup distinctly from other failures
+      // (code 'user_already_exists'/'email_exists', or message text on older
+      // SDK/server versions). Surfacing that verbatim lets an attacker
+      // enumerate registered emails via the signup form, so it gets the same
+      // generic "check your email" response as a fresh signup — indistinguishable
+      // from the outside, same as the password-reset-request flow already is.
+      const code = (authError as { code?: string }).code;
+      const isDuplicate =
+        code === 'user_already_exists' ||
+        code === 'email_exists' ||
+        /already registered|already exists/i.test(authError.message);
+      if (isDuplicate) {
+        return {
+          success: true,
+          user: {
+            id: '',
+            email: params.email,
+            username: null,
+            full_name: null,
+            avatar_url: null,
+            role: 'user',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            last_login_at: null,
+          } as AuthUser,
+          requiresEmailConfirmation: true,
+        };
+      }
+
       const msg = /fetch|network|timeout/i.test(authError.message)
         ? 'Connection failed. Please check your network and try again.'
         : authError.message;
@@ -243,6 +300,10 @@ export async function signIn(params: SignInParams): Promise<AuthResult> {
   const supabase = createBrowserClient();
 
   try {
+    if (!(await checkAuthThrottle('login', params.email))) {
+      return { success: false, error: RATE_LIMITED_ERROR };
+    }
+
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email: params.email,
       password: params.password,
@@ -414,6 +475,10 @@ export async function sendPasswordResetEmail(email: string): Promise<{ success: 
   const supabase = createBrowserClient();
 
   try {
+    if (!(await checkAuthThrottle('reset', email))) {
+      return { success: false, error: RATE_LIMITED_ERROR };
+    }
+
     const redirectTo = new URL('/auth/reset-password', window.location.origin).toString();
     const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
 

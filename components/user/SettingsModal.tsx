@@ -442,6 +442,19 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
         setError(updateError.message || 'Failed to update password.');
         return;
       }
+
+      // Revoke any other active sessions so a stolen refresh token doesn't
+      // survive this password change. Best-effort — the password itself is
+      // already changed, so a failure here shouldn't block the success state.
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        fetch('/api/auth/invalidate-other-sessions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ accessToken: session.access_token }),
+        }).catch(() => {});
+      }
+
       setPasswordSuccess(true);
       setPasswordNew('');
       setPasswordConfirm('');
