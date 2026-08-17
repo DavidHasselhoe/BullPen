@@ -110,6 +110,14 @@ export async function GET(
     width: SLIDE_WIDTH,
     height: SLIDE_HEIGHT,
     fonts,
-    headers: { 'Cache-Control': 'public, max-age=31536000, immutable' },
+    // Was `immutable, max-age=31536000` — a same-URL cache with no version
+    // key, so a code fix to the rendering component silently never took
+    // effect for an already-cached post (the 2026-08-17 mascot z-index bug:
+    // Discord's link preview cached the buggy render before the fix
+    // deployed, and the CDN kept serving those bytes straight through the
+    // Monday publish). 1 hour comfortably covers the review-to-publish
+    // window (staged Sunday, published Monday) while letting a same-day
+    // fix actually reach the next fetch.
+    headers: { 'Cache-Control': 'public, max-age=3600' },
   });
 }
