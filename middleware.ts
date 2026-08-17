@@ -18,6 +18,23 @@ export async function middleware(request: NextRequest) {
   // read the session from the cookie without re-verifying it themselves.
   const isApiRoute = request.nextUrl.pathname.startsWith('/api/');
 
+  // CSRF defense-in-depth: the Supabase session cookie is SameSite=Lax
+  // (required so the browser client can read it — see @supabase/ssr's
+  // DEFAULT_COOKIE_OPTIONS), which already blocks the classic cross-site
+  // form-post/fetch CSRF case, but nothing else backstops it. Browsers set
+  // Origin on every same-origin AND cross-origin POST/PUT/PATCH/DELETE, so a
+  // mismatch here is either a forged cross-site request or a non-browser
+  // caller spoofing the header — legitimate non-browser callers (Stripe
+  // webhooks, GitHub Actions crons) don't send an Origin header at all, so
+  // this only blocks requests that DO send one and it doesn't match.
+  const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+  if (isApiRoute && MUTATING_METHODS.has(request.method)) {
+    const origin = request.headers.get('origin');
+    if (origin && origin !== request.nextUrl.origin) {
+      return NextResponse.json({ error: 'Invalid origin' }, { status: 403 });
+    }
+  }
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!isApiRoute && supabaseUrl && supabaseAnonKey) {
