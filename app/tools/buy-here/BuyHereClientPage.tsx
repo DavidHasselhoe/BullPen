@@ -252,6 +252,7 @@ export default function BuyHereClientPage() {
   const [amount, setAmount] = useState('10,000');
   const [timeIndex, setTimeIndex] = useState<number | null>(2);
   const [customDate, setCustomDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
   const [compareSpy, setCompareSpy] = useState(true);
   const [result, setResult] = useState<BuyHereResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -310,6 +311,12 @@ export default function BuyHereClientPage() {
     return fallback.toISOString().slice(0, 10);
   };
 
+  // Presets always run through today; only "Custom" lets the end date move.
+  const getToDate = (): string => {
+    if (timeIndex === null && customEndDate) return customEndDate;
+    return new Date().toISOString().slice(0, 10);
+  };
+
   const handleCalculate = async () => {
     if (!selectedStock) {
       setResult({ success: false, error: 'Select a stock from the search' });
@@ -335,6 +342,7 @@ export default function BuyHereClientPage() {
           ticker: selectedStock.ticker,
           amount: amtUSD,
           from: getFromDate(),
+          to: getToDate(),
           compareSpy,
         }),
       });
@@ -446,6 +454,8 @@ export default function BuyHereClientPage() {
                 onChange={setTimeIndex}
                 customDate={customDate}
                 onCustomDateChange={setCustomDate}
+                customEndDate={customEndDate}
+                onCustomEndDateChange={setCustomEndDate}
               />
             </div>
 

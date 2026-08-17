@@ -16,11 +16,15 @@ const OPTIONS: { label: string; years: number | null }[] = [
   { label: 'Custom', years: null },
 ];
 
+const TODAY = new Date().toISOString().slice(0, 10);
+
 interface TimeSelectorProps {
   value: number | null;
   onChange: (index: number | null) => void;
   customDate?: string;
   onCustomDateChange?: (date: string) => void;
+  customEndDate?: string;
+  onCustomEndDateChange?: (date: string) => void;
   className?: string;
 }
 
@@ -29,6 +33,8 @@ export function TimeSelector({
   onChange,
   customDate = '',
   onCustomDateChange,
+  customEndDate = '',
+  onCustomEndDateChange,
   className,
 }: TimeSelectorProps) {
   return (
@@ -40,10 +46,15 @@ export function TimeSelector({
             type="button"
             onClick={() => {
               onChange(opt.years === null ? null : i);
-              if (opt.years === null && !customDate && onCustomDateChange) {
-                const d = new Date();
-                d.setFullYear(d.getFullYear() - 5);
-                onCustomDateChange(d.toISOString().slice(0, 10));
+              if (opt.years === null) {
+                if (!customDate && onCustomDateChange) {
+                  const d = new Date();
+                  d.setFullYear(d.getFullYear() - 5);
+                  onCustomDateChange(d.toISOString().slice(0, 10));
+                }
+                if (!customEndDate && onCustomEndDateChange) {
+                  onCustomEndDateChange(TODAY);
+                }
               }
             }}
             className={cn(
@@ -73,12 +84,27 @@ export function TimeSelector({
           exit={{ opacity: 0, height: 0 }}
           className="overflow-hidden"
         >
-          <DatePicker
-            value={customDate}
-            onChange={(date) => onCustomDateChange?.(date)}
-            max={new Date().toISOString().slice(0, 10)}
-            className="max-w-xs h-10 rounded-lg"
-          />
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="space-y-1">
+              <span className="text-xs text-muted-foreground">From</span>
+              <DatePicker
+                value={customDate}
+                onChange={(date) => onCustomDateChange?.(date)}
+                max={customEndDate || TODAY}
+                className="max-w-xs h-10 rounded-lg"
+              />
+            </div>
+            <div className="space-y-1">
+              <span className="text-xs text-muted-foreground">To</span>
+              <DatePicker
+                value={customEndDate || TODAY}
+                onChange={(date) => onCustomEndDateChange?.(date)}
+                min={customDate}
+                max={TODAY}
+                className="max-w-xs h-10 rounded-lg"
+              />
+            </div>
+          </div>
         </motion.div>
       )}
     </div>

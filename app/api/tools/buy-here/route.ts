@@ -8,6 +8,7 @@ export interface BuyHereRequest {
   ticker: string;
   amount: number;
   from: string; // YYYY-MM-DD
+  to?: string; // YYYY-MM-DD, defaults to today
   compareSpy?: boolean;
 }
 
@@ -41,7 +42,7 @@ export interface BuyHereResult {
 async function buyHereHandler(request: NextRequest) {
   try {
     const body: BuyHereRequest = await request.json();
-    const { ticker, amount, from, compareSpy = true } = body;
+    const { ticker, amount, from, to, compareSpy = true } = body;
 
     if (!ticker || !amount || amount <= 0 || !from) {
       return NextResponse.json(
@@ -52,11 +53,24 @@ async function buyHereHandler(request: NextRequest) {
 
     const symbol = ticker.toUpperCase().trim();
     const fromDate = new Date(from);
-    const toDate = new Date();
+    const now = new Date();
+    const toDate = to ? new Date(to) : now;
 
-    if (isNaN(fromDate.getTime()) || fromDate > toDate) {
+    if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
       return NextResponse.json(
-        { success: false, error: 'Invalid from date' },
+        { success: false, error: 'Invalid from or to date' },
+        { status: 400 }
+      );
+    }
+    if (toDate > now) {
+      return NextResponse.json(
+        { success: false, error: 'End date cannot be in the future' },
+        { status: 400 }
+      );
+    }
+    if (fromDate >= toDate) {
+      return NextResponse.json(
+        { success: false, error: 'From date must be before the end date' },
         { status: 400 }
       );
     }
