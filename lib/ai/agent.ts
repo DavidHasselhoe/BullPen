@@ -12,6 +12,7 @@ import type { UIMessage } from 'ai';
 import { SYSTEM_PROMPT } from './systemPrompt';
 import { BULLPEN_TOOLS, createAlertTool, getPortfolioContextTool } from './tools';
 import { languageName } from '@/lib/i18n/language-names';
+import { assertNoMutatingToolsWithExternalContent } from './tool-boundary';
 
 interface AIContext {
   tickers: string[];
@@ -80,6 +81,7 @@ export async function runAgent(
     ...(userId ? { createAlert: createAlertTool(userId) } : {}),
     ...(userId && allowHoldingsContext ? { getPortfolioContext: getPortfolioContextTool(userId) } : {}),
   };
+  assertNoMutatingToolsWithExternalContent(Object.keys(tools));
 
   const result = streamText({
     model: openai('gpt-4o'),
