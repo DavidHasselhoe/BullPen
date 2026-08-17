@@ -200,10 +200,10 @@ interface RowMetrics {
 }
 
 /** Linear interpolation from a "spacious" value (<=6 companies, today's
- *  typical week) down to a "compact" value (>=18, a busy peak-earnings
+ *  typical week) down to a "compact" value (>=15, a busy peak-earnings
  *  week), clamped outside that range. */
 function lerp(n: number, spacious: number, compact: number): number {
-  const t = Math.min(1, Math.max(0, (n - 6) / (18 - 6)));
+  const t = Math.min(1, Math.max(0, (n - 6) / (15 - 6)));
   return spacious + (compact - spacious) * t;
 }
 
@@ -211,27 +211,37 @@ function lerp(n: number, spacious: number, compact: number): number {
  * Row sizing scales down smoothly as the week's company count grows, so
  * every week fits on ONE list slide (see COMPANIES_PER_LIST_SLIDE above)
  * instead of spilling a single leftover company onto an awkward
- * near-empty second page. Tuned against SLIDE_HEIGHT (1350px) minus the
- * fixed page padding and header: comfortable at <=6 companies, still
- * legible down to ~18-20.
+ * near-empty second page.
+ *
+ * The original "compact" endpoint (n>=18) was hand-picked and never
+ * actually verified against real content — the first real week to reach
+ * this range (12 companies, 2026-08-17, once the hybrid Nasdaq+Claude
+ * source started finding more companies than the old Claude-only search
+ * ever did) overflowed the 1350px canvas, cutting off the last 1-2 rows
+ * with the mascot crowding into the row above them. Retuned from an actual
+ * height budget (SLIDE_HEIGHT minus padding, header, and footer) rather
+ * than eyeballing it, and the saturation point moved from 18 to 15 so a
+ * realistic 12-company week already gets most of the compaction instead of
+ * sitting at the spacious half of the curve. Verified live against the
+ * 12-company case this was found on before shipping.
  */
 function rowMetrics(n: number): RowMetrics {
   return {
-    badgeSize: Math.round(lerp(n, 56, 40)),
-    rowPaddingV: Math.round(lerp(n, 20, 8)),
-    rowPaddingH: Math.round(lerp(n, 28, 18)),
-    rowGap: Math.round(lerp(n, 20, 8)),
-    rowRadius: Math.round(lerp(n, 20, 14)),
-    symbolFontSize: Math.round(lerp(n, 34, 22)),
-    nameFontSize: Math.round(lerp(n, 22, 15)),
-    dateFontSize: Math.round(lerp(n, 20, 14)),
-    timeFontSize: Math.round(lerp(n, 20, 13)),
-    timePaddingV: Math.round(lerp(n, 6, 4)),
-    timePaddingH: Math.round(lerp(n, 16, 10)),
-    epsLabelFontSize: Math.round(lerp(n, 13, 11)),
-    epsValueFontSize: Math.round(lerp(n, 22, 16)),
-    headerMarginBottom: Math.round(lerp(n, 40, 24)),
-    dateHeaderFontSize: Math.round(lerp(n, 20, 15)),
+    badgeSize: Math.round(lerp(n, 56, 34)),
+    rowPaddingV: Math.round(lerp(n, 20, 6)),
+    rowPaddingH: Math.round(lerp(n, 28, 16)),
+    rowGap: Math.round(lerp(n, 20, 6)),
+    rowRadius: Math.round(lerp(n, 20, 12)),
+    symbolFontSize: Math.round(lerp(n, 34, 19)),
+    nameFontSize: Math.round(lerp(n, 22, 13)),
+    dateFontSize: Math.round(lerp(n, 20, 12)),
+    timeFontSize: Math.round(lerp(n, 20, 11)),
+    timePaddingV: Math.round(lerp(n, 6, 3)),
+    timePaddingH: Math.round(lerp(n, 16, 8)),
+    epsLabelFontSize: Math.round(lerp(n, 13, 9)),
+    epsValueFontSize: Math.round(lerp(n, 22, 14)),
+    headerMarginBottom: Math.round(lerp(n, 40, 16)),
+    dateHeaderFontSize: Math.round(lerp(n, 20, 12)),
   };
 }
 
