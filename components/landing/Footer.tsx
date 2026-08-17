@@ -45,6 +45,7 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
 
 const SOCIALS: { icon: IconName; label: string; href: string }[] = [
   { icon: 'discord', label: 'Discord', href: 'https://discord.gg/RkTFXyjZSY' },
+  { icon: 'instagram', label: 'Instagram', href: 'https://www.instagram.com/bullpen.no/' },
 ];
 
 export function Footer() {
