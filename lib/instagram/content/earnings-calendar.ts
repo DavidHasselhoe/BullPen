@@ -1,18 +1,26 @@
 /**
  * Earnings-calendar content for the automated Instagram pipeline.
  *
- * WHICH companies report and WHEN comes from Claude's web search (see
- * earnings-web-search.ts) rather than TwelveData's /earnings_calendar —
- * that endpoint only carries dates TwelveData has confirmed, which lags
- * 3-6 weeks behind for most companies, routinely later than this post's
- * one-week-ahead publish schedule. See earnings-web-search.ts's file
- * header for the full reasoning, including source-legitimacy notes.
+ * WHICH companies report and WHEN comes from two sources, in order:
+ *
+ * 1. nasdaq-earnings-calendar.ts — Nasdaq's free public calendar API. Zero
+ *    cost, and verified live 2026-08-17 to be complete and accurate for
+ *    near-term days (this week's 9-company retail-earnings week came back
+ *    with every date, every BMO/AMC, and every EPS estimate correct).
+ * 2. earnings-web-search.ts — Claude web search, now a FALLBACK only. Told
+ *    which companies Nasdaq's API already confirmed so it doesn't re-search
+ *    them; its job is just to find whatever Nasdaq's calendar doesn't have
+ *    yet. This still matters because Nasdaq's calendar has the same "not
+ *    populated for large caps until ~3 days out" gap that got TwelveData's
+ *    /earnings_calendar dropped in the first place — the tail of a
+ *    Sunday-generated Mon-Fri week (Thu/Fri) routinely falls inside that
+ *    gap. See earnings-web-search.ts's file header for the full history.
  *
  * Everything else — company name, logo, market cap — still comes from
  * BullPen's own data (screener_stats via attachCalendarMeta, the logo
- * proxy), never from Claude. The result is filtered to SIGNIFICANT_TICKERS
- * (S&P 500 + Nasdaq 100) plus one manual exception (see INSTAGRAM_ALLOWLIST
- * below), same scope as before.
+ * proxy), never from Claude or Nasdaq's payload. The result is filtered to
+ * SIGNIFICANT_TICKERS (S&P 500 + Nasdaq 100) plus one manual exception (see
+ * INSTAGRAM_ALLOWLIST below), same scope as before.
  * Deliberately narrower than app/api/calendar/earnings/route.ts's in-app
  * Market Calendar, which widened to the full ~1200-ticker active screener
  * universe earlier this session — that's the right call for a browsable
@@ -24,20 +32,22 @@
  * keeps hallucination risk on the slide's numbers at zero, not just "low":
  * there is no code path where the model's own knowledge could reach them.
  *
- * Claude cost: the web-search lookup (~a few cents/run, see
- * earnings-web-search.ts) plus a short, non-web-search hook/caption call
- * (~$0.01/run) — see lib/billing/log-ai-call.ts for where both are logged
- * (feature: 'instagram_content').
+ * Claude cost: the web-search gap-fill (now usually cheaper than the old
+ * whole-week search, see earnings-web-search.ts) plus a short, non-web-search
+ * hook/caption call (~$0.01/run) — see lib/billing/log-ai-call.ts for where
+ * both are logged (feature: 'instagram_content').
  */
 
 import Anthropic from '@anthropic-ai/sdk';
 import { fetchConfirmedEarnings } from './earnings-web-search';
+import { fetchNasdaqEarningsCalendar } from './nasdaq-earnings-calendar';
 import { SIGNIFICANT_TICKERS } from '@/lib/market-data/significant-tickers';
 import { NASDAQ100_TICKERS } from '@/lib/market-data/nasdaq100';
 import { attachCalendarMeta } from '@/lib/market-data/calendar-market-cap';
 import { logAiCall } from '@/lib/billing/log-ai-call';
 import { parseHookAndCaption } from './schema';
 import type { EarningsCalendarSlides, EarningsSlideCompany } from './schema';
+import type { WebSearchEarningsHit } from './earnings-web-search';
 
 const NASDAQ100_SET = new Set(NASDAQ100_TICKERS);
 const MODEL = 'claude-sonnet-4-6';
@@ -137,6 +147,20 @@ function formatWeekLabel(weekStart: string, weekEnd: string): string {
 
 const FIXED_DISCLAIMER = 'Not financial advice. Report dates gathered from public sources as of posting. Dates can change; always confirm before the market moves.';
 
+/**
+ * Static, not model-generated — Instagram capped posts at 5 hashtags in
+ * Dec 2025, and its 2026 algorithm weighs tag-caption relevance over count
+ * (mismatched/generic tags now get suppressed rather than ignored), so a
+ * small hand-picked set beats letting Claude invent a fresh batch every
+ * week for near-zero benefit at real hallucination/drift risk. Mix is
+ * deliberate: one broad reach tag (#investing), one broad-but-topical tag
+ * (#stockmarket), one exact-moment tag (#earningsseason), and two
+ * audience-specific tags matching BullPen's actual beginner-to-intermediate
+ * positioning rather than generic finance-influencer tags (#wallstreet,
+ * #financialfreedom, etc.) that would draw the wrong audience.
+ */
+const FIXED_HASHTAGS = '#StockMarket #EarningsSeason #Investing #StocksToWatch #InvestingForBeginners';
+
 const SYSTEM_PROMPT = `You write short, punchy Instagram copy for BullPen, a financial app for beginner-to-intermediate investors.
 
 Voice: confident, clear, never hype-y. No emoji spam (0-1 max, only if it genuinely fits). Never use an em dash (—) or en dash (–) to connect clauses; use a period or comma instead.
@@ -191,7 +215,7 @@ async function writeHookAndCaption(
   }
 
   const { headline, caption } = parseHookAndCaption(textBlock.text);
-  return { headline, caption: `${caption}\n\n${FIXED_DISCLAIMER}` };
+  return { headline, caption: `${caption}\n\n${FIXED_DISCLAIMER}\n\n${FIXED_HASHTAGS}` };
 }
 
 /**
@@ -200,18 +224,29 @@ async function writeHookAndCaption(
  *
  * Returns null when no allowlisted company has a confirmed report that
  * week — the caller skips posting entirely rather than publishing a
- * "quiet week" filler post. No Claude call is made in that case either,
- * since there would be nothing real to write about.
+ * "quiet week" filler post. The Claude fallback call still runs even on an
+ * apparently-quiet week (Nasdaq's calendar coming back empty isn't
+ * distinguishable from "not populated yet" without asking), but it's a
+ * single targeted search rather than the old whole-week discovery call.
  */
 export async function generateEarningsCalendarContent(
   weekStart: string,
   weekEnd: string
 ): Promise<EarningsCalendarSlides | null> {
-  // WHICH companies + WHEN comes from Claude's web search, not TwelveData —
-  // see earnings-web-search.ts's file header for why. Claude supplies only
-  // symbol/date/time; name and market cap are hydrated below from BullPen's
-  // own screener_stats, never trusted from the model.
-  const hits = await fetchConfirmedEarnings(weekStart, weekEnd);
+  // WHICH companies + WHEN: Nasdaq's free calendar API first (zero cost),
+  // then Claude web search only for whatever it's missing — see this file's
+  // header and earnings-web-search.ts's for why both are needed. Neither
+  // supplies company name/market cap; those are hydrated below from
+  // BullPen's own screener_stats, never trusted from either source.
+  const nasdaqHits = await fetchNasdaqEarningsCalendar(weekStart, weekEnd, INSTAGRAM_ALLOWLIST);
+  const gapFillHits = await fetchConfirmedEarnings(weekStart, weekEnd, nasdaqHits.map((h) => h.symbol));
+
+  const bySymbol = new Map<string, WebSearchEarningsHit>();
+  for (const hit of nasdaqHits) bySymbol.set(hit.symbol, hit);
+  for (const hit of gapFillHits) {
+    if (!bySymbol.has(hit.symbol)) bySymbol.set(hit.symbol, hit); // Nasdaq wins any overlap
+  }
+  const hits = [...bySymbol.values()];
 
   const filtered = hits
     .filter((item) => INSTAGRAM_ALLOWLIST.has(item.symbol))

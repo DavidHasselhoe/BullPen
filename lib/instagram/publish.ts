@@ -7,14 +7,18 @@
  */
 import { createServerClient } from '@/lib/supabase/client';
 import { publishCarousel, isInstagramConfigured } from '@/lib/instagram/client';
-import { totalSlideCount } from '@/lib/instagram/render/slides';
+import { totalSlideCount, altTextForSlide } from '@/lib/instagram/render/slides';
 import { postToDiscord } from '@/lib/discord/post-message';
+import { instagramBioLink } from '@/lib/instagram/utm-link';
+import type { EarningsCalendarSlides } from '@/lib/instagram/content/schema';
 
 interface InstagramPostRow {
   id: string;
   status: string;
   caption: string;
-  slides: { companies: unknown[] };
+  slides: EarningsCalendarSlides;
+  content_type: string;
+  period_key: string;
 }
 
 export type PublishStagedPostResult =
@@ -31,7 +35,7 @@ export async function publishStagedPost(id: string): Promise<PublishStagedPostRe
 
   const { data: post } = (await db
     .from('instagram_posts')
-    .select('id, status, caption, slides')
+    .select('id, status, caption, slides, content_type, period_key')
     .eq('id', id)
     .maybeSingle()) as { data: InstagramPostRow | null };
 
@@ -41,13 +45,14 @@ export async function publishStagedPost(id: string): Promise<PublishStagedPostRe
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bullpen.no';
   const slideCount = totalSlideCount(post.slides.companies.length);
   const imageUrls = Array.from({ length: slideCount }, (_, i) => `${appUrl}/api/instagram/render/${post.id}/${i}`);
+  const altTexts = Array.from({ length: slideCount }, (_, i) => altTextForSlide(post.slides, i));
 
   if (!isInstagramConfigured()) {
     return { outcome: 'dry_run', imageUrls, caption: post.caption };
   }
 
   try {
-    const result = await publishCarousel({ imageUrls, caption: post.caption });
+    const result = await publishCarousel({ imageUrls, altTexts, caption: post.caption });
 
     await db
       .from('instagram_posts')
@@ -61,8 +66,9 @@ export async function publishStagedPost(id: string): Promise<PublishStagedPostRe
 
     const webhookUrl = process.env.DISCORD_INSTAGRAM_WEBHOOK_URL;
     if (webhookUrl) {
+      const bioLink = instagramBioLink(post.content_type, post.period_key);
       await postToDiscord(webhookUrl, {
-        content: `✅ Published to Instagram: ${result.permalink ?? result.mediaId}`,
+        content: `✅ Published to Instagram: ${result.permalink ?? result.mediaId}\nBio link should be: ${bioLink}`,
       }).catch((err) => console.error('Discord confirmation failed (post still published):', err));
     }
 

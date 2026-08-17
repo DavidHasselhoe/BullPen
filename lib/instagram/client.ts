@@ -101,6 +101,10 @@ async function waitForContainerReady(containerId: string, accessToken: string, m
 export interface PublishCarouselParams {
   /** Publicly fetchable image URLs, in carousel display order. */
   imageUrls: string[];
+  /** Parallel to imageUrls — alt text per slide (Meta's accessibility +
+   *  content-understanding field, see altTextForSlide in render/slides.tsx).
+   *  Optional per-entry since not every content type supplies it yet. */
+  altTexts?: (string | undefined)[];
   caption: string;
 }
 
@@ -117,10 +121,15 @@ export async function publishCarousel(params: PublishCarouselParams): Promise<Pu
   const { accessToken, userId } = getConfig();
 
   const childIds: string[] = [];
-  for (const imageUrl of params.imageUrls) {
+  for (let i = 0; i < params.imageUrls.length; i++) {
+    const altText = params.altTexts?.[i];
     const item = await graphPost(
       `/${userId}/media`,
-      { image_url: imageUrl, is_carousel_item: 'true' },
+      {
+        image_url: params.imageUrls[i],
+        is_carousel_item: 'true',
+        ...(altText ? { alt_text: altText } : {}),
+      },
       accessToken
     );
     childIds.push(item.id as string);

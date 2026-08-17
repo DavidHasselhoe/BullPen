@@ -36,7 +36,7 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { loadGoogleFont } from '@/lib/render/google-fonts';
-import type { EarningsSlideCompany } from '@/lib/instagram/content/schema';
+import type { EarningsSlideCompany, EarningsCalendarSlides } from '@/lib/instagram/content/schema';
 
 export const SLIDE_WIDTH = 1080;
 export const SLIDE_HEIGHT = 1350;
@@ -79,6 +79,28 @@ export function slideKindAt(index: number, companyCount: number): SlideKind {
   if (index === 0) return 'hook';
   if (index === lists + 1) return 'cta';
   return 'list';
+}
+
+/**
+ * Per-slide alt text for the Instagram carousel item container (`alt_text`
+ * on the Graph API's /media call, is_carousel_item=true — supported for
+ * image children since March 2025). Not just an accessibility nicety: Meta
+ * uses it to understand image content for search/recommendation surfacing,
+ * so an image-only carousel (no real on-image text Meta can OCR reliably)
+ * was previously invisible to that signal entirely. Ticker-only in the list
+ * text (not full company names) to stay well under Meta's alt text length
+ * cap even at MAX_COMPANIES.
+ */
+export function altTextForSlide(content: EarningsCalendarSlides, slideIndex: number): string {
+  const kind = slideKindAt(slideIndex, content.companies.length);
+  if (kind === 'hook') {
+    return `${content.headline} Earnings calendar for the week of ${content.weekLabel} on BullPen.`;
+  }
+  if (kind === 'cta') {
+    return 'Open the BullPen app to see the full earnings calendar and set alerts for these stocks.';
+  }
+  const tickers = content.companies.map((c) => c.symbol).join(', ');
+  return `Companies reporting earnings the week of ${content.weekLabel}: ${tickers}.`;
 }
 
 /** All fonts every slide kind might need — fetched once per render, cached across warm invocations by loadGoogleFont itself. */
