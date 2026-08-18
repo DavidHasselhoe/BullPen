@@ -58,7 +58,7 @@ async function handler(
   const tier = await getTier(session.userId);
   const locked = course.requires_pro && !isPro(tier);
 
-  const [lessonsRes, lessonProgressRes, courseProgressRes] = await Promise.all([
+  const [lessonsRes, lessonProgressRes, courseProgressRes, quizRes] = await Promise.all([
     supabase
       .from('academy_lessons')
       .select('id, course_id, slug, title, type, order_index, xp_reward, content')
@@ -74,6 +74,11 @@ async function handler(
       .eq('user_id', session.userId)
       .eq('course_id', course.id)
       .maybeSingle<{ last_lesson_id: string | null; completed_at: string | null; started_at: string }>(),
+    supabase
+      .from('academy_course_quizzes')
+      .select('id')
+      .eq('course_id', course.id)
+      .maybeSingle<{ id: string }>(),
   ]);
 
   const lessonRows = (lessonsRes.data ?? []) as LessonRow[];
@@ -116,6 +121,7 @@ async function handler(
       lessons,
       locked,
       progress: courseProgressRes.data ?? null,
+      hasFinalQuiz: quizRes.data !== null,
     })
   );
 }

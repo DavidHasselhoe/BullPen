@@ -18,6 +18,7 @@ interface CourseResponse {
     completed_at: string | null;
     started_at: string;
   } | null;
+  hasFinalQuiz: boolean;
 }
 
 /** Course catalog with the current user's per-course progress + locked state. */
