@@ -20,9 +20,17 @@ function shuffle<T>(arr: T[]): T[] {
   return copy;
 }
 
+interface ShuffledQuiz {
+  content: QuizContent;
+  /** originalIndexes[i] = the index into quiz.questions that shuffled.content.questions[i] came from. */
+  originalIndexes: number[];
+}
+
 /** Reshuffles question order AND each question's option order (remapping correctIndex), so retrying isn't just "remember which button was right last time." */
-function shuffleQuiz(quiz: CourseFinalQuizType): QuizContent {
-  const questions = shuffle(quiz.questions).map((q) => {
+function shuffleQuiz(quiz: CourseFinalQuizType): ShuffledQuiz {
+  const originalIndexes = shuffle(quiz.questions.map((_, i) => i));
+  const questions = originalIndexes.map((origIdx) => {
+    const q = quiz.questions[origIdx];
     const optionOrder = shuffle(q.options.map((_, i) => i));
     return {
       question: q.question,
@@ -31,7 +39,7 @@ function shuffleQuiz(quiz: CourseFinalQuizType): QuizContent {
       explanation: q.explanation,
     };
   });
-  return { questions };
+  return { content: { questions }, originalIndexes };
 }
 
 interface SubmitResponse {
@@ -76,13 +84,16 @@ export function CourseFinalQuiz({ quiz, courseSlug, courseTitle }: Props) {
     },
   });
 
-  // shuffleQuiz's remapped questions carry correctIndex remapped to the
-  // shuffled option order, but the server grades against the *original*
-  // question order — map picked indices back before submitting.
+  // shuffleQuiz reorders both the questions and each question's options, but
+  // the server grades against the *original* question order — map picked
+  // indices back through originalIndexes (question position) and option text
+  // (option position) before submitting.
   function handleComplete(_score: number, pickedInShuffledOrder: number[]) {
-    const answersInOriginalOrder = shuffled.questions.map((q, i) => {
-      const pickedOptionText = q.options[pickedInShuffledOrder[i]];
-      return quiz.questions[i].options.indexOf(pickedOptionText);
+    const answersInOriginalOrder = new Array<number>(quiz.questions.length).fill(-1);
+    shuffled.content.questions.forEach((q, shuffledIdx) => {
+      const origIdx = shuffled.originalIndexes[shuffledIdx];
+      const pickedOptionText = q.options[pickedInShuffledOrder[shuffledIdx]];
+      answersInOriginalOrder[origIdx] = quiz.questions[origIdx].options.indexOf(pickedOptionText);
     });
     submitMutation.mutate(answersInOriginalOrder);
   }
@@ -164,7 +175,7 @@ export function CourseFinalQuiz({ quiz, courseSlug, courseTitle }: Props) {
           Answer at your own pace. You can retry as many times as you want.
         </p>
       </div>
-      <QuizLesson key={attempt} content={shuffled} onComplete={handleComplete} />
+      <QuizLesson key={attempt} content={shuffled.content} onComplete={handleComplete} />
     </div>
   );
 }
