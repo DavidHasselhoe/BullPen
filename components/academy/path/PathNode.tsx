@@ -19,8 +19,16 @@ interface Props {
 /**
  * One node on the /academy path. State is carried by shape + icon + label
  * together, never color alone: completed (filled emerald, check), current
- * (outlined emerald ring, course icon, "Continue" chip), locked — either by
- * progression or by needing Pro (flat gray fill, lock icon).
+ * (outlined emerald ring, course icon, "Continue" chip), available-but-not-
+ * current (plain outline, course icon — free and Pro tracks unlock
+ * independently in app/api/academy/courses/route.ts, so more than one course
+ * can be unlocked at once even though only one is ever "current"), locked —
+ * either by progression or by needing Pro (flat gray fill, lock icon).
+ *
+ * Icon/background are keyed off `course.isLocked` (the real gate state from
+ * the API), never off "not completed and not current" — that used to be the
+ * implicit fallback and silently mislabeled available-but-not-current
+ * courses as locked, with no background class matching either.
  */
 export function PathNode({ course, isCurrent, offset, align, circleRef }: Props) {
   const isProLocked = course.lockedReason === 'pro';
@@ -34,15 +42,16 @@ export function PathNode({ course, isCurrent, offset, align, circleRef }: Props)
         'relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-[1.5px] transition-colors',
         course.isCompleted && 'border-emerald-500 bg-emerald-500',
         isCurrent && 'border-2 border-emerald-500 bg-card shadow-[0_0_0_4px_rgba(34,197,94,0.12)] academy-current-pulse',
-        (isProgressionLocked || isProLocked) && 'border-border bg-muted'
+        course.isLocked && 'border-border bg-muted',
+        !course.isCompleted && !isCurrent && !course.isLocked && 'border-border bg-card'
       )}
     >
       {course.isCompleted ? (
         <Check className="h-6 w-6 text-white" strokeWidth={2.5} />
-      ) : isCurrent ? (
-        <CourseIcon name={course.icon} className="h-5 w-5 text-emerald-500" />
-      ) : (
+      ) : course.isLocked ? (
         <Lock className="h-5 w-5 text-muted-foreground/70" />
+      ) : (
+        <CourseIcon name={course.icon} className={cn('h-5 w-5', isCurrent ? 'text-emerald-500' : 'text-foreground/70')} />
       )}
       {isProLocked && (
         <span className="absolute -bottom-1 -right-1 rounded bg-amber-400/15 px-1 py-0.5 text-[11px] font-bold tracking-wide text-amber-500 border border-card">
