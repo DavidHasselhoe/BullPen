@@ -1,5 +1,16 @@
 [
   {
+    "date": "2026-08-18",
+    "entries": [
+      { "type": "new", "text": "Academy courses now end with a short quiz you need to pass before the next course unlocks. If you already know the material, you can skip straight to the quiz instead of doing every lesson" },
+      { "type": "new", "text": "The Academy path now shows a countdown for when the next new course is coming, so there's always something to look forward to" },
+      { "type": "improved", "text": "Redesigned the Portfolio Risk Analysis results screen with a clearer risk score gauge, ranked risk factors, stress test scenarios, and a trend view of your past analyses" },
+      { "type": "improved", "text": "Refreshed the upgrade prompts you see when you hit a free plan limit, with clearer benefits and pricing shown up front. Portfolio Risk Analysis's prompt also now previews what a real analysis looks like" },
+      { "type": "fixed", "text": "Fixed a display bug on the Academy path where some course icons could look broken or see-through" },
+      { "type": "fixed", "text": "Fixed a display glitch in Portfolio Risk Analysis history where a stray colored line could appear and your saved analyses looked squeezed together" }
+    ]
+  },
+  {
     "date": "2026-08-17",
     "entries": [
       { "type": "new", "text": "Added a temporary lock on your account after several failed login attempts, which lifts automatically after a short wait" },
