@@ -21,7 +21,22 @@ import type { CourseOutline, LessonSpec, GeneratableLessonType } from './course-
 const MODEL = 'claude-opus-4-8';
 const MAX_RETRIES = 3;
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+// Lazily constructed, not a module-level const: ESM import statements are
+// hoisted above all other top-level code, so a module-level client here
+// would read process.env.ANTHROPIC_API_KEY before scripts/generate-academy-course.ts's
+// own dotenv config() call has run (config() is a plain statement, not an
+// import, so it only runs after every imported module has already
+// initialized) — the client would permanently bake in an undefined key.
+// Deferring construction to first actual use sidesteps import-order
+// entirely; the Next.js cron route (which loads env vars before any user
+// code runs anyway) is unaffected either way.
+let anthropicClient: Anthropic | null = null;
+function getAnthropicClient(): Anthropic {
+  if (!anthropicClient) {
+    anthropicClient = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  }
+  return anthropicClient;
+}
 
 const SCHEMA_BY_TYPE: Record<GeneratableLessonType, z.ZodTypeAny> = {
   read: ReadContentSchema,
@@ -77,7 +92,7 @@ async function generateLessonContent(lesson: LessonSpec): Promise<unknown> {
     const userPrompt =
       `Lesson title: "${lesson.title}"\nLesson type: ${lesson.type}\nTeach this: ${lesson.topic}${retryNote}`;
 
-    const msg = await anthropic.messages.create({
+    const msg = await getAnthropicClient().messages.create({
       model: MODEL,
       max_tokens: 1500,
       system: systemPromptFor(lesson.type),
