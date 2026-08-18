@@ -32,8 +32,14 @@ interface Props {
  */
 export function PathNode({ course, isCurrent, offset, align, circleRef }: Props) {
   const isProLocked = course.lockedReason === 'pro';
-  const isProgressionLocked = course.lockedReason === 'progression';
-  const isInteractive = !isProgressionLocked;
+  // lockedReason is derived from whether the PREVIOUS course in this track is
+  // complete, independent of this course's own completion — so a course
+  // tested-out-of-order (its final quiz passed while an earlier course in the
+  // chain is still unfinished) can still read lockedReason: 'progression'
+  // even though it's done. isCompleted always wins: a finished course must
+  // stay clickable so the user can go back and review it.
+  const isProgressionLocked = course.lockedReason === 'progression' && !course.isCompleted;
+  const isInteractive = course.isCompleted || !isProgressionLocked;
 
   const circle = (
     <div
@@ -128,8 +134,8 @@ export function PathNode({ course, isCurrent, offset, align, circleRef }: Props)
 
   if (!isInteractive) {
     return (
-      <div className="flex flex-col items-center gap-1.5 py-2.5" aria-disabled="true">
-        {content}
+      <div className="flex flex-col items-center gap-1.5 py-2.5">
+        <div aria-disabled="true">{content}</div>
         {showSkipToQuiz && (
           <Link
             href={`/academy/${course.slug}/quiz?title=${encodeURIComponent(course.title)}`}
