@@ -34,6 +34,15 @@ export const QuizContentSchema = z.object({
 });
 export type QuizContent = z.infer<typeof QuizContentSchema>;
 
+// ─── Course-level final quiz (gates course completion, distinct from any
+// in-course quiz-type lesson) ────────────────────────────────────────────────
+
+export const CourseFinalQuizSchema = z.object({
+  questions: QuizContentSchema.shape.questions,
+  passThreshold: z.number().min(0).max(1),
+});
+export type CourseFinalQuiz = z.infer<typeof CourseFinalQuizSchema>;
+
 export const MatchContentSchema = z.object({
   pairs: z
     .array(z.object({ term: z.string(), definition: z.string() }))
@@ -201,8 +210,12 @@ export interface CourseWithProgress extends Course {
   isLocked: boolean;
   /** Why isLocked is true — 'pro' takes priority over 'progression' in messaging. */
   lockedReason: 'progression' | 'pro' | null;
-  /** This course's own completed_at is set — via lessons or a skip. */
+  /** This course's own completed_at is set — via lessons, a final-quiz pass, or an optional-course skip. */
   isCompleted: boolean;
+  /** True if academy_course_quizzes has a row for this course — gates completion via quiz instead of lesson count. */
+  hasFinalQuiz: boolean;
+  /** isCompleted is true but completedLessons < totalLessons — completed by passing the quiz cold, without doing every lesson. */
+  skipped: boolean;
 }
 
 export interface UserCourseProgress {
