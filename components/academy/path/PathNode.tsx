@@ -82,6 +82,11 @@ export function PathNode({ course, isCurrent, offset, align, circleRef }: Props)
             Optional
           </span>
         )}
+        {course.skipped && (
+          <span className="text-[11px] font-mono font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+            Skipped
+          </span>
+        )}
         <span className="text-[11px] font-mono text-muted-foreground/70 tabular-nums">
           {course.completedLessons}/{course.totalLessons} lessons
         </span>
@@ -119,10 +124,20 @@ export function PathNode({ course, isCurrent, offset, align, circleRef }: Props)
     </div>
   );
 
+  const showSkipToQuiz = isProgressionLocked && course.hasFinalQuiz;
+
   if (!isInteractive) {
     return (
-      <div className="flex justify-center py-2.5" aria-disabled="true">
+      <div className="flex flex-col items-center gap-1.5 py-2.5" aria-disabled="true">
         {content}
+        {showSkipToQuiz && (
+          <Link
+            href={`/academy/${course.slug}/quiz?title=${encodeURIComponent(course.title)}`}
+            className="text-[11px] font-mono text-muted-foreground/70 underline underline-offset-2 hover:text-foreground transition-colors"
+          >
+            I know this, skip to quiz
+          </Link>
+        )}
       </div>
     );
   }
