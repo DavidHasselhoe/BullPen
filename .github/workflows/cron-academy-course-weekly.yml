@@ -1,0 +1,30 @@
+name: Cron — Academy Weekly Course Generation
+
+# Monday 06:00 UTC. Drafts the next course in the 10-week roadmap
+# (lib/academy/academy-roadmap.ts) via Claude and stages it unpublished.
+# Time-tolerant (a weekly content drop, not market-hours-sensitive), same
+# reasoning as the other non-Vercel crons in this repo. Requires explicit
+# human approval at /admin/academy-roadmap before a course goes live — there
+# is no auto-publish step, unlike the Instagram earnings pipeline.
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: POST /api/cron/generate-academy-course
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          APP_URL: ${{ vars.APP_URL || 'https://bullpen.no' }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::CRON_SECRET secret is not configured in repo settings"
+            exit 1
+          fi
+          curl -fsS -X GET \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "${APP_URL}/api/cron/generate-academy-course"
