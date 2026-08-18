@@ -9,13 +9,14 @@ import type { QuizContent } from '@/types/academy';
 
 interface Props {
   content: QuizContent;
-  onComplete: (score: number) => void;
+  onComplete: (score: number, answers: number[]) => void;
 }
 
 export function QuizLesson({ content, onComplete }: Props) {
   const [index, setIndex] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
   const [correctCount, setCorrectCount] = useState(0);
+  const [answers, setAnswers] = useState<number[]>([]);
 
   const total = content.questions.length;
   const question = content.questions[index];
@@ -26,6 +27,7 @@ export function QuizLesson({ content, onComplete }: Props) {
   function handlePick(i: number) {
     if (answered) return;
     setPicked(i);
+    setAnswers((a) => [...a, i]);
     if (i === question.correctIndex) {
       setCorrectCount((c) => c + 1);
     }
@@ -33,7 +35,7 @@ export function QuizLesson({ content, onComplete }: Props) {
 
   function handleNext() {
     if (isLast) {
-      onComplete(correctCount / total);
+      onComplete(correctCount / total, answers);
       return;
     }
     setIndex((i) => i + 1);
