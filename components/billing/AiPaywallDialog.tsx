@@ -6,6 +6,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Crown } from 'lucide-react';
 import type { QuotaState } from '@/lib/billing/quotas';
+import { RiskAnalysisPaywallContent } from './RiskAnalysisPaywallContent';
 
 interface Props {
   open: boolean;
@@ -26,6 +27,22 @@ export function AiPaywallDialog({ open, onOpenChange, featureName, quota }: Prop
   const isProOnly = quota?.reason === 'pro_only';
   // Pro user who hit a cost-protection soft cap — they're already Pro, so don't upsell.
   const isProCap = quota?.reason === 'pro_cap_reached';
+
+  // Portfolio Risk Analysis gets a richer, feature-specific upsell (value
+  // stack, price, annual toggle, blurred result preview) — not generalized
+  // to the other 4 callers of this dialog (Ask Bull, Portfolio Builder,
+  // Deep Dive, Chart AI) since their benefits/preview content would need to
+  // be fabricated differently per feature. isProCap still falls through to
+  // the generic "Got it" content below since that user is already Pro.
+  if (featureName === 'Portfolio Risk Analysis' && !isProCap) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="overflow-hidden p-0 text-center sm:max-w-sm" showCloseButton>
+          <RiskAnalysisPaywallContent quota={quota} onDismiss={() => onOpenChange(false)} />
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   const headline = isProCap
     ? `You've reached this month's ${featureName} limit`
