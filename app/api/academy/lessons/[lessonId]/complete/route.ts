@@ -97,7 +97,7 @@ async function handler(
   // ── Record the lesson completion and fetch the course's lesson list in
   // parallel — the insert doesn't depend on knowing the other lessons, and
   // the lesson list only needs course_id, which we already have. ──────────
-  const [, { data: allLessonIds }] = await Promise.all([
+  const [, { data: allLessonIds }, quizGateRes] = await Promise.all([
     isFirstCompletion
       ? db.from('academy_user_lesson_progress').insert({
           user_id: session.userId,
@@ -107,9 +107,15 @@ async function handler(
         })
       : Promise.resolve(),
     supabase.from('academy_lessons').select('id').eq('course_id', lesson.course_id),
+    supabase.from('academy_course_quizzes').select('id').eq('course_id', lesson.course_id).maybeSingle<{ id: string }>(),
   ]);
 
-  // ── Course progress: mark complete if all lessons are now done ───────────
+  const courseIsQuizGated = quizGateRes.data !== null;
+
+  // ── Course progress: all-lessons-done is tracked regardless of gating, but
+  // completed_at (the field progression-lock actually reads) is only set here
+  // for courses with no final quiz. A quiz-gated course's completed_at is set
+  // exclusively by /api/academy/courses/[slug]/quiz/submit, never here. ───────
   const { data: completedRows } = await supabase
     .from('academy_user_lesson_progress')
     .select('lesson_id')
@@ -118,7 +124,8 @@ async function handler(
 
   const completedCount = completedRows?.length ?? 0;
   const totalCount = allLessonIds?.length ?? 0;
-  const courseNowComplete = totalCount > 0 && completedCount >= totalCount;
+  const allLessonsDone = totalCount > 0 && completedCount >= totalCount;
+  const courseNowComplete = allLessonsDone && !courseIsQuizGated;
 
   // ── Course progress upsert + stats upsert are independent writes ─────────
   const [, stats] = await Promise.all([
@@ -140,6 +147,7 @@ async function handler(
       xpAwarded,
       isFirstCompletion,
       courseCompleted: courseNowComplete,
+      allLessonsDone,
       stats,
     })
   );
