@@ -36,17 +36,27 @@ export function RiskAnalysisPaywallContent({ quota, onDismiss }: Props) {
     <div className="relative">
       <RiskAnalysisPaywallPreview />
 
-      {/* Mascot badge — a small supporting seal overlapping the preview/content
-          seam, the same "badge overlapping a card edge" pattern as /upgrade's
-          "Most popular" pill, not a dominant hero illustration. */}
+      {/* Brand badge — a supporting seal overlapping the preview/content seam,
+          the same "badge overlapping a card edge" pattern as /upgrade's
+          "Most popular" pill, not a dominant hero illustration. Uses the solid
+          bull silhouette (same asset as the nav logo) rather than the
+          thin-line mascot art — the line art reads fine at illustration size
+          but disappears at badge size, where a solid fill holds up. */}
       <div className="relative flex justify-center">
-        <div className="absolute -top-5 flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background shadow-sm">
+        <div className="absolute -top-7 flex h-14 w-14 items-center justify-center rounded-full border border-border bg-background shadow-sm">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/illustrations/bull-locked.png"
+            src="/BullPenLogo.png"
             alt=""
             aria-hidden
-            className="h-6 w-6 select-none opacity-90 dark:opacity-80 dark:invert"
+            className="block h-9 w-9 select-none dark:hidden"
+          />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/BullPenLogo-dark.png"
+            alt=""
+            aria-hidden
+            className="hidden h-9 w-9 select-none dark:block"
           />
         </div>
       </div>
