@@ -65,9 +65,9 @@ export function AiPaywallDialog({ open, onOpenChange, featureName, quota }: Prop
             </Button>
           ) : (
             <>
-              <Button asChild className="w-full">
+              <Button asChild className="w-full animate-cta-pulse">
                 <a href="/upgrade">
-                  <Crown className="h-3.5 w-3.5" /> Unlock Pro
+                  <Crown className="h-3.5 w-3.5" /> Unlock Everything
                 </a>
               </Button>
               <Button variant="ghost" className="w-full" onClick={() => onOpenChange(false)}>

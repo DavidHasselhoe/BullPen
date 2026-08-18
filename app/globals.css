@@ -717,6 +717,28 @@ html.animated-background-active [data-slot="dialog-content"] {
     to  { left: 100%; }
   }
 
+  /* ── Conversion CTA pulse — paywall dialogs ───────────────────────────────
+     A third, deliberate at-rest-motion exception alongside the landing CTA
+     and AI-action buttons (see DESIGN.md's Earned-Depth Rule) — reserved for
+     the one primary button inside a paywall dialog, which only ever appears
+     at a rare, high-stakes conversion moment (a real quota wall), never as
+     persistent in-page chrome. Deliberately kept out of the One Signal
+     Rule's emerald reservation: the ring derives from --foreground (the ink
+     token, which by definition contrasts against --background in both
+     themes) rather than --brand, so it doesn't compete with or dilute the
+     gain/loss signal. Same breathing-ring mechanic as
+     .academy-current-pulse — box-shadow opacity/spread only, nothing
+     scales, so it reads as precise rather than bouncy. The global
+     prefers-reduced-motion rule below already snaps this to a single
+     static frame. */
+  @keyframes cta-pulse {
+    0%, 100% { box-shadow: 0 0 0 0   color-mix(in oklch, var(--foreground) 16%, transparent); }
+    50%      { box-shadow: 0 0 0 6px color-mix(in oklch, var(--foreground) 0%,  transparent); }
+  }
+  .animate-cta-pulse {
+    animation: cta-pulse 2.2s ease-in-out infinite;
+  }
+
   /* ── Academy path "current node" pulse ───────────────────────────────────
      Marks the one open door on the /academy progression path — the ring
      opacity breathes, nothing scales or moves, so it stays "precise", not
