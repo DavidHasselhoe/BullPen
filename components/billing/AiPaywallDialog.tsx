@@ -4,7 +4,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Sparkles } from 'lucide-react';
+import { Crown } from 'lucide-react';
 import type { QuotaState } from '@/lib/billing/quotas';
 
 interface Props {
@@ -38,20 +38,25 @@ export function AiPaywallDialog({ open, onOpenChange, featureName, quota }: Prop
     : isProOnly
     ? `Upgrade to Pro to unlock ${featureName} and the rest of BullPen's AI features.`
     : quota
-    ? `Resets ${formatReset(quota.resetsAt, quota.period)}. Upgrade to Pro for unlimited access — plus Daily Brief, "Why Today?", and more.`
+    ? `Resets ${formatReset(quota.resetsAt, quota.period)}. Upgrade to Pro for unlimited access, plus Daily Brief, "Why Today?", and more.`
     : `Upgrade to Pro for unlimited access to ${featureName} and more.`;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-sm text-center">
-        <DialogHeader>
-          <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-            <Sparkles className="h-6 w-6 text-primary" />
-          </div>
-          <DialogTitle>{headline}</DialogTitle>
+        <DialogHeader className="items-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={isProCap ? '/illustrations/bull-sleeping.png' : '/illustrations/bull-locked.png'}
+            alt=""
+            aria-hidden
+            width={104}
+            className="mb-1 h-auto select-none opacity-90 dark:opacity-80 dark:invert"
+          />
+          <DialogTitle className="text-balance">{headline}</DialogTitle>
         </DialogHeader>
 
-        <p className="text-sm text-muted-foreground leading-relaxed">{body}</p>
+        <p className="text-sm text-muted-foreground leading-relaxed text-pretty">{body}</p>
 
         <DialogFooter className="flex-col gap-2 sm:flex-col">
           {isProCap ? (
@@ -61,7 +66,9 @@ export function AiPaywallDialog({ open, onOpenChange, featureName, quota }: Prop
           ) : (
             <>
               <Button asChild className="w-full">
-                <a href="/upgrade">Upgrade to Pro</a>
+                <a href="/upgrade">
+                  <Crown className="h-3.5 w-3.5" /> Unlock Pro
+                </a>
               </Button>
               <Button variant="ghost" className="w-full" onClick={() => onOpenChange(false)}>
                 Maybe later
