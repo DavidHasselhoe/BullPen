@@ -33,7 +33,7 @@ async function handler(
 ): Promise<NextResponse> {
   const supabase = createServerClient();
 
-  const [coursesRes, lessonsRes, lessonProgressRes, courseProgressRes, tier] = await Promise.all([
+  const [coursesRes, lessonsRes, lessonProgressRes, courseProgressRes, tier, quizzesRes] = await Promise.all([
     supabase
       .from('academy_courses')
       .select('id, slug, title, description, icon, color, order_index, difficulty, requires_pro, is_optional, unit_label')
@@ -51,6 +51,9 @@ async function handler(
       .select('course_id, completed_at')
       .eq('user_id', session.userId),
     getTier(session.userId),
+    supabase
+      .from('academy_course_quizzes')
+      .select('course_id'),
   ]);
 
   const userIsPro = isPro(tier);
@@ -73,6 +76,10 @@ async function handler(
     arr.push(l.id);
     lessonsByCourse.set(l.course_id, arr);
   }
+
+  const quizGatedCourseIds = new Set(
+    (quizzesRes.data ?? []).map((r: { course_id: string }) => r.course_id)
+  );
 
   const result: CourseWithProgress[] = courses.map((c, idx) => {
     const courseLessonIds = lessonsByCourse.get(c.id) ?? [];
@@ -99,6 +106,9 @@ async function handler(
         ? 'progression'
         : null;
 
+    const hasFinalQuiz = quizGatedCourseIds.has(c.id);
+    const isCompleted = completedCourseIds.has(c.id);
+
     return {
       id: c.id,
       slug: c.slug,
@@ -116,7 +126,9 @@ async function handler(
       percentComplete,
       isLocked: lockedReason !== null,
       lockedReason,
-      isCompleted: completedCourseIds.has(c.id),
+      isCompleted,
+      hasFinalQuiz,
+      skipped: isCompleted && done < total,
     };
   });
 
