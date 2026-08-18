@@ -2,10 +2,13 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
 import { groupIntoChapters, findCurrentCourse, nodeOffset } from '@/lib/academy/path-chapters';
 import { ChapterBanner } from './ChapterBanner';
 import { PathNode } from './PathNode';
+import { ComingSoonNode } from './ComingSoonNode';
 import type { CourseWithProgress } from '@/types/academy';
+import type { NextCourseCountdownResponse } from '@/app/api/academy/next-course-countdown/route';
 
 interface Props {
   courses: CourseWithProgress[];
@@ -31,6 +34,12 @@ export function AcademyPath({ courses }: Props) {
 
   const currentCourse = findCurrentCourse(courses);
   const chapters = groupIntoChapters(courses);
+
+  const { data: countdown } = useQuery<NextCourseCountdownResponse>({
+    queryKey: ['academy-next-course-countdown'],
+    queryFn: () => fetch('/api/academy/next-course-countdown').then((r) => r.json()),
+    staleTime: 60 * 60 * 1000, // an hour is plenty — this changes at most daily
+  });
   // Below ~420px, a full-magnitude zigzag offset combined with a left-aligned
   // label can push text past the viewport edge — scale the offset down once
   // the measured shell (not the raw window) gets that narrow.
@@ -170,6 +179,10 @@ export function AcademyPath({ courses }: Props) {
           </li>
         ))}
       </motion.ol>
+
+      {countdown?.show && (
+        <ComingSoonNode status={countdown.status ?? 'scheduled'} daysUntil={countdown.daysUntil} />
+      )}
     </div>
   );
 }
