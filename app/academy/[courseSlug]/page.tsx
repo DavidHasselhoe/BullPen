@@ -43,7 +43,7 @@ export default function CourseOverviewPage() {
     );
   }
 
-  const { course, lessons, progress, locked } = data;
+  const { course, lessons, progress, locked, hasFinalQuiz } = data;
   const completedCount = lessons.filter((l) => l.completed).length;
   const totalXp = lessons.reduce((s, l) => s + l.xpReward, 0);
   const nextLesson: LessonWithCompletion | undefined =
@@ -182,13 +182,33 @@ export default function CourseOverviewPage() {
         )
       )}
 
-      {completedCount === lessons.length && lessons.length > 0 && (
+      {hasFinalQuiz && completedCount === lessons.length && !progress?.completed_at && (
+        <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/[0.06] p-4 text-center space-y-3">
+          <div>
+            <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-emerald-500 mb-1">
+              Lessons done
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Take the final quiz to unlock the next course. Retry as many times as you want.
+            </p>
+          </div>
+          <Link href={`/academy/${course.slug}/quiz?title=${encodeURIComponent(course.title)}`}>
+            <Button size="lg" className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold">
+              Take the final quiz
+            </Button>
+          </Link>
+        </div>
+      )}
+
+      {(!hasFinalQuiz || progress?.completed_at) && completedCount === lessons.length && lessons.length > 0 && (
         <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/[0.06] p-4 text-center">
           <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-emerald-500 mb-1">
             Course complete
           </div>
           <p className="text-sm text-muted-foreground">
-            You finished every lesson. Keep going with the next course on the home page.
+            {hasFinalQuiz
+              ? 'You passed the final quiz. Keep going with the next course on the home page.'
+              : 'You finished every lesson. Keep going with the next course on the home page.'}
           </p>
         </div>
       )}
