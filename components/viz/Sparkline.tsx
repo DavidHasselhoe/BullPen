@@ -75,6 +75,8 @@ export function Sparkline({
     return (
       <svg
         viewBox="0 0 16 16"
+        width={16}
+        height={16}
         className={className}
         fill="none"
         strokeWidth={strokeWidth}
@@ -109,6 +111,8 @@ export function Sparkline({
   return (
     <svg
       viewBox={`0 0 ${width} ${height}`}
+      width={width}
+      height={height}
       preserveAspectRatio={preserveAspectRatio}
       className={cn('overflow-visible', className)}
       role="img"
