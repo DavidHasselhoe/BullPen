@@ -37,7 +37,17 @@ export function AnalysisHistory({ items, onRestore, onDelete }: Props) {
           <h3 className="text-sm font-semibold text-foreground">Analysis history</h3>
         </div>
         {scoresOldestFirst.length >= 2 && (
-          <Sparkline data={scoresOldestFirst} width={80} height={24} area ariaLabel="Risk score trend across saved analyses" />
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground/60">Trend</span>
+            <Sparkline
+              data={scoresOldestFirst}
+              direction="neutral"
+              width={80}
+              height={24}
+              area
+              ariaLabel="Risk score trend across saved analyses"
+            />
+          </div>
         )}
       </div>
       <div className="space-y-1">
