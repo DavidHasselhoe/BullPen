@@ -28,7 +28,7 @@ const RANK_STYLES = [
 
 function RankBadge({ rank }: { rank: number }) {
   if (rank <= 3) {
-    return <span className={cn('w-8 text-center tabular-nums', RANK_STYLES[rank - 1])}>{rank === 1 ? '🥇' : rank === 2 ? '🥈' : '🥉'}</span>;
+    return <span className={cn('w-8 text-center tabular-nums', RANK_STYLES[rank - 1])}>{rank}</span>;
   }
   return <span className="w-8 text-center text-sm font-medium text-muted-foreground tabular-nums">{rank}</span>;
 }
