@@ -27,6 +27,7 @@ interface DoneEvent {
   portfolio: Portfolio;
   logoMap: Record<string, string | null>;
   replacedTickers: string[];
+  createdAt?: string | null;
 }
 
 interface StatusResponse {
@@ -39,6 +40,7 @@ interface StatusResponse {
   replacedTickers?: string[];
   errorCode?: ErrorCode | null;
   errorMessage?: string | null;
+  createdAt?: string | null;
 }
 
 const HISTORY_KEY = ['portfolio-builder-history'];
@@ -111,7 +113,7 @@ export function PortfolioBuilderClient() {
   }, [stopPolling]);
 
   const restoreGeneration = useCallback((gen: SavedGeneration) => {
-    setResult({ type: 'done', portfolio: gen.portfolio, logoMap: gen.logoMap, replacedTickers: gen.replacedTickers });
+    setResult({ type: 'done', portfolio: gen.portfolio, logoMap: gen.logoMap, replacedTickers: gen.replacedTickers, createdAt: gen.createdAt });
     setThesis(gen.thesis);
     setPhase('done');
   }, []);
@@ -128,7 +130,7 @@ export function PortfolioBuilderClient() {
 
         if (data.status === 'done' && data.portfolio) {
           stopPolling();
-          setResult({ type: 'done', portfolio: data.portfolio, logoMap: data.logoMap ?? {}, replacedTickers: data.replacedTickers ?? [] });
+          setResult({ type: 'done', portfolio: data.portfolio, logoMap: data.logoMap ?? {}, replacedTickers: data.replacedTickers ?? [], createdAt: data.createdAt });
           setPhase('done');
           invalidateQuota('portfolio_builder');
           queryClient.invalidateQueries({ queryKey: HISTORY_KEY, exact: false });
@@ -158,7 +160,7 @@ export function PortfolioBuilderClient() {
           if (cancelled || !data.success) return;
           setThesis(data.thesis ?? '');
           if (data.status === 'done' && data.portfolio) {
-            setResult({ type: 'done', portfolio: data.portfolio, logoMap: data.logoMap ?? {}, replacedTickers: data.replacedTickers ?? [] });
+            setResult({ type: 'done', portfolio: data.portfolio, logoMap: data.logoMap ?? {}, replacedTickers: data.replacedTickers ?? [], createdAt: data.createdAt });
             setPhase('done');
           } else if (data.status === 'pending') {
             setPhase(data.phase ?? 'streaming');
@@ -261,6 +263,7 @@ export function PortfolioBuilderClient() {
         logoMap={result.logoMap}
         replacedTickers={result.replacedTickers}
         thesis={thesis}
+        createdAt={result.createdAt}
         onReset={reset}
       />
     );

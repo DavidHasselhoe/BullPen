@@ -14,6 +14,7 @@ import {
   TrendingUp, TrendingDown, Minus, Check, X, AlertTriangle, ArrowUpRight, ArrowDownRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { tierBadgeClass, tierTextClass, type Tier } from '@/lib/ui/severity-tiers';
 import type { Block } from '@/lib/ai/deep-dive/schema';
 
 // ─── Shared helpers ───────────────────────────────────────────────────────────
@@ -30,16 +31,20 @@ function toneBadge(tone: Tone): string {
   if (tone === 'negative') return 'bg-red-500/10 text-red-500';
   return 'bg-muted text-muted-foreground';
 }
-const severityBadge: Record<string, string> = {
-  high: 'bg-red-500/10 text-red-500',
-  medium: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-  low: 'bg-muted text-muted-foreground',
-};
+
+/** Deep Dive's `severity` (low/medium/high) onto the shared status/severity
+ *  tier system — matches Risk Analysis's own severity badges exactly,
+ *  rather than the block system's previous ad hoc red/amber/muted set. */
+function severityTier(severity: 'low' | 'medium' | 'high'): Tier {
+  if (severity === 'high') return 'risk';
+  if (severity === 'medium') return 'caution';
+  return 'info';
+}
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   if (!children) return null;
   return (
-    <h3 className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground/85 mb-3">
+    <h3 className="mb-3 text-sm font-semibold text-foreground">
       {children}
     </h3>
   );
@@ -283,12 +288,12 @@ function Risks({ block }: { block: Extract<Block, { type: 'risks' }> }) {
       <div className="space-y-2.5">
         {block.items.map((item, i) => (
           <div key={i} className="flex gap-3">
-            <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-amber-500" />
+            <AlertTriangle className={cn('h-4 w-4 mt-0.5 shrink-0', item.severity ? tierTextClass(severityTier(item.severity)) : 'text-amber-500')} />
             <div className="min-w-0 flex-1">
               <p className="flex items-center gap-2 text-sm font-medium text-foreground">
                 {item.title}
                 {item.severity && (
-                  <span className={cn('text-[11px] font-bold px-1.5 py-0.5 rounded uppercase leading-none', severityBadge[item.severity])}>
+                  <span className={cn('shrink-0 rounded-full border px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide', tierBadgeClass(severityTier(item.severity)))}>
                     {item.severity}
                   </span>
                 )}

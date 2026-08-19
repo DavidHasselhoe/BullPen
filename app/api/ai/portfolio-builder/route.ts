@@ -256,6 +256,7 @@ async function getStatusHandler(
       replacedTickers: data.replaced_tickers ?? [],
       errorCode: data.error_code ?? null,
       errorMessage: data.error_message ?? null,
+      createdAt: data.created_at,
     }));
   }
 

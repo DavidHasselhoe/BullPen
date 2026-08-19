@@ -1,20 +1,14 @@
 // components/holdings/risk-analysis/colors.ts
 //
-// The one severity/color mapping for the whole feature. Collapses the old
-// 4-5 tier green/amber/orange/red scale to the 3 tiers BullPen's palette
-// actually has (DESIGN.md "The One Signal Rule"): neutral (nothing to flag),
-// caution (Warn Amber), risk (Signal Red) — plus 'info' for genuinely
-// low-severity/informational items (Info Blue), which is what that token is
-// for. No orange anywhere; it isn't part of the system.
+// Risk-Analysis-specific mappings onto the shared severity/status tier system
+// (lib/ui/severity-tiers.ts) — the underlying colors/tokens live there now,
+// shared with Deep Dive and Portfolio Builder; this file keeps only the
+// mappings from this feature's own data shapes onto that shared system.
 
-export type RiskTier = 'neutral' | 'info' | 'caution' | 'risk';
+export type { Tier as RiskTier } from '@/lib/ui/severity-tiers';
+export { scoreTier, tierTextClass, tierBarClass, tierBadgeClass } from '@/lib/ui/severity-tiers';
 
-/** Risk-dimension score (0-100) and the overall score share the same bands. */
-export function scoreTier(score: number): RiskTier {
-  if (score >= 70) return 'risk';
-  if (score >= 45) return 'caution';
-  return 'neutral';
-}
+import type { Tier as RiskTier } from '@/lib/ui/severity-tiers';
 
 /** riskLevel: 'Low' | 'Moderate' | 'Elevated' | 'High' | 'Very High' (route.ts:62 thresholds). */
 export function levelTier(level: string): RiskTier {
@@ -51,33 +45,6 @@ export function scenarioTier(severity: string): RiskTier {
       return 'caution';
     default:
       return 'info';
-  }
-}
-
-export function tierTextClass(tier: RiskTier): string {
-  switch (tier) {
-    case 'risk':    return 'text-red-400';
-    case 'caution': return 'text-amber-400';
-    case 'info':    return 'text-blue-400';
-    default:        return 'text-foreground';
-  }
-}
-
-export function tierBarClass(tier: RiskTier): string {
-  switch (tier) {
-    case 'risk':    return 'bg-red-500';
-    case 'caution': return 'bg-amber-500';
-    case 'info':    return 'bg-blue-500';
-    default:        return 'bg-muted-foreground/40';
-  }
-}
-
-export function tierBadgeClass(tier: RiskTier): string {
-  switch (tier) {
-    case 'risk':    return 'bg-red-500/10 text-red-400 border-red-500/20';
-    case 'caution': return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
-    case 'info':    return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
-    default:        return 'bg-muted text-muted-foreground border-border/40';
   }
 }
 

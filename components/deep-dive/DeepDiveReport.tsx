@@ -2,17 +2,11 @@
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Sparkles, RefreshCw, MessageSquare } from 'lucide-react';
+import { RefreshCw, MessageSquare, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { BlockRenderer } from './blocks';
-import { LENS_LABELS, type DeepDiveReport as Report } from '@/lib/ai/deep-dive/schema';
-
-const STANCE_STYLE: Record<Report['verdict']['stance'], { label: string; cls: string }> = {
-  bullish: { label: 'Bullish', cls: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' },
-  bearish: { label: 'Bearish', cls: 'bg-red-500/10 text-red-500 border-red-500/20' },
-  neutral: { label: 'Neutral', cls: 'bg-muted text-muted-foreground border-border' },
-  mixed:   { label: 'Mixed',   cls: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20' },
-};
+import { DeepDiveHero } from './DeepDiveHero';
+import type { DeepDiveReport as Report } from '@/lib/ai/deep-dive/schema';
 
 function fmtWhen(iso: string): string {
   const d = new Date(iso);
@@ -33,67 +27,49 @@ interface Props {
   onAsk?: () => void;
 }
 
+// Hierarchy mirrors Risk Analysis's redesign brief: hero/summary -> data-driven
+// blocks (this feature's own information architecture — the model decides
+// which block types apply, unlike RA's fixed schema) -> footer, using the
+// same space-y-7 / border-t rhythm and Generated-· / Ask-Bull footer
+// convention as every other AI result surface.
 export function DeepDiveReport({ report, createdAt, onRegenerate, regenerating, onAsk }: Props) {
-  const stance = STANCE_STYLE[report.verdict.stance];
   const when = createdAt ?? report.generatedAt;
 
   return (
     <Card className="overflow-hidden">
-      {/* Header */}
-      <div className="border-b border-border/60 bg-muted/20 px-5 sm:px-6 py-5">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-widest text-primary">
-                <Sparkles className="h-3 w-3" /> AI Deep Dive
-              </span>
-              <span className="text-[11px] text-muted-foreground/85">·</span>
-              <span className="text-[11px] text-muted-foreground/80">{LENS_LABELS[report.lens]}</span>
-            </div>
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground leading-tight">
-              {report.companyName} <span className="text-muted-foreground font-mono text-base">${report.ticker}</span>
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1 max-w-2xl leading-snug">{report.headline}</p>
-          </div>
-
-          <div className="flex flex-col items-end gap-2 shrink-0">
-            <span className={cn('text-xs font-bold px-2.5 py-1 rounded-full border', stance.cls)}>
-              {stance.label}
-              <span className="font-normal opacity-70"> · {report.verdict.confidence} confidence</span>
-            </span>
-            <div className="flex items-center gap-1.5">
-              {onAsk && (
-                <Button variant="outline" size="sm" onClick={onAsk} className="h-8 gap-1.5 text-xs">
-                  <MessageSquare className="h-3.5 w-3.5" /> Ask AI
-                </Button>
-              )}
-              {onRegenerate && (
-                <Button variant="outline" size="sm" onClick={onRegenerate} disabled={regenerating} className="h-8 gap-1.5 text-xs animate-ai-sweep">
-                  <RefreshCw className={cn('h-3.5 w-3.5', regenerating && 'animate-spin')} /> Regenerate
-                </Button>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Verdict one-liner */}
-        <div className="mt-3 rounded-lg border border-border/50 bg-background/50 px-3.5 py-2.5">
-          <p className="text-sm text-foreground/90 leading-relaxed">{report.verdict.oneLiner}</p>
-        </div>
-      </div>
-
-      {/* Blocks */}
       <CardContent className="px-5 sm:px-6 py-6 space-y-7">
-        {report.blocks.map((block, i) => (
-          <BlockRenderer key={i} block={block} />
-        ))}
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div className="flex-1 min-w-0">
+            <DeepDiveHero report={report} />
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            {onAsk && (
+              <Button variant="outline" size="sm" onClick={onAsk} className="h-8 gap-1.5 text-xs">
+                <MessageSquare className="h-3.5 w-3.5" /> Ask AI
+              </Button>
+            )}
+            {onRegenerate && (
+              <Button variant="outline" size="sm" onClick={onRegenerate} disabled={regenerating} className="h-8 gap-1.5 text-xs animate-ai-sweep">
+                <RefreshCw className={cn('h-3.5 w-3.5', regenerating && 'animate-spin')} /> Regenerate
+              </Button>
+            )}
+          </div>
+        </div>
 
-        {/* Provenance footer */}
-        <div className="border-t border-border/40 pt-4 flex items-center justify-between gap-2 flex-wrap">
-          <p className="text-[11px] text-muted-foreground/85 leading-relaxed max-w-md">
-            Generated {fmtWhen(when)}
-            {report.dataAsOf ? ` · fundamentals as of ${report.dataAsOf}` : ''}. Educational only — not investment advice.
-          </p>
+        <div className="space-y-7 border-t border-border/20 pt-6">
+          {report.blocks.map((block, i) => (
+            <BlockRenderer key={i} block={block} />
+          ))}
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/20 pt-6">
+          <span className="text-[11px] font-mono uppercase tracking-[0.15em] text-muted-foreground/80">
+            Generated · {fmtWhen(when)}
+            {report.dataAsOf ? ` · fundamentals as of ${report.dataAsOf}` : ''}
+          </span>
+          <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground/70">
+            <Sparkles className="h-3 w-3" /> Educational only — not investment advice
+          </span>
         </div>
       </CardContent>
     </Card>
