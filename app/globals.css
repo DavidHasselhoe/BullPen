@@ -730,10 +730,13 @@ html.animated-background-active [data-slot="dialog-content"] {
      .academy-current-pulse — box-shadow opacity/spread only, nothing
      scales, so it reads as precise rather than bouncy. The global
      prefers-reduced-motion rule below already snaps this to a single
-     static frame. */
+     static frame. Opacity/spread tuned up from 16%/6px to 35%/8px — against
+     a light button fill in dark mode the original ring was functionally
+     invisible; this keeps the same restrained mechanic while actually
+     reading as motion. */
   @keyframes cta-pulse {
-    0%, 100% { box-shadow: 0 0 0 0   color-mix(in oklch, var(--foreground) 16%, transparent); }
-    50%      { box-shadow: 0 0 0 6px color-mix(in oklch, var(--foreground) 0%,  transparent); }
+    0%, 100% { box-shadow: 0 0 0 0   color-mix(in oklch, var(--foreground) 35%, transparent); }
+    50%      { box-shadow: 0 0 0 8px color-mix(in oklch, var(--foreground) 0%,  transparent); }
   }
   .animate-cta-pulse {
     animation: cta-pulse 2.2s ease-in-out infinite;
