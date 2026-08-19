@@ -19,7 +19,8 @@ import { ChartTooltip } from '@/components/charts/tooltip';
 import { useChartPrefs, type AdvancedChartType } from '@/hooks/use-chart-prefs';
 import { getIndicatorDef, defaultParamsFor, INDICATOR_PALETTE, INDICATOR_PRESETS, type IndicatorInstance } from '@/lib/finance/indicators';
 import { ChartSettingsPanel } from './ChartSettingsPanel';
-import { useAIPanel } from '@/components/ai/AIPanelProvider';
+import { AiPaywallDialog } from '@/components/billing/AiPaywallDialog';
+import { useWhyTodayGate } from '@/hooks/use-why-today-gate';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLivePrices } from '@/hooks/use-live-prices';
 import { useStockQuote } from '@/hooks/use-stock-price';
@@ -142,7 +143,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
   );
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const { isSimplified } = useExperienceLevel();
-  const { openWhyToday } = useAIPanel();
+  const { requestWhyToday, paywallOpen, setPaywallOpen, paywallQuota } = useWhyTodayGate();
 
   function toggleIndicator(key: Indicator) {
     setActiveIndicators((prev) => {
@@ -520,7 +521,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
                     </span>
                     <button
                       type="button"
-                      onClick={() => openWhyToday({ ticker, price, change, changePct })}
+                      onClick={() => requestWhyToday({ ticker, price, change, changePct })}
                       className="flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground hover:border-foreground/30"
                     >
                       <Sparkles className="h-3 w-3" />
@@ -568,7 +569,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
                   {range === '1D' && (
                     <button
                       type="button"
-                      onClick={() => openWhyToday({ ticker, price, change, changePct })}
+                      onClick={() => requestWhyToday({ ticker, price, change, changePct })}
                       className="flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground hover:border-foreground/30"
                     >
                       <Sparkles className="h-3 w-3" />
@@ -856,6 +857,13 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
           sales={mySales}
         />
       )}
+
+      <AiPaywallDialog
+        open={paywallOpen}
+        onOpenChange={setPaywallOpen}
+        featureName="Why Today"
+        quota={paywallQuota}
+      />
     </div>
   );
 }

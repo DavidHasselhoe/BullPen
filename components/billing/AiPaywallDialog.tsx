@@ -6,7 +6,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Crown } from 'lucide-react';
 import type { QuotaState } from '@/lib/billing/quotas';
-import { RiskAnalysisPaywallContent } from './RiskAnalysisPaywallContent';
+import { AiPaywallContent } from './AiPaywallContent';
+import { AI_PAYWALL_CONFIG } from './paywall-config';
 
 interface Props {
   open: boolean;
@@ -28,27 +29,34 @@ export function AiPaywallDialog({ open, onOpenChange, featureName, quota }: Prop
   // Pro user who hit a cost-protection soft cap — they're already Pro, so don't upsell.
   const isProCap = quota?.reason === 'pro_cap_reached';
 
-  // Portfolio Risk Analysis gets a richer, feature-specific upsell (value
-  // stack, price, annual toggle, blurred result preview) — not generalized
-  // to the other 4 callers of this dialog (Ask Bull, Portfolio Builder,
-  // Deep Dive, Chart AI) since their benefits/preview content would need to
-  // be fabricated differently per feature. isProCap still falls through to
-  // the generic "Got it" content below since that user is already Pro.
-  if (featureName === 'Portfolio Risk Analysis' && !isProCap) {
-    return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="overflow-hidden p-0 text-center sm:max-w-sm" showCloseButton>
-          <RiskAnalysisPaywallContent quota={quota} onDismiss={() => onOpenChange(false)} />
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
   const headline = isProCap
     ? `You've reached this month's ${featureName} limit`
     : isProOnly
     ? `${featureName} is a Pro feature`
     : `You've used your free ${featureName} ${quota?.limit === 1 ? 'run' : 'runs'} ${quota?.period === 'day' ? 'today' : 'this month'}`;
+
+  // Every AI-generation gate gets the richer, feature-specific upsell (value
+  // stack, price, annual toggle, fabricated result preview) via AI_PAYWALL_CONFIG
+  // — one shared AiPaywallContent, only the benefits/preview differ per feature.
+  // isProCap still falls through to the generic "Got it" content below since
+  // that user is already Pro and shouldn't be upsold.
+  const config = AI_PAYWALL_CONFIG[featureName];
+  if (config && !isProCap) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="overflow-hidden p-0 text-center sm:max-w-sm" showCloseButton>
+          <AiPaywallContent
+            headline={headline}
+            benefits={config.benefits}
+            preview={config.preview}
+            quota={quota}
+            showResetLine={!isProOnly}
+            onDismiss={() => onOpenChange(false)}
+          />
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   const body = isProCap
     ? `You've used all ${quota?.limit} of this month's ${featureName} runs. ${quota ? `Your usage limit resets ${formatReset(quota.resetsAt, quota.period)}. This isn't tied to your billing date.` : ''} Saved reports are always free to revisit.`

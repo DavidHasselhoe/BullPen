@@ -1,41 +1,52 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { ShieldAlert, Zap, Sparkles, Crown } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import { Crown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { DialogTitle } from '@/components/ui/dialog';
 import { PRICING, PLAN_COMPARISON_UPGRADE_COUNT } from '@/lib/billing/entitlements';
 import type { QuotaState } from '@/lib/billing/quotas';
-import { RiskAnalysisPaywallPreview } from './RiskAnalysisPaywallPreview';
 
-interface Props {
-  quota?: QuotaState;
-  onDismiss: () => void;
+export interface PaywallBenefit {
+  icon: LucideIcon;
+  text: string;
 }
 
-const BENEFITS = [
-  { icon: ShieldAlert, text: 'Unlimited Portfolio Risk Analysis' },
-  { icon: Zap, text: 'A daily market brief, in plain English' },
-  { icon: Sparkles, text: 'See why your stocks moved with "Why Today?"' },
-];
+interface Props {
+  headline: string;
+  benefits: PaywallBenefit[];
+  preview: ReactNode;
+  quota?: QuotaState;
+  /** False for a hard Pro-only gate (e.g. Why Today) — there's no free quota to reset. */
+  showResetLine: boolean;
+  onDismiss: () => void;
+}
 
 function formatResetDay(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { month: 'long', day: 'numeric' });
 }
 
-export function RiskAnalysisPaywallContent({ quota, onDismiss }: Props) {
+/**
+ * Shared "rich" paywall body: fabricated feature preview, a short value stack,
+ * a link to the rest of the benefits, and the pricing toggle/CTA. One
+ * component reused across every AI-generation gate (Risk Analysis, Why Today,
+ * Ask Bull, Portfolio Builder, Deep Dive) — only the headline/benefits/preview
+ * change per feature, so the offer can never drift between them.
+ */
+export function AiPaywallContent({ headline, benefits, preview, quota, showResetLine, onDismiss }: Props) {
   // Annual first, matching /upgrade's own default — it's the price this
   // dialog leads with, same convention as the pricing page.
   const [annual, setAnnual] = useState(true);
   const price = annual ? PRICING.proAnnualPerMonth : PRICING.proMonthly;
   const checkoutHref = `/upgrade?checkout=${annual ? 'annual' : 'monthly'}`;
-  const moreBenefitsCount = PLAN_COMPARISON_UPGRADE_COUNT - BENEFITS.length;
+  const moreBenefitsCount = PLAN_COMPARISON_UPGRADE_COUNT - benefits.length;
 
   return (
     <div className="relative">
-      <RiskAnalysisPaywallPreview />
+      {preview}
 
       {/* Brand badge — a supporting seal overlapping the preview/content seam,
           the same "badge overlapping a card edge" pattern as /upgrade's
@@ -63,10 +74,10 @@ export function RiskAnalysisPaywallContent({ quota, onDismiss }: Props) {
       </div>
 
       <div className="px-6 pb-6 pt-7 text-center">
-        <DialogTitle className="text-balance">You&apos;ve used your free Portfolio Risk Analysis run this month</DialogTitle>
+        <DialogTitle className="text-balance">{headline}</DialogTitle>
 
         <div className="mt-4 space-y-2.5 text-left">
-          {BENEFITS.map(({ icon: Icon, text }) => (
+          {benefits.map(({ icon: Icon, text }) => (
             <div key={text} className="flex items-center gap-2.5">
               <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10">
                 <Icon className="h-3.5 w-3.5 text-primary" />
@@ -85,7 +96,7 @@ export function RiskAnalysisPaywallContent({ quota, onDismiss }: Props) {
           </Link>
         )}
 
-        {quota && (
+        {showResetLine && quota && (
           <p className="mt-3 text-[11px] text-muted-foreground/70">Your free limit resets {formatResetDay(quota.resetsAt)}</p>
         )}
 

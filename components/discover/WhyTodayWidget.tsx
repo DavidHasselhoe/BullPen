@@ -6,10 +6,11 @@ import { useQuery } from '@tanstack/react-query';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
-import { useAIPanel } from '@/components/ai/AIPanelProvider';
+import { AiPaywallDialog } from '@/components/billing/AiPaywallDialog';
 import { useAuth } from '@/hooks/use-auth';
 import { useHoldings } from '@/hooks/use-holdings';
 import { useWatchlist } from '@/hooks/use-watchlist';
+import { useWhyTodayGate } from '@/hooks/use-why-today-gate';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
 
 interface Quote {
@@ -22,7 +23,7 @@ export function WhyTodayWidget() {
   const { isAuthenticated } = useAuth();
   const { data: holdings } = useHoldings();
   const { data: watchlist } = useWatchlist();
-  const { openWhyToday } = useAIPanel();
+  const { requestWhyToday, paywallOpen, setPaywallOpen, paywallQuota } = useWhyTodayGate();
 
   const symbols = useMemo(() => {
     const set = new Set<string>();
@@ -106,7 +107,7 @@ export function WhyTodayWidget() {
             </Link>
             <ChangeBadge changePercent={featured.changePercent} />
             <button
-              onClick={() => openWhyToday({
+              onClick={() => requestWhyToday({
                 ticker: featured.symbol,
                 price: featured.price,
                 change: featured.change,
@@ -119,6 +120,13 @@ export function WhyTodayWidget() {
           </div>
         </div>
       )}
+
+      <AiPaywallDialog
+        open={paywallOpen}
+        onOpenChange={setPaywallOpen}
+        featureName="Why Today"
+        quota={paywallQuota}
+      />
     </div>
   );
 }
