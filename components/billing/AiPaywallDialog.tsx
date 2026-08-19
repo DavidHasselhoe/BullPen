@@ -51,11 +51,11 @@ export function AiPaywallDialog({ open, onOpenChange, featureName, quota }: Prop
     : `You've used your free ${featureName} ${quota?.limit === 1 ? 'run' : 'runs'} ${quota?.period === 'day' ? 'today' : 'this month'}`;
 
   const body = isProCap
-    ? `You've used all ${quota?.limit} of this month's ${featureName} runs. ${quota ? `Resets ${formatReset(quota.resetsAt, quota.period)}.` : ''} Saved reports are always free to revisit.`
+    ? `You've used all ${quota?.limit} of this month's ${featureName} runs. ${quota ? `Your usage limit resets ${formatReset(quota.resetsAt, quota.period)}. This isn't tied to your billing date.` : ''} Saved reports are always free to revisit.`
     : isProOnly
     ? `Upgrade to Pro to unlock ${featureName} and the rest of BullPen's AI features.`
     : quota
-    ? `Resets ${formatReset(quota.resetsAt, quota.period)}. Upgrade to Pro for unlimited access, plus Daily Brief, "Why Today?", and more.`
+    ? `Your free limit resets ${formatReset(quota.resetsAt, quota.period)}. Upgrade to Pro for unlimited access, plus Daily Brief, "Why Today?", and more.`
     : `Upgrade to Pro for unlimited access to ${featureName} and more.`;
 
   return (

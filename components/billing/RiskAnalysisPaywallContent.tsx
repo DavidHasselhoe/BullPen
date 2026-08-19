@@ -86,7 +86,7 @@ export function RiskAnalysisPaywallContent({ quota, onDismiss }: Props) {
         )}
 
         {quota && (
-          <p className="mt-3 text-[11px] text-muted-foreground/70">Resets {formatResetDay(quota.resetsAt)}</p>
+          <p className="mt-3 text-[11px] text-muted-foreground/70">Your free limit resets {formatResetDay(quota.resetsAt)}</p>
         )}
 
         <div className="mt-5 flex justify-center">
