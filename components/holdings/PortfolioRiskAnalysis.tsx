@@ -7,10 +7,11 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
-  ShieldAlert, RefreshCw, AlertTriangle, CheckCircle2, Crown, Sparkles,
+  ShieldAlert, RefreshCw, AlertTriangle, Crown, Sparkles,
 } from 'lucide-react';
 import { AiPaywallDialog } from '@/components/billing/AiPaywallDialog';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { ProcessingScreen } from '@/components/ui/ProcessingScreen';
 import { useAuth } from '@/hooks/use-auth';
 import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import type { QuotaState } from '@/lib/billing/quotas';
@@ -80,23 +81,11 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
   const [paywallQuota, setPaywallQuota] = useState<QuotaState | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Sequential loading (Phase 1: symbol tick-off) — purely decorative; the
-  // underlying Claude call is a single non-streaming request with no real
-  // granular progress to report, same as the server's single 'analyzing' phase.
+  // Sequential loading (symbol tick-off) — purely decorative; the underlying
+  // Claude call is a single non-streaming request with no real granular
+  // progress to report, same as the server's single 'analyzing' phase.
   const [loadingStep, setLoadingStep] = useState(0);
   const loadingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const analyzeTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const [analyzeStep, setAnalyzeStep] = useState(0);
-
-  const ANALYZE_STAGES = useMemo(() => [
-    'Calculating concentration risk…',
-    'Assessing sector diversification…',
-    'Modelling stress scenarios…',
-    'Computing correlation exposure…',
-    'Evaluating liquidity risk…',
-    'Generating recommendations…',
-    'Synthesizing findings…',
-  ], []);
 
   const payload = useMemo(
     () => holdings.map((h) => ({
@@ -115,28 +104,15 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
   useEffect(() => {
     if (state === 'loading') {
       setLoadingStep(0);
-      setAnalyzeStep(0);
       loadingTimerRef.current = setInterval(() => setLoadingStep((s) => s + 1), 220);
-    } else {
-      if (loadingTimerRef.current) { clearInterval(loadingTimerRef.current); loadingTimerRef.current = null; }
-      if (analyzeTimerRef.current) { clearInterval(analyzeTimerRef.current); analyzeTimerRef.current = null; }
+    } else if (loadingTimerRef.current) {
+      clearInterval(loadingTimerRef.current);
+      loadingTimerRef.current = null;
     }
     return () => {
       if (loadingTimerRef.current) clearInterval(loadingTimerRef.current);
-      if (analyzeTimerRef.current) clearInterval(analyzeTimerRef.current);
     };
   }, [state]);
-
-  const allSymbolsLoaded = loadingStep >= holdings.length;
-  useEffect(() => {
-    if (state !== 'loading' || !allSymbolsLoaded) return;
-    analyzeTimerRef.current = setInterval(
-      () => setAnalyzeStep((s) => (s + 1) % ANALYZE_STAGES.length),
-      2200
-    );
-    return () => { if (analyzeTimerRef.current) clearInterval(analyzeTimerRef.current); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state, allSymbolsLoaded]);
 
   // Saved analyses history
   const { data: historyData } = useQuery<{ analyses: SavedRiskAnalysis[] }>({
@@ -312,43 +288,12 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
 
           {/* ── Loading ─────────────────────────────────────────────────────── */}
           {state === 'loading' && (
-            <div className="py-7 space-y-4">
-              <div className="text-center space-y-0.5">
-                <p className="text-sm font-medium text-foreground">Analyzing portfolio…</p>
-                <p className="text-[11px] text-muted-foreground/85">Running 6-dimension risk assessment</p>
-              </div>
-              <div className="max-w-[190px] mx-auto space-y-1.5 font-mono text-[11px]">
-                {holdings.slice(0, Math.min(loadingStep, holdings.length)).map((h) => (
-                  <div key={h.symbol} className="flex items-center gap-2 text-muted-foreground/85">
-                    <CheckCircle2 className="h-3 w-3 text-green-500 shrink-0" />
-                    <span className="tabular-nums">{h.symbol}</span>
-                  </div>
-                ))}
-                {loadingStep < holdings.length && (
-                  <div className="flex items-center gap-2 text-foreground/40">
-                    <span className="h-3 w-3 rounded-full border border-muted-foreground/30 shrink-0 motion-safe:animate-pulse" />
-                    <span className="tabular-nums">{holdings[loadingStep]?.symbol}</span>
-                  </div>
-                )}
-              </div>
-              {allSymbolsLoaded && (
-                <div className="flex flex-col items-center gap-2.5 pt-1">
-                  <p className="text-[11px] text-muted-foreground/80 flex items-center gap-1.5">
-                    <span className="h-1.5 w-1.5 rounded-full bg-primary motion-safe:animate-pulse shrink-0" />
-                    {ANALYZE_STAGES[analyzeStep]}
-                  </p>
-                  <div className="flex items-end gap-1" aria-hidden>
-                    {[0, 1, 2].map((i) => (
-                      <span key={i} className="inline-block h-1.5 w-1.5 rounded-full bg-muted-foreground/30 motion-safe:animate-bounce"
-                        style={{ animationDelay: `${i * 0.18}s`, animationDuration: '0.9s' }} />
-                    ))}
-                  </div>
-                </div>
-              )}
-              <p className="text-[11px] text-muted-foreground/85 text-center max-w-xs mx-auto leading-relaxed">
-                Typically 15–30 seconds. Feel free to leave this page. We&apos;ll notify you when it&apos;s ready.
-              </p>
-            </div>
+            <ProcessingScreen
+              items={holdings.map((h, i) => ({ label: h.symbol, done: i < loadingStep }))}
+              itemNoun={{ singular: 'holding', plural: 'holdings' }}
+              subtext="Running 6-dimension risk assessment. Typically 15-30 seconds."
+              leavePageHint
+            />
           )}
 
           {/* ── Error ───────────────────────────────────────────────────────── */}

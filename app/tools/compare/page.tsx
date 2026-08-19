@@ -41,7 +41,7 @@ import type { CompareCompany } from '@/app/api/compare/route';
 import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import { useRecentlyCompared } from '@/hooks/use-recently-compared';
 import { RecentlyComparedCard } from '@/components/tools/compare/RecentlyComparedCard';
-import { CompareLoadingState } from '@/components/tools/compare/CompareLoadingState';
+import { ProcessingScreen } from '@/components/ui/ProcessingScreen';
 import { cn } from '@/lib/utils';
 import { Suspense, Fragment } from 'react';
 
@@ -429,7 +429,7 @@ function CompareContent() {
   // One query per company instead of one batched request — lets the loading
   // state show real per-company progress (which ticker is still in flight)
   // instead of an all-or-nothing wait on the slowest one. See
-  // CompareLoadingState and /api/compare/company.
+  // ProcessingScreen and /api/compare/company.
   const compareQueries = useQueries({
     queries: tickers.map((ticker) => ({
       queryKey: ['compare-company', ticker],
@@ -710,7 +710,12 @@ function CompareContent() {
       </Link>
 
       {isLoading ? (
-        <CompareLoadingState items={progressItems} complete={allSettled} />
+        <ProcessingScreen
+          items={progressItems}
+          itemNoun={{ singular: 'company', plural: 'companies' }}
+          complete={allSettled}
+          subtext="This can take up to 20 seconds for companies we haven't cached yet."
+        />
       ) : (
         <>
           <div className="mb-8">

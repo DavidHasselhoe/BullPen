@@ -17,13 +17,17 @@ import { useInvalidateQuota } from '@/hooks/use-quota';
 import { QuotaIndicator } from '@/components/billing/QuotaIndicator';
 import { AiPaywallDialog } from '@/components/billing/AiPaywallDialog';
 import { DeepDiveReport } from '@/components/deep-dive/DeepDiveReport';
-import { GenerationProgress, type DivePhase } from '@/components/deep-dive/GenerationProgress';
 import { LensPicker } from '@/components/deep-dive/LensPicker';
+import { ProcessingScreen } from '@/components/ui/ProcessingScreen';
 import { isLens, type DeepDiveLens, type DeepDiveReport as Report } from '@/lib/ai/deep-dive/schema';
 import type { QuotaState } from '@/lib/billing/quotas';
 
 type Phase = 'loading' | 'idle' | 'generating' | 'done' | 'error';
 type ErrorCode = 'parse_failed' | 'rate_limited' | 'payment_required' | 'invalid_key' | 'unknown';
+export type DivePhase = 'reading_data' | 'searching' | 'reasoning' | 'composing';
+
+const DIVE_PHASE_LABELS = ['Reading fundamentals…', 'Researching the web…', 'Reasoning through the analysis…', 'Composing the report…'];
+const DIVE_PHASE_ORDER: Record<DivePhase, number> = { reading_data: 0, searching: 1, reasoning: 2, composing: 3 };
 
 const POLL_INTERVAL_MS = 2500;
 
@@ -218,7 +222,15 @@ export default function DeepDivePage() {
         )}
 
         {phase === 'generating' && (
-          <GenerationProgress phase={genPhase} ticker={symbol} />
+          <ProcessingScreen
+            phase={{
+              index: DIVE_PHASE_ORDER[genPhase],
+              total: DIVE_PHASE_LABELS.length,
+              label: DIVE_PHASE_LABELS[DIVE_PHASE_ORDER[genPhase]],
+            }}
+            subtext={`Analyzing $${symbol}. This usually takes 20-40 seconds.`}
+            leavePageHint
+          />
         )}
 
         {phase === 'done' && report && (

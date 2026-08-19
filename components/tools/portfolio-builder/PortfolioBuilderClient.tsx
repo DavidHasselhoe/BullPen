@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ThesisInput } from './ThesisInput';
-import { StreamingThoughts } from './StreamingThoughts';
+import { ProcessingScreen } from '@/components/ui/ProcessingScreen';
 import { PortfolioResult } from './PortfolioResult';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,6 +21,9 @@ import { useInvalidateQuota } from '@/hooks/use-quota';
 type Phase = 'idle' | 'streaming' | 'composing' | 'validating' | 'done' | 'error';
 type ErrorCode = 'invalid_key' | 'payment_required' | 'rate_limited' | 'parse_failed' | 'too_few_valid_tickers' | 'quota_exceeded' | 'unknown';
 type BuilderPhase = 'streaming' | 'composing' | 'validating';
+
+const BUILDER_PHASE_LABELS = ['Analyzing thesis…', 'Composing portfolio…', 'Validating tickers…'];
+const BUILDER_PHASE_ORDER: Record<BuilderPhase, number> = { streaming: 0, composing: 1, validating: 2 };
 
 interface DoneEvent {
   type: 'done';
@@ -293,7 +296,18 @@ export function PortfolioBuilderClient() {
     );
   }
 
-  return <StreamingThoughts phase={phase as BuilderPhase} />;
+  const builderPhase = phase as BuilderPhase;
+  return (
+    <ProcessingScreen
+      phase={{
+        index: BUILDER_PHASE_ORDER[builderPhase],
+        total: BUILDER_PHASE_LABELS.length,
+        label: BUILDER_PHASE_LABELS[BUILDER_PHASE_ORDER[builderPhase]],
+      }}
+      subtext="This usually takes 15-30 seconds."
+      leavePageHint
+    />
+  );
 }
 
 // ── Recent portfolios list ────────────────────────────────────────────────────
