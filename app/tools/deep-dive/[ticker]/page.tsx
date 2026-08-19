@@ -68,6 +68,10 @@ export default function DeepDivePage() {
   const [errorCode, setErrorCode] = useState<ErrorCode>('unknown');
   const [errorMessage, setErrorMessage] = useState('');
   const [paywallQuota, setPaywallQuota] = useState<QuotaState | null>(null);
+  // True for a brief hold after the real report lands, before swapping the
+  // loading screen out for the result — otherwise the bar hits 100% and the
+  // whole screen changes in the same instant.
+  const [justCompleted, setJustCompleted] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const stopPolling = useCallback(() => {
@@ -94,9 +98,13 @@ export default function DeepDivePage() {
           setReport(data.report);
           setCreatedAt(data.report.generatedAt ?? null);
           setLens(data.report.lens ?? useLens);
-          setPhase('done');
           invalidateQuota('deep_dive');
           queryClient.invalidateQueries({ queryKey: ['deep-dive-list'] });
+          setJustCompleted(true);
+          setTimeout(() => {
+            setJustCompleted(false);
+            setPhase('done');
+          }, 650);
         } else if (data.status === 'error') {
           stopPolling();
           setErrorCode(data.errorCode ?? 'unknown');
@@ -141,6 +149,7 @@ export default function DeepDivePage() {
   const generate = useCallback(async (useLens: DeepDiveLens) => {
     stopPolling();
     setPhase('generating');
+    setJustCompleted(false);
     setGenPhase('reading_data');
     setErrorMessage('');
 
@@ -229,6 +238,7 @@ export default function DeepDivePage() {
               label: DIVE_PHASE_LABELS[DIVE_PHASE_ORDER[genPhase]],
             }}
             subtext={`Analyzing $${symbol}. This usually takes 20-40 seconds.`}
+            complete={justCompleted}
             leavePageHint
           />
         )}

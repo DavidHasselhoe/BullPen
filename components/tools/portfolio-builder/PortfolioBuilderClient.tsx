@@ -57,6 +57,10 @@ export function PortfolioBuilderClient() {
   const [errorMessage, setErrorMessage] = useState('');
   const [thesis, setThesis] = useState('');
   const [paywallQuota, setPaywallQuota] = useState<QuotaState | null>(null);
+  // True for a brief hold after the real portfolio lands, before swapping
+  // the loading screen out for the result — otherwise the bar hits 100%
+  // and the whole screen changes in the same instant.
+  const [justCompleted, setJustCompleted] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const queryClient = useQueryClient();
   const invalidateQuota = useInvalidateQuota();
@@ -134,9 +138,13 @@ export function PortfolioBuilderClient() {
         if (data.status === 'done' && data.portfolio) {
           stopPolling();
           setResult({ type: 'done', portfolio: data.portfolio, logoMap: data.logoMap ?? {}, replacedTickers: data.replacedTickers ?? [], createdAt: data.createdAt });
-          setPhase('done');
           invalidateQuota('portfolio_builder');
           queryClient.invalidateQueries({ queryKey: HISTORY_KEY, exact: false });
+          setJustCompleted(true);
+          setTimeout(() => {
+            setJustCompleted(false);
+            setPhase('done');
+          }, 650);
         } else if (data.status === 'error') {
           stopPolling();
           setErrorCode(data.errorCode ?? 'unknown');
@@ -194,6 +202,7 @@ export function PortfolioBuilderClient() {
   const submit = async (submittedThesis: string) => {
     stopPolling();
     setPhase('streaming');
+    setJustCompleted(false);
     setResult(null);
     setErrorMessage('');
     setThesis(submittedThesis);
@@ -305,6 +314,7 @@ export function PortfolioBuilderClient() {
         label: BUILDER_PHASE_LABELS[BUILDER_PHASE_ORDER[builderPhase]],
       }}
       subtext="This usually takes 15-30 seconds."
+      complete={justCompleted}
       leavePageHint
     />
   );

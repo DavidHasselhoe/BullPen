@@ -74,6 +74,10 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
   }, [user]);
 
   const [state, setState] = useState<State>('idle');
+  // True for a brief hold after the real analysis lands, before swapping the
+  // loading screen out for the result — otherwise the bar hits 100% and the
+  // whole screen changes in the same instant.
+  const [justCompleted, setJustCompleted] = useState(false);
   const [analysis, setAnalysis] = useState<RiskAnalysis | null>(null);
   const [restoredFrom, setRestoredFrom] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
@@ -163,8 +167,12 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
           stopPolling();
           setAnalysis(data.analysis);
           setRestoredFrom(null);
-          setState('loaded');
           queryClient.invalidateQueries({ queryKey: HISTORY_KEY });
+          setJustCompleted(true);
+          setTimeout(() => {
+            setJustCompleted(false);
+            setState('loaded');
+          }, 650);
         } else if (data.status === 'error') {
           stopPolling();
           setErrorMessage(data.errorMessage || 'Something went wrong analyzing your portfolio.');
@@ -198,6 +206,7 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
   async function analyze() {
     stopPolling();
     setState('loading');
+    setJustCompleted(false);
     setErrorMessage('');
     setRestoredFrom(null);
     try {
@@ -292,6 +301,7 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
               items={holdings.map((h, i) => ({ label: h.symbol, done: i < loadingStep }))}
               itemNoun={{ singular: 'holding', plural: 'holdings' }}
               subtext="Running 6-dimension risk assessment. Typically 15-30 seconds."
+              complete={justCompleted}
               leavePageHint
             />
           )}

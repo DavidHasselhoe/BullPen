@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
 import { Progress } from '@/components/ui/progress';
 import { POSE_SRC } from '@/components/ui/EmptyState';
 
@@ -38,7 +39,9 @@ interface Props {
    * True during the brief hold after the work has actually finished, right
    * before the parent swaps this out for the real content — gives the user
    * a moment to register "done" instead of the bar hitting 100% and the
-   * whole screen changing in the same instant.
+   * whole screen changing in the same instant. Callers should keep
+   * rendering this component with complete=true for ~500-700ms after the
+   * real result arrives rather than unmounting it immediately.
    */
   complete?: boolean;
   /** Headline shown once `complete` is true. Default: "All set!" */
@@ -52,7 +55,7 @@ interface Props {
    */
   subtext?: string;
   /**
-   * Shows "Feel free to leave this page — we'll notify you when it's ready."
+   * Shows "Feel free to leave this page. We'll notify you when it's ready."
    * Only for features backed by a real background job the user can safely
    * navigate away from (poll-and-resume) — not for a synchronous wait like
    * Compare's, which the user should just stay on.
@@ -61,14 +64,53 @@ interface Props {
 }
 
 /**
- * The one processing/loading screen for every AI-generation feature in the
- * app — piloted on Compare, then generalized here so Risk Analysis,
- * Portfolio Builder, and Deep Dive (previously each with their own bespoke
- * animation) share identical chrome: mascot, one message, a progress bar,
- * and (where relevant) the leave-this-page reassurance. Deliberately
- * minimal — no rotating hints, elapsed timers, or decorative flourishes,
- * so it reads as one calm, recognizable pattern everywhere it appears.
+ * Real progress (items done / phase index) only ever moves in a few big,
+ * infrequent steps — jumping the bar straight between those values reads as
+ * broken ("is this stuck?"), and a single phase can legitimately run
+ * 30-90s (extended thinking) with zero real signal in between. This
+ * simulates continuous motion on top of the real signal: within the current
+ * band [bandStart, bandEnd), the ceiling itself creeps forward with elapsed
+ * time (not just distance), asymptotically approaching but never reaching
+ * bandEnd — so the bar stays visibly alive no matter how long a single band
+ * lasts, without ever claiming to be further along than the real signal
+ * allows. A real band change (the next item/phase) snaps the clock and
+ * lets the bar jump forward again. `complete` overrides everything to 100.
  */
+function useSimulatedPercent(bandStart: number, bandEnd: number, complete: boolean): number {
+  const [display, setDisplay] = useState(1);
+  // null until the first effect run sets it — avoids calling the impure
+  // Date.now() during render (useRef's initial-value argument still runs
+  // on every render even though only the first call is kept).
+  const bandStartedAtRef = useRef<number | null>(null);
+  const prevBandStartRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (prevBandStartRef.current !== bandStart) {
+      prevBandStartRef.current = bandStart;
+      bandStartedAtRef.current = Date.now();
+    }
+  }, [bandStart]);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setDisplay((d) => {
+        if (complete) {
+          if (d >= 100) return d;
+          return Math.min(d + Math.max((100 - d) * 0.12, 3), 100);
+        }
+        const elapsedSec = (Date.now() - (bandStartedAtRef.current ?? Date.now())) / 1000;
+        const eased = 1 - Math.exp(-elapsedSec / 12); // ~63% of the way in 12s, ~95% by 36s
+        const target = Math.max(d, bandStart + (bandEnd - bandStart) * 0.95 * eased);
+        if (d >= target) return d;
+        return Math.min(d + Math.max((target - d) * 0.15, 0.15), target);
+      });
+    }, 200);
+    return () => clearInterval(id);
+  }, [complete, bandStart, bandEnd]);
+
+  return Math.round(Math.max(1, display));
+}
+
 export function ProcessingScreen({
   items,
   itemNoun = { singular: 'item', plural: 'items' },
@@ -78,7 +120,8 @@ export function ProcessingScreen({
   subtext,
   leavePageHint = false,
 }: Props) {
-  let percent: number;
+  let bandStart: number;
+  let bandEnd: number;
   let message: string;
   let itemCountLine: string | null = null;
 
@@ -86,7 +129,8 @@ export function ProcessingScreen({
     const total = items.length;
     const doneCount = items.filter((i) => i.done).length;
     const pending = items.filter((i) => !i.done);
-    percent = complete ? 100 : total > 0 ? Math.round((doneCount / total) * 100) : 0;
+    bandStart = total > 0 ? (doneCount / total) * 100 : 0;
+    bandEnd = pending.length === 0 ? 100 : total > 0 ? ((doneCount + 1) / total) * 100 : 100;
     message = complete
       ? completeMessage
       : pending.length === 0
@@ -96,12 +140,16 @@ export function ProcessingScreen({
           : `Fetching data for ${pending.length} ${itemNoun.plural}…`;
     itemCountLine = complete ? null : `${doneCount} of ${total} ${total === 1 ? itemNoun.singular : itemNoun.plural} loaded.`;
   } else if (phase) {
-    percent = complete ? 100 : phase.total > 0 ? Math.round((phase.index / phase.total) * 100) : 0;
+    bandStart = phase.total > 0 ? (phase.index / phase.total) * 100 : 0;
+    bandEnd = phase.total > 0 ? ((phase.index + 1) / phase.total) * 100 : 100;
     message = complete ? completeMessage : phase.label;
   } else {
-    percent = complete ? 100 : 0;
+    bandStart = 0;
+    bandEnd = 100;
     message = complete ? completeMessage : 'Working…';
   }
+
+  const percent = useSimulatedPercent(bandStart, bandEnd, complete);
 
   return (
     <div className="flex flex-col items-center gap-6 py-16 text-center">
@@ -129,7 +177,7 @@ export function ProcessingScreen({
       </div>
       {!complete && leavePageHint && (
         <p className="text-[11px] text-muted-foreground/85 max-w-xs">
-          Feel free to leave this page — we&apos;ll notify you when it&apos;s ready.
+          Feel free to leave this page. We&apos;ll notify you when it&apos;s ready.
         </p>
       )}
     </div>
