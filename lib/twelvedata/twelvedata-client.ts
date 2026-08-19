@@ -704,12 +704,10 @@ export async function getEarningsCalendar(
 
   // TD's /earnings only gives the report date, not the fiscal period covered, and
   // (seen on AAPL/GOOGL) occasionally fabricates an "already reported" row with an
-  // eps_actual that doesn't correspond to any real filing. /income_statement is the
-  // authoritative source for both problems: it carries the company's own real
-  // fiscal quarter/year per period (correct even when the fiscal year isn't
-  // calendar-aligned, e.g. Apple/Microsoft), and a genuine report's eps_actual will
-  // always equal that period's own eps_diluted, because both come from the same
-  // filed 10-Q/10-K.
+  // eps_actual that doesn't correspond to any real filing. /income_statement carries
+  // the company's own real fiscal quarter/year per period (correct even when the
+  // fiscal year isn't calendar-aligned, e.g. Apple/Microsoft), so a report date that
+  // lands 0-100 days after a filed period's fiscal_date is that period's report.
   let filedPeriods: IncomeStatementPeriod[] = [];
   if (rawItems.some((item) => item.eps_actual != null)) {
     try {
@@ -726,24 +724,46 @@ export async function getEarningsCalendar(
   // A just-reported quarter routinely isn't in /income_statement yet — 10-Q filing
   // plus TD's own ingestion lag can take days. Within this window an unmatched
   // "actual" row is treated as genuine-but-unconfirmed instead of dropped; past
-  // this window it's presumed to be TD fabricating/misdating a row (seen on
-  // AAPL/GOOGL, and pervasively on CEG, where none of five recent /earnings rows
-  // matched any real filed quarter).
+  // this window it's presumed to be TD fabricating/misdating a row (seen
+  // pervasively on CEG, where none of five recent /earnings rows landed anywhere
+  // near a real filed quarter's date).
   const UNCONFIRMED_WINDOW_DAYS = 14;
 
+  // Resolve each filed period to at most one /earnings row, so a lone backfilled
+  // date can be trusted purely on timing while a cluster of competing dates (CEG:
+  // three different rows all landing in the same period's window with three
+  // different EPS values) still can't be — with no exact EPS match to break the
+  // tie, there's no way to tell which of several candidates is real, so none of
+  // them are matched by date alone.
+  const itemsWithActual = rawItems.filter((i) => i.eps_actual != null);
+  const matchByItem = new Map<EarningsApiItem, IncomeStatementPeriod>();
+  for (const period of filedPeriods) {
+    if (period.eps_diluted == null || matchByItem.size === itemsWithActual.length) continue;
+    const candidates = itemsWithActual.filter((item) => {
+      if (matchByItem.has(item)) return false;
+      const daysSincePeriodEnd = (Date.parse(item.date) - Date.parse(period.fiscal_date)) / 86_400_000;
+      return daysSincePeriodEnd > 0 && daysSincePeriodEnd <= 100;
+    });
+    if (candidates.length === 0) continue;
+    const exact = candidates.find((c) => Math.abs(period.eps_diluted! - (c.eps_actual as number)) < 0.02);
+    if (exact) {
+      matchByItem.set(exact, period);
+    } else if (candidates.length === 1) {
+      // Sole candidate for this period, no EPS agreement — /earnings' "actual" is
+      // frequently the company's non-GAAP/adjusted EPS, which routinely diverges
+      // from the filed GAAP eps_diluted for the same quarter (AMD's 2026-08-04
+      // report: $1.66 non-GAAP vs $1.38 GAAP, a $0.28 gap on a report that was
+      // genuinely already made). An unambiguous date-window correlation is itself
+      // the confirmation here — requiring the two EPS conventions to also agree
+      // was rejecting real reports, not catching fake ones.
+      matchByItem.set(candidates[0], period);
+    }
+    // else: multiple competing candidates, none with an exact EPS match —
+    // ambiguous/corrupted data, leave all of them unmatched.
+  }
+
   return rawItems.flatMap((item) => {
-    const matched =
-      item.eps_actual != null
-        ? filedPeriods.find((p) => {
-            if (p.eps_diluted == null || Math.abs(p.eps_diluted - (item.eps_actual as number)) >= 0.02) return false;
-            // A genuine report always lands 0-100 days *after* the period it covers —
-            // without this, a coincidentally similar EPS from an unrelated period
-            // (seen on GOOGL: 2025-04-24's 2.81 vs 2025-12-31's 2.82) can false-match.
-            const daysSincePeriodEnd =
-              (Date.parse(item.date) - Date.parse(p.fiscal_date)) / 86_400_000;
-            return daysSincePeriodEnd > 0 && daysSincePeriodEnd <= 100;
-          })
-        : null;
+    const matched = item.eps_actual != null ? matchByItem.get(item) ?? null : null;
 
     const isUnverifiedActual = item.eps_actual != null && !matched;
     const daysSinceReport = (Date.now() - Date.parse(item.date)) / 86_400_000;
