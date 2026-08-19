@@ -71,6 +71,11 @@ export interface ComparisonGroup {
   rows: ComparisonRow[];
 }
 
+/** Rows where Pro actually differs from Free — used to count "N more benefits" upsells without hardcoding a number that drifts from the table. */
+function isUpgradeRow(row: ComparisonRow): boolean {
+  return row.free !== row.pro;
+}
+
 export const PLAN_COMPARISON: ComparisonGroup[] = [
   {
     title: 'Research',
@@ -120,3 +125,9 @@ export const PLAN_COMPARISON: ComparisonGroup[] = [
     ],
   },
 ];
+
+/** Total count of genuine Pro upsells across the comparison table — the source
+ *  of truth for any "+N more benefits" upsell copy, so it can't drift from
+ *  what /upgrade actually lists. */
+export const PLAN_COMPARISON_UPGRADE_COUNT =
+  PLAN_COMPARISON.flatMap((g) => g.rows).filter(isUpgradeRow).length;

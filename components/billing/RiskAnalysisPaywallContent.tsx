@@ -6,7 +6,7 @@ import { ShieldAlert, Zap, Sparkles, Crown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { DialogTitle } from '@/components/ui/dialog';
-import { PRICING } from '@/lib/billing/entitlements';
+import { PRICING, PLAN_COMPARISON_UPGRADE_COUNT } from '@/lib/billing/entitlements';
 import type { QuotaState } from '@/lib/billing/quotas';
 import { RiskAnalysisPaywallPreview } from './RiskAnalysisPaywallPreview';
 
@@ -31,6 +31,7 @@ export function RiskAnalysisPaywallContent({ quota, onDismiss }: Props) {
   const [annual, setAnnual] = useState(true);
   const price = annual ? PRICING.proAnnualPerMonth : PRICING.proMonthly;
   const checkoutHref = `/upgrade?checkout=${annual ? 'annual' : 'monthly'}`;
+  const moreBenefitsCount = PLAN_COMPARISON_UPGRADE_COUNT - BENEFITS.length;
 
   return (
     <div className="relative">
@@ -74,6 +75,15 @@ export function RiskAnalysisPaywallContent({ quota, onDismiss }: Props) {
             </div>
           ))}
         </div>
+
+        {moreBenefitsCount > 0 && (
+          <Link
+            href="/upgrade#compare"
+            className="mt-2.5 inline-flex items-center gap-1 rounded-full border border-border bg-muted/40 px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            + {moreBenefitsCount} more
+          </Link>
+        )}
 
         {quota && (
           <p className="mt-3 text-[11px] text-muted-foreground/70">Resets {formatResetDay(quota.resetsAt)}</p>

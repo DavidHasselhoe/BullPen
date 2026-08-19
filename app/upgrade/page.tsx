@@ -178,7 +178,7 @@ function UpgradeContent() {
         </div>
 
         {/* Comparison */}
-        <div className="mx-auto mt-12 max-w-3xl">
+        <div id="compare" className="mx-auto mt-12 max-w-3xl scroll-mt-20">
           <h2 className="mb-4 text-center text-lg font-semibold">Compare plans</h2>
           <div className="overflow-hidden rounded-2xl border">
             <div className="grid grid-cols-[1fr_5rem_5rem] items-center gap-2 border-b bg-muted/30 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
