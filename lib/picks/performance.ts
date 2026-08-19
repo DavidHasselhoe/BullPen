@@ -36,6 +36,7 @@ import {
   type StockCandles,
 } from '@/lib/twelvedata/twelvedata-client';
 import { getCached, setCached } from '@/lib/cache/market-data-cache';
+import { getMarketSession } from '@/lib/cache/redis-cache';
 import {
   MIN_PICKS_FOR_HEADLINE,
   type PerformanceResponse,
@@ -245,7 +246,7 @@ export async function computePerformance(): Promise<PerformanceResponse> {
   const quotes = await withRateLimitRetry(() => getStockQuotes([...symbols, BENCHMARK_SYMBOL]))
     .catch(() => new Map());
 
-  const picksWithPerf = buildPickPerformance(picks, quotes, barsBySymbol);
+  const picksWithPerf = buildPickPerformance(picks, quotes, barsBySymbol, benchmarkBars);
 
   if (!benchmarkBars) {
     // No benchmark history — still return the per-pick numbers rather than
@@ -301,30 +302,48 @@ export async function computePerformance(): Promise<PerformanceResponse> {
 
 interface QuoteLike { c: number }
 
+function lastDailyClose(bars: DailyBars | null | undefined): number | null {
+  return bars && bars.close.length > 0 ? bars.close[bars.close.length - 1] : null;
+}
+
 function buildPickPerformance(
   rows: PickRow[],
   quotes: Map<string, QuoteLike>,
-  barsBySymbol: Map<string, DailyBars>
+  barsBySymbol: Map<string, DailyBars>,
+  benchmarkBars: DailyBars | null
 ): PickWithPerformance[] {
+  // Outside an active session (the closed window before pre-market opens, or a
+  // weekend) there's nothing live to show — the correct "current" price is
+  // just the prior session's close. Go straight to the daily bar for that
+  // instead of routing through the live /quote endpoint, which has a known
+  // dead-window gap right before the first pre-market trade posts (see
+  // parseQuoteResponse). During an active session the quote is still preferred
+  // since it's fresher than a once-a-day bar.
+  const marketClosed = getMarketSession() === 'closed';
+
   const spyQuote = quotes.get(BENCHMARK_SYMBOL);
+  const spyQuotePrice = spyQuote && Number.isFinite(spyQuote.c) && spyQuote.c > 0 ? spyQuote.c : null;
+  const spyPrice = !marketClosed && spyQuotePrice != null
+    ? spyQuotePrice
+    : lastDailyClose(benchmarkBars) ?? spyQuotePrice;
 
   return rows
     .map((row) => {
       const summary = rowToSummary(row);
 
       // A closed pick is frozen at its close price. Otherwise prefer the live
-      // quote, falling back to the last daily close if the quote is missing.
+      // quote during market hours; once the market is closed, or if the quote
+      // is simply missing, fall back to the last daily close.
       let currentPrice: number | null = null;
       if (row.status === 'closed' && row.close_price != null) {
         currentPrice = row.close_price;
       } else {
         const q = quotes.get(row.symbol);
-        if (q && Number.isFinite(q.c) && q.c > 0) {
-          currentPrice = q.c;
-        } else {
-          const bars = barsBySymbol.get(row.symbol);
-          if (bars && bars.close.length > 0) currentPrice = bars.close[bars.close.length - 1];
-        }
+        const quotePrice = q && Number.isFinite(q.c) && q.c > 0 ? q.c : null;
+        const bars = barsBySymbol.get(row.symbol);
+        currentPrice = !marketClosed && quotePrice != null
+          ? quotePrice
+          : lastDailyClose(bars) ?? quotePrice;
       }
 
       const entry = row.entry_price;
@@ -333,8 +352,8 @@ function buildPickPerformance(
         : null;
 
       const benchEntry = row.benchmark_entry_price;
-      const benchmarkReturnPct = benchEntry != null && benchEntry > 0 && spyQuote?.c
-        ? (spyQuote.c / benchEntry - 1) * 100
+      const benchmarkReturnPct = benchEntry != null && benchEntry > 0 && spyPrice != null
+        ? (spyPrice / benchEntry - 1) * 100
         : null;
 
       return { ...summary, currentPrice, returnPct, benchmarkReturnPct };

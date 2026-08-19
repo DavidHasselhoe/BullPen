@@ -37,7 +37,14 @@ async function handler(
     }
 
     const result = await computePerformance();
-    void rset(CACHE_KEY, result, CACHE_TTL_SECONDS);
+
+    // A transient TD failure (rate limit, network blip) can leave every pick's
+    // currentPrice null even though the picks themselves loaded fine. Caching
+    // that degraded result for 30 minutes would make it survive repeated
+    // refreshes — only cache once at least one pick actually resolved a price.
+    if (result.picks.length === 0 || result.picks.some((p) => p.currentPrice != null)) {
+      void rset(CACHE_KEY, result, CACHE_TTL_SECONDS);
+    }
 
     return addSecurityHeaders(NextResponse.json({ success: true, ...result }));
   } catch (err) {

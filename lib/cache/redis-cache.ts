@@ -72,9 +72,9 @@ export async function rdel(key: string): Promise<void> {
 
 // ── Market-session-aware TTL for 1D candles ───────────────────────────────────
 
-type MarketSession = 'regular' | 'extended' | 'closed';
+export type MarketSession = 'regular' | 'extended' | 'closed';
 
-function getMarketSession(): MarketSession {
+export function getMarketSession(): MarketSession {
   // toLocaleString gives us the ET wall-clock time without a tz library.
   const etStr = new Date().toLocaleString('en-US', {
     timeZone: 'America/New_York',
