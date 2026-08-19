@@ -145,12 +145,6 @@ export function WhyTodayView({ ticker, price, change, changePct }: Props) {
           </Link>
         </div>
       )}
-
-      {(status === 'streaming' || status === 'done') && (
-        <p className="mt-4 text-[11px] text-muted-foreground/80 select-none">
-          Powered by Claude + live web search
-        </p>
-      )}
     </div>
   );
 }

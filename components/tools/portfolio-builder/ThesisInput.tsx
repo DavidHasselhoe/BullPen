@@ -87,7 +87,7 @@ export function ThesisInput({ onSubmit, disabled }: Props) {
           ))}
         </div>
         <p className="text-[11px] text-muted-foreground/80 text-center mt-6 select-none">
-          Powered by Claude Sonnet 4.6 with extended thinking · Not investment advice
+          Not investment advice
         </p>
       </div>
     </div>
