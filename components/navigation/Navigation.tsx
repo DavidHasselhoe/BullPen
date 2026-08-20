@@ -32,7 +32,9 @@ export function Navigation() {
   const searchShortcut = useSearchShortcut();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [activeSettingsTab, setActiveSettingsTab] = useState<string | undefined>(undefined);
-  const [pinnedOpen, setPinnedOpen] = useState(false);
+  // Mutually exclusive with the notification and user-account popovers below —
+  // opening one closes the others instead of letting them overlap in the corner.
+  const [activeMenu, setActiveMenu] = useState<'pinned' | 'notifications' | 'user' | null>(null);
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -249,7 +251,10 @@ export function Navigation() {
               <span className="hidden md:inline">Search...</span>
               <kbd className="hidden lg:inline-flex h-5 items-center rounded border px-1.5 text-[11px]">{searchShortcut}</kbd>
             </button>
-            <Popover open={pinnedOpen} onOpenChange={setPinnedOpen}>
+            <Popover
+              open={activeMenu === 'pinned'}
+              onOpenChange={(val) => setActiveMenu(val ? 'pinned' : null)}
+            >
               <PopoverTrigger asChild>
                 <Button
                   variant="ghost"
@@ -262,7 +267,10 @@ export function Navigation() {
                 </Button>
               </PopoverTrigger>
               <PopoverContent align="end">
-                <PinnedTickersPanel active={pinnedOpen} onNavigate={() => setPinnedOpen(false)} />
+                <PinnedTickersPanel
+                  active={activeMenu === 'pinned'}
+                  onNavigate={() => setActiveMenu(null)}
+                />
               </PopoverContent>
             </Popover>
             <Button
@@ -274,8 +282,14 @@ export function Navigation() {
             >
               <Settings className="h-5 w-5" />
             </Button>
-            <NotificationBell />
-            <UserMenu />
+            <NotificationBell
+              open={activeMenu === 'notifications'}
+              onOpenChange={(val) => setActiveMenu(val ? 'notifications' : null)}
+            />
+            <UserMenu
+              open={activeMenu === 'user'}
+              onOpenChange={(val) => setActiveMenu(val ? 'user' : null)}
+            />
           </div>
         </div>
       </header>

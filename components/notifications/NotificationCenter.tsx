@@ -73,10 +73,8 @@ export function NotificationCenter({ open, onOpenChange }: NotificationCenterPro
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  if (!open) return null;
-
   return (
-    <div className="absolute right-0 top-full mt-2 w-[400px] max-w-[calc(100vw-2rem)] bg-popover border rounded-lg shadow-lg z-50 max-h-[600px] flex flex-col animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 origin-top-right">
+    <div className="flex max-h-[600px] flex-col">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b">
         <h3 className="font-semibold text-sm">Notifications</h3>
