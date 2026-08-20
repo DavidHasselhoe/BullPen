@@ -1,5 +1,13 @@
 [
   {
+    "date": "2026-08-20",
+    "entries": [
+      { "type": "improved", "text": "Risk Analysis, Portfolio Builder, Deep Dive, and Company Compare loading screens no longer sit stuck at 100% while still finishing up, and the finished screen now stays visible long enough to actually see it before the result appears" },
+      { "type": "improved", "text": "Finishing a Pro upgrade now shows a summary of everything you just unlocked instead of a small easy-to-miss note, and managing your subscription now returns you to your dashboard afterward" },
+      { "type": "fixed", "text": "Fixed the notifications panel and account menu sometimes overlapping instead of the first one closing when you opened the other, and fixed the notifications panel closing instantly instead of animating shut" }
+    ]
+  },
+  {
     "date": "2026-08-19",
     "entries": [
       { "type": "improved", "text": "Portfolio Builder and Deep Dive results now match the redesigned Portfolio Risk Analysis layout, with clearer sections you can expand and collapse" },
