@@ -10,7 +10,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useEntitlements } from '@/hooks/use-entitlements';
 import { PRICING, PLAN_COMPARISON } from '@/lib/billing/entitlements';
 import { startCheckout } from '@/lib/billing/checkout';
-import { EmptyState } from '@/components/ui/EmptyState';
+import { UpgradeSuccessModal } from '@/components/billing/UpgradeSuccessModal';
 
 const FAQ = [
   { q: `Is there a free trial?`, a: `Yes — Pro starts with a ${PRICING.trialDays}-day free trial, and there's a ${PRICING.moneyBackDays}-day money-back guarantee. No card needed to use the free plan.` },
@@ -32,7 +32,8 @@ function UpgradeContent() {
   // Preselect the plan the user clicked on the landing page (?checkout=monthly|annual).
   const [annual, setAnnual] = useState(searchParams.get('checkout') !== 'monthly');
   const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
-  const justSubscribed = searchParams.get('checkout') === 'success';
+  const [successModalDismissed, setSuccessModalDismissed] = useState(false);
+  const justSubscribed = searchParams.get('checkout') === 'success' && !successModalDismissed;
 
   const price = annual ? PRICING.proAnnualPerMonth : PRICING.proMonthly;
 
@@ -58,20 +59,10 @@ function UpgradeContent() {
           Home
         </Link>
 
-        {justSubscribed && (
-          <div className="mx-auto mb-8 max-w-lg rounded-2xl border border-primary/30 bg-primary/[0.06] p-6">
-            <EmptyState
-              pose="celebrate"
-              title="Welcome to Pro! 🎉"
-              description="Your 14-day trial is live and the full AI analyst is unlocked. It can take a few seconds for your account to reflect it."
-              imageSize={150}
-            >
-              <Button asChild>
-                <Link href="/dashboard">Start exploring</Link>
-              </Button>
-            </EmptyState>
-          </div>
-        )}
+        <UpgradeSuccessModal
+          open={justSubscribed}
+          onOpenChange={(nextOpen) => { if (!nextOpen) setSuccessModalDismissed(true); }}
+        />
 
         {/* Hero */}
         <div className="mx-auto max-w-2xl text-center">
