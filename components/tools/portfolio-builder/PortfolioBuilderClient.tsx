@@ -144,7 +144,7 @@ export function PortfolioBuilderClient() {
           setTimeout(() => {
             setJustCompleted(false);
             setPhase('done');
-          }, 650);
+          }, 1650);
         } else if (data.status === 'error') {
           stopPolling();
           setErrorCode(data.errorCode ?? 'unknown');

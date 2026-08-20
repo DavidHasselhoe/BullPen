@@ -462,7 +462,7 @@ function CompareContent() {
   }
   useEffect(() => {
     if (!holding) return;
-    const t = setTimeout(() => setHolding(false), 600);
+    const t = setTimeout(() => setHolding(false), 1650);
     return () => clearTimeout(t);
   }, [holding]);
   const isLoading = tickers.length >= 2 && (!allSettled || holding);
