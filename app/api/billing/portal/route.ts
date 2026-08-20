@@ -37,7 +37,7 @@ async function portalHandler(
   const base = process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin;
   const portalSession = await stripe.billingPortal.sessions.create({
     customer: customerId,
-    return_url: `${base}/upgrade`,
+    return_url: `${base}/dashboard`,
   });
 
   return NextResponse.json({ url: portalSession.url });
