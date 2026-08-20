@@ -28,6 +28,18 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const MODEL = 'claude-sonnet-4-6';
 const MAX_SAVED = 10;
 
+// Real progress, not simulated: the output schema's key order is fixed by the
+// system prompt (metrics -> topRisks -> sectorBreakdown -> stressScenarios ->
+// recommendations -> portfolioSummary), so watching for each key as it lands
+// in the streamed text is a genuine signal of how far the model has gotten,
+// not a fake timer. Order here must match PHASE_MARKERS below.
+type RiskPhase = 'scoring' | 'identifying_risks' | 'modeling_scenarios' | 'finalizing';
+const PHASE_MARKERS: Array<{ phase: RiskPhase; marker: string }> = [
+  { phase: 'identifying_risks', marker: '"topRisks"' },
+  { phase: 'modeling_scenarios', marker: '"stressScenarios"' },
+  { phase: 'finalizing', marker: '"recommendations"' },
+];
+
 const RISK_ANALYST_SYSTEM_PROMPT = `You are a senior portfolio risk analyst at a top-tier institutional investment firm. Your task is to produce a rigorous, structured risk assessment of a retail investor's stock portfolio.
 
 You MUST respond with ONLY valid JSON — no markdown fences, no prose, no comments. Any deviation will break the consuming application.
@@ -126,30 +138,44 @@ async function runRiskAnalysis(params: {
 }): Promise<void> {
   const { id, userId, holdings, currency } = params;
   const supabase = createServerClient();
+  const setPhase = (phase: RiskPhase) => supabase.from('risk_analyses').update({ phase }).eq('id', id);
   const markError = (code: string, message: string) =>
     supabase.from('risk_analyses').update({ status: 'error', phase: null, error_code: code, error_message: message }).eq('id', id);
 
   try {
     const prompt = buildPrompt(holdings, currency);
 
-    const msg = await anthropic.messages.create({
+    const stream = anthropic.messages.stream({
       model: MODEL,
       max_tokens: 4096,
       system: RISK_ANALYST_SYSTEM_PROMPT,
       messages: [{ role: 'user', content: prompt }],
     });
 
+    let buffered = '';
+    let nextMarker = 0;
+    for await (const event of stream) {
+      if (event.type !== 'content_block_delta') continue;
+      const delta = event.delta as { type: string; text?: string };
+      if (delta.type !== 'text_delta' || !delta.text) continue;
+      buffered += delta.text;
+      while (nextMarker < PHASE_MARKERS.length && buffered.includes(PHASE_MARKERS[nextMarker].marker)) {
+        await setPhase(PHASE_MARKERS[nextMarker].phase);
+        nextMarker++;
+      }
+    }
+
+    const final = await stream.finalMessage();
     void logAiCall({
       userId,
       feature: 'risk_analysis',
       model: MODEL,
-      inputTokens: msg.usage.input_tokens,
-      outputTokens: msg.usage.output_tokens,
+      inputTokens: final.usage.input_tokens,
+      outputTokens: final.usage.output_tokens,
       metadata: { holdingsCount: holdings.length, currency },
     });
 
-    const rawText = msg.content[0].type === 'text' ? msg.content[0].text : '';
-    const cleaned = rawText.trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '');
+    const cleaned = buffered.trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '');
 
     let analysis: Record<string, unknown>;
     try {
@@ -254,7 +280,7 @@ async function postHandler(req: NextRequest, _context: unknown, session: { userI
       currency,
       holdings_count: holdings.length,
       status: 'pending',
-      phase: 'analyzing',
+      phase: 'scoring',
     })
     .select('id')
     .single();
@@ -316,7 +342,7 @@ async function getStatusHandler(req: NextRequest, _context: unknown, session: { 
   return addSecurityHeaders(NextResponse.json({
     success: true,
     pendingId: pendingRow?.id ?? null,
-    pendingPhase: pendingRow?.phase ?? null,
+    pendingPhase: (pendingRow?.phase as RiskPhase | null) ?? null,
   }));
 }
 

@@ -23,10 +23,17 @@ import { AnalysisHistory } from './risk-analysis/AnalysisHistory';
 
 type ErrorCode = 'invalid_key' | 'payment_required' | 'rate_limited' | 'parse_failed' | 'unknown';
 
+// Mirrors the server's PHASE_MARKERS in app/api/holdings/risk-analysis/route.ts —
+// each phase is reached only once its corresponding JSON key has actually
+// landed in Claude's streamed output, so this reflects real progress.
+type RiskPhase = 'scoring' | 'identifying_risks' | 'modeling_scenarios' | 'finalizing';
+const RISK_PHASE_LABELS = ['Calculating risk metrics…', 'Identifying key risk factors…', 'Modeling stress scenarios…', 'Finalizing recommendations…'];
+const RISK_PHASE_ORDER: Record<RiskPhase, number> = { scoring: 0, identifying_risks: 1, modeling_scenarios: 2, finalizing: 3 };
+
 interface StatusResponse {
   success: boolean;
   status?: 'pending' | 'done' | 'error';
-  phase?: 'analyzing' | null;
+  phase?: RiskPhase | null;
   analysis?: RiskAnalysis | null;
   errorCode?: ErrorCode | null;
   errorMessage?: string | null;
@@ -85,11 +92,8 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
   const [paywallQuota, setPaywallQuota] = useState<QuotaState | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Sequential loading (symbol tick-off) — purely decorative; the underlying
-  // Claude call is a single non-streaming request with no real granular
-  // progress to report, same as the server's single 'analyzing' phase.
-  const [loadingStep, setLoadingStep] = useState(0);
-  const loadingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Real backend progress — see RiskPhase above.
+  const [genPhase, setGenPhase] = useState<RiskPhase>('scoring');
 
   const payload = useMemo(
     () => holdings.map((h) => ({
@@ -103,20 +107,6 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
     })),
     [holdings]
   );
-
-  // Phase 1: tick off symbols
-  useEffect(() => {
-    if (state === 'loading') {
-      setLoadingStep(0);
-      loadingTimerRef.current = setInterval(() => setLoadingStep((s) => s + 1), 220);
-    } else if (loadingTimerRef.current) {
-      clearInterval(loadingTimerRef.current);
-      loadingTimerRef.current = null;
-    }
-    return () => {
-      if (loadingTimerRef.current) clearInterval(loadingTimerRef.current);
-    };
-  }, [state]);
 
   // Saved analyses history
   const { data: historyData } = useQuery<{ analyses: SavedRiskAnalysis[] }>({
@@ -163,6 +153,8 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
         const data: StatusResponse = await res.json();
         if (!data.success) return;
 
+        if (data.phase) setGenPhase(data.phase);
+
         if (data.status === 'done' && data.analysis) {
           stopPolling();
           setAnalysis(data.analysis);
@@ -172,14 +164,12 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
           setTimeout(() => {
             setJustCompleted(false);
             setState('loaded');
-          }, 650);
+          }, 1650);
         } else if (data.status === 'error') {
           stopPolling();
           setErrorMessage(data.errorMessage || 'Something went wrong analyzing your portfolio.');
           setState('error');
         }
-        // status === 'pending': keep polling, nothing to update — the analysis
-        // is a single non-streaming call so there's no finer-grained phase.
       } catch {
         // Transient network hiccup — keep polling, the next tick will retry.
       }
@@ -195,6 +185,7 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
         const res = await fetch('/api/holdings/risk-analysis');
         const data = await res.json();
         if (cancelled || !data?.success || !data.pendingId) return;
+        setGenPhase((data.pendingPhase as RiskPhase) ?? 'scoring');
         setState('loading');
         pollStatus(data.pendingId);
       } catch { /* stay idle */ }
@@ -207,6 +198,7 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
     stopPolling();
     setState('loading');
     setJustCompleted(false);
+    setGenPhase('scoring');
     setErrorMessage('');
     setRestoredFrom(null);
     try {
@@ -298,9 +290,12 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
           {/* ── Loading ─────────────────────────────────────────────────────── */}
           {state === 'loading' && (
             <ProcessingScreen
-              items={holdings.map((h, i) => ({ label: h.symbol, done: i < loadingStep }))}
-              itemNoun={{ singular: 'holding', plural: 'holdings' }}
-              subtext="Running 6-dimension risk assessment. Typically 15-30 seconds."
+              phase={{
+                index: RISK_PHASE_ORDER[genPhase],
+                total: RISK_PHASE_LABELS.length,
+                label: RISK_PHASE_LABELS[RISK_PHASE_ORDER[genPhase]],
+              }}
+              subtext={`Analyzing ${holdings.length} ${holdings.length === 1 ? 'holding' : 'holdings'}. Typically 15-30 seconds.`}
               complete={justCompleted}
               leavePageHint
             />

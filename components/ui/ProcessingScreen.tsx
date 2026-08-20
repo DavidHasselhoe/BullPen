@@ -40,8 +40,9 @@ interface Props {
    * before the parent swaps this out for the real content — gives the user
    * a moment to register "done" instead of the bar hitting 100% and the
    * whole screen changing in the same instant. Callers should keep
-   * rendering this component with complete=true for ~500-700ms after the
-   * real result arrives rather than unmounting it immediately.
+   * rendering this component with complete=true for ~1.6s after the real
+   * result arrives rather than unmounting it immediately — long enough for
+   * the user to actually register the "done" state before the screen swaps.
    */
   complete?: boolean;
   /** Headline shown once `complete` is true. Default: "All set!" */
@@ -129,8 +130,21 @@ export function ProcessingScreen({
     const total = items.length;
     const doneCount = items.filter((i) => i.done).length;
     const pending = items.filter((i) => !i.done);
-    bandStart = total > 0 ? (doneCount / total) * 100 : 0;
-    bandEnd = pending.length === 0 ? 100 : total > 0 ? ((doneCount + 1) / total) * 100 : 100;
+    // Item loading only fills 0-92%. Once every item is in but `complete`
+    // hasn't fired yet (e.g. risk analysis's server-side pass after all
+    // holdings are fetched), bandStart/bandEnd would otherwise both land on
+    // 100 with zero room between them — the bar has nowhere left to creep
+    // and just sits at 100% for however long that trailing work takes. The
+    // reserved 92-99 band keeps it visibly moving through that wait; `complete`
+    // still overrides everything to the true 100 when the real result lands.
+    const loadCeiling = 92;
+    if (pending.length === 0) {
+      bandStart = loadCeiling;
+      bandEnd = 99;
+    } else {
+      bandStart = total > 0 ? (doneCount / total) * loadCeiling : 0;
+      bandEnd = total > 0 ? ((doneCount + 1) / total) * loadCeiling : loadCeiling;
+    }
     message = complete
       ? completeMessage
       : pending.length === 0
