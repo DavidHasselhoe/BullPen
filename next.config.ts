@@ -1,6 +1,15 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Pins the workspace root explicitly. Without this, Turbopack's root
+  // inference has a known Windows bug (vercel/next.js#92978) where it
+  // misdetects the root as the drive letter itself (e.g. "C:\"), causing
+  // every CSS/postcss resolution to fail and Turbopack to spin up a fresh
+  // worker process on every retry — runaway RAM/CPU within seconds of the
+  // first page request.
+  turbopack: {
+    root: process.cwd(),
+  },
   typescript: {
     // The project uses @supabase/supabase-js@2.90 which has different type requirements
     // than our hand-written Database types. Runtime behavior is correct.
