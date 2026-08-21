@@ -1,13 +1,15 @@
 /**
- * Derives buy/sell chart markers from a user's holding + sale history for one
- * ticker. Shared by both chart surfaces (the main stock-page chart and the
- * fullscreen advanced chart) so the "what counts as a trade" rule lives in
- * exactly one place.
+ * Derives buy/sell chart markers from a user's holding + sale/purchase
+ * history for one ticker. Shared by both chart surfaces (the main stock-page
+ * chart and the fullscreen advanced chart) so the "what counts as a trade"
+ * rule lives in exactly one place.
  *
- * Buy data is limited to a single point: `date_purchased`/`avg_price` on
- * `user_holdings`, set once when a position first opens and never updated on
- * later top-ups (there is no per-purchase log, only a running average). Sells
- * are full fidelity — one `holding_sales` row per sale, each with its own
+ * Buy data prefers per-lot history from `holding_purchases` (one row per
+ * discrete purchase event) when any exists. If none exist — a
+ * brokerage-synced holding, or a manual holding never topped up since lot
+ * recording shipped — falls back to the single legacy dot from
+ * `date_purchased`/`avg_price` on `user_holdings`. Sells are always full
+ * fidelity — one `holding_sales` row per sale, each with its own
  * date/price/quantity.
  */
 
@@ -21,6 +23,12 @@ export interface SaleMarkerInput {
   sale_date: string;
   sale_price: number;
   quantity_sold: number;
+}
+
+export interface PurchaseMarkerInput {
+  purchase_date: string;
+  price: number;
+  quantity: number;
 }
 
 export interface TransactionMarker {
@@ -39,10 +47,21 @@ function dateToTsSeconds(isoDate: string): number {
 
 export function buildTransactionMarkers(
   holding: TransactionMarkerInput | undefined,
-  sales: SaleMarkerInput[]
+  sales: SaleMarkerInput[],
+  purchases: PurchaseMarkerInput[] = []
 ): TransactionMarker[] {
   const markers: TransactionMarker[] = [];
-  if (holding?.date_purchased && holding.avg_price != null) {
+  if (purchases.length > 0) {
+    for (const p of purchases) {
+      markers.push({
+        tsSeconds: dateToTsSeconds(p.purchase_date),
+        price: p.price,
+        kind: 'buy',
+        quantity: p.quantity,
+        dateStr: p.purchase_date,
+      });
+    }
+  } else if (holding?.date_purchased && holding.avg_price != null) {
     markers.push({
       tsSeconds: dateToTsSeconds(holding.date_purchased),
       price: holding.avg_price,
