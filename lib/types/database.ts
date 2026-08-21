@@ -157,6 +157,26 @@ export type InsertHoldingSale = Omit<HoldingSale, 'id' | 'created_at'> & {
   id?: string;
 };
 
+export interface HoldingPurchase {
+  id: string;
+  user_id: string;
+  holding_id: string;
+  symbol: string;
+  company_name: string;
+  quantity: number;
+  price: number;
+  purchase_date: string;
+  purchase_currency: string | null;
+  purchase_fx_rate: number | null;
+  trading_currency: string | null;
+  asset_type: string | null;
+  created_at: string;
+}
+
+export type InsertHoldingPurchase = Omit<HoldingPurchase, 'id' | 'created_at'> & {
+  id?: string;
+};
+
 export interface PortfolioActivity {
   id: string;
   user_id: string;
