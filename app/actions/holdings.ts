@@ -4,8 +4,8 @@
 // Server-side mutations for user holdings with authentication
 
 import { getCurrentUserId } from '@/lib/auth/server-session';
-import { getHoldings, addHolding, addOrUpdateHolding, updateHolding, removeHolding, updateHoldingBySymbol, removeHoldingBySymbol, sellHolding, getHoldingSales, deleteHoldingSale, updateHoldingSale } from '@/lib/holdings/holdings-db';
-import type { UserHolding, HoldingSale } from '@/lib/types/database';
+import { getHoldings, addHolding, addOrUpdateHolding, updateHolding, removeHolding, updateHoldingBySymbol, removeHoldingBySymbol, sellHolding, getHoldingSales, deleteHoldingSale, updateHoldingSale, getHoldingPurchases } from '@/lib/holdings/holdings-db';
+import type { UserHolding, HoldingSale, HoldingPurchase } from '@/lib/types/database';
 
 export interface AddHoldingInput {
   symbol: string;
@@ -266,6 +266,20 @@ export async function getHoldingSalesAction(): Promise<{
   const userId = await getCurrentUserId();
   if (!userId) return { success: false, error: 'Authentication required' };
   return await getHoldingSales(userId);
+}
+
+/**
+ * Server Action: Get all recorded purchase lots for a user.
+ * userId from session only — never trust client-provided userId.
+ */
+export async function getHoldingPurchasesAction(): Promise<{
+  success: boolean;
+  purchases?: HoldingPurchase[];
+  error?: string;
+}> {
+  const userId = await getCurrentUserId();
+  if (!userId) return { success: false, error: 'Authentication required' };
+  return await getHoldingPurchases(userId);
 }
 
 /**
