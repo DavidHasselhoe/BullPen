@@ -2,7 +2,7 @@
 // Server-side database operations for user holdings
 
 import { createServerClient } from '@/lib/supabase/client';
-import type { UserHolding, InsertUserHolding, UpdateUserHolding, HoldingSale, InsertHoldingSale } from '@/lib/types/database';
+import type { UserHolding, InsertUserHolding, UpdateUserHolding, HoldingSale, InsertHoldingSale, HoldingPurchase, InsertHoldingPurchase } from '@/lib/types/database';
 import { logger } from '@/lib/utils/logger';
 import { getCompanyProfile } from '@/lib/twelvedata/twelvedata-client';
 import { recordPortfolioActivity } from '@/lib/holdings/portfolio-activity';
@@ -124,6 +124,47 @@ export async function getHoldings(userId: string): Promise<GetHoldingsResult> {
 }
 
 /**
+ * Records one purchase lot for a holding — inserted by both addHolding (the
+ * initial buy) and addOrUpdateHolding (every subsequent top-up), so every
+ * discrete buy event gets its own row for accurate multi-dot chart markers.
+ * Best-effort: logs and swallows errors rather than failing the parent
+ * mutation, same fire-and-forget pattern as recordPortfolioActivity.
+ */
+async function recordHoldingPurchase(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  userId: string,
+  holding: {
+    id: string;
+    symbol: string;
+    company_name: string;
+    purchase_currency?: string | null;
+    purchase_fx_rate?: number | null;
+    trading_currency?: string | null;
+    asset_type?: string | null;
+  },
+  lot: { quantity: number; price: number; purchaseDate: string }
+): Promise<void> {
+  const insert: Omit<InsertHoldingPurchase, 'id'> = {
+    user_id: userId,
+    holding_id: holding.id,
+    symbol: holding.symbol,
+    company_name: holding.company_name,
+    quantity: lot.quantity,
+    price: lot.price,
+    purchase_date: lot.purchaseDate,
+    purchase_currency: holding.purchase_currency ?? null,
+    purchase_fx_rate: holding.purchase_fx_rate ?? null,
+    trading_currency: holding.trading_currency ?? null,
+    asset_type: holding.asset_type ?? null,
+  };
+  const { error } = await supabase.from('holding_purchases').insert(insert);
+  if (error) {
+    logger.error('Error recording holding purchase lot:', error);
+  }
+}
+
+/**
  * Add a new holding for a user
  */
 export async function addHolding(
@@ -191,6 +232,14 @@ export async function addHolding(
 
     void recordPortfolioActivity(userId, newHolding.symbol, newHolding.company_name, 'opened');
 
+    if (newHolding.quantity != null && newHolding.quantity > 0 && newHolding.avg_price != null && newHolding.avg_price > 0) {
+      void recordHoldingPurchase(supabase, userId, newHolding as UserHolding, {
+        quantity: newHolding.quantity,
+        price: newHolding.avg_price,
+        purchaseDate: newHolding.date_purchased ?? new Date().toISOString().slice(0, 10),
+      });
+    }
+
     return {
       success: true,
       holding: newHolding as UserHolding,
@@ -224,7 +273,7 @@ export async function addOrUpdateHolding(
 
     const { data: existing } = await supabase
       .from('user_holdings')
-      .select('id, quantity, avg_price')
+      .select('id, quantity, avg_price, date_purchased, purchase_currency, purchase_fx_rate, trading_currency, asset_type')
       .eq('user_id', userId)
       .eq('symbol', holding.symbol.toUpperCase())
       .maybeSingle();
@@ -259,6 +308,51 @@ export async function addOrUpdateHolding(
 
       if (error) {
         return { success: false, error: error.message };
+      }
+
+      if (addQty > 0 && holding.avg_price != null && holding.avg_price > 0) {
+        const { count: existingLotCount, error: lotCountErr } = await supabase
+          .from('holding_purchases')
+          .select('*', { count: 'exact', head: true })
+          .eq('holding_id', existing.id);
+
+        // Lazy backfill: an old holding with no recorded lots yet gets one
+        // synthesized from its pre-update state, so the lot total doesn't
+        // fall short of the holding's real share count. Skipped if we
+        // can't confirm no lots exist yet, or if the pre-existing chunk
+        // has no date to backfill at — see "Lazy backfill" in
+        // docs/superpowers/specs/2026-08-21-holding-purchase-lots-design.md.
+        if (!lotCountErr && !existingLotCount && existingQty > 0 && existing.avg_price != null && existing.date_purchased) {
+          void recordHoldingPurchase(
+            supabase,
+            userId,
+            {
+              id: existing.id,
+              symbol: updated.symbol,
+              company_name: updated.company_name,
+              purchase_currency: existing.purchase_currency,
+              purchase_fx_rate: existing.purchase_fx_rate,
+              trading_currency: existing.trading_currency,
+              asset_type: existing.asset_type,
+            },
+            { quantity: existingQty, price: existing.avg_price, purchaseDate: existing.date_purchased }
+          );
+        }
+
+        void recordHoldingPurchase(
+          supabase,
+          userId,
+          {
+            id: existing.id,
+            symbol: updated.symbol,
+            company_name: updated.company_name,
+            purchase_currency: holding.purchase_currency,
+            purchase_fx_rate: holding.purchase_fx_rate,
+            trading_currency: holding.trading_currency,
+            asset_type: holding.asset_type,
+          },
+          { quantity: addQty, price: holding.avg_price, purchaseDate: holding.date_purchased ?? new Date().toISOString().slice(0, 10) }
+        );
       }
 
       if (existingQty <= 0) {
@@ -766,6 +860,36 @@ export async function updateHoldingSale(
     return { success: true, sale: updatedSale as HoldingSale, holding: updatedHolding };
   } catch (error) {
     logger.error('Error in updateHoldingSale:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Internal server error' };
+  }
+}
+
+export interface GetHoldingPurchasesResult {
+  success: boolean;
+  purchases?: HoldingPurchase[];
+  error?: string;
+}
+
+/**
+ * Lists this user's recorded purchase lots, oldest first (chart markers want
+ * chronological order; buildTransactionMarkers re-sorts anyway, but this
+ * keeps the raw list itself readable if it's ever displayed directly).
+ */
+export async function getHoldingPurchases(userId: string): Promise<GetHoldingPurchasesResult> {
+  try {
+    const supabase = createServerClient();
+    const { data, error } = await supabase
+      .from('holding_purchases')
+      .select('*')
+      .eq('user_id', userId)
+      .order('purchase_date', { ascending: true });
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+    return { success: true, purchases: (data ?? []) as HoldingPurchase[] };
+  } catch (error) {
+    logger.error('Error in getHoldingPurchases:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Internal server error' };
   }
 }
