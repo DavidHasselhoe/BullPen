@@ -20,6 +20,9 @@ const COUNTRY_FLAGS: Record<string, { emoji: string; name: string }> = {
   PT: { emoji: '🇵🇹', name: 'Portugal' },
   IE: { emoji: '🇮🇪', name: 'Ireland' },
   AT: { emoji: '🇦🇹', name: 'Austria' },
+  JP: { emoji: '🇯🇵', name: 'Japan' },
+  KR: { emoji: '🇰🇷', name: 'South Korea' },
+  CN: { emoji: '🇨🇳', name: 'China' },
 };
 
 /**

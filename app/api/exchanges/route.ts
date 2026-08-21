@@ -20,7 +20,7 @@ export async function GET(_request: NextRequest) {
     const [exchangesResult, holidaysResult] = await Promise.all([
       supabase
         .from('exchanges')
-        .select('code, name, country, timezone, open_time, close_time')
+        .select('code, name, country, timezone, open_time, close_time, midday_close_time, midday_open_time')
         .order('country', { ascending: true })
         .order('name', { ascending: true })
         .limit(200),

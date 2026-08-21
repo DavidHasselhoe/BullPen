@@ -319,6 +319,10 @@ export interface Exchange {
   timezone: string;
   open_time: string;
   close_time: string;
+  /** For exchanges with a lunch trading halt (e.g. Tokyo, Shanghai) — local time the morning session ends. Null for continuously-trading exchanges. */
+  midday_close_time: string | null;
+  /** Local time the afternoon session resumes. Null for continuously-trading exchanges. */
+  midday_open_time: string | null;
   created_at: string;
 }
 

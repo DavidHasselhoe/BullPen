@@ -158,6 +158,28 @@ function createDateInTimezone(date: Date, timeStr: string, timezone: string): Da
   return bestDate || new Date(`${dateStr}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00Z`);
 }
 
+interface Session {
+  open: string;
+  close: string;
+}
+
+/**
+ * Builds the list of trading sessions for a day. Exchanges with a midday
+ * halt (Tokyo, Shanghai) get a morning + afternoon session; everyone else
+ * gets a single session. `closeTime` is the day's final close (already
+ * early-close-adjusted by the caller), so an early-close day on a
+ * lunch-break exchange correctly shortens just the afternoon session.
+ */
+function getSessions(exchange: Exchange, closeTime: string): Session[] {
+  if (exchange.midday_close_time && exchange.midday_open_time) {
+    return [
+      { open: exchange.open_time, close: exchange.midday_close_time },
+      { open: exchange.midday_open_time, close: closeTime },
+    ];
+  }
+  return [{ open: exchange.open_time, close: closeTime }];
+}
+
 /**
  * Calculates market status for an exchange
  */
@@ -216,33 +238,61 @@ export function calculateMarketStatus(
     };
   }
   
-  // Compare current time with open and close times
-  const openCompare = compareTimes(exchange.open_time, exchangeTime.hours, exchangeTime.minutes);
-  const closeCompare = compareTimes(closeTime, exchangeTime.hours, exchangeTime.minutes);
-  
-  const isOpen = openCompare >= 0 && closeCompare < 0;
-  
+  // Compare current time against each trading session — exchanges with a
+  // midday halt (Tokyo, Shanghai) get two sessions, so a lunch break reads
+  // as "closed, reopens at 12:30 today" rather than staying "open" straight
+  // through it.
+  const sessions = getSessions(exchange, closeTime);
+
+  let isOpen = false;
+  let currentSessionClose: string | null = null;
+  for (const session of sessions) {
+    const sessionOpenCompare = compareTimes(session.open, exchangeTime.hours, exchangeTime.minutes);
+    const sessionCloseCompare = compareTimes(session.close, exchangeTime.hours, exchangeTime.minutes);
+    if (sessionOpenCompare >= 0 && sessionCloseCompare < 0) {
+      isOpen = true;
+      currentSessionClose = session.close;
+      break;
+    }
+  }
+
+  // The next session whose open time hasn't arrived yet today — non-null
+  // during a lunch break (afternoon session still ahead), null once the
+  // day's last session has started or finished (rolls over to tomorrow).
+  let nextSessionOpenToday: string | null = null;
+  for (const session of sessions) {
+    if (compareTimes(session.open, exchangeTime.hours, exchangeTime.minutes) < 0) {
+      nextSessionOpenToday = session.open;
+      break;
+    }
+  }
+
   // Calculate next open/close times
   let nextOpenTime: Date | null = null;
   let nextCloseTime: Date | null = null;
   let timeUntilOpen: number | null = null;
   let timeUntilClose: number | null = null;
-  
+
   if (isOpen) {
     // Market is open, calculate time until close TODAY
-    const closeDate = createDateInTimezone(currentTime, closeTime, exchange.timezone);
-    
+    const closeDate = createDateInTimezone(currentTime, currentSessionClose!, exchange.timezone);
+
     // If the close time has already passed today (shouldn't happen if isOpen is correct), use tomorrow
     if (closeDate <= currentTime) {
       const tomorrow = new Date(currentTime);
       tomorrow.setDate(tomorrow.getDate() + 1);
-      const tomorrowCloseDate = createDateInTimezone(tomorrow, closeTime, exchange.timezone);
+      const tomorrowCloseDate = createDateInTimezone(tomorrow, currentSessionClose!, exchange.timezone);
       nextCloseTime = tomorrowCloseDate;
       timeUntilClose = Math.max(0, tomorrowCloseDate.getTime() - currentTime.getTime());
     } else {
       nextCloseTime = closeDate;
       timeUntilClose = Math.max(0, closeDate.getTime() - currentTime.getTime());
     }
+  } else if (nextSessionOpenToday) {
+    // Between sessions (e.g. lunch break) — reopens later today, not tomorrow
+    const openDate = createDateInTimezone(currentTime, nextSessionOpenToday, exchange.timezone);
+    nextOpenTime = openDate;
+    timeUntilOpen = Math.max(0, openDate.getTime() - currentTime.getTime());
   } else {
     // Market is closed, calculate time until open (use exchange timezone, not local)
     let openDate = createDateInTimezone(currentTime, exchange.open_time, exchange.timezone);
