@@ -16,6 +16,7 @@ import {
   buildTransactionMarkers,
   type TransactionMarkerInput,
   type SaleMarkerInput,
+  type PurchaseMarkerInput,
 } from '@/lib/holdings/transaction-markers';
 import {
   getIndicatorDef,
@@ -82,16 +83,17 @@ interface Props {
   onToggleEvents: () => void;
   showTransactions: boolean;
   onToggleTransactions: () => void;
-  /** This user's holding/sales for `ticker`, already scoped by the caller. */
+  /** This user's holding/sales/purchases for `ticker`, already scoped by the caller. */
   holding?: TransactionMarkerInput;
   sales: SaleMarkerInput[];
+  purchases?: PurchaseMarkerInput[];
 }
 
 export function AdvancedChartModal({
   ticker, initialRange, onClose,
   chartType, onChartType, onRangeChange, indicators, onAddIndicator, onRemoveIndicator, onUpdateIndicator, onApplyPreset,
   onReplaceIndicators, onApplyConfig,
-  showVolume, onToggleVolume, showEvents, onToggleEvents, showTransactions, onToggleTransactions, holding, sales,
+  showVolume, onToggleVolume, showEvents, onToggleEvents, showTransactions, onToggleTransactions, holding, sales, purchases = [],
 }: Props) {
   const router = useRouter();
   const { resolvedTheme } = useTheme();
@@ -188,8 +190,8 @@ export function AdvancedChartModal({
   // no extra fetch here.
   const transactions = useMemo(() => {
     if (!showTransactions) return undefined;
-    return buildTransactionMarkers(holding, sales).map((m) => ({ ts: m.tsSeconds, kind: m.kind }));
-  }, [showTransactions, holding, sales]);
+    return buildTransactionMarkers(holding, sales, purchases).map((m) => ({ ts: m.tsSeconds, kind: m.kind }));
+  }, [showTransactions, holding, sales, purchases]);
 
   // Anchor the visible window to the newest loaded bar (avoids Date.now during
   // render). Bars before this are warm-up only so long SMAs cover the window.

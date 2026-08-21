@@ -25,7 +25,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useLivePrices } from '@/hooks/use-live-prices';
 import { useStockQuote } from '@/hooks/use-stock-price';
 import { useExperienceLevel } from '@/hooks/use-experience-level';
-import { useHoldings, useHoldingSales } from '@/hooks/use-holdings';
+import { useHoldings, useHoldingSales, useHoldingPurchases } from '@/hooks/use-holdings';
 import { buildTransactionMarkers } from '@/lib/holdings/transaction-markers';
 import { cn } from '@/lib/utils';
 import type { ExtendedHoursQuote, IndicatorValue, CompanyEarnings } from '@/lib/twelvedata/twelvedata-client';
@@ -286,10 +286,15 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
   // behind the toggle — flipping the switch on shows markers instantly.
   const { data: allHoldings } = useHoldings();
   const { data: allSales } = useHoldingSales();
+  const { data: allPurchases } = useHoldingPurchases();
   const myHolding = allHoldings?.find((h) => h.symbol.toUpperCase() === ticker.toUpperCase());
   const mySales = useMemo(
     () => allSales?.filter((s) => s.symbol.toUpperCase() === ticker.toUpperCase()) ?? [],
     [allSales, ticker]
+  );
+  const myPurchases = useMemo(
+    () => allPurchases?.filter((p) => p.symbol.toUpperCase() === ticker.toUpperCase()) ?? [],
+    [allPurchases, ticker]
   );
 
   // ── Indicator queries ─────────────────────────────────────────────────────
@@ -427,7 +432,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
     if (!prefs.showTransactions || !chartDisplayData.length) return [];
     const chartStart = chartDisplayData[0].time;
     const chartEnd = chartDisplayData[chartDisplayData.length - 1].time;
-    return buildTransactionMarkers(myHolding, mySales)
+    return buildTransactionMarkers(myHolding, mySales, myPurchases)
       .filter((m) => m.tsSeconds >= chartStart && m.tsSeconds <= chartEnd)
       .map((m) => ({
         date: new Date(m.tsSeconds * 1000),
@@ -435,10 +440,12 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
         kind: m.kind,
         title:
           m.kind === 'buy'
-            ? `Bought at ${fmtPrice(m.price)} avg on ${m.dateStr}`
+            ? myPurchases.length > 0
+              ? `Bought at ${fmtPrice(m.price)} on ${m.dateStr}`
+              : `Bought at ${fmtPrice(m.price)} avg on ${m.dateStr}`
             : `Sold ${m.quantity} at ${fmtPrice(m.price)} on ${m.dateStr}`,
       }));
-  }, [prefs.showTransactions, myHolding, mySales, chartDisplayData]);
+  }, [prefs.showTransactions, myHolding, mySales, myPurchases, chartDisplayData]);
 
   // Right block (dual mode) — derive extended price from the last candle when it's a
   // pre/post session so the header and chart tooltip always read from the same source.
@@ -855,6 +862,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
           onToggleTransactions={() => setPref('showTransactions', !prefs.showTransactions)}
           holding={myHolding ? { date_purchased: myHolding.date_purchased, avg_price: myHolding.avg_price, quantity: myHolding.quantity } : undefined}
           sales={mySales}
+          purchases={myPurchases}
         />
       )}
 
