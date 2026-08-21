@@ -14,11 +14,12 @@ import {
   getHoldingSalesAction,
   deleteHoldingSaleAction,
   updateHoldingSaleAction,
+  getHoldingPurchasesAction,
   type AddHoldingInput,
   type UpdateHoldingInput,
   type SellHoldingInput,
 } from '@/app/actions/holdings';
-import type { UserHolding, HoldingSale } from '@/lib/types/database';
+import type { UserHolding, HoldingSale, HoldingPurchase } from '@/lib/types/database';
 
 /**
  * TanStack Query hook to fetch user holdings
@@ -249,6 +250,26 @@ export function useHoldingSales() {
       const result = await getHoldingSalesAction();
       if (result.success && result.sales) return result.sales;
       throw new Error(result.error || 'Failed to fetch sales');
+    },
+    enabled: isAuthenticated && !!user,
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
+}
+
+/**
+ * TanStack Query hook to fetch all recorded purchase lots for the current user.
+ */
+export function useHoldingPurchases() {
+  const { user, isAuthenticated } = useAuth();
+
+  return useQuery({
+    queryKey: ['holding-purchases', user?.id],
+    queryFn: async (): Promise<HoldingPurchase[]> => {
+      if (!isAuthenticated || !user) throw new Error('Authentication required');
+      const result = await getHoldingPurchasesAction();
+      if (result.success && result.purchases) return result.purchases;
+      throw new Error(result.error || 'Failed to fetch purchases');
     },
     enabled: isAuthenticated && !!user,
     staleTime: 60 * 1000,
