@@ -1,5 +1,13 @@
 [
   {
+    "date": "2026-08-21",
+    "entries": [
+      { "type": "new", "text": "Stock charts now show a dot for every time you bought shares, at the real price and date, instead of one dot averaged across all your purchases. You can now log a purchase against a holding you already track, or enter multiple buy dates when adding a new one" },
+      { "type": "new", "text": "Added Tokyo, Korea, and Shanghai to Market Hours, including their midday trading breaks" },
+      { "type": "fixed", "text": "Fixed Portfolio Risk Analysis sometimes giving a different score on back-to-back runs even though your holdings hadn't changed" }
+    ]
+  },
+  {
     "date": "2026-08-20",
     "entries": [
       { "type": "improved", "text": "Risk Analysis, Portfolio Builder, Deep Dive, and Company Compare loading screens no longer sit stuck at 100% while still finishing up, and the finished screen now stays visible long enough to actually see it before the result appears" },
