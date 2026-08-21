@@ -21,8 +21,9 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
-import { useAddHolding } from '@/hooks/use-holdings';
+import { useAddHolding, useAddOrUpdateHolding } from '@/hooks/use-holdings';
 import { useAuth } from '@/hooks/use-auth';
 import { CheckCircle2 } from 'lucide-react';
 import type { AddHoldingInput } from '@/app/actions/holdings';
@@ -56,11 +57,37 @@ export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStock, setSelectedStock] = useState<SearchResult | null>(null);
+  const [mode, setMode] = useState<'single' | 'multiple'>('single');
   const [quantity, setQuantity] = useState('');
   const [avgPrice, setAvgPrice] = useState('');
   const [datePurchased, setDatePurchased] = useState('');
   const [quantityError, setQuantityError] = useState('');
   const [avgPriceError, setAvgPriceError] = useState('');
+  interface PurchaseRow {
+    quantity: string;
+    price: string;
+    date: string;
+  }
+  const [purchaseRows, setPurchaseRows] = useState<PurchaseRow[]>([{ quantity: '', price: '', date: '' }]);
+  const [multiError, setMultiError] = useState('');
+  const addOrUpdateHolding = useAddOrUpdateHolding();
+
+  const addPurchaseRow = () => setPurchaseRows((rows) => [...rows, { quantity: '', price: '', date: '' }]);
+  const removePurchaseRow = (index: number) => setPurchaseRows((rows) => rows.filter((_, i) => i !== index));
+  const updatePurchaseRow = (index: number, field: keyof PurchaseRow, value: string) =>
+    setPurchaseRows((rows) => rows.map((row, i) => (i === index ? { ...row, [field]: value } : row)));
+
+  const multiTotals = useMemo(() => {
+    let totalQty = 0;
+    let totalCost = 0;
+    for (const row of purchaseRows) {
+      const q = parseFloat(row.quantity) || 0;
+      const p = parseFloat(row.price) || 0;
+      totalQty += q;
+      totalCost += q * p;
+    }
+    return { totalQty, avgPrice: totalQty > 0 ? totalCost / totalQty : 0 };
+  }, [purchaseRows]);
 
   // Derive user's home currency from settings
   const userCurrency = useMemo((): CurrencyCode => {
@@ -158,6 +185,47 @@ export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
 
     if (!selectedStock) return;
 
+    const assetType = inferAssetType(selectedStock.ticker, selectedStock.instrument_type);
+
+    if (mode === 'multiple') {
+      setMultiError('');
+      for (const row of purchaseRows) {
+        const q = parseFloat(row.quantity) || 0;
+        const p = parseFloat(row.price) || 0;
+        if (q <= 0 || p <= 0 || !row.date) {
+          setMultiError('Every purchase row needs a quantity, price, and date.');
+          return;
+        }
+      }
+
+      try {
+        for (const row of purchaseRows) {
+          const input: AddHoldingInput = {
+            symbol: selectedStock.ticker,
+            company_name: selectedStock.name,
+            quantity: parseFloat(row.quantity),
+            avg_price: parseFloat(row.price),
+            date_purchased: row.date,
+            asset_type: assetType === 'unknown' ? 'stock' : assetType,
+            purchase_currency: userCurrency,
+            purchase_fx_rate: userCurrency !== 'USD' ? null : 1,
+            trading_currency: selectedStock.currency ?? null,
+          };
+          // Sequential, not Promise.all — the first call creates the holding,
+          // every later call must see it already exist to merge into it.
+          await addOrUpdateHolding.mutateAsync(input);
+        }
+
+        setSelectedStock(null);
+        setSearchQuery('');
+        setPurchaseRows([{ quantity: '', price: '', date: '' }]);
+        onOpenChange(false);
+      } catch (error) {
+        console.error('Error adding holding (multiple purchases):', error);
+      }
+      return;
+    }
+
     // Run validation before submitting
     const qErr = validateQuantity(quantity);
     const pErr = validateAvgPrice(avgPrice);
@@ -166,7 +234,6 @@ export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
     if (qErr || pErr) return;
 
     try {
-      const assetType = inferAssetType(selectedStock.ticker, selectedStock.instrument_type);
       const input: AddHoldingInput = {
         symbol: selectedStock.ticker,
         company_name: selectedStock.name,
@@ -203,6 +270,9 @@ export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
     setDatePurchased('');
     setQuantityError('');
     setAvgPriceError('');
+    setMode('single');
+    setPurchaseRows([{ quantity: '', price: '', date: '' }]);
+    setMultiError('');
     onOpenChange(false);
   };
 
@@ -276,72 +346,135 @@ export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
             )}
           </div>
 
-          {/* Quantity (Optional) */}
-          <div className="space-y-2">
-            <Label htmlFor="quantity">Quantity (Optional)</Label>
-            <Input
-              id="quantity"
-              type="number"
-              step="0.01"
-              placeholder="e.g., 10"
-              value={quantity}
-              onChange={(e) => {
-                setQuantity(e.target.value);
-                if (quantityError) setQuantityError(validateQuantity(e.target.value));
-              }}
-              onBlur={(e) => setQuantityError(validateQuantity(e.target.value))}
-              aria-invalid={!!quantityError}
-              className={quantityError ? 'border-destructive focus-visible:ring-destructive' : ''}
-            />
-            {quantityError && (
-              <p className="text-xs text-destructive">{quantityError}</p>
-            )}
-          </div>
+          <Tabs value={mode} onValueChange={(v) => setMode(v as 'single' | 'multiple')}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="single">Single purchase</TabsTrigger>
+              <TabsTrigger value="multiple">Multiple purchases</TabsTrigger>
+            </TabsList>
 
-          {/* Average Price (Optional) */}
-          <div className="space-y-2">
-            <Label htmlFor="avg-price">Average Price (Optional)</Label>
-            <Input
-              id="avg-price"
-              type="number"
-              step="0.01"
-              placeholder="e.g., 150.00"
-              value={avgPrice}
-              onChange={(e) => {
-                setAvgPrice(e.target.value);
-                if (avgPriceError) setAvgPriceError(validateAvgPrice(e.target.value));
-              }}
-              onBlur={(e) => setAvgPriceError(validateAvgPrice(e.target.value))}
-              aria-invalid={!!avgPriceError}
-              className={avgPriceError ? 'border-destructive focus-visible:ring-destructive' : ''}
-            />
-            {avgPriceError && (
-              <p className="text-xs text-destructive">{avgPriceError}</p>
-            )}
-          </div>
+            <TabsContent value="single" className="space-y-6 pt-4">
+              {/* Quantity (Optional) */}
+              <div className="space-y-2">
+                <Label htmlFor="quantity">Quantity (Optional)</Label>
+                <Input
+                  id="quantity"
+                  type="number"
+                  step="0.01"
+                  placeholder="e.g., 10"
+                  value={quantity}
+                  onChange={(e) => {
+                    setQuantity(e.target.value);
+                    if (quantityError) setQuantityError(validateQuantity(e.target.value));
+                  }}
+                  onBlur={(e) => setQuantityError(validateQuantity(e.target.value))}
+                  aria-invalid={!!quantityError}
+                  className={quantityError ? 'border-destructive focus-visible:ring-destructive' : ''}
+                />
+                {quantityError && (
+                  <p className="text-xs text-destructive">{quantityError}</p>
+                )}
+              </div>
 
-          {/* Date Purchased (Optional) */}
-          <div className="space-y-2">
-            <Label htmlFor="date-purchased">Date Purchased (Optional)</Label>
-            <DatePicker
-              id="date-purchased"
-              max={new Date().toISOString().slice(0, 10)}
-              value={datePurchased}
-              onChange={setDatePurchased}
-              placeholder="Select a date"
-            />
-            {datePurchased && userCurrency !== 'USD' ? (
-              <p className="text-xs text-muted-foreground">
-                {historicalRateData
-                  ? `Rate on ${datePurchased}: 1 USD = ${historicalRateData.toFixed(4)} ${userCurrency} — used for FX-adjusted P/L`
-                  : `Looking up USD/${userCurrency} rate for ${datePurchased}…`}
-              </p>
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                Used to chart your P/L from the day you opened this position.
-              </p>
-            )}
-          </div>
+              {/* Average Price (Optional) */}
+              <div className="space-y-2">
+                <Label htmlFor="avg-price">Average Price (Optional)</Label>
+                <Input
+                  id="avg-price"
+                  type="number"
+                  step="0.01"
+                  placeholder="e.g., 150.00"
+                  value={avgPrice}
+                  onChange={(e) => {
+                    setAvgPrice(e.target.value);
+                    if (avgPriceError) setAvgPriceError(validateAvgPrice(e.target.value));
+                  }}
+                  onBlur={(e) => setAvgPriceError(validateAvgPrice(e.target.value))}
+                  aria-invalid={!!avgPriceError}
+                  className={avgPriceError ? 'border-destructive focus-visible:ring-destructive' : ''}
+                />
+                {avgPriceError && (
+                  <p className="text-xs text-destructive">{avgPriceError}</p>
+                )}
+              </div>
+
+              {/* Date Purchased (Optional) */}
+              <div className="space-y-2">
+                <Label htmlFor="date-purchased">Date Purchased (Optional)</Label>
+                <DatePicker
+                  id="date-purchased"
+                  max={new Date().toISOString().slice(0, 10)}
+                  value={datePurchased}
+                  onChange={setDatePurchased}
+                  placeholder="Select a date"
+                />
+                {datePurchased && userCurrency !== 'USD' ? (
+                  <p className="text-xs text-muted-foreground">
+                    {historicalRateData
+                      ? `Rate on ${datePurchased}: 1 USD = ${historicalRateData.toFixed(4)} ${userCurrency} — used for FX-adjusted P/L`
+                      : `Looking up USD/${userCurrency} rate for ${datePurchased}…`}
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Used to chart your P/L from the day you opened this position.
+                  </p>
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="multiple" className="space-y-4 pt-4">
+              {purchaseRows.map((row, i) => (
+                <div key={i} className="space-y-2 rounded-lg border p-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs text-muted-foreground">Purchase {i + 1}</Label>
+                    {purchaseRows.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removePurchaseRow(i)}
+                        className="text-xs text-muted-foreground hover:text-destructive"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="Shares"
+                      value={row.quantity}
+                      onChange={(e) => updatePurchaseRow(i, 'quantity', e.target.value)}
+                    />
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="Price"
+                      value={row.price}
+                      onChange={(e) => updatePurchaseRow(i, 'price', e.target.value)}
+                    />
+                    <DatePicker
+                      max={new Date().toISOString().slice(0, 10)}
+                      value={row.date}
+                      onChange={(v) => updatePurchaseRow(i, 'date', v)}
+                      placeholder="Date"
+                    />
+                  </div>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={addPurchaseRow}
+                className="w-full rounded-lg border border-dashed border-border/60 py-2 text-sm text-muted-foreground hover:border-primary/50 hover:text-primary"
+              >
+                + Add another purchase
+              </button>
+              {multiTotals.totalQty > 0 && (
+                <p className="text-sm text-muted-foreground">
+                  Total: {multiTotals.totalQty} shares at ${multiTotals.avgPrice.toFixed(2)} average
+                </p>
+              )}
+              {multiError && <p className="text-xs text-destructive">{multiError}</p>}
+            </TabsContent>
+          </Tabs>
 
           {/* Submit Button */}
           <div className="flex justify-end gap-3">
@@ -350,9 +483,9 @@ export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
             </Button>
             <Button
               type="submit"
-              disabled={!selectedStock || addHolding.isPending}
+              disabled={!selectedStock || addHolding.isPending || addOrUpdateHolding.isPending}
             >
-              {addHolding.isPending ? 'Adding...' : 'Add Holding'}
+              {(mode === 'multiple' ? addOrUpdateHolding.isPending : addHolding.isPending) ? 'Adding...' : 'Add Holding'}
             </Button>
           </div>
 
