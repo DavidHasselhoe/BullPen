@@ -177,6 +177,7 @@ export interface Database {
           analysis: JsonValue | null;
           currency: string;
           holdings_count: number | null;
+          holdings_snapshot: JsonValue | null;
           status: string;
           phase: string | null;
           error_code: string | null;
@@ -188,6 +189,7 @@ export interface Database {
           analysis?: JsonValue | null;
           currency?: string;
           holdings_count?: number | null;
+          holdings_snapshot?: JsonValue | null;
           status?: string;
           phase?: string | null;
           error_code?: string | null;
@@ -199,6 +201,7 @@ export interface Database {
           analysis: JsonValue | null;
           currency: string;
           holdings_count: number | null;
+          holdings_snapshot: JsonValue | null;
           status: string;
           phase: string | null;
           error_code: string | null;

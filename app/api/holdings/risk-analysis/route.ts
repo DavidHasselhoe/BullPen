@@ -96,6 +96,76 @@ interface HoldingInput {
   unrealizedPLPercent?: number;
 }
 
+// Minimal position fingerprint — deliberately excludes allocation/marketValue/
+// dayChangePercent/unrealizedPLPercent, which drift every run regardless of
+// whether the user actually bought or sold anything. Only share count and
+// symbol membership represent a real position change.
+interface HoldingSnapshotEntry {
+  symbol: string;
+  quantity: number | null;
+}
+
+interface SnapshotDiff {
+  added: string[];
+  removed: string[];
+  resized: Array<{ symbol: string; from: number | null; to: number | null }>;
+}
+
+function toSnapshot(holdings: HoldingInput[]): HoldingSnapshotEntry[] {
+  return holdings.map((h) => ({ symbol: h.symbol, quantity: h.quantity ?? null }));
+}
+
+function diffHoldingsSnapshot(prior: HoldingSnapshotEntry[], current: HoldingSnapshotEntry[]): SnapshotDiff {
+  const priorMap = new Map(prior.map((h) => [h.symbol, h.quantity]));
+  const currentMap = new Map(current.map((h) => [h.symbol, h.quantity]));
+
+  const added = current.filter((h) => !priorMap.has(h.symbol)).map((h) => h.symbol);
+  const removed = prior.filter((h) => !currentMap.has(h.symbol)).map((h) => h.symbol);
+  const resized: SnapshotDiff['resized'] = [];
+  for (const [symbol, priorQty] of priorMap) {
+    if (!currentMap.has(symbol)) continue;
+    const currentQty = currentMap.get(symbol) ?? null;
+    if (Math.abs((priorQty ?? 0) - (currentQty ?? 0)) > 1e-6) {
+      resized.push({ symbol, from: priorQty, to: currentQty });
+    }
+  }
+
+  return { added, removed, resized };
+}
+
+function isUnchanged(diff: SnapshotDiff): boolean {
+  return diff.added.length === 0 && diff.removed.length === 0 && diff.resized.length === 0;
+}
+
+/**
+ * Builds a prompt suffix anchoring the model to the previous score when the
+ * portfolio hasn't actually changed, so identical holdings don't get a
+ * re-rolled score purely from LLM sampling variance. When holdings HAVE
+ * changed, the model is told exactly what changed and asked to explain the
+ * delta rather than starting from a totally independent number.
+ */
+function buildHistoryContext(
+  prior: { score: number; level: string; snapshot: HoldingSnapshotEntry[] } | null,
+  currentHoldings: HoldingInput[]
+): string {
+  if (!prior) return '';
+
+  const diff = diffHoldingsSnapshot(prior.snapshot, toSnapshot(currentHoldings));
+
+  if (isUnchanged(diff)) {
+    return `\n\nIMPORTANT: You scored this exact portfolio (same holdings, same share counts) ${prior.score}/100 (${prior.level}) last time. Keep the overall score and risk level the same unless you identify a genuinely new external risk factor since then (e.g. a specific holding entered financial distress, a sector-specific shock occurred). Do not vary the score merely due to re-analysis or normal sampling variation: an unchanged portfolio should produce an unchanged score.`;
+  }
+
+  const changes: string[] = [];
+  if (diff.added.length > 0) changes.push(`added: ${diff.added.join(', ')}`);
+  if (diff.removed.length > 0) changes.push(`removed: ${diff.removed.join(', ')}`);
+  if (diff.resized.length > 0) {
+    changes.push(`resized: ${diff.resized.map((r) => `${r.symbol} (${r.from ?? 0} -> ${r.to ?? 0} shares)`).join(', ')}`);
+  }
+
+  return `\n\nSince the last analysis (scored ${prior.score}/100, ${prior.level}), the portfolio changed: ${changes.join('; ')}. Reassess from first principles based on the current holdings below, and in portfolioSummary briefly note how this change moved the score relative to last time.`;
+}
+
 // Currency display helpers
 const CURRENCY_PREFIXES: Record<string, string> = {
   USD: '$', EUR: '€', GBP: '£', JPY: '¥',
@@ -143,11 +213,36 @@ async function runRiskAnalysis(params: {
     supabase.from('risk_analyses').update({ status: 'error', phase: null, error_code: code, error_message: message }).eq('id', id);
 
   try {
-    const prompt = buildPrompt(holdings, currency);
+    const { data: priorRow } = await supabase
+      .from('risk_analyses')
+      .select('analysis, holdings_snapshot')
+      .eq('user_id', userId)
+      .eq('status', 'done')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    let historyContext = '';
+    if (priorRow?.analysis && Array.isArray(priorRow.holdings_snapshot)) {
+      const priorAnalysis = priorRow.analysis as { overallRiskScore?: unknown; riskLevel?: unknown };
+      if (typeof priorAnalysis.overallRiskScore === 'number' && typeof priorAnalysis.riskLevel === 'string') {
+        historyContext = buildHistoryContext(
+          {
+            score: priorAnalysis.overallRiskScore,
+            level: priorAnalysis.riskLevel,
+            snapshot: priorRow.holdings_snapshot as unknown as HoldingSnapshotEntry[],
+          },
+          holdings
+        );
+      }
+    }
+
+    const prompt = buildPrompt(holdings, currency) + historyContext;
 
     const stream = anthropic.messages.stream({
       model: MODEL,
       max_tokens: 4096,
+      temperature: 0,
       system: RISK_ANALYST_SYSTEM_PROMPT,
       messages: [{ role: 'user', content: prompt }],
     });
@@ -273,12 +368,14 @@ async function postHandler(req: NextRequest, _context: unknown, session: { userI
   }
 
   const supabase = createServerClient();
+  type RiskInsert = Database['public']['Tables']['risk_analyses']['Insert'];
   const { data: inserted, error: insertErr } = await supabase
     .from('risk_analyses')
     .insert({
       user_id: session.userId,
       currency,
       holdings_count: holdings.length,
+      holdings_snapshot: toSnapshot(holdings) as unknown as RiskInsert['holdings_snapshot'],
       status: 'pending',
       phase: 'scoring',
     })
