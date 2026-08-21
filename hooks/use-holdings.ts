@@ -70,6 +70,7 @@ export function useAddHolding() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['holdings', user?.id] });
       queryClient.invalidateQueries({ queryKey: ['holdings-quotes'] });
+      queryClient.invalidateQueries({ queryKey: ['holding-purchases', user?.id] });
     },
   });
 }
@@ -93,6 +94,7 @@ export function useAddOrUpdateHolding() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['holdings', user?.id] });
       queryClient.invalidateQueries({ queryKey: ['holdings-quotes'] });
+      queryClient.invalidateQueries({ queryKey: ['holding-purchases', user?.id] });
     },
   });
 }
