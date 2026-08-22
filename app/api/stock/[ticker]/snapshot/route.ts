@@ -8,7 +8,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { batchFetch, withRateLimitRetry, TwelveDataRateLimitError, reportDateToFiscalQuarter } from '@/lib/twelvedata/twelvedata-client';
-import { getCached, getCachedWithMeta, setCached } from '@/lib/cache/market-data-cache';
+import { getCached, getCachedWithMeta, getCachedStale, getCachedStaleWithMeta, setCached } from '@/lib/cache/market-data-cache';
+import { tryReserveOrganicCredits } from '@/lib/twelvedata/credit-budget';
 import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
 import { slugToSymbol, inferAssetType, hasEarnings } from '@/lib/assets/asset-type';
 
@@ -59,12 +60,22 @@ async function handler(
     const cachedStats = cachedStatsMeta?.payload ?? null;
     let statsFetchedAt: string | null = cachedStatsMeta?.fetchedAt ?? null;
 
-    // Build batch — always include quote (real-time); skip cached endpoints
+    // Reserve against the shared per-minute credit budget before committing to the
+    // expensive sub-requests (see lib/twelvedata/credit-budget.ts). A denied
+    // reservation means this ticker's stats/earnings fall back to the last known
+    // cached value below, even past its normal TTL, rather than firing unreserved
+    // and risking the account-wide 610/min cap on a burst of concurrent cold tickers.
+    const wantsStats = !cachedStats;
+    const wantsEarnings = !cachedEarnings && hasEarnings(assetType);
+    const expensiveCost = (wantsStats ? 50 : 0) + (wantsEarnings ? 20 : 0);
+    const budgetOk = expensiveCost === 0 || (await tryReserveOrganicCredits(expensiveCost));
+
+    // Build batch — always include quote (real-time); skip cached or budget-denied endpoints
     const requests: Record<string, string> = {
       quote: `/quote?symbol=${sym}&apikey=${key}`,
     };
-    if (!cachedStats) requests.statistics = `/statistics?symbol=${sym}&apikey=${key}`;
-    if (!cachedEarnings && hasEarnings(assetType)) requests.earnings = `/earnings?symbol=${sym}&outputsize=8&apikey=${key}`;
+    if (wantsStats && budgetOk) requests.statistics = `/statistics?symbol=${sym}&apikey=${key}`;
+    if (wantsEarnings && budgetOk) requests.earnings = `/earnings?symbol=${sym}&outputsize=8&apikey=${key}`;
 
     // Retry-wrapped: a transient network blip here (common intermittently on Vercel's
     // outbound TwelveData calls) would otherwise leave quote null, which the stock page
@@ -95,10 +106,14 @@ async function handler(
       instrumentType = q.type != null ? String(q.type) : null;
     }
 
-    // ---- Statistics (cached or freshly fetched) ----
+    // ---- Statistics (cached, freshly fetched, or stale fallback under budget pressure) ----
     let statistics: Statistics | null = cachedStats;
 
-    if (!cachedStats) {
+    if (wantsStats && !budgetOk) {
+      const stale = await getCachedStaleWithMeta<Statistics>(`snap-stats:${sym}`);
+      statistics = stale?.payload ?? null;
+      statsFetchedAt = stale?.fetchedAt ?? null;
+    } else if (wantsStats) {
       const statRaw = raw.statistics as { statistics?: Statistics; code?: number; status?: string; message?: string } | undefined;
       if (statRaw && !statRaw.code && statRaw.status !== 'error' && statRaw.statistics) {
         const s = statRaw.statistics;
@@ -136,10 +151,12 @@ async function handler(
       }
     }
 
-    // ---- Earnings (cached or freshly fetched) ----
+    // ---- Earnings (cached, freshly fetched, or stale fallback under budget pressure) ----
     let earnings: EarningsItem[] = cachedEarnings ?? [];
 
-    if (!cachedEarnings) {
+    if (wantsEarnings && !budgetOk) {
+      earnings = (await getCachedStale<EarningsItem[]>(`snap-earnings:${sym}`)) ?? [];
+    } else if (wantsEarnings) {
       interface EarningsApiItem { date: string; time?: string; eps_estimate?: number | null; eps_actual?: number | null; }
       interface EarningsRaw { earnings?: EarningsApiItem[]; code?: number; status?: string; }
       const earningsRaw = raw.earnings as EarningsRaw | undefined;

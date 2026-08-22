@@ -113,6 +113,31 @@ export async function getCachedStale<T>(key: string): Promise<T | null> {
 }
 
 /**
+ * Like getCachedStale but also returns the fetched_at timestamp — the
+ * stale/expiry-ignoring sibling of getCachedWithMeta, same relationship as
+ * getCachedMany/getCachedManyStale above. Used when a live refetch was
+ * skipped (e.g. tryReserveOrganicCredits denied it) and the caller still
+ * wants to tell the client how old the data it's serving actually is,
+ * rather than fabricating a fresh timestamp for stale data.
+ */
+export async function getCachedStaleWithMeta<T>(key: string): Promise<{ payload: T; fetchedAt: string } | null> {
+  try {
+    const supabase = createServerClient();
+    const { data, error } = await supabase
+      .from(TABLE)
+      .select('payload, fetched_at')
+      .eq('cache_key', key)
+      .maybeSingle<Pick<MarketDataCacheRow, 'payload' | 'fetched_at'>>();
+
+    if (error || !data) return null;
+    return { payload: data.payload as T, fetchedAt: data.fetched_at };
+  } catch (error) {
+    console.error('[market-data-cache] stale-with-meta read failed:', error);
+    return null;
+  }
+}
+
+/**
  * Like getCached but also returns the fetched_at timestamp.
  * Returns null on miss/expiry; { payload, fetchedAt } on hit.
  */

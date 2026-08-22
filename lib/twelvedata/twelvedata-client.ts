@@ -69,6 +69,28 @@ function logUsage(endpoint: string, symbol?: string): void {
   }
 }
 
+/**
+ * Logs TwelveData's own `api-credits-left`/`api-credits-used` response
+ * headers — ground truth for the account-wide per-minute cap, straight from
+ * the provider rather than our own estimated per-endpoint cost table (which
+ * has drifted from reality before: income/balance/cash-flow turned out to
+ * cost ~101 credits each, not the 1 originally assumed, per
+ * docs/twelve-data-venture-analysis.md). Only called at the specific
+ * expensive-endpoint call sites gated by lib/twelvedata/credit-budget.ts's
+ * tryReserveOrganicCredits, as a calibration signal for that budget rather
+ * than a blanket instrumentation of every endpoint in this file. Same
+ * TWELVE_DATA_USAGE_LOG=true gate as logUsage — off by default in production.
+ */
+function logCreditHeaders(response: Response, endpoint: string): void {
+  if (process.env.TWELVE_DATA_USAGE_LOG !== 'true') return;
+  const creditsLeft = response.headers.get('api-credits-left');
+  const creditsUsed = response.headers.get('api-credits-used');
+  if (creditsLeft == null && creditsUsed == null) return;
+  console.log(
+    JSON.stringify({ ts: Date.now(), source: 'twelvedata-credits', endpoint, creditsLeft, creditsUsed })
+  );
+}
+
 function getApiKey(): string {
   const apiKey = process.env.TWELVE_DATA_API_KEY;
   if (!apiKey) {
@@ -302,6 +324,7 @@ export async function batchFetch<T>(
     },
     body: JSON.stringify(body),
   });
+  logCreditHeaders(res, 'batch');
   const data = (await res.json()) as BatchResponse<T>;
   if (!res.ok || data.status === 'error') {
     throw new Error(`Twelve Data batch error: ${res.status}`);
@@ -824,6 +847,7 @@ export async function getCompanyEarnings(
 ): Promise<CompanyEarnings[]> {
   const url = buildUrl('/earnings', { symbol: symbol.toUpperCase() });
   const response = await fetch(url);
+  logCreditHeaders(response, 'earnings');
   const data = (await response.json()) as TwelveDataEarningsResponse;
   logUsage('earnings', symbol);
 
@@ -929,6 +953,7 @@ export async function getStatistics(symbol: string): Promise<CompanyStatistics> 
   logUsage('statistics', symbol);
   const url = buildUrl('/statistics', { symbol: symbol.toUpperCase() });
   const response = await fetch(url);
+  logCreditHeaders(response, 'statistics');
   const data = (await response.json()) as TwelveDataStatisticsResponse;
 
   if (!response.ok || data.code || data.status === 'error') {
@@ -1028,6 +1053,7 @@ export async function getIncomeStatement(
     outputsize,
   });
   const response = await fetch(url);
+  logCreditHeaders(response, 'income_statement');
   const data = (await response.json()) as TwelveDataIncomeResponse;
 
   if (!response.ok || data.code || data.status === 'error') {
@@ -1116,6 +1142,7 @@ export async function getBalanceSheet(
     outputsize,
   });
   const response = await fetch(url);
+  logCreditHeaders(response, 'balance_sheet');
   const data = (await response.json()) as TwelveDataBalanceResponse;
 
   if (!response.ok || data.code || data.status === 'error') {
@@ -1191,6 +1218,7 @@ export async function getCashFlow(
     outputsize,
   });
   const response = await fetch(url);
+  logCreditHeaders(response, 'cash_flow');
   const data = (await response.json()) as TwelveDataCashFlowResponse;
 
   if (!response.ok || data.code || data.status === 'error') {

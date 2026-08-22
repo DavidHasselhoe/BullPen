@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
-import { getCached, setCached } from '@/lib/cache/market-data-cache';
+import { getCached, getCachedStale, setCached } from '@/lib/cache/market-data-cache';
 import { coalesce } from '@/lib/cache/request-coalesce';
+import { tryReserveOrganicCredits } from '@/lib/twelvedata/credit-budget';
 import {
   getIncomeStatement,
   getBalanceSheet,
@@ -11,6 +12,27 @@ import {
   withRateLimitRetry,
   TwelveDataRateLimitError,
 } from '@/lib/twelvedata/twelvedata-client';
+
+/**
+ * Reserves against the shared per-minute credit budget (see
+ * lib/twelvedata/credit-budget.ts) before firing one of the ~101-credit
+ * statement fetches. A denied reservation falls back to the last known
+ * stale value instead of risking the account-wide 610/min cap on a burst
+ * of concurrent cold tickers; only genuinely uncached tickers surface as
+ * `{ denied: true }` with nothing to show.
+ */
+async function fetchGatedStatement<T>(
+  cacheKey: string,
+  cost: number,
+  fetcher: () => Promise<T>
+): Promise<{ denied: false; data: T } | { denied: true }> {
+  if (await tryReserveOrganicCredits(cost)) {
+    return { denied: false, data: await coalesce(cacheKey, () => withRateLimitRetry(fetcher)) };
+  }
+  const stale = await getCachedStale<T>(cacheKey);
+  if (stale !== null) return { denied: false, data: stale };
+  return { denied: true };
+}
 
 type FinancialType = 'income' | 'balance' | 'cashflow' | 'dividends' | 'splits';
 type Period = 'quarterly' | 'annual';
@@ -45,17 +67,32 @@ async function handler(
     // failures, socket resets); those still propagate to the catch block below.
     let result;
     switch (type) {
-      case 'income':
+      case 'income': {
         // Coalesced on cacheKey — HealthScoreCard reads the same key and may
         // already have this in flight on a cold stock page load.
-        result = await coalesce(cacheKey, () => withRateLimitRetry(() => getIncomeStatement(symbol, period)));
+        const outcome = await fetchGatedStatement(cacheKey, 101, () => getIncomeStatement(symbol, period));
+        if (outcome.denied) {
+          return addSecurityHeaders(NextResponse.json({ success: false, error: 'rate_limited', type, period }, { status: 429 }));
+        }
+        result = outcome.data;
         break;
-      case 'balance':
-        result = await coalesce(cacheKey, () => withRateLimitRetry(() => getBalanceSheet(symbol, period)));
+      }
+      case 'balance': {
+        const outcome = await fetchGatedStatement(cacheKey, 101, () => getBalanceSheet(symbol, period));
+        if (outcome.denied) {
+          return addSecurityHeaders(NextResponse.json({ success: false, error: 'rate_limited', type, period }, { status: 429 }));
+        }
+        result = outcome.data;
         break;
-      case 'cashflow':
-        result = await coalesce(cacheKey, () => withRateLimitRetry(() => getCashFlow(symbol, period)));
+      }
+      case 'cashflow': {
+        const outcome = await fetchGatedStatement(cacheKey, 101, () => getCashFlow(symbol, period));
+        if (outcome.denied) {
+          return addSecurityHeaders(NextResponse.json({ success: false, error: 'rate_limited', type, period }, { status: 429 }));
+        }
+        result = outcome.data;
         break;
+      }
       case 'dividends':
         result = await withRateLimitRetry(() => getDividends(symbol));
         break;

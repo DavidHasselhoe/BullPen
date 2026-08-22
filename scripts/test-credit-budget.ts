@@ -165,6 +165,39 @@ check(
     'rather than silent.'
 );
 
+// ── 5. Organic (interactive) traffic ceiling stays sane relative to the plan cap ──
+console.log('\nOrganic credit ceiling invariants:');
+
+const ORGANIC_CEILING = constant(budgetSrc, 'ORGANIC_CREDIT_CEILING', 'credit-budget.ts');
+
+check(
+  `ORGANIC_CREDIT_CEILING (${ORGANIC_CEILING}) <= PLAN_CAP (${PLAN_CAP})`,
+  ORGANIC_CEILING <= PLAN_CAP,
+  `a ceiling above the true account-wide cap can never actually protect it — ` +
+    `tryReserveOrganicCredits would grant reservations that still blow the 610/min limit.`
+);
+
+check(
+  `ORGANIC_CREDIT_CEILING (${ORGANIC_CEILING}) > CRON_CREDIT_SHARE (${SHARE})`,
+  ORGANIC_CEILING > SHARE,
+  `organic (interactive) traffic should have more headroom than background cron work, ` +
+    `not less — a live page load waiting on this reservation should win over a deferrable cron batch.`
+);
+
+check(
+  `PLAN_CAP - ORGANIC_CREDIT_CEILING (${PLAN_CAP - ORGANIC_CEILING}) leaves slack for ungated 1-credit calls`,
+  PLAN_CAP - ORGANIC_CEILING >= 10,
+  `quote/candles/profile fetches are never reserved at all (too cheap to be worth the latency) ` +
+    `but still cost real credits — the ceiling needs headroom under the true cap for them.`
+);
+
+check(
+  'tryReserveOrganicCredits exists (one-shot admission check for interactive traffic)',
+  /export async function tryReserveOrganicCredits/.test(budgetSrc),
+  'tryReserveOrganicCredits was removed or renamed — the stock snapshot/statistics/financials ' +
+    'routes import it by this exact name to gate their expensive TwelveData calls.'
+);
+
 console.log('');
 if (failures > 0) {
   console.error(`${failures} check(s) failed.\n`);

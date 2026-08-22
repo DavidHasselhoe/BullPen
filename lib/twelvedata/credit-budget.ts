@@ -144,3 +144,47 @@ export async function tryReserveCredits(cost: number, maxWaitMs = 8_000): Promis
   }
   return true;
 }
+
+/**
+ * Ceiling for interactive/organic traffic (stock snapshot, statistics,
+ * financials) — reservations against this ceiling write into the SAME
+ * per-minute counter reserveCronCredits uses (see bucketKey), not a
+ * separate budget. Set well above CRON_CREDIT_SHARE (580 vs 400) so a live
+ * page load takes priority over background cron work by construction: a
+ * cron reservation can never push the shared total past its own 400-credit
+ * share, while organic traffic can use the rest of the headroom up to this
+ * ceiling. The ~30-credit gap under the true 610 plan cap is deliberate
+ * slack for the cheap (1-credit) calls that are never reserved at all —
+ * quote, candles, company profile.
+ */
+export const ORGANIC_CREDIT_CEILING = 580;
+
+/**
+ * One-shot admission check for interactive/organic traffic. Reserves
+ * against the same shared per-minute bucket reserveCronCredits uses, but
+ * checked against ORGANIC_CREDIT_CEILING instead of CRON_CREDIT_SHARE.
+ *
+ * Deliberately NOT a polling/wait variant like waitForCronCreditBudget or
+ * tryReserveCredits — an interactive request should degrade to cached/stale
+ * data immediately under load, not add latency hoping the budget frees up
+ * a few seconds later. There is no "proceed anyway" outcome here: a false
+ * result means the caller must have a real fallback (stale cache, or a
+ * smaller request with fewer sub-fetches) — same hard-fail contract as
+ * tryReserveCredits, just without the wait loop.
+ */
+export async function tryReserveOrganicCredits(cost: number): Promise<boolean> {
+  const c = client();
+  if (!c) return true;
+  const key = bucketKey();
+  try {
+    const total = await c.incrby(key, cost);
+    if (total === cost) void c.expire(key, WINDOW_SECONDS * 2);
+    if (total > ORGANIC_CREDIT_CEILING) {
+      await c.decrby(key, cost);
+      return false;
+    }
+    return true;
+  } catch {
+    return true;
+  }
+}

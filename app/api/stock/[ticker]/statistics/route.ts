@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
 import { getStatistics, TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
-import { getCachedWithMeta, setCached } from '@/lib/cache/market-data-cache';
+import { getCachedWithMeta, getCachedStaleWithMeta, setCached } from '@/lib/cache/market-data-cache';
 import { coalesce } from '@/lib/cache/request-coalesce';
+import { tryReserveOrganicCredits } from '@/lib/twelvedata/credit-budget';
 
 const STATS_TTL_SECONDS = 24 * 60 * 60;
 
@@ -26,6 +27,18 @@ async function handler(
     if (snapCached) {
       void setCached(cacheKey, symbol, 'statistics', snapCached.payload, STATS_TTL_SECONDS);
       return addSecurityHeaders(NextResponse.json({ success: true, stats: snapCached.payload, fetchedAt: snapCached.fetchedAt }));
+    }
+
+    // Reserve against the shared per-minute credit budget (see
+    // lib/twelvedata/credit-budget.ts) before firing the live 50-credit fetch —
+    // a denied reservation falls back to the last known stale value instead of
+    // risking the account-wide 610/min cap on a burst of concurrent cold tickers.
+    if (!(await tryReserveOrganicCredits(50))) {
+      const stale = await getCachedStaleWithMeta<Awaited<ReturnType<typeof getStatistics>>>(cacheKey);
+      if (stale) {
+        return addSecurityHeaders(NextResponse.json({ success: true, stats: stale.payload, fetchedAt: stale.fetchedAt }));
+      }
+      return addSecurityHeaders(NextResponse.json({ success: false, error: 'rate_limited' }, { status: 429 }));
     }
 
     const fetchedAt = new Date().toISOString();
