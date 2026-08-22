@@ -10,13 +10,13 @@ import { publishCarousel, isInstagramConfigured } from '@/lib/instagram/client';
 import { totalSlideCount, altTextForSlide } from '@/lib/instagram/render/slides';
 import { postToDiscord } from '@/lib/discord/post-message';
 import { instagramBioLink } from '@/lib/instagram/utm-link';
-import type { EarningsCalendarSlides } from '@/lib/instagram/content/schema';
+import type { EarningsCalendarSlides, EarningsResultsSlides } from '@/lib/instagram/content/schema';
 
 interface InstagramPostRow {
   id: string;
   status: string;
   caption: string;
-  slides: EarningsCalendarSlides;
+  slides: EarningsCalendarSlides | EarningsResultsSlides;
   content_type: string;
   period_key: string;
 }

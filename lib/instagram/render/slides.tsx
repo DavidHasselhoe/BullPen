@@ -36,7 +36,12 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { loadGoogleFont } from '@/lib/render/google-fonts';
-import type { EarningsSlideCompany, EarningsCalendarSlides } from '@/lib/instagram/content/schema';
+import type {
+  EarningsSlideCompany,
+  EarningsCalendarSlides,
+  EarningsResultCompany,
+  EarningsResultsSlides,
+} from '@/lib/instagram/content/schema';
 
 export const SLIDE_WIDTH = 1080;
 export const SLIDE_HEIGHT = 1350;
@@ -91,16 +96,26 @@ export function slideKindAt(index: number, companyCount: number): SlideKind {
  * text (not full company names) to stay well under Meta's alt text length
  * cap even at MAX_COMPANIES.
  */
-export function altTextForSlide(content: EarningsCalendarSlides, slideIndex: number): string {
+export function altTextForSlide(
+  content: EarningsCalendarSlides | EarningsResultsSlides,
+  slideIndex: number
+): string {
   const kind = slideKindAt(slideIndex, content.companies.length);
+  const isResults = content.contentType === 'earnings_results';
   if (kind === 'hook') {
-    return `${content.headline} Earnings calendar for the week of ${content.weekLabel} on BullPen.`;
+    return isResults
+      ? `${content.headline} Earnings results for the week of ${content.weekLabel} on BullPen.`
+      : `${content.headline} Earnings calendar for the week of ${content.weekLabel} on BullPen.`;
   }
   if (kind === 'cta') {
-    return 'Open the BullPen app to see the full earnings calendar and set alerts for these stocks.';
+    return isResults
+      ? 'Open the BullPen app to see the full earnings results recap and track these stocks.'
+      : 'Open the BullPen app to see the full earnings calendar and set alerts for these stocks.';
   }
   const tickers = content.companies.map((c) => c.symbol).join(', ');
-  return `Companies reporting earnings the week of ${content.weekLabel}: ${tickers}.`;
+  return isResults
+    ? `Earnings results for the week of ${content.weekLabel}: ${tickers}.`
+    : `Companies reporting earnings the week of ${content.weekLabel}: ${tickers}.`;
 }
 
 /** All fonts every slide kind might need — fetched once per render, cached across warm invocations by loadGoogleFont itself. */
@@ -356,8 +371,19 @@ function DateHeader({ dateStr, fontSize }: { dateStr: string; fontSize: number }
   );
 }
 
+interface HookSlideProps {
+  headline: string;
+  weekLabel: string;
+  companyCount: number;
+  slideIndex: number;
+  totalSlides: number;
+  /** Overrides the default "{n} COMPANIES REPORTING" pill text — e.g.
+   *  earnings-results.ts's "9 OF 12 BEAT ESTIMATES" for the results recap. */
+  pillText?: string;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function HookSlide({ headline, weekLabel, companyCount, slideIndex, totalSlides }: { headline: string; weekLabel: string; companyCount: number; slideIndex: number; totalSlides: number }): any {
+export function HookSlide({ headline, weekLabel, companyCount, slideIndex, totalSlides, pillText }: HookSlideProps): any {
   return (
     <div
       style={{
@@ -390,7 +416,7 @@ export function HookSlide({ headline, weekLabel, companyCount, slideIndex, total
             padding: '10px 20px', borderRadius: 999, marginBottom: 28,
           }}
         >
-          {companyCount} {companyCount === 1 ? 'COMPANY' : 'COMPANIES'} REPORTING
+          {pillText ?? `${companyCount} ${companyCount === 1 ? 'COMPANY' : 'COMPANIES'} REPORTING`}
         </div>
         <div style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 84, lineHeight: 1.05, color: FG, maxWidth: 820 }}>
           {headline}
@@ -484,6 +510,125 @@ export function EarningsListSlide({ companies, overflowCount = 0, slideIndex, to
             </div>
           ))
         )}
+      </div>
+
+      {overflowCount > 0 && (
+        <div style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: 22, color: MUTED, marginTop: 24 }}>
+          +{overflowCount} more this week on BullPen
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Earnings-results (the Saturday recap) row elements ─────────────────────
+// Reuses EarningsListSlide's shared color/font tokens and Wordmark/
+// CompanyBadge/DateHeader — only the right-hand side of each row differs:
+// Est -> Actual EPS plus a BEAT/MISSED pill instead of a single EST. EPS
+// stat plus a BMO/AMC time badge (the "when" no longer matters once the
+// report already happened).
+const MISSED_COLOR = '#f87171'; // red-400 — same negative-direction hex app/api/og/share/[id]/route.tsx already uses, matching this file's BRAND (emerald-400) for the positive side.
+
+/** BEAT (emerald) / MISSED (red) — the one place this template uses red at
+ *  all, reserved for the loss-side financial-direction signal per
+ *  DESIGN.md's One Signal Rule, same as BRAND is reserved for the gain side
+ *  elsewhere in this file. */
+function ResultBadge({ status, fontSize, paddingV, paddingH }: { status: 'beat' | 'missed'; fontSize: number; paddingV: number; paddingH: number }) {
+  const isBeat = status === 'beat';
+  return (
+    <div
+      style={{
+        display: 'flex', fontSize, fontWeight: 700, letterSpacing: '0.04em',
+        color: isBeat ? BRAND_INK : '#ffffff',
+        fontFamily: 'Geist', padding: `${paddingV}px ${paddingH}px`, borderRadius: 999,
+        backgroundColor: isBeat ? BRAND : MISSED_COLOR,
+      }}
+    >
+      {isBeat ? 'BEAT' : 'MISSED'}
+    </div>
+  );
+}
+
+/** "EST $1.20 -> ACT $1.35" stacked as two lines, mirroring EpsStat's
+ *  column layout. Always both non-null here — earnings-results.ts only
+ *  ever includes a company once both are confirmed (see schema.ts). */
+function EpsCompareStat({ estimate, actual, labelFontSize, valueFontSize }: { estimate: number; actual: number; labelFontSize: number; valueFontSize: number }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+      <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontWeight: 700, fontSize: labelFontSize, letterSpacing: '0.06em', color: MUTED_DIM }}>
+        EST {formatEps(estimate)}
+      </span>
+      <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontWeight: 700, fontSize: valueFontSize, color: FG }}>
+        {formatEps(actual)}
+      </span>
+    </div>
+  );
+}
+
+interface EarningsResultsListSlideProps {
+  companies: EarningsResultCompany[];
+  overflowCount?: number;
+  slideIndex: number;
+  totalSlides: number;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function EarningsResultsListSlide({ companies, overflowCount = 0, slideIndex, totalSlides }: EarningsResultsListSlideProps): any {
+  const m = rowMetrics(companies.length);
+  const groups = groupByDate(companies);
+  return (
+    <div
+      style={{
+        width: '100%', height: '100%', display: 'flex', flexDirection: 'column',
+        padding: 80, backgroundColor: BG, color: FG, position: 'relative', overflow: 'hidden',
+      }}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={getChalkboardMascot()}
+        alt=""
+        width={260}
+        height={260}
+        style={{ position: 'absolute', bottom: -30, right: 25, opacity: 0.9 }}
+      />
+
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: m.headerMarginBottom, zIndex: 1 }}>
+        <Wordmark />
+        <SlideIndicator index={slideIndex} total={totalSlides} />
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: m.rowGap, zIndex: 1 }}>
+        {groups.map((group) => (
+          <div key={group.date} style={{ display: 'flex', flexDirection: 'column', gap: m.rowGap }}>
+            <DateHeader dateStr={group.date} fontSize={m.dateHeaderFontSize} />
+            {group.items.map((c) => (
+              <div
+                key={c.symbol}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: `${m.rowPaddingV}px ${m.rowPaddingH}px`, borderRadius: m.rowRadius,
+                  backgroundColor: SURFACE, border: `1px solid ${BORDER_STRONG}`,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+                  <CompanyBadge symbol={c.symbol} logoUrl={c.logoUrl} size={m.badgeSize} />
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 14 }}>
+                    <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: m.symbolFontSize, color: FG }}>
+                      {c.symbol}
+                    </span>
+                    <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: m.nameFontSize, color: MUTED }}>
+                      {c.name}
+                    </span>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 22 }}>
+                  <EpsCompareStat estimate={c.epsEstimate} actual={c.epsActual} labelFontSize={m.epsLabelFontSize} valueFontSize={m.epsValueFontSize} />
+                  <ResultBadge status={c.status} fontSize={m.timeFontSize} paddingV={m.timePaddingV} paddingH={m.timePaddingH} />
+                </div>
+              </div>
+            ))}
+          </div>
+        ))}
       </div>
 
       {overflowCount > 0 && (

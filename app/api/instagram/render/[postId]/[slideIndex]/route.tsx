@@ -23,9 +23,10 @@ import {
   totalSlideCount,
   HookSlide,
   EarningsListSlide,
+  EarningsResultsListSlide,
   CTASlide,
 } from '@/lib/instagram/render/slides';
-import type { EarningsCalendarSlides } from '@/lib/instagram/content/schema';
+import type { EarningsCalendarSlides, EarningsResultsSlides } from '@/lib/instagram/content/schema';
 
 export const runtime = 'nodejs';
 
@@ -62,12 +63,13 @@ export async function GET(
     return NextResponse.json({ error: 'not_found' }, { status: 404 });
   }
 
-  if (post.content_type !== 'earnings_calendar') {
-    // Only content type built so far — a future content type would branch here.
+  if (post.content_type !== 'earnings_calendar' && post.content_type !== 'earnings_results') {
+    // Only content types built so far — a future content type would branch here.
     return NextResponse.json({ error: 'unsupported_content_type' }, { status: 500 });
   }
 
-  const slides = post.slides as unknown as EarningsCalendarSlides;
+  const isResults = post.content_type === 'earnings_results';
+  const slides = post.slides as unknown as EarningsCalendarSlides | EarningsResultsSlides;
   const companyCount = slides.companies.length;
   const total = totalSlideCount(companyCount);
   if (slideIndex >= total) {
@@ -79,6 +81,9 @@ export async function GET(
 
   let element: React.ReactElement;
   if (kind === 'hook') {
+    const pillText = isResults
+      ? `${(slides as EarningsResultsSlides).beatCount} OF ${companyCount} BEAT ESTIMATES`
+      : undefined;
     element = (
       <HookSlide
         headline={slides.headline}
@@ -86,6 +91,7 @@ export async function GET(
         companyCount={companyCount}
         slideIndex={slideIndex}
         totalSlides={total}
+        pillText={pillText}
       />
     );
   } else if (kind === 'cta') {
@@ -96,9 +102,16 @@ export async function GET(
       listSlideIdx * COMPANIES_PER_LIST_SLIDE,
       (listSlideIdx + 1) * COMPANIES_PER_LIST_SLIDE
     );
-    element = (
+    element = isResults ? (
+      <EarningsResultsListSlide
+        companies={pageCompanies as EarningsResultsSlides['companies']}
+        overflowCount={slides.overflowCount}
+        slideIndex={slideIndex}
+        totalSlides={total}
+      />
+    ) : (
       <EarningsListSlide
-        companies={pageCompanies}
+        companies={pageCompanies as EarningsCalendarSlides['companies']}
         overflowCount={slides.overflowCount}
         slideIndex={slideIndex}
         totalSlides={total}

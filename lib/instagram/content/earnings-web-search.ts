@@ -65,6 +65,15 @@ export interface WebSearchEarningsHit {
    *  expected loss), sourced the same way as date/time — grounded in a real
    *  analyst-estimate source, never Claude's own guess. Null if unconfirmed. */
   epsEstimate: number | null;
+  /** Reported EPS in dollars. Only ever populated by
+   *  nasdaq-earnings-calendar.ts when fetching a PAST date range (Nasdaq's
+   *  calendar API returns actual results alongside the original forecast
+   *  once a report has happened) — used by earnings-results.ts. Always
+   *  undefined/null from this module and from a future-dated Nasdaq fetch. */
+  epsActual?: number | null;
+  /** eps_actual vs eps_estimate surprise, as a percent (e.g. 3.6 for a 3.6%
+   *  beat). Same populate-on-past-date-only rule as epsActual above. */
+  surprisePercent?: number | null;
 }
 
 const SYSTEM_PROMPT = `You research upcoming corporate earnings report dates for a financial app.

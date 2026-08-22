@@ -90,3 +90,41 @@ export interface EarningsCalendarSlides {
   overflowCount: number; // companies beyond what fits on the list slides
   caption: string;
 }
+
+/**
+ * One earnings-results slide row — the Saturday "how did the week go"
+ * recap's companion to EarningsSlideCompany above. Only ever built from a
+ * company with BOTH a confirmed estimate and a confirmed actual (see
+ * earnings-results.ts) — unlike the forward-looking calendar, there's no
+ * "N/A, check back later" state here, so epsEstimate/epsActual are
+ * non-nullable.
+ */
+export interface EarningsResultCompany {
+  symbol: string;
+  name: string;
+  date: string; // YYYY-MM-DD, the report date
+  time: 'BMO' | 'AMC' | null;
+  epsEstimate: number;
+  epsActual: number;
+  /** eps_actual vs eps_estimate surprise, as a percent. Null on the rare
+   *  case where a fallback source confirmed actual/estimate but not the
+   *  precomputed surprise — the badge status below never depends on it. */
+  surprisePercent: number | null;
+  /** actual >= estimate, the same rule components/stock/EarningsCalendar.tsx
+   *  already uses in-app for its beat/miss streak — a company that met the
+   *  number exactly counts as a beat there, so it does here too. */
+  status: 'beat' | 'missed';
+  marketCap: number | null;
+  logoUrl: string | null;
+}
+
+export interface EarningsResultsSlides {
+  contentType: 'earnings_results';
+  headline: string;
+  weekLabel: string; // e.g. "Aug 17-21, 2026"
+  companies: EarningsResultCompany[];
+  beatCount: number;
+  missedCount: number;
+  overflowCount: number; // companies beyond what fits on the list slides
+  caption: string;
+}

@@ -20,6 +20,13 @@
  * (a request error or empty day just yields no hits, same as a genuinely
  * quiet day) rather than throwing, so a format change degrades to "the
  * Claude fallback does more work" instead of breaking the pipeline.
+ *
+ * PAST-DATE BONUS (verified live 2026-08-22): the same endpoint, queried for
+ * a date that already happened, returns `eps` (actual) and `surprise` (%)
+ * alongside `epsForecast` — the original estimate and the real result in one
+ * response. earnings-results.ts (the Saturday "how did the week go" recap)
+ * relies on this instead of a second source: no Claude fallback needed for
+ * historical data the way the forward-looking case needs one.
  */
 
 import type { WebSearchEarningsHit } from './earnings-web-search';
@@ -43,10 +50,25 @@ function parseEps(raw: string | undefined): number | null {
   return negative ? -n : n;
 }
 
+/** "3.6" -> 3.6, "-4.2" -> -4.2, "" -> null. Only ever present on a
+ *  past-date response (see file header) — a future date's row simply omits
+ *  the field, which comes through here as undefined -> null anyway. */
+function parseSurprise(raw: string | undefined): number | null {
+  if (!raw) return null;
+  const n = Number(raw.replace(/,/g, '').trim());
+  return Number.isFinite(n) ? n : null;
+}
+
 interface NasdaqCalendarRow {
   symbol?: string;
   time?: string;
   epsForecast?: string;
+  /** Actual reported EPS — only present once a report has happened
+   *  (see file header's PAST-DATE BONUS note). */
+  eps?: string;
+  /** eps vs epsForecast surprise, as a percent string — same
+   *  past-date-only availability as `eps`. */
+  surprise?: string;
 }
 
 interface NasdaqCalendarResponse {
@@ -97,7 +119,14 @@ export async function fetchNasdaqEarningsCalendar(
     for (const row of rows) {
       const symbol = row.symbol?.toUpperCase();
       if (!symbol || !allowlist.has(symbol)) continue;
-      hits.push({ symbol, date, time: parseTime(row.time), epsEstimate: parseEps(row.epsForecast) });
+      hits.push({
+        symbol,
+        date,
+        time: parseTime(row.time),
+        epsEstimate: parseEps(row.epsForecast),
+        epsActual: parseEps(row.eps),
+        surprisePercent: parseSurprise(row.surprise),
+      });
     }
   });
   return hits;
