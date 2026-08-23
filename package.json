@@ -37,6 +37,7 @@
     "trigger-instagram-earnings-results": "tsx scripts/trigger-instagram-earnings-results.ts",
     "trigger-instagram-earnings-publish": "tsx scripts/trigger-instagram-earnings-publish.ts",
     "instagram-publish": "tsx scripts/publish-instagram.ts",
+    "trigger-market-movers": "tsx scripts/trigger-market-movers.ts",
     "sync-index-constituents": "tsx scripts/sync-index-constituents.ts"
   },
   "dependencies": {

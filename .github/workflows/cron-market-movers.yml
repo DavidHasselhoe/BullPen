@@ -1,0 +1,31 @@
+name: Cron — Instagram Market Movers
+
+# Weekdays at 21:30 UTC (post US market close) — same schedule as
+# check-price-moves, chosen for the same reason (reliably after close in
+# both EDT/EST; nothing in this codebase hardcodes a fixed UTC close time).
+# Generates + stages today's top-5-gainers/top-5-losers carousel (S&P 500 +
+# Nasdaq 100 only) and posts a Discord preview for review — it does NOT
+# publish to Instagram itself (see scripts/publish-instagram.ts for that
+# manual step).
+on:
+  schedule:
+    - cron: '30 21 * * 1-5'
+  workflow_dispatch:  # allows manual fire from the Actions tab
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: POST /api/cron/market-movers-daily
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          APP_URL: ${{ vars.APP_URL || 'https://bullpen.no' }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::CRON_SECRET secret is not configured in repo settings"
+            exit 1
+          fi
+          curl -fsS -X GET \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "${APP_URL}/api/cron/market-movers-daily"
