@@ -28,9 +28,9 @@
  *
  * The bull mascot (public/illustrations/bull-alert.png) appears on the hook
  * and CTA slides — the two moments built to earn a scroll-stop and a tap,
- * respectively — not the data-dense list slide, which gets its own small
- * corner accent (bull-chalkboard.png) instead so it never competes with
- * the actual company rows.
+ * respectively. The data-dense list slide has no mascot at all: a corner
+ * accent (bull-chalkboard.png) was tried there but overlapped the last
+ * row(s) of companies on busy weeks, so it was removed rather than fixed.
  */
 
 import { readFileSync } from 'fs';
@@ -140,7 +140,6 @@ export async function loadSlideFonts() {
 // the app's own base URL.
 let brandIconDataUri: string | null = null;
 let mascotDataUri: string | null = null;
-let chalkboardMascotDataUri: string | null = null;
 
 function loadLocalImageDataUri(relativePath: string): string {
   const buf = readFileSync(join(process.cwd(), 'public', relativePath));
@@ -155,11 +154,6 @@ function getBrandIcon(): string {
 function getMascot(): string {
   if (!mascotDataUri) mascotDataUri = loadLocalImageDataUri('illustrations/bull-alert.png');
   return mascotDataUri;
-}
-
-function getChalkboardMascot(): string {
-  if (!chalkboardMascotDataUri) chalkboardMascotDataUri = loadLocalImageDataUri('illustrations/bull-chalkboard.png');
-  return chalkboardMascotDataUri;
 }
 
 function formatDateHeader(dateStr: string): string {
@@ -449,19 +443,6 @@ export function EarningsListSlide({ companies, overflowCount = 0, slideIndex, to
         padding: 80, backgroundColor: BG, color: FG, position: 'relative', overflow: 'hidden',
       }}
     >
-      {/* Small corner accent, not a hero moment like the hook/CTA slides'
-          mascot — placed first in DOM order (behind the header/row cards,
-          which have opaque backgrounds) so a busy week's rows simply paint
-          over it instead of needing conditional logic to avoid overlap. */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={getChalkboardMascot()}
-        alt=""
-        width={260}
-        height={260}
-        style={{ position: 'absolute', bottom: -30, right: 25, opacity: 0.9 }}
-      />
-
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: m.headerMarginBottom, zIndex: 1 }}>
         <Wordmark />
         <SlideIndicator index={slideIndex} total={totalSlides} />
@@ -583,15 +564,6 @@ export function EarningsResultsListSlide({ companies, overflowCount = 0, slideIn
         padding: 80, backgroundColor: BG, color: FG, position: 'relative', overflow: 'hidden',
       }}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={getChalkboardMascot()}
-        alt=""
-        width={260}
-        height={260}
-        style={{ position: 'absolute', bottom: -30, right: 25, opacity: 0.9 }}
-      />
-
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: m.headerMarginBottom, zIndex: 1 }}>
         <Wordmark />
         <SlideIndicator index={slideIndex} total={totalSlides} />
