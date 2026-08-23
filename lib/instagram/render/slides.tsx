@@ -669,6 +669,14 @@ function MoverBar({ changePercent, maxAbs, positive }: { changePercent: number; 
   );
 }
 
+/** Manual truncation instead of CSS text-overflow: ellipsis — verified live
+ *  that Satori doesn't render the CSS ellipsis glyph correctly here (it
+ *  showed a broken/tofu character instead of "..."), so the safe fix is a
+ *  real "..." in the text content itself, not a CSS property. */
+function truncateName(name: string, maxChars = 26): string {
+  return name.length > maxChars ? `${name.slice(0, maxChars).trimEnd()}...` : name;
+}
+
 interface MoversListSlideProps {
   title: string;
   subtitle: string;
@@ -704,15 +712,28 @@ export function MoversListSlide({ title, subtitle, entries, positive, slideIndex
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
         {entries.map((entry) => (
-          <div key={entry.symbol} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+          <div key={entry.symbol} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 20, flex: 1, minWidth: 0 }}>
               <CompanyBadge symbol={entry.symbol} logoUrl={entry.logoUrl} size={52} />
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 14 }}>
-                <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 32, color: FG }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, flex: 1, minWidth: 0 }}>
+                <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 32, color: FG, flexShrink: 0 }}>
                   {entry.symbol}
                 </span>
-                <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 22, color: MUTED }}>
-                  {entry.name}
+                {/* flex+minWidth:0+overflow:hidden is what lets this shrink
+                    instead of growing the row past the canvas — some legal
+                    company names (e.g. "Coinbase Global, Inc. Class A Common
+                    Stock") are long enough to otherwise push MoverBar off its
+                    intended position, breaking the magnitude-ordered
+                    stair-step look the bars are supposed to have. Truncation
+                    itself is manual text (truncateName), not CSS
+                    text-overflow — see that function's comment. */}
+                <span
+                  style={{
+                    display: 'flex', fontFamily: 'Geist', fontSize: 22, color: MUTED,
+                    flex: 1, minWidth: 0, overflow: 'hidden', whiteSpace: 'nowrap',
+                  }}
+                >
+                  {truncateName(entry.name)}
                 </span>
               </div>
             </div>

@@ -145,8 +145,8 @@ export interface MarketMoverEntry {
 export interface MarketMoversSlides {
   contentType: 'market_movers';
   dateLabel: string; // e.g. "Aug 24, 2026"
-  winners: MarketMoverEntry[]; // exactly 5, sorted descending by changePercent
-  losers: MarketMoverEntry[]; // exactly 5, sorted ascending by changePercent (most negative first)
+  winners: MarketMoverEntry[]; // exactly 10, sorted descending by changePercent
+  losers: MarketMoverEntry[]; // exactly 10, sorted ascending by changePercent (most negative first)
   caption: string;
 }
 

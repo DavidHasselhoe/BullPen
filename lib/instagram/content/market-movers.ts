@@ -42,7 +42,7 @@ const MODEL = 'claude-sonnet-4-6';
  *  app/api/quotes/batch/route.ts. */
 const QUOTE_CHUNK_SIZE = 100;
 const CREDITS_PER_QUOTE = 1;
-const TOP_N = 5;
+const TOP_N = 10;
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
