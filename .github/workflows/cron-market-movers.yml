@@ -1,15 +1,18 @@
 name: Cron — Instagram Market Movers
 
-# Weekdays at 21:30 UTC (post US market close) — same schedule as
-# check-price-moves, chosen for the same reason (reliably after close in
-# both EDT/EST; nothing in this codebase hardcodes a fixed UTC close time).
-# Generates + stages today's top-5-gainers/top-5-losers carousel (S&P 500 +
-# Nasdaq 100 only) and posts a Discord preview for review — it does NOT
-# publish to Instagram itself (see scripts/publish-instagram.ts for that
-# manual step).
+# Monday, Wednesday, Friday at 21:30 UTC (post US market close) — same
+# time-of-day as check-price-moves, chosen for the same reason (reliably
+# after close in both EDT/EST; nothing in this codebase hardcodes a fixed
+# UTC close time). 3x/week rather than every weekday: a same-format post
+# every single weekday risked feed fatigue given the existing 2x/week
+# earnings content already posts on top of this.
+# Generates + stages that day's top-10-gainers/top-10-losers carousel
+# (S&P 500 + Nasdaq 100 only) and posts a Discord preview for review — it
+# does NOT publish to Instagram itself (see scripts/publish-instagram.ts
+# for that manual step).
 on:
   schedule:
-    - cron: '30 21 * * 1-5'
+    - cron: '30 21 * * 1,3,5'
   workflow_dispatch:  # allows manual fire from the Actions tab
 
 jobs:

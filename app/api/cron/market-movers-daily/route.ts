@@ -2,19 +2,21 @@
  * Instagram Market Movers Daily Generation Cron
  * GET /api/cron/market-movers-daily
  *
- * Runs weekdays at 21:30 UTC, after US market close (see
- * .github/workflows/cron-market-movers.yml — same schedule as
+ * Runs Monday/Wednesday/Friday at 21:30 UTC, after US market close (see
+ * .github/workflows/cron-market-movers.yml — same time-of-day as
  * check-price-moves, chosen for the same "reliably after close in both
  * EDT/EST" reason; nothing in this codebase hardcodes a fixed UTC close
- * time). Generates today's top-5-gainers/top-5-losers carousel (S&P 500 +
- * Nasdaq 100 only), stages it in instagram_posts (status: 'ready'), and
- * posts a Discord preview — no auto-publish yet, same review-then-manual-
- * publish flow as instagram-earnings-results. This route itself never
- * calls the Instagram API.
+ * time. 3x/week rather than every weekday to avoid feed fatigue on top of
+ * the existing 2x/week earnings content). Generates that day's
+ * top-10-gainers/top-10-losers carousel (S&P 500 + Nasdaq 100 only), stages
+ * it in instagram_posts (status: 'ready'), and posts a Discord preview — no
+ * auto-publish yet, same review-then-manual-publish flow as
+ * instagram-earnings-results. This route itself never calls the Instagram
+ * API.
  *
  * Idempotent per ET trading day (period_key), scoped to this content_type.
  * Unlike the earnings posts, there is no "skip if nothing happened" case —
- * there's always a top 5/top 5 by rank, so this always stages a post.
+ * there's always a top 10/top 10 by rank, so this always stages a post.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
