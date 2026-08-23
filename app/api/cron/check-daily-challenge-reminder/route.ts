@@ -75,7 +75,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     // ── 3. Notify ─────────────────────────────────────────────────────────
     for (const row of atRisk) {
       if (!eligibleIds.has(row.user_id)) continue;
-      const created = await createDailyChallengeReminderNotification(row.user_id, row.current_streak);
+      const created = await createDailyChallengeReminderNotification(row.user_id);
       if (created) summary.usersNotified++;
     }
   } catch (err) {

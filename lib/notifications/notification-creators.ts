@@ -418,10 +418,15 @@ export async function createDividendReminderNotification(
  * protect the streak before the ET day ends. Targeting (active streak +
  * no activity today) happens in the cron; this only handles the notification
  * itself. Fires at most once per ET day per user via the standard 12h dedup.
+ *
+ * Deliberately doesn't bake the streak count into the title: notification
+ * text is written once at creation time and never re-rendered, but the
+ * streak itself can change (reset to 1) if the user acts later that same
+ * evening or the next day before reading it — leaving a stale number here
+ * that contradicts whatever /academy shows live at read time.
  */
 export async function createDailyChallengeReminderNotification(
-  userId: string,
-  currentStreak: number
+  userId: string
 ): Promise<boolean> {
   const todayStr = new Date().toISOString().slice(0, 10);
   const dedupeId = `academy:streak_reminder:${todayStr}`;
@@ -430,7 +435,7 @@ export async function createDailyChallengeReminderNotification(
   const result = await createNotification({
     user_id: userId,
     type: 'academy',
-    title: `Keep your ${currentStreak}-day streak alive`,
+    title: 'Keep your streak alive',
     message: "Today's Academy challenge is still waiting — takes about a minute.",
     entity_type: 'market',
     entity_id: dedupeId,
