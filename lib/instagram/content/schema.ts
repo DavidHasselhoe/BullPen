@@ -128,3 +128,27 @@ export interface EarningsResultsSlides {
   overflowCount: number; // companies beyond what fits on the list slides
   caption: string;
 }
+
+/**
+ * One Market Movers row — real TwelveData quote data only, never
+ * LLM-derived. Shape stored verbatim in instagram_posts.slides for the
+ * 'market_movers' content type.
+ */
+export interface MarketMoverEntry {
+  symbol: string;
+  name: string;
+  changePercent: number; // signed: +13.70 or -8.60
+  price: number;
+  logoUrl: string | null;
+}
+
+export interface MarketMoversSlides {
+  contentType: 'market_movers';
+  dateLabel: string; // e.g. "Aug 24, 2026"
+  winners: MarketMoverEntry[]; // exactly 5, sorted descending by changePercent
+  losers: MarketMoverEntry[]; // exactly 5, sorted ascending by changePercent (most negative first)
+  caption: string;
+}
+
+/** Every shape instagram_posts.slides can hold, keyed by contentType. */
+export type InstagramPostSlides = EarningsCalendarSlides | EarningsResultsSlides | MarketMoversSlides;
