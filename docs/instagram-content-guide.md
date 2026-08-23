@@ -79,8 +79,9 @@ Ordered by how directly they reuse existing data/infrastructure — first few ar
 
 **Already buildable from existing data, no new integration needed:**
 1. **Earnings calendar** (shipped) — this week's confirmed S&P 500/Nasdaq 100/TSM reporters.
-2. **Weekly market movers** — top gainers/losers, S&P 500/Nasdaq 100 scope (`getTopMovers`), styled like stockmarketchasers' ranked grid with real logos.
+2. **Market movers** (shipped 2026-08-23) — top 10 gainers/top 10 losers, restricted to S&P 500/Nasdaq 100 only (`SIGNIFICANT_TICKERS`, deliberately narrower than the earnings posts' `INSTAGRAM_ALLOWLIST` — a random small-cap's 100% pop isn't relevant to a general audience). `lib/instagram/content/market-movers.ts`, styled with a bar-scaled % badge per row rather than stockmarketchasers' plain grid. Runs Mon/Wed/Fri (not every weekday — 3x/week chosen to avoid feed fatigue layered on top of the earnings posts), stage-and-review only, no auto-publish yet.
 3. **Earnings results recap** (shipped 2026-08-22) — Saturday companion to #1: same allowlisted companies, but "did they beat or miss." `lib/instagram/content/earnings-results.ts` re-derives the week's reporters from Nasdaq's calendar API (same free source as #1), which turns out to carry `eps`/`surprise` alongside `epsForecast` once a date is in the past — no second discovery source needed the way the forward-looking post needs Claude web search. `getCompanyEarnings` (TwelveData, 20 credits/symbol) is a narrow fallback only for whatever Nasdaq's feed didn't confirm. Beat/missed uses the same `actual >= estimate` rule already shown in-app (`components/stock/EarningsCalendar.tsx`).
+   - **Not yet built, future variant:** an "unusual surprises only" cut — filter to companies that beat/missed by 20%+ or gave surprising guidance, more engagement-worthy than the routine full-week recap. Pure filter on data #3 already has, no new integration. A Sankey-diagram visualization for this was floated and explicitly ruled out — Satori (`next/og`'s renderer, used by every slide in this pipeline) only supports flexbox-style layouts, not arbitrary curved SVG paths.
 4. **52-week high/low tracker** — stocks in the tracked universe hitting new highs or lows this week (`screener_stats.week52_high/low`, already computed for alerts).
 5. **Dividend calendar** — upcoming ex-dividend dates for notable payers (`getDividendsCalendar`, already wired for the in-app Market Calendar).
 6. **Market cap milestones** — "X just crossed $1T," watcher.guru's exact format, driven by `screener_stats.market_cap` crossing round thresholds.
@@ -96,6 +97,10 @@ Ordered by how directly they reuse existing data/infrastructure — first few ar
 
 **Different register — educational, not data-driven:**
 14. **Academy glossary explainers** — "What is a P/E ratio, actually" style posts, repurposing existing Academy course content (`lib/academy` course material already exists in beginner-friendly language). Good for engagement variety and top-of-funnel reach beyond people who already track individual stocks.
+
+**Needs a genuinely new data source — not in the codebase today:**
+15. **Economic data** (Fed rate decisions, CPI, jobs report, GDP) — same "we don't own this data" situation the earnings-calendar generator solved for report dates: no economic-calendar wrapper exists in `lib/twelvedata/twelvedata-client.ts` today, so this would need Claude web search grounding the same way `earnings-web-search.ts` does, not a new TwelveData endpoint. Bigger lift than #2 or #3 above since there's no existing fetch path to start from at all.
+16. **Analyst upgrades/downgrades** ("JPMorgan just downgraded Apple") — same gap as #15: no analyst-ratings endpoint wrapped anywhere in `lib/twelvedata/twelvedata-client.ts` (confirmed via a repo-wide search 2026-08-23). Needs a new data source decision before there's anything to build on.
 
 ## Caption and copy rules
 
