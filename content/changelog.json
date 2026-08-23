@@ -1,5 +1,11 @@
 [
   {
+    "date": "2026-08-23",
+    "entries": [
+      { "type": "fixed", "text": "Academy streak reminder notifications no longer show a day count that can be out of date by the time you read them, since your streak can reset in between" }
+    ]
+  },
+  {
     "date": "2026-08-21",
     "entries": [
       { "type": "new", "text": "Stock charts now show a dot for every time you bought shares, at the real price and date, instead of one dot averaged across all your purchases. You can now log a purchase against a holding you already track, or enter multiple buy dates when adding a new one" },
