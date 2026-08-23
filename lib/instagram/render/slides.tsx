@@ -626,6 +626,104 @@ export function EarningsResultsListSlide({ companies, overflowCount = 0, slideIn
   );
 }
 
+// ── Market Movers (winners/losers) slide elements ──────────────────────────
+// One component, two call sites (winners=positive, losers=!positive) — see
+// MarketMoversSlides handling in the render route. Opens the carousel
+// itself (no separate hook slide, per the reference design this was built
+// from) rather than following the hook->list->cta shape the earnings posts
+// use, since a fixed 5-row list needs no pagination.
+
+/** Fixed track width for the % bar badge, sized to comfortably fit a
+ *  5-character label ("+13.70%") inside even a floored 20%-width bar. */
+const MOVER_BAR_TRACK_WIDTH = 380;
+const MOVER_BAR_HEIGHT = 56;
+/** Floor so the smallest mover's bar (relative to the largest on the same
+ *  slide) never shrinks to an illegibly thin sliver. */
+const MOVER_BAR_MIN_FRACTION = 0.2;
+
+/** One winner/loser row's % badge — a filled, rounded-rect bar whose width
+ *  scales with the move's size relative to the largest mover on the same
+ *  slide, label right-aligned inside the fill. Both direction colors are
+ *  meaningful here (gain vs loss), the same case DESIGN.md's One Signal
+ *  Rule already carves out — see this file's header comment on
+ *  MISSED_COLOR, which is reused here rather than defining a new red. */
+function MoverBar({ changePercent, maxAbs, positive }: { changePercent: number; maxAbs: number; positive: boolean }) {
+  const fraction = Math.max(MOVER_BAR_MIN_FRACTION, maxAbs > 0 ? Math.abs(changePercent) / maxAbs : MOVER_BAR_MIN_FRACTION);
+  const width = Math.round(fraction * MOVER_BAR_TRACK_WIDTH);
+  const color = positive ? BRAND : MISSED_COLOR;
+  const sign = changePercent >= 0 ? '+' : '';
+  return (
+    <div style={{ display: 'flex', width: MOVER_BAR_TRACK_WIDTH, height: MOVER_BAR_HEIGHT, justifyContent: 'flex-end' }}>
+      <div
+        style={{
+          display: 'flex', width, height: MOVER_BAR_HEIGHT, borderRadius: 10,
+          backgroundColor: color, alignItems: 'center', justifyContent: 'flex-end',
+          padding: '0 18px',
+        }}
+      >
+        <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontWeight: 700, fontSize: 24, color: positive ? BRAND_INK : '#ffffff' }}>
+          {sign}{changePercent.toFixed(2)}%
+        </span>
+      </div>
+    </div>
+  );
+}
+
+interface MoversListSlideProps {
+  title: string;
+  subtitle: string;
+  entries: MarketMoverEntry[];
+  positive: boolean;
+  slideIndex: number;
+  totalSlides: number;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function MoversListSlide({ title, subtitle, entries, positive, slideIndex, totalSlides }: MoversListSlideProps): any {
+  const maxAbs = Math.max(...entries.map((e) => Math.abs(e.changePercent)), 0.01);
+  return (
+    <div
+      style={{
+        width: '100%', height: '100%', display: 'flex', flexDirection: 'column',
+        padding: 80, backgroundColor: BG, color: FG,
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+        <Wordmark />
+        <SlideIndicator index={slideIndex} total={totalSlides} />
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 40 }}>
+        <div style={{ display: 'flex', fontFamily: 'Instrument Serif', fontStyle: 'italic', fontSize: 72, color: FG, marginBottom: 12 }}>
+          {title}
+        </div>
+        <div style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: 22, color: MUTED }}>
+          {subtitle}
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+        {entries.map((entry) => (
+          <div key={entry.symbol} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+              <CompanyBadge symbol={entry.symbol} logoUrl={entry.logoUrl} size={52} />
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 14 }}>
+                <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 32, color: FG }}>
+                  {entry.symbol}
+                </span>
+                <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 22, color: MUTED }}>
+                  {entry.name}
+                </span>
+              </div>
+            </div>
+            <MoverBar changePercent={entry.changePercent} maxAbs={maxAbs} positive={positive} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function BellIcon({ size }: { size: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={FG} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
