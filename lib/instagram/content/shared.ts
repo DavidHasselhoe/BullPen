@@ -53,3 +53,20 @@ export async function resolveLogoUrl(appUrl: string, ticker: string): Promise<st
     return null;
   }
 }
+
+/**
+ * Sibling to FIXED_DISCLAIMER, for content types built from BullPen's own
+ * live price data rather than gathered report dates — market-movers.ts
+ * doesn't touch anything Claude-sourced or third-party-report-date-based,
+ * so FIXED_DISCLAIMER's "Report dates gathered from public sources" wording
+ * doesn't apply.
+ */
+export const MARKET_DATA_DISCLAIMER = 'Not financial advice. Prices and % changes as of market close.';
+
+/** Single-date sibling to formatWeekLabel, e.g. "Aug 24, 2026". Same
+ *  UTC-noon-anchor trick as formatDateHeader in slides.tsx, so a plain
+ *  YYYY-MM-DD string never shifts a day under a server's local timezone. */
+export function formatDateLabel(dateStr: string): string {
+  const d = new Date(dateStr + 'T12:00:00Z');
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+}
