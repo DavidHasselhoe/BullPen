@@ -10,13 +10,13 @@ import { publishCarousel, isInstagramConfigured } from '@/lib/instagram/client';
 import { totalSlideCount, altTextForSlide } from '@/lib/instagram/render/slides';
 import { postToDiscord } from '@/lib/discord/post-message';
 import { instagramBioLink } from '@/lib/instagram/utm-link';
-import type { EarningsCalendarSlides, EarningsResultsSlides } from '@/lib/instagram/content/schema';
+import type { InstagramPostSlides } from '@/lib/instagram/content/schema';
 
 interface InstagramPostRow {
   id: string;
   status: string;
   caption: string;
-  slides: EarningsCalendarSlides | EarningsResultsSlides;
+  slides: InstagramPostSlides;
   content_type: string;
   period_key: string;
 }
@@ -43,7 +43,7 @@ export async function publishStagedPost(id: string): Promise<PublishStagedPostRe
   if (post.status !== 'ready') return { outcome: 'not_ready', status: post.status };
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bullpen.no';
-  const slideCount = totalSlideCount(post.slides.companies.length);
+  const slideCount = totalSlideCount(post.slides);
   const imageUrls = Array.from({ length: slideCount }, (_, i) => `${appUrl}/api/instagram/render/${post.id}/${i}`);
   const altTexts = Array.from({ length: slideCount }, (_, i) => altTextForSlide(post.slides, i));
 

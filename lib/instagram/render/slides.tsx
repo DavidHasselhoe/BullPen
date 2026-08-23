@@ -38,9 +38,9 @@ import { join } from 'path';
 import { loadGoogleFont } from '@/lib/render/google-fonts';
 import type {
   EarningsSlideCompany,
-  EarningsCalendarSlides,
   EarningsResultCompany,
-  EarningsResultsSlides,
+  MarketMoverEntry,
+  InstagramPostSlides,
 } from '@/lib/instagram/content/schema';
 
 export const SLIDE_WIDTH = 1080;
@@ -67,20 +67,28 @@ const AMC_COLOR = '#f59e0b'; // Tailwind amber-500 — matches EarningsCalendarW
  */
 export const COMPANIES_PER_LIST_SLIDE = 30;
 
-export type SlideKind = 'hook' | 'list' | 'cta';
+export type SlideKind = 'hook' | 'list' | 'cta' | 'winners' | 'losers';
 
 function listSlideCount(companyCount: number): number {
   return Math.max(1, Math.ceil(companyCount / COMPANIES_PER_LIST_SLIDE));
 }
 
-/** Total slide count for a given company count: hook + list page(s) + CTA. */
-export function totalSlideCount(companyCount: number): number {
-  return 1 + listSlideCount(companyCount) + 1;
+/** Total slide count for a given post. market_movers is always a fixed 3
+ *  slides (winners, losers, cta); earnings_calendar/earnings_results
+ *  paginate their company list across a hook, 1+ list slides, and a CTA. */
+export function totalSlideCount(slides: InstagramPostSlides): number {
+  if (slides.contentType === 'market_movers') return 3;
+  return 1 + listSlideCount(slides.companies.length) + 1;
 }
 
-/** Which kind of slide a given 0-indexed slide position is. */
-export function slideKindAt(index: number, companyCount: number): SlideKind {
-  const lists = listSlideCount(companyCount);
+/** Which kind of slide a given 0-indexed slide position is, for a given post. */
+export function slideKindAt(index: number, slides: InstagramPostSlides): SlideKind {
+  if (slides.contentType === 'market_movers') {
+    if (index === 0) return 'winners';
+    if (index === 1) return 'losers';
+    return 'cta';
+  }
+  const lists = listSlideCount(slides.companies.length);
   if (index === 0) return 'hook';
   if (index === lists + 1) return 'cta';
   return 'list';
@@ -97,10 +105,16 @@ export function slideKindAt(index: number, companyCount: number): SlideKind {
  * cap even at MAX_COMPANIES.
  */
 export function altTextForSlide(
-  content: EarningsCalendarSlides | EarningsResultsSlides,
+  content: InstagramPostSlides,
   slideIndex: number
 ): string {
-  const kind = slideKindAt(slideIndex, content.companies.length);
+  if (content.contentType === 'market_movers') {
+    const kind = slideKindAt(slideIndex, content);
+    if (kind === 'winners') return `Today's top S&P 500 and Nasdaq 100 gainers on BullPen: ${content.winners.map((w) => w.symbol).join(', ')}.`;
+    if (kind === 'losers') return `Today's top S&P 500 and Nasdaq 100 losers on BullPen: ${content.losers.map((l) => l.symbol).join(', ')}.`;
+    return 'Open the BullPen app to track every S&P 500 and Nasdaq 100 stock in real time.';
+  }
+  const kind = slideKindAt(slideIndex, content);
   const isResults = content.contentType === 'earnings_results';
   if (kind === 'hook') {
     return isResults
