@@ -24,9 +24,10 @@ import {
   HookSlide,
   EarningsListSlide,
   EarningsResultsListSlide,
+  MoversListSlide,
   CTASlide,
 } from '@/lib/instagram/render/slides';
-import type { EarningsCalendarSlides, EarningsResultsSlides } from '@/lib/instagram/content/schema';
+import type { EarningsCalendarSlides, EarningsResultsSlides, InstagramPostSlides } from '@/lib/instagram/content/schema';
 
 export const runtime = 'nodejs';
 
@@ -63,60 +64,93 @@ export async function GET(
     return NextResponse.json({ error: 'not_found' }, { status: 404 });
   }
 
-  if (post.content_type !== 'earnings_calendar' && post.content_type !== 'earnings_results') {
+  if (
+    post.content_type !== 'earnings_calendar' &&
+    post.content_type !== 'earnings_results' &&
+    post.content_type !== 'market_movers'
+  ) {
     // Only content types built so far — a future content type would branch here.
     return NextResponse.json({ error: 'unsupported_content_type' }, { status: 500 });
   }
 
-  const isResults = post.content_type === 'earnings_results';
-  const slides = post.slides as unknown as EarningsCalendarSlides | EarningsResultsSlides;
-  const companyCount = slides.companies.length;
-  const total = totalSlideCount(companyCount);
+  const slides = post.slides as unknown as InstagramPostSlides;
+  const total = totalSlideCount(slides);
   if (slideIndex >= total) {
     return NextResponse.json({ error: 'slide_index_out_of_range' }, { status: 404 });
   }
 
   const fonts = await loadSlideFonts();
-  const kind = slideKindAt(slideIndex, companyCount);
+  const kind = slideKindAt(slideIndex, slides);
 
   let element: React.ReactElement;
-  if (kind === 'hook') {
-    const pillText = isResults
-      ? `${(slides as EarningsResultsSlides).beatCount} OF ${companyCount} BEAT ESTIMATES`
-      : undefined;
-    element = (
-      <HookSlide
-        headline={slides.headline}
-        weekLabel={slides.weekLabel}
-        companyCount={companyCount}
-        slideIndex={slideIndex}
-        totalSlides={total}
-        pillText={pillText}
-      />
-    );
-  } else if (kind === 'cta') {
-    element = <CTASlide slideIndex={slideIndex} totalSlides={total} />;
+  if (slides.contentType === 'market_movers') {
+    if (kind === 'winners') {
+      element = (
+        <MoversListSlide
+          title="Daily Winners"
+          subtitle={`S&P 500 & Nasdaq 100 · ${slides.dateLabel}`}
+          entries={slides.winners}
+          positive
+          slideIndex={slideIndex}
+          totalSlides={total}
+        />
+      );
+    } else if (kind === 'losers') {
+      element = (
+        <MoversListSlide
+          title="Daily Losers"
+          subtitle={`S&P 500 & Nasdaq 100 · ${slides.dateLabel}`}
+          entries={slides.losers}
+          positive={false}
+          slideIndex={slideIndex}
+          totalSlides={total}
+        />
+      );
+    } else {
+      element = <CTASlide slideIndex={slideIndex} totalSlides={total} />;
+    }
   } else {
-    const listSlideIdx = slideIndex - 1;
-    const pageCompanies = slides.companies.slice(
-      listSlideIdx * COMPANIES_PER_LIST_SLIDE,
-      (listSlideIdx + 1) * COMPANIES_PER_LIST_SLIDE
-    );
-    element = isResults ? (
-      <EarningsResultsListSlide
-        companies={pageCompanies as EarningsResultsSlides['companies']}
-        overflowCount={slides.overflowCount}
-        slideIndex={slideIndex}
-        totalSlides={total}
-      />
-    ) : (
-      <EarningsListSlide
-        companies={pageCompanies as EarningsCalendarSlides['companies']}
-        overflowCount={slides.overflowCount}
-        slideIndex={slideIndex}
-        totalSlides={total}
-      />
-    );
+    const isResults = slides.contentType === 'earnings_results';
+    const companyCount = slides.companies.length;
+
+    if (kind === 'hook') {
+      const pillText = isResults
+        ? `${(slides as EarningsResultsSlides).beatCount} OF ${companyCount} BEAT ESTIMATES`
+        : undefined;
+      element = (
+        <HookSlide
+          headline={slides.headline}
+          weekLabel={slides.weekLabel}
+          companyCount={companyCount}
+          slideIndex={slideIndex}
+          totalSlides={total}
+          pillText={pillText}
+        />
+      );
+    } else if (kind === 'cta') {
+      element = <CTASlide slideIndex={slideIndex} totalSlides={total} />;
+    } else {
+      const listSlideIdx = slideIndex - 1;
+      const pageCompanies = slides.companies.slice(
+        listSlideIdx * COMPANIES_PER_LIST_SLIDE,
+        (listSlideIdx + 1) * COMPANIES_PER_LIST_SLIDE
+      );
+      element = isResults ? (
+        <EarningsResultsListSlide
+          companies={pageCompanies as EarningsResultsSlides['companies']}
+          overflowCount={slides.overflowCount}
+          slideIndex={slideIndex}
+          totalSlides={total}
+        />
+      ) : (
+        <EarningsListSlide
+          companies={pageCompanies as EarningsCalendarSlides['companies']}
+          overflowCount={slides.overflowCount}
+          slideIndex={slideIndex}
+          totalSlides={total}
+        />
+      );
+    }
   }
 
   return new ImageResponse(element, {
