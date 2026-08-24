@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Logo } from '@/components/landing/Atoms';
 import { Footer } from '@/components/landing/Footer';
-import { GLOSSARY } from '@/lib/finance/glossary';
+import { GLOSSARY, canonicalGlossaryTerms, glossarySlug } from '@/lib/finance/glossary';
 import { PageMascot } from '@/components/legal/PageMascot';
 import '@/components/landing/landing-styles.css';
 
@@ -13,6 +13,7 @@ export const metadata: Metadata = {
 
 export default function GlossaryPage() {
   const entries = Object.entries(GLOSSARY).sort(([a], [b]) => a.localeCompare(b));
+  const canonicalTerms = new Set(canonicalGlossaryTerms());
 
   return (
     <div className="bullpen-landing-root">
@@ -39,7 +40,12 @@ export default function GlossaryPage() {
             {entries.map(([term, entry]) => (
               <div key={term}>
                 <h3>
-                  {term} <span style={{ color: 'var(--fg-dim)', fontWeight: 400 }}>— {entry.plainLabel}</span>
+                  {canonicalTerms.has(term) ? (
+                    <Link href={`/glossary/${glossarySlug(term)}`}>{term}</Link>
+                  ) : (
+                    term
+                  )}{' '}
+                  <span style={{ color: 'var(--fg-dim)', fontWeight: 400 }}>({entry.plainLabel})</span>
                 </h3>
                 <p>{entry.description}</p>
               </div>

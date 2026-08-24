@@ -428,3 +428,70 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
 export function getGlossaryEntry(term: string): GlossaryEntry | undefined {
   return GLOSSARY[term];
 }
+
+/**
+ * Category grouping for the standalone /glossary/[term] pages — mirrors the
+ * section comments above, transcribed once as data so pages can link
+ * "related terms" and the index can group its listing. Not derived from the
+ * comments themselves (comments aren't readable at runtime); keep this in
+ * sync when adding a new section above.
+ */
+export const GLOSSARY_CATEGORIES: { name: string; terms: string[] }[] = [
+  { name: 'Statistics & Valuation', terms: ['Market Cap', 'Enterprise Value', 'Beta', 'Avg Volume', 'Shares Float', 'P/E (TTM)', 'P/E', 'Forward P/E', 'P/S', 'P/B', 'EV/EBITDA', 'Short Ratio', '52W Range', '52W High', '52W Low', 'Dividend Yield', 'Profit Margin', 'Rev Growth'] },
+  { name: 'Income Statement', terms: ['Revenue', 'Gross Profit', 'Operating Income', 'EBITDA', 'Net Income', 'EPS (Diluted)', 'EPS (Basic)', 'R&D Expenses', 'SG&A Expenses', 'Interest Expense', 'Income Tax'] },
+  { name: 'Balance Sheet', terms: ['Total Assets', 'Current Assets', 'Cash & Equivalents', 'Goodwill & Intangibles', 'Total Liabilities', 'Current Liabilities', 'Long-Term Debt', "Stockholders' Equity", 'Retained Earnings'] },
+  { name: 'Cash Flow', terms: ['Operating Cash Flow', 'Capital Expenditures', 'Free Cash Flow', 'D&A', 'Investing Activities', 'Financing Activities', 'Dividends Paid'] },
+  { name: 'Technical Indicators', terms: ['SMA 50', 'SMA 200', 'EMA 20', 'BB', 'RSI', 'MACD'] },
+  { name: 'Portfolio & Holdings', terms: ['Total Value', 'Cost Basis', 'Market Value', 'Unrealized P/L', 'Total P/L', 'Today P&L', 'Day Change', 'Avg Price', 'Allocation', 'Earnings', 'Thesis'] },
+  { name: 'Health Score', terms: ['Health', 'Profitability', 'Financial Strength', 'Valuation', 'Growth', 'Market Risk', 'Current Ratio', 'Debt-to-Equity'] },
+  { name: 'Price Panel', terms: ['Open', 'High', 'Low', 'Prev Close'] },
+  { name: 'Revenue Flow', terms: ['Cost of Revenue', 'Other OpEx', 'Tax & Other', 'Total Costs'] },
+  { name: 'Macro & Economy', terms: ['Federal Reserve', 'Interest Rate', 'Jobs Report', 'Inflation', 'CPI', 'Unemployment Rate', 'Oil Price', 'Discount Rate', 'Growth Stock', 'Value Stock', 'Yield Curve', 'Yield Curve Inversion', 'Credit Spread', 'Sector Rotation', 'Recession'] },
+];
+
+function categoryOf(term: string): string | undefined {
+  return GLOSSARY_CATEGORIES.find((c) => c.terms.includes(term))?.name;
+}
+
+/** URL-safe slug for a glossary term, e.g. "P/E (TTM)" → "pe-ttm". */
+export function glossarySlug(term: string): string {
+  return term
+    .toLowerCase()
+    .replace(/[()/&']/g, ' ')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+/**
+ * Terms worth their own indexed page: the first term (by declaration order)
+ * for each distinct description. A few entries are pure aliases with
+ * byte-identical descriptions (e.g. "Mkt Cap" duplicates "Market Cap" — see
+ * the "Watchlist shorthands" comment above) — publishing both as separate
+ * pages would be duplicate content, so the alias is dropped here rather than
+ * hand-picked, and any lookup for it resolves to the canonical term instead.
+ */
+export function canonicalGlossaryTerms(): string[] {
+  const seenDescriptions = new Set<string>();
+  const canonical: string[] = [];
+  for (const [term, entry] of Object.entries(GLOSSARY)) {
+    if (seenDescriptions.has(entry.description)) continue;
+    seenDescriptions.add(entry.description);
+    canonical.push(term);
+  }
+  return canonical;
+}
+
+/** Reverse-lookup: slug → canonical term. Aliases resolve to their canonical term's slug. */
+export function resolveGlossaryTermFromSlug(slug: string): string | undefined {
+  const canonical = canonicalGlossaryTerms();
+  return canonical.find((term) => glossarySlug(term) === slug);
+}
+
+/** Up to `max` other terms from the same category, for "related terms" links. */
+export function relatedGlossaryTerms(term: string, max = 6): string[] {
+  const category = categoryOf(term);
+  if (!category) return [];
+  const canonicalSet = new Set(canonicalGlossaryTerms());
+  const siblings = GLOSSARY_CATEGORIES.find((c) => c.name === category)!.terms;
+  return siblings.filter((t) => t !== term && canonicalSet.has(t)).slice(0, max);
+}

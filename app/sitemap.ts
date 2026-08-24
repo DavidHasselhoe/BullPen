@@ -1,4 +1,5 @@
 import type { MetadataRoute } from 'next';
+import { canonicalGlossaryTerms, glossarySlug } from '@/lib/finance/glossary';
 
 /**
  * Served at /sitemap.xml.
@@ -31,10 +32,22 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   const lastModified = new Date();
 
-  return routes.map((route) => ({
+  const staticEntries = routes.map((route) => ({
     url: `${BASE_URL}${route.path}`,
     lastModified,
     changeFrequency: route.changeFrequency,
     priority: route.priority,
   }));
+
+  // One entry per canonical glossary term (definition aliases are excluded —
+  // see canonicalGlossaryTerms()) — real, static, zero-API-cost content, so
+  // it's safe to fully index unlike /stock and /asset (see robots.ts).
+  const glossaryEntries = canonicalGlossaryTerms().map((term) => ({
+    url: `${BASE_URL}/glossary/${glossarySlug(term)}`,
+    lastModified,
+    changeFrequency: 'yearly' as const,
+    priority: 0.4,
+  }));
+
+  return [...staticEntries, ...glossaryEntries];
 }
