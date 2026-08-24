@@ -18,23 +18,22 @@ export type Tier = 'free' | 'pro' | 'admin';
 
 /**
  * Derive the unified Tier from the raw DB fields. `role='admin'` wins regardless
- * of billing tier; otherwise tier comes from `account_tier`.
+ * of billing tier; otherwise tier comes from `account_tier`, OR a still-active
+ * `pro_bonus_until` (referral rewards — see migration 114/115, lib/auth/
+ * share-attribution.ts). The bonus is deliberately independent of
+ * `account_tier`: it's never touched by the Stripe webhook, so it can't be
+ * silently stomped by a billing event, and it still applies on top of a real
+ * Free account with no Stripe subscription at all.
  */
 export function tierFromUser(
   accountTier: number | null | undefined,
-  role: string | null | undefined
+  role: string | null | undefined,
+  proBonusUntil?: string | null
 ): Tier {
   if (role === 'admin') return 'admin';
   if (typeof accountTier === 'number' && accountTier >= 3) return 'pro';
+  if (proBonusUntil && new Date(proBonusUntil).getTime() > Date.now()) return 'pro';
   return 'free';
-}
-
-/**
- * Back-compat: when only account_tier is available (e.g. older code paths that
- * haven't been migrated). Prefer `tierFromUser` since it also considers role.
- */
-export function tierFromInt(n: number | null | undefined): Tier {
-  return tierFromUser(n, null);
 }
 
 /** True for paid Pro AND admin (admins should always have feature access). */
@@ -67,12 +66,13 @@ export async function getTier(userId: string): Promise<Tier> {
     const supabase = createServerClient();
     const { data } = await supabase
       .from('users')
-      .select('account_tier, role')
+      .select('account_tier, role, pro_bonus_until')
       .eq('id', userId)
       .maybeSingle();
     return tierFromUser(
       (data?.account_tier as number | null) ?? null,
-      (data?.role as string | null) ?? null
+      (data?.role as string | null) ?? null,
+      (data as { pro_bonus_until?: string | null } | null)?.pro_bonus_until ?? null
     );
   } catch {
     return 'free';

@@ -36,7 +36,9 @@ export function ShareLanding({ share }: { share: PortfolioShare }) {
         <Button size="lg" onClick={openSignUp}>
           Start tracking your portfolio
         </Button>
-        <p className="text-xs text-muted-foreground mt-3">Free to start &middot; no card required</p>
+        <p className="text-xs text-muted-foreground mt-3">
+          Free to start, no card required. Sign up here and get a free month of Pro.
+        </p>
 
         {/* The one piece of real social proof this page has: a link to the
             sharer's own public profile (already public/browsable — see

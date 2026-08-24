@@ -11,9 +11,11 @@ export function getShareRefCookie(): string | null {
 
 /**
  * If a bp_ref cookie is present and this account hasn't already been
- * attributed, tags settings.acquired_via_share_id and bumps that share's
- * signup_count. Safe to call on every login/signup completion — a no-op
- * whenever there's no cookie or the account is already attributed.
+ * attributed, tags settings.acquired_via_share_id and grants the "give a
+ * month, get a month" referral reward to both the new signup and the share's
+ * owner (migrations 114/115 — bonus Pro access, notifications on both sides).
+ * Safe to call on every login/signup completion — a no-op whenever there's
+ * no cookie or the account is already attributed.
  */
 export async function maybeClaimShareAttribution(userId: string): Promise<void> {
   const shareId = getShareRefCookie();
@@ -29,5 +31,5 @@ export async function maybeClaimShareAttribution(userId: string): Promise<void> 
     .update({ settings: { ...settings, acquired_via_share_id: shareId } } as never)
     .eq('id', userId);
 
-  await supabase.rpc('increment_share_signup_count' as never, { share_id: shareId } as never);
+  await supabase.rpc('grant_share_referral_reward' as never, { share_id: shareId, new_user_id: userId } as never);
 }

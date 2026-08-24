@@ -131,6 +131,9 @@ export function ShareSheet({ disabled }: ShareSheetProps) {
             <Button size="sm" className="w-full" onClick={handleShare}>
               {canNativeShare ? 'Share' : copyLabel}
             </Button>
+            <p className="text-center text-[11px] text-muted-foreground">
+              Friends who sign up from this link get a free month of Pro. You get one too.
+            </p>
           </>
         )}
       </PopoverContent>

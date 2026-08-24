@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowUpRight, ArrowDownRight, BarChart2, Sparkles, Bell, ChevronRight, Coins, GraduationCap, HeartPulse, Star, Newspaper } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, BarChart2, Sparkles, Bell, ChevronRight, Coins, GraduationCap, HeartPulse, Star, Newspaper, Crown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import type { Notification } from '@/lib/notifications/notifications-db';
@@ -132,6 +132,11 @@ function GenericIcon({ type }: { type: Notification['type'] }) {
       <Newspaper className={cn(base, 'text-blue-400')} />
     </div>
   );
+  if (type === 'referral') return (
+    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-500/10">
+      <Crown className={cn(base, 'text-amber-400')} />
+    </div>
+  );
   return (
     <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted">
       <Bell className={cn(base, 'text-muted-foreground/80')} />
@@ -188,6 +193,9 @@ function notificationSource(n: Notification): { label: string; href: string } | 
   }
   if (n.type === 'daily_brief') {
     return { label: 'Daily Brief', href: '/dashboard' };
+  }
+  if (n.type === 'referral') {
+    return { label: 'Your Pro perks', href: '/upgrade' };
   }
 
   // entity_type is typed narrower than runtime — the alert cron writes 'user_alert'.

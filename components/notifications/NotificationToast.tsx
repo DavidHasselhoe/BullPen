@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { X, AlertTriangle, AlertCircle, Sparkles } from 'lucide-react';
+import { X, AlertTriangle, AlertCircle, Sparkles, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useMarkNotificationRead } from '@/hooks/use-notifications';
@@ -36,8 +36,14 @@ export function NotificationToast({ notification, onDismiss }: NotificationToast
   // for). ai_insight also toasts regardless of severity — these are things the
   // user actively started and is waiting on (a Deep Dive, a portfolio build),
   // so "info" severity shouldn't mean "quiet"; they should hear about it now,
-  // not just via the bell badge.
-  if (notification.severity !== 'warning' && notification.severity !== 'critical' && notification.type !== 'ai_insight') {
+  // not just via the bell badge. referral is the same reasoning: a bonus month
+  // of Pro landing is good news worth interrupting for, not a quiet badge tick.
+  if (
+    notification.severity !== 'warning' &&
+    notification.severity !== 'critical' &&
+    notification.type !== 'ai_insight' &&
+    notification.type !== 'referral'
+  ) {
     return null;
   }
 
@@ -52,6 +58,9 @@ export function NotificationToast({ notification, onDismiss }: NotificationToast
     if (notification.type === 'ai_insight' && notification.entity_id?.startsWith('risk_analysis:')) {
       return `/holdings?riskAnalysisId=${notification.entity_id.replace(/^risk_analysis:/, '')}`;
     }
+    if (notification.type === 'referral') {
+      return '/upgrade';
+    }
     if (notification.entity_type === 'stock' && notification.entity_id) {
       return `/stock/${notification.entity_id}`;
     }
@@ -63,8 +72,9 @@ export function NotificationToast({ notification, onDismiss }: NotificationToast
 
   const linkUrl = getLinkUrl();
   const isAiInsight = notification.type === 'ai_insight';
-  const Icon = isAiInsight ? Sparkles : notification.severity === 'critical' ? AlertCircle : AlertTriangle;
-  const iconColor = isAiInsight ? 'text-violet-400' : notification.severity === 'critical' ? 'text-red-500' : 'text-amber-500';
+  const isReferral = notification.type === 'referral';
+  const Icon = isAiInsight ? Sparkles : isReferral ? Crown : notification.severity === 'critical' ? AlertCircle : AlertTriangle;
+  const iconColor = isAiInsight ? 'text-violet-400' : isReferral ? 'text-amber-400' : notification.severity === 'critical' ? 'text-red-500' : 'text-amber-500';
 
   if (!isVisible) return null;
 

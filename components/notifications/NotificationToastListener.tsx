@@ -6,7 +6,7 @@ import { NotificationToast } from './NotificationToast';
 import type { Notification } from '@/lib/notifications/notifications-db';
 
 function shouldToast(n: Notification): boolean {
-  return n.severity === 'warning' || n.severity === 'critical' || n.type === 'ai_insight';
+  return n.severity === 'warning' || n.severity === 'critical' || n.type === 'ai_insight' || n.type === 'referral';
 }
 
 /**

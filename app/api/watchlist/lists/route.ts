@@ -85,11 +85,12 @@ async function postHandler(
 
   // Fetch tier and existing list count in parallel
   const [{ data: userRow }, { count, error: countError }] = await Promise.all([
-    supabase.from('users').select('account_tier').eq('id', session.userId).maybeSingle(),
+    supabase.from('users').select('account_tier, pro_bonus_until').eq('id', session.userId).maybeSingle(),
     supabase.from('watchlist_lists').select('id', { count: 'exact', head: true }).eq('user_id', session.userId),
   ]);
 
   const tier = (userRow?.account_tier as number | null) ?? null;
+  const proBonusUntil = (userRow as { pro_bonus_until?: string | null } | null)?.pro_bonus_until ?? null;
 
   if (countError) {
     return addSecurityHeaders(
@@ -97,7 +98,7 @@ async function postHandler(
     );
   }
 
-  if (!canCreateWatchlist(count ?? 0, tier)) {
+  if (!canCreateWatchlist(count ?? 0, tier, proBonusUntil)) {
     return addSecurityHeaders(
       NextResponse.json(
         { error: 'upgrade_required' },

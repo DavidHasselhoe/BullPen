@@ -48,7 +48,7 @@ async function fetchUserProfile(
   try {
     const { data, error } = await supabase
       .from('users')
-      .select('id, email, username, full_name, avatar_url, role, bio, experience_level, market_focus, risk_profile, account_tier, created_at, updated_at, last_login_at, settings')
+      .select('id, email, username, full_name, avatar_url, role, bio, experience_level, market_focus, risk_profile, account_tier, pro_bonus_until, created_at, updated_at, last_login_at, settings')
       .eq('id', userId)
       .single();
 

@@ -100,7 +100,7 @@ export function UserMenu({ forceDark = false, open, onOpenChange }: UserMenuProp
   };
 
   const displayName = user.full_name || user.username || user.email.split('@')[0];
-  const tier = tierFromUser(user.account_tier, user.role);
+  const tier = tierFromUser(user.account_tier, user.role, user.pro_bonus_until);
   const userIsAdmin = isAdmin(tier);
   const userIsPro = isPro(tier);
 

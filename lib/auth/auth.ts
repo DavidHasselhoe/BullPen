@@ -17,8 +17,11 @@ export interface AuthUser {
   market_focus: 'US' | 'EU' | 'BOTH' | null;
   risk_profile: 'conservative' | 'balanced' | 'aggressive' | null;
   // INTEGER in DB (migration 026): 1 = free, 2 = admin/staff, 3 = paid Pro.
-  // Use `tierFromInt()` / `isPro()` from `lib/billing/tier.ts` instead of comparing this directly.
+  // Use `tierFromUser()` / `isPro()` from `lib/billing/tier.ts` instead of comparing this directly.
   account_tier: number | null;
+  // Referral-reward bonus Pro access (migrations 114/115), independent of
+  // account_tier and never touched by the Stripe webhook. See tierFromUser().
+  pro_bonus_until: string | null;
   settings: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;

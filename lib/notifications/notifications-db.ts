@@ -6,10 +6,10 @@ import { createServerClient } from '@/lib/supabase/client';
 export interface Notification {
   id: string;
   user_id: string;
-  type: 'price_move' | 'earnings' | 'ai_insight' | 'market' | 'dividend' | 'academy' | 'health_score' | 'weekly_pick' | 'daily_brief';
+  type: 'price_move' | 'earnings' | 'ai_insight' | 'market' | 'dividend' | 'academy' | 'health_score' | 'weekly_pick' | 'daily_brief' | 'referral';
   title: string;
   message: string;
-  entity_type: 'stock' | 'portfolio' | 'market' | null;
+  entity_type: 'stock' | 'portfolio' | 'market' | 'user' | null;
   entity_id: string | null;
   severity: 'info' | 'warning' | 'critical';
   is_read: boolean;
@@ -24,10 +24,10 @@ export interface NotificationDBResult<T> {
 
 export interface CreateNotificationInput {
   user_id: string;
-  type: 'price_move' | 'earnings' | 'ai_insight' | 'market' | 'dividend' | 'academy' | 'health_score' | 'weekly_pick' | 'daily_brief';
+  type: 'price_move' | 'earnings' | 'ai_insight' | 'market' | 'dividend' | 'academy' | 'health_score' | 'weekly_pick' | 'daily_brief' | 'referral';
   title: string;
   message: string;
-  entity_type?: 'stock' | 'portfolio' | 'market' | null;
+  entity_type?: 'stock' | 'portfolio' | 'market' | 'user' | null;
   entity_id?: string | null;
   severity?: 'info' | 'warning' | 'critical';
 }
