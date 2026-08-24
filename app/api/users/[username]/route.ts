@@ -1,14 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withRateLimit, withAuth, addSecurityHeaders } from '@/lib/security/api-security';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
+import { createServerClient } from '@/lib/supabase/client';
 import type { PublicUser } from '../search/route';
 
+// Public profile page — deliberately unauthenticated, same reasoning as
+// users/search/route.ts: the column whitelist below plus the profile_public/
+// holdings_public checks already restrict this to what the owner chose to
+// make public, so rate limiting is the right protection, not a login wall.
+// Was previously built on the RLS-subject anon-key client (@supabase/ssr),
+// which has no SELECT grant for the `anon` role at all — every anonymous
+// visitor got "This profile is private" regardless of the setting. Switched
+// to the service-role client since the authorization decision already lives
+// in this handler, not in RLS (same pattern as users/search).
 /** Fetches a user's public profile + portfolio symbols by username. */
 async function handler(
   _request: NextRequest,
-  context: { params: Promise<{ username: string }> },
-  _session: { userId: string }
+  context: { params: Promise<{ username: string }> }
 ): Promise<NextResponse> {
   const { username } = await context.params;
 
@@ -19,23 +26,7 @@ async function handler(
   }
 
   try {
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll: () => cookieStore.getAll(),
-          setAll: (cookiesToSet) => {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) =>
-                cookieStore.set(name, value, options)
-              );
-            } catch {}
-          },
-        },
-      }
-    );
+    const supabase = createServerClient();
 
     const SELECT_COLS = 'id, username, full_name, avatar_url, bio, experience_level, market_focus, risk_profile, account_tier, created_at, settings';
 
@@ -118,7 +109,4 @@ async function handler(
   }
 }
 
-export const GET = withRateLimit(
-  withAuth(handler),
-  { windowMs: 60 * 1000, maxRequests: 60 }
-);
+export const GET = withRateLimit(handler, { windowMs: 60 * 1000, maxRequests: 60 });

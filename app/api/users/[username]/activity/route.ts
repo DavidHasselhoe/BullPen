@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuth, withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
+import { createServerClient } from '@/lib/supabase/client';
 
 export interface ActivityItem {
   type: 'thesis' | 'reply' | 'portfolio';
@@ -17,25 +16,17 @@ export interface ActivityItem {
 
 const PAGE_SIZE = 20;
 
-function makeSupabase(cookieStore: Awaited<ReturnType<typeof cookies>>) {
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll: () => cookieStore.getAll(),
-        setAll: (list) => {
-          try { list.forEach(({ name, value, options }) => cookieStore.set(name, value, options)); } catch {}
-        },
-      },
-    }
-  );
-}
-
+// Public profile's Activity tab — deliberately unauthenticated, same
+// reasoning as the profile route one level up: profile_public/holdings_public
+// are already enforced below, so a signed-out visitor sees exactly what the
+// owner chose to make public, nothing more. Previously built on the
+// RLS-subject anon-key client, which has no SELECT grant for `anon` at all —
+// every anonymous request 403'd regardless of the owner's setting. Switched
+// to the service-role client since the authorization decision already lives
+// in this handler, not in RLS.
 async function handler(
   req: NextRequest,
-  context: { params: Promise<{ username: string }> },
-  _session: { userId: string }
+  context: { params: Promise<{ username: string }> }
 ): Promise<NextResponse> {
   const { username } = await context.params;
   const cursor = req.nextUrl.searchParams.get('cursor') ?? new Date().toISOString();
@@ -45,8 +36,7 @@ async function handler(
   }
 
   try {
-    const cookieStore = await cookies();
-    const supabase = makeSupabase(cookieStore);
+    const supabase = createServerClient();
 
     const SELECT_COLS = 'id, settings';
     let userRow: { id: string; settings: Record<string, unknown> | null } | null = null;
@@ -176,4 +166,4 @@ async function handler(
   }
 }
 
-export const GET = withRateLimit(withAuth(handler), { windowMs: 60 * 1000, maxRequests: 60 });
+export const GET = withRateLimit(handler, { windowMs: 60 * 1000, maxRequests: 60 });
