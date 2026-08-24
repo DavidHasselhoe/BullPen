@@ -58,6 +58,18 @@ function TrendDelta({ analysis, displayedTimestamp, history }: Props) {
   );
 }
 
+function ScoreChangeReason({ reason }: { reason: string | null | undefined }) {
+  if (!reason) return null;
+  return (
+    <div className="rounded-lg border border-border/30 bg-muted/20 px-3 py-2.5">
+      <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+        Why the score changed
+      </div>
+      <p className="mt-1 text-[13px] leading-relaxed text-foreground/85">{reason}</p>
+    </div>
+  );
+}
+
 function RiskHighlight({ label, title, detail, tier }: { label: string; title: string; detail?: string; tier: 'risk' | 'caution' | 'info' }) {
   return (
     <div className="min-w-0">
@@ -92,6 +104,8 @@ export function RiskScoreHero({ analysis, displayedTimestamp, history }: Props) 
         </div>
         <RiskScale score={analysis.overallRiskScore} />
       </div>
+
+      <ScoreChangeReason reason={analysis.scoreChangeReason} />
 
       <p className="max-w-prose text-sm leading-relaxed text-foreground/85">{analysis.portfolioSummary}</p>
 

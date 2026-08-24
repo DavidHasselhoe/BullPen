@@ -48,6 +48,7 @@ Output this exact schema:
 {
   "overallRiskScore": <integer 0-100, where 100 = maximum risk>,
   "riskLevel": <"Low" | "Moderate" | "Elevated" | "High" | "Very High">,
+  "scoreChangeReason": <string, or null>,
   "metrics": {
     "concentration":        { "score": <integer 0-100>, "label": <string>, "detail": <string> },
     "sectorDiversification":{ "score": <integer 0-100>, "label": <string>, "detail": <string> },
@@ -70,6 +71,7 @@ Output this exact schema:
 }
 
 Scoring guidelines:
+- scoreChangeReason: null unless the user message gives you prior-analysis context to compare against. When context is given and your score matches the prior score exactly, set this to null. When context is given and your score differs from the prior score (whether because holdings changed or because you identified a new external risk factor), this field is REQUIRED: 2-3 sentences starting with "Since your last analysis," that name the SPECIFIC cause — the exact holdings added/removed/resized, or the exact external event (a rate decision, an earnings miss, a guidance cut, a sector-wide selloff) — never a vague statement like "market conditions changed."
 - overallRiskScore: weighted average — concentration 25%, sectorDiversification 20%, marketCapBias 15%, volatilityExposure 20%, correlationRisk 10%, liquidityRisk 10%
 - riskLevel thresholds: 0-20 = Low, 21-40 = Moderate, 41-60 = Elevated, 61-79 = High, 80-100 = Very High
 - concentration: score 80+ if top 1 holding > 40%, or top 3 > 75%; score 50-79 if top 3 = 55-75%; score <50 if well spread
@@ -153,7 +155,7 @@ function buildHistoryContext(
   const diff = diffHoldingsSnapshot(prior.snapshot, toSnapshot(currentHoldings));
 
   if (isUnchanged(diff)) {
-    return `\n\nIMPORTANT: You scored this exact portfolio (same holdings, same share counts) ${prior.score}/100 (${prior.level}) last time. Keep the overall score and risk level the same unless you identify a genuinely new external risk factor since then (e.g. a specific holding entered financial distress, a sector-specific shock occurred). Do not vary the score merely due to re-analysis or normal sampling variation: an unchanged portfolio should produce an unchanged score.`;
+    return `\n\nIMPORTANT: You scored this exact portfolio (same holdings, same share counts) ${prior.score}/100 (${prior.level}) last time. Keep the overall score and risk level the same unless you identify a genuinely new external risk factor since then (e.g. a specific holding entered financial distress, a sector-specific shock occurred). Do not vary the score merely due to re-analysis or normal sampling variation: an unchanged portfolio should produce an unchanged score. If you do change it anyway, scoreChangeReason MUST name the specific external event that justifies it — you have no live news access, so only cite something you are genuinely confident happened, never a generic hedge.`;
   }
 
   const changes: string[] = [];
@@ -163,7 +165,7 @@ function buildHistoryContext(
     changes.push(`resized: ${diff.resized.map((r) => `${r.symbol} (${r.from ?? 0} -> ${r.to ?? 0} shares)`).join(', ')}`);
   }
 
-  return `\n\nSince the last analysis (scored ${prior.score}/100, ${prior.level}), the portfolio changed: ${changes.join('; ')}. Reassess from first principles based on the current holdings below, and in portfolioSummary briefly note how this change moved the score relative to last time.`;
+  return `\n\nSince the last analysis (scored ${prior.score}/100, ${prior.level}), the portfolio changed: ${changes.join('; ')}. Reassess from first principles based on the current holdings below, and use scoreChangeReason to explain how this specific change moved the score relative to last time.`;
 }
 
 // Currency display helpers

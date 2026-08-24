@@ -17,6 +17,8 @@ export interface StressScenario {
 export interface RiskAnalysis {
   overallRiskScore: number;
   riskLevel: string;
+  /** Why the score differs from the prior analysis; null on a first analysis or when the score didn't change. */
+  scoreChangeReason: string | null;
   generatedAt: string;
   metrics: {
     concentration: RiskMetric;
