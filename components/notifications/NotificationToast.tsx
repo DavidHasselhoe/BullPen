@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { X, AlertTriangle, AlertCircle, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useMarkNotificationRead } from '@/hooks/use-notifications';
 import type { Notification } from '@/lib/notifications/notifications-db';
 
 interface NotificationToastProps {
@@ -19,6 +20,7 @@ interface NotificationToastProps {
  */
 export function NotificationToast({ notification, onDismiss }: NotificationToastProps) {
   const [isVisible, setIsVisible] = useState(true);
+  const markRead = useMarkNotificationRead();
 
   useEffect(() => {
     // Auto-dismiss after 6 seconds
@@ -46,6 +48,9 @@ export function NotificationToast({ notification, onDismiss }: NotificationToast
     }
     if (notification.type === 'ai_insight' && notification.entity_id?.startsWith('portfolio_builder:')) {
       return `/tools/portfolio-builder?id=${notification.entity_id.replace(/^portfolio_builder:/, '')}`;
+    }
+    if (notification.type === 'ai_insight' && notification.entity_id?.startsWith('risk_analysis:')) {
+      return `/holdings?riskAnalysisId=${notification.entity_id.replace(/^risk_analysis:/, '')}`;
     }
     if (notification.entity_type === 'stock' && notification.entity_id) {
       return `/stock/${notification.entity_id}`;
@@ -82,7 +87,7 @@ export function NotificationToast({ notification, onDismiss }: NotificationToast
         </div>
         <div className="flex items-start gap-2 shrink-0">
           {linkUrl !== '/' && (
-            <Link href={linkUrl}>
+            <Link href={linkUrl} onClick={() => markRead.mutate(notification.id)}>
               <Button variant="ghost" size="sm" className="h-7 text-xs">
                 View
               </Button>

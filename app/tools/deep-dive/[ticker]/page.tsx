@@ -13,6 +13,7 @@ import { useBackground } from '@/hooks/use-background';
 import { useExperienceLevel } from '@/hooks/use-experience-level';
 import { useHoldings } from '@/hooks/use-holdings';
 import { useAIPanel } from '@/components/ai/AIPanelProvider';
+import { useMarkEntityNotificationsRead } from '@/hooks/use-notifications';
 import { useInvalidateQuota } from '@/hooks/use-quota';
 import { QuotaIndicator } from '@/components/billing/QuotaIndicator';
 import { AiPaywallDialog } from '@/components/billing/AiPaywallDialog';
@@ -52,6 +53,7 @@ export default function DeepDivePage() {
   const { open: openAIPanel } = useAIPanel();
   const invalidateQuota = useInvalidateQuota();
   const queryClient = useQueryClient();
+  const markEntityRead = useMarkEntityNotificationsRead();
 
   const holds = !!holdings?.some((h) => h.symbol.toUpperCase() === symbol);
 
@@ -100,6 +102,9 @@ export default function DeepDivePage() {
           setLens(data.report.lens ?? useLens);
           invalidateQuota('deep_dive');
           queryClient.invalidateQueries({ queryKey: ['deep-dive-list'] });
+          // Generated while the user was watching — clear its notification
+          // now instead of leaving it unread until the bell is opened.
+          markEntityRead.mutate(`${symbol}:deep_dive`);
           setJustCompleted(true);
           setTimeout(() => {
             setJustCompleted(false);
@@ -115,7 +120,7 @@ export default function DeepDivePage() {
         // Transient network hiccup — keep polling, the next tick will retry.
       }
     }, POLL_INTERVAL_MS);
-  }, [rawTicker, stopPolling, invalidateQuota, queryClient]);
+  }, [rawTicker, symbol, stopPolling, invalidateQuota, queryClient, markEntityRead]);
 
   // On mount: show the latest saved dive, or resume polling if one is still
   // generating (e.g. the user started it, left, and came back).
@@ -131,6 +136,9 @@ export default function DeepDivePage() {
           setCreatedAt(data.createdAt ?? null);
           setLens((data.report as Report).lens ?? 'full');
           setPhase('done');
+          // Landed here from a notification (or just revisiting) — the
+          // report is already on screen, so clear its unread notification.
+          markEntityRead.mutate(`${symbol}:deep_dive`);
         } else if (data?.success && data.pendingId) {
           setGenPhase((data.pendingPhase as DivePhase) ?? 'reading_data');
           setPhase('generating');

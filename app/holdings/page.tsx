@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, Suspense } from 'react';
 import { AuthGate } from '@/components/ui/AuthGate';
 import { HoldingsTable } from '@/components/holdings/HoldingsTable';
 import { AddHoldingModal } from '@/components/holdings/AddHoldingModal';
@@ -397,7 +397,9 @@ export default function HoldingsPage() {
 
       {/* AI risk analysis */}
       {throttledHoldings.length > 0 && (
-        <PortfolioRiskAnalysis holdings={throttledHoldings} />
+        <Suspense fallback={null}>
+          <PortfolioRiskAnalysis holdings={throttledHoldings} />
+        </Suspense>
       )}
 
       {/* Add Modal */}

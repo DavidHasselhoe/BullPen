@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Card, CardContent, CardHeader, CardTitle,
@@ -14,6 +15,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { ProcessingScreen } from '@/components/ui/ProcessingScreen';
 import { useAuth } from '@/hooks/use-auth';
 import { useAIPanel } from '@/components/ai/AIPanelProvider';
+import { useMarkEntityNotificationsRead } from '@/hooks/use-notifications';
 import type { QuotaState } from '@/lib/billing/quotas';
 import type { HoldingWithPrice } from './types';
 import type { SavedRiskAnalysis } from '@/app/api/holdings/risk-analysis/history/route';
@@ -71,6 +73,8 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { open: openAIPanel } = useAIPanel();
+  const searchParams = useSearchParams();
+  const markEntityRead = useMarkEntityNotificationsRead();
 
   // Derive user's display currency from settings
   const userCurrency = useMemo((): string => {
@@ -133,8 +137,12 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
       setAnalysis(data.analysis as RiskAnalysis);
       setRestoredFrom(data.createdAt);
       setState('loaded');
+      // The user is now looking straight at this analysis — clear its
+      // "ready" notification instead of leaving it unread until they
+      // separately open the bell dropdown.
+      markEntityRead.mutate(`risk_analysis:${id}`);
     }
-  }, []);
+  }, [markEntityRead]);
 
   const stopPolling = useCallback(() => {
     if (pollRef.current) {
@@ -160,6 +168,9 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
           setAnalysis(data.analysis);
           setRestoredFrom(null);
           queryClient.invalidateQueries({ queryKey: HISTORY_KEY });
+          // Generated while the user was watching — its notification would
+          // otherwise sit unread until they separately opened the bell.
+          markEntityRead.mutate(`risk_analysis:${id}`);
           setJustCompleted(true);
           setTimeout(() => {
             setJustCompleted(false);
@@ -174,13 +185,21 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
         // Transient network hiccup — keep polling, the next tick will retry.
       }
     }, POLL_INTERVAL_MS);
-  }, [stopPolling, queryClient]);
+  }, [stopPolling, queryClient, markEntityRead]);
 
-  // On mount: resume polling if an analysis was started and the user left
-  // mid-run and came back (or just reloaded the page).
+  // On mount: open a specific analysis from a notification deep link
+  // (?riskAnalysisId=...), or resume polling if the user left mid-run and
+  // came back (or just reloaded the page).
   useEffect(() => {
     let cancelled = false;
+    const linkedId = searchParams.get('riskAnalysisId');
+
     (async () => {
+      if (linkedId) {
+        await restoreAnalysis(linkedId);
+        return;
+      }
+
       try {
         const res = await fetch('/api/holdings/risk-analysis');
         const data = await res.json();

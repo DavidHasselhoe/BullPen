@@ -178,6 +178,10 @@ function notificationSource(n: Notification): { label: string; href: string } | 
     const id = n.entity_id.replace(/^portfolio_builder:/, '');
     return { label: 'Portfolio Builder', href: `/tools/portfolio-builder?id=${id}` };
   }
+  if (n.type === 'ai_insight' && n.entity_id?.startsWith('risk_analysis:')) {
+    const id = n.entity_id.replace(/^risk_analysis:/, '');
+    return { label: 'Risk Analysis', href: `/holdings?riskAnalysisId=${id}` };
+  }
   if (n.type === 'weekly_pick' && n.entity_id?.startsWith('weekly_pick:')) {
     const date = n.entity_id.replace(/^weekly_pick:/, '');
     return { label: "Bull's Pick", href: `/picks/${date}` };

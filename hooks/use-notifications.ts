@@ -120,6 +120,37 @@ export function useMarkNotificationRead() {
 }
 
 /**
+ * TanStack Query mutation to mark every unread notification for one
+ * entity_id as read (e.g. `risk_analysis:<id>`). Used by AI-generated-content
+ * pages (Risk Analysis, Deep Dive, Portfolio Builder) to clear the "1" badge
+ * the instant the user is actually looking at the thing the notification is
+ * about — generated inline, restored from history, or opened via a deep
+ * link — instead of requiring a separate trip to the bell dropdown.
+ */
+export function useMarkEntityNotificationsRead() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (entityId: string): Promise<void> => {
+      if (!user?.id) return;
+      const supabase = createBrowserClient();
+      const { error } = await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('user_id', user.id)
+        .eq('entity_id', entityId)
+        .eq('is_read', false);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['notifications-unread-count', user?.id] });
+    },
+  });
+}
+
+/**
  * TanStack Query mutation to mark all notifications as read
  */
 export function useMarkAllNotificationsRead() {

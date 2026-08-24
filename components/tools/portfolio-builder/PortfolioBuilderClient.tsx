@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils';
 import { QuotaIndicator } from '@/components/billing/QuotaIndicator';
 import { AiPaywallDialog } from '@/components/billing/AiPaywallDialog';
 import { useInvalidateQuota } from '@/hooks/use-quota';
+import { useMarkEntityNotificationsRead } from '@/hooks/use-notifications';
 
 type Phase = 'idle' | 'streaming' | 'composing' | 'validating' | 'done' | 'error';
 type ErrorCode = 'invalid_key' | 'payment_required' | 'rate_limited' | 'parse_failed' | 'too_few_valid_tickers' | 'quota_exceeded' | 'unknown';
@@ -64,6 +65,7 @@ export function PortfolioBuilderClient() {
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const queryClient = useQueryClient();
   const invalidateQuota = useInvalidateQuota();
+  const markEntityRead = useMarkEntityNotificationsRead();
 
   const stopPolling = useCallback(() => {
     if (pollRef.current) {
@@ -140,6 +142,9 @@ export function PortfolioBuilderClient() {
           setResult({ type: 'done', portfolio: data.portfolio, logoMap: data.logoMap ?? {}, replacedTickers: data.replacedTickers ?? [], createdAt: data.createdAt });
           invalidateQuota('portfolio_builder');
           queryClient.invalidateQueries({ queryKey: HISTORY_KEY, exact: false });
+          // Generated while the user was watching — clear its notification
+          // now instead of leaving it unread until the bell is opened.
+          markEntityRead.mutate(`portfolio_builder:${id}`);
           setJustCompleted(true);
           setTimeout(() => {
             setJustCompleted(false);
@@ -155,7 +160,7 @@ export function PortfolioBuilderClient() {
         // Transient network hiccup — keep polling, the next tick will retry.
       }
     }, POLL_INTERVAL_MS);
-  }, [stopPolling, invalidateQuota, queryClient]);
+  }, [stopPolling, invalidateQuota, queryClient, markEntityRead]);
 
   // On mount: load a specific generation from a notification deep link
   // (?id=...), or resume polling if the user left mid-build and came back.
@@ -173,6 +178,9 @@ export function PortfolioBuilderClient() {
           if (data.status === 'done' && data.portfolio) {
             setResult({ type: 'done', portfolio: data.portfolio, logoMap: data.logoMap ?? {}, replacedTickers: data.replacedTickers ?? [], createdAt: data.createdAt });
             setPhase('done');
+            // Landed here from a notification — the result is already on
+            // screen, so clear its unread notification.
+            markEntityRead.mutate(`portfolio_builder:${linkedId}`);
           } else if (data.status === 'pending') {
             setPhase(data.phase ?? 'streaming');
             pollStatus(linkedId);
