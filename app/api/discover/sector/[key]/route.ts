@@ -7,23 +7,22 @@
  *
  * Returned already sorted by today's move — the useful order when you've just
  * clicked into a sector because it was leading or lagging.
+ *
+ * Public, no auth required — /discover itself has no AuthGate, and this
+ * handler never touched the session anyway (was previously wrapped in
+ * withAuth regardless, 401-ing every anonymous expand).
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/client';
-import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
+import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
 import { getStockQuotes, withRateLimitRetry, TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
 import { rget, rset } from '@/lib/cache/redis-cache';
 import { SECTOR_BY_KEY, STOCKS_PER_SECTOR, type TickerItem } from '@/lib/discover/discover-config';
 
 const CACHE_TTL_SECONDS = 5 * 60;
 
-async function handler(
-  _request: NextRequest,
-  context: unknown,
-   
-  _session: { userId: string }
-): Promise<NextResponse> {
+async function handler(_request: NextRequest, context: unknown): Promise<NextResponse> {
   const { key } = await (context as { params: Promise<{ key: string }> }).params;
 
   const sector = SECTOR_BY_KEY.get(key);
@@ -88,4 +87,4 @@ async function handler(
   }
 }
 
-export const GET = withAuth(handler, { rateLimit: { windowMs: 60 * 1000, maxRequests: 60 } });
+export const GET = withRateLimit(handler, { windowMs: 60 * 1000, maxRequests: 60 });
