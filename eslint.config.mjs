@@ -35,6 +35,14 @@ const eslintConfig = defineConfig([
     // source we don't author, trips react-hooks/refs and set-state-in-effect
     // in its own internals.
     "components/charts/**",
+    // AI-tool skill/agent config directories (Claude Code, Cursor, GitHub
+    // Copilot) — vendored skill bundles like impeccable's minified scripts,
+    // not application source. Same rationale as components/charts/** above.
+    ".agents/**",
+    ".cursor/**",
+    ".github/skills/**",
+    ".github/agents/**",
+    ".github/hooks/**",
   ]),
 ]);
 
