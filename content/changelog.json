@@ -1,5 +1,15 @@
 [
   {
+    "date": "2026-08-24",
+    "entries": [
+      { "type": "new", "text": "Referring a friend now gives you both a free month of Pro when they sign up from your shared portfolio card" },
+      { "type": "improved", "text": "Free accounts can now read the full reasoning behind one of Bull's Weekly Picks each month, not just the ticker and price" },
+      { "type": "improved", "text": "When you re-run Portfolio Risk Analysis, it now explains what changed since last time if the score is different, even when your holdings stayed the same" },
+      { "type": "fixed", "text": "Notifications for AI features like Risk Analysis and Deep Dive now clear automatically once you've seen the result, and tapping one now takes you to the right place instead of a generic page" },
+      { "type": "fixed", "text": "Fixed Bull's Weekly Pick track record, Discover, and public profiles not loading properly when you weren't signed in" }
+    ]
+  },
+  {
     "date": "2026-08-23",
     "entries": [
       { "type": "fixed", "text": "Academy streak reminder notifications no longer show a day count that can be out of date by the time you read them, since your streak can reset in between" }
