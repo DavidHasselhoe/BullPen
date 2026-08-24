@@ -162,6 +162,23 @@ export function withAuth(
 }
 
 /**
+ * Wraps a handler that's public but session-aware: an anonymous caller gets
+ * `session: null` and the handler decides what that means (e.g. free-tier
+ * content), rather than being rejected outright. Use for endpoints that are
+ * genuinely public but personalize/gate when signed in — never returns 401.
+ */
+export function withOptionalAuth(
+  handler: (request: NextRequest, context: unknown, session: { userId: string } | null) => Promise<NextResponse>,
+  options: { rateLimit?: { windowMs?: number; maxRequests?: number } } = {}
+) {
+  const base = async (request: NextRequest, context?: unknown): Promise<NextResponse> => {
+    const session = await getSessionForApiRoute();
+    return handler(request, context ?? {}, session);
+  };
+  return options.rateLimit ? withRateLimit(base, options.rateLimit) : base;
+}
+
+/**
  * Adds security headers to response
  */
 export function addSecurityHeaders(response: NextResponse): NextResponse {

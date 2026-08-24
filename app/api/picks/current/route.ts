@@ -1,22 +1,24 @@
 /**
  * GET /api/picks/current
  *
- * The latest published pick. The ticker, headline, one-liner, entry price, and
- * live return are free; the thesis and risks are Pro (stripped server-side by
- * `toDetail`, never sent and hidden client-side).
+ * The latest published pick — public, no auth required. The ticker, headline,
+ * one-liner, entry price, and live return are always free; the thesis and
+ * risks are gated by resolveThesisAccess() (Pro, or a free account's one
+ * thesis a month) and stripped server-side by `toDetail`, never sent to a
+ * caller who isn't unlocked.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
+import { withOptionalAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
-import { getTier } from '@/lib/billing/tier';
+import { resolveThesisAccess } from '@/lib/picks/thesis-access';
 import { getLatestPickRow, toDetail } from '@/lib/picks/picks-db';
 import { livePerformanceFor } from '@/lib/picks/performance';
 
 async function handler(
   _request: NextRequest,
   _context: unknown,
-  session: { userId: string }
+  session: { userId: string } | null
 ): Promise<NextResponse> {
   try {
     const row = await getLatestPickRow();
@@ -24,10 +26,13 @@ async function handler(
       return addSecurityHeaders(NextResponse.json({ success: true, pick: null }));
     }
 
-    const [tier, perf] = await Promise.all([getTier(session.userId), livePerformanceFor(row)]);
+    const [access, perf] = await Promise.all([
+      resolveThesisAccess(session, row.pick_date, row.model),
+      livePerformanceFor(row),
+    ]);
 
     return addSecurityHeaders(
-      NextResponse.json({ success: true, pick: toDetail(row, perf, tier) })
+      NextResponse.json({ success: true, pick: toDetail(row, perf, access) })
     );
   } catch (err) {
     if (err instanceof TwelveDataRateLimitError) {
@@ -40,4 +45,4 @@ async function handler(
   }
 }
 
-export const GET = withAuth(handler, { rateLimit: { windowMs: 60 * 1000, maxRequests: 60 } });
+export const GET = withOptionalAuth(handler, { rateLimit: { windowMs: 60 * 1000, maxRequests: 60 } });

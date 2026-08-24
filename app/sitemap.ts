@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { canonicalGlossaryTerms, glossarySlug } from '@/lib/finance/glossary';
+import { createServerClient } from '@/lib/supabase/client';
 
 /**
  * Served at /sitemap.xml.
@@ -11,7 +12,7 @@ import { canonicalGlossaryTerms, glossarySlug } from '@/lib/finance/glossary';
  * intentionally excluded: they require a session and aren't unique
  * indexable content for an anonymous searcher.
  */
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const BASE_URL = 'https://bullpen.no';
 
   const routes: { path: string; priority: number; changeFrequency: MetadataRoute.Sitemap[number]['changeFrequency'] }[] = [
@@ -19,6 +20,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: '/pricing', priority: 0.9, changeFrequency: 'monthly' },
     { path: '/academy', priority: 0.8, changeFrequency: 'weekly' },
     { path: '/discover', priority: 0.8, changeFrequency: 'daily' },
+    // Bull's Weekly Pick track record — public (see app/api/picks/*), and the
+    // whole point of a track record is that it's checkable without signing up.
+    { path: '/picks', priority: 0.7, changeFrequency: 'weekly' },
     { path: '/about', priority: 0.6, changeFrequency: 'monthly' },
     { path: '/help', priority: 0.6, changeFrequency: 'monthly' },
     { path: '/glossary', priority: 0.6, changeFrequency: 'monthly' },
@@ -49,5 +53,19 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.4,
   }));
 
-  return [...staticEntries, ...glossaryEntries];
+  // One entry per published pick — real, permanent content (the whole point
+  // is the thesis and its result never change after publication).
+  const supabase = createServerClient();
+  const { data: pickRows } = await supabase
+    .from('ai_stock_picks')
+    .select('pick_date')
+    .order('pick_date', { ascending: false });
+  const pickEntries = (pickRows ?? []).map((row) => ({
+    url: `${BASE_URL}/picks/${(row as { pick_date: string }).pick_date}`,
+    lastModified,
+    changeFrequency: 'weekly' as const,
+    priority: 0.5,
+  }));
+
+  return [...staticEntries, ...glossaryEntries, ...pickEntries];
 }

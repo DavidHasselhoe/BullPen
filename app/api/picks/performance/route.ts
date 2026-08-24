@@ -3,6 +3,10 @@
  *
  * The whole track record in one payload: the calendar-time equal-dollar series,
  * the day-0 normalized curve, per-pick returns, and the summary figures.
+ * Public, no auth required — every field here is summary-level (picks-db.ts's
+ * PICK_SUMMARY_COLUMNS), never the thesis, so there's no tier boundary to
+ * enforce. The whole point of a track record is that anyone can check it
+ * without signing up first.
  *
  * Computed server-side so the browser never fires one candle request per pick,
  * and cached in Redis for 30 minutes — the underlying picks only change weekly,
@@ -13,7 +17,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
+import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
 import { TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
 import { rget, rset } from '@/lib/cache/redis-cache';
 import { computePerformance } from '@/lib/picks/performance';
@@ -24,12 +28,7 @@ import type { PerformanceResponse } from '@/lib/picks/types';
 const CACHE_KEY = 'picks:performance:v2';
 const CACHE_TTL_SECONDS = 30 * 60;
 
-async function handler(
-  _request: NextRequest,
-  _context: unknown,
-   
-  _session: { userId: string }
-): Promise<NextResponse> {
+async function handler(_request: NextRequest): Promise<NextResponse> {
   try {
     const cached = await rget<PerformanceResponse>(CACHE_KEY);
     if (cached) {
@@ -58,4 +57,4 @@ async function handler(
   }
 }
 
-export const GET = withAuth(handler, { rateLimit: { windowMs: 60 * 1000, maxRequests: 30 } });
+export const GET = withRateLimit(handler, { windowMs: 60 * 1000, maxRequests: 30 });

@@ -3,13 +3,14 @@
  *
  * One pick by its publication date (YYYY-MM-DD) — the canonical URL key, since
  * exactly one pick exists per date and the date is what the track record is
- * built on. Same tier boundary as /api/picks/current.
+ * built on. Public, no auth required — same tier/quota boundary as
+ * /api/picks/current.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
+import { withOptionalAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
-import { getTier } from '@/lib/billing/tier';
+import { resolveThesisAccess } from '@/lib/picks/thesis-access';
 import { getPickRowByDate, toDetail } from '@/lib/picks/picks-db';
 import { livePerformanceFor } from '@/lib/picks/performance';
 
@@ -18,7 +19,7 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 async function handler(
   _request: NextRequest,
   context: unknown,
-  session: { userId: string }
+  session: { userId: string } | null
 ): Promise<NextResponse> {
   const { date } = await (context as { params: Promise<{ date: string }> }).params;
 
@@ -36,10 +37,13 @@ async function handler(
       );
     }
 
-    const [tier, perf] = await Promise.all([getTier(session.userId), livePerformanceFor(row)]);
+    const [access, perf] = await Promise.all([
+      resolveThesisAccess(session, row.pick_date, row.model),
+      livePerformanceFor(row),
+    ]);
 
     return addSecurityHeaders(
-      NextResponse.json({ success: true, pick: toDetail(row, perf, tier) })
+      NextResponse.json({ success: true, pick: toDetail(row, perf, access) })
     );
   } catch (err) {
     if (err instanceof TwelveDataRateLimitError) {
@@ -52,4 +56,4 @@ async function handler(
   }
 }
 
-export const GET = withAuth(handler, { rateLimit: { windowMs: 60 * 1000, maxRequests: 60 } });
+export const GET = withOptionalAuth(handler, { rateLimit: { windowMs: 60 * 1000, maxRequests: 60 } });

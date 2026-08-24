@@ -50,8 +50,10 @@ export interface PickDetail extends PickWithPerformance {
   metricsSnapshot?: Record<string, unknown>;
   model: string;
   generatedAt: string;
-  /** True when the viewer's tier doesn't include the thesis. */
+  /** True when the viewer doesn't currently have access to the thesis. */
   locked: boolean;
+  /** Why `locked` is true — absent when locked is false. Drives the upsell copy. */
+  lockReason?: 'anonymous' | 'free_quota_used';
 }
 
 // ─── Performance series ──────────────────────────────────────────────────────

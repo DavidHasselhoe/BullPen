@@ -34,6 +34,11 @@ compare_explain:   { count: 5,  period: 'day'   } as QuotaConfig,
   academy_explain:   { count: 30, period: 'day'   } as QuotaConfig,  // free for all; glossary cache absorbs repeats
   deep_dive:         { count: 1,  period: 'month', proCap: 25 } as QuotaConfig,  // free teaser 1/mo; Pro soft-capped to bound cost
   why_today:         { count: 0,  period: 'day'   } as QuotaConfig,  // Pro-only; unlimited for Pro (Sonnet + web search per call)
+  // Zero marginal cost (the thesis is already generated for everyone) — this
+  // isn't bounding AI spend like the others, it's the free-tier taste of
+  // Bull's Weekly Pick. See lib/picks/thesis-access.ts for how "1 free" picks
+  // WHICH pick a free user gets to keep reading for the rest of the period.
+  weekly_pick_thesis: { count: 1, period: 'month' } as QuotaConfig,
 };
 
 export type QuotaFeature = keyof typeof QUOTAS;
@@ -60,7 +65,7 @@ function nextPeriodBoundary(period: 'day' | 'month'): Date {
 }
 
 /** First moment of the current period (window start, inclusive). */
-function currentPeriodStart(period: 'day' | 'month'): Date {
+export function currentPeriodStart(period: 'day' | 'month'): Date {
   const now = new Date();
   if (period === 'day') {
     const start = new Date(now);

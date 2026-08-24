@@ -135,7 +135,13 @@ export function WeeklyPickHero() {
                 <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
               </Link>
               {pick.locked && (
-                <span className="text-[11px] text-muted-foreground/80">Full thesis is a Pro feature</span>
+                <span className="text-[11px] text-muted-foreground/80">
+                  {pick.lockReason === 'anonymous'
+                    ? 'Sign up free for one thesis a month'
+                    : pick.lockReason === 'free_quota_used'
+                      ? "This month's free thesis is used"
+                      : 'Full thesis is a Pro feature'}
+                </span>
               )}
             </div>
           </div>

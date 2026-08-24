@@ -8,7 +8,7 @@
  */
 
 import { createServerClient } from '@/lib/supabase/client';
-import { isPro, type Tier } from '@/lib/billing/tier';
+import type { Tier } from '@/lib/billing/tier';
 import type { CatalystType, Horizon, PickRisk, StoredThesis } from '@/lib/ai/picks/schema';
 import type { PickDetail, PickSummary, PickWithPerformance } from './types';
 
@@ -87,24 +87,28 @@ export function coerceRowNumerics<T extends PickRow>(row: T): T {
 }
 
 /**
- * Build the detail payload for a viewer. Non-Pro callers get the response with
- * `thesis`/`risks`/`metricsSnapshot` absent entirely — not blanked, not
- * truncated — so the Pro content never reaches the client at all.
+ * Build the detail payload for a viewer. Callers the resolved access says are
+ * NOT unlocked get the response with `thesis`/`risks`/`metricsSnapshot`
+ * absent entirely — not blanked, not truncated — so that content never
+ * reaches the client at all. `access.unlocked` (see lib/picks/thesis-access.ts)
+ * is Pro OR a spent/available free-monthly slot, not raw tier — a free user
+ * can be unlocked, and lockReason explains why a non-Pro caller isn't.
  */
 export function toDetail(
   row: PickDetailRow,
   perf: Pick<PickWithPerformance, 'currentPrice' | 'returnPct' | 'benchmarkReturnPct'>,
-  tier: Tier
+  access: { tier: Tier; unlocked: boolean; lockReason?: 'anonymous' | 'free_quota_used' }
 ): PickDetail {
   const base: PickDetail = {
     ...rowToSummary(row),
     ...perf,
     model: row.model,
     generatedAt: row.generated_at,
-    locked: !isPro(tier),
+    locked: !access.unlocked,
+    ...(access.lockReason ? { lockReason: access.lockReason } : {}),
   };
 
-  if (!isPro(tier)) return base;
+  if (!access.unlocked) return base;
 
   return {
     ...base,
