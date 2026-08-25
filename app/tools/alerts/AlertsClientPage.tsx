@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Bell, Plus, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -17,6 +18,7 @@ import { FREE_ACTIVE_ALERT_LIMIT, type AlertType } from '@/types/alerts';
 import { useAlerts } from '@/hooks/use-alerts';
 
 export default function AlertsClientPage() {
+  const { t } = useTranslation('tools');
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -62,11 +64,11 @@ export default function AlertsClientPage() {
       <div className={cn('min-h-screen', !hasAnimatedBackground && 'bg-background')}>
         <div className="max-w-xl mx-auto px-4 py-16 text-center space-y-4">
           <Bell className="h-10 w-10 text-primary/70 mx-auto" />
-          <h1 className="text-2xl font-semibold">Sign in to set alerts</h1>
+          <h1 className="text-2xl font-semibold">{t('alertsSignInTitle', 'Sign in to set alerts')}</h1>
           <p className="text-sm text-muted-foreground">
-            Create personal alerts when a stock hits a price, % move, or all-time high.
+            {t('alertsSignInDescription', 'Create personal alerts when a stock hits a price, % move, or all-time high.')}
           </p>
-          <Button onClick={() => router.push('/login?redirectTo=/tools/alerts')}>Sign in</Button>
+          <Button onClick={() => router.push('/login?redirectTo=/tools/alerts')}>{t('alertsSignInButton', 'Sign in')}</Button>
         </div>
       </div>
     );
@@ -83,7 +85,7 @@ export default function AlertsClientPage() {
             className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-3 group"
           >
             <ArrowLeft className="h-3 w-3 transition-transform group-hover:-translate-x-0.5" />
-            All tools
+            {t('allToolsLink', 'All tools')}
           </Link>
 
           <div className="flex items-start justify-between gap-4">
@@ -96,9 +98,9 @@ export default function AlertsClientPage() {
                 className="hidden sm:block h-20 w-20 shrink-0 select-none opacity-90 dark:opacity-80 dark:invert"
               />
               <div className="min-w-0">
-                <h1 className="text-2xl font-bold tracking-tight">Price Alerts</h1>
+                <h1 className="text-2xl font-bold tracking-tight">{t('alertsTitle', 'Price Alerts')}</h1>
                 <p className="text-sm text-muted-foreground mt-0.5">
-                  Get notified when a stock hits a target price, daily move, 52-week extreme, or new high.
+                  {t('alertsSubtitle', 'Get notified when a stock hits a target price, daily move, 52-week extreme, or new high.')}
                 </p>
               </div>
             </div>
@@ -112,7 +114,7 @@ export default function AlertsClientPage() {
                   className="gap-1.5"
                 >
                   <Plus className="h-3.5 w-3.5" />
-                  New alert
+                  {t('alertsNewAlert', 'New alert')}
                 </Button>
               )}
               {!isLoading && (
@@ -162,7 +164,7 @@ export default function AlertsClientPage() {
           <div className="flex flex-col items-center gap-3 py-16 text-center">
             <AlertCircle className="h-8 w-8 text-muted-foreground/80" />
             <p className="text-sm text-muted-foreground">{humanizeError(error)}</p>
-            <Button variant="outline" size="sm" onClick={() => refetch()}>Try again</Button>
+            <Button variant="outline" size="sm" onClick={() => refetch()}>{t('tryAgainButton', 'Try again')}</Button>
           </div>
         ) : alerts.length === 0 ? (
           // Empty state
@@ -170,8 +172,8 @@ export default function AlertsClientPage() {
             <EmptyState
               pose="alert"
               imageSize={168}
-              title="No alerts yet"
-              description="Pick a stock and set your first threshold. We'll ping you the moment it triggers."
+              title={t('alertsEmptyTitle', 'No alerts yet')}
+              description={t('alertsEmptyDescription', "Pick a stock and set your first threshold. We'll ping you the moment it triggers.")}
             >
               {!composerOpen && (
                 <div className="flex justify-center">
@@ -181,7 +183,7 @@ export default function AlertsClientPage() {
                     className="gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-white"
                   >
                     <Plus className="h-3.5 w-3.5" />
-                    Create your first alert
+                    {t('alertsCreateFirst', 'Create your first alert')}
                   </Button>
                 </div>
               )}
@@ -194,13 +196,14 @@ export default function AlertsClientPage() {
         {/* About */}
         <div className="border-t border-border/30 pt-5 px-1">
           <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-muted-foreground/80 mb-2">
-            About alerts
+            {t('alertsAboutHeading', 'About alerts')}
           </div>
           <p className="text-[11px] leading-relaxed text-muted-foreground/80">
-            Alerts are checked at <span className="font-mono text-muted-foreground/85">market open</span>{' '}
-            and once every hour through close (Mon–Fri). Each alert can fire at most{' '}
-            <span className="font-mono text-muted-foreground/85">once per 24 hours</span> so you&apos;re never spammed.
-            Pause one to silence it without losing the configuration.
+            {t(
+              'alertsAboutBody',
+              "Alerts are checked at {{marketOpen}} and once every hour through close (Mon–Fri). Each alert can fire at most {{oncePerDay}} so you're never spammed. Pause one to silence it without losing the configuration.",
+              { marketOpen: 'market open', oncePerDay: 'once per 24 hours' }
+            )}
           </p>
         </div>
       </div>

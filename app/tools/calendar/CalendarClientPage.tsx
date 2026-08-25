@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CalendarDays, ArrowLeft, Info, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -46,6 +47,7 @@ const VALID_VIEWS = new Set<CalendarView>(['list', 'week', 'month']);
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 export function CalendarClientPage() {
+  const { t } = useTranslation('tools');
   const router = useRouter();
   const searchParams = useSearchParams();
   const { hasAnimatedBackground } = useBackground();
@@ -118,7 +120,7 @@ export function CalendarClientPage() {
   const periodLabel =
     view === 'month' ? fmtMonthLabel(monthKeyOf(anchor))
     : view === 'week' ? fmtWeekRange(from, to)
-    : `${fmtShortDate(from)} to ${fmtShortDate(to)}`;
+    : t('calendarDateRange', '{{from}} to {{to}}', { from: fmtShortDate(from), to: fmtShortDate(to) });
 
   // "Today" only appears once the anchor has left the current period, so it
   // isn't a permanently-lit control that does nothing.
@@ -152,15 +154,15 @@ export function CalendarClientPage() {
             className="group mb-5 inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
           >
             <ArrowLeft className="h-3 w-3 transition-transform group-hover:-translate-x-0.5" />
-            All tools
+            {t('allToolsLink', 'All tools')}
           </Link>
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
               <CalendarDays className="h-5 w-5 text-primary" aria-hidden />
             </div>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">Market Calendar</h1>
-              <p className="mt-0.5 text-sm text-muted-foreground">Earnings, dividends, splits &amp; IPOs</p>
+              <h1 className="text-2xl font-bold tracking-tight">{t('calendarTitle', 'Market Calendar')}</h1>
+              <p className="mt-0.5 text-sm text-muted-foreground">{t('calendarSubtitle', 'Earnings, dividends, splits & IPOs')}</p>
             </div>
           </div>
         </div>
@@ -170,8 +172,20 @@ export function CalendarClientPage() {
           <CalendarViewToggle view={view} onChange={(v) => setParams({ view: v })} />
           <CalendarDateNav
             label={periodLabel}
-            prevLabel={`Previous ${view === 'month' ? 'month' : view === 'week' ? 'week' : 'period'}`}
-            nextLabel={`Next ${view === 'month' ? 'month' : view === 'week' ? 'week' : 'period'}`}
+            prevLabel={
+              view === 'month'
+                ? t('calendarPreviousMonth', 'Previous month')
+                : view === 'week'
+                ? t('calendarPreviousWeek', 'Previous week')
+                : t('calendarPreviousPeriod', 'Previous period')
+            }
+            nextLabel={
+              view === 'month'
+                ? t('calendarNextMonth', 'Next month')
+                : view === 'week'
+                ? t('calendarNextWeek', 'Next week')
+                : t('calendarNextPeriod', 'Next period')
+            }
             onPrev={goPrev}
             onNext={goNext}
             onToday={() => setParams({ date: today })}
@@ -188,7 +202,7 @@ export function CalendarClientPage() {
         {isPartial && (
           <div className="mb-6 flex items-center gap-2 rounded-lg border border-border/50 bg-muted/30 px-3 py-2.5 text-xs text-muted-foreground">
             <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin motion-reduce:animate-none" aria-hidden />
-            <p>Loading the rest of this range. Days will fill in as they arrive.</p>
+            <p>{t('calendarLoadingRange', 'Loading the rest of this range. Days will fill in as they arrive.')}</p>
           </div>
         )}
 
@@ -198,7 +212,10 @@ export function CalendarClientPage() {
           <div className="mb-6 flex items-start gap-2 rounded-lg border border-border/50 bg-muted/30 px-3 py-2.5 text-xs text-muted-foreground">
             <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
             <p>
-              No confirmed earnings dates in this range yet. Companies usually confirm their report date 3 to 6 weeks ahead, so this fills in automatically as new dates are announced.
+              {t(
+                'calendarEarningsGap',
+                'No confirmed earnings dates in this range yet. Companies usually confirm their report date 3 to 6 weeks ahead, so this fills in automatically as new dates are announced.'
+              )}
             </p>
           </div>
         )}
@@ -261,9 +278,10 @@ export function CalendarClientPage() {
 }
 
 function EmptyRange() {
+  const { t } = useTranslation('tools');
   return (
     <p className="py-10 text-center text-sm text-muted-foreground">
-      Nothing scheduled in this range.
+      {t('calendarNothingScheduled', 'Nothing scheduled in this range.')}
     </p>
   );
 }
