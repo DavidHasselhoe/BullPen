@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
+import { getLogoUrlsForTickers } from '@/lib/logos/logos-db';
 
 /** GET /api/watchlist — list current user's watchlist */
 async function getHandler(
@@ -22,7 +23,11 @@ async function getHandler(
     );
   }
 
-  return addSecurityHeaders(NextResponse.json({ success: true, watchlist: data ?? [] }));
+  const rows = data ?? [];
+  const logoUrls = await getLogoUrlsForTickers(rows.map((r) => r.symbol));
+  const watchlist = rows.map((row) => ({ ...row, logo_url: logoUrls.get(row.symbol) ?? null }));
+
+  return addSecurityHeaders(NextResponse.json({ success: true, watchlist }));
 }
 
 /** POST /api/watchlist — add a symbol */

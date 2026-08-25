@@ -14,7 +14,6 @@ import { useHoldings, useRemoveHolding } from '@/hooks/use-holdings';
 import { SoldPositionsModal } from '@/components/holdings/SoldPositionsModal';
 import { useAuth } from '@/hooks/use-auth';
 import { Trash2, Edit2, DollarSign, PlusCircle, ArrowUpRight, ArrowDownRight, Plus, Search, X, Loader2, Upload, Download } from 'lucide-react';
-import { createBrowserClient } from '@/lib/supabase/client';
 import { logger } from '@/lib/utils/logger';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
 import { cn } from '@/lib/utils';
@@ -550,33 +549,17 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
   const isFxLoading = userCurrency !== null && exchangeRates.isLoading;
 
   // Only run the internal quote fetch when no live data is provided from the parent page.
-  // When externalHoldings is present we skip this to avoid duplicate API calls.
+  // When externalHoldings is present we skip this to avoid duplicate API calls. Logos are
+  // NOT fetched here — they arrive already attached on `holdings` from getHoldings()
+  // (lib/holdings/holdings-db.ts), so they render on the first paint instead of waiting
+  // on this second, holdings-gated query.
   const quotes = useQuery({
     queryKey: ['holdings-quotes', holdings?.map((h) => h.symbol)],
     queryFn: async () => {
-      if (!holdings || holdings.length === 0) return { quotes: {}, logos: {} };
-      
-      const supabase = createBrowserClient();
+      if (!holdings || holdings.length === 0) return { quotes: {} };
+
       const quoteMap: Record<string, { price: number; change: number; changePercent: number }> = {};
       const tickers = holdings.map((h) => h.symbol);
-
-      // Single batched logo query instead of N individual queries
-      const { data: companiesData } = await supabase
-        .from('companies')
-        .select('ticker, logo_url')
-        .in('ticker', tickers);
-
-      const dbLogoMap = new Map<string, string | null>(
-        (companiesData || []).map((c) => [c.ticker, c.logo_url])
-      );
-
-      const logoMap: Record<string, string | null> = {};
-      for (const ticker of tickers) {
-        const dbLogo = dbLogoMap.get(ticker) ?? null;
-        logoMap[ticker] = dbLogo ?? supabase.storage
-          .from('company-logos')
-          .getPublicUrl(`${ticker.toLowerCase()}.jpg`).data.publicUrl ?? null;
-      }
 
       // Batch quotes (throttled server-side to avoid Twelve Data rate limits)
       const batchRes = await fetch('/api/quotes/batch', {
@@ -592,7 +575,7 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
         Object.assign(quoteMap, batchData.quotes);
       }
 
-      return { quotes: quoteMap, logos: logoMap };
+      return { quotes: quoteMap };
     },
     // Skip the internal fetch entirely when the parent already supplies live data.
     enabled: !externalHoldings && !!holdings && holdings.length > 0,
@@ -612,9 +595,8 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
     if (!holdings) return [];
     
     const quotesMap = quotes.data?.quotes || {};
-    const logosMap = quotes.data?.logos || {};
     const rates = exchangeRates.data;
-    
+
     // Calculate total market value (in USD)
     const totalMarketValue = holdings.reduce((sum, holding) => {
       const quote = quotesMap[holding.symbol];
@@ -626,7 +608,7 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
 
     return holdings.map((holding) => {
       const quote = quotesMap[holding.symbol];
-      const logoUrl = logosMap[holding.symbol] || null;
+      const logoUrl = holding.logo_url ?? null;
       
       // All values are in USD initially
       const currentPriceUSD = quote?.price;

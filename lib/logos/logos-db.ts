@@ -122,3 +122,31 @@ export async function getCompaniesNeedingLogos(limit?: number): Promise<{
     };
   }
 }
+
+/**
+ * Batched `companies.logo_url` lookup for a list of tickers — one round trip
+ * instead of N. Built for list surfaces (watchlist, holdings) that render a
+ * `CompanyLogo` per row and would otherwise pass `logoUrl={null}` and pay the
+ * `/api/logo/[ticker]` redirect chain for every single row on every load.
+ * Missing tickers are simply absent from the returned map, not an error.
+ */
+export async function getLogoUrlsForTickers(tickers: string[]): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  if (tickers.length === 0) return out;
+
+  const supabase = createServerClient();
+  try {
+    const { data, error } = await supabase
+      .from('companies')
+      .select('ticker, logo_url')
+      .in('ticker', tickers)
+      .not('logo_url', 'is', null)
+      .returns<Array<{ ticker: string; logo_url: string }>>();
+
+    if (error || !data) return out;
+    for (const row of data) out.set(row.ticker, row.logo_url);
+    return out;
+  } catch {
+    return out;
+  }
+}

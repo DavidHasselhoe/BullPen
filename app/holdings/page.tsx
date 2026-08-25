@@ -100,22 +100,24 @@ export default function HoldingsPage() {
   // component) re-renders at most once every 3 s instead of on every WS tick.
   const throttledLivePrices = useThrottle(livePrices, 3000);
 
-  // Fetch quotes and logos for all holdings (shared cache with HoldingsTable)
+  // Fetch quotes and sectors for all holdings (shared cache with HoldingsTable).
+  // Logos are NOT fetched here — they arrive already attached on `holdings` from
+  // getHoldings() (lib/holdings/holdings-db.ts), so they render on the first paint
+  // instead of waiting on this second, holdings-gated query.
   const quotesData = useQuery({
     queryKey: ['holdings-quotes', holdings?.map((h) => h.symbol), isPreMarket],
     queryFn: async () => {
-      if (!holdings || holdings.length === 0) return { quotes: {}, logos: {}, sectors: {} };
+      if (!holdings || holdings.length === 0) return { quotes: {}, sectors: {} };
 
       const supabase = createBrowserClient();
       const quoteMap: Record<string, { price: number; change: number; changePercent: number; stale?: boolean }> = {};
-      const logoMap: Record<string, string | null> = {};
       const sectorMap: Record<string, string | null> = {};
 
       const tickers = holdings.map((h) => h.symbol);
 
-      // Fetch companies + cached sectors in parallel
+      // Fetch cached sectors + companies (for sector fallback) in parallel
       const [{ data: companiesData }, { data: cachedSectors }] = await Promise.all([
-        supabase.from('companies').select('ticker, logo_url, sector').in('ticker', tickers),
+        supabase.from('companies').select('ticker, sector').in('ticker', tickers),
         supabase.from('ticker_sectors').select('ticker, sector').in('ticker', tickers),
       ]);
 
@@ -151,15 +153,6 @@ export default function HoldingsPage() {
       for (const ticker of tickers) {
         const company = dbCompanyMap.get(ticker);
         if (!(ticker in sectorMap)) sectorMap[ticker] = company?.sector ?? null;
-        const dbLogo = company?.logo_url ?? null;
-        if (dbLogo) {
-          logoMap[ticker] = dbLogo;
-        } else {
-          const { data: urlData } = supabase.storage
-            .from('company-logos')
-            .getPublicUrl(`${ticker.toLowerCase()}.jpg`);
-          logoMap[ticker] = urlData?.publicUrl || null;
-        }
       }
 
       // Batch quotes — pass prepost:true during pre-market so extended prices
@@ -177,7 +170,7 @@ export default function HoldingsPage() {
         Object.assign(quoteMap, batchData.quotes);
       }
 
-      return { quotes: quoteMap, logos: logoMap, sectors: sectorMap };
+      return { quotes: quoteMap, sectors: sectorMap };
     },
     enabled: !!holdings && holdings.length > 0,
     // During pre-market, re-anchor previousClose every 90 s so drift doesn't accumulate.
@@ -193,7 +186,6 @@ export default function HoldingsPage() {
     if (!holdings) return [];
 
     const quotesMap = quotesData.data?.quotes || {};
-    const logosMap = quotesData.data?.logos || {};
     const sectorsMap = quotesData.data?.sectors || {};
 
     const conv = (usd: number) => usd * currentFxRate;
@@ -209,7 +201,7 @@ export default function HoldingsPage() {
     return holdings.map((holding) => {
       const liveQuote = throttledLivePrices.get(holding.symbol);
       const batchQuote = quotesMap[holding.symbol];
-      const logoUrl = logosMap[holding.symbol] || null;
+      const logoUrl = holding.logo_url ?? null;
       const sector = sectorsMap[holding.symbol] ?? null;
 
       const currentPriceUSD = liveQuote?.price ?? batchQuote?.price;

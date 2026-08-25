@@ -134,6 +134,7 @@ export default function AssetPage() {
                         ticker={symbol}
                         logoUrl={profile?.logoUrl ?? null}
                         size={64}
+                        loading="eager"
                       />
                       <div>
                         <h1 className="text-3xl font-semibold text-foreground">{displayName}</h1>

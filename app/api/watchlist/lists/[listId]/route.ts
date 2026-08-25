@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
+import { getLogoUrlsForTickers } from '@/lib/logos/logos-db';
 
 interface RouteContext {
   params: Promise<{ listId: string }>;
@@ -53,7 +54,11 @@ async function getHandler(
     );
   }
 
-  return addSecurityHeaders(NextResponse.json({ success: true, items: data ?? [] }));
+  const rows = data ?? [];
+  const logoUrls = await getLogoUrlsForTickers(rows.map((r) => r.symbol));
+  const items = rows.map((row) => ({ ...row, logo_url: logoUrls.get(row.symbol) ?? null }));
+
+  return addSecurityHeaders(NextResponse.json({ success: true, items }));
 }
 
 const COLOR_RE = /^#[0-9A-Fa-f]{6}$/;

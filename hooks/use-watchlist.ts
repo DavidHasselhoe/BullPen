@@ -10,6 +10,7 @@ export interface WatchlistItem {
   alerts_enabled: boolean;
   added_at: string;
   list_id?: string | null;
+  logo_url?: string | null;
 }
 
 export interface WatchlistList {

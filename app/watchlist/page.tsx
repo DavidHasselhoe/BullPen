@@ -403,6 +403,7 @@ export default function WatchlistPage() {
                   key={item.symbol}
                   symbol={item.symbol}
                   company_name={item.company_name}
+                  logo_url={item.logo_url}
                   quote={quote}
                   alerts_enabled={item.alerts_enabled}
                   onRemove={(sym) => removeMutation.mutate({ symbol: sym, listId: activeListId })}

@@ -137,6 +137,8 @@ export interface UserHolding {
   trading_currency: string | null;
   created_at: string;
   updated_at: string;
+  /** Not a real `user_holdings` column — attached by getHoldings() from `companies.logo_url` so the first fetch already carries it, instead of a second client-side query. */
+  logo_url?: string | null;
 }
 
 export interface HoldingSale {

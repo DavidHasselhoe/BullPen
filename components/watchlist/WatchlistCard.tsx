@@ -25,6 +25,7 @@ interface HealthScore {
 interface WatchlistCardProps {
   symbol: string;
   company_name: string;
+  logo_url?: string | null;
   quote?: Quote | null;
   onRemove: (symbol: string) => void;
   isRemoving?: boolean;
@@ -56,6 +57,7 @@ function thesisColor(sentiment: 'bull' | 'bear' | 'neutral') {
 export function WatchlistCard({
   symbol,
   company_name,
+  logo_url,
   quote,
   onRemove,
   isRemoving,
@@ -115,7 +117,7 @@ export function WatchlistCard({
       <Link href={slugToAssetPath(symbol)} className="flex flex-col gap-3 p-4">
         {/* Header */}
         <div className="flex items-center gap-3">
-          <CompanyLogo name={company_name} ticker={symbol} logoUrl={null} size={36} />
+          <CompanyLogo name={company_name} ticker={symbol} logoUrl={logo_url ?? null} size={36} />
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-foreground leading-none">{symbol}</p>
             <p className="text-xs text-muted-foreground truncate mt-0.5">{company_name}</p>

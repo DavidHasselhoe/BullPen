@@ -341,6 +341,7 @@ export default function StockDetailPage() {
                               ticker={ticker}
                               logoUrl={company?.logo_url}
                               size={64}
+                              loading="eager"
                             />
                             <div>
                               <h1 className="text-3xl font-semibold text-foreground">{displayName}</h1>

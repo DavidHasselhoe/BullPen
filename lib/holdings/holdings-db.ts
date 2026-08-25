@@ -6,6 +6,7 @@ import type { UserHolding, InsertUserHolding, UpdateUserHolding, HoldingSale, In
 import { logger } from '@/lib/utils/logger';
 import { getCompanyProfile } from '@/lib/twelvedata/twelvedata-client';
 import { recordPortfolioActivity } from '@/lib/holdings/portfolio-activity';
+import { getLogoUrlsForTickers } from '@/lib/logos/logos-db';
 
 /** Cap how many profiles we resolve per fetch so a fresh portfolio doesn't burst the API. */
 const MAX_CURRENCY_BACKFILL = 25;
@@ -102,13 +103,25 @@ export async function getHoldings(userId: string): Promise<GetHoldingsResult> {
     }
 
     // Fill in any missing trading currencies (legacy/synced rows) so Avg Price can be
-    // labeled in the asset's native currency. Best-effort — never blocks the response.
+    // labeled in the asset's native currency, and attach logo_url from `companies` —
+    // both best-effort, run in parallel, and never block the response. Attaching the
+    // logo here means it arrives with the first holdings fetch instead of the second,
+    // dependent client-side query that used to gate it (see HoldingsTable/holdings page).
     let result = holdings as UserHolding[];
-    try {
-      result = await backfillTradingCurrencies(supabase, userId, result);
-    } catch (err) {
-      logger.warn('trading_currency backfill skipped:', err);
-    }
+    const tickers = [...new Set(result.map((h) => h.symbol.toUpperCase()))];
+
+    const [backfilled, logoUrls] = await Promise.all([
+      backfillTradingCurrencies(supabase, userId, result).catch((err) => {
+        logger.warn('trading_currency backfill skipped:', err);
+        return result;
+      }),
+      getLogoUrlsForTickers(tickers),
+    ]);
+
+    result = backfilled.map((h) => ({
+      ...h,
+      logo_url: logoUrls.get(h.symbol.toUpperCase()) ?? null,
+    }));
 
     return {
       success: true,
