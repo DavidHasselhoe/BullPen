@@ -1,14 +1,16 @@
 'use client';
 
+import { useMemo } from 'react';
 import { Maximize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { currentMonthKey, fmtMonthLabelShort, fmtFullDate } from '@/lib/dates/calendar-format';
+import { fmtWeekRange, monthKeyOf, todayET, weekRangeOf } from '@/lib/dates/calendar-format';
 import { summarize } from '@/lib/holdings/daily-performance';
 import type { CurrencyCode } from '@/lib/currency/currency-conversion';
 import { useDailyPerformance } from './use-daily-performance';
-import { fmtSignedCurrency, fmtSignedPercent, textClass, stripFillClass } from './calendar-model';
+import { CalendarGrid } from './CalendarGrid';
+import { buildWeekRow, fmtSignedCurrency, fmtSignedPercent, textClass } from './calendar-model';
 
 interface Props {
   currency?: CurrencyCode;
@@ -16,27 +18,41 @@ interface Props {
   onExpand: () => void;
 }
 
-const SKELETON_SQUARES = 22;
-
 /**
- * Always-visible, ~90px preview of this month's daily performance: a summary
- * line plus a sparkline-style strip of small squares, one per trading day so
- * far this month, coloured the same way the full grid's cells are. The full
- * interactive calendar (month navigation, per-day contributors) lives behind
- * "Expand" in a dialog — this view exists so the page never pays the full
- * grid's ~500px+ height just to show today's number.
+ * Always-visible, ~100px preview: a summary line for the current Mon-Sun
+ * week plus that week laid out as one row of the same DayCell/CalendarGrid
+ * used by the full month view — real weekday labels, day numbers, tint and
+ * contributor popovers, not an anonymous strip of dots. The full interactive
+ * calendar (month navigation, other weeks) lives behind "Expand" in a dialog
+ * — this view exists so the page never pays the full grid's multi-row height
+ * just to show the current week.
  *
- * Deliberately not `aria-hidden`-decorative: the strip itself is a button
- * with an aria-label summarising the month, matching "Expand" — a screen
- * reader user gets the same "open the full calendar" affordance either way,
- * without 20+ individually-focusable squares that duplicate the dialog's
- * own fully-accessible grid.
+ * The current week can straddle two calendar months (e.g. Mon Aug 31 - Sun
+ * Sep 6). useDailyPerformance only fetches one month at a time, so both are
+ * requested and merged; the second query is skipped entirely (`enabled`)
+ * when the week doesn't cross a boundary, which is true almost every week.
  */
 export function PerformanceHeatStrip({ currency = 'USD', fxRate = 1, onExpand }: Props) {
-  const month = currentMonthKey();
-  const { days, isLoading, isGated } = useDailyPerformance(month);
-  const total = summarize(days);
-  const hasData = days.length > 0;
+  const today = todayET();
+  const { from: weekFrom, to: weekTo } = useMemo(() => weekRangeOf(today), [today]);
+  const monthA = monthKeyOf(weekFrom);
+  const monthB = monthKeyOf(weekTo);
+  const crossesMonth = monthA !== monthB;
+
+  const resultA = useDailyPerformance(monthA);
+  const resultB = useDailyPerformance(monthB, crossesMonth);
+
+  const isLoading = resultA.isLoading || (crossesMonth && resultB.isLoading);
+  const isGated = resultA.isGated || resultB.isGated;
+
+  const weekRow = useMemo(() => {
+    const days = crossesMonth ? [...resultA.days, ...resultB.days] : resultA.days;
+    const holidays = crossesMonth ? [...resultA.holidays, ...resultB.holidays] : resultA.holidays;
+    return buildWeekRow(weekFrom, weekTo, days, holidays);
+  }, [weekFrom, weekTo, crossesMonth, resultA.days, resultA.holidays, resultB.days, resultB.holidays]);
+  const weekData = useMemo(() => weekRow.flatMap((c) => (c.data ? [c.data] : [])), [weekRow]);
+  const total = summarize(weekData);
+  const hasData = weekData.length > 0;
 
   return (
     <div className="min-w-0">
@@ -54,12 +70,13 @@ export function PerformanceHeatStrip({ currency = 'USD', fxRate = 1, onExpand }:
             <span className="text-xs text-muted-foreground/70">
               {total.upDays} up · {total.downDays} down
             </span>
+            <span className="text-xs text-muted-foreground/60">{fmtWeekRange(weekFrom, weekTo)}</span>
           </div>
         ) : (
           <span className="text-xs text-muted-foreground">
             {isGated
               ? 'Daily performance is briefly unavailable.'
-              : `No positions were held so far in ${fmtMonthLabelShort(month)}.`}
+              : `No positions were held so far this week (${fmtWeekRange(weekFrom, weekTo)}).`}
           </span>
         )}
 
@@ -70,26 +87,15 @@ export function PerformanceHeatStrip({ currency = 'USD', fxRate = 1, onExpand }:
       </div>
 
       {isLoading ? (
-        <div className="flex flex-wrap gap-1" aria-hidden="true">
-          {Array.from({ length: SKELETON_SQUARES }).map((_, i) => (
-            <Skeleton key={i} className="h-3.5 w-3.5 rounded-sm shrink-0" />
+        // 5 columns — matches CalendarGrid's default (Mon-Fri) shape; the
+        // brief flash before data lands isn't worth knowing showWeekend for.
+        <div className="grid grid-cols-5 gap-1 sm:gap-1.5" aria-hidden="true">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-[48px] sm:h-[64px] rounded-lg" />
           ))}
         </div>
       ) : hasData ? (
-        <button
-          type="button"
-          onClick={onExpand}
-          aria-label={`${days.length} trading days in ${fmtMonthLabelShort(month)}. Expand for the full calendar.`}
-          className="flex flex-wrap gap-1 rounded-lg -m-1 p-1 transition-colors duration-150 hover:bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          {days.map((day) => (
-            <span
-              key={day.date}
-              title={`${fmtFullDate(day.date)}: ${fmtSignedPercent(day.pct)}`}
-              className={cn('h-3.5 w-3.5 rounded-sm shrink-0', stripFillClass(day.pct))}
-            />
-          ))}
-        </button>
+        <CalendarGrid weeks={[weekRow]} fxRate={fxRate} currency={currency} compact />
       ) : null}
     </div>
   );

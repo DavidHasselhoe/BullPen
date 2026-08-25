@@ -4,7 +4,7 @@
  * colour ramp. Pure — no React, no data fetching.
  */
 
-import { monthWeeks, todayET } from '@/lib/dates/calendar-format';
+import { monthWeeks, todayET, weekDatesBetween } from '@/lib/dates/calendar-format';
 import {
   formatCurrency,
   getCurrencySymbol,
@@ -40,6 +40,32 @@ export interface DayCellModel {
   holidayLabel: string | null;
 }
 
+/** Builds one non-pad cell's model — shared by buildMonthGrid and buildWeekRow. */
+function cellFor(
+  date: string,
+  byDate: Map<string, DailyPerformanceDay>,
+  holidayByDate: Map<string, string>,
+  today: string
+): DayCellModel {
+  const data = byDate.get(date) ?? null;
+  const holidayLabel = data ? null : (holidayByDate.get(date) ?? null);
+  const state: CellState = data
+    ? 'data'
+    : date > today
+      ? 'future'
+      : holidayLabel
+        ? 'holiday'
+        : 'closed';
+  return {
+    date,
+    dayOfMonth: Number(date.slice(8, 10)),
+    state,
+    isToday: date === today,
+    data,
+    holidayLabel,
+  };
+}
+
 /**
  * Lay a month out as Monday-first calendar weeks and attach each day's data.
  *
@@ -56,36 +82,34 @@ export function buildMonthGrid(
   const today = todayET();
 
   return monthWeeks(monthKey).map((week) =>
-    week.map((date): DayCellModel => {
-      if (date === null) {
-        return {
-          date: null,
-          dayOfMonth: null,
-          state: 'pad',
-          isToday: false,
-          data: null,
-          holidayLabel: null,
-        };
-      }
-      const data = byDate.get(date) ?? null;
-      const holidayLabel = data ? null : (holidayByDate.get(date) ?? null);
-      const state: CellState = data
-        ? 'data'
-        : date > today
-          ? 'future'
-          : holidayLabel
-            ? 'holiday'
-            : 'closed';
-      return {
-        date,
-        dayOfMonth: Number(date.slice(8, 10)),
-        state,
-        isToday: date === today,
-        data,
-        holidayLabel,
-      };
-    })
+    week.map((date): DayCellModel =>
+      date === null
+        ? { date: null, dayOfMonth: null, state: 'pad', isToday: false, data: null, holidayLabel: null }
+        : cellFor(date, byDate, holidayByDate, today)
+    )
   );
+}
+
+/**
+ * A single Monday-first week row (7 cells, never padded — `weekFrom`/`weekTo`
+ * always come from `weekRangeOf`/`getWeekRange`, which are already
+ * Monday-Sunday). Used by the always-visible heat strip so "this week" reads
+ * with the same cells, colours and contributor popovers as the full month
+ * grid, just one row of it. Unlike buildMonthGrid, the days can span two
+ * different `DailyPerformanceDay[]` fetches (a week straddling a month
+ * boundary) — the caller is responsible for merging those before calling this.
+ */
+export function buildWeekRow(
+  weekFrom: string,
+  weekTo: string,
+  days: DailyPerformanceDay[],
+  holidays: MarketHoliday[] = []
+): DayCellModel[] {
+  const byDate = new Map(days.map((d) => [d.date, d]));
+  const holidayByDate = new Map(holidays.map((h) => [h.date, h.label]));
+  const today = todayET();
+
+  return weekDatesBetween(weekFrom, weekTo).map((date) => cellFor(date, byDate, holidayByDate, today));
 }
 
 /**
