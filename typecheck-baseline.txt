@@ -1,0 +1,523 @@
+app/actions/holdings.ts|error TS2345|Argument of type 'Record<string, unknown>' is not assignable to parameter of type 'never'.
+app/api/academy/courses/[slug]/quiz/route.ts|error TS2345|Argument of type '(_req: NextRequest, context: { params: Promise<{ slug: string; }>; }, session: { userId: string; }) => Promise<NextResponse<unknown>>' is not assignable to parameter of type '(request: NextRequest, context: unknown, session: { userId: string; }) => Promise<NextResponse<unknown>>'.
+app/api/academy/courses/[slug]/quiz/submit/route.ts|error TS2345|Argument of type '(req: NextRequest, context: { params: Promise<{ slug: string; }>; }, session: { userId: string; }) => Promise<NextResponse<unknown>>' is not assignable to parameter of type '(request: NextRequest, context: unknown, session: { userId: string; }) => Promise<NextResponse<unknown>>'.
+app/api/academy/courses/[slug]/route.ts|error TS2345|Argument of type '(_req: NextRequest, context: { params: Promise<{ slug: string; }>; }, session: { userId: string; }) => Promise<NextResponse<unknown>>' is not assignable to parameter of type '(request: NextRequest, context: unknown, session: { userId: string; }) => Promise<NextResponse<unknown>>'.
+app/api/academy/courses/[slug]/skip/route.ts|error TS2345|Argument of type '(_req: NextRequest, context: { params: Promise<{ slug: string; }>; }, session: { userId: string; }) => Promise<NextResponse<unknown>>' is not assignable to parameter of type '(request: NextRequest, context: unknown, session: { userId: string; }) => Promise<NextResponse<unknown>>'.
+app/api/academy/lessons/[lessonId]/complete/route.ts|error TS2345|Argument of type '(req: NextRequest, context: { params: Promise<{ lessonId: string; }>; }, session: { userId: string; }) => Promise<NextResponse<unknown>>' is not assignable to parameter of type '(request: NextRequest, context: unknown, session: { userId: string; }) => Promise<NextResponse<unknown>>'.
+app/api/admin/academy-roadmap/[courseId]/route.ts|error TS2345|Argument of type '(_req: NextRequest, context: { params: Promise<{ courseId: string; }>; }, session: { userId: string; }) => Promise<NextResponse<unknown>>' is not assignable to parameter of type '(request: NextRequest, context: unknown, session: { userId: string; }) => Promise<NextResponse<unknown>>'.
+app/api/admin/academy-roadmap/[courseId]/route.ts|error TS2345|Argument of type '(_req: NextRequest, context: { params: Promise<{ courseId: string; }>; }, session: { userId: string; }) => Promise<NextResponse<unknown>>' is not assignable to parameter of type '(request: NextRequest, context: unknown, session: { userId: string; }) => Promise<NextResponse<unknown>>'.
+app/api/admin/academy-roadmap/[courseId]/route.ts|error TS2345|Argument of type '{ is_published: boolean; }' is not assignable to parameter of type 'never'.
+app/api/admin/feedback/[id]/route.ts|error TS2345|Argument of type '(request: NextRequest, context: { params: Promise<{ id: string; }>; }, session: { userId: string; }) => Promise<NextResponse<unknown>>' is not assignable to parameter of type '(request: NextRequest, context: unknown, session: { userId: string; }) => Promise<NextResponse<unknown>>'.
+app/api/ai/chart/route.ts|error TS2339|Property 'catch' does not exist on type 'PromiseLike<void>'.
+app/api/ai/chart/route.ts|error TS2345|Argument of type '(req: NextRequest, _ctx: unknown, session: { userId: string; }) => Promise<Response>' is not assignable to parameter of type '(request: NextRequest, context: unknown, session: { userId: string; }) => Promise<NextResponse<unknown>>'.
+app/api/ai/chat/route.ts|error TS2339|Property 'catch' does not exist on type 'PromiseLike<void>'.
+app/api/ai/chat/route.ts|error TS2345|Argument of type '(req: NextRequest, _ctx: unknown, session: { userId: string; }) => Promise<Response>' is not assignable to parameter of type '(request: NextRequest, context: unknown, session: { userId: string; }) => Promise<NextResponse<unknown>>'.
+app/api/ai/deep-dive/[ticker]/route.ts|error TS2339|Property 'created_at' does not exist on type 'never'.
+app/api/ai/deep-dive/[ticker]/route.ts|error TS2339|Property 'created_at' does not exist on type 'never'.
+app/api/ai/deep-dive/[ticker]/route.ts|error TS2339|Property 'error_code' does not exist on type 'never'.
+app/api/ai/deep-dive/[ticker]/route.ts|error TS2339|Property 'error_message' does not exist on type 'never'.
+app/api/ai/deep-dive/[ticker]/route.ts|error TS2339|Property 'id' does not exist on type 'never'.
+app/api/ai/deep-dive/[ticker]/route.ts|error TS2339|Property 'id' does not exist on type 'never'.
+app/api/ai/deep-dive/[ticker]/route.ts|error TS2339|Property 'id' does not exist on type 'never'.
+app/api/ai/deep-dive/[ticker]/route.ts|error TS2339|Property 'id' does not exist on type 'never'.
+app/api/ai/deep-dive/[ticker]/route.ts|error TS2339|Property 'phase' does not exist on type 'never'.
+app/api/ai/deep-dive/[ticker]/route.ts|error TS2339|Property 'phase' does not exist on type 'never'.
+app/api/ai/deep-dive/[ticker]/route.ts|error TS2339|Property 'report' does not exist on type 'never'.
+app/api/ai/deep-dive/[ticker]/route.ts|error TS2339|Property 'report' does not exist on type 'never'.
+app/api/ai/deep-dive/[ticker]/route.ts|error TS2339|Property 'status' does not exist on type 'never'.
+app/api/ai/deep-dive/[ticker]/route.ts|error TS2345|Argument of type '(request: NextRequest, context: { params: Promise<{ ticker: string; }>; }, session: { userId: string; }) => Promise<NextResponse<unknown>>' is not assignable to parameter of type '(request: NextRequest, context: unknown, session: { userId: string; }) => Promise<NextResponse<unknown>>'.
+app/api/ai/deep-dive/[ticker]/route.ts|error TS2345|Argument of type '(request: NextRequest, context: { params: Promise<{ ticker: string; }>; }, session: { userId: string; }) => Promise<NextResponse<unknown>>' is not assignable to parameter of type '(request: NextRequest, context: unknown, session: { userId: string; }) => Promise<NextResponse<unknown>>'.
+app/api/ai/deep-dive/[ticker]/route.ts|error TS2345|Argument of type '{ phase: DivePhase; }' is not assignable to parameter of type 'never'.
+app/api/ai/deep-dive/[ticker]/route.ts|error TS2345|Argument of type '{ status: string; phase: null; error_code: AiErrorCode; error_message: string; }' is not assignable to parameter of type 'never'.
+app/api/ai/deep-dive/[ticker]/route.ts|error TS2345|Argument of type '{ status: string; phase: null; error_code: AiErrorCode; error_message: string; }' is not assignable to parameter of type 'never'.
+app/api/ai/deep-dive/[ticker]/route.ts|error TS2345|Argument of type '{ status: string; phase: null; report: JsonValue | undefined; company_name: string; data_as_of: string | null; }' is not assignable to parameter of type 'never'.
+app/api/ai/deep-dive/[ticker]/route.ts|error TS2769|No overload matches this call.
+app/api/ai/portfolio-builder/history/route.ts|error TS2339|Property 'created_at' does not exist on type 'never'.
+app/api/ai/portfolio-builder/history/route.ts|error TS2339|Property 'id' does not exist on type 'never'.
+app/api/ai/portfolio-builder/history/route.ts|error TS2339|Property 'logo_map' does not exist on type 'never'.
+app/api/ai/portfolio-builder/history/route.ts|error TS2339|Property 'portfolio' does not exist on type 'never'.
+app/api/ai/portfolio-builder/history/route.ts|error TS2339|Property 'replaced_tickers' does not exist on type 'never'.
+app/api/ai/portfolio-builder/history/route.ts|error TS2339|Property 'thesis' does not exist on type 'never'.
+app/api/ai/portfolio-builder/route.ts|error TS2339|Property 'created_at' does not exist on type 'never'.
+app/api/ai/portfolio-builder/route.ts|error TS2339|Property 'error_code' does not exist on type 'never'.
+app/api/ai/portfolio-builder/route.ts|error TS2339|Property 'error_message' does not exist on type 'never'.
+app/api/ai/portfolio-builder/route.ts|error TS2339|Property 'id' does not exist on type 'never'.
+app/api/ai/portfolio-builder/route.ts|error TS2339|Property 'id' does not exist on type 'never'.
+app/api/ai/portfolio-builder/route.ts|error TS2339|Property 'id' does not exist on type 'never'.
+app/api/ai/portfolio-builder/route.ts|error TS2339|Property 'id' does not exist on type 'never'.
+app/api/ai/portfolio-builder/route.ts|error TS2339|Property 'logo_map' does not exist on type 'never'.
+app/api/ai/portfolio-builder/route.ts|error TS2339|Property 'phase' does not exist on type 'never'.
+app/api/ai/portfolio-builder/route.ts|error TS2339|Property 'phase' does not exist on type 'never'.
+app/api/ai/portfolio-builder/route.ts|error TS2339|Property 'portfolio' does not exist on type 'never'.
+app/api/ai/portfolio-builder/route.ts|error TS2339|Property 'replaced_tickers' does not exist on type 'never'.
+app/api/ai/portfolio-builder/route.ts|error TS2339|Property 'status' does not exist on type 'never'.
+app/api/ai/portfolio-builder/route.ts|error TS2339|Property 'thesis' does not exist on type 'never'.
+app/api/ai/portfolio-builder/route.ts|error TS2339|Property 'thesis' does not exist on type 'never'.
+app/api/ai/portfolio-builder/route.ts|error TS2345|Argument of type '{ phase: BuilderPhase; }' is not assignable to parameter of type 'never'.
+app/api/ai/portfolio-builder/route.ts|error TS2345|Argument of type '{ status: string; phase: null; error_code: string; error_message: string; }' is not assignable to parameter of type 'never'.
+app/api/ai/portfolio-builder/route.ts|error TS2345|Argument of type '{ status: string; phase: null; portfolio: { holdings: { ticker: string; sector: string; role: "CORE" | "SECONDARY" | "HEDGE"; exchange: string; company: string; subsector_exposure: string[]; allocation_pct: number; rationale: string; thesis_exposure_score: number; key_risk: string; risk_level: "LOW" | ... 1 more ......' is not assignable to parameter of type 'never'.
+app/api/ai/portfolio-builder/route.ts|error TS2769|No overload matches this call.
+app/api/alerts/[id]/route.ts|error TS2345|Argument of type '(_req: NextRequest, context: { params: Promise<{ id: string; }>; }, session: { userId: string; }) => Promise<NextResponse<unknown>>' is not assignable to parameter of type '(request: NextRequest, context: unknown, session: { userId: string; }) => Promise<NextResponse<unknown>>'.
+app/api/alerts/[id]/route.ts|error TS2345|Argument of type '(req: NextRequest, context: { params: Promise<{ id: string; }>; }, session: { userId: string; }) => Promise<NextResponse<unknown>>' is not assignable to parameter of type '(request: NextRequest, context: unknown, session: { userId: string; }) => Promise<NextResponse<unknown>>'.
+app/api/alerts/route.ts|error TS2339|Property 'symbol' does not exist on type 'never'.
+app/api/asset/[slug]/profile/route.ts|error TS2345|Argument of type '(_req: NextRequest, context: { params: Promise<{ slug: string; }>; }) => Promise<NextResponse<unknown>>' is not assignable to parameter of type '(request: NextRequest, context?: unknown) => Promise<NextResponse<unknown>>'.
+app/api/billing/checkout/route.ts|error TS2339|Property 'account_tier' does not exist on type 'never'.
+app/api/billing/checkout/route.ts|error TS2339|Property 'email' does not exist on type 'never'.
+app/api/billing/checkout/route.ts|error TS2339|Property 'role' does not exist on type 'never'.
+app/api/billing/checkout/route.ts|error TS2339|Property 'settings' does not exist on type 'never'.
+app/api/billing/checkout/route.ts|error TS2339|Property 'stripe_customer_id' does not exist on type 'never'.
+app/api/billing/portal/route.ts|error TS2339|Property 'stripe_customer_id' does not exist on type 'never'.
+app/api/briefs/today/route.ts|error TS2339|Property 'published_date' does not exist on type 'never'.
+app/api/brokerage/accounts/route.ts|error TS2339|Property 'id' does not exist on type 'never'.
+app/api/brokerage/accounts/route.ts|error TS2339|Property 'is_active' does not exist on type 'never'.
+app/api/brokerage/accounts/route.ts|error TS2339|Property 'snaptrade_account_id' does not exist on type 'never'.
+app/api/brokerage/accounts/route.ts|error TS2339|Property 'snaptrade_user_id' does not exist on type 'never'.
+app/api/brokerage/accounts/route.ts|error TS2339|Property 'user_secret' does not exist on type 'never'.
+app/api/brokerage/accounts/route.ts|error TS2345|Argument of type '{ is_active: boolean; }' is not assignable to parameter of type 'never'.
+app/api/brokerage/accounts/route.ts|error TS2769|No overload matches this call.
+app/api/brokerage/connect/route.ts|error TS18047|'snapUser' is possibly 'null'.
+app/api/brokerage/connect/route.ts|error TS18047|'snapUser' is possibly 'null'.
+app/api/brokerage/connect/route.ts|error TS2322|Type '{ snaptrade_user_id: string; user_secret: string; }' is not assignable to type 'null'.
+app/api/brokerage/connect/route.ts|error TS2353|Object literal may only specify known properties, and 'redirectURI' does not exist in type 'AxiosRequestConfig<any>'.
+app/api/brokerage/connect/route.ts|error TS2769|No overload matches this call.
+app/api/brokerage/disconnect/route.ts|error TS2339|Property 'snaptrade_user_id' does not exist on type 'never'.
+app/api/brokerage/disconnect/route.ts|error TS2339|Property 'snaptrade_user_id' does not exist on type 'never'.
+app/api/brokerage/disconnect/route.ts|error TS2339|Property 'user_secret' does not exist on type 'never'.
+app/api/brokerage/disconnect/route.ts|error TS2345|Argument of type '{ is_active: boolean; }' is not assignable to parameter of type 'never'.
+app/api/brokerage/disconnect/route.ts|error TS2345|Argument of type '{ is_active: boolean; }' is not assignable to parameter of type 'never'.
+app/api/brokerage/disconnect/route.ts|error TS2345|Argument of type '{ is_active: boolean; }' is not assignable to parameter of type 'never'.
+app/api/brokerage/register/route.ts|error TS2769|No overload matches this call.
+app/api/brokerage/sync/route.ts|error TS2339|Property 'snaptrade_user_id' does not exist on type 'never'.
+app/api/brokerage/sync/route.ts|error TS2339|Property 'user_secret' does not exist on type 'never'.
+app/api/brokerage/sync/route.ts|error TS2345|Argument of type '{ last_synced_at: string; is_active: boolean; }' is not assignable to parameter of type 'never'.
+app/api/brokerage/sync/route.ts|error TS2769|No overload matches this call.
+app/api/companies/batch/route.ts|error TS2339|Property 'logo_url' does not exist on type 'never'.
+app/api/companies/batch/route.ts|error TS2339|Property 'name' does not exist on type 'never'.
+app/api/companies/batch/route.ts|error TS2339|Property 'ticker' does not exist on type 'never'.
+app/api/companies/enrich-sectors/route.ts|error TS2345|Argument of type '{ sector: string; }' is not assignable to parameter of type 'never'.
+app/api/companies/enrich-sectors/route.ts|error TS2769|No overload matches this call.
+app/api/contact/route.ts|error TS2769|No overload matches this call.
+app/api/cron/generate-daily-brief/route.ts|error TS2769|No overload matches this call.
+app/api/cron/prefetch-market-data/route.ts|error TS2339|Property 'ticker' does not exist on type 'never'.
+app/api/cron/prefetch-market-data/route.ts|error TS2339|Property 'ticker' does not exist on type 'never'.
+app/api/cron/prefetch-market-data/route.ts|error TS2769|No overload matches this call.
+app/api/currency/rates/historical/route.ts|error TS2339|Property 'rate' does not exist on type 'never'.
+app/api/currency/rates/historical/route.ts|error TS2339|Property 'target_currency' does not exist on type 'never'.
+app/api/currency/rates/historical/route.ts|error TS2769|No overload matches this call.
+app/api/currency/rates/route.ts|error TS2339|Property 'rate' does not exist on type 'never'.
+app/api/currency/rates/route.ts|error TS2339|Property 'target_currency' does not exist on type 'never'.
+app/api/currency/rates/route.ts|error TS2769|No overload matches this call.
+app/api/holdings/import/route.ts|error TS2339|Property 'name' does not exist on type 'never'.
+app/api/holdings/import/route.ts|error TS2339|Property 'name' does not exist on type 'never'.
+app/api/holdings/import/route.ts|error TS2339|Property 'ticker' does not exist on type 'never'.
+app/api/holdings/risk-analysis/history/route.ts|error TS2339|Property 'analysis' does not exist on type 'never'.
+app/api/holdings/risk-analysis/history/route.ts|error TS2339|Property 'created_at' does not exist on type 'never'.
+app/api/holdings/risk-analysis/history/route.ts|error TS2339|Property 'currency' does not exist on type 'never'.
+app/api/holdings/risk-analysis/history/route.ts|error TS2339|Property 'holdings_count' does not exist on type 'never'.
+app/api/holdings/risk-analysis/history/route.ts|error TS2339|Property 'id' does not exist on type 'never'.
+app/api/holdings/risk-analysis/route.ts|error TS2339|Property 'analysis' does not exist on type 'never'.
+app/api/holdings/risk-analysis/route.ts|error TS2339|Property 'analysis' does not exist on type 'never'.
+app/api/holdings/risk-analysis/route.ts|error TS2339|Property 'analysis' does not exist on type 'never'.
+app/api/holdings/risk-analysis/route.ts|error TS2339|Property 'created_at' does not exist on type 'never'.
+app/api/holdings/risk-analysis/route.ts|error TS2339|Property 'currency' does not exist on type 'never'.
+app/api/holdings/risk-analysis/route.ts|error TS2339|Property 'error_code' does not exist on type 'never'.
+app/api/holdings/risk-analysis/route.ts|error TS2339|Property 'error_message' does not exist on type 'never'.
+app/api/holdings/risk-analysis/route.ts|error TS2339|Property 'holdings_count' does not exist on type 'never'.
+app/api/holdings/risk-analysis/route.ts|error TS2339|Property 'holdings_snapshot' does not exist on type 'never'.
+app/api/holdings/risk-analysis/route.ts|error TS2339|Property 'holdings_snapshot' does not exist on type 'never'.
+app/api/holdings/risk-analysis/route.ts|error TS2339|Property 'id' does not exist on type 'never'.
+app/api/holdings/risk-analysis/route.ts|error TS2339|Property 'id' does not exist on type 'never'.
+app/api/holdings/risk-analysis/route.ts|error TS2339|Property 'id' does not exist on type 'never'.
+app/api/holdings/risk-analysis/route.ts|error TS2339|Property 'phase' does not exist on type 'never'.
+app/api/holdings/risk-analysis/route.ts|error TS2339|Property 'phase' does not exist on type 'never'.
+app/api/holdings/risk-analysis/route.ts|error TS2339|Property 'status' does not exist on type 'never'.
+app/api/holdings/risk-analysis/route.ts|error TS2345|Argument of type '{ phase: RiskPhase; }' is not assignable to parameter of type 'never'.
+app/api/holdings/risk-analysis/route.ts|error TS2345|Argument of type '{ status: string; phase: null; analysis: JsonValue | undefined; }' is not assignable to parameter of type 'never'.
+app/api/holdings/risk-analysis/route.ts|error TS2345|Argument of type '{ status: string; phase: null; error_code: string; error_message: string; }' is not assignable to parameter of type 'never'.
+app/api/holdings/risk-analysis/route.ts|error TS2769|No overload matches this call.
+app/api/screener/views/[id]/route.ts|error TS2345|Argument of type 'Record<string, unknown>' is not assignable to parameter of type 'never'.
+app/api/screener/views/route.ts|error TS2769|No overload matches this call.
+app/api/search/metrics/route.ts|error TS2345|Argument of type '{ time_period_hours: number; limit_count: number; }' is not assignable to parameter of type 'undefined'.
+app/api/social/follow/[username]/route.ts|error TS2345|Argument of type '(_req: NextRequest, context: { params: Promise<{ username: string; }>; }, session: { userId: string; }) => Promise<NextResponse<unknown>>' is not assignable to parameter of type '(request: NextRequest, context: unknown, session: { userId: string; }) => Promise<NextResponse<unknown>>'.
+app/api/social/follow/[username]/route.ts|error TS2345|Argument of type '(_req: NextRequest, context: { params: Promise<{ username: string; }>; }, session: { userId: string; }) => Promise<NextResponse<unknown>>' is not assignable to parameter of type '(request: NextRequest, context: unknown, session: { userId: string; }) => Promise<NextResponse<unknown>>'.
+app/api/social/follow/[username]/route.ts|error TS2345|Argument of type '(_req: NextRequest, context: { params: Promise<{ username: string; }>; }, session: { userId: string; }) => Promise<NextResponse<unknown>>' is not assignable to parameter of type '(request: NextRequest, context: unknown, session: { userId: string; }) => Promise<NextResponse<unknown>>'.
+app/api/social/thesis/[symbol]/replies/route.ts|error TS2345|Argument of type '(_req: NextRequest, context: { params: Promise<{ symbol: string; }>; }, session: { userId: string; }) => Promise<NextResponse<unknown>>' is not assignable to parameter of type '(request: NextRequest, context: unknown, session: { userId: string; }) => Promise<NextResponse<unknown>>'.
+app/api/social/thesis/[symbol]/replies/route.ts|error TS2345|Argument of type '(req: NextRequest, context: { params: Promise<{ symbol: string; }>; }, session: { userId: string; }) => Promise<NextResponse<unknown>>' is not assignable to parameter of type '(request: NextRequest, context: unknown, session: { userId: string; }) => Promise<NextResponse<unknown>>'.
+app/api/social/thesis/[symbol]/route.ts|error TS2345|Argument of type '(req: NextRequest, context: { params: Promise<{ symbol: string; }>; }, session: { userId: string; }) => Promise<NextResponse<unknown>>' is not assignable to parameter of type '(request: NextRequest, context: unknown, session: { userId: string; }) => Promise<NextResponse<unknown>>'.
+app/api/social/thesis/[symbol]/route.ts|error TS2345|Argument of type '(req: NextRequest, context: { params: Promise<{ symbol: string; }>; }, session: { userId: string; }) => Promise<NextResponse<unknown>>' is not assignable to parameter of type '(request: NextRequest, context: unknown, session: { userId: string; }) => Promise<NextResponse<unknown>>'.
+app/api/social/thesis/delete/[id]/route.ts|error TS2345|Argument of type '(_req: NextRequest, context: { params: Promise<{ id: string; }>; }, session: { userId: string; }) => Promise<NextResponse<unknown>>' is not assignable to parameter of type '(request: NextRequest, context: unknown, session: { userId: string; }) => Promise<NextResponse<unknown>>'.
+app/api/social/thesis/reply/[replyId]/route.ts|error TS2345|Argument of type '(_req: NextRequest, context: { params: Promise<{ replyId: string; }>; }, session: { userId: string; }) => Promise<NextResponse<unknown>>' is not assignable to parameter of type '(request: NextRequest, context: unknown, session: { userId: string; }) => Promise<NextResponse<unknown>>'.
+app/api/social/thesis/reply/[replyId]/route.ts|error TS2345|Argument of type '(req: NextRequest, context: { params: Promise<{ replyId: string; }>; }, session: { userId: string; }) => Promise<NextResponse<unknown>>' is not assignable to parameter of type '(request: NextRequest, context: unknown, session: { userId: string; }) => Promise<NextResponse<unknown>>'.
+app/api/stock/[ticker]/candles/route.ts|error TS2345|Argument of type '(request: NextRequest, context: { params: Promise<{ ticker: string; }>; }) => Promise<NextResponse<unknown>>' is not assignable to parameter of type '(request: NextRequest, context?: unknown) => Promise<NextResponse<unknown>>'.
+app/api/stock/[ticker]/company-profile/route.ts|error TS2345|Argument of type '(request: NextRequest, { params }: { params: Promise<{ ticker: string; }>; }) => Promise<NextResponse<unknown>>' is not assignable to parameter of type '(request: NextRequest, context?: unknown) => Promise<NextResponse<unknown>>'.
+app/api/stock/[ticker]/competitors/route.ts|error TS2339|Property 'logo_url' does not exist on type 'never'.
+app/api/stock/[ticker]/competitors/route.ts|error TS2339|Property 'name' does not exist on type 'never'.
+app/api/stock/[ticker]/competitors/route.ts|error TS2339|Property 'ticker' does not exist on type 'never'.
+app/api/stock/[ticker]/competitors/route.ts|error TS2345|Argument of type '(_req: NextRequest, { params }: { params: Promise<{ ticker: string; }>; }) => Promise<NextResponse<unknown>>' is not assignable to parameter of type '(request: NextRequest, context?: unknown) => Promise<NextResponse<unknown>>'.
+app/api/stock/[ticker]/competitors/route.ts|error TS2353|Object literal may only specify known properties, and 'maxTokens' does not exist in type 'CallSettings & { system?: string | SystemModelMessage | SystemModelMessage[] | undefined; } & { prompt: string | ModelMessage[]; messages?: undefined; } & { ...; }'.
+app/api/stock/[ticker]/earnings-dates/route.ts|error TS2339|Property 'filing_date' does not exist on type 'never'.
+app/api/stock/[ticker]/earnings-dates/route.ts|error TS2339|Property 'id' does not exist on type 'never'.
+app/api/stock/[ticker]/earnings-dates/route.ts|error TS2339|Property 'period_end_date' does not exist on type 'never'.
+app/api/stock/[ticker]/extended-hours/route.ts|error TS2345|Argument of type '(_request: NextRequest, { params }: { params: Promise<{ ticker: string; }>; }) => Promise<NextResponse<unknown>>' is not assignable to parameter of type '(request: NextRequest, context?: unknown) => Promise<NextResponse<unknown>>'.
+app/api/stock/[ticker]/financials/route.ts|error TS2345|Argument of type '(request: NextRequest, context: { params: Promise<{ ticker: string; }>; }) => Promise<NextResponse<unknown>>' is not assignable to parameter of type '(request: NextRequest, context?: unknown) => Promise<NextResponse<unknown>>'.
+app/api/stock/[ticker]/freshness/route.ts|error TS2345|Argument of type '(_request: NextRequest, context: { params: Promise<{ ticker: string; }>; }) => Promise<NextResponse<unknown>>' is not assignable to parameter of type '(request: NextRequest, context?: unknown) => Promise<NextResponse<unknown>>'.
+app/api/stock/[ticker]/health-score/history/route.ts|error TS2345|Argument of type '(_request: NextRequest, context: { params: Promise<{ ticker: string; }>; }) => Promise<NextResponse<unknown>>' is not assignable to parameter of type '(request: NextRequest, context?: unknown) => Promise<NextResponse<unknown>>'.
+app/api/stock/[ticker]/health-score/route.ts|error TS2345|Argument of type '(_request: NextRequest, context: { params: Promise<{ ticker: string; }>; }) => Promise<NextResponse<unknown>>' is not assignable to parameter of type '(request: NextRequest, context?: unknown) => Promise<NextResponse<unknown>>'.
+app/api/stock/[ticker]/indicator/route.ts|error TS2345|Argument of type '(request: NextRequest, { params }: { params: Promise<{ ticker: string; }>; }) => Promise<NextResponse<unknown>>' is not assignable to parameter of type '(request: NextRequest, context?: unknown) => Promise<NextResponse<unknown>>'.
+app/api/stock/[ticker]/insider-transactions/route.ts|error TS2345|Argument of type '(_request: NextRequest, { params }: { params: Promise<{ ticker: string; }>; }, session: { userId: string; }) => Promise<NextResponse<unknown>>' is not assignable to parameter of type '(request: NextRequest, context: unknown, session: { userId: string; }) => Promise<NextResponse<unknown>>'.
+app/api/stock/[ticker]/route.ts|error TS2345|Argument of type '(request: NextRequest, context: { params: Promise<{ ticker: string; }>; }) => Promise<NextResponse<unknown>>' is not assignable to parameter of type '(request: NextRequest, context?: unknown) => Promise<NextResponse<unknown>>'.
+app/api/stock/[ticker]/sankey/route.ts|error TS2339|Property 'id' does not exist on type 'never'.
+app/api/stock/[ticker]/sankey/route.ts|error TS2345|Argument of type '(request: NextRequest, { params }: { params: Promise<{ ticker: string; }>; }) => Promise<NextResponse<unknown>>' is not assignable to parameter of type '(request: NextRequest, context?: unknown) => Promise<NextResponse<unknown>>'.
+app/api/stock/[ticker]/snapshot/route.ts|error TS2345|Argument of type '(_req: NextRequest, context: { params: Promise<{ ticker: string; }>; }) => Promise<NextResponse<unknown>>' is not assignable to parameter of type '(request: NextRequest, context?: unknown) => Promise<NextResponse<unknown>>'.
+app/api/stock/[ticker]/statistics/route.ts|error TS2345|Argument of type '(_request: NextRequest, context: { params: Promise<{ ticker: string; }>; }) => Promise<NextResponse<unknown>>' is not assignable to parameter of type '(request: NextRequest, context?: unknown) => Promise<NextResponse<unknown>>'.
+app/api/stock/[ticker]/visit/route.ts|error TS2345|Argument of type '(_request: NextRequest, context: { params: Promise<{ ticker: string; }>; }) => Promise<NextResponse<unknown>>' is not assignable to parameter of type '(request: NextRequest, context?: unknown) => Promise<NextResponse<unknown>>'.
+app/api/tools/heatmap/route.ts|error TS2339|Property 'market_cap' does not exist on type 'never'.
+app/api/tools/heatmap/route.ts|error TS2339|Property 'market_cap' does not exist on type 'never'.
+app/api/tools/heatmap/route.ts|error TS2339|Property 'market_cap' does not exist on type 'never'.
+app/api/tools/heatmap/route.ts|error TS2339|Property 'name' does not exist on type 'never'.
+app/api/tools/heatmap/route.ts|error TS2339|Property 'name' does not exist on type 'never'.
+app/api/tools/heatmap/route.ts|error TS2339|Property 'quantity' does not exist on type 'never'.
+app/api/tools/heatmap/route.ts|error TS2339|Property 'quantity' does not exist on type 'never'.
+app/api/tools/heatmap/route.ts|error TS2339|Property 'sector' does not exist on type 'never'.
+app/api/tools/heatmap/route.ts|error TS2339|Property 'sector' does not exist on type 'never'.
+app/api/tools/heatmap/route.ts|error TS2339|Property 'symbol' does not exist on type 'never'.
+app/api/tools/heatmap/route.ts|error TS2339|Property 'symbol' does not exist on type 'never'.
+app/api/tools/heatmap/route.ts|error TS2339|Property 'ticker' does not exist on type 'never'.
+app/api/tools/heatmap/route.ts|error TS2339|Property 'ticker' does not exist on type 'never'.
+app/api/tools/heatmap/route.ts|error TS2339|Property 'ticker' does not exist on type 'never'.
+app/api/tools/heatmap/route.ts|error TS2339|Property 'ticker' does not exist on type 'never'.
+app/api/users/[username]/activity/route.ts|error TS2339|Property 'content' does not exist on type 'never'.
+app/api/users/[username]/activity/route.ts|error TS2339|Property 'content' does not exist on type 'never'.
+app/api/users/[username]/activity/route.ts|error TS2339|Property 'created_at' does not exist on type 'never'.
+app/api/users/[username]/activity/route.ts|error TS2339|Property 'created_at' does not exist on type 'never'.
+app/api/users/[username]/activity/route.ts|error TS2339|Property 'id' does not exist on type 'never'.
+app/api/users/[username]/activity/route.ts|error TS2339|Property 'id' does not exist on type 'never'.
+app/api/users/[username]/activity/route.ts|error TS2339|Property 'sentiment' does not exist on type 'never'.
+app/api/users/[username]/activity/route.ts|error TS2339|Property 'settings' does not exist on type 'never'.
+app/api/users/[username]/activity/route.ts|error TS2339|Property 'symbol' does not exist on type 'never'.
+app/api/users/[username]/activity/route.ts|error TS2339|Property 'symbol' does not exist on type 'never'.
+app/api/users/[username]/activity/route.ts|error TS2339|Property 'thesis_id' does not exist on type 'never'.
+app/api/users/[username]/activity/route.ts|error TS2339|Property 'thesis_id' does not exist on type 'never'.
+app/api/users/[username]/activity/route.ts|error TS2339|Property 'user_id' does not exist on type 'never'.
+app/api/users/[username]/activity/route.ts|error TS2339|Property 'user_id' does not exist on type 'never'.
+app/api/users/[username]/activity/route.ts|error TS2345|Argument of type '(req: NextRequest, context: { params: Promise<{ username: string; }>; }) => Promise<NextResponse<unknown>>' is not assignable to parameter of type '(request: NextRequest, context?: unknown) => Promise<NextResponse<unknown>>'.
+app/api/users/[username]/route.ts|error TS2339|Property 'account_tier' does not exist on type 'never'.
+app/api/users/[username]/route.ts|error TS2339|Property 'avatar_url' does not exist on type 'never'.
+app/api/users/[username]/route.ts|error TS2339|Property 'bio' does not exist on type 'never'.
+app/api/users/[username]/route.ts|error TS2339|Property 'created_at' does not exist on type 'never'.
+app/api/users/[username]/route.ts|error TS2339|Property 'experience_level' does not exist on type 'never'.
+app/api/users/[username]/route.ts|error TS2339|Property 'full_name' does not exist on type 'never'.
+app/api/users/[username]/route.ts|error TS2339|Property 'id' does not exist on type 'never'.
+app/api/users/[username]/route.ts|error TS2339|Property 'id' does not exist on type 'never'.
+app/api/users/[username]/route.ts|error TS2339|Property 'market_focus' does not exist on type 'never'.
+app/api/users/[username]/route.ts|error TS2339|Property 'risk_profile' does not exist on type 'never'.
+app/api/users/[username]/route.ts|error TS2339|Property 'settings' does not exist on type 'never'.
+app/api/users/[username]/route.ts|error TS2339|Property 'username' does not exist on type 'never'.
+app/api/users/[username]/route.ts|error TS2345|Argument of type '(_request: NextRequest, context: { params: Promise<{ username: string; }>; }) => Promise<NextResponse<unknown>>' is not assignable to parameter of type '(request: NextRequest, context?: unknown) => Promise<NextResponse<unknown>>'.
+app/api/watchlist/enhanced/route.ts|error TS2339|Property 'health_score' does not exist on type 'never'.
+app/api/watchlist/enhanced/route.ts|error TS2339|Property 'health_score' does not exist on type 'never'.
+app/api/watchlist/enhanced/route.ts|error TS2339|Property 'health_score_grade' does not exist on type 'never'.
+app/api/watchlist/enhanced/route.ts|error TS2339|Property 'health_score_grade' does not exist on type 'never'.
+app/api/watchlist/enhanced/route.ts|error TS2339|Property 'health_score_grade' does not exist on type 'never'.
+app/api/watchlist/enhanced/route.ts|error TS2339|Property 'sentiment' does not exist on type 'never'.
+app/api/watchlist/enhanced/route.ts|error TS2339|Property 'symbol' does not exist on type 'never'.
+app/api/watchlist/enhanced/route.ts|error TS2339|Property 'symbol' does not exist on type 'never'.
+app/api/watchlist/enhanced/route.ts|error TS2339|Property 'ticker' does not exist on type 'never'.
+app/api/watchlist/lists/[listId]/items/route.ts|error TS2345|Argument of type '(req: NextRequest, ctx: RouteContext, session: { userId: string; }) => Promise<NextResponse<unknown>>' is not assignable to parameter of type '(request: NextRequest, context: unknown, session: { userId: string; }) => Promise<NextResponse<unknown>>'.
+app/api/watchlist/lists/[listId]/items/route.ts|error TS2345|Argument of type '(req: NextRequest, ctx: RouteContext, session: { userId: string; }) => Promise<NextResponse<unknown>>' is not assignable to parameter of type '(request: NextRequest, context: unknown, session: { userId: string; }) => Promise<NextResponse<unknown>>'.
+app/api/watchlist/lists/[listId]/items/route.ts|error TS2769|No overload matches this call.
+app/api/watchlist/lists/[listId]/route.ts|error TS2339|Property 'symbol' does not exist on type 'never'.
+app/api/watchlist/lists/[listId]/route.ts|error TS2339|Property 'symbol' does not exist on type 'never'.
+app/api/watchlist/lists/[listId]/route.ts|error TS2345|Argument of type '(_req: NextRequest, ctx: RouteContext, session: { userId: string; }) => Promise<NextResponse<unknown>>' is not assignable to parameter of type '(request: NextRequest, context: unknown, session: { userId: string; }) => Promise<NextResponse<unknown>>'.
+app/api/watchlist/lists/[listId]/route.ts|error TS2345|Argument of type '(_req: NextRequest, ctx: RouteContext, session: { userId: string; }) => Promise<NextResponse<unknown>>' is not assignable to parameter of type '(request: NextRequest, context: unknown, session: { userId: string; }) => Promise<NextResponse<unknown>>'.
+app/api/watchlist/lists/[listId]/route.ts|error TS2345|Argument of type '(req: NextRequest, ctx: RouteContext, session: { userId: string; }) => Promise<NextResponse<unknown>>' is not assignable to parameter of type '(request: NextRequest, context: unknown, session: { userId: string; }) => Promise<NextResponse<unknown>>'.
+app/api/watchlist/lists/[listId]/route.ts|error TS2345|Argument of type 'Record<string, unknown>' is not assignable to parameter of type 'never'.
+app/api/watchlist/lists/[listId]/route.ts|error TS2698|Spread types may only be created from object types.
+app/api/watchlist/lists/route.ts|error TS2339|Property 'account_tier' does not exist on type 'never'.
+app/api/watchlist/lists/route.ts|error TS2339|Property 'id' does not exist on type 'never'.
+app/api/watchlist/lists/route.ts|error TS2339|Property 'id' does not exist on type 'never'.
+app/api/watchlist/lists/route.ts|error TS2339|Property 'list_id' does not exist on type 'never'.
+app/api/watchlist/lists/route.ts|error TS2339|Property 'list_id' does not exist on type 'never'.
+app/api/watchlist/lists/route.ts|error TS2339|Property 'list_id' does not exist on type 'never'.
+app/api/watchlist/lists/route.ts|error TS2698|Spread types may only be created from object types.
+app/api/watchlist/lists/route.ts|error TS2769|No overload matches this call.
+app/api/watchlist/route.ts|error TS2339|Property 'symbol' does not exist on type 'never'.
+app/api/watchlist/route.ts|error TS2339|Property 'symbol' does not exist on type 'never'.
+app/api/watchlist/route.ts|error TS2345|Argument of type '{ alerts_enabled: boolean; }' is not assignable to parameter of type 'never'.
+app/api/watchlist/route.ts|error TS2698|Spread types may only be created from object types.
+app/api/watchlist/route.ts|error TS2769|No overload matches this call.
+app/holdings/page.tsx|error TS2339|Property 'sector' does not exist on type 'never'.
+app/holdings/page.tsx|error TS2339|Property 'sector' does not exist on type 'never'.
+app/holdings/page.tsx|error TS2339|Property 'sector' does not exist on type 'never'.
+app/holdings/page.tsx|error TS2339|Property 'ticker' does not exist on type 'never'.
+app/holdings/page.tsx|error TS2339|Property 'ticker' does not exist on type 'never'.
+app/tools/compare/page.tsx|error TS18047|'a.v' is possibly 'null'.
+app/tools/compare/page.tsx|error TS18047|'a.v' is possibly 'null'.
+app/tools/compare/page.tsx|error TS18047|'b.v' is possibly 'null'.
+app/tools/compare/page.tsx|error TS18047|'b.v' is possibly 'null'.
+app/tools/compare/page.tsx|error TS2362|The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+app/tools/compare/page.tsx|error TS2362|The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+app/tools/compare/page.tsx|error TS2363|The right-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+app/tools/compare/page.tsx|error TS2363|The right-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+app/tools/compare/page.tsx|error TS2677|A type predicate's type must be assignable to its parameter's type.
+app/watchlist/page.tsx|error TS2322|Type '{ key: string; symbol: string; company_name: string; logo_url: string | null | undefined; quote: { price: number; change: number; changePercent: number; stale?: boolean | undefined; } | null; ... 7 more ...; sparkline: number[] | undefined; }' is not assignable to type 'IntrinsicAttributes & WatchlistCardProps'.
+app/watchlist/page.tsx|error TS2345|Argument of type 'string | undefined' is not assignable to parameter of type 'SetStateAction<string | null>'.
+components/alerts/CreateAlertForm.tsx|error TS2339|Property 'code' does not exist on type '{ ok: boolean; error?: string | undefined; }'.
+components/discover/DailyBriefWidget.tsx|error TS1501|This regular expression flag is only available when targeting 'es2018' or later.
+components/discover/PortfolioSummaryWidget.tsx|error TS2345|Argument of type 'ExchangeRates | null | undefined' is not assignable to parameter of type 'ExchangeRates | null'.
+components/screener/ScreenerFilters.tsx|error TS2352|Conversion of type 'ScreenerFilterValues' to type 'Record<string, string>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+components/stock/ChartSettingsPanel.tsx|error TS2741|Property 'setPrefs' is missing in type '{ prefs: ChartPrefs; setPref: <K extends keyof ChartPrefs>(key: K, val: ChartPrefs[K]) => void; reset: () => void; onRangeChange: (r: ChartRange) => void; onIndicatorsChange: (inds: ChartIndicator[]) => void; }' but required in type 'Props'.
+components/stock/FinancialsSection.tsx|error TS2322|Type 'BalanceSheetPeriod[]' is not assignable to type 'Record<string, unknown>[]'.
+components/stock/FinancialsSection.tsx|error TS2322|Type 'CashFlowPeriod[]' is not assignable to type 'Record<string, unknown>[]'.
+components/stock/FinancialsSection.tsx|error TS2322|Type 'IncomeStatementPeriod[]' is not assignable to type 'Record<string, unknown>[]'.
+components/stock/FinancialsSection.tsx|error TS2322|Type 'TableRow<BalanceSheetPeriod>[]' is not assignable to type 'TableRow<Record<string, unknown>>[]'.
+components/stock/FinancialsSection.tsx|error TS2322|Type 'TableRow<CashFlowPeriod>[]' is not assignable to type 'TableRow<Record<string, unknown>>[]'.
+components/stock/FinancialsSection.tsx|error TS2322|Type 'TableRow<IncomeStatementPeriod>[]' is not assignable to type 'TableRow<Record<string, unknown>>[]'.
+components/stock/FinancialsSection.tsx|error TS2345|Argument of type 'BalanceSheetPeriod[]' is not assignable to parameter of type 'Record<string, unknown>[]'.
+components/stock/FinancialsSection.tsx|error TS2345|Argument of type 'CashFlowPeriod[]' is not assignable to parameter of type 'Record<string, unknown>[]'.
+components/stock/FinancialsSection.tsx|error TS2345|Argument of type 'IncomeStatementPeriod[]' is not assignable to parameter of type 'Record<string, unknown>[]'.
+components/stock/FinancialsTrendChart.tsx|error TS2322|Type '(value: number | string, name: string) => [string, string]' is not assignable to type 'Formatter<string | number, string>'.
+components/stock/StockPricePanel.tsx|error TS2741|Property 'setPrefs' is missing in type '{ prefs: ChartPrefs; setPref: <K extends keyof ChartPrefs>(key: K, val: ChartPrefs[K]) => void; reset: () => void; onRangeChange: (r: ChartRange) => void; onIndicatorsChange: (inds: ChartIndicator[]) => void; }' but required in type 'Props'.
+components/user/ProfileModal.tsx|error TS2345|Argument of type 'Record<string, unknown>' is not assignable to parameter of type 'never'.
+components/user/ProfileModal.tsx|error TS2554|Expected 1 arguments, but got 0.
+components/user/SettingsModal.tsx|error TS2339|Property 'ai_insights' does not exist on type '{}'.
+components/user/SettingsModal.tsx|error TS2339|Property 'app_metadata' does not exist on type 'AuthUser'.
+components/user/SettingsModal.tsx|error TS2339|Property 'daily_brief_ready' does not exist on type '{}'.
+components/user/SettingsModal.tsx|error TS2339|Property 'daily_challenge_reminder' does not exist on type '{}'.
+components/user/SettingsModal.tsx|error TS2339|Property 'dividend_reminder' does not exist on type '{}'.
+components/user/SettingsModal.tsx|error TS2339|Property 'health_score_change' does not exist on type '{}'.
+components/user/SettingsModal.tsx|error TS2339|Property 'portfolio_recap' does not exist on type '{}'.
+components/user/SettingsModal.tsx|error TS2339|Property 'price_alerts' does not exist on type '{}'.
+components/user/SettingsModal.tsx|error TS2339|Property 'settings' does not exist on type 'never'.
+components/user/SettingsModal.tsx|error TS2339|Property 'upcoming_earnings' does not exist on type '{}'.
+components/user/SettingsModal.tsx|error TS2339|Property 'weekly_pick' does not exist on type '{}'.
+components/user/SettingsModal.tsx|error TS2345|Argument of type '{} | null' is not assignable to parameter of type 'SetStateAction<boolean>'.
+components/user/SettingsModal.tsx|error TS2345|Argument of type '{} | null' is not assignable to parameter of type 'SetStateAction<string | null>'.
+components/user/SettingsModal.tsx|error TS2345|Argument of type '{} | null' is not assignable to parameter of type 'SetStateAction<string | null>'.
+components/user/SettingsModal.tsx|error TS2554|Expected 1 arguments, but got 0.
+components/user/SettingsModal.tsx|error TS2741|Property 'setPrefs' is missing in type '{ prefs: ChartPrefs; setPref: <K extends keyof ChartPrefs>(key: K, val: ChartPrefs[K]) => void; reset: () => void; }' but required in type 'Props'.
+components/watchlist/AddToListPicker.tsx|error TS2345|Argument of type 'string' is not assignable to parameter of type '{ symbol: string; listId?: string | null | undefined; }'.
+components/watchlist/AddToListPicker.tsx|error TS2345|Argument of type 'string' is not assignable to parameter of type '{ symbol: string; listId?: string | null | undefined; }'.
+hooks/use-notifications.ts|error TS2345|Argument of type '{ is_read: boolean; }' is not assignable to parameter of type 'never'.
+hooks/use-notifications.ts|error TS2345|Argument of type '{ is_read: boolean; }' is not assignable to parameter of type 'never'.
+hooks/use-notifications.ts|error TS2345|Argument of type '{ is_read: boolean; }' is not assignable to parameter of type 'never'.
+hooks/use-user-settings.ts|error TS2339|Property 'settings' does not exist on type 'never'.
+hooks/use-user-settings.ts|error TS2339|Property 'settings' does not exist on type 'never'.
+hooks/use-user-settings.ts|error TS2339|Property 'settings' does not exist on type 'never'.
+hooks/use-user-settings.ts|error TS2339|Property 'settings' does not exist on type 'never'.
+hooks/use-user-settings.ts|error TS2345|Argument of type '{ settings: { market_context_mode: MarketContextMode; }; }' is not assignable to parameter of type 'never'.
+hooks/use-user-settings.ts|error TS2345|Argument of type '{ settings: { market_hours_exchanges: string[]; }; }' is not assignable to parameter of type 'never'.
+hooks/use-user-settings.ts|error TS2345|Argument of type '{ settings: { pinned_tickers: string[]; }; }' is not assignable to parameter of type 'never'.
+hooks/use-user-settings.ts|error TS2345|Argument of type '{ settings: { tools_shortcuts: string[]; }; }' is not assignable to parameter of type 'never'.
+lib/ai/agent.ts|error TS2353|Object literal may only specify known properties, and 'maxSteps' does not exist in type 'CallSettings & { system?: string | SystemModelMessage | SystemModelMessage[] | undefined; } & { messages: ModelMessage[]; prompt?: undefined; } & { ...; }'.
+lib/ai/ai-analyzer.ts|error TS2339|Property 'confidence' does not exist on type 'object'.
+lib/ai/ai-analyzer.ts|error TS2339|Property 'confidence' does not exist on type 'object'.
+lib/ai/ai-analyzer.ts|error TS2339|Property 'confidence' does not exist on type 'object'.
+lib/ai/ai-analyzer.ts|error TS2339|Property 'key_points' does not exist on type 'object'.
+lib/ai/ai-analyzer.ts|error TS2339|Property 'key_points' does not exist on type 'object'.
+lib/ai/ai-analyzer.ts|error TS2339|Property 'risk_flags' does not exist on type 'object'.
+lib/ai/ai-analyzer.ts|error TS2339|Property 'sentiment' does not exist on type 'object'.
+lib/ai/ai-analyzer.ts|error TS2339|Property 'summary' does not exist on type 'object'.
+lib/ai/ai-analyzer.ts|error TS2339|Property 'summary' does not exist on type 'object'.
+lib/ai/ai-insights-db.ts|error TS2322|Type 'unknown' is not assignable to type 'Record<string, unknown>'.
+lib/ai/ai-insights-db.ts|error TS2769|No overload matches this call.
+lib/ai/portfolio-builder/validate-tickers.ts|error TS2339|Property 'logo_url' does not exist on type 'never'.
+lib/ai/portfolio-builder/validate-tickers.ts|error TS2339|Property 'ticker' does not exist on type 'never'.
+lib/ai/portfolio-builder/validate-tickers.ts|error TS2339|Property 'ticker' does not exist on type 'never'.
+lib/auth/auth.ts|error TS2345|Argument of type '{ last_login_at: string; }' is not assignable to parameter of type 'never'.
+lib/auth/auth.ts|error TS2769|No overload matches this call.
+lib/auth/auth.ts|error TS2769|No overload matches this call.
+lib/auth/oauth-profile.ts|error TS2339|Property 'avatar_url' does not exist on type 'never'.
+lib/auth/oauth-profile.ts|error TS2339|Property 'avatar_url' does not exist on type 'never'.
+lib/auth/oauth-profile.ts|error TS2339|Property 'full_name' does not exist on type 'never'.
+lib/auth/oauth-profile.ts|error TS2339|Property 'full_name' does not exist on type 'never'.
+lib/auth/oauth-profile.ts|error TS2345|Argument of type '{ full_name?: string | null | undefined; avatar_url?: string | null | undefined; }' is not assignable to parameter of type 'never'.
+lib/auth/oauth-profile.ts|error TS2769|No overload matches this call.
+lib/billing/anthropic-spend-guard.ts|error TS2339|Property 'cost_usd' does not exist on type 'never'.
+lib/billing/log-ai-call.ts|error TS2769|No overload matches this call.
+lib/billing/tier.ts|error TS2339|Property 'account_tier' does not exist on type 'never'.
+lib/billing/tier.ts|error TS2339|Property 'role' does not exist on type 'never'.
+lib/cache/market-data-cache.ts|error TS2769|No overload matches this call.
+lib/discover/discover-db.ts|error TS2339|Property 'data' does not exist on type 'unknown'.
+lib/discover/discover-db.ts|error TS2339|Property 'data' does not exist on type 'unknown'.
+lib/discover/discover-db.ts|error TS2339|Property 'data' does not exist on type 'unknown'.
+lib/discover/discover-db.ts|error TS2339|Property 'data' does not exist on type 'unknown'.
+lib/discover/discover-db.ts|error TS2339|Property 'error' does not exist on type 'unknown'.
+lib/discover/discover-db.ts|error TS2339|Property 'error' does not exist on type 'unknown'.
+lib/discover/discover-db.ts|error TS2339|Property 'error' does not exist on type 'unknown'.
+lib/discover/discover-db.ts|error TS2345|Argument of type 'PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, never[], "companies", never, "GET">' is not assignable to parameter of type 'Promise<unknown>'.
+lib/discover/discover-db.ts|error TS2345|Argument of type 'PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, never[], "signals", never, "GET">' is not assignable to parameter of type 'Promise<unknown>'.
+lib/discover/discover-db.ts|error TS2345|Argument of type 'PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, never[], "trends", never, "GET">' is not assignable to parameter of type 'Promise<unknown>'.
+lib/discover/discover-db.ts|error TS2345|Argument of type 'PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, never[], "trends", never, "GET">' is not assignable to parameter of type 'Promise<unknown>'.
+lib/email/earnings-alert.ts|error TS2339|Property 'id' does not exist on type 'never'.
+lib/email/earnings-alert.ts|error TS2339|Property 'id' does not exist on type 'never'.
+lib/email/earnings-alert.ts|error TS2339|Property 'value' does not exist on type 'never'.
+lib/email/earnings-alert.ts|error TS2339|Property 'value' does not exist on type 'never'.
+lib/email/earnings-alert.ts|error TS2339|Property 'value' does not exist on type 'never'.
+lib/email/earnings-alert.ts|error TS2339|Property 'value' does not exist on type 'never'.
+lib/finance/get-health-score.ts|error TS2339|Property 'health_score' does not exist on type 'never'.
+lib/finance/get-health-score.ts|error TS2339|Property 'health_score' does not exist on type 'never'.
+lib/finance/get-health-score.ts|error TS2339|Property 'health_score_grade' does not exist on type 'never'.
+lib/finance/get-health-score.ts|error TS2339|Property 'health_score_grade' does not exist on type 'never'.
+lib/finance/get-health-score.ts|error TS2345|Argument of type '{ health_score: number; health_score_grade: "B" | "D" | "A" | "C" | "F"; }' is not assignable to parameter of type 'never'.
+lib/finance/health-score-history.ts|error TS2769|No overload matches this call.
+lib/holdings/holdings-db.ts|error TS2339|Property 'asset_type' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'asset_type' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'avg_cost_basis' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'avg_price' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'avg_price' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'avg_price' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'avg_price' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'avg_price' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'avg_price' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'avg_price' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'avg_price' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'avg_price' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'avg_price' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'avg_price' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'company_name' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'company_name' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'company_name' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'company_name' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'company_name' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'company_name' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'company_name' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'company_name' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'date_purchased' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'date_purchased' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'date_purchased' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'id' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'id' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'id' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'id' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'id' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'id' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'id' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'id' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'id' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'id' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'original_holding_id' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'original_holding_id' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'original_holding_id' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'original_holding_id' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'purchase_currency' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'purchase_fx_rate' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'quantity' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'quantity' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'quantity' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'quantity' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'quantity' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'quantity' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'quantity' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'quantity' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'quantity_sold' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'quantity_sold' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'quantity_sold' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'source' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'symbol' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'symbol' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'symbol' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'symbol' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'symbol' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'symbol' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'symbol' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'symbol' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'trading_currency' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2339|Property 'trading_currency' does not exist on type 'never'.
+lib/holdings/holdings-db.ts|error TS2345|Argument of type 'Partial<InsertUserHolding>' is not assignable to parameter of type 'never'.
+lib/holdings/holdings-db.ts|error TS2345|Argument of type 'Record<string, unknown>' is not assignable to parameter of type 'never'.
+lib/holdings/holdings-db.ts|error TS2345|Argument of type '{ quantity: any; avg_price: number | null; company_name: string; updated_at: string; }' is not assignable to parameter of type 'never'.
+lib/holdings/holdings-db.ts|error TS2345|Argument of type '{ quantity: any; updated_at: string; }' is not assignable to parameter of type 'never'.
+lib/holdings/holdings-db.ts|error TS2345|Argument of type '{ quantity: number; updated_at: string; }' is not assignable to parameter of type 'never'.
+lib/holdings/holdings-db.ts|error TS2345|Argument of type '{ quantity: number; updated_at: string; }' is not assignable to parameter of type 'never'.
+lib/holdings/holdings-db.ts|error TS2345|Argument of type '{ quantity_sold: number; sale_price: number; sale_date: string; realized_pl: number; }' is not assignable to parameter of type 'never'.
+lib/holdings/holdings-db.ts|error TS2769|No overload matches this call.
+lib/holdings/holdings-db.ts|error TS2769|No overload matches this call.
+lib/holdings/portfolio-activity.ts|error TS2769|No overload matches this call.
+lib/i18n/translate.ts|error TS2339|Property 'translated_text' does not exist on type 'never'.
+lib/i18n/translate.ts|error TS2339|Property 'translated_text' does not exist on type 'never'.
+lib/i18n/translate.ts|error TS2769|No overload matches this call.
+lib/instagram/render/slides.tsx|error TS2322|Type 'number | null' is not assignable to type 'number'.
+lib/instagram/render/slides.tsx|error TS2339|Property 'epsActual' does not exist on type 'EarningsSlideCompany'.
+lib/instagram/render/slides.tsx|error TS2339|Property 'status' does not exist on type 'EarningsSlideCompany'.
+lib/logos/logos-db.ts|error TS2339|Property 'logo_source' does not exist on type 'never'.
+lib/logos/logos-db.ts|error TS2339|Property 'logo_updated_at' does not exist on type 'never'.
+lib/logos/logos-db.ts|error TS2339|Property 'logo_url' does not exist on type 'never'.
+lib/logos/logos-db.ts|error TS2345|Argument of type '{ logo_url: string; logo_source: "brand" | "wikipedia" | "manual" | "logo.dev"; logo_updated_at: string; updated_at: string; }' is not assignable to parameter of type 'never'.
+lib/logos/logos-storage.ts|error TS2322|Type 'Buffer<ArrayBufferLike>' is not assignable to type 'BlobPart'.
+lib/logos/logos-storage.ts|error TS2367|This comparison appears to be unintentional because the types 'number | undefined' and 'string' have no overlap.
+lib/logos/logos-storage.ts|error TS2367|This comparison appears to be unintentional because the types 'number | undefined' and 'string' have no overlap.
+lib/logos/logos-storage.ts|error TS2367|This comparison appears to be unintentional because the types 'number | undefined' and 'string' have no overlap.
+lib/market-data/screener-stats.ts|error TS2741|Property 'psRatio' is missing in type '{ symbol: string; marketCap: number | null; enterpriseValue: number | null; peRatioTTM: number | null; peRatioForward: number | null; pbRatio: number | null; evToEbitda: number | null; ... 9 more ...; epsGrowthTTM: number | null; }' but required in type 'CompanyStatistics'.
+lib/market-data/screener-stats.ts|error TS2769|No overload matches this call.
+lib/notifications/notification-creators.ts|error TS2322|Type '"user_alert"' is not assignable to type '"stock" | "user" | "market" | "portfolio" | null | undefined'.
+lib/notifications/notifications-db.ts|error TS2339|Property 'id' does not exist on type 'never'.
+lib/notifications/notifications-db.ts|error TS2339|Property 'settings' does not exist on type 'never'.
+lib/notifications/notifications-db.ts|error TS2345|Argument of type '{ is_read: boolean; }' is not assignable to parameter of type 'never'.
+lib/notifications/notifications-db.ts|error TS2345|Argument of type '{ is_read: boolean; }' is not assignable to parameter of type 'never'.
+lib/notifications/notifications-db.ts|error TS2345|Argument of type '{ title: string; message: string; severity: "info" | "warning" | "critical"; is_read: boolean; created_at: string; }' is not assignable to parameter of type 'never'.
+lib/notifications/notifications-db.ts|error TS2769|No overload matches this call.
+lib/sankey/sankey-generator.ts|error TS2339|Property 'confidence' does not exist on type 'never'.
+lib/sankey/sankey-generator.ts|error TS2339|Property 'data' does not exist on type 'never'.
+lib/sankey/sankey-generator.ts|error TS2339|Property 'fiscal_quarter' does not exist on type 'never'.
+lib/sankey/sankey-generator.ts|error TS2339|Property 'fiscal_quarter' does not exist on type 'never'.
+lib/sankey/sankey-generator.ts|error TS2339|Property 'fiscal_year' does not exist on type 'never'.
+lib/sankey/sankey-generator.ts|error TS2339|Property 'fiscal_year' does not exist on type 'never'.
+lib/sankey/sankey-generator.ts|error TS2339|Property 'metric_type' does not exist on type 'never'.
+lib/sankey/sankey-generator.ts|error TS2339|Property 'period_end_date' does not exist on type 'never'.
+lib/sankey/sankey-generator.ts|error TS2339|Property 'source' does not exist on type 'never'.
+lib/sankey/sankey-generator.ts|error TS2339|Property 'value' does not exist on type 'never'.
+lib/sankey/sankey-generator.ts|error TS2345|Argument of type '{ revenue?: number | undefined; costOfRevenue?: number | undefined; grossProfit?: number | undefined; operatingIncome?: number | undefined; netIncome?: number | undefined; periodEndDate?: string | undefined; fiscalYear?: number | undefined; fiscalQuarter?: number | undefined; }' is not assignable to parameter of type '{ costOfRevenue?: number | undefined; grossProfit?: number | undefined; operatingIncome?: number | undefined; netIncome?: number | undefined; periodEndDate: string; fiscalYear?: number | undefined; fiscalQuarter?: number | undefined; }'.
+lib/sankey/sankey-generator.ts|error TS2769|No overload matches this call.
+lib/sankey/segment-extractor.ts|error TS2339|Property 'revenue_value' does not exist on type 'never'.
+lib/sankey/segment-extractor.ts|error TS2339|Property 'segment_name' does not exist on type 'never'.
+lib/sankey/segment-extractor.ts|error TS2769|No overload matches this call.
+lib/security/security-events.ts|error TS2769|No overload matches this call.
+lib/supabase/types.ts|error TS2305|Module '"../types/database"' has no exported member 'Filing'.
+lib/supabase/types.ts|error TS2305|Module '"../types/database"' has no exported member 'FilingSection'.
+lib/trends/trend-detector.ts|error TS2741|Property 'values' is missing in type '{ metric_type_1: MetricType; metric_type_2: MetricType; values_1: number[]; values_2: number[]; period_end_dates: string[]; changes_1: number[]; changes_2: number[]; opposite_count: number; divergence_strength: number; }' but required in type '{ [key: string]: unknown; values: number[]; period_end_dates: string[]; deltas?: number[] | undefined; percentages?: number[] | undefined; }'.
+lib/trends/trends-db.ts|error TS2769|No overload matches this call.
+lib/trends/trends-db.ts|error TS2769|No overload matches this call.
+lib/trends/trends-orchestrator.ts|error TS2307|Cannot find module '../metrics/metrics-ui' or its corresponding type declarations.
+lib/trends/trends-orchestrator.ts|error TS2339|Property 'name' does not exist on type 'never'.
+lib/trends/trends-orchestrator.ts|error TS2339|Property 'name' does not exist on type 'never'.
+lib/trends/trends-orchestrator.ts|error TS2339|Property 'ticker' does not exist on type 'never'.
+lib/trends/trends-orchestrator.ts|error TS7006|Parameter 'd' implicitly has an 'any' type.
+lib/trends/trends-orchestrator.ts|error TS7006|Parameter 'd' implicitly has an 'any' type.
+lib/trends/trends-orchestrator.ts|error TS7006|Parameter 'd' implicitly has an 'any' type.
+scripts/test-ai-analysis.ts|error TS2307|Cannot find module '../lib/ai/ai-orchestrator' or its corresponding type declarations.
+scripts/test-ai-analysis.ts|error TS2339|Property 'accession_number' does not exist on type 'never'.
+scripts/test-ai-analysis.ts|error TS2339|Property 'confidence_score' does not exist on type 'never'.
+scripts/test-ai-analysis.ts|error TS2339|Property 'content' does not exist on type 'never'.
+scripts/test-ai-analysis.ts|error TS2339|Property 'filing_date' does not exist on type 'never'.
+scripts/test-ai-analysis.ts|error TS2339|Property 'filing_type' does not exist on type 'never'.
+scripts/test-ai-analysis.ts|error TS2339|Property 'id' does not exist on type 'never'.
+scripts/test-ai-analysis.ts|error TS2339|Property 'insight_type' does not exist on type 'never'.
+scripts/test-ai-analysis.ts|error TS2339|Property 'length' does not exist on type '{}'.
+scripts/test-ai-analysis.ts|error TS2339|Property 'length' does not exist on type '{}'.
+scripts/test-ai-analysis.ts|error TS2339|Property 'model_version' does not exist on type 'never'.
+scripts/test-ai-analysis.ts|error TS2339|Property 'substring' does not exist on type '{}'.
+scripts/test-ai-analysis.ts|error TS2339|Property 'title' does not exist on type 'never'.
+scripts/test-ai-analysis.ts|error TS7006|Parameter 'details' implicitly has an 'any' type.
+scripts/test-ai-analysis.ts|error TS7006|Parameter 'error' implicitly has an 'any' type.
+scripts/test-ai-analysis.ts|error TS7006|Parameter 'i' implicitly has an 'any' type.
+scripts/test-ai-analysis.ts|error TS7006|Parameter 'i' implicitly has an 'any' type.
+scripts/test-ai-analysis.ts|error TS7006|Parameter 'sr' implicitly has an 'any' type.
+scripts/test-ai-analysis.ts|error TS7006|Parameter 'step' implicitly has an 'any' type.
+scripts/test-health-score-history.ts|error TS2339|Property 'score' does not exist on type 'never'.
+scripts/test-health-score-history.ts|error TS2339|Property 'score' does not exist on type 'never'.
+scripts/test-portfolio-activity.ts|error TS2339|Property 'action' does not exist on type 'never'.
+scripts/test-portfolio-activity.ts|error TS2339|Property 'action' does not exist on type 'never'.
+scripts/test-portfolio-activity.ts|error TS2339|Property 'action' does not exist on type 'never'.
+scripts/test-portfolio-activity.ts|error TS2339|Property 'action' does not exist on type 'never'.
+scripts/test-portfolio-activity.ts|error TS2339|Property 'id' does not exist on type 'never'.
+scripts/test-portfolio-activity.ts|error TS2339|Property 'percent_change' does not exist on type 'never'.
+scripts/test-portfolio-activity.ts|error TS2339|Property 'percent_change' does not exist on type 'never'.
+scripts/test-portfolio-activity.ts|error TS2339|Property 'percent_change' does not exist on type 'never'.
+scripts/test-portfolio-activity.ts|error TS2339|Property 'percent_change' does not exist on type 'never'.
+scripts/test-trends.ts|error TS2339|Property 'id' does not exist on type 'never'.
+scripts/test-trends.ts|error TS2339|Property 'id' does not exist on type 'never'.
+scripts/test-trends.ts|error TS2339|Property 'id' does not exist on type 'never'.
+scripts/test-trends.ts|error TS2339|Property 'id' does not exist on type 'never'.
+scripts/test-trends.ts|error TS2339|Property 'name' does not exist on type 'never'.
+scripts/test-trends.ts|error TS2339|Property 'ticker' does not exist on type 'never'.

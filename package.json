@@ -10,6 +10,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "node scripts/typecheck-diff.mjs",
+    "typecheck:update": "node scripts/typecheck-diff.mjs --update",
     "test-ai": "tsx scripts/test-ai-analysis.ts",
     "test-calendar-market-cap": "tsx scripts/test-calendar-market-cap.ts",
     "test-calendar-day-model": "tsx scripts/test-calendar-day-model.ts",
