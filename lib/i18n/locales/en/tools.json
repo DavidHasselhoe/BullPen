@@ -137,5 +137,13 @@
   "marketMoodTitle": "Market Mood",
   "portfolioBuilderDescription": "Type an investment thesis. Get a high-conviction thematic portfolio.",
   "portfolioBuilderTitle": "Portfolio Builder",
+  "toolBackToTools": "Back to Tools",
+  "toolComingSoon": "Coming soon",
+  "toolFutureUpdateNote": "This tool will be available in a future update. Check back soon for updates.",
+  "toolNotFound": "Tool not found",
+  "toolUnderConstruction": "Tool under construction",
+  "toolsPageComingSoon": "Soon",
+  "toolsPageSubtitle": "Calculators, analyzers, and market insights",
+  "toolsPageTitle": "Investment Tools",
   "tryAgainButton": "Try again"
 }

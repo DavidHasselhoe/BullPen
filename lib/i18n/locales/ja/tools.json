@@ -4,6 +4,7 @@
   "aiChatStarterInsiderBuying": "NVDAの最近のインサイダー買いはありますか?",
   "aiChatStarterRecentEarnings": "AAPLの最近の決算を表示する",
   "aiChatSubtitle": "投資調査アシスタント。SEC提出書類、指標、またはコンセプトについて質問してください",
+  "alertsAboutBody": "アラートは{{marketOpen}}と営業時間中（月～金）は1時間ごとにチェックされます。各アラートは{{oncePerDay}}に最大1回だけ発動するため、スパムされることはありません。アラートを一時停止すれば、設定を失わずに通知を止められます。",
   "alertsAboutHeading": "アラートについて",
   "alertsCreateFirst": "最初のアラートを作成する",
   "alertsEmptyDescription": "株式を選んで最初のしきい値を設定してください。トリガーされたらすぐにお知らせします。",
@@ -135,7 +136,14 @@
   "marketMoodTitle": "市場ムード",
   "portfolioBuilderDescription": "投資テーゼを入力してください。説得力の高いテーマ型ポートフォリオが得られます。",
   "portfolioBuilderTitle": "ポートフォリオビルダー",
+  "toolBackToTools": "ツールに戻る",
+  "toolComingSoon": "近日対応予定",
+  "toolFutureUpdateNote": "このツールは今後のアップデートで利用可能になります。アップデート情報は随時確認してください。",
+  "toolNotFound": "ツールが見つかりません",
+  "toolUnderConstruction": "ツール準備中",
+  "toolsPageComingSoon": "近日公開",
+  "toolsPageSubtitle": "計算機、分析ツール、市場インサイト",
+  "toolsPageTitle": "投資ツール",
   "tryAgainButton": "もう一度試す",
-  "alertsAboutBody": "アラートは{{marketOpen}}と営業時間中（月～金）は1時間ごとにチェックされます。各アラートは{{oncePerDay}}に最大1回だけ発動するため、スパムされることはありません。アラートを一時停止すれば、設定を失わずに通知を止められます。",
   "dividendProjectionPeriod": "Projection period"
 }

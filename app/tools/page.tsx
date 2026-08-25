@@ -1,12 +1,14 @@
 'use client';
 
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { Wrench, ArrowRight } from 'lucide-react';
 import { TOOLS } from '@/lib/tools/tools-config';
 import { cn } from '@/lib/utils';
 import { useBackground } from '@/hooks/use-background';
 
 export default function ToolsPage() {
+  const { t } = useTranslation('tools');
   const { hasAnimatedBackground } = useBackground();
 
   return (
@@ -20,9 +22,9 @@ export default function ToolsPage() {
               <Wrench className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-foreground">Investment Tools</h1>
+              <h1 className="text-2xl font-bold tracking-tight text-foreground">{t('toolsPageTitle', 'Investment Tools')}</h1>
               <p className="text-sm text-muted-foreground mt-0.5">
-                Calculators, analyzers, and market insights
+                {t('toolsPageSubtitle', 'Calculators, analyzers, and market insights')}
               </p>
             </div>
           </div>
@@ -52,7 +54,7 @@ export default function ToolsPage() {
                     <span className="text-sm font-semibold text-foreground">{tool.name}</span>
                     {isComingSoon && (
                       <span className="rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
-                        Soon
+                        {t('toolsPageComingSoon', 'Soon')}
                       </span>
                     )}
                   </div>

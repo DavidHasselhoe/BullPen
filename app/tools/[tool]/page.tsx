@@ -1,6 +1,7 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft } from 'lucide-react';
@@ -9,6 +10,7 @@ import { useBackground } from '@/hooks/use-background';
 import { cn } from '@/lib/utils';
 
 export default function ToolPage() {
+  const { t } = useTranslation('tools');
   const params = useParams();
   const router = useRouter();
   const toolId = params.tool as string;
@@ -19,9 +21,9 @@ export default function ToolPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-xl font-semibold">Tool not found</h1>
+          <h1 className="text-xl font-semibold">{t('toolNotFound', 'Tool not found')}</h1>
           <Button variant="outline" className="mt-4" onClick={() => router.push('/tools')}>
-            Back to Tools
+            {t('toolBackToTools', 'Back to Tools')}
           </Button>
         </div>
       </div>
@@ -40,7 +42,7 @@ export default function ToolPage() {
           onClick={() => router.push('/tools')}
         >
           <ArrowLeft className="h-4 w-4 mr-2 group-hover:-translate-x-1 transition-transform" />
-          Back to Tools
+          {t('toolBackToTools', 'Back to Tools')}
         </Button>
 
         <Card>
@@ -58,10 +60,10 @@ export default function ToolPage() {
           <CardContent>
             <div className="rounded-lg border border-dashed py-16 text-center">
               <p className="text-muted-foreground font-medium mb-4">
-                {tool.status === 'coming-soon' ? 'Coming soon' : 'Tool under construction'}
+                {tool.status === 'coming-soon' ? t('toolComingSoon', 'Coming soon') : t('toolUnderConstruction', 'Tool under construction')}
               </p>
               <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-                This tool will be available in a future update. Check back soon for updates.
+                {t('toolFutureUpdateNote', 'This tool will be available in a future update. Check back soon for updates.')}
               </p>
             </div>
           </CardContent>

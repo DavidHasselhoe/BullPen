@@ -212,5 +212,13 @@
   "tools.calendarPreviousWeek": "c0f8bbcd417656cf2e756b55849036ce0948b60a509e9cf10e6589743bb73e61",
   "tools.calendarSubtitle": "01d3b9bd247d78979b195baa2ce7fb8ceb71d68924a04b16d5931bfae31e4052",
   "tools.calendarTitle": "a3a5e54c27960462b7cedddb30d09d2a38c68973dc304642e1ff28594262ebbd",
-  "tools.alertsAboutBody": "a726a0bf10c1ed559c3d702da0df9f0484e94dcfdfc9d54a83022cee5b0cd8fd"
+  "tools.alertsAboutBody": "a726a0bf10c1ed559c3d702da0df9f0484e94dcfdfc9d54a83022cee5b0cd8fd",
+  "tools.toolBackToTools": "247ff5c2945edd046de628e376fd627c56f04dc696696dae4f3f8602409555a5",
+  "tools.toolComingSoon": "4f7d64017689437e6d93f5724f3f797054f3935d98a13148025b616b8db8fb2c",
+  "tools.toolFutureUpdateNote": "4f5e8bc1b08eddb80d34c6e9b79df9ed61c6e834c9b232085e5c3a5b74cbcb57",
+  "tools.toolNotFound": "abd678d6782ca1656330a54237f662365dc17cee8f015dfed19e38547b4ca234",
+  "tools.toolUnderConstruction": "14b13d9af42f5ae1874cea02f7497868f932ced43a99df4e22306026f9704ac5",
+  "tools.toolsPageComingSoon": "cf0ee3547a4e51a52304eb720431ff5a38bf9561d8a1537953d6ddfc9edb04ce",
+  "tools.toolsPageSubtitle": "0d793ca34f9a911e24d1606da765c54e875f18150226436f76cf7676f1071bf2",
+  "tools.toolsPageTitle": "56c160727f05dc7ea691d1251b118eff61d6e4abf1e44731a1dae11230643006"
 }

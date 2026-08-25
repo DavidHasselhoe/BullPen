@@ -136,6 +136,14 @@
   "marketMoodTitle": "Sentimiento del mercado",
   "portfolioBuilderDescription": "Escribe una tesis de inversión. Obtén un portafolio temático de alta convicción.",
   "portfolioBuilderTitle": "Constructor de Portafolio",
+  "toolBackToTools": "Volver a Herramientas",
+  "toolComingSoon": "Próximamente",
+  "toolFutureUpdateNote": "Esta herramienta estará disponible en una actualización futura. Vuelve pronto para actualizaciones.",
+  "toolNotFound": "Herramienta no encontrada",
+  "toolUnderConstruction": "Herramienta en construcción",
+  "toolsPageComingSoon": "Próximamente",
+  "toolsPageSubtitle": "Calculadoras, analizadores e información del mercado",
+  "toolsPageTitle": "Herramientas de inversión",
   "tryAgainButton": "Intentar de nuevo",
   "dividendProjectionPeriod": "Projection period"
 }

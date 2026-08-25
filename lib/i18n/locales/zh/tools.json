@@ -136,6 +136,14 @@
   "marketMoodTitle": "市场情绪",
   "portfolioBuilderDescription": "输入投资主题。获得高确定性的主题组合。",
   "portfolioBuilderTitle": "投资组合生成器",
+  "toolBackToTools": "返回工具",
+  "toolComingSoon": "即将推出",
+  "toolFutureUpdateNote": "此工具将在未来更新中提供。请继续关注更新。",
+  "toolNotFound": "找不到工具",
+  "toolUnderConstruction": "工具正在建设中",
+  "toolsPageComingSoon": "即将推出",
+  "toolsPageSubtitle": "计算器、分析器和市场洞察",
+  "toolsPageTitle": "投资工具",
   "tryAgainButton": "重试",
   "dividendProjectionPeriod": "Projection period"
 }

@@ -136,6 +136,14 @@
   "marketMoodTitle": "Markt-Stimmung",
   "portfolioBuilderDescription": "Gib eine Investitionsthese ein. Erhalte ein Portfolio mit hoher Überzeugung zu einem Thema.",
   "portfolioBuilderTitle": "Portfolio-Builder",
+  "toolBackToTools": "Zurück zu Tools",
+  "toolComingSoon": "Kommt bald",
+  "toolFutureUpdateNote": "Dieses Tool wird in einem zukünftigen Update verfügbar sein. Schau bald vorbei für Updates.",
+  "toolNotFound": "Tool nicht gefunden",
+  "toolUnderConstruction": "Tool wird gerade entwickelt",
+  "toolsPageComingSoon": "Bald",
+  "toolsPageSubtitle": "Rechner, Analyzetools und Markteinblicke",
   "tryAgainButton": "Erneut versuchen",
-  "heatmapLive": "Live"
+  "heatmapLive": "Live",
+  "toolsPageTitle": "Investitions-Tools"
 }
