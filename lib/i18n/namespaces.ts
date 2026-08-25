@@ -9,7 +9,7 @@
  * safe (i18next just gets an empty resource) but pointless until then.
  */
 
-export const NAMESPACES = ['common', 'settings', 'languages'] as const;
+export const NAMESPACES = ['common', 'settings', 'languages', 'tools'] as const;
 export type Namespace = (typeof NAMESPACES)[number];
 
 /**
@@ -34,6 +34,7 @@ export const ALWAYS_LOADED: readonly Namespace[] = ['common', 'languages'];
  * useTranslation('settings') hook first renders, which for a ~4KB file is
  * effectively instant.
  */
-export function namespacesForPath(_pathname: string): Namespace[] {
+export function namespacesForPath(pathname: string): Namespace[] {
+  if (pathname.startsWith('/tools')) return ['tools'];
   return [];
 }

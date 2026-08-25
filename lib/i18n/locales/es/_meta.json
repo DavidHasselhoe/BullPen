@@ -73,5 +73,10 @@
   "settings.deleteAccount": "c031bf992e172f57661450dfc88918947ebcc704a2c5b417607ab1a3e1d59ee8",
   "settings.deleteAccountDescription": "bc4c3b12dbf182c25492eaa05fae357d547b75b8794af7c2dcc8ef2e937a5290",
   "settings.confirmDelete": "605b30d7f9be2d94496a7dc1bd11e59deeb2c04ce8e8da303e9aeb199d3853b9",
-  "settings.confirmDeleteFinal": "41d40da859b3d244f133e8266411013643c3e78c13fd4c1f90a0cfeb6dca924c"
+  "settings.confirmDeleteFinal": "41d40da859b3d244f133e8266411013643c3e78c13fd4c1f90a0cfeb6dca924c",
+  "tools.aiChatStarterFinancialHealth": "45e2b88f27dc281d95fc90d5ccc3b9e67d7ff81b0436c303defcb36cc9ab65e5",
+  "tools.aiChatStarterHoldings": "44f15bcf8239011e3bc300712d353b4f7a9105da22206f7a6bc2975298c4b1e5",
+  "tools.aiChatStarterInsiderBuying": "5cb402d26ef5c342251b5c23a5b9dcbaa3c190062ffe1109ecf4c37e8ebdb4f4",
+  "tools.aiChatStarterRecentEarnings": "3fbf705ec8fc8051952036eba33cb0286494a1213ccfecaa4354cc972f5a3a5f",
+  "tools.aiChatSubtitle": "b35de91911057b3f665b35debd9c0ed51aec60db310cd83c928a5c37bc279445"
 }

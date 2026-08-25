@@ -1,15 +1,15 @@
 {
-  "save": "Save",
+  "apply": "Apply",
   "cancel": "Cancel",
+  "clear": "Clear",
+  "close": "Close",
   "delete": "Delete",
   "edit": "Edit",
-  "close": "Close",
-  "loading": "Loading...",
   "error": "Error",
-  "success": "Success",
-  "search": "Search",
   "filter": "Filter",
-  "clear": "Clear",
-  "apply": "Apply",
-  "reset": "Reset"
+  "loading": "Loading...",
+  "reset": "Reset",
+  "save": "Save",
+  "search": "Search",
+  "success": "Success"
 }
