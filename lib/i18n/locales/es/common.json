@@ -1,0 +1,15 @@
+{
+  "save": "Guardar",
+  "cancel": "Cancelar",
+  "delete": "Eliminar",
+  "edit": "Editar",
+  "close": "Cerrar",
+  "loading": "Cargando...",
+  "error": "Error",
+  "success": "Éxito",
+  "search": "Buscar",
+  "filter": "Filtrar",
+  "clear": "Limpiar",
+  "apply": "Aplicar",
+  "reset": "Restablecer"
+}

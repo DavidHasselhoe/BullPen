@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/use-auth';
+import { SUPPORTED_LANGUAGES, isSupportedLanguage } from '@/lib/i18n/language-names';
+import { writeLocaleCookie } from '@/lib/i18n/locale-cookie';
 import {
   Dialog,
   DialogContent,
@@ -129,7 +131,7 @@ function SettingsCard({ children, className }: { children: React.ReactNode; clas
 export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalProps) {
   const { user } = useAuth();
   const router = useRouter();
-  const { t, i18n } = useTranslation();
+  const { t, i18n } = useTranslation('settings');
   const [activeSection, setActiveSection] = useState<SettingsSection>(initialTab ?? 'preferences');
   const [error, setError] = useState<string | null>(null);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
@@ -186,7 +188,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
       ? homepageStockPick.name && homepageStockPick.name !== homepageStockPick.ticker
         ? `${homepageStockPick.ticker} — ${homepageStockPick.name}`
         : homepageStockPick.ticker
-      : t('settings.homepageStock')
+      : t('homepageStock')
     : currentHomepageOption?.label ?? 'Home';
   const [holdingsPublic, setHoldingsPublic] = useState<boolean>(true);
   const [widgetOrder, setWidgetOrder] = useState<string[]>(DEFAULT_WIDGET_ORDER);
@@ -323,16 +325,23 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
         throw new Error(updateError.message || 'Failed to update settings');
       }
 
-      if (language) {
-        await i18n.changeLanguage(language);
-        document.documentElement.lang = language;
-      } else {
-        const browserLang = navigator.language.split('-')[0];
-        const supportedLangs = ['en', 'es', 'fr', 'de', 'ja', 'zh'];
-        const detectedLang = supportedLangs.includes(browserLang) ? browserLang : 'en';
-        await i18n.changeLanguage(detectedLang);
-        document.documentElement.lang = detectedLang;
-      }
+      // Was `['en','es','fr','de','ja','zh']` here — missing 'no', so a
+      // Norwegian-browser user choosing "System default" silently got
+      // English. SUPPORTED_LANGUAGES is the single shared list now (see
+      // lib/i18n/language-names.ts) so this can't drift again.
+      const resolvedLang = language
+        ? language
+        : (() => {
+            const browserLang = navigator.language.split('-')[0];
+            return isSupportedLanguage(browserLang) ? browserLang : 'en';
+          })();
+
+      await i18n.changeLanguage(resolvedLang);
+      document.documentElement.lang = resolvedLang;
+      // bp_lang mirrors users.settings.language for the fast, DB-free server
+      // read (middleware.ts / lib/i18n/server.ts) — without this the next
+      // page load would still resolve locale from the stale cookie.
+      writeLocaleCookie(resolvedLang);
 
       window.dispatchEvent(new Event('auth:refresh'));
     } catch (err) {
@@ -478,9 +487,9 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
   const sectionGroups: Array<{ heading?: string; items: SectionMeta[] }> = [
     {
       items: [
-        { id: 'preferences', label: t('settings.preferences'), icon: Globe, description: 'Region, currency, language, theme, and your default homepage.' },
-        { id: 'notifications', label: t('settings.notifications'), icon: Bell, description: 'Choose which alerts BullPen sends you.' },
-        { id: 'customize', label: t('settings.customize'), icon: Settings2, description: 'Tailor your home layout and chart defaults.' },
+        { id: 'preferences', label: t('preferences'), icon: Globe, description: 'Region, currency, language, theme, and your default homepage.' },
+        { id: 'notifications', label: t('notifications'), icon: Bell, description: 'Choose which alerts BullPen sends you.' },
+        { id: 'customize', label: t('customize'), icon: Settings2, description: 'Tailor your home layout and chart defaults.' },
         { id: 'ai', label: 'Ask Bull', icon: Bot, description: 'How Bull communicates and frames its analysis.' },
       ],
     },
@@ -488,8 +497,8 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
       heading: 'Account',
       items: [
         { id: 'plan', label: 'Plan', icon: Sparkles, description: 'Your plan and what Pro unlocks.' },
-        { id: 'privacy', label: t('settings.privacy'), icon: Shield, description: 'Control your profile visibility and password.' },
-        { id: 'danger', label: t('settings.danger'), icon: AlertTriangle, description: 'Export your data or permanently delete your account.' },
+        { id: 'privacy', label: t('privacy'), icon: Shield, description: 'Control your profile visibility and password.' },
+        { id: 'danger', label: t('danger'), icon: AlertTriangle, description: 'Export your data or permanently delete your account.' },
       ],
     },
   ];
@@ -511,9 +520,9 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[90vw] !max-w-[1000px] sm:!max-w-[1000px] h-[85vh] overflow-hidden flex flex-col p-0">
         <DialogHeader className="px-6 pt-6 pb-4 border-b">
-          <DialogTitle>{t('settings.title')}</DialogTitle>
+          <DialogTitle>{t('title')}</DialogTitle>
           <DialogDescription>
-            {t('settings.description')}
+            {t('description')}
           </DialogDescription>
         </DialogHeader>
 
@@ -606,7 +615,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                   <div className="space-y-2">
                     <Label htmlFor="default-currency" className="flex items-center gap-2">
                       <DollarSign className="h-4 w-4" />
-                      {t('settings.currency')}
+                      {t('currency')}
                     </Label>
                     <Select
                       value={defaultCurrency || 'auto'}
@@ -616,7 +625,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="auto">{t('settings.currencyAuto')}</SelectItem>
+                        <SelectItem value="auto">{t('currencyAuto')}</SelectItem>
                         <SelectItem value="USD">USD ($)</SelectItem>
                         <SelectItem value="EUR">EUR (€)</SelectItem>
                         <SelectItem value="GBP">GBP (£)</SelectItem>
@@ -630,14 +639,14 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-muted-foreground">
-                      {t('settings.currencyDescription')}
+                      {t('currencyDescription')}
                     </p>
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="language" className="flex items-center gap-2">
                       <Globe className="h-4 w-4" />
-                      {t('settings.language')}
+                      {t('language')}
                     </Label>
                     <Select
                       value={language || 'system'}
@@ -647,25 +656,23 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="system">{t('settings.languageSystem')}</SelectItem>
-                        <SelectItem value="en">{t('languages.en')}</SelectItem>
-                        <SelectItem value="es">{t('languages.es')}</SelectItem>
-                        <SelectItem value="fr">{t('languages.fr')}</SelectItem>
-                        <SelectItem value="de">{t('languages.de')}</SelectItem>
-                        <SelectItem value="ja">{t('languages.ja')}</SelectItem>
-                        <SelectItem value="zh">{t('languages.zh')}</SelectItem>
-                        <SelectItem value="no">{t('languages.no')}</SelectItem>
+                        <SelectItem value="system">{t('languageSystem')}</SelectItem>
+                        {SUPPORTED_LANGUAGES.map((code) => (
+                          // 'languages' is its own namespace file, not a nested key
+                          // under 'settings' — cross-namespace lookup via 'ns:key'.
+                          <SelectItem key={code} value={code}>{t(`languages:${code}`)}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-muted-foreground">
-                      {t('settings.languageDescription')}
+                      {t('languageDescription')}
                     </p>
                   </div>
 
                   <div className="space-y-2">
                     <Label className="flex items-center gap-2">
                       <Home className="h-4 w-4" />
-                      {t('settings.defaultHomepage')}
+                      {t('defaultHomepage')}
                     </Label>
 
                     <DropdownMenu open={homepageMenuOpen} onOpenChange={setHomepageMenuOpen}>
@@ -751,7 +758,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                           className="cursor-pointer gap-2"
                         >
                           <LineChart className="h-4 w-4" />
-                          <span>{t('settings.homepageStock')}</span>
+                          <span>{t('homepageStock')}</span>
                           {stockMode && <Check className="ml-auto h-4 w-4 text-primary" />}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
@@ -763,7 +770,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                       <div className="space-y-1.5 rounded-md border border-border/60 bg-muted/20 p-3">
                         <Label className="flex items-center gap-2 text-xs">
                           <Search className="h-3.5 w-3.5" />
-                          {t('settings.homepageStockTickerLabel')}
+                          {t('homepageStockTickerLabel')}
                         </Label>
                         <TickerSelector
                           value={homepageStockPick}
@@ -775,25 +782,25 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                               setHomepageStockPick(null);
                             }
                           }}
-                          placeholder={t('settings.homepageStockSearchPlaceholder')}
+                          placeholder={t('homepageStockSearchPlaceholder')}
                         />
                         <p className="text-xs text-muted-foreground">
                           {homepageStockPick
-                            ? t('settings.homepageStockTickerHint')
+                            ? t('homepageStockTickerHint')
                             : 'Search and pick a stock to use as your homepage.'}
                         </p>
                       </div>
                     )}
 
                     <p className="text-xs text-muted-foreground">
-                      {t('settings.defaultHomepageDescription')}
+                      {t('defaultHomepageDescription')}
                     </p>
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="theme" className="flex items-center gap-2">
                       <Moon className="h-4 w-4" />
-                      {t('settings.theme')}
+                      {t('theme')}
                     </Label>
                     <Select
                       value={theme}
@@ -816,8 +823,8 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                   <SettingsCard>
                     <ToggleSetting
                       icon={Hash}
-                      label={t('settings.roundNumbers')}
-                      description={t('settings.roundNumbersDescription')}
+                      label={t('roundNumbers')}
+                      description={t('roundNumbersDescription')}
                       checked={roundNumbers}
                       onCheckedChange={setRoundNumbers}
                     />

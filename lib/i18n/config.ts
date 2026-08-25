@@ -1,52 +1,63 @@
-// i18n configuration for BullPen
-// Supports multiple languages with fallback to English
+// i18next configuration for BullPen.
+//
+// Locales are lazy-loaded per (language, namespace) via
+// i18next-resources-to-backend rather than statically imported. The old
+// version did `import en from './locales/en.json'` etc. for all 7 languages,
+// which shipped every locale to every client regardless of which one they
+// use — invisible at 83 keys (~27KB total) but ~968KB at full catalog size.
+// See docs/superpowers/plans/... (i18n effort) for the measurement.
+//
+// `resources` (server-preloaded namespaces for the active locale, so first
+// paint has no client-side fetch waterfall) is passed in per-request from
+// app/layout.tsx via lib/i18n/server.ts — this module has no knowledge of
+// the request and must stay safe to import from a Client Component.
 
-import i18n from 'i18next';
+import i18n, { type i18n as I18nInstance } from 'i18next';
 import { initReactI18next } from 'react-i18next';
-import LanguageDetector from 'i18next-browser-languagedetector';
+import resourcesToBackend from 'i18next-resources-to-backend';
+import { ALWAYS_LOADED } from './namespaces';
 
-// Import translation files
-import en from './locales/en.json';
-import es from './locales/es.json';
-import fr from './locales/fr.json';
-import de from './locales/de.json';
-import ja from './locales/ja.json';
-import zh from './locales/zh.json';
-import no from './locales/no.json';
+export interface CreateI18nOptions {
+  locale: string;
+  /**
+   * Server-preloaded resources, i18next's own `Resource` shape: `{ [locale]:
+   * { [namespace]: {...} } }` — see lib/i18n/server.ts's loadResources().
+   */
+  resources?: Record<string, Record<string, Record<string, unknown>>>;
+}
 
-const resources = {
-  en: { translation: en },
-  es: { translation: es },
-  fr: { translation: fr },
-  de: { translation: de },
-  ja: { translation: ja },
-  zh: { translation: zh },
-  no: { translation: no },
-};
+/**
+ * Creates a fresh i18next instance per request/render rather than mutating a
+ * module-level singleton. i18next's default singleton (`import i18n from
+ * 'i18next'; i18n.init(...)`) is a global — safe in a browser tab, but Next.js
+ * Server Components share the module cache across requests, so a singleton
+ * would leak one user's language into another's response. Each call to
+ * createI18nInstance gets its own instance via i18n.createInstance().
+ */
+export function createI18nInstance({ locale, resources }: CreateI18nOptions): I18nInstance {
+  const instance = i18n.createInstance();
 
-i18n
-  .use(LanguageDetector) // Detect user's browser language
-  .use(initReactI18next) // Passes i18n down to react-i18next
-  .init({
-    resources,
-    fallbackLng: 'en', // Use English if translation is missing
-    defaultNS: 'translation',
-    
-    interpolation: {
-      escapeValue: false, // React already escapes values
-    },
-    
-    // Language detection options
-    detection: {
-      order: ['localStorage', 'navigator'], // Check localStorage first, then browser
-      caches: ['localStorage'], // Cache language preference in localStorage
-      lookupLocalStorage: 'i18nextLng', // Key to store language in localStorage
-    },
-    
-    // React i18next options
-    react: {
-      useSuspense: false, // Disable suspense for SSR compatibility
-    },
-  });
+  instance
+    .use(initReactI18next)
+    .use(
+      resourcesToBackend(
+        (language: string, namespace: string) =>
+          import(`./locales/${language}/${namespace}.json`)
+      )
+    )
+    .init({
+      lng: locale,
+      fallbackLng: 'en',
+      ns: ALWAYS_LOADED as unknown as string[],
+      defaultNS: 'common',
+      resources,
+      // Resources passed in above are treated as a partial preload, not the
+      // full set — i18next-resources-to-backend still lazy-fetches whatever
+      // namespace a useTranslation() call asks for beyond those.
+      partialBundledLanguages: true,
+      interpolation: { escapeValue: false }, // React already escapes values
+      react: { useSuspense: false }, // SSR compatibility
+    });
 
-export default i18n;
+  return instance;
+}

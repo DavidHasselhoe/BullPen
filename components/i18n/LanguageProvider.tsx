@@ -1,39 +1,52 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useEffect, useState } from 'react';
+import { I18nextProvider } from 'react-i18next';
 import { useAuth } from '@/hooks/use-auth';
+import { createI18nInstance, type CreateI18nOptions } from '@/lib/i18n/config';
+import { isSupportedLanguage } from '@/lib/i18n/language-names';
+import { writeLocaleCookie } from '@/lib/i18n/locale-cookie';
 
-const SUPPORTED_LANGUAGES = ['en', 'es', 'fr', 'de', 'ja', 'zh', 'no'];
+interface LanguageProviderProps {
+  children: React.ReactNode;
+  locale: string;
+  resources: CreateI18nOptions['resources'];
+}
 
-export function LanguageProvider({ children }: { children: React.ReactNode }) {
+/**
+ * Owns the i18next instance for the whole client tree. The instance is
+ * created during render via useState's initializer, not in a useEffect — that
+ * distinction is what kills the old flash-of-English bug. The previous
+ * version called i18n.changeLanguage() inside a useEffect, so the server
+ * always rendered English and the client only swapped to the right language
+ * after mount; `locale`/`resources` here are already resolved server-side
+ * (middleware.ts → app/layout.tsx → lib/i18n/server.ts), so the very first
+ * render is already correct.
+ */
+export function LanguageProvider({ children, locale, resources }: LanguageProviderProps) {
   const { user } = useAuth();
-  const { i18n } = useTranslation();
+  const [instance] = useState(() => createI18nInstance({ locale, resources }));
 
+  // Reconciliation: the server resolved `locale` from the bp_lang cookie
+  // (seeded from Accept-Language on a user's very first visit — see
+  // middleware.ts). Once auth resolves, users.settings.language is the
+  // canonical preference and may disagree — e.g. a returning user on a new
+  // device/browser with no cookie yet, or one who changed language on
+  // another device. When it does, update the cookie (so the next SSR request
+  // agrees) and switch the live instance without a full reload. Explicitly
+  // does nothing when settings.language is unset ("System default") — that
+  // means trust what Accept-Language already resolved, not re-guess from
+  // navigator.language, which is the same signal by another name.
   useEffect(() => {
-    if (user?.settings) {
-      const settings = user.settings as { language?: string };
-      const userLanguage = settings.language;
+    const settings = user?.settings as { language?: string } | undefined;
+    const preferred = settings?.language;
+    if (!preferred || !isSupportedLanguage(preferred)) return;
+    if (preferred === instance.language) return;
 
-      if (userLanguage) {
-        // User has selected a specific language
-        i18n.changeLanguage(userLanguage);
-        document.documentElement.lang = userLanguage;
-      } else {
-        // Use system/browser language
-        const browserLang = navigator.language.split('-')[0];
-        const detectedLang = SUPPORTED_LANGUAGES.includes(browserLang) ? browserLang : 'en';
-        i18n.changeLanguage(detectedLang);
-        document.documentElement.lang = detectedLang;
-      }
-    } else {
-      // No user settings, use browser language
-      const browserLang = navigator.language.split('-')[0];
-      const detectedLang = SUPPORTED_LANGUAGES.includes(browserLang) ? browserLang : 'en';
-      i18n.changeLanguage(detectedLang);
-      document.documentElement.lang = detectedLang;
-    }
-  }, [user?.settings, i18n]);
+    writeLocaleCookie(preferred);
+    void instance.changeLanguage(preferred);
+    document.documentElement.lang = preferred;
+  }, [user?.settings, instance]);
 
-  return <>{children}</>;
+  return <I18nextProvider i18n={instance}>{children}</I18nextProvider>;
 }

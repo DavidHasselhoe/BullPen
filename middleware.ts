@@ -4,12 +4,35 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import { isSupportedLanguage } from './lib/i18n/language-names';
+
+const LOCALE_COOKIE = 'bp_lang';
+const LOCALE_HEADER = 'x-bp-locale';
+const PATHNAME_HEADER = 'x-bp-pathname';
+const LOCALE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
+
+/**
+ * Resolves the request's locale without a DB round-trip: the `bp_lang`
+ * cookie (written from `users.settings.language`, the canonical source, on
+ * every settings save and on post-auth reconciliation — see
+ * components/i18n/LanguageProvider.tsx) if present, else a same-request
+ * Accept-Language guess, else 'en'. Supabase is never queried here — that
+ * would add a DB call to every single request just to render `<html lang>`.
+ */
+function resolveLocale(request: NextRequest): string {
+  const cookieLocale = request.cookies.get(LOCALE_COOKIE)?.value;
+  if (cookieLocale && isSupportedLanguage(cookieLocale)) return cookieLocale;
+
+  const acceptLanguage = request.headers.get('accept-language');
+  if (acceptLanguage) {
+    const primary = acceptLanguage.split(',')[0]?.split('-')[0]?.trim().toLowerCase();
+    if (primary && isSupportedLanguage(primary)) return primary;
+  }
+
+  return 'en';
+}
 
 export async function middleware(request: NextRequest) {
-  const response = NextResponse.next({
-    request,
-  });
-
   // API routes authenticate themselves per-request (getSessionForApiRoute →
   // cookie-based getSession(), no network call) and don't rely on middleware
   // to refresh the session cookie. Skipping the network round-trip to
@@ -17,6 +40,43 @@ export async function middleware(request: NextRequest) {
   // API call. Pages/Server Components still get the refresh below, since they
   // read the session from the cookie without re-verifying it themselves.
   const isApiRoute = request.nextUrl.pathname.startsWith('/api/');
+
+  // Locale resolution (pages only — API routes have no <html lang> to serve
+  // and don't need the header). Forwarded via a request header so
+  // app/layout.tsx can read it with headers() without re-parsing cookies.
+  let locale: string | null = null;
+  let requestHadLocaleCookie = true;
+  if (!isApiRoute) {
+    requestHadLocaleCookie = request.cookies.has(LOCALE_COOKIE);
+    locale = resolveLocale(request);
+  }
+
+  const requestHeaders = new Headers(request.headers);
+  if (locale) {
+    requestHeaders.set(LOCALE_HEADER, locale);
+    // Next.js Server Components have no direct access to the request path;
+    // app/layout.tsx (a Server Component) needs it to preload the right
+    // namespace via namespacesForPath() — see lib/i18n/server.ts.
+    requestHeaders.set(PATHNAME_HEADER, request.nextUrl.pathname);
+  }
+
+  const response = NextResponse.next({
+    request: { headers: requestHeaders },
+  });
+
+  // First request with no saved preference: seed the cookie so subsequent
+  // requests (and the client-side i18next instance) agree with what the
+  // server just rendered, instead of re-guessing from Accept-Language every
+  // time. Once Settings saves a real preference this is overwritten from
+  // users.settings.language — see components/i18n/LanguageProvider.tsx.
+  if (locale && !requestHadLocaleCookie) {
+    response.cookies.set(LOCALE_COOKIE, locale, {
+      maxAge: LOCALE_COOKIE_MAX_AGE,
+      httpOnly: false, // read by client-side i18next init — see lib/i18n/config.ts
+      sameSite: 'lax',
+      path: '/',
+    });
+  }
 
   // CSRF defense-in-depth: the Supabase session cookie is SameSite=Lax
   // (required so the browser client can read it — see @supabase/ssr's

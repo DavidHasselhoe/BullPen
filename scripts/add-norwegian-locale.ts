@@ -1,12 +1,20 @@
 /**
- * One-off script: adds Norwegian as a supported language.
+ * SUPERSEDED — do not run. Its one job (bootstrap Norwegian as a 7th locale)
+ * is done: all 7 locales now have full key parity. It also reads/writes the
+ * flat lib/i18n/locales/<lang>.json layout, which no longer exists — the i18n
+ * effort's Phase 0.1 restructured locales into lib/i18n/locales/<lang>/<ns>.json
+ * per-namespace files (required for per-namespace lazy loading; see
+ * lib/i18n/config.ts). Running this script now would throw on the missing
+ * files, not silently corrupt anything, but it's kept only for history.
+ *
+ * Phase 2 of the i18n effort replaces this with scripts/translate-locales.ts —
+ * batched, incremental (only re-translates changed keys), and namespace-aware.
+ *
+ * Original docs, for reference:
  *  1. Translates "Norwegian" into the 5 existing non-English locales and
  *     patches languages.no into each of their JSON files.
  *  2. Translates the entire en.json object into Norwegian and writes
  *     lib/i18n/locales/no.json.
- *
- * Usage: npm run add-norwegian-locale
- * Run once, after adding "no": "Norwegian" to en.json's languages block.
  */
 
 import { config } from 'dotenv';

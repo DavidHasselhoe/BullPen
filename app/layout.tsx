@@ -6,6 +6,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 // Enable Web Analytics in Vercel Dashboard: Project → Analytics → Enable, then redeploy.
 import "./globals.css";
 import { Providers } from "./providers";
+import { getRequestLocale, getRequestPathname, loadResources } from "@/lib/i18n/server";
 import { AuthNavigation } from "@/components/navigation/AuthNavigation";
 import { BackgroundProvider } from "@/components/backgrounds/BackgroundProvider";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
@@ -81,14 +82,24 @@ const WEBSITE_JSON_LD = {
   url: "https://bullpen.no",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Reading headers() here (via getRequestLocale/getRequestPathname) makes
+  // every route dynamically rendered, including the currently-static
+  // marketing/legal pages — an accepted trade-off for Phase 1 of the i18n
+  // effort: marketing translation is out of scope, most in-app pages are
+  // already force-dynamic, and these are cheap text renders. Splitting into
+  // two root layouts (marketing vs. app) via route groups would avoid this
+  // and is deferred; see the i18n plan's Phase 0.2 for the full reasoning.
+  const [locale, pathname] = await Promise.all([getRequestLocale(), getRequestPathname()]);
+  const resources = await loadResources(locale, pathname);
+
   return (
     <html
-      lang="en"
+      lang={locale}
       className={`dark h-full ${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable}`}
     >
       <body className="antialiased h-full min-h-screen overflow-x-hidden scrollbar-hide">
@@ -100,7 +111,7 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(WEBSITE_JSON_LD) }}
         />
-        <Providers>
+        <Providers locale={locale} resources={resources}>
           <ThemeProvider>
             <AIPanelProvider>
               <CommandPaletteProvider>
