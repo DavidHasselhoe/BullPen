@@ -2,6 +2,8 @@
 
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { motion, useReducedMotion } from 'framer-motion';
@@ -71,20 +73,22 @@ const LEGEND_STEPS = RAMP.map((step, i) => ({ fill: step.fill, label: LEGEND_LAB
 
 // ─── Session helpers ────────────────────────────────────────────────────────
 
-function sessionLabel(session: Session): string | null {
-  if (session === 'pre') return 'Pre-Market';
-  if (session === 'post') return 'After-Hours';
+function sessionLabel(session: Session, t: TFunction): string | null {
+  if (session === 'pre') return t('heatmapPreMarket', 'Pre-Market');
+  if (session === 'post') return t('heatmapPostMarket', 'After-Hours');
   return null;
 }
 
 // ─── Session badge ────────────────────────────────────────────────────────────
 
 function SessionBadge({ session, connected }: { session: Session; connected: boolean }) {
+  const { t } = useTranslation('tools');
+
   if (!connected) {
     return (
       <div className="flex items-center gap-1.5 rounded-full border border-border bg-background/80 px-2.5 py-1 text-xs font-medium text-muted-foreground">
         <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
-        Reconnecting
+        {t('heatmapReconnecting', 'Reconnecting')}
       </div>
     );
   }
@@ -93,7 +97,7 @@ function SessionBadge({ session, connected }: { session: Session; connected: boo
     return (
       <div className="flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-1 text-xs font-medium text-emerald-400">
         <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-        Live
+        {t('heatmapLive', 'Live')}
       </div>
     );
   }
@@ -101,14 +105,14 @@ function SessionBadge({ session, connected }: { session: Session; connected: boo
     return (
       <div className="flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-500">
         <span className="h-2 w-2 rounded-full bg-amber-500" />
-        {sessionLabel(session)}
+        {sessionLabel(session, t)}
       </div>
     );
   }
   return (
     <div className="flex items-center gap-1.5 rounded-full border border-border bg-background/80 px-2.5 py-1 text-xs font-medium text-muted-foreground">
       <span className="h-2 w-2 rounded-full bg-muted-foreground/40" />
-      Market Closed
+      {t('heatmapMarketClosed', 'Market Closed')}
     </div>
   );
 }
@@ -280,9 +284,10 @@ function renderCell(
 // ─── Legend ───────────────────────────────────────────────────────────────────
 
 function HeatmapLegend() {
+  const { t } = useTranslation('tools');
   return (
     <div className="flex items-center gap-3 flex-wrap">
-      <span className="text-xs text-muted-foreground font-medium shrink-0">Performance:</span>
+      <span className="text-xs text-muted-foreground font-medium shrink-0">{t('heatmapPerformanceLabel', 'Performance:')}</span>
       <div className="flex items-center gap-1.5 flex-wrap">
         {LEGEND_STEPS.map((s) => (
           <div key={s.label} className="flex items-center gap-1">
@@ -323,6 +328,7 @@ function SectorFilter({
   active: string | null;
   onChange: (s: string | null) => void;
 }) {
+  const { t } = useTranslation('tools');
   const ordered = [
     ...SECTOR_ORDER.filter((s) => sectors.includes(s)),
     ...sectors.filter((s) => !SECTOR_ORDER.includes(s)).sort(),
@@ -339,7 +345,7 @@ function SectorFilter({
             : 'border-border text-muted-foreground hover:text-foreground hover:border-foreground/30'
         )}
       >
-        All
+        {t('heatmapSectorAll', 'All')}
       </button>
       {ordered.map((s) => (
         <button
@@ -362,10 +368,11 @@ function SectorFilter({
 // ─── Floating tooltip ─────────────────────────────────────────────────────────
 
 function FloatingTooltip({ pos, session }: { pos: TooltipPos | null; session: Session }) {
+  const { t } = useTranslation('tools');
   if (!pos) return null;
   const { x, y, stock } = pos;
   const pct = `${stock.change >= 0 ? '+' : ''}${stock.change.toFixed(2)}%`;
-  const extended = sessionLabel(session);
+  const extended = sessionLabel(session, t);
   const absChange =
     stock.previousClose != null && stock.previousClose > 0
       ? stock.price - stock.previousClose
@@ -389,13 +396,13 @@ function FloatingTooltip({ pos, session }: { pos: TooltipPos | null; session: Se
       )}
       <div className="mt-2 space-y-1 text-xs">
         <div className="flex justify-between gap-4">
-          <span className="text-muted-foreground">Price</span>
+          <span className="text-muted-foreground">{t('heatmapTooltipPrice', 'Price')}</span>
           <span className="font-mono tabular-nums font-semibold">
             ${stock.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </span>
         </div>
         <div className="flex justify-between gap-4">
-          <span className="text-muted-foreground">Change</span>
+          <span className="text-muted-foreground">{t('heatmapTooltipChange', 'Change')}</span>
           <span className={cn('font-mono tabular-nums font-semibold', stock.change >= 0 ? 'text-emerald-400' : 'text-red-400')}>
             {pct}
             {absChange != null && (
@@ -407,7 +414,7 @@ function FloatingTooltip({ pos, session }: { pos: TooltipPos | null; session: Se
         </div>
         {stock.previousClose != null && stock.previousClose > 0 && (
           <div className="flex justify-between gap-4">
-            <span className="text-muted-foreground">Prev Close</span>
+            <span className="text-muted-foreground">{t('heatmapTooltipPrevClose', 'Prev Close')}</span>
             <span className="font-mono tabular-nums">
               ${stock.previousClose.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
@@ -415,7 +422,7 @@ function FloatingTooltip({ pos, session }: { pos: TooltipPos | null; session: Se
         )}
         {stock.volume != null && stock.volume > 0 && (
           <div className="flex justify-between gap-4">
-            <span className="text-muted-foreground">Volume</span>
+            <span className="text-muted-foreground">{t('heatmapTooltipVolume', 'Volume')}</span>
             <span className="font-mono tabular-nums">
               {stock.volume >= 1_000_000
                 ? `${(stock.volume / 1_000_000).toFixed(1)}M`
@@ -551,6 +558,8 @@ function SectorLeaderboard({
     return max > 0 ? max : 1;
   }, [rows]);
 
+  const { t } = useTranslation('tools');
+
   if (rows.length === 0) return null;
 
   return (
@@ -558,7 +567,7 @@ function SectorLeaderboard({
       <div className="mb-3 flex items-center gap-2">
         <ListOrdered className="h-4 w-4 text-primary" aria-hidden />
         <h2 id="leaderboard-heading" className="text-lg font-semibold tracking-tight text-foreground">
-          Sector Leaderboard
+          {t('heatmapSectorLeaderboard', 'Sector Leaderboard')}
         </h2>
       </div>
       <div className="overflow-hidden rounded-xl border border-border/50 bg-background/40">
@@ -596,6 +605,7 @@ function HeatmapSkeleton() {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function HeatmapClientPage() {
+  const { t } = useTranslation('tools');
   const router = useRouter();
   const prefersReducedMotion = useReducedMotion();
   const { isAuthenticated } = useAuth();
@@ -691,7 +701,7 @@ export default function HeatmapClientPage() {
           className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-6 group"
         >
           <ArrowLeft className="h-3 w-3 transition-transform group-hover:-translate-x-0.5" />
-          All tools
+          {t('allToolsLink', 'All tools')}
         </Link>
 
         <motion.div
@@ -705,10 +715,10 @@ export default function HeatmapClientPage() {
             </div>
             <div>
               <h1 className="text-2xl font-bold tracking-tight text-foreground">
-                {mode === 'my-stocks' ? 'My Stocks Heatmap' : 'S&P 500 Sector Heatmap'}
+                {mode === 'my-stocks' ? t('heatmapMyStocksTitle', 'My Stocks Heatmap') : t('heatmapSp500Title', 'S&P 500 Sector Heatmap')}
               </h1>
               <p className="text-muted-foreground text-sm mt-0.5">
-                Sized by market cap · colored by today&apos;s performance
+                {t('heatmapSubtitle', "Sized by market cap · colored by today's performance")}
               </p>
             </div>
           </div>
@@ -717,14 +727,14 @@ export default function HeatmapClientPage() {
             {isAuthenticated && (
               <Tabs value={mode} onValueChange={(v) => setMode(v as HeatmapMode)}>
                 <TabsList>
-                  <TabsTrigger value="sp500">S&amp;P 500</TabsTrigger>
-                  <TabsTrigger value="my-stocks">My Stocks</TabsTrigger>
+                  <TabsTrigger value="sp500">{t('heatmapSp500Tab', 'S&P 500')}</TabsTrigger>
+                  <TabsTrigger value="my-stocks">{t('heatmapMyStocksTab', 'My Stocks')}</TabsTrigger>
                 </TabsList>
               </Tabs>
             )}
             <SessionBadge session={session} connected={connected} />
             {!connected && lastUpdated && (
-              <span className="text-xs text-muted-foreground tabular-nums">As of {lastUpdated}</span>
+              <span className="text-xs text-muted-foreground tabular-nums">{t('heatmapAsOf', 'As of {{time}}', { time: lastUpdated })}</span>
             )}
           </div>
         </motion.div>
@@ -754,7 +764,7 @@ export default function HeatmapClientPage() {
                 <button
                   onClick={() => setSearchQuery('')}
                   className="absolute right-1.5 text-muted-foreground hover:text-foreground"
-                  aria-label="Clear search"
+                  aria-label={t('heatmapClearSearch', 'Clear search')}
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
@@ -784,36 +794,36 @@ export default function HeatmapClientPage() {
               <div className="flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/10 p-4 max-w-md">
                 <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-medium text-destructive">Failed to load heatmap</p>
+                  <p className="font-medium text-destructive">{t('heatmapErrorTitle', 'Failed to load heatmap')}</p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {data?.error ?? 'An unexpected error occurred. Please try again.'}
+                    {data?.error ?? t('heatmapErrorFallback', 'An unexpected error occurred. Please try again.')}
                   </p>
                 </div>
               </div>
-              <Button variant="outline" onClick={() => refetch()}>Try again</Button>
+              <Button variant="outline" onClick={() => refetch()}>{t('tryAgainButton', 'Try again')}</Button>
             </div>
           ) : treemapData.length === 0 ? (
             <div className="flex h-[55vh] items-center justify-center sm:h-[65vh]">
               {mode === 'my-stocks' && !sectorFilter ? (
                 <EmptyState
                   pose="shrug"
-                  title="Nothing to show yet"
-                  description="Add a stock to your holdings or watchlist to see it here."
+                  title={t('heatmapMyStocksEmptyTitle', 'Nothing to show yet')}
+                  description={t('heatmapMyStocksEmptyDescription', 'Add a stock to your holdings or watchlist to see it here.')}
                   imageSize={120}
                 >
                   <div className="flex justify-center gap-3 text-xs">
                     <Link href="/holdings" className="text-primary underline-offset-4 hover:underline">
-                      Go to Holdings
+                      {t('heatmapGoToHoldings', 'Go to Holdings')}
                     </Link>
                     <Link href="/watchlist" className="text-primary underline-offset-4 hover:underline">
-                      Go to Watchlist
+                      {t('heatmapGoToWatchlist', 'Go to Watchlist')}
                     </Link>
                   </div>
                 </EmptyState>
               ) : (
                 <EmptyState
                   pose="shrug"
-                  title={sectorFilter ? `No data for ${sectorFilter}` : 'No heatmap data available'}
+                  title={sectorFilter ? t('heatmapNoDataForSector', 'No data for {{sector}}', { sector: sectorFilter }) : t('heatmapNoDataGeneric', 'No heatmap data available')}
                   imageSize={120}
                 />
               )}
@@ -850,7 +860,10 @@ export default function HeatmapClientPage() {
         )}
 
         <p className="mt-6 text-center text-[11px] text-muted-foreground/70">
-          Prices stream live via WebSocket during market hours. Sector and market-cap classification refresh periodically.
+          {t(
+            'heatmapFooterNote',
+            'Prices stream live via WebSocket during market hours. Sector and market-cap classification refresh periodically.'
+          )}
         </p>
       </main>
 

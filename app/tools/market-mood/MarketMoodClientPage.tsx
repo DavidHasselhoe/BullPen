@@ -96,7 +96,7 @@ export default function MarketMoodClientPage() {
           >
             <div className="flex justify-center">
               <Button variant="outline" size="sm" onClick={() => refetch()}>
-                {t('marketMoodTryAgain', 'Try again')}
+                {t('tryAgainButton', 'Try again')}
               </Button>
             </div>
           </EmptyState>
