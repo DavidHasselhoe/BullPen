@@ -12,6 +12,8 @@
     "lint": "eslint",
     "typecheck": "node scripts/typecheck-diff.mjs",
     "typecheck:update": "node scripts/typecheck-diff.mjs --update",
+    "i18n:pseudo": "node scripts/generate-pseudo-locale.mjs",
+    "i18n:translate": "tsx scripts/translate-locales.ts",
     "test-ai": "tsx scripts/test-ai-analysis.ts",
     "test-calendar-market-cap": "tsx scripts/test-calendar-market-cap.ts",
     "test-calendar-day-model": "tsx scripts/test-calendar-day-model.ts",
@@ -116,6 +118,8 @@
     "dotenv": "^17.2.3",
     "eslint": "^9",
     "eslint-config-next": "16.1.1",
+    "eslint-plugin-i18next": "^6.1.5",
+    "i18next-cli": "^1.71.3",
     "tailwindcss": "^4",
     "tsx": "^4.7.0",
     "typescript": "^5"

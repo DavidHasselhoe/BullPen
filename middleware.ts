@@ -4,7 +4,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
-import { isSupportedLanguage } from './lib/i18n/language-names';
+import { isSupportedLanguage, isValidLocale } from './lib/i18n/language-names';
 
 const LOCALE_COOKIE = 'bp_lang';
 const LOCALE_HEADER = 'x-bp-locale';
@@ -20,8 +20,12 @@ const LOCALE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
  * would add a DB call to every single request just to render `<html lang>`.
  */
 function resolveLocale(request: NextRequest): string {
+  // isValidLocale (not isSupportedLanguage) so the dev-only 'qa' pseudo-locale
+  // cookie works for the un-extracted-string sweep (see lib/i18n/language-names.ts) —
+  // real users only ever have a SUPPORTED_LANGUAGES value here since that's
+  // all the Settings dropdown can write.
   const cookieLocale = request.cookies.get(LOCALE_COOKIE)?.value;
-  if (cookieLocale && isSupportedLanguage(cookieLocale)) return cookieLocale;
+  if (cookieLocale && isValidLocale(cookieLocale)) return cookieLocale;
 
   const acceptLanguage = request.headers.get('accept-language');
   if (acceptLanguage) {

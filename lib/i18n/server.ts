@@ -1,7 +1,7 @@
 import 'server-only';
 import { headers } from 'next/headers';
 import { ALWAYS_LOADED, namespacesForPath, type Namespace } from './namespaces';
-import { isSupportedLanguage } from './language-names';
+import { isValidLocale } from './language-names';
 
 /**
  * Reads the locale middleware already resolved (see middleware.ts's
@@ -12,7 +12,7 @@ import { isSupportedLanguage } from './language-names';
 export async function getRequestLocale(): Promise<string> {
   const h = await headers();
   const locale = h.get('x-bp-locale');
-  return locale && isSupportedLanguage(locale) ? locale : 'en';
+  return locale && isValidLocale(locale) ? locale : 'en';
 }
 
 /** The request path, forwarded by middleware.ts since Server Components have no direct access to it. */

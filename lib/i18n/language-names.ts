@@ -27,3 +27,24 @@ export function languageName(code: string): string {
 export function isSupportedLanguage(code: string): boolean {
   return code in LANGUAGE_NAMES;
 }
+
+/**
+ * Dev-only pseudo-locale (`?bp_lang=qa` / `bp_lang=qa` cookie) — every string
+ * wrapped in `«»` with vowels doubled (see scripts/generate-pseudo-locale.mjs).
+ * Anything still rendering as plain English under this locale is, by
+ * definition, an un-extracted literal. This is the primary tool for finding
+ * strings a codemod missed, since `ignoreBuildErrors: true` means neither the
+ * build nor a type error will catch one.
+ *
+ * Deliberately NOT part of SUPPORTED_LANGUAGES — it must never appear in the
+ * Settings language dropdown or be selectable by a real user. isValidLocale()
+ * is the separate, wider check that middleware.ts/lib/i18n/server.ts use for
+ * resolving what the client is ALLOWED to request, which is real languages
+ * plus this one escape hatch, gated to non-production.
+ */
+export const PSEUDO_LOCALE = 'qa';
+
+export function isValidLocale(code: string): boolean {
+  if (isSupportedLanguage(code)) return true;
+  return code === PSEUDO_LOCALE && process.env.NODE_ENV !== 'production';
+}

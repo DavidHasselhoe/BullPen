@@ -1,10 +1,36 @@
 import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
+import i18next from "eslint-plugin-i18next";
+
+/**
+ * i18n lint ratchet (see the i18n effort plan, Phase 2b). `i18next/no-literal-string`
+ * flags a hardcoded JSX text string — but it's only turned on for directories
+ * that have ALREADY been through the Phase 1 codemod + review pass and verified
+ * to have zero hardcoded strings. Enabling it repo-wide would just flag the
+ * ~2,000 strings still awaiting conversion; scoped like this, it instead makes
+ * a REGRESSION in an already-converted area impossible without failing the
+ * lint gate that already runs every session — no ongoing discipline required.
+ *
+ * Add a directory's glob here the same PR its Phase 1 conversion completes.
+ * Empty for now — nothing has been fully converted yet.
+ */
+const I18N_DONE_DIRS = [];
 
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  ...(I18N_DONE_DIRS.length > 0
+    ? [
+        {
+          files: I18N_DONE_DIRS,
+          plugins: { i18next },
+          rules: {
+            "i18next/no-literal-string": ["error", { mode: "jsx-text-only" }],
+          },
+        },
+      ]
+    : []),
   {
     // Respect the codebase's existing `_`-prefix convention for intentionally
     // unused handler params (e.g. `_session`, `_ctx`) instead of flagging them.
