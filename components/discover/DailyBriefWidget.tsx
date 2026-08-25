@@ -758,6 +758,18 @@ export function DailyBriefWidget() {
     },
     staleTime: 5 * 60_000,
     retry: false,
+    // Keep polling until today's brief actually exists. The 06:30 UTC cron can
+    // land any time after that, and staleTime + no refetchOnWindowFocus
+    // trigger alone left a tab open through the morning stuck showing
+    // yesterday's brief (or the "check back after..." placeholder) until the
+    // user manually reloaded. Stops polling as soon as a real today's brief
+    // is in hand — no need to keep checking once it's there.
+    refetchInterval: (query) => {
+      const d = query.state.data;
+      if (!d || d.locked) return false;
+      if (d.brief === null || d.is_today === false) return 5 * 60_000;
+      return false;
+    },
   });
 
   if (error) return null;

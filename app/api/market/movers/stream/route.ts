@@ -200,6 +200,19 @@ async function streamHandler(request: NextRequest) {
       // Register with the shared singleton — opens WS if not already open
       WsManager.addListener(listener);
 
+      // Emit the REST-seeded snapshot immediately rather than waiting for the
+      // first WS tick. onTick only fires on real trade activity, so during a
+      // quiet stretch (overnight, or the first minutes of a session most
+      // symbols haven't traded yet) a client could go long past this stream's
+      // own 4.5-min reconnect cycle without ever receiving an update — stuck
+      // showing the previous session's movers until the page was manually
+      // reloaded (which resets client state and re-triggers the REST
+      // fallback). initialQuotes was just re-fetched with the CURRENT
+      // session's prepost flag above, so this snapshot is already
+      // session-correct on every reconnect, tick or no tick.
+      lastEmitAt = Date.now();
+      emitSnapshot();
+
       // Keep-alive ping every 15s so the browser doesn't time out the SSE connection
       const pingInterval = setInterval(() => {
         if (closed) {
