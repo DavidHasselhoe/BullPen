@@ -50,6 +50,7 @@ import {
   type SplitsCalendarItem,
   type IPOCalendarItem,
 } from '@/lib/twelvedata/twelvedata-client';
+import { fetchNasdaqEarningsDay, type NasdaqEarningsRow } from './nasdaq-earnings-calendar';
 import { getCachedMany, getCachedManyStale, setCached } from '@/lib/cache/market-data-cache';
 import { tryReserveCredits, waitForCronCreditBudget } from '@/lib/twelvedata/credit-budget';
 import { addDays, todayET } from '@/lib/dates/calendar-format';
@@ -74,6 +75,83 @@ export const CALENDAR_CREDITS_PER_REQUEST = 40;
 export const MAX_LIVE_DAYS_PER_REQUEST = 8;
 
 const COUNTRY = 'United States';
+
+/**
+ * How many days ahead of "today" get Nasdaq's free calendar (nasdaq-earnings-
+ * calendar.ts) merged in on top of TD's /earnings_calendar. TD only confirms
+ * dates ~3-6 weeks out (see calendarDayTtl below); verified live 2026-08-25
+ * that this leaves the whole near-term window returning 0-2 US rows/day —
+ * even known quarterly reporters (FDX, NKE) had no forward date anywhere in
+ * TD's data — while Nasdaq's calendar returned 50+ rows for the same days,
+ * including megacaps with real EPS estimates and BMO/AMC timing. 21 days
+ * gives a few days of margin past TD's own "near future" TTL bucket (7 days)
+ * without reaching into the range TD is more likely to have picked up.
+ */
+const NASDAQ_MERGE_DAYS_AHEAD = 21;
+
+function dayDeltaFromToday(date: string, today: string): number {
+  const delta = (Date.parse(`${date}T12:00:00Z`) - Date.parse(`${today}T12:00:00Z`)) / 86_400_000;
+  return Number.isFinite(delta) ? Math.round(delta) : NaN;
+}
+
+function isWithinNasdaqMergeWindow(date: string, today: string): boolean {
+  const delta = dayDeltaFromToday(date, today);
+  return delta >= 0 && delta <= NASDAQ_MERGE_DAYS_AHEAD;
+}
+
+function mapNasdaqRowToEarningsItem(row: NasdaqEarningsRow, date: string): EarningsCalendarItem {
+  return {
+    symbol: row.symbol,
+    name: row.name,
+    date,
+    time: row.time ?? '',
+    eps_estimate: row.epsEstimate,
+    eps_actual: row.epsActual,
+    revenue_estimate: null,
+    revenue_actual: null,
+    fiscal_quarter: undefined,
+    surprise: row.surprisePercent,
+  };
+}
+
+/**
+ * Merges TD's /earnings_calendar rows with Nasdaq's free calendar for one
+ * near-term day. TD stays the base row for any symbol it has (so its other
+ * fields are kept when present); Nasdaq fills in any symbol TD is missing
+ * entirely, and backfills `time`/`eps_estimate` on a TD row that came back
+ * empty for them — TD's /earnings_calendar returns `time: ""` on effectively
+ * every row (see components/tools/calendar/EventRows.tsx's dead-code-removal
+ * comment), so Nasdaq is what makes real BMO/AMC timing possible at all.
+ * Nasdaq's own fetch fails soft (see its file header), so a scrape breakage
+ * degrades this to "TD-only for that day," never a thrown error.
+ */
+async function fetchEarningsDayWithNasdaqFill(date: string): Promise<EarningsCalendarItem[]> {
+  const [tdRows, nasdaqRows] = await Promise.all([
+    getEarningsCalendarRange(date, date, COUNTRY),
+    fetchNasdaqEarningsDay(date),
+  ]);
+
+  const bySymbol = new Map<string, EarningsCalendarItem>();
+  for (const row of tdRows) {
+    if (row.symbol) bySymbol.set(row.symbol.toUpperCase(), row);
+  }
+
+  for (const nRow of nasdaqRows) {
+    const existing = bySymbol.get(nRow.symbol);
+    if (!existing) {
+      bySymbol.set(nRow.symbol, mapNasdaqRowToEarningsItem(nRow, date));
+      continue;
+    }
+    bySymbol.set(nRow.symbol, {
+      ...existing,
+      name: existing.name || nRow.name,
+      time: existing.time || nRow.time || '',
+      eps_estimate: existing.eps_estimate ?? nRow.epsEstimate,
+    });
+  }
+
+  return [...bySymbol.values()];
+}
 
 /**
  * Rows to request per dividends call. That feed is global and uncapped-by-
@@ -153,10 +231,16 @@ function rowDate(kind: CalendarKind, row: CalendarRow): string {
 async function fetchFromProvider(
   kind: CalendarKind,
   from: string,
-  to: string
+  to: string,
+  today: string
 ): Promise<CalendarRow[]> {
   switch (kind) {
     case 'earnings':
+      // Earnings is always fetched one day at a time (see PER_DAY_KINDS), so
+      // from === to here — the merge only ever targets a single real day.
+      if (from === to && isWithinNasdaqMergeWindow(from, today)) {
+        return fetchEarningsDayWithNasdaqFill(from);
+      }
       return getEarningsCalendarRange(from, to, COUNTRY);
     case 'dividends':
       return getDividendsCalendar(from, to, DIVIDENDS_OUTPUTSIZE);
@@ -183,7 +267,7 @@ async function fetchAndCacheUnit(
   to: string,
   today: string
 ): Promise<Map<string, CalendarRow[]>> {
-  const rows = await fetchFromProvider(kind, from, to);
+  const rows = await fetchFromProvider(kind, from, to, today);
   const dates = datesBetween(from, to);
 
   const byDate = new Map<string, CalendarRow[]>();

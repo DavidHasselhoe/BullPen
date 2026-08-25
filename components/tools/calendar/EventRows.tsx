@@ -82,13 +82,26 @@ export function DetailEventRow({ event }: { event: UnifiedEvent }) {
           >
             {e.symbol}
           </Link>
-          {/* A BMO/AMC badge and a fiscal-quarter chip used to sit under the
-              name. Both were unreachable: /earnings_calendar returns an empty
-              `time` on every row, and getEarningsCalendarRange hardcodes
-              `fiscal_quarter: undefined` because the endpoint does not return
-              it either. The wrapper rendered an empty div on every row. */}
+          {/* A fiscal-quarter chip used to sit here too — still dead: neither
+              TD's /earnings_calendar nor Nasdaq's calendar returns it. The
+              BMO/AMC badge below came back to life once calendar-days.ts
+              started merging in Nasdaq's free calendar for near-term days,
+              which actually populates `time` (TD's own feed returns "" on
+              effectively every row). */}
           <div className="min-w-0 flex-1">
-            {e.name && <p className="text-xs text-muted-foreground truncate leading-tight">{e.name}</p>}
+            <div className="flex items-center gap-1.5">
+              {e.name && <p className="text-xs text-muted-foreground truncate leading-tight">{e.name}</p>}
+              {e.time === 'BMO' && (
+                <span className="shrink-0 text-[10px] font-medium px-1 py-px bg-muted/60 rounded text-muted-foreground/85">
+                  Before open
+                </span>
+              )}
+              {e.time === 'AMC' && (
+                <span className="shrink-0 text-[10px] font-medium px-1 py-px bg-muted/60 rounded text-muted-foreground/85">
+                  After close
+                </span>
+              )}
+            </div>
           </div>
         </div>
         <div className="text-right text-xs shrink-0 space-y-0.5">

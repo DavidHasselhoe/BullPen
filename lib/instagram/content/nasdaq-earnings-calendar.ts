@@ -1,93 +1,19 @@
 /**
- * Free, public Nasdaq earnings-calendar JSON API — no key, no auth. Same
- * site earnings-web-search.ts's prompt already told Claude to search first;
- * this calls it directly instead of paying an LLM to re-extract structured
- * data that's already sitting there in clean JSON.
+ * Instagram-pipeline-specific wrapper over the shared Nasdaq earnings-calendar
+ * fetcher (lib/market-data/nasdaq-earnings-calendar.ts) — filters to an
+ * allowlist and shapes rows as WebSearchEarningsHit so this module's two
+ * callers (earnings-calendar.ts, earnings-results.ts) and their downstream
+ * fallback (earnings-web-search.ts) don't need to change.
  *
- * KNOWN LIMITATION (verified live 2026-08-17): like TwelveData's own
- * /earnings_calendar (see earnings-web-search.ts's file header), this
- * aggregator isn't reliably populated for large-cap names more than ~3 days
- * out — a date 4 days out (the Friday of a Sunday-generated week) showed
- * only small/mid-caps with no EPS, and 7 days out showed almost nothing.
- * That's why this is the PRIMARY source, not the ONLY source —
- * earnings-calendar.ts falls back to a narrower Claude web search for
- * whatever's still missing after this, instead of researching the whole
- * week from scratch every run.
- *
- * Also unofficial: this is Nasdaq's own internal API backing their public
- * earnings calendar page, not a documented/licensed developer product — it
- * could change shape or start blocking scraping without notice. Fails soft
- * (a request error or empty day just yields no hits, same as a genuinely
- * quiet day) rather than throwing, so a format change degrades to "the
- * Claude fallback does more work" instead of breaking the pipeline.
- *
- * PAST-DATE BONUS (verified live 2026-08-22): the same endpoint, queried for
- * a date that already happened, returns `eps` (actual) and `surprise` (%)
- * alongside `epsForecast` — the original estimate and the real result in one
- * response. earnings-results.ts (the Saturday "how did the week go" recap)
- * relies on this instead of a second source: no Claude fallback needed for
- * historical data the way the forward-looking case needs one.
+ * Same site earnings-web-search.ts's prompt already told Claude to search
+ * first; this calls it directly instead of paying an LLM to re-extract
+ * structured data that's already sitting there in clean JSON. See the shared
+ * module's file header for cost/accuracy/limitation details — they're
+ * unchanged by this wrapper.
  */
 
+import { fetchNasdaqEarningsDay } from '@/lib/market-data/nasdaq-earnings-calendar';
 import type { WebSearchEarningsHit } from './earnings-web-search';
-
-const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36';
-
-function parseTime(raw: string | undefined): 'BMO' | 'AMC' | null {
-  if (raw === 'time-pre-market') return 'BMO';
-  if (raw === 'time-after-hours') return 'AMC';
-  return null;
-}
-
-/** "$4.71" -> 4.71, "($0.45)" -> -0.45, "" -> null. */
-function parseEps(raw: string | undefined): number | null {
-  if (!raw) return null;
-  const negative = raw.startsWith('(') && raw.endsWith(')');
-  const cleaned = raw.replace(/[()$,]/g, '').trim();
-  if (!cleaned) return null;
-  const n = Number(cleaned);
-  if (!Number.isFinite(n)) return null;
-  return negative ? -n : n;
-}
-
-/** "3.6" -> 3.6, "-4.2" -> -4.2, "" -> null. Only ever present on a
- *  past-date response (see file header) — a future date's row simply omits
- *  the field, which comes through here as undefined -> null anyway. */
-function parseSurprise(raw: string | undefined): number | null {
-  if (!raw) return null;
-  const n = Number(raw.replace(/,/g, '').trim());
-  return Number.isFinite(n) ? n : null;
-}
-
-interface NasdaqCalendarRow {
-  symbol?: string;
-  time?: string;
-  epsForecast?: string;
-  /** Actual reported EPS — only present once a report has happened
-   *  (see file header's PAST-DATE BONUS note). */
-  eps?: string;
-  /** eps vs epsForecast surprise, as a percent string — same
-   *  past-date-only availability as `eps`. */
-  surprise?: string;
-}
-
-interface NasdaqCalendarResponse {
-  data?: { rows?: NasdaqCalendarRow[] | null } | null;
-}
-
-async function fetchOneDay(date: string): Promise<NasdaqCalendarRow[]> {
-  try {
-    const res = await fetch(`https://api.nasdaq.com/api/calendar/earnings?date=${date}`, {
-      headers: { 'User-Agent': USER_AGENT, Accept: 'application/json' },
-    });
-    if (!res.ok) return [];
-    const body = (await res.json()) as NasdaqCalendarResponse;
-    return body.data?.rows ?? [];
-  } catch (err) {
-    console.error(`[nasdaq-earnings-calendar] fetch failed for ${date}:`, err);
-    return [];
-  }
-}
 
 function dateRange(weekStart: string, weekEnd: string): string[] {
   const dates: string[] = [];
@@ -111,21 +37,20 @@ export async function fetchNasdaqEarningsCalendar(
   allowlist: ReadonlySet<string>
 ): Promise<WebSearchEarningsHit[]> {
   const dates = dateRange(weekStart, weekEnd);
-  const perDay = await Promise.all(dates.map((date) => fetchOneDay(date)));
+  const perDay = await Promise.all(dates.map((date) => fetchNasdaqEarningsDay(date)));
 
   const hits: WebSearchEarningsHit[] = [];
   perDay.forEach((rows, i) => {
     const date = dates[i];
     for (const row of rows) {
-      const symbol = row.symbol?.toUpperCase();
-      if (!symbol || !allowlist.has(symbol)) continue;
+      if (!allowlist.has(row.symbol)) continue;
       hits.push({
-        symbol,
+        symbol: row.symbol,
         date,
-        time: parseTime(row.time),
-        epsEstimate: parseEps(row.epsForecast),
-        epsActual: parseEps(row.eps),
-        surprisePercent: parseSurprise(row.surprise),
+        time: row.time,
+        epsEstimate: row.epsEstimate,
+        epsActual: row.epsActual,
+        surprisePercent: row.surprisePercent,
       });
     }
   });
