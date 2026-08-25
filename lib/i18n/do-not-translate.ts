@@ -8,6 +8,13 @@
  *    every one of these 7 languages' financial press — translating "P/E"
  *    would produce something a beginner investor wouldn't recognize from
  *    any other source they read.
+ *
+ * Deliberately NOT here: "AI". Unlike the tickers/abbreviations above, "AI"
+ * has well-established native abbreviations in German ("KI") and French
+ * ("IA") — forcing it to stay literal "AI" produced translations Haiku
+ * correctly localized (e.g. "KI-Tiefenanalyse") that the validator then
+ * rejected for not containing the substring "AI". Verified live 2026-08-26
+ * on deepDiveTitle/deepDiveTickerTitle in de/tools.json.
  */
 export const DO_NOT_TRANSLATE = [
   // Brand
@@ -40,7 +47,6 @@ export const DO_NOT_TRANSLATE = [
   'MACD',
   'SMA',
   'EMA',
-  'AI',
   'S&P 500',
   'SPY',
   'SPY: S&P 500',

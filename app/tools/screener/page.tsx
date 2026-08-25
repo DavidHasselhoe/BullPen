@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useMemo, useEffect, useRef, Suspense } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, keepPreviousData } from '@tanstack/react-query';
 import { useDebounce } from '@/hooks/use-debounce';
@@ -84,6 +85,7 @@ function paramToView(param: string | null, customViews: ScreenerView[]): ActiveV
 }
 
 function ScreenerContent() {
+  const { t } = useTranslation('tools');
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuth();
@@ -231,15 +233,21 @@ function ScreenerContent() {
       return res.json();
     },
     onSuccess: (result) => {
-      setRefreshStatus(`Refreshed batch ${result.batch + 1}/${result.totalBatches} (${result.refreshed} companies)`);
+      setRefreshStatus(
+        t('screenerRefreshBatchStatus', 'Refreshed batch {{batch}}/{{total}} ({{count}} companies)', {
+          batch: result.batch + 1,
+          total: result.totalBatches,
+          count: result.refreshed,
+        })
+      );
       if (result.nextBatch !== null) {
         setTimeout(() => triggerRefresh(result.nextBatch!), 65_000);
       } else {
-        setRefreshStatus('Screener data refreshed successfully');
+        setRefreshStatus(t('screenerRefreshSuccess', 'Screener data refreshed successfully'));
         refetch();
       }
     },
-    onError: () => setRefreshStatus('Refresh failed — check console'),
+    onError: () => setRefreshStatus(t('screenerRefreshFailed', 'Refresh failed. Check console.')),
   });
 
   // Keep a stable ref to activeView so the URL-sync effect doesn't need it as a dep
@@ -332,37 +340,37 @@ function ScreenerContent() {
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
             <Filter className="h-5 w-5 text-primary" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Stock Screener</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">{t('screenerTitle', 'Stock Screener')}</h1>
           {!isLoading && !customViewEmpty && (
             <Badge variant="secondary" className="text-xs">
-              {data?.total ?? 0} result{(data?.total ?? 0) !== 1 ? 's' : ''}
+              {t('screenerResultCount', { count: data?.total ?? 0 })}
             </Badge>
           )}
           <span className="flex items-center gap-1 text-xs font-medium">
             {!connected ? (
               <>
                 <span className="h-2 w-2 rounded-full bg-amber-500" />
-                <span className="text-amber-500">Connecting…</span>
+                <span className="text-amber-500">{t('screenerSessionConnecting', 'Connecting…')}</span>
               </>
             ) : marketSession === 'regular' ? (
               <>
                 <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-emerald-500">Live</span>
+                <span className="text-emerald-500">{t('screenerSessionLive', 'Live')}</span>
               </>
             ) : marketSession === 'pre' ? (
               <>
                 <span className="h-2 w-2 rounded-full bg-amber-400" />
-                <span className="text-amber-400">Pre-market</span>
+                <span className="text-amber-400">{t('screenerSessionPreMarket', 'Pre-market')}</span>
               </>
             ) : marketSession === 'post' ? (
               <>
                 <span className="h-2 w-2 rounded-full bg-amber-400" />
-                <span className="text-amber-400">After-hours</span>
+                <span className="text-amber-400">{t('screenerSessionAfterHours', 'After-hours')}</span>
               </>
             ) : (
               <>
                 <span className="h-2 w-2 rounded-full bg-muted-foreground/40" />
-                <span className="text-muted-foreground/80">Closed</span>
+                <span className="text-muted-foreground/80">{t('screenerSessionClosed', 'Closed')}</span>
               </>
             )}
           </span>
@@ -372,28 +380,30 @@ function ScreenerContent() {
             {userIsAdmin && (
               <Button
                 variant="outline" size="sm"
-                onClick={() => { setRefreshStatus('Starting refresh…'); triggerRefresh(0); }}
+                onClick={() => { setRefreshStatus(t('screenerRefreshStarting', 'Starting refresh…')); triggerRefresh(0); }}
                 disabled={isRefreshing}
                 className="gap-1.5 h-8 text-xs"
               >
                 <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
-                {isRefreshing ? 'Refreshing…' : 'Refresh Data'}
+                {isRefreshing ? t('screenerRefreshing', 'Refreshing…') : t('screenerRefreshDataButton', 'Refresh Data')}
               </Button>
             )}
           </div>
         </div>
         <p className="text-sm text-muted-foreground">
           {pickedTickers.length > 0
-            ? `Comparing ${pickedTickers.length} cherry-picked stock${pickedTickers.length !== 1 ? 's' : ''}. Clear the search to return to your view.`
+            ? t('screenerDescriptionCherryPicked', { count: pickedTickers.length })
             : activeView.type === 'all'
-              ? `Every stock in BullPen's database — ${data?.total ?? '…'} tickers with live prices and fundamental data.`
+              ? t('screenerDescriptionAll', "Every stock in BullPen's database: {{total}} tickers with live prices and fundamental data.", {
+                  total: data?.total ?? '…',
+                })
               : activeView.type === 'sp500'
-                ? 'Screen the full S&P 500 with live prices and fundamental data.'
+                ? t('screenerDescriptionSp500', 'Screen the full S&P 500 with live prices and fundamental data.')
                 : activeView.type === 'holdings'
-                  ? `Screening your ${userHoldings.length} held position${userHoldings.length !== 1 ? 's' : ''}.`
+                  ? t('screenerDescriptionHoldings', { count: userHoldings.length })
                   : activeView.type === 'watchlist'
-                    ? 'Screening your watchlist.'
-                    : `Screening "${activeView.view.name}"`}
+                    ? t('screenerDescriptionWatchlist', 'Screening your watchlist.')
+                    : t('screenerDescriptionCustomView', 'Screening {{name}}', { name: activeView.view.name })}
         </p>
       </div>
 
@@ -450,7 +460,7 @@ function ScreenerContent() {
                 <details className="group">
                   <summary className="flex cursor-pointer items-center gap-2 text-sm font-medium">
                     <Filter className="h-4 w-4" />
-                    Filters
+                    {t('screenerFiltersLabel', 'Filters')}
                     {activeFilterCount > 0 && (
                       <Badge variant="secondary" className="text-xs">{activeFilterCount}</Badge>
                     )}
@@ -477,7 +487,7 @@ function ScreenerContent() {
             <div className="rounded-md border border-border/40 overflow-hidden">
               {/* Table header row */}
               <div className="px-3 py-2.5 border-b border-border/30 bg-muted/10">
-                <span className="text-xs font-medium text-muted-foreground">Company</span>
+                <span className="text-xs font-medium text-muted-foreground">{t('screenerCompanyColumnLabel', 'Company')}</span>
               </div>
               {/* Empty body with inline picker */}
               <div className="px-3 py-6">

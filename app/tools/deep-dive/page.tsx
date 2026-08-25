@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -27,6 +28,7 @@ const STANCE_DOT: Record<Verdict['stance'], string> = {
 };
 
 export default function DeepDiveLanding() {
+  const { t } = useTranslation('tools');
   const router = useRouter();
   const { hasAnimatedBackground } = useBackground();
   const queryClient = useQueryClient();
@@ -67,15 +69,17 @@ export default function DeepDiveLanding() {
             className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-5 group"
           >
             <ArrowLeft className="h-3 w-3 transition-transform group-hover:-translate-x-0.5" />
-            All tools
+            {t('allToolsLink', 'All tools')}
           </Link>
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 shrink-0">
               <Telescope className="h-5 w-5 text-primary" aria-hidden />
             </div>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">AI Deep Dive</h1>
-              <p className="text-sm text-muted-foreground mt-0.5">Analyst-grade reports: results, guidance, valuation, bull vs bear, risks.</p>
+              <h1 className="text-2xl font-bold tracking-tight">{t('deepDiveTitle', 'AI Deep Dive')}</h1>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                {t('deepDiveSubtitle', 'Analyst-grade reports: results, guidance, valuation, bull vs bear, risks.')}
+              </p>
             </div>
           </div>
         </div>
@@ -94,17 +98,17 @@ export default function DeepDiveLanding() {
                 className="flex-1"
               />
               <Button type="submit" size="lg" disabled={!selected} className="gap-2 shrink-0 rounded-full animate-ai-pill-shine">
-                <Telescope className="h-4 w-4" /> Analyze
+                <Telescope className="h-4 w-4" /> {t('deepDiveAnalyzeButton', 'Analyze')}
               </Button>
             </form>
 
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[11px] text-muted-foreground/80">Lens:</span>
+              <span className="text-[11px] text-muted-foreground/80">{t('deepDiveLensLabel', 'Lens:')}</span>
               <LensPicker value={lens} onChange={setLens} />
             </div>
 
             <div className="flex flex-wrap items-center gap-1.5 pt-1">
-              <span className="text-[11px] text-muted-foreground/80">Popular:</span>
+              <span className="text-[11px] text-muted-foreground/80">{t('deepDivePopularLabel', 'Popular:')}</span>
               {POPULAR.map((sym) => (
                 <button
                   key={sym}
@@ -125,7 +129,7 @@ export default function DeepDiveLanding() {
         {/* Saved dives */}
         <div className="flex items-center gap-2 mb-3">
           <Clock className="h-3.5 w-3.5 text-muted-foreground/85" />
-          <span className="text-[11px] uppercase tracking-widest text-muted-foreground/85 font-semibold">Your deep dives</span>
+          <span className="text-[11px] uppercase tracking-widest text-muted-foreground/85 font-semibold">{t('deepDiveYourDives', 'Your deep dives')}</span>
           {dives.length > 0 && <span className="text-[11px] text-muted-foreground/80 tabular-nums">({dives.length})</span>}
         </div>
 
@@ -136,8 +140,8 @@ export default function DeepDiveLanding() {
         ) : dives.length === 0 ? (
           <EmptyState
             pose="thinking"
-            title="No deep dives yet"
-            description="Enter a ticker above and the AI analyst will dig into the business, financials, and risks."
+            title={t('deepDiveEmptyTitle', 'No deep dives yet')}
+            description={t('deepDiveEmptyDescription', 'Enter a ticker above and the AI analyst will dig into the business, financials, and risks.')}
             imageSize={150}
             className="py-6"
           />
@@ -155,6 +159,7 @@ export default function DeepDiveLanding() {
 }
 
 function SavedDiveRow({ dive: d, onDelete }: { dive: SavedDivePreview; onDelete: () => void }) {
+  const { t } = useTranslation('tools');
   const [confirm, setConfirm] = useState(false);
 
   return (
@@ -176,13 +181,13 @@ function SavedDiveRow({ dive: d, onDelete }: { dive: SavedDivePreview; onDelete:
               onClick={onDelete}
               className="text-xs text-red-400 hover:text-red-300 px-2 py-1 rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              Delete
+              {t('deepDiveDeleteButton', 'Delete')}
             </button>
             <button
               onClick={() => setConfirm(false)}
               className="text-xs text-muted-foreground/85 hover:text-muted-foreground px-2 py-1 rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              Cancel
+              {t('deepDiveCancelButton', 'Cancel')}
             </button>
           </>
         ) : (
@@ -190,7 +195,7 @@ function SavedDiveRow({ dive: d, onDelete }: { dive: SavedDivePreview; onDelete:
             <button
               onClick={() => setConfirm(true)}
               className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 text-muted-foreground/80 hover:text-red-400 p-1.5 rounded transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              aria-label={`Delete ${d.symbol} deep dive`}
+              aria-label={t('deepDiveDeleteAriaLabel', 'Delete {{symbol}} deep dive', { symbol: d.symbol })}
             >
               <Trash2 className="h-3.5 w-3.5" />
             </button>
