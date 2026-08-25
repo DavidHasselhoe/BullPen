@@ -209,9 +209,21 @@ async function translateChunk(
   }
 
   const jsonMatch = textBlock.text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error(`Could not find a JSON object in response for ${lang}`);
-
-  const parsed = JSON.parse(jsonMatch[0]) as Record<string, unknown>;
+  // A malformed response (e.g. the model emits an unescaped quote inside a
+  // translated value) must not crash the whole run — one bad chunk would
+  // otherwise abort every later language too, as happened live 2026-08-26.
+  // Treat the entire chunk as failed instead: every key keeps its English
+  // value and stays out of _meta.json, so the next run retries just this chunk.
+  let parsed: Record<string, unknown> = {};
+  if (!jsonMatch) {
+    console.warn(`  ⚠ ${lang}: no JSON object in response, keeping English for this chunk`);
+  } else {
+    try {
+      parsed = JSON.parse(jsonMatch[0]) as Record<string, unknown>;
+    } catch (err) {
+      console.warn(`  ⚠ ${lang}: response was not valid JSON, keeping English for this chunk (${(err as Error).message})`);
+    }
+  }
   const out: Flat = {};
   const failedKeys = new Set<string>();
   for (const [key, sourceText] of Object.entries(entries)) {

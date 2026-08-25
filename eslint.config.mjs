@@ -15,7 +15,7 @@ import i18next from "eslint-plugin-i18next";
  * Add a directory's glob here the same PR its Phase 1 conversion completes.
  * Empty for now — nothing has been fully converted yet.
  */
-const I18N_DONE_DIRS = ["app/tools/ai-chat/**/*.tsx", "app/tools/portfolio-builder/**/*.tsx", "app/tools/buy-here/**/*.tsx"];
+const I18N_DONE_DIRS = ["app/tools/ai-chat/**/*.tsx", "app/tools/portfolio-builder/**/*.tsx", "app/tools/buy-here/**/*.tsx", "app/tools/market-mood/**/*.tsx", "app/tools/dividend/**/*.tsx"];
 
 const eslintConfig = defineConfig([
   ...nextVitals,

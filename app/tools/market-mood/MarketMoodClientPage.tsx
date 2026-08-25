@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, RefreshCw, Gauge } from 'lucide-react';
 import { useBackground } from '@/hooks/use-background';
@@ -13,6 +14,7 @@ import type { MarketMoodData } from '@/app/api/market/mood/route';
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function MarketMoodClientPage() {
+  const { t } = useTranslation('tools');
   const { hasAnimatedBackground } = useBackground();
 
   const { data, isLoading, isError, refetch, isFetching, dataUpdatedAt } =
@@ -48,7 +50,7 @@ export default function MarketMoodClientPage() {
             className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-5 group"
           >
             <ArrowLeft className="h-3 w-3 transition-transform group-hover:-translate-x-0.5" />
-            All tools
+            {t('allToolsLink', 'All tools')}
           </Link>
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -56,8 +58,10 @@ export default function MarketMoodClientPage() {
                 <Gauge className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold tracking-tight text-foreground">Market Mood</h1>
-                <p className="text-sm text-muted-foreground mt-0.5">Fear &amp; Greed Index: composite of 4 market signals</p>
+                <h1 className="text-2xl font-bold tracking-tight text-foreground">{t('marketMoodTitle', 'Market Mood')}</h1>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  {t('marketMoodSubtitle', 'Fear & Greed Index: composite of 4 market signals')}
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
@@ -72,7 +76,7 @@ export default function MarketMoodClientPage() {
                 className="h-8 w-8"
                 onClick={() => refetch()}
                 disabled={isFetching}
-                aria-label="Refresh"
+                aria-label={t('marketMoodRefreshLabel', 'Refresh')}
               >
                 <RefreshCw className={cn('h-3.5 w-3.5 text-muted-foreground/80', isFetching && 'animate-spin')} />
               </Button>
@@ -86,12 +90,14 @@ export default function MarketMoodClientPage() {
         ) : isError ? (
           <EmptyState
             pose="error"
-            title="Couldn't load market data right now"
+            title={t('marketMoodErrorTitle', "Couldn't load market data right now")}
             imageSize={120}
             className="py-16"
           >
             <div className="flex justify-center">
-              <Button variant="outline" size="sm" onClick={() => refetch()}>Try again</Button>
+              <Button variant="outline" size="sm" onClick={() => refetch()}>
+                {t('marketMoodTryAgain', 'Try again')}
+              </Button>
             </div>
           </EmptyState>
         ) : data ? (
@@ -106,14 +112,14 @@ export default function MarketMoodClientPage() {
               <div className="px-1">
                 <div className="flex items-baseline justify-between gap-3">
                   <h2 className="text-[11px] font-bold uppercase tracking-[0.22em] text-muted-foreground/80">
-                    Signal Breakdown
+                    {t('marketMoodSignalBreakdown', 'Signal Breakdown')}
                   </h2>
                   <span className="text-[11px] font-mono text-muted-foreground/80 tracking-wider">
-                    {data.signals.length} of 4
+                    {t('marketMoodSignalCount', '{{count}} of 4', { count: data.signals.length })}
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground/80 mt-1">
-                  How each input contributes to the composite
+                  {t('marketMoodSignalDescription', 'How each input contributes to the composite')}
                 </p>
               </div>
 
@@ -130,18 +136,14 @@ export default function MarketMoodClientPage() {
             {/* Methodology — quiet, editorial, mono accent on symbol codes */}
             <div className="border-t border-border/30 pt-5 px-1">
               <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-muted-foreground/80 mb-2">
-                Methodology
+                {t('marketMoodMethodologyHeading', 'Methodology')}
               </div>
               <p className="text-[11px] leading-relaxed text-muted-foreground/85">
-                Composite weighted by{' '}
-                <span className="font-mono text-muted-foreground/85">VIX</span> volatility (35%),{' '}
-                <span className="font-mono text-muted-foreground/85">S&amp;P 500</span> momentum vs 125-day average (30%),{' '}
-                high-yield bond demand{' '}
-                <span className="font-mono text-muted-foreground/85">HYG/LQD</span> (20%),{' '}
-                and safe-haven flight{' '}
-                <span className="font-mono text-muted-foreground/85">SPY/TLT</span> (15%).
-                A score of <span className="font-mono">0</span> represents extreme fear;{' '}
-                <span className="font-mono">100</span>, extreme greed.
+                {t(
+                  'marketMoodMethodology',
+                  'Composite weighted by {{vix}} volatility (35%), {{sp500}} momentum vs 125-day average (30%), high-yield bond demand {{hygLqd}} (20%), and safe-haven flight {{spyTlt}} (15%). A score of {{low}} represents extreme fear; {{high}}, extreme greed.',
+                  { vix: 'VIX', sp500: 'S&P 500', hygLqd: 'HYG/LQD', spyTlt: 'SPY/TLT', low: '0', high: '100' }
+                )}
               </p>
             </div>
           </>

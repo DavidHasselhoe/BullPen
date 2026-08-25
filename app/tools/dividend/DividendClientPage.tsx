@@ -2,6 +2,7 @@
 
 import { useRef, useState, useMemo } from 'react';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from 'next-themes';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -173,6 +174,7 @@ export default function DividendClientPage({
   embedded = false,
   onCalculated,
 }: DividendClientPageProps = {}) {
+  const { t } = useTranslation('tools');
   const { hasAnimatedBackground } = useBackground();
   const { user } = useAuth();
   const { roundNumbers } = useUserSettings();
@@ -298,7 +300,7 @@ export default function DividendClientPage({
 
   const handleCalculate = async () => {
     if (!isValid) {
-      setResult({ success: false, error: 'Add at least one stock with a valid amount' });
+      setResult({ success: false, error: t('dividendErrorNoValidStock', 'Add at least one stock with a valid amount') });
       return;
     }
 
@@ -336,7 +338,7 @@ export default function DividendClientPage({
       });
       setResult(await res.json());
     } catch (e) {
-      setResult({ success: false, error: e instanceof Error ? e.message : 'Request failed' });
+      setResult({ success: false, error: e instanceof Error ? e.message : t('dividendErrorRequestFailed', 'Request failed') });
     } finally {
       setIsLoading(false);
       onCalculated?.();
@@ -352,7 +354,7 @@ export default function DividendClientPage({
         className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-6 group"
       >
         <ArrowLeft className="h-3 w-3 transition-transform group-hover:-translate-x-0.5" />
-        All tools
+        {t('allToolsLink', 'All tools')}
       </Link>
 
       <motion.div
@@ -366,9 +368,9 @@ export default function DividendClientPage({
             <Wallet className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">Dividend Calculator</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">{t('dividendTitle', 'Dividend Calculator')}</h1>
             <p className="text-muted-foreground text-sm mt-0.5">
-              Build a dividend portfolio and project income, reinvestment growth, and break-even
+              {t('dividendSubtitle', 'Build a dividend portfolio and project income, reinvestment growth, and break-even')}
             </p>
           </div>
         </div>
@@ -391,7 +393,7 @@ export default function DividendClientPage({
           {/* Quick pick */}
           <div className="mb-6">
             <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-3">
-              Quick add
+              {t('dividendQuickAdd', 'Quick add')}
             </p>
             <div className="flex flex-wrap gap-2">
               {DIVIDEND_QUICK_PICKS.map((pick) => {
@@ -414,7 +416,7 @@ export default function DividendClientPage({
                     <span className="font-medium">{pick.ticker}</span>
                     {pick.highYield && (
                       <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-emerald-500">
-                        High yield
+                        {t('dividendHighYield', 'High yield')}
                       </span>
                     )}
                     <span
@@ -435,7 +437,7 @@ export default function DividendClientPage({
           <div data-tour="dividend-holdings" className="space-y-3">
             <div className="flex items-center justify-between flex-wrap gap-2">
               <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Your portfolio
+                {t('dividendYourPortfolio', 'Your portfolio')}
               </p>
               <div className="flex items-center gap-2">
                 {myHoldings && myHoldings.length > 0 && (
@@ -443,10 +445,10 @@ export default function DividendClientPage({
                     type="button"
                     onClick={loadFromHoldings}
                     className="flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                    title="Replace the portfolio below with your real holdings"
+                    title={t('dividendLoadFromHoldingsTitle', 'Replace the portfolio below with your real holdings')}
                   >
                     <Briefcase className="h-3.5 w-3.5" />
-                    Load from My Holdings
+                    {t('dividendLoadFromHoldings', 'Load from My Holdings')}
                   </button>
                 )}
                 <DividendPresetMenu
@@ -455,7 +457,9 @@ export default function DividendClientPage({
                   onSave={(name) => savePreset(name, validHoldings)}
                   onDelete={deletePreset}
                 />
-                <span className="text-xs text-muted-foreground">{pickedTickers.size}/{MAX_HOLDINGS} stocks</span>
+                <span className="text-xs text-muted-foreground">
+                  {t('dividendStockCount', '{{count}}/{{max}} stocks', { count: pickedTickers.size, max: MAX_HOLDINGS })}
+                </span>
               </div>
             </div>
 
@@ -502,7 +506,7 @@ export default function DividendClientPage({
                           )}
                           title={m === 'amount' ? `Amount (${userCurrency})` : 'Number of shares'}
                         >
-                          {m === 'amount' ? currencySymbol : 'sh'}
+                          {m === 'amount' ? currencySymbol : t('dividendSharesAbbrev', 'sh')}
                         </button>
                       ))}
                     </div>
@@ -526,7 +530,7 @@ export default function DividendClientPage({
                 className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border/60 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground"
               >
                 <Plus className="h-4 w-4" />
-                Add stock
+                {t('dividendAddStock', 'Add stock')}
               </button>
             )}
           </div>
@@ -535,7 +539,7 @@ export default function DividendClientPage({
 
           {/* Year presets */}
           <div data-tour="dividend-settings" className="space-y-3">
-            <label className="text-sm font-medium">Projection period</label>
+            <label className="text-sm font-medium">{t('dividendProjectionPeriod', 'Projection period')}</label>
             <div className="flex flex-wrap gap-1 p-1 rounded-xl bg-muted/50 border border-border/50 w-fit">
               {YEAR_PRESETS.map((y) => (
                 <button
@@ -549,7 +553,7 @@ export default function DividendClientPage({
                       : 'border border-transparent text-muted-foreground hover:text-foreground'
                   )}
                 >
-                  {y} {y === 1 ? 'year' : 'years'}
+                  {t('dividendYearsCount', { count: y })}
                 </button>
               ))}
             </div>
@@ -576,9 +580,9 @@ export default function DividendClientPage({
               />
             </button>
             <div>
-              <p className="text-sm font-medium">Reinvest dividends (DRIP)</p>
+              <p className="text-sm font-medium">{t('dividendDripLabel', 'Reinvest dividends (DRIP)')}</p>
               <p className="text-xs text-muted-foreground">
-                Each stock&apos;s dividends buy more of its own shares, compounding income
+                {t('dividendDripDescription', "Each stock's dividends buy more of its own shares, compounding income")}
               </p>
             </div>
           </div>
@@ -594,8 +598,8 @@ export default function DividendClientPage({
             )}
           >
             {isLoading ? (
-              <><Loader2 className="h-5 w-5 mr-2 animate-spin" />Calculating…</>
-            ) : 'Calculate dividends'}
+              <><Loader2 className="h-5 w-5 mr-2 animate-spin" />{t('dividendCalculating', 'Calculating…')}</>
+            ) : t('dividendCalculateButton', 'Calculate dividends')}
           </Button>
         </motion.form>
 
@@ -627,16 +631,18 @@ export default function DividendClientPage({
               transition={{ duration: 0.3 }}
               className="rounded-2xl border border-border/50 bg-background/60 backdrop-blur-xl shadow-xl p-6 sm:p-8"
             >
-              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-6">Results</p>
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-6">
+                {t('dividendResultsLabel', 'Results')}
+              </p>
 
               {!result.success ? (
                 <div className="flex items-start gap-4 rounded-xl border border-destructive/30 bg-destructive/10 p-4">
                   <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
                   <div>
-                    <p className="font-medium text-destructive">Could not calculate dividends</p>
+                    <p className="font-medium text-destructive">{t('dividendErrorCouldNotCalculate', 'Could not calculate dividends')}</p>
                     <p className="text-sm text-muted-foreground mt-1">{result.error}</p>
                     <p className="text-xs text-muted-foreground mt-2">
-                      Make sure the stocks pay dividends. Rate-limited APIs may need a moment before retrying.
+                      {t('dividendErrorHint', 'Make sure the stocks pay dividends. Rate-limited APIs may need a moment before retrying.')}
                     </p>
                   </div>
                 </div>
@@ -680,6 +686,7 @@ function ResultsView({
   userCurrency: CurrencyCode;
   rates: ExchangeRates | null;
 }) {
+  const { t } = useTranslation('tools');
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
   const tickColor = isDark ? '#a1a1aa' : '#71717a';
@@ -696,25 +703,32 @@ function ResultsView({
 
   const summaryCards = [
     {
-      label: 'Year 1 income',
+      label: t('dividendCardYear1Income', 'Year 1 income'),
       value: toDisplay(totalIncomeYear1 ?? 0),
-      sub: `${holdingList.length} ${holdingList.length === 1 ? 'stock' : 'stocks'} · ${fmtFull(toDisplay(totalInvested ?? 0))} invested`,
+      sub: t('dividendCardYear1IncomeSub', {
+        count: holdingList.length,
+        invested: fmtFull(toDisplay(totalInvested ?? 0)),
+      }),
     },
     {
-      label: `Total over ${yearRows!.length} years`,
+      label: t('dividendCardTotalOverYears', 'Total over {{years}} years', { years: yearRows!.length }),
       value: toDisplay(totalIncome ?? 0),
-      sub: drip ? 'With dividend reinvestment' : 'Without reinvestment',
+      sub: drip
+        ? t('dividendCardWithReinvestment', 'With dividend reinvestment')
+        : t('dividendCardWithoutReinvestment', 'Without reinvestment'),
     },
     {
-      label: 'Final portfolio value',
+      label: t('dividendCardFinalValue', 'Final portfolio value'),
       value: toDisplay(finalPortfolioValue ?? 0),
-      sub: drip ? 'Shares grow via reinvestment' : 'Share count held flat',
+      sub: drip
+        ? t('dividendCardSharesGrow', 'Shares grow via reinvestment')
+        : t('dividendCardSharesFlat', 'Share count held flat'),
     },
     {
-      label: 'Blended yield',
+      label: t('dividendCardBlendedYield', 'Blended yield'),
       value: blendedYield ?? 0,
       isPercent: true,
-      sub: 'Weighted by amount invested',
+      sub: t('dividendCardWeightedByAmount', 'Weighted by amount invested'),
     },
   ];
 
@@ -731,8 +745,10 @@ function ResultsView({
         <div className="flex items-start gap-3 rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-4">
           <AlertCircle className="h-5 w-5 text-yellow-500 shrink-0 mt-0.5" />
           <p className="text-sm text-muted-foreground">
-            None of the selected stocks have dividend history available, so income projects to zero.
-            Try adding dividend-paying stocks from Quick add.
+            {t(
+              'dividendNoHistoryWarning',
+              'None of the selected stocks have dividend history available, so income projects to zero. Try adding dividend-paying stocks from Quick add.'
+            )}
           </p>
         </div>
       )}
@@ -762,7 +778,7 @@ function ResultsView({
       {/* Per-stock breakdown */}
       {holdingList.length > 0 && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}>
-          <p className="text-sm font-medium mb-3">By stock</p>
+          <p className="text-sm font-medium mb-3">{t('dividendByStock', 'By stock')}</p>
           <div className="overflow-hidden rounded-xl border border-border/50 divide-y divide-border/50">
             {holdingList.map((h) => (
               <div key={h.ticker} className="flex items-center gap-3 px-4 py-3">
@@ -770,16 +786,21 @@ function ResultsView({
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold text-foreground">{h.ticker}</p>
                   <p className="text-xs text-muted-foreground">
-                    {h.sharesStart.toFixed(2)} shares · {fmtFull(toDisplay(h.invested))} invested
+                    {t('dividendHoldingLine', '{{shares}} shares · {{invested}} invested', {
+                      shares: h.sharesStart.toFixed(2),
+                      invested: fmtFull(toDisplay(h.invested)),
+                    })}
                   </p>
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-semibold tabular-nums text-foreground">
                     {fmtFull(toDisplay(h.year1Income))}
-                    <span className="text-xs font-normal text-muted-foreground">/yr</span>
+                    <span className="text-xs font-normal text-muted-foreground">{t('dividendPerYearSuffix', '/yr')}</span>
                   </p>
                   <p className={cn('text-xs tabular-nums', h.noDividends ? 'text-muted-foreground' : 'text-emerald-500')}>
-                    {h.noDividends ? 'No dividend' : `${h.dividendYield.toFixed(2)}% yield`}
+                    {h.noDividends
+                      ? t('dividendNoDividend', 'No dividend')
+                      : t('dividendYieldPct', '{{pct}}% yield', { pct: h.dividendYield.toFixed(2) })}
                   </p>
                 </div>
               </div>
@@ -797,8 +818,8 @@ function ResultsView({
         >
           <TrendingUp className="h-5 w-5 text-primary shrink-0" />
           <p className="text-sm">
-            Cumulative dividends cover your total investment in{' '}
-            <strong className="text-foreground">year {breakEvenYear}</strong>.
+            {t('dividendBreakEvenPrefix', 'Cumulative dividends cover your total investment in')}{' '}
+            <strong className="text-foreground">{t('dividendBreakEvenYear', 'year {{year}}', { year: breakEvenYear })}</strong>.
           </p>
         </motion.div>
       )}
@@ -806,7 +827,10 @@ function ResultsView({
       {hasAnyDividends && breakEvenYear == null && (
         <div className="rounded-xl border border-border/50 bg-muted/20 p-4">
           <p className="text-sm text-muted-foreground">
-            At current dividend levels, cumulative income does not cover the total investment within the selected projection window.
+            {t(
+              'dividendNoBreakEven',
+              'At current dividend levels, cumulative income does not cover the total investment within the selected projection window.'
+            )}
           </p>
         </div>
       )}
@@ -814,7 +838,9 @@ function ResultsView({
       {hasAnyDividends && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }}>
           <p className="text-sm font-medium mb-3">
-            Annual dividend income {drip ? '(DRIP — growing each year)' : '(no reinvestment — flat)'}
+            {drip
+              ? t('dividendAnnualIncomeDrip', 'Annual dividend income (DRIP, growing each year)')
+              : t('dividendAnnualIncomeFlat', 'Annual dividend income (no reinvestment, flat)')}
           </p>
           <div className="w-full overflow-hidden">
             <ResponsiveContainer width="100%" height={288}>
@@ -828,7 +854,7 @@ function ResultsView({
                 <XAxis dataKey="year" tick={{ fontSize: 11, fill: tickColor }} axisLine={false} tickLine={false} />
                 <YAxis tickFormatter={(v) => fmtCompact(v)} tick={{ fontSize: 11, fill: tickColor }} axisLine={false} tickLine={false} width={72} />
                 <Tooltip content={<ChartTooltip fmt={fmtFull} />} />
-                <Area dataKey="annualIncome" name="Annual income" type="monotone" stroke={INCOME_COLOR} strokeWidth={2} fill="url(#incomeGradient)" dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
+                <Area dataKey="annualIncome" name={t('dividendAnnualIncomeSeries', 'Annual income')} type="monotone" stroke={INCOME_COLOR} strokeWidth={2} fill="url(#incomeGradient)" dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -837,15 +863,15 @@ function ResultsView({
 
       {hasAnyDividends && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
-          <p className="text-sm font-medium mb-3">Cumulative income over time</p>
+          <p className="text-sm font-medium mb-3">{t('dividendCumulativeOverTime', 'Cumulative income over time')}</p>
           <div className="flex items-center gap-4 mb-3 text-xs text-muted-foreground">
             <span className="flex items-center gap-1.5">
               <span className="h-2.5 w-2.5 rounded-full" style={{ background: INCOME_COLOR }} />
-              <span className="font-medium text-foreground">Cumulative income</span>
+              <span className="font-medium text-foreground">{t('dividendCumulativeIncomeLegend', 'Cumulative income')}</span>
             </span>
             <span className="flex items-center gap-1.5">
               <span className="h-2.5 w-2.5 rounded-full" style={{ background: PORTFOLIO_COLOR }} />
-              <span>Portfolio value</span>
+              <span>{t('dividendPortfolioValueLegend', 'Portfolio value')}</span>
             </span>
           </div>
           <div className="w-full overflow-hidden">
@@ -864,8 +890,8 @@ function ResultsView({
                 <XAxis dataKey="year" tick={{ fontSize: 11, fill: tickColor }} axisLine={false} tickLine={false} />
                 <YAxis tickFormatter={(v) => fmtCompact(v)} tick={{ fontSize: 11, fill: tickColor }} axisLine={false} tickLine={false} width={72} />
                 <Tooltip content={<ChartTooltip fmt={fmtFull} />} />
-                <Area type="monotone" dataKey="cumulativeIncome" name="Cumulative income" stroke={INCOME_COLOR} strokeWidth={2} fill="url(#cumIncomeGradient)" dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
-                <Area type="monotone" dataKey="portfolioValue" name="Portfolio value" stroke={PORTFOLIO_COLOR} strokeWidth={2} fill="url(#portfolioGradient)" dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
+                <Area type="monotone" dataKey="cumulativeIncome" name={t('dividendCumulativeIncomeLegend', 'Cumulative income')} stroke={INCOME_COLOR} strokeWidth={2} fill="url(#cumIncomeGradient)" dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
+                <Area type="monotone" dataKey="portfolioValue" name={t('dividendPortfolioValueLegend', 'Portfolio value')} stroke={PORTFOLIO_COLOR} strokeWidth={2} fill="url(#portfolioGradient)" dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
               </AreaChart>
             </ResponsiveContainer>
           </div>

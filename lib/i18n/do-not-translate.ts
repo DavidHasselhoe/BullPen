@@ -44,4 +44,7 @@ export const DO_NOT_TRANSLATE = [
   'S&P 500',
   'SPY',
   'SPY: S&P 500',
+  'VIX',
+  'HYG/LQD',
+  'SPY/TLT',
 ] as const;
