@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getLogoUrl } from '@/lib/twelvedata/twelvedata-client';
 import { uploadLogoToStorage } from '@/lib/logos/logos-storage';
+import { resolveFromTwelveData, resolveFromLogoDev } from '@/lib/logos/resolve-logo';
 import { addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
 import { getCached, setCached } from '@/lib/cache/market-data-cache';
@@ -17,9 +17,19 @@ import { slugToSymbol } from '@/lib/assets/asset-type';
  * Resolution order:
  *   1. market_data_cache  (30-day positive / 24-hour negative cache)
  *   2. companies.logo_url (DB source of truth — instant)
- *   3. TwelveData /logo   (1 credit; result is downloaded → uploaded to
- *                          our `company-logos` bucket → persisted in DB so
- *                          we never pay for the same ticker twice)
+ *   3. TwelveData /logo   (1 credit) — download the image it points to and
+ *                          VALIDATE it's actually a real image before trusting
+ *                          it. TwelveData's /logo metadata call can return a
+ *                          URL for a symbol whose CDN entry 404s (this was
+ *                          the actual bug behind BAC/MS-class logos being
+ *                          broken: the old code redirected straight to that
+ *                          URL and cached the broken redirect as a 30-day hit).
+ *   4. logo.dev ticker API — only tried when step 3 fails to produce a real
+ *                          image. Same validate-before-trust treatment.
+ *
+ * Whichever source wins is downloaded once, uploaded to our own
+ * `company-logos` bucket, and persisted on `companies.logo_url` so we never
+ * pay for (or re-validate) the same ticker twice.
  *
  * Returns 404 on truly unresolvable tickers so the calling `<CompanyLogo>`
  * `onError` handler can fall through to the initials fallback.
@@ -27,6 +37,7 @@ import { slugToSymbol } from '@/lib/assets/asset-type';
 
 const HIT_TTL_SEC  = 30 * 24 * 60 * 60;  // 30 days — logos are stable
 const MISS_TTL_SEC = 24 * 60 * 60;       // 1 day — retry missing logos daily
+const DEGRADED_TTL_SEC = 60 * 60;        // 1 hour — a validated image we couldn't persist to our own bucket; retry the upload soon
 
 interface LogoCacheEntry {
   url: string | null;  // null = negative cache
@@ -85,63 +96,58 @@ export async function GET(
       return redirectTo(company.logo_url);
     }
   } catch {
-    // Non-fatal — fall through to TwelveData
+    // Non-fatal — fall through to TwelveData / logo.dev
   }
 
-  // ── 3. TwelveData (1 credit) → download → upload to our bucket ───────────
-  let cdnUrl: string | null = null;
-  try {
-    cdnUrl = await getLogoUrl(sym);
-  } catch {
-    cdnUrl = null;
+  // ── 3. TwelveData first; stop here if it resolves to a real image ────────
+  let resolved = await resolveFromTwelveData(sym);
+  let source: 'brand' | 'logo.dev' = 'brand';
+
+  // ── 4. logo.dev fallback — only when TwelveData didn't pan out ───────────
+  if (!resolved) {
+    resolved = await resolveFromLogoDev(sym);
+    source = 'logo.dev';
   }
 
-  if (!cdnUrl) {
+  if (!resolved) {
     void setCached(cacheKey, sym, 'logo', { url: null }, MISS_TTL_SEC);
     return notFound();
   }
 
-  // Download + upload to our own bucket so we control the URL & never pay
-  // TwelveData credits again for this ticker.
-  let finalUrl = cdnUrl;
-  try {
-    const imageRes = await fetch(cdnUrl, { signal: AbortSignal.timeout(8000) });
-    if (imageRes.ok) {
-      const contentType = imageRes.headers.get('content-type') ?? 'image/png';
-      const mimeType = contentType.split(';')[0]?.trim() ?? 'image/png';
-      const buffer = Buffer.from(await imageRes.arrayBuffer());
-      const uploadResult = await uploadLogoToStorage(sym, buffer, mimeType);
-      if (uploadResult.success && uploadResult.publicUrl) {
-        finalUrl = uploadResult.publicUrl;
+  // Persist to our own bucket so we control the URL & never re-fetch or
+  // re-validate this ticker against TwelveData/logo.dev again.
+  let finalUrl = resolved.sourceUrl;
+  let cacheTtl = DEGRADED_TTL_SEC;
 
-        // Persist to companies if it exists — best-effort.
-        try {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const { data: row } = (await (supabase as any)
-            .from('companies')
-            .select('id')
-            .eq('ticker', sym)
-            .maybeSingle()) as { data: { id: string } | null };
-          if (row?.id) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            await (supabase as any)
-              .from('companies')
-              .update({
-                logo_url: uploadResult.publicUrl,
-                logo_source: 'brand',
-                logo_updated_at: new Date().toISOString(),
-              })
-              .eq('id', row.id);
-          }
-        } catch {
-          // Companies update is best-effort
-        }
+  const uploadResult = await uploadLogoToStorage(sym, resolved.buffer, resolved.mimeType);
+  if (uploadResult.success && uploadResult.publicUrl) {
+    finalUrl = uploadResult.publicUrl;
+    cacheTtl = HIT_TTL_SEC;
+
+    // Persist to companies if it exists — best-effort.
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: row } = (await (supabase as any)
+        .from('companies')
+        .select('id')
+        .eq('ticker', sym)
+        .maybeSingle()) as { data: { id: string } | null };
+      if (row?.id) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any)
+          .from('companies')
+          .update({
+            logo_url: uploadResult.publicUrl,
+            logo_source: source,
+            logo_updated_at: new Date().toISOString(),
+          })
+          .eq('id', row.id);
       }
+    } catch {
+      // Companies update is best-effort
     }
-  } catch {
-    // Storage path failed — keep the TwelveData CDN URL as the response
   }
 
-  void setCached(cacheKey, sym, 'logo', { url: finalUrl }, HIT_TTL_SEC);
+  void setCached(cacheKey, sym, 'logo', { url: finalUrl }, cacheTtl);
   return redirectTo(finalUrl);
 }

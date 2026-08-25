@@ -12,6 +12,32 @@ export interface StorageUploadResult {
 
 const LOGO_BUCKET = 'company-logos';
 
+/** Every extension `uploadLogoToStorage` has ever written for a ticker. */
+const KNOWN_LOGO_EXTENSIONS = ['png', 'jpg', 'jpeg', 'svg'];
+
+/**
+ * Removes any other-extension objects for a ticker after a successful upload,
+ * so a ticker whose source (TwelveData vs logo.dev) or content-type changes
+ * across runs doesn't leave an orphaned duplicate (e.g. `bac.svg` lingering
+ * after a later run stores `bac.png`). Best-effort — a stray file left behind
+ * on failure doesn't break anything, it just means the bucket stays slightly
+ * less tidy until the next successful upload for that ticker.
+ */
+async function removeStaleLogoVariants(ticker: string, keepExtension: string): Promise<void> {
+  const base = ticker.toLowerCase();
+  const stalePaths = KNOWN_LOGO_EXTENSIONS.filter((ext) => ext !== keepExtension).map(
+    (ext) => `${base}.${ext}`
+  );
+  if (stalePaths.length === 0) return;
+
+  try {
+    const supabase = createServerClient();
+    await supabase.storage.from(LOGO_BUCKET).remove(stalePaths);
+  } catch {
+    // Non-fatal — cleanup is opportunistic, not required for correctness.
+  }
+}
+
 /**
  * Returns the public URL for a company logo in Supabase Storage (read-only).
  * Built from NEXT_PUBLIC_SUPABASE_URL only — does NOT use the service-role client,
@@ -109,6 +135,10 @@ export async function uploadLogoToStorage(
         error: 'Failed to generate public URL',
       };
     }
+
+    // Clean up any other-extension leftovers for this ticker so the bucket
+    // never holds two objects for the same company.
+    await removeStaleLogoVariants(ticker, extension);
 
     return {
       success: true,

@@ -6,7 +6,6 @@
     "backfill-logos": "tsx scripts/backfill-logos.ts",
     "upload-commodity-logos": "tsx scripts/upload-commodity-logos.ts",
     "create-logo-bucket": "tsx scripts/create-logo-bucket.ts",
-    "download-sp500-logos": "tsx scripts/download-sp500-logos.ts",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",

@@ -23,14 +23,13 @@
 1. **company_index** — Populated by bootstrap from SEC `company_tickers.json`. Has ticker, name, cik, `has_data`.
 2. **companies** — Created when **lazy ingestion** runs for a ticker. Stores profile, logo_url, etc.
 3. **Metrics** — Extracted from SEC XBRL Company Facts API during lazy ingestion (no AI for metrics).
-4. **Logos** — `download-sp500-logos.ts` fetches from img.logo.dev, uploads to Supabase Storage, updates `companies.logo_url`.
+4. **Logos** — served by the self-healing `/api/logo/[ticker]` proxy (TwelveData first, logo.dev fallback — see `lib/logos/README.md`), which uploads to Supabase Storage and updates `companies.logo_url` on first request for a ticker. `scripts/backfill-logos.ts` runs the same resolution eagerly for every company row missing a logo.
 
 ### Top Market Movers & Logos
 
 - **Top Movers** data comes from Finnhub (symbols, prices, changes).
-- **CompanyLogo** looks up `companies.logo_url` or falls back to storage `company-logos/{ticker}.jpg`.
-- If a mover (e.g. AMZN, NVDA) isn’t in `companies`, the logo may be missing until that company is ingested or logos are pre-downloaded.
-- `download-sp500-logos` uploads to storage even when the company doesn’t exist yet, so logos can be shown from storage once the script has run.
+- **CompanyLogo** looks up `companies.logo_url` or falls back to the `/api/logo/[ticker]` proxy, which resolves and uploads to storage `company-logos/{ticker}.{ext}` on demand.
+- If a mover (e.g. AMZN, NVDA) isn’t in `companies`, the logo still resolves and uploads to storage via the proxy — the `companies.logo_url` persist step is best-effort and simply no-ops until the company is ingested.
 
 ---
 

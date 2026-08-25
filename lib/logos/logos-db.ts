@@ -5,7 +5,7 @@ import { createServerClient } from '../supabase/client';
 
 export interface LogoMetadata {
   logo_url: string | null;
-  logo_source: 'brand' | 'wikipedia' | 'manual' | null;
+  logo_source: 'brand' | 'logo.dev' | 'wikipedia' | 'manual' | null;
   logo_updated_at: string | null;
 }
 
@@ -15,7 +15,7 @@ export interface LogoMetadata {
 export async function updateCompanyLogo(
   companyId: string,
   logoUrl: string,
-  source: 'brand' | 'wikipedia' | 'manual'
+  source: 'brand' | 'logo.dev' | 'wikipedia' | 'manual'
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = createServerClient();
 
@@ -72,7 +72,7 @@ export async function getCompanyLogo(companyId: string): Promise<{
       success: true,
       logo: {
         logo_url: data.logo_url,
-        logo_source: data.logo_source as 'brand' | 'wikipedia' | 'manual' | null,
+        logo_source: data.logo_source as 'brand' | 'logo.dev' | 'wikipedia' | 'manual' | null,
         logo_updated_at: data.logo_updated_at,
       },
     };

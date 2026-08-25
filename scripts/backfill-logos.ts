@@ -1,24 +1,19 @@
 // Backfill Company Logos
-// Fetches and stores logos for all existing companies
+// Fetches and stores logos (TwelveData first, logo.dev fallback) for every
+// company row missing a logo_url.
+//
+// Usage: npm run backfill-logos
 
-import dotenv from 'dotenv';
 import { config } from 'dotenv';
 import { resolve } from 'path';
-
-// Load environment variables
-dotenv.config({ path: resolve(process.cwd(), '.env.local') });
 config({ path: resolve(process.cwd(), '.env.local') });
 
 import { getCompaniesNeedingLogos } from '../lib/logos/logos-db';
-import { ingestCompanyLogo } from '../lib/logos/logos-orchestrator';
+import { resolveAndPersistLogo } from '../lib/logos/resolve-logo';
 
-/**
- * Backfills logos for all companies missing logos
- */
 async function backfillLogos() {
   console.log('Starting logo backfill...\n');
 
-  // Get all companies needing logos
   const companiesResult = await getCompaniesNeedingLogos();
 
   if (!companiesResult.success || !companiesResult.companies) {
@@ -38,52 +33,34 @@ async function backfillLogos() {
   let failCount = 0;
   const errors: Array<{ ticker: string; error: string }> = [];
 
-  // Process companies with rate limiting
   for (let i = 0; i < companies.length; i++) {
     const company = companies[i];
     const progress = `[${i + 1}/${companies.length}]`;
 
-    console.log(`${progress} Processing ${company.ticker} (${company.name})...`);
-
     try {
-      const result = await ingestCompanyLogo(
-        company.ticker,
-        company.name,
-        company.id,
-        (step, details) => {
-          // Log progress steps
-          if (step.includes('completed') || step.includes('failed') || step.includes('Logo fetched')) {
-            console.log(`  ${step}`, details ? JSON.stringify(details).substring(0, 60) : '');
-          }
-        }
-      );
+      const result = await resolveAndPersistLogo(company.ticker, company.id);
 
-      if (result.success && result.logoUrl) {
-        console.log(`  ✓ Logo ingested: ${result.logoUrl.substring(0, 60)}...`);
+      if (result.success && result.url) {
+        console.log(`${progress} ✓ ${company.ticker} (${result.source}) → ${result.url}`);
         successCount++;
       } else {
-        console.log(`  ✗ Failed: ${result.error || 'Unknown error'}`);
+        console.log(`${progress} ✗ ${company.ticker}: ${result.error ?? 'Unknown error'}`);
         failCount++;
-        errors.push({ ticker: company.ticker, error: result.error || 'Unknown error' });
+        errors.push({ ticker: company.ticker, error: result.error ?? 'Unknown error' });
       }
     } catch (error) {
-      console.error(`  ✗ Error:`, error instanceof Error ? error.message : 'Unknown error');
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      console.log(`${progress} ✗ ${company.ticker}: ${message}`);
       failCount++;
-      errors.push({
-        ticker: company.ticker,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      });
+      errors.push({ ticker: company.ticker, error: message });
     }
 
-    // Rate limiting: wait 500ms between requests (2 req/sec)
+    // Rate limiting: wait 300ms between requests.
     if (i < companies.length - 1) {
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await new Promise((r) => setTimeout(r, 300));
     }
-
-    console.log(''); // Blank line for readability
   }
 
-  // Summary
   console.log('\n=== Backfill Summary ===');
   console.log(`Total companies: ${companies.length}`);
   console.log(`Success: ${successCount}`);
@@ -91,19 +68,14 @@ async function backfillLogos() {
 
   if (errors.length > 0) {
     console.log('\nErrors:');
-    errors.forEach(({ ticker, error }) => {
-      console.log(`  ${ticker}: ${error}`);
-    });
+    errors.forEach(({ ticker, error }) => console.log(`  ${ticker}: ${error}`));
   }
 
   console.log('\nBackfill complete!');
 }
 
-// Run backfill
 backfillLogos()
-  .then(() => {
-    process.exit(0);
-  })
+  .then(() => process.exit(0))
   .catch((error) => {
     console.error('Fatal error:', error);
     process.exit(1);
