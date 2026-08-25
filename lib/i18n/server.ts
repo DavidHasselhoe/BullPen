@@ -1,5 +1,7 @@
 import 'server-only';
 import { headers } from 'next/headers';
+import i18n, { type TFunction } from 'i18next';
+import { initReactI18next } from 'react-i18next';
 import { ALWAYS_LOADED, namespacesForPath, type Namespace } from './namespaces';
 import { isValidLocale } from './language-names';
 
@@ -60,4 +62,26 @@ export async function loadResources(
     namespaces.map(async (ns) => [ns, await loadNamespace(locale, ns)] as const)
   );
   return { [locale]: Object.fromEntries(entries) };
+}
+
+/**
+ * `t()` for the handful of Server Components that carry real copy (most
+ * don't — see the i18n plan's Phase 1 "special cases"). Unlike
+ * createI18nInstance (lib/i18n/config.ts), this fully awaits init and skips
+ * the resourcesToBackend dynamic-import backend entirely: it only ever needs
+ * the namespaces `namespacesForPath` already resolves for this route, which
+ * loadResources has fully preloaded, so there's nothing left to lazy-fetch.
+ */
+export async function getServerT(locale: string, pathname: string): Promise<TFunction> {
+  const resources = await loadResources(locale, pathname);
+  const instance = i18n.createInstance();
+  await instance.use(initReactI18next).init({
+    lng: locale,
+    fallbackLng: 'en',
+    ns: [...ALWAYS_LOADED, ...namespacesForPath(pathname)],
+    defaultNS: 'common',
+    resources,
+    interpolation: { escapeValue: false },
+  });
+  return instance.getFixedT(locale);
 }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from 'next-themes';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -105,6 +106,7 @@ interface ChartTooltipProps {
 }
 
 function ChartTooltip({ active, payload, label, fmtCurrency, sharesByName }: ChartTooltipProps) {
+  const { t } = useTranslation('tools');
   if (!active || !payload?.length || !label) return null;
   const date = new Date(label).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   return (
@@ -124,7 +126,7 @@ function ChartTooltip({ active, payload, label, fmtCurrency, sharesByName }: Cha
             </div>
             {perShare !== undefined && (
               <div className="flex justify-end text-[11px] text-muted-foreground/80 tabular-nums">
-                {fmtCurrency(perShare)}/share
+                {t('buyHerePerShare', '{{price}}/share', { price: fmtCurrency(perShare) })}
               </div>
             )}
           </div>
@@ -179,7 +181,10 @@ function BuyHereChart({
         {hasSpy && (
           <span className="flex items-center gap-1.5">
             <span className="h-2.5 w-2.5 rounded-full" style={{ background: spyColor }} />
-            <span>S&amp;P 500</span>
+            {/* "S&P 500" is a financial index name, not translated in any of the
+                7 languages' financial press — see lib/i18n/do-not-translate.ts.
+                Kept in a JSX expression container so jsx-text-only lint passes. */}
+            <span>{'S&P 500'}</span>
           </span>
         )}
       </div>
@@ -245,6 +250,7 @@ function BuyHereChart({
 }
 
 export default function BuyHereClientPage() {
+  const { t } = useTranslation('tools');
   const { hasAnimatedBackground } = useBackground();
   const { user } = useAuth();
   const { roundNumbers } = useUserSettings();
@@ -319,12 +325,12 @@ export default function BuyHereClientPage() {
 
   const handleCalculate = async () => {
     if (!selectedStock) {
-      setResult({ success: false, error: 'Select a stock from the search' });
+      setResult({ success: false, error: t('buyHereErrorSelectStock', 'Select a stock from the search') });
       return;
     }
     const amtInUserCurrency = parseFormattedAmount(amount);
     if (!amtInUserCurrency || amtInUserCurrency <= 0) {
-      setResult({ success: false, error: 'Enter a valid investment amount' });
+      setResult({ success: false, error: t('buyHereErrorInvalidAmount', 'Enter a valid investment amount') });
       return;
     }
     // Convert from user's currency to USD (stock prices are quoted in USD)
@@ -351,7 +357,7 @@ export default function BuyHereClientPage() {
     } catch (e) {
       setResult({
         success: false,
-        error: e instanceof Error ? e.message : 'Request failed',
+        error: e instanceof Error ? e.message : t('buyHereErrorRequestFailed', 'Request failed'),
       });
     } finally {
       setIsLoading(false);
@@ -372,7 +378,7 @@ export default function BuyHereClientPage() {
           className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-6 group"
         >
           <ArrowLeft className="h-3 w-3 transition-transform group-hover:-translate-x-0.5" />
-          All tools
+          {t('allToolsLink', 'All tools')}
         </Link>
 
         <motion.div
@@ -386,9 +392,9 @@ export default function BuyHereClientPage() {
               <Calculator className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-foreground">If You Bought Here</h1>
+              <h1 className="text-2xl font-bold tracking-tight text-foreground">{t('buyHereTitle', 'If You Bought Here')}</h1>
               <p className="text-muted-foreground text-sm mt-0.5">
-                See how an investment would have performed based on historical prices
+                {t('buyHereSubtitle', 'See how an investment would have performed based on historical prices')}
               </p>
             </div>
           </div>
@@ -406,12 +412,12 @@ export default function BuyHereClientPage() {
           className="mb-8 rounded-2xl border border-border/50 bg-background/60 backdrop-blur-xl shadow-xl p-6 sm:p-8"
         >
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-6">
-            Inputs
+            {t('buyHereInputsLabel', 'Inputs')}
           </p>
           <div className="space-y-6">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Stock</label>
+                <label className="text-sm font-medium">{t('buyHereStockLabel', 'Stock')}</label>
                 <TickerSelector
                   value={selectedStock}
                   onChange={setSelectedStock}
@@ -419,7 +425,7 @@ export default function BuyHereClientPage() {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Investment amount</label>
+                <label className="text-sm font-medium">{t('buyHereAmountLabel', 'Investment amount')}</label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
                     {currencySymbol}
@@ -444,9 +450,9 @@ export default function BuyHereClientPage() {
               <TooltipProvider>
                 <TooltipRoot>
                   <TooltipTrigger asChild>
-                    <label className="text-sm font-medium cursor-help">Time period</label>
+                    <label className="text-sm font-medium cursor-help">{t('buyHereTimePeriodLabel', 'Time period')}</label>
                   </TooltipTrigger>
-                  <TooltipContent>How far back to simulate the investment</TooltipContent>
+                  <TooltipContent>{t('buyHereTimePeriodTooltip', 'How far back to simulate the investment')}</TooltipContent>
                 </TooltipRoot>
               </TooltipProvider>
               <TimeSelector
@@ -467,7 +473,7 @@ export default function BuyHereClientPage() {
                       <CompareToggle checked={compareSpy} onCheckedChange={setCompareSpy} />
                     </span>
                   </TooltipTrigger>
-                  <TooltipContent>Compare your stock&apos;s performance with the S&P 500</TooltipContent>
+                  <TooltipContent>{t('buyHereCompareTooltip', "Compare your stock's performance with the S&P 500")}</TooltipContent>
                 </TooltipRoot>
               </TooltipProvider>
             </div>
@@ -484,10 +490,10 @@ export default function BuyHereClientPage() {
               {isLoading ? (
                 <>
                   <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                  Calculating...
+                  {t('buyHereCalculating', 'Calculating...')}
                 </>
               ) : (
-                'Calculate'
+                t('buyHereCalculateButton', 'Calculate')
               )}
             </Button>
           </div>
@@ -524,17 +530,20 @@ export default function BuyHereClientPage() {
               className="rounded-2xl border border-border/50 bg-background/60 backdrop-blur-xl shadow-xl p-6 sm:p-8"
             >
               <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-6">
-                Results
+                {t('buyHereResultsLabel', 'Results')}
               </p>
 
               {!result.success ? (
                 <div className="flex items-start gap-4 rounded-xl border border-destructive/30 bg-destructive/10 p-4">
                   <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
                   <div>
-                    <p className="font-medium text-destructive">Failed to load data</p>
+                    <p className="font-medium text-destructive">{t('buyHereErrorFailedToLoad', 'Failed to load data')}</p>
                     <p className="text-sm text-muted-foreground mt-1">{result.error}</p>
                     <p className="text-xs text-muted-foreground mt-2">
-                      Please ensure the stock is listed in the US and try again. If the issue persists, check your API key or rate limits.
+                      {t(
+                        'buyHereErrorHint',
+                        'Please ensure the stock is listed in the US and try again. If the issue persists, check your API key or rate limits.'
+                      )}
                     </p>
                   </div>
                 </div>
@@ -547,7 +556,7 @@ export default function BuyHereClientPage() {
                       className="rounded-xl border border-border/50 bg-muted/30 p-5"
                     >
                       <p className="text-sm font-medium text-muted-foreground">
-                        {result.stock.ticker} — Your investment
+                        {t('buyHereYourInvestment', '{{ticker}} — Your investment', { ticker: result.stock.ticker })}
                       </p>
                       <p className="mt-2 text-2xl font-bold text-foreground">
                         <AnimatedCounter value={result.stock.valueNow} format={fmtCurrency} />
@@ -558,14 +567,17 @@ export default function BuyHereClientPage() {
                           result.stock.returnPct >= 0 ? 'text-green-600' : 'text-red-600'
                         )}
                       >
-                        {formatPercent(result.stock.returnPct)} return
+                        {t('buyHereReturnLabel', '{{pct}} return', { pct: formatPercent(result.stock.returnPct) })}
                         <span className="font-normal text-muted-foreground">
                           {' '}({formatSignedGain(result.stock.valueNow, result.stock.shares, result.stock.priceAtStart, fmtCurrency)})
                         </span>
                       </p>
                       <p className="text-xs text-muted-foreground mt-2">
-                        {result.stock.shares.toFixed(2)} shares @ {fmtCurrency(result.stock.priceAtStart)} →{' '}
-                        {fmtCurrency(result.stock.priceAtEnd)}
+                        {t('buyHereSharesLine', '{{shares}} shares @ {{startPrice}} → {{endPrice}}', {
+                          shares: result.stock.shares.toFixed(2),
+                          startPrice: fmtCurrency(result.stock.priceAtStart),
+                          endPrice: fmtCurrency(result.stock.priceAtEnd),
+                        })}
                       </p>
                     </motion.div>
                     {result.spy && (
@@ -575,7 +587,7 @@ export default function BuyHereClientPage() {
                         transition={{ delay: 0.05 }}
                         className="rounded-xl border border-border/50 bg-muted/30 p-5"
                       >
-                        <p className="text-sm font-medium text-muted-foreground">SPY: S&P 500</p>
+                        <p className="text-sm font-medium text-muted-foreground">{t('buyHereSpyLabel', 'SPY: S&P 500')}</p>
                         <p className="mt-2 text-2xl font-bold text-foreground">
                           <AnimatedCounter value={result.spy.valueNow} format={fmtCurrency} />
                         </p>
@@ -585,13 +597,13 @@ export default function BuyHereClientPage() {
                             result.spy.returnPct >= 0 ? 'text-green-600' : 'text-red-600'
                           )}
                         >
-                          {formatPercent(result.spy.returnPct)} return
+                          {t('buyHereReturnLabel', '{{pct}} return', { pct: formatPercent(result.spy.returnPct) })}
                           <span className="font-normal text-muted-foreground">
                             {' '}({formatSignedGain(result.spy.valueNow, result.spy.shares, result.spy.priceAtStart, fmtCurrency)})
                           </span>
                         </p>
                         <p className="text-xs text-muted-foreground mt-2">
-                          Same amount invested in SPY
+                          {t('buyHereSpyInvestedNote', 'Same amount invested in SPY')}
                         </p>
                       </motion.div>
                     )}

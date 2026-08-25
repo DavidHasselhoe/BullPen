@@ -41,4 +41,7 @@ export const DO_NOT_TRANSLATE = [
   'SMA',
   'EMA',
   'AI',
+  'S&P 500',
+  'SPY',
+  'SPY: S&P 500',
 ] as const;
