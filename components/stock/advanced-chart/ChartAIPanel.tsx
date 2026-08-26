@@ -21,6 +21,7 @@ import { BullAiIcon } from '@/components/ai/BullAiIcon';
 import { getActiveToolName, getToolStatusLabel, getCompletedToolCalls, getFollowups, extractTickers } from '@/lib/ai/tool-ux';
 import type { QuotaState } from '@/lib/billing/quotas';
 import type { ChartAction, ChartSnapshot } from './chart-context';
+import type { TFunction } from 'i18next';
 
 interface Props {
   /** Always mounted — this just controls the width/visibility animation
@@ -47,12 +48,14 @@ const MARKDOWN_CLS = cn(
   '[&_a]:underline [&_a]:hover:opacity-80',
 );
 
-const STARTER_PROMPTS = [
-  'Analyze this chart',
-  'Is it in an uptrend?',
-  'Add a 50 & 200-day SMA',
-  'Explain the RSI',
-];
+function getStarterPrompts(t: TFunction): string[] {
+  return [
+    t('chartAiStarterAnalyze'),
+    t('chartAiStarterUptrend'),
+    t('chartAiStarterAddSma'),
+    t('chartAiStarterExplainRsi'),
+  ];
+}
 
 /** Pull chart actions out of a finished assistant message's tool outputs. */
 function extractChartActions(message: {
@@ -99,13 +102,14 @@ export function ChartAIPanel({ open, symbol, snapshot, onAction, onClose }: Prop
   const isMobile = useIsMobile();
   const panelWidth = isMobile ? '100%' : PANEL_WIDTH;
   const { user } = useAuth();
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation('stock');
   const invalidateQuota = useInvalidateQuota();
   const { noteTicker } = useAIPanel();
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const inputRef = useRef('');
   const [paywallQuota, setPaywallQuota] = useState<QuotaState | null>(null);
+  const starterPrompts = getStarterPrompts(t);
 
   const transport = useMemo(() => new DefaultChatTransport({ api: '/api/ai/chart' }), []);
 
@@ -217,7 +221,7 @@ export function ChartAIPanel({ open, symbol, snapshot, onAction, onClose }: Prop
       className="relative z-20 h-full shrink-0 overflow-hidden border-l border-border/60 bg-background shadow-2xl"
       role="dialog"
       aria-hidden={!open}
-      aria-label={`Ask Bull about ${symbol} chart`}
+      aria-label={t('chartAiPanelAriaLabel', { symbol })}
     >
     <div className="absolute inset-y-0 right-0 flex h-full flex-col" style={{ width: isMobile ? '100vw' : PANEL_WIDTH }}>
       {/* Header */}
@@ -225,14 +229,14 @@ export function ChartAIPanel({ open, symbol, snapshot, onAction, onClose }: Prop
         <div className="flex items-center gap-2">
           <BullAiIcon pose="idle" size={28} />
           <div className="leading-tight">
-            <p className="text-sm font-semibold text-foreground">Ask Bull</p>
-            <p className="text-[11px] text-muted-foreground">Analyzing {symbol.toUpperCase()}</p>
+            <p className="text-sm font-semibold text-foreground">{t('chartToolbarAskBull')}</p>
+            <p className="text-[11px] text-muted-foreground">{t('chartAiAnalyzing', { symbol: symbol.toUpperCase() })}</p>
           </div>
         </div>
         <button
           type="button"
           onClick={onClose}
-          aria-label="Close AI assistant"
+          aria-label={t('chartAiCloseAriaLabel')}
           className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
         >
           <X className="h-4 w-4" />
@@ -246,7 +250,7 @@ export function ChartAIPanel({ open, symbol, snapshot, onAction, onClose }: Prop
       <AiPaywallDialog
         open={paywallQuota !== null}
         onOpenChange={(o) => !o && setPaywallQuota(null)}
-        featureName="Ask Bull"
+        featureName={t('chartToolbarAskBull')}
         quota={paywallQuota ?? undefined}
       />
 
@@ -256,13 +260,13 @@ export function ChartAIPanel({ open, symbol, snapshot, onAction, onClose }: Prop
           <div className="flex h-full flex-col items-center justify-center gap-3 py-6 text-center">
             <BullAiIcon pose="wave" size={112} />
             <div>
-              <p className="text-sm font-semibold text-foreground">I&apos;m Bull</p>
+              <p className="text-sm font-semibold text-foreground">{t('chartAiWelcomeHeading')}</p>
               <p className="mt-1 max-w-[240px] text-xs text-muted-foreground leading-relaxed">
-                I can read the price action, explain indicators, and change the chart or set alerts for you.
+                {t('chartAiWelcomeDescription')}
               </p>
             </div>
             <div className="mt-2 flex flex-wrap justify-center gap-2">
-              {STARTER_PROMPTS.map((p) => (
+              {starterPrompts.map((p) => (
                 <button
                   key={p}
                   type="button"
@@ -346,7 +350,7 @@ export function ChartAIPanel({ open, symbol, snapshot, onAction, onClose }: Prop
                 animate={{ opacity: [0.55, 1, 0.55] }}
                 transition={{ opacity: { duration: 1.6, repeat: Infinity, ease: 'easeInOut' } }}
               >
-                {toolStatusLabel ?? (status === 'submitted' ? 'Thinking…' : 'Reasoning…')}
+                {toolStatusLabel ?? (status === 'submitted' ? t('chartAiThinking') : t('chartAiReasoning'))}
               </motion.span>
             </div>
           </motion.div>
@@ -377,9 +381,9 @@ export function ChartAIPanel({ open, symbol, snapshot, onAction, onClose }: Prop
 
       {error && (
         <div className="mx-3 mb-1 flex items-center justify-between gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">
-          <span className="truncate">Something went wrong. Try again.</span>
+          <span className="truncate">{t('chartAiErrorMessage')}</span>
           <button onClick={clearError} className="shrink-0 underline">
-            Dismiss
+            {t('dismissAriaLabel')}
           </button>
         </div>
       )}
@@ -394,8 +398,8 @@ export function ChartAIPanel({ open, symbol, snapshot, onAction, onClose }: Prop
           rows={1}
           onChange={handleInput}
           onKeyDown={handleKeyDown}
-          placeholder="Ask about the chart…"
-          aria-label="Message the chart assistant"
+          placeholder={t('chartAiInputPlaceholder')}
+          aria-label={t('chartAiInputAriaLabel')}
           className="max-h-[120px] flex-1 resize-none overflow-y-auto rounded-xl border border-input bg-background px-3.5 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring [&::-webkit-scrollbar]:hidden"
           style={{ height: 'auto' }}
         />
@@ -404,7 +408,7 @@ export function ChartAIPanel({ open, symbol, snapshot, onAction, onClose }: Prop
             type="button"
             onMouseDown={(e) => e.preventDefault()}
             onClick={stop}
-            aria-label="Stop"
+            aria-label={t('chartAiStopAriaLabel')}
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
             <Square className="h-4 w-4" />
@@ -412,7 +416,7 @@ export function ChartAIPanel({ open, symbol, snapshot, onAction, onClose }: Prop
         ) : (
           <button
             type="submit"
-            aria-label="Send"
+            aria-label={t('chartAiSendAriaLabel')}
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground transition-opacity hover:opacity-90"
           >
             <Send className="h-4 w-4" />

@@ -818,5 +818,21 @@
   "stock.healthMethodologyProfitability": "9b27034ba1080c6ebc725ae270e167d896db228728ad6f321f07e6522dffc949",
   "stock.healthMethodologyValuation": "2cdb689a48af1b0175fff15958864574f5d321000b5d196919117875a8e6a735",
   "stock.healthOutOf100": "8a6be05198a5a62fab301a2f528b7ff6440966bfb3072634af481fe10b193cd7",
-  "stock.healthNotAvailable": "e2f79e5b60330bba4c289962231b6ba2957d0b14e7deb3110417003c79dea635"
+  "stock.healthNotAvailable": "e2f79e5b60330bba4c289962231b6ba2957d0b14e7deb3110417003c79dea635",
+  "stock.chartAiAnalyzing": "ea65e7b7379a7440ecaa8a394e9c86ed31288a26a7d69b233621b7919e737084",
+  "stock.chartAiCloseAriaLabel": "6eeeb4d28cf25bd66bbbdf00fecfb7ebbd6676f2d5d103fc3455b85971740665",
+  "stock.chartAiErrorMessage": "4def98c892406e31099ba18e5d6a60db12420dd723a27a5ab77235d20adb0beb",
+  "stock.chartAiInputAriaLabel": "43ccd159ce9a13333b84cb3485ca22a1c3506d9cc6f722bc4f60e34944a6aad9",
+  "stock.chartAiInputPlaceholder": "4960e49fee59173701d4a7d6f07c2040c5f395ae175d82ef500c91032522cc9f",
+  "stock.chartAiReasoning": "40f1ed878b17b2ac8902947a02a42e9ad983128b4a3748ac76c7d8fae68506c8",
+  "stock.chartAiSendAriaLabel": "f6f4688ff23d50c67053963c251fa0ce64a925cf283537cf066b1f362cb9b778",
+  "stock.chartAiStarterAddSma": "79ff0cda784cb1813197d0b60454dc64566af66ffbe189652d8b203397d13c67",
+  "stock.chartAiStarterAnalyze": "ebfadcd2ca7b923b7fee03215ba6e3cabc08bbbf570b29cd1769dec986fe2157",
+  "stock.chartAiStarterExplainRsi": "374d212f510ab61b1adb55a73f3e28a7f3ec712ded4a02595200b29d1e1d0514",
+  "stock.chartAiStarterUptrend": "f79b3216cff91f485a1afd7aaad4189406d65530826819292db77907db329051",
+  "stock.chartAiStopAriaLabel": "cae7d57bc067a514b8e34c9589631a95c7dc051638ddd2a190773269279a99df",
+  "stock.chartAiThinking": "a02f1cea3c1d6c6edc0bdf52b8807f09eb5b33ca35a5e938e49d9ff646f80969",
+  "stock.chartAiWelcomeDescription": "bef1108b92e8c91b2a07a65c39cab11d1d7b7b7dcaf90b15baaa6bf9e6dc803b",
+  "stock.chartAiWelcomeHeading": "25db3a0956f2a3d53e7a811676d4afbaae3d5656010f3a3c25f7fd328002a552",
+  "stock.chartAiPanelAriaLabel": "6fb8833f11cb8a2e64bccea7281c7033a339eb3b6d8dc506926eee27bccc962a"
 }
