@@ -70,24 +70,20 @@ export const COMPANIES_PER_LIST_SLIDE = 30;
 
 export type SlideKind =
   | 'hook' | 'list' | 'cta' | 'winners' | 'losers'
-  | 'deepdive_hero' | 'deepdive_revenue' | 'deepdive_profitability' | 'deepdive_guidance' | 'deepdive_reaction';
-
-const DEEP_DIVE_SLIDE_KINDS: SlideKind[] = [
-  'deepdive_hero', 'deepdive_revenue', 'deepdive_profitability', 'deepdive_guidance', 'deepdive_reaction',
-];
+  | 'deepdive_summary';
 
 function listSlideCount(companyCount: number): number {
   return Math.max(1, Math.ceil(companyCount / COMPANIES_PER_LIST_SLIDE));
 }
 
 /** Total slide count for a given post. market_movers is always a fixed 3
- *  slides (winners, losers, cta); earnings_deep_dive is always a fixed 5
- *  (see DEEP_DIVE_SLIDE_KINDS — one company, no pagination); earnings_calendar/
- *  earnings_results paginate their company list across a hook, 1+ list
- *  slides, and a CTA. */
+ *  slides (winners, losers, cta); earnings_deep_dive is always a fixed 2
+ *  (the info-dense summary card, then the shared conversion CTA slide every
+ *  other content type ends on); earnings_calendar/earnings_results paginate
+ *  their company list across a hook, 1+ list slides, and a CTA. */
 export function totalSlideCount(slides: InstagramPostSlides): number {
   if (slides.contentType === 'market_movers') return 3;
-  if (slides.contentType === 'earnings_deep_dive') return DEEP_DIVE_SLIDE_KINDS.length;
+  if (slides.contentType === 'earnings_deep_dive') return 2;
   return 1 + listSlideCount(slides.companies.length) + 1;
 }
 
@@ -99,7 +95,7 @@ export function slideKindAt(index: number, slides: InstagramPostSlides): SlideKi
     return 'cta';
   }
   if (slides.contentType === 'earnings_deep_dive') {
-    return DEEP_DIVE_SLIDE_KINDS[index] ?? 'deepdive_reaction';
+    return index === 0 ? 'deepdive_summary' : 'cta';
   }
   const lists = listSlideCount(slides.companies.length);
   if (index === 0) return 'hook';
@@ -130,11 +126,10 @@ export function altTextForSlide(
   if (content.contentType === 'earnings_deep_dive') {
     const kind = slideKindAt(slideIndex, content);
     const d = content.data;
-    if (kind === 'deepdive_hero') return `${d.ticker} (${d.companyName}) earnings: EPS ${d.epsActual != null ? d.epsActual : 'pending'} vs estimate ${d.epsEstimate ?? 'N/A'} on BullPen.`;
-    if (kind === 'deepdive_revenue') return `${d.ticker} revenue results on BullPen.`;
-    if (kind === 'deepdive_profitability') return `${d.ticker} gross margin and profitability results on BullPen.`;
-    if (kind === 'deepdive_guidance') return `${d.ticker} next-quarter guidance on BullPen.`;
-    return `${d.ticker} after-hours market reaction. Track ${d.ticker} free on BullPen.`;
+    if (kind === 'deepdive_summary') {
+      return `${d.ticker} (${d.companyName}) earnings: EPS ${d.epsActual != null ? d.epsActual : 'pending'} vs estimate ${d.epsEstimate ?? 'N/A'}, revenue ${d.revenueActual != null ? d.revenueActual : 'pending'} vs estimate ${d.revenueEstimate ?? 'N/A'}. Track ${d.ticker} free on BullPen.`;
+    }
+    return 'Open the BullPen app to track earnings, prices, and your whole portfolio in one place.';
   }
   const kind = slideKindAt(slideIndex, content);
   const isResults = content.contentType === 'earnings_results';

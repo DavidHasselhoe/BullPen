@@ -87,7 +87,9 @@ export async function GET(
   let element: React.ReactElement;
   if (slides.contentType === 'earnings_deep_dive') {
     const d = (slides as EarningsDeepDiveSlides).data;
-    element = <DeepDiveSummarySlide data={d} />;
+    element = kind === 'deepdive_summary'
+      ? <DeepDiveSummarySlide data={d} />
+      : <CTASlide slideIndex={slideIndex} totalSlides={total} />;
   } else if (slides.contentType === 'market_movers') {
     if (kind === 'winners') {
       element = (

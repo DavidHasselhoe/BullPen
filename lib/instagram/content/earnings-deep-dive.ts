@@ -329,16 +329,16 @@ export async function completeEarningsDeepDiveFromFiling(
       fields: [{ name: 'Publish', value: `\`npm run instagram-publish -- --id=${row.id}\`` }],
       timestamp: new Date().toISOString(),
     };
-    // Single summary card now (see lib/instagram/render/slides.tsx's
-    // DeepDiveSummarySlide) — slideCount is always 1, but this still loops
-    // rather than hardcoding index 0 so it keeps working unchanged if this
-    // content type ever grows a second slide again.
+    // Summary card + the shared conversion CTA slide (see
+    // lib/instagram/render/slides.tsx's DeepDiveSummarySlide/CTASlide) —
+    // slideCount is always 2, but this still loops rather than hardcoding
+    // indices so it keeps working unchanged if the shape changes again.
     const slideEmbeds = Array.from({ length: slideCount }, (_, i) => ({
       image: { url: `${appUrl}/api/instagram/render/${row.id}/${i}` },
     }));
 
     await postToDiscord(webhookUrl, {
-      content: `📊 **${merged.ticker} just reported.** Review the card below before publishing.`,
+      content: `📊 **${merged.ticker} just reported.** Review below before publishing.`,
       embeds: [summaryEmbed, ...slideEmbeds],
     }).catch((err) => console.error('[earnings-deep-dive] Discord notification failed:', err));
   }
