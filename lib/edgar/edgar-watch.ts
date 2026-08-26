@@ -96,17 +96,56 @@ export async function findEarnings8K(cik: string | number, notBeforeDate: string
 
 export interface EdgarFilingFile {
   name: string;
-  size: string; // bytes as a string, per SEC's index.json shape; "" for non-file rows
+  size: string; // bytes as a string; "" when unknown
+  /** SEC's own document-type label for the row (e.g. "8-K", "EX-99.1", "GRAPHIC"). */
+  type?: string;
 }
 
-/** Every file in a filing's directory (the 8-K body, exhibits, XBRL, etc). */
+function stripTags(html: string): string {
+  return html.replace(/<[^>]+>/g, '').replace(/&nbsp;/gi, ' ').trim();
+}
+
+/**
+ * Every file in a filing's directory (the 8-K body, exhibits, XBRL, etc).
+ *
+ * Parses the human-facing `-index.htm` page's "Document Format Files" table
+ * rather than the `index.json` directory listing — verified live against
+ * NVIDIA's 2026-08-26 8-K (accession 0001045810-26-000073): index.json sat
+ * for 2+ hours (still stuck as of this fix) returning only the index/`.txt`/
+ * XBRL-zip stub files, silently omitting the actual 8-K body and both
+ * exhibits, while `-index.htm` had the full document list correct within
+ * minutes of filing. That gap made `pickPressReleaseFile` come up empty and
+ * killed the very first live run of this pipeline. The HTML table also
+ * carries each row's real document `type` (e.g. "EX-99.1"), which is a much
+ * more reliable signal than guessing from file size alone.
+ */
 export async function fetchFilingIndex(cik: string | number, accessionNumber: string): Promise<EdgarFilingFile[]> {
   const paddedCik = padCik(cik);
   const accNoDash = accessionNumber.replace(/-/g, '');
-  const res = await edgarFetch(`https://www.sec.gov/Archives/edgar/data/${Number(paddedCik)}/${accNoDash}/index.json`);
+  const res = await edgarFetch(
+    `https://www.sec.gov/Archives/edgar/data/${Number(paddedCik)}/${accNoDash}/${accessionNumber}-index.htm`
+  );
   if (!res.ok) throw new Error(`SEC filing index fetch failed: ${res.status} for ${accessionNumber}`);
-  const body = (await res.json()) as { directory?: { item?: EdgarFilingFile[] } };
-  return body.directory?.item ?? [];
+  const html = await res.text();
+
+  const files: EdgarFilingFile[] = [];
+  const rowRe = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+  let rowMatch: RegExpExecArray | null;
+  while ((rowMatch = rowRe.exec(html))) {
+    const cellRe = /<td[^>]*>([\s\S]*?)<\/td>/gi;
+    const cells: string[] = [];
+    let cellMatch: RegExpExecArray | null;
+    while ((cellMatch = cellRe.exec(rowMatch[1]))) cells.push(cellMatch[1]);
+    if (cells.length < 5) continue;
+
+    const hrefMatch = /href="([^"]+)"/i.exec(cells[2]);
+    if (!hrefMatch) continue;
+    const name = hrefMatch[1].split('/').pop();
+    if (!name) continue;
+
+    files.push({ name, type: stripTags(cells[3]) || undefined, size: stripTags(cells[4]) });
+  }
+  return files;
 }
 
 /**
@@ -128,7 +167,13 @@ export function pickPressReleaseFile(files: EdgarFilingFile[], primaryDocument: 
     (f) => f.name.toLowerCase().endsWith('.htm') && f.name !== primaryDocument && !/index/i.test(f.name)
   );
   if (candidates.length === 0) return null;
-  return candidates.reduce((biggest, f) => (Number(f.size) > Number(biggest.size) ? f : biggest));
+
+  // Prefer SEC's own "EX-99.x" exhibit type over the commentary doc — a much
+  // more reliable signal than file size, but not every filer's index tags
+  // types cleanly, so fall back to "biggest .htm file" when none match.
+  const exhibits = candidates.filter((f) => /^ex-?99/i.test(f.type ?? '') && !/commentary/i.test(f.name));
+  const pool = exhibits.length > 0 ? exhibits : candidates;
+  return pool.reduce((biggest, f) => (Number(f.size) > Number(biggest.size) ? f : biggest));
 }
 
 /** Same idea as pickPressReleaseFile, but specifically for a CFO-commentary-
