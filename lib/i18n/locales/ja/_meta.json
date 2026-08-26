@@ -512,5 +512,16 @@
   "tools.portfolioBuilderWhyThisCouldWork": "f3a2a6774194dea32df442acd5c07eac0ffb14ed68eff35342d94d6067437800",
   "tools.portfolioBuilderWhyThisStock": "5137da238c488ec1f9400db46c9c9448ab935d8d6709cf65da00613b81fe1e8a",
   "tools.portfolioBuilderAskBullButton": "dd98341e6c8ee3a0b2e1ebf2d6a2cebc89394c3317f2f02f7353610618e343e4",
-  "tools.portfolioBuilderCharCount": "a4f05456b90df5539d2e47bb788d4137011981b194eef0bfcf46ef5f34f4d2e1"
+  "tools.portfolioBuilderCharCount": "a4f05456b90df5539d2e47bb788d4137011981b194eef0bfcf46ef5f34f4d2e1",
+  "tools.dividendPresetApplyTitle": "3fb2a6349300bf8bcc16a5a1a9f159a9f45a8ac0c214be53a8d626f76a61254d",
+  "tools.dividendPresetDeleteAriaLabel": "b939ca9d78e65adc76dcad0ab2a60113c7a250f4033268fcde60f5be87dffe8d",
+  "tools.dividendPresetEmpty": "e6a60abde91b25b1637d01b748406565ec552e3d71943d835c5da0c36a97469c",
+  "tools.dividendPresetNameAriaLabel": "e534a6662ac8394409ca1927b83569d2aa7b87fbaec11df92c87e8347c0a393b",
+  "tools.dividendPresetNamePlaceholder": "2c73b7fcf1ed242246e23393833093870ffc5b08d70a32a68f55e61e2de159c8",
+  "tools.dividendPresetSaveButton": "1509f561f2416598629b886ad7d3c05a7e221e4e0675c84bbff4ee6d9e03913d",
+  "tools.dividendPresetSaveHeading": "2024a202390950e17f39f0902ce088dc47feda5388e6c349f7966f6f6d6b724d",
+  "tools.dividendPresetSaveHint": "3c52859a338d99359dfdc9fe0c514e26cff226abe6a5f0a85a92285dacbff7c0",
+  "tools.dividendPresetStockCount_one": "2b2220f3a7c04277724136c9dae5492f30be472699d61240a5b09585dfdbc946",
+  "tools.dividendPresetStockCount_other": "82df529fb162ce21e6196ae3e04cf217e4e77e8c4c7cfaa3d764531c4b27de7d",
+  "tools.dividendPresetsButton": "954f93fe1c66ae447f4d9e75eb0dc5a32f3a45dfc1cfb6df391a9d5947a97d10"
 }

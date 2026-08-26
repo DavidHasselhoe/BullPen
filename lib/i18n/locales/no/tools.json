@@ -438,5 +438,16 @@
   "tryAgainButton": "Prøv igjen",
   "calendarEstPrefix": "est.",
   "compareMetricInfoAriaLabel": "Info: {{label}}",
-  "portfolioBuilderAskBullButton": "Ask Bull about this"
+  "dividendPresetApplyTitle": "Bruk {{name}}",
+  "dividendPresetDeleteAriaLabel": "Slett {{name}}",
+  "dividendPresetEmpty": "Ingen forhåndsinnstillinger ennå — lagre en beholdning ovenfor.",
+  "dividendPresetNameAriaLabel": "Navn på forhåndsinnstilling",
+  "dividendPresetNamePlaceholder": "Navn på forhåndsinnstilling…",
+  "dividendPresetSaveButton": "Lagre",
+  "dividendPresetSaveHeading": "Lagre gjeldende beholdning",
+  "dividendPresetSaveHint": "Lagrer aksjene og beløpene som for øyeblikket er i beholdningen din nedenfor.",
+  "dividendPresetStockCount_one": "{{count}} aksje",
+  "dividendPresetStockCount_other": "{{count}} aksjer",
+  "dividendPresetsButton": "Forhåndsinnstillinger",
+  "portfolioBuilderAskBullButton": "Ask Bull om dette"
 }

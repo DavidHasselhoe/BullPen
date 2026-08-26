@@ -437,6 +437,17 @@
   "toolsPageSubtitle": "計算ツール、分析ツール、市場インサイト",
   "toolsPageTitle": "投資ツール",
   "tryAgainButton": "もう一度試す",
+  "dividendPresetApplyTitle": "{{name}}を適用",
+  "dividendPresetDeleteAriaLabel": "{{name}}を削除",
+  "dividendPresetEmpty": "プリセットはまだありません — 上記でポートフォリオを保存してください。",
+  "dividendPresetNameAriaLabel": "プリセット名",
+  "dividendPresetNamePlaceholder": "プリセット名…",
+  "dividendPresetSaveButton": "保存",
+  "dividendPresetSaveHeading": "現在のポートフォリオを保存",
+  "dividendPresetSaveHint": "下記のポートフォリオに含まれている銘柄と数量をキャプチャします。",
+  "dividendPresetStockCount_one": "{{count}}銘柄",
+  "dividendPresetStockCount_other": "{{count}}銘柄",
+  "dividendPresetsButton": "プリセット",
   "portfolioBuilderBullCase": "Bull case",
   "portfolioBuilderBullThesis": "Bull thesis"
 }

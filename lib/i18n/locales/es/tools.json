@@ -436,7 +436,18 @@
   "toolsPageTitle": "Herramientas de inversión",
   "tryAgainButton": "Intentar de nuevo",
   "deepDivePopularLabel": "Popular:",
-  "portfolioBuilderAskBullButton": "Ask Bull about this",
-  "portfolioBuilderBullCase": "Bull case",
-  "portfolioBuilderBullThesis": "Bull thesis"
+  "dividendPresetApplyTitle": "Aplicar {{name}}",
+  "dividendPresetDeleteAriaLabel": "Eliminar {{name}}",
+  "dividendPresetEmpty": "Sin presets aún — guarda un portafolio arriba.",
+  "dividendPresetNameAriaLabel": "Nombre del preset",
+  "dividendPresetNamePlaceholder": "Nombre del preset…",
+  "dividendPresetSaveButton": "Guardar",
+  "dividendPresetSaveHeading": "Guardar portafolio actual",
+  "dividendPresetSaveHint": "Captura las acciones y montos actualmente en tu portafolio abajo.",
+  "dividendPresetStockCount_one": "{{count}} acción",
+  "dividendPresetStockCount_other": "{{count}} acciones",
+  "dividendPresetsButton": "Presets",
+  "portfolioBuilderAskBullButton": "Ask Bull sobre esto",
+  "portfolioBuilderBullCase": "Caso Bull",
+  "portfolioBuilderBullThesis": "Tesis Bull"
 }
