@@ -854,43 +854,47 @@ function guidanceStatus(low: number | null, high: number | null, consensus: numb
   return diffPercent > 0 ? 'beat' : 'missed';
 }
 
-/** "Flat QoQ" / "+0.3pp QoQ" / "-1.2pp QoQ" — gross margin has no analyst
- *  consensus worth showing, so its badge-equivalent is a sequential
+/** "Maintained 75.0%" / "+0.3pp QoQ" / "-1.2pp QoQ" — gross margin has no
+ *  analyst consensus worth showing, so its badge-equivalent is a sequential
  *  comparison instead (percentage POINTS, not percent, since a margin move
- *  is already a percentage — "+0.3pp" avoids the "+0.3%" ambiguity). */
+ *  is already a percentage — "+0.3pp" avoids the "+0.3%" ambiguity). A
+ *  near-zero move reads as "Maintained X%" rather than "Flat QoQ": holding
+ *  a margin steady while revenue scales is itself the beat, not a non-event
+ *  worth a shrug-word. */
 function marginQoqLabel(prior: number | null, actual: number | null): string | null {
   if (prior == null || actual == null) return null;
   const diff = actual - prior;
-  if (Math.abs(diff) < 0.3) return 'Flat QoQ';
+  if (Math.abs(diff) < 0.3) return `Maintained ${actual.toFixed(1)}%`;
   return `${diff > 0 ? '+' : ''}${diff.toFixed(1)}pp QoQ`;
 }
 
-/** One metric tile in the summary grid — label, "estimate → actual" (or
- *  "prior → current" for margin), and an optional status badge + footnote.
- *  Same surface/border/radius language as the segment callouts the old
- *  per-topic slides used, just sized to share a 2x2 grid instead of owning
- *  a whole slide. */
+/** One metric tile in the summary grid — label, an optional "vs. estimate"
+ *  context line, the headline number (Signal Emerald on a beat, black
+ *  otherwise — the number itself carries the result, not just its badge),
+ *  and an optional status badge + footnote. No arrow glyph between estimate
+ *  and actual: Satori renders "→" noticeably off the text baseline at this
+ *  weight/size, which read as a misaligned bug rather than a connector, so
+ *  the estimate sits as its own small line above the number instead. Same
+ *  surface/border/radius language as the segment callouts the old per-topic
+ *  slides used, just sized to share a 2x2 grid instead of owning a whole
+ *  slide. */
 function MetricCell({
-  label, fromValue, toValue, toColor = FG, status, footnote,
+  label, fromValue, toValue, status, footnote,
 }: {
-  label: string; fromValue: string | null; toValue: string; toColor?: string; status?: 'beat' | 'missed' | 'inline' | null; footnote?: string | null;
+  label: string; fromValue: string | null; toValue: string; status?: 'beat' | 'missed' | 'inline' | null; footnote?: string | null;
 }) {
+  const toColor = status === 'beat' ? BRAND : FG;
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20, flex: 1, padding: 40, borderRadius: 28, backgroundColor: SURFACE, border: `1px solid ${BORDER_STRONG}` }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, flex: 1, padding: 40, borderRadius: 28, backgroundColor: SURFACE, border: `1px solid ${BORDER}` }}>
       <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontWeight: 700, fontSize: 19, letterSpacing: '0.06em', color: MUTED_DIM }}>
         {label.toUpperCase()}
       </span>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 14 }}>
-        {fromValue && (
-          <>
-            <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: 26, color: MUTED_DIM }}>{fromValue}</span>
-            <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 26, color: MUTED_DIM }}>→</span>
-          </>
-        )}
-        <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontWeight: 700, fontSize: 54, color: toColor }}>{toValue}</span>
-      </div>
+      {fromValue && (
+        <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: 20, color: MUTED_DIM }}>{fromValue}</span>
+      )}
+      <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontWeight: 700, fontSize: 54, color: toColor }}>{toValue}</span>
       {(status || footnote) && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8 }}>
           {status && <DeepDiveStatusBadge status={status} size="sm" />}
           {footnote && (
             <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: 20, color: MUTED }}>{footnote}</span>
@@ -936,14 +940,14 @@ export function DeepDiveSummarySlide({ data }: DeepDiveSlideProps): any {
         <div style={{ display: 'flex', gap: 20 }}>
           <MetricCell
             label="EPS"
-            fromValue={data.epsEstimate != null ? formatEps(data.epsEstimate) : null}
+            fromValue={data.epsEstimate != null ? `Est. ${formatEps(data.epsEstimate)}` : null}
             toValue={data.epsActual != null ? formatEps(data.epsActual) : 'N/A'}
             status={data.epsStatus}
             footnote={data.epsSurprisePercent != null ? formatPercentSigned(data.epsSurprisePercent) : null}
           />
           <MetricCell
             label="Revenue"
-            fromValue={data.revenueEstimate != null ? formatUsdCompact(data.revenueEstimate) : null}
+            fromValue={data.revenueEstimate != null ? `Est. ${formatUsdCompact(data.revenueEstimate)}` : null}
             toValue={data.revenueActual != null ? formatUsdCompact(data.revenueActual) : 'N/A'}
             status={data.revenueStatus}
             footnote={data.revenueYoyGrowthPercent != null ? `${formatPercentSigned(data.revenueYoyGrowthPercent)} YoY` : null}
@@ -952,7 +956,7 @@ export function DeepDiveSummarySlide({ data }: DeepDiveSlideProps): any {
         <div style={{ display: 'flex', gap: 20 }}>
           <MetricCell
             label="Gross Margin"
-            fromValue={data.grossMarginPriorQuarterPercent != null ? `${data.grossMarginPriorQuarterPercent.toFixed(1)}%` : null}
+            fromValue={data.grossMarginPriorQuarterPercent != null ? `Prior ${data.grossMarginPriorQuarterPercent.toFixed(1)}%` : null}
             toValue={data.grossMarginActualPercent != null ? `${data.grossMarginActualPercent.toFixed(1)}%` : 'N/A'}
             footnote={marginFootnote}
           />
