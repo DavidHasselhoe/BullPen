@@ -172,13 +172,15 @@ function containsWholeTerm(text: string, term: string): boolean {
 
 /**
  * True when `text` is built entirely from DO_NOT_TRANSLATE terms,
- * interpolation placeholders, whitespace, and punctuation — i.e. there is no
- * actual translatable content left once those are stripped out. A string
- * like "{{ticker}} EPS" legitimately round-trips unchanged in most target
- * languages (nothing in it can be translated), but its literal form isn't
- * itself a DO_NOT_TRANSLATE entry, so the plain unchanged-string check below
- * would otherwise reject it. Reproduced live 2026-08-26 on
- * `compareTickerEpsHeader`.
+ * interpolation placeholders, whitespace, punctuation, and plain digits —
+ * i.e. there is no actual translatable content left once those are stripped
+ * out. A string like "{{ticker}} EPS" legitimately round-trips unchanged in
+ * most target languages (nothing in it can be translated), but its literal
+ * form isn't itself a DO_NOT_TRANSLATE entry, so the plain unchanged-string
+ * check below would otherwise reject it. Reproduced live 2026-08-26 on
+ * `compareTickerEpsHeader`. Digits are stripped too: a string like
+ * "{{count}} / 500" is pure numerals and punctuation with nothing to
+ * translate, and failed validation in all 6 languages until this was added.
  */
 function isEntirelyDoNotTranslate(text: string): boolean {
   let remainder = text;
@@ -186,7 +188,7 @@ function isEntirelyDoNotTranslate(text: string): boolean {
     remainder = remainder.split(term).join('');
   }
   remainder = remainder.replace(/\{\{[^}]+\}\}/g, '');
-  remainder = remainder.replace(/[\s\p{P}]+/gu, '');
+  remainder = remainder.replace(/[\s\p{P}\d]+/gu, '');
   return remainder.length === 0;
 }
 

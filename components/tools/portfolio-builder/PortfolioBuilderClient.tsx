@@ -1,6 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -23,8 +25,11 @@ type Phase = 'idle' | 'streaming' | 'composing' | 'validating' | 'done' | 'error
 type ErrorCode = 'invalid_key' | 'payment_required' | 'rate_limited' | 'parse_failed' | 'too_few_valid_tickers' | 'quota_exceeded' | 'unknown';
 type BuilderPhase = 'streaming' | 'composing' | 'validating';
 
-const BUILDER_PHASE_LABELS = ['Analyzing thesis…', 'Composing portfolio…', 'Validating tickers…'];
 const BUILDER_PHASE_ORDER: Record<BuilderPhase, number> = { streaming: 0, composing: 1, validating: 2 };
+
+function getBuilderPhaseLabels(t: TFunction): string[] {
+  return [t('portfolioBuilderPhaseAnalyzing'), t('portfolioBuilderPhaseComposing'), t('portfolioBuilderPhaseValidating')];
+}
 
 interface DoneEvent {
   type: 'done';
@@ -51,6 +56,7 @@ const HISTORY_KEY = ['portfolio-builder-history'];
 const POLL_INTERVAL_MS = 2500;
 
 export function PortfolioBuilderClient() {
+  const { t } = useTranslation('tools');
   const searchParams = useSearchParams();
   const [phase, setPhase] = useState<Phase>('idle');
   const [result, setResult] = useState<DoneEvent | null>(null);
@@ -231,14 +237,14 @@ export function PortfolioBuilderClient() {
       }
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setErrorMessage(data.error || `Request failed: ${res.status}`);
+        setErrorMessage(data.error || t('portfolioBuilderRequestFailed', { status: res.status }));
         setErrorCode('unknown');
         setPhase('error');
         return;
       }
 
       const data = await res.json();
-      if (!data.id) { setErrorMessage('Failed to start generation'); setErrorCode('unknown'); setPhase('error'); return; }
+      if (!data.id) { setErrorMessage(t('portfolioBuilderFailedToStart')); setErrorCode('unknown'); setPhase('error'); return; }
       pollStatus(data.id);
     } catch (err) {
       setErrorMessage((err as Error).message ?? '');
@@ -252,7 +258,7 @@ export function PortfolioBuilderClient() {
       <div className="space-y-10">
         <ThesisInput onSubmit={submit} />
         <div className="-mt-6 flex justify-center">
-          <QuotaIndicator feature="portfolio_builder" unit={{ singular: 'build', plural: 'builds' }} />
+          <QuotaIndicator feature="portfolio_builder" unit={{ singular: t('portfolioBuilderUnitSingular'), plural: t('portfolioBuilderUnitPlural') }} />
         </div>
         {(historyTotal > 0 || debouncedQuery) && (
           <RecentPortfolios
@@ -269,7 +275,7 @@ export function PortfolioBuilderClient() {
         <AiPaywallDialog
           open={paywallQuota !== null}
           onOpenChange={(o) => !o && setPaywallQuota(null)}
-          featureName="Portfolio Builder"
+          featureName={t('portfolioBuilderTitle')}
           quota={paywallQuota ?? undefined}
         />
       </div>
@@ -296,13 +302,13 @@ export function PortfolioBuilderClient() {
           <div className="flex items-start gap-3">
             <AlertCircle className="h-5 w-5 text-red-400 shrink-0 mt-0.5" />
             <div className="flex-1">
-              <h3 className="text-sm font-semibold text-foreground mb-1">{errorTitle(errorCode)}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">{errorBody(errorCode, errorMessage)}</p>
+              <h3 className="text-sm font-semibold text-foreground mb-1">{errorTitle(errorCode, t)}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">{errorBody(errorCode, errorMessage, t)}</p>
               <div className="mt-4 flex gap-2">
-                <Button onClick={reset} size="sm" variant="outline">Try Again</Button>
+                <Button onClick={reset} size="sm" variant="outline">{t('tryAgainButton')}</Button>
                 {errorCode === 'rate_limited' && (
                   <Link href="/upgrade" className="inline-flex items-center justify-center text-xs font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-2">
-                    Learn about Pro →
+                    {t('portfolioBuilderLearnAboutPro')}
                   </Link>
                 )}
               </div>
@@ -314,14 +320,15 @@ export function PortfolioBuilderClient() {
   }
 
   const builderPhase = phase as BuilderPhase;
+  const builderPhaseLabels = getBuilderPhaseLabels(t);
   return (
     <ProcessingScreen
       phase={{
         index: BUILDER_PHASE_ORDER[builderPhase],
-        total: BUILDER_PHASE_LABELS.length,
-        label: BUILDER_PHASE_LABELS[BUILDER_PHASE_ORDER[builderPhase]],
+        total: builderPhaseLabels.length,
+        label: builderPhaseLabels[BUILDER_PHASE_ORDER[builderPhase]],
       }}
-      subtext="This usually takes 15-30 seconds."
+      subtext={t('portfolioBuilderProcessingSubtext')}
       complete={justCompleted}
       leavePageHint
     />
@@ -349,6 +356,7 @@ function RecentPortfolios({
   onRestore: (gen: SavedGeneration) => void;
   onDelete: (id: string) => void;
 }) {
+  const { t } = useTranslation('tools');
   const isSearching = query.trim().length > 0;
   const showSearch = expanded || isSearching;
   const hasMore = total > items.length && !isSearching;
@@ -358,7 +366,7 @@ function RecentPortfolios({
       <div className="flex items-center gap-2 mb-3">
         <Clock className="h-3.5 w-3.5 text-muted-foreground/85" />
         <span className="text-[11px] uppercase tracking-widest text-muted-foreground/85 font-semibold">
-          {isSearching ? `Matching portfolios` : 'Recent portfolios'}
+          {isSearching ? t('portfolioBuilderMatchingPortfolios') : t('portfolioBuilderRecentPortfolios')}
         </span>
         {total > 0 && (
           <span className="text-[11px] text-muted-foreground/80 tabular-nums">
@@ -374,7 +382,7 @@ function RecentPortfolios({
             type="text"
             value={query}
             onChange={(e) => onQueryChange(e.target.value)}
-            placeholder="Search your portfolios…"
+            placeholder={t('portfolioBuilderSearchPlaceholder')}
             className="w-full rounded-lg border border-border/50 bg-card/50 pl-9 pr-9 py-2 text-sm text-foreground placeholder:text-muted-foreground/80 focus:outline-none focus:border-border focus:bg-card transition-colors"
             autoFocus
           />
@@ -382,7 +390,7 @@ function RecentPortfolios({
             <button
               onClick={() => onQueryChange('')}
               className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/80 hover:text-muted-foreground p-1"
-              aria-label="Clear search"
+              aria-label={t('heatmapClearSearch')}
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -401,7 +409,7 @@ function RecentPortfolios({
         ))}
         {items.length === 0 && isSearching && (
           <p className="text-xs text-muted-foreground/85 italic px-1 py-3">
-            No portfolios match &ldquo;{query}&rdquo;.
+            {t('portfolioBuilderNoMatchQuery', { query })}
           </p>
         )}
       </div>
@@ -412,8 +420,8 @@ function RecentPortfolios({
           className="mt-3 w-full text-center text-xs text-muted-foreground/80 hover:text-foreground transition-colors py-2 rounded-lg border border-dashed border-border/40 hover:border-border/70"
         >
           {expanded
-            ? 'Show less'
-            : `View all (${total})`}
+            ? t('portfolioBuilderShowLess')
+            : t('portfolioBuilderViewAll', { total })}
         </button>
       )}
     </div>
@@ -429,6 +437,7 @@ function RecentPortfolioRow({
   onRestore: (gen: SavedGeneration) => void;
   onDelete: (id: string) => void;
 }) {
+  const { t } = useTranslation('tools');
   const [confirmDelete, setConfirmDelete] = useState(false);
   const score = gen.portfolio.confidence_score;
   const scoreColor =
@@ -437,7 +446,7 @@ function RecentPortfolioRow({
                   'text-red-400';
 
   const date = new Date(gen.createdAt);
-  const label = formatRelative(date);
+  const label = formatRelative(date, t);
 
   return (
     <div className={cn(
@@ -455,10 +464,10 @@ function RecentPortfolioRow({
         </div>
         <div className="flex items-center gap-3 text-xs text-muted-foreground/80">
           <span className={cn('font-semibold tabular-nums', scoreColor)}>
-            {score} confidence
+            {t('portfolioBuilderConfidenceScore', { score })}
           </span>
           <span>·</span>
-          <span>{gen.portfolio.holdings.length} holdings</span>
+          <span>{t('portfolioBuilderHoldingsCount', { count: gen.portfolio.holdings.length })}</span>
           <span>·</span>
           <span>{label}</span>
         </div>
@@ -471,13 +480,13 @@ function RecentPortfolioRow({
               onClick={() => onDelete(gen.id)}
               className="text-xs text-red-400 hover:text-red-300 px-2 py-1 transition-colors"
             >
-              Delete
+              {t('deepDiveDeleteButton')}
             </button>
             <button
               onClick={() => setConfirmDelete(false)}
               className="text-xs text-muted-foreground/85 hover:text-muted-foreground px-2 py-1 transition-colors"
             >
-              Cancel
+              {t('deepDiveCancelButton')}
             </button>
           </>
         ) : (
@@ -485,7 +494,7 @@ function RecentPortfolioRow({
             <button
               onClick={() => setConfirmDelete(true)}
               className="opacity-0 group-hover:opacity-100 text-muted-foreground/80 hover:text-muted-foreground/80 p-1.5 transition-all"
-              aria-label="Delete"
+              aria-label={t('deepDiveDeleteButton')}
             >
               <Trash2 className="h-3.5 w-3.5" />
             </button>
@@ -497,37 +506,37 @@ function RecentPortfolioRow({
   );
 }
 
-function formatRelative(date: Date): string {
+function formatRelative(date: Date, t: TFunction): string {
   const now = Date.now();
   const diff = now - date.getTime();
   const mins = Math.floor(diff / 60_000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 1) return t('portfolioBuilderJustNow');
+  if (mins < 60) return t('portfolioBuilderMinsAgo', { count: mins });
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
+  if (hrs < 24) return t('portfolioBuilderHrsAgo', { count: hrs });
   const days = Math.floor(hrs / 24);
-  if (days < 7) return `${days}d ago`;
+  if (days < 7) return t('portfolioBuilderDaysAgo', { count: days });
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
-function errorTitle(code: ErrorCode): string {
+function errorTitle(code: ErrorCode, t: TFunction): string {
   switch (code) {
-    case 'rate_limited':         return 'Rate limit reached';
-    case 'payment_required':     return 'API credits required';
-    case 'invalid_key':          return 'API key issue';
-    case 'parse_failed':         return 'Unexpected model response';
-    case 'too_few_valid_tickers': return "Couldn't verify enough tickers";
-    default:                     return 'Something went wrong';
+    case 'rate_limited':         return t('portfolioBuilderErrorTitleRateLimited');
+    case 'payment_required':     return t('deepDiveErrorTitlePaymentRequired');
+    case 'invalid_key':          return t('deepDiveErrorTitleInvalidKey');
+    case 'parse_failed':         return t('deepDiveErrorTitleParseFailed');
+    case 'too_few_valid_tickers': return t('portfolioBuilderErrorTitleTooFewTickers');
+    default:                     return t('deepDiveErrorTitleUnknown');
   }
 }
 
-function errorBody(code: ErrorCode, message: string): string {
+function errorBody(code: ErrorCode, message: string, t: TFunction): string {
   switch (code) {
-    case 'rate_limited':         return "You've hit the per-minute limit (5 generations). Wait a moment and try again.";
-    case 'payment_required':     return 'This AI feature is temporarily unavailable. Please try again shortly.';
-    case 'invalid_key':          return 'This AI feature is temporarily unavailable. Please try again shortly.';
-    case 'parse_failed':         return 'The model returned an unexpected response. This is usually transient — try again.';
-    case 'too_few_valid_tickers': return "Most of the suggested tickers couldn't be verified against our index. Try rephrasing the thesis with more concrete language.";
-    default:                     return message || 'An unexpected error occurred. Please try again.';
+    case 'rate_limited':         return t('portfolioBuilderErrorBodyRateLimited');
+    case 'payment_required':     return t('deepDiveErrorBodyUnavailable');
+    case 'invalid_key':          return t('deepDiveErrorBodyUnavailable');
+    case 'parse_failed':         return t('deepDiveErrorBodyParseFailed');
+    case 'too_few_valid_tickers': return t('portfolioBuilderErrorBodyTooFewTickers');
+    default:                     return message || t('deepDiveErrorBodyUnknown');
   }
 }

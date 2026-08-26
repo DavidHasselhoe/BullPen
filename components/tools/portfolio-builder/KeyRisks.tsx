@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { tierBadgeClass } from '@/lib/ui/severity-tiers';
@@ -11,11 +12,12 @@ interface Props {
 }
 
 export function KeyRisks({ risks }: Props) {
+  const { t } = useTranslation('tools');
   if (!risks?.length) return null;
 
   return (
     <div>
-      <h3 className="mb-2 text-sm font-semibold text-foreground">Key risks</h3>
+      <h3 className="mb-2 text-sm font-semibold text-foreground">{t('portfolioBuilderKeyRisksHeading')}</h3>
       <Accordion type="single" collapsible className="border-t border-border/20">
         {risks.map((risk, i) => (
           <AccordionItem key={i} value={String(i)} className="border-border/20">

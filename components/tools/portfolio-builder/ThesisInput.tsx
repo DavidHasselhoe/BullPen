@@ -1,18 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Sparkles, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-const EXAMPLES = [
-  'AI inference infrastructure over the next 3 years',
-  'European defense rearmament and sovereign tech independence',
-  'Aging population: pharma, robotics, and elder care',
-  'Energy transition bottlenecks: copper, uranium, grid',
-  'Cybersecurity in a post-quantum world',
-];
 
 interface Props {
   onSubmit: (thesis: string) => void;
@@ -20,6 +13,14 @@ interface Props {
 }
 
 export function ThesisInput({ onSubmit, disabled }: Props) {
+  const { t } = useTranslation('tools');
+  const EXAMPLES = [
+    t('portfolioBuilderExample1'),
+    t('portfolioBuilderExample2'),
+    t('portfolioBuilderExample3'),
+    t('portfolioBuilderExample4'),
+    t('portfolioBuilderExample5'),
+  ];
   const [thesis, setThesis] = useState('');
   const tooShort = thesis.trim().length > 0 && thesis.trim().length < 10;
   const valid = thesis.trim().length >= 10 && thesis.trim().length <= 500;
@@ -31,10 +32,9 @@ export function ThesisInput({ onSubmit, disabled }: Props) {
         <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-primary/10 border border-primary/20 mb-1">
           <Sparkles className="h-6 w-6 text-primary" />
         </div>
-        <h1 className="text-3xl font-bold tracking-tight">Portfolio Builder</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{t('portfolioBuilderTitle')}</h1>
         <p className="text-muted-foreground max-w-md mx-auto text-sm leading-relaxed">
-          Describe an investment theme in plain language. Claude reasons through subsectors,
-          identifies high-conviction stocks, and assigns allocations, like an institutional analyst would.
+          {t('portfolioBuilderHeroDescription')}
         </p>
       </div>
 
@@ -45,7 +45,7 @@ export function ThesisInput({ onSubmit, disabled }: Props) {
             id="thesis-input"
             value={thesis}
             onChange={(e) => setThesis(e.target.value.slice(0, 500))}
-            placeholder="e.g. AI inference chip design over the next 5 years, with exposure to memory and advanced packaging."
+            placeholder={t('portfolioBuilderPlaceholder')}
             rows={5}
             disabled={disabled}
             className="resize-none text-base leading-relaxed border-0 bg-transparent p-0 shadow-none focus-visible:ring-0 placeholder:text-muted-foreground/80"
@@ -53,7 +53,7 @@ export function ThesisInput({ onSubmit, disabled }: Props) {
 
           <div className="mt-3 flex items-center justify-between border-t border-border/40 pt-3">
             <span className={cn('text-xs text-muted-foreground/85', tooShort && 'text-amber-500')}>
-              {tooShort ? 'A bit more detail needed (min 10 characters)' : `${thesis.length} / 500`}
+              {tooShort ? t('portfolioBuilderTooShort') : t('portfolioBuilderCharCount', { count: thesis.length })}
             </span>
             <Button
               onClick={() => onSubmit(thesis.trim())}
@@ -61,7 +61,7 @@ export function ThesisInput({ onSubmit, disabled }: Props) {
               size="sm"
               className="gap-2 px-4 rounded-full animate-ai-pill-shine"
             >
-              Construct Portfolio
+              {t('portfolioBuilderConstructButton')}
               <ArrowRight className="h-3.5 w-3.5" />
             </Button>
           </div>
@@ -71,7 +71,7 @@ export function ThesisInput({ onSubmit, disabled }: Props) {
       {/* Examples */}
       <div>
         <p className="text-[11px] uppercase tracking-widest text-muted-foreground/80 font-semibold mb-3 text-center">
-          Example theses
+          {t('portfolioBuilderExampleThesesHeading')}
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {EXAMPLES.map((ex) => (
@@ -87,7 +87,7 @@ export function ThesisInput({ onSubmit, disabled }: Props) {
           ))}
         </div>
         <p className="text-[11px] text-muted-foreground/80 text-center mt-6 select-none">
-          Not investment advice
+          {t('portfolioBuilderNotAdvice')}
         </p>
       </div>
     </div>

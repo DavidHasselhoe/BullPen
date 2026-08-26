@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { useExperienceLevel } from '@/hooks/use-experience-level';
 
@@ -15,6 +16,7 @@ interface Props {
  * as it does for a real gain/loss figure elsewhere in the app.
  */
 export function BullBearCase({ bullCase, bearCase }: Props) {
+  const { t } = useTranslation('tools');
   const { isSimplified } = useExperienceLevel();
   if (!bullCase?.length && !bearCase?.length) return null;
 
@@ -24,7 +26,7 @@ export function BullBearCase({ bullCase, bearCase }: Props) {
         <div>
           <h3 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-emerald-400">
             <TrendingUp className="h-3.5 w-3.5" />
-            {isSimplified ? 'Why this could work' : 'Bull case'}
+            {isSimplified ? t('portfolioBuilderWhyThisCouldWork') : t('portfolioBuilderBullCase')}
           </h3>
           <ol className="space-y-2.5">
             {bullCase.map((point, i) => (
@@ -42,7 +44,7 @@ export function BullBearCase({ bullCase, bearCase }: Props) {
         <div>
           <h3 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-red-400">
             <TrendingDown className="h-3.5 w-3.5" />
-            {isSimplified ? 'Why it could go wrong' : 'Bear case'}
+            {isSimplified ? t('portfolioBuilderWhyItCouldGoWrong') : t('portfolioBuilderBearCase')}
           </h3>
           <ol className="space-y-2.5">
             {bearCase.map((point, i) => (

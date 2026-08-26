@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import type { Portfolio } from '@/lib/ai/portfolio-builder/schema';
 import { confidenceTier } from './colors';
@@ -13,6 +14,7 @@ interface Props {
  *  reads low→high confidence left to right instead of low→high risk — the
  *  gradient direction flips to match (green where confidence is strong). */
 function ConfidenceScale({ score }: { score: number }) {
+  const { t } = useTranslation('tools');
   const pct = Math.max(0, Math.min(100, score));
   return (
     <div className="w-full max-w-xs">
@@ -23,9 +25,9 @@ function ConfidenceScale({ score }: { score: number }) {
         />
       </div>
       <div className="mt-1.5 flex justify-between text-[11px] text-muted-foreground/80">
-        <span>Low</span>
-        <span>Moderate</span>
-        <span>High</span>
+        <span>{t('portfolioBuilderScaleLow')}</span>
+        <span>{t('portfolioBuilderScaleModerate')}</span>
+        <span>{t('portfolioBuilderScaleHigh')}</span>
       </div>
     </div>
   );
@@ -42,6 +44,7 @@ function Highlight({ label, title, detail }: { label: string; title: string; det
 }
 
 export function PortfolioHero({ portfolio }: Props) {
+  const { t } = useTranslation('tools');
   const tier = confidenceTier(portfolio.confidence_score);
   const topHolding = [...portfolio.holdings].sort((a, b) => b.allocation_pct - a.allocation_pct)[0];
   const primaryRisk = portfolio.key_risks?.[0];
@@ -58,7 +61,9 @@ export function PortfolioHero({ portfolio }: Props) {
             </span>
           </div>
           <div className={cn('text-base font-semibold', tierTextClass(tier))}>
-            {tier === 'neutral' ? 'High' : tier === 'caution' ? 'Moderate' : 'Low'} Confidence
+            {t('portfolioBuilderConfidenceSuffix', {
+              tier: tier === 'neutral' ? t('portfolioBuilderScaleHigh') : tier === 'caution' ? t('portfolioBuilderScaleModerate') : t('portfolioBuilderScaleLow'),
+            })}
           </div>
           <span className="inline-flex items-center gap-1 text-[13px] text-muted-foreground">
             {portfolio.investment_horizon}
@@ -84,13 +89,13 @@ export function PortfolioHero({ portfolio }: Props) {
       {(topHolding || primaryRisk || bullPoint) && (
         <div className="grid grid-cols-1 gap-4 border-t border-border/20 pt-4 sm:grid-cols-3">
           {topHolding && (
-            <Highlight label="Top holding" title={`${topHolding.ticker} · ${Math.round(topHolding.allocation_pct)}%`} detail={topHolding.company} />
+            <Highlight label={t('portfolioBuilderTopHolding')} title={`${topHolding.ticker} · ${Math.round(topHolding.allocation_pct)}%`} detail={topHolding.company} />
           )}
           {primaryRisk && (
-            <Highlight label="Primary risk" title={primaryRisk.title} detail={primaryRisk.description} />
+            <Highlight label={t('portfolioBuilderPrimaryRisk')} title={primaryRisk.title} detail={primaryRisk.description} />
           )}
           {bullPoint && (
-            <Highlight label="Bull thesis" title={bullPoint} />
+            <Highlight label={t('portfolioBuilderBullThesis')} title={bullPoint} />
           )}
         </div>
       )}

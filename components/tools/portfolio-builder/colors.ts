@@ -8,6 +8,7 @@
 // gain/loss figure. Everything else (risk_level, role) is a severity/status
 // classification and belongs on the shared tier system instead.
 
+import type { TFunction } from 'i18next';
 import type { PortfolioHolding } from '@/lib/ai/portfolio-builder/schema';
 import type { Tier } from '@/lib/ui/severity-tiers';
 
@@ -32,11 +33,13 @@ export function confidenceTier(score: number): Tier {
   return 'risk';
 }
 
-export const ROLE_LABEL: Record<PortfolioHolding['role'], string> = {
-  CORE: 'Core',
-  SECONDARY: 'Secondary',
-  HEDGE: 'Hedge',
-};
+export function getRoleLabel(t: TFunction): Record<PortfolioHolding['role'], string> {
+  return {
+    CORE: t('portfolioBuilderRoleCore'),
+    SECONDARY: t('portfolioBuilderRoleSecondary'),
+    HEDGE: t('portfolioBuilderRoleHedge'),
+  };
+}
 
 /** Not a severity — role is categorical (what job this holding does), so it
  *  stays on its own distinct palette rather than the risk/caution/neutral

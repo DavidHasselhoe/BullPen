@@ -1,7 +1,9 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import type { PortfolioHolding } from '@/lib/ai/portfolio-builder/schema';
 import { cn } from '@/lib/utils';
+import { getRoleLabel } from './colors';
 
 // Reuses the SECTOR_COLORS palette spirit from HoldingsPieChart — tuned for dark UI and
 // distinguishable across 12 holdings.
@@ -26,17 +28,13 @@ const ROLE_ORDER: Record<PortfolioHolding['role'], number> = {
   HEDGE: 2,
 };
 
-const ROLE_LABEL: Record<PortfolioHolding['role'], string> = {
-  CORE: 'Core',
-  SECONDARY: 'Secondary',
-  HEDGE: 'Hedge',
-};
-
 interface Props {
   holdings: PortfolioHolding[];
 }
 
 export function AllocationBars({ holdings }: Props) {
+  const { t } = useTranslation('tools');
+  const roleLabel = getRoleLabel(t);
   // Group by role, then sort within each group by allocation desc
   const grouped = holdings
     .slice()
@@ -68,7 +66,7 @@ export function AllocationBars({ holdings }: Props) {
           <div key={section.role}>
             <div className="flex items-center justify-between mb-2.5">
               <span className="text-[11px] uppercase tracking-widest text-muted-foreground/80 font-semibold">
-                {ROLE_LABEL[section.role]} · {section.items.length} {section.items.length === 1 ? 'position' : 'positions'}
+                {roleLabel[section.role]} · {t('portfolioBuilderPositionCount', { count: section.items.length })}
               </span>
               <span className="text-[11px] tabular-nums text-muted-foreground/80 font-semibold">
                 {sectionTotal}%

@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Button } from '@/components/ui/button';
 import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import { useExperienceLevel } from '@/hooks/use-experience-level';
@@ -24,22 +26,31 @@ interface Props {
   onReset: () => void;
 }
 
-function formatWhen(iso: string): string {
+function formatWhen(iso: string, t: TFunction): string {
   const d = new Date(iso);
   const diff = Date.now() - d.getTime();
   const mins = Math.floor(diff / 60_000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 1) return t('portfolioBuilderJustNow');
+  if (mins < 60) return t('portfolioBuilderMinsAgo', { count: mins });
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
+  if (hrs < 24) return t('portfolioBuilderHrsAgo', { count: hrs });
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 // [display:...] is stripped in BullpenChat before rendering — the full prompt still reaches the AI.
-function buildAskBullQuery(portfolio: Portfolio, thesis: string): string {
+function buildAskBullQuery(portfolio: Portfolio, thesis: string, t: TFunction): string {
   const tickers = portfolio.holdings.map((h) => h.ticker).join(', ');
   const topRisk = portfolio.key_risks?.[0];
-  return `[display:Explain this AI portfolio]\nBull just built a thematic portfolio from my thesis "${thesis}" (${tickers}). Confidence: ${portfolio.confidence_score}/100. ${topRisk ? `Top risk flagged: ${topRisk.title} — ${topRisk.description}` : ''}\n\nCan you walk me through what this means in plain terms, and tell me what I should sanity-check before acting on it?`;
+  const riskNote = topRisk
+    ? t('portfolioBuilderAskBullRiskNote', { title: topRisk.title, description: topRisk.description })
+    : '';
+  const summary = t('portfolioBuilderAskBullQuery', {
+    thesis,
+    tickers,
+    confidence: portfolio.confidence_score,
+    riskNote,
+  });
+  return `[display:${t('portfolioBuilderAskBullDisplayLabel')}]\n${summary}\n\n${t('portfolioBuilderAskBullFollowup')}`;
 }
 
 // ── Save-as-Watchlist state machine ──────────────────────────────────────────
@@ -49,7 +60,7 @@ type SaveState =
   | { kind: 'saved'; listId: string }
   | { kind: 'error'; message: string };
 
-async function saveAsWatchlist(portfolio: Portfolio): Promise<{ listId: string }> {
+async function saveAsWatchlist(portfolio: Portfolio, t: TFunction): Promise<{ listId: string }> {
   const listRes = await fetch('/api/watchlist/lists', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -58,9 +69,9 @@ async function saveAsWatchlist(portfolio: Portfolio): Promise<{ listId: string }
   if (!listRes.ok) {
     const body = await listRes.json().catch(() => ({}));
     if (body?.error === 'upgrade_required') {
-      throw new Error('You\'ve reached the free-tier watchlist limit. Upgrade to Pro to save more.');
+      throw new Error(t('portfolioBuilderWatchlistLimitError'));
     }
-    throw new Error(body?.error ?? 'Could not create watchlist');
+    throw new Error(body?.error ?? t('portfolioBuilderCreateWatchlistError'));
   }
   const { list } = (await listRes.json()) as { list: { id: string } };
 
@@ -82,6 +93,7 @@ async function saveAsWatchlist(portfolio: Portfolio): Promise<{ listId: string }
 // allocation -> holdings -> risks -> bull/bear -> notes (progressive
 // disclosure last), matching its space-y-7 / border-t rhythm.
 export function PortfolioResult({ portfolio, logoMap, replacedTickers, thesis, createdAt, onReset }: Props) {
+  const { t } = useTranslation('tools');
   const { isSimplified } = useExperienceLevel();
   const { open: openAIPanel } = useAIPanel();
   const [saveState, setSaveState] = useState<SaveState>({ kind: 'idle' });
@@ -89,10 +101,10 @@ export function PortfolioResult({ portfolio, logoMap, replacedTickers, thesis, c
   const handleSave = async () => {
     setSaveState({ kind: 'saving' });
     try {
-      const { listId } = await saveAsWatchlist(portfolio);
+      const { listId } = await saveAsWatchlist(portfolio, t);
       setSaveState({ kind: 'saved', listId });
     } catch (err) {
-      setSaveState({ kind: 'error', message: err instanceof Error ? err.message : 'Save failed' });
+      setSaveState({ kind: 'error', message: err instanceof Error ? err.message : t('portfolioBuilderSaveFailedError') });
     }
   };
 
@@ -102,7 +114,8 @@ export function PortfolioResult({ portfolio, logoMap, replacedTickers, thesis, c
         <div className="flex items-start gap-2 rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2.5 text-xs">
           <Info className="h-3.5 w-3.5 text-amber-400 shrink-0 mt-0.5" />
           <span className="text-muted-foreground">
-            <span className="text-amber-400 font-semibold">{replacedTickers.length}</span> ticker{replacedTickers.length === 1 ? '' : 's'} couldn&apos;t be verified ({replacedTickers.join(', ')}) and were swapped or omitted.
+            <span className="text-amber-400 font-semibold">{replacedTickers.length}</span>{' '}
+            {t('portfolioBuilderTickersReplaced', { count: replacedTickers.length, tickers: replacedTickers.join(', ') })}
           </span>
         </div>
       )}
@@ -111,7 +124,7 @@ export function PortfolioResult({ portfolio, logoMap, replacedTickers, thesis, c
 
       <div className="space-y-6 border-t border-border/20 pt-6">
         <div>
-          <h3 className="mb-3 text-sm font-semibold text-foreground">Allocation</h3>
+          <h3 className="mb-3 text-sm font-semibold text-foreground">{t('portfolioBuilderAllocationHeading')}</h3>
           <AllocationBars holdings={portfolio.holdings} />
         </div>
         <HoldingsList holdings={portfolio.holdings} logoMap={logoMap} isSimplified={isSimplified} />
@@ -125,24 +138,24 @@ export function PortfolioResult({ portfolio, logoMap, replacedTickers, thesis, c
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/20 pt-6">
         <span className="text-[11px] font-mono uppercase tracking-[0.15em] text-muted-foreground/80">
-          {createdAt ? `Generated · ${formatWhen(createdAt)}` : 'Generated just now'}
+          {createdAt ? t('portfolioBuilderGeneratedAt', { when: formatWhen(createdAt, t) }) : t('portfolioBuilderGeneratedJustNow')}
         </span>
         <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => openAIPanel({
-              query: buildAskBullQuery(portfolio, thesis),
+              query: buildAskBullQuery(portfolio, thesis, t),
               context: { tickers: portfolio.holdings.map((h) => h.ticker), label: portfolio.theme_summary },
             })}
             className="flex items-center gap-1.5 rounded-lg border border-border bg-muted/40 px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
             <Sparkles className="h-3 w-3" />
-            Ask Bull about this
+            {t('portfolioBuilderAskBullButton')}
           </button>
           {saveState.kind === 'saved' ? (
             <Link href="/watchlist" className="inline-flex">
               <Button variant="default" size="sm" className="gap-1.5">
                 <Check className="h-3.5 w-3.5" />
-                Saved
+                {t('portfolioBuilderSavedButton')}
                 <ExternalLink className="h-3 w-3 ml-1 opacity-70" />
               </Button>
             </Link>
@@ -155,12 +168,12 @@ export function PortfolioResult({ portfolio, logoMap, replacedTickers, thesis, c
               className="gap-1.5"
             >
               <ListPlus className={cn('h-3.5 w-3.5', saveState.kind === 'saving' && 'animate-pulse')} />
-              {saveState.kind === 'saving' ? 'Saving…' : 'Save as Watchlist'}
+              {saveState.kind === 'saving' ? t('portfolioBuilderSavingButton') : t('portfolioBuilderSaveButton')}
             </Button>
           )}
           <Button variant="outline" size="sm" onClick={onReset} className="gap-2">
             <RefreshCw className="h-3.5 w-3.5" />
-            New Thesis
+            {t('portfolioBuilderNewThesisButton')}
           </Button>
         </div>
       </div>
