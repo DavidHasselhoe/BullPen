@@ -8,6 +8,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { useExperienceLevel } from '@/hooks/use-experience-level';
 import { HelpCircle, X, Sparkles, ArrowUpRight, ArrowDownRight, Minus, History } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import { HealthRing } from '@/components/finance/HealthRing';
 import { TermTooltip } from '@/components/ui/TermTooltip';
@@ -46,20 +48,35 @@ function scoreBarColor(ratio: number): string {
 
 // ─── How-it-works popover ─────────────────────────────────────────────────────
 
-const METHODOLOGY = [
-  { name: 'Profitability', max: 30, desc: 'Profit margin, net income, revenue growth' },
-  { name: 'Financial Strength', max: 25, desc: 'Current ratio, debt-to-equity, free cash flow' },
-  { name: 'Valuation', max: 20, desc: 'P/E ratio, P/B ratio, EV/EBITDA' },
-  { name: 'Growth', max: 15, desc: 'Revenue growth TTM, EPS growth TTM' },
-  { name: 'Market Risk', max: 10, desc: 'Beta (volatility), short interest ratio' },
-];
+function getMethodology(t: TFunction) {
+  return [
+    { name: 'Profitability', max: 30, desc: t('healthMethodologyProfitability') },
+    { name: 'Financial Strength', max: 25, desc: t('healthMethodologyFinancialStrength') },
+    { name: 'Valuation', max: 20, desc: t('healthMethodologyValuation') },
+    { name: 'Growth', max: 15, desc: t('healthMethodologyGrowth') },
+    { name: 'Market Risk', max: 10, desc: t('healthMethodologyMarketRisk') },
+  ];
+}
+
+function getGradeThresholds(t: TFunction) {
+  return [
+    { grade: 'A', range: '85–100', label: t('healthGradeStrong') },
+    { grade: 'B', range: '70–84', label: t('healthGradeGood') },
+    { grade: 'C', range: '55–69', label: t('healthGradeFair') },
+    { grade: 'D', range: '40–54', label: t('healthGradeWeak') },
+    { grade: 'F', range: '0–39', label: t('healthGradeAtRisk') },
+  ];
+}
 
 function MethodologyPopover({ onClose, anchorRect }: { onClose: () => void; anchorRect: DOMRect | null }) {
+  const { t } = useTranslation('stock');
   if (!anchorRect || typeof document === 'undefined') return null;
 
   // Align right edge of popover with right edge of the ? button, drop below it
   const top = anchorRect.bottom + 8;
   const left = Math.max(8, anchorRect.right - 272);
+  const methodology = getMethodology(t);
+  const gradeThresholds = getGradeThresholds(t);
 
   return createPortal(
     <div
@@ -67,43 +84,37 @@ function MethodologyPopover({ onClose, anchorRect }: { onClose: () => void; anch
       className="rounded-xl border border-border bg-card shadow-2xl p-4 space-y-3"
     >
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold text-foreground">How is this score calculated?</span>
+        <span className="text-xs font-semibold text-foreground">{t('healthMethodologyHeading')}</span>
         <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
           <X className="h-3.5 w-3.5" />
         </button>
       </div>
       <p className="text-xs text-muted-foreground leading-relaxed">
-        We score 5 fundamental categories using live data from TwelveData. Each category contributes a weighted portion of the 100-point total.
+        {t('healthMethodologyIntro')}
       </p>
       <div className="space-y-2">
-        {METHODOLOGY.map((m) => (
+        {methodology.map((m) => (
           <div key={m.name} className="flex items-start gap-2">
             <span className="text-xs font-medium text-foreground w-28 shrink-0">{m.name}</span>
             <span className="text-xs text-muted-foreground leading-relaxed">
-              {m.desc} <span className="text-muted-foreground/85">({m.max} pts)</span>
+              {m.desc} <span className="text-muted-foreground/85">{t('healthMethodologyPoints', { count: m.max })}</span>
             </span>
           </div>
         ))}
       </div>
       <div className="border-t border-border/40 pt-2 space-y-1">
-        <p className="text-[11px] text-muted-foreground/85 font-medium uppercase tracking-wide">Grade thresholds</p>
-        {[
-          { grade: 'A', range: '85–100', label: 'Strong' },
-          { grade: 'B', range: '70–84', label: 'Good' },
-          { grade: 'C', range: '55–69', label: 'Fair' },
-          { grade: 'D', range: '40–54', label: 'Weak' },
-          { grade: 'F', range: '0–39', label: 'At Risk' },
-        ].map(({ grade, range, label }) => (
+        <p className="text-[11px] text-muted-foreground/85 font-medium uppercase tracking-wide">{t('healthGradeThresholdsHeading')}</p>
+        {gradeThresholds.map(({ grade, range, label }) => (
           <div key={grade} className="flex items-center gap-2 text-xs text-muted-foreground">
             <span className="w-4 font-semibold text-foreground">{grade}</span>
             <span>{range}</span>
-            <span className="text-muted-foreground/85">—</span>
+            <span className="text-muted-foreground/85">·</span>
             <span>{label}</span>
           </div>
         ))}
       </div>
       <p className="text-[11px] text-muted-foreground/85 leading-relaxed">
-        This score is educational and does not constitute investment advice.
+        {t('healthMethodologyDisclaimer')}
       </p>
     </div>,
     document.body
@@ -113,6 +124,7 @@ function MethodologyPopover({ onClose, anchorRect }: { onClose: () => void; anch
 // ─── Category bar ─────────────────────────────────────────────────────────────
 
 function CategoryBar({ cat }: { cat: CategoryScore }) {
+  const { t } = useTranslation('stock');
   const unavailable = cat.dataAvailable === false;
   const ratio = cat.max > 0 ? cat.score / cat.max : 0;
   const pct = Math.round(ratio * 100);
@@ -126,7 +138,7 @@ function CategoryBar({ cat }: { cat: CategoryScore }) {
           <TermTooltip term={cat.name} />
         </span>
         {unavailable ? (
-          <span className="text-[11px] font-medium text-muted-foreground/80">N/A</span>
+          <span className="text-[11px] font-medium text-muted-foreground/80">{t('healthNotAvailable')}</span>
         ) : (
           <span className="tabular-nums text-[11px] font-semibold text-muted-foreground">
             {cat.score}<span className="font-medium text-muted-foreground/80">/{cat.max}</span>
@@ -202,6 +214,7 @@ Risk Profile:
 }
 
 export function HealthScoreCard({ ticker, onSignalsReady }: HealthScoreCardProps) {
+  const { t } = useTranslation('stock');
   const { isSimplified } = useExperienceLevel();
   const { open: openAIPanel } = useAIPanel();
   const [showMethodology, setShowMethodology] = useState(false);
@@ -283,7 +296,7 @@ export function HealthScoreCard({ ticker, onSignalsReady }: HealthScoreCardProps
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <CardTitle className="text-base font-semibold">Financial Health</CardTitle>
+            <CardTitle className="text-base font-semibold">{t('healthCardTitle')}</CardTitle>
             {/* ? button — explains methodology */}
             <button
               ref={helpButtonRef}
@@ -293,7 +306,7 @@ export function HealthScoreCard({ ticker, onSignalsReady }: HealthScoreCardProps
                 setShowMethodology((v) => !v);
               }}
               className="text-muted-foreground/85 hover:text-muted-foreground transition-colors"
-              aria-label="How is this score calculated?"
+              aria-label={t('healthMethodologyHeading')}
             >
               <HelpCircle className="h-3.5 w-3.5" />
             </button>
@@ -317,8 +330,8 @@ export function HealthScoreCard({ ticker, onSignalsReady }: HealthScoreCardProps
                     ? 'bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/20'
                     : 'bg-muted text-muted-foreground border-border hover:bg-muted/70'
                 )}
-                aria-label="View financial health score history"
-                title="View score history"
+                aria-label={t('healthHistoryAriaLabel')}
+                title={t('healthHistoryTitleTooltip')}
               >
                 <History className="h-3 w-3" />
                 {trend > 0 ? <ArrowUpRight className="h-3 w-3" /> : trend < 0 ? <ArrowDownRight className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
@@ -348,7 +361,7 @@ export function HealthScoreCard({ ticker, onSignalsReady }: HealthScoreCardProps
               showLabel={false}
               className="text-foreground"
             />
-            <span className="text-[11px] text-muted-foreground/85 tracking-wide uppercase">out of 100</span>
+            <span className="text-[11px] text-muted-foreground/85 tracking-wide uppercase">{t('healthOutOf100')}</span>
           </div>
 
           {/* Pro mode: category progress bars */}
@@ -368,7 +381,7 @@ export function HealthScoreCard({ ticker, onSignalsReady }: HealthScoreCardProps
                 const ratio = cat.score / cat.max;
                 const pct = Math.round(ratio * 100);
                 const sig = ratio >= 0.7 ? 'positive' : ratio >= 0.45 ? 'neutral' : 'negative';
-                const sigLabel = sig === 'positive' ? 'Strong' : sig === 'neutral' ? 'Fair' : 'Weak';
+                const sigLabel = sig === 'positive' ? t('healthGradeStrong') : sig === 'neutral' ? t('healthGradeFair') : t('healthGradeWeak');
                 const barColor = sig === 'positive' ? 'bg-emerald-500' : sig === 'neutral' ? 'bg-amber-400' : 'bg-red-500';
                 const textColor = sig === 'positive' ? 'text-emerald-500' : sig === 'neutral' ? 'text-amber-400' : 'text-red-500';
                 return (
@@ -379,7 +392,7 @@ export function HealthScoreCard({ ticker, onSignalsReady }: HealthScoreCardProps
                         <TermTooltip term={cat.name} className="truncate" />
                       </span>
                       {unavailable ? (
-                        <span className="text-[11px] font-medium text-muted-foreground/80 shrink-0">N/A</span>
+                        <span className="text-[11px] font-medium text-muted-foreground/80 shrink-0">{t('healthNotAvailable')}</span>
                       ) : (
                         <span className={cn('text-[11px] font-semibold shrink-0', textColor)}>{sigLabel}</span>
                       )}
@@ -409,7 +422,7 @@ export function HealthScoreCard({ ticker, onSignalsReady }: HealthScoreCardProps
             className="shrink-0 flex items-center gap-1.5 rounded-lg border border-border bg-muted/40 px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
           >
             <Sparkles className="h-3 w-3" />
-            Explain
+            {t('healthExplainButton')}
           </button>
         </div>
       </CardContent>

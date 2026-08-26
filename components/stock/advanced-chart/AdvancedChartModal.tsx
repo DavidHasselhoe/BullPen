@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useTheme } from 'next-themes';
 import { motion } from 'framer-motion';
 import { AlertCircle, Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { AdvancedChartType, ChartRange } from '@/hooks/use-chart-prefs';
 import { useStockQuote } from '@/hooks/use-stock-price';
 import { useLivePrices } from '@/hooks/use-live-prices';
@@ -95,6 +96,7 @@ export function AdvancedChartModal({
   onReplaceIndicators, onApplyConfig,
   showVolume, onToggleVolume, showEvents, onToggleEvents, showTransactions, onToggleTransactions, holding, sales, purchases = [],
 }: Props) {
+  const { t } = useTranslation('stock');
   const router = useRouter();
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme !== 'light';
@@ -300,7 +302,7 @@ export function AdvancedChartModal({
       className="fixed inset-0 z-[100] flex flex-col bg-background"
       role="dialog"
       aria-modal="true"
-      aria-label={`${ticker} advanced chart`}
+      aria-label={t('advancedChartAriaLabel', { ticker })}
     >
       <ChartToolbar
         symbol={ticker.toUpperCase()}
@@ -341,14 +343,14 @@ export function AdvancedChartModal({
           {isLoading && !hasData && (
             <div className="flex h-full items-center justify-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Loading chart…
+              {t('advancedChartLoading')}
             </div>
           )}
 
           {!isLoading && (isError || !hasData) && (
             <div className="flex h-full flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
               <AlertCircle className="h-6 w-6 text-muted-foreground/80" />
-              {isError ? 'Market data is rate-limited — try again in a moment.' : 'No chart data available.'}
+              {isError ? t('advancedChartRateLimited') : t('advancedChartNoData')}
             </div>
           )}
 
