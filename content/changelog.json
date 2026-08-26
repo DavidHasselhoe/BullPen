@@ -2,6 +2,7 @@
   {
     "date": "2026-08-26",
     "entries": [
+      { "type": "fixed", "text": "Fixed a few company logos that were showing up as blank white squares instead of the company's initials" },
       { "type": "improved", "text": "Parts of the app, including the tools section and stock screener, now display in your selected language if you've set one in Settings, with more areas being translated over time" }
     ]
   },
