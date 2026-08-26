@@ -150,5 +150,65 @@ export interface MarketMoversSlides {
   caption: string;
 }
 
+/**
+ * Single-company earnings deep-dive carousel — unlike the multi-company
+ * calendar/results posts above, this is triggered on demand for one ticker
+ * the moment its report actually drops (see lib/edgar/edgar-watch.ts), not
+ * on a weekly cron. A 'draft' row is staged ahead of the report with only
+ * the *_estimate fields populated (from earnings-deep-dive-estimates.ts);
+ * the EDGAR watcher fills in every *_actual field and flips status to
+ * 'ready' once the real press release is parsed. Every *_estimate/*_actual
+ * pair is nullable independently since either half can legitimately be
+ * unconfirmed (no analyst consensus for a given line item; a metric the
+ * company doesn't break out that quarter).
+ */
+export interface EarningsDeepDiveData {
+  contentType: 'earnings_deep_dive';
+  ticker: string;
+  companyName: string;
+  logoUrl: string | null;
+  reportDate: string; // YYYY-MM-DD
+  reportTiming: 'BMO' | 'AMC' | null;
+
+  // Hero / EPS
+  epsEstimate: number | null;
+  epsActual: number | null;
+  epsStatus: 'beat' | 'missed' | 'inline' | null;
+  epsSurprisePercent: number | null;
+
+  // Revenue
+  revenueEstimate: number | null; // dollars
+  revenueActual: number | null;
+  revenueStatus: 'beat' | 'missed' | 'inline' | null;
+  revenueYoyGrowthPercent: number | null;
+  segmentLabel: string | null; // e.g. "Data Center"
+  segmentRevenueActual: number | null;
+  segmentYoyGrowthPercent: number | null;
+
+  // Profitability
+  grossMarginActualPercent: number | null;
+  grossMarginPriorQuarterPercent: number | null;
+  secondaryMetricLabel: string | null; // e.g. "Free Cash Flow", "Operating Margin"
+  secondaryMetricValue: number | null;
+  secondaryMetricIsCurrency: boolean;
+
+  // Guidance (next quarter)
+  guidanceRevenueLow: number | null;
+  guidanceRevenueHigh: number | null;
+  guidanceConsensus: number | null;
+  whyThisMatters: string | null; // one-liner, Claude-written, grounded in the resolved fields
+
+  // Market reaction (optional — filled in later once after-hours data settles)
+  afterHoursChangePercent: number | null;
+
+  headline: string | null;
+  caption: string | null;
+}
+
+export interface EarningsDeepDiveSlides {
+  contentType: 'earnings_deep_dive';
+  data: EarningsDeepDiveData;
+}
+
 /** Every shape instagram_posts.slides can hold, keyed by contentType. */
-export type InstagramPostSlides = EarningsCalendarSlides | EarningsResultsSlides | MarketMoversSlides;
+export type InstagramPostSlides = EarningsCalendarSlides | EarningsResultsSlides | MarketMoversSlides | EarningsDeepDiveSlides;

@@ -26,8 +26,13 @@ import {
   EarningsResultsListSlide,
   MoversListSlide,
   CTASlide,
+  DeepDiveHeroSlide,
+  DeepDiveRevenueSlide,
+  DeepDiveProfitabilitySlide,
+  DeepDiveGuidanceSlide,
+  DeepDiveReactionSlide,
 } from '@/lib/instagram/render/slides';
-import type { EarningsCalendarSlides, EarningsResultsSlides, InstagramPostSlides } from '@/lib/instagram/content/schema';
+import type { EarningsCalendarSlides, EarningsResultsSlides, EarningsDeepDiveSlides, InstagramPostSlides } from '@/lib/instagram/content/schema';
 
 export const runtime = 'nodejs';
 
@@ -67,7 +72,8 @@ export async function GET(
   if (
     post.content_type !== 'earnings_calendar' &&
     post.content_type !== 'earnings_results' &&
-    post.content_type !== 'market_movers'
+    post.content_type !== 'market_movers' &&
+    post.content_type !== 'earnings_deep_dive'
   ) {
     // Only content types built so far — a future content type would branch here.
     return NextResponse.json({ error: 'unsupported_content_type' }, { status: 500 });
@@ -83,7 +89,15 @@ export async function GET(
   const kind = slideKindAt(slideIndex, slides);
 
   let element: React.ReactElement;
-  if (slides.contentType === 'market_movers') {
+  if (slides.contentType === 'earnings_deep_dive') {
+    const d = (slides as EarningsDeepDiveSlides).data;
+    const commonProps = { data: d, slideIndex, totalSlides: total };
+    if (kind === 'deepdive_hero') element = <DeepDiveHeroSlide {...commonProps} />;
+    else if (kind === 'deepdive_revenue') element = <DeepDiveRevenueSlide {...commonProps} />;
+    else if (kind === 'deepdive_profitability') element = <DeepDiveProfitabilitySlide {...commonProps} />;
+    else if (kind === 'deepdive_guidance') element = <DeepDiveGuidanceSlide {...commonProps} />;
+    else element = <DeepDiveReactionSlide {...commonProps} />;
+  } else if (slides.contentType === 'market_movers') {
     if (kind === 'winners') {
       element = (
         <MoversListSlide

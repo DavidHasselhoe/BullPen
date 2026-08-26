@@ -13,6 +13,11 @@ export interface DiscordEmbed {
   fields?: Array<{ name: string; value: string; inline?: boolean }>;
   footer?: { text: string };
   timestamp?: string; // ISO 8601
+  /** One image per embed — Discord renders it inline, full-width, directly
+   *  in the message. Multiple embeds in the same message (up to 10) each
+   *  with their own `image` is the standard way to paste several pictures
+   *  into one webhook post, since a single embed can only carry one. */
+  image?: { url: string };
 }
 
 export interface DiscordMessage {

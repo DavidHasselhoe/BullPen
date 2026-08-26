@@ -41,6 +41,7 @@ import type {
   EarningsResultCompany,
   MarketMoverEntry,
   InstagramPostSlides,
+  EarningsDeepDiveData,
 } from '@/lib/instagram/content/schema';
 
 export const SLIDE_WIDTH = 1080;
@@ -67,17 +68,26 @@ const AMC_COLOR = '#f59e0b'; // Tailwind amber-500 — matches EarningsCalendarW
  */
 export const COMPANIES_PER_LIST_SLIDE = 30;
 
-export type SlideKind = 'hook' | 'list' | 'cta' | 'winners' | 'losers';
+export type SlideKind =
+  | 'hook' | 'list' | 'cta' | 'winners' | 'losers'
+  | 'deepdive_hero' | 'deepdive_revenue' | 'deepdive_profitability' | 'deepdive_guidance' | 'deepdive_reaction';
+
+const DEEP_DIVE_SLIDE_KINDS: SlideKind[] = [
+  'deepdive_hero', 'deepdive_revenue', 'deepdive_profitability', 'deepdive_guidance', 'deepdive_reaction',
+];
 
 function listSlideCount(companyCount: number): number {
   return Math.max(1, Math.ceil(companyCount / COMPANIES_PER_LIST_SLIDE));
 }
 
 /** Total slide count for a given post. market_movers is always a fixed 3
- *  slides (winners, losers, cta); earnings_calendar/earnings_results
- *  paginate their company list across a hook, 1+ list slides, and a CTA. */
+ *  slides (winners, losers, cta); earnings_deep_dive is always a fixed 5
+ *  (see DEEP_DIVE_SLIDE_KINDS — one company, no pagination); earnings_calendar/
+ *  earnings_results paginate their company list across a hook, 1+ list
+ *  slides, and a CTA. */
 export function totalSlideCount(slides: InstagramPostSlides): number {
   if (slides.contentType === 'market_movers') return 3;
+  if (slides.contentType === 'earnings_deep_dive') return DEEP_DIVE_SLIDE_KINDS.length;
   return 1 + listSlideCount(slides.companies.length) + 1;
 }
 
@@ -87,6 +97,9 @@ export function slideKindAt(index: number, slides: InstagramPostSlides): SlideKi
     if (index === 0) return 'winners';
     if (index === 1) return 'losers';
     return 'cta';
+  }
+  if (slides.contentType === 'earnings_deep_dive') {
+    return DEEP_DIVE_SLIDE_KINDS[index] ?? 'deepdive_reaction';
   }
   const lists = listSlideCount(slides.companies.length);
   if (index === 0) return 'hook';
@@ -113,6 +126,15 @@ export function altTextForSlide(
     if (kind === 'winners') return `Today's top S&P 500 and Nasdaq 100 gainers on BullPen: ${content.winners.map((w) => w.symbol).join(', ')}.`;
     if (kind === 'losers') return `Today's top S&P 500 and Nasdaq 100 losers on BullPen: ${content.losers.map((l) => l.symbol).join(', ')}.`;
     return 'Open the BullPen app to track every S&P 500 and Nasdaq 100 stock in real time.';
+  }
+  if (content.contentType === 'earnings_deep_dive') {
+    const kind = slideKindAt(slideIndex, content);
+    const d = content.data;
+    if (kind === 'deepdive_hero') return `${d.ticker} (${d.companyName}) earnings: EPS ${d.epsActual != null ? d.epsActual : 'pending'} vs estimate ${d.epsEstimate ?? 'N/A'} on BullPen.`;
+    if (kind === 'deepdive_revenue') return `${d.ticker} revenue results on BullPen.`;
+    if (kind === 'deepdive_profitability') return `${d.ticker} gross margin and profitability results on BullPen.`;
+    if (kind === 'deepdive_guidance') return `${d.ticker} next-quarter guidance on BullPen.`;
+    return `${d.ticker} after-hours market reaction. Track ${d.ticker} free on BullPen.`;
   }
   const kind = slideKindAt(slideIndex, content);
   const isResults = content.contentType === 'earnings_results';
@@ -740,6 +762,361 @@ export function MoversListSlide({ title, subtitle, entries, positive, slideIndex
             <MoverBar changePercent={entry.changePercent} maxAbs={maxAbs} positive={positive} />
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Earnings Deep Dive (single-company, on-demand) slide elements ──────────
+// Triggered per-report the moment it drops (see lib/edgar/edgar-watch.ts and
+// lib/instagram/content/earnings-deep-dive.ts) rather than on a weekly cron.
+// Reuses this file's existing tokens/atoms (Wordmark, SlideIndicator,
+// CompanyBadge, BRAND/MISSED_COLOR, formatEps) instead of a parallel style
+// system — a one-off post still has to read as the same brand as every
+// other carousel. Fixed 5-slide shape (see totalSlideCount/slideKindAt
+// below), no pagination since there's only ever one company.
+
+const INLINE_COLOR = AMC_COLOR; // amber — neutral "in line with estimates" state, no gain/loss direction to signal
+
+/** "$46.7B" / "-$1.2M" / "$823.40" below $1K — compact form for revenue-scale
+ *  dollar figures; falls back to plain 2-decimal formatting under $1,000 so a
+ *  small dollar figure (e.g. a per-share buyback price) never renders as
+ *  "$0.0K". */
+function formatUsdCompact(v: number): string {
+  const sign = v < 0 ? '-' : '';
+  const abs = Math.abs(v);
+  if (abs >= 1e9) return `${sign}$${(abs / 1e9).toFixed(abs / 1e9 >= 100 ? 0 : 1)}B`;
+  if (abs >= 1e6) return `${sign}$${(abs / 1e6).toFixed(abs / 1e6 >= 100 ? 0 : 1)}M`;
+  if (abs >= 1e3) return `${sign}$${(abs / 1e3).toFixed(1)}K`;
+  return `${sign}$${abs.toFixed(2)}`;
+}
+
+function formatPercentSigned(v: number, decimals = 1): string {
+  const sign = v > 0 ? '+' : '';
+  return `${sign}${v.toFixed(decimals)}%`;
+}
+
+/** BEAT (emerald) / MISS (red) / IN LINE (amber) — the one deep-dive
+ *  component with a third neutral state: a same-as-consensus result is
+ *  common enough on revenue/EPS that forcing it into beat-or-miss would
+ *  misrepresent it either direction. */
+function DeepDiveStatusBadge({ status, size = 'lg' }: { status: 'beat' | 'missed' | 'inline'; size?: 'lg' | 'sm' }) {
+  const color = status === 'beat' ? BRAND : status === 'missed' ? MISSED_COLOR : INLINE_COLOR;
+  const ink = status === 'beat' ? BRAND_INK : '#ffffff';
+  const label = status === 'beat' ? 'BEAT' : status === 'missed' ? 'MISS' : 'IN LINE';
+  const fontSize = size === 'lg' ? 30 : 20;
+  const padding = size === 'lg' ? '14px 32px' : '8px 18px';
+  return (
+    <div style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, letterSpacing: '0.04em', fontSize, color: ink, backgroundColor: color, padding, borderRadius: 999 }}>
+      {label}
+    </div>
+  );
+}
+
+function ReportTimingBadge({ timing }: { timing: 'BMO' | 'AMC' | null }) {
+  if (!timing) return null;
+  const color = timing === 'BMO' ? BMO_COLOR : AMC_COLOR;
+  return (
+    <div style={{ display: 'flex', fontSize: 20, fontWeight: 500, color, fontFamily: 'Geist', padding: '8px 18px', borderRadius: 999, backgroundColor: `${color}1a` }}>
+      {timing === 'BMO' ? 'Before Open' : 'After Close'}
+    </div>
+  );
+}
+
+function DeepDiveHeader({ slideIndex, totalSlides }: { slideIndex: number; totalSlides: number }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 40, zIndex: 1 }}>
+      <Wordmark />
+      <SlideIndicator index={slideIndex} total={totalSlides} />
+    </div>
+  );
+}
+
+function CompanyIdentity({ data, badgeSize = 72 }: { data: EarningsDeepDiveData; badgeSize?: number }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 22 }}>
+      <CompanyBadge symbol={data.ticker} logoUrl={data.logoUrl} size={badgeSize} />
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
+        <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: Math.round(badgeSize * 0.5), color: FG }}>
+          ${data.ticker}
+        </span>
+        <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: Math.round(badgeSize * 0.26), color: MUTED }}>
+          {data.companyName}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+interface DeepDiveSlideProps {
+  data: EarningsDeepDiveData;
+  slideIndex: number;
+  totalSlides: number;
+}
+
+/** Slide 1/5 — EPS headline result: the hero moment, same "big number lands
+ *  first" idea as HookSlide but data-driven instead of copy-driven. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function DeepDiveHeroSlide({ data, slideIndex, totalSlides }: DeepDiveSlideProps): any {
+  return (
+    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: 88, backgroundColor: BG, color: FG }}>
+      <DeepDiveHeader slideIndex={slideIndex} totalSlides={totalSlides} />
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+        <CompanyIdentity data={data} badgeSize={84} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: 22, color: MUTED }}>
+            {formatDateHeader(data.reportDate)}
+          </span>
+          <ReportTimingBadge timing={data.reportTiming} />
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontWeight: 700, fontSize: 20, letterSpacing: '0.08em', color: MUTED_DIM }}>
+          EARNINGS PER SHARE
+        </span>
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 48 }}>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: 24, color: MUTED }}>Estimate</span>
+            <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontWeight: 700, fontSize: 56, color: MUTED_DIM }}>
+              {data.epsEstimate != null ? formatEps(data.epsEstimate) : 'N/A'}
+            </span>
+          </div>
+          <div style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 48, color: MUTED_DIM }}>→</div>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: 24, color: MUTED }}>Actual</span>
+            <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontWeight: 700, fontSize: 80, color: FG }}>
+              {data.epsActual != null ? formatEps(data.epsActual) : 'N/A'}
+            </span>
+          </div>
+        </div>
+        {data.epsStatus && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
+            <DeepDiveStatusBadge status={data.epsStatus} />
+            {data.epsSurprisePercent != null && (
+              <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontWeight: 700, fontSize: 26, color: MUTED }}>
+                {formatPercentSigned(data.epsSurprisePercent)}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Slide 2/5 — total revenue est vs actual, plus the one segment sub-metric
+ *  most relevant to the company (e.g. Data Center for NVDA). */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function DeepDiveRevenueSlide({ data, slideIndex, totalSlides }: DeepDiveSlideProps): any {
+  return (
+    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: 88, backgroundColor: BG, color: FG }}>
+      <DeepDiveHeader slideIndex={slideIndex} totalSlides={totalSlides} />
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <span style={{ display: 'flex', fontFamily: 'Instrument Serif', fontStyle: 'italic', fontSize: 56, color: FG }}>
+          Total Revenue
+        </span>
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 48 }}>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: 22, color: MUTED }}>Estimate</span>
+            <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontWeight: 700, fontSize: 44, color: MUTED_DIM }}>
+              {data.revenueEstimate != null ? formatUsdCompact(data.revenueEstimate) : 'N/A'}
+            </span>
+          </div>
+          <div style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 40, color: MUTED_DIM }}>→</div>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: 22, color: MUTED }}>Actual</span>
+            <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontWeight: 700, fontSize: 68, color: FG }}>
+              {data.revenueActual != null ? formatUsdCompact(data.revenueActual) : 'N/A'}
+            </span>
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
+          {data.revenueStatus && <DeepDiveStatusBadge status={data.revenueStatus} />}
+          {data.revenueYoyGrowthPercent != null && (
+            <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontWeight: 700, fontSize: 26, color: MUTED }}>
+              {formatPercentSigned(data.revenueYoyGrowthPercent)} YoY
+            </span>
+          )}
+        </div>
+      </div>
+
+      {data.segmentLabel && data.segmentRevenueActual != null && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: 32, borderRadius: 24, backgroundColor: SURFACE, border: `1px solid ${BORDER_STRONG}` }}>
+          <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontWeight: 700, fontSize: 18, letterSpacing: '0.06em', color: MUTED_DIM }}>
+            {data.segmentLabel.toUpperCase()} REVENUE
+          </span>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 16 }}>
+            <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontWeight: 700, fontSize: 44, color: FG }}>
+              {formatUsdCompact(data.segmentRevenueActual)}
+            </span>
+            {data.segmentYoyGrowthPercent != null && (
+              <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: 22, color: MUTED }}>
+                {formatPercentSigned(data.segmentYoyGrowthPercent)} YoY
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Slide 3/5 — gross margin vs prior quarter (no analyst consensus for
+ *  margin exists in a form worth showing, so this compares sequentially
+ *  instead of est-vs-actual), plus one secondary profitability metric. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function DeepDiveProfitabilitySlide({ data, slideIndex, totalSlides }: DeepDiveSlideProps): any {
+  return (
+    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: 88, backgroundColor: BG, color: FG }}>
+      <DeepDiveHeader slideIndex={slideIndex} totalSlides={totalSlides} />
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <span style={{ display: 'flex', fontFamily: 'Instrument Serif', fontStyle: 'italic', fontSize: 56, color: FG }}>
+          Gross Margin
+        </span>
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 48 }}>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: 22, color: MUTED }}>Prior Quarter</span>
+            <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontWeight: 700, fontSize: 44, color: MUTED_DIM }}>
+              {data.grossMarginPriorQuarterPercent != null ? `${data.grossMarginPriorQuarterPercent.toFixed(1)}%` : 'N/A'}
+            </span>
+          </div>
+          <div style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 40, color: MUTED_DIM }}>→</div>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: 22, color: MUTED }}>This Quarter</span>
+            <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontWeight: 700, fontSize: 68, color: FG }}>
+              {data.grossMarginActualPercent != null ? `${data.grossMarginActualPercent.toFixed(1)}%` : 'N/A'}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {data.secondaryMetricLabel && data.secondaryMetricValue != null && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: 32, borderRadius: 24, backgroundColor: SURFACE, border: `1px solid ${BORDER_STRONG}` }}>
+          <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontWeight: 700, fontSize: 18, letterSpacing: '0.06em', color: MUTED_DIM }}>
+            {data.secondaryMetricLabel.toUpperCase()}
+          </span>
+          <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontWeight: 700, fontSize: 44, color: FG }}>
+            {data.secondaryMetricIsCurrency ? formatUsdCompact(data.secondaryMetricValue) : `${data.secondaryMetricValue.toFixed(1)}%`}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Slide 4/5 — next-quarter revenue guidance range vs consensus, plus a
+ *  short Claude-written "why this matters" line grounded in the resolved
+ *  numbers on this and the prior slides (never introduces a new fact). */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function DeepDiveGuidanceSlide({ data, slideIndex, totalSlides }: DeepDiveSlideProps): any {
+  const hasRange = data.guidanceRevenueLow != null && data.guidanceRevenueHigh != null;
+  return (
+    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: 88, backgroundColor: BG, color: FG }}>
+      <DeepDiveHeader slideIndex={slideIndex} totalSlides={totalSlides} />
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <span style={{ display: 'flex', fontFamily: 'Instrument Serif', fontStyle: 'italic', fontSize: 56, color: FG }}>
+          Next Quarter Guidance
+        </span>
+        <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontWeight: 700, fontSize: 60, color: FG }}>
+          {hasRange ? `${formatUsdCompact(data.guidanceRevenueLow as number)} - ${formatUsdCompact(data.guidanceRevenueHigh as number)}` : 'N/A'}
+        </span>
+        {data.guidanceConsensus != null && (
+          <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: 24, color: MUTED }}>
+            vs. {formatUsdCompact(data.guidanceConsensus)} consensus
+          </span>
+        )}
+      </div>
+
+      {data.whyThisMatters && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 36, borderRadius: 24, backgroundColor: SURFACE, border: `1px solid ${BORDER_STRONG}` }}>
+          <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontWeight: 700, fontSize: 16, letterSpacing: '0.08em', color: MUTED_DIM }}>
+            WHY THIS MATTERS
+          </span>
+          <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 28, color: FG, lineHeight: 1.35 }}>
+            {data.whyThisMatters}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Simple up/down zigzag — deliberately not a real chart (no axes, no data
+ *  points beyond a hand-picked directional shape), matching the brief's
+ *  "just directional" ask. `path`, not `polyline`, since that's the SVG
+ *  primitive already proven to render correctly through Satori elsewhere in
+ *  this file (see BellIcon/ChartIcon/WalletIcon above). */
+function DirectionalSketch({ positive, width = 320, height = 140 }: { positive: boolean; width?: number; height?: number }) {
+  const color = positive ? BRAND : MISSED_COLOR;
+  const d = positive
+    ? `M4,${height - 10} L${width * 0.35},${height * 0.55} L${width * 0.65},${height * 0.6} L${width - 4},10`
+    : `M4,10 L${width * 0.35},${height * 0.45} L${width * 0.65},${height * 0.4} L${width - 4},${height - 10}`;
+  return (
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} fill="none">
+      <path d={d} stroke={color} strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function ArrowIcon({ positive, size = 40 }: { positive: boolean; size?: number }) {
+  const color = positive ? BRAND : MISSED_COLOR;
+  const d = positive ? 'M12 19V5M5 12l7-7 7 7' : 'M12 5v14M5 12l7 7 7-7';
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+      <path d={d} />
+    </svg>
+  );
+}
+
+/** Slide 5/5 — after-hours price reaction plus the app CTA. Combines what
+ *  the brief called the "reaction" and "CTA footer" moments into one slide
+ *  (rather than a bare directional stat slide followed by a generic
+ *  CTASlide) since a single-company post's natural close is "here's how the
+ *  market reacted, now go track it" as one beat, not two. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function DeepDiveReactionSlide({ data, slideIndex, totalSlides }: DeepDiveSlideProps): any {
+  const hasReaction = data.afterHoursChangePercent != null;
+  const positive = hasReaction && (data.afterHoursChangePercent as number) >= 0;
+  return (
+    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', alignItems: 'center', padding: 88, backgroundColor: BG, color: FG, textAlign: 'center' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', zIndex: 1 }}>
+        <Wordmark />
+        <SlideIndicator index={slideIndex} total={totalSlides} />
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
+        <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontWeight: 700, fontSize: 20, letterSpacing: '0.08em', color: MUTED_DIM }}>
+          AFTER-HOURS REACTION
+        </span>
+        {hasReaction ? (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+              <ArrowIcon positive={positive} size={56} />
+              <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontWeight: 700, fontSize: 96, color: positive ? BRAND : MISSED_COLOR }}>
+                {formatPercentSigned(data.afterHoursChangePercent as number)}
+              </span>
+            </div>
+            <DirectionalSketch positive={positive} />
+          </>
+        ) : (
+          <span style={{ display: 'flex', fontFamily: 'Instrument Serif', fontStyle: 'italic', fontSize: 44, color: FG }}>
+            Still moving
+          </span>
+        )}
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18 }}>
+        <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 26, color: MUTED }}>
+          Track ${data.ticker} free on BullPen
+        </span>
+        <div style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: 24, fontWeight: 500, color: BRAND_INK, backgroundColor: BRAND, padding: '18px 44px', borderRadius: 999 }}>
+          bullpen.no
+        </div>
       </div>
     </div>
   );
