@@ -14,6 +14,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { useQuery } from '@tanstack/react-query';
 import { Calendar as CalendarIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useExperienceLevel } from '@/hooks/use-experience-level';
 import { DeltaBar } from '@/components/viz/DeltaBar';
 import type { EarningsCalendar as EarningsItem } from '@/lib/finnhub/finnhub-client';
@@ -30,10 +32,10 @@ function formatDate(dateStr: string): string {
   }).format(new Date(dateStr + 'T12:00:00Z'));
 }
 
-function formatHour(hour: string): string {
+function formatHour(hour: string, t: TFunction): string {
   const h = hour.toLowerCase();
-  if (h === 'pre market' || h === 'bmo' || h === 'before-market-open') return 'Pre Market';
-  if (h === 'after hours' || h === 'amc' || h === 'after-market-close') return 'After Hours';
+  if (h === 'pre market' || h === 'bmo' || h === 'before-market-open') return t('earningsPreMarket');
+  if (h === 'after hours' || h === 'amc' || h === 'after-market-close') return t('earningsAfterHours');
   return '';
 }
 
@@ -43,6 +45,7 @@ function daysUntil(dateStr: string): number {
 }
 
 export function EarningsCalendar({ ticker }: { ticker: string }) {
+  const { t } = useTranslation('stock');
   const { isSimplified } = useExperienceLevel();
   const today = new Date().toISOString().split('T')[0];
 
@@ -70,7 +73,7 @@ export function EarningsCalendar({ ticker }: { ticker: string }) {
       <Card className="mb-8">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base font-semibold">
-            <CalendarIcon className="h-4 w-4" /> Earnings
+            <CalendarIcon className="h-4 w-4" /> {t('earningsCardTitle')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -88,11 +91,11 @@ export function EarningsCalendar({ ticker }: { ticker: string }) {
       <Card className="mb-8">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base font-semibold">
-            <CalendarIcon className="h-4 w-4" /> Earnings
+            <CalendarIcon className="h-4 w-4" /> {t('earningsCardTitle')}
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">No earnings data available</p>
+          <p className="text-sm text-muted-foreground">{t('earningsNoData')}</p>
         </CardContent>
       </Card>
     );
@@ -121,21 +124,21 @@ export function EarningsCalendar({ ticker }: { ticker: string }) {
   const streakLine =
     scored.length >= 2
       ? beats > scored.length / 2
-        ? { text: `Beat expectations ${beats} of the last ${scored.length} quarters`, glyph: '▲', cls: 'text-emerald-500' }
+        ? { text: t('earningsStreakBeat', { count: beats, total: scored.length }), glyph: '▲', cls: 'text-emerald-500' }
         : beats < scored.length / 2
-          ? { text: `Missed expectations ${scored.length - beats} of the last ${scored.length} quarters`, glyph: '▼', cls: 'text-red-500' }
-          : { text: `Beat expectations ${beats} of the last ${scored.length} quarters`, glyph: '●', cls: 'text-muted-foreground' }
+          ? { text: t('earningsStreakMiss', { count: scored.length - beats, total: scored.length }), glyph: '▼', cls: 'text-red-500' }
+          : { text: t('earningsStreakBeat', { count: beats, total: scored.length }), glyph: '●', cls: 'text-muted-foreground' }
       : null;
 
   return (
     <Card className="mb-8">
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-base font-semibold">
-          <CalendarIcon className="h-4 w-4" /> Earnings
+          <CalendarIcon className="h-4 w-4" /> {t('earningsCardTitle')}
         </CardTitle>
         {isSimplified && (
           <p className="text-xs text-muted-foreground mt-1">
-            Every three months, companies report how much they earned. Beating what analysts expected is usually good news for the stock.
+            {t('earningsSimplifiedExplainer')}
           </p>
         )}
       </CardHeader>
@@ -144,27 +147,27 @@ export function EarningsCalendar({ ticker }: { ticker: string }) {
         {/* Next earnings — countdown leads */}
         {nextEvent && (
           <div>
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-2">Next Report</p>
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-2">{t('earningsNextReportLabel')}</p>
             <div className="flex items-center justify-between rounded-lg border border-border/50 bg-accent/30 px-4 py-3">
               <div>
                 <p className="text-xl font-semibold tabular-nums leading-none">
-                  {daysUntil(nextEvent.date) === 0 ? 'Today' : `In ${daysUntil(nextEvent.date)} days`}
+                  {daysUntil(nextEvent.date) === 0 ? t('earningsToday') : t('earningsInDays', { count: daysUntil(nextEvent.date) })}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1.5">
                   {formatDate(nextEvent.date)}
-                  {nextEvent.quarter && nextEvent.year && ` · Q${nextEvent.quarter} ${nextEvent.year}`}
+                  {nextEvent.quarter && nextEvent.year && ` · ${t('earningsQuarterYear', { quarter: nextEvent.quarter, year: nextEvent.year })}`}
                 </p>
               </div>
               <div className="flex items-center gap-2">
                 {nextEvent.epsEstimate !== null && (
                   <div className="text-right">
-                    <p className="text-xs text-muted-foreground">{isSimplified ? 'Expected profit/share' : 'EPS Est.'}</p>
+                    <p className="text-xs text-muted-foreground">{isSimplified ? t('earningsExpectedProfitPerShare') : t('earningsEpsEst')}</p>
                     <p className="text-sm font-medium tabular-nums">${nextEvent.epsEstimate.toFixed(2)}</p>
                   </div>
                 )}
-                {formatHour(nextEvent.hour) && (
+                {formatHour(nextEvent.hour, t) && (
                   <Badge variant="outline" className="text-xs shrink-0">
-                    {formatHour(nextEvent.hour)}
+                    {formatHour(nextEvent.hour, t)}
                   </Badge>
                 )}
               </div>
@@ -175,7 +178,7 @@ export function EarningsCalendar({ ticker }: { ticker: string }) {
         {/* Upcoming date not announced yet — say so instead of a silent gap */}
         {!nextEvent && recent.length > 0 && (
           <p className="text-xs text-muted-foreground">
-            The next report date hasn&apos;t been announced yet.
+            {t('earningsDateNotAnnounced')}
           </p>
         )}
 
@@ -183,7 +186,7 @@ export function EarningsCalendar({ ticker }: { ticker: string }) {
         {recent.length > 0 && (
           <div>
             <div className="mb-2 flex items-baseline justify-between gap-3">
-              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Recent Reports</p>
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{t('earningsRecentReportsLabel')}</p>
               {streakLine && (
                 <p className="text-xs text-muted-foreground">
                   <span className={streakLine.cls} aria-hidden>{streakLine.glyph}</span> {streakLine.text}
@@ -199,10 +202,10 @@ export function EarningsCalendar({ ticker }: { ticker: string }) {
                   <div className="min-w-0 shrink-0">
                     <span className="text-sm font-medium">{formatDate(e.date)}</span>
                     {e.quarter && e.year && (
-                      <span className="text-xs text-muted-foreground ml-2">Q{e.quarter} {e.year}</span>
+                      <span className="text-xs text-muted-foreground ml-2">{t('earningsQuarterYear', { quarter: e.quarter, year: e.year })}</span>
                     )}
                     {e.unconfirmed && (
-                      <Badge variant="outline" className="text-xs ml-2">Unconfirmed</Badge>
+                      <Badge variant="outline" className="text-xs ml-2">{t('earningsUnconfirmed')}</Badge>
                     )}
                   </div>
                   <DeltaBar
@@ -210,8 +213,12 @@ export function EarningsCalendar({ ticker }: { ticker: string }) {
                     actual={e.epsActual}
                     srLabel={
                       e.epsActual != null && e.epsEstimate != null
-                        ? `Earned $${e.epsActual.toFixed(2)} per share vs $${e.epsEstimate.toFixed(2)} expected${e.unconfirmed ? ', not yet confirmed against filed financials' : ''}`
-                        : `Estimate $${e.epsEstimate?.toFixed(2) ?? '—'} per share`
+                        ? t('earningsDeltaSrLabelActual', {
+                            actual: e.epsActual.toFixed(2),
+                            estimate: e.epsEstimate.toFixed(2),
+                            suffix: e.unconfirmed ? t('earningsDeltaSrLabelUnconfirmedSuffix') : '',
+                          })
+                        : t('earningsDeltaSrLabelEstimate', { estimate: e.epsEstimate?.toFixed(2) ?? '—' })
                     }
                   />
                 </div>

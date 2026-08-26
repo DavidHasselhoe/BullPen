@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { Plus, X, LineChart as LineChartIcon } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
@@ -29,6 +30,7 @@ function clampParam(value: number, min: number, max: number): number {
 }
 
 export function IndicatorMenu({ indicators, onAdd, onRemove, onUpdate, onApplyPreset, onClear }: Props) {
+  const { t } = useTranslation('stock');
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -38,7 +40,7 @@ export function IndicatorMenu({ indicators, onAdd, onRemove, onUpdate, onApplyPr
           className="flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
         >
           <LineChartIcon className="h-3.5 w-3.5" />
-          Indicators
+          {t('indicatorsButton')}
           {indicators.length > 0 && (
             <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[11px] font-semibold text-primary-foreground">
               {indicators.length}
@@ -52,7 +54,7 @@ export function IndicatorMenu({ indicators, onAdd, onRemove, onUpdate, onApplyPr
         {/* Presets */}
         <div className="border-b border-border/60 p-2">
           <p className="px-1 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80">
-            Presets
+            {t('indicatorPresetsLabel')}
           </p>
           <div className="flex flex-wrap gap-1.5">
             {INDICATOR_PRESETS.map((preset) => (
@@ -73,13 +75,13 @@ export function IndicatorMenu({ indicators, onAdd, onRemove, onUpdate, onApplyPr
         {indicators.length > 0 && (
           <div className="border-b border-border/60 p-2">
             <div className="flex items-center justify-between px-1 pb-1.5">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80">Active</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80">{t('indicatorActiveLabel')}</p>
               <button
                 type="button"
                 onClick={onClear}
                 className="text-[11px] font-medium text-muted-foreground/85 transition-colors hover:text-red-400"
               >
-                Clear all
+                {t('indicatorClearAll')}
               </button>
             </div>
             <div className="space-y-1.5">
@@ -96,7 +98,7 @@ export function IndicatorMenu({ indicators, onAdd, onRemove, onUpdate, onApplyPr
                         <input
                           key={spec.key}
                           type="number"
-                          aria-label={`${indicatorLabel(inst)} ${spec.label}`}
+                          aria-label={t('indicatorParamAriaLabel', { indicator: indicatorLabel(inst), param: spec.label })}
                           title={spec.label}
                           value={inst.params[spec.key]}
                           min={spec.min}
@@ -115,7 +117,7 @@ export function IndicatorMenu({ indicators, onAdd, onRemove, onUpdate, onApplyPr
                     <button
                       type="button"
                       onClick={() => onRemove(inst.id)}
-                      aria-label={`Remove ${def.label}`}
+                      aria-label={t('indicatorRemoveAriaLabel', { indicator: def.label })}
                       className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground/80 transition-colors hover:bg-red-500/10 hover:text-red-400"
                     >
                       <X className="h-3.5 w-3.5" />
@@ -129,8 +131,8 @@ export function IndicatorMenu({ indicators, onAdd, onRemove, onUpdate, onApplyPr
 
         {/* Add catalog */}
         <div className="max-h-72 overflow-y-auto p-2">
-          <AddGroup title="Overlays" defs={OVERLAYS} onAdd={onAdd} />
-          <AddGroup title="Oscillators" defs={OSCILLATORS} onAdd={onAdd} className="mt-2" />
+          <AddGroup title={t('indicatorOverlaysGroup')} defs={OVERLAYS} onAdd={onAdd} />
+          <AddGroup title={t('indicatorOscillatorsGroup')} defs={OSCILLATORS} onAdd={onAdd} className="mt-2" />
         </div>
       </PopoverContent>
     </Popover>
