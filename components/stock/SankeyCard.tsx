@@ -9,6 +9,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { Network, Lock } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -51,6 +53,29 @@ const FALLBACK = { light: '#94a3b8', dark: '#64748b' };
 
 function pickColor(id: string, isDark: boolean): string {
   return (NODE_PALETTE[id] ?? FALLBACK)[isDark ? 'dark' : 'light'];
+}
+
+// Node `id` strings double as graph-wiring keys (buildGraph source/target
+// references, NODE_PALETTE color lookups) — they must stay fixed English
+// identifiers. This maps each one to a translated key purely for display.
+const NODE_LABEL_KEYS: Record<string, string> = {
+  'Total Revenue': 'sankeyNodeTotalRevenue',
+  'Cost of Revenue': 'sankeyNodeCostOfRevenue',
+  'Gross Profit': 'sankeyNodeGrossProfit',
+  'R&D': 'sankeyNodeRnD',
+  'SG&A': 'sankeyNodeSgA',
+  'Other OpEx': 'sankeyNodeOtherOpEx',
+  'Other Costs': 'sankeyNodeOtherCosts',
+  'Total Costs': 'sankeyNodeTotalCosts',
+  'Costs & Tax': 'sankeyNodeCostsAndTax',
+  'Operating Income': 'sankeyNodeOperatingIncome',
+  'Tax & Other': 'sankeyNodeTaxAndOther',
+  'Net Income': 'sankeyNodeNetIncome',
+};
+
+function nodeLabel(id: string, t: TFunction): string {
+  const key = NODE_LABEL_KEYS[id];
+  return key ? t(key) : id;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -180,6 +205,7 @@ interface SankeyChartProps {
 }
 
 function SankeyChart({ graph, width, revenue, isDark, ticker, onTip }: SankeyChartProps) {
+  const { t } = useTranslation('stock');
   const innerW = width - PAD.left - PAD.right;
   const innerH = CHART_H - PAD.top - PAD.bottom;
 
@@ -268,7 +294,7 @@ function SankeyChart({ graph, width, revenue, isDark, ticker, onTip }: SankeyCha
               key={node.id as string}
               onMouseMove={(e) => onTip({
                 x: e.clientX, y: e.clientY,
-                id: node.id as string,
+                id: nodeLabel(node.id as string, t),
                 value: val,
                 pct: revenue > 0 ? fmtPct(val, revenue) : '—',
               })}
@@ -296,7 +322,7 @@ function SankeyChart({ graph, width, revenue, isDark, ticker, onTip }: SankeyCha
                 fill="var(--foreground)"
                 style={{ userSelect: 'none', pointerEvents: 'none' }}
               >
-                {node.id as string}
+                {nodeLabel(node.id as string, t)}
               </text>
               {/* Sub-label: value + pct */}
               {showSub && (
@@ -324,6 +350,7 @@ function SankeyChart({ graph, width, revenue, isDark, ticker, onTip }: SankeyCha
 // ─── Card ─────────────────────────────────────────────────────────────────────
 
 export function SankeyCard({ ticker }: { ticker: string }) {
+  const { t } = useTranslation('stock');
   const { resolvedTheme } = useTheme();
   // mounted guard prevents hydration mismatch — node colours flash on first render otherwise
   const [mounted, setMounted] = useState(false);
@@ -380,8 +407,8 @@ export function SankeyCard({ ticker }: { ticker: string }) {
               <Network className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h2 className="text-base font-semibold leading-tight text-foreground">Revenue Flow</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">How revenue becomes profit</p>
+              <h2 className="text-base font-semibold leading-tight text-foreground">{t('sankeyCardTitle')}</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">{t('sankeyCardSubtitle')}</p>
             </div>
           </div>
 
@@ -394,7 +421,7 @@ export function SankeyCard({ ticker }: { ticker: string }) {
                   'bg-amber-400':   conf === 'medium',
                   'bg-slate-400':   conf === 'low',
                 })} />
-                {conf.charAt(0).toUpperCase() + conf.slice(1)} confidence
+                {conf === 'high' ? t('sankeyConfidenceHigh') : conf === 'medium' ? t('sankeyConfidenceMedium') : t('sankeyConfidenceLow')}
               </span>
             )}
 
@@ -409,7 +436,7 @@ export function SankeyCard({ ticker }: { ticker: string }) {
                     'text-muted-foreground hover:text-foreground': period !== p,
                   })}
                 >
-                  {p === 'annual' ? 'Annual' : 'Quarterly'}
+                  {p === 'annual' ? t('sankeyAnnual') : t('sankeyQuarterly')}
                 </button>
               ))}
             </div>
@@ -447,9 +474,9 @@ export function SankeyCard({ ticker }: { ticker: string }) {
             >
               <Lock className="h-6 w-6 text-muted-foreground" />
               <p className="text-muted-foreground text-center max-w-xs">
-                {period === 'quarterly' ? 'Quarterly' : 'Annual'} income statement data requires a higher plan.
+                {period === 'quarterly' ? t('sankeyPlanRestrictedQuarterly') : t('sankeyPlanRestrictedAnnual')}
                 <br />
-                <span className="text-xs opacity-70">Try switching to Annual above.</span>
+                <span className="text-xs opacity-70">{t('sankeyPlanRestrictedHint')}</span>
               </p>
             </div>
           )}
@@ -459,7 +486,7 @@ export function SankeyCard({ ticker }: { ticker: string }) {
               className="flex items-center justify-center rounded-xl border border-border/40 bg-muted/20 text-sm text-muted-foreground"
               style={{ height: CHART_H }}
             >
-              Financial flow data not available for this period
+              {t('sankeyNoData')}
             </div>
           )}
 
@@ -486,7 +513,7 @@ export function SankeyCard({ ticker }: { ticker: string }) {
                     className="h-2.5 w-2.5 rounded-sm shrink-0"
                     style={{ background: colors[isDark ? 'dark' : 'light'] }}
                   />
-                  {id}
+                  {nodeLabel(id, t)}
                 </span>
               ))}
           </div>
@@ -503,11 +530,11 @@ export function SankeyCard({ ticker }: { ticker: string }) {
           <p className="font-semibold text-foreground mb-1.5">{tip.id}</p>
           <div className="space-y-1">
             <div className="flex justify-between gap-4">
-              <span className="text-muted-foreground">Value</span>
+              <span className="text-muted-foreground">{t('sankeyTooltipValue')}</span>
               <span className="font-medium tabular-nums text-foreground">{fmtVal(tip.value)}</span>
             </div>
             <div className="flex justify-between gap-4">
-              <span className="text-muted-foreground">% of Revenue</span>
+              <span className="text-muted-foreground">{t('sankeyTooltipPercentOfRevenue')}</span>
               <span className="font-medium tabular-nums text-foreground">{tip.pct}</span>
             </div>
           </div>
