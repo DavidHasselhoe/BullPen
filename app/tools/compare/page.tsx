@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useQuery, useQueries } from '@tanstack/react-query';
 import Link from 'next/link';
@@ -55,10 +57,8 @@ interface SearchResult {
   logo_url?: string | null;
 }
 
-const NA = 'Data unavailable';
-
-function fmt(n: number | null): string {
-  if (n == null) return NA;
+function fmt(n: number | null, na: string): string {
+  if (n == null) return na;
   const abs = Math.abs(n);
   const sign = n < 0 ? '-' : '';
   if (abs >= 1e12) return `${sign}$${(abs / 1e12).toFixed(2)}T`;
@@ -67,13 +67,13 @@ function fmt(n: number | null): string {
   return `${sign}$${n.toFixed(2)}`;
 }
 
-function fmtPct(n: number | null): string {
-  if (n == null) return NA;
+function fmtPct(n: number | null, na: string): string {
+  if (n == null) return na;
   return `${n.toFixed(1)}%`;
 }
 
-function formatFiscalYearEnd(fye: string | null): string {
-  if (!fye) return NA;
+function formatFiscalYearEnd(fye: string | null, na: string): string {
+  if (!fye) return na;
   const [month, day] = fye.split('-');
   if (!month || !day) return fye;
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -81,89 +81,100 @@ function formatFiscalYearEnd(fye: string | null): string {
   return m >= 0 && m < 12 ? `${months[m]} ${parseInt(day, 10)}` : fye;
 }
 
-function fmtEps(n: number | null): string {
-  if (n == null) return NA;
+function fmtEps(n: number | null, na: string): string {
+  if (n == null) return na;
   return `$${n.toFixed(2)}`;
 }
 
 const MIN_SLOTS = 2;
 const MAX_SLOTS = 5;
 
+type MetricDef = { key: string; label: string; fmt: (n: number | null) => string; isPct: boolean };
+type MetricGroup = { name: string; metrics: MetricDef[] };
+
 /** Metric tooltips for less familiar users */
-const METRIC_TOOLTIPS: Record<string, string> = {
-  grossMargin: 'Gross profit divided by revenue. Measures profitability after direct costs.',
-  operatingMargin: 'Operating income divided by revenue. Indicates operational profitability.',
-  netMargin: 'Net income divided by revenue. Reflects overall profitability.',
-  revenueGrowth: 'Year-over-year revenue change. Indicates top-line growth trend.',
-  revenue: 'Total revenue from operations. Primary measure of business scale.',
-  netIncome: 'Profit after all expenses and taxes.',
-  totalAssets: 'Total value of company assets. Indicates balance sheet size.',
-  shareholdersEquity: "Shareholders' ownership value. Assets minus liabilities.",
-  freeCashFlow: 'Cash from operations minus capital expenditures. Shows cash generation ability.',
-  epsDiluted: 'Earnings per share (diluted). Net income divided by shares outstanding.',
-};
+function getMetricTooltips(t: TFunction): Record<string, string> {
+  return {
+    grossMargin: t('compareMetricGrossMarginTooltip'),
+    operatingMargin: t('compareMetricOperatingMarginTooltip'),
+    netMargin: t('compareMetricNetMarginTooltip'),
+    revenueGrowth: t('compareMetricRevenueGrowthTooltip'),
+    revenue: t('compareMetricRevenueTooltip'),
+    netIncome: t('compareMetricNetIncomeTooltip'),
+    totalAssets: t('compareMetricTotalAssetsTooltip'),
+    shareholdersEquity: t('compareMetricShareholdersEquityTooltip'),
+    freeCashFlow: t('compareMetricFreeCashFlowTooltip'),
+    epsDiluted: t('compareMetricEpsDilutedTooltip'),
+  };
+}
 
 /** Metric definitions for expandable details */
-const METRIC_DEFINITIONS: Record<string, string> = {
-  grossMargin: 'Revenue minus cost of goods sold, divided by revenue.',
-  operatingMargin: 'Operating income (revenue minus operating expenses) divided by revenue.',
-  netMargin: 'Net income divided by revenue. Reflects bottom-line profitability after all expenses.',
-  revenueGrowth: 'Year-over-year percentage change in revenue. Compares latest fiscal year to prior year.',
-  revenue: 'Total revenue from operations. Primary measure of business scale and top-line performance.',
-  netIncome: 'Profit after all expenses, interest, and taxes.',
-  totalAssets: 'Total value of company assets (current and non-current). Indicates balance sheet size.',
-  shareholdersEquity: "Shareholders' ownership value. Assets minus liabilities.",
-  freeCashFlow: 'Cash from operations minus capital expenditures. Shows cash generation ability.',
-  epsDiluted: 'Earnings per share (diluted). Net income divided by weighted average shares outstanding.',
-};
+function getMetricDefinitions(t: TFunction): Record<string, string> {
+  return {
+    grossMargin: t('compareMetricGrossMarginDefinition'),
+    operatingMargin: t('compareMetricOperatingMarginDefinition'),
+    netMargin: t('compareMetricNetMarginDefinition'),
+    revenueGrowth: t('compareMetricRevenueGrowthDefinition'),
+    revenue: t('compareMetricRevenueDefinition'),
+    netIncome: t('compareMetricNetIncomeDefinition'),
+    totalAssets: t('compareMetricTotalAssetsDefinition'),
+    shareholdersEquity: t('compareMetricShareholdersEquityDefinition'),
+    freeCashFlow: t('compareMetricFreeCashFlowDefinition'),
+    epsDiluted: t('compareMetricEpsDilutedDefinition'),
+  };
+}
 
 /** Why each metric matters for investment analysis */
-const METRIC_WHY_IT_MATTERS: Record<string, string> = {
-  grossMargin: 'Higher gross margins indicate pricing power or cost efficiency. Sustained low margins can signal commoditization.',
-  operatingMargin: 'Indicates operational profitability before interest and taxes. Shows how well management controls costs.',
-  netMargin: 'Reflects overall profitability. Higher margins typically indicate a stronger competitive moat.',
-  revenueGrowth: 'Sustained growth suggests market share gains or expansion. Compare to industry averages.',
-  revenue: 'Scale matters for bargaining power, R&D investment, and economies of scale.',
-  netIncome: 'Bottom-line profit drives dividends and buybacks. Essential for valuation.',
-  totalAssets: 'Larger asset bases can support growth but also imply greater capital intensity.',
-  shareholdersEquity: 'Book value of equity. Important for value investors and financial health.',
-  freeCashFlow: 'Cash available for dividends, buybacks, and debt reduction. Key indicator of financial flexibility.',
-  epsDiluted: 'Directly comparable across companies. Essential for P/E valuation.',
-};
+function getMetricWhyItMatters(t: TFunction): Record<string, string> {
+  return {
+    grossMargin: t('compareMetricGrossMarginWhyMatters'),
+    operatingMargin: t('compareMetricOperatingMarginWhyMatters'),
+    netMargin: t('compareMetricNetMarginWhyMatters'),
+    revenueGrowth: t('compareMetricRevenueGrowthWhyMatters'),
+    revenue: t('compareMetricRevenueWhyMatters'),
+    netIncome: t('compareMetricNetIncomeWhyMatters'),
+    totalAssets: t('compareMetricTotalAssetsWhyMatters'),
+    shareholdersEquity: t('compareMetricShareholdersEquityWhyMatters'),
+    freeCashFlow: t('compareMetricFreeCashFlowWhyMatters'),
+    epsDiluted: t('compareMetricEpsDilutedWhyMatters'),
+  };
+}
 
 /** Metric groups for scanability. Higher is better for all listed metrics. */
-const METRIC_GROUPS = [
-  {
-    name: 'Profitability',
-    metrics: [
-      { key: 'grossMargin', label: 'Gross Margin', fmt: fmtPct, isPct: true },
-      { key: 'operatingMargin', label: 'Operating Margin', fmt: fmtPct, isPct: true },
-      { key: 'netMargin', label: 'Net Margin', fmt: fmtPct, isPct: true },
-    ],
-  },
-  {
-    name: 'Growth',
-    metrics: [
-      { key: 'revenueGrowth', label: 'Revenue Growth YoY', fmt: fmtPct, isPct: true },
-    ],
-  },
-  {
-    name: 'Scale',
-    metrics: [
-      { key: 'revenue', label: 'Revenue', fmt, isPct: false },
-      { key: 'netIncome', label: 'Net Income', fmt, isPct: false },
-      { key: 'totalAssets', label: 'Total Assets', fmt, isPct: false },
-      { key: 'shareholdersEquity', label: "Shareholders' Equity", fmt, isPct: false },
-    ],
-  },
-  {
-    name: 'Cash Flow',
-    metrics: [
-      { key: 'freeCashFlow', label: 'Free Cash Flow', fmt, isPct: false },
-      { key: 'epsDiluted', label: 'EPS (Diluted)', fmt: fmtEps, isPct: false },
-    ],
-  },
-] as const;
+function getMetricGroups(t: TFunction, na: string): MetricGroup[] {
+  return [
+    {
+      name: t('compareGroupProfitability'),
+      metrics: [
+        { key: 'grossMargin', label: t('compareMetricGrossMarginLabel'), fmt: (n: number | null) => fmtPct(n, na), isPct: true },
+        { key: 'operatingMargin', label: t('compareMetricOperatingMarginLabel'), fmt: (n: number | null) => fmtPct(n, na), isPct: true },
+        { key: 'netMargin', label: t('compareMetricNetMarginLabel'), fmt: (n: number | null) => fmtPct(n, na), isPct: true },
+      ],
+    },
+    {
+      name: t('compareGroupGrowth'),
+      metrics: [
+        { key: 'revenueGrowth', label: t('compareMetricRevenueGrowthLabel'), fmt: (n: number | null) => fmtPct(n, na), isPct: true },
+      ],
+    },
+    {
+      name: t('compareGroupScale'),
+      metrics: [
+        { key: 'revenue', label: t('compareMetricRevenueLabel'), fmt: (n: number | null) => fmt(n, na), isPct: false },
+        { key: 'netIncome', label: t('compareMetricNetIncomeLabel'), fmt: (n: number | null) => fmt(n, na), isPct: false },
+        { key: 'totalAssets', label: t('compareMetricTotalAssetsLabel'), fmt: (n: number | null) => fmt(n, na), isPct: false },
+        { key: 'shareholdersEquity', label: t('compareMetricShareholdersEquityLabel'), fmt: (n: number | null) => fmt(n, na), isPct: false },
+      ],
+    },
+    {
+      name: t('compareGroupCashFlow'),
+      metrics: [
+        { key: 'freeCashFlow', label: t('compareMetricFreeCashFlowLabel'), fmt: (n: number | null) => fmt(n, na), isPct: false },
+        { key: 'epsDiluted', label: t('compareMetricEpsDilutedLabel'), fmt: (n: number | null) => fmtEps(n, na), isPct: false },
+      ],
+    },
+  ];
+}
 
 function computeBetterIndex<V>(values: (V | null)[], higherIsBetter: boolean): number | null {
   const valid = values
@@ -198,8 +209,11 @@ function computeDiff(
 }
 
 /** Generate comparison summary bullets (scale, profitability, growth) */
-function buildComparisonSummaryBullets(companies: CompareCompany[]): string[] {
-  const bullets: string[] = [];
+function buildComparisonSummaryBullets(
+  companies: CompareCompany[],
+  t: TFunction
+): Array<{ label: string; text: string }> {
+  const bullets: Array<{ label: string; text: string }> = [];
   if (companies.length < 2) return bullets;
 
   const revA = companies[0]?.metrics?.revenue ?? null;
@@ -215,8 +229,11 @@ function buildComparisonSummaryBullets(companies: CompareCompany[]): string[] {
     const smaller = ratio >= 1 ? companies[1] : companies[0];
     const r = ratio >= 1 ? ratio : 1 / ratio;
     if (r >= 1.5) {
-      const mult = r >= 10 ? Math.round(r) : r >= 2 ? r.toFixed(1) : r.toFixed(1);
-      bullets.push(`Scale: ${larger.name} revenue is approximately ${mult}× larger than ${smaller.name}.`);
+      const mult = r >= 10 ? Math.round(r) : r.toFixed(1);
+      bullets.push({
+        label: t('compareGroupScale'),
+        text: t('compareSummaryScaleText', { larger: larger.name, smaller: smaller.name, mult }),
+      });
     }
   }
 
@@ -226,7 +243,10 @@ function buildComparisonSummaryBullets(companies: CompareCompany[]): string[] {
     const other = diff >= 0 ? companies[1] : companies[0];
     const absDiff = Math.abs(diff);
     if (absDiff >= 5) {
-      bullets.push(`Profitability: ${leader.name} gross margin exceeds ${other.name} by over ${Math.round(absDiff)} percentage points.`);
+      bullets.push({
+        label: t('compareGroupProfitability'),
+        text: t('compareSummaryProfitabilityText', { leader: leader.name, other: other.name, diff: Math.round(absDiff) }),
+      });
     }
   }
 
@@ -235,7 +255,10 @@ function buildComparisonSummaryBullets(companies: CompareCompany[]): string[] {
     const lower = grA >= grB ? companies[1] : companies[0];
     const diff = Math.abs(grA - grB);
     if (diff >= 10) {
-      bullets.push(`Growth: ${higher.name} revenue growth significantly exceeds ${lower.name}'s latest annual growth.`);
+      bullets.push({
+        label: t('compareGroupGrowth'),
+        text: t('compareSummaryGrowthText', { higher: higher.name, lower: lower.name }),
+      });
     }
   }
 
@@ -263,8 +286,11 @@ function buildBiggestDifferences(
 }
 
 /** Which company leads each category (by wins per metric in that category) */
-function buildCategoryLeaders(companies: CompareCompany[]): Array<{ category: string; leader: string }> {
-  return METRIC_GROUPS.map((g) => {
+function buildCategoryLeaders(
+  companies: CompareCompany[],
+  metricGroups: MetricGroup[]
+): Array<{ category: string; leader: string }> {
+  return metricGroups.map((g) => {
     const wins = new Array(companies.length).fill(0);
     for (const m of g.metrics) {
       const k = m.key as keyof (typeof companies)[0]['metrics'];
@@ -279,15 +305,29 @@ function buildCategoryLeaders(companies: CompareCompany[]): Array<{ category: st
 }
 
 /** Short trend summary from financial history */
-function buildTrendSummary(companies: CompareCompany[]): string[] {
+function buildTrendSummary(companies: CompareCompany[], t: TFunction): string[] {
   const lines: string[] = [];
   for (const c of companies) {
     const hist = c.history.slice(0, 4).sort((a, b) => b.fiscalYear - a.fiscalYear);
     const revs = hist.map((h) => h.revenue).filter((v): v is number => v != null);
     if (revs.length >= 2) {
       const growth = ((revs[0] - revs[revs.length - 1]) / revs[revs.length - 1]) * 100;
-      const trend = growth > 30 ? 'grew dramatically' : growth > 10 ? 'grew steadily' : growth > 0 ? 'grew moderately' : 'declined';
-      lines.push(`${c.name} revenue ${trend} between FY${hist[hist.length - 1]?.fiscalYear} and FY${hist[0]?.fiscalYear}.`);
+      const trend =
+        growth > 30
+          ? t('compareTrendGrewDramatically')
+          : growth > 10
+            ? t('compareTrendGrewSteadily')
+            : growth > 0
+              ? t('compareTrendGrewModerately')
+              : t('compareTrendDeclined');
+      lines.push(
+        t('compareTrendSentence', {
+          name: c.name,
+          trend,
+          startYear: hist[hist.length - 1]?.fiscalYear,
+          endYear: hist[0]?.fiscalYear,
+        })
+      );
     }
   }
   return lines;
@@ -296,20 +336,29 @@ function buildTrendSummary(companies: CompareCompany[]): string[] {
 /** Friendly copy for known /api/compare error codes. Transient vs. permanent framing matters:
  *  rate_limited means try again shortly, plan_restricted means the data provider (not the
  *  user's BullPen plan) doesn't have this data available. */
-const COMPARE_ERROR_COPY: Record<string, { message: string; transient: boolean }> = {
-  rate_limited: {
-    message: 'Market data is temporarily busy. Try again in a moment.',
-    transient: true,
-  },
-  plan_restricted: {
-    message: "Full financial history for one of these companies isn't available from our data provider right now.",
-    transient: false,
-  },
-};
+function getCompareErrorCopy(t: TFunction): Record<string, { message: string; transient: boolean }> {
+  return {
+    rate_limited: {
+      message: t('compareErrorRateLimited'),
+      transient: true,
+    },
+    plan_restricted: {
+      message: t('compareErrorPlanRestricted'),
+      transient: false,
+    },
+  };
+}
 
 type MetricSort = 'default' | 'diff' | string;
 
 function CompareContent() {
+  const { t } = useTranslation('tools');
+  const na = t('compareDataUnavailable');
+  const metricTooltips = getMetricTooltips(t);
+  const metricDefinitions = getMetricDefinitions(t);
+  const metricWhyItMatters = getMetricWhyItMatters(t);
+  const metricGroups = getMetricGroups(t, na);
+  const compareErrorCopy = getCompareErrorCopy(t);
   const router = useRouter();
   const searchParams = useSearchParams();
   const tickersParam = searchParams.get('tickers');
@@ -516,16 +565,16 @@ function CompareContent() {
             className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-5 group"
           >
             <ArrowLeft className="h-3 w-3 transition-transform group-hover:-translate-x-0.5" />
-            All tools
+            {t('allToolsLink')}
           </Link>
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
               <Scale className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-foreground">Compare Companies</h1>
+              <h1 className="text-2xl font-bold tracking-tight text-foreground">{t('compareTitle')}</h1>
               <p className="text-sm text-muted-foreground mt-0.5">
-                Select 2–5 companies to compare side-by-side.
+                {t('compareSubtitle')}
               </p>
             </div>
           </div>
@@ -553,7 +602,7 @@ function CompareContent() {
                         size="icon"
                         className="h-9 w-9 shrink-0"
                         onClick={() => handleRemove(i)}
-                        title="Remove"
+                        title={t('compareRemoveButton')}
                       >
                         <X className="h-4 w-4" />
                       </Button>
@@ -567,7 +616,7 @@ function CompareContent() {
                   onClick={() => openPicker(i)}
                 >
                   <Plus className="h-8 w-8 text-muted-foreground" />
-                  <span className="text-sm font-medium">Add company</span>
+                  <span className="text-sm font-medium">{t('compareAddCompany')}</span>
                 </Button>
               )}
             </div>
@@ -576,27 +625,27 @@ function CompareContent() {
         {canCompare && (
           <div className="mt-6">
             <Button onClick={handleCompare} size="lg">
-              Compare {selectedCompanies.length} companies
+              {t('compareButtonCount', { count: selectedCompanies.length })}
             </Button>
           </div>
         )}
         <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>Select company</DialogTitle>
+              <DialogTitle>{t('compareSelectCompanyTitle')}</DialogTitle>
               <DialogDescription>
-                Search by ticker or company name. Type at least 2 characters.
+                {t('compareSelectCompanyDescription')}
               </DialogDescription>
             </DialogHeader>
             <Command className="rounded-lg border">
               <CommandInput
-                placeholder="Search by ticker or company name..."
+                placeholder={t('compareSearchPlaceholder')}
                 value={searchQuery}
                 onValueChange={setSearchQuery}
               />
               <CommandList>
                 {isSearching && (
-                  <div className="p-4 text-center text-sm text-muted-foreground">Searching...</div>
+                  <div className="p-4 text-center text-sm text-muted-foreground">{t('compareSearching')}</div>
                 )}
                 {!isSearching && searchResults && searchResults.length > 0 && (() => {
                   const available = searchResults.filter((r) => !selectedCompanies.some((s) => s.ticker === r.ticker));
@@ -624,12 +673,12 @@ function CompareContent() {
                     </CommandGroup>
                   ) : (
                     <div className="p-4 text-center text-sm text-muted-foreground">
-                      Selected companies already in comparison.
+                      {t('compareAllSelected')}
                     </div>
                   );
                 })()}
                 {!isSearching && debouncedQuery.trim().length >= 2 && searchResults?.length === 0 && (
-                  <CommandEmpty>No companies found.</CommandEmpty>
+                  <CommandEmpty>{t('compareNoCompaniesFound')}</CommandEmpty>
                 )}
               </CommandList>
             </Command>
@@ -641,8 +690,8 @@ function CompareContent() {
 
   if (allSettled && tickers.length >= 2 && companies.length === 0) {
     const code = firstQueryError?.message;
-    const known = code ? COMPARE_ERROR_COPY[code] : undefined;
-    const message = known?.message ?? 'Could not load comparison. Check that tickers exist in BullPen.';
+    const known = code ? compareErrorCopy[code] : undefined;
+    const message = known?.message ?? t('compareLoadError');
 
     return (
       <div className="container mx-auto px-4 py-12 max-w-6xl">
@@ -651,13 +700,13 @@ function CompareContent() {
           className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-6 group"
         >
           <ArrowLeft className="h-3 w-3 transition-transform group-hover:-translate-x-0.5" />
-          All tools
+          {t('allToolsLink')}
         </Link>
         <Card className={known?.transient ? undefined : 'border-destructive/50'}>
           <CardContent className="py-8 flex flex-col items-center gap-4 text-center">
             <p className={known?.transient ? 'text-muted-foreground' : 'text-destructive'}>{message}</p>
             <Button variant="outline" size="sm" onClick={refetchAll}>
-              Try again
+              {t('tryAgainButton')}
             </Button>
           </CardContent>
         </Card>
@@ -666,16 +715,16 @@ function CompareContent() {
   }
 
   const sortOptions: { value: MetricSort; label: string }[] = [
-    { value: 'default', label: 'By category' },
-    ...(companies.length === 2 ? [{ value: 'diff', label: 'Largest difference first' }] : []),
-    ...companies.map((c, i) => ({ value: `company${i}`, label: `By ${c.ticker} value` })),
+    { value: 'default', label: t('compareSortByCategory') },
+    ...(companies.length === 2 ? [{ value: 'diff', label: t('compareSortLargestDifferenceOption') }] : []),
+    ...companies.map((c, i) => ({ value: `company${i}`, label: t('compareSortByTickerValue', { ticker: c.ticker }) })),
   ];
 
-  const flattened = METRIC_GROUPS.flatMap((g) => g.metrics.map((m) => ({ ...m, groupName: g.name })));
+  const flattened = metricGroups.flatMap((g) => g.metrics.map((m) => ({ ...m, groupName: g.name })));
 
   const metricsDisplayGroups =
     metricSort === 'default'
-      ? METRIC_GROUPS.map((g) => ({ groupName: g.name, metrics: g.metrics }))
+      ? metricGroups.map((g) => ({ groupName: g.name, metrics: g.metrics }))
       : (() => {
           const withSort = flattened.map((m) => {
             const k = m.key as keyof typeof companies[0]['metrics'];
@@ -692,10 +741,10 @@ function CompareContent() {
           withSort.sort((a, b) => (b.sortVal as number) - (a.sortVal as number));
           const sortLabel =
             metricSort === 'diff'
-              ? 'Largest differences first'
+              ? t('compareSortedGroupLargestDifferences')
               : metricSort.startsWith('company')
-                ? `By ${companies[parseInt(metricSort.replace('company', ''), 10)]?.ticker ?? ''} value`
-                : 'Sorted';
+                ? t('compareSortByTickerValue', { ticker: companies[parseInt(metricSort.replace('company', ''), 10)]?.ticker ?? '' })
+                : t('compareSortedFallback');
           return [{ groupName: sortLabel, metrics: withSort }];
         })();
 
@@ -706,15 +755,15 @@ function CompareContent() {
         className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-6 group"
       >
         <ArrowLeft className="h-3 w-3 transition-transform group-hover:-translate-x-0.5" />
-        All tools
+        {t('allToolsLink')}
       </Link>
 
       {isLoading ? (
         <ProcessingScreen
           items={progressItems}
-          itemNoun={{ singular: 'company', plural: 'companies' }}
+          itemNoun={{ singular: t('compareItemNounSingular'), plural: t('compareItemNounPlural') }}
           complete={allSettled}
-          subtext="This can take up to 20 seconds for companies we haven't cached yet."
+          subtext={t('compareProcessingSubtext')}
         />
       ) : (
         <>
@@ -735,38 +784,33 @@ function CompareContent() {
                 className="shrink-0 gap-2"
               >
                 <MessageSquare className="h-4 w-4" />
-                Ask AI
+                {t('compareAskAiButton')}
               </Button>
             </div>
             <p className="text-sm text-muted-foreground mb-6">
-              Side-by-side comparison of business profile, key metrics, and financial history from SEC filings.
+              {t('compareDescription')}
             </p>
 
             {/* Comparison Summary — highlights most important differences */}
             {companies.length >= 2 && (() => {
-              const summaryBullets = buildComparisonSummaryBullets(companies);
+              const summaryBullets = buildComparisonSummaryBullets(companies, t);
               if (summaryBullets.length === 0) return null;
               return (
                 <Card className="mb-6 border-primary/20 bg-primary/5">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-base font-semibold">Comparison Summary</CardTitle>
+                    <CardTitle className="text-base font-semibold">{t('compareSummaryTitle')}</CardTitle>
                     <CardDescription className="text-sm">
-                      Key differences at a glance
+                      {t('compareSummarySubtitle')}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <ul className="space-y-1.5 text-sm">
-                      {summaryBullets.map((b, i) => {
-                        const colonIdx = b.indexOf(':');
-                        const label = colonIdx >= 0 ? b.slice(0, colonIdx) : '';
-                        const rest = colonIdx >= 0 ? b.slice(colonIdx + 1).trim() : b;
-                        return (
-                          <li key={i} className="flex gap-2">
-                            <span className="text-primary font-medium shrink-0">{label}:</span>
-                            <span className="text-muted-foreground">{rest}</span>
-                          </li>
-                        );
-                      })}
+                      {summaryBullets.map((b, i) => (
+                        <li key={i} className="flex gap-2">
+                          <span className="text-primary font-medium shrink-0">{b.label}:</span>
+                          <span className="text-muted-foreground">{b.text}</span>
+                        </li>
+                      ))}
                     </ul>
                   </CardContent>
                 </Card>
@@ -779,9 +823,9 @@ function CompareContent() {
             <section>
               <h2 className="flex items-center gap-2 text-xl font-semibold mb-2">
                 <Building2 className="h-5 w-5 text-primary" />
-                Overview
+                {t('compareOverviewHeading')}
               </h2>
-              <p className="text-sm text-muted-foreground mb-4">Company profiles at a glance</p>
+              <p className="text-sm text-muted-foreground mb-4">{t('compareOverviewSubtitle')}</p>
               <div
                 className="grid gap-4"
                 style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))' }}
@@ -811,13 +855,13 @@ function CompareContent() {
                         )}
                         {c.fiscal_year_end && (
                           <p className="text-xs text-muted-foreground">
-                            Fiscal year ends {formatFiscalYearEnd(c.fiscal_year_end)}
+                            {t('compareFiscalYearEnds', { date: formatFiscalYearEnd(c.fiscal_year_end, na) })}
                           </p>
                         )}
                         <div className="pt-2 border-t border-border/50">
-                          <p className="text-xs text-muted-foreground mb-0.5">Revenue (latest)</p>
+                          <p className="text-xs text-muted-foreground mb-0.5">{t('compareRevenueLatest')}</p>
                           <p className="font-mono text-sm font-medium tabular-nums">
-                            {fmt(c.metrics.revenue)}
+                            {fmt(c.metrics.revenue, na)}
                           </p>
                         </div>
                       </CardHeader>
@@ -832,7 +876,7 @@ function CompareContent() {
               <section>
                 <h2 className="flex items-center gap-2 text-xl font-semibold mb-2">
                   <Building2 className="h-5 w-5 text-primary" />
-                  Business
+                  {t('compareBusinessHeading')}
                 </h2>
                 <div
                   className="grid gap-4"
@@ -842,7 +886,7 @@ function CompareContent() {
                     <Card key={c.ticker} className="overflow-hidden">
                       <CardContent className="pt-4">
                         <p className="text-sm text-muted-foreground leading-relaxed line-clamp-6">
-                          {c.description?.trim() || 'Business description not available.'}
+                          {c.description?.trim() || t('compareBusinessDescriptionUnavailable')}
                         </p>
                       </CardContent>
                     </Card>
@@ -854,14 +898,14 @@ function CompareContent() {
             {/* Biggest Differences + Category Leaders — above metrics table */}
             {companies.length >= 2 && (() => {
               const biggestDiffs = buildBiggestDifferences(companies, flattened);
-              const leaders = buildCategoryLeaders(companies);
+              const leaders = buildCategoryLeaders(companies, metricGroups);
               return (
                 <div className={`grid gap-4 mb-6 ${biggestDiffs.length > 0 ? 'grid-cols-1 md:grid-cols-2' : ''}`}>
                   {biggestDiffs.length > 0 && (
                     <Card>
                       <CardHeader className="pb-2">
-                        <CardTitle className="text-base font-semibold">Biggest Differences</CardTitle>
-                        <p className="text-xs text-muted-foreground">Sorted by largest gap</p>
+                        <CardTitle className="text-base font-semibold">{t('compareBiggestDifferencesTitle')}</CardTitle>
+                        <p className="text-xs text-muted-foreground">{t('compareSortedByLargestGap')}</p>
                       </CardHeader>
                       <CardContent>
                         <ul className="space-y-2 text-sm font-mono tabular-nums">
@@ -879,8 +923,8 @@ function CompareContent() {
                   )}
                   <Card className={biggestDiffs.length > 0 ? undefined : 'md:max-w-md'}>
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-base font-semibold">Category Leaders</CardTitle>
-                      <p className="text-xs text-muted-foreground">Which company leads each category</p>
+                      <CardTitle className="text-base font-semibold">{t('compareCategoryLeadersTitle')}</CardTitle>
+                      <p className="text-xs text-muted-foreground">{t('compareCategoryLeadersSubtitle')}</p>
                     </CardHeader>
                     <CardContent>
                       <ul className="space-y-2 text-sm">
@@ -903,9 +947,9 @@ function CompareContent() {
                 <div>
                   <h2 className="flex items-center gap-2 text-xl font-semibold mb-1">
                     <BarChart3 className="h-5 w-5 text-primary" />
-                    Key Metrics
+                    {t('compareKeyMetricsHeading')}
                   </h2>
-                  <p className="text-sm text-muted-foreground">Latest annual comparison</p>
+                  <p className="text-sm text-muted-foreground">{t('compareLatestAnnualComparison')}</p>
                 </div>
                 <div className="flex items-center gap-3">
                   <Button
@@ -934,9 +978,9 @@ function CompareContent() {
                         });
                         const json = await res.json();
                         if (json.success) setAiExplanation(json.explanation);
-                        else setAiExplainError(json.error || 'Failed to generate');
+                        else setAiExplainError(json.error || t('compareExplainFailed'));
                       } catch (e) {
-                        setAiExplainError(e instanceof Error ? e.message : 'Failed to generate');
+                        setAiExplainError(e instanceof Error ? e.message : t('compareExplainFailed'));
                       } finally {
                         setAiExplainLoading(false);
                       }
@@ -945,12 +989,12 @@ function CompareContent() {
                     className="shrink-0 rounded-full animate-ai-pill-shine"
                   >
                     <Sparkles className={cn('h-4 w-4 mr-2', aiExplainLoading && 'animate-pulse')} />
-                    {aiExplainLoading ? 'Generating…' : 'Explain Differences'}
+                    {aiExplainLoading ? t('compareGeneratingButton') : t('compareExplainDifferencesButton')}
                   </Button>
                   <Select value={metricSort} onValueChange={setMetricSort}>
                     <SelectTrigger className="w-[200px]">
                       <ArrowUpDown className="h-4 w-4 mr-2 shrink-0" />
-                      <SelectValue placeholder="Sort by" />
+                      <SelectValue placeholder={t('compareSortByPlaceholder')} />
                     </SelectTrigger>
                     <SelectContent>
                       {sortOptions.map((opt) => (
@@ -977,7 +1021,7 @@ function CompareContent() {
                   <table className="w-full text-sm border-collapse">
                     <thead className="sticky top-0 z-10 bg-muted/95 dark:bg-muted/90 backdrop-blur supports-[backdrop-filter]:bg-muted/90 border-b shadow-sm">
                       <tr>
-                        <th className="text-left py-3.5 px-5 font-semibold min-w-[11rem]">Metric</th>
+                        <th className="text-left py-3.5 px-5 font-semibold min-w-[11rem]">{t('compareMetricColumnHeader')}</th>
                         {companies.map((c) => (
                           <th key={c.ticker} className="text-right py-3.5 px-5 font-semibold min-w-[7rem] tabular-nums">
                             <Link href={`/stock/${c.ticker}`} className="hover:underline font-mono">
@@ -987,7 +1031,7 @@ function CompareContent() {
                         ))}
                         {companies.length === 2 && (
                           <th className="text-right py-3 px-4 font-medium w-32 text-muted-foreground tabular-nums">
-                            Difference
+                            {t('compareDifferenceColumnHeader')}
                           </th>
                         )}
                       </tr>
@@ -1013,8 +1057,8 @@ function CompareContent() {
                               companies.length === 2
                                 ? computeDiff(values[0], values[1], isPct)
                                 : null;
-                            const definition = METRIC_DEFINITIONS[key];
-                            const whyMatters = METRIC_WHY_IT_MATTERS[key];
+                            const definition = metricDefinitions[key];
+                            const whyMatters = metricWhyItMatters[key];
                             const expandable = definition || whyMatters;
                             const isExpanded = expandedMetricKey === key;
                             return (
@@ -1033,20 +1077,20 @@ function CompareContent() {
                                         </span>
                                       )}
                                       <span>{label}</span>
-                                      {!expandable && METRIC_TOOLTIPS[key] && (
+                                      {!expandable && metricTooltips[key] && (
                                         <Tooltip>
                                           <TooltipTrigger asChild>
                                             <button
                                               type="button"
                                               className="inline-flex text-muted-foreground/85 hover:text-muted-foreground focus:outline-none"
-                                              aria-label={`Info: ${label}`}
+                                              aria-label={t('compareMetricInfoAriaLabel', { label })}
                                               onClick={(e) => e.stopPropagation()}
                                             >
                                               <Info className="h-3.5 w-3.5" />
                                             </button>
                                           </TooltipTrigger>
                                           <TooltipContent side="right" className="max-w-xs">
-                                            {METRIC_TOOLTIPS[key]}
+                                            {metricTooltips[key]}
                                           </TooltipContent>
                                         </Tooltip>
                                       )}
@@ -1070,7 +1114,7 @@ function CompareContent() {
                                       diffRes?.isPositive ? 'text-emerald-400' : 'text-muted-foreground'
                                     }`}
                                   >
-                                    {diffRes?.str ?? NA}
+                                    {diffRes?.str ?? na}
                                   </td>
                                 )}
                               </tr>
@@ -1080,13 +1124,13 @@ function CompareContent() {
                                     <div className="space-y-2 text-muted-foreground">
                                       {definition && (
                                         <p>
-                                          <span className="font-medium text-foreground/80">Definition:</span>{' '}
+                                          <span className="font-medium text-foreground/80">{t('compareDefinitionLabel')}</span>{' '}
                                           {definition}
                                         </p>
                                       )}
                                       {whyMatters && (
                                         <p>
-                                          <span className="font-medium text-foreground/80">Why it matters:</span>{' '}
+                                          <span className="font-medium text-foreground/80">{t('compareWhyItMattersLabel')}</span>{' '}
                                           {whyMatters}
                                         </p>
                                       )}
@@ -1109,17 +1153,17 @@ function CompareContent() {
             <section>
               <h2 className="flex items-center gap-2 text-xl font-semibold mb-2">
                 <TrendingUp className="h-5 w-5 text-primary" />
-                Financial History
+                {t('compareFinancialHistoryHeading')}
               </h2>
-              <p className="text-sm text-muted-foreground mb-4">Annual revenue and EPS by fiscal year</p>
+              <p className="text-sm text-muted-foreground mb-4">{t('compareFinancialHistorySubtitle')}</p>
               {(() => {
-                const trendLines = buildTrendSummary(companies);
+                const trendLines = buildTrendSummary(companies, t);
                 if (trendLines.length === 0) return null;
                 return (
                   <Card className="mb-4 border-muted">
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-semibold">Trend Summary</CardTitle>
-                      <p className="text-xs text-muted-foreground">Historical revenue and EPS trends</p>
+                      <CardTitle className="text-sm font-semibold">{t('compareTrendSummaryTitle')}</CardTitle>
+                      <p className="text-xs text-muted-foreground">{t('compareTrendSummarySubtitle')}</p>
                     </CardHeader>
                     <CardContent>
                       <ul className="space-y-1.5 text-sm text-muted-foreground">
@@ -1136,16 +1180,16 @@ function CompareContent() {
                   <table className="w-full text-sm border-collapse">
                     <thead className="sticky top-0 z-10 bg-muted/95 dark:bg-muted/90 backdrop-blur supports-[backdrop-filter]:bg-muted/90 border-b shadow-sm">
                       <tr className="border-b">
-                        <th className="text-left py-3.5 px-5 font-semibold w-24">Year</th>
+                        <th className="text-left py-3.5 px-5 font-semibold w-24">{t('compareYearColumnHeader')}</th>
                         {companies.flatMap((c) => [
                           <th key={`${c.ticker}-rev`} className="text-right py-3 px-4 font-medium w-24">
                             <Link href={`/stock/${c.ticker}`} className="hover:underline font-mono text-xs">
-                              {c.ticker} Rev
+                              {t('compareTickerRevHeader', { ticker: c.ticker })}
                             </Link>
                           </th>,
                           <th key={`${c.ticker}-eps`} className="text-right py-3.5 px-5 font-semibold min-w-[4rem]">
                             <Link href={`/stock/${c.ticker}`} className="hover:underline font-mono text-xs">
-                              {c.ticker} EPS
+                              {t('compareTickerEpsHeader', { ticker: c.ticker })}
                             </Link>
                           </th>,
                         ])}
@@ -1174,13 +1218,13 @@ function CompareContent() {
                                     key={`${c.ticker}-rev`}
                                     className={`text-right py-3 px-5 font-mono tabular-nums ${h?.revenue == null ? 'text-muted-foreground' : ''}`}
                                   >
-                                    {h?.revenue != null ? fmt(h.revenue) : NA}
+                                    {h?.revenue != null ? fmt(h.revenue, na) : na}
                                   </td>,
                                   <td
                                     key={`${c.ticker}-eps`}
                                     className={`text-right py-3 px-5 font-mono tabular-nums ${h?.epsDiluted == null ? 'text-muted-foreground' : ''}`}
                                   >
-                                    {h?.epsDiluted != null ? fmtEps(h.epsDiluted) : NA}
+                                    {h?.epsDiluted != null ? fmtEps(h.epsDiluted, na) : na}
                                   </td>,
                                 ];
                               })}

@@ -151,6 +151,45 @@ function extractPlaceholders(text: string): string[] {
 /** Same guard ai-translate.ts uses against a model replying conversationally instead of translating. */
 const CONVERSATIONAL_RESPONSE_RE = /^(sure|i'm sorry|i am sorry|please provide|certainly)[,!.]?\s/i;
 
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Whether `term` appears in `text` as a standalone token rather than as a
+ * substring of a larger word. Plain `.includes('Pro')` also matches inside
+ * "Profitability", "Property", "Process" etc. — ordinary English words that
+ * happen to contain a short DO_NOT_TRANSLATE brand term as a substring.
+ * Reproduced live 2026-08-26: "Profitability" failed validation in all 6
+ * languages on every retry because every correct translation (e.g. Spanish
+ * "Rentabilidad") naturally drops the accidental "Pro" substring, which the
+ * old check misread as the DNT term "Pro" having been translated away.
+ */
+function containsWholeTerm(text: string, term: string): boolean {
+  const pattern = new RegExp(`(?<![A-Za-z0-9])${escapeRegExp(term)}(?![A-Za-z0-9])`);
+  return pattern.test(text);
+}
+
+/**
+ * True when `text` is built entirely from DO_NOT_TRANSLATE terms,
+ * interpolation placeholders, whitespace, and punctuation — i.e. there is no
+ * actual translatable content left once those are stripped out. A string
+ * like "{{ticker}} EPS" legitimately round-trips unchanged in most target
+ * languages (nothing in it can be translated), but its literal form isn't
+ * itself a DO_NOT_TRANSLATE entry, so the plain unchanged-string check below
+ * would otherwise reject it. Reproduced live 2026-08-26 on
+ * `compareTickerEpsHeader`.
+ */
+function isEntirelyDoNotTranslate(text: string): boolean {
+  let remainder = text;
+  for (const term of DO_NOT_TRANSLATE) {
+    remainder = remainder.split(term).join('');
+  }
+  remainder = remainder.replace(/\{\{[^}]+\}\}/g, '');
+  remainder = remainder.replace(/[\s\p{P}]+/gu, '');
+  return remainder.length === 0;
+}
+
 function isValidTranslation(sourceText: string, translated: unknown): translated is string {
   if (typeof translated !== 'string' || !translated.trim()) return false;
   if (CONVERSATIONAL_RESPONSE_RE.test(translated.trim())) return false;
@@ -160,7 +199,7 @@ function isValidTranslation(sourceText: string, translated: unknown): translated
   if (JSON.stringify(sourcePlaceholders) !== JSON.stringify(targetPlaceholders)) return false;
 
   for (const term of DO_NOT_TRANSLATE) {
-    if (sourceText.includes(term) && !translated.includes(term)) return false;
+    if (containsWholeTerm(sourceText, term) && !translated.includes(term)) return false;
   }
 
   // Verified live 2026-08-26: with a long do-not-translate list in the system
@@ -170,8 +209,10 @@ function isValidTranslation(sourceText: string, translated: unknown): translated
   // even though none of them are on the DNT list). The prompt in
   // buildSystemPrompt() now explicitly guards against this, but this check
   // stays as a second, independent net: an unchanged value is only
-  // legitimate when the source text IS actually a do-not-translate term.
-  const isLegitimatelyUnchanged = (DO_NOT_TRANSLATE as readonly string[]).includes(sourceText.trim());
+  // legitimate when the source text IS actually a do-not-translate term (or
+  // is composed entirely of such terms plus placeholders/punctuation).
+  const isLegitimatelyUnchanged =
+    (DO_NOT_TRANSLATE as readonly string[]).includes(sourceText.trim()) || isEntirelyDoNotTranslate(sourceText);
   if (translated.trim() === sourceText.trim() && !isLegitimatelyUnchanged) return false;
 
   return true;
