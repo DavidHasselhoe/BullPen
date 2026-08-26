@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { Settings2 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ChartPrefsControls } from './ChartPrefsControls';
@@ -11,13 +12,14 @@ interface Props extends UseChartPrefs {
 }
 
 export function ChartSettingsPanel({ prefs, setPref, reset, onRangeChange, onIndicatorsChange }: Props) {
+  const { t } = useTranslation('stock');
   return (
     <Popover>
       <PopoverTrigger asChild>
         <button
           type="button"
           className="rounded-md p-1.5 text-muted-foreground/80 hover:text-foreground hover:bg-muted/60 transition-colors"
-          title="Chart settings"
+          title={t('chartSettingsTitle')}
         >
           <Settings2 className="h-3.5 w-3.5" />
         </button>

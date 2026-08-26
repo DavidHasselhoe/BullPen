@@ -1,6 +1,24 @@
 {
   "ageLabel": "Edad {{age}}",
+  "ceoLabel": "Director Ejecutivo",
+  "chartPresetApplyTitle": "Aplicar {{name}}",
+  "chartPresetDeleteAriaLabel": "Eliminar {{name}}",
+  "chartPresetEmpty": "Sin presets aún. Guarda una vista arriba.",
+  "chartPresetEvents": "Eventos",
+  "chartPresetIndicatorCount_one": "{{count}} indicador",
+  "chartPresetIndicatorCount_other": "{{count}} indicadores",
+  "chartPresetNameAriaLabel": "Nombre del preset",
+  "chartPresetNamePlaceholder": "Nombre del preset…",
+  "chartPresetSaveButton": "Guardar",
+  "chartPresetSaveHeading": "Guardar vista actual",
+  "chartPresetSaveHint": "Captura el período de tiempo, tipo de gráfico, indicadores y los controles de volumen y eventos.",
+  "chartPresetTrades": "Operaciones",
+  "chartPresetVolume": "Volumen",
+  "chartSettingsTitle": "Configuración del gráfico",
   "companyProfileTitle": "Perfil de la empresa",
+  "healthHistoryEmpty": "Acabamos de empezar a registrar el historial de esta empresa. Vuelve después del próximo reporte de ganancias.",
+  "healthHistoryScoreGrade": "{{score}}/100 · {{grade}}",
+  "healthHistoryTitle": "Historial de Salud Financiera de {{ticker}}",
   "dismissAriaLabel": "Descartar",
   "employeesLabel": "Empleados",
   "exchangeLabel": "Bolsa",
@@ -25,5 +43,5 @@
   "volatilityIndustry": "Sector",
   "volatilityLow": "Baja",
   "websiteLabel": "Sitio web",
-  "ceoLabel": "Director Ejecutivo"
+  "chartPresetsButton": "Presets"
 }

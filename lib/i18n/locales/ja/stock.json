@@ -1,5 +1,6 @@
 {
   "ageLabel": "年齢 {{age}}",
+  "ceoLabel": "最高経営責任者",
   "companyProfileTitle": "企業プロフィール",
   "dismissAriaLabel": "閉じる",
   "employeesLabel": "従業員数",
@@ -25,5 +26,22 @@
   "volatilityIndustry": "業界",
   "volatilityLow": "低い",
   "websiteLabel": "ウェブサイト",
-  "ceoLabel": "最高経営責任者"
+  "chartPresetApplyTitle": "{{name}}を適用",
+  "chartPresetDeleteAriaLabel": "{{name}}を削除",
+  "chartPresetEmpty": "プリセットがまだありません。上記でビューを保存してください。",
+  "chartPresetEvents": "イベント",
+  "chartPresetIndicatorCount_one": "{{count}}個のインジケーター",
+  "chartPresetIndicatorCount_other": "{{count}}個のインジケーター",
+  "chartPresetNameAriaLabel": "プリセット名",
+  "chartPresetNamePlaceholder": "プリセット名…",
+  "chartPresetSaveButton": "保存",
+  "chartPresetSaveHeading": "現在のビューを保存",
+  "chartPresetSaveHint": "時間枠、チャートタイプ、インジケーター、およびボリュームとイベントの切り替えをキャプチャします。",
+  "chartPresetTrades": "取引",
+  "chartPresetVolume": "ボリューム",
+  "chartPresetsButton": "プリセット",
+  "chartSettingsTitle": "チャート設定",
+  "healthHistoryEmpty": "この企業の履歴追跡を開始したばかりです。次の決算発表後にご確認ください。",
+  "healthHistoryScoreGrade": "{{score}}/100 · {{grade}}",
+  "healthHistoryTitle": "{{ticker}}財務健全性の履歴"
 }

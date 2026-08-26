@@ -1,6 +1,23 @@
 {
   "ageLabel": "Alter {{age}}",
+  "ceoLabel": "Geschäftsführer",
+  "chartPresetApplyTitle": "{{name}} anwenden",
+  "chartPresetDeleteAriaLabel": "{{name}} löschen",
+  "chartPresetEmpty": "Noch keine Voreinstellungen. Speichere oben eine Ansicht.",
+  "chartPresetIndicatorCount_one": "{{count}} Indikator",
+  "chartPresetIndicatorCount_other": "{{count}} Indikatoren",
+  "chartPresetNameAriaLabel": "Name der Voreinstellung",
+  "chartPresetNamePlaceholder": "Name der Voreinstellung…",
+  "chartPresetSaveButton": "Speichern",
+  "chartPresetSaveHeading": "Aktuelle Ansicht speichern",
+  "chartPresetSaveHint": "Erfasst Zeitraum, Charttyp, Indikatoren und die Volumen- und Events-Umschalter.",
+  "chartPresetVolume": "Volumen",
+  "chartPresetsButton": "Voreinstellungen",
+  "chartSettingsTitle": "Chart-Einstellungen",
   "companyProfileTitle": "Unternehmensprofil",
+  "healthHistoryEmpty": "Wir haben gerade angefangen, die Historie für dieses Unternehmen zu verfolgen. Schau nach dem nächsten Quartalsergebnis vorbei.",
+  "healthHistoryScoreGrade": "{{score}}/100 · {{grade}}",
+  "healthHistoryTitle": "{{ticker}} Finanzielle-Gesundheits-Historie",
   "dismissAriaLabel": "Schließen",
   "employeesLabel": "Mitarbeiter",
   "exchangeLabel": "Börse",
@@ -24,6 +41,7 @@
   "volatilityHigh": "Hoch",
   "volatilityIndustry": "Branche",
   "volatilityLow": "Niedrig",
-  "ceoLabel": "Geschäftsführer",
-  "websiteLabel": "Webseite"
+  "websiteLabel": "Webseite",
+  "chartPresetEvents": "Ereignisse",
+  "chartPresetTrades": "Trades"
 }

@@ -1,7 +1,24 @@
 {
   "ageLabel": "Âge {{age}}",
   "ceoLabel": "PDG",
+  "chartPresetApplyTitle": "Appliquer {{name}}",
+  "chartPresetDeleteAriaLabel": "Supprimer {{name}}",
+  "chartPresetEmpty": "Aucun préset pour l'instant. Enregistrez une vue ci-dessus.",
+  "chartPresetEvents": "Événements",
+  "chartPresetIndicatorCount_one": "{{count}} indicateur",
+  "chartPresetIndicatorCount_other": "{{count}} indicateurs",
+  "chartPresetNameAriaLabel": "Nom du préset",
+  "chartPresetNamePlaceholder": "Nom du préset…",
+  "chartPresetSaveButton": "Enregistrer",
+  "chartPresetSaveHeading": "Enregistrer la vue actuelle",
+  "chartPresetSaveHint": "Capture l'intervalle de temps, le type de graphique, les indicateurs et les bascules de volume et d'événements.",
+  "chartPresetTrades": "Transactions",
+  "chartPresetsButton": "Présets",
+  "chartSettingsTitle": "Paramètres du graphique",
   "companyProfileTitle": "Profil de l'entreprise",
+  "healthHistoryEmpty": "Nous venons de commencer à suivre l'historique de cette entreprise. Revenez après le prochain rapport de résultats.",
+  "healthHistoryScoreGrade": "{{score}}/100 · {{grade}}",
+  "healthHistoryTitle": "Historique de la santé financière de {{ticker}}",
   "dismissAriaLabel": "Fermer",
   "employeesLabel": "Employés",
   "exchangeLabel": "Bourse",
@@ -25,5 +42,6 @@
   "volatilityHigh": "Élevée",
   "volatilityIndustry": "Secteur d'activité",
   "volatilityLow": "Faible",
-  "websiteLabel": "Site Web"
+  "websiteLabel": "Site Web",
+  "chartPresetVolume": "Volume"
 }

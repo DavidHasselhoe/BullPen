@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { ArrowUpRight, ArrowDownRight, Minus, ChevronDown } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -54,6 +55,7 @@ function CategoryDiffRow({ current, previous }: { current: CategoryScore; previo
 }
 
 export function HealthScoreHistoryModal({ ticker, open, onOpenChange, history }: Props) {
+  const { t } = useTranslation('stock');
   const [expandedFiscalDate, setExpandedFiscalDate] = useState<string | null>(null);
   const chartData = history.map((h) => ({ ...h, label: formatQuarterLabel(h.fiscalDate) }));
   const listNewestFirst = [...history].reverse();
@@ -62,12 +64,12 @@ export function HealthScoreHistoryModal({ ticker, open, onOpenChange, history }:
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{ticker} — Financial Health History</DialogTitle>
+          <DialogTitle>{t('healthHistoryTitle', { ticker })}</DialogTitle>
         </DialogHeader>
 
         {history.length < 2 ? (
           <p className="text-sm text-muted-foreground py-6 text-center">
-            We just started tracking history for this company — check back after the next earnings report.
+            {t('healthHistoryEmpty')}
           </p>
         ) : (
           <>
@@ -88,7 +90,7 @@ export function HealthScoreHistoryModal({ ticker, open, onOpenChange, history }:
                     const pt = payload[0].payload as (typeof chartData)[number];
                     return (
                       <div className="rounded-lg border border-border bg-background/95 px-3 py-2 shadow-lg backdrop-blur-sm text-xs space-y-0.5">
-                        <p className="font-semibold text-foreground">{pt.score}/100 · {pt.grade}</p>
+                        <p className="font-semibold text-foreground">{t('healthHistoryScoreGrade', { score: pt.score, grade: pt.grade })}</p>
                         <p className="text-muted-foreground">{formatQuarterLabel(pt.fiscalDate)}</p>
                       </div>
                     );
