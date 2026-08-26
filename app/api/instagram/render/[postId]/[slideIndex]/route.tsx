@@ -26,11 +26,7 @@ import {
   EarningsResultsListSlide,
   MoversListSlide,
   CTASlide,
-  DeepDiveHeroSlide,
-  DeepDiveRevenueSlide,
-  DeepDiveProfitabilitySlide,
-  DeepDiveGuidanceSlide,
-  DeepDiveReactionSlide,
+  DeepDiveSummarySlide,
 } from '@/lib/instagram/render/slides';
 import type { EarningsCalendarSlides, EarningsResultsSlides, EarningsDeepDiveSlides, InstagramPostSlides } from '@/lib/instagram/content/schema';
 
@@ -91,12 +87,7 @@ export async function GET(
   let element: React.ReactElement;
   if (slides.contentType === 'earnings_deep_dive') {
     const d = (slides as EarningsDeepDiveSlides).data;
-    const commonProps = { data: d, slideIndex, totalSlides: total };
-    if (kind === 'deepdive_hero') element = <DeepDiveHeroSlide {...commonProps} />;
-    else if (kind === 'deepdive_revenue') element = <DeepDiveRevenueSlide {...commonProps} />;
-    else if (kind === 'deepdive_profitability') element = <DeepDiveProfitabilitySlide {...commonProps} />;
-    else if (kind === 'deepdive_guidance') element = <DeepDiveGuidanceSlide {...commonProps} />;
-    else element = <DeepDiveReactionSlide {...commonProps} />;
+    element = <DeepDiveSummarySlide data={d} />;
   } else if (slides.contentType === 'market_movers') {
     if (kind === 'winners') {
       element = (

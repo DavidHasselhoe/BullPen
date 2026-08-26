@@ -324,17 +324,21 @@ export async function completeEarningsDeepDiveFromFiling(
     // several images into one Discord post), not just a text link list.
     const summaryEmbed = {
       title: `${merged.ticker} earnings deep-dive ready for review`,
-      description: `EPS ${merged.epsStatus ?? 'N/A'} · Revenue ${merged.revenueStatus ?? 'N/A'} · ${slideCount} slides\n\n**Caption:**\n${caption}`,
+      description: `EPS ${merged.epsStatus ?? 'N/A'} · Revenue ${merged.revenueStatus ?? 'N/A'}\n\n**Caption:**\n${caption}`,
       color: merged.epsStatus === 'missed' ? 0xf87171 : 0x34d399,
       fields: [{ name: 'Publish', value: `\`npm run instagram-publish -- --id=${row.id}\`` }],
       timestamp: new Date().toISOString(),
     };
+    // Single summary card now (see lib/instagram/render/slides.tsx's
+    // DeepDiveSummarySlide) — slideCount is always 1, but this still loops
+    // rather than hardcoding index 0 so it keeps working unchanged if this
+    // content type ever grows a second slide again.
     const slideEmbeds = Array.from({ length: slideCount }, (_, i) => ({
       image: { url: `${appUrl}/api/instagram/render/${row.id}/${i}` },
     }));
 
     await postToDiscord(webhookUrl, {
-      content: `📊 **${merged.ticker} just reported.** Review the carousel below before publishing.`,
+      content: `📊 **${merged.ticker} just reported.** Review the card below before publishing.`,
       embeds: [summaryEmbed, ...slideEmbeds],
     }).catch((err) => console.error('[earnings-deep-dive] Discord notification failed:', err));
   }
