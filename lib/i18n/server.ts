@@ -1,7 +1,6 @@
 import 'server-only';
 import { headers } from 'next/headers';
 import i18n, { type TFunction } from 'i18next';
-import { initReactI18next } from 'react-i18next';
 import { ALWAYS_LOADED, namespacesForPath, type Namespace } from './namespaces';
 import { isValidLocale } from './language-names';
 
@@ -71,11 +70,26 @@ export async function loadResources(
  * the resourcesToBackend dynamic-import backend entirely: it only ever needs
  * the namespaces `namespacesForPath` already resolves for this route, which
  * loadResources has fully preloaded, so there's nothing left to lazy-fetch.
+ *
+ * Deliberately does NOT `.use(initReactI18next)` — that binding exists only
+ * to wire the `useTranslation()` hook's React context, which this function
+ * never touches (it returns a plain `getFixedT()` function, called directly
+ * as `t('key')`, not rendered via a hook). `initReactI18next` internally
+ * calls `React.createContext()`, which broke here with
+ * `TypeError: (0, T.createContext) is not a function` during Next.js's
+ * server-side "Collecting page data" build phase — a constrained
+ * server-bundle environment, not the full client React runtime. Silently
+ * broke every preview build from the commit that introduced this function
+ * (2026-08-25) until caught during end-session deploy verification
+ * (2026-08-26) — Vercel kept serving the last successful deployment the
+ * whole time, so production was never actually down, but every build in
+ * between failed. Pure `i18next` core (no React plugin) is all `getFixedT`
+ * needs.
  */
 export async function getServerT(locale: string, pathname: string): Promise<TFunction> {
   const resources = await loadResources(locale, pathname);
   const instance = i18n.createInstance();
-  await instance.use(initReactI18next).init({
+  await instance.init({
     lng: locale,
     fallbackLng: 'en',
     ns: [...ALWAYS_LOADED, ...namespacesForPath(pathname)],
