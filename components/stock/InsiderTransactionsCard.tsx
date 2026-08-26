@@ -12,6 +12,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -56,37 +58,41 @@ function fmtDate(dateStr: string): string {
   }
 }
 
-const TYPE_CONFIG = {
-  buy: {
-    icon: TrendingUp,
-    label: 'Purchase',
-    plainLabel: 'Bought',
-    color: 'text-emerald-500',
-    badgeClass: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
-  },
-  sell: {
-    icon: TrendingDown,
-    label: 'Sale',
-    plainLabel: 'Sold',
-    color: 'text-red-500',
-    badgeClass: 'bg-red-500/10 text-red-500 border-red-500/20',
-  },
-  other: {
-    icon: Minus,
-    label: 'Other',
-    plainLabel: 'Other',
-    color: 'text-muted-foreground',
-    badgeClass: 'bg-muted text-muted-foreground border-border',
-  },
-} as const;
+function getTypeConfig(t: TFunction) {
+  return {
+    buy: {
+      icon: TrendingUp,
+      label: t('insiderTypePurchase'),
+      plainLabel: t('insiderTypeBought'),
+      color: 'text-emerald-500',
+      badgeClass: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
+    },
+    sell: {
+      icon: TrendingDown,
+      label: t('insiderTypeSale'),
+      plainLabel: t('insiderTypeSold'),
+      color: 'text-red-500',
+      badgeClass: 'bg-red-500/10 text-red-500 border-red-500/20',
+    },
+    other: {
+      icon: Minus,
+      label: t('insiderTypeOther'),
+      plainLabel: t('insiderTypeOther'),
+      color: 'text-muted-foreground',
+      badgeClass: 'bg-muted text-muted-foreground border-border',
+    },
+  } as const;
+}
 
 const INITIAL_SHOW = 8;
 
 export function InsiderTransactionsCard({ ticker }: { ticker: string }) {
+  const { t } = useTranslation('stock');
   const { isSimplified } = useExperienceLevel();
   const { isPro } = useEntitlements();
   const [showAll, setShowAll] = useState(false);
   const [requested, setRequested] = useState(false);
+  const TYPE_CONFIG = getTypeConfig(t);
 
   const { data, isLoading } = useQuery<InsiderResponse>({
     queryKey: ['insider-transactions', ticker],
@@ -110,13 +116,13 @@ export function InsiderTransactionsCard({ ticker }: { ticker: string }) {
             <Users className="h-4 w-4 text-muted-foreground shrink-0" />
             <div className="min-w-0">
               <p className="flex items-center gap-1.5 text-sm font-medium text-foreground">
-                Insider Transactions
+                {t('insiderCardTitle')}
                 {!isPro && <ProBadge />}
               </p>
               <p className="text-xs text-muted-foreground/85">
                 {isSimplified
-                  ? 'See when executives buy or sell their own stock'
-                  : 'SEC Form 4 filings by executives, directors & 10%+ shareholders'}
+                  ? t('insiderSimplifiedDescription')
+                  : t('insiderAdvancedDescription')}
               </p>
             </div>
           </div>
@@ -125,14 +131,14 @@ export function InsiderTransactionsCard({ ticker }: { ticker: string }) {
               onClick={() => setRequested(true)}
               className="shrink-0 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors whitespace-nowrap"
             >
-              View
+              {t('insiderViewButton')}
             </button>
           ) : (
             <Link
               href="/upgrade"
               className="shrink-0 rounded-lg border border-primary/30 bg-primary/5 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/10 transition-colors whitespace-nowrap"
             >
-              Upgrade
+              {t('insiderUpgradeButton')}
             </Link>
           )}
         </CardContent>
@@ -146,7 +152,7 @@ export function InsiderTransactionsCard({ ticker }: { ticker: string }) {
         <CardHeader className="pb-2">
           <CardTitle className="text-base font-semibold flex items-center gap-2">
             <Users className="h-4 w-4" />
-            Insider Transactions
+            {t('insiderCardTitle')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -189,8 +195,10 @@ export function InsiderTransactionsCard({ ticker }: { ticker: string }) {
     tradeCount === 0
       ? null
       : net === 0
-        ? `Insider buying and selling roughly balanced across ${tradeCount} trades`
-        : `Insiders net ${net > 0 ? 'bought' : 'sold'} ${netAbs} of stock across ${tradeCount} recent trades`;
+        ? t('insiderInsightBalanced', { count: tradeCount })
+        : net > 0
+          ? t('insiderInsightNetBought', { amount: netAbs, count: tradeCount })
+          : t('insiderInsightNetSold', { amount: netAbs, count: tradeCount });
 
   return (
     <Card className="mb-8">
@@ -199,15 +207,15 @@ export function InsiderTransactionsCard({ ticker }: { ticker: string }) {
           <div>
             <CardTitle className="text-base font-semibold flex items-center gap-2">
               <Users className="h-4 w-4 text-muted-foreground" />
-              Insider Transactions
+              {t('insiderCardTitle')}
             </CardTitle>
             {isSimplified ? (
               <p className="text-xs text-muted-foreground mt-1">
-                When company executives buy or sell their own stock, it can signal their confidence in the company&apos;s future.
+                {t('insiderSimplifiedExplainer')}
               </p>
             ) : (
               <p className="text-xs text-muted-foreground mt-1">
-                Trades by executives, directors, and 10%+ shareholders — filed with the SEC.
+                {t('insiderAdvancedExplainer')}
               </p>
             )}
           </div>
@@ -220,7 +228,7 @@ export function InsiderTransactionsCard({ ticker }: { ticker: string }) {
               'bg-muted text-muted-foreground border-border'
             )}>
               {sentiment === 'bullish' ? <TrendingUp className="h-3 w-3" /> : sentiment === 'bearish' ? <TrendingDown className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
-              {sentiment === 'neutral' ? 'Balanced' : `Net ${net > 0 ? '+' : '−'}${netAbs}`}
+              {sentiment === 'neutral' ? t('insiderSentimentBalanced') : t('insiderSentimentNet', { sign: net > 0 ? '+' : '−', amount: netAbs })}
             </span>
           </div>
         </div>
@@ -232,10 +240,10 @@ export function InsiderTransactionsCard({ ticker }: { ticker: string }) {
           <div className="mb-4 rounded-lg border border-border/50 bg-accent/20 px-4 py-3">
             <FlowBar
               inflow={buyValue}
-              inLabel={`Bought ${buyValue > 0 ? fmtValue(buyValue) : '$0'} (${buys.length})`}
+              inLabel={t('insiderFlowBought', { amount: buyValue > 0 ? fmtValue(buyValue) : '$0', count: buys.length })}
               outflow={sellValue}
-              outLabel={`Sold ${sellValue > 0 ? fmtValue(sellValue) : '$0'} (${sells.length})`}
-              srLabel={`Insiders bought ${fmtValue(buyValue)} and sold ${fmtValue(sellValue)}`}
+              outLabel={t('insiderFlowSold', { amount: sellValue > 0 ? fmtValue(sellValue) : '$0', count: sells.length })}
+              srLabel={t('insiderFlowSrLabel', { bought: fmtValue(buyValue), sold: fmtValue(sellValue) })}
             />
             {insight && <p className="mt-2 text-xs text-muted-foreground">{insight}</p>}
           </div>
@@ -243,10 +251,10 @@ export function InsiderTransactionsCard({ ticker }: { ticker: string }) {
 
         {/* Table header */}
         <div className="grid grid-cols-[1fr_auto] sm:grid-cols-[1fr_80px_100px_90px] items-center gap-x-4 pb-2 border-b border-border text-xs font-medium text-muted-foreground">
-          <span>Insider</span>
-          <span className="hidden sm:block text-right">Type</span>
-          <span className="hidden sm:block text-right">Shares</span>
-          <span className="text-right">Value</span>
+          <span>{t('insiderColumnInsider')}</span>
+          <span className="hidden sm:block text-right">{t('insiderColumnType')}</span>
+          <span className="hidden sm:block text-right">{t('insiderColumnShares')}</span>
+          <span className="text-right">{t('insiderColumnValue')}</span>
         </div>
 
         <div className="divide-y divide-border/50">
@@ -315,8 +323,8 @@ export function InsiderTransactionsCard({ ticker }: { ticker: string }) {
             className="mt-3 w-full rounded-lg border border-border py-2 text-xs text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
           >
             {showAll
-              ? 'Show less'
-              : `Show ${transactions.length - INITIAL_SHOW} more transactions`}
+              ? t('showLess')
+              : t('insiderShowMoreTransactions', { count: transactions.length - INITIAL_SHOW })}
           </button>
         )}
       </CardContent>
