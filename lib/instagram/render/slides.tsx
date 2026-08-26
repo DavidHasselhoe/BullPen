@@ -768,8 +768,9 @@ export function MoversListSlide({ title, subtitle, entries, positive, slideIndex
 // Reuses this file's existing tokens/atoms (Wordmark, SlideIndicator,
 // CompanyBadge, BRAND/MISSED_COLOR, formatEps) instead of a parallel style
 // system — a one-off post still has to read as the same brand as every
-// other carousel. Fixed 5-slide shape (see totalSlideCount/slideKindAt
-// below), no pagination since there's only ever one company.
+// other carousel. Fixed 2-slide shape — summary card, then the shared
+// CTASlide (see totalSlideCount/slideKindAt below) — no pagination since
+// there's only ever one company.
 
 const INLINE_COLOR = AMC_COLOR; // amber — neutral "in line with estimates" state, no gain/loss direction to signal
 
