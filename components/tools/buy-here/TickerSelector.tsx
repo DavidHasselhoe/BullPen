@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { Search, X } from 'lucide-react';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
@@ -28,10 +29,12 @@ interface TickerSelectorProps {
 export function TickerSelector({
   value,
   onChange,
-  placeholder = 'Search by ticker or company name...',
+  placeholder,
   className,
   disabled,
 }: TickerSelectorProps) {
+  const { t } = useTranslation('tools');
+  const displayPlaceholder = placeholder ?? t('compareSearchPlaceholder');
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
@@ -126,7 +129,7 @@ export function TickerSelector({
             onBlur={() => {
               if (!query && value) setIsSearching(false);
             }}
-            placeholder={placeholder}
+            placeholder={displayPlaceholder}
             disabled={disabled}
             autoFocus={!value}
             className={cn(
@@ -146,7 +149,7 @@ export function TickerSelector({
           )}
         >
           {isLoading ? (
-            <div className="py-8 text-center text-sm text-muted-foreground">Searching...</div>
+            <div className="py-8 text-center text-sm text-muted-foreground">{t('compareSearching')}</div>
           ) : results && results.length > 0 ? (
             <div className="max-h-64 overflow-y-auto py-1">
               {results.map((r) => (
@@ -173,7 +176,7 @@ export function TickerSelector({
               ))}
             </div>
           ) : (
-            <div className="py-8 text-center text-sm text-muted-foreground">No companies found</div>
+            <div className="py-8 text-center text-sm text-muted-foreground">{t('compareNoCompaniesFound')}</div>
           )}
         </div>
       )}

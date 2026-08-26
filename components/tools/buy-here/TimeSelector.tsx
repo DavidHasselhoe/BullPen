@@ -1,19 +1,15 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { DatePicker } from '@/components/ui/date-picker';
 
 export const PRESETS = [
-  { label: '1 year', years: 1 },
-  { label: '3 years', years: 3 },
-  { label: '5 years', years: 5 },
-  { label: '10 years', years: 10 },
-];
-
-const OPTIONS: { label: string; years: number | null }[] = [
-  ...PRESETS,
-  { label: 'Custom', years: null },
+  { years: 1 },
+  { years: 3 },
+  { years: 5 },
+  { years: 10 },
 ];
 
 const TODAY = new Date().toISOString().slice(0, 10);
@@ -37,10 +33,18 @@ export function TimeSelector({
   onCustomEndDateChange,
   className,
 }: TimeSelectorProps) {
+  const { t } = useTranslation('tools');
+  const options: { label: string; years: number | null }[] = [
+    { label: t('buyHereTimePreset1Year'), years: 1 },
+    { label: t('buyHereTimePreset3Years'), years: 3 },
+    { label: t('buyHereTimePreset5Years'), years: 5 },
+    { label: t('buyHereTimePreset10Years'), years: 10 },
+    { label: t('buyHereTimePresetCustom'), years: null },
+  ];
   return (
     <div className={cn('space-y-2', className)}>
       <div className="relative flex flex-wrap gap-1 p-1 rounded-xl bg-muted/50 border border-border/50">
-        {OPTIONS.map((opt, i) => (
+        {options.map((opt, i) => (
           <button
             key={opt.label}
             type="button"
@@ -86,7 +90,7 @@ export function TimeSelector({
         >
           <div className="flex flex-wrap items-center gap-3">
             <div className="space-y-1">
-              <span className="text-xs text-muted-foreground">From</span>
+              <span className="text-xs text-muted-foreground">{t('buyHereFromLabel')}</span>
               <DatePicker
                 value={customDate}
                 onChange={(date) => onCustomDateChange?.(date)}
@@ -95,7 +99,7 @@ export function TimeSelector({
               />
             </div>
             <div className="space-y-1">
-              <span className="text-xs text-muted-foreground">To</span>
+              <span className="text-xs text-muted-foreground">{t('buyHereToLabel')}</span>
               <DatePicker
                 value={customEndDate || TODAY}
                 onChange={(date) => onCustomEndDateChange?.(date)}

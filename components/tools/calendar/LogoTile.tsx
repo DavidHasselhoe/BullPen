@@ -1,6 +1,8 @@
 'use client';
 
 import type { ElementType } from 'react';
+import type { TFunction } from 'i18next';
+import { useTranslation } from 'react-i18next';
 import { TrendingUp, DollarSign, Scissors, Rocket } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
@@ -13,12 +15,14 @@ export const TYPE_ICONS: Record<EventType, ElementType> = {
   ipo: Rocket,
 };
 
-export const TYPE_LABELS: Record<EventType, string> = {
-  earnings: 'Earnings',
-  dividends: 'Ex-dividend',
-  splits: 'Split',
-  ipo: 'IPO',
-};
+export function getTypeLabels(t: TFunction): Record<EventType, string> {
+  return {
+    earnings: t('calendarTypeEarnings'),
+    dividends: t('calendarTypeDividends'),
+    splits: t('calendarTypeSplits'),
+    ipo: t('calendarTypeIpo'),
+  };
+}
 
 /**
  * Tile sizes, measured against the real container. `max-w-5xl` minus page and
@@ -73,10 +77,12 @@ export function LogoTile({
   className,
   orientation = 'row',
 }: LogoTileProps) {
+  const { t } = useTranslation('tools');
+  const typeLabels = getTypeLabels(t);
   const px = LOGO_PX[size];
   const Icon = TYPE_ICONS[event.type];
-  const label = `${event.symbol}${event.name ? `, ${event.name}` : ''}. ${TYPE_LABELS[event.type]}${
-    isMine ? '. In your portfolio' : ''
+  const label = `${event.symbol}${event.name ? `, ${event.name}` : ''}. ${typeLabels[event.type]}${
+    isMine ? `. ${t('calendarInYourPortfolio')}` : ''
   }`;
 
   const logo = (

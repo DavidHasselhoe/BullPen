@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { monthWeeks } from '@/lib/dates/calendar-format';
@@ -33,6 +34,7 @@ const EMPTY_DAY = (date: string): DayModel => ({
  * dropping the shape.
  */
 export function MonthCalendarGrid({ monthKey, days, today, mySymbols, onOpenDay }: MonthCalendarGridProps) {
+  const { t } = useTranslation('tools');
   const byDate = new Map(days.map((d) => [d.date, d]));
   const weeks = monthWeeks(monthKey);
   const { gridRef, onKeyDown, activeDate } = useGridKeyboardNav(7);
@@ -48,7 +50,7 @@ export function MonthCalendarGrid({ monthKey, days, today, mySymbols, onOpenDay 
         ref={gridRef}
         className="flex flex-col gap-1 sm:gap-1.5"
         role="grid"
-        aria-label="Month calendar"
+        aria-label={t('calendarMonthGridAriaLabel')}
         onKeyDown={onKeyDown}
       >
         {weeks.map((week, i) => (

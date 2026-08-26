@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { DayCell } from './DayCell';
 import { WEEKDAY_LABELS } from '@/lib/dates/calendar-format';
 import { useGridKeyboardNav } from './useGridKeyboardNav';
@@ -22,12 +23,13 @@ interface CalendarGridProps {
  * like a broken calendar; an actual list is the better answer.
  */
 export function CalendarGrid({ days, today, mySymbols, onOpenDay }: CalendarGridProps) {
+  const { t } = useTranslation('tools');
   const { gridRef, onKeyDown, activeDate } = useGridKeyboardNav(7);
   const firstWithEvents = days.find((d) => d.total > 0)?.date ?? null;
   const tabStop = activeDate ?? firstWithEvents;
 
   return (
-    <div ref={gridRef} role="grid" aria-label="Week calendar" className="min-w-0" onKeyDown={onKeyDown}>
+    <div ref={gridRef} role="grid" aria-label={t('calendarWeekGridAriaLabel')} className="min-w-0" onKeyDown={onKeyDown}>
       <div className="grid grid-cols-7 gap-2" role="row">
         {days.map((model) => (
           <DayCell

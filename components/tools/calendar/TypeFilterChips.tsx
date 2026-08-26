@@ -1,16 +1,10 @@
 'use client';
 
 import type { ElementType } from 'react';
+import { useTranslation } from 'react-i18next';
 import { TrendingUp, DollarSign, Scissors, Rocket } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { EventType } from './types';
-
-const TYPES: { key: EventType; label: string; icon: ElementType }[] = [
-  { key: 'earnings', label: 'Earnings', icon: TrendingUp },
-  { key: 'dividends', label: 'Dividends', icon: DollarSign },
-  { key: 'splits', label: 'Splits', icon: Scissors },
-  { key: 'ipo', label: 'IPOs', icon: Rocket },
-];
 
 interface TypeFilterChipsProps {
   active: Set<EventType>;
@@ -18,6 +12,13 @@ interface TypeFilterChipsProps {
 }
 
 export function TypeFilterChips({ active, onToggle }: TypeFilterChipsProps) {
+  const { t } = useTranslation('tools');
+  const TYPES: { key: EventType; label: string; icon: ElementType }[] = [
+    { key: 'earnings', label: t('calendarFilterEarnings'), icon: TrendingUp },
+    { key: 'dividends', label: t('calendarFilterDividends'), icon: DollarSign },
+    { key: 'splits', label: t('calendarFilterSplits'), icon: Scissors },
+    { key: 'ipo', label: t('calendarFilterIpos'), icon: Rocket },
+  ];
   return (
     <div className="flex items-center gap-1.5 flex-wrap">
       {TYPES.map(({ key, label, icon: Icon }) => {

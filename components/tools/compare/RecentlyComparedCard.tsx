@@ -1,12 +1,14 @@
 'use client';
 
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { History } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { useRecentlyCompared } from '@/hooks/use-recently-compared';
 
 export function RecentlyComparedCard() {
+  const { t } = useTranslation('tools');
   const { items } = useRecentlyCompared();
 
   if (items.length === 0) return null;
@@ -16,7 +18,7 @@ export function RecentlyComparedCard() {
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-base">
           <History className="h-4 w-4 text-muted-foreground" />
-          Recently compared
+          {t('compareRecentlyCompared')}
         </CardTitle>
       </CardHeader>
       <CardContent>

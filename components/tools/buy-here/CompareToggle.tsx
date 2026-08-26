@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 
 interface CompareToggleProps {
@@ -13,9 +14,11 @@ interface CompareToggleProps {
 export function CompareToggle({
   checked,
   onCheckedChange,
-  label = 'Compare with S&P 500 (SPY)',
+  label,
   className,
 }: CompareToggleProps) {
+  const { t } = useTranslation('tools');
+  const displayLabel = label ?? t('buyHereCompareToggleLabel');
   return (
     <span className={cn('inline-flex items-center gap-3', className)}>
       <button
@@ -36,7 +39,7 @@ export function CompareToggle({
           animate={{ x: checked ? 20 : 0 }}
         />
       </button>
-      <span className="text-sm font-medium">{label}</span>
+      <span className="text-sm font-medium">{displayLabel}</span>
       {checked && (
         <motion.span
           initial={{ opacity: 0, scale: 0.9 }}

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
@@ -64,6 +65,7 @@ export function compactMetric(event: UnifiedEvent): string | null {
 
 /** Full-detail row — same visual language as the pre-redesign per-type list rows. Used inside DayDetailDialog. */
 export function DetailEventRow({ event }: { event: UnifiedEvent }) {
+  const { t } = useTranslation('tools');
   if (event.type === 'earnings') {
     const e = event.raw as EarningsItem;
     return (
@@ -93,12 +95,12 @@ export function DetailEventRow({ event }: { event: UnifiedEvent }) {
               {e.name && <p className="text-xs text-muted-foreground truncate leading-tight">{e.name}</p>}
               {e.time === 'BMO' && (
                 <span className="shrink-0 text-[10px] font-medium px-1 py-px bg-muted/60 rounded text-muted-foreground/85">
-                  Before open
+                  {t('calendarBeforeOpen')}
                 </span>
               )}
               {e.time === 'AMC' && (
                 <span className="shrink-0 text-[10px] font-medium px-1 py-px bg-muted/60 rounded text-muted-foreground/85">
-                  After close
+                  {t('calendarAfterClose')}
                 </span>
               )}
             </div>
@@ -107,20 +109,20 @@ export function DetailEventRow({ event }: { event: UnifiedEvent }) {
         <div className="text-right text-xs shrink-0 space-y-0.5">
           {e.eps_actual != null ? (
             <div className="flex items-center justify-end gap-1">
-              <span className="text-muted-foreground/80">EPS </span>
+              <span className="text-muted-foreground/80">{t('calendarEpsLabel')} </span>
               <span className={cn('font-semibold tabular-nums', e.eps_actual < 0 ? 'text-red-400' : 'text-foreground')}>
                 {fmtEPS(e.eps_actual)}
               </span>
               {(() => {
                 const dir = epsDirection(e.eps_actual!, e.eps_estimate);
-                if (dir === 'beat') return <ArrowUpRight className="h-3 w-3 text-emerald-400" aria-label="Beat estimate" />;
-                if (dir === 'miss') return <ArrowDownRight className="h-3 w-3 text-red-400" aria-label="Missed estimate" />;
+                if (dir === 'beat') return <ArrowUpRight className="h-3 w-3 text-emerald-400" aria-label={t('calendarBeatEstimate')} />;
+                if (dir === 'miss') return <ArrowDownRight className="h-3 w-3 text-red-400" aria-label={t('calendarMissedEstimate')} />;
                 return null;
               })()}
             </div>
           ) : e.eps_estimate != null ? (
             <div>
-              <span className="text-muted-foreground/80">EPS est. </span>
+              <span className="text-muted-foreground/80">{t('calendarEpsEstLabel')} </span>
               <span className={cn('font-semibold tabular-nums', e.eps_estimate < 0 ? 'text-red-400' : 'text-foreground')}>
                 {fmtEPS(e.eps_estimate)}
               </span>
@@ -129,10 +131,10 @@ export function DetailEventRow({ event }: { event: UnifiedEvent }) {
             <span className="text-muted-foreground/80">—</span>
           )}
           {e.eps_actual != null && e.eps_estimate != null && (
-            <div className="text-[11px] text-muted-foreground/80">est. {fmtEPS(e.eps_estimate)}</div>
+            <div className="text-[11px] text-muted-foreground/80">{t('calendarEstPrefix')} {fmtEPS(e.eps_estimate)}</div>
           )}
           {e.revenue_estimate != null && (
-            <div className="text-[11px] text-muted-foreground/80">Rev {fmtRevenue(e.revenue_estimate)}</div>
+            <div className="text-[11px] text-muted-foreground/80">{t('calendarRevPrefix')} {fmtRevenue(e.revenue_estimate)}</div>
           )}
         </div>
       </div>
@@ -160,7 +162,7 @@ export function DetailEventRow({ event }: { event: UnifiedEvent }) {
           <div className="min-w-0">
             {d.name && <p className="text-xs text-muted-foreground truncate">{d.name}</p>}
             <div className="flex items-center gap-2 mt-0.5 text-[11px] text-muted-foreground/85 flex-wrap">
-              {d.payment_date && <span>Pay {fmtShortDate(d.payment_date)}</span>}
+              {d.payment_date && <span>{t('calendarPayDate', { date: fmtShortDate(d.payment_date) })}</span>}
               {d.frequency && <span className="capitalize px-1 bg-muted/60 rounded">{d.frequency}</span>}
             </div>
           </div>

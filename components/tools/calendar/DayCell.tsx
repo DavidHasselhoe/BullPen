@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { LogoTile, LOGO_PX, TYPE_ICONS } from './LogoTile';
 import { compactMetric } from './EventRows';
@@ -49,6 +50,7 @@ function TypeCountStrip({ counts }: { counts: Record<EventType, number> }) {
 }
 
 export function DayCell({ model, today, mySymbols, onOpenDay, compact, tabIndex }: DayCellProps) {
+  const { t } = useTranslation('tools');
   const isToday = model.date === today;
   // Week cells no longer force a fixed height: hero tiles are big enough that
   // a quiet day and a busy day should read as visibly different heights,
@@ -80,7 +82,7 @@ export function DayCell({ model, today, mySymbols, onOpenDay, compact, tabIndex 
       data-cal-cell
       tabIndex={tabIndex}
       onClick={() => onOpenDay(model.date)}
-      aria-label={`${fmtFullDate(model.date)}, ${model.total} event${model.total === 1 ? '' : 's'}`}
+      aria-label={t('calendarEventsAriaLabel', { count: model.total, date: fmtFullDate(model.date) })}
       className={cn(
         'flex flex-col gap-1.5 rounded-lg text-left border transition-all',
         'hover:shadow-md hover:-translate-y-0.5 motion-reduce:hover:translate-y-0',
@@ -130,7 +132,7 @@ export function DayCell({ model, today, mySymbols, onOpenDay, compact, tabIndex 
               >
                 +{model.moreCount}
               </span>
-              <span className="text-xs font-medium leading-none text-muted-foreground/80">more</span>
+              <span className="text-xs font-medium leading-none text-muted-foreground/80">{t('calendarMoreLabel')}</span>
             </span>
           )}
         </span>
@@ -139,7 +141,7 @@ export function DayCell({ model, today, mySymbols, onOpenDay, compact, tabIndex 
       {compact && model.moreCount > 0 && (
         <span className="text-xs font-medium leading-none text-muted-foreground/80">
           +{model.moreCount}
-          <span className="hidden sm:inline"> more</span>
+          <span className="hidden sm:inline"> {t('calendarMoreLabel')}</span>
         </span>
       )}
 

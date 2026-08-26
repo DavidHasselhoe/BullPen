@@ -1,10 +1,11 @@
 'use client';
 
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
 import { fmtDayHeader } from '@/lib/dates/calendar-format';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
-import { TYPE_ICONS, TYPE_LABELS } from './LogoTile';
+import { TYPE_ICONS, getTypeLabels } from './LogoTile';
 import type { DayModel } from './types';
 
 /** Chips shown before collapsing into a count. A month view can otherwise
@@ -21,6 +22,8 @@ const MAX_CHIPS = 12;
  * the meaning anyway, so nothing depends on the color alone.
  */
 export function YourWeekStrip({ days }: { days: DayModel[] }) {
+  const { t } = useTranslation('tools');
+  const typeLabels = getTypeLabels(t);
   const items = days.flatMap((day) => day.mine.map((event) => ({ event, date: day.date })));
   if (items.length === 0) return null;
 
@@ -30,7 +33,7 @@ export function YourWeekStrip({ days }: { days: DayModel[] }) {
   return (
     <div className="mb-6">
       <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground/70">
-        Your events
+        {t('calendarYourEvents')}
       </p>
       <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
         {shown.map(({ event, date }, i) => {
@@ -51,14 +54,14 @@ export function YourWeekStrip({ days }: { days: DayModel[] }) {
               />
               <span className="font-mono font-bold">{event.symbol}</span>
               <Icon className="h-3 w-3 text-muted-foreground/80" aria-hidden />
-              <span className="text-muted-foreground/85">{TYPE_LABELS[event.type]}</span>
+              <span className="text-muted-foreground/85">{typeLabels[event.type]}</span>
               <span className="text-muted-foreground/70">{fmtDayHeader(date)}</span>
             </Link>
           );
         })}
         {hidden > 0 && (
           <span className="flex shrink-0 items-center rounded-full border border-border/60 px-3 py-1.5 text-xs text-muted-foreground">
-            +{hidden} more
+            +{hidden} {t('calendarMoreLabel')}
           </span>
         )}
       </div>

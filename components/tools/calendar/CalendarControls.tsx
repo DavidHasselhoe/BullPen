@@ -1,16 +1,11 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { List, CalendarRange, CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 export type CalendarView = 'list' | 'week' | 'month';
-
-const VIEWS: { value: CalendarView; label: string; Icon: typeof List }[] = [
-  { value: 'list', label: 'List', Icon: List },
-  { value: 'week', label: 'Week', Icon: CalendarRange },
-  { value: 'month', label: 'Month', Icon: CalendarDays },
-];
 
 /**
  * Segmented control for the three views.
@@ -29,10 +24,16 @@ export function CalendarViewToggle({
   view: CalendarView;
   onChange: (v: CalendarView) => void;
 }) {
+  const { t } = useTranslation('tools');
+  const VIEWS: { value: CalendarView; label: string; Icon: typeof List }[] = [
+    { value: 'list', label: t('calendarViewList'), Icon: List },
+    { value: 'week', label: t('calendarViewWeek'), Icon: CalendarRange },
+    { value: 'month', label: t('calendarViewMonth'), Icon: CalendarDays },
+  ];
   return (
     <div
       role="group"
-      aria-label="Calendar view"
+      aria-label={t('calendarViewGroupAriaLabel')}
       className="flex items-center gap-0.5 rounded-lg border border-border bg-muted/40 p-0.5"
     >
       {VIEWS.map(({ value, label, Icon }) => {
@@ -84,6 +85,7 @@ export function CalendarDateNav({
   showToday: boolean;
   disabled?: boolean;
 }) {
+  const { t } = useTranslation('tools');
   return (
     <div className="flex items-center gap-1">
       {showToday && (
@@ -93,7 +95,7 @@ export function CalendarDateNav({
           onClick={onToday}
           className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
         >
-          Today
+          {t('calendarTodayButton')}
         </Button>
       )}
       <Button

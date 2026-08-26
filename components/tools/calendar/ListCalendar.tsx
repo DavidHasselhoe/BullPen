@@ -1,11 +1,12 @@
 'use client';
 
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { compactMetric } from './EventRows';
-import { TYPE_ICONS, TYPE_LABELS } from './LogoTile';
+import { TYPE_ICONS, getTypeLabels } from './LogoTile';
 import { fmtFullDate } from '@/lib/dates/calendar-format';
 import type { DayModel, UnifiedEvent } from './types';
 
@@ -20,6 +21,8 @@ interface ListCalendarProps {
 const ROWS_PER_DAY = 12;
 
 function EventListRow({ event, isMine }: { event: UnifiedEvent; isMine: boolean }) {
+  const { t } = useTranslation('tools');
+  const typeLabels = getTypeLabels(t);
   const Icon = TYPE_ICONS[event.type];
   const metric = compactMetric(event);
   const href = event.symbol ? slugToAssetPath(event.symbol) : null;
@@ -39,7 +42,7 @@ function EventListRow({ event, isMine }: { event: UnifiedEvent; isMine: boolean 
           <span className="font-mono text-sm font-bold text-foreground">{event.symbol || '—'}</span>
           {isMine && (
             <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-xs font-semibold leading-none text-primary">
-              Yours
+              {t('calendarYoursBadge')}
             </span>
           )}
         </span>
@@ -50,7 +53,7 @@ function EventListRow({ event, isMine }: { event: UnifiedEvent; isMine: boolean 
       <span className="flex shrink-0 items-center gap-2.5">
         <span className="flex items-center gap-1 text-xs text-muted-foreground/70">
           <Icon className="h-3 w-3" aria-hidden />
-          <span className="hidden sm:inline">{TYPE_LABELS[event.type]}</span>
+          <span className="hidden sm:inline">{typeLabels[event.type]}</span>
         </span>
         {metric && (
           <span className="font-mono text-sm tabular-nums text-foreground/90">{metric}</span>
@@ -80,6 +83,7 @@ function EventListRow({ event, isMine }: { event: UnifiedEvent; isMine: boolean 
  * Empty days are skipped entirely rather than rendered as blank headers.
  */
 export function ListCalendar({ days, today, mySymbols, onOpenDay }: ListCalendarProps) {
+  const { t } = useTranslation('tools');
   const withEvents = days.filter((d) => d.total > 0);
 
   if (withEvents.length === 0) return null;
@@ -102,7 +106,7 @@ export function ListCalendar({ days, today, mySymbols, onOpenDay }: ListCalendar
             >
               <span>
                 {fmtFullDate(day.date)}
-                {isToday && <span className="ml-1.5 normal-case tracking-normal">(today)</span>}
+                {isToday && <span className="ml-1.5 normal-case tracking-normal">{t('calendarTodaySuffix')}</span>}
               </span>
               <span className="font-mono tabular-nums text-muted-foreground/60">{day.total}</span>
             </h3>
@@ -122,7 +126,7 @@ export function ListCalendar({ days, today, mySymbols, onOpenDay }: ListCalendar
                   onClick={() => onOpenDay(day.date)}
                   className="mt-1 self-start rounded-md px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
-                  Show {hidden} more on {fmtFullDate(day.date)}
+                  {t('calendarShowMoreOn', { count: hidden, date: fmtFullDate(day.date) })}
                 </button>
               )}
             </div>
