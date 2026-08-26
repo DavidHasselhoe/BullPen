@@ -1,6 +1,7 @@
 'use client';
 
 import { RotateCcw } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import type { UseChartPrefs, ChartPrefs, ChartRange, ChartIndicator } from '@/hooks/use-chart-prefs';
@@ -90,6 +91,7 @@ function RadioRow<T extends string>({
 export function ChartPrefsControls({
   prefs, setPref, reset, onRangeChange, onIndicatorsChange,
 }: Props) {
+  const { t } = useTranslation('stock');
   const toggleIndicator = (ind: ChartIndicator) => {
     const next = prefs.defaultIndicators.includes(ind)
       ? prefs.defaultIndicators.filter((i) => i !== ind)
@@ -111,11 +113,11 @@ export function ChartPrefsControls({
     <div className="space-y-5">
       {/* ── Defaults ─────────────────────────────────────────────────── */}
       <div>
-        <SectionLabel>Defaults</SectionLabel>
+        <SectionLabel>{t('chartPrefsDefaultsSection')}</SectionLabel>
 
         <div className="space-y-3">
           <div>
-            <p className="text-xs font-medium text-foreground mb-1.5">Default timeframe</p>
+            <p className="text-xs font-medium text-foreground mb-1.5">{t('chartPrefsDefaultTimeframe')}</p>
             <div className="flex flex-wrap gap-1">
               {RANGE_OPTIONS.map(({ value, label }) => (
                 <button
@@ -136,7 +138,7 @@ export function ChartPrefsControls({
           </div>
 
           <div>
-            <p className="text-xs font-medium text-foreground mb-1.5">Default indicators</p>
+            <p className="text-xs font-medium text-foreground mb-1.5">{t('chartPrefsDefaultIndicators')}</p>
             <div className="flex flex-wrap gap-1">
               {INDICATOR_OPTIONS.map(({ value, label }) => (
                 <button
@@ -160,23 +162,23 @@ export function ChartPrefsControls({
 
       {/* ── Overlays ─────────────────────────────────────────────────── */}
       <div className="border-t border-border/30 pt-4">
-        <SectionLabel>Overlays</SectionLabel>
+        <SectionLabel>{t('chartPrefsOverlaysSection')}</SectionLabel>
         <div className="divide-y divide-border/20">
           <ToggleRow
-            label="Earnings events"
-            description="Mark quarterly earnings dates directly on the chart"
+            label={t('chartPrefsEarningsEventsLabel')}
+            description={t('chartPrefsEarningsEventsDescription')}
             checked={prefs.showEarnings}
             onToggle={() => setPref('showEarnings', !prefs.showEarnings)}
           />
           <ToggleRow
-            label="Your trades"
-            description="Green dot where you bought, red dot where you sold"
+            label={t('chartPrefsYourTradesLabel')}
+            description={t('chartPrefsYourTradesDescription')}
             checked={prefs.showTransactions}
             onToggle={() => setPref('showTransactions', !prefs.showTransactions)}
           />
           <ToggleRow
-            label="Period open line"
-            description="Horizontal dashed reference at the start of the selected period"
+            label={t('chartPrefsPeriodOpenLineLabel')}
+            description={t('chartPrefsPeriodOpenLineDescription')}
             checked={prefs.showPrevClose}
             onToggle={() => setPref('showPrevClose', !prefs.showPrevClose)}
           />
@@ -185,27 +187,27 @@ export function ChartPrefsControls({
 
       {/* ── Display ──────────────────────────────────────────────────── */}
       <div className="border-t border-border/30 pt-4">
-        <SectionLabel>Display</SectionLabel>
+        <SectionLabel>{t('chartPrefsDisplaySection')}</SectionLabel>
         <div className="divide-y divide-border/20">
           <ToggleRow
-            label="Volume bars"
-            description="Trading volume as bars beneath the price chart"
+            label={t('chartPrefsVolumeBarsLabel')}
+            description={t('chartPrefsVolumeBarsDescription')}
             checked={prefs.showVolume}
             onToggle={() => setPref('showVolume', !prefs.showVolume)}
           />
           <ToggleRow
-            label="Extended hours"
-            description="Pre and after-market price data on the 1D chart"
+            label={t('chartPrefsExtendedHoursLabel')}
+            description={t('chartPrefsExtendedHoursDescription')}
             checked={prefs.showExtendedHours}
             onToggle={() => setPref('showExtendedHours', !prefs.showExtendedHours)}
           />
         </div>
 
         <RadioRow
-          label="Chart style"
+          label={t('chartPrefsChartStyleLabel')}
           options={[
-            { value: 'area', label: 'Area' },
-            { value: 'line', label: 'Line' },
+            { value: 'area', label: t('chartPrefsChartStyleArea') },
+            { value: 'line', label: t('chartPrefsChartStyleLine') },
           ]}
           value={prefs.chartStyle}
           onChange={(v) => setPrefTyped('chartStyle', v)}
@@ -220,7 +222,7 @@ export function ChartPrefsControls({
           className="flex items-center gap-1.5 text-xs text-muted-foreground/80 hover:text-foreground transition-colors"
         >
           <RotateCcw className="h-3 w-3" />
-          Reset to defaults
+          {t('chartPrefsResetToDefaults')}
         </button>
       </div>
     </div>

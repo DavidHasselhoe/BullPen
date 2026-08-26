@@ -1,6 +1,7 @@
 'use client';
 
 import { CandlestickChart, LineChart, AreaChart, BarChart3, CalendarDays, Wallet, Ruler, BellPlus, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { BullAiIcon } from '@/components/ai/BullAiIcon';
 import { IndicatorMenu } from './IndicatorMenu';
@@ -8,6 +9,7 @@ import { PresetMenu } from './PresetMenu';
 import type { AdvancedChartType, ChartRange } from '@/hooks/use-chart-prefs';
 import type { ChartPreset } from '@/hooks/use-chart-presets';
 import type { IndicatorInstance } from '@/lib/finance/indicators';
+import type { TFunction } from 'i18next';
 
 const RANGES: { value: ChartRange; label: string }[] = [
   { value: '1D', label: '1D' },
@@ -20,11 +22,13 @@ const RANGES: { value: ChartRange; label: string }[] = [
   { value: 'MAX', label: 'ALL' },
 ];
 
-const CHART_TYPES: { value: AdvancedChartType; label: string; Icon: typeof LineChart }[] = [
-  { value: 'candles', label: 'Candles', Icon: CandlestickChart },
-  { value: 'line', label: 'Line', Icon: LineChart },
-  { value: 'area', label: 'Area', Icon: AreaChart },
-];
+function getChartTypes(t: TFunction): { value: AdvancedChartType; label: string; Icon: typeof LineChart }[] {
+  return [
+    { value: 'candles', label: t('chartTypeCandles'), Icon: CandlestickChart },
+    { value: 'line', label: t('chartTypeLine'), Icon: LineChart },
+    { value: 'area', label: t('chartTypeArea'), Icon: AreaChart },
+  ];
+}
 
 interface Props {
   symbol: string;
@@ -64,8 +68,10 @@ export function ChartToolbar({
   showVolume, onToggleVolume, showEvents, onToggleEvents, showTransactions, onToggleTransactions,
   tool, onToolChange, aiOpen, onToggleAI, onClose,
 }: Props) {
+  const { t } = useTranslation('stock');
   const pct = changePct ?? 0;
   const pos = pct >= 0;
+  const CHART_TYPES = getChartTypes(t);
 
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-border/60 px-4 py-2.5">
@@ -129,7 +135,7 @@ export function ChartToolbar({
           type="button"
           onClick={onToggleAI}
           aria-pressed={aiOpen}
-          title="Ask Bull about this chart"
+          title={t('chartToolbarAskBullTitle')}
           className={cn(
             'flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-semibold transition-colors',
             aiOpen
@@ -138,7 +144,7 @@ export function ChartToolbar({
           )}
         >
           <BullAiIcon pose="idle" size={18} />
-          <span className="hidden sm:inline">Ask Bull</span>
+          <span className="hidden sm:inline">{t('chartToolbarAskBull')}</span>
         </button>
         <PresetMenu
           presets={presets}
@@ -158,7 +164,7 @@ export function ChartToolbar({
           type="button"
           onClick={() => onToolChange(tool === 'measure' ? 'none' : 'measure')}
           aria-pressed={tool === 'measure'}
-          title="Measure tool: drag between two points"
+          title={t('chartToolbarMeasureTitle')}
           className={cn(
             'flex h-8 w-8 items-center justify-center rounded-md border border-border transition-colors',
             tool === 'measure' ? 'bg-accent text-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground'
@@ -170,7 +176,7 @@ export function ChartToolbar({
           type="button"
           onClick={() => onToolChange(tool === 'alert' ? 'none' : 'alert')}
           aria-pressed={tool === 'alert'}
-          title="Set a price alert: click a level on the chart"
+          title={t('chartToolbarAlertTitle')}
           className={cn(
             'flex h-8 w-8 items-center justify-center rounded-md border border-border transition-colors',
             tool === 'alert' ? 'bg-accent text-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground'
@@ -182,7 +188,7 @@ export function ChartToolbar({
           type="button"
           onClick={onToggleVolume}
           aria-pressed={showVolume}
-          title="Toggle volume"
+          title={t('chartToolbarToggleVolume')}
           className={cn(
             'flex h-8 w-8 items-center justify-center rounded-md border border-border transition-colors',
             showVolume ? 'bg-accent text-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground'
@@ -194,7 +200,7 @@ export function ChartToolbar({
           type="button"
           onClick={onToggleEvents}
           aria-pressed={showEvents}
-          title="Toggle earnings events"
+          title={t('chartToolbarToggleEarningsEvents')}
           className={cn(
             'flex h-8 w-8 items-center justify-center rounded-md border border-border transition-colors',
             showEvents ? 'bg-accent text-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground'
@@ -206,7 +212,7 @@ export function ChartToolbar({
           type="button"
           onClick={onToggleTransactions}
           aria-pressed={showTransactions}
-          title="Toggle your trades"
+          title={t('chartToolbarToggleTrades')}
           className={cn(
             'flex h-8 w-8 items-center justify-center rounded-md border border-border transition-colors',
             showTransactions ? 'bg-accent text-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground'
@@ -217,8 +223,8 @@ export function ChartToolbar({
         <button
           type="button"
           onClick={onClose}
-          aria-label="Close fullscreen chart"
-          title="Close (Esc)"
+          aria-label={t('chartToolbarCloseAriaLabel')}
+          title={t('chartToolbarCloseTitle')}
           className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
         >
           <X className="h-4 w-4" />
