@@ -1,5 +1,20 @@
 [
   {
+    "date": "2026-08-26",
+    "entries": [
+      { "type": "improved", "text": "Parts of the app, including the tools section and stock screener, now display in your selected language if you've set one in Settings, with more areas being translated over time" }
+    ]
+  },
+  {
+    "date": "2026-08-25",
+    "entries": [
+      { "type": "new", "text": "The Holdings Daily performance card now labels which day of the week each bar is" },
+      { "type": "fixed", "text": "Fixed company logos that were sometimes missing or broken, with a new fallback source so one almost always loads" },
+      { "type": "fixed", "text": "Fixed the Market Calendar sometimes showing few or no earnings dates for the next few weeks even though companies had already confirmed them" },
+      { "type": "fixed", "text": "Daily Brief and Market Movers no longer show stale data until you manually reload the page" }
+    ]
+  },
+  {
     "date": "2026-08-24",
     "entries": [
       { "type": "new", "text": "Referring a friend now gives you both a free month of Pro when they sign up from your shared portfolio card" },
