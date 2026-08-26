@@ -10,6 +10,7 @@
 
 import { useEffect, useState } from 'react';
 import { BarChart, Bar, XAxis, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { useTranslation } from 'react-i18next';
 
 const EMERALD = '#10b981';
 const RED = '#ef4444';
@@ -48,6 +49,7 @@ export function FinancialsTrendChart({
   format,
   colorMode = 'neutral',
 }: FinancialsTrendChartProps) {
+  const { t } = useTranslation('stock');
   const hasData = points.some((p) => p.primary != null || p.secondary != null);
   const [reducedMotion, setReducedMotion] = useState(
     () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -67,9 +69,16 @@ export function FinancialsTrendChart({
   const secondarySwatchColor =
     colorMode === 'ownVsOwe' ? RED : colorMode === 'signSecondary' ? EMERALD : 'var(--muted-foreground)';
   const animation = { isAnimationActive: !reducedMotion, animationDuration: 450, animationEasing: 'ease-out' as const };
+  const secondaryPart = secondaryLabel ? t('financialsTrendChartAriaSecondaryPart', { secondaryLabel }) : '';
+  const ariaLabel = t('financialsTrendChartAriaLabel', {
+    question,
+    primaryLabel,
+    secondaryPart,
+    count: points.length,
+  });
 
   return (
-    <div className="mb-5" role="img" aria-label={`${question} Chart of ${primaryLabel}${secondaryLabel ? ` and ${secondaryLabel}` : ''} across ${points.length} periods.`}>
+    <div className="mb-5" role="img" aria-label={ariaLabel}>
       <div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <p className="text-sm font-medium text-foreground/80">{question}</p>
         <div className="flex items-center gap-4 text-xs text-muted-foreground">

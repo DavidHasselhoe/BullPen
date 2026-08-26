@@ -17,6 +17,8 @@ import { TermTooltip } from '@/components/ui/TermTooltip';
 import { useExperienceLevel } from '@/hooks/use-experience-level';
 import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { FinancialsTrendChart, type TrendPoint } from './FinancialsTrendChart';
 import { TrendBars } from '@/components/viz/TrendBars';
 import type {
@@ -65,6 +67,7 @@ function fmtDividend(v: number): string {
 
 function getTrend(
   values: (number | null | undefined)[],
+  t: TFunction,
   costMetric = false
 ): { label: string; cls: string } | null {
   const filtered = values.filter((v): v is number => v != null && !isNaN(v));
@@ -78,7 +81,7 @@ function getTrend(
   const improving = costMetric ? pct < 0 : pct > 0;
   const neutral = Math.abs(pct) < 2;
 
-  if (neutral) return { label: 'Flat', cls: 'text-muted-foreground/80' };
+  if (neutral) return { label: t('financialsTrendFlat'), cls: 'text-muted-foreground/80' };
   if (improving) return { label: `+${Math.abs(pct).toFixed(0)}%`, cls: 'text-emerald-500' };
   return { label: `-${Math.abs(pct).toFixed(0)}%`, cls: 'text-red-500' };
 }
@@ -117,10 +120,11 @@ interface TableProps<T> {
 }
 
 function FinancialTable<T extends Record<string, unknown>>({ rows, data, dateKey }: TableProps<T>) {
+  const { t } = useTranslation('stock');
   if (!data.length) {
     return (
       <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
-        No data available
+        {t('financialsNoDataAvailable')}
       </div>
     );
   }
@@ -133,10 +137,10 @@ function FinancialTable<T extends Record<string, unknown>>({ rows, data, dateKey
         <thead>
           <tr className="border-b border-border">
             <th className="py-2.5 text-left font-medium text-muted-foreground w-44 min-w-[160px]">
-              Period
+              {t('financialsColumnPeriod')}
             </th>
             <th className="py-2.5 text-center font-medium text-muted-foreground px-3 min-w-[96px]">
-              Trend
+              {t('financialsColumnTrend')}
             </th>
             {cols.map((col, i) => (
               <th key={i} className="py-2.5 text-right font-medium text-muted-foreground tabular-nums px-3 min-w-[90px]">
@@ -148,7 +152,7 @@ function FinancialTable<T extends Record<string, unknown>>({ rows, data, dateKey
         <tbody>
           {rows.map(({ label, key, fmt: fmtFn, highlight, costMetric }) => {
             const allValues = cols.map((col) => col[key] as number | null | undefined);
-            const trend = getTrend(allValues, costMetric);
+            const trend = getTrend(allValues, t, costMetric);
             const barValues = allValues
               .slice()
               .reverse()
@@ -172,7 +176,7 @@ function FinancialTable<T extends Record<string, unknown>>({ rows, data, dateKey
                         values={barValues}
                         height={16}
                         signed
-                        srLabel={`${label} trend across ${barValues.length} periods`}
+                        srLabel={t('financialsTrendBarsSrLabel', { label, count: barValues.length })}
                         className="text-foreground"
                       />
                     )}
@@ -208,64 +212,68 @@ function FinancialTable<T extends Record<string, unknown>>({ rows, data, dateKey
 }
 
 function IncomeTable({ data }: { data: IncomeStatementPeriod[] }) {
+  const { t } = useTranslation('stock');
   const rows: TableProps<IncomeStatementPeriod>['rows'] = [
-    { label: 'Revenue',          key: 'revenue',                                   fmt: (v) => fmtNum(v as number), highlight: true },
-    { label: 'Gross Profit',     key: 'gross_profit',                              fmt: (v) => fmtNum(v as number), highlight: true },
-    { label: 'Operating Income', key: 'operating_income',                          fmt: (v) => fmtNum(v as number) },
-    { label: 'EBITDA',           key: 'ebitda',                                    fmt: (v) => fmtNum(v as number) },
-    { label: 'Net Income',       key: 'net_income',                                fmt: (v) => fmtNum(v as number), highlight: true },
-    { label: 'EPS (Diluted)',    key: 'eps_diluted',                               fmt: (v) => fmtEps(v as number) },
-    { label: 'EPS (Basic)',      key: 'eps_basic',                                 fmt: (v) => fmtEps(v as number) },
-    { label: 'R&D Expenses',     key: 'r_and_d_expenses',                          fmt: (v) => fmtNum(v as number), costMetric: true },
-    { label: 'SG&A Expenses',    key: 'selling_general_administrative_expenses',   fmt: (v) => fmtNum(v as number), costMetric: true },
-    { label: 'Interest Expense', key: 'interest_expense',                          fmt: (v) => fmtNum(v as number), costMetric: true },
-    { label: 'Income Tax',       key: 'income_tax_expense',                        fmt: (v) => fmtNum(v as number) },
+    { label: t('financialsRowRevenue'),          key: 'revenue',                                   fmt: (v) => fmtNum(v as number), highlight: true },
+    { label: t('financialsRowGrossProfit'),      key: 'gross_profit',                              fmt: (v) => fmtNum(v as number), highlight: true },
+    { label: t('financialsRowOperatingIncome'),  key: 'operating_income',                          fmt: (v) => fmtNum(v as number) },
+    { label: t('financialsRowEbitda'),           key: 'ebitda',                                    fmt: (v) => fmtNum(v as number) },
+    { label: t('financialsRowNetIncome'),        key: 'net_income',                                fmt: (v) => fmtNum(v as number), highlight: true },
+    { label: t('financialsRowEpsDiluted'),       key: 'eps_diluted',                               fmt: (v) => fmtEps(v as number) },
+    { label: t('financialsRowEpsBasic'),         key: 'eps_basic',                                 fmt: (v) => fmtEps(v as number) },
+    { label: t('financialsRowRnDExpenses'),      key: 'r_and_d_expenses',                          fmt: (v) => fmtNum(v as number), costMetric: true },
+    { label: t('financialsRowSgAExpenses'),      key: 'selling_general_administrative_expenses',   fmt: (v) => fmtNum(v as number), costMetric: true },
+    { label: t('financialsRowInterestExpense'),  key: 'interest_expense',                          fmt: (v) => fmtNum(v as number), costMetric: true },
+    { label: t('financialsRowIncomeTax'),        key: 'income_tax_expense',                        fmt: (v) => fmtNum(v as number) },
   ];
   return <FinancialTable rows={rows} data={data} dateKey="fiscal_date" />;
 }
 
 function BalanceTable({ data }: { data: BalanceSheetPeriod[] }) {
+  const { t } = useTranslation('stock');
   const rows: TableProps<BalanceSheetPeriod>['rows'] = [
-    { label: 'Total Assets',          key: 'total_assets',                fmt: (v) => fmtNum(v as number), highlight: true },
-    { label: 'Current Assets',        key: 'total_current_assets',        fmt: (v) => fmtNum(v as number) },
-    { label: 'Cash & Equivalents',    key: 'cash_and_equivalents',        fmt: (v) => fmtNum(v as number), highlight: true },
-    { label: 'Goodwill & Intangibles',key: 'goodwill_and_intangible_assets', fmt: (v) => fmtNum(v as number) },
-    { label: 'Total Liabilities',     key: 'total_liabilities',           fmt: (v) => fmtNum(v as number), highlight: true, costMetric: true },
-    { label: 'Current Liabilities',   key: 'total_current_liabilities',   fmt: (v) => fmtNum(v as number), costMetric: true },
-    { label: 'Long-Term Debt',        key: 'long_term_debt',              fmt: (v) => fmtNum(v as number), costMetric: true },
-    { label: "Stockholders' Equity",  key: 'total_stockholders_equity',   fmt: (v) => fmtNum(v as number), highlight: true },
-    { label: 'Retained Earnings',     key: 'retained_earnings',           fmt: (v) => fmtNum(v as number) },
+    { label: t('financialsRowTotalAssets'),          key: 'total_assets',                fmt: (v) => fmtNum(v as number), highlight: true },
+    { label: t('financialsRowCurrentAssets'),        key: 'total_current_assets',        fmt: (v) => fmtNum(v as number) },
+    { label: t('financialsRowCashAndEquivalents'),    key: 'cash_and_equivalents',        fmt: (v) => fmtNum(v as number), highlight: true },
+    { label: t('financialsRowGoodwillAndIntangibles'),key: 'goodwill_and_intangible_assets', fmt: (v) => fmtNum(v as number) },
+    { label: t('financialsRowTotalLiabilities'),     key: 'total_liabilities',           fmt: (v) => fmtNum(v as number), highlight: true, costMetric: true },
+    { label: t('financialsRowCurrentLiabilities'),   key: 'total_current_liabilities',   fmt: (v) => fmtNum(v as number), costMetric: true },
+    { label: t('financialsRowLongTermDebt'),        key: 'long_term_debt',              fmt: (v) => fmtNum(v as number), costMetric: true },
+    { label: t('financialsRowStockholdersEquity'),  key: 'total_stockholders_equity',   fmt: (v) => fmtNum(v as number), highlight: true },
+    { label: t('financialsRowRetainedEarnings'),     key: 'retained_earnings',           fmt: (v) => fmtNum(v as number) },
   ];
   return <FinancialTable rows={rows} data={data} dateKey="fiscal_date" />;
 }
 
 function CashFlowTable({ data }: { data: CashFlowPeriod[] }) {
+  const { t } = useTranslation('stock');
   const rows: TableProps<CashFlowPeriod>['rows'] = [
-    { label: 'Operating Cash Flow', key: 'operating_cash_flow',           fmt: (v) => fmtNum(v as number), highlight: true },
-    { label: 'Capital Expenditures',key: 'capital_expenditures',          fmt: (v) => fmtNum(v as number), costMetric: true },
-    { label: 'Free Cash Flow',      key: 'free_cash_flow',                fmt: (v) => fmtNum(v as number), highlight: true },
-    { label: 'Net Income',          key: 'net_income',                    fmt: (v) => fmtNum(v as number) },
-    { label: 'D&A',                 key: 'depreciation_and_amortization', fmt: (v) => fmtNum(v as number) },
-    { label: 'Investing Activities',key: 'investing_activities_cash_flow',fmt: (v) => fmtNum(v as number) },
-    { label: 'Financing Activities',key: 'financing_activities_cash_flow',fmt: (v) => fmtNum(v as number) },
-    { label: 'Dividends Paid',      key: 'dividends_paid',                fmt: (v) => fmtNum(v as number) },
+    { label: t('financialsRowOperatingCashFlow'), key: 'operating_cash_flow',           fmt: (v) => fmtNum(v as number), highlight: true },
+    { label: t('financialsRowCapitalExpenditures'),key: 'capital_expenditures',          fmt: (v) => fmtNum(v as number), costMetric: true },
+    { label: t('financialsRowFreeCashFlow'),      key: 'free_cash_flow',                fmt: (v) => fmtNum(v as number), highlight: true },
+    { label: t('financialsRowNetIncome'),          key: 'net_income',                    fmt: (v) => fmtNum(v as number) },
+    { label: t('financialsRowDAndA'),                 key: 'depreciation_and_amortization', fmt: (v) => fmtNum(v as number) },
+    { label: t('financialsRowInvestingActivities'),key: 'investing_activities_cash_flow',fmt: (v) => fmtNum(v as number) },
+    { label: t('financialsRowFinancingActivities'),key: 'financing_activities_cash_flow',fmt: (v) => fmtNum(v as number) },
+    { label: t('financialsRowDividendsPaid'),      key: 'dividends_paid',                fmt: (v) => fmtNum(v as number) },
   ];
   return <FinancialTable rows={rows} data={data} dateKey="fiscal_date" />;
 }
 
 function DividendsTable({ data }: { data: DividendItem[] }) {
+  const { t } = useTranslation('stock');
   if (!data.length) {
     return (
       <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
-        No dividend history available
+        {t('financialsNoDividendHistory')}
       </div>
     );
   }
   // The payment-date column is often entirely null from the API — drop it then.
   const hasPaymentDates = data.some((d) => d.payment_date);
   const headers = hasPaymentDates
-    ? ['Ex-Dividend Date', 'Payment Date', 'Amount', 'Currency']
-    : ['Ex-Dividend Date', 'Amount', 'Currency'];
+    ? [t('financialsColumnExDividendDate'), t('financialsColumnPaymentDate'), t('financialsColumnAmount'), t('financialsColumnCurrency')]
+    : [t('financialsColumnExDividendDate'), t('financialsColumnAmount'), t('financialsColumnCurrency')];
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-xs">
@@ -296,6 +304,7 @@ function DividendsTable({ data }: { data: DividendItem[] }) {
  * split with its ratio, led by the cumulative "1 share then → N shares now".
  */
 function SplitsTimeline({ data }: { data: SplitItem[] }) {
+  const { t } = useTranslation('stock');
   if (data.length === 0) return null;
   const sorted = data.slice().sort((a, b) => a.date.localeCompare(b.date));
   // TwelveData semantics (verified against AAPL's 2020 4-for-1 split, which it
@@ -310,7 +319,7 @@ function SplitsTimeline({ data }: { data: SplitItem[] }) {
     <div className="mb-5">
       {factor > 1 && (
         <p className="mb-4 text-sm font-medium text-foreground/80">
-          1 share held since {firstYear} would be <span className="tabular-nums">{fmtFactor(factor)}</span> shares today
+          {t('financialsSplitsSummaryPrefix', { year: firstYear })} <span className="tabular-nums">{fmtFactor(factor)}</span> {t('financialsSplitsSummarySuffix')}
         </p>
       )}
       <ol className="relative ml-1.5 border-l border-border/60 pl-5">
@@ -322,12 +331,12 @@ function SplitsTimeline({ data }: { data: SplitItem[] }) {
               <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                 <span className="text-sm font-medium text-foreground/80">{s.date}</span>
                 <span className="rounded-full border border-border bg-muted/50 px-2.5 py-0.5 text-xs font-medium tabular-nums">
-                  {s.from_factor}-for-{s.to_factor} {m < 1 ? 'reverse split' : 'split'}
+                  {t('financialsSplitRatio', { from: s.from_factor, to: s.to_factor })} {m < 1 ? t('financialsReverseSplit') : t('financialsSplit')}
                 </span>
                 <span className="text-xs text-muted-foreground">
                   {m >= 1
-                    ? `each share became ${fmtFactor(m)}`
-                    : `every ${s.to_factor} shares became ${s.from_factor}`}
+                    ? t('financialsSplitEachShareBecame', { factor: fmtFactor(m) })
+                    : t('financialsSplitEveryNSharesBecame', { to: s.to_factor, from: s.from_factor })}
                 </span>
               </div>
             </li>
@@ -339,10 +348,11 @@ function SplitsTimeline({ data }: { data: SplitItem[] }) {
 }
 
 function SplitsTable({ data }: { data: SplitItem[] }) {
+  const { t } = useTranslation('stock');
   if (!data.length) {
     return (
       <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
-        No split history available
+        {t('financialsNoSplitHistory')}
       </div>
     );
   }
@@ -351,7 +361,7 @@ function SplitsTable({ data }: { data: SplitItem[] }) {
       <table className="w-full text-xs">
         <thead>
           <tr className="border-b border-border">
-            {['Date', 'Ratio', 'From', 'To'].map((h) => (
+            {[t('financialsColumnDate'), t('financialsColumnRatio'), t('financialsColumnFrom'), t('financialsColumnTo')].map((h) => (
               <th key={h} className="py-2.5 text-left font-medium text-muted-foreground pr-4 first:pl-0">{h}</th>
             ))}
           </tr>
@@ -392,6 +402,7 @@ function KeyTakeawaysCard({
   ticker?: string;
   onAskAI?: (q: string) => void;
 }) {
+  const { t } = useTranslation('stock');
   return (
     <div className="mb-4">
       <p className="text-xs text-muted-foreground mb-3">{description}</p>
@@ -423,7 +434,7 @@ function KeyTakeawaysCard({
         className="mt-3 flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
       >
         <ChevronDown className="h-3.5 w-3.5" />
-        Show full breakdown
+        {t('financialsShowFullBreakdown')}
       </button>
     </div>
   );
@@ -431,15 +442,19 @@ function KeyTakeawaysCard({
 
 // ---- Main component ----
 
-const TABS: { key: Tab; label: string }[] = [
-  { key: 'income', label: 'Income Statement' },
-  { key: 'balance', label: 'Balance Sheet' },
-  { key: 'cashflow', label: 'Cash Flow' },
-  { key: 'dividends', label: 'Dividends' },
-  { key: 'splits', label: 'Splits' },
-];
+function getTabs(t: TFunction): { key: Tab; label: string }[] {
+  return [
+    { key: 'income', label: t('financialsTabIncomeStatement') },
+    { key: 'balance', label: t('financialsTabBalanceSheet') },
+    { key: 'cashflow', label: t('financialsTabCashFlow') },
+    { key: 'dividends', label: t('financialsTabDividends') },
+    { key: 'splits', label: t('financialsTabSplits') },
+  ];
+}
 
 export function FinancialsSection({ ticker }: { ticker: string }) {
+  const { t } = useTranslation('stock');
+  const TABS = getTabs(t);
   const [activeTab, setActiveTab] = useState<Tab>('income');
   const [period, setPeriod] = useState<Period>('quarterly');
   const [showFullBreakdown, setShowFullBreakdown] = useState(false);
@@ -466,9 +481,9 @@ export function FinancialsSection({ ticker }: { ticker: string }) {
       chart = (
         <FinancialsTrendChart
           points={toPoints(data.data as IncomeStatementPeriod[], 'fiscal_date', 'revenue', 'net_income')}
-          primaryLabel="Revenue"
-          secondaryLabel="Net Income"
-          question="Is the company growing — and keeping profit?"
+          primaryLabel={t('financialsChartRevenue')}
+          secondaryLabel={t('financialsChartNetIncome')}
+          question={t('financialsQuestionIncome')}
           format={fmtNum}
           colorMode="signSecondary"
         />
@@ -477,9 +492,9 @@ export function FinancialsSection({ ticker }: { ticker: string }) {
       chart = (
         <FinancialsTrendChart
           points={toPoints(data.data as BalanceSheetPeriod[], 'fiscal_date', 'total_assets', 'total_liabilities')}
-          primaryLabel="Assets"
-          secondaryLabel="Liabilities"
-          question="Does it own more than it owes?"
+          primaryLabel={t('financialsChartAssets')}
+          secondaryLabel={t('financialsChartLiabilities')}
+          question={t('financialsQuestionBalance')}
           format={fmtNum}
           colorMode="ownVsOwe"
         />
@@ -488,9 +503,9 @@ export function FinancialsSection({ ticker }: { ticker: string }) {
       chart = (
         <FinancialsTrendChart
           points={toPoints(data.data as CashFlowPeriod[], 'fiscal_date', 'operating_cash_flow', 'free_cash_flow')}
-          primaryLabel="Operating Cash Flow"
-          secondaryLabel="Free Cash Flow"
-          question="Is real cash coming in?"
+          primaryLabel={t('financialsChartOperatingCashFlow')}
+          secondaryLabel={t('financialsChartFreeCashFlow')}
+          question={t('financialsQuestionCashFlow')}
           format={fmtNum}
           colorMode="signSecondary"
         />
@@ -507,9 +522,9 @@ export function FinancialsSection({ ticker }: { ticker: string }) {
         const insight =
           growthPct != null && Math.abs(growthPct) >= 1
             ? growthPct > 0
-              ? `Raised ${raises} time${raises === 1 ? '' : 's'} since ${first.ex_dividend_date.slice(0, 4)} — up ${Math.round(growthPct)}% overall`
-              : `Down ${Math.round(Math.abs(growthPct))}% since ${first.ex_dividend_date.slice(0, 4)}`
-            : `Held steady since ${first.ex_dividend_date.slice(0, 4)}`;
+              ? t('financialsDividendRaised', { count: raises, year: first.ex_dividend_date.slice(0, 4), pct: Math.round(growthPct) })
+              : t('financialsDividendDown', { pct: Math.round(Math.abs(growthPct)), year: first.ex_dividend_date.slice(0, 4) })
+            : t('financialsDividendSteady', { year: first.ex_dividend_date.slice(0, 4) });
         chart = (
           <div>
             <FinancialsTrendChart
@@ -521,8 +536,8 @@ export function FinancialsSection({ ticker }: { ticker: string }) {
                     : '',
                 primary: d.amount,
               }))}
-              primaryLabel="Dividend per share"
-              question="Is the dividend growing?"
+              primaryLabel={t('financialsChartDividendPerShare')}
+              question={t('financialsQuestionDividend')}
               format={fmtDividend}
             />
             <p className="-mt-3 mb-5 text-xs text-muted-foreground">{insight}</p>
@@ -538,7 +553,7 @@ export function FinancialsSection({ ticker }: { ticker: string }) {
     <Card className="mb-8">
       <CardHeader className="pb-0">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <CardTitle className="text-base font-semibold">Financials</CardTitle>
+          <CardTitle className="text-base font-semibold">{t('financialsCardTitle')}</CardTitle>
 
           {activeTab !== 'dividends' && activeTab !== 'splits' && (
             <div className="flex items-center gap-0.5 rounded-lg border border-border bg-muted/50 p-0.5 self-start">
@@ -552,7 +567,7 @@ export function FinancialsSection({ ticker }: { ticker: string }) {
                       : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  {p === 'quarterly' ? 'Quarterly' : 'Annual'}
+                  {p === 'quarterly' ? t('sankeyQuarterly') : t('sankeyAnnual')}
                 </button>
               ))}
             </div>
@@ -607,11 +622,11 @@ export function FinancialsSection({ ticker }: { ticker: string }) {
                   const rows = data.data as IncomeStatementPeriod[];
                   const latest = rows[0];
                   const prior = rows[1];
-                  if (!latest) return <div className="py-8 text-center text-sm text-muted-foreground">No data available</div>;
+                  if (!latest) return <div className="py-8 text-center text-sm text-muted-foreground">{t('financialsNoDataAvailable')}</div>;
                   const revGrowth = latest.revenue && prior?.revenue ? ((latest.revenue - prior.revenue) / Math.abs(prior.revenue)) : null;
                   return (
                     <KeyTakeawaysCard
-                      description="The most important numbers from this company's income statement. These tell you how much money the company made and kept."
+                      description={t('financialsTakeawaysIncomeDescription')}
                       rows={[
                         { term: 'Revenue', value: fmtNum(latest.revenue), positive: revGrowth != null ? revGrowth > 0 : null },
                         { term: 'Gross Profit', value: fmtNum(latest.gross_profit), positive: (latest.gross_profit ?? 0) > 0 },
@@ -626,10 +641,10 @@ export function FinancialsSection({ ticker }: { ticker: string }) {
                 {activeTab === 'balance' && (() => {
                   const rows = data.data as BalanceSheetPeriod[];
                   const latest = rows[0];
-                  if (!latest) return <div className="py-8 text-center text-sm text-muted-foreground">No data available</div>;
+                  if (!latest) return <div className="py-8 text-center text-sm text-muted-foreground">{t('financialsNoDataAvailable')}</div>;
                   return (
                     <KeyTakeawaysCard
-                      description="A snapshot of what the company owns vs. what it owes. Healthy companies have more assets than liabilities."
+                      description={t('financialsTakeawaysBalanceDescription')}
                       rows={[
                         { term: 'Total Assets', value: fmtNum(latest.total_assets), positive: null },
                         { term: 'Total Liabilities', value: fmtNum(latest.total_liabilities), positive: false },
@@ -644,10 +659,10 @@ export function FinancialsSection({ ticker }: { ticker: string }) {
                 {activeTab === 'cashflow' && (() => {
                   const rows = data.data as CashFlowPeriod[];
                   const latest = rows[0];
-                  if (!latest) return <div className="py-8 text-center text-sm text-muted-foreground">No data available</div>;
+                  if (!latest) return <div className="py-8 text-center text-sm text-muted-foreground">{t('financialsNoDataAvailable')}</div>;
                   return (
                     <KeyTakeawaysCard
-                      description="Cash flow shows the actual money moving in and out of the business, harder to manipulate than reported profit."
+                      description={t('financialsTakeawaysCashFlowDescription')}
                       rows={[
                         { term: 'Operating Cash Flow', value: fmtNum(latest.operating_cash_flow), positive: (latest.operating_cash_flow ?? 0) > 0 },
                         { term: 'Capital Expenditures', value: fmtNum(latest.capital_expenditures), positive: null },
@@ -671,7 +686,7 @@ export function FinancialsSection({ ticker }: { ticker: string }) {
                     className="mb-3 flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
                   >
                     <ChevronUp className="h-3.5 w-3.5" />
-                    Show key takeaways
+                    {t('financialsShowKeyTakeaways')}
                   </button>
                 )}
                 {activeTab === 'income' && <IncomeTable data={data.data as IncomeStatementPeriod[]} />}
@@ -686,14 +701,14 @@ export function FinancialsSection({ ticker }: { ticker: string }) {
 
         {!isLoading && !data?.success && data?.error === 'plan_restricted' && (
           <div className="flex flex-col items-center justify-center py-12 gap-1.5 text-center">
-            <p className="text-sm text-muted-foreground">Financial statements require an Enterprise plan.</p>
-            <p className="text-xs text-muted-foreground/80">Dividends may still be available. Try the Dividends tab.</p>
+            <p className="text-sm text-muted-foreground">{t('financialsPlanRestricted')}</p>
+            <p className="text-xs text-muted-foreground/80">{t('financialsPlanRestrictedDividendsHint')}</p>
           </div>
         )}
 
         {!isLoading && !data?.success && data?.error !== 'plan_restricted' && (
           <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
-            No financial data available
+            {t('financialsNoFinancialData')}
           </div>
         )}
       </CardContent>
