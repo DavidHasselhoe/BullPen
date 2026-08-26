@@ -23,6 +23,18 @@ export interface LogoResolution {
 }
 
 /**
+ * Below this, real logos in our own storage bucket don't go (smallest
+ * confirmed legitimate one is 2249 bytes) — but TwelveData and logo.dev have
+ * both been observed returning a "real" 200 image response for tickers they
+ * don't have: a blank white square (DLO: 1189 bytes, BETA: 1676 bytes) or a
+ * generic "No Image" placeholder icon (1696 bytes). Neither is an HTTP error,
+ * so the content-type/non-empty check below doesn't catch them, and they'd
+ * otherwise get cached as the ticker's logo for 30 days straight over the
+ * initials fallback.
+ */
+const MIN_LOGO_BYTES = 2000;
+
+/**
  * Downloads a candidate logo URL and confirms it's actually an image before
  * trusting it — a 200 with an HTML error page, an empty body, or a non-2xx
  * status must never be treated as a resolved logo. TwelveData's `/logo`
@@ -36,7 +48,7 @@ export async function downloadAndValidateLogo(url: string): Promise<ResolvedLogo
     const contentType = res.headers.get('content-type') ?? '';
     if (!contentType.startsWith('image/')) return null;
     const buffer = Buffer.from(await res.arrayBuffer());
-    if (buffer.length === 0) return null;
+    if (buffer.length < MIN_LOGO_BYTES) return null;
     const mimeType = contentType.split(';')[0]?.trim() || 'image/png';
     return { buffer, mimeType, sourceUrl: url };
   } catch {
