@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 
 export interface StockNavSection {
@@ -9,6 +10,7 @@ export interface StockNavSection {
 }
 
 export function StockNavSidebar({ sections }: { sections: StockNavSection[] }) {
+  const { t } = useTranslation('stock');
   const [activeId, setActiveId] = useState<string | null>(sections[0]?.id ?? null);
   const intersectingIds = useRef(new Set<string>());
 
@@ -45,7 +47,7 @@ export function StockNavSidebar({ sections }: { sections: StockNavSection[] }) {
   };
 
   return (
-    <nav aria-label="Page sections" className="flex flex-col">
+    <nav aria-label={t('pageSectionsAriaLabel')} className="flex flex-col">
       {sections.map(({ id, label }) => {
         const isActive = activeId === id;
         return (

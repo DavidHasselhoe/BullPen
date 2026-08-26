@@ -1,6 +1,7 @@
 'use client';
 
 import { Component, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   children: ReactNode;
@@ -32,14 +33,17 @@ export class StockSectionBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
-      return (
-        this.props.fallback ?? (
-          <div className="mb-8 rounded-xl border border-border bg-card px-4 py-6 text-center text-sm text-muted-foreground">
-            This section couldn&apos;t load — try refreshing the page.
-          </div>
-        )
-      );
+      return this.props.fallback ?? <SectionErrorFallback />;
     }
     return this.props.children;
   }
+}
+
+function SectionErrorFallback() {
+  const { t } = useTranslation('stock');
+  return (
+    <div className="mb-8 rounded-xl border border-border bg-card px-4 py-6 text-center text-sm text-muted-foreground">
+      {t('sectionLoadError')}
+    </div>
+  );
 }

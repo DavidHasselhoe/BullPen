@@ -60,7 +60,7 @@ function InfoRow({ icon: Icon, label, value }: { icon: React.ElementType; label:
 }
 
 export function CompanyProfileCard({ ticker }: { ticker: string }) {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation('stock');
   const [descExpanded, setDescExpanded] = useState(false);
   const { data, isLoading } = useQuery<ProfileResponse>({
     queryKey: ['company-profile', ticker, i18n.language],
@@ -104,7 +104,7 @@ export function CompanyProfileCard({ ticker }: { ticker: string }) {
   return (
     <Card className="mb-8">
       <CardHeader className="pb-3">
-        <CardTitle className="text-base font-semibold">Company Profile</CardTitle>
+        <CardTitle className="text-base font-semibold">{t('companyProfileTitle')}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
 
@@ -118,7 +118,7 @@ export function CompanyProfileCard({ ticker }: { ticker: string }) {
               onClick={() => setDescExpanded((v) => !v)}
               className="mt-1.5 text-xs font-medium text-primary/70 hover:text-primary transition-colors"
             >
-              {descExpanded ? 'Show less' : 'Show more'}
+              {descExpanded ? t('showLess') : t('showMore')}
             </button>
           </div>
         )}
@@ -126,24 +126,24 @@ export function CompanyProfileCard({ ticker }: { ticker: string }) {
         {/* Key facts grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {profile.ceo && (
-            <InfoRow icon={Briefcase} label="CEO" value={profile.ceo} />
+            <InfoRow icon={Briefcase} label={t('ceoLabel')} value={profile.ceo} />
           )}
           {profile.employees && (
-            <InfoRow icon={Users} label="Employees" value={fmtEmployees(profile.employees)} />
+            <InfoRow icon={Users} label={t('employeesLabel')} value={fmtEmployees(profile.employees)} />
           )}
           {location && (
-            <InfoRow icon={MapPin} label="Headquarters" value={location} />
+            <InfoRow icon={MapPin} label={t('headquartersLabel')} value={location} />
           )}
           {profile.ipo_date && (
-            <InfoRow icon={Calendar} label="IPO Date" value={fmtDate(profile.ipo_date)} />
+            <InfoRow icon={Calendar} label={t('ipoDateLabel')} value={fmtDate(profile.ipo_date)} />
           )}
           {profile.exchange && (
-            <InfoRow icon={Building2} label="Exchange" value={`${profile.exchange} · ${profile.currency}`} />
+            <InfoRow icon={Building2} label={t('exchangeLabel')} value={`${profile.exchange} · ${profile.currency}`} />
           )}
           {profile.website && (
             <InfoRow
               icon={Globe}
-              label="Website"
+              label={t('websiteLabel')}
               value={
                 <a
                   href={profile.website}
@@ -177,7 +177,7 @@ export function CompanyProfileCard({ ticker }: { ticker: string }) {
         {/* Key Executives */}
         {executives.length > 0 && (
           <div>
-            <h3 className="text-sm font-semibold mb-3 text-foreground">Key Executives</h3>
+            <h3 className="text-sm font-semibold mb-3 text-foreground">{t('keyExecutivesHeading')}</h3>
             <div className="divide-y divide-border">
               {executives.slice(0, 8).map((exec, i) => (
                 <div key={i} className="flex items-center justify-between py-2.5 gap-4">
@@ -193,7 +193,7 @@ export function CompanyProfileCard({ ticker }: { ticker: string }) {
                       </div>
                     ) : null}
                     {exec.age && (
-                      <p className="text-xs text-muted-foreground">Age {exec.age}</p>
+                      <p className="text-xs text-muted-foreground">{t('ageLabel', { age: exec.age })}</p>
                     )}
                   </div>
                 </div>

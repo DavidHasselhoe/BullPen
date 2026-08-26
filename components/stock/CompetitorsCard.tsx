@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import type { CompetitorEntry } from '@/app/api/stock/[ticker]/competitors/route';
@@ -11,6 +12,7 @@ interface CompetitorsResponse {
 }
 
 export function CompetitorPills({ ticker }: { ticker: string }) {
+  const { t } = useTranslation('stock');
   const router = useRouter();
 
   const { data } = useQuery<CompetitorsResponse>({
@@ -25,7 +27,7 @@ export function CompetitorPills({ ticker }: { ticker: string }) {
 
   return (
     <div className="mt-2 flex items-center gap-1.5 flex-wrap">
-      <span className="text-xs text-muted-foreground">Peers:</span>
+      <span className="text-xs text-muted-foreground">{t('peersLabel')}</span>
       {competitors.map((c) => (
         <button
           key={c.ticker}

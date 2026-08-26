@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 
 /**
@@ -39,12 +40,15 @@ export function VolatilityGauge({
   max,
   ticker,
   marketValue,
-  marketLabel = 'Average market',
+  marketLabel,
   industryValue,
-  industryLabel = 'Industry',
+  industryLabel,
   srLabel,
   className,
 }: VolatilityGaugeProps) {
+  const { t } = useTranslation('stock');
+  const displayMarketLabel = marketLabel ?? t('volatilityAverageMarket');
+  const displayIndustryLabel = industryLabel ?? t('volatilityIndustry');
   const valuePct = pos(value, min, max);
   const marketPct = pos(marketValue, min, max);
   const industryPct = industryValue != null ? pos(industryValue, min, max) : null;
@@ -68,8 +72,8 @@ export function VolatilityGauge({
       </div>
 
       <div className="mt-1 flex justify-between text-xs leading-none text-muted-foreground/85">
-        <span>Low</span>
-        <span>High</span>
+        <span>{t('volatilityLow')}</span>
+        <span>{t('volatilityHigh')}</span>
       </div>
 
       <div className="relative mt-2 h-3">
@@ -84,7 +88,7 @@ export function VolatilityGauge({
             className="absolute -translate-x-1/2 whitespace-nowrap rounded bg-muted px-1 py-0.5 text-xs font-medium leading-none text-muted-foreground"
             style={{ left: `${clampLabel(industryPct)}%` }}
           >
-            {industryLabel}
+            {displayIndustryLabel}
           </span>
         </div>
       )}
@@ -93,7 +97,7 @@ export function VolatilityGauge({
           className="absolute -translate-x-1/2 whitespace-nowrap text-xs leading-none text-muted-foreground/80"
           style={{ left: `${clampLabel(marketPct)}%` }}
         >
-          {marketLabel}
+          {displayMarketLabel}
         </span>
       </div>
     </div>
