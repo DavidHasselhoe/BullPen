@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, ChevronDown, Pencil, Trash2 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -51,6 +52,7 @@ function RenamePill({
   onDone: () => void;
   onViewChange: (v: ActiveView) => void;
 }) {
+  const { t } = useTranslation('tools');
   const inputRef = useRef<HTMLInputElement>(null);
   const updateView = useUpdateScreenerView();
   const didSave = useRef(false);
@@ -83,13 +85,14 @@ function RenamePill({
         onClick={(e) => e.stopPropagation()}
         className="bg-transparent outline-none w-28 text-xs font-medium placeholder:text-current/40"
         maxLength={60}
-        placeholder="View name…"
+        placeholder={t('screenerViewNamePlaceholderShort')}
       />
     </span>
   );
 }
 
 export function ScreenerViewBar({ activeView, onViewChange }: Props) {
+  const { t } = useTranslation('tools');
   const { isAuthenticated } = useAuth();
   const { data: watchlistItems = [] } = useWatchlist();
   const { data: watchlistLists = [] } = useWatchlistLists();
@@ -109,7 +112,7 @@ export function ScreenerViewBar({ activeView, onViewChange }: Props) {
   };
 
   const handleCreate = async () => {
-    const name = `View ${customViews.length + 1}`;
+    const name = t('screenerViewDefaultName', { count: customViews.length + 1 });
     try {
       const view = await createView.mutateAsync({ name, tickers: [] });
       onViewChange({ type: 'custom', view });
@@ -127,9 +130,9 @@ export function ScreenerViewBar({ activeView, onViewChange }: Props) {
   };
 
   const activeWatchlistLabel = () => {
-    if (activeView.type !== 'watchlist') return 'Watchlist';
-    if (!activeView.listId) return 'Watchlist';
-    return watchlistLists.find((l) => l.id === activeView.listId)?.name ?? 'Watchlist';
+    if (activeView.type !== 'watchlist') return t('screenerWatchlistLabel');
+    if (!activeView.listId) return t('screenerWatchlistLabel');
+    return watchlistLists.find((l) => l.id === activeView.listId)?.name ?? t('screenerWatchlistLabel');
   };
 
   return (
@@ -139,7 +142,7 @@ export function ScreenerViewBar({ activeView, onViewChange }: Props) {
         onClick={() => onViewChange({ type: 'all' })}
         className={cn(pillBase, isActive({ type: 'all' }) ? pillActive : pillInactive)}
       >
-        All
+        {t('screenerViewAll')}
       </button>
 
       {/* S&P 500 */}
@@ -147,7 +150,7 @@ export function ScreenerViewBar({ activeView, onViewChange }: Props) {
         onClick={() => onViewChange({ type: 'sp500' })}
         className={cn(pillBase, isActive({ type: 'sp500' }) ? pillActive : pillInactive)}
       >
-        S&amp;P 500
+        {t('screenerSp500Label')}
       </button>
 
       {/* My Holdings */}
@@ -156,7 +159,7 @@ export function ScreenerViewBar({ activeView, onViewChange }: Props) {
           onClick={() => onViewChange({ type: 'holdings' })}
           className={cn(pillBase, isActive({ type: 'holdings' }) ? pillActive : pillInactive)}
         >
-          My Holdings
+          {t('screenerMyHoldings')}
           <span className={cn('text-[11px] opacity-60', isActive({ type: 'holdings' }) ? 'text-primary-foreground' : 'text-muted-foreground')}>
             {holdings.length}
           </span>
@@ -178,7 +181,7 @@ export function ScreenerViewBar({ activeView, onViewChange }: Props) {
                 onClick={() => { onViewChange({ type: 'watchlist', listId: null }); setWatchlistOpen(false); }}
                 className="text-xs"
               >
-                All watchlists
+                {t('screenerAllWatchlists')}
                 <span className="ml-auto text-[11px] text-muted-foreground/80">{watchlistItems.length}</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
@@ -202,7 +205,7 @@ export function ScreenerViewBar({ activeView, onViewChange }: Props) {
             onClick={() => onViewChange({ type: 'watchlist', listId: null })}
             className={cn(pillBase, isActive({ type: 'watchlist', listId: null }) ? pillActive : pillInactive)}
           >
-            Watchlist
+            {t('screenerWatchlistLabel')}
           </button>
         )
       )}
@@ -243,7 +246,7 @@ export function ScreenerViewBar({ activeView, onViewChange }: Props) {
             )}>
               <button
                 type="button"
-                title="Rename"
+                title={t('screenerRename')}
                 onClick={(e) => { e.stopPropagation(); setRenamingId(view.id); }}
                 className={cn(
                   'h-5 w-5 rounded flex items-center justify-center transition-colors',
@@ -271,14 +274,14 @@ export function ScreenerViewBar({ activeView, onViewChange }: Props) {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-32">
                   <DropdownMenuItem className="text-xs gap-2" onClick={() => setRenamingId(view.id)}>
-                    <Pencil className="h-3 w-3" /> Rename
+                    <Pencil className="h-3 w-3" /> {t('screenerRename')}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     className="text-xs gap-2 text-destructive focus:text-destructive"
                     onClick={(e) => handleDelete(e, view)}
                   >
-                    <Trash2 className="h-3 w-3" /> Delete
+                    <Trash2 className="h-3 w-3" /> {t('deepDiveDeleteButton')}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -295,7 +298,7 @@ export function ScreenerViewBar({ activeView, onViewChange }: Props) {
           className={cn(pillBase, pillInactive, 'border-dashed')}
         >
           <Plus className="h-3 w-3" />
-          {createView.isPending ? 'Creating…' : 'New view'}
+          {createView.isPending ? t('screenerCreatingView') : t('screenerNewView')}
         </button>
       )}
     </div>

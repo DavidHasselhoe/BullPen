@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useReducer, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Search, Plus } from 'lucide-react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { Input } from '@/components/ui/input';
@@ -44,6 +45,7 @@ function formReducer(state: FormState, action: FormAction): FormState {
 }
 
 export function ScreenerViewModal({ open, onOpenChange, editingView, onCreated }: Props) {
+  const { t } = useTranslation('tools');
   const isEditing = !!editingView;
 
   const [form, dispatch] = useReducer(formReducer, { name: '', tickers: [], search: '', error: '' });
@@ -76,8 +78,8 @@ export function ScreenerViewModal({ open, onOpenChange, editingView, onCreated }
   const handleSave = async () => {
     dispatch({ type: 'setError', error: '' });
     const trimmedName = name.trim();
-    if (!trimmedName) { dispatch({ type: 'setError', error: 'Please enter a name for this view.' }); return; }
-    if (tickers.length === 0) { dispatch({ type: 'setError', error: 'Add at least one stock.' }); return; }
+    if (!trimmedName) { dispatch({ type: 'setError', error: t('screenerViewNameRequired') }); return; }
+    if (tickers.length === 0) { dispatch({ type: 'setError', error: t('screenerViewStockRequired') }); return; }
 
     try {
       if (isEditing && editingView) {
@@ -88,7 +90,7 @@ export function ScreenerViewModal({ open, onOpenChange, editingView, onCreated }
       }
       onOpenChange(false);
     } catch (e) {
-      dispatch({ type: 'setError', error: e instanceof Error ? e.message : 'Something went wrong.' });
+      dispatch({ type: 'setError', error: e instanceof Error ? e.message : t('screenerViewGenericError') });
     }
   };
 
@@ -105,13 +107,13 @@ export function ScreenerViewModal({ open, onOpenChange, editingView, onCreated }
           )}
         >
           <DialogPrimitive.Title className="sr-only">
-            {isEditing ? 'Edit view' : 'New view'}
+            {isEditing ? t('screenerEditView') : t('screenerNewView')}
           </DialogPrimitive.Title>
 
           {/* Header */}
           <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-border/30">
             <h2 className="text-sm font-semibold text-foreground">
-              {isEditing ? 'Edit view' : 'New view'}
+              {isEditing ? t('screenerEditView') : t('screenerNewView')}
             </h2>
             <DialogPrimitive.Close className="text-muted-foreground/85 hover:text-foreground transition-colors p-1 rounded-lg hover:bg-muted/40">
               <X className="h-4 w-4" />
@@ -122,13 +124,13 @@ export function ScreenerViewModal({ open, onOpenChange, editingView, onCreated }
             {/* Name */}
             <div className="space-y-1.5">
               <label className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground/85">
-                Name
+                {t('screenerViewNameLabel')}
               </label>
               <Input
                 ref={nameRef}
                 value={name}
                 onChange={(e) => dispatch({ type: 'setName', name: e.target.value })}
-                placeholder="e.g. My Tech Picks"
+                placeholder={t('screenerViewNamePlaceholder')}
                 maxLength={60}
                 className="h-9 text-sm"
                 onKeyDown={(e) => e.key === 'Enter' && handleSave()}
@@ -138,14 +140,14 @@ export function ScreenerViewModal({ open, onOpenChange, editingView, onCreated }
             {/* Ticker search */}
             <div className="space-y-1.5">
               <label className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground/85">
-                Stocks
+                {t('screenerViewStocksLabel')}
               </label>
               <div className="relative">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/85" />
                 <Input
                   value={search}
                   onChange={(e) => dispatch({ type: 'setSearch', search: e.target.value })}
-                  placeholder="Search S&P 500 tickers…"
+                  placeholder={t('screenerViewSearchPlaceholder')}
                   className="h-9 pl-8 text-sm"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && suggestions.length > 0) {
@@ -195,7 +197,7 @@ export function ScreenerViewModal({ open, onOpenChange, editingView, onCreated }
 
               {tickers.length === 0 && search.trim() === '' && (
                 <p className="text-[11px] text-muted-foreground/85 pt-0.5">
-                  Search and add stocks from the S&amp;P 500 universe.
+                  {t('screenerViewStocksHint')}
                 </p>
               )}
             </div>
@@ -209,14 +211,14 @@ export function ScreenerViewModal({ open, onOpenChange, editingView, onCreated }
           {/* Footer */}
           <div className="flex items-center justify-between gap-3 px-5 pb-5 pt-1">
             <span className="text-[11px] text-muted-foreground/85 tabular-nums">
-              {tickers.length} stock{tickers.length !== 1 ? 's' : ''}
+              {t('screenerViewStockCount', { count: tickers.length })}
             </span>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} className="h-8 text-xs">
-                Cancel
+                {t('deepDiveCancelButton')}
               </Button>
               <Button size="sm" onClick={handleSave} disabled={isPending} className="h-8 text-xs">
-                {isPending ? 'Saving…' : isEditing ? 'Save changes' : 'Create view'}
+                {isPending ? t('screenerViewSaving') : isEditing ? t('screenerViewSaveChanges') : t('screenerViewCreateButton')}
               </Button>
             </div>
           </div>

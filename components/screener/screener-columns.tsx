@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import type { TFunction } from 'i18next';
 import { cn } from '@/lib/utils';
 import type { ScreenerRow } from '@/app/api/screener/route';
 import type { HeatmapPriceEntry } from '@/hooks/use-heatmap-stream';
@@ -55,14 +56,16 @@ const RVOL_SURGE = 2; // ≥2× average = unusual activity
 
 export type ColumnGroup = 'health' | 'price' | 'volume' | 'valuation' | 'profitability' | 'risk';
 
-export const GROUP_LABELS: Record<ColumnGroup, string> = {
-  health: 'Health Score',
-  price: 'Price',
-  volume: 'Volume',
-  valuation: 'Valuation',
-  profitability: 'Profitability',
-  risk: 'Risk & Income',
-};
+export function getGroupLabels(t: TFunction): Record<ColumnGroup, string> {
+  return {
+    health: t('screenerGroupHealthScore'),
+    price: t('screenerGroupPrice'),
+    volume: t('screenerVolumeHeading'),
+    valuation: t('screenerValuationHeading'),
+    profitability: t('screenerProfitabilityHeading'),
+    risk: t('screenerRiskIncomeHeading'),
+  };
+}
 
 export interface ScreenerColumn {
   key: string;
@@ -79,12 +82,13 @@ export interface ScreenerColumn {
 }
 
 
-export const SCREENER_COLUMNS: ScreenerColumn[] = [
+export function getScreenerColumns(t: TFunction): ScreenerColumn[] {
+  return [
   // ── Health Score ──
   {
     key: 'health_score',
-    label: 'Health',
-    tip: 'BullPen financial health score (0–100) — rates profitability, balance sheet strength, valuation, growth, and market risk.',
+    label: t('screenerColHealthLabel'),
+    tip: t('screenerColHealthTip'),
     group: 'health',
     defaultVisible: true,
     width: 88,
@@ -94,7 +98,7 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
       const grade = row.health_score_grade;
       if (score == null || !grade) return <span className="text-muted-foreground/80">—</span>;
       return (
-        <span className="inline-flex items-center" title={`Health ${score}/100 · Grade ${grade}`}>
+        <span className="inline-flex items-center" title={t('screenerColHealthTitle', { score, grade })}>
           <HealthRing score={score} grade={grade as 'A' | 'B' | 'C' | 'D' | 'F'} size={34} className="text-foreground" />
         </span>
       );
@@ -108,8 +112,8 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
   // Rendered dimmed with a tooltip so it reads as "last close", not live.
   {
     key: 'price',
-    label: 'Price',
-    tip: 'Live price (last close when the market is closed)',
+    label: t('screenerColPriceLabel'),
+    tip: t('screenerColPriceTip'),
     group: 'price',
     defaultVisible: true,
     width: 92,
@@ -118,7 +122,7 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
       if (live) return fmtPrice(live.price);
       if (row.last_price != null) {
         return (
-          <span className="text-muted-foreground/85" title="Last close. Live price unavailable until the market reopens">
+          <span className="text-muted-foreground/85" title={t('screenerColLastCloseTitle')}>
             {fmtPrice(row.last_price)}
           </span>
         );
@@ -128,8 +132,8 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
   },
   {
     key: 'change_pct',
-    label: '% Chg',
-    tip: "Day change % (previous trading day's when the market is closed)",
+    label: t('screenerColChangePctLabel'),
+    tip: t('screenerColChangePctTip'),
     group: 'price',
     defaultVisible: true,
     width: 84,
@@ -145,7 +149,7 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
             pct > 0 && (isLive ? 'text-emerald-500' : 'text-emerald-500/60'),
             pct < 0 && (isLive ? 'text-red-500' : 'text-red-500/60'),
           )}
-          title={isLive ? undefined : 'At last close — live price unavailable until the market reopens'}
+          title={isLive ? undefined : t('screenerColLastCloseChangeTitle')}
         >
           {pct > 0 ? '+' : ''}{pct.toFixed(2)}%
         </span>
@@ -156,8 +160,8 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
   // ── Volume ──
   {
     key: 'rvol',
-    label: 'RVOL',
-    tip: "Relative volume — today's volume vs 90-day average. ≥2× = unusual activity. Green = bought on the move, red = sold. Needs live market data.",
+    label: t('screenerColRvolLabel'),
+    tip: t('screenerColRvolTip'),
     group: 'volume',
     defaultVisible: true,
     width: 72,
@@ -183,8 +187,8 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
   },
   {
     key: 'volume',
-    label: 'Volume',
-    tip: "Today's cumulative trading volume (live)",
+    label: t('screenerColVolumeLabel'),
+    tip: t('screenerColVolumeTip'),
     group: 'volume',
     defaultVisible: false,
     width: 80,
@@ -193,8 +197,8 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
   },
   {
     key: 'avg_volume',
-    label: 'Avg Vol',
-    tip: '90-day average daily volume',
+    label: t('screenerColAvgVolumeLabel'),
+    tip: t('screenerColAvgVolumeTip'),
     group: 'volume',
     defaultVisible: false,
     width: 80,
@@ -205,8 +209,8 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
   // ── Valuation ──
   {
     key: 'market_cap',
-    label: 'Mkt Cap',
-    tip: 'Market capitalisation',
+    label: t('screenerColMarketCapLabel'),
+    tip: t('screenerColMarketCapTip'),
     group: 'valuation',
     defaultVisible: true,
     width: 84,
@@ -215,8 +219,8 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
   },
   {
     key: 'pe_ratio',
-    label: 'P/E',
-    tip: 'Trailing P/E ratio',
+    label: t('screenerColPeRatioLabel'),
+    tip: t('screenerColPeRatioTip'),
     group: 'valuation',
     defaultVisible: true,
     width: 72,
@@ -225,8 +229,8 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
   },
   {
     key: 'forward_pe',
-    label: 'Fwd P/E',
-    tip: 'Forward P/E (next 12 months estimate)',
+    label: t('screenerColForwardPeLabel'),
+    tip: t('screenerColForwardPeTip'),
     group: 'valuation',
     defaultVisible: true,
     width: 80,
@@ -235,8 +239,8 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
   },
   {
     key: 'pb_ratio',
-    label: 'P/B',
-    tip: 'Price-to-book ratio',
+    label: t('screenerColPbRatioLabel'),
+    tip: t('screenerColPbRatioTip'),
     group: 'valuation',
     defaultVisible: true,
     width: 72,
@@ -245,8 +249,8 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
   },
   {
     key: 'ps_ratio',
-    label: 'P/S',
-    tip: 'Price-to-sales ratio (TTM)',
+    label: t('screenerColPsRatioLabel'),
+    tip: t('screenerColPsRatioTip'),
     group: 'valuation',
     defaultVisible: false,
     width: 68,
@@ -255,8 +259,8 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
   },
   {
     key: 'ev_to_ebitda',
-    label: 'EV/EB',
-    tip: 'Enterprise value to EBITDA (EV/EBITDA)',
+    label: t('screenerColEvEbitdaLabel'),
+    tip: t('screenerColEvEbitdaTip'),
     group: 'valuation',
     defaultVisible: true,
     width: 72,
@@ -265,8 +269,8 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
   },
   {
     key: 'eps_ttm',
-    label: 'EPS',
-    tip: 'Earnings per share, trailing 12 months',
+    label: t('screenerColEpsLabel'),
+    tip: t('screenerColEpsTip'),
     group: 'valuation',
     defaultVisible: true,
     width: 76,
@@ -281,8 +285,8 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
   // ── Profitability ──
   {
     key: 'profit_margin',
-    label: 'Margin',
-    tip: 'Net profit margin',
+    label: t('screenerColMarginLabel'),
+    tip: t('screenerColMarginTip'),
     group: 'profitability',
     defaultVisible: true,
     width: 76,
@@ -298,8 +302,8 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
   },
   {
     key: 'revenue_growth_yoy',
-    label: 'Rev Gth',
-    tip: 'Quarterly revenue growth YoY',
+    label: t('screenerColRevGthLabel'),
+    tip: t('screenerColRevGthTip'),
     group: 'profitability',
     defaultVisible: true,
     width: 80,
@@ -315,8 +319,8 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
   },
   {
     key: 'earnings_growth_yoy',
-    label: 'Earn Gth',
-    tip: 'Quarterly earnings growth YoY',
+    label: t('screenerColEarnGthLabel'),
+    tip: t('screenerColEarnGthTip'),
     group: 'profitability',
     defaultVisible: false,
     width: 84,
@@ -334,8 +338,8 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
   // ── Risk & Income ──
   {
     key: 'beta',
-    label: 'Beta',
-    tip: '5Y monthly beta',
+    label: t('screenerColBetaLabel'),
+    tip: t('screenerColBetaTip'),
     group: 'risk',
     defaultVisible: true,
     width: 68,
@@ -351,8 +355,8 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
   },
   {
     key: 'dividend_yield',
-    label: 'Div Yld',
-    tip: 'Forward annual dividend yield',
+    label: t('screenerColDivYldLabel'),
+    tip: t('screenerColDivYldTip'),
     group: 'risk',
     defaultVisible: true,
     width: 76,
@@ -361,8 +365,8 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
   },
   {
     key: 'payout_ratio',
-    label: 'Payout',
-    tip: 'Dividend payout ratio',
+    label: t('screenerColPayoutLabel'),
+    tip: t('screenerColPayoutTip'),
     group: 'risk',
     defaultVisible: false,
     width: 72,
@@ -373,8 +377,8 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
   // ── Price levels ──
   {
     key: 'week52_high',
-    label: '52W Hi',
-    tip: '52-week high price',
+    label: t('screenerColWeek52HiLabel'),
+    tip: t('screenerColWeek52HiTip'),
     group: 'price',
     defaultVisible: true,
     width: 92,
@@ -383,8 +387,8 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
   },
   {
     key: 'week52_low',
-    label: '52W Lo',
-    tip: '52-week low price',
+    label: t('screenerColWeek52LoLabel'),
+    tip: t('screenerColWeek52LoTip'),
     group: 'price',
     defaultVisible: false,
     width: 92,
@@ -393,8 +397,8 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
   },
   {
     key: 'day50_ma',
-    label: '50D MA',
-    tip: '50-day moving average',
+    label: t('screenerColDay50MaLabel'),
+    tip: t('screenerColDay50MaTip'),
     group: 'price',
     defaultVisible: false,
     width: 92,
@@ -403,15 +407,21 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = [
   },
   {
     key: 'day200_ma',
-    label: '200D MA',
-    tip: '200-day moving average',
+    label: t('screenerColDay200MaLabel'),
+    tip: t('screenerColDay200MaTip'),
     group: 'price',
     defaultVisible: false,
     width: 96,
     getValue: (row) => row.day200_ma,
     render: (row) => <span className="text-muted-foreground">{fmtPrice(row.day200_ma)}</span>,
   },
-];
+  ];
+}
+
+/** Structural registry (key/group/defaultVisible/width) — used where only
+ *  language-independent shape is needed (persisted column-prefs bookkeeping).
+ *  Label/tip text there is meaningless since it's never rendered. */
+export const SCREENER_COLUMNS: ScreenerColumn[] = getScreenerColumns(((k: string) => k) as TFunction);
 
 export const COLUMN_BY_KEY: Record<string, ScreenerColumn> = Object.fromEntries(
   SCREENER_COLUMNS.map((c) => [c.key, c]),

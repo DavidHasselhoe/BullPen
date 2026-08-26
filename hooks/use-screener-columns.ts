@@ -1,7 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { SCREENER_COLUMNS, COLUMN_BY_KEY, type ScreenerColumn } from '@/components/screener/screener-columns';
+import { useTranslation } from 'react-i18next';
+import { SCREENER_COLUMNS, COLUMN_BY_KEY, getScreenerColumns, type ScreenerColumn } from '@/components/screener/screener-columns';
 import { useAuth } from '@/hooks/use-auth';
 import { createBrowserClient } from '@/lib/supabase/client';
 
@@ -62,7 +63,11 @@ export interface UseScreenerColumns {
 }
 
 export function useScreenerColumns(): UseScreenerColumns {
+  const { t } = useTranslation('tools');
   const { user } = useAuth();
+  const translatedColumnByKey = useMemo(() => {
+    return Object.fromEntries(getScreenerColumns(t).map((c) => [c.key, c]));
+  }, [t]);
 
   // localPrefs: what the user has typed/dragged this session (or from localStorage).
   const [localPrefs, setLocalPrefs] = useState<StoredPrefs>(loadLocal);
@@ -113,7 +118,7 @@ export function useScreenerColumns(): UseScreenerColumns {
 
   const orderedKeys = resolveOrder(prefs.order);
   const hidden = new Set(prefs.hidden);
-  const orderedColumns = orderedKeys.map((k) => COLUMN_BY_KEY[k]).filter(Boolean);
+  const orderedColumns = orderedKeys.map((k) => translatedColumnByKey[k]).filter(Boolean);
   const visibleColumns = orderedColumns.filter((c) => !hidden.has(c.key));
 
   const isHidden = useCallback((key: string) => prefs.hidden.includes(key), [prefs.hidden]);

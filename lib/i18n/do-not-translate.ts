@@ -39,6 +39,7 @@ export const DO_NOT_TRANSLATE = [
   'ETF',
   'IPO',
   'SEC',
+  'CSV',
   '10-K',
   '10-Q',
   '8-K',

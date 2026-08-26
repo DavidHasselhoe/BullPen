@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, Search, X } from 'lucide-react';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { cn } from '@/lib/utils';
@@ -25,6 +26,7 @@ interface Props {
 }
 
 export function ScreenerViewStockPicker({ view, universe, onAdd, hasStocks }: Props) {
+  const { t } = useTranslation('tools');
   // Start expanded when the view is empty (no stocks yet)
   const [expanded, setExpanded] = useState(!hasStocks);
   const [query, setQuery] = useState('');
@@ -63,7 +65,7 @@ export function ScreenerViewStockPicker({ view, universe, onAdd, hasStocks }: Pr
         <div className="h-5 w-5 rounded-full border border-dashed border-border/50 flex items-center justify-center shrink-0 group-hover:border-primary/50 transition-colors">
           <Plus className="h-3 w-3 group-hover:text-primary transition-colors" />
         </div>
-        Add stock to this view
+        {t('screenerAddStockToView')}
       </button>
     );
   }
@@ -78,7 +80,7 @@ export function ScreenerViewStockPicker({ view, universe, onAdd, hasStocks }: Pr
           autoFocus
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search by ticker or company name…"
+          placeholder={t('compareSearchPlaceholder')}
           className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/80"
           onKeyDown={(e) => {
             if (e.key === 'Escape') { setExpanded(false); setQuery(''); }
@@ -134,14 +136,14 @@ export function ScreenerViewStockPicker({ view, universe, onAdd, hasStocks }: Pr
       {/* Empty search state */}
       {q.length > 0 && suggestions.length === 0 && (
         <div className="px-3 py-4 text-xs text-muted-foreground/85 text-center">
-          No S&amp;P 500 stocks match &ldquo;{query}&rdquo;
+          {t('screenerNoStocksMatch', { query })}
         </div>
       )}
 
       {/* Hint when no query yet */}
       {q.length === 0 && (
         <div className="px-3 py-3 text-[11px] text-muted-foreground/80 text-center">
-          Type a ticker or company name to search the S&amp;P 500
+          {t('screenerSearchHint')}
         </div>
       )}
     </div>

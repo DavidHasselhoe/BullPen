@@ -1,6 +1,7 @@
 'use client';
 
 import { Reorder, useDragControls } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { SlidersHorizontal, GripVertical, Eye, EyeOff, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -21,6 +22,7 @@ function ColumnItem({
   hidden: boolean;
   onToggle: () => void;
 }) {
+  const { t } = useTranslation('tools');
   const controls = useDragControls();
 
   return (
@@ -34,7 +36,7 @@ function ColumnItem({
         type="button"
         onPointerDown={(e) => controls.start(e)}
         className="cursor-grab active:cursor-grabbing text-muted-foreground/80 hover:text-muted-foreground touch-none"
-        aria-label={`Reorder ${col.label}`}
+        aria-label={t('screenerReorderColumnAriaLabel', { label: col.label })}
       >
         <GripVertical className="h-3.5 w-3.5" />
       </button>
@@ -56,6 +58,7 @@ function ColumnItem({
 }
 
 export function ColumnChooser({ columns }: Props) {
+  const { t } = useTranslation('tools');
   const { orderedColumns, isHidden, toggle, showAll, hideAll, reorder, reset } = columns;
   const visibleCount = orderedColumns.filter((c) => !isHidden(c.key)).length;
   const orderedKeys = orderedColumns.map((c) => c.key);
@@ -65,15 +68,15 @@ export function ColumnChooser({ columns }: Props) {
       <PopoverTrigger asChild>
         <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs">
           <SlidersHorizontal className="h-3.5 w-3.5" />
-          Columns
+          {t('screenerColumnsButton')}
           <span className="text-muted-foreground/80">{visibleCount}</span>
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-64 p-2">
         <div className="flex items-center justify-between px-1.5 pb-2 mb-1 border-b border-border/60">
           <div className="flex flex-col">
-            <span className="text-xs font-semibold text-foreground">Columns</span>
-            <span className="text-[11px] text-muted-foreground/80">Drag to reorder · click to show/hide</span>
+            <span className="text-xs font-semibold text-foreground">{t('screenerColumnsButton')}</span>
+            <span className="text-[11px] text-muted-foreground/80">{t('screenerColumnsHint')}</span>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <button
@@ -81,7 +84,7 @@ export function ColumnChooser({ columns }: Props) {
               onClick={showAll}
               className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
             >
-              All
+              {t('screenerColumnsAll')}
             </button>
             <span className="text-border/60">·</span>
             <button
@@ -89,7 +92,7 @@ export function ColumnChooser({ columns }: Props) {
               onClick={hideAll}
               className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
             >
-              None
+              {t('screenerColumnsNone')}
             </button>
             <span className="text-border/60">·</span>
             <button
@@ -98,7 +101,7 @@ export function ColumnChooser({ columns }: Props) {
               className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
             >
               <RotateCcw className="h-3 w-3" />
-              Reset
+              {t('screenerColumnsReset')}
             </button>
           </div>
         </div>

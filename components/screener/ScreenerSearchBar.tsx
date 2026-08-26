@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { Search, X } from 'lucide-react';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
@@ -28,6 +29,7 @@ function looksLikeTicker(s: string): boolean {
 }
 
 export function ScreenerSearchBar({ universe, value, onChange }: Props) {
+  const { t } = useTranslation('tools');
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
   const [focused, setFocused] = useState(false);
@@ -169,7 +171,7 @@ export function ScreenerSearchBar({ universe, value, onChange }: Props) {
               <span className="font-mono font-semibold">{ticker}</span>
               <button
                 type="button"
-                aria-label={`Remove ${meta?.name ?? ticker}`}
+                aria-label={t('screenerRemoveTickerAriaLabel', { name: meta?.name ?? ticker })}
                 onClick={(e) => { e.stopPropagation(); onChange(value.filter((t) => t !== ticker)); }}
                 className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground/80 hover:bg-muted hover:text-foreground transition-colors"
               >
@@ -188,8 +190,8 @@ export function ScreenerSearchBar({ universe, value, onChange }: Props) {
           onPaste={handlePaste}
           onFocus={() => setFocused(true)}
           onBlur={() => setTimeout(() => setFocused(false), 120)}
-          placeholder={value.length === 0 ? 'Search stocks to compare — try "nvidia, broadcom, marvell"' : 'Add another…'}
-          aria-label="Search and pick stocks"
+          placeholder={value.length === 0 ? t('screenerSearchPlaceholderEmpty') : t('screenerSearchPlaceholderMore')}
+          aria-label={t('screenerSearchAriaLabel')}
           aria-expanded={showDropdown}
           role="combobox"
           aria-autocomplete="list"
@@ -206,7 +208,7 @@ export function ScreenerSearchBar({ universe, value, onChange }: Props) {
             onClick={(e) => { e.stopPropagation(); onChange([]); setQuery(''); }}
             className="ml-auto shrink-0 rounded px-1.5 py-1 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
-            Clear all
+            {t('screenerClearAll')}
           </button>
         )}
       </div>
@@ -240,9 +242,9 @@ export function ScreenerSearchBar({ universe, value, onChange }: Props) {
           {suggestions.length === 0 && (
             <li className="px-3 py-3 text-xs text-muted-foreground/85" aria-live="polite">
               {noMatchAddable ? (
-                <>No company match, press <kbd className="rounded border border-border bg-muted px-1 font-mono text-[11px]">Enter</kbd> to add <span className="font-mono font-semibold text-foreground">{query.trim().toUpperCase()}</span> as a ticker</>
+                <>{t('screenerNoCompanyMatchPrefix')} <kbd className="rounded border border-border bg-muted px-1 font-mono text-[11px]">{t('screenerEnterKey')}</kbd> {t('screenerNoCompanyMatchSuffix', { ticker: query.trim().toUpperCase() })}</>
               ) : (
-                <>No matches for &ldquo;{query.trim()}&rdquo;</>
+                <>{t('screenerNoMatchesFor', { query: query.trim() })}</>
               )}
             </li>
           )}

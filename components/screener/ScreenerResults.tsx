@@ -2,6 +2,8 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useRouter } from 'next/navigation';
 import { useEntitlements } from '@/hooks/use-entitlements';
 import { ProBadge } from '@/components/billing/ProBadge';
@@ -22,7 +24,7 @@ import type { ScreenerRow } from '@/app/api/screener/route';
 import type { HeatmapPriceEntry } from '@/hooks/use-heatmap-stream';
 import { cn } from '@/lib/utils';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
-import { SCREENER_COLUMNS, computeRvol, type ScreenerColumn } from './screener-columns';
+import { SCREENER_COLUMNS, getScreenerColumns, computeRvol, type ScreenerColumn } from './screener-columns';
 import { AlertDialog } from '@/components/alerts/AlertDialog';
 
 type SortDir = 'asc' | 'desc';
@@ -32,13 +34,13 @@ const PAGE_SIZE_OPTIONS = [25, 50, 100];
 const STALE_AFTER_DAYS = 3;
 
 /** Returns a tooltip label when a row's fundamentals are older than the freshness window. */
-function stalenessLabel(updatedAt: string | null | undefined): string | null {
+function stalenessLabel(updatedAt: string | null | undefined, t: TFunction): string | null {
   if (!updatedAt) return null;
   const ms = Date.now() - new Date(updatedAt).getTime();
   if (!isFinite(ms) || ms < 0) return null;
   const days = Math.floor(ms / 86_400_000);
   if (days < STALE_AFTER_DAYS) return null;
-  return `Fundamentals as of ${days} day${days === 1 ? '' : 's'} ago`;
+  return t('screenerStalenessLabel', { count: days });
 }
 
 interface ScreenerResultsProps {
@@ -64,9 +66,11 @@ export function ScreenerResults({
   onPageChange,
   onPageSizeChange,
 }: ScreenerResultsProps) {
+  const { t } = useTranslation('tools');
   const router = useRouter();
   const { isPro } = useEntitlements();
-  const columns = visibleColumns ?? SCREENER_COLUMNS;
+  const fallbackColumns = useMemo(() => getScreenerColumns(t), [t]);
+  const columns = visibleColumns ?? fallbackColumns;
   const [sortKey, setSortKey] = useState<string>('market_cap');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
 
@@ -106,7 +110,7 @@ export function ScreenerResults({
   const exportCSV = useCallback(() => {
     // CSV export is a Pro feature — free users are routed to /upgrade.
     if (!isPro) { router.push('/upgrade'); return; }
-    const headers = ['Company', 'Ticker', 'Sector', ...columns.map((c) => c.label)];
+    const headers = [t('screenerCompanyColumnLabel'), t('screenerCsvTicker'), t('screenerCsvSector'), ...columns.map((c) => c.label)];
     const rows = sorted.map((row) => {
       const live = livePrices?.get(row.ticker);
       const cells = [
@@ -128,7 +132,7 @@ export function ScreenerResults({
     a.download = `screener-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-  }, [sorted, columns, livePrices, isPro, router]);
+  }, [sorted, columns, livePrices, isPro, router, t]);
 
   const toggleSort = (key: string) => {
     if (sortKey === key) {
@@ -146,26 +150,13 @@ export function ScreenerResults({
       : <ArrowDown className="h-3 w-3 text-primary" />;
   };
 
-  if (data.length === 0) {
+  if (data.length === 0 || sorted.length === 0) {
     return (
       <div className="flex items-center justify-center py-10">
         <EmptyState
           pose="search"
-          title="No matches"
-          description="No companies match the current filters. Try widening or clearing them."
-          imageSize={140}
-        />
-      </div>
-    );
-  }
-
-  if (sorted.length === 0) {
-    return (
-      <div className="flex items-center justify-center py-10">
-        <EmptyState
-          pose="search"
-          title="No matches"
-          description="No companies match the current filters. Try widening or clearing them."
+          title={t('screenerNoMatchesTitle')}
+          description={t('screenerNoMatchesDescription')}
           imageSize={140}
         />
       </div>
@@ -180,13 +171,13 @@ export function ScreenerResults({
       {/* ── Mobile: sort control + card list (the table is unusable < md) ── */}
       <div className="space-y-2 md:hidden">
         <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">Sort</span>
+          <span className="text-xs text-muted-foreground">{t('screenerSortLabel')}</span>
           <select
             value={sortKey}
             onChange={(e) => setSortKey(e.target.value)}
             className="h-8 flex-1 rounded-md border border-input bg-background px-2 text-xs"
           >
-            <option value="ticker">Ticker</option>
+            <option value="ticker">{t('screenerCsvTicker')}</option>
             {columns.map((c) => (
               <option key={c.key} value={c.key}>{c.label}</option>
             ))}
@@ -194,7 +185,7 @@ export function ScreenerResults({
           <button
             type="button"
             onClick={() => setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))}
-            aria-label={`Sort ${sortDir === 'asc' ? 'descending' : 'ascending'}`}
+            aria-label={sortDir === 'asc' ? t('screenerSortDescendingAriaLabel') : t('screenerSortAscendingAriaLabel')}
             className="flex h-8 w-8 items-center justify-center rounded-md border border-input text-muted-foreground hover:text-foreground"
           >
             {sortDir === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
@@ -203,7 +194,7 @@ export function ScreenerResults({
 
         {paginated.map((row) => {
           const live = livePrices?.get(row.ticker);
-          const stale = stalenessLabel(row.updated_at);
+          const stale = stalenessLabel(row.updated_at, t);
           return (
             <div key={row.ticker} className="rounded-xl border bg-card p-3">
               <div className="flex items-start justify-between gap-2">
@@ -225,7 +216,7 @@ export function ScreenerResults({
                     <button
                       type="button"
                       className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-muted-foreground/80 hover:bg-muted/60 hover:text-foreground"
-                      title={`Set alert for ${row.ticker}`}
+                      title={t('screenerSetAlertFor', { ticker: row.ticker })}
                     >
                       <Bell className="h-4 w-4" />
                     </button>
@@ -259,7 +250,7 @@ export function ScreenerResults({
                   onClick={() => toggleSort('ticker')}
                   className="flex items-center gap-1 text-xs font-medium hover:text-foreground"
                 >
-                  Company {sortIcon('ticker')}
+                  {t('screenerCompanyColumnLabel')} {sortIcon('ticker')}
                 </button>
               </TableHead>
 
@@ -304,7 +295,7 @@ export function ScreenerResults({
                             {row.ticker}
                           </span>
                           {(() => {
-                            const stale = stalenessLabel(row.updated_at);
+                            const stale = stalenessLabel(row.updated_at, t);
                             return stale ? (
                               <span
                                 className="ml-1 inline-block h-1.5 w-1.5 rounded-full bg-amber-400/70 align-middle"
@@ -332,7 +323,7 @@ export function ScreenerResults({
                             <button
                               type="button"
                               className="h-6 w-6 rounded flex items-center justify-center text-muted-foreground/85 hover:text-foreground hover:bg-muted/60 transition-colors"
-                              title={`Set alert for ${row.ticker}`}
+                              title={t('screenerSetAlertFor', { ticker: row.ticker })}
                             >
                               <Bell className="h-3.5 w-3.5" />
                             </button>
@@ -362,16 +353,16 @@ export function ScreenerResults({
       <div className="flex items-center justify-between px-1">
         <div className="flex items-center gap-3">
           <p className="text-xs text-muted-foreground">
-            Showing {startItem}–{endItem} of {sorted.length} results
+            {t('screenerShowingResults', { start: startItem, end: endItem, total: sorted.length })}
           </p>
           <button
             type="button"
             onClick={exportCSV}
             className="flex items-center gap-1 text-xs text-muted-foreground/80 hover:text-foreground transition-colors"
-            title={isPro ? 'Export all results to CSV' : 'CSV export is a Pro feature'}
+            title={isPro ? t('screenerExportCsvTitle') : t('screenerExportCsvProOnly')}
           >
             <Download className="h-3 w-3" />
-            CSV
+            {t('screenerCsvLabel')}
             {!isPro && <ProBadge className="ml-0.5" />}
           </button>
         </div>
