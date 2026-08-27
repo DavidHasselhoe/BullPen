@@ -1,6 +1,7 @@
 'use client';
 
 import { memo, useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -222,6 +223,7 @@ function DayChangeCell({
   currency: CurrencyCode;
   roundNumbers: boolean;
 }) {
+  const { t } = useTranslation('holdings');
   const trigger = (
     <div className={cn('flex items-center gap-1 animate-in fade-in duration-300', colorClass)}>
       {isPositive ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
@@ -233,7 +235,7 @@ function DayChangeCell({
 
   if (dayChange === undefined) {
     return (
-      <div title={isPriceStale ? 'Last close — live price unavailable right now' : undefined}>
+      <div title={isPriceStale ? t('holdingsTableStaleLastClose') : undefined}>
         {trigger}
       </div>
     );
@@ -248,7 +250,9 @@ function DayChangeCell({
         <div className="cursor-default">{trigger}</div>
       </TooltipTrigger>
       <TooltipContent>
-        {signedAmount} today{isPriceStale ? ' · Last close' : ''}
+        {isPriceStale
+          ? t('holdingsTableTodayLastClose', { amount: signedAmount })
+          : t('holdingsTableToday', { amount: signedAmount })}
       </TooltipContent>
     </Tooltip>
   );
@@ -294,6 +298,7 @@ const HoldingRow = memo(function HoldingRow({
   onSell,
   onAddPurchase,
 }: HoldingRowProps) {
+  const { t } = useTranslation('holdings');
   const queryClient = useQueryClient();
   const isPositive = (holding.dayChangePercent ?? 0) >= 0;
   const plIsPositive = (holding.unrealizedPLPercent ?? 0) >= 0;
@@ -336,7 +341,7 @@ const HoldingRow = memo(function HoldingRow({
               </span>
               {holding.source === 'snaptrade' && (
                 <span className="inline-flex items-center rounded-full bg-blue-500/10 px-1.5 py-0 text-[11px] font-medium text-blue-400 border border-blue-500/20">
-                  synced
+                  {t('holdingsTableSynced')}
                 </span>
               )}
             </div>
@@ -358,7 +363,7 @@ const HoldingRow = memo(function HoldingRow({
         {showPriceSkeleton ? <PriceSkeleton /> : holding.currentPrice !== undefined ? (
           <span
             className={cn('animate-in fade-in duration-300', holding.isPriceStale && 'text-muted-foreground/85')}
-            title={holding.isPriceStale ? 'Last close — live price unavailable right now' : undefined}
+            title={holding.isPriceStale ? t('holdingsTableStaleLastClose') : undefined}
           >
             {formatCurrencyValue(holding.currentPrice, currency, roundNumbers ? { round: true } : undefined)}
           </span>
@@ -428,7 +433,7 @@ const HoldingRow = memo(function HoldingRow({
             size="sm"
             onClick={() => onEdit(holding)}
             disabled={anyPending || isEditModalOpen}
-            title="Edit holding"
+            title={t('holdingsTableEditHolding')}
           >
             <Edit2 className="h-4 w-4" />
           </Button>
@@ -438,7 +443,7 @@ const HoldingRow = memo(function HoldingRow({
               size="sm"
               onClick={() => onSell(holding)}
               disabled={anyPending}
-              title="Sell shares"
+              title={t('holdingsTableSellShares')}
             >
               <DollarSign className="h-4 w-4" />
             </Button>
@@ -449,7 +454,7 @@ const HoldingRow = memo(function HoldingRow({
               size="sm"
               onClick={() => onAddPurchase(holding)}
               disabled={anyPending}
-              title="Add purchase"
+              title={t('holdingsTableAddPurchase')}
             >
               <PlusCircle className="h-4 w-4" />
             </Button>
@@ -459,7 +464,7 @@ const HoldingRow = memo(function HoldingRow({
             size="sm"
             onClick={() => onRemove({ id: holding.id, symbol: holding.symbol, companyName: holding.company_name, quantity: holding.quantity ?? 0 })}
             disabled={anyPending}
-            title={isDeletingThis ? 'Removing…' : 'Remove holding'}
+            title={isDeletingThis ? t('holdingsTableRemoving') : t('holdingsTableRemoveHolding')}
           >
             {isDeletingThis ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
           </Button>
@@ -487,6 +492,7 @@ const HoldingRow = memo(function HoldingRow({
 // ─── Main table ───────────────────────────────────────────────────────────────
 
 export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: externalHoldings, hoveredSector, isPricesLoading }: HoldingsTableProps) {
+  const { t } = useTranslation('holdings');
   const { data: holdings, isLoading } = useHoldings();
   const { user } = useAuth();
   const { roundNumbers } = useUserSettings();
@@ -749,7 +755,7 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
         <Card>
           <CardHeader>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <CardTitle>My Holdings</CardTitle>
+              <CardTitle>{t('holdingsTableTitle')}</CardTitle>
               <Skeleton className="h-8 w-56 rounded-lg" />
             </div>
           </CardHeader>
@@ -758,16 +764,16 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-border/50">
-                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Symbol</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Quantity</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Avg Price</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Current Price</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Day Change</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Market Value</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Unrealized P/L</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Allocation</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('holdingsTableColSymbol')}</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('holdingsTableColQuantity')}</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground"><TermTooltip term="Avg Price" /></th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('holdingsTableColCurrentPrice')}</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground"><TermTooltip term="Day Change" /></th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('holdingsTableColMarketValue')}</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground"><TermTooltip term="Unrealized P/L" /></th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('holdingsTableColAllocation')}</th>
                     <th className="py-3 px-4" />
-                    <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">Actions</th>
+                    <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">{t('holdingsTableColActions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -787,12 +793,12 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
     return (
       <Card>
         <CardHeader>
-          <CardTitle>My Holdings</CardTitle>
+          <CardTitle>{t('holdingsTableTitle')}</CardTitle>
         </CardHeader>
         <CardContent className="py-6">
           <EmptyState
-            title="No holdings yet"
-            description="Add stocks to track your portfolio, see performance, and get AI-powered insights."
+            title={t('holdingsTableEmptyTitle')}
+            description={t('holdingsTableEmptyDescription')}
           >
             <div className="mx-auto flex max-w-md flex-col gap-2 sm:flex-row">
               {onAddClick && (
@@ -803,7 +809,7 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
                   <span className="flex items-center justify-center h-8 w-8 rounded-full border-2 border-dashed border-border/60 group-hover:border-primary/50 transition-colors">
                     <Plus className="h-4 w-4" />
                   </span>
-                  <span className="text-sm font-medium">Add your first holding</span>
+                  <span className="text-sm font-medium">{t('holdingsTableAddFirstHolding')}</span>
                 </button>
               )}
               {onImportClick && (
@@ -814,7 +820,7 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
                   <span className="flex items-center justify-center h-8 w-8 rounded-full border-2 border-dashed border-border/60 group-hover:border-emerald-500/40 transition-colors">
                     <Upload className="h-4 w-4" />
                   </span>
-                  <span className="text-sm font-medium">Import from CSV</span>
+                  <span className="text-sm font-medium">{t('holdingsTableImportFromCsv')}</span>
                 </button>
               )}
             </div>
@@ -838,7 +844,7 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
     <Card>
       <CardHeader>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <CardTitle>My Holdings</CardTitle>
+          <CardTitle>{t('holdingsTableTitle')}</CardTitle>
           <div className="flex items-center gap-2">
             {onImportClick && (
               <button
@@ -846,17 +852,17 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
                 className="flex items-center gap-1.5 h-8 rounded-lg border border-border/60 bg-muted/30 px-3 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-border hover:bg-muted/60 transition-colors"
               >
                 <Upload className="h-3.5 w-3.5" />
-                Import CSV
+                {t('holdingsTableImportCsv')}
               </button>
             )}
             {sortedHoldings.length > 0 && (
               <button
                 onClick={handleExport}
-                title={isPro ? 'Export holdings to CSV' : 'Exporting is a Pro feature'}
+                title={isPro ? t('holdingsTableExportTitle') : t('holdingsTableExportProOnlyTitle')}
                 className="flex items-center gap-1.5 h-8 rounded-lg border border-border/60 bg-muted/30 px-3 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-border hover:bg-muted/60 transition-colors"
               >
                 <Download className="h-3.5 w-3.5" />
-                Export CSV
+                {t('holdingsTableExportCsv')}
                 {!isPro && <ProBadge className="ml-0.5" />}
               </button>
             )}
@@ -866,7 +872,7 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
             <input
               type="text"
-              placeholder="Search holdings…"
+              placeholder={t('holdingsTableSearchPlaceholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full h-8 pl-8 pr-7 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring placeholder:text-muted-foreground"
@@ -884,7 +890,7 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
         </div>
         {search && (
           <p className="text-xs text-muted-foreground mt-1">
-            Showing {filteredHoldings.length} of {sortedHoldings.length} holding{sortedHoldings.length !== 1 ? 's' : ''}
+            {t('holdingsTableSearchSummary', { filtered: filteredHoldings.length, count: sortedHoldings.length })}
           </p>
         )}
       </CardHeader>
@@ -892,7 +898,7 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
         {/* Mobile: card list (the 10-column table is unusable < md) */}
         <div className="space-y-2 md:hidden">
           {filteredHoldings.length === 0 && search && (
-            <p className="py-8 text-center text-sm text-muted-foreground">No holdings match &ldquo;{search}&rdquo;</p>
+            <p className="py-8 text-center text-sm text-muted-foreground">{t('holdingsTableNoMatch', { search })}</p>
           )}
           {filteredHoldings.map((holding) => {
             const isPos = (holding.dayChangePercent ?? 0) >= 0;
@@ -910,46 +916,46 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
                     </div>
                   </Link>
                   <div className="flex shrink-0 items-center gap-1">
-                    <button onClick={() => handleEditRow(holding)} disabled={removeHolding.isPending || isEditModalOpen} title="Edit holding" className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/60 hover:text-foreground">
+                    <button onClick={() => handleEditRow(holding)} disabled={removeHolding.isPending || isEditModalOpen} title={t('holdingsTableEditHolding')} className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/60 hover:text-foreground">
                       <Edit2 className="h-4 w-4" />
                     </button>
                     {holding.source === 'manual' && (
-                      <button onClick={() => handleSellRow(holding)} disabled={removeHolding.isPending} title="Sell shares" className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/60 hover:text-foreground">
+                      <button onClick={() => handleSellRow(holding)} disabled={removeHolding.isPending} title={t('holdingsTableSellShares')} className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/60 hover:text-foreground">
                         <DollarSign className="h-4 w-4" />
                       </button>
                     )}
                     {holding.source === 'manual' && (
-                      <button onClick={() => handleAddPurchaseRow(holding)} disabled={removeHolding.isPending} title="Add purchase" className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/60 hover:text-foreground">
+                      <button onClick={() => handleAddPurchaseRow(holding)} disabled={removeHolding.isPending} title={t('holdingsTableAddPurchase')} className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/60 hover:text-foreground">
                         <PlusCircle className="h-4 w-4" />
                       </button>
                     )}
-                    <button onClick={() => handleRemoveRow({ id: holding.id, symbol: holding.symbol, companyName: holding.company_name, quantity: holding.quantity ?? 0 })} disabled={removeHolding.isPending} title="Remove holding" className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-red-500/10 hover:text-red-400">
+                    <button onClick={() => handleRemoveRow({ id: holding.id, symbol: holding.symbol, companyName: holding.company_name, quantity: holding.quantity ?? 0 })} disabled={removeHolding.isPending} title={t('holdingsTableRemoveHolding')} className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-red-500/10 hover:text-red-400">
                       {removeHolding.isPending && deletingHolding?.id === holding.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                     </button>
                   </div>
                 </div>
                 <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
                   <HoldingField
-                    label="Price"
+                    label={t('holdingsTableFieldPrice')}
                     valueClass={holding.isPriceStale ? 'text-muted-foreground/85' : undefined}
-                    title={holding.isPriceStale ? 'Last close — live price unavailable right now' : undefined}
+                    title={holding.isPriceStale ? t('holdingsTableStaleLastClose') : undefined}
                     value={holding.currentPrice !== undefined ? formatCurrencyValue(holding.currentPrice, ccy, opts) : '—'}
                   />
                   <HoldingField
-                    label="Day"
+                    label={t('holdingsTableFieldDay')}
                     valueClass={cn(isPos ? 'text-green-500' : 'text-red-500', holding.isPriceStale && 'opacity-60')}
-                    title={holding.isPriceStale ? 'Last close — live price unavailable right now' : undefined}
+                    title={holding.isPriceStale ? t('holdingsTableStaleLastClose') : undefined}
                     value={holding.dayChangePercent !== undefined ? formatPercentUtil(holding.dayChangePercent, roundNumbers) : '—'}
                   />
-                  <HoldingField label="Value" value={holding.marketValue !== undefined ? formatCurrencyValue(holding.marketValue, ccy, opts) : '—'} />
-                  <HoldingField label="P/L" valueClass={plPos ? 'text-green-500' : 'text-red-500'} value={holding.unrealizedPL !== undefined ? formatCurrencyValue(holding.unrealizedPL, ccy, opts) : '—'} />
+                  <HoldingField label={t('holdingsTableFieldValue')} value={holding.marketValue !== undefined ? formatCurrencyValue(holding.marketValue, ccy, opts) : '—'} />
+                  <HoldingField label={t('holdingsTableFieldPl')} valueClass={plPos ? 'text-green-500' : 'text-red-500'} value={holding.unrealizedPL !== undefined ? formatCurrencyValue(holding.unrealizedPL, ccy, opts) : '—'} />
                 </div>
               </div>
             );
           })}
           {onAddClick && (
             <button onClick={onAddClick} className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border/60 py-3 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary">
-              <Plus className="h-4 w-4" /> Add holding
+              <Plus className="h-4 w-4" /> {t('holdingsTableAddHolding')}
             </button>
           )}
         </div>
@@ -963,17 +969,17 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
                     onClick={() => handleSort('symbol')}
                     className="hover:text-foreground transition-colors"
                   >
-                    Symbol
+                    {t('holdingsTableColSymbol')}
                   </button>
                 </th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-                  Quantity
+                  {t('holdingsTableColQuantity')}
                 </th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
                   <TermTooltip term="Avg Price" />
                 </th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-                  Current Price
+                  {t('holdingsTableColCurrentPrice')}
                 </th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
                   <TermTooltip term="Day Change" />
@@ -983,7 +989,7 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
                     onClick={() => handleSort('marketValue')}
                     className="hover:text-foreground transition-colors"
                   >
-                    Market Value
+                    {t('holdingsTableColMarketValue')}
                   </button>
                 </th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
@@ -994,12 +1000,12 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
                     onClick={() => handleSort('allocation')}
                     className="hover:text-foreground transition-colors"
                   >
-                    Allocation
+                    {t('holdingsTableColAllocation')}
                   </button>
                 </th>
                 <th className="py-3 px-4" />
                 <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">
-                  Actions
+                  {t('holdingsTableColActions')}
                 </th>
               </tr>
             </thead>
@@ -1007,7 +1013,7 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
               {filteredHoldings.length === 0 && search && (
                 <tr>
                   <td colSpan={10} className="py-8 text-center text-sm text-muted-foreground">
-                    No holdings match &ldquo;{search}&rdquo;
+                    {t('holdingsTableNoMatch', { search })}
                   </td>
                 </tr>
               )}
@@ -1041,7 +1047,7 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
                       <span className="flex items-center justify-center h-8 w-8 rounded-full border border-dashed border-border/60 group-hover:border-primary/50 group-hover:bg-primary/5 transition-colors">
                         <Plus className="h-4 w-4" />
                       </span>
-                      <span className="text-sm font-medium">Add holding</span>
+                      <span className="text-sm font-medium">{t('holdingsTableAddHolding')}</span>
                     </button>
                   </td>
                 </tr>
