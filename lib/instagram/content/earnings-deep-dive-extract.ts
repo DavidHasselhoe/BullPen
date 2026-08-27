@@ -40,6 +40,7 @@ function getAnthropic(): Anthropic {
 
 const ExtractedSchema = z.object({
   companyName: z.string().nullable(),
+  fiscalPeriodLabel: z.string().nullable(),
   epsActualGaap: z.number().nullable(),
   epsActualNonGaap: z.number().nullable(),
   revenueActual: z.number().nullable(), // dollars
@@ -68,9 +69,10 @@ Rules:
 - "freeCashFlow" is operating cash flow minus capital expenditures, only if the release states a free cash flow figure directly (or explicitly labels one line "free cash flow") — do not compute it yourself from separate operating cash flow and capex lines unless the release places them adjacent specifically to state free cash flow.
 - Guidance figures are for the NEXT quarter (the quarter after the one just reported), not the quarter just reported.
 - reportTiming: "AMC" if the release says after market close / after the bell, "BMO" if before market open, null if genuinely unclear.
+- fiscalPeriodLabel: which fiscal period this release reports, exactly as the company itself states it (nearly always right in the headline/title, e.g. "NVIDIA Announces Financial Results for Second Quarter Fiscal 2026" or "Reports Q2 FY26 Results"). Normalize to a short "Q<n> FY<yyyy>" form (e.g. "Q2 FY2026") when the release names a specific quarter; use "FY<yyyy>" alone (e.g. "FY2026") when it's a full fiscal-year report with no quarter named (e.g. "IREN Reports FY26 Results"). Expand a 2-digit fiscal year to 4 digits. This is the company's OWN fiscal calendar, which for many companies does not match the calendar year — never compute or guess it from the filing date, only from what the release itself states.
 
 Output ONLY a JSON object with exactly these fields, no markdown fences, no commentary:
-{"companyName": string|null, "epsActualGaap": number|null, "epsActualNonGaap": number|null, "revenueActual": number|null, "revenueYoyGrowthPercent": number|null, "segmentRevenueActual": number|null, "segmentYoyGrowthPercent": number|null, "grossMarginActualGaapPercent": number|null, "grossMarginActualNonGaapPercent": number|null, "operatingMarginNonGaapPercent": number|null, "freeCashFlow": number|null, "guidanceRevenueLow": number|null, "guidanceRevenueHigh": number|null, "reportTiming": "BMO"|"AMC"|null}`;
+{"companyName": string|null, "fiscalPeriodLabel": string|null, "epsActualGaap": number|null, "epsActualNonGaap": number|null, "revenueActual": number|null, "revenueYoyGrowthPercent": number|null, "segmentRevenueActual": number|null, "segmentYoyGrowthPercent": number|null, "grossMarginActualGaapPercent": number|null, "grossMarginActualNonGaapPercent": number|null, "operatingMarginNonGaapPercent": number|null, "freeCashFlow": number|null, "guidanceRevenueLow": number|null, "guidanceRevenueHigh": number|null, "reportTiming": "BMO"|"AMC"|null}`;
 }
 
 /**

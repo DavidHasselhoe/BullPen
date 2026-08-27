@@ -172,6 +172,11 @@ export interface EarningsDeepDiveData {
   logoUrl: string | null;
   reportDate: string; // YYYY-MM-DD
   reportTiming: 'BMO' | 'AMC' | null;
+  /** e.g. "Q2 FY2026", or "FY2026" for a full-year-only report (see IREN) —
+   *  the company's own stated fiscal period, extracted from the release
+   *  itself (earnings-deep-dive-extract.ts), never computed from reportDate.
+   *  null until the real filing lands; the pre-report draft doesn't know it. */
+  fiscalPeriodLabel: string | null;
 
   // Hero / EPS
   epsEstimate: number | null;

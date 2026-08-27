@@ -947,7 +947,7 @@ export function DeepDiveSummarySlide({ data }: DeepDiveSlideProps): any {
           <CompanyIdentity data={data} badgeSize={80} />
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: 22, color: MUTED }}>
-              {formatDateHeader(data.reportDate)}
+              {data.fiscalPeriodLabel ? `${data.fiscalPeriodLabel} · ` : ''}{formatDateHeader(data.reportDate)}
             </span>
             <ReportTimingBadge timing={data.reportTiming} />
           </div>

@@ -113,6 +113,7 @@ export async function seedEarningsDeepDiveDraft(params: {
     logoUrl,
     reportDate: params.reportDate,
     reportTiming: params.reportTiming,
+    fiscalPeriodLabel: null,
     epsEstimate: estimates.epsEstimate,
     epsActual: null,
     epsStatus: null,
@@ -167,6 +168,7 @@ async function writeHeadlineAndCaption(data: EarningsDeepDiveData): Promise<{ he
   }
 
   const facts = [
+    data.fiscalPeriodLabel ? `Fiscal period: ${data.fiscalPeriodLabel}` : null,
     `EPS: ${data.epsActual ?? 'N/A'} actual vs ${data.epsEstimate ?? 'N/A'} estimate (${data.epsStatus ?? 'unconfirmed'})`,
     `Revenue: ${data.revenueActual ?? 'N/A'} actual vs ${data.revenueEstimate ?? 'N/A'} estimate (${data.revenueStatus ?? 'unconfirmed'}), YoY growth ${data.revenueYoyGrowthPercent ?? 'N/A'}%`,
     data.segmentLabel ? `${data.segmentLabel} revenue: ${data.segmentRevenueActual ?? 'N/A'}` : null,
@@ -263,6 +265,7 @@ export async function completeEarningsDeepDiveFromFiling(
     ...draft,
     companyName: extracted.companyName ?? draft.companyName,
     reportTiming: extracted.reportTiming ?? draft.reportTiming,
+    fiscalPeriodLabel: extracted.fiscalPeriodLabel,
     epsActual,
     epsStatus: statusFor(draft.epsEstimate, epsActual),
     epsSurprisePercent: surprisePercent(draft.epsEstimate, epsActual),
