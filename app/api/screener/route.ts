@@ -133,6 +133,21 @@ async function handler(request: NextRequest) {
   const scopeAll = scope === 'all';
   const scopeSp500 = scope === 'sp500';
 
+  // Cheap path for the "View all (N)" pill — it needs the full database
+  // ticker count regardless of whichever view/filters are currently active,
+  // so it can't reuse the main query's `total` (that's scoped to the current
+  // view). Fetches tickers only (not `select('*')`) and applies the same
+  // dual-class dedup as the full "all" scope below, so this stays exactly
+  // consistent with what that view's own `total` would read.
+  if (scopeAll && sp.get('countOnly') === '1') {
+    const { data, error } = await supabase.from('screener_stats').select('ticker');
+    if (error) {
+      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    }
+    const total = (data ?? []).filter((r) => !isDuplicateShareClass(r.ticker)).length;
+    return NextResponse.json({ success: true, total });
+  }
+
   // --- Parse filter params ---
   const sector = sp.get('sector') || undefined;
   const industry = sp.get('industry') || undefined;

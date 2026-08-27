@@ -32,6 +32,7 @@ export type ActiveView =
 interface Props {
   activeView: ActiveView;
   onViewChange: (view: ActiveView) => void;
+  totalCount?: number;
 }
 
 const pillBase =
@@ -91,7 +92,7 @@ function RenamePill({
   );
 }
 
-export function ScreenerViewBar({ activeView, onViewChange }: Props) {
+export function ScreenerViewBar({ activeView, onViewChange, totalCount }: Props) {
   const { t } = useTranslation('tools');
   const { isAuthenticated } = useAuth();
   const { data: watchlistItems = [] } = useWatchlist();
@@ -142,7 +143,7 @@ export function ScreenerViewBar({ activeView, onViewChange }: Props) {
         onClick={() => onViewChange({ type: 'all' })}
         className={cn(pillBase, isActive({ type: 'all' }) ? pillActive : pillInactive)}
       >
-        {t('screenerViewAll')}
+        {t('screenerViewAll', { total: totalCount ?? '…' })}
       </button>
 
       {/* S&P 500 */}

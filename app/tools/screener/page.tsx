@@ -195,6 +195,19 @@ function ScreenerContent() {
     placeholderData: keepPreviousData,
   });
 
+  // Full database ticker count, decoupled from the active view/filters — powers
+  // the "View all (N)" pill, which must show the same number no matter which
+  // view is currently selected.
+  const { data: allTotalData } = useQuery<{ success: boolean; total: number }>({
+    queryKey: ['screener-all-total'],
+    queryFn: async () => {
+      const res = await fetch('/api/screener?scope=all&countOnly=1');
+      if (!res.ok) throw new Error('Failed to fetch screener total');
+      return res.json();
+    },
+    staleTime: 10 * 60 * 1000,
+  });
+
   // Cache company universe whenever we have a full market set loaded
   useEffect(() => {
     if ((activeView.type === 'sp500' || activeView.type === 'all') && data?.results && data.results.length > 10) {
@@ -418,7 +431,7 @@ function ScreenerContent() {
 
       {/* View bar — dimmed while cherry-picking since picks override the view */}
       <div className={cn('mb-5 transition-opacity', pickedTickers.length > 0 && 'opacity-40 pointer-events-none')}>
-        <ScreenerViewBar activeView={activeView} onViewChange={handleViewChange} />
+        <ScreenerViewBar activeView={activeView} onViewChange={handleViewChange} totalCount={allTotalData?.total} />
       </div>
 
       <div className="flex gap-4">
