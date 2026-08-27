@@ -89,12 +89,13 @@ export async function GET(
     const d = (slides as EarningsDeepDiveSlides).data;
     element = kind === 'deepdive_summary'
       ? <DeepDiveSummarySlide data={d} />
-      : <CTASlide slideIndex={slideIndex} totalSlides={total} />;
+      : <CTASlide slideIndex={slideIndex} totalSlides={total} variant="earnings_deep_dive" ticker={d.ticker} />;
   } else if (slides.contentType === 'market_movers') {
+    const sessionPrefix = slides.sessionLabel ?? 'Daily';
     if (kind === 'winners') {
       element = (
         <MoversListSlide
-          title="Daily Winners"
+          title={`${sessionPrefix} Winners`}
           subtitle={`S&P 500 & Nasdaq 100 · ${slides.dateLabel}`}
           entries={slides.winners}
           positive
@@ -105,7 +106,7 @@ export async function GET(
     } else if (kind === 'losers') {
       element = (
         <MoversListSlide
-          title="Daily Losers"
+          title={`${sessionPrefix} Losers`}
           subtitle={`S&P 500 & Nasdaq 100 · ${slides.dateLabel}`}
           entries={slides.losers}
           positive={false}
@@ -114,7 +115,7 @@ export async function GET(
         />
       );
     } else {
-      element = <CTASlide slideIndex={slideIndex} totalSlides={total} />;
+      element = <CTASlide slideIndex={slideIndex} totalSlides={total} variant="market_movers" />;
     }
   } else {
     const isResults = slides.contentType === 'earnings_results';
@@ -135,7 +136,13 @@ export async function GET(
         />
       );
     } else if (kind === 'cta') {
-      element = <CTASlide slideIndex={slideIndex} totalSlides={total} />;
+      element = (
+        <CTASlide
+          slideIndex={slideIndex}
+          totalSlides={total}
+          variant={isResults ? 'earnings_results' : 'earnings_calendar'}
+        />
+      );
     } else {
       const listSlideIdx = slideIndex - 1;
       const pageCompanies = slides.companies.slice(

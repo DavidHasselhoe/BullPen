@@ -3,12 +3,18 @@
  * Loads CRON_SECRET from .env.local and calls /api/cron/market-movers-daily.
  *
  * Usage: npm run trigger-market-movers
+ *        npm run trigger-market-movers -- --preMarket --context="$NVDA reported earnings after yesterday's close"
  * (Ensure the dev server is running: npm run dev)
  */
 
 import { config } from 'dotenv';
 
 config({ path: '.env.local' });
+
+function argValue(flag: string): string | undefined {
+  const arg = process.argv.find((a) => a.startsWith(`--${flag}=`));
+  return arg?.slice(flag.length + 3);
+}
 
 async function main() {
   const secret = process.env.CRON_SECRET;
@@ -19,7 +25,15 @@ async function main() {
     process.exit(1);
   }
 
-  const url = `${base}/api/cron/market-movers-daily`;
+  const preMarket = process.argv.includes('--preMarket');
+  const context = argValue('context');
+
+  const params = new URLSearchParams();
+  if (preMarket) params.set('preMarket', 'true');
+  if (context) params.set('contextNote', context);
+  const qs = params.toString();
+
+  const url = `${base}/api/cron/market-movers-daily${qs ? `?${qs}` : ''}`;
   console.log('Calling', url, '...\n');
 
   const res = await fetch(url, {

@@ -63,6 +63,11 @@ export async function resolveLogoUrl(appUrl: string, ticker: string): Promise<st
  */
 export const MARKET_DATA_DISCLAIMER = 'Not financial advice. Prices and % changes as of market close.';
 
+/** Pre-market special-edition sibling — "as of market close" is factually
+ *  wrong for a post built from live pre-market quotes (see
+ *  generateMarketMoversContent's preMarket option). */
+export const MARKET_DATA_DISCLAIMER_PRE_MARKET = 'Not financial advice. Prices and % changes are live pre-market quotes and can move sharply before the open.';
+
 /** Single-date sibling to formatWeekLabel, e.g. "Aug 24, 2026". Same
  *  UTC-noon-anchor trick as formatDateHeader in slides.tsx, so a plain
  *  YYYY-MM-DD string never shifts a day under a server's local timezone. */

@@ -664,22 +664,40 @@ const MOVER_BAR_MIN_FRACTION = 0.2;
  *  meaningful here (gain vs loss), the same case DESIGN.md's One Signal
  *  Rule already carves out — see this file's header comment on
  *  MISSED_COLOR, which is reused here rather than defining a new red. */
+/** Geist Mono's per-character advance width at MOVER_BAR_LABEL_FONT_SIZE,
+ *  bold — empirical estimate (Satori/next-og has no text-measurement API to
+ *  ask for the real value). Used only to guarantee the pill never renders
+ *  narrower than its own label needs. */
+const MOVER_BAR_LABEL_CHAR_WIDTH = 14.5;
+const MOVER_BAR_LABEL_FONT_SIZE = 24;
+const MOVER_BAR_LABEL_PADDING = 18; // matches the pill's `padding: '0 18px'` below, per side
+
 function MoverBar({ changePercent, maxAbs, positive }: { changePercent: number; maxAbs: number; positive: boolean }) {
-  const fraction = Math.max(MOVER_BAR_MIN_FRACTION, maxAbs > 0 ? Math.abs(changePercent) / maxAbs : MOVER_BAR_MIN_FRACTION);
-  const width = Math.round(fraction * MOVER_BAR_TRACK_WIDTH);
-  const color = positive ? BRAND : MISSED_COLOR;
   const sign = changePercent >= 0 ? '+' : '';
+  const label = `${sign}${changePercent.toFixed(2)}%`;
+
+  const fraction = Math.max(MOVER_BAR_MIN_FRACTION, maxAbs > 0 ? Math.abs(changePercent) / maxAbs : MOVER_BAR_MIN_FRACTION);
+  const scaledWidth = Math.round(fraction * MOVER_BAR_TRACK_WIDTH);
+  // A magnitude-proportional bar can end up narrower than its own label on a
+  // slide where one mover dwarfs the rest (e.g. HPQ -12.88% vs NFLX -1.20%
+  // on the same axis) — the label used to overflow the pill into the page
+  // background, where its white/near-white color made it unreadable. The
+  // pill's own text is never allowed to be the thing that gets clipped.
+  const minWidthForLabel = Math.ceil(label.length * MOVER_BAR_LABEL_CHAR_WIDTH + MOVER_BAR_LABEL_PADDING * 2);
+  const width = Math.min(MOVER_BAR_TRACK_WIDTH, Math.max(scaledWidth, minWidthForLabel));
+
+  const color = positive ? BRAND : MISSED_COLOR;
   return (
     <div style={{ display: 'flex', width: MOVER_BAR_TRACK_WIDTH, height: MOVER_BAR_HEIGHT, justifyContent: 'flex-end' }}>
       <div
         style={{
           display: 'flex', width, height: MOVER_BAR_HEIGHT, borderRadius: 10,
           backgroundColor: color, alignItems: 'center', justifyContent: 'flex-end',
-          padding: '0 18px',
+          padding: `0 ${MOVER_BAR_LABEL_PADDING}px`,
         }}
       >
-        <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontWeight: 700, fontSize: 24, color: positive ? BRAND_INK : '#ffffff' }}>
-          {sign}{changePercent.toFixed(2)}%
+        <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontWeight: 700, fontSize: MOVER_BAR_LABEL_FONT_SIZE, color: positive ? BRAND_INK : '#ffffff' }}>
+          {label}
         </span>
       </div>
     </div>
@@ -1039,8 +1057,45 @@ function FeatureRow() {
   );
 }
 
+/** Content type a CTA slide is closing out — drives which headline/subtitle
+ *  pairing it shows, so the conversion pitch actually follows from what the
+ *  viewer just scrolled through instead of always pitching earnings alerts
+ *  on a market-movers or deep-dive post that never mentioned a "report". */
+export type CTAVariant = 'earnings_calendar' | 'earnings_results' | 'market_movers' | 'earnings_deep_dive';
+
+const CTA_COPY: Record<CTAVariant, { headline: string; subtitle: (ticker?: string) => string }> = {
+  earnings_calendar: {
+    headline: 'Never miss a report again',
+    subtitle: () => 'Track earnings, prices, and your whole portfolio in one place.',
+  },
+  earnings_results: {
+    headline: 'Know the reaction, not just the news',
+    subtitle: () => 'Follow every earnings beat, miss, and price move in real time.',
+  },
+  market_movers: {
+    headline: 'Never miss a move again',
+    subtitle: () => "Track the market's biggest winners and losers, every single day.",
+  },
+  earnings_deep_dive: {
+    headline: 'Get this deep dive on any stock',
+    subtitle: (ticker) =>
+      ticker
+        ? `Free AI-powered financials, valuation, and risk breakdowns, on $${ticker} and every other stock.`
+        : 'Free AI-powered financials, valuation, and risk breakdowns, on any stock.',
+  },
+};
+
+interface CTASlideProps {
+  slideIndex: number;
+  totalSlides: number;
+  variant?: CTAVariant;
+  ticker?: string;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function CTASlide({ slideIndex, totalSlides }: { slideIndex: number; totalSlides: number }): any {
+export function CTASlide({ slideIndex, totalSlides, variant = 'earnings_calendar', ticker }: CTASlideProps): any {
+  const { headline, subtitle } = CTA_COPY[variant];
+
   return (
     <div
       style={{
@@ -1065,10 +1120,10 @@ export function CTASlide({ slideIndex, totalSlides }: { slideIndex: number; tota
       <img src={getMascot()} alt="" width={300} height={300} style={{ marginBottom: 8 }} />
 
       <div style={{ display: 'flex', fontFamily: 'Instrument Serif', fontStyle: 'italic', fontSize: 52, color: FG, marginBottom: 20, maxWidth: 780 }}>
-        Never miss a report again
+        {headline}
       </div>
       <div style={{ display: 'flex', fontFamily: 'Geist', fontSize: 26, color: MUTED, marginBottom: 44, maxWidth: 700, textAlign: 'center' }}>
-        Track earnings, prices, and your whole portfolio in one place.
+        {subtitle(ticker)}
       </div>
 
       <FeatureRow />

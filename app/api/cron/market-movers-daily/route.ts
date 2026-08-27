@@ -24,6 +24,7 @@ import { logSecurityEvent } from '@/lib/security/security-events';
 import { createServerClient } from '@/lib/supabase/client';
 import { generateMarketMoversContent } from '@/lib/instagram/content/market-movers';
 import { totalSlideCount } from '@/lib/instagram/render/slides';
+import { contentVersion } from '@/lib/instagram/render/cache-bust';
 import { postToDiscord } from '@/lib/discord/post-message';
 import { instagramBioLink } from '@/lib/instagram/utm-link';
 import type { MarketMoversSlides } from '@/lib/instagram/content/schema';
@@ -51,7 +52,18 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any; // instagram_posts isn't in the generated Database type yet
 
-  const periodKey = todayEtDateKey();
+  // Off-schedule special edition (e.g. a pre-market post ahead of a
+  // market-moving event) — ?preMarket=true switches to live pre-market
+  // quotes and a distinct period_key so it never collides with (or gets
+  // skipped by the idempotency check for) that same day's regular post-close
+  // post. contextNote is a real, confirmed fact the caption is allowed to
+  // reference (see GenerateMarketMoversOptions) — never invented server-side.
+  const sp = request.nextUrl.searchParams;
+  const preMarket = sp.get('preMarket') === 'true';
+  const contextNote = sp.get('contextNote') ?? undefined;
+
+  const basePeriodKey = todayEtDateKey();
+  const periodKey = preMarket ? `${basePeriodKey}-premarket` : basePeriodKey;
 
   // ── Idempotency ──────────────────────────────────────────────────────────
   const { data: existing } = await db
@@ -68,7 +80,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   // ── Generate ─────────────────────────────────────────────────────────────
   let content: MarketMoversSlides;
   try {
-    content = await generateMarketMoversContent(periodKey);
+    content = await generateMarketMoversContent(basePeriodKey, { preMarket, contextNote });
   } catch (err) {
     console.error('[market-movers-daily] content generation failed:', err);
     return NextResponse.json(
@@ -100,8 +112,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   // ── Review notification ─────────────────────────────────────────────────
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bullpen.no';
   const slideCount = totalSlideCount(content);
+  // ?v=<content hash> so a later fix to this same post (a manual DB patch, a
+  // re-notify) produces genuinely different URLs — see contentVersion's doc
+  // comment for why a same-URL cache silently defeats a same-URL fix.
+  const v = contentVersion(content);
   const previewLinks = Array.from({ length: slideCount }, (_, i) =>
-    `[Slide ${i + 1}](${appUrl}/api/instagram/render/${postId}/${i})`
+    `[Slide ${i + 1}](${appUrl}/api/instagram/render/${postId}/${i}?v=${v})`
   ).join(' · ');
 
   const bioLink = instagramBioLink(CONTENT_TYPE, periodKey);
@@ -114,7 +130,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       await postToDiscord(webhookUrl, {
         embeds: [
           {
-            title: `Market movers ready for review — ${content.dateLabel}`,
+            title: `${content.sessionLabel ? `${content.sessionLabel} m` : 'M'}arket movers ready for review — ${content.dateLabel}`,
             description: `Top gainer: ${topGainer.symbol} +${topGainer.changePercent.toFixed(2)}%. Top loser: ${topLoser.symbol} ${topLoser.changePercent.toFixed(2)}%. ${slideCount} slides.\n\n${previewLinks}\n\n**Caption:**\n${content.caption}`,
             color: 0x34d399,
             fields: [

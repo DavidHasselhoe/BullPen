@@ -31,9 +31,11 @@ import { getStockQuotes, withRateLimitRetry } from '@/lib/twelvedata/twelvedata-
 import { waitForCronCreditBudget } from '@/lib/twelvedata/credit-budget';
 import { SIGNIFICANT_TICKERS } from '@/lib/market-data/significant-tickers';
 import { attachCalendarMeta } from '@/lib/market-data/calendar-market-cap';
+import { getLogoManifest, logoUrlFromManifest } from '@/lib/logos/logo-manifest';
+import { resolveAndPersistLogo, downloadAndValidateLogo } from '@/lib/logos/resolve-logo';
 import { logAiCall } from '@/lib/billing/log-ai-call';
 import { parseHookAndCaption } from './schema';
-import { MARKET_DATA_DISCLAIMER, FIXED_HASHTAGS, formatDateLabel } from './shared';
+import { MARKET_DATA_DISCLAIMER, MARKET_DATA_DISCLAIMER_PRE_MARKET, FIXED_HASHTAGS, formatDateLabel } from './shared';
 import type { MarketMoversSlides, MarketMoverEntry } from './schema';
 
 const MODEL = 'claude-sonnet-4-6';
@@ -50,13 +52,15 @@ const SYSTEM_PROMPT = `You write short, punchy Instagram copy for BullPen, a fin
 
 Voice: confident, clear, never hype-y. No emoji spam (0-1 max, only if it genuinely fits). Never use an em dash (—) or en dash (–) to connect clauses; use a period or comma instead.
 
-DATA FIDELITY (critical): you are given today's real top 5 gainers and top 5 losers from the S&P 500 and Nasdaq 100. Use ONLY those company names, tickers, and % changes. Do not add, invent, or imply any other company or number, and do not speculate about WHY any stock moved. State only that it moved.
+DATA FIDELITY (critical): you are given today's real top 5 gainers and top 5 losers from the S&P 500 and Nasdaq 100. Use ONLY those company names, tickers, and % changes. Do not add, invent, or imply any other company or number, and do not speculate about WHY any INDIVIDUAL stock moved beyond what you're explicitly told. State only that it moved, unless a VERIFIED CONTEXT note below gives you a real, confirmed reason.
 
 Output ONLY a JSON object with exactly two fields, nothing else, no markdown fences:
 {
   "headline": "a punchy hook under 10 words, no ticker required",
   "caption": "a 2-3 sentence Instagram caption naming the day's single biggest gainer and biggest loser with their exact % change, ending with a soft call to action to check the full movers list on BullPen"
 }`;
+
+const PRE_MARKET_ADDENDUM = `\n\nThis is a special PRE-MARKET edition, posted before the US market opens. These are live pre-market price moves, not the regular post-close change — make that explicit in both the headline and caption (e.g. "before the bell", "pre-market"), so nobody mistakes this for the usual after-close movers post.`;
 
 interface RankedQuote {
   symbol: string;
@@ -77,7 +81,7 @@ interface MoverMetaInput {
  * Sequential, not Promise.all, so chunks don't all queue on the shared
  * per-minute reservation counter simultaneously.
  */
-async function fetchRankedQuotes(): Promise<RankedQuote[]> {
+async function fetchRankedQuotes(preMarket: boolean): Promise<RankedQuote[]> {
   const symbols = [...SIGNIFICANT_TICKERS];
   const ranked: RankedQuote[] = [];
 
@@ -85,7 +89,11 @@ async function fetchRankedQuotes(): Promise<RankedQuote[]> {
     const chunk = symbols.slice(i, i + QUOTE_CHUNK_SIZE);
     await waitForCronCreditBudget(chunk.length * CREDITS_PER_QUOTE);
     try {
-      const quotes = await withRateLimitRetry(() => getStockQuotes(chunk));
+      // prepost:true is what makes this a genuine pre-market reading — without
+      // it TwelveData's plain /quote returns yesterday's regular-session
+      // close-to-close change, the same numbers the last post-close post
+      // already used, not the actual pre-market move.
+      const quotes = await withRateLimitRetry(() => getStockQuotes(chunk, { prepost: preMarket }));
       for (const [symbol, quote] of quotes.entries()) {
         if (!quote || quote.c <= 0 || !isFinite(quote.dp)) continue;
         ranked.push({ symbol, changePercent: quote.dp, price: quote.c });
@@ -102,7 +110,8 @@ async function fetchRankedQuotes(): Promise<RankedQuote[]> {
 async function writeCaption(
   winners: MarketMoverEntry[],
   losers: MarketMoverEntry[],
-  dateLabel: string
+  dateLabel: string,
+  opts: { preMarket?: boolean; contextNote?: string } = {}
 ): Promise<string> {
   const listText = [
     'Winners:',
@@ -111,12 +120,16 @@ async function writeCaption(
     ...losers.map((l) => `- ${l.symbol} (${l.name}): ${l.changePercent.toFixed(2)}%`),
   ].join('\n');
 
-  const userPrompt = `${dateLabel}. Today's S&P 500 + Nasdaq 100 movers (use ONLY these):\n${listText}\n\nWrite the headline and caption now.`;
+  const sessionText = opts.preMarket ? "Today's S&P 500 + Nasdaq 100 pre-market movers" : "Today's S&P 500 + Nasdaq 100 movers";
+  const contextText = opts.contextNote ? `\n\nVERIFIED CONTEXT (real, confirmed — you may reference this, nothing else): ${opts.contextNote}` : '';
+  const userPrompt = `${dateLabel}. ${sessionText} (use ONLY these):\n${listText}${contextText}\n\nWrite the headline and caption now.`;
+
+  const system = SYSTEM_PROMPT + (opts.preMarket ? PRE_MARKET_ADDENDUM : '');
 
   const message = await anthropic.messages.create({
     model: MODEL,
     max_tokens: 400,
-    system: SYSTEM_PROMPT,
+    system,
     messages: [{ role: 'user', content: userPrompt }],
   });
 
@@ -126,7 +139,7 @@ async function writeCaption(
     model: MODEL,
     inputTokens: message.usage.input_tokens,
     outputTokens: message.usage.output_tokens,
-    metadata: { contentType: 'market_movers', dateLabel },
+    metadata: { contentType: 'market_movers', dateLabel, preMarket: opts.preMarket ?? false },
   });
 
   const textBlock = message.content.find((b) => b.type === 'text');
@@ -140,18 +153,93 @@ async function writeCaption(
   // every other generator in this pipeline already validates against,
   // rather than adding a second near-duplicate schema for one field.
   const { caption } = parseHookAndCaption(textBlock.text);
-  return `${caption}\n\n${MARKET_DATA_DISCLAIMER}\n\n${FIXED_HASHTAGS}`;
+  const disclaimer = opts.preMarket ? MARKET_DATA_DISCLAIMER_PRE_MARKET : MARKET_DATA_DISCLAIMER;
+  return `${caption}\n\n${disclaimer}\n\n${FIXED_HASHTAGS}`;
+}
+
+/**
+ * Backfills any of today's mover tickers whose logo is missing OR broken —
+ * `attachCalendarMeta`'s logo lookup only serves whatever's already present
+ * in the `company-logos` bucket manifest (see logo-manifest.ts), and merely
+ * being *present* isn't proof it's a real, renderable image: root cause of
+ * the 2026-08-26 $LITE/$WMB missing-logo incident was a stale/invalid object
+ * from before this pipeline's validation existed (confirmed via storage
+ * timestamps: `lite.jpg`/`wmb.jpg` — the extension `getStorageLogoUrl`'s
+ * older, unvalidated convention writes — were replaced by freshly-validated
+ * `lite.png`/`wmb.png` a few hours AFTER that day's post had already
+ * generated and baked the dead `.jpg` URL into its static slide JSON, which
+ * never gets re-derived once staged. So "present in the manifest" alone
+ * isn't enough to trust — this validates the actual bytes the same way
+ * `resolveAndPersistLogo` does before ever accepting a URL as good.
+ *
+ * Only ~20 tickers ever appear in one post, so validating (a fast read of
+ * our own storage CDN, no external credits) and backfilling any failures via
+ * TwelveData/logo.dev (1 credit each, only on a real miss) is cheap
+ * insurance against ever shipping a blank or broken logo for a stock that
+ * was genuinely rankable today.
+ */
+async function backfillMissingLogos(symbols: string[]): Promise<Map<string, string>> {
+  const manifest = await getLogoManifest();
+  const backfilled = new Map<string, string>();
+
+  const needsResolve: string[] = [];
+  await Promise.all(
+    symbols.map(async (sym) => {
+      const candidate = logoUrlFromManifest(manifest, sym);
+      if (!candidate) {
+        needsResolve.push(sym);
+        return;
+      }
+      const valid = await downloadAndValidateLogo(candidate).catch(() => null);
+      if (!valid) needsResolve.push(sym);
+    })
+  );
+
+  if (needsResolve.length === 0) return backfilled;
+
+  // Sequential: each resolution is a real external fetch (TwelveData, then
+  // logo.dev) plus a storage upload, not a cheap read — no need to
+  // parallelize a handful of misses, and it keeps failures isolated per ticker.
+  for (const sym of needsResolve) {
+    try {
+      const result = await resolveAndPersistLogo(sym);
+      if (result.success && result.url) backfilled.set(sym, result.url);
+    } catch (err) {
+      console.error(`[market-movers] logo backfill failed for ${sym}:`, err);
+    }
+  }
+  return backfilled;
+}
+
+export interface GenerateMarketMoversOptions {
+  /** Off-schedule special edition using live pre-market quotes instead of the
+   *  regular post-close change — see PRE_MARKET_ADDENDUM and fetchRankedQuotes. */
+  preMarket?: boolean;
+  /** A real, confirmed fact (e.g. "$NVDA reported earnings after yesterday's
+   *  close") the caption is allowed to reference as macro context. Never
+   *  invented by this function — the caller supplies it, and the system
+   *  prompt still forbids Claude from speculating about any OTHER stock's
+   *  move beyond what's in this note. */
+  contextNote?: string;
 }
 
 /**
  * Builds the full slide content for today's Market Movers carousel. Real
  * data first, Claude second, grounded in that data — see file header.
  */
-export async function generateMarketMoversContent(dateET: string): Promise<MarketMoversSlides> {
-  const ranked = await fetchRankedQuotes();
+export async function generateMarketMoversContent(
+  dateET: string,
+  opts: GenerateMarketMoversOptions = {}
+): Promise<MarketMoversSlides> {
+  const { preMarket = false, contextNote } = opts;
+  const ranked = await fetchRankedQuotes(preMarket);
 
   const winnersRanked = [...ranked].sort((a, b) => b.changePercent - a.changePercent).slice(0, TOP_N);
   const losersRanked = [...ranked].sort((a, b) => a.changePercent - b.changePercent).slice(0, TOP_N);
+
+  const backfilledLogos = await backfillMissingLogos(
+    [...winnersRanked, ...losersRanked].map((r) => r.symbol)
+  );
 
   const winnersInput: MoverMetaInput[] = winnersRanked.map((r) => ({ symbol: r.symbol }));
   const losersInput: MoverMetaInput[] = losersRanked.map((r) => ({ symbol: r.symbol }));
@@ -165,18 +253,19 @@ export async function generateMarketMoversContent(dateET: string): Promise<Marke
     name: meta.name ?? r.symbol,
     changePercent: r.changePercent,
     price: r.price,
-    logoUrl: meta.logo_url,
+    logoUrl: backfilledLogos.get(r.symbol) ?? meta.logo_url,
   });
 
   const winners = winnersRanked.map((r, i) => toEntry(r, winnersMeta[i]));
   const losers = losersRanked.map((r, i) => toEntry(r, losersMeta[i]));
 
   const dateLabel = formatDateLabel(dateET);
-  const caption = await writeCaption(winners, losers, dateLabel);
+  const caption = await writeCaption(winners, losers, dateLabel, { preMarket, contextNote });
 
   return {
     contentType: 'market_movers',
     dateLabel,
+    sessionLabel: preMarket ? 'Pre-Market' : undefined,
     winners,
     losers,
     caption,

@@ -145,6 +145,9 @@ export interface MarketMoverEntry {
 export interface MarketMoversSlides {
   contentType: 'market_movers';
   dateLabel: string; // e.g. "Aug 24, 2026"
+  /** Set for an off-schedule special edition (e.g. "Pre-Market") — undefined
+   *  for the regular post-close 3x/week post, which reads as "Daily". */
+  sessionLabel?: string;
   winners: MarketMoverEntry[]; // exactly 10, sorted descending by changePercent
   losers: MarketMoverEntry[]; // exactly 10, sorted ascending by changePercent (most negative first)
   caption: string;
