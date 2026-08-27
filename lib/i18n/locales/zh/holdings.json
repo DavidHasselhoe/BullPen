@@ -37,6 +37,7 @@
   "holdingsTableFieldValue": "价值",
   "holdingsTableImportCsv": "导入 CSV",
   "holdingsTableImportFromCsv": "从 CSV 导入",
+  "holdingsTableNoMatch": "没有持仓与\"{{search}}\"相匹配",
   "holdingsTableRemoveHolding": "删除持仓",
   "holdingsTableRemoving": "删除中…",
   "holdingsTableSearchPlaceholder": "搜索持仓…",
@@ -86,5 +87,19 @@
   "soldPositionsTitle": "已卖出持仓",
   "soldPositionsUndoTitle": "撤销此交易",
   "soldPositionsUpdateError": "交易更新失败",
-  "holdingsTableNoMatch": "没有持仓与\"{{search}}\"相匹配"
+  "editHoldingAvgPriceLabel": "平均价格（可选）",
+  "editHoldingAvgPricePlaceholder": "例如，150.00",
+  "editHoldingCancel": "取消",
+  "editHoldingDateHint": "用于绘制您从开仓当日起的损益图表。",
+  "editHoldingDateLabel": "购买日期（可选）",
+  "editHoldingDatePlaceholder": "选择日期",
+  "editHoldingDescription": "更新 {{symbol}} - {{companyName}} 的数量和平均价格",
+  "editHoldingError": "更新持仓失败",
+  "editHoldingQuantityLabel": "数量（可选）",
+  "editHoldingQuantityPlaceholder": "例如，10",
+  "editHoldingSaved": "已保存！",
+  "editHoldingSubmit": "更新持仓",
+  "editHoldingTitle": "编辑持仓",
+  "editHoldingUpdating": "更新中...",
+  "holdingsPieChartTitle": "配置"
 }

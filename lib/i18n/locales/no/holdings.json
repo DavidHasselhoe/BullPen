@@ -37,6 +37,7 @@
   "holdingsTableFieldValue": "Verdi",
   "holdingsTableImportCsv": "Importer CSV",
   "holdingsTableImportFromCsv": "Importer fra CSV",
+  "holdingsTableNoMatch": "Ingen beholdninger samsvarer med \"{{search}}\"",
   "holdingsTableRemoveHolding": "Fjern beholdning",
   "holdingsTableRemoving": "Fjerner…",
   "holdingsTableSearchPlaceholder": "Søk i beholdninger…",
@@ -86,5 +87,19 @@
   "soldPositionsTitle": "Solgte posisjoner",
   "soldPositionsUndoTitle": "Angre dette salget",
   "soldPositionsUpdateError": "Kunne ikke oppdatere salget",
-  "holdingsTableNoMatch": "Ingen beholdninger samsvarer med \"{{search}}\""
+  "editHoldingAvgPriceLabel": "Gjennomsnittspris (Valgfritt)",
+  "editHoldingAvgPricePlaceholder": "f.eks. 150.00",
+  "editHoldingCancel": "Avbryt",
+  "editHoldingDateHint": "Brukes til å kartlegge din P/L fra dagen du åpnet denne posisjonen.",
+  "editHoldingDateLabel": "Kjøpsdato (Valgfritt)",
+  "editHoldingDatePlaceholder": "Velg en dato",
+  "editHoldingDescription": "Oppdater antall og gjennomsnittspris for {{symbol}} - {{companyName}}",
+  "editHoldingError": "Kunne ikke oppdatere beholdning",
+  "editHoldingQuantityLabel": "Antall (Valgfritt)",
+  "editHoldingQuantityPlaceholder": "f.eks. 10",
+  "editHoldingSaved": "Lagret!",
+  "editHoldingSubmit": "Oppdater beholdning",
+  "editHoldingTitle": "Rediger beholdning",
+  "editHoldingUpdating": "Oppdaterer...",
+  "holdingsPieChartTitle": "Allokering"
 }

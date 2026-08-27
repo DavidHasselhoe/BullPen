@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { LayoutGrid } from 'lucide-react';
@@ -45,6 +46,7 @@ export function getSectorLabel(h: Pick<HoldingWithPrice, 'asset_type' | 'sector'
 }
 
 export function HoldingsPieChart({ holdings, onSectorHover, isLoading }: HoldingsPieChartProps) {
+  const { t } = useTranslation('holdings');
   const sectors = useMemo(() => {
     const totalValue = holdings.reduce((sum, h) => sum + (h.marketValue ?? 0), 0);
     if (totalValue === 0) return [];
@@ -67,7 +69,7 @@ export function HoldingsPieChart({ holdings, onSectorHover, isLoading }: Holding
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-sm font-semibold">
             <LayoutGrid className="h-4 w-4 text-muted-foreground/80" />
-            Allocation
+            {t('holdingsPieChartTitle')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -97,7 +99,7 @@ export function HoldingsPieChart({ holdings, onSectorHover, isLoading }: Holding
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-sm font-semibold">
           <LayoutGrid className="h-4 w-4 text-muted-foreground/80" />
-          Allocation
+          {t('holdingsPieChartTitle')}
         </CardTitle>
       </CardHeader>
       <CardContent>

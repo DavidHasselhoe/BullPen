@@ -37,6 +37,7 @@
   "holdingsTableFieldValue": "評価額",
   "holdingsTableImportCsv": "CSVをインポート",
   "holdingsTableImportFromCsv": "CSVからインポート",
+  "holdingsTableNoMatch": "「{{search}}」に一致する保有銘柄がありません",
   "holdingsTableRemoveHolding": "保有銘柄を削除",
   "holdingsTableRemoving": "削除中…",
   "holdingsTableSearchPlaceholder": "保有銘柄を検索…",
@@ -86,5 +87,19 @@
   "soldPositionsTitle": "売却済みポジション",
   "soldPositionsUndoTitle": "この売却を取り消す",
   "soldPositionsUpdateError": "売却の更新に失敗しました",
-  "holdingsTableNoMatch": "「{{search}}」に一致する保有銘柄がありません"
+  "editHoldingAvgPriceLabel": "平均取得価格（任意）",
+  "editHoldingAvgPricePlaceholder": "例：150.00",
+  "editHoldingCancel": "キャンセル",
+  "editHoldingDateHint": "ポジションを開いた日からの損益をチャートで表示するために使用されます。",
+  "editHoldingDateLabel": "購入日（任意）",
+  "editHoldingDatePlaceholder": "日付を選択",
+  "editHoldingDescription": "{{symbol}} - {{companyName}} の数量と平均取得価格を更新",
+  "editHoldingError": "ホールディングの更新に失敗しました",
+  "editHoldingQuantityLabel": "数量（任意）",
+  "editHoldingQuantityPlaceholder": "例：10",
+  "editHoldingSaved": "保存されました！",
+  "editHoldingSubmit": "ホールディングを更新",
+  "editHoldingTitle": "ホールディングを編集",
+  "editHoldingUpdating": "更新中...",
+  "holdingsPieChartTitle": "配分"
 }

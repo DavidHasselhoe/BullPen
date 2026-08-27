@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Check } from 'lucide-react';
 import {
   Dialog,
@@ -25,6 +26,7 @@ interface EditHoldingModalProps {
 }
 
 export function EditHoldingModal({ open, onOpenChange, holding }: EditHoldingModalProps) {
+  const { t } = useTranslation('holdings');
   const [quantity, setQuantity] = useState('');
   const [avgPrice, setAvgPrice] = useState('');
   const [datePurchased, setDatePurchased] = useState('');
@@ -92,22 +94,22 @@ export function EditHoldingModal({ open, onOpenChange, holding }: EditHoldingMod
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Edit Holding</DialogTitle>
+          <DialogTitle>{t('editHoldingTitle')}</DialogTitle>
           <DialogDescription>
-            Update quantity and average price for {holding.symbol} - {holding.company_name}
+            {t('editHoldingDescription', { symbol: holding.symbol, companyName: holding.company_name })}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Quantity (Optional) */}
           <div className="space-y-2">
-            <Label htmlFor="quantity">Quantity (Optional)</Label>
+            <Label htmlFor="quantity">{t('editHoldingQuantityLabel')}</Label>
             <Input
               id="quantity"
               type="number"
               step="0.01"
               min="0"
-              placeholder="e.g., 10"
+              placeholder={t('editHoldingQuantityPlaceholder')}
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
             />
@@ -115,13 +117,13 @@ export function EditHoldingModal({ open, onOpenChange, holding }: EditHoldingMod
 
           {/* Average Price (Optional) */}
           <div className="space-y-2">
-            <Label htmlFor="avg-price">Average Price (Optional)</Label>
+            <Label htmlFor="avg-price">{t('editHoldingAvgPriceLabel')}</Label>
             <Input
               id="avg-price"
               type="number"
               step="0.01"
               min="0"
-              placeholder="e.g., 150.00"
+              placeholder={t('editHoldingAvgPricePlaceholder')}
               value={avgPrice}
               onChange={(e) => setAvgPrice(e.target.value)}
             />
@@ -129,23 +131,23 @@ export function EditHoldingModal({ open, onOpenChange, holding }: EditHoldingMod
 
           {/* Date Purchased (Optional) */}
           <div className="space-y-2">
-            <Label htmlFor="date-purchased">Date Purchased (Optional)</Label>
+            <Label htmlFor="date-purchased">{t('editHoldingDateLabel')}</Label>
             <DatePicker
               id="date-purchased"
               max={new Date().toISOString().slice(0, 10)}
               value={datePurchased}
               onChange={setDatePurchased}
-              placeholder="Select a date"
+              placeholder={t('editHoldingDatePlaceholder')}
             />
             <p className="text-xs text-muted-foreground">
-              Used to chart your P/L from the day you opened this position.
+              {t('editHoldingDateHint')}
             </p>
           </div>
 
           {/* Submit Button */}
           <div className="flex justify-end gap-3">
             <Button type="button" variant="outline" onClick={handleClose}>
-              Cancel
+              {t('editHoldingCancel')}
             </Button>
             <Button
               type="submit"
@@ -153,8 +155,8 @@ export function EditHoldingModal({ open, onOpenChange, holding }: EditHoldingMod
               className={saved ? 'bg-emerald-600 hover:bg-emerald-600 text-white' : ''}
             >
               {saved
-                ? <><Check className="h-4 w-4 mr-1.5" />Saved!</>
-                : updateHolding.isPending ? 'Updating...' : 'Update Holding'}
+                ? <><Check className="h-4 w-4 mr-1.5" />{t('editHoldingSaved')}</>
+                : updateHolding.isPending ? t('editHoldingUpdating') : t('editHoldingSubmit')}
             </Button>
           </div>
 
@@ -162,7 +164,7 @@ export function EditHoldingModal({ open, onOpenChange, holding }: EditHoldingMod
             <div className="text-sm text-red-600 dark:text-red-400">
               {updateHolding.error instanceof Error
                 ? updateHolding.error.message
-                : 'Failed to update holding'}
+                : t('editHoldingError')}
             </div>
           )}
         </form>

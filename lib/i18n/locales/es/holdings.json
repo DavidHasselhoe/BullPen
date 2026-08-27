@@ -37,6 +37,7 @@
   "holdingsTableFieldValue": "Valor",
   "holdingsTableImportCsv": "Importar CSV",
   "holdingsTableImportFromCsv": "Importar desde CSV",
+  "holdingsTableNoMatch": "No hay posiciones que coincidan con \"{{search}}\"",
   "holdingsTableRemoveHolding": "Eliminar posición",
   "holdingsTableRemoving": "Eliminando…",
   "holdingsTableSearchPlaceholder": "Buscar posiciones…",
@@ -86,5 +87,19 @@
   "soldPositionsTitle": "Posiciones Vendidas",
   "soldPositionsUndoTitle": "Deshacer esta venta",
   "soldPositionsUpdateError": "No se pudo actualizar la venta",
-  "holdingsTableNoMatch": "No hay posiciones que coincidan con \"{{search}}\""
+  "editHoldingAvgPriceLabel": "Precio Promedio (Opcional)",
+  "editHoldingAvgPricePlaceholder": "p. ej., 150.00",
+  "editHoldingCancel": "Cancelar",
+  "editHoldingDateHint": "Se utiliza para graficar tu P/L desde el día que abriste esta posición.",
+  "editHoldingDateLabel": "Fecha de Compra (Opcional)",
+  "editHoldingDatePlaceholder": "Selecciona una fecha",
+  "editHoldingDescription": "Actualiza la cantidad y el precio promedio para {{symbol}} - {{companyName}}",
+  "editHoldingError": "Error al actualizar la posición",
+  "editHoldingQuantityLabel": "Cantidad (Opcional)",
+  "editHoldingQuantityPlaceholder": "p. ej., 10",
+  "editHoldingSaved": "¡Guardado!",
+  "editHoldingSubmit": "Actualizar Posición",
+  "editHoldingTitle": "Editar Posición",
+  "editHoldingUpdating": "Actualizando...",
+  "holdingsPieChartTitle": "Asignación"
 }
