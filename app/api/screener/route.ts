@@ -144,7 +144,7 @@ async function handler(request: NextRequest) {
     if (error) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
-    const total = (data ?? []).filter((r) => !isDuplicateShareClass(r.ticker)).length;
+    const total = ((data ?? []) as { ticker: string }[]).filter((r) => !isDuplicateShareClass(r.ticker)).length;
     return NextResponse.json({ success: true, total });
   }
 
