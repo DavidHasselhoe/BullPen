@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { Check } from 'lucide-react';
 import {
@@ -29,6 +30,7 @@ interface AddPurchaseModalProps {
 }
 
 export function AddPurchaseModal({ open, onOpenChange, holding, currentPriceUSD }: AddPurchaseModalProps) {
+  const { t } = useTranslation('holdings');
   const { user } = useAuth();
   const [quantity, setQuantity] = useState('');
   const [price, setPrice] = useState('');
@@ -117,16 +119,19 @@ export function AddPurchaseModal({ open, onOpenChange, holding, currentPriceUSD 
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Add purchase — {holding.symbol}</DialogTitle>
+          <DialogTitle>{t('addPurchaseTitle', { symbol: holding.symbol })}</DialogTitle>
           <DialogDescription>
-            You hold {heldQty} shares of {holding.company_name} at an average cost of{' '}
-            {holding.avg_price != null ? `$${holding.avg_price.toFixed(2)}` : '—'}.
+            {t('addPurchaseDescription', {
+              heldQty,
+              companyName: holding.company_name,
+              avgPrice: holding.avg_price != null ? `$${holding.avg_price.toFixed(2)}` : '—',
+            })}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="purchase-quantity">Shares purchased</Label>
+            <Label htmlFor="purchase-quantity">{t('addPurchaseSharesLabel')}</Label>
             <Input
               id="purchase-quantity"
               type="number"
@@ -138,7 +143,7 @@ export function AddPurchaseModal({ open, onOpenChange, holding, currentPriceUSD 
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="purchase-price">Price per share (USD)</Label>
+            <Label htmlFor="purchase-price">{t('addPurchasePriceLabel')}</Label>
             <Input
               id="purchase-price"
               type="number"
@@ -150,7 +155,7 @@ export function AddPurchaseModal({ open, onOpenChange, holding, currentPriceUSD 
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="purchase-date">Purchase date</Label>
+            <Label htmlFor="purchase-date">{t('addPurchaseDateLabel')}</Label>
             <DatePicker
               id="purchase-date"
               max={new Date().toISOString().slice(0, 10)}
@@ -161,13 +166,13 @@ export function AddPurchaseModal({ open, onOpenChange, holding, currentPriceUSD 
 
           {qtyNum > 0 && priceNum > 0 && (
             <p className="text-sm text-muted-foreground">
-              New position: {newQuantity} shares at ${newAvgPrice?.toFixed(2)} average
+              {t('addPurchaseNewPosition', { quantity: newQuantity, avgPrice: newAvgPrice?.toFixed(2) })}
             </p>
           )}
 
           <div className="flex justify-end gap-3">
             <Button type="button" variant="outline" onClick={handleClose}>
-              Cancel
+              {t('addPurchaseCancel')}
             </Button>
             <Button
               type="submit"
@@ -175,14 +180,14 @@ export function AddPurchaseModal({ open, onOpenChange, holding, currentPriceUSD 
               className={saved ? 'bg-emerald-600 hover:bg-emerald-600 text-white' : ''}
             >
               {saved
-                ? <><Check className="h-4 w-4 mr-1.5" />Added!</>
-                : addOrUpdateHolding.isPending ? 'Adding...' : 'Add Purchase'}
+                ? <><Check className="h-4 w-4 mr-1.5" />{t('addPurchaseAdded')}</>
+                : addOrUpdateHolding.isPending ? t('addPurchaseAdding') : t('addPurchaseSubmit')}
             </Button>
           </div>
 
           {addOrUpdateHolding.isError && (
             <div className="text-sm text-red-600 dark:text-red-400">
-              {addOrUpdateHolding.error instanceof Error ? addOrUpdateHolding.error.message : 'Failed to add purchase'}
+              {addOrUpdateHolding.error instanceof Error ? addOrUpdateHolding.error.message : t('addPurchaseError')}
             </div>
           )}
         </form>

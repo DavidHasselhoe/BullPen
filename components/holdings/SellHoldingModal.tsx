@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Check } from 'lucide-react';
 import {
   Dialog,
@@ -31,6 +32,7 @@ interface SellHoldingModalProps {
 const QUICK_PERCENTS = [25, 50, 75, 100] as const;
 
 export function SellHoldingModal({ open, onOpenChange, holding, currentPriceUSD }: SellHoldingModalProps) {
+  const { t } = useTranslation('holdings');
   const [quantity, setQuantity] = useState('');
   const [salePrice, setSalePrice] = useState('');
   const [saleDate, setSaleDate] = useState(new Date().toISOString().slice(0, 10));
@@ -92,23 +94,26 @@ export function SellHoldingModal({ open, onOpenChange, holding, currentPriceUSD 
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Sell {holding.symbol}</DialogTitle>
+          <DialogTitle>{t('sellHoldingTitle', { symbol: holding.symbol })}</DialogTitle>
           <DialogDescription>
-            You hold {heldQty} shares of {holding.company_name} at an average cost of{' '}
-            {holding.avg_price != null ? `$${holding.avg_price.toFixed(2)}` : '—'}.
+            {t('sellHoldingDescription', {
+              heldQty,
+              companyName: holding.company_name,
+              avgPrice: holding.avg_price != null ? `$${holding.avg_price.toFixed(2)}` : '—',
+            })}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="sell-quantity">Shares to sell</Label>
+            <Label htmlFor="sell-quantity">{t('sellHoldingSharesLabel')}</Label>
             <Input
               id="sell-quantity"
               type="number"
               step="0.000001"
               min="0"
               max={heldQty}
-              placeholder={`up to ${heldQty}`}
+              placeholder={t('sellHoldingUpToPlaceholder', { heldQty })}
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
             />
@@ -120,14 +125,14 @@ export function SellHoldingModal({ open, onOpenChange, holding, currentPriceUSD 
                   onClick={() => handlePercent(pct)}
                   className="rounded-full border border-border/60 px-3 py-1 text-xs font-medium text-muted-foreground hover:border-border hover:text-foreground transition-colors"
                 >
-                  {pct === 100 ? 'All' : `${pct}%`}
+                  {pct === 100 ? t('sellHoldingAll') : `${pct}%`}
                 </button>
               ))}
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="sell-price">Sale price per share (USD)</Label>
+            <Label htmlFor="sell-price">{t('sellHoldingPriceLabel')}</Label>
             <Input
               id="sell-price"
               type="number"
@@ -139,7 +144,7 @@ export function SellHoldingModal({ open, onOpenChange, holding, currentPriceUSD 
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="sell-date">Sale date</Label>
+            <Label htmlFor="sell-date">{t('sellHoldingDateLabel')}</Label>
             <DatePicker
               id="sell-date"
               max={new Date().toISOString().slice(0, 10)}
@@ -150,14 +155,15 @@ export function SellHoldingModal({ open, onOpenChange, holding, currentPriceUSD 
 
           {qtyNum > 0 && priceNum > 0 && holding.avg_price != null && (
             <p className={`text-sm font-medium ${realizedPl >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-              {realizedPl >= 0 ? '+' : ''}
-              ${realizedPl.toFixed(2)} realized {realizedPl >= 0 ? 'gain' : 'loss'}
+              {realizedPl >= 0
+                ? t('sellHoldingRealizedGain', { amount: realizedPl.toFixed(2) })
+                : t('sellHoldingRealizedLoss', { amount: realizedPl.toFixed(2) })}
             </p>
           )}
 
           <div className="flex justify-end gap-3">
             <Button type="button" variant="outline" onClick={handleClose}>
-              Cancel
+              {t('sellHoldingCancel')}
             </Button>
             <Button
               type="submit"
@@ -165,14 +171,14 @@ export function SellHoldingModal({ open, onOpenChange, holding, currentPriceUSD 
               className={saved ? 'bg-emerald-600 hover:bg-emerald-600 text-white' : ''}
             >
               {saved
-                ? <><Check className="h-4 w-4 mr-1.5" />Sold!</>
-                : sellHolding.isPending ? 'Selling...' : 'Confirm Sale'}
+                ? <><Check className="h-4 w-4 mr-1.5" />{t('sellHoldingSold')}</>
+                : sellHolding.isPending ? t('sellHoldingSelling') : t('sellHoldingConfirm')}
             </Button>
           </div>
 
           {sellHolding.isError && (
             <div className="text-sm text-red-600 dark:text-red-400">
-              {sellHolding.error instanceof Error ? sellHolding.error.message : 'Failed to sell holding'}
+              {sellHolding.error instanceof Error ? sellHolding.error.message : t('sellHoldingError')}
             </div>
           )}
         </form>
