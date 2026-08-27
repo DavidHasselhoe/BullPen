@@ -20,10 +20,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { ProfileAvatar } from '@/components/user/ProfileAvatar';
-import { Loader2, Upload, User, Briefcase, Target, TrendingUp, Crown, Calendar, Check } from 'lucide-react';
+import { Loader2, Upload, Camera, User, Briefcase, Target, TrendingUp, Crown, Calendar, Check, type LucideIcon } from 'lucide-react';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { logger } from '@/lib/utils/logger';
 import { uploadAvatarToStorage } from '@/lib/storage/avatar-upload';
@@ -35,6 +34,18 @@ interface ProfileModalProps {
 }
 
 type ProfileSection = 'basic' | 'preferences';
+
+interface SectionMeta {
+  id: ProfileSection;
+  label: string;
+  description: string;
+  icon: LucideIcon;
+}
+
+const SECTIONS: SectionMeta[] = [
+  { id: 'basic', label: 'Basic Info', icon: User, description: 'Your public display name, photo, and account details.' },
+  { id: 'preferences', label: 'Preferences', icon: Target, description: 'How BullPen tailors data and analysis to your experience.' },
+];
 
 export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
   const { user, isLoading: authLoading } = useAuth();
@@ -179,10 +190,8 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
     ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
     : '';
 
-  const sections: Array<{ id: ProfileSection; label: string; icon: React.ReactNode }> = [
-    { id: 'basic', label: 'Basic Info', icon: <User className="h-4 w-4" /> },
-    { id: 'preferences', label: 'Preferences', icon: <Target className="h-4 w-4" /> },
-  ];
+  const activeMeta = SECTIONS.find((s) => s.id === activeSection) ?? SECTIONS[0];
+  const ActiveIcon = activeMeta.icon;
 
   if (authLoading || !user) {
     return null;
@@ -192,65 +201,116 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[90vw] !max-w-[1000px] sm:!max-w-[1000px] h-[85vh] overflow-hidden flex flex-col p-0">
         <DialogHeader className="px-6 pt-6 pb-4 border-b">
-          <div className="flex items-center justify-between gap-4 pr-2">
-            <div>
-              <DialogTitle>Profile Settings</DialogTitle>
-              <DialogDescription>
-                Manage your profile information and preferences
-              </DialogDescription>
-            </div>
-            <div className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground min-w-[72px] justify-end">
-              {saveStatus === 'saving' && (
-                <>
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                  <span>Saving…</span>
-                </>
-              )}
-              {saveStatus === 'saved' && (
-                <>
-                  <Check className="h-3 w-3 text-emerald-500" />
-                  <span className="text-emerald-500">Saved</span>
-                </>
-              )}
-            </div>
-          </div>
+          <DialogTitle>Profile Settings</DialogTitle>
+          <DialogDescription>
+            Manage your profile information and preferences
+          </DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-1 overflow-hidden">
           {/* Sidebar Navigation */}
-          <div className="w-56 border-r bg-muted/30 p-4 space-y-2 flex-shrink-0">
-            {sections.map((section) => (
-              <button
-                key={section.id}
-                onClick={() => setActiveSection(section.id)}
-                className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${
-                  activeSection === section.id
-                    ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'hover:bg-accent text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {section.icon}
-                {section.label}
-              </button>
-            ))}
-          </div>
+          <aside className="flex w-16 flex-shrink-0 flex-col border-r bg-muted/20 sm:w-56">
+            <nav className="flex-1 space-y-1 overflow-y-auto p-2 sm:p-3">
+              {SECTIONS.map((section) => {
+                const Icon = section.icon;
+                const active = activeSection === section.id;
+                return (
+                  <button
+                    key={section.id}
+                    onClick={() => setActiveSection(section.id)}
+                    aria-current={active ? 'page' : undefined}
+                    title={section.label}
+                    className={cn(
+                      'group relative flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                      'justify-center sm:justify-start',
+                      active
+                        ? 'bg-accent text-foreground'
+                        : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        'absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r-full bg-primary transition-opacity',
+                        active ? 'opacity-100' : 'opacity-0'
+                      )}
+                    />
+                    <Icon className={cn('h-4 w-4 shrink-0', active && 'text-primary')} />
+                    <span className="hidden sm:inline">{section.label}</span>
+                  </button>
+                );
+              })}
+            </nav>
+
+            {/* Identity + autosave status */}
+            <div className="hidden border-t p-3 sm:block">
+              <div className="flex min-w-0 items-center gap-2.5">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-semibold text-primary">
+                  {getInitials()}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-xs font-medium text-foreground">{user.email}</p>
+                  <p className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                    {saveStatus === 'saving' ? (
+                      <><Loader2 className="h-2.5 w-2.5 animate-spin" />Saving…</>
+                    ) : saveStatus === 'saved' ? (
+                      <><Check className="h-2.5 w-2.5 text-emerald-500" /><span className="text-emerald-500">All changes saved</span></>
+                    ) : (
+                      'Changes save automatically'
+                    )}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </aside>
 
           {/* Main Content */}
-          <div className="flex-1 overflow-y-auto p-6 min-h-0 relative">
-            {activeSection === 'basic' && (
-              <div className="space-y-6 max-w-2xl">
-                {/* Avatar Section */}
-                <div className="flex items-center gap-6">
-                  <ProfileAvatar
-                    avatarUrl={avatarUrl}
-                    displayName={displayName}
-                    fallback={getInitials()}
-                    tier={user?.account_tier ?? 1}
-                    size="xl"
-                    showTooltip={true}
-                  />
-                  <div className="flex flex-col gap-3">
-                    <div className="flex items-center gap-3">
+          <div className="relative min-h-0 flex-1 overflow-y-auto">
+            <div
+              key={activeSection}
+              className="p-6 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-right-1 motion-safe:duration-200"
+            >
+              {/* Section header */}
+              <div className="mb-6 max-w-2xl">
+                <div className="flex items-center gap-2">
+                  <ActiveIcon className="h-4 w-4 text-primary" />
+                  <h2 className="text-base font-semibold tracking-tight text-foreground">{activeMeta.label}</h2>
+                </div>
+                <p className="mt-1 text-sm text-muted-foreground">{activeMeta.description}</p>
+              </div>
+
+              {activeSection === 'basic' && (
+                <div className="space-y-6 max-w-2xl">
+                  {/* Avatar Section */}
+                  <div className="flex items-center gap-6">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploadingAvatar}
+                      className="group relative shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                      aria-label="Change profile picture"
+                    >
+                      <ProfileAvatar
+                        avatarUrl={avatarUrl}
+                        displayName={displayName}
+                        fallback={getInitials()}
+                        tier={user?.account_tier ?? 1}
+                        size="xl"
+                        showTooltip={false}
+                      />
+                      <span
+                        className={cn(
+                          'absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100',
+                          isUploadingAvatar && 'opacity-100'
+                        )}
+                      >
+                        {isUploadingAvatar ? (
+                          <Loader2 className="h-5 w-5 animate-spin text-white" />
+                        ) : (
+                          <Camera className="h-5 w-5 text-white" />
+                        )}
+                      </span>
+                    </button>
+                    <div className="flex flex-col gap-3">
                       <input
                         ref={fileInputRef}
                         type="file"
@@ -262,232 +322,205 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
                       <Button
                         type="button"
                         variant="outline"
-                        size="icon"
+                        size="sm"
                         disabled={isUploadingAvatar}
                         onClick={() => fileInputRef.current?.click()}
-                        className="cursor-pointer"
+                        className="w-fit gap-2"
                       >
                         {isUploadingAvatar ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
                           <Upload className="h-4 w-4" />
                         )}
+                        Upload profile picture
                       </Button>
-                      <span className="text-sm text-muted-foreground">Upload profile picture</span>
+                      <p className="text-xs text-muted-foreground">
+                        JPEG, PNG, or WebP image (max 5 MB)
+                      </p>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      JPEG, PNG, or WebP image (max 5 MB)
-                    </p>
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* Account info — read-only */}
-                <div className="flex flex-wrap gap-4">
-                  <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                      <Crown className="h-3 w-3" />
-                      Account Tier
-                    </p>
-                    <Badge
-                      variant="secondary"
-                      className={cn(
-                        user.account_tier === 3 && 'border-2 border-[#FFD700] text-[#FFD700]'
-                      )}
-                    >
-                      {user.account_tier === 3 ? 'Gold' : 'Normal'}
-                    </Badge>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                      <Calendar className="h-3 w-3" />
-                      Member Since
-                    </p>
-                    <p className="text-sm font-medium">{memberSince}</p>
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* Basic Info */}
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="full-name">Display Name</Label>
-                    <Input
-                      id="full-name"
-                      placeholder="John Doe"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                    />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="username">Username</Label>
-                    <Input
-                      id="username"
-                      placeholder="johndoe"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="bio">Bio</Label>
-                    <Textarea
-                      id="bio"
-                      placeholder="Tell us about yourself..."
-                      value={bio}
-                      onChange={(e) => setBio(e.target.value)}
-                      rows={4}
-                      maxLength={500}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      {bio.length}/500 characters
-                    </p>
-                  </div>
-
-                  {/* Profile Badges */}
-                  {(experienceLevel || marketFocus || riskProfile) && (
-                    <>
-                      <Separator />
-                      <div className="space-y-3">
-                        <Label className="text-sm font-medium">Profile Badges</Label>
-                        <div className="flex flex-wrap gap-2">
-                          {experienceLevel && (
-                            <Badge variant="secondary" className="capitalize">
-                              {experienceLevel}
-                            </Badge>
-                          )}
-                          {marketFocus && (
-                            <Badge variant="secondary">
-                              {marketFocus === 'US' ? 'US Markets' : marketFocus === 'EU' ? 'EU Markets' : 'US & EU Markets'}
-                            </Badge>
-                          )}
-                          {riskProfile && (
-                            <Badge variant="secondary" className="capitalize">
-                              {riskProfile}
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          Your profile badges are displayed based on your preferences
+                  {/* Account info — read-only */}
+                  <div className="rounded-xl border bg-card p-5">
+                    <div className="flex flex-wrap gap-6">
+                      <div className="space-y-1">
+                        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <Crown className="h-3 w-3" />
+                          Account Tier
                         </p>
+                        <Badge
+                          variant="secondary"
+                          className={cn(
+                            user.account_tier === 3 && 'border-2 border-[#FFD700] text-[#FFD700]'
+                          )}
+                        >
+                          {user.account_tier === 3 ? 'Gold' : 'Normal'}
+                        </Badge>
                       </div>
-                    </>
+                      <div className="space-y-1">
+                        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <Calendar className="h-3 w-3" />
+                          Member Since
+                        </p>
+                        <p className="text-sm font-medium text-foreground">{memberSince}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Basic Info */}
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="full-name">Display Name</Label>
+                      <Input
+                        id="full-name"
+                        placeholder="John Doe"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="username">Username</Label>
+                      <Input
+                        id="username"
+                        placeholder="johndoe"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="bio">Bio</Label>
+                      <Textarea
+                        id="bio"
+                        placeholder="Tell us about yourself..."
+                        value={bio}
+                        onChange={(e) => setBio(e.target.value)}
+                        rows={4}
+                        maxLength={500}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        {bio.length}/500 characters
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Profile Badges — live preview of how these read on your public profile */}
+                  {(experienceLevel || marketFocus || riskProfile) && (
+                    <div className="space-y-3 rounded-lg border bg-muted/20 p-4">
+                      <Label className="text-sm font-medium">Profile Badges</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {experienceLevel && (
+                          <Badge variant="secondary" className="capitalize">
+                            {experienceLevel}
+                          </Badge>
+                        )}
+                        {marketFocus && (
+                          <Badge variant="secondary">
+                            {marketFocus === 'US' ? 'US Markets' : marketFocus === 'EU' ? 'EU Markets' : 'US & EU Markets'}
+                          </Badge>
+                        )}
+                        {riskProfile && (
+                          <Badge variant="secondary" className="capitalize">
+                            {riskProfile}
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Shown on your public profile, based on the preferences you set below.
+                      </p>
+                    </div>
                   )}
                 </div>
-              </div>
-            )}
+              )}
 
-            {activeSection === 'preferences' && (
-              <div className="space-y-6 max-w-2xl">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="experience-level" className="flex items-center gap-2">
-                      <Briefcase className="h-4 w-4" />
-                      Experience Level
-                    </Label>
-                    <Select
-                      value={experienceLevel}
-                      onValueChange={(value: 'beginner' | 'intermediate' | 'advanced') =>
-                        setExperienceLevel(value)
-                      }
-                    >
-                      <SelectTrigger id="experience-level">
-                        <SelectValue placeholder="Select your experience level" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="beginner">Beginner</SelectItem>
-                        <SelectItem value="intermediate">Intermediate</SelectItem>
-                        <SelectItem value="advanced">Advanced</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground">
-                      We&apos;ll customize data display based on your experience level
-                    </p>
-                    {experienceLevel && (
-                      <div className="mt-2">
-                        <Badge variant="secondary" className="capitalize">
-                          {experienceLevel}
-                        </Badge>
-                      </div>
-                    )}
-                  </div>
+              {activeSection === 'preferences' && (
+                <div className="space-y-6 max-w-2xl">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="experience-level" className="flex items-center gap-2">
+                        <Briefcase className="h-4 w-4" />
+                        Experience Level
+                      </Label>
+                      <Select
+                        value={experienceLevel}
+                        onValueChange={(value: 'beginner' | 'intermediate' | 'advanced') =>
+                          setExperienceLevel(value)
+                        }
+                      >
+                        <SelectTrigger id="experience-level">
+                          <SelectValue placeholder="Select your experience level" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="beginner">Beginner</SelectItem>
+                          <SelectItem value="intermediate">Intermediate</SelectItem>
+                          <SelectItem value="advanced">Advanced</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        We&apos;ll customize data display based on your experience level
+                      </p>
+                    </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="market-focus" className="flex items-center gap-2">
-                      <Target className="h-4 w-4" />
-                      Market Focus
-                    </Label>
-                    <Select
-                      value={marketFocus}
-                      onValueChange={(value: 'US' | 'EU' | 'BOTH') => setMarketFocus(value)}
-                    >
-                      <SelectTrigger id="market-focus">
-                        <SelectValue placeholder="Select your market focus" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="US">US Markets</SelectItem>
-                        <SelectItem value="EU">EU Markets</SelectItem>
-                        <SelectItem value="BOTH">Both US & EU</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {marketFocus && (
-                      <div className="mt-2">
-                        <Badge variant="outline">
-                          {marketFocus === 'US' ? 'US Markets' : marketFocus === 'EU' ? 'EU Markets' : 'US & EU Markets'}
-                        </Badge>
-                      </div>
-                    )}
-                  </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="market-focus" className="flex items-center gap-2">
+                        <Target className="h-4 w-4" />
+                        Market Focus
+                      </Label>
+                      <Select
+                        value={marketFocus}
+                        onValueChange={(value: 'US' | 'EU' | 'BOTH') => setMarketFocus(value)}
+                      >
+                        <SelectTrigger id="market-focus">
+                          <SelectValue placeholder="Select your market focus" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="US">US Markets</SelectItem>
+                          <SelectItem value="EU">EU Markets</SelectItem>
+                          <SelectItem value="BOTH">Both US & EU</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Prioritizes news, context, and defaults for the exchanges you follow
+                      </p>
+                    </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="risk-profile" className="flex items-center gap-2">
-                      <TrendingUp className="h-4 w-4" />
-                      Risk Profile
-                    </Label>
-                    <Select
-                      value={riskProfile}
-                      onValueChange={(value: 'conservative' | 'balanced' | 'aggressive') =>
-                        setRiskProfile(value)
-                      }
-                    >
-                      <SelectTrigger id="risk-profile">
-                        <SelectValue placeholder="Select your risk tolerance" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="conservative">Conservative</SelectItem>
-                        <SelectItem value="balanced">Balanced</SelectItem>
-                        <SelectItem value="aggressive">Aggressive</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {riskProfile && (
-                      <div className="mt-2">
-                        <Badge variant="secondary" className="capitalize">
-                          {riskProfile}
-                        </Badge>
-                      </div>
-                    )}
+                    <div className="space-y-2">
+                      <Label htmlFor="risk-profile" className="flex items-center gap-2">
+                        <TrendingUp className="h-4 w-4" />
+                        Risk Profile
+                      </Label>
+                      <Select
+                        value={riskProfile}
+                        onValueChange={(value: 'conservative' | 'balanced' | 'aggressive') =>
+                          setRiskProfile(value)
+                        }
+                      >
+                        <SelectTrigger id="risk-profile">
+                          <SelectValue placeholder="Select your risk tolerance" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="conservative">Conservative</SelectItem>
+                          <SelectItem value="balanced">Balanced</SelectItem>
+                          <SelectItem value="aggressive">Aggressive</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Shapes how Bull frames analysis and the ideas Discover surfaces for you
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Error/Success Messages */}
-            {error && (
-              <div className="mt-4 p-3 rounded-md bg-destructive/10 text-destructive text-sm animate-in fade-in slide-in-from-bottom-2">
-                {error}
-              </div>
-            )}
+              {/* Error message */}
+              {error && (
+                <div className="mt-4 max-w-2xl rounded-md bg-destructive/10 p-3 text-sm text-destructive animate-in fade-in slide-in-from-bottom-2">
+                  {error}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-
-        {/* Footer */}
-        <div className="border-t px-6 py-4 flex justify-end gap-3">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Close
-          </Button>
         </div>
       </DialogContent>
     </Dialog>
