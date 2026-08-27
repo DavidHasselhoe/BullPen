@@ -718,6 +718,29 @@ html.animated-background-active [data-slot="dialog-content"] {
     to  { left: 100%; }
   }
 
+  /* ── Brand solid fill — onboarding "save profile" CTA ────────────────────
+     Not an AI-generation button, so it deliberately skips .animate-ai-pill-shine's
+     shine sweep (that motion language stays exclusive to AI actions per
+     DESIGN.md's One Signal Rule). This is a narrow 4th earned use of Signal
+     Emerald as a solid fill, alongside the landing CTA / AI buttons /
+     paywall pulse — the get-started flow's final "save what you just built"
+     step, a real conversion moment, not general chrome. Keep this scoped to
+     that one button; don't reach for it as a generic "make a button pop"
+     utility. Same !important rationale as .animate-ai-pill-shine above: cva's
+     base `bg-primary text-primary-foreground` must lose unconditionally. */
+  .btn-brand-solid {
+    background: var(--brand) !important;
+    color: var(--brand-ink) !important;
+    border: 1px solid oklch(1 0 0 / 0.2);
+    transition: opacity 150ms ease, transform 200ms ease;
+  }
+  .btn-brand-solid:hover:not(:disabled) {
+    opacity: 0.92;
+  }
+  .btn-brand-solid:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
   /* ── Conversion CTA pulse — paywall dialogs ───────────────────────────────
      A third, deliberate at-rest-motion exception alongside the landing CTA
      and AI-action buttons (see DESIGN.md's Earned-Depth Rule) — reserved for

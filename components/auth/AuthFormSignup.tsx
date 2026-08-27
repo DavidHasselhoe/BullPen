@@ -8,12 +8,14 @@ import { PasswordInput } from './PasswordInput';
 import { Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { signUp } from '@/lib/auth/auth';
+import { cn } from '@/lib/utils';
 
 interface AuthFormSignupProps {
   onSuccess?: () => void;
   onError?: (error: string) => void;
   submitLabel?: string;
   submitLoadingLabel?: string;
+  submitClassName?: string;
 }
 
 export function AuthFormSignup({
@@ -21,6 +23,7 @@ export function AuthFormSignup({
   onError,
   submitLabel = 'Create account',
   submitLoadingLabel = 'Creating account...',
+  submitClassName,
 }: AuthFormSignupProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -172,7 +175,7 @@ export function AuthFormSignup({
 
       <Button
         type="submit"
-        className="h-11 w-full rounded-lg"
+        className={cn('h-11 w-full rounded-lg', submitClassName)}
         disabled={isLoading || !isValid}
       >
         {isLoading ? (

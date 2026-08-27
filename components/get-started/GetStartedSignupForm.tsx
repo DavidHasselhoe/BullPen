@@ -83,6 +83,7 @@ export function GetStartedSignupForm() {
         onError={setError}
         submitLabel="Save my profile"
         submitLoadingLabel="Saving..."
+        submitClassName="btn-brand-solid"
       />
 
       <p style={{ marginTop: 16, fontSize: 12, color: 'var(--fg-dim)', textAlign: 'center' }}>
