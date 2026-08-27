@@ -9,6 +9,8 @@
  */
 
 import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -82,28 +84,35 @@ function fmt(value: number | null | undefined, type: 'currency' | 'ratio' | 'per
   }
 }
 
-function formatFetchedAt(iso: string | null | undefined): string | null {
+function formatFetchedAt(iso: string | null | undefined, t: TFunction): string | null {
   if (!iso) return null;
   const d = new Date(iso);
   if (isNaN(d.getTime())) return null;
   const now = new Date();
   const isToday = d.toDateString() === now.toDateString();
   const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-  if (isToday) return `Updated today at ${time}`;
-  return `Updated ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at ${time}`;
+  if (isToday) return t('statisticsGridUpdatedToday', { time });
+  return t('statisticsGridUpdatedOn', { date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), time });
 }
 
 /** "How big is this company?" — a 5-band log scale with a marker. */
-function CapBandScale({ marketCap }: { marketCap: number }) {
+function CapBandScale({ marketCap, t }: { marketCap: number; t: TFunction }) {
   const { band, position } = marketCapBand(marketCap);
-  const bands = ['Micro', 'Small', 'Mid', 'Large', 'Mega'] as const;
+  const bands = [
+    { key: 'Micro', label: t('statisticsGridBandMicro') },
+    { key: 'Small', label: t('statisticsGridBandSmall') },
+    { key: 'Mid', label: t('statisticsGridBandMid') },
+    { key: 'Large', label: t('statisticsGridBandLarge') },
+    { key: 'Mega', label: t('statisticsGridBandMega') },
+  ] as const;
+  const bandLabel = bands.find((b) => b.key === band)?.label ?? band;
   return (
-    <div className="w-full" role="img" aria-label={`Company size: ${band}-cap`}>
+    <div className="w-full" role="img" aria-label={t('statisticsGridCompanySizeAriaLabel', { band: bandLabel })}>
       <div className="relative flex h-1.5 w-full gap-[3px]">
         {bands.map((b) => (
           <div
-            key={b}
-            className={cn('h-full flex-1 rounded-full', b === band ? 'bg-foreground/50' : 'bg-muted')}
+            key={b.key}
+            className={cn('h-full flex-1 rounded-full', b.key === band ? 'bg-foreground/50' : 'bg-muted')}
           />
         ))}
         <div
@@ -113,7 +122,7 @@ function CapBandScale({ marketCap }: { marketCap: number }) {
       </div>
       <div className="mt-1.5 flex justify-between text-xs leading-none text-muted-foreground">
         {bands.map((b) => (
-          <span key={b} className={cn(b === band && 'font-medium text-foreground/80')}>{b}</span>
+          <span key={b.key} className={cn(b.key === band && 'font-medium text-foreground/80')}>{b.label}</span>
         ))}
       </div>
     </div>
@@ -150,6 +159,7 @@ export function StatisticsGrid({
   industry?: string | null;
   forceFull?: boolean;
 }) {
+  const { t } = useTranslation('stock');
   const { isSimplified: rawSimplified } = useExperienceLevel();
   // Local, non-destructive "show everything" toggle. Expanding the full stats
   // must NOT rewrite the user's saved experience level (it used to silently call
@@ -200,7 +210,7 @@ export function StatisticsGrid({
   if (isLoading) {
     return (
       <Card className="mb-8">
-        <CardHeader><CardTitle className="text-base font-semibold">Key Numbers</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base font-semibold">{t('statisticsGridTitle')}</CardTitle></CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -216,9 +226,9 @@ export function StatisticsGrid({
     if (data?.error === 'plan_restricted') {
       return (
         <Card className="mb-8">
-          <CardHeader className="pb-2"><CardTitle className="text-base font-semibold">Key Numbers</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-base font-semibold">{t('statisticsGridTitle')}</CardTitle></CardHeader>
           <CardContent className="pt-0">
-            <p className="text-sm text-muted-foreground py-6 text-center">Statistics require an Enterprise plan.</p>
+            <p className="text-sm text-muted-foreground py-6 text-center">{t('statisticsGridEnterprisePlanRequired')}</p>
           </CardContent>
         </Card>
       );
@@ -228,7 +238,7 @@ export function StatisticsGrid({
   if (!data.stats) return null;
 
   const s = data.stats;
-  const updatedLabel = formatFetchedAt(data.fetchedAt);
+  const updatedLabel = formatFetchedAt(data.fetchedAt, t);
   const sig = (key: string): SignalValue | undefined => (signals ? signals[key] : undefined);
 
   const hasRange = s.week52High != null && s.week52Low != null && s.week52High > s.week52Low;
@@ -245,7 +255,7 @@ export function StatisticsGrid({
   const forwardPeDetail = (metric: ValuationMetric) =>
     foldsForwardPe(selection, metric) && s.peRatioForward != null ? (
       <p className="text-xs tabular-nums text-muted-foreground">
-        Forward P/E {fmt(s.peRatioForward, 'ratio')}
+        {t('statisticsGridForwardPe', { value: fmt(s.peRatioForward, 'ratio') })}
         {s.peRatioTTM != null && s.peRatioForward < s.peRatioTTM && ' ↓'}
         {s.peRatioTTM != null && s.peRatioForward > s.peRatioTTM && ' ↑'}
       </p>
@@ -260,7 +270,7 @@ export function StatisticsGrid({
         key="range"
         label="52W Range"
         value={price != null ? `$${price.toFixed(2)}` : `${fmt(s.week52Low, 'currency')} – ${fmt(s.week52High, 'currency')}`}
-        insight={price != null ? week52Insight(s.week52Low!, s.week52High!, price) : 'The price range over the past year'}
+        insight={price != null ? week52Insight(s.week52Low!, s.week52High!, price) : t('statisticsGridRangeFallbackInsight')}
         tourId="stat-52w-high"
         ticker={ticker}
         onAskAI={handleAskAI}
@@ -269,7 +279,11 @@ export function StatisticsGrid({
           low={s.week52Low!}
           high={s.week52High!}
           current={price}
-          srLabel={`52-week range ${fmt(s.week52Low, 'currency')} to ${fmt(s.week52High, 'currency')}${price != null ? `, currently ${fmt(price, 'currency')}` : ''}`}
+          srLabel={
+            price != null
+              ? t('statisticsGridRangeSrLabelCurrent', { low: fmt(s.week52Low, 'currency'), high: fmt(s.week52High, 'currency'), current: fmt(price, 'currency') })
+              : t('statisticsGridRangeSrLabel', { low: fmt(s.week52Low, 'currency'), high: fmt(s.week52High, 'currency') })
+          }
         />
       </MetricCard>
     );
@@ -286,7 +300,7 @@ export function StatisticsGrid({
         ticker={ticker}
         onAskAI={handleAskAI}
       >
-        <CapBandScale marketCap={s.marketCap} />
+        <CapBandScale marketCap={s.marketCap} t={t} />
       </MetricCard>
     );
   }
@@ -310,8 +324,8 @@ export function StatisticsGrid({
             min={PE_DOMAIN.min}
             max={PE_DOMAIN.max}
             signal={sig('peRatioTTM')}
-            benchmark={dist('pe_ratio') ? { value: dist('pe_ratio')!.median, label: 'typical' } : undefined}
-            srLabel={`P/E ratio ${fmt(s.peRatioTTM, 'ratio')} on a 0 to 60 scale`}
+            benchmark={dist('pe_ratio') ? { value: dist('pe_ratio')!.median, label: t('statisticsGridBenchmarkTypical') } : undefined}
+            srLabel={t('statisticsGridPeSrLabel', { value: fmt(s.peRatioTTM, 'ratio') })}
             minLabel="0"
             maxLabel="60"
           />
@@ -335,8 +349,8 @@ export function StatisticsGrid({
           value={s.psRatio}
           min={PS_DOMAIN.min}
           max={PS_DOMAIN.max}
-          benchmark={dist('ps_ratio') ? { value: dist('ps_ratio')!.median, label: 'typical' } : undefined}
-          srLabel={`Price-to-sales ${fmt(s.psRatio, 'ratio')} on a 0 to 20 scale`}
+          benchmark={dist('ps_ratio') ? { value: dist('ps_ratio')!.median, label: t('statisticsGridBenchmarkTypical') } : undefined}
+          srLabel={t('statisticsGridPsSrLabel', { value: fmt(s.psRatio, 'ratio') })}
           minLabel="0"
           maxLabel="20"
         />
@@ -364,21 +378,21 @@ export function StatisticsGrid({
             min={MARGIN_DOMAIN.min}
             max={MARGIN_DOMAIN.max}
             signal={sig('profitMargin')}
-            benchmark={dist('profit_margin') ? { value: dist('profit_margin')!.median, label: 'typical' } : undefined}
-            srLabel={`Profit margin ${fmt(s.profitMargin, 'percent')}`}
+            benchmark={dist('profit_margin') ? { value: dist('profit_margin')!.median, label: t('statisticsGridBenchmarkTypical') } : undefined}
+            srLabel={t('statisticsGridMarginSrLabel', { value: fmt(s.profitMargin, 'percent') })}
             minLabel="-10%"
             maxLabel="40%"
           />
         )}
         {s.revenueGrowthTTM != null && (
           <div className="flex items-center gap-2" data-tour="stat-rev-growth">
-            <span className="w-20 shrink-0 text-xs text-muted-foreground">Rev Growth</span>
+            <span className="w-20 shrink-0 text-xs text-muted-foreground">{t('statisticsGridRevGrowthLabel')}</span>
             <MeterBar
               value={s.revenueGrowthTTM}
               min={GROWTH_DOMAIN.min}
               max={GROWTH_DOMAIN.max}
               signal={sig('revenueGrowthTTM')}
-              srLabel={`Revenue growth ${fmt(s.revenueGrowthTTM, 'percent')}`}
+              srLabel={t('statisticsGridRevGrowthSrLabel', { value: fmt(s.revenueGrowthTTM, 'percent') })}
               className="flex-1"
               minLabel="-20%"
               maxLabel="40%"
@@ -394,7 +408,7 @@ export function StatisticsGrid({
     <MetricCard
       key="div"
       label="Dividend Yield"
-      value={s.dividendYield != null && s.dividendYield > 0 ? fmt(s.dividendYield, 'percent') : 'None'}
+      value={s.dividendYield != null && s.dividendYield > 0 ? fmt(s.dividendYield, 'percent') : t('statisticsGridDividendNone')}
       signal={s.dividendYield != null && s.dividendYield > 0 ? sig('dividendYield') : undefined}
       insight={dividendInsight(s.dividendYield)}
       context={s.dividendYield != null && s.dividendYield > 0 ? sectorContext(s.dividendYield, dist('dividend_yield'), 'yield', benchmarkLabel) : ''}
@@ -408,8 +422,8 @@ export function StatisticsGrid({
           min={YIELD_DOMAIN.min}
           max={YIELD_DOMAIN.max}
           signal={sig('dividendYield')}
-          benchmark={dist('dividend_yield') ? { value: dist('dividend_yield')!.median, label: 'typical' } : undefined}
-          srLabel={`Dividend yield ${fmt(s.dividendYield, 'percent')} on a 0 to 8 percent scale`}
+          benchmark={dist('dividend_yield') ? { value: dist('dividend_yield')!.median, label: t('statisticsGridBenchmarkTypical') } : undefined}
+          srLabel={t('statisticsGridDividendSrLabel', { value: fmt(s.dividendYield, 'percent') })}
           minLabel="0%"
           maxLabel="8%"
         />
@@ -440,8 +454,8 @@ export function StatisticsGrid({
           industryLabel={benchmarkLabel || 'Industry'}
           srLabel={
             dist('beta')
-              ? `Beta ${fmt(s.beta, 'ratio')}, versus the market average of 1.0 and the ${benchmarkLabel || 'industry'} average of ${dist('beta')!.median.toFixed(2)}`
-              : `Beta ${fmt(s.beta, 'ratio')}, where 1 moves with the market`
+              ? t('statisticsGridBetaSrLabelWithBenchmark', { value: fmt(s.beta, 'ratio'), group: benchmarkLabel || t('volatilityIndustry'), groupValue: dist('beta')!.median.toFixed(2) })
+              : t('statisticsGridBetaSrLabelSimple', { value: fmt(s.beta, 'ratio') })
           }
         />
       </MetricCard>
@@ -466,8 +480,8 @@ export function StatisticsGrid({
           value={s.pbRatio}
           min={PB_DOMAIN.min}
           max={PB_DOMAIN.max}
-          benchmark={dist('pb_ratio') ? { value: dist('pb_ratio')!.median, label: 'typical' } : undefined}
-          srLabel={`Price-to-book ${fmt(s.pbRatio, 'ratio')} on a 0 to 10 scale`}
+          benchmark={dist('pb_ratio') ? { value: dist('pb_ratio')!.median, label: t('statisticsGridBenchmarkTypical') } : undefined}
+          srLabel={t('statisticsGridPbSrLabel', { value: fmt(s.pbRatio, 'ratio') })}
           minLabel="0"
           maxLabel="10"
         />
@@ -491,8 +505,8 @@ export function StatisticsGrid({
           value={s.evToEbitda}
           min={EV_EBITDA_DOMAIN.min}
           max={EV_EBITDA_DOMAIN.max}
-          benchmark={dist('ev_to_ebitda') ? { value: dist('ev_to_ebitda')!.median, label: 'typical' } : undefined}
-          srLabel={`EV to EBITDA ${fmt(s.evToEbitda, 'ratio')} on a 0 to 30 scale`}
+          benchmark={dist('ev_to_ebitda') ? { value: dist('ev_to_ebitda')!.median, label: t('statisticsGridBenchmarkTypical') } : undefined}
+          srLabel={t('statisticsGridEvEbitdaSrLabel', { value: fmt(s.evToEbitda, 'ratio') })}
           minLabel="0"
           maxLabel="30"
         />
@@ -529,7 +543,7 @@ export function StatisticsGrid({
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-baseline gap-3 min-w-0">
-            <CardTitle className="text-base font-semibold shrink-0">Key Numbers</CardTitle>
+            <CardTitle className="text-base font-semibold shrink-0">{t('statisticsGridTitle')}</CardTitle>
             {updatedLabel && (
               <span className="text-xs text-muted-foreground/80 font-mono tracking-wide truncate">
                 {updatedLabel}
@@ -541,13 +555,13 @@ export function StatisticsGrid({
               onClick={() => setExpandedFull(true)}
               className="text-xs text-muted-foreground hover:text-primary transition-colors shrink-0"
             >
-              Show full statistics →
+              {t('statisticsGridShowFullStatistics')} →
             </button>
           )}
         </div>
         {isSimplified && (
           <p className="text-xs text-muted-foreground mt-0.5">
-            The most important numbers to evaluate this company. Hover any label for an explanation.
+            {t('statisticsGridSimplifiedHint')}
           </p>
         )}
       </CardHeader>
@@ -564,7 +578,7 @@ export function StatisticsGrid({
               aria-expanded={showAll}
             >
               {showAll ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-              {showAll ? 'Hide detailed statistics' : 'All statistics'}
+              {showAll ? t('statisticsGridHideDetailed') : t('statisticsGridAllStatistics')}
             </button>
             {showAll && (
               <div className="mt-2 grid grid-cols-1 gap-x-10 sm:grid-cols-2 lg:grid-cols-3">
