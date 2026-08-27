@@ -1,8 +1,10 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import dynamic from 'next/dynamic';
-import { Maximize2, Sparkles } from 'lucide-react';
+import { Maximize2, Sparkles, X } from 'lucide-react';
 
 import { useQuery } from '@tanstack/react-query';
 import { LineChart, Line } from '@/components/charts/line-chart';
@@ -55,10 +57,16 @@ const RANGE_DISPLAY: Record<Range, string> = {
   '1D': '1D', '1W': '5D', '1M': '1M', '6M': '6M', '1Y': '1Y', 'YTD': 'YTD', '5Y': '5Y', 'MAX': 'ALL',
 };
 // Human-readable label used in the performance banner
-const RANGE_LABEL: Record<Range, string> = {
-  '1D': 'today', '1W': 'this week', '1M': 'this month',
-  '6M': 'past 6 months', '1Y': 'past year', 'YTD': 'year to date', '5Y': 'past 5 years', 'MAX': 'all time',
+const RANGE_LABEL_KEYS: Record<Range, string> = {
+  '1D': 'stockPricePanelRangeLabelToday', '1W': 'stockPricePanelRangeLabelWeek', '1M': 'stockPricePanelRangeLabelMonth',
+  '6M': 'stockPricePanelRangeLabel6Months', '1Y': 'stockPricePanelRangeLabelYear', 'YTD': 'stockPricePanelRangeLabelYtd',
+  '5Y': 'stockPricePanelRangeLabel5Years', 'MAX': 'stockPricePanelRangeLabelAll',
 };
+function getRangeLabel(t: TFunction): Record<Range, string> {
+  return Object.fromEntries(
+    Object.entries(RANGE_LABEL_KEYS).map(([range, key]) => [range, t(key)])
+  ) as Record<Range, string>;
+}
 
 type Indicator = 'sma50' | 'sma200' | 'ema20' | 'bbands' | 'rsi' | 'macd';
 interface IndicatorOption { key: Indicator; label: string; type: string; params?: Record<string, number> }
@@ -135,6 +143,8 @@ function StatItem({ label, value, valueClass }: { label: string; value: string; 
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function StockPricePanel({ ticker }: { ticker: string }) {
+  const { t } = useTranslation('stock');
+  const RANGE_LABEL = getRangeLabel(t);
   const { prefs, setPref, setPrefs, reset: resetPrefs } = useChartPrefs();
   const [range, setRange] = useState<Range>(prefs.defaultRange as Range);
 
@@ -441,11 +451,11 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
         title:
           m.kind === 'buy'
             ? myPurchases.length > 0
-              ? `Bought at ${fmtPrice(m.price)} on ${m.dateStr}`
-              : `Bought at ${fmtPrice(m.price)} avg on ${m.dateStr}`
-            : `Sold ${m.quantity} at ${fmtPrice(m.price)} on ${m.dateStr}`,
+              ? t('stockPricePanelMarkerBought', { price: fmtPrice(m.price), date: m.dateStr })
+              : t('stockPricePanelMarkerBoughtAvg', { price: fmtPrice(m.price), date: m.dateStr })
+            : t('stockPricePanelMarkerSold', { quantity: m.quantity, price: fmtPrice(m.price), date: m.dateStr }),
       }));
-  }, [prefs.showTransactions, myHolding, mySales, myPurchases, chartDisplayData]);
+  }, [prefs.showTransactions, myHolding, mySales, myPurchases, chartDisplayData, t]);
 
   // Right block (dual mode) — derive extended price from the last candle when it's a
   // pre/post session so the header and chart tooltip always read from the same source.
@@ -524,7 +534,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
                   </div>
                   <div className="flex items-center gap-2 mt-1.5">
                     <span className="text-[11px] uppercase tracking-widest text-muted-foreground/80 font-semibold">
-                      At Close
+                      {t('stockPricePanelAtClose')}
                     </span>
                     <button
                       type="button"
@@ -532,7 +542,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
                       className="flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground hover:border-foreground/30"
                     >
                       <Sparkles className="h-3 w-3" />
-                      Why?
+                      {t('stockPricePanelWhyButton')}
                     </button>
                   </div>
                 </div>
@@ -556,7 +566,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
                       <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                     )}
                     <span className="text-[11px] uppercase tracking-widest text-muted-foreground/80 font-semibold">
-                      {extHours!.pre_or_post === 'pre' ? 'Pre-Market' : 'After-Hours'}
+                      {extHours!.pre_or_post === 'pre' ? t('stockPricePanelPreMarket') : t('stockPricePanelAfterHours')}
                     </span>
                   </div>
                 </div>
@@ -570,7 +580,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
 
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-2.5">
                   <span className={cn('text-sm font-medium tabular-nums', priceColor)}>
-                    {isPositive ? '+' : ''}{fmtPrice(change)} ({isPositive ? '+' : ''}{changePct.toFixed(2)}%) today
+                    {isPositive ? '+' : ''}{fmtPrice(change)} ({isPositive ? '+' : ''}{changePct.toFixed(2)}%) {RANGE_LABEL['1D']}
                   </span>
 
                   {range === '1D' && (
@@ -580,14 +590,14 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
                       className="flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground hover:border-foreground/30"
                     >
                       <Sparkles className="h-3 w-3" />
-                      Why?
+                      {t('stockPricePanelWhyButton')}
                     </button>
                   )}
 
                   {isLive && (
                     <span className="flex items-center gap-1 text-xs text-emerald-400 font-medium">
                       <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                      Live
+                      {t('stockPricePanelLive')}
                     </span>
                   )}
                 </div>
@@ -641,8 +651,8 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
                   <button
                     type="button"
                     onClick={() => setAdvancedOpen(true)}
-                    title="Advanced chart (fullscreen)"
-                    aria-label="Open advanced fullscreen chart"
+                    title={t('stockPricePanelAdvancedChartTitle')}
+                    aria-label={t('stockPricePanelAdvancedChartAriaLabel')}
                     className="rounded-md p-1.5 text-muted-foreground/80 hover:text-foreground hover:bg-muted/60 transition-colors"
                   >
                     <Maximize2 className="h-3.5 w-3.5" />
@@ -671,9 +681,10 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
                 {activeIndicators.size > 0 && (
                   <button
                     onClick={() => setActiveIndicators(new Set())}
-                    className="rounded-full px-2 py-0.5 text-[11px] font-medium border border-border text-muted-foreground hover:text-foreground transition-all"
+                    aria-label={t('stockPricePanelClearIndicators')}
+                    className="rounded-full p-1 border border-border text-muted-foreground hover:text-foreground transition-all"
                   >
-                    ✕
+                    <X className="h-2.5 w-2.5" />
                   </button>
                 )}
               </div>
@@ -688,13 +699,13 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
 
         {!isLoadingChart && candleError && (
           <div className="flex h-[300px] items-center justify-center text-sm text-muted-foreground">
-            Couldn&apos;t load chart data
+            {t('stockPricePanelLoadError')}
           </div>
         )}
 
         {!isLoadingChart && !candleError && candleData?.candles === null && (
           <div className="flex h-[300px] items-center justify-center text-sm text-muted-foreground">
-            No chart data available
+            {t('advancedChartNoData')}
           </div>
         )}
 
@@ -750,8 +761,8 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
               showTime={isIntradayRange}
               showYear={YEAR_DISAMBIGUATED_RANGES.has(range)}
               rows={(point) => {
-                const rows = [{ label: 'Price', value: fmtPrice(point.price as number), color: lineColor }];
-                if ((point.volume as number) > 0) rows.push({ label: 'Vol', value: fmtVol(point.volume as number), color: 'var(--chart-grid)' });
+                const rows = [{ label: t('advancedChartPriceLabel'), value: fmtPrice(point.price as number), color: lineColor }];
+                if ((point.volume as number) > 0) rows.push({ label: t('stockPricePanelTooltipVol'), value: fmtVol(point.volume as number), color: 'var(--chart-grid)' });
                 if (activeIndicators.has('sma50') && point.sma50 != null) rows.push({ label: 'SMA 50', value: fmtPrice(point.sma50 as number), color: INDICATOR_COLORS.sma50 });
                 if (activeIndicators.has('sma200') && point.sma200 != null) rows.push({ label: 'SMA 200', value: fmtPrice(point.sma200 as number), color: INDICATOR_COLORS.sma200 });
                 if (activeIndicators.has('ema20') && point.ema != null) rows.push({ label: 'EMA 20', value: fmtPrice(point.ema as number), color: INDICATOR_COLORS.ema20 });
@@ -773,7 +784,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
         <div className="border-t border-border/30">
           <div className="px-5 pt-2 pb-0.5">
             <span className="text-[11px] text-muted-foreground/80 font-medium uppercase tracking-widest">
-              Volume
+              {t('stockPricePanelVolumeLabel')}
             </span>
           </div>
           <BarChart data={bklitData} xDataKey="date" timeScale margin={{ top: 2, right: 28, bottom: 0, left: 28 }} style={{ height: 58 }}>
@@ -833,10 +844,10 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
       {/* ── Stats bar ────────────────────────────────────────────────────── */}
       {(openPrice > 0 || dayHigh > 0 || dayLow > 0 || prevClose > 0) && (
         <div className="px-5 py-3 flex flex-wrap items-center gap-x-6 gap-y-1.5 border-t border-border/20">
-          {openPrice > 0  && <StatItem label="Open"       value={fmtPrice(openPrice)} />}
-          {dayHigh > 0    && <StatItem label="High"       value={fmtPrice(dayHigh)}   valueClass="text-emerald-400" />}
-          {dayLow > 0     && <StatItem label="Low"        value={fmtPrice(dayLow)}    valueClass="text-red-400" />}
-          {prevClose > 0  && <StatItem label="Prev Close" value={fmtPrice(prevClose)} />}
+          {openPrice > 0  && <StatItem label={t('stockPricePanelOpenLabel')}       value={fmtPrice(openPrice)} />}
+          {dayHigh > 0    && <StatItem label={t('stockPricePanelHighLabel')}       value={fmtPrice(dayHigh)}   valueClass="text-emerald-400" />}
+          {dayLow > 0     && <StatItem label={t('stockPricePanelLowLabel')}        value={fmtPrice(dayLow)}    valueClass="text-red-400" />}
+          {prevClose > 0  && <StatItem label={t('stockPricePanelPrevCloseLabel')}  value={fmtPrice(prevClose)} />}
         </div>
       )}
 
