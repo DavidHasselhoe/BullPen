@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { PasswordInput } from './PasswordInput';
 import { Loader2 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { signUp } from '@/lib/auth/auth';
 import { cn } from '@/lib/utils';
 
@@ -75,7 +75,15 @@ export function AuthFormSignup({
       }
 
       if (result.requiresEmailConfirmation) {
-        const errorMsg = 'Please check your email to confirm your account. After confirming, you can sign in.';
+        // Deliberately worded to read correctly whether this is a genuine new
+        // signup or an already-registered email that lib/auth/auth.ts masks
+        // behind the same success response (anti-enumeration: revealing which
+        // case happened would let the signup form be used to probe registered
+        // emails). Never say "check your email" alone here — for the masked
+        // duplicate case no email is actually sent, so that phrasing alone
+        // reads as a bug. The "or sign in" clause is the honest nudge for
+        // that case without confirming it outright.
+        const errorMsg = 'Check your inbox for a confirmation link, or sign in if you already have an account.';
         setError(errorMsg);
         onError?.(errorMsg);
         setIsLoading(false);
@@ -102,21 +110,6 @@ export function AuthFormSignup({
       onSubmit={handleSubmit}
       className="space-y-5"
     >
-      <AnimatePresence mode="wait">
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.15 }}
-            className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive"
-            role="alert"
-          >
-            {error}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       <div className="space-y-2">
         <Label htmlFor="signup-email" className="text-sm font-medium">
           Email

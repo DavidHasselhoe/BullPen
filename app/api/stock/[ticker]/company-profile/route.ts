@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCompanyProfile, getKeyExecutives, withRateLimitRetry, TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
+import { getCompanyProfile, getKeyExecutives, withRateLimitRetry, TwelveDataRateLimitError, TwelveDataInvalidSymbolError } from '@/lib/twelvedata/twelvedata-client';
 import { getCached, setCached } from '@/lib/cache/market-data-cache';
 import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
 import { translateText } from '@/lib/i18n/translate';
@@ -68,7 +68,20 @@ async function handler(
         NextResponse.json({ success: false, error: 'rate_limited' }, { status: 429 }),
       );
     }
+    // Positively confirmed by TwelveData ("symbol ... invalid"), not merely a
+    // failed fetch — the only case the stock page should treat as evidence
+    // this ticker doesn't exist. See TwelveDataInvalidSymbolError's doc comment.
+    if (err instanceof TwelveDataInvalidSymbolError) {
+      return addSecurityHeaders(
+        NextResponse.json({ success: false, error: 'invalid_symbol', invalidSymbol: true }),
+      );
+    }
     const msg = err instanceof Error ? err.message : 'Unknown error';
+    // Previously silent — a genuine failure here (post-retry network error, plan
+    // restriction, unexpected TwelveData response shape) left no trace in Vercel
+    // logs, which is exactly what made the 2026-08-27 $SNOW false-positive 404
+    // impossible to confirm from logs alone. Logged now so the next one is traceable.
+    console.error(`[company-profile] ${sym} failed:`, msg);
     return addSecurityHeaders(
       NextResponse.json({ success: false, error: msg }, { status: 500 }),
     );

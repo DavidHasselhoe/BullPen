@@ -960,5 +960,12 @@
   "stock.statisticsGridSimplifiedHint": "76c09d9953b4ceed8e3b91122b173e84047d5aff6d9523d35cc4128ff9310ad3",
   "stock.statisticsGridTitle": "c4f23096a84ab2bbc5f715db31a57d5d5cba5df5c3fef01471fdba7c6772a233",
   "stock.statisticsGridUpdatedOn": "84171515c0475ad25b140a7fe7d602149efe8928accb1acb096f93b32cbea982",
-  "stock.statisticsGridUpdatedToday": "3390869c42b0ed27d8da577b12a63ae78cf2f26ca09af8bf5e52b9eec8c84253"
+  "stock.statisticsGridUpdatedToday": "3390869c42b0ed27d8da577b12a63ae78cf2f26ca09af8bf5e52b9eec8c84253",
+  "stock.advancedChartAlertHint": "e69399509b497ba2c71c93e6feb6b743839a85b9715fa4740003581344cf6a38",
+  "stock.advancedChartMarkerBuy": "64e3cb0e4960ba69298843d481376d1ce7b92cd43cf70e61a982da651c0335f3",
+  "stock.advancedChartMarkerSell": "2ec1e28159466f2a82a3d778394486baba97f065f20073206788bcfdc7f6d2ec",
+  "stock.advancedChartMeasureHint": "001cb553c7723f928befada8e4084863b25c97f7fc10afe0af242c12148e8dff",
+  "stock.advancedChartMeasureSummary": "901b98539088889a5c5e1636f90f151988f5c55f0d99b1250a87fb31dddfaca3",
+  "stock.advancedChartPriceLabel": "93c91c851e7acc17d881c9b89ea954be1183070254014be03a93d169cf52dbbd",
+  "stock.advancedChartSetAlertAt": "676f6683e9620cf30b4021dc7f6f785e10d25ab5f04df8da43d1612c474afe55"
 }

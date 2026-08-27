@@ -64,6 +64,14 @@ export default function HoldingsPage() {
   const [hoveredSector, setHoveredSector] = useState<string | null>(null);
   const session = useSessionState();
   const isPreMarket = session === 'pre-market';
+  // Broader than isPreMarket: covers pre-market, after-hours, AND the fully-closed
+  // overnight/weekend gap. TwelveData only returns the extended-hours print (the
+  // actual last trade) when prepost=true is requested — without it, the batch quote
+  // falls back to the plain regular-session close and misses any after-hours move,
+  // which is exactly the gap the stock detail page's live-price seed (isOutsideRegularSessionET
+  // in lib/twelvedata/twelvedata-client.ts) was built to avoid. Mirrors that same logic
+  // here so My Holdings' day change matches the stock detail page at all hours.
+  const wantsExtendedPricing = session !== 'regular';
 
   // Brokerage connect — used for the compact header button
   const { data: brokerageData } = useBrokerageAccounts();
@@ -105,7 +113,7 @@ export default function HoldingsPage() {
   // getHoldings() (lib/holdings/holdings-db.ts), so they render on the first paint
   // instead of waiting on this second, holdings-gated query.
   const quotesData = useQuery({
-    queryKey: ['holdings-quotes', holdings?.map((h) => h.symbol), isPreMarket],
+    queryKey: ['holdings-quotes', holdings?.map((h) => h.symbol), wantsExtendedPricing],
     queryFn: async () => {
       if (!holdings || holdings.length === 0) return { quotes: {}, sectors: {} };
 
@@ -155,12 +163,12 @@ export default function HoldingsPage() {
         if (!(ticker in sectorMap)) sectorMap[ticker] = company?.sector ?? null;
       }
 
-      // Batch quotes — pass prepost:true during pre-market so extended prices
-      // are returned and previousClose is anchored to yesterday's regular close.
+      // Batch quotes — pass prepost:true outside regular market hours so extended
+      // (pre-market/after-hours) prices are returned instead of the stale regular close.
       const batchRes = await fetch('/api/quotes/batch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ symbols: tickers, prepost: isPreMarket }),
+        body: JSON.stringify({ symbols: tickers, prepost: wantsExtendedPricing }),
       });
       const batchData = await batchRes.json();
       if (batchRes.status === 429) {

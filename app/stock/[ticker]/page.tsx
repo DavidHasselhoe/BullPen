@@ -155,6 +155,8 @@ export default function StockDetailPage() {
   const { data: profileData, isLoading: profileLoading } = useQuery<{
     success: boolean;
     profile?: { name: string; sector: string | null; industry: string | null };
+    /** True only when Twelve Data positively confirmed this symbol doesn't exist. */
+    invalidSymbol?: boolean;
   }>({
     queryKey: ['company-profile', ticker, i18n.language],
     queryFn: async () => {
@@ -199,6 +201,16 @@ export default function StockDetailPage() {
   // request flag. If, once everything has settled, none of the three know the
   // symbol, it isn't a real ticker → show not-found.
   const hasRealQuote = (snapshot.data?.quote?.price ?? 0) > 0;
+  // Root cause of the 2026-08-27 $SNOW false-positive 404: a transient TwelveData
+  // fetch failure on the profile/quote requests looked identical to a genuinely
+  // invalid ticker (both surface as "no profile" / "no quote"). isNotFound below
+  // only trusts invalidSymbol/quoteConfirmedInvalid, which the API routes only
+  // set when Twelve Data has positively said the symbol doesn't exist — see
+  // TwelveDataInvalidSymbolError in lib/twelvedata/twelvedata-client.ts. A plain
+  // failed fetch (network blip, rate limit) no longer gets treated as evidence
+  // of invalidity; it just leaves the page showing whatever data did resolve.
+  const profileConfirmedInvalid = profileData?.invalidSymbol === true;
+  const quoteConfirmedInvalid = snapshot.data?.quoteConfirmedInvalid === true;
   // Companies with no row in the Supabase `companies` table (long-tail tickers
   // TwelveData still knows about) render fine here from profile/quote data
   // alone — gating on company?.ticker meant those visits never made it into
@@ -216,8 +228,10 @@ export default function StockDetailPage() {
     company === null &&
     profileData !== undefined &&
     !profileData?.profile &&
+    profileConfirmedInvalid &&
     snapshot.data?.success === true &&
-    !hasRealQuote;
+    !hasRealQuote &&
+    quoteConfirmedInvalid;
 
   // Record a Hot Picks visit only once the symbol is confirmed real (a company
   // row, a profile, or a live quote resolved) — never for invalid tickers. The

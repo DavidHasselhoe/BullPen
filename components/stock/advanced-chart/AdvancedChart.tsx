@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   createChart, createSeriesMarkers, ColorType, CrosshairMode, LineStyle,
   CandlestickSeries, LineSeries, AreaSeries, HistogramSeries,
@@ -105,6 +106,7 @@ export function AdvancedChart({
   candles, chartType, indicators, showVolume, isDark, intraday, fitKey, events, transactions, displayFrom,
   livePrice, tool = 'none', onCreateAlert,
 }: Props) {
+  const { t } = useTranslation('stock');
   const containerRef = useRef<HTMLDivElement>(null);
   const legendRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -231,7 +233,7 @@ export function AdvancedChart({
             position: tx.kind === 'buy' ? 'belowBar' : 'aboveBar',
             color: tx.kind === 'buy' ? UP : DOWN,
             shape: tx.kind === 'buy' ? 'arrowUp' : 'arrowDown',
-            text: tx.kind === 'buy' ? 'Buy' : 'Sell',
+            text: tx.kind === 'buy' ? t('advancedChartMarkerBuy') : t('advancedChartMarkerSell'),
           });
         }
       }
@@ -353,7 +355,7 @@ export function AdvancedChart({
     }
 
     setLegendLines(newLegendLines);
-  }, [candles, points, chartType, indicators, showVolume, fitKey, events, transactions]);
+  }, [candles, points, chartType, indicators, showVolume, fitKey, events, transactions, t]);
 
   // ── Live last-bar update (intraday) ─────────────────────────────────────────
   useEffect(() => {
@@ -412,7 +414,7 @@ export function AdvancedChart({
           `<span class="text-muted-foreground">L</span> ${d.low?.toFixed(2)} ` +
           `<span class="text-muted-foreground">C</span> <span style="color:${up ? UP : DOWN}">${d.close.toFixed(2)}</span>`;
       } else if (d.value != null) {
-        legend.innerHTML = `<span class="text-muted-foreground">Price</span> ${d.value.toFixed(2)}`;
+        legend.innerHTML = `<span class="text-muted-foreground">${t('advancedChartPriceLabel')}</span> ${d.value.toFixed(2)}`;
       }
 
       for (const [key, series] of lineSeriesRef.current.entries()) {
@@ -424,7 +426,7 @@ export function AdvancedChart({
     };
     chart.subscribeCrosshairMove(handler);
     return () => chart.unsubscribeCrosshairMove(handler);
-  }, []);
+  }, [t]);
 
   // Clear tool-specific overlay state when leaving that tool.
   useEffect(() => {
@@ -538,7 +540,7 @@ export function AdvancedChart({
       {/* Tool hint */}
       {tool !== 'none' && (
         <div className="pointer-events-none absolute right-3 top-2 z-20 rounded-md bg-background/80 px-2 py-1 text-[11px] font-medium text-muted-foreground backdrop-blur">
-          {tool === 'measure' ? 'Drag to measure' : 'Click a price level to set an alert'}
+          {tool === 'measure' ? t('advancedChartMeasureHint') : t('advancedChartAlertHint')}
         </div>
       )}
 
@@ -565,7 +567,7 @@ export function AdvancedChart({
               className="absolute right-2 -translate-y-1/2 whitespace-nowrap rounded-md px-2 py-1 text-[11px] font-semibold tabular-nums text-white shadow-lg"
               style={{ top: alertHoverPrice.y, background: alertBadgeColor }}
             >
-              Set alert @ ${alertHoverPrice.price.toFixed(2)}
+              {t('advancedChartSetAlertAt', { price: `$${alertHoverPrice.price.toFixed(2)}` })}
             </div>
           </>
         )}
@@ -589,7 +591,7 @@ export function AdvancedChart({
               }}
             >
               {measureBox.dAbs >= 0 ? '+' : ''}{measureBox.dAbs.toFixed(2)} ({measureBox.dPct >= 0 ? '+' : ''}{measureBox.dPct.toFixed(2)}%)
-              <span className="ml-1.5 font-normal opacity-90">{measureBox.bars} bars · {span}</span>
+              <span className="ml-1.5 font-normal opacity-90">{t('advancedChartMeasureSummary', { bars: measureBox.bars, span })}</span>
             </div>
           </>
         )}

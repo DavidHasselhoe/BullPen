@@ -18,6 +18,8 @@ interface SnapshotResponse {
     price: number; change: number; changePercent: number;
     high: number; low: number; open: number; previousClose: number;
   } | null;
+  /** True only when Twelve Data positively confirmed this symbol doesn't exist. */
+  quoteConfirmedInvalid?: boolean;
   statistics: CompanyStatistics | null;
   statsFetchedAt: string | null;
   earnings: {

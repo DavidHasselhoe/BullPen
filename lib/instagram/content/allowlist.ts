@@ -39,6 +39,13 @@
  *   - Consumer / social: RDDT, RBLX, CVNA, CAVA, OPEN
  *   - Betting / gaming: DKNG
  *   - Crypto-adjacent: BMNR, MARA, RIOT, CLSK
+ * - IREN (added 2026-08-27, same crypto-adjacent/AI-infra rationale as the
+ *   batch above): found missing when its earnings day was absent from both
+ *   the Instagram calendar and the Market Calendar tool despite a real
+ *   ~$14B market cap. Root cause was screener_universe still carrying it
+ *   as tier-0/never-refreshed (see lib/market-data/screener-universe.ts) —
+ *   manually promoted to tier-1 in the DB as part of that fix; added here
+ *   too since editorial coverage shouldn't depend on that pipeline alone.
  *   - AI / speculative tech: IONQ, RGTI, QBTS, SYM
  *   - Software / cloud: SNOW, U
  *   Deliberately NOT added: MSTR and ARM are both already in
@@ -56,7 +63,7 @@ export const INSTAGRAM_ALLOWLIST: Set<string> = new Set([
   'RIVN', 'LCID', 'JOBY', 'ACHR',
   'RDDT', 'RBLX', 'CVNA', 'CAVA', 'OPEN',
   'DKNG',
-  'BMNR', 'MARA', 'RIOT', 'CLSK',
+  'BMNR', 'MARA', 'RIOT', 'CLSK', 'IREN',
   'IONQ', 'RGTI', 'QBTS', 'SYM',
   'SNOW', 'U',
 ]);

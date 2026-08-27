@@ -18,6 +18,29 @@ export class TwelveDataRateLimitError extends Error {
 }
 
 /**
+ * Thrown when Twelve Data positively confirms a symbol doesn't exist (e.g.
+ * "**symbol** or **figi** parameter is missing or invalid" — the exact
+ * message returned for a bogus ticker, verified live 2026-08-27). Distinct
+ * from every other failure mode (network blip, rate limit, plan restriction):
+ * those mean "we don't know if this symbol is valid," not "it isn't." Root
+ * cause of the 2026-08-27 $SNOW false-positive 404: the stock page's
+ * not-found gate keyed off mere absence of profile/quote data, which a
+ * transient TwelveData/Vercel network hiccup produces identically to a
+ * genuinely bogus ticker — this type lets callers tell the two apart.
+ */
+export class TwelveDataInvalidSymbolError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'TwelveDataInvalidSymbolError';
+  }
+}
+
+/** Matches Twelve Data's own wording for "this symbol does not exist," not a transient failure. */
+function isInvalidSymbolMessage(msg: string): boolean {
+  return /symbol.*(missing or invalid|is invalid|not found)|invalid symbol/i.test(msg);
+}
+
+/**
  * Matches transient failures observed intermittently on Vercel's outbound calls to
  * TwelveData/Supabase — dropped connections and truncated/malformed response bodies
  * (e.g. "TypeError: terminated", "SocketError: other side closed", ECONNRESET, or a
@@ -214,6 +237,7 @@ function parseQuoteResponse(data: TwelveDataQuoteResponse, symbol: string, useEx
       data.code === 402 ||
       /rate.?limit|too many|credits? exceeded|exceeded.*limit/i.test(msg);
     if (isRateLimit) throw new TwelveDataRateLimitError(msg);
+    if (isInvalidSymbolMessage(msg)) throw new TwelveDataInvalidSymbolError(msg);
     throw new Error(msg);
   }
   // Equity requests are always for USD-listed companies (see screener-stats.ts for the
@@ -285,6 +309,7 @@ export async function getStockQuote(symbol: string): Promise<StockQuote> {
     if (response.status === 429 || data.code === 429 || /rate.?limit|credits? exceeded/i.test(msg)) {
       throw new TwelveDataRateLimitError(msg);
     }
+    if (isInvalidSymbolMessage(msg)) throw new TwelveDataInvalidSymbolError(msg);
     throw new Error(msg);
   }
   return parseQuoteResponse(data, symbol);
@@ -1374,6 +1399,7 @@ export async function getCompanyProfile(symbol: string): Promise<CompanyProfile>
   if (!response.ok || data.code || data.status === 'error') {
     const msg = data.message || `Twelve Data profile error for ${symbol}`;
     if (data.code === 429 || /rate.?limit|credits? exceeded/i.test(msg)) throw new TwelveDataRateLimitError(msg);
+    if (isInvalidSymbolMessage(msg)) throw new TwelveDataInvalidSymbolError(msg);
     throw new Error(msg);
   }
 

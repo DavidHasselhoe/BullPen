@@ -7,7 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { batchFetch, withRateLimitRetry, TwelveDataRateLimitError, reportDateToFiscalQuarter } from '@/lib/twelvedata/twelvedata-client';
+import { batchFetch, getStockQuote, withRateLimitRetry, TwelveDataRateLimitError, TwelveDataInvalidSymbolError, reportDateToFiscalQuarter } from '@/lib/twelvedata/twelvedata-client';
 import { getCached, getCachedWithMeta, getCachedStale, getCachedStaleWithMeta, setCached } from '@/lib/cache/market-data-cache';
 import { tryReserveOrganicCredits } from '@/lib/twelvedata/credit-budget';
 import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
@@ -89,6 +89,11 @@ async function handler(
     } | null = null;
     let instrumentType: string | null = null;
 
+    // True only when Twelve Data has positively confirmed this symbol doesn't
+    // exist (not merely "we have no quote right now") — the one signal the
+    // stock page's not-found gate can safely trust. See TwelveDataInvalidSymbolError.
+    let quoteConfirmedInvalid = false;
+
     const q = raw.quote as Record<string, string | number> | undefined;
     if (q && !q.code && q.status !== 'error') {
       const close = parseFloat(String(q.close ?? 0));
@@ -104,6 +109,33 @@ async function handler(
         previousClose: pc,
       };
       instrumentType = q.type != null ? String(q.type) : null;
+    } else {
+      // The batched /quote sub-request came back missing or errored even
+      // though the overall /batch call succeeded — a per-symbol hiccup within
+      // an otherwise-fine response, not something withRateLimitRetry's whole-
+      // request retry covers. Root cause of the 2026-08-27 $SNOW false-positive
+      // 404: this silently left `quote: null` with no distinguishing signal
+      // and no log line, identical in shape to a genuinely invalid ticker. Try
+      // once more with a plain single-symbol call (1 credit) before giving up.
+      try {
+        const direct = await getStockQuote(sym);
+        quote = {
+          price: direct.c,
+          change: direct.d,
+          changePercent: direct.dp,
+          high: direct.h,
+          low: direct.l,
+          open: direct.o,
+          previousClose: direct.pc,
+        };
+      } catch (fallbackErr) {
+        if (fallbackErr instanceof TwelveDataInvalidSymbolError) {
+          quoteConfirmedInvalid = true;
+        } else {
+          const msg = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr);
+          console.error(`[snapshot] ${sym} quote fallback failed:`, msg);
+        }
+      }
     }
 
     // ---- Statistics (cached, freshly fetched, or stale fallback under budget pressure) ----
@@ -190,6 +222,7 @@ async function handler(
         success: true,
         symbol: sym,
         quote,
+        quoteConfirmedInvalid,
         statistics,
         statsFetchedAt,
         earnings,

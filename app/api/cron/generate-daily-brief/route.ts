@@ -36,22 +36,57 @@ function toETDateString(date: Date): string {
   return date.toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
 }
 
-function formatEarningsRow(e: {
-  symbol: string;
-  name?: string;
-  eps_actual?: number | null;
-  eps_estimate?: number | null;
-  surprise?: number | null;
-  time?: string;
-}): string {
+/**
+ * Formats a real price-reaction tag (e.g. "[after-hours +4.7%]") from our own
+ * TwelveData quotes, so the model has ground truth instead of inferring the
+ * reaction from whatever web search articles say — those are often written
+ * minutes after the earnings drop and describe an initial move that reverses
+ * by the time after-hours trading actually settles (see the 2026-08-27 $NVDA
+ * incident: the brief said shares "slid after hours" sourced from early
+ * coverage, while our own after-hours quote had it +4.7%).
+ *
+ * AMC reporters get the after-hours print (extendedQuotes, fetched with
+ * prepost:true); BMO/unknown-timing reporters get the regular session's
+ * close-to-close move instead — by the time this cron runs (~1:30 AM ET
+ * the next day), a BMO reporter's after-hours drift is marginal compared to
+ * the regular-session reaction that already priced in the earnings.
+ */
+function formatPriceReaction(
+  isAmc: boolean,
+  symbol: string,
+  regularQuotes: Map<string, { dp: number }>,
+  extendedQuotes: Map<string, { dp: number }>,
+): string {
+  const source = isAmc ? extendedQuotes.get(symbol) : regularQuotes.get(symbol);
+  if (!source || !Number.isFinite(source.dp)) return '';
+  const label = isAmc ? 'after-hours' : 'session';
+  return ` [${label} ${source.dp >= 0 ? '+' : ''}${source.dp.toFixed(1)}%]`;
+}
+
+function formatEarningsRow(
+  e: {
+    symbol: string;
+    name?: string;
+    eps_actual?: number | null;
+    eps_estimate?: number | null;
+    surprise?: number | null;
+    time?: string;
+  },
+  regularQuotes: Map<string, { dp: number }> = new Map(),
+  extendedQuotes: Map<string, { dp: number }> = new Map(),
+): string {
   const name = e.name ? ` (${e.name})` : '';
+  const isBmo = e.time === 'BMO' || e.time === 'pre_market';
+  const isAmc = e.time === 'AMC' || e.time === 'after_close';
+  const tag = isBmo ? 'BMO' : isAmc ? 'AMC' : '';
+  const reaction = formatPriceReaction(isAmc, e.symbol, regularQuotes, extendedQuotes);
+
   if (e.eps_actual != null && e.eps_estimate != null) {
     const beat = e.eps_actual >= e.eps_estimate ? 'BEAT' : 'MISSED';
     const surprise = e.surprise != null ? ` ${e.surprise > 0 ? '+' : ''}${e.surprise.toFixed(1)}%` : '';
-    return `${e.symbol}${name}: EPS $${e.eps_actual.toFixed(2)} vs est $${e.eps_estimate.toFixed(2)} — ${beat}${surprise}`;
+    return `${e.symbol}${name}: EPS $${e.eps_actual.toFixed(2)} vs est $${e.eps_estimate.toFixed(2)}, ${beat}${surprise}${reaction}`;
   }
-  const tag = e.time === 'BMO' || e.time === 'pre_market' ? 'BMO' : e.time === 'AMC' || e.time === 'after_close' ? 'AMC' : '';
-  return `${e.symbol}${name}${tag ? ` [${tag}]` : ''}`;
+  return `${e.symbol}${name}${tag ? ` [${tag}]` : ''}${reaction}`;
 }
 
 function extractTickers(text: string): string[] {
@@ -120,6 +155,20 @@ function trimIncomplete(text: string): string {
   );
   if (lastPeriod === -1) return text;
   return trimmed.slice(0, lastPeriod + 1).trimEnd();
+}
+
+/**
+ * Deterministic backstop for the "no em/en dash as a clause connector" rule.
+ * The system prompt already instructs this (and CLAUDE.md's UI-copy rule
+ * covers every user-facing surface, this one included), but web-search source
+ * material is full of dashes and the model doesn't reliably comply — this
+ * catches whatever slips through instead of trusting instruction-following
+ * alone. Only matches a dash with a space on both sides (the clause-connector
+ * usage the rule targets); a true en-dash range like "2024–2026" has no
+ * surrounding spaces and is left untouched.
+ */
+function stripConnectorDashes(text: string): string {
+  return text.replace(/ [—–] /g, ', ');
 }
 
 interface BriefSource {
@@ -358,21 +407,35 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     (e) => e.symbol.length <= 5 && /^[A-Z]/.test(e.symbol) && (e.eps_estimate != null || e.eps_actual != null)
   );
 
+  // ── Real price-reaction ground truth for yesterday's earnings tickers ──────
+  // Two batched quote fetches (regular + prepost:true), 1 credit/symbol each —
+  // cheap next to this route's ~60-100 credit budget. See formatPriceReaction's
+  // doc comment for why the model can't be trusted to get this right from web
+  // search alone: articles are often written minutes after the print and can
+  // describe a reaction that reverses before after-hours trading settles.
+  const earningsSymbols = confirmedYesterdayEarnings.slice(0, 15).map((e) => e.symbol);
+  const [regularQuotesResult, extendedQuotesResult] = await Promise.allSettled([
+    withTimeout(getStockQuotes(earningsSymbols), DATA_GATHER_TIMEOUT_MS),
+    withTimeout(getStockQuotes(earningsSymbols, { prepost: true }), DATA_GATHER_TIMEOUT_MS),
+  ]);
+  const regularQuotes = regularQuotesResult.status === 'fulfilled' ? regularQuotesResult.value : new Map();
+  const extendedQuotes = extendedQuotesResult.status === 'fulfilled' ? extendedQuotesResult.value : new Map();
+
   // ── Build context strings for the prompt ──────────────────────────────────
   const earningsResultsText = confirmedYesterdayEarnings.length > 0
-    ? confirmedYesterdayEarnings.slice(0, 15).map(formatEarningsRow).join('\n')
+    ? confirmedYesterdayEarnings.slice(0, 15).map((e) => formatEarningsRow(e, regularQuotes, extendedQuotes)).join('\n')
     : 'No analyst-covered earnings with EPS estimates reported yesterday.';
 
   const todayReportersText = todayEarningsData
     .filter((e) => e.symbol.length <= 5 && /^[A-Z]/.test(e.symbol))
     .slice(0, 10)
-    .map(formatEarningsRow)
+    .map((e) => formatEarningsRow(e))
     .join('\n') || 'No major earnings scheduled today.';
 
   const tomorrowReportersText = tomorrowEarningsData
     .filter((e) => e.symbol.length <= 5 && /^[A-Z]/.test(e.symbol))
     .slice(0, 8)
-    .map(formatEarningsRow)
+    .map((e) => formatEarningsRow(e))
     .join('\n') || 'No major earnings scheduled tomorrow.';
 
   const topGainers = movers.gainers.slice(0, 5).map(
@@ -418,12 +481,13 @@ Hard rules:
 - Use **bold** for company names on first mention and for key metrics.
 - Target ~650 words total. Hard ceiling: 800.
 - COMPLETE EVERY SENTENCE. Never end a section or the brief mid-thought. If you are running long, cut earlier content — never trail off.
-- Never use an em dash (—) or en dash (–) to connect clauses. Use a period, comma, or colon instead.
+- Never use an em dash (—) or en dash (–) anywhere in your output, for any reason. Not to connect clauses, not for a parenthetical, not for a range. Use a period, comma, or colon instead. This is a hard rule, not a style preference: an em dash is one of the clearest tells that text was AI-written, and it will be mechanically stripped from your output before publishing regardless, so a dash you write is wasted effort at best and a mangled sentence at worst.
 
 DATA FIDELITY (critical):
 - In "Earnings Results": cite ONLY companies listed in "YESTERDAY'S EARNINGS RESULTS" below. Do not invent additional tickers — especially micro/small-cap names (symbols like AAMMF, ADKT, AGNC-type cross-listings) that are not on that list. If the list is sparse, say so concisely.
 - For "Reporting Today": cite ONLY companies from "TODAY'S SCHEDULED REPORTERS" below.
 - After-hours or pre-market moves must be flagged [AH] or [PM] immediately after the ticker, e.g. "$INTU [AH] fell 13%".
+- A "YESTERDAY'S EARNINGS RESULTS" row may end with a bracketed tag like "[after-hours +4.7%]" or "[session -1.6%]" — this is the ACTUAL price move, pulled directly from our own live market data at generation time, not from a news article. It is ground truth. Web search results describing that stock's reaction (e.g. "shares fell after the report") are frequently written minutes after the print and capture an initial move that reverses by the time trading actually settles — when a source's narrative conflicts with the bracketed number, the bracketed number is what happened and the source is describing a moment that already passed. Never describe a stock's post-earnings move in a direction that contradicts its bracketed tag. If a row has no bracketed tag, no verified reaction is available. Don't state a specific price move for it. Describe the earnings result itself instead.
 
 Sector analysis:
 - When citing a sector gain or loss in "Movers & Stories", add one sentence explaining the specific catalyst (not just "on strong earnings" — why did that sector move relative to others today?).
@@ -648,11 +712,14 @@ Use live web search to verify the latest news for "Movers & Stories", "Watch Tod
     return NextResponse.json({ success: false, error: 'Empty response from Claude' }, { status: 500 });
   }
 
-  // ── Post-process: trim any incomplete trailing sentence ────────────────────
-  const processedText = trimIncomplete(fullText);
+  // ── Post-process: trim any incomplete trailing sentence, then strip any
+  // em/en dash the model used anyway despite the system prompt's rule — a
+  // deterministic backstop, since instruction-following alone has proven
+  // unreliable here (see stripConnectorDashes's doc comment).
+  const processedText = stripConnectorDashes(trimIncomplete(fullText));
 
   // ── Parse title (defensive: filters out Claude's tool-orchestration narration) ─
-  const titleLine = extractTitle(processedText) ?? `Market Brief — ${todayFormatted}`;
+  const titleLine = extractTitle(processedText) ?? `Market Brief: ${todayFormatted}`;
 
   // Body = everything from the first `##` section onward. If no header was found
   // (degenerate response), fall back to dropping the matched title line.
