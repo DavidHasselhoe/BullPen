@@ -1,5 +1,17 @@
 [
   {
+    "date": "2026-08-27",
+    "entries": [
+      { "type": "fixed", "text": "Stock pages no longer show a false \"not found\" error for a real ticker after a brief data hiccup" },
+      { "type": "fixed", "text": "Fixed My Holdings' daily change sometimes not matching the after-hours or pre-market change shown on a stock's own page" },
+      { "type": "fixed", "text": "Daily Brief now checks our own live after-hours price data before describing how a stock reacted to earnings, instead of relying only on early news coverage that can be outdated by the time you read it" },
+      { "type": "fixed", "text": "Fixed the sign-up form sometimes showing the same error message twice, and clarified the message you see when an email is already registered" },
+      { "type": "fixed", "text": "Fixed the Screener's \"View all\" pill showing placeholder text instead of the actual number of stocks" },
+      { "type": "fixed", "text": "Fixed the \"Save my profile\" button on the onboarding flow looking greyed out even when it was ready to use" },
+      { "type": "improved", "text": "Refreshed the Profile Settings modal (from the account menu) with a clearer layout, matching the rest of Settings, and a way to update your photo by clicking directly on it" }
+    ]
+  },
+  {
     "date": "2026-08-26",
     "entries": [
       { "type": "fixed", "text": "Fixed a few company logos that were showing up as blank white squares instead of the company's initials" },
