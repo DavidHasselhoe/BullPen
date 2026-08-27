@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Check, History, Loader2, Pencil, Undo2 } from 'lucide-react';
 import {
   Dialog,
@@ -18,6 +19,7 @@ import type { HoldingSale } from '@/lib/types/database';
 import { logger } from '@/lib/utils/logger';
 
 function SoldPositionRow({ sale }: { sale: HoldingSale }) {
+  const { t } = useTranslation('holdings');
   const [editing, setEditing] = useState(false);
   const [quantity, setQuantity] = useState(String(sale.quantity_sold));
   const [salePrice, setSalePrice] = useState(String(sale.sale_price));
@@ -67,7 +69,7 @@ function SoldPositionRow({ sale }: { sale: HoldingSale }) {
         </div>
         <div className="grid grid-cols-3 gap-2">
           <div className="space-y-1">
-            <Label htmlFor={`qty-${sale.id}`} className="text-xs text-muted-foreground">Shares</Label>
+            <Label htmlFor={`qty-${sale.id}`} className="text-xs text-muted-foreground">{t('soldPositionsSharesLabel')}</Label>
             <Input
               id={`qty-${sale.id}`}
               type="number"
@@ -79,7 +81,7 @@ function SoldPositionRow({ sale }: { sale: HoldingSale }) {
             />
           </div>
           <div className="space-y-1">
-            <Label htmlFor={`price-${sale.id}`} className="text-xs text-muted-foreground">Price</Label>
+            <Label htmlFor={`price-${sale.id}`} className="text-xs text-muted-foreground">{t('soldPositionsPriceLabel')}</Label>
             <Input
               id={`price-${sale.id}`}
               type="number"
@@ -91,7 +93,7 @@ function SoldPositionRow({ sale }: { sale: HoldingSale }) {
             />
           </div>
           <div className="space-y-1">
-            <Label htmlFor={`date-${sale.id}`} className="text-xs text-muted-foreground">Date</Label>
+            <Label htmlFor={`date-${sale.id}`} className="text-xs text-muted-foreground">{t('soldPositionsDateLabel')}</Label>
             <DatePicker
               id={`date-${sale.id}`}
               max={new Date().toISOString().slice(0, 10)}
@@ -103,18 +105,18 @@ function SoldPositionRow({ sale }: { sale: HoldingSale }) {
         </div>
         {updateSale.isError && (
           <p className="text-xs text-red-500">
-            {updateSale.error instanceof Error ? updateSale.error.message : 'Failed to update sale'}
+            {updateSale.error instanceof Error ? updateSale.error.message : t('soldPositionsUpdateError')}
           </p>
         )}
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" size="sm" onClick={() => setEditing(false)} disabled={updateSale.isPending}>
-            Cancel
+            {t('soldPositionsCancel')}
           </Button>
           <Button type="button" size="sm" onClick={handleSave} disabled={!canSave || updateSale.isPending}>
             {updateSale.isPending
               ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
               : <Check className="h-3.5 w-3.5" />}
-            Save
+            {t('soldPositionsSave')}
           </Button>
         </div>
       </div>
@@ -131,18 +133,21 @@ function SoldPositionRow({ sale }: { sale: HoldingSale }) {
           <span className="truncate text-xs text-muted-foreground">{sale.company_name}</span>
         </div>
         <div className="text-xs text-muted-foreground">
-          Sold {sale.quantity_sold} shares at ${sale.sale_price.toFixed(2)} on{' '}
-          {new Date(sale.sale_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+          {t('soldPositionsSummary', {
+            quantity: sale.quantity_sold,
+            price: sale.sale_price.toFixed(2),
+            date: new Date(sale.sale_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+          })}
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-1">
         <span className={`text-sm font-semibold tabular-nums ${isPos ? 'text-emerald-500' : 'text-red-500'}`}>
           {isPos ? '+' : ''}${sale.realized_pl.toFixed(2)}
         </span>
-        <Button variant="ghost" size="sm" onClick={startEdit} title="Edit this sale">
+        <Button variant="ghost" size="sm" onClick={startEdit} title={t('soldPositionsEditTitle')}>
           <Pencil className="h-4 w-4" />
         </Button>
-        <Button variant="ghost" size="sm" onClick={handleUndo} disabled={deleteSale.isPending} title="Undo this sale">
+        <Button variant="ghost" size="sm" onClick={handleUndo} disabled={deleteSale.isPending} title={t('soldPositionsUndoTitle')}>
           {deleteSale.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Undo2 className="h-4 w-4" />}
         </Button>
       </div>
@@ -151,6 +156,7 @@ function SoldPositionRow({ sale }: { sale: HoldingSale }) {
 }
 
 export function SoldPositionsModal() {
+  const { t } = useTranslation('holdings');
   const { data: sales, isLoading } = useHoldingSales();
   const [open, setOpen] = useState(false);
 
@@ -164,13 +170,13 @@ export function SoldPositionsModal() {
         className="flex items-center gap-1.5 h-8 rounded-lg border border-border/60 bg-muted/30 px-3 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-border hover:bg-muted/60 transition-colors"
       >
         <History className="h-3.5 w-3.5" />
-        History
+        {t('soldPositionsHistoryButton')}
       </button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-[560px] max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Sold Positions</DialogTitle>
-            <DialogDescription>Your closed and partially-sold positions.</DialogDescription>
+            <DialogTitle>{t('soldPositionsTitle')}</DialogTitle>
+            <DialogDescription>{t('soldPositionsDescription')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
             {sales.map((sale) => (

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Share2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -14,13 +15,14 @@ interface ShareSheetProps {
 type Phase = 'idle' | 'creating' | 'ready' | 'error';
 
 export function ShareSheet({ disabled }: ShareSheetProps) {
+  const { t } = useTranslation('holdings');
   const [open, setOpen] = useState(false);
   const [includeAmount, setIncludeAmount] = useState(false);
   const [anonymous, setAnonymous] = useState(false);
   const [phase, setPhase] = useState<Phase>('idle');
   const [errorCode, setErrorCode] = useState<string | null>(null);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
-  const [copyLabel, setCopyLabel] = useState('Copy link');
+  const [copied, setCopied] = useState(false);
 
   const createShare = async (opts: { includeAmount: boolean; anonymous: boolean }) => {
     setPhase('creating');
@@ -62,8 +64,8 @@ export function ShareSheet({ disabled }: ShareSheetProps) {
       return;
     }
     await navigator.clipboard.writeText(shareUrl);
-    setCopyLabel('Copied!');
-    setTimeout(() => setCopyLabel('Copy link'), 2000);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
@@ -74,8 +76,8 @@ export function ShareSheet({ disabled }: ShareSheetProps) {
           size="icon"
           className="h-7 w-7"
           disabled={disabled}
-          title={disabled ? "Today's figure isn't ready yet" : "Share today's performance"}
-          aria-label="Share today's performance"
+          title={disabled ? t('shareSheetNotReadyTitle') : t('shareSheetTriggerTitle')}
+          aria-label={t('shareSheetTriggerTitle')}
         >
           <Share2 className="h-3.5 w-3.5" />
         </Button>
@@ -84,15 +86,15 @@ export function ShareSheet({ disabled }: ShareSheetProps) {
       <PopoverContent align="end" className="w-72 space-y-3">
         {phase === 'creating' && (
           <div className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" /> Preparing your card…
+            <Loader2 className="h-4 w-4 animate-spin" /> {t('shareSheetPreparing')}
           </div>
         )}
 
         {phase === 'error' && (
           <p className="text-sm text-muted-foreground py-4 text-center">
             {errorCode === 'no_data_yet'
-              ? "No trades yet today. Try again once the market opens."
-              : "Couldn't create a share link right now. Try again in a moment."}
+              ? t('shareSheetErrorNoData')
+              : t('shareSheetErrorGeneric')}
           </p>
         )}
 
@@ -101,12 +103,12 @@ export function ShareSheet({ disabled }: ShareSheetProps) {
             {/* eslint-disable-next-line @next/next/no-img-element -- external OG route, not a static/optimizable local asset */}
             <img
               src={shareUrl.replace('/share/', '/api/og/share/')}
-              alt="Share preview"
+              alt={t('shareSheetPreviewAlt')}
               className="w-full rounded-lg border border-border"
             />
 
             <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">Include dollar amount</span>
+              <span className="text-xs text-muted-foreground">{t('shareSheetIncludeAmount')}</span>
               <Switch
                 checked={includeAmount}
                 onCheckedChange={(checked) => {
@@ -117,7 +119,7 @@ export function ShareSheet({ disabled }: ShareSheetProps) {
               />
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">Post anonymously</span>
+              <span className="text-xs text-muted-foreground">{t('shareSheetPostAnonymously')}</span>
               <Switch
                 checked={anonymous}
                 onCheckedChange={(checked) => {
@@ -129,10 +131,10 @@ export function ShareSheet({ disabled }: ShareSheetProps) {
             </div>
 
             <Button size="sm" className="w-full" onClick={handleShare}>
-              {canNativeShare ? 'Share' : copyLabel}
+              {canNativeShare ? t('shareSheetShareButton') : (copied ? t('shareSheetCopied') : t('shareSheetCopyLink'))}
             </Button>
             <p className="text-center text-[11px] text-muted-foreground">
-              Friends who sign up from this link get a free month of Pro. You get one too.
+              {t('shareSheetReferralNote')}
             </p>
           </>
         )}

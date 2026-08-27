@@ -1,5 +1,6 @@
 'use client';
 
+import { Trans, useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogContent,
@@ -30,6 +31,8 @@ export function DeleteHoldingDialog({
   isLoading = false,
   hasShares = false,
 }: DeleteHoldingDialogProps) {
+  const { t } = useTranslation('holdings');
+
   const handleConfirm = () => {
     onConfirm();
     onOpenChange(false);
@@ -39,10 +42,15 @@ export function DeleteHoldingDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Remove Holding</DialogTitle>
+          <DialogTitle>{t('deleteHoldingDialogTitle')}</DialogTitle>
           <DialogDescription>
-            Are you sure you want to remove <strong>{symbol}</strong> ({companyName}) from your holdings? This action cannot be undone.
-            {hasShares && ' If you actually sold these shares, use Sell instead to keep your performance chart accurate.'}
+            <Trans
+              i18nKey="deleteHoldingDialogDescription"
+              ns="holdings"
+              values={{ symbol, companyName }}
+              components={{ strong: <strong /> }}
+            />
+            {hasShares && ' ' + t('deleteHoldingDialogSharesWarning')}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
@@ -52,7 +60,7 @@ export function DeleteHoldingDialog({
             onClick={() => onOpenChange(false)}
             disabled={isLoading}
           >
-            Cancel
+            {t('deleteHoldingDialogCancel')}
           </Button>
           <Button
             type="button"
@@ -60,7 +68,7 @@ export function DeleteHoldingDialog({
             onClick={handleConfirm}
             disabled={isLoading}
           >
-            {isLoading ? 'Removing...' : 'Remove'}
+            {isLoading ? t('deleteHoldingDialogRemoving') : t('deleteHoldingDialogRemove')}
           </Button>
         </DialogFooter>
       </DialogContent>
