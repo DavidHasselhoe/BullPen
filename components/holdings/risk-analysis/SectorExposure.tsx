@@ -1,6 +1,7 @@
 // components/holdings/risk-analysis/SectorExposure.tsx
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import type { RiskAnalysis } from './types';
 
@@ -9,12 +10,13 @@ interface Props {
 }
 
 export function SectorExposure({ sectors }: Props) {
+  const { t } = useTranslation('holdings');
   if (!sectors?.length) return null;
   const sorted = [...sectors].sort((a, b) => b.estimatedWeight - a.estimatedWeight);
 
   return (
     <div>
-      <h3 className="mb-2 text-sm font-semibold text-foreground">Sector exposure</h3>
+      <h3 className="mb-2 text-sm font-semibold text-foreground">{t('riskSectorExposureTitle')}</h3>
       <Accordion type="single" collapsible className="border-t border-border/20">
         {sorted.map((s) => (
           <AccordionItem key={s.sector} value={s.sector} className="border-border/20">

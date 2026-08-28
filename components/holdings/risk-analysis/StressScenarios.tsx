@@ -1,6 +1,7 @@
 // components/holdings/risk-analysis/StressScenarios.tsx
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import type { StressScenario } from './types';
@@ -11,11 +12,12 @@ interface Props {
 }
 
 export function StressScenarios({ scenarios }: Props) {
+  const { t } = useTranslation('holdings');
   if (!scenarios?.length) return null;
 
   return (
     <div>
-      <h3 className="mb-2 text-sm font-semibold text-foreground">Downside scenarios</h3>
+      <h3 className="mb-2 text-sm font-semibold text-foreground">{t('riskStressScenariosTitle')}</h3>
       <Accordion type="single" collapsible className="border-t border-border/20">
         {scenarios.map((s, i) => {
           const { figure, rest } = splitImpact(s.estimatedImpact);

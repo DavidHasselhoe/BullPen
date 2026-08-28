@@ -1,6 +1,8 @@
 // components/holdings/risk-analysis/Recommendations.tsx
 'use client';
 
+import { useTranslation } from 'react-i18next';
+
 interface Props {
   recommendations: string[];
 }
@@ -9,11 +11,12 @@ interface Props {
 // — no structured current/suggested-range/rationale fields exist to render,
 // so this stays a clean numbered list rather than fabricating those sub-fields.
 export function Recommendations({ recommendations }: Props) {
+  const { t } = useTranslation('holdings');
   if (!recommendations?.length) return null;
 
   return (
     <div>
-      <h3 className="mb-2 text-sm font-semibold text-foreground">Recommended actions</h3>
+      <h3 className="mb-2 text-sm font-semibold text-foreground">{t('riskRecommendationsTitle')}</h3>
       <ol className="space-y-3">
         {recommendations.map((rec, i) => (
           <li key={i} className="flex gap-3">

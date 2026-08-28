@@ -1,29 +1,35 @@
 // components/holdings/risk-analysis/RiskProfile.tsx
 'use client';
 
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { cn } from '@/lib/utils';
 import type { RiskAnalysis } from './types';
 import { scoreTier, tierBarClass, tierTextClass } from './colors';
 
-const METRIC_LABELS: Record<string, string> = {
-  concentration: 'Concentration',
-  sectorDiversification: 'Sector exposure',
-  marketCapBias: 'Market-cap bias',
-  volatilityExposure: 'Volatility',
-  correlationRisk: 'Correlation',
-  liquidityRisk: 'Liquidity',
-};
+function getMetricLabels(t: TFunction): Record<string, string> {
+  return {
+    concentration: t('riskProfileMetricConcentration'),
+    sectorDiversification: t('riskProfileMetricSectorDiversification'),
+    marketCapBias: t('riskProfileMetricMarketCapBias'),
+    volatilityExposure: t('riskProfileMetricVolatilityExposure'),
+    correlationRisk: t('riskProfileMetricCorrelationRisk'),
+    liquidityRisk: t('riskProfileMetricLiquidityRisk'),
+  };
+}
 
 interface Props {
   metrics: RiskAnalysis['metrics'];
 }
 
 export function RiskProfile({ metrics }: Props) {
+  const { t } = useTranslation('holdings');
+  const METRIC_LABELS = getMetricLabels(t);
   const rows = Object.entries(metrics) as [string, RiskAnalysis['metrics'][keyof RiskAnalysis['metrics']]][];
 
   return (
     <div>
-      <h3 className="mb-3 text-sm font-semibold text-foreground">Risk profile</h3>
+      <h3 className="mb-3 text-sm font-semibold text-foreground">{t('riskProfileTitle')}</h3>
       <div className="space-y-2.5">
         {rows.map(([key, metric]) => {
           const tier = scoreTier(metric.score);

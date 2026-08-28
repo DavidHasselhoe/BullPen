@@ -1,6 +1,7 @@
 // components/holdings/risk-analysis/TopRisks.tsx
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import type { RiskAnalysis } from './types';
@@ -11,11 +12,12 @@ interface Props {
 }
 
 export function TopRisks({ risks }: Props) {
+  const { t } = useTranslation('holdings');
   if (!risks?.length) return null;
 
   return (
     <div>
-      <h3 className="mb-2 text-sm font-semibold text-foreground">Top risks</h3>
+      <h3 className="mb-2 text-sm font-semibold text-foreground">{t('riskTopRisksTitle')}</h3>
       <Accordion type="single" collapsible className="border-t border-border/20">
         {risks.map((risk, i) => (
           <AccordionItem key={i} value={String(i)} className="border-border/20">
