@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from '@/components/ui/card';
 import { useHoldings } from '@/hooks/use-holdings';
 import { useAuth } from '@/hooks/use-auth';
@@ -114,6 +115,7 @@ function usePortfolioSparkline(holdings: UserHolding[]) {
 // ─── Widget ────────────────────────────────────────────────────────────────────
 
 export function PortfolioSummaryWidget() {
+  const { t } = useTranslation('discover');
   const { user, isAuthenticated } = useAuth();
   const { roundNumbers } = useUserSettings();
   const { data: holdings, isLoading } = useHoldings();
@@ -139,7 +141,7 @@ export function PortfolioSummaryWidget() {
       });
       const batchData = await batchRes.json();
       if (batchRes.status === 429) {
-        throw new Error(batchData.error || 'Market data rate limit exceeded. Please try again in a minute.');
+        throw new Error(batchData.error || t('portfolioWidgetRateLimit'));
       }
       return { quotes: (batchData.success && batchData.quotes) ? batchData.quotes : {} };
     },
@@ -212,13 +214,13 @@ export function PortfolioSummaryWidget() {
             <div className="flex items-start justify-between gap-3 px-4 pt-4 pb-3">
               <div className="min-w-0">
                 <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  Portfolio
+                  {t('portfolioWidgetLabel')}
                 </p>
                 <p className="text-sm font-semibold text-foreground mt-0.5">
-                  Track your first holding
+                  {t('portfolioWidgetEmptyTitle')}
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5 leading-snug">
-                  Add a stock to see live P/L and a weekly trend.
+                  {t('portfolioWidgetEmptyDescription')}
                 </p>
               </div>
               <div className="h-7 w-7 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-emerald-500/20 transition-colors">
@@ -249,7 +251,7 @@ export function PortfolioSummaryWidget() {
           <div className="flex items-start justify-between gap-3 px-4 pt-4 pb-3">
             <div className="min-w-0">
               <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Portfolio
+                {t('portfolioWidgetLabel')}
               </p>
               <p className="text-lg font-bold tabular-nums text-foreground truncate">
                 {formatCurrency(summary.totalValue, userCurrency, roundNumbers ? { round: true } : undefined)}
@@ -261,9 +263,10 @@ export function PortfolioSummaryWidget() {
                   }`}
                 >
                   {isPositive ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-                  {isPositive ? '+' : ''}
-                  {formatCurrency(summary.weekChange!, userCurrency, roundNumbers ? { round: true } : undefined)}
-                  {' '}({isPositive ? '+' : ''}{weekChangePercent!.toFixed(roundNumbers ? 1 : 2)}%) this week
+                  {t('portfolioWidgetWeekChange', {
+                    amount: `${isPositive ? '+' : ''}${formatCurrency(summary.weekChange!, userCurrency, roundNumbers ? { round: true } : undefined)}`,
+                    pct: `${isPositive ? '+' : ''}${weekChangePercent!.toFixed(roundNumbers ? 1 : 2)}`,
+                  })}
                 </p>
               )}
             </div>

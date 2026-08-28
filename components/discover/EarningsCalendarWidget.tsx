@@ -1,6 +1,8 @@
 'use client';
 
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -83,11 +85,13 @@ function DayColumn({
   dayLabel,
   isToday,
   rows,
+  t,
 }: {
   dateStr: string;
   dayLabel: string;
   isToday: boolean;
   rows: EarningsRow[];
+  t: TFunction;
 }) {
   const sorted = [...rows].sort((a, b) => timeOrder(a.time) - timeOrder(b.time));
   const visible = sorted.slice(0, MAX_PER_DAY);
@@ -161,7 +165,7 @@ function DayColumn({
             href="/tools/calendar"
             className="mt-2 text-[11px] text-muted-foreground/80 hover:text-primary transition-colors"
           >
-            +{overflow} more
+            {t('earningsWidgetMoreCount', { count: overflow })}
           </Link>
         )}
       </div>
@@ -192,6 +196,7 @@ function SkeletonCalendar() {
 // ── Main widget ───────────────────────────────────────────────────────────────
 
 export function EarningsCalendarWidget() {
+  const { t } = useTranslation('discover');
   const { isAuthenticated } = useAuth();
   const { marketContextMode } = useUserSettings();
   const isPortfolioMode = marketContextMode === 'holdings';
@@ -271,7 +276,7 @@ export function EarningsCalendarWidget() {
       {/* Editorial section header */}
       <div className="flex items-center gap-3">
         <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/85 shrink-0">
-          {isPortfolioMode ? 'Portfolio earnings' : 'Earnings this week'}
+          {isPortfolioMode ? t('earningsWidgetPortfolioTitle') : t('earningsWidgetMarketTitle')}
         </span>
         <div className="flex-1 h-px bg-border/50" />
         <span className="text-[11px] font-mono text-muted-foreground/80 hidden sm:block tracking-wider shrink-0">
@@ -281,7 +286,7 @@ export function EarningsCalendarWidget() {
           href="/tools/calendar"
           className="text-[11px] font-mono text-muted-foreground/85 hover:text-foreground transition-colors uppercase tracking-wider shrink-0"
         >
-          Full →
+          {t('earningsWidgetFullLink')}
         </Link>
       </div>
 
@@ -298,6 +303,7 @@ export function EarningsCalendarWidget() {
                 dayLabel={DAY_NAMES[i]}
                 isToday={dateStr === today}
                 rows={rowsByDate.get(dateStr) ?? []}
+                t={t}
               />
             ))}
           </div>

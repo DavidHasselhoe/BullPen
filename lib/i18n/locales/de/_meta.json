@@ -1597,5 +1597,14 @@
   "discover.hotPicksViewCount_one": "562490c0610238ad99dc4433078aa10b283abbd8a31984df66adbc4a2f62525e",
   "discover.hotPicksViewCount_other": "26bf295a1314ccd94347f01a0ad938478768d40c646b34757037609f87992ad6",
   "discover.sectorRowLoadError": "45c53a21d0a5ec719c8ef04e17802b777b7bbba4769331c1f707fdc150797b51",
-  "discover.sectorRowTaglineSuffix": "c3d7269fc9df850f976a779c4a9c8fb892151c342b14d076d7e6717ca69c6f88"
+  "discover.sectorRowTaglineSuffix": "c3d7269fc9df850f976a779c4a9c8fb892151c342b14d076d7e6717ca69c6f88",
+  "discover.earningsWidgetFullLink": "9973b0916ed33fa51bb17a4aec8071c1f391ae8c7346f6a11561d821065d5ddd",
+  "discover.earningsWidgetMarketTitle": "c171bdd6486471cb22ee72a168d15988c97b5d5ecdb9da62e5f1a78eb186277b",
+  "discover.earningsWidgetMoreCount_one": "48380badf7a45c74d3fac6b89d19d777585cb9052d135d1ec482b932bc99e98a",
+  "discover.earningsWidgetMoreCount_other": "48380badf7a45c74d3fac6b89d19d777585cb9052d135d1ec482b932bc99e98a",
+  "discover.earningsWidgetPortfolioTitle": "7543ef6d828623f2e1023cbd308f4ee43f696e44933d5a0b1fa16dd8dc956432",
+  "discover.portfolioWidgetEmptyDescription": "2019a7ce27922a23ff69a1c1d420685627137323d018ac7db3074f12ce4348e8",
+  "discover.portfolioWidgetEmptyTitle": "6b1f690619401ede0da3920127f400174f363d600ec7f62ca661deafe3b20860",
+  "discover.portfolioWidgetRateLimit": "9e2acfdae5829911af7eeb5c0267e06fc30cc67c812d731bf2e825b5a85245cc",
+  "discover.portfolioWidgetWeekChange": "572e02631c383072d227ae57922fd0b724d833d590dbcd79c21efe01fa6ab03b"
 }
