@@ -1,44 +1,49 @@
 'use client';
 
 import { Loader2, Check, AlertCircle, RotateCcw } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { cn } from '@/lib/utils';
 import { alertTypeLabel, describeAlert } from '@/types/alerts';
 import type { ClientAction, ActionOutcome } from '@/lib/ai/tool-ux';
 
 export type ActionableClientAction = Exclude<ClientAction, { type: 'navigate' }>;
 
-function describeAction(action: ActionableClientAction): string {
+function describeAction(action: ActionableClientAction, t: TFunction): string {
   switch (action.type) {
     case 'addHolding': {
-      const qty = action.quantity != null ? `${action.quantity} shares of ` : '';
-      return `Add ${qty}${action.ticker} to your holdings`;
+      const qty = action.quantity != null ? t('receiptQtySharesOf', { quantity: action.quantity }) : '';
+      return t('receiptAddHolding', { qty, ticker: action.ticker });
     }
     case 'updateHolding': {
       const parts: string[] = [];
-      if (action.quantity != null) parts.push(`${action.quantity} shares`);
-      if (action.avg_price != null) parts.push(`avg price $${action.avg_price}`);
-      return parts.length > 0 ? `Update ${action.ticker} — ${parts.join(', ')}` : `Update ${action.ticker}`;
+      if (action.quantity != null) parts.push(t('receiptSharesCount', { quantity: action.quantity }));
+      if (action.avg_price != null) parts.push(t('receiptAvgPrice', { price: action.avg_price }));
+      return parts.length > 0
+        ? t('receiptUpdateHoldingWithDetails', { ticker: action.ticker, details: parts.join(', ') })
+        : t('receiptUpdateHolding', { ticker: action.ticker });
     }
     case 'removeHolding':
-      return `Remove ${action.ticker} from your holdings`;
+      return t('receiptRemoveHolding', { ticker: action.ticker });
     case 'createAlert':
-      return `${alertTypeLabel(action.alertType)} alert for ${action.ticker} — ${describeAlert({
-        alertType: action.alertType,
-        threshold: action.threshold,
-      })}`;
+      return t('receiptCreateAlert', {
+        alertType: alertTypeLabel(action.alertType),
+        ticker: action.ticker,
+        details: describeAlert({ alertType: action.alertType, threshold: action.threshold }),
+      });
   }
 }
 
-function successMessage(action: ActionableClientAction): string {
+function successMessage(action: ActionableClientAction, t: TFunction): string {
   switch (action.type) {
     case 'addHolding':
-      return `Added ${action.ticker} to your holdings`;
+      return t('receiptAddedHolding', { ticker: action.ticker });
     case 'updateHolding':
-      return `Updated ${action.ticker}`;
+      return t('receiptUpdatedHolding', { ticker: action.ticker });
     case 'removeHolding':
-      return `Removed ${action.ticker} from your holdings`;
+      return t('receiptRemovedHolding', { ticker: action.ticker });
     case 'createAlert':
-      return `Alert set for ${action.ticker}`;
+      return t('receiptAlertSet', { ticker: action.ticker });
   }
 }
 
@@ -51,7 +56,8 @@ interface ActionReceiptCardProps {
 }
 
 export function ActionReceiptCard({ action, outcome, isHistorical, onRetry }: ActionReceiptCardProps) {
-  const description = describeAction(action);
+  const { t } = useTranslation('ai');
+  const description = describeAction(action, t);
 
   // Historical messages never had their outcome recorded in this session —
   // show a neutral "requested" view instead of a fake or stuck-forever status.
@@ -73,9 +79,9 @@ export function ActionReceiptCard({ action, outcome, isHistorical, onRetry }: Ac
       <div className="min-w-0 flex-1">
         <div className={cn('text-foreground', status === 'error' && 'text-red-500')}>
           {status === 'success'
-            ? outcome?.message ?? successMessage(action)
+            ? outcome?.message ?? successMessage(action, t)
             : status === 'error'
-              ? outcome?.message ?? 'Something went wrong.'
+              ? outcome?.message ?? t('receiptGenericError')
               : description}
         </div>
         {status === 'error' && onRetry && (
@@ -84,7 +90,7 @@ export function ActionReceiptCard({ action, outcome, isHistorical, onRetry }: Ac
             className="mt-1.5 flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground"
           >
             <RotateCcw className="h-3 w-3" />
-            Retry
+            {t('receiptRetry')}
           </button>
         )}
       </div>

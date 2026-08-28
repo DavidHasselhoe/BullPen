@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useTranslation, Trans } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { BullAiIcon } from './BullAiIcon';
 import { useAiTerms } from '@/hooks/use-ai-terms';
@@ -27,6 +28,7 @@ function DisclosureItem({ children }: { children: React.ReactNode }) {
  * versioned (see useAiTerms) so updated terms re-prompt existing users.
  */
 export function AiTermsGate({ onAccept }: AiTermsGateProps) {
+  const { t } = useTranslation('ai');
   const { accept } = useAiTerms();
   const [submitting, setSubmitting] = useState(false);
 
@@ -47,42 +49,41 @@ export function AiTermsGate({ onAccept }: AiTermsGateProps) {
 
       <div className="space-y-1.5">
         <div className="flex items-center justify-center gap-2">
-          <p className="text-sm font-semibold text-foreground">Ask Bull</p>
+          <p className="text-sm font-semibold text-foreground">{t('askBull')}</p>
           <span className="text-[11px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-500">
-            Beta
+            {t('termsGateBeta')}
           </span>
         </div>
         <p className="text-xs text-muted-foreground max-w-[260px] leading-relaxed">
-          Research companies and explore investment ideas with BullPen&rsquo;s AI assistant.
+          {t('termsGateIntro')}
         </p>
       </div>
 
       <ul className="w-full max-w-[300px] space-y-2.5 text-left">
         <DisclosureItem>
-          Your messages are sent to OpenAI for processing. We don&rsquo;t use your data to train AI models.
+          {t('termsGateDisclosureData')}
         </DisclosureItem>
         <DisclosureItem>
-          Ask Bull provides general, educational information only — it&rsquo;s not personal
-          financial advice. Always do your own research before investing. See our{' '}
-          <Link href="/disclosures" className="underline hover:text-foreground" target="_blank">
-            Disclosures
-          </Link>
-          .
+          <Trans
+            i18nKey="termsGateDisclosureNotAdvice"
+            ns="ai"
+            components={{ disclosuresLink: <Link href="/disclosures" className="underline hover:text-foreground" target="_blank" /> }}
+          />
         </DisclosureItem>
         <DisclosureItem>
-          You&rsquo;re talking to an AI, not a human advisor, and it can make mistakes.
+          {t('termsGateDisclosureAi')}
         </DisclosureItem>
         <DisclosureItem>
-          You can request access to or deletion of your data at any time — see our{' '}
-          <Link href="/privacy" className="underline hover:text-foreground" target="_blank">
-            Privacy Policy
-          </Link>
-          .
+          <Trans
+            i18nKey="termsGateDisclosurePrivacy"
+            ns="ai"
+            components={{ privacyLink: <Link href="/privacy" className="underline hover:text-foreground" target="_blank" /> }}
+          />
         </DisclosureItem>
       </ul>
 
       <Button onClick={handleEnable} disabled={submitting} className="w-full max-w-[200px]">
-        {submitting ? 'Enabling…' : 'Enable Ask Bull'}
+        {submitting ? t('termsGateEnabling') : t('termsGateEnableButton')}
       </Button>
     </div>
   );

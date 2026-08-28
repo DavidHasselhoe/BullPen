@@ -1,6 +1,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { useAIPanel } from './AIPanelProvider';
 import { BullAiIcon } from './BullAiIcon';
 import { cn } from '@/lib/utils';
@@ -27,6 +28,7 @@ const PUBLIC_ROUTES = new Set([
 ]);
 
 export function AIPanelToggle() {
+  const { t } = useTranslation('ai');
   const { isOpen, toggle } = useAIPanel();
   const pathname = usePathname();
 
@@ -42,8 +44,8 @@ export function AIPanelToggle() {
   return (
     <button
       onClick={toggle}
-      aria-label="Ask Bull: open AI Assistant"
-      title="Ask Bull"
+      aria-label={t('panelToggleAriaLabel')}
+      title={t('askBull')}
       className={cn(
         'fixed right-5 z-50 group',
         // Below md, MobileTabBar occupies ~3.5rem + safe-area at the bottom
@@ -74,7 +76,7 @@ export function AIPanelToggle() {
           'group-hover:border-primary/30 transition-colors duration-200'
         )}
       >
-        Ask Bull
+        {t('askBull')}
       </span>
     </button>
   );
