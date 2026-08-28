@@ -65,5 +65,11 @@
   "financialsCapex": "CapEx",
   "statisticsBeta": "Beta",
   "statisticsEvEbitda": "EV/EBITDA",
-  "termsGateBeta": "Beta"
+  "termsGateBeta": "Beta",
+  "whyTodayChangeSummary": "{{change}} ({{changePct}}%) i dag",
+  "whyTodayGenericError": "Kunne ikke laste inn en forklaring akkurat nå. Prøv igjen om litt.",
+  "whyTodayRateLimited": "For mange forespørsler. Vent litt og prøv igjen.",
+  "whyTodaySearching": "Søker etter dagens nyheter om ${{ticker}}…",
+  "whyTodayUpgradeCta": "Oppgrader til Pro →",
+  "whyTodayUpgradeNotice": "Sanntids AI-nyhetsanalyse er en <pro>Pro</pro>-funksjon."
 }

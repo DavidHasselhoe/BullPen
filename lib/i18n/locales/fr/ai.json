@@ -53,6 +53,7 @@
   "statisticsRangeSrLabel": "Fourchette 52 semaines ${{low}} à ${{high}}",
   "statisticsRangeSrLabelWithCurrent": "Plage sur 52 semaines ${{low}} à ${{high}}, actuellement ${{current}}",
   "statisticsValuationTitle": "Valorisation de {{ticker}}",
+  "termsGateBeta": "Bêta",
   "termsGateDisclosureAi": "Vous discutez avec une IA, pas avec un conseiller humain, et elle peut faire des erreurs.",
   "termsGateDisclosureData": "Vos messages sont envoyés à OpenAI pour traitement. Nous n'utilisons pas vos données pour entraîner les modèles d'IA.",
   "termsGateDisclosureNotAdvice": "Ask Bull fournit des informations générales et éducatives uniquement. Ce n'est pas un conseil financier personnel. Faites toujours vos propres recherches avant d'investir. Voir nos <disclosuresLink>Divulgations</disclosuresLink>.",
@@ -65,5 +66,10 @@
   "healthScoreNotAvailable": "N/A",
   "insiderNet": "Net {{value}}",
   "statisticsEvEbitda": "EV/EBITDA",
-  "termsGateBeta": "Bêta"
+  "whyTodayChangeSummary": "{{change}} ({{changePct}}%) aujourd'hui",
+  "whyTodayGenericError": "Impossible de charger une explication pour le moment. Veuillez réessayer dans quelques instants.",
+  "whyTodayRateLimited": "Trop de demandes. Veuillez patienter un moment et réessayer.",
+  "whyTodaySearching": "Recherche sur le web les actualités d'aujourd'hui sur ${{ticker}}…",
+  "whyTodayUpgradeCta": "Passer à Pro →",
+  "whyTodayUpgradeNotice": "L'analyse d'actualités par IA en temps réel est une fonctionnalité <pro>Pro</pro>."
 }

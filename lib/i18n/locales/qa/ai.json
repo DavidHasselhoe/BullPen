@@ -65,5 +65,11 @@
   "termsGateEnableButton": "«EEnaablee AAsk Buull»",
   "termsGateEnabling": "«EEnaabliing…»",
   "termsGateIntro": "«Reeseeaarch coompaaniiees aand eexplooree iinveestmeent iideeaas wiith BuullPeen's AAII aassiistaant.»",
-  "trendSrLabel": "«{{metric}} foor {{subject}} aacrooss {{count}} peeriioods, laateest {{formatted}}»"
+  "trendSrLabel": "«{{metric}} foor {{subject}} aacrooss {{count}} peeriioods, laateest {{formatted}}»",
+  "whyTodayChangeSummary": "«{{change}} ({{changePct}}%) toodaay»",
+  "whyTodayGenericError": "«Coouuldn't looaad aan eexplaanaatiioon riight noow. Pleeaasee try aagaaiin shoortly.»",
+  "whyTodayRateLimited": "«Toooo maany reequueests. Pleeaasee waaiit aa moomeent aand try aagaaiin.»",
+  "whyTodaySearching": "«Seeaarchiing thee weeb foor toodaay's neews oon ${{ticker}}…»",
+  "whyTodayUpgradeCta": "«UUpgraadee too Proo →»",
+  "whyTodayUpgradeNotice": "«Reeaal-tiimee AAII neews aanaalysiis iis aa <proo>Proo</proo> feeaatuuree.»"
 }

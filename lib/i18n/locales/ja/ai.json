@@ -26,6 +26,7 @@
   "insiderTradeCount_one": "{{count}}件の取引",
   "insiderTradeCount_other": "{{count}}件の取引",
   "panelToggleAriaLabel": "Ask Bull: AI アシスタントを開く",
+  "profileCeoLabel": "最高経営責任者",
   "profileEmployeesLabel": "従業員数",
   "profileHqLabel": "本社",
   "quoteHighLabel": "高値",
@@ -62,8 +63,13 @@
   "trendSrLabel": "{{count}} 期間にわたる {{subject}} の {{metric}}、最新 {{formatted}}",
   "financialsCapex": "CapEx",
   "healthScoreNotAvailable": "N/A",
-  "profileCeoLabel": "最高経営責任者",
   "statisticsBeta": "Beta",
   "statisticsEvEbitda": "EV/EBITDA",
-  "termsGateBeta": "Beta"
+  "termsGateBeta": "Beta",
+  "whyTodayChangeSummary": "{{change}} ({{changePct}}%) 本日",
+  "whyTodayGenericError": "現在説明を読み込めません。しばらく後にもう一度お試しください。",
+  "whyTodayRateLimited": "リクエストが多すぎます。少々お待ちの上、もう一度お試しください。",
+  "whyTodaySearching": "${{ticker}} の本日のニュースをウェブで検索中…",
+  "whyTodayUpgradeCta": "Pro にアップグレード →",
+  "whyTodayUpgradeNotice": "リアルタイム AI ニュース分析は <pro>Pro</pro> 機能です。"
 }

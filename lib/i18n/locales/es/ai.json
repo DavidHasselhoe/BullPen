@@ -26,6 +26,7 @@
   "insiderTradeCount_one": "{{count}} operación",
   "insiderTradeCount_other": "{{count}} operaciones",
   "panelToggleAriaLabel": "Ask Bull: abrir Asistente de IA",
+  "profileCeoLabel": "Director General",
   "profileEmployeesLabel": "Empleados",
   "profileHqLabel": "Sede",
   "quoteHighLabel": "Máximo",
@@ -62,8 +63,13 @@
   "trendSrLabel": "{{metric}} para {{subject}} en {{count}} períodos, últimos {{formatted}}",
   "financialsCapex": "CapEx",
   "healthScoreNotAvailable": "N/A",
-  "profileCeoLabel": "Director General",
   "statisticsBeta": "Beta",
   "statisticsEvEbitda": "EV/EBITDA",
-  "termsGateBeta": "Beta"
+  "termsGateBeta": "Beta",
+  "whyTodayChangeSummary": "{{change}} ({{changePct}}%) hoy",
+  "whyTodayGenericError": "No pudimos cargar una explicación en este momento. Por favor, intenta de nuevo en breve.",
+  "whyTodayRateLimited": "Demasiadas solicitudes. Por favor, espera un momento e intenta de nuevo.",
+  "whyTodaySearching": "Buscando noticias de hoy sobre ${{ticker}} en la web…",
+  "whyTodayUpgradeCta": "Actualiza a Pro →",
+  "whyTodayUpgradeNotice": "El análisis de noticias en tiempo real con IA es una función de <pro>Pro</pro>."
 }

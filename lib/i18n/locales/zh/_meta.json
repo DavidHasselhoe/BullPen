@@ -1536,5 +1536,11 @@
   "ai.termsGateDisclosurePrivacy": "aa6d666147fe7e6f42446eebcd39ad719fc6c782e5da31a0d1c0b8f1d7dc7bf8",
   "ai.termsGateEnableButton": "cffccec06473a4834a7adcd4d5b7532fd372cf5412b08fa5bde0211dd073a932",
   "ai.termsGateEnabling": "e22c24238eb035dd27996c9bc176c775e30c59f41b5676c2158eb59921037303",
-  "ai.termsGateIntro": "28533cf02f915b52bd860f308bbbe482834885882fecb4df45b1ced4bcf0a708"
+  "ai.termsGateIntro": "28533cf02f915b52bd860f308bbbe482834885882fecb4df45b1ced4bcf0a708",
+  "ai.whyTodayChangeSummary": "615266e10f1a8200f1727c9e741b2c87eeba06e67768d33bc5a4699f70551cd1",
+  "ai.whyTodayGenericError": "e5930f9ef47ba35c034dc79882c8845cde97ae0e2ddd58d6a02224624fbef8d1",
+  "ai.whyTodayRateLimited": "50da2322715cb0de687a3f602fc6244592cac582d588f0bfcb9c00bb866797d6",
+  "ai.whyTodaySearching": "8f991e62b09ed1d068594d7b37b1bfde8a6b4d497cd13536d93af3311abf6acd",
+  "ai.whyTodayUpgradeCta": "bfc10ad05c49c4bebb4e9470c0bfd7cd5d1c528b9f2bbcdf0796eee12f3d4d50",
+  "ai.whyTodayUpgradeNotice": "4c1722594eff2c05162385b005e0e918f9b6f5c52a312a3bf2a6f4d8ad51724b"
 }

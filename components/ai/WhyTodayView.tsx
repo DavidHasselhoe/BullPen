@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useTranslation, Trans } from 'react-i18next';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
@@ -22,7 +22,7 @@ interface Props {
  * mount, keyed by the caller so a repeat "Why?" click remounts and restarts.
  */
 export function WhyTodayView({ ticker, price, change, changePct }: Props) {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation('ai');
   const [status, setStatus] = useState<Status>('searching');
   const [text, setText] = useState('');
   const [errorCode, setErrorCode] = useState<ErrorCode>('unknown');
@@ -98,14 +98,17 @@ export function WhyTodayView({ ticker, price, change, changePct }: Props) {
           'text-sm font-medium tabular-nums',
           changePct >= 0 ? 'text-emerald-400' : 'text-red-400'
         )}>
-          {changePct >= 0 ? '+' : ''}{change.toFixed(2)} ({changePct >= 0 ? '+' : ''}{changePct.toFixed(2)}%) today
+          {t('whyTodayChangeSummary', {
+            change: `${changePct >= 0 ? '+' : ''}${change.toFixed(2)}`,
+            changePct: `${changePct >= 0 ? '+' : ''}${changePct.toFixed(2)}`,
+          })}
         </span>
       </div>
 
       {status === 'searching' && (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary animate-pulse shrink-0" />
-          Searching the web for today&apos;s news on ${ticker}…
+          {t('whyTodaySearching', { ticker })}
         </div>
       )}
 
@@ -127,21 +130,25 @@ export function WhyTodayView({ ticker, price, change, changePct }: Props) {
       {status === 'error' && (
         <p className="text-sm text-muted-foreground">
           {errorCode === 'rate_limited'
-            ? 'Too many requests. Please wait a moment and try again.'
-            : "Couldn't load an explanation right now. Please try again shortly."}
+            ? t('whyTodayRateLimited')
+            : t('whyTodayGenericError')}
         </p>
       )}
 
       {status === 'upgrade' && (
         <div className="space-y-3">
           <p className="text-sm text-muted-foreground">
-            Real-time AI news analysis is a <span className="text-foreground font-medium">Pro</span> feature.
+            <Trans
+              i18nKey="whyTodayUpgradeNotice"
+              ns="ai"
+              components={{ pro: <span className="text-foreground font-medium" /> }}
+            />
           </p>
           <Link
             href="/upgrade"
             className="inline-flex items-center rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
           >
-            Upgrade to Pro →
+            {t('whyTodayUpgradeCta')}
           </Link>
         </div>
       )}

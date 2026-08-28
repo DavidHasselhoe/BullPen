@@ -65,5 +65,11 @@
   "termsGateEnableButton": "Enable Ask Bull",
   "termsGateEnabling": "Enabling…",
   "termsGateIntro": "Research companies and explore investment ideas with BullPen's AI assistant.",
-  "trendSrLabel": "{{metric}} for {{subject}} across {{count}} periods, latest {{formatted}}"
+  "trendSrLabel": "{{metric}} for {{subject}} across {{count}} periods, latest {{formatted}}",
+  "whyTodayChangeSummary": "{{change}} ({{changePct}}%) today",
+  "whyTodayGenericError": "Couldn't load an explanation right now. Please try again shortly.",
+  "whyTodayRateLimited": "Too many requests. Please wait a moment and try again.",
+  "whyTodaySearching": "Searching the web for today's news on ${{ticker}}…",
+  "whyTodayUpgradeCta": "Upgrade to Pro →",
+  "whyTodayUpgradeNotice": "Real-time AI news analysis is a <pro>Pro</pro> feature."
 }

@@ -65,5 +65,11 @@
   "trendSrLabel": "{{count}} 个周期内 {{subject}} 的 {{metric}}，最新 {{formatted}}",
   "statisticsBeta": "Beta",
   "statisticsEvEbitda": "EV/EBITDA",
-  "termsGateBeta": "Beta"
+  "termsGateBeta": "Beta",
+  "whyTodayChangeSummary": "{{change}} ({{changePct}}%) 今天",
+  "whyTodayGenericError": "现在无法加载解释。请稍后重试。",
+  "whyTodayRateLimited": "请求过多。请稍等片刻后重试。",
+  "whyTodaySearching": "正在网络搜索 ${{ticker}} 今天的新闻……",
+  "whyTodayUpgradeCta": "升级到 Pro →",
+  "whyTodayUpgradeNotice": "实时 AI 新闻分析是 <pro>Pro</pro> 功能。"
 }

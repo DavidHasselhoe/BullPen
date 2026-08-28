@@ -65,5 +65,11 @@
   "financialsOperatingCf": "Operating CF",
   "statisticsBeta": "Beta",
   "statisticsEvEbitda": "EV/EBITDA",
-  "termsGateBeta": "Beta"
+  "termsGateBeta": "Beta",
+  "whyTodayChangeSummary": "{{change}} ({{changePct}}%) heute",
+  "whyTodayGenericError": "Erklärung konnte gerade nicht geladen werden. Bitte versuche es in Kürze erneut.",
+  "whyTodayRateLimited": "Zu viele Anfragen. Bitte warte einen Moment und versuche es erneut.",
+  "whyTodaySearching": "Suche im Web nach heutigen Nachrichten zu ${{ticker}}…",
+  "whyTodayUpgradeCta": "Upgrade auf Pro →",
+  "whyTodayUpgradeNotice": "Echtzeit-KI-Nachrichtenanalyse ist eine <pro>Pro</pro>-Funktion."
 }
