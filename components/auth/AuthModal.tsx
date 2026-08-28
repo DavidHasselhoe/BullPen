@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
@@ -23,6 +24,7 @@ interface AuthModalProps {
 }
 
 export function AuthModal({ open, onOpenChange, initialMode = 'login', redirectTo }: AuthModalProps) {
+  const { t } = useTranslation('auth');
   const router = useRouter();
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
@@ -46,12 +48,12 @@ export function AuthModal({ open, onOpenChange, initialMode = 'login', redirectT
     try {
       const result = await signInWithGoogle(redirectTo);
       if (!result.success) {
-        setError(result.error || 'Failed to sign in with Google');
+        setError(result.error || t('modalGoogleFailed'));
         setIsGoogleLoading(false);
       }
       // If successful, redirect will happen automatically via OAuth flow
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+      setError(err instanceof Error ? err.message : t('unexpectedError'));
       setIsGoogleLoading(false);
     }
   };
@@ -69,24 +71,24 @@ export function AuthModal({ open, onOpenChange, initialMode = 'login', redirectT
   const getTitle = () => {
     switch (mode) {
       case 'login':
-        return 'Welcome back';
+        return t('modalTitleLogin');
       case 'signup':
-        return 'Create an account';
+        return t('modalTitleSignup');
       case 'forgot-password':
-        return 'Reset password';
+        return t('modalTitleForgotPassword');
       default:
-        return 'Welcome to BullPen';
+        return t('modalTitleDefault');
     }
   };
 
   const getDescription = () => {
     switch (mode) {
       case 'login':
-        return 'Sign in to your BullPen account';
+        return t('modalDescriptionLogin');
       case 'signup':
-        return 'Track, analyze, and understand the market';
+        return t('modalDescriptionSignup');
       case 'forgot-password':
-        return 'Enter your email to reset your password';
+        return t('modalDescriptionForgotPassword');
       default:
         return '';
     }
@@ -113,8 +115,8 @@ export function AuthModal({ open, onOpenChange, initialMode = 'login', redirectT
           <div className="hidden sm:block">
             <Tabs value={mode} onValueChange={(v) => handleModeChange(v as AuthMode)}>
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">Sign in</TabsTrigger>
-                <TabsTrigger value="signup">Sign up</TabsTrigger>
+                <TabsTrigger value="login">{t('loginSubmit')}</TabsTrigger>
+                <TabsTrigger value="signup">{t('modalSignUp')}</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
@@ -151,7 +153,7 @@ export function AuthModal({ open, onOpenChange, initialMode = 'login', redirectT
                 <Separator />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">Or continue with email</span>
+                <span className="bg-background px-2 text-muted-foreground">{t('modalOrContinueWithEmail')}</span>
               </div>
             </div>
           )}
@@ -192,24 +194,24 @@ export function AuthModal({ open, onOpenChange, initialMode = 'login', redirectT
               <p className="text-sm text-muted-foreground">
                 {mode === 'login' ? (
                   <>
-                    Don&apos;t have an account?{' '}
+                    {t('modalNoAccount')}{' '}
                     <button
                       type="button"
                       onClick={() => handleModeChange('signup')}
                       className="font-medium text-primary underline-offset-4 hover:underline transition-colors"
                     >
-                      Sign up
+                      {t('modalSignUp')}
                     </button>
                   </>
                 ) : (
                   <>
-                    Already have an account?{' '}
+                    {t('modalHasAccount')}{' '}
                     <button
                       type="button"
                       onClick={() => handleModeChange('login')}
                       className="font-medium text-primary underline-offset-4 hover:underline transition-colors"
                     >
-                      Sign in
+                      {t('loginSubmit')}
                     </button>
                   </>
                 )}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -17,6 +18,7 @@ interface AuthFormLoginProps {
 }
 
 export function AuthFormLogin({ onSuccess, onError, onForgotPassword }: AuthFormLoginProps) {
+  const { t } = useTranslation('auth');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -27,7 +29,7 @@ export function AuthFormLogin({ onSuccess, onError, onForgotPassword }: AuthForm
     setError('');
 
     if (!email || !password) {
-      const errorMsg = 'Please enter both email and password';
+      const errorMsg = t('loginMissingFields');
       setError(errorMsg);
       onError?.(errorMsg);
       return;
@@ -39,7 +41,7 @@ export function AuthFormLogin({ onSuccess, onError, onForgotPassword }: AuthForm
       const result = await signIn({ email, password });
 
       if (!result.success) {
-        const errorMsg = result.error || 'Failed to sign in';
+        const errorMsg = result.error || t('loginFailed');
         setError(errorMsg);
         onError?.(errorMsg);
         setIsLoading(false);
@@ -49,7 +51,7 @@ export function AuthFormLogin({ onSuccess, onError, onForgotPassword }: AuthForm
       setIsLoading(false);
       onSuccess?.();
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'An unexpected error occurred';
+      const errorMsg = err instanceof Error ? err.message : t('unexpectedError');
       setError(errorMsg);
       onError?.(errorMsg);
       setIsLoading(false);
@@ -84,12 +86,12 @@ export function AuthFormLogin({ onSuccess, onError, onForgotPassword }: AuthForm
 
       <div className="space-y-2">
         <Label htmlFor="login-email" className="text-sm font-medium">
-          Email
+          {t('emailLabel')}
         </Label>
         <Input
           id="login-email"
           type="email"
-          placeholder="you@example.com"
+          placeholder={t('emailPlaceholder')}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           disabled={isLoading}
@@ -104,7 +106,7 @@ export function AuthFormLogin({ onSuccess, onError, onForgotPassword }: AuthForm
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <Label htmlFor="login-password" className="text-sm font-medium">
-            Password
+            {t('passwordLabel')}
           </Label>
           {onForgotPassword && (
             <button
@@ -112,7 +114,7 @@ export function AuthFormLogin({ onSuccess, onError, onForgotPassword }: AuthForm
               onClick={onForgotPassword}
               className="text-xs text-muted-foreground hover:text-primary transition-colors"
             >
-              Forgot password?
+              {t('forgotPasswordLink')}
             </button>
           )}
         </div>
@@ -136,10 +138,10 @@ export function AuthFormLogin({ onSuccess, onError, onForgotPassword }: AuthForm
         {isLoading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Signing in...
+            {t('loginSigningIn')}
           </>
         ) : (
-          'Sign in'
+          t('loginSubmit')
         )}
       </Button>
     </motion.form>

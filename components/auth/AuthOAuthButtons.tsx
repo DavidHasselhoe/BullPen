@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Loader2, Check } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -34,6 +35,7 @@ const GoogleIcon = () => (
 );
 
 export function AuthOAuthButtons({ onGoogleClick, isLoading = false, disabled = false, lastUsed = false }: AuthOAuthButtonsProps) {
+  const { t } = useTranslation('auth');
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
@@ -51,16 +53,16 @@ export function AuthOAuthButtons({ onGoogleClick, isLoading = false, disabled = 
         {isLoading ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin" />
-            <span>Connecting...</span>
+            <span>{t('oauthConnecting')}</span>
           </>
         ) : (
           <>
             <GoogleIcon />
-            <span>Continue with Google</span>
+            <span>{t('oauthContinueWithGoogle')}</span>
             {lastUsed && (
               <span className="absolute -top-2 -right-2 inline-flex items-center gap-1 rounded-full bg-blue-600 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-white shadow-sm ring-2 ring-background">
                 <Check className="size-2.5" strokeWidth={3} />
-                Last used
+                {t('oauthLastUsed')}
               </span>
             )}
           </>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, FormEvent } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,7 @@ interface AuthFormForgotPasswordProps {
 }
 
 export function AuthFormForgotPassword({ onBack }: AuthFormForgotPasswordProps) {
+  const { t } = useTranslation('auth');
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -23,7 +25,7 @@ export function AuthFormForgotPassword({ onBack }: AuthFormForgotPasswordProps) 
     setError('');
 
     if (!email.includes('@')) {
-      setError('Please enter a valid email address');
+      setError(t('forgotInvalidEmail'));
       return;
     }
 
@@ -32,7 +34,7 @@ export function AuthFormForgotPassword({ onBack }: AuthFormForgotPasswordProps) 
     setIsLoading(false);
 
     if (!result.success) {
-      setError(result.error || 'Failed to send reset email');
+      setError(result.error || t('forgotSendFailed'));
       return;
     }
 
@@ -50,11 +52,16 @@ export function AuthFormForgotPassword({ onBack }: AuthFormForgotPasswordProps) 
         <div className="flex items-start gap-3 rounded-lg border border-border bg-muted/50 px-4 py-3 text-sm text-muted-foreground">
           <MailCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
           <p>
-            If an account exists for <span className="font-medium text-foreground">{email}</span>, we&apos;ve sent a link to reset your password.
+            <Trans
+              i18nKey="forgotSentMessage"
+              ns="auth"
+              values={{ email }}
+              components={{ strong: <span className="font-medium text-foreground" /> }}
+            />
           </p>
         </div>
         <Button type="button" variant="outline" className="h-11 w-full rounded-lg" onClick={onBack}>
-          Back to sign in
+          {t('backToSignIn')}
         </Button>
       </motion.div>
     );
@@ -86,12 +93,12 @@ export function AuthFormForgotPassword({ onBack }: AuthFormForgotPasswordProps) 
 
       <div className="space-y-2">
         <Label htmlFor="forgot-email" className="text-sm font-medium">
-          Email
+          {t('emailLabel')}
         </Label>
         <Input
           id="forgot-email"
           type="email"
-          placeholder="you@example.com"
+          placeholder={t('emailPlaceholder')}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           disabled={isLoading}
@@ -111,15 +118,15 @@ export function AuthFormForgotPassword({ onBack }: AuthFormForgotPasswordProps) 
         {isLoading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Sending link...
+            {t('forgotSendingLink')}
           </>
         ) : (
-          'Send reset link'
+          t('forgotSendLink')
         )}
       </Button>
 
       <Button type="button" variant="ghost" className="h-11 w-full rounded-lg" onClick={onBack}>
-        Back to sign in
+        {t('backToSignIn')}
       </Button>
     </motion.form>
   );

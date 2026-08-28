@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -21,31 +22,35 @@ interface AuthFormSignupProps {
 export function AuthFormSignup({
   onSuccess,
   onError,
-  submitLabel = 'Create account',
-  submitLoadingLabel = 'Creating account...',
+  submitLabel,
+  submitLoadingLabel,
   submitClassName,
 }: AuthFormSignupProps) {
+  const { t } = useTranslation('auth');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  const resolvedSubmitLabel = submitLabel ?? t('signupSubmit');
+  const resolvedSubmitLoadingLabel = submitLoadingLabel ?? t('signupSubmitting');
+
   const validateForm = (): string | null => {
     if (!email) {
-      return 'Email is required';
+      return t('signupEmailRequired');
     }
     if (!email.includes('@')) {
-      return 'Please enter a valid email address';
+      return t('forgotInvalidEmail');
     }
     if (!password) {
-      return 'Password is required';
+      return t('signupPasswordRequired');
     }
     if (password.length < 8) {
-      return 'Password must be at least 8 characters';
+      return t('signupPasswordTooShort');
     }
     if (password !== confirmPassword) {
-      return 'Passwords do not match';
+      return t('signupPasswordMismatch');
     }
     return null;
   };
@@ -67,7 +72,7 @@ export function AuthFormSignup({
       const result = await signUp({ email, password });
 
       if (!result.success) {
-        const errorMsg = result.error || 'Failed to create account';
+        const errorMsg = result.error || t('signupFailed');
         setError(errorMsg);
         onError?.(errorMsg);
         setIsLoading(false);
@@ -83,7 +88,7 @@ export function AuthFormSignup({
         // duplicate case no email is actually sent, so that phrasing alone
         // reads as a bug. The "or sign in" clause is the honest nudge for
         // that case without confirming it outright.
-        const errorMsg = 'Check your inbox for a confirmation link, or sign in if you already have an account.';
+        const errorMsg = t('signupCheckInbox');
         setError(errorMsg);
         onError?.(errorMsg);
         setIsLoading(false);
@@ -92,7 +97,7 @@ export function AuthFormSignup({
 
       onSuccess?.();
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'An unexpected error occurred';
+      const errorMsg = err instanceof Error ? err.message : t('unexpectedError');
       setError(errorMsg);
       onError?.(errorMsg);
       setIsLoading(false);
@@ -112,12 +117,12 @@ export function AuthFormSignup({
     >
       <div className="space-y-2">
         <Label htmlFor="signup-email" className="text-sm font-medium">
-          Email
+          {t('emailLabel')}
         </Label>
         <Input
           id="signup-email"
           type="email"
-          placeholder="you@example.com"
+          placeholder={t('emailPlaceholder')}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           disabled={isLoading}
@@ -131,7 +136,7 @@ export function AuthFormSignup({
 
       <div className="space-y-2">
         <Label htmlFor="signup-password" className="text-sm font-medium">
-          Password
+          {t('passwordLabel')}
         </Label>
         <PasswordInput
           id="signup-password"
@@ -144,12 +149,12 @@ export function AuthFormSignup({
           aria-invalid={!!error && error.toLowerCase().includes('password')}
           minLength={8}
         />
-        <p className="text-xs text-muted-foreground">Must be at least 8 characters</p>
+        <p className="text-xs text-muted-foreground">{t('signupPasswordHint')}</p>
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="signup-confirm-password" className="text-sm font-medium">
-          Confirm Password
+          {t('signupConfirmPasswordLabel')}
         </Label>
         <PasswordInput
           id="signup-confirm-password"
@@ -162,7 +167,7 @@ export function AuthFormSignup({
           aria-invalid={!!error && error.toLowerCase().includes('match')}
         />
         {confirmPassword && password !== confirmPassword && (
-          <p className="text-xs text-destructive">Passwords do not match</p>
+          <p className="text-xs text-destructive">{t('signupPasswordMismatch')}</p>
         )}
       </div>
 
@@ -174,10 +179,10 @@ export function AuthFormSignup({
         {isLoading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            {submitLoadingLabel}
+            {resolvedSubmitLoadingLabel}
           </>
         ) : (
-          submitLabel
+          resolvedSubmitLabel
         )}
       </Button>
     </motion.form>
