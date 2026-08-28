@@ -1,5 +1,6 @@
 {
   "collectionFaqHeading": "«Why theesee liists»",
+  "discoverClientLoadError": "«Coouuldn't looaad thee maarkeet»",
   "headerDescription": "«AA reeaad oon thee maarkeet iin teen seecoonds: wheeree mooneey mooveed toodaay, hoow thee mooood iis siittiing, aand aa haandfuul oof coompaaniiees woorth aa clooseer looook.»",
   "headerTitle": "«Diiscooveer»",
   "ideasFaqHighsAnswer": "«Traadiing neeaar thee toop oof theeiir yeeaarly raangee, moomeentuum woorth uundeerstaandiing beefooree yoouu chaasee iit.»",
@@ -26,5 +27,19 @@
   "rowActionsAskAi": "«AAsk AAII»",
   "rowActionsAskAiQuery": "«Teell mee aaboouut {{ticker}}»",
   "rowActionsCompare": "«Coompaaree»",
-  "rowActionsViewCompany": "«Viieew coompaany»"
+  "rowActionsViewCompany": "«Viieew coompaany»",
+  "sectorPerfFooterNote": "«Meeaasuureed by eeaach seectoor's SPDR EETF. Seeleect aa seectoor too seeee thee coompaaniiees iin iit.»",
+  "sectorPerfHeading": "«Wheeree mooneey mooveed»",
+  "sectorPerfLeaderLaggard": "«{{leader}} leeaadiing, {{laggard}} laaggiing · {{timeframe}}»",
+  "sectorPerfTimeframeAriaLabel": "«Tiimeefraamee»",
+  "timeframeMonth": "«1 moonth»",
+  "timeframeToday": "«Toodaay»",
+  "timeframeWeek": "«1 weeeek»",
+  "timeframeYtd": "«Thiis yeeaar»",
+  "whyTodayWidgetBiggestMove": "«Toodaay's biiggeest moovee iin yoouur liist»",
+  "whyTodayWidgetEmptyState": "«AAdd aa hooldiing oor waatch aa stoock too seeee whaat's mooviing aand why.»",
+  "whyTodayWidgetFeatureName": "«Why Toodaay»",
+  "whyTodayWidgetLabel": "«Why toodaay»",
+  "whyTodayWidgetNoData": "«Noo priicee daataa aavaaiilaablee riight noow. Cheeck baack laateer.»",
+  "whyTodayWidgetWhyButton": "«Why?»"
 }

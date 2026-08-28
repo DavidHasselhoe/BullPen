@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { AlertCircle } from 'lucide-react';
 import { useLivePrices } from '@/hooks/use-live-prices';
@@ -24,6 +25,7 @@ const FEED_QUERY_KEY = ['discover-feed'];
  * check-in, so movers and news deliberately live there and not here.
  */
 export function DiscoverClient() {
+  const { t } = useTranslation('discover');
   // Shares its query key with WeeklyPickHero, so this is the same single
   // request — read here only to fold the pick's symbol into the SSE list below.
   const { data: pickData } = useQuery(CURRENT_PICK_QUERY);
@@ -70,7 +72,7 @@ export function DiscoverClient() {
         <div className="flex items-start gap-3 rounded-xl border border-red-500/30 bg-red-500/5 p-6">
           <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-400" aria-hidden />
           <div>
-            <h2 className="text-sm font-semibold text-foreground">Couldn&apos;t load the market</h2>
+            <h2 className="text-sm font-semibold text-foreground">{t('discoverClientLoadError')}</h2>
             <p className="mt-1 text-sm text-muted-foreground">{humanizeError(error)}</p>
           </div>
         </div>

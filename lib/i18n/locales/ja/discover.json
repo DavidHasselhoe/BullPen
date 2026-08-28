@@ -26,5 +26,20 @@
   "rowActionsAskAi": "AIに質問",
   "rowActionsAskAiQuery": "{{ticker}}について教えてください",
   "rowActionsCompare": "比較",
-  "rowActionsViewCompany": "企業情報を表示"
+  "rowActionsViewCompany": "企業情報を表示",
+  "discoverClientLoadError": "マーケットを読み込めませんでした",
+  "sectorPerfFooterNote": "各セクターの SPDR ETF で測定されています。セクターを選択すると、そのセクターの企業を確認できます。",
+  "sectorPerfHeading": "資金が動いた場所",
+  "sectorPerfLeaderLaggard": "{{leader}} がリード、{{laggard}} が下落 · {{timeframe}}",
+  "sectorPerfTimeframeAriaLabel": "時間枠",
+  "timeframeMonth": "1 か月",
+  "timeframeToday": "今日",
+  "timeframeWeek": "1 週間",
+  "timeframeYtd": "今年",
+  "whyTodayWidgetBiggestMove": "あなたのリストで今日の最大変動",
+  "whyTodayWidgetEmptyState": "保有銘柄を追加するか、株式をウォッチして、何が動いているかと理由を確認しましょう。",
+  "whyTodayWidgetFeatureName": "なぜ今日",
+  "whyTodayWidgetLabel": "なぜ今日",
+  "whyTodayWidgetNoData": "現在、価格データは利用できません。後でもう一度確認してください。",
+  "whyTodayWidgetWhyButton": "なぜ？"
 }

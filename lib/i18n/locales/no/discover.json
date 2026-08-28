@@ -26,5 +26,20 @@
   "rowActionsAskAi": "Spør AI",
   "rowActionsAskAiQuery": "Fortell meg om {{ticker}}",
   "rowActionsCompare": "Sammenlign",
-  "rowActionsViewCompany": "Vis selskap"
+  "rowActionsViewCompany": "Vis selskap",
+  "discoverClientLoadError": "Kunne ikke laste markedet",
+  "sectorPerfFooterNote": "Målt etter hver sektors SPDR ETF. Velg en sektor for å se selskapene i den.",
+  "sectorPerfHeading": "Hvor penger flyttet seg",
+  "sectorPerfLeaderLaggard": "{{leader}} leder, {{laggard}} henger etter · {{timeframe}}",
+  "sectorPerfTimeframeAriaLabel": "Tidsrom",
+  "timeframeMonth": "1 måned",
+  "timeframeToday": "I dag",
+  "timeframeWeek": "1 uke",
+  "timeframeYtd": "Dette året",
+  "whyTodayWidgetBiggestMove": "Dagens største kursendring i listen din",
+  "whyTodayWidgetEmptyState": "Legg til en beholdning eller se på en aksje for å se hva som endrer seg og hvorfor.",
+  "whyTodayWidgetFeatureName": "Hvorfor i dag",
+  "whyTodayWidgetLabel": "Hvorfor i dag",
+  "whyTodayWidgetNoData": "Ingen prisdata tilgjengelig nå. Kom tilbake senere.",
+  "whyTodayWidgetWhyButton": "Hvorfor?"
 }

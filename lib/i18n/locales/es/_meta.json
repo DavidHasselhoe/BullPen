@@ -1593,5 +1593,20 @@
   "discover.rowActionsAskAi": "ea9e45ac7083cf49eaca10fc7c9f1ca1f1aaca9067d4b7e974aaf270a7c95414",
   "discover.rowActionsAskAiQuery": "76db22f775cbabc08e5bab8459193a2404195e9af768804ede049974b7d8da53",
   "discover.rowActionsCompare": "e888155d8c7d2e3c3f9eb1bf57e8d81ba1a3c182b5e94b01e09de2cb2cca81f9",
-  "discover.rowActionsViewCompany": "871bbf701d69b1111b33656a41ea1623958c309e84e2d2084705e3795993a5f9"
+  "discover.rowActionsViewCompany": "871bbf701d69b1111b33656a41ea1623958c309e84e2d2084705e3795993a5f9",
+  "discover.discoverClientLoadError": "6655dbf716bdce0aa30f57337fcb9a797cbda97d095ce0fed28c0791bf10419e",
+  "discover.sectorPerfFooterNote": "006c24d5f7e05db0175a9e4f93839bf82b0fcbd5fa73c71a0b2aa262109fb619",
+  "discover.sectorPerfHeading": "84f9c35ff26eb5561cc696938f59b5b3503588cc2d251ea5bc59d8e88eb1a17c",
+  "discover.sectorPerfLeaderLaggard": "27b37cf477a47d336fe96e7ae76f140e41a1576d62aed78d771d2a8e7c36320a",
+  "discover.sectorPerfTimeframeAriaLabel": "f580cb76d8473a570e2b9a6bb67eb071994ea6673e8eceb97058aca757b4b0a5",
+  "discover.timeframeMonth": "cd8c117e6dd5be925df3f0e87dcef2500da7b731d0289b35b8fc3ef642d07e26",
+  "discover.timeframeToday": "2b065c7c9ce466e5ebcad757987d5d660ee4c9ea708bc62c43444b53334738ba",
+  "discover.timeframeWeek": "c8cc522340b984b57109fd8b120419170b4301baead519e2a8fd65736b9ddd41",
+  "discover.timeframeYtd": "98597183c8c663282c3bb42f3374730701220f7caece637facee5b33cbd9f66e",
+  "discover.whyTodayWidgetBiggestMove": "446ecdc87faf942d2c6d99ec1acf2f3d4fc66d5e7eeaa138c9b914b9bd155b6d",
+  "discover.whyTodayWidgetEmptyState": "da3b67bb98fe110f54bd69673341f31f025288f0d85abe9c546d834517062db3",
+  "discover.whyTodayWidgetFeatureName": "57310843b370121054526fda0f74c0ef441580241dbb718acd854f519fd9bbbb",
+  "discover.whyTodayWidgetLabel": "a9b465dc56db1e840000a00a22900053e9a2f97cc5c861100625c9a52cb60304",
+  "discover.whyTodayWidgetNoData": "357098becacafd58850cc36886a942938a2fb6386a26797cc219cc63c3975aea",
+  "discover.whyTodayWidgetWhyButton": "5d8a995a6fa7cf7c577cc9d49ca9e00d4aee4d0bcd5e2ad5caff27e2a8097276"
 }

@@ -26,5 +26,20 @@
   "rowActionsAskAi": "Ask Bull",
   "rowActionsAskAiQuery": "告诉我关于 {{ticker}} 的信息",
   "rowActionsCompare": "比较",
-  "rowActionsViewCompany": "查看公司"
+  "rowActionsViewCompany": "查看公司",
+  "discoverClientLoadError": "无法加载市场数据",
+  "sectorPerfFooterNote": "按各行业 SPDR ETF 衡量。选择一个行业可查看其中的公司。",
+  "sectorPerfHeading": "资金流向",
+  "sectorPerfLeaderLaggard": "{{leader}} 领涨，{{laggard}} 领跌 · {{timeframe}}",
+  "sectorPerfTimeframeAriaLabel": "时间范围",
+  "timeframeMonth": "1 个月",
+  "timeframeToday": "今天",
+  "timeframeWeek": "1 周",
+  "timeframeYtd": "今年",
+  "whyTodayWidgetBiggestMove": "您持仓或关注股票中今天的最大涨跌",
+  "whyTodayWidgetEmptyState": "添加持仓或关注股票，查看价格变动及原因。",
+  "whyTodayWidgetFeatureName": "为什么今天",
+  "whyTodayWidgetLabel": "为什么今天",
+  "whyTodayWidgetNoData": "暂无价格数据。请稍后再试。",
+  "whyTodayWidgetWhyButton": "为什么？"
 }

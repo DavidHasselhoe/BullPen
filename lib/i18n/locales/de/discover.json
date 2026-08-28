@@ -26,5 +26,20 @@
   "rowActionsAskAi": "Ask Bull",
   "rowActionsAskAiQuery": "Erzähl mir von {{ticker}}",
   "rowActionsCompare": "Vergleichen",
-  "rowActionsViewCompany": "Unternehmen ansehen"
+  "rowActionsViewCompany": "Unternehmen ansehen",
+  "discoverClientLoadError": "Konnte den Markt nicht laden",
+  "sectorPerfFooterNote": "Gemessen an den SPDR ETFs jedes Sektors. Wähle einen Sektor aus, um die Unternehmen darin zu sehen.",
+  "sectorPerfHeading": "Wohin das Geld floss",
+  "sectorPerfLeaderLaggard": "{{leader}} führt, {{laggard}} hinkt hinterher · {{timeframe}}",
+  "sectorPerfTimeframeAriaLabel": "Zeitraum",
+  "timeframeMonth": "1 Monat",
+  "timeframeToday": "Heute",
+  "timeframeWeek": "1 Woche",
+  "timeframeYtd": "Dieses Jahr",
+  "whyTodayWidgetBiggestMove": "Größte heutige Bewegung in deiner Liste",
+  "whyTodayWidgetEmptyState": "Füge einen Bestand hinzu oder beobachte eine Aktie, um zu sehen, was sich bewegt und warum.",
+  "whyTodayWidgetFeatureName": "Warum Heute",
+  "whyTodayWidgetLabel": "Warum heute",
+  "whyTodayWidgetNoData": "Momentan keine Kursdaten verfügbar. Schau später vorbei.",
+  "whyTodayWidgetWhyButton": "Warum?"
 }

@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { cn } from '@/lib/utils';
 import {
   TIMEFRAMES,
@@ -9,12 +11,14 @@ import {
 } from '@/lib/discover/discover-config';
 import { SectorRow } from './SectorRow';
 
-const TIMEFRAME_LABELS: Record<Timeframe, string> = {
-  '1D': 'Today',
-  '1W': '1 week',
-  '1M': '1 month',
-  YTD: 'This year',
-};
+function getTimeframeLabels(t: TFunction): Record<Timeframe, string> {
+  return {
+    '1D': t('timeframeToday'),
+    '1W': t('timeframeWeek'),
+    '1M': t('timeframeMonth'),
+    YTD: t('timeframeYtd'),
+  };
+}
 
 interface Props {
   sectors: Record<Timeframe, SectorPerf[]>;
@@ -34,6 +38,8 @@ interface Props {
  * tradeable return rather than an average of whichever names we happened to list.
  */
 export function SectorPerformance({ sectors }: Props) {
+  const { t } = useTranslation('discover');
+  const TIMEFRAME_LABELS = getTimeframeLabels(t);
   const [timeframe, setTimeframe] = useState<Timeframe>('1D');
   const [expanded, setExpanded] = useState<string | null>(null);
   const [grown, setGrown] = useState(false);
@@ -71,18 +77,18 @@ export function SectorPerformance({ sectors }: Props) {
             id="sectors-heading"
             className="text-sm font-semibold uppercase tracking-widest text-muted-foreground/80"
           >
-            Where money moved
+            {t('sectorPerfHeading')}
           </h2>
           {leader?.changePct != null && laggard?.changePct != null && (
             <p className="mt-1 text-xs text-muted-foreground/80">
-              {leader.label} leading, {laggard.label} lagging · {TIMEFRAME_LABELS[timeframe].toLowerCase()}
+              {t('sectorPerfLeaderLaggard', { leader: leader.label, laggard: laggard.label, timeframe: TIMEFRAME_LABELS[timeframe].toLowerCase() })}
             </p>
           )}
         </div>
 
         <div
           role="tablist"
-          aria-label="Timeframe"
+          aria-label={t('sectorPerfTimeframeAriaLabel')}
           className="flex shrink-0 items-center gap-0.5 rounded-md bg-muted/50 p-0.5"
         >
           {TIMEFRAMES.map((tf) => (
@@ -125,7 +131,7 @@ export function SectorPerformance({ sectors }: Props) {
       </div>
 
       <p className="mt-2 text-[11px] text-muted-foreground/80">
-        Measured by each sector&apos;s SPDR ETF. Select a sector to see the companies in it.
+        {t('sectorPerfFooterNote')}
       </p>
     </section>
   );

@@ -26,5 +26,20 @@
   "rowActionsAskAi": "Demander à l'IA",
   "rowActionsAskAiQuery": "Parlez-moi de {{ticker}}",
   "rowActionsCompare": "Comparer",
-  "rowActionsViewCompany": "Voir l'entreprise"
+  "rowActionsViewCompany": "Voir l'entreprise",
+  "discoverClientLoadError": "Impossible de charger le marché",
+  "sectorPerfFooterNote": "Mesuré par l'ETF SPDR de chaque secteur. Sélectionnez un secteur pour voir les entreprises qu'il contient.",
+  "sectorPerfHeading": "Où l'argent s'est déplacé",
+  "sectorPerfLeaderLaggard": "{{leader}} en tête, {{laggard}} à la traîne · {{timeframe}}",
+  "sectorPerfTimeframeAriaLabel": "Période",
+  "timeframeMonth": "1 mois",
+  "timeframeToday": "Aujourd'hui",
+  "timeframeWeek": "1 semaine",
+  "timeframeYtd": "Cette année",
+  "whyTodayWidgetBiggestMove": "Le plus grand mouvement d'aujourd'hui dans votre liste",
+  "whyTodayWidgetEmptyState": "Ajoutez une position ou suivez une action pour voir ce qui bouge et pourquoi.",
+  "whyTodayWidgetFeatureName": "Pourquoi Aujourd'hui",
+  "whyTodayWidgetLabel": "Pourquoi aujourd'hui",
+  "whyTodayWidgetNoData": "Aucune donnée de prix disponible pour le moment. Réessayez plus tard.",
+  "whyTodayWidgetWhyButton": "Pourquoi ?"
 }

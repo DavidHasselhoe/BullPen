@@ -1,5 +1,6 @@
 {
   "collectionFaqHeading": "Why these lists",
+  "discoverClientLoadError": "Couldn't load the market",
   "headerDescription": "A read on the market in ten seconds: where money moved today, how the mood is sitting, and a handful of companies worth a closer look.",
   "headerTitle": "Discover",
   "ideasFaqHighsAnswer": "Trading near the top of their yearly range, momentum worth understanding before you chase it.",
@@ -26,5 +27,19 @@
   "rowActionsAskAi": "Ask AI",
   "rowActionsAskAiQuery": "Tell me about {{ticker}}",
   "rowActionsCompare": "Compare",
-  "rowActionsViewCompany": "View company"
+  "rowActionsViewCompany": "View company",
+  "sectorPerfFooterNote": "Measured by each sector's SPDR ETF. Select a sector to see the companies in it.",
+  "sectorPerfHeading": "Where money moved",
+  "sectorPerfLeaderLaggard": "{{leader}} leading, {{laggard}} lagging · {{timeframe}}",
+  "sectorPerfTimeframeAriaLabel": "Timeframe",
+  "timeframeMonth": "1 month",
+  "timeframeToday": "Today",
+  "timeframeWeek": "1 week",
+  "timeframeYtd": "This year",
+  "whyTodayWidgetBiggestMove": "Today's biggest move in your list",
+  "whyTodayWidgetEmptyState": "Add a holding or watch a stock to see what's moving and why.",
+  "whyTodayWidgetFeatureName": "Why Today",
+  "whyTodayWidgetLabel": "Why today",
+  "whyTodayWidgetNoData": "No price data available right now. Check back later.",
+  "whyTodayWidgetWhyButton": "Why?"
 }

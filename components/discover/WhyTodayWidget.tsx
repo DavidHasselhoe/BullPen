@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -20,6 +21,7 @@ interface Quote {
 }
 
 export function WhyTodayWidget() {
+  const { t } = useTranslation('discover');
   const { isAuthenticated } = useAuth();
   const { data: holdings } = useHoldings();
   const { data: watchlist } = useWatchlist();
@@ -74,14 +76,14 @@ export function WhyTodayWidget() {
     <div className="min-w-0">
       <div className="flex items-center gap-3 mb-3">
         <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/85 shrink-0">
-          Why today
+          {t('whyTodayWidgetLabel')}
         </span>
         <div className="flex-1 h-px bg-border/50" />
       </div>
 
       {symbols.length === 0 ? (
         <p className="text-sm text-muted-foreground/85">
-          Add a holding or watch a stock to see what&apos;s moving and why.
+          {t('whyTodayWidgetEmptyState')}
         </p>
       ) : isLoading ? (
         <div className="flex items-center gap-3 rounded-lg border border-border/30 bg-muted/10 px-4 py-3">
@@ -93,7 +95,7 @@ export function WhyTodayWidget() {
         </div>
       ) : !featured ? (
         <p className="text-sm text-muted-foreground/85">
-          No price data available right now — check back later.
+          {t('whyTodayWidgetNoData')}
         </p>
       ) : (
         <div className="rounded-lg border border-border/30 bg-muted/10 overflow-hidden">
@@ -103,7 +105,7 @@ export function WhyTodayWidget() {
               <p className="text-sm font-semibold text-foreground group-hover:underline truncate">
                 ${featured.symbol}
               </p>
-              <p className="text-xs text-muted-foreground/80">Today&apos;s biggest move in your list</p>
+              <p className="text-xs text-muted-foreground/80">{t('whyTodayWidgetBiggestMove')}</p>
             </Link>
             <ChangeBadge changePercent={featured.changePercent} />
             <button
@@ -115,7 +117,7 @@ export function WhyTodayWidget() {
               })}
               className="shrink-0 text-xs font-medium rounded-md px-2.5 py-1.5 border border-border/40 text-muted-foreground transition-colors hover:text-foreground hover:border-border"
             >
-              Why?
+              {t('whyTodayWidgetWhyButton')}
             </button>
           </div>
         </div>
@@ -124,7 +126,7 @@ export function WhyTodayWidget() {
       <AiPaywallDialog
         open={paywallOpen}
         onOpenChange={setPaywallOpen}
-        featureName="Why Today"
+        featureName={t('whyTodayWidgetFeatureName')}
         quota={paywallQuota}
       />
     </div>
