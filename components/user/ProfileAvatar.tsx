@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Avatar,
   AvatarFallback,
@@ -41,7 +42,7 @@ interface ProfileAvatarProps {
  */
 export function ProfileAvatar({
   avatarUrl,
-  displayName = 'User',
+  displayName,
   fallback,
   tier = 1,
   size = 'md',
@@ -49,10 +50,12 @@ export function ProfileAvatar({
   showCrown = true, // Show crown by default for Gold tier
   className,
 }: ProfileAvatarProps) {
+  const { t } = useTranslation('user');
+  const resolvedDisplayName = displayName ?? t('profileAvatarDefaultName');
   // Generate fallback from display name if not provided
   const finalFallback =
     fallback ||
-    displayName
+    resolvedDisplayName
       ?.split(' ')
       .map((n) => n[0])
       .join('')
@@ -84,7 +87,7 @@ export function ProfileAvatar({
         >
           <AvatarImage
             src={avatarUrl || undefined}
-            alt={`${displayName} avatar`}
+            alt={t('profileAvatarAlt', { name: resolvedDisplayName })}
             className="object-cover"
           />
           <AvatarFallback className="bg-primary/10 text-primary text-lg">
@@ -113,13 +116,13 @@ export function ProfileAvatar({
     return avatarElement;
   }
 
-  const tierName = tier === 3 ? 'Gold' : 'Normal';
+  const tierName = tier === 3 ? t('profileAvatarTierGold') : t('profileAvatarTierNormal');
 
   return (
     <Tooltip>
       <TooltipTrigger asChild>{avatarElement}</TooltipTrigger>
       <TooltipContent>
-        <p>{displayName}</p>
+        <p>{resolvedDisplayName}</p>
         <p className="text-xs text-muted-foreground">{tierName}</p>
       </TooltipContent>
     </Tooltip>

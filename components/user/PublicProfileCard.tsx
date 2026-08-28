@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Briefcase, TrendingUp, BarChart2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { tierLabel } from '@/lib/billing/tier';
@@ -30,25 +32,37 @@ const AVATAR_RING_CLASS: Record<'Member' | 'Pro', string> = {
   Pro: 'ring-amber-400/70 group-hover:ring-amber-400',
 };
 
-const EXPERIENCE_LABELS: Record<string, string> = {
-  beginner: 'Beginner',
-  intermediate: 'Intermediate',
-  advanced: 'Advanced',
-};
+function getExperienceLabels(t: TFunction): Record<string, string> {
+  return {
+    beginner: t('publicProfileExperienceBeginner'),
+    intermediate: t('publicProfileExperienceIntermediate'),
+    advanced: t('publicProfileExperienceAdvanced'),
+  };
+}
 
-const MARKET_LABELS: Record<string, string> = {
-  US: 'US Markets',
-  EU: 'European Markets',
-  BOTH: 'Global Markets',
-};
+function getMarketLabels(t: TFunction): Record<string, string> {
+  return {
+    US: t('publicProfileMarketUs'),
+    EU: t('publicProfileMarketEu'),
+    BOTH: t('publicProfileMarketGlobal'),
+  };
+}
+
+function getTierLabels(t: TFunction): Record<'Member' | 'Pro', string> {
+  return {
+    Member: t('publicProfileTierMember'),
+    Pro: t('publicProfileTierPro'),
+  };
+}
 
 export function PublicProfileCard({ user, className }: PublicProfileCardProps) {
-  const displayName = user.full_name || user.username || 'Anonymous';
+  const { t } = useTranslation('user');
+  const displayName = user.full_name || user.username || t('publicProfileAnonymous');
   // Prefer username slug; fall back to user ID so profiles without a username are still reachable
   const profileSlug = user.username ? encodeURIComponent(user.username) : user.id;
   const href = profileSlug ? `/users/${profileSlug}` : '#';
   const tierLabelValue = tierLabel(user.account_tier);
-  const tier = tierLabelValue ? { label: tierLabelValue, className: TIER_BADGE_CLASS[tierLabelValue] } : null;
+  const tier = tierLabelValue ? { label: getTierLabels(t)[tierLabelValue], className: TIER_BADGE_CLASS[tierLabelValue] } : null;
   const ringClass = AVATAR_RING_CLASS[tierLabelValue ?? 'Member'];
   const initials = displayName.slice(0, 2).toUpperCase();
 
@@ -103,19 +117,19 @@ export function PublicProfileCard({ user, className }: PublicProfileCardProps) {
         {user.experience_level && (
           <span className="flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
             <BarChart2 className="h-2.5 w-2.5" />
-            {EXPERIENCE_LABELS[user.experience_level]}
+            {getExperienceLabels(t)[user.experience_level]}
           </span>
         )}
         {user.market_focus && (
           <span className="flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
             <TrendingUp className="h-2.5 w-2.5" />
-            {MARKET_LABELS[user.market_focus]}
+            {getMarketLabels(t)[user.market_focus]}
           </span>
         )}
         {(user.holdings_count ?? 0) > 0 && (
           <span className="flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
             <Briefcase className="h-2.5 w-2.5" />
-            {user.holdings_count} stock{user.holdings_count === 1 ? '' : 's'}
+            {t('publicProfileStockCount', { count: user.holdings_count ?? 0 })}
           </span>
         )}
       </div>

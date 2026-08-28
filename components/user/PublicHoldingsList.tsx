@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { cn } from '@/lib/utils';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
@@ -16,9 +17,10 @@ interface PublicHoldingsListProps {
 }
 
 export function PublicHoldingsList({ holdings, className }: PublicHoldingsListProps) {
+  const { t } = useTranslation('user');
   if (holdings.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground">No public holdings.</p>
+      <p className="text-sm text-muted-foreground">{t('publicHoldingsEmpty')}</p>
     );
   }
 
