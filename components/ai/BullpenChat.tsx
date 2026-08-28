@@ -5,6 +5,7 @@ import { DefaultChatTransport } from 'ai';
 import type { UIMessage } from 'ai';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useEffect, useRef, useState, useCallback, forwardRef, useImperativeHandle, memo } from 'react';
 import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
@@ -25,11 +26,14 @@ import { ToolResultCard } from '@/components/ai/ToolResultCard';
 import { BullAiIcon } from '@/components/ai/BullAiIcon';
 import { getActiveToolName, getToolStatusLabel, getCompletedToolCalls, getFollowups, extractTickers, type ClientAction, type ActionOutcome } from '@/lib/ai/tool-ux';
 
-const DEFAULT_STARTER_PROMPTS = [
-  'How healthy is AAPL financially?',
-  'Any insider buying in NVDA lately?',
-  'Find me some growth stocks',
-];
+// Byte-identical to AISidePanel's starterPromptHealthCheck/InsiderBuying/GrowthStocks — reused rather than duplicated.
+function getDefaultStarterPrompts(t: TFunction): string[] {
+  return [
+    t('starterPromptHealthCheck'),
+    t('starterPromptInsiderBuying'),
+    t('starterPromptGrowthStocks'),
+  ];
+}
 
 export interface AIContextProp {
   tickers: string[];
@@ -68,14 +72,14 @@ interface BullpenChatProps {
 // (a raw fetch/network failure, a future regression) so a provider's internal
 // error payload — org IDs, rate-limit internals, stack-shaped text — never
 // renders directly to a user.
-function friendlyChatError(message: string | undefined): string {
-  if (!message) return 'Something went wrong. Please try again.';
+function friendlyChatError(message: string | undefined, t: TFunction): string {
+  if (!message) return t('chatGenericError');
   const looksTechnical =
     message.length > 160 ||
     /"(type|code|error)"\s*:/i.test(message) ||
     /\borg-[a-zA-Z0-9]+\b/.test(message) ||
     /rate[_ ]limit/i.test(message);
-  return looksTechnical ? 'Something went wrong. Please try again.' : message;
+  return looksTechnical ? t('chatGenericError') : message;
 }
 
 const MARKDOWN_CLS = cn(
@@ -162,11 +166,12 @@ export interface BullpenChatHandle {
 }
 
 export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(function BullpenChat(
-  { compact = false, user, starterPrompts = DEFAULT_STARTER_PROMPTS, open, initialQuery, aiContext, onConsumedQuery, conversationId, initialMessages },
+  { compact = false, user, starterPrompts, open, initialQuery, aiContext, onConsumedQuery, conversationId, initialMessages },
   ref
 ) {
   const router = useRouter();
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation('ai');
+  const resolvedStarterPrompts = starterPrompts ?? getDefaultStarterPrompts(t);
   const addHoldingMutation = useAddOrUpdateHolding();
   const updateHoldingMutation = useUpdateHoldingBySymbol();
   const removeHoldingMutation = useRemoveHoldingBySymbol();
@@ -274,11 +279,11 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
       } catch (err) {
         setActionOutcomes((prev) => ({
           ...prev,
-          [key]: { status: 'error', message: err instanceof Error ? err.message : 'Something went wrong.' },
+          [key]: { status: 'error', message: err instanceof Error ? err.message : t('receiptGenericError') },
         }));
       }
     },
-    [router, addHoldingMutation, updateHoldingMutation, removeHoldingMutation, createAlert]
+    [router, addHoldingMutation, updateHoldingMutation, removeHoldingMutation, createAlert, t]
   );
 
   const {
@@ -356,7 +361,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
     ? getToolStatusLabel(getActiveToolName(lastMessage))
     : null;
   const thinkingLabel = isStreaming && !lastMessageHasText
-    ? toolStatusLabel ?? (status === 'submitted' ? 'Thinking…' : 'Reasoning…')
+    ? toolStatusLabel ?? (status === 'submitted' ? t('chatThinking') : t('chatReasoning'))
     : null;
   const followups = !isStreaming && lastMessage?.role === 'assistant' ? getFollowups(lastMessage) : [];
 
@@ -392,17 +397,17 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
   const contextPrompts = aiContext
     ? aiContext.tickers.length >= 2
       ? [
-          'Explain profitability differences',
-          'Which company has stronger margins?',
-          'Compare revenue growth',
+          t('chatContextPromptProfitability'),
+          t('chatContextPromptMargins'),
+          t('chatContextPromptRevenueGrowth'),
         ]
       : [
-          `Summarize ${aiContext.tickers[0]} key metrics`,
-          `What are the main risks for ${aiContext.tickers[0]}?`,
-          `Recent filings for ${aiContext.tickers[0]}`,
+          t('chatContextPromptSummarize', { ticker: aiContext.tickers[0] }),
+          t('chatContextPromptRisks', { ticker: aiContext.tickers[0] }),
+          t('chatContextPromptFilings', { ticker: aiContext.tickers[0] }),
         ]
     : [];
-  const displayPrompts = contextPrompts.length > 0 ? contextPrompts : starterPrompts;
+  const displayPrompts = contextPrompts.length > 0 ? contextPrompts : resolvedStarterPrompts;
 
   const refocusInput = () => {
     // After submit, React may re-render; run after paint so focus isn’t stolen by disabled state (we avoid disabling while streaming).
@@ -452,14 +457,14 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
     <div className={cn('flex flex-col h-full', compact ? '' : 'min-h-[460px]')}>
       {/* Quota indicator (free users only — invisible for Pro) */}
       <div className="shrink-0 px-4 pt-3 flex justify-center">
-        <QuotaIndicator feature="chat" unit={{ singular: 'message', plural: 'messages' }} />
+        <QuotaIndicator feature="chat" unit={{ singular: t('chatUnitMessage'), plural: t('chatUnitMessages') }} />
       </div>
 
       {/* Quota wall (free user hit 15/day → upgrade prompt) */}
       <AiPaywallDialog
         open={paywallQuota !== null}
         onOpenChange={(o) => !o && setPaywallQuota(null)}
-        featureName="Ask Bull"
+        featureName={t('askBull')}
         quota={paywallQuota ?? undefined}
       />
 
@@ -469,11 +474,11 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
           <div className="flex flex-col items-center justify-center h-full gap-4 py-8 text-center">
             <BullAiIcon pose="wave" size={132} />
             <div className="space-y-1">
-              <p className="text-base font-semibold text-foreground">I&apos;m Bull</p>
+              <p className="text-base font-semibold text-foreground">{t('chatImBull')}</p>
               <p className="text-xs text-muted-foreground max-w-[260px] leading-relaxed">
                 {aiContext?.label
-                  ? `Your personal research assistant. Ask me anything about ${aiContext.label}.`
-                  : 'Your personal research assistant. Research any stock, manage your holdings, or set price alerts, all from chat.'}
+                  ? t('chatIntroWithContext', { label: aiContext.label })
+                  : t('chatIntroDefault')}
               </p>
             </div>
             <motion.div
@@ -643,7 +648,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
       {/* Error bar */}
       {error && (
         <div className="mx-3 mb-1 px-3 py-2 rounded-lg bg-destructive/10 text-destructive text-xs flex items-center justify-between gap-2">
-          <span className="truncate">{friendlyChatError(error.message)}</span>
+          <span className="truncate">{friendlyChatError(error.message, t)}</span>
           <div className="flex items-center gap-3 shrink-0">
             <button
               onClick={() => {
@@ -658,10 +663,10 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
               }}
               className="shrink-0 underline"
             >
-              Retry
+              {t('receiptRetry')}
             </button>
             <button onClick={clearError} className="shrink-0 underline">
-              Dismiss
+              {t('chatDismiss')}
             </button>
           </div>
         </div>
@@ -678,9 +683,9 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
           rows={1}
           onChange={handleInput}
           onKeyDown={handleKeyDown}
-          placeholder="Ask anything…"
+          placeholder={t('chatInputPlaceholder')}
           tabIndex={0}
-          aria-label="Message input"
+          aria-label={t('chatInputAriaLabel')}
           className="flex-1 resize-none rounded-xl border border-input bg-background px-3.5 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 max-h-[120px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] pointer-events-auto"
           style={{ height: 'auto' }}
         />
@@ -695,7 +700,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
               refocusInput();
             }}
             className="shrink-0 h-11 w-11 rounded-xl"
-            title="Stop generating"
+            title={t('chatStopGenerating')}
           >
             <Square className="h-4 w-4" />
           </Button>
@@ -705,7 +710,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
             size="icon"
             onMouseDown={(e) => e.preventDefault()}
             className="shrink-0 h-11 w-11 rounded-xl"
-            title="Send message"
+            title={t('chatSendMessage')}
           >
             <Send className="h-4 w-4" />
           </Button>
