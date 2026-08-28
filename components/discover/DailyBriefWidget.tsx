@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
@@ -79,12 +81,12 @@ function parseSections(content: string): BriefSection[] {
   return sections;
 }
 
-function formatRelativeTime(isoString: string): string {
+function formatRelativeTime(isoString: string, t: TFunction): string {
   const diff = Date.now() - new Date(isoString).getTime();
   const hours = Math.floor(diff / 3_600_000);
-  if (hours < 1) return 'less than 1h ago';
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
+  if (hours < 1) return t('briefRelativeLessThanHour');
+  if (hours < 24) return t('briefRelativeHours', { hours });
+  return t('briefRelativeDays', { days: Math.floor(hours / 24) });
 }
 
 function formatPublishedDate(dateStr: string): string {
@@ -193,6 +195,7 @@ interface SectionBlockProps {
 }
 
 function SectionBlock({ section, index, isTldr, sectionRef }: SectionBlockProps) {
+  const { t } = useTranslation('discover');
   const lines = section.body.split('\n').filter((l) => l.trim().length > 0 && !/^-+$/.test(l.trim()));
 
   if (isTldr) {
@@ -205,7 +208,7 @@ function SectionBlock({ section, index, isTldr, sectionRef }: SectionBlockProps)
       >
         <div className="relative rounded-2xl border border-primary/15 bg-primary/[0.04] px-5 py-4 md:px-6 md:py-5 overflow-hidden">
           <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary/80 mb-2.5">
-            TL;DR
+            {t('briefTldrLabel')}
           </div>
           <div className="space-y-2.5 text-[15px] leading-7 text-foreground/90">
             {lines.map((line, i) => {
@@ -278,15 +281,16 @@ function SectionTOC({
   activeSlug: string | null;
   onNavigate: (slug: string) => void;
 }) {
+  const { t } = useTranslation('discover');
   // Hide the TOC entirely when there's only one section — wastes space.
   if (sections.length <= 1) return null;
   return (
     <nav
-      aria-label="Sections"
+      aria-label={t('briefTocSectionsAriaLabel')}
       className="hidden md:block w-[180px] shrink-0 border-r border-border/30 px-4 py-7 overflow-y-auto brief-scroll"
     >
       <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground/80 mb-3 pl-3">
-        In this brief
+        {t('briefTocHeading')}
       </p>
       <ul className="space-y-0.5">
         {sections.map((s) => {
@@ -347,6 +351,7 @@ function Favicon({ domain, size = 16, className }: { domain: string; size?: numb
 }
 
 function BriefSourcesFooter({ sources }: { sources: BriefSource[] }) {
+  const { t } = useTranslation('discover');
   const [open, setOpen] = useState(false);
 
   const stackDomains = useMemo(() => {
@@ -378,7 +383,7 @@ function BriefSourcesFooter({ sources }: { sources: BriefSource[] }) {
             ))}
           </span>
           <span className="text-[11px] font-medium text-muted-foreground">
-            {sources.length} {sources.length === 1 ? 'source' : 'sources'}
+            {t('briefSourceCount', { count: sources.length })}
           </span>
           <ChevronDown
             className={cn(
@@ -430,6 +435,7 @@ function BriefReader({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const { t } = useTranslation('discover');
   const { data: history } = useQuery({
     queryKey: ['daily-briefs-list'],
     queryFn: async (): Promise<DailyBrief[]> => {
@@ -601,7 +607,7 @@ function BriefReader({
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary/75">
-                    Daily Brief
+                    {t('briefHeroLabel')}
                   </span>
                 </div>
                 <h2 className="text-xl md:text-[26px] font-semibold text-foreground leading-tight tracking-tight pr-28 md:pr-32">
@@ -610,9 +616,9 @@ function BriefReader({
                 <div className="flex items-center flex-wrap gap-x-2 gap-y-1 mt-3 text-[11px] text-muted-foreground/85 font-mono">
                   <span>{formatPublishedDate(displayedBrief.published_date)}</span>
                   <span className="text-muted-foreground/80">·</span>
-                  <span>{readingMinutes} min read</span>
+                  <span>{t('briefMinRead', { minutes: readingMinutes })}</span>
                   <span className="text-muted-foreground/80">·</span>
-                  <span>Generated {formatRelativeTime(displayedBrief.generated_at)}</span>
+                  <span>{t('briefGeneratedAt', { time: formatRelativeTime(displayedBrief.generated_at, t) })}</span>
                 </div>
               </div>
 
@@ -623,8 +629,8 @@ function BriefReader({
                       type="button"
                       onClick={goOlder}
                       disabled={!canGoOlder}
-                      aria-label="Older brief"
-                      title="Older brief"
+                      aria-label={t('briefOlderLabel')}
+                      title={t('briefOlderLabel')}
                       className="text-muted-foreground/85 hover:text-foreground transition-all duration-150 p-1.5 rounded-lg hover:bg-muted/40 active:scale-95 disabled:opacity-30 disabled:pointer-events-none disabled:hover:bg-transparent"
                     >
                       <ChevronLeft className="h-4 w-4" />
@@ -633,8 +639,8 @@ function BriefReader({
                       type="button"
                       onClick={goNewer}
                       disabled={!canGoNewer}
-                      aria-label="Newer brief"
-                      title="Newer brief"
+                      aria-label={t('briefNewerLabel')}
+                      title={t('briefNewerLabel')}
                       className="text-muted-foreground/85 hover:text-foreground transition-all duration-150 p-1.5 rounded-lg hover:bg-muted/40 active:scale-95 disabled:opacity-30 disabled:pointer-events-none disabled:hover:bg-transparent"
                     >
                       <ChevronRight className="h-4 w-4" />
@@ -643,8 +649,8 @@ function BriefReader({
                       type="button"
                       onClick={() => setHistoryOpen((v) => !v)}
                       aria-expanded={historyOpen}
-                      aria-label="Past briefs"
-                      title="Past briefs"
+                      aria-label={t('briefPastBriefsLabel')}
+                      title={t('briefPastBriefsLabel')}
                       className={cn(
                         'transition-all duration-150 p-1.5 rounded-lg active:scale-95',
                         historyOpen
@@ -658,7 +664,7 @@ function BriefReader({
                 )}
                 <DialogPrimitive.Close
                   className="text-muted-foreground/85 hover:text-foreground transition-all duration-150 p-1.5 rounded-lg hover:bg-muted/40 active:scale-95"
-                  aria-label="Close"
+                  aria-label={t('briefCloseLabel')}
                 >
                   <X className="h-4 w-4" />
                 </DialogPrimitive.Close>
@@ -745,6 +751,7 @@ function BriefReader({
 // ── widget (dashboard entry point) ──────────────────────────────────────────
 
 export function DailyBriefWidget() {
+  const { t } = useTranslation('discover');
   const [isOpen, setIsOpen] = useState(false);
 
   const { data, isLoading, error } = useQuery({
@@ -782,7 +789,7 @@ export function DailyBriefWidget() {
     return (
       <div className="min-w-0">
         <div className="flex items-center gap-3 mb-3">
-          <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/85 shrink-0">Daily brief</span>
+          <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/85 shrink-0">{t('briefWidgetLabel')}</span>
           <div className="flex-1 h-px bg-border/50" />
         </div>
         <div className="h-4 w-72 animate-shimmer rounded mb-2" />
@@ -795,7 +802,7 @@ export function DailyBriefWidget() {
     return (
       <div className="min-w-0">
         <div className="flex items-center gap-3 mb-3">
-          <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/85 shrink-0">Daily brief</span>
+          <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/85 shrink-0">{t('briefWidgetLabel')}</span>
           <div className="flex-1 h-px bg-border/50" />
         </div>
         <div className="flex items-center justify-between gap-4 p-3 rounded-lg border border-border/30 bg-muted/10">
@@ -803,15 +810,15 @@ export function DailyBriefWidget() {
               screen readers land on the "Upgrade" CTA instead of a fake blurred preview. */}
           <div className="space-y-1 min-w-0" aria-hidden="true">
             <p className="text-sm font-medium text-foreground/30 blur-sm select-none truncate">
-              Markets surge as Fed signals pivot — tech leads broad rally
+              {t('briefLockedPreviewHeadline')}
             </p>
-            <p className="text-xs text-muted-foreground/80 blur-sm select-none">TL;DR · The Setup · Earnings Pulse · Movers · Watch Today</p>
+            <p className="text-xs text-muted-foreground/80 blur-sm select-none">{t('briefLockedPreviewSections')}</p>
           </div>
           <Link
             href="/upgrade"
             className="shrink-0 inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
           >
-            Upgrade <ArrowUpRight className="h-3 w-3" />
+            {t('briefUpgradeCta')} <ArrowUpRight className="h-3 w-3" />
           </Link>
         </div>
       </div>
@@ -822,11 +829,11 @@ export function DailyBriefWidget() {
     return (
       <div className="min-w-0">
         <div className="flex items-center gap-3 mb-3">
-          <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/85 shrink-0">Daily brief</span>
+          <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/85 shrink-0">{t('briefWidgetLabel')}</span>
           <div className="flex-1 h-px bg-border/50" />
         </div>
         <p className="text-sm text-muted-foreground/85">
-          Today&apos;s brief is generating — check back after {getNextBriefLocalTime()}.
+          {t('briefGenerating', { time: getNextBriefLocalTime() })}
         </p>
       </div>
     );
@@ -841,11 +848,11 @@ export function DailyBriefWidget() {
       <div className="min-w-0">
         <div className="flex items-center gap-3 mb-3">
           <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/85 shrink-0">
-            {isToday ? 'Daily brief' : "Yesterday's brief"}
+            {isToday ? t('briefWidgetLabel') : t('briefYesterdayLabel')}
           </span>
           <div className="flex-1 h-px bg-border/50" />
           <span className="text-[11px] font-mono text-muted-foreground/80 tracking-wider shrink-0">
-            {formatRelativeTime(brief.generated_at)}
+            {formatRelativeTime(brief.generated_at, t)}
           </span>
         </div>
 
