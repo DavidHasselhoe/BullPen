@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -33,15 +34,13 @@ interface Props {
   className?: string;
 }
 
-const ACCURACY_NOTE =
-  'Each day compares your positions at that day\'s close against the previous close, using the shares you held going into the day. Reconstructed from your current holdings and sale history, so days before a position was opened are excluded.';
-
 export function PerformanceCalendar({
   currency = 'USD',
   fxRate = 1,
   compact = false,
   className,
 }: Props) {
+  const { t } = useTranslation('holdings');
   const thisMonth = currentMonthKey();
   const [month, setMonth] = useState(thisMonth);
 
@@ -63,7 +62,7 @@ export function PerformanceCalendar({
             size="icon"
             className="h-7 w-7 shrink-0"
             onClick={() => setMonth(shiftMonth(month, -1))}
-            aria-label={`Previous month, ${fmtMonthLabel(shiftMonth(month, -1))}`}
+            aria-label={t('perfCalPrevMonth', { month: fmtMonthLabel(shiftMonth(month, -1)) })}
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
@@ -76,7 +75,7 @@ export function PerformanceCalendar({
             className="h-7 w-7 shrink-0"
             onClick={() => setMonth(shiftMonth(month, 1))}
             disabled={atCurrentMonth}
-            aria-label={`Next month, ${fmtMonthLabel(shiftMonth(month, 1))}`}
+            aria-label={t('perfCalNextMonth', { month: fmtMonthLabel(shiftMonth(month, 1)) })}
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
@@ -89,7 +88,7 @@ export function PerformanceCalendar({
             className="h-7 px-2 text-xs text-muted-foreground shrink-0"
             onClick={() => setMonth(thisMonth)}
           >
-            Today
+            {t('perfCalToday')}
           </Button>
         )}
       </div>
@@ -112,12 +111,16 @@ export function PerformanceCalendar({
               {fmtSignedCurrency(total.pnlUsd * fxRate, currency)}
             </span>
             <span className="text-xs text-muted-foreground/70">
-              {total.upDays} up · {total.downDays} down
+              {t('perfCalUpDown', { up: total.upDays, down: total.downDays })}
             </span>
             {!compact && total.best && total.worst && (
               <span className="text-xs text-muted-foreground/70">
-                Best {fmtShortDate(total.best.date)} {fmtSignedPercent(total.best.pct)} · Worst{' '}
-                {fmtShortDate(total.worst.date)} {fmtSignedPercent(total.worst.pct)}
+                {t('perfCalBestWorst', {
+                  bestDate: fmtShortDate(total.best.date),
+                  bestPct: fmtSignedPercent(total.best.pct),
+                  worstDate: fmtShortDate(total.worst.date),
+                  worstPct: fmtSignedPercent(total.worst.pct),
+                })}
               </span>
             )}
             <Tooltip>
@@ -125,7 +128,7 @@ export function PerformanceCalendar({
                 <button
                   type="button"
                   className="text-muted-foreground/50 hover:text-muted-foreground transition-colors"
-                  aria-label="How daily performance is calculated"
+                  aria-label={t('perfCalHowCalculated')}
                 >
                   <Info className="h-3.5 w-3.5" />
                 </button>
@@ -134,15 +137,15 @@ export function PerformanceCalendar({
                 side="top"
                 className="max-w-[280px] leading-snug bg-popover text-popover-foreground border border-border shadow-lg"
               >
-                {ACCURACY_NOTE}
+                {t('perfCalAccuracyNote')}
               </TooltipContent>
             </Tooltip>
           </>
         ) : (
           <span className="text-xs text-muted-foreground">
             {isGated
-              ? 'Daily performance is briefly unavailable. Try again shortly.'
-              : `No positions were held during ${fmtMonthLabel(month)}.`}
+              ? t('perfCalGatedLong')
+              : t('perfCalNoPositionsMonth', { month: fmtMonthLabel(month) })}
           </span>
         )}
       </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CalendarDays } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -26,6 +27,7 @@ interface Props {
  * dialog instead of being on the page by default.
  */
 export function PerformanceCalendarCard({ currency = 'USD', fxRate = 1 }: Props) {
+  const { t } = useTranslation('holdings');
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -33,7 +35,7 @@ export function PerformanceCalendarCard({ currency = 'USD', fxRate = 1 }: Props)
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base font-semibold">
           <CalendarDays className="h-4 w-4 text-muted-foreground" />
-          Daily performance
+          {t('perfCalTitle')}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -45,7 +47,7 @@ export function PerformanceCalendarCard({ currency = 'USD', fxRate = 1 }: Props)
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CalendarDays className="h-4 w-4 text-muted-foreground" />
-              Daily performance
+              {t('perfCalTitle')}
             </DialogTitle>
           </DialogHeader>
           <PerformanceCalendar currency={currency} fxRate={fxRate} />

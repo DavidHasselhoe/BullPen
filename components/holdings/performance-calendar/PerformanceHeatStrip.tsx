@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Maximize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -33,6 +34,7 @@ interface Props {
  * when the week doesn't cross a boundary, which is true almost every week.
  */
 export function PerformanceHeatStrip({ currency = 'USD', fxRate = 1, onExpand }: Props) {
+  const { t } = useTranslation('holdings');
   const today = todayET();
   const { from: weekFrom, to: weekTo } = useMemo(() => weekRangeOf(today), [today]);
   const monthA = monthKeyOf(weekFrom);
@@ -68,21 +70,21 @@ export function PerformanceHeatStrip({ currency = 'USD', fxRate = 1, onExpand }:
               {fmtSignedCurrency(total.pnlUsd * fxRate, currency)}
             </span>
             <span className="text-xs text-muted-foreground/70">
-              {total.upDays} up · {total.downDays} down
+              {t('perfCalUpDown', { up: total.upDays, down: total.downDays })}
             </span>
             <span className="text-xs text-muted-foreground/60">{fmtWeekRange(weekFrom, weekTo)}</span>
           </div>
         ) : (
           <span className="text-xs text-muted-foreground">
             {isGated
-              ? 'Daily performance is briefly unavailable.'
-              : `No positions were held so far this week (${fmtWeekRange(weekFrom, weekTo)}).`}
+              ? t('perfCalGatedShort')
+              : t('perfCalNoPositionsWeek', { range: fmtWeekRange(weekFrom, weekTo) })}
           </span>
         )}
 
         <Button variant="outline" size="sm" onClick={onExpand} className="shrink-0 text-xs">
           <Maximize2 className="h-3.5 w-3.5" aria-hidden="true" />
-          Expand
+          {t('perfCalExpand')}
         </Button>
       </div>
 

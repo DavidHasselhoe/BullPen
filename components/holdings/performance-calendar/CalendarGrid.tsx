@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { WEEKDAY_LABELS } from '@/lib/dates/calendar-format';
 import { summarize } from '@/lib/holdings/daily-performance';
@@ -37,6 +38,7 @@ const GRID_COLS_7 = 'grid-cols-7 sm:grid-cols-[repeat(7,minmax(0,1fr))_minmax(0,
 const GRID_COLS_5 = 'grid-cols-5 sm:grid-cols-[repeat(5,minmax(0,1fr))_minmax(0,0.9fr)]';
 
 export function CalendarGrid({ weeks, fxRate, currency, compact }: Props) {
+  const { t } = useTranslation('holdings');
   const gridRef = useRef<HTMLDivElement>(null);
   const [activeDate, setActiveDate] = useState<string | null>(null);
 
@@ -84,7 +86,7 @@ export function CalendarGrid({ weeks, fxRate, currency, compact }: Props) {
     <div
       ref={gridRef}
       role="grid"
-      aria-label="Daily portfolio performance"
+      aria-label={t('perfCalGridAriaLabel')}
       className="min-w-0"
       onKeyDown={handleKeyDown}
     >
@@ -106,7 +108,7 @@ export function CalendarGrid({ weeks, fxRate, currency, compact }: Props) {
           role="columnheader"
           className="hidden sm:block text-xs font-medium uppercase tracking-wider text-muted-foreground/60 text-center"
         >
-          Wk
+          {t('perfCalWeekColHeader')}
         </div>
       </div>
 

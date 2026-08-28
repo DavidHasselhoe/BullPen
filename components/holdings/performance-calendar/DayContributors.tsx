@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { fmtFullDate } from '@/lib/dates/calendar-format';
 import type { CurrencyCode } from '@/lib/currency/currency-conversion';
@@ -21,6 +22,7 @@ interface Props {
  * cell immediately provokes. Trading-journal calendars stop at the day total.
  */
 export function DayContributors({ day, fxRate, currency, isToday }: Props) {
+  const { t } = useTranslation('holdings');
   const amount = day.pnlUsd * fxRate;
   const maxAbs = Math.max(...day.contributors.map((c) => Math.abs(c.pnlUsd)), 1);
 
@@ -40,7 +42,7 @@ export function DayContributors({ day, fxRate, currency, isToday }: Props) {
 
       {day.contributors.length === 0 ? (
         <p className="px-3 py-3 text-xs text-muted-foreground">
-          No position moved on this day.
+          {t('perfCalNoPositionMoved')}
         </p>
       ) : (
         <ul className="py-1">
@@ -82,7 +84,7 @@ export function DayContributors({ day, fxRate, currency, isToday }: Props) {
 
       {isToday && (
         <p className="px-3 pb-2.5 pt-1 text-xs text-muted-foreground">
-          Today is still moving — updates through the close.
+          {t('perfCalStillMoving')}
         </p>
       )}
     </div>

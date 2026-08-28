@@ -1,6 +1,7 @@
 'use client';
 
 import { CalendarOff } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { fmtFullDate } from '@/lib/dates/calendar-format';
@@ -28,6 +29,7 @@ interface Props {
 }
 
 export function DayCell({ model, fxRate, currency, compact, tabIndex, onFocus }: Props) {
+  const { t } = useTranslation('holdings');
   // Type stays on DESIGN.md's ramp (Body 14 / Label 12) at every size; the day
   // number recedes by weight and colour rather than by dropping below the
   // ramp's floor, which is where dense grids start feeling like a terminal.
@@ -53,7 +55,7 @@ export function DayCell({ model, fxRate, currency, compact, tabIndex, onFocus }:
         role="gridcell"
         title={isHoliday ? model.holidayLabel! : undefined}
         aria-label={
-          isHoliday ? `${fmtFullDate(model.date!)}. Market closed for ${model.holidayLabel}.` : undefined
+          isHoliday ? `${fmtFullDate(model.date!)}. ${t('perfCalMarketClosedFor', { holiday: model.holidayLabel })}` : undefined
         }
         className={cn(
           'rounded-lg p-1 sm:p-2 flex flex-col',
