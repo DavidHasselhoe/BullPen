@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import {
   Dialog,
@@ -54,6 +55,7 @@ interface AddHoldingModalProps {
 }
 
 export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
+  const { t } = useTranslation('holdings');
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStock, setSelectedStock] = useState<SearchResult | null>(null);
@@ -169,14 +171,14 @@ export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
   const validateQuantity = (val: string) => {
     if (!val) return '';
     const n = parseFloat(val);
-    if (isNaN(n) || n <= 0) return 'Quantity must be greater than 0';
+    if (isNaN(n) || n <= 0) return t('addHoldingQuantityError');
     return '';
   };
 
   const validateAvgPrice = (val: string) => {
     if (!val) return '';
     const n = parseFloat(val);
-    if (isNaN(n) || n <= 0) return 'Price must be greater than 0';
+    if (isNaN(n) || n <= 0) return t('addHoldingPriceError');
     return '';
   };
 
@@ -193,7 +195,7 @@ export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
         const q = parseFloat(row.quantity) || 0;
         const p = parseFloat(row.price) || 0;
         if (q <= 0 || p <= 0 || !row.date) {
-          setMultiError('Every purchase row needs a quantity, price, and date.');
+          setMultiError(t('addHoldingMultiRowError'));
           return;
         }
       }
@@ -280,28 +282,28 @@ export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Add Holding</DialogTitle>
+          <DialogTitle>{t('addHoldingTitle')}</DialogTitle>
           <DialogDescription>
-            Search for a stock and optionally add quantity and average price.
+            {t('addHoldingDescription')}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Stock Search */}
           <div className="space-y-2">
-            <Label htmlFor="stock-search">Stock</Label>
+            <Label htmlFor="stock-search">{t('addHoldingStockLabel')}</Label>
             <div className="relative">
               <Command className="rounded-lg border">
                 <CommandInput
                   id="stock-search"
-                  placeholder="Search by ticker or company name..."
+                  placeholder={t('addHoldingSearchPlaceholder')}
                   value={searchQuery}
                   onValueChange={setSearchQuery}
                 />
                 <CommandList>
                   {isSearching && (
                     <div className="p-4 text-center text-sm text-muted-foreground">
-                      Searching...
+                      {t('addHoldingSearching')}
                     </div>
                   )}
                   {!isSearching && searchResults && searchResults.length > 0 && (
@@ -334,33 +336,33 @@ export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
                     debouncedQuery.trim().length >= 2 &&
                     searchResults &&
                     searchResults.length === 0 && (
-                      <CommandEmpty>No stocks found.</CommandEmpty>
+                      <CommandEmpty>{t('addHoldingNoStocksFound')}</CommandEmpty>
                     )}
                 </CommandList>
               </Command>
             </div>
             {selectedStock && (
               <div className="text-xs text-muted-foreground">
-                Selected: {selectedStock.ticker} - {selectedStock.name}
+                {t('addHoldingSelected', { ticker: selectedStock.ticker, name: selectedStock.name })}
               </div>
             )}
           </div>
 
           <Tabs value={mode} onValueChange={(v) => setMode(v as 'single' | 'multiple')}>
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="single">Single purchase</TabsTrigger>
-              <TabsTrigger value="multiple">Multiple purchases</TabsTrigger>
+              <TabsTrigger value="single">{t('addHoldingSinglePurchase')}</TabsTrigger>
+              <TabsTrigger value="multiple">{t('addHoldingMultiplePurchases')}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="single" className="space-y-6 pt-4">
               {/* Quantity (Optional) */}
               <div className="space-y-2">
-                <Label htmlFor="quantity">Quantity (Optional)</Label>
+                <Label htmlFor="quantity">{t('addHoldingQuantityLabel')}</Label>
                 <Input
                   id="quantity"
                   type="number"
                   step="0.01"
-                  placeholder="e.g., 10"
+                  placeholder={t('addHoldingQuantityPlaceholder')}
                   value={quantity}
                   onChange={(e) => {
                     setQuantity(e.target.value);
@@ -377,12 +379,12 @@ export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
 
               {/* Average Price (Optional) */}
               <div className="space-y-2">
-                <Label htmlFor="avg-price">Average Price (Optional)</Label>
+                <Label htmlFor="avg-price">{t('addHoldingAvgPriceLabel')}</Label>
                 <Input
                   id="avg-price"
                   type="number"
                   step="0.01"
-                  placeholder="e.g., 150.00"
+                  placeholder={t('addHoldingAvgPricePlaceholder')}
                   value={avgPrice}
                   onChange={(e) => {
                     setAvgPrice(e.target.value);
@@ -399,23 +401,23 @@ export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
 
               {/* Date Purchased (Optional) */}
               <div className="space-y-2">
-                <Label htmlFor="date-purchased">Date Purchased (Optional)</Label>
+                <Label htmlFor="date-purchased">{t('addHoldingDateLabel')}</Label>
                 <DatePicker
                   id="date-purchased"
                   max={new Date().toISOString().slice(0, 10)}
                   value={datePurchased}
                   onChange={setDatePurchased}
-                  placeholder="Select a date"
+                  placeholder={t('addHoldingDatePlaceholder')}
                 />
                 {datePurchased && userCurrency !== 'USD' ? (
                   <p className="text-xs text-muted-foreground">
                     {historicalRateData
-                      ? `Rate on ${datePurchased}: 1 USD = ${historicalRateData.toFixed(4)} ${userCurrency} — used for FX-adjusted P/L`
-                      : `Looking up USD/${userCurrency} rate for ${datePurchased}…`}
+                      ? t('addHoldingFxRateNote', { date: datePurchased, rate: historicalRateData.toFixed(4), currency: userCurrency })
+                      : t('addHoldingFxRateLoading', { currency: userCurrency, date: datePurchased })}
                   </p>
                 ) : (
                   <p className="text-xs text-muted-foreground">
-                    Used to chart your P/L from the day you opened this position.
+                    {t('editHoldingDateHint')}
                   </p>
                 )}
               </div>
@@ -425,14 +427,14 @@ export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
               {purchaseRows.map((row, i) => (
                 <div key={i} className="space-y-2 rounded-lg border p-3">
                   <div className="flex items-center justify-between">
-                    <Label className="text-xs text-muted-foreground">Purchase {i + 1}</Label>
+                    <Label className="text-xs text-muted-foreground">{t('addHoldingPurchaseRowLabel', { n: i + 1 })}</Label>
                     {purchaseRows.length > 1 && (
                       <button
                         type="button"
                         onClick={() => removePurchaseRow(i)}
                         className="text-xs text-muted-foreground hover:text-destructive"
                       >
-                        Remove
+                        {t('addHoldingRemoveRow')}
                       </button>
                     )}
                   </div>
@@ -440,14 +442,14 @@ export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
                     <Input
                       type="number"
                       step="0.01"
-                      placeholder="Shares"
+                      placeholder={t('addHoldingSharesPlaceholder')}
                       value={row.quantity}
                       onChange={(e) => updatePurchaseRow(i, 'quantity', e.target.value)}
                     />
                     <Input
                       type="number"
                       step="0.01"
-                      placeholder="Price"
+                      placeholder={t('addHoldingPricePlaceholder')}
                       value={row.price}
                       onChange={(e) => updatePurchaseRow(i, 'price', e.target.value)}
                     />
@@ -455,7 +457,7 @@ export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
                       max={new Date().toISOString().slice(0, 10)}
                       value={row.date}
                       onChange={(v) => updatePurchaseRow(i, 'date', v)}
-                      placeholder="Date"
+                      placeholder={t('addHoldingDatePlaceholderShort')}
                     />
                   </div>
                 </div>
@@ -465,11 +467,11 @@ export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
                 onClick={addPurchaseRow}
                 className="w-full rounded-lg border border-dashed border-border/60 py-2 text-sm text-muted-foreground hover:border-primary/50 hover:text-primary"
               >
-                + Add another purchase
+                {t('addHoldingAddAnotherPurchase')}
               </button>
               {multiTotals.totalQty > 0 && (
                 <p className="text-sm text-muted-foreground">
-                  Total: {multiTotals.totalQty} shares at ${multiTotals.avgPrice.toFixed(2)} average
+                  {t('addHoldingMultiTotal', { qty: multiTotals.totalQty, avgPrice: multiTotals.avgPrice.toFixed(2) })}
                 </p>
               )}
               {multiError && <p className="text-xs text-destructive">{multiError}</p>}
@@ -479,13 +481,13 @@ export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
           {/* Submit Button */}
           <div className="flex justify-end gap-3">
             <Button type="button" variant="outline" onClick={handleClose}>
-              Cancel
+              {t('addHoldingCancel')}
             </Button>
             <Button
               type="submit"
               disabled={!selectedStock || addHolding.isPending || addOrUpdateHolding.isPending}
             >
-              {(mode === 'multiple' ? addOrUpdateHolding.isPending : addHolding.isPending) ? 'Adding...' : 'Add Holding'}
+              {(mode === 'multiple' ? addOrUpdateHolding.isPending : addHolding.isPending) ? t('addHoldingAdding') : t('addHoldingTitle')}
             </Button>
           </div>
 
@@ -493,7 +495,7 @@ export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
             <div className="text-sm text-red-600 dark:text-red-400">
               {addHolding.error instanceof Error
                 ? addHolding.error.message
-                : 'Failed to add holding'}
+                : t('addHoldingGenericError')}
             </div>
           )}
         </form>

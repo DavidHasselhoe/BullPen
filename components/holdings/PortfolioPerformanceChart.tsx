@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -68,6 +69,7 @@ interface Props {
 }
 
 export function PortfolioPerformanceChart({ holdings, currency = 'USD', fxRate = 1, isLoading: holdingsLoading }: Props) {
+  const { t } = useTranslation('holdings');
   const [range, setRange]           = useState<Range>('MAX');
   const [showBenchmark, setShowBenchmark] = useState(false);
 
@@ -338,7 +340,7 @@ export function PortfolioPerformanceChart({ holdings, currency = 'USD', fxRate =
             {isPositive
               ? <TrendingUp  className="h-4 w-4 text-emerald-500" />
               : <TrendingDown className="h-4 w-4 text-red-500" />}
-            Performance
+            {t('portfolioChartTitle')}
           </CardTitle>
 
           <div className="flex items-center gap-0.5 rounded-full bg-muted p-1">
@@ -372,7 +374,7 @@ export function PortfolioPerformanceChart({ holdings, currency = 'USD', fxRate =
                     <line x1="0" y1="4" x2="18" y2="4" stroke={lineColor} strokeWidth="2" />
                   </svg>
                   <span className="text-[11px] font-bold uppercase tracking-widest text-foreground/50">
-                    Your Portfolio
+                    {t('portfolioChartYourPortfolio')}
                   </span>
                   <span className={cn('text-[11px] font-bold tabular-nums', isPositive ? 'text-emerald-500' : 'text-red-500')}>
                     {fmtPct(currentPlPct)}
@@ -385,7 +387,7 @@ export function PortfolioPerformanceChart({ holdings, currency = 'USD', fxRate =
                       <line x1="0" y1="4" x2="18" y2="4" stroke="#94a3b8" strokeWidth="1.5" strokeDasharray="3 2" />
                     </svg>
                     <span className="text-[11px] font-bold uppercase tracking-widest text-foreground/50">
-                      S&P 500
+                      {t('portfolioChartSp500')}
                     </span>
                     <span className="text-[11px] font-bold tabular-nums text-slate-400">
                       {fmtPct(spyCurrentPct!)}
@@ -402,7 +404,7 @@ export function PortfolioPerformanceChart({ holdings, currency = 'USD', fxRate =
                   ({fmtPct(currentPlPct)})
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  {range === 'MAX' ? 'total P/L' : 'period return'}
+                  {range === 'MAX' ? t('portfolioChartTotalPl') : t('portfolioChartPeriodReturn')}
                 </span>
               </div>
             )}
@@ -416,7 +418,7 @@ export function PortfolioPerformanceChart({ holdings, currency = 'USD', fxRate =
                     ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
                     : 'text-red-400 bg-red-500/10 border-red-500/20'
                 )}>
-                  {fmtPct(outperformance)} VS S&P
+                  {t('portfolioChartVsSp', { pct: fmtPct(outperformance) })}
                 </span>
               )}
               <button
@@ -438,7 +440,7 @@ export function PortfolioPerformanceChart({ holdings, currency = 'USD', fxRate =
                     </>
                   )}
                 </svg>
-                S&P Benchmark
+                {t('portfolioChartSpBenchmark')}
               </button>
             </div>
           </div>
@@ -450,7 +452,7 @@ export function PortfolioPerformanceChart({ holdings, currency = 'USD', fxRate =
 
         {!isLoading && isError && (
           <div className="flex h-[220px] items-center justify-center text-sm text-muted-foreground">
-            Could not load chart data
+            {t('portfolioChartLoadError')}
           </div>
         )}
 
@@ -491,17 +493,17 @@ export function PortfolioPerformanceChart({ holdings, currency = 'USD', fxRate =
               rows={(point) => {
                 if (showBenchmark) {
                   const rows = [{
-                    label: 'Portfolio',
+                    label: t('portfolioChartTooltipPortfolio'),
                     value: fmtPct(point.plPct as number),
                     color: lineColor,
                   }];
                   if (point.spyPct != null) {
-                    rows.push({ label: 'S&P 500', value: fmtPct(point.spyPct as number), color: '#94a3b8' });
+                    rows.push({ label: t('portfolioChartSp500'), value: fmtPct(point.spyPct as number), color: '#94a3b8' });
                   }
                   return rows;
                 }
                 return [{
-                  label: 'P/L',
+                  label: t('portfolioChartTooltipPl'),
                   value: `${fmtPL(point.pl as number, currency)} (${fmtPct(point.plPct as number)})`,
                   color: lineColor,
                 }];
@@ -513,7 +515,7 @@ export function PortfolioPerformanceChart({ holdings, currency = 'USD', fxRate =
 
         {!isLoading && !isError && enrichedData.length === 0 && (
           <div className="flex h-[220px] items-center justify-center text-sm text-muted-foreground">
-            No chart data available for this period
+            {t('portfolioChartNoData')}
           </div>
         )}
       </CardContent>
