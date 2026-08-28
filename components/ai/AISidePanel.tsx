@@ -5,6 +5,8 @@ import Image from 'next/image';
 import { X, PanelRightClose, Settings, History, SquarePen, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useQuery } from '@tanstack/react-query';
 import type { UIMessage } from 'ai';
 import {
@@ -37,14 +39,16 @@ interface AISidePanelProps {
   onCloseWhyToday?: () => void;
 }
 
-const STARTER_PROMPTS = [
-  'Add 10 shares of AAPL to my holdings',
-  'Alert me if TSLA drops below $200',
-  'Any insider buying in NVDA lately?',
-  'How healthy is AAPL financially?',
-  'Find me some growth stocks',
-  "Show me AAPL's recent earnings",
-];
+function getStarterPrompts(t: TFunction): string[] {
+  return [
+    t('starterPromptAddHolding'),
+    t('starterPromptSetAlert'),
+    t('starterPromptInsiderBuying'),
+    t('starterPromptHealthCheck'),
+    t('starterPromptGrowthStocks'),
+    t('starterPromptRecentEarnings'),
+  ];
+}
 
 const PANEL_WIDTH = 480;
 
@@ -62,13 +66,14 @@ function formatShortDate(iso: string): string {
 }
 
 function AuthGate() {
+  const { t } = useTranslation('ai');
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-5 px-6 py-8 text-center">
       <BullAiIcon pose="wave" size={112} />
       <div className="space-y-1.5">
-        <p className="text-sm font-semibold text-foreground">Sign in to ask Bull</p>
+        <p className="text-sm font-semibold text-foreground">{t('authGateTitle')}</p>
         <p className="text-xs text-muted-foreground max-w-[220px] leading-relaxed">
-          Get instant answers about SEC filings, financial metrics, and investment research.
+          {t('authGateDescription')}
         </p>
       </div>
       <div className="flex flex-col gap-2 w-full max-w-[200px]">
@@ -76,13 +81,13 @@ function AuthGate() {
           href="/login"
           className="flex items-center justify-center gap-2 w-full rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
         >
-          Sign in
+          {t('authGateSignIn')}
         </Link>
         <Link
           href="/register"
           className="flex items-center justify-center gap-2 w-full rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
         >
-          Create account
+          {t('authGateCreateAccount')}
         </Link>
       </div>
     </div>
@@ -90,6 +95,7 @@ function AuthGate() {
 }
 
 export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumedQuery, whyToday, onCloseWhyToday }: AISidePanelProps) {
+  const { t } = useTranslation('ai');
   const { user, isLoading, isAuthenticated } = useAuth();
   const { hasAccepted: hasAcceptedAiTerms } = useAiTerms();
   const isMobile = useIsMobile();
@@ -200,7 +206,7 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
           <TooltipTrigger asChild>
             <button
               onClick={handleClose}
-              aria-label="Close AI panel"
+              aria-label={t('sidePanelClose')}
               className={cn(
                 'flex items-center justify-center',
                 'w-8 h-16 -ml-px',
@@ -212,7 +218,7 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
               <PanelRightClose className="h-5 w-5" />
             </button>
           </TooltipTrigger>
-          <TooltipContent side="left">Close AI panel</TooltipContent>
+          <TooltipContent side="left">{t('sidePanelClose')}</TooltipContent>
         </Tooltip>
       </motion.div>
 
@@ -233,18 +239,18 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
                   <TooltipTrigger asChild>
                     <button
                       onClick={onCloseWhyToday}
-                      aria-label="Back to chat"
+                      aria-label={t('sidePanelBackToChat')}
                       className="rounded-md p-1.5 -ml-1.5 shrink-0 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
                     >
                       <ArrowLeft className="h-4 w-4" />
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom">Back to chat</TooltipContent>
+                  <TooltipContent side="bottom">{t('sidePanelBackToChat')}</TooltipContent>
                 </Tooltip>
-                <p className="text-sm font-semibold leading-none truncate">Why ${whyToday.ticker} moved</p>
+                <p className="text-sm font-semibold leading-none truncate">{t('sidePanelWhyMoved', { ticker: whyToday.ticker })}</p>
               </>
             ) : (
-              <p className="text-sm font-semibold leading-none truncate">Ask Bull</p>
+              <p className="text-sm font-semibold leading-none truncate">{t('askBull')}</p>
             )}
           </div>
           <div className="flex items-center gap-2">
@@ -254,22 +260,22 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
                   <TooltipTrigger asChild>
                     <button
                       onClick={startNewChat}
-                      aria-label="New chat"
-                      title="New chat"
+                      aria-label={t('sidePanelNewChat')}
+                      title={t('sidePanelNewChat')}
                       className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
                     >
                       <SquarePen className="h-4 w-4" />
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom">New chat</TooltipContent>
+                  <TooltipContent side="bottom">{t('sidePanelNewChat')}</TooltipContent>
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
                       onClick={() => setHistoryOpen((v) => !v)}
                       aria-expanded={historyOpen}
-                      aria-label="Chat history"
-                      title="Chat history"
+                      aria-label={t('sidePanelChatHistory')}
+                      title={t('sidePanelChatHistory')}
                       className={cn(
                         'rounded-md p-1.5 transition-colors',
                         historyOpen
@@ -280,19 +286,19 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
                       <History className="h-4 w-4" />
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom">Chat history</TooltipContent>
+                  <TooltipContent side="bottom">{t('sidePanelChatHistory')}</TooltipContent>
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
                       onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { tab: 'ai' } }))}
-                      aria-label="AI settings"
+                      aria-label={t('sidePanelAiSettings')}
                       className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
                     >
                       <Settings className="h-4 w-4" />
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom">AI settings</TooltipContent>
+                  <TooltipContent side="bottom">{t('sidePanelAiSettings')}</TooltipContent>
                 </Tooltip>
                 <div className="h-7 w-7 rounded-full overflow-hidden ring-2 ring-border">
                   {user.avatar_url ? (
@@ -313,7 +319,7 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
             )}
             <button
               onClick={handleClose}
-              aria-label="Close AI panel"
+              aria-label={t('sidePanelClose')}
               className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
             >
               <X className="h-4 w-4" />
@@ -325,9 +331,9 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
         {historyOpen && (
           <div className="absolute top-16 right-4 z-30 w-72 max-h-80 overflow-y-auto rounded-lg border border-border/40 bg-background shadow-lg py-1.5">
             {historyLoading ? (
-              <div className="px-3 py-4 text-xs text-muted-foreground text-center">Loading…</div>
+              <div className="px-3 py-4 text-xs text-muted-foreground text-center">{t('sidePanelHistoryLoading')}</div>
             ) : !history || history.length === 0 ? (
-              <div className="px-3 py-4 text-xs text-muted-foreground text-center">No past conversations yet</div>
+              <div className="px-3 py-4 text-xs text-muted-foreground text-center">{t('sidePanelHistoryEmpty')}</div>
             ) : (
               history.map((c) => (
                 <button
@@ -385,7 +391,7 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
                       ref={chatRef}
                       compact
                       user={user}
-                      starterPrompts={STARTER_PROMPTS}
+                      starterPrompts={getStarterPrompts(t)}
                       open={open}
                       initialQuery={initialQuery ?? undefined}
                       aiContext={aiContext ?? undefined}
