@@ -54,4 +54,25 @@ export const DO_NOT_TRANSLATE = [
   'VIX',
   'HYG/LQD',
   'SPY/TLT',
+  // ISO 4217 currency codes — universal, same in every language's financial press.
+  'USD',
+  'EUR',
+  'GBP',
+  'NOK',
+  'SEK',
+  'DKK',
+  'JPY',
+  'CHF',
+  'CAD',
+  'AUD',
+  // Full "CODE (symbol)" composites whose symbol is plain Latin letters (A$, C$,
+  // Fr, kr) rather than a Unicode currency glyph — isEntirelyDoNotTranslate's
+  // symbol-stripping only catches the $/€/£/¥-style ones automatically, so these
+  // need the exact full string listed, same fix as the earlier "SPY: S&P 500" case.
+  'AUD (A$)',
+  'CAD (C$)',
+  'CHF (Fr)',
+  'DKK (kr)',
+  'NOK (kr)',
+  'SEK (kr)',
 ] as const;

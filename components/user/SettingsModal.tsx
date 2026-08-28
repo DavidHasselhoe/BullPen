@@ -186,10 +186,10 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
   const homepageLabel = stockMode
     ? homepageStockPick
       ? homepageStockPick.name && homepageStockPick.name !== homepageStockPick.ticker
-        ? `${homepageStockPick.ticker} — ${homepageStockPick.name}`
+        ? `${homepageStockPick.ticker} · ${homepageStockPick.name}`
         : homepageStockPick.ticker
       : t('homepageStock')
-    : currentHomepageOption?.label ?? 'Home';
+    : currentHomepageOption?.label ?? t('homepageHome');
   const [holdingsPublic, setHoldingsPublic] = useState<boolean>(true);
   const [widgetOrder, setWidgetOrder] = useState<string[]>(DEFAULT_WIDGET_ORDER);
   const [widgetHidden, setWidgetHidden] = useState<string[]>([]);
@@ -322,7 +322,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
         .eq('id', user.id);
 
       if (updateError) {
-        throw new Error(updateError.message || 'Failed to update settings');
+        throw new Error(updateError.message || t('errorUpdateSettings'));
       }
 
       // Was `['en','es','fr','de','ja','zh']` here — missing 'no', so a
@@ -345,7 +345,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
 
       window.dispatchEvent(new Event('auth:refresh'));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update settings');
+      setError(err instanceof Error ? err.message : t('errorUpdateSettings'));
     }
   };
 
@@ -370,10 +370,10 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
 
   const handleDeleteAccount = async () => {
     if (!user) return;
-    if (!confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+    if (!confirm(t('confirmDeleteAccount'))) {
       return;
     }
-    if (!confirm('All your holdings and settings will be permanently deleted. This cannot be reversed. Continue?')) {
+    if (!confirm(t('confirmDeleteAccountFinal'))) {
       return;
     }
 
@@ -383,7 +383,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
     try {
       const result = await deleteAccount();
       if (!result.success) {
-        setError(result.error || 'Failed to delete account');
+        setError(result.error || t('errorDeleteAccount'));
         setIsDeletingAccount(false);
         return;
       }
@@ -391,7 +391,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
       router.push('/');
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete account');
+      setError(err instanceof Error ? err.message : t('errorDeleteAccount'));
       setIsDeletingAccount(false);
     }
   };
@@ -405,7 +405,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
     try {
       const result = await exportUserData();
       if (!result.success || !result.data) {
-        setError(result.error || 'Failed to export data');
+        setError(result.error || t('errorExportData'));
         return;
       }
 
@@ -420,7 +420,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to export data');
+      setError(err instanceof Error ? err.message : t('errorExportData'));
     } finally {
       setIsExportingData(false);
     }
@@ -428,15 +428,15 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
 
   const handleChangePassword = async () => {
     if (!passwordNew || !passwordConfirm) {
-      setError('Please fill in both password fields.');
+      setError(t('errorPasswordFieldsRequired'));
       return;
     }
     if (passwordNew.length < 8) {
-      setError('Password must be at least 8 characters.');
+      setError(t('errorPasswordTooShort'));
       return;
     }
     if (passwordNew !== passwordConfirm) {
-      setError('Passwords do not match.');
+      setError(t('errorPasswordMismatch'));
       return;
     }
 
@@ -448,7 +448,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
       const supabase = createBrowserClient();
       const { error: updateError } = await supabase.auth.updateUser({ password: passwordNew });
       if (updateError) {
-        setError(updateError.message || 'Failed to update password.');
+        setError(updateError.message || t('errorPasswordUpdateFailed'));
         return;
       }
 
@@ -472,7 +472,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
         setPasswordSuccess(false);
       }, 2000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update password.');
+      setError(err instanceof Error ? err.message : t('errorPasswordUpdateFailed'));
     } finally {
       setIsChangingPassword(false);
     }
@@ -487,18 +487,18 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
   const sectionGroups: Array<{ heading?: string; items: SectionMeta[] }> = [
     {
       items: [
-        { id: 'preferences', label: t('preferences'), icon: Globe, description: 'Region, currency, language, theme, and your default homepage.' },
-        { id: 'notifications', label: t('notifications'), icon: Bell, description: 'Choose which alerts BullPen sends you.' },
-        { id: 'customize', label: t('customize'), icon: Settings2, description: 'Tailor your home layout and chart defaults.' },
-        { id: 'ai', label: 'Ask Bull', icon: Bot, description: 'How Bull communicates and frames its analysis.' },
+        { id: 'preferences', label: t('preferences'), icon: Globe, description: t('sectionPreferencesDescription') },
+        { id: 'notifications', label: t('notifications'), icon: Bell, description: t('sectionNotificationsDescription') },
+        { id: 'customize', label: t('customize'), icon: Settings2, description: t('sectionCustomizeDescription') },
+        { id: 'ai', label: t('sectionAiLabel'), icon: Bot, description: t('sectionAiDescription') },
       ],
     },
     {
-      heading: 'Account',
+      heading: t('sectionAccountHeading'),
       items: [
-        { id: 'plan', label: 'Plan', icon: Sparkles, description: 'Your plan and what Pro unlocks.' },
-        { id: 'privacy', label: t('privacy'), icon: Shield, description: 'Control your profile visibility and password.' },
-        { id: 'danger', label: t('danger'), icon: AlertTriangle, description: 'Export your data or permanently delete your account.' },
+        { id: 'plan', label: t('sectionPlanLabel'), icon: Sparkles, description: t('sectionPlanDescription') },
+        { id: 'privacy', label: t('privacy'), icon: Shield, description: t('sectionPrivacyDescription') },
+        { id: 'danger', label: t('danger'), icon: AlertTriangle, description: t('sectionDangerDescription') },
       ],
     },
   ];
@@ -582,11 +582,11 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                   <p className="truncate text-xs font-medium text-foreground">{user.email}</p>
                   <p className="flex items-center gap-1 text-[11px] text-muted-foreground">
                     {saveStatus === 'saving' ? (
-                      <><Loader2 className="h-2.5 w-2.5 animate-spin" />Saving…</>
+                      <><Loader2 className="h-2.5 w-2.5 animate-spin" />{t('savingEllipsis')}</>
                     ) : saveStatus === 'saved' ? (
-                      <><Check className="h-2.5 w-2.5 text-emerald-500" /><span className="text-emerald-500">All changes saved</span></>
+                      <><Check className="h-2.5 w-2.5 text-emerald-500" /><span className="text-emerald-500">{t('allChangesSaved')}</span></>
                     ) : (
-                      'Changes save automatically'
+                      t('changesSaveAutomatically')
                     )}
                   </p>
                 </div>
@@ -626,16 +626,16 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="auto">{t('currencyAuto')}</SelectItem>
-                        <SelectItem value="USD">USD ($)</SelectItem>
-                        <SelectItem value="EUR">EUR (€)</SelectItem>
-                        <SelectItem value="GBP">GBP (£)</SelectItem>
-                        <SelectItem value="NOK">NOK (kr)</SelectItem>
-                        <SelectItem value="SEK">SEK (kr)</SelectItem>
-                        <SelectItem value="DKK">DKK (kr)</SelectItem>
-                        <SelectItem value="JPY">JPY (¥)</SelectItem>
-                        <SelectItem value="CHF">CHF (Fr)</SelectItem>
-                        <SelectItem value="CAD">CAD (C$)</SelectItem>
-                        <SelectItem value="AUD">AUD (A$)</SelectItem>
+                        <SelectItem value="USD">{t('currencyOptionUsd')}</SelectItem>
+                        <SelectItem value="EUR">{t('currencyOptionEur')}</SelectItem>
+                        <SelectItem value="GBP">{t('currencyOptionGbp')}</SelectItem>
+                        <SelectItem value="NOK">{t('currencyOptionNok')}</SelectItem>
+                        <SelectItem value="SEK">{t('currencyOptionSek')}</SelectItem>
+                        <SelectItem value="DKK">{t('currencyOptionDkk')}</SelectItem>
+                        <SelectItem value="JPY">{t('currencyOptionJpy')}</SelectItem>
+                        <SelectItem value="CHF">{t('currencyOptionChf')}</SelectItem>
+                        <SelectItem value="CAD">{t('currencyOptionCad')}</SelectItem>
+                        <SelectItem value="AUD">{t('currencyOptionAud')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-muted-foreground">
@@ -719,7 +719,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                         <DropdownMenuSub>
                           <DropdownMenuSubTrigger className="gap-2">
                             <Wrench className="h-4 w-4" />
-                            <span>Tools</span>
+                            <span>{t('homepageTools')}</span>
                           </DropdownMenuSubTrigger>
                           <DropdownMenuSubContent className="max-h-[320px] overflow-y-auto">
                             {HOMEPAGE_TOOL_OPTIONS.map((tool) => {
@@ -787,7 +787,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                         <p className="text-xs text-muted-foreground">
                           {homepageStockPick
                             ? t('homepageStockTickerHint')
-                            : 'Search and pick a stock to use as your homepage.'}
+                            : t('homepageStockSearchHint')}
                         </p>
                       </div>
                     )}
@@ -810,12 +810,12 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="dark">Dark</SelectItem>
-                        <SelectItem value="light">Light</SelectItem>
-                        <SelectItem value="gradient-purple">Gradient Purple</SelectItem>
-                        <SelectItem value="gradient-blue">Gradient Blue</SelectItem>
-                        <SelectItem value="gradient-midnight">Gradient Midnight</SelectItem>
-                        <SelectItem value="gradient-embers">Gradient Embers</SelectItem>
+                        <SelectItem value="dark">{t('themeDark')}</SelectItem>
+                        <SelectItem value="light">{t('themeLight')}</SelectItem>
+                        <SelectItem value="gradient-purple">{t('themeGradientPurple')}</SelectItem>
+                        <SelectItem value="gradient-blue">{t('themeGradientBlue')}</SelectItem>
+                        <SelectItem value="gradient-midnight">{t('themeGradientMidnight')}</SelectItem>
+                        <SelectItem value="gradient-embers">{t('themeGradientEmbers')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -837,56 +837,56 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
               <div className="space-y-6 max-w-2xl">
                 <SettingsCard>
                   <ToggleSetting
-                    label="Earnings Today"
-                    description="Get notified the morning a tracked stock reports earnings"
+                    label={t('notifEarningsTodayLabel')}
+                    description={t('notifEarningsTodayDescription')}
                     checked={notifications.upcoming_earnings}
                     onCheckedChange={(checked) => setNotifications({ ...notifications, upcoming_earnings: checked })}
                   />
                   <ToggleSetting
-                    label="Big Price Moves"
-                    description="Daily alert when a tracked stock moves 5% or more"
+                    label={t('notifBigPriceMovesLabel')}
+                    description={t('notifBigPriceMovesDescription')}
                     checked={notifications.price_alerts}
                     onCheckedChange={(checked) => setNotifications({ ...notifications, price_alerts: checked })}
                   />
                   <ToggleSetting
-                    label="Daily Portfolio Recap"
-                    description="A daily summary of how your holdings moved and what drove it"
+                    label={t('notifPortfolioRecapLabel')}
+                    description={t('notifPortfolioRecapDescription')}
                     checked={notifications.portfolio_recap}
                     onCheckedChange={(checked) => setNotifications({ ...notifications, portfolio_recap: checked })}
                   />
                   <ToggleSetting
-                    label="AI Insights Ready"
-                    description="Get notified when a Deep Dive, Portfolio Builder, or Risk Analysis finishes running"
+                    label={t('notifAiInsightsLabel')}
+                    description={t('notifAiInsightsDescription')}
                     checked={notifications.ai_insights}
                     onCheckedChange={(checked) => setNotifications({ ...notifications, ai_insights: checked })}
                   />
                   <ToggleSetting
-                    label="Health Score Changes"
-                    description="Get notified when a tracked stock's BullPen health score crosses a letter grade"
+                    label={t('notifHealthScoreLabel')}
+                    description={t('notifHealthScoreDescription')}
                     checked={notifications.health_score_change}
                     onCheckedChange={(checked) => setNotifications({ ...notifications, health_score_change: checked })}
                   />
                   <ToggleSetting
-                    label="Ex-Dividend Reminders"
-                    description="Get notified a few days before a tracked stock goes ex-dividend"
+                    label={t('notifExDividendLabel')}
+                    description={t('notifExDividendDescription')}
                     checked={notifications.dividend_reminder}
                     onCheckedChange={(checked) => setNotifications({ ...notifications, dividend_reminder: checked })}
                   />
                   <ToggleSetting
-                    label="Daily Brief Ready"
-                    description="Get notified when today's AI market brief is published"
+                    label={t('notifDailyBriefLabel')}
+                    description={t('notifDailyBriefDescription')}
                     checked={notifications.daily_brief_ready}
                     onCheckedChange={(checked) => setNotifications({ ...notifications, daily_brief_ready: checked })}
                   />
                   <ToggleSetting
-                    label="Weekly Pick"
-                    description="Get notified when Bull publishes the week's featured stock pick"
+                    label={t('notifWeeklyPickLabel')}
+                    description={t('notifWeeklyPickDescription')}
                     checked={notifications.weekly_pick}
                     onCheckedChange={(checked) => setNotifications({ ...notifications, weekly_pick: checked })}
                   />
                   <ToggleSetting
-                    label="Daily Challenge Reminder"
-                    description="An evening nudge to keep your Academy streak alive if you haven't done today's challenge yet"
+                    label={t('notifDailyChallengeLabel')}
+                    description={t('notifDailyChallengeDescription')}
                     checked={notifications.daily_challenge_reminder}
                     onCheckedChange={(checked) => setNotifications({ ...notifications, daily_challenge_reminder: checked })}
                   />
@@ -904,13 +904,13 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 border-b pb-2">
                     <Home className="h-4 w-4 text-muted-foreground" />
-                    <h3 className="text-sm font-semibold">Home</h3>
+                    <h3 className="text-sm font-semibold">{t('customizeHomeHeading')}</h3>
                   </div>
 
                   <SettingsCard>
                     <ToggleSetting
-                      label="Show Welcome Text"
-                      description="Display a personalized welcome message at the top of the page"
+                      label={t('customizeShowWelcomeLabel')}
+                      description={t('customizeShowWelcomeDescription')}
                       checked={showWelcomeText}
                       onCheckedChange={setShowWelcomeText}
                     />
@@ -919,11 +919,10 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                   <div className="space-y-3 pt-1">
                     <Label className="flex items-center gap-2">
                       <LayoutGrid className="h-4 w-4" />
-                      Homepage Layout
+                      {t('customizeHomepageLayoutLabel')}
                     </Label>
                     <p className="text-xs text-muted-foreground">
-                      Drag to reorder cards on your homepage. Toggle the eye icon to hide cards
-                      you don&apos;t use — including the investing quote.
+                      {t('customizeHomepageLayoutHint')}
                     </p>
                     <HomepageLayoutEditor
                       order={widgetOrder}
@@ -939,11 +938,10 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                     <div className="space-y-3 pt-1">
                       <Label className="flex items-center gap-2">
                         <LayoutGrid className="h-4 w-4" />
-                        Market Context Cards
+                        {t('customizeMarketContextLabel')}
                       </Label>
                       <p className="text-xs text-muted-foreground">
-                        Choose which cards appear inside Market Context — hide the ones you
-                        don&apos;t use without hiding the whole section.
+                        {t('customizeMarketContextHint')}
                       </p>
                       <MarketContextVisibilityEditor
                         hidden={marketContextHidden}
@@ -957,11 +955,10 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 border-b pb-2">
                     <LineChart className="h-4 w-4 text-muted-foreground" />
-                    <h3 className="text-sm font-semibold">Charts</h3>
+                    <h3 className="text-sm font-semibold">{t('customizeChartsHeading')}</h3>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Defaults for every price chart. These stay in sync with the chart settings
-                    on each stock page.
+                    {t('customizeChartsHint')}
                   </p>
                   <div className="rounded-lg border bg-muted/20 p-4">
                     <ChartPrefsControls
@@ -983,11 +980,11 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                         ? <Crown className="h-5 w-5 shrink-0 text-primary" />
                         : <Sparkles className="h-5 w-5 shrink-0 text-muted-foreground" />}
                       <div>
-                        <p className="text-sm font-semibold text-foreground">{ent.isPro ? 'Pro' : 'Free'}</p>
+                        <p className="text-sm font-semibold text-foreground">{ent.isPro ? t('planProLabel') : t('planFreeLabel')}</p>
                         <p className="text-xs text-muted-foreground">
                           {ent.isPro
-                            ? 'Full access to the AI suite and unlimited tracking.'
-                            : 'Unlimited research, screener, alerts and Academy — free.'}
+                            ? t('planProDescription')
+                            : t('planFreeDescription')}
                         </p>
                       </div>
                     </div>
@@ -997,15 +994,15 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
 
                 {!ent.isPro && (
                   <div className="rounded-xl border bg-muted/20 p-5">
-                    <p className="text-sm font-semibold text-foreground">Pro unlocks</p>
+                    <p className="text-sm font-semibold text-foreground">{t('planUnlocksHeading')}</p>
                     <ul className="mt-2.5 space-y-2 text-sm text-muted-foreground">
-                      <li className="flex items-center gap-2"><Check className="h-4 w-4 shrink-0 text-primary" /> Unlimited AI chat, Deep Dives &amp; Portfolio Builder</li>
-                      <li className="flex items-center gap-2"><Check className="h-4 w-4 shrink-0 text-primary" /> Daily Brief &amp; &ldquo;Why Today?&rdquo; explanations</li>
-                      <li className="flex items-center gap-2"><Check className="h-4 w-4 shrink-0 text-primary" /> Unlimited price alerts &amp; watchlists</li>
-                      <li className="flex items-center gap-2"><Check className="h-4 w-4 shrink-0 text-primary" /> CSV/PDF exports &amp; insider transactions</li>
+                      <li className="flex items-center gap-2"><Check className="h-4 w-4 shrink-0 text-primary" /> {t('planUnlockAiChat')}</li>
+                      <li className="flex items-center gap-2"><Check className="h-4 w-4 shrink-0 text-primary" /> {t('planUnlockDailyBrief')}</li>
+                      <li className="flex items-center gap-2"><Check className="h-4 w-4 shrink-0 text-primary" /> {t('planUnlockAlerts')}</li>
+                      <li className="flex items-center gap-2"><Check className="h-4 w-4 shrink-0 text-primary" /> {t('planUnlockExports')}</li>
                     </ul>
                     <Link href="/upgrade" className="mt-4 inline-block text-xs font-medium text-primary hover:underline">
-                      See the full comparison →
+                      {t('planSeeComparison')}
                     </Link>
                   </div>
                 )}
@@ -1019,18 +1016,18 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                   <div className="space-y-3">
                     <Label className="flex items-center gap-2">
                       <Shield className="h-4 w-4" />
-                      Profile Visibility
+                      {t('privacyVisibilityLabel')}
                     </Label>
                     <SettingsCard>
                       <ToggleSetting
-                        label="Public profile"
-                        description="Allow other BullPen members to find and view your profile page."
+                        label={t('privacyPublicProfileLabel')}
+                        description={t('privacyPublicProfileDescription')}
                         checked={profilePublic}
                         onCheckedChange={setProfilePublic}
                       />
                       <ToggleSetting
-                        label="Show portfolio"
-                        description="Show your portfolio stocks (ticker and company name only, no quantities or prices) on your public profile."
+                        label={t('privacyShowPortfolioLabel')}
+                        description={t('privacyShowPortfolioDescription')}
                         checked={holdingsPublic}
                         onCheckedChange={setHoldingsPublic}
                         disabled={!profilePublic}
@@ -1043,27 +1040,27 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                   <div className="space-y-3">
                     <Label className="flex items-center gap-2">
                       <Shield className="h-4 w-4" />
-                      Change Password
+                      {t('changePassword')}
                     </Label>
                     {user.app_metadata?.provider === 'google' ? (
                       <p className="text-xs text-muted-foreground">
-                        You signed in with Google. Password change is not available for OAuth accounts.
+                        {t('privacyOAuthNotice')}
                       </p>
                     ) : !showPasswordForm ? (
                       <Button variant="outline" onClick={() => { setShowPasswordForm(true); setError(null); }}>
-                        Change Password
+                        {t('changePassword')}
                       </Button>
                     ) : (
                       <div className="space-y-3 rounded-lg border bg-muted/30 p-4">
                         <div className="space-y-1.5">
-                          <Label htmlFor="pw-new" className="text-xs">New Password</Label>
+                          <Label htmlFor="pw-new" className="text-xs">{t('privacyNewPasswordLabel')}</Label>
                           <div className="relative">
                             <Input
                               id="pw-new"
                               type={showPasswordNew ? 'text' : 'password'}
                               value={passwordNew}
                               onChange={(e) => setPasswordNew(e.target.value)}
-                              placeholder="Min. 8 characters"
+                              placeholder={t('privacyPasswordMinChars')}
                               className="pr-10"
                             />
                             <button
@@ -1076,14 +1073,14 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                           </div>
                         </div>
                         <div className="space-y-1.5">
-                          <Label htmlFor="pw-confirm" className="text-xs">Confirm New Password</Label>
+                          <Label htmlFor="pw-confirm" className="text-xs">{t('privacyConfirmPasswordLabel')}</Label>
                           <div className="relative">
                             <Input
                               id="pw-confirm"
                               type={showPasswordConfirm ? 'text' : 'password'}
                               value={passwordConfirm}
                               onChange={(e) => setPasswordConfirm(e.target.value)}
-                              placeholder="Repeat new password"
+                              placeholder={t('privacyRepeatPassword')}
                               className="pr-10"
                             />
                             <button
@@ -1103,11 +1100,11 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                             className="flex-1"
                           >
                             {isChangingPassword ? (
-                              <><Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />Updating...</>
+                              <><Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />{t('privacyUpdatingPassword')}</>
                             ) : passwordSuccess ? (
-                              <><Check className="mr-2 h-3.5 w-3.5" />Password updated!</>
+                              <><Check className="mr-2 h-3.5 w-3.5" />{t('privacyPasswordUpdated')}</>
                             ) : (
-                              'Update Password'
+                              t('privacyUpdatePasswordButton')
                             )}
                           </Button>
                           <Button
@@ -1116,7 +1113,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                             onClick={() => { setShowPasswordForm(false); setPasswordNew(''); setPasswordConfirm(''); setError(null); }}
                             disabled={isChangingPassword}
                           >
-                            Cancel
+                            {t('privacyCancelButton')}
                           </Button>
                         </div>
                       </div>
@@ -1137,16 +1134,16 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
 
                 <div className="space-y-3">
                   <div>
-                    <Label className="text-sm font-medium">Risk Profile</Label>
+                    <Label className="text-sm font-medium">{t('aiRiskProfileLabel')}</Label>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Shapes how the AI frames investment analysis and risk discussion.
+                      {t('aiRiskProfileHint')}
                     </p>
                   </div>
                   <div className="flex gap-2">
                     {([
-                      { value: 'conservative', label: 'Conservative', description: 'Capital preservation, downside risks' },
-                      { value: 'balanced', label: 'Balanced', description: 'Balanced risk-reward perspective' },
-                      { value: 'aggressive', label: 'Aggressive', description: 'Growth focus, upside opportunity' },
+                      { value: 'conservative', label: t('aiRiskConservative'), description: t('aiRiskConservativeDescription') },
+                      { value: 'balanced', label: t('aiRiskBalanced'), description: t('aiRiskBalancedDescription') },
+                      { value: 'aggressive', label: t('aiRiskAggressive'), description: t('aiRiskAggressiveDescription') },
                     ] as const).map(({ value, label, description }) => (
                       <button
                         key={value}
@@ -1168,16 +1165,16 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
 
                 <div className="space-y-3">
                   <div>
-                    <Label className="text-sm font-medium">Investment Time Horizon</Label>
+                    <Label className="text-sm font-medium">{t('aiHorizonLabel')}</Label>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Adjusts whether AI emphasizes near-term catalysts or long-term fundamentals.
+                      {t('aiHorizonHint')}
                     </p>
                   </div>
                   <div className="flex gap-2">
                     {([
-                      { value: 'short', label: 'Short-term', description: '< 1 year' },
-                      { value: 'medium', label: 'Medium-term', description: '1 – 5 years' },
-                      { value: 'long', label: 'Long-term', description: '5+ years' },
+                      { value: 'short', label: t('aiHorizonShort'), description: t('aiHorizonShortDescription') },
+                      { value: 'medium', label: t('aiHorizonMedium'), description: t('aiHorizonMediumDescription') },
+                      { value: 'long', label: t('aiHorizonLong'), description: t('aiHorizonLongDescription') },
                     ] as const).map(({ value, label, description }) => (
                       <button
                         key={value}
@@ -1199,16 +1196,16 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
 
                 <div className="space-y-3">
                   <div>
-                    <Label className="text-sm font-medium">Response Style</Label>
+                    <Label className="text-sm font-medium">{t('aiResponseStyleLabel')}</Label>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Controls how long and structured AI responses are.
+                      {t('aiResponseStyleHint')}
                     </p>
                   </div>
                   <div className="flex gap-2">
                     {([
-                      { value: 'concise', label: 'Concise', description: '1–2 paragraphs, bullets' },
-                      { value: 'balanced', label: 'Balanced', description: 'Standard analysis length' },
-                      { value: 'detailed', label: 'Detailed', description: 'Full sections, all data' },
+                      { value: 'concise', label: t('aiStyleConcise'), description: t('aiStyleConciseDescription') },
+                      { value: 'balanced', label: t('aiStyleBalanced'), description: t('aiStyleBalancedDescription') },
+                      { value: 'detailed', label: t('aiStyleDetailed'), description: t('aiStyleDetailedDescription') },
                     ] as const).map(({ value, label, description }) => (
                       <button
                         key={value}
@@ -1229,8 +1226,8 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                 <Separator />
 
                 <ToggleSetting
-                  label="Let Bull see my holdings & watchlist"
-                  description="Bull can reference what you actually own and watch when you ask about your own portfolio. Off by default; this is separate from the Portfolio Risk Analysis feature on the Holdings page, which stays a deeper, scored report either way."
+                  label={t('aiHoldingsContextLabel')}
+                  description={t('aiHoldingsContextDescription')}
                   checked={allowHoldingsContext}
                   onCheckedChange={setAllowHoldingsContext}
                 />
@@ -1243,10 +1240,10 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                   <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-4 space-y-4">
                     <div className="flex items-center gap-2 text-destructive">
                       <AlertTriangle className="h-5 w-5" />
-                      <Label className="text-base">Export Data</Label>
+                      <Label className="text-base">{t('exportData')}</Label>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      Download all your data (holdings, settings) as a JSON file.
+                      {t('dangerExportDescription')}
                     </p>
                     <Button
                       variant="outline"
@@ -1257,12 +1254,12 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                       {isExportingData ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Exporting...
+                          {t('dangerExporting')}
                         </>
                       ) : (
                         <>
                           <Download className="mr-2 h-4 w-4" />
-                          Export Data
+                          {t('exportData')}
                         </>
                       )}
                     </Button>
@@ -1273,11 +1270,10 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                   <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-4 space-y-4">
                     <div className="flex items-center gap-2 text-destructive">
                       <Trash2 className="h-5 w-5" />
-                      <Label className="text-base">Delete Account</Label>
+                      <Label className="text-base">{t('deleteAccount')}</Label>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      Permanently delete your account and all associated data. This action
-                      cannot be undone.
+                      {t('deleteAccountDescription')}
                     </p>
                     <Button
                       variant="destructive"
@@ -1288,12 +1284,12 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                       {isDeletingAccount ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Deleting account...
+                          {t('dangerDeletingAccount')}
                         </>
                       ) : (
                         <>
                           <Trash2 className="mr-2 h-4 w-4" />
-                          Delete Account
+                          {t('deleteAccount')}
                         </>
                       )}
                     </Button>
