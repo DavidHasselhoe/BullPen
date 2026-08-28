@@ -1,6 +1,8 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -26,6 +28,13 @@ const RANK_STYLES = [
   'text-amber-600 font-bold text-base', // #3
 ];
 
+function getTierLabels(t: TFunction): Record<'Member' | 'Pro', string> {
+  return {
+    Member: t('leaderboardTierMember'),
+    Pro: t('leaderboardTierPro'),
+  };
+}
+
 function RankBadge({ rank }: { rank: number }) {
   if (rank <= 3) {
     return <span className={cn('w-8 text-center tabular-nums', RANK_STYLES[rank - 1])}>{rank}</span>;
@@ -34,6 +43,8 @@ function RankBadge({ rank }: { rank: number }) {
 }
 
 export default function AcademyLeaderboardPage() {
+  const { t } = useTranslation('academy');
+  const tierLabels = getTierLabels(t);
   const { data, isLoading } = useQuery({
     queryKey: ['leaderboard', 'xp'],
     queryFn: async (): Promise<LeaderboardEntry[]> => {
@@ -55,9 +66,9 @@ export default function AcademyLeaderboardPage() {
           <Trophy className="h-5 w-5 text-primary" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Academy Leaderboard</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">{t('leaderboardTitle')}</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Top learners by Academy XP. Only public profiles are shown.
+            {t('leaderboardSubtitle')}
           </p>
         </div>
       </div>
@@ -78,16 +89,16 @@ export default function AcademyLeaderboardPage() {
         ) : (data?.length ?? 0) === 0 ? (
           <div className="flex flex-col items-center gap-3 py-16 text-center text-muted-foreground">
             <Trophy className="h-10 w-10 opacity-30" />
-            <p className="text-sm">No Academy XP earned yet. Be the first!</p>
+            <p className="text-sm">{t('leaderboardEmpty')}</p>
           </div>
         ) : (
           <div className="divide-y divide-border">
             {data!.map((entry) => {
-              const displayName = entry.full_name || entry.username || 'Anonymous';
+              const displayName = entry.full_name || entry.username || t('leaderboardAnonymous');
               const initials = displayName.slice(0, 2).toUpperCase();
               const href = entry.username ? `/users/${encodeURIComponent(entry.username)}` : '#';
               const tierLabelValue = tierLabel(entry.account_tier);
-              const tier = tierLabelValue ? { label: tierLabelValue, className: TIER_BADGE_CLASS[tierLabelValue] } : null;
+              const tier = tierLabelValue ? { label: tierLabels[tierLabelValue], className: TIER_BADGE_CLASS[tierLabelValue] } : null;
 
               return (
                 <Link
@@ -121,7 +132,7 @@ export default function AcademyLeaderboardPage() {
                     )}
                   </div>
 
-                  {tier && tier.label !== 'Member' && (
+                  {tier && tierLabelValue !== 'Member' && (
                     <span className={cn('inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full shrink-0', tier.className)}>
                       {tier.label}
                     </span>
@@ -135,12 +146,12 @@ export default function AcademyLeaderboardPage() {
                       </span>
                     )}
                     <span className="inline-block text-[11px] font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary shrink-0">
-                      Lvl {entry.level ?? 1}
+                      {t('leaderboardLevel', { level: entry.level ?? 1 })}
                     </span>
                     <div className="flex items-center gap-1.5 text-sm">
                       <GraduationCap className="h-3.5 w-3.5 text-muted-foreground" />
                       <span className="font-semibold text-foreground tabular-nums">{(entry.total_xp ?? 0).toLocaleString()}</span>
-                      <span className="text-muted-foreground hidden sm:inline">XP</span>
+                      <span className="text-muted-foreground hidden sm:inline">{t('leaderboardXpUnit')}</span>
                     </div>
                   </div>
                 </Link>
@@ -151,7 +162,7 @@ export default function AcademyLeaderboardPage() {
       </div>
 
       <p className="text-xs text-muted-foreground text-center">
-        Rankings are based on total Academy XP earned from lessons and daily challenges.
+        {t('leaderboardFooter')}
       </p>
     </div>
   );

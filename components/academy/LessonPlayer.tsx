@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Zap } from 'lucide-react';
@@ -46,6 +47,7 @@ interface Props {
 }
 
 export function LessonPlayer({ lesson, courseSlug }: Props) {
+  const { t } = useTranslation('academy');
   const router = useRouter();
   const queryClient = useQueryClient();
   const [celebrating, setCelebrating] = useState(false);
@@ -114,7 +116,7 @@ export function LessonPlayer({ lesson, courseSlug }: Props) {
     return (
       <div className="rounded-2xl border border-red-500/30 bg-red-500/[0.06] p-5">
         <p className="text-sm text-red-400">
-          This lesson has invalid content and can&apos;t be played. Please contact support.
+          {t('lessonPlayerInvalidContent')}
         </p>
       </div>
     );
@@ -131,11 +133,11 @@ export function LessonPlayer({ lesson, courseSlug }: Props) {
           className="gap-1.5 -ml-2 text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back
+          {t('lessonPlayerBack')}
         </Button>
         <div className="flex items-center gap-1.5 text-xs font-mono text-emerald-500 bg-emerald-500/10 rounded-full px-2.5 py-1">
           <Zap className="h-3 w-3 fill-emerald-500" />
-          {lesson.xpReward} XP
+          {t('lessonPlayerXpReward', { xp: lesson.xpReward })}
         </div>
       </div>
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -57,6 +58,7 @@ interface Props {
 }
 
 export function CourseFinalQuiz({ quiz, courseSlug, courseTitle }: Props) {
+  const { t } = useTranslation('academy');
   const router = useRouter();
   const queryClient = useQueryClient();
   const [attempt, setAttempt] = useState(0);
@@ -121,12 +123,12 @@ export function CourseFinalQuiz({ quiz, courseSlug, courseTitle }: Props) {
               result.passed ? 'text-emerald-500' : 'text-amber-400'
             }`}
           >
-            {result.passed ? 'Nice work' : 'Not quite there yet'}
+            {result.passed ? t('courseFinalQuizNiceWork') : t('courseFinalQuizNotQuite')}
           </div>
           <p className="text-sm text-muted-foreground leading-relaxed">
             {result.passed
-              ? `You got ${Math.round(result.score * 100)}% and unlocked the next course.`
-              : `You got ${Math.round(result.score * 100)}%. Take another look and try again, no rush.`}
+              ? t('courseFinalQuizPassedMessage', { score: Math.round(result.score * 100) })
+              : t('courseFinalQuizFailedMessage', { score: Math.round(result.score * 100) })}
           </p>
           <div className="flex flex-col gap-2 pt-1">
             {result.passed ? (
@@ -137,7 +139,7 @@ export function CourseFinalQuiz({ quiz, courseSlug, courseTitle }: Props) {
                 }
                 className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold gap-1.5"
               >
-                Continue
+                {t('pathNodeContinue')}
                 <ArrowRight className="h-4 w-4" />
               </Button>
             ) : (
@@ -148,12 +150,12 @@ export function CourseFinalQuiz({ quiz, courseSlug, courseTitle }: Props) {
                   className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold gap-1.5"
                 >
                   <RotateCcw className="h-4 w-4" />
-                  Try again
+                  {t('courseFinalQuizTryAgain')}
                 </Button>
                 <Link href={`/academy/${courseSlug}`}>
                   <Button size="lg" variant="ghost" className="w-full gap-1.5 text-muted-foreground">
                     <BookOpen className="h-4 w-4" />
-                    Review the lessons instead
+                    {t('courseFinalQuizReviewLessons')}
                   </Button>
                 </Link>
               </>
@@ -168,11 +170,11 @@ export function CourseFinalQuiz({ quiz, courseSlug, courseTitle }: Props) {
     <div className="space-y-5">
       <div>
         <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-muted-foreground/80 mb-1.5">
-          Final quiz
+          {t('courseFinalQuizLabel')}
         </div>
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight leading-tight">{courseTitle}</h1>
         <p className="text-sm text-muted-foreground/85 mt-2 leading-relaxed">
-          Answer at your own pace. You can retry as many times as you want.
+          {t('courseFinalQuizIntro')}
         </p>
       </div>
       <QuizLesson key={attempt} content={shuffled.content} onComplete={handleComplete} />

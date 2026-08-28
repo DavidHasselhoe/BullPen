@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, type CSSProperties } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -45,6 +46,7 @@ function tooltipStyle(rect: DOMRect | null): CSSProperties {
 }
 
 export function DemoTour({ steps, stepIndex, onStepIndexChange, isActionSatisfied, onSkip, onFinish }: Props) {
+  const { t } = useTranslation('academy');
   const [rect, setRect] = useState<DOMRect | null>(null);
   const step = steps[stepIndex];
 
@@ -144,7 +146,7 @@ export function DemoTour({ steps, stepIndex, onStepIndexChange, isActionSatisfie
             <button
               type="button"
               onClick={onSkip}
-              aria-label="Skip tour"
+              aria-label={t('demoTourSkip')}
               className="text-muted-foreground/80 transition-colors hover:text-foreground"
             >
               <X className="h-4 w-4" />
@@ -153,7 +155,7 @@ export function DemoTour({ steps, stepIndex, onStepIndexChange, isActionSatisfie
           <p className="mb-1 text-sm font-semibold text-foreground">{step.title}</p>
           <p className="mb-3 text-xs leading-relaxed text-muted-foreground">{step.body}</p>
           {step.requiredAction !== 'none' && !isActionSatisfied && (
-            <p className="mb-3 text-[11px] font-medium text-primary">Try it to continue →</p>
+            <p className="mb-3 text-[11px] font-medium text-primary">{t('demoTourTryToContinue')}</p>
           )}
           <div className="flex items-center justify-between">
             <button
@@ -161,7 +163,7 @@ export function DemoTour({ steps, stepIndex, onStepIndexChange, isActionSatisfie
               onClick={onSkip}
               className="text-xs text-muted-foreground transition-colors hover:text-foreground"
             >
-              Skip tour
+              {t('demoTourSkip')}
             </button>
             <button
               type="button"
@@ -169,7 +171,7 @@ export function DemoTour({ steps, stepIndex, onStepIndexChange, isActionSatisfie
               disabled={!canAdvance}
               className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-opacity disabled:opacity-40"
             >
-              {isLast ? 'Finish' : 'Next'}
+              {isLast ? t('demoTourFinish') : t('demoTourNext')}
               <ArrowRight className="h-3.5 w-3.5" />
             </button>
           </div>

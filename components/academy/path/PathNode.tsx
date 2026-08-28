@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { Check, Lock, Play } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -31,6 +32,7 @@ interface Props {
  * courses as locked, with no background class matching either.
  */
 export function PathNode({ course, isCurrent, offset, align, circleRef }: Props) {
+  const { t } = useTranslation('academy');
   const isProLocked = course.lockedReason === 'pro';
   // lockedReason is derived from whether the PREVIOUS course in this track is
   // complete, independent of this course's own completion — so a course
@@ -61,7 +63,7 @@ export function PathNode({ course, isCurrent, offset, align, circleRef }: Props)
       )}
       {isProLocked && (
         <span className="absolute -bottom-1 -right-1 rounded bg-amber-400/15 px-1 py-0.5 text-[11px] font-bold tracking-wide text-amber-500 border border-card">
-          PRO
+          {t('pathNodePro')}
         </span>
       )}
     </div>
@@ -85,22 +87,22 @@ export function PathNode({ course, isCurrent, offset, align, circleRef }: Props)
         )}
         {course.isOptional && (
           <span className="text-[11px] font-mono font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-            Optional
+            {t('pathNodeOptional')}
           </span>
         )}
         {course.skipped && (
           <span className="text-[11px] font-mono font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-            Skipped
+            {t('pathNodeSkipped')}
           </span>
         )}
         <span className="text-[11px] font-mono text-muted-foreground/70 tabular-nums">
-          {course.completedLessons}/{course.totalLessons} lessons
+          {t('pathNodeLessonProgress', { completed: course.completedLessons, total: course.totalLessons })}
         </span>
       </div>
       {isCurrent && (
         <div className={cn('mt-1.5 inline-flex items-center gap-1 text-[11px] font-mono font-bold uppercase tracking-wider text-emerald-500', align === 'left' && 'flex-row-reverse')}>
           <Play className="h-2.5 w-2.5 fill-current" />
-          {course.completedLessons > 0 ? 'Continue' : 'Start'}
+          {course.completedLessons > 0 ? t('pathNodeContinue') : t('pathNodeStart')}
         </div>
       )}
     </div>
@@ -141,7 +143,7 @@ export function PathNode({ course, isCurrent, offset, align, circleRef }: Props)
             href={`/academy/${course.slug}/quiz?title=${encodeURIComponent(course.title)}`}
             className="text-[11px] font-mono text-muted-foreground/70 underline underline-offset-2 hover:text-foreground transition-colors"
           >
-            I know this, skip to quiz
+            {t('pathNodeSkipToQuiz')}
           </Link>
         )}
       </div>

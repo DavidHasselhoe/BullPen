@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
 
@@ -17,6 +18,7 @@ function prefersReducedMotion(): boolean {
 }
 
 export function CompletionCelebration({ xpEarned, durationMs = 1600, onDismiss }: Props) {
+  const { t } = useTranslation('academy');
   const [visible, setVisible] = useState(true);
   const [reduced] = useState(prefersReducedMotion);
 
@@ -110,7 +112,7 @@ export function CompletionCelebration({ xpEarned, durationMs = 1600, onDismiss }
           +{xpEarned}
         </motion.div>
         <div className="text-sm font-bold uppercase tracking-[0.35em] text-emerald-500 mt-2">
-          XP earned
+          {t('completionCelebrationXpEarned')}
         </div>
       </motion.div>
     </motion.div>

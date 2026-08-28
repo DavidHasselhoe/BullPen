@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import DividendClientPage, { type DividendSeedHolding } from '@/app/tools/dividend/DividendClientPage';
 import { DemoSurfaceShell } from './DemoSurfaceShell';
 
@@ -18,11 +19,11 @@ interface Props {
  * The tour asks the learner to run one calculation; `onCalculated` unlocks it.
  */
 export function DividendDemo({ holdings, years, onCalculated, onClose, children }: Props) {
+  const { t } = useTranslation('academy');
   return (
-    <DemoSurfaceShell eyebrow="Demo · Dividends & passive income" title="Dividend calculator" onClose={onClose}>
+    <DemoSurfaceShell eyebrow={t('dividendDemoEyebrow')} title={t('dividendDemoTitle')} onClose={onClose}>
       <p className="mb-6 text-sm text-muted-foreground">
-        This is BullPen&apos;s real dividend calculator, preloaded with a few example
-        dividend-paying stocks. Hit calculate to project the passive income they&apos;d generate.
+        {t('dividendDemoDescription')}
       </p>
 
       <DividendClientPage

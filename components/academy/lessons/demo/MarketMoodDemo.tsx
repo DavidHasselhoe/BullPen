@@ -1,6 +1,7 @@
 'use client';
 
 import { type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { MoodHero, SignalCard, MoodSkeleton } from '@/components/market/MarketMoodDisplay';
 import type { MarketMoodData } from '@/app/api/market/mood/route';
@@ -18,6 +19,7 @@ interface Props {
  * PortfolioDemo's shape rather than ScreenerDemo/DividendDemo's gated ones.
  */
 export function MarketMoodDemo({ onClose, children }: Props) {
+  const { t } = useTranslation('academy');
   const { data, isLoading } = useQuery<MarketMoodData>({
     queryKey: ['academy-market-mood-demo'],
     queryFn: async () => {
@@ -29,10 +31,9 @@ export function MarketMoodDemo({ onClose, children }: Props) {
   });
 
   return (
-    <DemoSurfaceShell eyebrow="Demo · Reading market sentiment" title="Market Mood" onClose={onClose}>
+    <DemoSurfaceShell eyebrow={t('marketMoodDemoEyebrow')} title={t('marketMoodDemoTitle')} onClose={onClose}>
       <p className="mb-6 text-sm text-muted-foreground">
-        This is BullPen&apos;s real Market Mood tool, a live composite of market signals that
-        gauge fear and greed across the market right now.
+        {t('marketMoodDemoDescription')}
       </p>
 
       {isLoading || !data ? (

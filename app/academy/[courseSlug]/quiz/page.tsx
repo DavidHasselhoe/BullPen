@@ -1,6 +1,7 @@
 'use client';
 
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -17,6 +18,7 @@ interface QuizResponse {
 }
 
 export default function CourseQuizPage() {
+  const { t } = useTranslation('academy');
   const params = useParams<{ courseSlug: string }>();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -42,7 +44,7 @@ export default function CourseQuizPage() {
         className="gap-1.5 -ml-2 text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
-        Back
+        {t('lessonPlayerBack')}
       </Button>
 
       {isLoading || !data ? (
@@ -52,13 +54,13 @@ export default function CourseQuizPage() {
         </div>
       ) : !data.success ? (
         <div className="rounded-2xl border border-red-500/30 bg-red-500/[0.06] p-5">
-          <p className="text-sm text-red-400">{data.error ?? 'This quiz is not available.'}</p>
+          <p className="text-sm text-red-400">{data.error ?? t('quizPageNotAvailable')}</p>
         </div>
       ) : data.locked ? (
         <ProGate
           feature="academy_pro"
-          title="Unlock this course with Pro"
-          description="Intermediate and advanced Academy courses are a Pro benefit. Upgrade to take this quiz."
+          title={t('academyProGateTitle')}
+          description={t('academyProGateDescriptionQuiz')}
         />
       ) : (
         <CourseFinalQuiz quiz={data.quiz} courseSlug={courseSlug} courseTitle={courseTitle} />

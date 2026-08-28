@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
 import { GraduationCap, Trophy, ChevronRight } from 'lucide-react';
 import { AcademyPath } from '@/components/academy/path/AcademyPath';
@@ -12,6 +13,7 @@ import { useEntitlements } from '@/hooks/use-entitlements';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function AcademyHomePage() {
+  const { t } = useTranslation('academy');
   const { data: courses, isLoading } = useAcademyCourses();
   const { data: stats, isLoading: isStatsLoading } = useAcademyStats();
   const { isPro } = useEntitlements();
@@ -36,9 +38,9 @@ export default function AcademyHomePage() {
             <GraduationCap className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Academy</h1>
+            <h1 className="text-2xl font-bold tracking-tight">{t('homePageTitle')}</h1>
             <p className="text-sm text-muted-foreground mt-0.5">
-              Bite-sized lessons that teach you how investing actually works. Earn XP, build a streak.
+              {t('homePageSubtitle')}
             </p>
           </div>
         </div>
@@ -47,7 +49,7 @@ export default function AcademyHomePage() {
           className="flex items-center gap-1.5 shrink-0 rounded-lg border border-border bg-card px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
         >
           <Trophy className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Leaderboard</span>
+          <span className="hidden sm:inline">{t('homePageLeaderboard')}</span>
           <ChevronRight className="h-3.5 w-3.5 opacity-50" />
         </Link>
       </div>
@@ -67,9 +69,9 @@ export default function AcademyHomePage() {
             className="h-16 w-16 shrink-0 opacity-95 dark:invert"
           />
           <div>
-            <p className="text-sm font-semibold text-foreground">Welcome to Academy</p>
+            <p className="text-sm font-semibold text-foreground">{t('homePageWelcomeTitle')}</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Start with the first course below — a few minutes a day builds real investing knowledge.
+              {t('homePageWelcomeDescription')}
             </p>
           </div>
         </motion.div>
@@ -94,19 +96,18 @@ export default function AcademyHomePage() {
             className="h-16 w-16 shrink-0 opacity-95 dark:invert"
           />
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-foreground">You&apos;ve finished the free courses</p>
+            <p className="text-sm font-semibold text-foreground">{t('homePageGraduatedTitle')}</p>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              Go deeper with Pro: valuation, financial statements, portfolio risk, and researching with AI —
-              each with hands-on lessons inside the real app.
+              {t('homePageGraduatedDescription')}
             </p>
           </div>
-          <UpgradeCTA label="Unlock Pro courses" className="shrink-0" />
+          <UpgradeCTA label={t('homePageUnlockProCourses')} className="shrink-0" />
         </motion.div>
       )}
 
       {/* Course path */}
       {isLoading ? (
-        <div className="flex flex-col items-center gap-4 py-4" role="status" aria-label="Loading courses">
+        <div className="flex flex-col items-center gap-4 py-4" role="status" aria-label={t('homePageLoadingCourses')}>
           {[0, 1, 2, 3].map((i) => (
             <Skeleton key={i} className="h-14 w-14 rounded-full" />
           ))}
@@ -115,7 +116,7 @@ export default function AcademyHomePage() {
         <AcademyPath courses={courses} />
       ) : (
         <div className="py-20 text-center text-sm text-muted-foreground">
-          No courses available yet.
+          {t('homePageNoCourses')}
         </div>
       )}
     </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -20,6 +21,7 @@ interface HighlightedTermProps {
 }
 
 function HighlightedTerm({ term, definition }: HighlightedTermProps) {
+  const { t } = useTranslation('academy');
   const [open, setOpen] = useState(false);
   const { open: openAIPanel } = useAIPanel();
 
@@ -28,7 +30,7 @@ function HighlightedTerm({ term, definition }: HighlightedTermProps) {
   function askAI() {
     setOpen(false);
     openAIPanel({
-      query: `Can you explain "${term}" in more depth, with a simple example? Quick definition I already have: "${definition}"`,
+      query: t('readLessonAskAiQuery', { term, definition }),
     });
   }
 
@@ -58,7 +60,7 @@ function HighlightedTerm({ term, definition }: HighlightedTermProps) {
           className="w-full gap-1.5 text-xs h-7"
         >
           <Sparkles className="h-3 w-3 text-emerald-500" />
-          Ask AI for more
+          {t('readLessonAskAiForMore')}
         </Button>
       </PopoverContent>
     </Popover>
@@ -83,6 +85,7 @@ function renderTextWithHighlights(text: string, terms: HighlightedTermProps[]) {
 }
 
 export function ReadLesson({ content, onComplete }: Props) {
+  const { t } = useTranslation('academy');
   return (
     <div className="space-y-6">
       {content.sections.map((section, i) => (
@@ -109,7 +112,7 @@ export function ReadLesson({ content, onComplete }: Props) {
           className="rounded-2xl border border-amber-400/20 bg-amber-400/[0.04] p-4 sm:p-5"
         >
           <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-amber-400/70 mb-1.5">
-            Fun fact
+            {t('readLessonFunFact')}
           </div>
           <p className="text-sm text-muted-foreground leading-relaxed">{content.funFact}</p>
         </motion.div>
@@ -121,7 +124,7 @@ export function ReadLesson({ content, onComplete }: Props) {
           size="lg"
           className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold"
         >
-          Continue
+          {t('scenarioLessonContinue')}
         </Button>
       </div>
     </div>

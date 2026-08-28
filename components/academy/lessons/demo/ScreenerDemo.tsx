@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import {
@@ -64,6 +65,7 @@ interface ScreenerResponse {
  * lesson. The tour gate fires once the learner applies a valuation filter.
  */
 export function ScreenerDemo({ onFilterApplied, onClose, children }: Props) {
+  const { t } = useTranslation('academy');
   const [filters, setFilters] = useState<ScreenerFilterValues>(EMPTY_FILTERS);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
@@ -92,11 +94,9 @@ export function ScreenerDemo({ onFilterApplied, onClose, children }: Props) {
   const industries = data?.industries ?? [];
 
   return (
-    <DemoSurfaceShell eyebrow="Demo · Finding undervalued stocks" title="Stock screener" onClose={onClose}>
+    <DemoSurfaceShell eyebrow={t('screenerDemoEyebrow')} title={t('screenerDemoTitle')} onClose={onClose}>
       <p className="mb-5 text-sm text-muted-foreground">
-        This is BullPen&apos;s real screener, running against the S&amp;P 500. Set a
-        valuation filter — like a maximum P/E — to narrow {data?.total ?? 500} companies
-        down to the ones that look cheap.
+        {t('screenerDemoDescription', { count: data?.total ?? 500 })}
       </p>
 
       <div className="flex flex-col gap-4 md:flex-row">
@@ -125,7 +125,7 @@ export function ScreenerDemo({ onFilterApplied, onClose, children }: Props) {
           {isLoading && results.length === 0 ? (
             <div className="flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Loading the S&amp;P 500…
+              {t('screenerDemoLoading')}
             </div>
           ) : (
             <ScreenerResults

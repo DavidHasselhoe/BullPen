@@ -1,12 +1,14 @@
 'use client';
 
 import { GraduationCap } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/use-auth';
 import { useBackground } from '@/hooks/use-background';
 import { AuthGate } from '@/components/ui/AuthGate';
 import { XPBar } from '@/components/academy/XPBar';
 
 export default function AcademyLayout({ children }: { children: React.ReactNode }) {
+  const { t } = useTranslation('academy');
   const { isAuthenticated, isLoading } = useAuth();
   const { hasAnimatedBackground } = useBackground();
 
@@ -18,8 +20,8 @@ export default function AcademyLayout({ children }: { children: React.ReactNode 
     return (
       <AuthGate
         icon={<GraduationCap className="h-7 w-7" />}
-        title="Sign in to use Academy"
-        description="Bite-sized lessons that teach you how investing actually works. Earn XP and build a streak as you go."
+        title={t('academyLayoutSignInTitle')}
+        description={t('academyLayoutSignInDescription')}
         signInHref="/login?redirectTo=/academy"
       />
     );

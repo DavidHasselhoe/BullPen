@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, X, Flame, CalendarClock, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -20,6 +21,7 @@ function timeUntilEtMidnight(): string {
 }
 
 export function DailyChallengeCard() {
+  const { t } = useTranslation('academy');
   const { data, isLoading, submit } = useDailyChallenge();
   const [picked, setPicked] = useState<number | null>(null);
   const [result, setResult] = useState<DailySubmitResult | null>(null);
@@ -29,7 +31,7 @@ export function DailyChallengeCard() {
       <div
         className="rounded-2xl border border-border/40 bg-card/40 p-5"
         role="status"
-        aria-label="Loading daily challenge"
+        aria-label={t('dailyChallengeLoading')}
       >
         {/* Header */}
         <div className="flex items-center justify-between gap-3 mb-3">
@@ -91,14 +93,14 @@ export function DailyChallengeCard() {
           </span>
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-emerald-600 dark:text-emerald-400">
-              Daily Challenge
+              {t('dailyChallengeTitle')}
             </p>
-            <p className="text-[11px] text-muted-foreground/85">Keep your streak alive</p>
+            <p className="text-[11px] text-muted-foreground/85">{t('dailyChallengeSubtitle')}</p>
           </div>
         </div>
         <span className="flex items-center gap-1 text-[11px] font-medium text-emerald-600/80 dark:text-emerald-400/80">
           <Zap className="h-3 w-3" />
-          +{challenge.xpReward} XP
+          {t('dailyChallengeXpReward', { xp: challenge.xpReward })}
         </span>
       </div>
 
@@ -113,10 +115,10 @@ export function DailyChallengeCard() {
           </span>
           <div className="min-w-0">
             <p className="text-sm font-medium text-foreground">
-              {wasCorrect ? 'Solved today — nice work!' : 'Done for today.'}
+              {wasCorrect ? t('dailyChallengeSolvedToday') : t('dailyChallengeDoneToday')}
             </p>
             <p className="text-[11px] text-muted-foreground/85 flex items-center gap-1 mt-0.5">
-              <CalendarClock className="h-3 w-3" /> New challenge in {timeUntilEtMidnight()}
+              <CalendarClock className="h-3 w-3" /> {t('dailyChallengeNewChallengeIn', { time: timeUntilEtMidnight() })}
             </p>
           </div>
         </div>
@@ -179,14 +181,14 @@ export function DailyChallengeCard() {
                   'text-[11px] font-bold uppercase tracking-[0.18em] mb-1 flex items-center justify-between',
                   result.wasCorrect ? 'text-emerald-500' : 'text-amber-500',
                 )}>
-                  <span>{result.wasCorrect ? 'Correct!' : 'Not quite'}</span>
+                  <span>{result.wasCorrect ? t('dailyChallengeCorrect') : t('quizLessonIncorrect')}</span>
                   <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                    <Zap className="h-3 w-3" /> +{result.xpAwarded} XP
+                    <Zap className="h-3 w-3" /> {t('dailyChallengeXpReward', { xp: result.xpAwarded })}
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground leading-relaxed">{result.explanation}</p>
                 <p className="text-[11px] text-muted-foreground/80 flex items-center gap-1 mt-2">
-                  <CalendarClock className="h-3 w-3" /> New challenge in {timeUntilEtMidnight()}
+                  <CalendarClock className="h-3 w-3" /> {t('dailyChallengeNewChallengeIn', { time: timeUntilEtMidnight() })}
                 </p>
               </motion.div>
             )}

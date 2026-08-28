@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -28,6 +29,7 @@ interface Pair {
 }
 
 export function MatchLesson({ content, onComplete }: Props) {
+  const { t } = useTranslation('academy');
   const pairs: Pair[] = useMemo(
     () => content.pairs.map((p, i) => ({ index: i, term: p.term, definition: p.definition })),
     [content.pairs]
@@ -73,7 +75,7 @@ export function MatchLesson({ content, onComplete }: Props) {
   return (
     <div className="space-y-6">
       <p className="text-sm text-muted-foreground">
-        Tap a term, then tap its definition. Match all {pairs.length} pairs.
+        {t('matchLessonInstructions', { count: pairs.length })}
       </p>
 
       <div className="grid grid-cols-2 gap-3 sm:gap-4">
@@ -150,7 +152,7 @@ export function MatchLesson({ content, onComplete }: Props) {
               size="lg"
               className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold"
             >
-              All matched — continue
+              {t('matchLessonAllMatched')}
             </Button>
           </motion.div>
         )}

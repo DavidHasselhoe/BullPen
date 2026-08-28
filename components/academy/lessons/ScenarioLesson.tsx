@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export function ScenarioLesson({ content, onComplete }: Props) {
+  const { t } = useTranslation('academy');
   const [picked, setPicked] = useState<number | null>(null);
   const answered = picked !== null;
   const choice = picked !== null ? content.choices[picked] : null;
@@ -30,7 +32,7 @@ export function ScenarioLesson({ content, onComplete }: Props) {
 
       <div className="rounded-2xl border border-border/40 bg-gradient-to-br from-emerald-500/[0.04] to-transparent p-5 sm:p-6">
         <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-500/80 mb-2">
-          Scenario
+          {t('scenarioLessonLabel')}
         </div>
         <p className="text-base sm:text-lg leading-relaxed text-foreground">{content.setup}</p>
       </div>
@@ -86,7 +88,7 @@ export function ScenarioLesson({ content, onComplete }: Props) {
               )}
             >
               <Sparkles className="h-3 w-3" />
-              {choice.isCorrect ? 'Solid call' : 'Let’s rethink that'}
+              {choice.isCorrect ? t('scenarioLessonSolidCall') : t('scenarioLessonRethink')}
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">{choice.feedback}</p>
             <Button
@@ -94,7 +96,7 @@ export function ScenarioLesson({ content, onComplete }: Props) {
               size="lg"
               className="w-full mt-4 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold"
             >
-              Continue
+              {t('scenarioLessonContinue')}
             </Button>
           </motion.div>
         )}

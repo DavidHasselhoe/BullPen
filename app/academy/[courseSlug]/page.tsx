@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import Link from 'next/link';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, BookOpen, HelpCircle, Shuffle, GitFork, CandlestickChart, PlayCircle, Check, Zap, Lock } from 'lucide-react';
@@ -12,16 +14,20 @@ import { cn } from '@/lib/utils';
 import { useUserProgress } from '@/hooks/use-user-progress';
 import type { LessonType, LessonWithCompletion } from '@/types/academy';
 
-const TYPE_META: Record<LessonType, { label: string; icon: React.ComponentType<{ className?: string }> }> = {
-  read:        { label: 'Read',       icon: BookOpen },
-  quiz:        { label: 'Quiz',       icon: HelpCircle },
-  match:       { label: 'Match',      icon: Shuffle },
-  scenario:    { label: 'Scenario',   icon: GitFork },
-  'chart-tour': { label: 'Chart Tour', icon: CandlestickChart },
-  demo:        { label: 'Demo',       icon: PlayCircle },
-};
+function getTypeMeta(t: TFunction): Record<LessonType, { label: string; icon: React.ComponentType<{ className?: string }> }> {
+  return {
+    read:        { label: t('courseOverviewTypeRead'),       icon: BookOpen },
+    quiz:        { label: t('courseOverviewTypeQuiz'),       icon: HelpCircle },
+    match:       { label: t('courseOverviewTypeMatch'),      icon: Shuffle },
+    scenario:    { label: t('courseOverviewTypeScenario'),   icon: GitFork },
+    'chart-tour': { label: t('courseOverviewTypeChartTour'), icon: CandlestickChart },
+    demo:        { label: t('courseOverviewTypeDemo'),       icon: PlayCircle },
+  };
+}
 
 export default function CourseOverviewPage() {
+  const { t } = useTranslation('academy');
+  const TYPE_META = getTypeMeta(t);
   const params = useParams<{ courseSlug: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -76,7 +82,7 @@ export default function CourseOverviewPage() {
         className="gap-1.5 -ml-2 text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
-        All courses
+        {t('courseOverviewAllCourses')}
       </Button>
 
       <div>
@@ -84,7 +90,7 @@ export default function CourseOverviewPage() {
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{course.title}</h1>
           {course.isOptional && (
             <span className="text-[11px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-500 shrink-0">
-              Optional
+              {t('pathNodeOptional')}
             </span>
           )}
         </div>
@@ -92,11 +98,11 @@ export default function CourseOverviewPage() {
           {course.description}
         </p>
         <div className="flex items-center gap-3 mt-3 text-[11px] font-mono uppercase tracking-[0.16em] text-muted-foreground/80">
-          <span>{lessons.length} lessons</span>
+          <span>{t('courseOverviewLessonCount', { count: lessons.length })}</span>
           <span>•</span>
           <span className="text-emerald-500/80 flex items-center gap-1">
             <Zap className="h-3 w-3" />
-            {totalXp} XP available
+            {t('courseOverviewXpAvailable', { xp: totalXp })}
           </span>
         </div>
       </div>
@@ -153,8 +159,8 @@ export default function CourseOverviewPage() {
       {locked ? (
         <ProGate
           feature="academy_pro"
-          title="Unlock this course with Pro"
-          description="Intermediate and advanced Academy courses are a Pro benefit. Upgrade to start learning."
+          title={t('academyProGateTitle')}
+          description={t('academyProGateDescriptionLesson')}
         />
       ) : (
         nextLesson &&
@@ -165,7 +171,7 @@ export default function CourseOverviewPage() {
                 size="lg"
                 className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold"
               >
-                {completedCount === 0 ? 'Start course' : 'Continue'}
+                {completedCount === 0 ? t('courseOverviewStartCourse') : t('pathNodeContinue')}
               </Button>
             </Link>
             {canSkip && (
@@ -175,7 +181,7 @@ export default function CourseOverviewPage() {
                 disabled={skipping}
                 className="mt-2.5 w-full text-center text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors disabled:opacity-50"
               >
-                {skipping ? 'Skipping…' : "Skip this course — I'm not interested"}
+                {skipping ? t('courseOverviewSkipping') : t('courseOverviewSkipCourse')}
               </button>
             )}
           </div>
@@ -186,15 +192,15 @@ export default function CourseOverviewPage() {
         <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/[0.06] p-4 text-center space-y-3">
           <div>
             <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-emerald-500 mb-1">
-              Lessons done
+              {t('courseOverviewLessonsDone')}
             </div>
             <p className="text-sm text-muted-foreground">
-              Take the final quiz to unlock the next course. Retry as many times as you want.
+              {t('courseOverviewFinalQuizPrompt')}
             </p>
           </div>
           <Link href={`/academy/${course.slug}/quiz?title=${encodeURIComponent(course.title)}`}>
             <Button size="lg" className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold">
-              Take the final quiz
+              {t('courseOverviewTakeFinalQuiz')}
             </Button>
           </Link>
         </div>
@@ -203,12 +209,12 @@ export default function CourseOverviewPage() {
       {(!hasFinalQuiz || progress?.completed_at) && completedCount === lessons.length && lessons.length > 0 && (
         <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/[0.06] p-4 text-center">
           <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-emerald-500 mb-1">
-            Course complete
+            {t('courseOverviewCourseComplete')}
           </div>
           <p className="text-sm text-muted-foreground">
             {hasFinalQuiz
-              ? 'You passed the final quiz. Keep going with the next course on the home page.'
-              : 'You finished every lesson. Keep going with the next course on the home page.'}
+              ? t('courseOverviewPassedQuizMessage')
+              : t('courseOverviewFinishedLessonsMessage')}
           </p>
         </div>
       )}

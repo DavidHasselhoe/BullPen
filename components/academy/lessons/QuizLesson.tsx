@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export function QuizLesson({ content, onComplete }: Props) {
+  const { t } = useTranslation('academy');
   const [index, setIndex] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
   const [correctCount, setCorrectCount] = useState(0);
@@ -55,7 +57,7 @@ export function QuizLesson({ content, onComplete }: Props) {
           />
         </div>
         <span className="text-xs font-mono text-muted-foreground tabular-nums">
-          {index + 1}/{total}
+          {t('quizLessonProgress', { current: index + 1, total })}
         </span>
       </div>
 
@@ -133,7 +135,7 @@ export function QuizLesson({ content, onComplete }: Props) {
                 isCorrect ? 'text-emerald-500' : 'text-amber-400'
               )}
             >
-              {isCorrect ? 'Nice — that’s right' : 'Not quite'}
+              {isCorrect ? t('quizLessonCorrect') : t('quizLessonIncorrect')}
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
               {question.explanation}
@@ -143,7 +145,7 @@ export function QuizLesson({ content, onComplete }: Props) {
               size="lg"
               className="w-full mt-4 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold"
             >
-              {isLast ? 'Finish' : 'Next question'}
+              {isLast ? t('quizLessonFinish') : t('quizLessonNextQuestion')}
             </Button>
           </motion.div>
         )}

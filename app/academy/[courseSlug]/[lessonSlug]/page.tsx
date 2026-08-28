@@ -1,6 +1,7 @@
 'use client';
 
 import { useParams } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { LessonPlayer } from '@/components/academy/LessonPlayer';
 import { useUserProgress } from '@/hooks/use-user-progress';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -8,6 +9,7 @@ import { ProGate } from '@/components/billing/ProGate';
 import type { Lesson } from '@/types/academy';
 
 export default function LessonPage() {
+  const { t } = useTranslation('academy');
   const params = useParams<{ courseSlug: string; lessonSlug: string }>();
   const courseSlug = params?.courseSlug ?? null;
   const lessonSlug = params?.lessonSlug ?? null;
@@ -28,7 +30,7 @@ export default function LessonPage() {
   if (!lessonRow || !courseSlug) {
     return (
       <div className="rounded-2xl border border-border/40 bg-card p-6 text-center text-sm text-muted-foreground">
-        Lesson not found.
+        {t('lessonPageNotFound')}
       </div>
     );
   }
@@ -40,8 +42,8 @@ export default function LessonPage() {
     return (
       <ProGate
         feature="academy_pro"
-        title="Unlock this course with Pro"
-        description="Intermediate and advanced Academy courses are a Pro benefit. Upgrade to start learning."
+        title={t('academyProGateTitle')}
+        description={t('academyProGateDescriptionLesson')}
       />
     );
   }

@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { Flame } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -14,6 +15,7 @@ function todayInET(): string {
 }
 
 export function StreakBadge({ streak, lastActivityDate }: Props) {
+  const { t } = useTranslation('academy');
   const isActiveToday = lastActivityDate === todayInET();
   const isDim = streak === 0;
 
@@ -37,7 +39,7 @@ export function StreakBadge({ streak, lastActivityDate }: Props) {
             ? 'bg-orange-500/15 text-orange-400'
             : 'bg-orange-500/10 text-orange-400/70'
       )}
-      title={`${streak}-day streak`}
+      title={t('streakBadgeTitle', { count: streak })}
     >
       <Flame
         className={cn('h-3 w-3', isActiveToday && !isDim && 'fill-orange-400/40')}

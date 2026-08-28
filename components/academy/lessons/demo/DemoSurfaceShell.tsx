@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { X, GraduationCap } from 'lucide-react';
@@ -23,6 +24,7 @@ interface Props {
  * Rendered only via ssr:false dynamic import, so document is always available.
  */
 export function DemoSurfaceShell({ title, eyebrow, onClose, children }: Props) {
+  const { t } = useTranslation('academy');
   useEffect(() => {
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -61,7 +63,7 @@ export function DemoSurfaceShell({ title, eyebrow, onClose, children }: Props) {
         <button
           type="button"
           onClick={onClose}
-          aria-label="Exit demo"
+          aria-label={t('demoSurfaceShellExit')}
           className="rounded-md p-1.5 text-muted-foreground/85 transition-colors hover:bg-muted hover:text-foreground"
         >
           <X className="h-5 w-5" />

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowUpRight, Loader2, Sparkles, TrendingUp, TrendingDown, ExternalLink } from 'lucide-react';
@@ -29,6 +30,7 @@ type Phase = 'idle' | 'thinking' | 'answered';
  * reveals — which satisfies the tour's 'run-research' gate.
  */
 export function AiResearchDemo({ fixtureId, onResearched, onClose, children }: Props) {
+  const { t } = useTranslation('academy');
   const fx = getAiResearchFixture(fixtureId);
   const [phase, setPhase] = useState<Phase>('idle');
 
@@ -46,7 +48,7 @@ export function AiResearchDemo({ fixtureId, onResearched, onClose, children }: P
   };
 
   return (
-    <DemoSurfaceShell eyebrow="Demo · Researching with AI" title="Why Today?" onClose={onClose}>
+    <DemoSurfaceShell eyebrow={t('aiResearchDemoEyebrow')} title={t('aiResearchDemoTitle')} onClose={onClose}>
       {/* Ticker header */}
       <div className="mb-6 flex items-center gap-3">
         <CompanyLogo name={fx.name} ticker={fx.ticker} size={44} />
@@ -76,7 +78,7 @@ export function AiResearchDemo({ fixtureId, onResearched, onClose, children }: P
         className="rounded-xl border border-border/60 bg-muted/20 p-4"
       >
         <p className="mb-3 text-sm text-foreground">
-          <span className="text-muted-foreground">You ask:</span>{' '}
+          <span className="text-muted-foreground">{t('aiResearchDemoYouAsk')}</span>{' '}
           <span className="font-medium">&ldquo;{fx.question}&rdquo;</span>
         </p>
         <button
@@ -91,12 +93,12 @@ export function AiResearchDemo({ fixtureId, onResearched, onClose, children }: P
           {phase === 'thinking' ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              Researching…
+              {t('aiResearchDemoResearching')}
             </>
           ) : (
             <>
               <Sparkles className="h-4 w-4" />
-              {phase === 'answered' ? 'Answered' : 'Ask why it moved'}
+              {phase === 'answered' ? t('aiResearchDemoAnswered') : t('aiResearchDemoAskWhy')}
             </>
           )}
         </button>
@@ -114,7 +116,7 @@ export function AiResearchDemo({ fixtureId, onResearched, onClose, children }: P
           >
             <div className="mb-3 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.12em] text-primary">
               <Sparkles className="h-3.5 w-3.5" />
-              Why Today?
+              {t('aiResearchDemoTitle')}
             </div>
             <p className="mb-3 text-sm font-semibold leading-relaxed text-foreground">
               {fx.headline}
@@ -131,7 +133,7 @@ export function AiResearchDemo({ fixtureId, onResearched, onClose, children }: P
             {/* Sources — the teachable point: an answer you can verify */}
             <div data-tour="ai-sources">
               <p className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground/80">
-                Sources
+                {t('aiResearchDemoSources')}
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {fx.sources.map((s) => (
@@ -151,7 +153,7 @@ export function AiResearchDemo({ fixtureId, onResearched, onClose, children }: P
               href={slugToAssetPath(fx.ticker)}
               className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline"
             >
-              Try it live on a real stock
+              {t('aiResearchDemoTryLive')}
               <ArrowUpRight className="h-3.5 w-3.5" />
             </Link>
           </motion.div>

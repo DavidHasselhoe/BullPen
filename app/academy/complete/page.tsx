@@ -1,11 +1,13 @@
 'use client';
 
 import { useSearchParams, useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { Flame, Trophy, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export default function LessonCompletePage() {
+  const { t } = useTranslation('academy');
   const params = useSearchParams();
   const router = useRouter();
 
@@ -26,12 +28,12 @@ export default function LessonCompletePage() {
           <Trophy className="h-8 w-8 text-emerald-500" />
         </div>
         <h1 className="text-3xl font-bold tracking-tight">
-          {courseDone ? 'Course complete!' : 'Lesson complete'}
+          {courseDone ? t('completePageCourseTitle') : t('completePageLessonTitle')}
         </h1>
         <p className="text-sm text-muted-foreground/85 mt-1">
           {courseDone
-            ? 'You finished every lesson in this course. Nice work.'
-            : 'Keep the momentum going. One more lesson today and your streak grows.'}
+            ? t('completePageCourseDescription')
+            : t('completePageLessonDescription')}
         </p>
       </motion.div>
 
@@ -50,7 +52,7 @@ export default function LessonCompletePage() {
             +{xp}
           </div>
           <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-500/70 mt-1">
-            XP earned
+            {t('completionCelebrationXpEarned')}
           </div>
         </motion.div>
 
@@ -63,7 +65,7 @@ export default function LessonCompletePage() {
             {streak}
           </div>
           <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-orange-500/70 mt-1">
-            Day streak
+            {t('completePageDayStreak')}
           </div>
         </motion.div>
       </motion.div>
@@ -75,7 +77,7 @@ export default function LessonCompletePage() {
             onClick={() => router.push(`/academy/${courseSlug}`)}
             className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold"
           >
-            Continue course
+            {t('completePageContinueCourse')}
           </Button>
         )}
         <Button
@@ -84,7 +86,7 @@ export default function LessonCompletePage() {
           onClick={() => router.push('/academy')}
           className="w-full"
         >
-          {courseDone ? 'Pick another course' : 'Back to Academy'}
+          {courseDone ? t('completePagePickAnother') : t('completePageBackToAcademy')}
         </Button>
       </div>
     </div>

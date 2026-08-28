@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
 import { useAcademyStats } from '@/hooks/use-academy-stats';
 import { xpToNextLevel } from '@/types/academy';
@@ -14,6 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
  * completion) using framer-motion's `animate(motionValue, ...)`.
  */
 export function XPBar() {
+  const { t } = useTranslation('academy');
   const { data: stats, isLoading } = useAcademyStats();
 
   const totalXp = stats?.totalXp ?? 0;
@@ -43,7 +45,7 @@ export function XPBar() {
       <div
         className="flex items-center gap-3 rounded-2xl border border-border/40 bg-card/50 backdrop-blur-sm px-3 py-2"
         role="status"
-        aria-label="Loading progress"
+        aria-label={t('xpBarLoading')}
       >
         <Skeleton className="h-6 w-6 rounded-full shrink-0" />
         <div className="flex-1 min-w-0">
@@ -64,11 +66,11 @@ export function XPBar() {
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline justify-between gap-2 mb-1">
           <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground/80">
-            Level {level}
+            {t('xpBarLevel', { level })}
           </span>
           <span className="text-[11px] font-mono tabular-nums text-muted-foreground/85">
             <motion.span>{roundedXp}</motion.span>
-            {' XP'}
+            {t('xpBarXpSuffix')}
           </span>
         </div>
         <div className="h-1.5 rounded-full bg-muted/40 overflow-hidden">
