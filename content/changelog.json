@@ -1,5 +1,11 @@
 [
   {
+    "date": "2026-08-28",
+    "entries": [
+      { "type": "improved", "text": "More of the app now displays in your selected language, including My Holdings, your profile, Ask Bull, Discover, Market tools, and Academy, with more areas being translated over time" }
+    ]
+  },
+  {
     "date": "2026-08-27",
     "entries": [
       { "type": "fixed", "text": "Stock pages no longer show a false \"not found\" error for a real ticker after a brief data hiccup" },
