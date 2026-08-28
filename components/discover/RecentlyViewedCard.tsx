@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { useRecentlyViewed } from '@/hooks/use-recently-viewed';
@@ -10,6 +11,7 @@ import { cn } from '@/lib/utils';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
 
 export function RecentlyViewedCard() {
+  const { t } = useTranslation('discover');
   const { items } = useRecentlyViewed();
 
   const tickers = items.map((i) => i.ticker);
@@ -22,7 +24,7 @@ export function RecentlyViewedCard() {
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-base">
           <History className="h-4 w-4 text-muted-foreground" />
-          Recently viewed
+          {t('recentlyViewedTitle')}
         </CardTitle>
       </CardHeader>
       <CardContent>

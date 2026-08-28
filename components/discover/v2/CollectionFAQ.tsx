@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -20,6 +21,7 @@ export interface FAQEntry {
  * without forcing everyone to scroll past four paragraphs to reach the tickers.
  */
 export function CollectionFAQ({ items }: { items: FAQEntry[] }) {
+  const { t } = useTranslation('discover');
   const [openId, setOpenId] = useState<string | null>(null);
   const prefersReducedMotion = useReducedMotion();
 
@@ -31,7 +33,7 @@ export function CollectionFAQ({ items }: { items: FAQEntry[] }) {
         id="collection-faq-heading"
         className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/80"
       >
-        Why these lists
+        {t('collectionFaqHeading')}
       </h3>
       <div className="overflow-hidden rounded-xl border border-border/50 bg-card/40">
         {items.map((item) => {

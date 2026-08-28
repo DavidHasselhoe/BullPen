@@ -9,7 +9,7 @@
  * safe (i18next just gets an empty resource) but pointless until then.
  */
 
-export const NAMESPACES = ['common', 'settings', 'languages', 'tools', 'stock', 'holdings', 'user', 'ai'] as const;
+export const NAMESPACES = ['common', 'settings', 'languages', 'tools', 'stock', 'holdings', 'user', 'ai', 'discover'] as const;
 export type Namespace = (typeof NAMESPACES)[number];
 
 /**
@@ -39,5 +39,6 @@ export function namespacesForPath(pathname: string): Namespace[] {
   if (pathname.startsWith('/stock') || pathname.startsWith('/asset')) return ['stock'];
   if (pathname.startsWith('/holdings')) return ['holdings'];
   if (pathname.startsWith('/users')) return ['user'];
+  if (pathname.startsWith('/discover') || pathname.startsWith('/dashboard')) return ['discover'];
   return [];
 }

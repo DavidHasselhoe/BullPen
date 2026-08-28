@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowUpRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -30,6 +31,7 @@ function moodColor(score: number): string {
 }
 
 export function MoodCompact() {
+  const { t } = useTranslation('discover');
   const { data, isLoading } = useQuery<MarketMoodData>({
     queryKey: ['market-mood'],
     queryFn: async () => {
@@ -64,7 +66,7 @@ export function MoodCompact() {
       )}
     >
       <div className="flex items-center justify-between gap-3">
-        <span className="text-[11px] font-medium text-muted-foreground">Market mood</span>
+        <span className="text-[11px] font-medium text-muted-foreground">{t('moodCompactLabel')}</span>
         <ArrowUpRight
           className="h-3.5 w-3.5 shrink-0 text-muted-foreground/80 transition-colors group-hover:text-muted-foreground/85"
           aria-hidden
@@ -93,7 +95,7 @@ export function MoodCompact() {
         aria-valuenow={data.composite}
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-label={`Market mood: ${data.label}, ${data.composite} out of 100`}
+        aria-label={t('moodCompactAriaLabel', { label: data.label, composite: data.composite })}
       >
         <span
           className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-background"

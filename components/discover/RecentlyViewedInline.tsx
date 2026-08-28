@@ -2,6 +2,7 @@
 
 import { useCallback, useSyncExternalStore } from 'react';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { useRecentlyViewed } from '@/hooks/use-recently-viewed';
@@ -15,6 +16,7 @@ const _noop = () => () => {};
 const useIsClient = () => useSyncExternalStore(_noop, () => true, () => false);
 
 export function RecentlyViewedInline() {
+  const { t } = useTranslation('discover');
   const { items } = useRecentlyViewed();
   const queryClient = useQueryClient();
   const isClient = useIsClient();
@@ -35,7 +37,7 @@ export function RecentlyViewedInline() {
   return (
     <div className="flex items-center gap-3 min-w-0 overflow-hidden">
       <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/80 shrink-0">
-        Recent
+        {t('recentlyViewedInlineLabel')}
       </span>
       <div className="flex flex-wrap gap-1.5 min-w-0">
         {items.map((item) => {

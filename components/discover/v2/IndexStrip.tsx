@@ -1,6 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { ArrowDown, ArrowUp, Minus } from 'lucide-react';
 import { Sparkline } from '@/components/viz/Sparkline';
 import { cn } from '@/lib/utils';
@@ -57,6 +58,7 @@ function fmtPrice(price: number): string {
 }
 
 function IndexTile({ index, series }: { index: IndexQuote; series?: number[] }) {
+  const { t } = useTranslation('discover');
   const pct = index.changePct;
   const up = pct != null && pct > 0.005;
   const down = pct != null && pct < -0.005;
@@ -75,7 +77,7 @@ function IndexTile({ index, series }: { index: IndexQuote; series?: number[] }) 
             width={44}
             height={14}
             className="h-3.5 w-11 shrink-0"
-            ariaLabel={`${index.label} trend today`}
+            ariaLabel={t('indexTileTrendAriaLabel', { label: index.label })}
           />
         )}
       </div>

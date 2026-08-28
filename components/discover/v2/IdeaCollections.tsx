@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { CollectionGrid } from './CollectionGrid';
 import { CollectionFAQ, type FAQEntry } from './CollectionFAQ';
 import type { DiscoverFeed } from '@/lib/discover/discover-config';
@@ -17,6 +18,7 @@ import type { DiscoverFeed } from '@/lib/discover/discover-config';
  * file for why.
  */
 export function IdeaCollections({ collections }: { collections: DiscoverFeed['collections'] }) {
+  const { t } = useTranslation('discover');
   const { trending, qualityDiscount, near52High, near52Low } = collections;
 
   const hasAny =
@@ -27,31 +29,31 @@ export function IdeaCollections({ collections }: { collections: DiscoverFeed['co
 
   if (!hasAny) return null;
 
-  const trendingTitle = trending.mode === 'personalized' ? 'Because of what you follow' : 'Trending today';
+  const trendingTitle = trending.mode === 'personalized' ? t('ideasTrendingPersonalized') : t('ideasTrendingToday');
 
   const faqItems: FAQEntry[] = [
     trending.items.length > 0 && trending.explanation
-      ? { id: 'trending', question: `Why "${trendingTitle}"?`, answer: trending.explanation }
+      ? { id: 'trending', question: t('ideasFaqWhyTrending', { title: trendingTitle }), answer: trending.explanation }
       : null,
     qualityDiscount.length > 0
       ? {
           id: 'quality',
-          question: 'What makes a stock "quality at a discount"?',
-          answer: "Financially strong for their sector, but priced below what that sector normally commands on next year's earnings.",
+          question: t('ideasFaqQualityQuestion'),
+          answer: t('ideasFaqQualityAnswer'),
         }
       : null,
     near52High.length > 0
       ? {
           id: 'highs',
-          question: 'Why watch stocks pushing 52-week highs?',
-          answer: 'Trading near the top of their yearly range, momentum worth understanding before you chase it.',
+          question: t('ideasFaqHighsQuestion'),
+          answer: t('ideasFaqHighsAnswer'),
         }
       : null,
     near52Low.length > 0
       ? {
           id: 'lows',
-          question: 'Why watch stocks near 52-week lows?',
-          answer: "At the bottom of their yearly range. Sometimes that's a bargain and sometimes it's a warning. The point is to go and find out which.",
+          question: t('ideasFaqLowsQuestion'),
+          answer: t('ideasFaqLowsAnswer'),
         }
       : null,
   ].filter((x): x is FAQEntry => x != null);
@@ -62,17 +64,17 @@ export function IdeaCollections({ collections }: { collections: DiscoverFeed['co
         id="ideas-heading"
         className="mb-4 text-sm font-semibold uppercase tracking-widest text-muted-foreground/80"
       >
-        Worth a look
+        {t('ideasHeading')}
       </h2>
 
       <div className="space-y-8">
         <CollectionGrid title={trendingTitle} items={trending.items} />
 
-        <CollectionGrid title="Quality at a discount" items={qualityDiscount} showReason />
+        <CollectionGrid title={t('ideasQualityDiscountTitle')} items={qualityDiscount} showReason />
 
-        <CollectionGrid title="Pushing 52-week highs" items={near52High} showReason />
+        <CollectionGrid title={t('ideasPushingHighsTitle')} items={near52High} showReason />
 
-        <CollectionGrid title="Near 52-week lows" items={near52Low} showReason />
+        <CollectionGrid title={t('ideasNearLowsTitle')} items={near52Low} showReason />
       </div>
 
       <CollectionFAQ items={faqItems} />

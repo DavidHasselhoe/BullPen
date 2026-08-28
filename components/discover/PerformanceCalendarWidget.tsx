@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { ArrowRight } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { useHoldings } from '@/hooks/use-holdings';
@@ -16,6 +17,7 @@ import { PerformanceCalendar } from '@/components/holdings/performance-calendar/
  * without leaving an empty shell on brand-new accounts.
  */
 export function PerformanceCalendarWidget() {
+  const { t } = useTranslation('discover');
   const { user, isAuthenticated } = useAuth();
   const { data: holdings, isLoading } = useHoldings();
 
@@ -39,14 +41,14 @@ export function PerformanceCalendarWidget() {
     <div className="min-w-0">
       <div className="flex items-center gap-3 mb-4">
         <span className="text-xs font-bold uppercase tracking-[0.15em] text-muted-foreground/85 shrink-0">
-          Daily performance
+          {t('perfCalWidgetTitle')}
         </span>
         <div className="flex-1 h-px bg-border/50" />
         <Link
           href="/holdings"
           className="shrink-0 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
-          Holdings
+          {t('perfCalWidgetHoldingsLink')}
           <ArrowRight className="h-3 w-3" />
         </Link>
       </div>

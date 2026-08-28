@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import { ExternalLink, Scale, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -17,12 +18,13 @@ interface CompanyRowActionsProps {
  * View company, Compare, Ask AI.
  */
 export function CompanyRowActions({ ticker, className }: CompanyRowActionsProps) {
+  const { t } = useTranslation('discover');
   const { open: openAIPanel } = useAIPanel();
 
   const handleAskAI = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    openAIPanel({ query: `Tell me about ${ticker}` });
+    openAIPanel({ query: t('rowActionsAskAiQuery', { ticker }) });
   };
 
   return (
@@ -36,14 +38,14 @@ export function CompanyRowActions({ ticker, className }: CompanyRowActionsProps)
       <Link
         href={slugToAssetPath(ticker)}
         className="rounded p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
-        title="View company"
+        title={t('rowActionsViewCompany')}
       >
         <ExternalLink className="h-3.5 w-3.5" />
       </Link>
       <Link
         href={`/tools/compare?tickers=${ticker}`}
         className="rounded p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
-        title="Compare"
+        title={t('rowActionsCompare')}
       >
         <Scale className="h-3.5 w-3.5" />
       </Link>
@@ -51,7 +53,7 @@ export function CompanyRowActions({ ticker, className }: CompanyRowActionsProps)
         type="button"
         onClick={handleAskAI}
         className="rounded p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
-        title="Ask AI"
+        title={t('rowActionsAskAi')}
       >
         <MessageSquare className="h-3.5 w-3.5" />
       </button>
