@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { TrendBars } from '@/components/viz/TrendBars';
 import { CardShell } from './CardPrimitives';
 
@@ -19,6 +20,7 @@ export interface CompanyMetricsOutput {
 }
 
 export function CompanyMetricsResultCard({ output }: { output: CompanyMetricsOutput }) {
+  const { t } = useTranslation('ai');
   if (!output.rows || output.rows.length === 0) return null;
   // Tool returns rows newest-first; TrendBars expects oldest-to-newest.
   const oldestToNewest = output.rows.slice().reverse();
@@ -36,7 +38,7 @@ export function CompanyMetricsResultCard({ output }: { output: CompanyMetricsOut
         values={oldestToNewest.map((r) => r.value)}
         height={28}
         signed
-        srLabel={`${output.metric} for ${output.company} across ${oldestToNewest.length} periods, latest ${latest.formatted}`}
+        srLabel={t('trendSrLabel', { metric: output.metric, subject: output.company, count: oldestToNewest.length, formatted: latest.formatted })}
         className="text-foreground"
       />
     </CardShell>

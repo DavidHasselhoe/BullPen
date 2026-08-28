@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
@@ -19,6 +20,7 @@ export interface LiveQuoteOutput {
 }
 
 export function LiveQuoteResultCard({ output }: { output: LiveQuoteOutput }) {
+  const { t } = useTranslation('ai');
   const negative = isNegative(output.change);
   const flat = output.change === '0.00';
   const color = flat ? 'text-muted-foreground' : negative ? 'text-red-500' : 'text-emerald-500';
@@ -40,9 +42,9 @@ export function LiveQuoteResultCard({ output }: { output: LiveQuoteOutput }) {
       </div>
       {(output.open || output.high || output.low) && (
         <div className="mt-2.5 grid grid-cols-3 gap-2 border-t border-border/40 pt-2">
-          <StatCell label="Open" value={output.open ?? '—'} />
-          <StatCell label="High" value={output.high ?? '—'} />
-          <StatCell label="Low" value={output.low ?? '—'} />
+          <StatCell label={t('quoteOpenLabel')} value={output.open ?? '—'} />
+          <StatCell label={t('quoteHighLabel')} value={output.high ?? '—'} />
+          <StatCell label={t('quoteLowLabel')} value={output.low ?? '—'} />
         </div>
       )}
     </CardShell>

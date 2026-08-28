@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { TrendBars } from '@/components/viz/TrendBars';
 import { CardShell } from './CardPrimitives';
 
@@ -23,10 +24,11 @@ export interface ComparisonOutput {
 }
 
 export function ComparisonResultCard({ output }: { output: ComparisonOutput }) {
+  const { t } = useTranslation('ai');
   const rows = output.comparison;
   if (!rows || rows.length === 0) return null;
 
-  const metricLabel = rows.find((r) => r.metric)?.metric ?? 'Comparison';
+  const metricLabel = rows.find((r) => r.metric)?.metric ?? t('comparisonFallbackLabel');
 
   return (
     <CardShell>
@@ -37,7 +39,7 @@ export function ComparisonResultCard({ output }: { output: ComparisonOutput }) {
             return (
               <div key={row.ticker} className="flex items-center justify-between gap-2">
                 <span className="font-medium text-foreground">{row.ticker}</span>
-                <span className="text-[11px] text-muted-foreground">{row.error ?? 'No data'}</span>
+                <span className="text-[11px] text-muted-foreground">{row.error ?? t('comparisonNoData')}</span>
               </div>
             );
           }
@@ -57,7 +59,7 @@ export function ComparisonResultCard({ output }: { output: ComparisonOutput }) {
                 values={oldestToNewest.map((p) => p.value)}
                 height={22}
                 signed
-                srLabel={`${metricLabel} for ${row.company ?? row.ticker} across ${oldestToNewest.length} periods, latest ${latest.formatted}`}
+                srLabel={t('trendSrLabel', { metric: metricLabel, subject: row.company ?? row.ticker, count: oldestToNewest.length, formatted: latest.formatted })}
                 className="text-foreground"
               />
             </div>

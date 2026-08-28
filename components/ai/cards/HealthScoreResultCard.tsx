@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { CardShell } from './CardPrimitives';
 
@@ -23,12 +24,13 @@ function barColor(ratio: number): string {
 }
 
 export function HealthScoreResultCard({ output }: { output: HealthScoreOutput }) {
+  const { t } = useTranslation('ai');
   return (
     <CardShell>
       <div className="mb-2 flex items-center justify-between gap-2">
-        <span className="font-semibold text-foreground">{output.ticker} Financial Health</span>
+        <span className="font-semibold text-foreground">{t('healthScoreTitle', { ticker: output.ticker })}</span>
         <span className={cn('shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold', gradeBadgeClass(output.grade))}>
-          {output.score}/100 · {output.grade}
+          {t('healthScoreBadge', { score: output.score, grade: output.grade })}
         </span>
       </div>
       <div className="space-y-1.5">
@@ -39,7 +41,7 @@ export function HealthScoreResultCard({ output }: { output: HealthScoreOutput })
             <div key={c.name} className="space-y-0.5">
               <div className="flex items-center justify-between text-[11px]">
                 <span className="text-muted-foreground">{c.name}</span>
-                <span className="tabular-nums text-muted-foreground">{unavailable ? 'N/A' : `${c.score}/${c.max}`}</span>
+                <span className="tabular-nums text-muted-foreground">{unavailable ? t('healthScoreNotAvailable') : `${c.score}/${c.max}`}</span>
               </div>
               {!unavailable && (
                 <div className="h-1 w-full overflow-hidden rounded-full bg-muted">

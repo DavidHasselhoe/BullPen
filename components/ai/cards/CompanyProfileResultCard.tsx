@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { CardShell, StatCell } from './CardPrimitives';
 
 export interface CompanyProfileOutput {
@@ -15,6 +16,7 @@ export interface CompanyProfileOutput {
 }
 
 export function CompanyProfileResultCard({ output }: { output: CompanyProfileOutput }) {
+  const { t } = useTranslation('ai');
   return (
     <CardShell>
       <div className="mb-1.5 flex items-center justify-between gap-2">
@@ -33,9 +35,9 @@ export function CompanyProfileResultCard({ output }: { output: CompanyProfileOut
       )}
       {(output.ceo || output.employees != null || output.headquarters) && (
         <div className="mb-1.5 grid grid-cols-3 gap-x-3 gap-y-1.5">
-          {output.ceo && <StatCell label="CEO" value={output.ceo} />}
-          {output.employees != null && <StatCell label="Employees" value={output.employees.toLocaleString()} />}
-          {output.headquarters && <StatCell label="HQ" value={output.headquarters} />}
+          {output.ceo && <StatCell label={t('profileCeoLabel')} value={output.ceo} />}
+          {output.employees != null && <StatCell label={t('profileEmployeesLabel')} value={output.employees.toLocaleString()} />}
+          {output.headquarters && <StatCell label={t('profileHqLabel')} value={output.headquarters} />}
         </div>
       )}
       {output.description && (

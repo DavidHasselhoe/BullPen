@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { RangeBar } from '@/components/viz/RangeBar';
 import { CardShell, StatCell } from './CardPrimitives';
 
@@ -24,31 +25,34 @@ export function KeyStatisticsResultCard({
   /** Current price from a sibling getLiveQuote call in the same message, if any — powers the RangeBar marker. */
   livePrice?: number | null;
 }) {
+  const { t } = useTranslation('ai');
   const hasRange =
     output.week52HighRaw != null && output.week52LowRaw != null && output.week52HighRaw > output.week52LowRaw;
 
   return (
     <CardShell>
-      <div className="mb-2 font-semibold text-foreground">{output.ticker} Valuation</div>
+      <div className="mb-2 font-semibold text-foreground">{t('statisticsValuationTitle', { ticker: output.ticker })}</div>
       {hasRange && (
         <div className="mb-2.5 border-b border-border/40 pb-2.5">
           <RangeBar
             low={output.week52LowRaw!}
             high={output.week52HighRaw!}
             current={livePrice ?? null}
-            srLabel={`52-week range $${output.week52LowRaw!.toFixed(2)} to $${output.week52HighRaw!.toFixed(2)}${
-              livePrice != null ? `, currently $${livePrice.toFixed(2)}` : ''
-            }`}
+            srLabel={
+              livePrice != null
+                ? t('statisticsRangeSrLabelWithCurrent', { low: output.week52LowRaw!.toFixed(2), high: output.week52HighRaw!.toFixed(2), current: livePrice.toFixed(2) })
+                : t('statisticsRangeSrLabel', { low: output.week52LowRaw!.toFixed(2), high: output.week52HighRaw!.toFixed(2) })
+            }
           />
         </div>
       )}
       <div className="grid grid-cols-3 gap-x-3 gap-y-2.5">
-        <StatCell label="Market Cap" value={output.marketCap} />
-        <StatCell label="P/E (TTM)" value={output.peRatioTTM} />
-        <StatCell label="P/B" value={output.pbRatio} />
-        <StatCell label="EV/EBITDA" value={output.evToEbitda} />
-        <StatCell label="Beta" value={output.beta} />
-        <StatCell label="Div Yield" value={output.dividendYield} />
+        <StatCell label={t('statisticsMarketCap')} value={output.marketCap} />
+        <StatCell label={t('statisticsPeTtm')} value={output.peRatioTTM} />
+        <StatCell label={t('statisticsPb')} value={output.pbRatio} />
+        <StatCell label={t('statisticsEvEbitda')} value={output.evToEbitda} />
+        <StatCell label={t('statisticsBeta')} value={output.beta} />
+        <StatCell label={t('statisticsDivYield')} value={output.dividendYield} />
       </div>
     </CardShell>
   );
