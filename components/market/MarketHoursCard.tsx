@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Image from 'next/image';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -27,6 +28,7 @@ export function MarketHoursCard({
   editable = false,
   onExchangesChange,
 }: MarketHoursCardProps) {
+  const { t } = useTranslation('market');
   const { data: marketStatuses, isLoading } = useMultipleMarketStatus(exchangeCodes);
   const [isEditing, setIsEditing] = useState(false);
 
@@ -100,8 +102,8 @@ export function MarketHoursCard({
           ? 'text-emerald-500 hover:bg-emerald-500/10'
           : 'text-muted-foreground/80 hover:text-foreground hover:bg-muted/60'
       )}
-      aria-label={isEditing ? 'Done editing' : 'Edit exchanges'}
-      title={isEditing ? 'Done' : 'Edit exchanges'}
+      aria-label={isEditing ? t('shortcutsDoneEditing') : t('hoursEditLabel')}
+      title={isEditing ? t('shortcutsDone') : t('hoursEditLabel')}
     >
       {isEditing ? <Check className="h-3.5 w-3.5" /> : <Pencil className="h-3.5 w-3.5" />}
     </button>
@@ -114,7 +116,7 @@ export function MarketHoursCard({
           <div className="flex items-center justify-between gap-2">
             <CardTitle className="flex items-center gap-2">
               <Clock className="h-5 w-5 text-primary" />
-              Market Hours
+              {t('hoursTitle')}
             </CardTitle>
             {headerControls}
           </div>
@@ -143,14 +145,14 @@ export function MarketHoursCard({
             <div className="flex items-center justify-between gap-2">
               <CardTitle className="flex items-center gap-2">
                 <Clock className="h-5 w-5 text-primary" />
-                Market Hours
+                {t('hoursTitle')}
               </CardTitle>
               {headerControls}
             </div>
           </CardHeader>
           <CardContent>
             <p className="text-xs text-muted-foreground/80 mb-3">
-              No exchanges yet — pick the markets you want to track.
+              {t('hoursEmptyState')}
             </p>
             <ExchangePicker selectedCodes={exchangeCodes} onAdd={handleAdd} />
           </CardContent>
@@ -166,7 +168,7 @@ export function MarketHoursCard({
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5 text-primary" />
-            Market Hours
+            {t('hoursTitle')}
           </CardTitle>
           {headerControls}
         </div>
@@ -193,12 +195,12 @@ export function MarketHoursCard({
                   )}
                   aria-hidden="true"
                 />
-                <span className="sr-only">{status.isOpen ? 'Market open' : 'Market closed'}</span>
+                <span className="sr-only">{status.isOpen ? t('hoursMarketOpen') : t('hoursMarketClosed')}</span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
                     <Image
                       src={flagUrl}
-                      alt={`${countryName} flag`}
+                      alt={t('hoursFlagAlt', { country: countryName })}
                       width={20}
                       height={15}
                       className="rounded-sm object-cover"
@@ -206,13 +208,13 @@ export function MarketHoursCard({
                       unoptimized
                     />
                     <span className="font-semibold text-foreground text-sm">
-                      {countryName} Exchange
+                      {t('hoursExchangeLabel', { country: countryName })}
                     </span>
                     {status.isHoliday && (
-                      <Badge variant="outline" className="text-xs">Holiday</Badge>
+                      <Badge variant="outline" className="text-xs">{t('hoursHoliday')}</Badge>
                     )}
                     {status.isEarlyClose && (
-                      <Badge variant="outline" className="text-xs">Early Close</Badge>
+                      <Badge variant="outline" className="text-xs">{t('hoursEarlyClose')}</Badge>
                     )}
                   </div>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -228,8 +230,8 @@ export function MarketHoursCard({
                   type="button"
                   onClick={() => handleRemove(status.exchange.code)}
                   className="h-7 w-7 rounded-md flex items-center justify-center bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-500 transition-colors shrink-0"
-                  aria-label={`Remove ${countryName}`}
-                  title={`Remove ${countryName}`}
+                  aria-label={t('hoursRemove', { country: countryName })}
+                  title={t('hoursRemove', { country: countryName })}
                 >
                   <Minus className="h-3.5 w-3.5" />
                 </button>
@@ -243,7 +245,7 @@ export function MarketHoursCard({
                         : 'bg-muted text-muted-foreground'
                     )}
                   >
-                    {status.isOpen ? 'Open' : 'Closed'}
+                    {status.isOpen ? t('hoursOpen') : t('hoursClosed')}
                   </Badge>
                   {countdown && (
                     <span className="text-xs text-muted-foreground font-mono">{countdown}</span>

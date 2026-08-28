@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { MoodSignal } from '@/app/api/market/mood/route';
 
@@ -48,6 +49,7 @@ export function signalTourId(name: string): string {
 // ─── Hero — score number + spectrum bar (modern, neutral, single-color) ──────
 
 export function MoodHero({ score, label, animated }: { score: number; label: string; animated: boolean }) {
+  const { t } = useTranslation('market');
   const eased = useEased(score / 100, animated); // 0..1
   const color = moodColor(score);
   const pct = `${(eased * 100).toFixed(2)}%`;
@@ -109,11 +111,11 @@ export function MoodHero({ score, label, animated }: { score: number; label: str
 
         {/* End labels */}
         <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-[0.22em] text-muted-foreground/80">
-          <span>Fear</span>
+          <span>{t('moodFear')}</span>
           <span className="font-mono tabular-nums text-muted-foreground/80">
-            0&nbsp;·&nbsp;25&nbsp;·&nbsp;50&nbsp;·&nbsp;75&nbsp;·&nbsp;100
+            {t('moodScale')}
           </span>
-          <span>Greed</span>
+          <span>{t('moodGreed')}</span>
         </div>
       </div>
     </div>

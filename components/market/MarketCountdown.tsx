@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useMarketStatus } from '@/hooks/use-market-status';
 import { formatTimeUntil } from '@/lib/market/market-status';
 import { cn } from '@/lib/utils';
@@ -13,6 +14,7 @@ interface MarketCountdownProps {
 }
 
 export function MarketCountdown({ exchangeCode, showLabel = true, className }: MarketCountdownProps) {
+  const { t } = useTranslation('market');
   const { data: status, isLoading } = useMarketStatus(exchangeCode);
   const [countdown, setCountdown] = useState<string>('');
 
@@ -44,7 +46,7 @@ export function MarketCountdown({ exchangeCode, showLabel = true, className }: M
   }
 
   const timeUntil = status.isOpen ? status.timeUntilClose : status.timeUntilOpen;
-  const label = status.isOpen ? 'Closes in' : 'Opens in';
+  const label = status.isOpen ? t('countdownClosesIn') : t('countdownOpensIn');
 
   if (!timeUntil || timeUntil <= 0) {
     return null;

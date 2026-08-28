@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/use-auth';
 import { useHoldings } from '@/hooks/use-holdings';
 import { useUserSettings } from '@/hooks/use-user-settings';
@@ -25,6 +26,7 @@ import {
 const DEFAULT_EXCHANGES = ['NYSE', 'NASDAQ', 'LSE', 'OSE', 'XETRA', 'STO'];
 
 export function MarketContextSection() {
+  const { t } = useTranslation('market');
   const { isAuthenticated } = useAuth();
   const { data: holdings } = useHoldings();
   const {
@@ -84,7 +86,7 @@ export function MarketContextSection() {
       {/* Editorial section header */}
       <div className="flex items-center gap-3">
         <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/85 shrink-0">
-          Market context
+          {t('contextSectionTitle')}
         </span>
         <div className="flex-1 h-px bg-border/50" />
         {isAuthenticated && (
@@ -101,18 +103,18 @@ export function MarketContextSection() {
                   className="h-6 gap-1.5 px-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground/80 hover:text-foreground"
                 >
                   {holdingsMode ? (
-                    <><Briefcase className="h-3 w-3" />My portfolio</>
+                    <><Briefcase className="h-3 w-3" />{t('contextMyPortfolio')}</>
                   ) : (
-                    <><Globe className="h-3 w-3" />All markets</>
+                    <><Globe className="h-3 w-3" />{t('contextAllMarkets')}</>
                   )}
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
                 {hasHoldings
                   ? holdingsMode
-                    ? 'Showing data for your portfolio. Switch to see all markets.'
-                    : 'Switch to see only your portfolio: market hours for your exchanges, movers from your holdings, and news about your companies.'
-                  : 'Add stocks to your portfolio to personalize Market Context.'}
+                    ? t('contextTooltipShowingPortfolio')
+                    : t('contextTooltipSwitchToPortfolio')
+                  : t('contextTooltipAddStocks')}
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -153,12 +155,12 @@ export function MarketContextSection() {
               <Card className="border-border/50 min-w-0">
                 <CardContent className="flex flex-col items-center justify-center py-12 text-center">
                   <Briefcase className="h-10 w-10 text-muted-foreground/85 mb-3" />
-                  <p className="text-sm font-medium text-foreground">No holdings yet</p>
+                  <p className="text-sm font-medium text-foreground">{t('contextNoHoldingsYet')}</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Add stocks to see portfolio movers
+                    {t('contextAddStocksMovers')}
                   </p>
                   <Button variant="link" size="sm" className="mt-2" asChild>
-                    <a href="/holdings">Go to My Holdings</a>
+                    <a href="/holdings">{t('contextGoToHoldings')}</a>
                   </Button>
                 </CardContent>
               </Card>
@@ -179,12 +181,12 @@ export function MarketContextSection() {
               <Card className="border-border/50 min-w-0">
                 <CardContent className="flex flex-col items-center justify-center py-12 text-center">
                   <Briefcase className="h-10 w-10 text-muted-foreground/85 mb-3" />
-                  <p className="text-sm font-medium text-foreground">No holdings yet</p>
+                  <p className="text-sm font-medium text-foreground">{t('contextNoHoldingsYet')}</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Add stocks to see portfolio news
+                    {t('contextAddStocksNews')}
                   </p>
                   <Button variant="link" size="sm" className="mt-2" asChild>
-                    <a href="/holdings">Go to My Holdings</a>
+                    <a href="/holdings">{t('contextGoToHoldings')}</a>
                   </Button>
                 </CardContent>
               </Card>

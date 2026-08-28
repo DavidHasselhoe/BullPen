@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, Search } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Input } from '@/components/ui/input';
@@ -14,6 +15,7 @@ interface Props {
 
 /** Popover that lists the tools not yet added as a shortcut. */
 export function ToolPicker({ selectedIds, onAdd }: Props) {
+  const { t } = useTranslation('market');
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
 
@@ -42,10 +44,10 @@ export function ToolPicker({ selectedIds, onAdd }: Props) {
         <button
           type="button"
           className="group flex w-full items-center gap-2 rounded-md border border-dashed border-border/50 px-3 py-2 text-left text-xs text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground"
-          aria-label="Add tool"
+          aria-label={t('toolPickerAddTool')}
         >
           <Plus className="h-3.5 w-3.5" />
-          <span className="font-medium">Add tool</span>
+          <span className="font-medium">{t('toolPickerAddTool')}</span>
         </button>
       </PopoverTrigger>
 
@@ -56,7 +58,7 @@ export function ToolPicker({ selectedIds, onAdd }: Props) {
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search tools"
+              placeholder={t('toolPickerSearchPlaceholder')}
               className="h-8 pl-7 text-xs"
               autoFocus
             />
@@ -65,7 +67,7 @@ export function ToolPicker({ selectedIds, onAdd }: Props) {
         <div className="max-h-64 overflow-y-auto py-1">
           {filtered.length === 0 ? (
             <div className="px-3 py-6 text-center text-xs text-muted-foreground">
-              {query ? 'No matches' : 'All tools added'}
+              {query ? t('toolPickerNoMatches') : t('toolPickerAllAdded')}
             </div>
           ) : (
             filtered.map((tool) => {

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Wrench, Pencil, Check, Minus, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -26,6 +27,7 @@ export function ToolsShortcutCard({
   editable = false,
   onToolsChange,
 }: ToolsShortcutCardProps) {
+  const { t } = useTranslation('market');
   const [isEditing, setIsEditing] = useState(false);
 
   // Resolve ids → tool config, dropping any unknown/removed ids.
@@ -53,8 +55,8 @@ export function ToolsShortcutCard({
           ? 'text-emerald-500 hover:bg-emerald-500/10'
           : 'text-muted-foreground/80 hover:text-foreground hover:bg-muted/60'
       )}
-      aria-label={isEditing ? 'Done editing' : 'Edit shortcuts'}
-      title={isEditing ? 'Done' : 'Edit shortcuts'}
+      aria-label={isEditing ? t('shortcutsDoneEditing') : t('shortcutsEditLabel')}
+      title={isEditing ? t('shortcutsDone') : t('shortcutsEditLabel')}
     >
       {isEditing ? <Check className="h-3.5 w-3.5" /> : <Pencil className="h-3.5 w-3.5" />}
     </button>
@@ -66,7 +68,7 @@ export function ToolsShortcutCard({
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="flex items-center gap-2">
             <Wrench className="h-5 w-5 text-primary" />
-            Tools shortcut
+            {t('shortcutsTitle')}
           </CardTitle>
           {headerControls}
         </div>
@@ -74,7 +76,7 @@ export function ToolsShortcutCard({
       <CardContent className="space-y-1">
         {tools.length === 0 && !isEditing ? (
           <p className="py-2 text-xs text-muted-foreground/80">
-            No shortcuts yet{editable ? ' — tap the pencil to add some.' : '.'}
+            {editable ? t('shortcutsEmptyEditable') : t('shortcutsEmpty')}
           </p>
         ) : (
           tools.map((tool) => {
@@ -96,8 +98,8 @@ export function ToolsShortcutCard({
                     type="button"
                     onClick={() => handleRemove(tool.id)}
                     className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-red-500/10 text-red-400 transition-colors hover:bg-red-500/20 hover:text-red-500"
-                    aria-label={`Remove ${tool.name}`}
-                    title={`Remove ${tool.name}`}
+                    aria-label={t('shortcutsRemove', { name: tool.name })}
+                    title={t('shortcutsRemove', { name: tool.name })}
                   >
                     <Minus className="h-3.5 w-3.5" />
                   </button>

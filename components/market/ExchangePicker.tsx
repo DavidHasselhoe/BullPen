@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Image from 'next/image';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { Plus, Search } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
@@ -27,6 +28,7 @@ interface Props {
 }
 
 export function ExchangePicker({ selectedCodes, onAdd }: Props) {
+  const { t } = useTranslation('market');
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
 
@@ -97,10 +99,10 @@ export function ExchangePicker({ selectedCodes, onAdd }: Props) {
             'border-border/50 hover:border-foreground/30 px-3 py-2 text-left transition-colors',
             'text-xs text-muted-foreground hover:text-foreground'
           )}
-          aria-label="Add exchange"
+          aria-label={t('exchangePickerAdd')}
         >
           <Plus className="h-3.5 w-3.5" />
-          <span className="font-medium">Add exchange</span>
+          <span className="font-medium">{t('exchangePickerAdd')}</span>
         </button>
       </PopoverTrigger>
 
@@ -111,7 +113,7 @@ export function ExchangePicker({ selectedCodes, onAdd }: Props) {
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search country or exchange"
+              placeholder={t('exchangePickerSearchPlaceholder')}
               className="h-8 pl-7 text-xs"
               autoFocus
             />
@@ -119,10 +121,10 @@ export function ExchangePicker({ selectedCodes, onAdd }: Props) {
         </div>
         <div className="max-h-64 overflow-y-auto py-1">
           {isLoading ? (
-            <div className="px-3 py-6 text-center text-xs text-muted-foreground">Loading…</div>
+            <div className="px-3 py-6 text-center text-xs text-muted-foreground">{t('exchangePickerLoading')}</div>
           ) : filtered.length === 0 ? (
             <div className="px-3 py-6 text-center text-xs text-muted-foreground">
-              {query ? 'No matches' : 'All countries already added'}
+              {query ? t('exchangePickerNoMatches') : t('exchangePickerAllAdded')}
             </div>
           ) : (
             filtered.map((ex) => {

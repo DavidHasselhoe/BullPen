@@ -1,6 +1,8 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TrendingUp, TrendingDown } from 'lucide-react';
@@ -19,7 +21,7 @@ import type { MarketMover } from '@/lib/twelvedata/twelvedata-client';
  * like a closed day: the label rolls back to the last actual trading day rather
  * than naming the closed date. Uses the NYSE holiday calendar from /api/exchanges.
  */
-function useMoversDateLabel(): string {
+function useMoversDateLabel(t: TFunction): string {
   const { data } = useExchanges();
 
   const nowET = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
@@ -49,15 +51,15 @@ function useMoversDateLabel(): string {
 
   // Weekend or holiday: the market is closed today, so show the last trading day.
   if (isClosedDay(nowET)) {
-    return `${fmt(lastTradingDay(nowET))} · Market closed`;
+    return t('moversDateMarketClosed', { date: fmt(lastTradingDay(nowET)) });
   }
 
   const etMins = h * 60 + m;
   const isPreMarket = etMins >= 240 && etMins < 570;   // 4:00 AM – 9:30 AM
   const isAfterHours = etMins >= 960 && etMins < 1200; // 4:00 PM – 8:00 PM
 
-  if (isPreMarket) return `${fmt(nowET)} · Pre-market`;
-  if (isAfterHours) return `${fmt(nowET)} · After-hours`;
+  if (isPreMarket) return t('moversDatePreMarket', { date: fmt(nowET) });
+  if (isAfterHours) return t('moversDateAfterHours', { date: fmt(nowET) });
 
   // Before pre-market (midnight – 4:00 AM ET): data is still from the previous
   // trading day's close — walk back over the weekend and any holiday.
@@ -106,11 +108,13 @@ function MoverItem({
   isGainer,
   companyName,
   sparkPrices,
+  t,
 }: {
   mover: MarketMover;
   isGainer: boolean;
   companyName?: string;
   sparkPrices?: number[];
+  t: TFunction;
 }) {
   const textColor = isGainer ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
   // Prefer DB batch name → stream name → ticker symbol (never blank)
@@ -136,7 +140,7 @@ function MoverItem({
             fallbackArrow
             preserveAspectRatio="xMidYMid meet"
             className="shrink-0 opacity-80 hidden sm:block w-10 h-6"
-            ariaLabel={`${mover.symbol} intraday trend`}
+            ariaLabel={t('moversIntradayTrend', { symbol: mover.symbol })}
           />
         </div>
         <div className="min-w-0 overflow-hidden flex flex-col justify-center relative">
@@ -187,7 +191,8 @@ function MoverItem({
 }
 
 export function TopMoversCard({ gainers, losers, isLoading, isError, isHoldingsMode }: TopMoversCardProps) {
-  const dateLabel = useMoversDateLabel();
+  const { t } = useTranslation('market');
+  const dateLabel = useMoversDateLabel(t);
   const allTickers = [...(gainers || []), ...(losers || [])].map((m) => m.symbol);
 
   const { data: sparklines } = useMoversSparklines(allTickers, !isLoading && allTickers.length > 0);
@@ -222,14 +227,14 @@ export function TopMoversCard({ gainers, losers, isLoading, isError, isHoldingsM
     return (
       <Card className="border-border/50 min-w-0 overflow-hidden">
         <CardHeader>
-          <CardTitle>Top Market Movers</CardTitle>
+          <CardTitle>{t('moversTitle')}</CardTitle>
           <p className="text-xs text-muted-foreground">{dateLabel}</p>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
             <div className="flex items-center gap-2 mb-3">
               <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
-              <h3 className="text-sm font-semibold text-foreground">Top Gainers</h3>
+              <h3 className="text-sm font-semibold text-foreground">{t('moversTopGainers')}</h3>
             </div>
             <div className="space-y-2">
               {[1, 2, 3, 4, 5].map((i) => (
@@ -240,7 +245,7 @@ export function TopMoversCard({ gainers, losers, isLoading, isError, isHoldingsM
           <div>
             <div className="flex items-center gap-2 mb-3">
               <TrendingDown className="h-4 w-4 text-red-600 dark:text-red-400" />
-              <h3 className="text-sm font-semibold text-foreground">Top Losers</h3>
+              <h3 className="text-sm font-semibold text-foreground">{t('moversTopLosers')}</h3>
             </div>
             <div className="space-y-2">
               {[1, 2, 3, 4, 5].map((i) => (
@@ -257,12 +262,12 @@ export function TopMoversCard({ gainers, losers, isLoading, isError, isHoldingsM
     return (
       <Card className="border-border/50 min-w-0 overflow-hidden">
         <CardHeader>
-          <CardTitle>Top Market Movers</CardTitle>
+          <CardTitle>{t('moversTitle')}</CardTitle>
           <p className="text-xs text-muted-foreground">{dateLabel}</p>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground py-8 text-center">
-            Couldn&apos;t load market movers. Try again in a moment.
+            {t('moversLoadError')}
           </p>
         </CardContent>
       </Card>
@@ -273,9 +278,9 @@ export function TopMoversCard({ gainers, losers, isLoading, isError, isHoldingsM
     <Card className="border-border/50 min-w-0 overflow-hidden">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          Top Market Movers
+          {t('moversTitle')}
           {isHoldingsMode && (
-            <span className="text-xs font-normal text-muted-foreground">(from your portfolio)</span>
+            <span className="text-xs font-normal text-muted-foreground">{t('moversPortfolioSuffix')}</span>
           )}
         </CardTitle>
         <p className="text-xs text-muted-foreground">{dateLabel}</p>
@@ -285,7 +290,7 @@ export function TopMoversCard({ gainers, losers, isLoading, isError, isHoldingsM
         <div>
           <div className="flex items-center gap-2 mb-3">
             <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
-            <h3 className="text-sm font-semibold text-foreground">Top Gainers</h3>
+            <h3 className="text-sm font-semibold text-foreground">{t('moversTopGainers')}</h3>
           </div>
           <div className="space-y-1.5">
             {gainers.length > 0 ? (
@@ -296,11 +301,12 @@ export function TopMoversCard({ gainers, losers, isLoading, isError, isHoldingsM
                   isGainer={true}
                   companyName={companyNameMap.get(mover.symbol)}
                   sparkPrices={sparklines?.[mover.symbol]}
+                  t={t}
                 />
               ))
             ) : (
               <p className="text-sm text-muted-foreground py-4 text-center">
-                {isHoldingsMode ? 'None of your holdings are up right now' : 'No data available'}
+                {isHoldingsMode ? t('moversNoneUp') : t('moversNoData')}
               </p>
             )}
           </div>
@@ -310,7 +316,7 @@ export function TopMoversCard({ gainers, losers, isLoading, isError, isHoldingsM
         <div>
           <div className="flex items-center gap-2 mb-3">
             <TrendingDown className="h-4 w-4 text-red-600 dark:text-red-400" />
-            <h3 className="text-sm font-semibold text-foreground">Top Losers</h3>
+            <h3 className="text-sm font-semibold text-foreground">{t('moversTopLosers')}</h3>
           </div>
           <div className="space-y-1.5">
             {losers.length > 0 ? (
@@ -321,11 +327,12 @@ export function TopMoversCard({ gainers, losers, isLoading, isError, isHoldingsM
                   isGainer={false}
                   companyName={companyNameMap.get(mover.symbol)}
                   sparkPrices={sparklines?.[mover.symbol]}
+                  t={t}
                 />
               ))
             ) : (
               <p className="text-sm text-muted-foreground py-4 text-center">
-                {isHoldingsMode ? 'None of your holdings are down right now' : 'No data available'}
+                {isHoldingsMode ? t('moversNoneDown') : t('moversNoData')}
               </p>
             )}
           </div>
