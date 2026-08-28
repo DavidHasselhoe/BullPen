@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useAuth } from '@/hooks/use-auth';
 import {
   Dialog,
@@ -42,13 +44,34 @@ interface SectionMeta {
   icon: LucideIcon;
 }
 
-const SECTIONS: SectionMeta[] = [
-  { id: 'basic', label: 'Basic Info', icon: User, description: 'Your public display name, photo, and account details.' },
-  { id: 'preferences', label: 'Preferences', icon: Target, description: 'How BullPen tailors data and analysis to your experience.' },
-];
+function getSections(t: TFunction): SectionMeta[] {
+  return [
+    { id: 'basic', label: t('profileModalSectionBasicLabel'), icon: User, description: t('profileModalSectionBasicDescription') },
+    { id: 'preferences', label: t('profileModalSectionPreferencesLabel'), icon: Target, description: t('profileModalSectionPreferencesDescription') },
+  ];
+}
+
+// Reuses PublicProfileCard's experience-level wording — same three words, same namespace.
+function getExperienceLabels(t: TFunction): Record<'beginner' | 'intermediate' | 'advanced', string> {
+  return {
+    beginner: t('publicProfileExperienceBeginner'),
+    intermediate: t('publicProfileExperienceIntermediate'),
+    advanced: t('publicProfileExperienceAdvanced'),
+  };
+}
+
+function getRiskProfileLabels(t: TFunction): Record<'conservative' | 'balanced' | 'aggressive', string> {
+  return {
+    conservative: t('profileModalRiskConservative'),
+    balanced: t('profileModalRiskBalanced'),
+    aggressive: t('profileModalRiskAggressive'),
+  };
+}
 
 export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
+  const { t } = useTranslation('user');
   const { user, isLoading: authLoading } = useAuth();
+  const SECTIONS = getSections(t);
   const [activeSection, setActiveSection] = useState<ProfileSection>('basic');
   const [error, setError] = useState<string | null>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
@@ -97,7 +120,7 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
       const uploadResult = await uploadAvatarToStorage(user.id, file);
 
       if (!uploadResult.success || !uploadResult.publicUrl) {
-        throw new Error(uploadResult.error || 'Upload failed');
+        throw new Error(uploadResult.error || t('profileModalUploadFailed'));
       }
 
       // Update avatar URL in state
@@ -106,7 +129,7 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
       // Optionally auto-save
       // For now, user needs to click "Save Changes" to persist
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to upload avatar');
+      setError(err instanceof Error ? err.message : t('profileModalAvatarUploadFailed'));
     } finally {
       setIsUploadingAvatar(false);
       // Reset input so same file can be selected again
@@ -139,12 +162,12 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
 
       if (updateError) {
         logger.error('[ProfileModal] Database update error', updateError);
-        throw new Error(updateError.message || 'Failed to update profile in database');
+        throw new Error(updateError.message || t('profileModalUpdateDbFailed'));
       }
 
       window.dispatchEvent(new Event('auth:refresh'));
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to update profile';
+      const msg = err instanceof Error ? err.message : t('profileModalUpdateFailed');
       setError(msg);
     }
   };
@@ -182,10 +205,10 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
     if (username) {
       return username.slice(0, 2).toUpperCase();
     }
-    return user?.email.slice(0, 2).toUpperCase() || 'U';
+    return user?.email.slice(0, 2).toUpperCase() || t('profileAvatarDefaultName').slice(0, 1).toUpperCase();
   };
 
-  const displayName = fullName || username || user?.email.split('@')[0] || 'User';
+  const displayName = fullName || username || user?.email.split('@')[0] || t('profileAvatarDefaultName');
   const memberSince = user?.created_at
     ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
     : '';
@@ -201,9 +224,9 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[90vw] !max-w-[1000px] sm:!max-w-[1000px] h-[85vh] overflow-hidden flex flex-col p-0">
         <DialogHeader className="px-6 pt-6 pb-4 border-b">
-          <DialogTitle>Profile Settings</DialogTitle>
+          <DialogTitle>{t('profileModalTitle')}</DialogTitle>
           <DialogDescription>
-            Manage your profile information and preferences
+            {t('profileModalDescription')}
           </DialogDescription>
         </DialogHeader>
 
@@ -251,11 +274,11 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
                   <p className="truncate text-xs font-medium text-foreground">{user.email}</p>
                   <p className="flex items-center gap-1 text-[11px] text-muted-foreground">
                     {saveStatus === 'saving' ? (
-                      <><Loader2 className="h-2.5 w-2.5 animate-spin" />Saving…</>
+                      <><Loader2 className="h-2.5 w-2.5 animate-spin" />{t('profileModalSaving')}</>
                     ) : saveStatus === 'saved' ? (
-                      <><Check className="h-2.5 w-2.5 text-emerald-500" /><span className="text-emerald-500">All changes saved</span></>
+                      <><Check className="h-2.5 w-2.5 text-emerald-500" /><span className="text-emerald-500">{t('profileModalAllChangesSaved')}</span></>
                     ) : (
-                      'Changes save automatically'
+                      t('profileModalChangesSaveAutomatically')
                     )}
                   </p>
                 </div>
@@ -287,7 +310,7 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
                       onClick={() => fileInputRef.current?.click()}
                       disabled={isUploadingAvatar}
                       className="group relative shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                      aria-label="Change profile picture"
+                      aria-label={t('profileModalChangePicture')}
                     >
                       <ProfileAvatar
                         avatarUrl={avatarUrl}
@@ -332,10 +355,10 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
                         ) : (
                           <Upload className="h-4 w-4" />
                         )}
-                        Upload profile picture
+                        {t('profileModalUploadPicture')}
                       </Button>
                       <p className="text-xs text-muted-foreground">
-                        JPEG, PNG, or WebP image (max 5 MB)
+                        {t('profileModalUploadHint')}
                       </p>
                     </div>
                   </div>
@@ -346,7 +369,7 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
                       <div className="space-y-1">
                         <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
                           <Crown className="h-3 w-3" />
-                          Account Tier
+                          {t('profileModalAccountTier')}
                         </p>
                         <Badge
                           variant="secondary"
@@ -354,13 +377,13 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
                             user.account_tier === 3 && 'border-2 border-[#FFD700] text-[#FFD700]'
                           )}
                         >
-                          {user.account_tier === 3 ? 'Gold' : 'Normal'}
+                          {user.account_tier === 3 ? t('profileAvatarTierGold') : t('profileAvatarTierNormal')}
                         </Badge>
                       </div>
                       <div className="space-y-1">
                         <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
                           <Calendar className="h-3 w-3" />
-                          Member Since
+                          {t('profileModalMemberSince')}
                         </p>
                         <p className="text-sm font-medium text-foreground">{memberSince}</p>
                       </div>
@@ -370,37 +393,37 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
                   {/* Basic Info */}
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="full-name">Display Name</Label>
+                      <Label htmlFor="full-name">{t('profileModalDisplayNameLabel')}</Label>
                       <Input
                         id="full-name"
-                        placeholder="John Doe"
+                        placeholder={t('profileModalDisplayNamePlaceholder')}
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="username">Username</Label>
+                      <Label htmlFor="username">{t('profileModalUsernameLabel')}</Label>
                       <Input
                         id="username"
-                        placeholder="johndoe"
+                        placeholder={t('profileModalUsernamePlaceholder')}
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="bio">Bio</Label>
+                      <Label htmlFor="bio">{t('profileModalBioLabel')}</Label>
                       <Textarea
                         id="bio"
-                        placeholder="Tell us about yourself..."
+                        placeholder={t('profileModalBioPlaceholder')}
                         value={bio}
                         onChange={(e) => setBio(e.target.value)}
                         rows={4}
                         maxLength={500}
                       />
                       <p className="text-xs text-muted-foreground">
-                        {bio.length}/500 characters
+                        {t('profileModalBioCharCount', { count: bio.length })}
                       </p>
                     </div>
                   </div>
@@ -408,26 +431,26 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
                   {/* Profile Badges — live preview of how these read on your public profile */}
                   {(experienceLevel || marketFocus || riskProfile) && (
                     <div className="space-y-3 rounded-lg border bg-muted/20 p-4">
-                      <Label className="text-sm font-medium">Profile Badges</Label>
+                      <Label className="text-sm font-medium">{t('profileModalBadgesLabel')}</Label>
                       <div className="flex flex-wrap gap-2">
                         {experienceLevel && (
                           <Badge variant="secondary" className="capitalize">
-                            {experienceLevel}
+                            {getExperienceLabels(t)[experienceLevel]}
                           </Badge>
                         )}
                         {marketFocus && (
                           <Badge variant="secondary">
-                            {marketFocus === 'US' ? 'US Markets' : marketFocus === 'EU' ? 'EU Markets' : 'US & EU Markets'}
+                            {marketFocus === 'US' ? t('profileModalMarketUs') : marketFocus === 'EU' ? t('profileModalMarketEu') : t('profileModalMarketBothBadge')}
                           </Badge>
                         )}
                         {riskProfile && (
                           <Badge variant="secondary" className="capitalize">
-                            {riskProfile}
+                            {getRiskProfileLabels(t)[riskProfile]}
                           </Badge>
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        Shown on your public profile, based on the preferences you set below.
+                        {t('profileModalBadgesHint')}
                       </p>
                     </div>
                   )}
@@ -440,7 +463,7 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
                     <div className="space-y-2">
                       <Label htmlFor="experience-level" className="flex items-center gap-2">
                         <Briefcase className="h-4 w-4" />
-                        Experience Level
+                        {t('profileModalExperienceLabel')}
                       </Label>
                       <Select
                         value={experienceLevel}
@@ -449,46 +472,46 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
                         }
                       >
                         <SelectTrigger id="experience-level">
-                          <SelectValue placeholder="Select your experience level" />
+                          <SelectValue placeholder={t('profileModalExperiencePlaceholder')} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="beginner">Beginner</SelectItem>
-                          <SelectItem value="intermediate">Intermediate</SelectItem>
-                          <SelectItem value="advanced">Advanced</SelectItem>
+                          <SelectItem value="beginner">{getExperienceLabels(t).beginner}</SelectItem>
+                          <SelectItem value="intermediate">{getExperienceLabels(t).intermediate}</SelectItem>
+                          <SelectItem value="advanced">{getExperienceLabels(t).advanced}</SelectItem>
                         </SelectContent>
                       </Select>
                       <p className="text-xs text-muted-foreground">
-                        We&apos;ll customize data display based on your experience level
+                        {t('profileModalExperienceHint')}
                       </p>
                     </div>
 
                     <div className="space-y-2">
                       <Label htmlFor="market-focus" className="flex items-center gap-2">
                         <Target className="h-4 w-4" />
-                        Market Focus
+                        {t('profileModalMarketFocusLabel')}
                       </Label>
                       <Select
                         value={marketFocus}
                         onValueChange={(value: 'US' | 'EU' | 'BOTH') => setMarketFocus(value)}
                       >
                         <SelectTrigger id="market-focus">
-                          <SelectValue placeholder="Select your market focus" />
+                          <SelectValue placeholder={t('profileModalMarketFocusPlaceholder')} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="US">US Markets</SelectItem>
-                          <SelectItem value="EU">EU Markets</SelectItem>
-                          <SelectItem value="BOTH">Both US & EU</SelectItem>
+                          <SelectItem value="US">{t('profileModalMarketUs')}</SelectItem>
+                          <SelectItem value="EU">{t('profileModalMarketEu')}</SelectItem>
+                          <SelectItem value="BOTH">{t('profileModalMarketBothSelect')}</SelectItem>
                         </SelectContent>
                       </Select>
                       <p className="text-xs text-muted-foreground">
-                        Prioritizes news, context, and defaults for the exchanges you follow
+                        {t('profileModalMarketFocusHint')}
                       </p>
                     </div>
 
                     <div className="space-y-2">
                       <Label htmlFor="risk-profile" className="flex items-center gap-2">
                         <TrendingUp className="h-4 w-4" />
-                        Risk Profile
+                        {t('profileModalRiskProfileLabel')}
                       </Label>
                       <Select
                         value={riskProfile}
@@ -497,16 +520,16 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
                         }
                       >
                         <SelectTrigger id="risk-profile">
-                          <SelectValue placeholder="Select your risk tolerance" />
+                          <SelectValue placeholder={t('profileModalRiskProfilePlaceholder')} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="conservative">Conservative</SelectItem>
-                          <SelectItem value="balanced">Balanced</SelectItem>
-                          <SelectItem value="aggressive">Aggressive</SelectItem>
+                          <SelectItem value="conservative">{getRiskProfileLabels(t).conservative}</SelectItem>
+                          <SelectItem value="balanced">{getRiskProfileLabels(t).balanced}</SelectItem>
+                          <SelectItem value="aggressive">{getRiskProfileLabels(t).aggressive}</SelectItem>
                         </SelectContent>
                       </Select>
                       <p className="text-xs text-muted-foreground">
-                        Shapes how Bull frames analysis and the ideas Discover surfaces for you
+                        {t('profileModalRiskProfileHint')}
                       </p>
                     </div>
                   </div>
