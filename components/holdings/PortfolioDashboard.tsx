@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatCurrency, formatPercent, type CurrencyCode } from '@/lib/currency/currency-conversion';
@@ -17,6 +18,7 @@ interface PortfolioDashboardProps {
 }
 
 export function PortfolioDashboard({ holdings, currency = 'USD', isLoading }: PortfolioDashboardProps) {
+  const { t } = useTranslation('holdings');
   const { roundNumbers } = useUserSettings();
   const fmt = (value: number) =>
     formatCurrency(value, currency, roundNumbers ? { round: true } : undefined);
@@ -85,7 +87,7 @@ export function PortfolioDashboard({ holdings, currency = 'USD', isLoading }: Po
           {fmt(stats.totalValue)}
         </p>
         <p className="text-xs text-muted-foreground mt-1.5">
-          across {stats.valuedPositions} position{stats.valuedPositions !== 1 ? 's' : ''}
+          {t('portfolioDashboardAcrossPositions', { count: stats.valuedPositions })}
         </p>
       </div>
 
@@ -165,7 +167,7 @@ export function PortfolioDashboard({ holdings, currency = 'USD', isLoading }: Po
               : 'text-red-600/70 dark:text-red-400/70'
           )}
         >
-          {formatPercent(stats.totalPLPct, roundNumbers)} all time
+          {t('portfolioDashboardAllTime', { pct: formatPercent(stats.totalPLPct, roundNumbers) })}
         </p>
       </div>
 
@@ -181,7 +183,7 @@ export function PortfolioDashboard({ holdings, currency = 'USD', isLoading }: Po
           {fmt(stats.costBasis)}
         </p>
         <p className="text-xs text-muted-foreground mt-1.5">
-          lifetime invested
+          {t('portfolioDashboardLifetimeInvested')}
         </p>
       </div>
     </div>

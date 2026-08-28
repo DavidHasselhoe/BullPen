@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useSearchParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -29,7 +31,14 @@ type ErrorCode = 'invalid_key' | 'payment_required' | 'rate_limited' | 'parse_fa
 // each phase is reached only once its corresponding JSON key has actually
 // landed in Claude's streamed output, so this reflects real progress.
 type RiskPhase = 'scoring' | 'identifying_risks' | 'modeling_scenarios' | 'finalizing';
-const RISK_PHASE_LABELS = ['Calculating risk metrics…', 'Identifying key risk factors…', 'Modeling stress scenarios…', 'Finalizing recommendations…'];
+function getRiskPhaseLabels(t: TFunction): string[] {
+  return [
+    t('riskPhaseScoring'),
+    t('riskPhaseIdentifyingRisks'),
+    t('riskPhaseModelingScenarios'),
+    t('riskPhaseFinalizing'),
+  ];
+}
 const RISK_PHASE_ORDER: Record<RiskPhase, number> = { scoring: 0, identifying_risks: 1, modeling_scenarios: 2, finalizing: 3 };
 
 interface StatusResponse {
@@ -51,7 +60,7 @@ const HISTORY_KEY = ['risk-analysis-history'];
 // ─── Ask Bull query builder ────────────────────────────────────────────────────
 // [display:...] is stripped in BullpenChat before rendering — the full prompt still reaches the AI.
 
-function buildAskBullQuery(analysis: RiskAnalysis, holdings: HoldingWithPrice[]): string {
+function buildAskBullQuery(analysis: RiskAnalysis, holdings: HoldingWithPrice[], t: TFunction): string {
   const tickers = holdings.map((h) => h.symbol).join(', ');
   const topRisks = analysis.topRisks
     ?.slice(0, 3)
@@ -62,7 +71,14 @@ function buildAskBullQuery(analysis: RiskAnalysis, holdings: HoldingWithPrice[])
     .map((r) => `- ${r}`)
     .join('\n') ?? '';
 
-  return `[display:Explain my portfolio risk analysis]\nA risk analysis just ran on my portfolio (${tickers}). Overall risk: ${analysis.riskLevel} (${analysis.overallRiskScore}/100).\n\nTop risk factors:\n${topRisks}\n\nRecommendations given:\n${recommendations}\n\nCan you walk me through what this means in plain terms, and tell me which recommendation to prioritize first?`;
+  const summary = t('riskAskBullQuery', {
+    tickers,
+    riskLevel: analysis.riskLevel,
+    score: analysis.overallRiskScore,
+    topRisks,
+    recommendations,
+  });
+  return `[display:${t('riskAskBullDisplayLabel')}]\n${summary}\n\n${t('riskAskBullFollowup')}`;
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -70,6 +86,7 @@ function buildAskBullQuery(analysis: RiskAnalysis, holdings: HoldingWithPrice[])
 type State = 'idle' | 'loading' | 'loaded' | 'error';
 
 export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) {
+  const { t } = useTranslation('holdings');
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { open: openAIPanel } = useAIPanel();
@@ -178,14 +195,14 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
           }, 1650);
         } else if (data.status === 'error') {
           stopPolling();
-          setErrorMessage(data.errorMessage || 'Something went wrong analyzing your portfolio.');
+          setErrorMessage(data.errorMessage || t('riskAnalysisGenericError'));
           setState('error');
         }
       } catch {
         // Transient network hiccup — keep polling, the next tick will retry.
       }
     }, POLL_INTERVAL_MS);
-  }, [stopPolling, queryClient, markEntityRead]);
+  }, [stopPolling, queryClient, markEntityRead, t]);
 
   // On mount: open a specific analysis from a notification deep link
   // (?riskAnalysisId=...), or resume polling if the user left mid-run and
@@ -243,7 +260,7 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
       if (!data.id) throw new Error('Failed to start analysis');
       pollStatus(data.id);
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : 'Failed to analyze portfolio');
+      setErrorMessage(err instanceof Error ? err.message : t('riskAnalysisFailedGeneric'));
       setState('error');
     }
   }
@@ -262,15 +279,15 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
           <div className="flex items-center justify-between gap-4">
             <CardTitle className="flex items-center gap-2 text-sm font-semibold">
               <ShieldAlert className="h-4 w-4 text-primary" />
-              Portfolio Risk Analysis
+              {t('riskAnalysisTitle')}
               <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-[0.14em] text-primary/80 bg-primary/10 px-1.5 py-0.5 rounded-full">
-                <Crown className="h-2 w-2" /> Pro
+                <Crown className="h-2 w-2" /> {t('riskAnalysisProBadge')}
               </span>
             </CardTitle>
             {state === 'loaded' && (
               <Button size="sm" variant="ghost" onClick={analyze}
                 className="shrink-0 gap-1.5 h-7 text-xs text-muted-foreground hover:text-foreground">
-                <RefreshCw className="h-3 w-3" /> Re-analyze
+                <RefreshCw className="h-3 w-3" /> {t('riskAnalysisReAnalyze')}
               </Button>
             )}
           </div>
@@ -282,8 +299,8 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
             <div className="space-y-6 py-2">
               <EmptyState
                 pose="thinking"
-                title="AI-Powered Risk Assessment"
-                description={`Concentration, sector exposure, correlation, liquidity, and stress scenarios across your ${holdings.length} holding${holdings.length !== 1 ? 's' : ''}.`}
+                title={t('riskAnalysisEmptyTitle')}
+                description={t('riskAnalysisEmptyDescription', { count: holdings.length })}
                 imageSize={112}
                 className="py-2"
               >
@@ -293,7 +310,7 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
                     size="sm"
                     className="gap-1.5 rounded-full animate-ai-pill-shine"
                   >
-                    <ShieldAlert className="h-3.5 w-3.5" /> Run Analysis
+                    <ShieldAlert className="h-3.5 w-3.5" /> {t('riskAnalysisRunAnalysis')}
                   </Button>
                 </div>
               </EmptyState>
@@ -311,10 +328,10 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
             <ProcessingScreen
               phase={{
                 index: RISK_PHASE_ORDER[genPhase],
-                total: RISK_PHASE_LABELS.length,
-                label: RISK_PHASE_LABELS[RISK_PHASE_ORDER[genPhase]],
+                total: getRiskPhaseLabels(t).length,
+                label: getRiskPhaseLabels(t)[RISK_PHASE_ORDER[genPhase]],
               }}
-              subtext={`Analyzing ${holdings.length} ${holdings.length === 1 ? 'holding' : 'holdings'}. Typically 15-30 seconds.`}
+              subtext={t('riskAnalysisAnalyzingSubtext', { count: holdings.length })}
               complete={justCompleted}
               leavePageHint
             />
@@ -324,9 +341,9 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
           {state === 'error' && (
             <div className="flex flex-col items-center py-7 gap-3 text-center">
               <AlertTriangle className="h-7 w-7 text-destructive/80" />
-              <p className="text-sm text-destructive/90">{errorMessage || 'Something went wrong analyzing your portfolio.'}</p>
+              <p className="text-sm text-destructive/90">{errorMessage || t('riskAnalysisGenericError')}</p>
               <Button variant="outline" size="sm" onClick={analyze} className="gap-1.5 animate-ai-sweep">
-                <RefreshCw className="h-3 w-3" /> Try Again
+                <RefreshCw className="h-3 w-3" /> {t('riskAnalysisTryAgain')}
               </Button>
             </div>
           )}
@@ -342,17 +359,19 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
               footer={
                 <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/15 pt-4">
                   <span className="text-[11px] font-mono uppercase tracking-[0.15em] text-muted-foreground/80">
-                    {restoredFrom ? `Restored · ${generatedTime}` : `Generated · ${generatedTime}`}
+                    {restoredFrom
+                      ? t('riskAnalysisRestoredAt', { time: generatedTime })
+                      : t('riskAnalysisGeneratedAt', { time: generatedTime })}
                   </span>
                   <button
                     onClick={() => openAIPanel({
-                      query: buildAskBullQuery(analysis, holdings),
-                      context: { tickers: holdings.map((h) => h.symbol), label: 'Your portfolio' },
+                      query: buildAskBullQuery(analysis, holdings, t),
+                      context: { tickers: holdings.map((h) => h.symbol), label: t('riskAnalysisAskBullContextLabel') },
                     })}
                     className="flex items-center gap-1.5 rounded-lg border border-border bg-muted/40 px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                   >
                     <Sparkles className="h-3 w-3" />
-                    Ask Bull about this
+                    {t('riskAnalysisAskBullAboutThis')}
                   </button>
                 </div>
               }
@@ -364,7 +383,7 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
       <AiPaywallDialog
         open={showPaywall}
         onOpenChange={setShowPaywall}
-        featureName="Portfolio Risk Analysis"
+        featureName={t('riskAnalysisTitle')}
         quota={paywallQuota ?? undefined}
       />
     </>
