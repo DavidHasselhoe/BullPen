@@ -3,6 +3,7 @@
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { CompanyRowActions } from '@/components/discover/CompanyRowActions';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { fetchWithTimeout } from '@/lib/utils';
 import { HOT_PICKS_QUERY_KEY } from '@/lib/discover/hot-picks-query';
@@ -39,6 +40,7 @@ function SkeletonRow({ rank }: { rank: number }) {
 }
 
 export function HotPicksCard() {
+  const { t } = useTranslation('discover');
   const { data: hotPicks, isLoading } = useQuery<HotPick[]>({
     queryKey: HOT_PICKS_QUERY_KEY,
     queryFn: async () => {
@@ -93,11 +95,11 @@ export function HotPicksCard() {
       {/* Editorial section header */}
       <div className="flex items-center gap-3 mb-4">
         <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-foreground/70 shrink-0">
-          Trending this week
+          {t('hotPicksTitle')}
         </span>
         <div className="flex-1 h-px bg-border/50" />
         <span className="text-[11px] font-mono text-foreground/50 uppercase tracking-wider shrink-0">
-          by views
+          {t('hotPicksByViews')}
         </span>
       </div>
 
@@ -109,7 +111,7 @@ export function HotPicksCard() {
         </div>
       ) : isEmpty ? (
         <p className="text-sm text-muted-foreground py-4">
-          Nothing here yet — open a few company pages and this list will fill up automatically.
+          {t('hotPicksEmptyState')}
         </p>
       ) : (
         <div className="divide-y divide-border/30">
@@ -145,7 +147,7 @@ export function HotPicksCard() {
                   </div>
 
                   <span className="text-[11px] tabular-nums text-foreground/50 shrink-0 font-mono">
-                    {pick.click_count} {pick.click_count === 1 ? 'view' : 'views'}
+                    {t('hotPicksViewCount', { count: pick.click_count })}
                   </span>
                 </Link>
 

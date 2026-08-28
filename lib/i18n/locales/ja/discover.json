@@ -1,5 +1,6 @@
 {
   "collectionFaqHeading": "これらのリストを選んだ理由",
+  "discoverClientLoadError": "マーケットを読み込めませんでした",
   "headerDescription": "10秒で市場の動きが分かる：今日の資金の流れ、市場の雰囲気、そして詳しく見る価値のある企業の数々。",
   "headerTitle": "発見",
   "ideasFaqHighsAnswer": "52週間高値の付近で取引されており、追いかける前に確認すべき勢いを持っています。",
@@ -27,7 +28,6 @@
   "rowActionsAskAiQuery": "{{ticker}}について教えてください",
   "rowActionsCompare": "比較",
   "rowActionsViewCompany": "企業情報を表示",
-  "discoverClientLoadError": "マーケットを読み込めませんでした",
   "sectorPerfFooterNote": "各セクターの SPDR ETF で測定されています。セクターを選択すると、そのセクターの企業を確認できます。",
   "sectorPerfHeading": "資金が動いた場所",
   "sectorPerfLeaderLaggard": "{{leader}} がリード、{{laggard}} が下落 · {{timeframe}}",
@@ -41,5 +41,12 @@
   "whyTodayWidgetFeatureName": "なぜ今日",
   "whyTodayWidgetLabel": "なぜ今日",
   "whyTodayWidgetNoData": "現在、価格データは利用できません。後でもう一度確認してください。",
-  "whyTodayWidgetWhyButton": "なぜ？"
+  "whyTodayWidgetWhyButton": "なぜ？",
+  "hotPicksByViews": "閲覧数順",
+  "hotPicksEmptyState": "まだ何もありません。いくつかの企業ページを開くと、このリストが自動的に表示されます。",
+  "hotPicksTitle": "今週のトレンド",
+  "hotPicksViewCount_one": "{{count}}回の閲覧",
+  "hotPicksViewCount_other": "{{count}}回の閲覧",
+  "sectorRowLoadError": "現在、このセクターの企業を読み込めません。",
+  "sectorRowTaglineSuffix": "{{tagline}} · 値動きが大きい順"
 }

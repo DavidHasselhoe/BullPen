@@ -1622,5 +1622,12 @@
   "discover.whyTodayWidgetFeatureName": "57310843b370121054526fda0f74c0ef441580241dbb718acd854f519fd9bbbb",
   "discover.whyTodayWidgetLabel": "a9b465dc56db1e840000a00a22900053e9a2f97cc5c861100625c9a52cb60304",
   "discover.whyTodayWidgetNoData": "357098becacafd58850cc36886a942938a2fb6386a26797cc219cc63c3975aea",
-  "discover.whyTodayWidgetWhyButton": "5d8a995a6fa7cf7c577cc9d49ca9e00d4aee4d0bcd5e2ad5caff27e2a8097276"
+  "discover.whyTodayWidgetWhyButton": "5d8a995a6fa7cf7c577cc9d49ca9e00d4aee4d0bcd5e2ad5caff27e2a8097276",
+  "discover.hotPicksByViews": "5d2833fb508cb70b6b3ca3c562b436006102b2706392f9f3bf2ccd4490587e73",
+  "discover.hotPicksEmptyState": "fd5e2c9bf2929fb81937370d60e19f7ca34c2497152b9c5d53bc9fc91c5a1b57",
+  "discover.hotPicksTitle": "5dd5e52920d075e8c2681348f4268b5ba54499bf05be066afec182bcd03d3522",
+  "discover.hotPicksViewCount_one": "562490c0610238ad99dc4433078aa10b283abbd8a31984df66adbc4a2f62525e",
+  "discover.hotPicksViewCount_other": "26bf295a1314ccd94347f01a0ad938478768d40c646b34757037609f87992ad6",
+  "discover.sectorRowLoadError": "45c53a21d0a5ec719c8ef04e17802b777b7bbba4769331c1f707fdc150797b51",
+  "discover.sectorRowTaglineSuffix": "c3d7269fc9df850f976a779c4a9c8fb892151c342b14d076d7e6717ca69c6f88"
 }

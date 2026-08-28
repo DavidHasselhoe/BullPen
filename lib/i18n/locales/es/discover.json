@@ -1,5 +1,6 @@
 {
   "collectionFaqHeading": "Por qué estas listas",
+  "discoverClientLoadError": "No se pudo cargar el mercado",
   "headerDescription": "Un vistazo al mercado en diez segundos: dónde se movió el dinero hoy, cómo está el sentimiento, y un puñado de empresas que merecen una mirada más cercana.",
   "headerTitle": "Descubrir",
   "ideasFaqHighsAnswer": "Operando cerca de la parte superior de su rango anual, impulso que vale la pena entender antes de perseguirlo.",
@@ -27,7 +28,6 @@
   "rowActionsAskAiQuery": "Cuéntame sobre {{ticker}}",
   "rowActionsCompare": "Comparar",
   "rowActionsViewCompany": "Ver empresa",
-  "discoverClientLoadError": "No se pudo cargar el mercado",
   "sectorPerfFooterNote": "Medido por el ETF SPDR de cada sector. Selecciona un sector para ver las empresas en él.",
   "sectorPerfHeading": "Dónde se movió el dinero",
   "sectorPerfLeaderLaggard": "{{leader}} liderando, {{laggard}} rezagado · {{timeframe}}",
@@ -41,5 +41,12 @@
   "whyTodayWidgetFeatureName": "Por Qué Hoy",
   "whyTodayWidgetLabel": "Por qué hoy",
   "whyTodayWidgetNoData": "No hay datos de precio disponibles en este momento. Vuelve más tarde.",
-  "whyTodayWidgetWhyButton": "¿Por qué?"
+  "whyTodayWidgetWhyButton": "¿Por qué?",
+  "hotPicksByViews": "por visualizaciones",
+  "hotPicksEmptyState": "Nada aquí aún. Abre algunas páginas de empresas y esta lista se llenará automáticamente.",
+  "hotPicksTitle": "Tendencias esta semana",
+  "hotPicksViewCount_one": "{{count}} visualización",
+  "hotPicksViewCount_other": "{{count}} visualizaciones",
+  "sectorRowLoadError": "No pudimos cargar las empresas de este sector en este momento.",
+  "sectorRowTaglineSuffix": "{{tagline}} · mayores cambios primero"
 }

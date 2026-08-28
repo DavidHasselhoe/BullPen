@@ -1,5 +1,6 @@
 {
   "collectionFaqHeading": "为什么是这些列表",
+  "discoverClientLoadError": "无法加载市场数据",
   "headerDescription": "十秒钟了解市场动向：今天资金去向如何、市场情绪如何，以及几家值得深入了解的公司。",
   "headerTitle": "发现",
   "ideasFaqHighsAnswer": "在年度高位区间附近交易，动能值得在跟风前理解。",
@@ -27,7 +28,6 @@
   "rowActionsAskAiQuery": "告诉我关于 {{ticker}} 的信息",
   "rowActionsCompare": "比较",
   "rowActionsViewCompany": "查看公司",
-  "discoverClientLoadError": "无法加载市场数据",
   "sectorPerfFooterNote": "按各行业 SPDR ETF 衡量。选择一个行业可查看其中的公司。",
   "sectorPerfHeading": "资金流向",
   "sectorPerfLeaderLaggard": "{{leader}} 领涨，{{laggard}} 领跌 · {{timeframe}}",
@@ -41,5 +41,12 @@
   "whyTodayWidgetFeatureName": "为什么今天",
   "whyTodayWidgetLabel": "为什么今天",
   "whyTodayWidgetNoData": "暂无价格数据。请稍后再试。",
-  "whyTodayWidgetWhyButton": "为什么？"
+  "whyTodayWidgetWhyButton": "为什么？",
+  "hotPicksByViews": "按浏览次数",
+  "hotPicksEmptyState": "这里还没有内容。打开几个公司页面后，这个列表会自动填充。",
+  "hotPicksTitle": "本周热门",
+  "hotPicksViewCount_one": "{{count}} 次浏览",
+  "hotPicksViewCount_other": "{{count}} 次浏览",
+  "sectorRowLoadError": "暂时无法加载该行业的公司。",
+  "sectorRowTaglineSuffix": "{{tagline}} · 涨跌幅最大的优先"
 }

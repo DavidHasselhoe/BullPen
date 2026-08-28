@@ -1,5 +1,6 @@
 {
   "collectionFaqHeading": "Warum diese Listen",
+  "discoverClientLoadError": "Konnte den Markt nicht laden",
   "headerDescription": "Ein Überblick über den Markt in zehn Sekunden: wohin das Geld heute floss, wie die Stimmung steht und eine Handvoll Unternehmen, die sich näher ansehen lohnt.",
   "headerTitle": "Entdecken",
   "ideasFaqHighsAnswer": "Handeln in der Nähe der Spitze ihrer Jahresspanne – ein Momentum, das du verstehen solltest, bevor du es verfolgst.",
@@ -27,7 +28,6 @@
   "rowActionsAskAiQuery": "Erzähl mir von {{ticker}}",
   "rowActionsCompare": "Vergleichen",
   "rowActionsViewCompany": "Unternehmen ansehen",
-  "discoverClientLoadError": "Konnte den Markt nicht laden",
   "sectorPerfFooterNote": "Gemessen an den SPDR ETFs jedes Sektors. Wähle einen Sektor aus, um die Unternehmen darin zu sehen.",
   "sectorPerfHeading": "Wohin das Geld floss",
   "sectorPerfLeaderLaggard": "{{leader}} führt, {{laggard}} hinkt hinterher · {{timeframe}}",
@@ -41,5 +41,12 @@
   "whyTodayWidgetFeatureName": "Warum Heute",
   "whyTodayWidgetLabel": "Warum heute",
   "whyTodayWidgetNoData": "Momentan keine Kursdaten verfügbar. Schau später vorbei.",
-  "whyTodayWidgetWhyButton": "Warum?"
+  "whyTodayWidgetWhyButton": "Warum?",
+  "hotPicksByViews": "nach Aufrufen",
+  "hotPicksEmptyState": "Hier ist noch nichts. Öffne ein paar Unternehmensseiten und diese Liste füllt sich automatisch.",
+  "hotPicksTitle": "Diese Woche im Trend",
+  "hotPicksViewCount_one": "{{count}} Aufruf",
+  "hotPicksViewCount_other": "{{count}} Aufrufe",
+  "sectorRowLoadError": "Die Unternehmen dieses Sektors konnten gerade nicht geladen werden.",
+  "sectorRowTaglineSuffix": "{{tagline}} · größte Bewegungen zuerst"
 }

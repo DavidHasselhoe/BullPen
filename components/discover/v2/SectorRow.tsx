@@ -1,6 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -36,6 +37,7 @@ function fmtPct(pct: number | null): string {
  * reinforcement rather than the only carrier of meaning.
  */
 export function SectorRow({ sector, scale, expanded, onToggle, index, grown }: Props) {
+  const { t } = useTranslation('discover');
   const entry = SECTOR_BY_KEY.get(sector.key);
   const Icon = entry?.icon;
   const pct = sector.changePct;
@@ -138,7 +140,7 @@ export function SectorRow({ sector, scale, expanded, onToggle, index, grown }: P
             <div className="px-3 pb-4 pt-1 sm:px-4">
               {entry?.tagline && (
                 <p className="mb-2.5 text-[11px] text-muted-foreground/80">
-                  {entry.tagline} · biggest movers first
+                  {t('sectorRowTaglineSuffix', { tagline: entry.tagline })}
                 </p>
               )}
 
@@ -162,7 +164,7 @@ export function SectorRow({ sector, scale, expanded, onToggle, index, grown }: P
 
               {!isLoading && (!data?.items || data.items.length === 0) && (
                 <p className="text-xs text-muted-foreground/80">
-                  Couldn&apos;t load this sector&apos;s companies right now.
+                  {t('sectorRowLoadError')}
                 </p>
               )}
             </div>
