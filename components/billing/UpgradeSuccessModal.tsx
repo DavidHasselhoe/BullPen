@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Check } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from '@/components/ui/dialog';
@@ -20,6 +21,7 @@ interface Props {
  * below it) rather than hardcoded, so it can't drift from what was promised.
  */
 export function UpgradeSuccessModal({ open, onOpenChange }: Props) {
+  const { t } = useTranslation('billing');
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
@@ -33,9 +35,9 @@ export function UpgradeSuccessModal({ open, onOpenChange }: Props) {
             height={96}
             className="h-24 w-24 select-none dark:invert"
           />
-          <DialogTitle>Welcome to Pro!</DialogTitle>
+          <DialogTitle>{t('upgradeSuccessTitle')}</DialogTitle>
           <DialogDescription>
-            Thanks for upgrading. Your {PRICING.trialDays}-day trial is live, and here&apos;s everything you just unlocked.
+            {t('upgradeSuccessDescription', { trialDays: PRICING.trialDays })}
           </DialogDescription>
         </DialogHeader>
 
@@ -62,7 +64,7 @@ export function UpgradeSuccessModal({ open, onOpenChange }: Props) {
         </div>
 
         <Button asChild className="w-full">
-          <Link href="/dashboard">Start exploring</Link>
+          <Link href="/dashboard">{t('upgradeSuccessStartExploring')}</Link>
         </Button>
       </DialogContent>
     </Dialog>

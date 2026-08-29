@@ -1,6 +1,13 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
+
+const TIER_FILL: Record<'risk' | 'caution' | 'neutral', string> = {
+  risk: 'bg-red-500',
+  caution: 'bg-amber-500',
+  neutral: 'bg-emerald-500',
+};
 
 /**
  * Static, fabricated mini risk-analysis visual used purely as a paywall
@@ -9,19 +16,13 @@ import { cn } from '@/lib/utils';
  * Blurred and labeled "Preview" so it always reads as an example of the
  * feature, never as an actual result.
  */
-const MOCK_BARS: { label: string; pct: number; tier: 'risk' | 'caution' | 'neutral' }[] = [
-  { label: 'Tech concentration', pct: 74, tier: 'risk' },
-  { label: 'Sector diversification', pct: 46, tier: 'caution' },
-  { label: 'Liquidity', pct: 22, tier: 'neutral' },
-];
-
-const TIER_FILL: Record<'risk' | 'caution' | 'neutral', string> = {
-  risk: 'bg-red-500',
-  caution: 'bg-amber-500',
-  neutral: 'bg-emerald-500',
-};
-
 export function RiskAnalysisPaywallPreview() {
+  const { t } = useTranslation('billing');
+  const mockBars: { label: string; pct: number; tier: 'risk' | 'caution' | 'neutral' }[] = [
+    { label: t('riskAnalysisPreviewTechConcentration'), pct: 74, tier: 'risk' },
+    { label: t('riskAnalysisPreviewSectorDiversification'), pct: 46, tier: 'caution' },
+    { label: t('riskAnalysisPreviewLiquidity'), pct: 22, tier: 'neutral' },
+  ];
   return (
     <div className="relative select-none bg-card px-6 pb-8 pt-7" aria-hidden="true">
       <div className="pointer-events-none opacity-70 blur-[3px]">
@@ -29,7 +30,7 @@ export function RiskAnalysisPaywallPreview() {
           <span className="font-mono text-3xl font-bold tabular-nums text-foreground">
             72<span className="text-base text-muted-foreground">/100</span>
           </span>
-          <span className="text-sm font-semibold text-red-400">High Risk</span>
+          <span className="text-sm font-semibold text-red-400">{t('riskAnalysisPreviewLevel')}</span>
         </div>
 
         <div className="relative mt-3 h-2 w-full rounded-full bg-gradient-to-r from-emerald-500 via-amber-400 to-red-500">
@@ -40,7 +41,7 @@ export function RiskAnalysisPaywallPreview() {
         </div>
 
         <div className="mt-5 space-y-2.5">
-          {MOCK_BARS.map((b) => (
+          {mockBars.map((b) => (
             <div key={b.label}>
               <div className="mb-1 flex items-center justify-between text-[11px] text-muted-foreground">
                 <span>{b.label}</span>
@@ -60,7 +61,7 @@ export function RiskAnalysisPaywallPreview() {
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-card to-transparent" />
 
       <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-border/70 bg-background/90 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground shadow-sm">
-        Preview
+        {t('previewBadge')}
       </span>
     </div>
   );

@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { useEntitlements } from '@/hooks/use-entitlements';
 import type { ProFeature } from '@/lib/billing/entitlements';
 import { UpgradeCTA } from './UpgradeCTA';
@@ -16,7 +17,10 @@ interface Props {
  * Renders `children` for Pro users; otherwise a locked placeholder with an
  * upgrade CTA. Server routes must still enforce — this is UX, not security.
  */
-export function ProGate({ feature, title = 'A Pro feature', description = 'Upgrade to Pro to unlock this.', children }: Props) {
+export function ProGate({ feature, title, description, children }: Props) {
+  const { t } = useTranslation('billing');
+  const resolvedTitle = title ?? t('proGateDefaultTitle');
+  const resolvedDescription = description ?? t('proGateDefaultDescription');
   const ent = useEntitlements();
   const allowed = feature ? ent.can(feature) : ent.isPro;
   if (allowed) return <>{children}</>;
@@ -31,8 +35,8 @@ export function ProGate({ feature, title = 'A Pro feature', description = 'Upgra
         className="h-auto w-20 select-none opacity-90 dark:opacity-80 dark:invert"
       />
       <div>
-        <p className="text-sm font-semibold text-foreground">{title}</p>
-        <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
+        <p className="text-sm font-semibold text-foreground">{resolvedTitle}</p>
+        <p className="mt-0.5 text-xs text-muted-foreground">{resolvedDescription}</p>
       </div>
       <UpgradeCTA />
     </div>

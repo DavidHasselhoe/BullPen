@@ -1,7 +1,9 @@
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 
 /** Small "PRO" pill for marking Pro-only features. */
 export function ProBadge({ className }: { className?: string }) {
+  const { t } = useTranslation('billing');
   return (
     <span
       className={cn(
@@ -9,7 +11,7 @@ export function ProBadge({ className }: { className?: string }) {
         className
       )}
     >
-      Pro
+      {t('proBadge')}
     </span>
   );
 }

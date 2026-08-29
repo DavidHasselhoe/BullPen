@@ -1,23 +1,24 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
-
-/**
- * Static, fabricated Deep Dive report snapshot used purely as a paywall
- * teaser. Never a real analysis.
- */
-const MOCK_SECTIONS: { label: string; pct: number; tone: 'good' | 'mixed' }[] = [
-  { label: 'Growth', pct: 82, tone: 'good' },
-  { label: 'Valuation', pct: 38, tone: 'mixed' },
-  { label: 'Financial health', pct: 91, tone: 'good' },
-];
 
 const TONE_FILL: Record<'good' | 'mixed', string> = {
   good: 'bg-emerald-500',
   mixed: 'bg-amber-500',
 };
 
+/**
+ * Static, fabricated Deep Dive report snapshot used purely as a paywall
+ * teaser. Never a real analysis.
+ */
 export function DeepDivePaywallPreview() {
+  const { t } = useTranslation('billing');
+  const mockSections: { label: string; pct: number; tone: 'good' | 'mixed' }[] = [
+    { label: t('deepDivePreviewGrowth'), pct: 82, tone: 'good' },
+    { label: t('deepDivePreviewValuation'), pct: 38, tone: 'mixed' },
+    { label: t('deepDivePreviewFinancialHealth'), pct: 91, tone: 'good' },
+  ];
   return (
     <div className="relative select-none bg-card px-6 pb-8 pt-7" aria-hidden="true">
       <div className="pointer-events-none opacity-70 blur-[3px]">
@@ -25,11 +26,11 @@ export function DeepDivePaywallPreview() {
           <span className="font-mono text-3xl font-bold tabular-nums text-foreground">
             84<span className="text-base text-muted-foreground">/100</span>
           </span>
-          <span className="text-sm font-semibold text-emerald-400">Strong fundamentals</span>
+          <span className="text-sm font-semibold text-emerald-400">{t('deepDivePreviewVerdict')}</span>
         </div>
 
         <div className="mt-5 space-y-2.5">
-          {MOCK_SECTIONS.map((s) => (
+          {mockSections.map((s) => (
             <div key={s.label}>
               <div className="mb-1 flex items-center justify-between text-[11px] text-muted-foreground">
                 <span>{s.label}</span>
@@ -49,7 +50,7 @@ export function DeepDivePaywallPreview() {
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-card to-transparent" />
 
       <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-border/70 bg-background/90 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground shadow-sm">
-        Preview
+        {t('previewBadge')}
       </span>
     </div>
   );

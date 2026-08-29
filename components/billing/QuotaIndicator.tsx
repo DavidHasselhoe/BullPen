@@ -1,6 +1,7 @@
 'use client';
 
 import { Sparkles } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useQuota } from '@/hooks/use-quota';
 import { cn } from '@/lib/utils';
 import type { QuotaFeature } from '@/lib/billing/quotas';
@@ -25,6 +26,7 @@ function formatResetDate(iso: string, period: 'day' | 'month'): string {
  * Returns null for pro/admin users (unlimited) and while loading.
  */
 export function QuotaIndicator({ feature, unit, className }: Props) {
+  const { t } = useTranslation('billing');
   const { data } = useQuota(feature);
 
   if (!data) return null;
@@ -35,7 +37,7 @@ export function QuotaIndicator({ feature, unit, className }: Props) {
   const remaining = Math.max(0, (limit as number) - used);
   const atLimit = remaining === 0;
   const noun = remaining === 1 ? unit.singular : unit.plural;
-  const periodLabel = period === 'day' ? 'today' : 'this month';
+  const periodLabel = period === 'day' ? t('quotaPeriodToday') : t('quotaPeriodMonth');
 
   return (
     <div
@@ -51,13 +53,13 @@ export function QuotaIndicator({ feature, unit, className }: Props) {
     >
       <Sparkles className="h-3 w-3 shrink-0 opacity-70" aria-hidden />
       <span className="font-semibold tabular-nums">
-        {used} / {limit}
+        {t('quotaUsedOfLimit', { used, limit })}
       </span>
       <span>
         {noun} {periodLabel}
       </span>
       <span className="opacity-50">·</span>
-      <span className="opacity-70">resets {formatResetDate(resetsAt, period)}</span>
+      <span className="opacity-70">{t('quotaResetsAt', { date: formatResetDate(resetsAt, period) })}</span>
     </div>
   );
 }

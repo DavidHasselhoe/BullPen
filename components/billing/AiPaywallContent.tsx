@@ -4,6 +4,7 @@ import { useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import type { LucideIcon } from 'lucide-react';
 import { Crown } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { DialogTitle } from '@/components/ui/dialog';
@@ -37,6 +38,7 @@ function formatResetDay(iso: string): string {
  * change per feature, so the offer can never drift between them.
  */
 export function AiPaywallContent({ headline, benefits, preview, quota, showResetLine, onDismiss }: Props) {
+  const { t } = useTranslation('billing');
   // Annual first, matching /upgrade's own default — it's the price this
   // dialog leads with, same convention as the pricing page.
   const [annual, setAnnual] = useState(true);
@@ -92,12 +94,12 @@ export function AiPaywallContent({ headline, benefits, preview, quota, showReset
             href="/upgrade#compare"
             className="mt-2.5 inline-flex items-center gap-1 rounded-full border border-border bg-muted/40 px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
-            + {moreBenefitsCount} more
+            {t('paywallContentMoreBenefits', { count: moreBenefitsCount })}
           </Link>
         )}
 
         {showResetLine && quota && (
-          <p className="mt-3 text-[11px] text-muted-foreground/70">Your free limit resets {formatResetDay(quota.resetsAt)}</p>
+          <p className="mt-3 text-[11px] text-muted-foreground/70">{t('paywallContentResetLine', { date: formatResetDay(quota.resetsAt) })}</p>
         )}
 
         <div className="mt-5 flex justify-center">
@@ -107,16 +109,16 @@ export function AiPaywallContent({ headline, benefits, preview, quota, showReset
               onClick={() => setAnnual(false)}
               className={cn('rounded-full px-3 py-1 text-xs font-medium transition-colors', !annual ? 'bg-background text-foreground shadow' : 'text-muted-foreground')}
             >
-              Monthly
+              {t('paywallContentMonthly')}
             </button>
             <button
               type="button"
               onClick={() => setAnnual(true)}
               className={cn('flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors', annual ? 'bg-background text-foreground shadow' : 'text-muted-foreground')}
             >
-              Yearly
+              {t('paywallContentYearly')}
               <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-500">
-                Save 25%
+                {t('paywallContentSavePct')}
               </span>
             </button>
           </div>
@@ -124,19 +126,19 @@ export function AiPaywallContent({ headline, benefits, preview, quota, showReset
 
         <div className="mt-3 flex items-baseline justify-center gap-1.5">
           <span className="font-mono text-2xl font-bold tabular-nums text-foreground">${price}</span>
-          <span className="text-sm text-muted-foreground">/mo</span>
+          <span className="text-sm text-muted-foreground">{t('paywallContentPerMonth')}</span>
         </div>
         {annual && (
-          <p className="text-[11px] text-muted-foreground/70">billed ${price * 12}/yr</p>
+          <p className="text-[11px] text-muted-foreground/70">{t('paywallContentBilledPerYear', { price: price * 12 })}</p>
         )}
 
         <Button asChild className="mt-4 w-full animate-cta-pulse">
           <Link href={checkoutHref}>
-            <Crown className="h-3.5 w-3.5" /> Upgrade to Pro · ${price}/mo
+            <Crown className="h-3.5 w-3.5" /> {t('paywallContentUpgradeCta', { price })}
           </Link>
         </Button>
         <Button variant="ghost" className="mt-2 w-full" onClick={onDismiss}>
-          Maybe later
+          {t('paywallContentMaybeLater')}
         </Button>
       </div>
     </div>
