@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
@@ -18,6 +19,7 @@ interface CreateListDialogProps {
 }
 
 export function CreateListDialog({ open, onOpenChange, onCreated }: CreateListDialogProps) {
+  const { t } = useTranslation('watchlist');
   const [name, setName] = useState('');
   const [color, setColor] = useState<string | null>(null);
   const createList = useCreateWatchlistList();
@@ -39,12 +41,12 @@ export function CreateListDialog({ open, onOpenChange, onCreated }: CreateListDi
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle>New watchlist</DialogTitle>
+          <DialogTitle>{t('createListTitle')}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
-            placeholder="e.g. AI Plays"
+            placeholder={t('createListNamePlaceholder')}
             value={name}
             onChange={(e) => setName(e.target.value)}
             maxLength={60}
@@ -52,7 +54,7 @@ export function CreateListDialog({ open, onOpenChange, onCreated }: CreateListDi
           />
 
           <div>
-            <p className="text-xs text-muted-foreground mb-2">Colour (optional)</p>
+            <p className="text-xs text-muted-foreground mb-2">{t('createListColorLabel')}</p>
             <div className="flex gap-2">
               {PRESET_COLORS.map((c) => (
                 <button
@@ -72,10 +74,10 @@ export function CreateListDialog({ open, onOpenChange, onCreated }: CreateListDi
 
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
-              Cancel
+              {t('createListCancel')}
             </Button>
             <Button type="submit" disabled={!name.trim() || createList.isPending}>
-              {createList.isPending ? 'Creating…' : 'Create'}
+              {createList.isPending ? t('createListCreating') : t('createListCreate')}
             </Button>
           </DialogFooter>
         </form>

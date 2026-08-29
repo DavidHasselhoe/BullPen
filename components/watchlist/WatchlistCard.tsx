@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { X, TrendingUp, TrendingDown, Minus, Bell } from 'lucide-react';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { AlertDialog } from '@/components/alerts/AlertDialog';
@@ -67,6 +68,7 @@ export function WatchlistCard({
   thesisSentiment,
   sparkline,
 }: WatchlistCardProps) {
+  const { t } = useTranslation('watchlist');
   const isUp = (quote?.changePercent ?? 0) > 0;
   const isDown = (quote?.changePercent ?? 0) < 0;
   const Icon = isUp ? TrendingUp : isDown ? TrendingDown : Minus;
@@ -79,7 +81,7 @@ export function WatchlistCard({
       {thesisSentiment && (
         <span
           className={cn('absolute left-2 top-2 z-10 h-1.5 w-1.5 rounded-full', thesisColor(thesisSentiment))}
-          title={`Thesis: ${thesisSentiment}`}
+          title={t('watchlistThesisTitle', { sentiment: thesisSentiment })}
         />
       )}
 
@@ -93,8 +95,8 @@ export function WatchlistCard({
               type="button"
               onClick={(e) => e.preventDefault()}
               className="rounded-full p-1 text-muted-foreground hover:bg-accent hover:text-foreground transition-all"
-              title={`Price alerts for ${symbol}`}
-              aria-label={`Manage price alerts for ${symbol}`}
+              title={t('watchlistAlertsTitle', { symbol })}
+              aria-label={t('watchlistAlertsAriaLabel', { symbol })}
             >
               <Bell className="h-3.5 w-3.5" />
             </button>
@@ -108,7 +110,7 @@ export function WatchlistCard({
             'text-muted-foreground hover:bg-destructive/10 hover:text-destructive',
             isRemoving && 'opacity-50 cursor-not-allowed'
           )}
-          aria-label={`Remove ${symbol} from watchlist`}
+          aria-label={t('watchlistRemoveFromWatchlistAriaLabel', { symbol })}
         >
           <X className="h-3.5 w-3.5" />
         </button>
@@ -129,7 +131,7 @@ export function WatchlistCard({
           <div className="flex items-end justify-between">
             <span
               className={cn('text-lg font-bold tabular-nums', quote.stale ? 'text-muted-foreground/85' : 'text-foreground')}
-              title={quote.stale ? 'Last close — live price unavailable right now' : undefined}
+              title={quote.stale ? t('watchlistStaleTitle') : undefined}
             >
               ${formatPrice(quote.price)}
             </span>
@@ -144,7 +146,7 @@ export function WatchlistCard({
                 !isUp && !isDown && 'bg-muted text-muted-foreground',
                 quote.stale && 'opacity-60'
               )}
-              title={quote.stale ? 'Last close — live price unavailable right now' : undefined}
+              title={quote.stale ? t('watchlistStaleTitle') : undefined}
             >
               <Icon className="h-3 w-3" />
               {isUp ? '+' : ''}{quote.changePercent.toFixed(2)}%
@@ -152,7 +154,7 @@ export function WatchlistCard({
           </div>
         ) : (
           <div className="flex items-end justify-between">
-            <span className="text-sm text-muted-foreground">Loading...</span>
+            <span className="text-sm text-muted-foreground">{t('watchlistLoading')}</span>
           </div>
         )}
 
@@ -164,7 +166,7 @@ export function WatchlistCard({
               direction={isUp ? 'up' : isDown ? 'down' : 'neutral'}
               area
               className="w-full h-9"
-              ariaLabel={`${symbol} recent price trend`}
+              ariaLabel={t('watchlistSparklineAriaLabel', { symbol })}
             />
           </div>
         )}
@@ -175,7 +177,7 @@ export function WatchlistCard({
             {healthScore ? (
               <span
                 className="flex items-center gap-1.5"
-                title={`Financial health: ${healthScore.label} (${healthScore.grade}, ${healthScore.score}/100)`}
+                title={t('watchlistHealthTitle', { label: healthScore.label, grade: healthScore.grade, score: healthScore.score })}
               >
                 <span className={cn('text-xs font-semibold px-1.5 py-0.5 rounded', gradeColor(healthScore.grade))}>
                   {healthScore.grade}
@@ -189,7 +191,7 @@ export function WatchlistCard({
                 'text-xs font-medium',
                 daysToEarnings === 0 ? 'text-red-500' : 'text-amber-500'
               )}>
-                {daysToEarnings === 0 ? 'Earnings today' : `Earnings in ${daysToEarnings}d`}
+                {daysToEarnings === 0 ? t('watchlistEarningsToday') : t('watchlistEarningsInDays', { days: daysToEarnings })}
               </span>
             )}
           </div>

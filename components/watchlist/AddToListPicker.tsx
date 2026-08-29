@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Bookmark, BookmarkCheck, ChevronDown, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -12,6 +13,7 @@ interface AddToListPickerProps {
 }
 
 export function AddToListPicker({ symbol, companyName }: AddToListPickerProps) {
+  const { t } = useTranslation('watchlist');
   const [open, setOpen] = useState(false);
   const { data: lists } = useWatchlistLists();
   const isWatched = useIsWatched(symbol);
@@ -37,9 +39,9 @@ export function AddToListPicker({ symbol, companyName }: AddToListPickerProps) {
         className="gap-2"
       >
         {isWatched ? (
-          <><BookmarkCheck className="h-4 w-4" />Watching</>
+          <><BookmarkCheck className="h-4 w-4" />{t('watchlistWatching')}</>
         ) : (
-          <><Bookmark className="h-4 w-4" />Watch</>
+          <><Bookmark className="h-4 w-4" />{t('watchlistWatch')}</>
         )}
       </Button>
     );
@@ -58,9 +60,9 @@ export function AddToListPicker({ symbol, companyName }: AddToListPickerProps) {
           className="gap-2 rounded-r-none border-r-0"
         >
           {isWatched ? (
-            <><BookmarkCheck className="h-4 w-4" />Watching</>
+            <><BookmarkCheck className="h-4 w-4" />{t('watchlistWatching')}</>
           ) : (
-            <><Bookmark className="h-4 w-4" />Watch</>
+            <><Bookmark className="h-4 w-4" />{t('watchlistWatch')}</>
           )}
         </Button>
         <Button
@@ -68,7 +70,7 @@ export function AddToListPicker({ symbol, companyName }: AddToListPickerProps) {
           size="sm"
           onClick={() => setOpen((o) => !o)}
           className="rounded-l-none px-2"
-          aria-label="Choose watchlist"
+          aria-label={t('watchlistChooseListAriaLabel')}
         >
           <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', open && 'rotate-180')} />
         </Button>

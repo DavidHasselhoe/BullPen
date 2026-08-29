@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
@@ -13,6 +14,7 @@ interface PaywallDialogProps {
 }
 
 export function PaywallDialog({ open, onOpenChange }: PaywallDialogProps) {
+  const { t } = useTranslation('watchlist');
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-sm text-center">
@@ -20,20 +22,19 @@ export function PaywallDialog({ open, onOpenChange }: PaywallDialogProps) {
           <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
             <Lock className="h-6 w-6 text-primary" />
           </div>
-          <DialogTitle>Upgrade to Pro</DialogTitle>
+          <DialogTitle>{t('watchlistPaywallTitle')}</DialogTitle>
         </DialogHeader>
 
         <p className="text-sm text-muted-foreground">
-          Free accounts are limited to {MAX_FREE_WATCHLISTS} watchlist.
-          Upgrade to Pro for unlimited lists, price alerts, and more.
+          {t('watchlistPaywallBody', { max: MAX_FREE_WATCHLISTS })}
         </p>
 
         <DialogFooter className="flex-col gap-2 sm:flex-col">
           <Button asChild className="w-full">
-            <a href="/upgrade">View Pro plans</a>
+            <a href="/upgrade">{t('watchlistPaywallViewPlans')}</a>
           </Button>
           <Button variant="ghost" className="w-full" onClick={() => onOpenChange(false)}>
-            Maybe later
+            {t('watchlistMaybeLater')}
           </Button>
         </DialogFooter>
       </DialogContent>

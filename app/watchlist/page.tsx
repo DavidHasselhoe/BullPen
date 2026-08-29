@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/use-auth';
 import { useWatchlist, useWatchlistLists, useWatchlistItems, useAddToWatchlist, useRemoveFromWatchlist, useCreateWatchlistList } from '@/hooks/use-watchlist';
 import { useAlerts } from '@/hooks/use-alerts';
@@ -52,6 +53,7 @@ interface QuoteMap {
 }
 
 export default function WatchlistPage() {
+  const { t } = useTranslation('watchlist');
   const { isAuthenticated } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
@@ -178,8 +180,8 @@ export default function WatchlistPage() {
     return (
       <AuthGate
         icon={<Bookmark className="h-7 w-7" />}
-        title="Sign in to use Watchlist"
-        description="Track your favourite stocks and get alerts when prices move."
+        title={t('watchlistSignInTitle')}
+        description={t('watchlistSignInDescription')}
       />
     );
   }
@@ -196,18 +198,18 @@ export default function WatchlistPage() {
             </div>
             <div>
               <div className="flex items-center gap-2.5 mb-0.5">
-                <h1 className="text-2xl font-bold tracking-tight text-foreground">Watchlist</h1>
+                <h1 className="text-2xl font-bold tracking-tight text-foreground">{t('watchlistPageTitle')}</h1>
                 {isLive && livePrices.size > 0 && (
                   <span className="flex items-center gap-1 text-xs text-emerald-500 font-medium">
                     <Radio className="h-3 w-3 animate-pulse" />
-                    Live
+                    {t('watchlistLiveLabel')}
                   </span>
                 )}
               </div>
               <p className="text-sm text-muted-foreground">
                 {(displayItems.length) > 0
-                  ? `${displayItems.length} stock${displayItems.length === 1 ? '' : 's'} tracked`
-                  : 'Add stocks you want to keep an eye on.'}
+                  ? t('watchlistCountTracked', { count: displayItems.length })
+                  : t('watchlistEmptyHint')}
               </p>
             </div>
           </div>
@@ -218,10 +220,10 @@ export default function WatchlistPage() {
             <button
               onClick={() => setTemplatesOpen(true)}
               className="flex items-center gap-1.5 h-9 rounded-lg border border-border px-3 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-              title="Add a starter watchlist"
+              title={t('watchlistTemplatesButtonTitle')}
             >
               <Sparkles className="h-4 w-4" />
-              <span className="hidden sm:inline">Templates</span>
+              <span className="hidden sm:inline">{t('watchlistTemplatesButtonLabel')}</span>
             </button>
             {/* View toggle */}
             <div className="flex rounded-lg border border-border overflow-hidden">
@@ -231,7 +233,7 @@ export default function WatchlistPage() {
                   'p-2 transition-colors',
                   viewMode === 'grid' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'
                 )}
-                aria-label="Grid view"
+                aria-label={t('watchlistGridViewAriaLabel')}
               >
                 <LayoutGrid className="h-4 w-4" />
               </button>
@@ -241,7 +243,7 @@ export default function WatchlistPage() {
                   'p-2 transition-colors',
                   viewMode === 'table' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'
                 )}
-                aria-label="Table view"
+                aria-label={t('watchlistTableViewAriaLabel')}
               >
                 <List className="h-4 w-4" />
               </button>
@@ -256,7 +258,7 @@ export default function WatchlistPage() {
                 onChange={(e) => { setSearchQuery(e.target.value); setShowDropdown(true); }}
                 onFocus={() => setShowDropdown(true)}
                 onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
-                placeholder="Add a stock…"
+                placeholder={t('watchlistSearchPlaceholder')}
                 className="pl-9 pr-4"
               />
             </div>
@@ -318,9 +320,9 @@ export default function WatchlistPage() {
               className="h-auto w-36 select-none opacity-90 dark:opacity-80 dark:invert"
             />
             <div>
-              <p className="text-base font-medium text-foreground">Nothing here yet</p>
+              <p className="text-base font-medium text-foreground">{t('watchlistEmptyTitle')}</p>
               <p className="text-sm text-muted-foreground mt-1">
-                Search above to add any stock, or get started with a few popular ones:
+                {t('watchlistEmptySubtitle')}
               </p>
             </div>
             {/* Quick-add suggestions */}
@@ -352,14 +354,14 @@ export default function WatchlistPage() {
                 className="flex items-center gap-1.5 rounded-lg border border-border bg-muted/40 px-3.5 py-2 text-sm font-medium text-foreground hover:border-primary/50 hover:bg-primary/5 hover:text-primary transition-colors"
               >
                 <Sparkles className="h-4 w-4" />
-                Start from a template
+                {t('watchlistStartFromTemplate')}
               </button>
               <Link
                 href="/discover"
                 className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
               >
                 <TrendingUp className="h-3.5 w-3.5" />
-                Browse Hot Picks on Discover
+                {t('watchlistBrowseHotPicks')}
               </Link>
             </div>
           </div>

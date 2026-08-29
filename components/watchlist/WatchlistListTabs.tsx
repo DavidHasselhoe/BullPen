@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { WatchlistList } from '@/hooks/use-watchlist';
@@ -27,6 +28,7 @@ function RenameInput({
   isActive: boolean;
   onDone: () => void;
 }) {
+  const { t } = useTranslation('watchlist');
   const inputRef = useRef<HTMLInputElement>(null);
   const updateList = useUpdateWatchlistList();
   const didSave = useRef(false);
@@ -58,7 +60,7 @@ function RenameInput({
         isActive ? 'border-primary-foreground/50 text-primary-foreground' : 'border-muted-foreground/50'
       )}
       maxLength={60}
-      placeholder="List name…"
+      placeholder={t('watchlistRenamePlaceholder')}
     />
   );
 }
@@ -70,6 +72,7 @@ export function WatchlistListTabs({
   onListCreated,
   onListDeleted,
 }: WatchlistListTabsProps) {
+  const { t } = useTranslation('watchlist');
   const [createOpen, setCreateOpen] = useState(false);
   const [paywallOpen, setPaywallOpen] = useState(false);
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -127,7 +130,7 @@ export function WatchlistListTabs({
                 <button
                   onClick={() => onSelect(list.id)}
                   className="flex items-center gap-1.5 min-w-0"
-                  title="Click to select · Pencil to rename"
+                  title={t('watchlistTabTitle')}
                 >
                   <span className="truncate max-w-[160px]">{list.name}</span>
                   <span className={cn(
@@ -150,7 +153,7 @@ export function WatchlistListTabs({
                 )}>
                   <button
                     type="button"
-                    title="Rename list"
+                    title={t('watchlistRenameTitle')}
                     onClick={(e) => { e.stopPropagation(); setRenamingId(list.id); }}
                     className={cn(
                       'h-5 w-5 rounded flex items-center justify-center transition-colors',
@@ -163,7 +166,7 @@ export function WatchlistListTabs({
                   </button>
                   <button
                     type="button"
-                    title="Delete list"
+                    title={t('watchlistDeleteTitle')}
                     onClick={(e) => handleDelete(e, list)}
                     disabled={deleteList.isPending}
                     className={cn(
@@ -184,10 +187,10 @@ export function WatchlistListTabs({
         <button
           onClick={handleNewList}
           className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors whitespace-nowrap"
-          aria-label="New list"
+          aria-label={t('watchlistNewList')}
         >
           <Plus className="h-3.5 w-3.5" />
-          New list
+          {t('watchlistNewList')}
         </button>
       </div>
 

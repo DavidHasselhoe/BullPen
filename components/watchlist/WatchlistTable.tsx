@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowUpDown, ArrowUp, ArrowDown, X } from 'lucide-react';
 import {
@@ -79,6 +80,7 @@ function Col({
 }
 
 export function WatchlistTable({ items, quotes, enhancedData, onRemove, isRemoving }: WatchlistTableProps) {
+  const { t } = useTranslation('watchlist');
   const [sortKey, setSortKey] = useState<SortKey>('added_at');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const queryClient = useQueryClient();
@@ -130,15 +132,15 @@ export function WatchlistTable({ items, quotes, enhancedData, onRemove, isRemovi
       <Table>
         <TableHeader>
           <TableRow className="bg-muted/40 hover:bg-muted/40">
-            <TableHead className="w-48"><Col sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} label="Symbol" col="symbol" /></TableHead>
-            <TableHead><Col sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} label="Price" col="price" /></TableHead>
-            <TableHead><Col sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} label="Change" col="changePercent" /></TableHead>
-            <TableHead><Col sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} label="Mkt Cap" col="marketCap" /></TableHead>
+            <TableHead className="w-48"><Col sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} label={t('watchlistColSymbol')} col="symbol" /></TableHead>
+            <TableHead><Col sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} label={t('watchlistColPrice')} col="price" /></TableHead>
+            <TableHead><Col sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} label={t('watchlistColChange')} col="changePercent" /></TableHead>
+            <TableHead><Col sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} label={t('watchlistColMktCap')} col="marketCap" /></TableHead>
             <TableHead className="text-xs font-medium text-muted-foreground"><TermTooltip term="P/E" /></TableHead>
-            <TableHead><Col sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} label="Health" col="health" /></TableHead>
-            <TableHead><Col sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} label="Earnings" col="earnings" /></TableHead>
+            <TableHead><Col sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} label={t('watchlistColHealth')} col="health" /></TableHead>
+            <TableHead><Col sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} label={t('watchlistColEarnings')} col="earnings" /></TableHead>
             <TableHead className="text-xs font-medium text-muted-foreground"><TermTooltip term="Thesis" /></TableHead>
-            <TableHead><Col sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} label="Added" col="added_at" /></TableHead>
+            <TableHead><Col sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} label={t('watchlistColAdded')} col="added_at" /></TableHead>
             <TableHead className="w-10" />
           </TableRow>
         </TableHeader>
@@ -163,7 +165,7 @@ export function WatchlistTable({ items, quotes, enhancedData, onRemove, isRemovi
 
                 <TableCell
                   className={cn('tabular-nums font-medium', q?.stale && 'text-muted-foreground/85')}
-                  title={q?.stale ? 'Last close — live price unavailable right now' : undefined}
+                  title={q?.stale ? t('watchlistStaleTitle') : undefined}
                 >
                   {q ? `$${q.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
                 </TableCell>
@@ -178,7 +180,7 @@ export function WatchlistTable({ items, quotes, enhancedData, onRemove, isRemovi
                         !isUp && !isDown && 'text-muted-foreground',
                         q.stale && 'opacity-60'
                       )}
-                      title={q.stale ? 'Last close — live price unavailable right now' : undefined}
+                      title={q.stale ? t('watchlistStaleTitle') : undefined}
                     >
                       <div>{isUp ? '+' : ''}{(q.changePercent ?? 0).toFixed(2)}%</div>
                       <div className="text-xs opacity-70">
@@ -211,7 +213,7 @@ export function WatchlistTable({ items, quotes, enhancedData, onRemove, isRemovi
                     <span className={cn(
                       enhanced.daysToEarnings === 0 ? 'text-red-500' : enhanced.daysToEarnings <= 14 ? 'text-amber-500' : 'text-muted-foreground'
                     )}>
-                      {enhanced.daysToEarnings === 0 ? 'Today' : `${enhanced.daysToEarnings}d`}
+                      {enhanced.daysToEarnings === 0 ? t('watchlistTableEarningsToday') : t('watchlistTableEarningsInDays', { days: enhanced.daysToEarnings })}
                     </span>
                   ) : '—'}
                 </TableCell>
@@ -238,7 +240,7 @@ export function WatchlistTable({ items, quotes, enhancedData, onRemove, isRemovi
                     onClick={() => onRemove(item.symbol)}
                     disabled={removing}
                     className="text-muted-foreground hover:text-destructive transition-colors p-1 rounded"
-                    aria-label={`Remove ${item.symbol}`}
+                    aria-label={t('watchlistTableRemoveAriaLabel', { symbol: item.symbol })}
                   >
                     <X className="h-3.5 w-3.5" />
                   </button>
