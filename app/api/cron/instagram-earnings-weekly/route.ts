@@ -21,7 +21,7 @@ import { logSecurityEvent } from '@/lib/security/security-events';
 import { createServerClient } from '@/lib/supabase/client';
 import { generateEarningsCalendarContent } from '@/lib/instagram/content/earnings-calendar';
 import { totalSlideCount } from '@/lib/instagram/render/slides';
-import { postToDiscord } from '@/lib/discord/post-message';
+import { sendDiscordBotMessage } from '@/lib/discord/bot-message';
 import { isoWeekKey } from '@/lib/instagram/period-key';
 import { instagramBioLink } from '@/lib/instagram/utm-link';
 import type { EarningsCalendarSlides } from '@/lib/instagram/content/schema';
@@ -125,30 +125,28 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   const bioLink = instagramBioLink(CONTENT_TYPE, periodKey);
 
-  const webhookUrl = process.env.DISCORD_INSTAGRAM_WEBHOOK_URL;
-  if (webhookUrl) {
+  const channelId = process.env.DISCORD_INSTAGRAM_CHANNEL_ID;
+  if (channelId) {
     try {
-      await postToDiscord(webhookUrl, {
+      await sendDiscordBotMessage(channelId, {
         embeds: [
           {
             title: `Earnings calendar ready for review — week of ${content.weekLabel}`,
             description: `${content.companies.length} companies, ${slideCount} slides.\n\n${previewLinks}\n\n**Caption:**\n${content.caption}`,
             color: 0x34d399,
-            fields: [
-              { name: 'Publish', value: `\`npm run instagram-publish -- --id=${postId}\`` },
-              { name: '⚠️ Update bio link before Monday', value: bioLink },
-            ],
+            fields: [{ name: '⚠️ Update bio link before Monday', value: bioLink }],
             timestamp: new Date().toISOString(),
           },
         ],
+        buttons: [{ label: 'Publish Now', customId: `publish:${postId}`, style: 'success' }],
       });
     } catch (err) {
-      // Never fail the cron over a notification failure — the row is already
-      // staged and can still be published manually by id.
+      // Never fail the cron over a notification failure — Monday's
+      // auto-publish cron still picks this row up if still 'ready'.
       console.error('[instagram-earnings-weekly] Discord notification failed:', err);
     }
   } else {
-    console.warn('[instagram-earnings-weekly] DISCORD_INSTAGRAM_WEBHOOK_URL not set, skipping review notification');
+    console.warn('[instagram-earnings-weekly] DISCORD_INSTAGRAM_CHANNEL_ID not set, skipping review notification');
   }
 
   return NextResponse.json({

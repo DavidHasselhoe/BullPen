@@ -57,7 +57,21 @@ INSTAGRAM_ACCESS_TOKEN=your-long-lived-access-token
 INSTAGRAM_USER_ID=your-instagram-scoped-user-id
 ```
 
-Also set `DISCORD_INSTAGRAM_WEBHOOK_URL` (Discord channel → Integrations → Webhooks → New Webhook) so the weekly review notification and publish confirmations have somewhere to land — separate from `DISCORD_CHANGELOG_WEBHOOK_URL` so Instagram doesn't mix into the changelog channel.
+Also set `DISCORD_INSTAGRAM_WEBHOOK_URL` (Discord channel → Integrations → Webhooks → New Webhook) so publish confirmations/failures have somewhere to land — separate from `DISCORD_CHANGELOG_WEBHOOK_URL` so Instagram doesn't mix into the changelog channel. This is only used for that one-line confirmation after a publish attempt; the review preview itself is posted by the bot in step 5b below.
+
+## 5b. Set up the Discord "Publish Now" button
+
+The weekly review previews (from `instagram-earnings-weekly` and `instagram-earnings-results`) are posted by a Discord bot instead of a plain webhook, with a **Publish Now** button attached — clicking it calls `publishStagedPost()` directly (same code path as `app/api/instagram/publish-by-id`), so publishing a staged post no longer requires opening a terminal. This needs its own small Discord Application (buttons only route to an application that owns the message; a plain incoming webhook has no application to route the click to).
+
+1. Go to the [Discord Developer Portal](https://discord.com/developers/applications) → New Application (e.g. "BullPen Bot").
+2. **Bot** tab → Add Bot → Reset Token → copy it → this is `DISCORD_BOT_TOKEN`.
+3. **General Information** tab → copy **Public Key** → this is `DISCORD_PUBLIC_KEY`.
+4. **OAuth2 → URL Generator** → scope `bot` → bot permissions `Send Messages` + `Embed Links` → open the generated URL → authorize it into the server that has the Instagram review channel.
+5. Enable Developer Mode (Discord User Settings → Advanced), right-click the target channel → Copy Channel ID → this is `DISCORD_INSTAGRAM_CHANNEL_ID`.
+6. Add all three env vars (`DISCORD_BOT_TOKEN`, `DISCORD_PUBLIC_KEY`, `DISCORD_INSTAGRAM_CHANNEL_ID`) to Vercel → deploy.
+7. Back in the Developer Portal, **General Information** tab → **Interactions Endpoint URL** → set to `https://bullpen.no/api/discord/interactions` → Save. The route must already be live in production for this save to succeed — Discord sends a verification `PING` to it immediately and rejects the URL if it doesn't respond correctly (see `app/api/discord/interactions/route.ts`).
+
+Without this set up, the review previews fall back to no notification at all for the two generation crons (the `channelId` guard just logs a warning) — publishing still works via `app/api/instagram/publish-by-id` or the manual script, there's just no Discord button.
 
 ## 6. App Review (only needed to go fully live)
 
