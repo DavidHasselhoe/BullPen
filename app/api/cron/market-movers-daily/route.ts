@@ -29,7 +29,12 @@ import { postToDiscord } from '@/lib/discord/post-message';
 import { instagramBioLink } from '@/lib/instagram/utm-link';
 import type { MarketMoversSlides } from '@/lib/instagram/content/schema';
 
-export const maxDuration = 60;
+// 60s was too tight and timed out intermittently in production: fetchRankedQuotes
+// needs ~518 credits for the full SIGNIFICANT_TICKERS universe against the shared
+// CRON_CREDIT_SHARE of 400/60s (lib/twelvedata/credit-budget.ts), so the last chunk
+// structurally has to wait for the next minute's bucket before the logo backfill and
+// Claude caption call even start. Matches check-price-moves, the closest analog.
+export const maxDuration = 300;
 
 const CONTENT_TYPE = 'market_movers';
 
