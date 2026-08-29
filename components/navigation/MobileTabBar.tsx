@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { Home, Compass, Briefcase, Bookmark, Menu, GraduationCap, Settings, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -10,18 +11,19 @@ import { COMMUNITY_LINKS } from '@/lib/navigation/nav-items';
 import { TOOLS } from '@/lib/tools/tools-config';
 import { PinnedTickersPanel } from './PinnedTickersPanel';
 
-const TABS = [
-  { name: 'Home', href: '/dashboard', icon: Home },
-  { name: 'Discover', href: '/discover', icon: Compass },
-  { name: 'Holdings', href: '/holdings', icon: Briefcase },
-  { name: 'Watchlist', href: '/watchlist', icon: Bookmark },
-];
-
 const MORE_PREFIXES = ['/academy', '/tools', '/social', '/users'];
 
 export function MobileTabBar() {
+  const { t } = useTranslation('navigation');
   const pathname = usePathname() ?? '';
   const [moreOpen, setMoreOpen] = useState(false);
+
+  const TABS = [
+    { name: t('mobileTabHome'), href: '/dashboard', icon: Home },
+    { name: t('mobileTabDiscover'), href: '/discover', icon: Compass },
+    { name: t('mobileTabHoldings'), href: '/holdings', icon: Briefcase },
+    { name: t('mobileTabWatchlist'), href: '/watchlist', icon: Bookmark },
+  ];
 
   // Reserve space at the bottom of the page only on routes where the bar shows
   // (this component mounts only on authed routes, via AuthNavigation). DOM side
@@ -45,7 +47,7 @@ export function MobileTabBar() {
       <nav
         className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:hidden"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
-        aria-label="Primary"
+        aria-label={t('navPrimaryAriaLabel')}
       >
         <div className="grid grid-cols-5">
           {TABS.map(({ name, href, icon: Icon }) => {
@@ -74,7 +76,7 @@ export function MobileTabBar() {
             )}
           >
             <Menu className="h-5 w-5" />
-            More
+            {t('mobileTabMore')}
           </button>
         </div>
       </nav>
@@ -82,30 +84,30 @@ export function MobileTabBar() {
       <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
         <SheetContent side="bottom" className="max-h-[85vh] gap-0 overflow-y-auto p-0">
           <SheetHeader className="border-b border-border px-4 py-3.5">
-            <SheetTitle>Menu</SheetTitle>
+            <SheetTitle>{t('navMenuTitle')}</SheetTitle>
           </SheetHeader>
 
           <div className="space-y-6 px-4 py-4" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
-            <MoreSection title="Pinned">
+            <MoreSection title={t('navSectionPinned')}>
               <PinnedTickersPanel active={moreOpen} onNavigate={close} />
             </MoreSection>
 
             {/* Academy */}
-            <MoreRow href="/academy" name="Academy" description="Learn investing, earn XP" icon={GraduationCap} onClick={close} />
+            <MoreRow href="/academy" name={t('navAcademyRowName')} description={t('navAcademyRowDescription')} icon={GraduationCap} onClick={close} />
 
-            <MoreSection title="Tools">
-              {TOOLS.filter((t) => t.status !== 'coming-soon').map((tool) => (
+            <MoreSection title={t('navSectionTools')}>
+              {TOOLS.filter((tool) => tool.status !== 'coming-soon').map((tool) => (
                 <MoreRow key={tool.id} href={tool.href} name={tool.name} icon={tool.icon} onClick={close} compact />
               ))}
             </MoreSection>
 
-            <MoreSection title="Community">
+            <MoreSection title={t('navSectionCommunity')}>
               {COMMUNITY_LINKS.map((link) => (
                 <MoreRow key={link.id} href={link.href} name={link.name} description={link.description} icon={link.icon} onClick={close} />
               ))}
             </MoreSection>
 
-            <MoreSection title="Account">
+            <MoreSection title={t('navSectionAccount')}>
               <button
                 type="button"
                 onClick={openSettings}
@@ -114,7 +116,7 @@ export function MobileTabBar() {
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted">
                   <Settings className="h-4 w-4 text-muted-foreground" />
                 </span>
-                <span className="flex-1 text-sm font-medium text-foreground">Settings</span>
+                <span className="flex-1 text-sm font-medium text-foreground">{t('navSettings')}</span>
                 <ChevronRight className="h-4 w-4 text-muted-foreground/85" />
               </button>
             </MoreSection>

@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { UserMenu } from './UserMenu';
 import { Button } from '@/components/ui/button';
@@ -23,9 +24,10 @@ import {
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { PinnedTickersPanel } from './PinnedTickersPanel';
 import { TOOLS } from '@/lib/tools/tools-config';
-import { NAV_ITEMS as navigation, COMMUNITY_LINKS } from '@/lib/navigation/nav-items';
+import { getNavItems, COMMUNITY_LINKS } from '@/lib/navigation/nav-items';
 
 export function Navigation() {
+  const { t } = useTranslation('navigation');
   const pathname = usePathname();
   const queryClient = useQueryClient();
   const { open: openCommandPalette = () => {} } = useCommandPalette();
@@ -92,6 +94,8 @@ export function Navigation() {
     queryClient.prefetchQuery({ queryKey: ['hot-picks'] });
   }, [queryClient]);
 
+  const navItems = getNavItems(t);
+
   return (
     <>
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -104,14 +108,14 @@ export function Navigation() {
             {/* Black mark on light theme, white mark on dark theme (theme is user-selectable, not fixed) */}
             <Image src="/BullPenLogo.png" alt="" width={26} height={26} priority aria-hidden="true" className="block dark:hidden" />
             <Image src="/BullPenLogo-dark.png" alt="" width={26} height={26} priority aria-hidden="true" className="hidden dark:block" />
-            bullpen
+            {t('navBrandName')}
           </Link>
 
           {/* Navigation - Centered */}
           <div className="flex items-center justify-center min-w-0 overflow-x-auto scrollbar-hide">
             {/* Navigation Links */}
             <nav className="hidden items-center gap-2 md:flex shrink-0">
-              {navigation.map((item) => {
+              {navItems.map((item) => {
                 const isActive = pathname === item.href || (item.href !== '/' && pathname?.startsWith(item.href));
                 const Icon = item.icon;
 
@@ -146,7 +150,7 @@ export function Navigation() {
                       )}
                     >
                       <Users className="h-4 w-4" />
-                      Community
+                      {t('navCommunityLabel')}
                       <ChevronDown className={cn(
                         'h-3.5 w-3.5 opacity-60 transition-transform duration-200',
                         communityOpen && 'rotate-180 opacity-100'
@@ -193,7 +197,7 @@ export function Navigation() {
                     )}
                   >
                     <Wrench className="h-4 w-4" />
-                    Tools
+                    {t('navToolsLabel')}
                     <ChevronDown className={cn(
                       'h-3.5 w-3.5 opacity-60 transition-transform duration-200',
                       toolsOpen && 'rotate-180 opacity-100'
@@ -218,7 +222,7 @@ export function Navigation() {
                           <div className="flex flex-col">
                             <span>{tool.name}</span>
                             {tool.status === 'coming-soon' && (
-                              <span className="text-xs text-muted-foreground">Coming soon</span>
+                              <span className="text-xs text-muted-foreground">{t('navComingSoon')}</span>
                             )}
                           </div>
                         </Link>
@@ -228,7 +232,7 @@ export function Navigation() {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
                     <Link href="/tools" className="flex items-center gap-3 cursor-pointer font-medium">
-                      View all tools
+                      {t('navViewAllTools')}
                     </Link>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -243,12 +247,12 @@ export function Navigation() {
               type="button"
               onClick={() => openCommandPalette()}
               className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 md:px-4 text-sm text-muted-foreground transition-all duration-150 hover:bg-accent hover:text-accent-foreground active:scale-[0.97]"
-              aria-label={`Search (${searchShortcut})`}
+              aria-label={t('navSearchAriaLabel', { shortcut: searchShortcut })}
             >
               <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
-              <span className="hidden md:inline">Search...</span>
+              <span className="hidden md:inline">{t('navSearchPlaceholderText')}</span>
               <kbd className="hidden lg:inline-flex h-5 items-center rounded border px-1.5 text-[11px]">{searchShortcut}</kbd>
             </button>
             <Popover
@@ -260,8 +264,8 @@ export function Navigation() {
                   variant="ghost"
                   size="icon"
                   className="transition-all hover:scale-105"
-                  aria-label="Pinned tickers"
-                  title="Pinned tickers"
+                  aria-label={t('navPinnedTickersLabel')}
+                  title={t('navPinnedTickersLabel')}
                 >
                   <Pin className="h-5 w-5" />
                 </Button>
@@ -278,7 +282,7 @@ export function Navigation() {
               size="icon"
               onClick={() => setSettingsOpen(true)}
               className="transition-all hover:scale-105"
-              aria-label="Open settings"
+              aria-label={t('navOpenSettingsAriaLabel')}
             >
               <Settings className="h-5 w-5" />
             </Button>

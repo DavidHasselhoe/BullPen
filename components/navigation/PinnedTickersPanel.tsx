@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { X, TrendingUp, TrendingDown } from 'lucide-react';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { TickerSelector, type SearchResult } from '@/components/tools/buy-here/TickerSelector';
@@ -25,6 +26,7 @@ interface Props {
 }
 
 export function PinnedTickersPanel({ active, onNavigate }: Props) {
+  const { t } = useTranslation('navigation');
   const { pinnedTickers, updatePinnedTickers } = useUserSettings();
   const livePrices = useLivePrices(active ? pinnedTickers : []);
   const [pendingSelect, setPendingSelect] = useState<SearchResult | null>(null);
@@ -52,7 +54,7 @@ export function PinnedTickersPanel({ active, onNavigate }: Props) {
     <div className="space-y-3">
       {pinnedTickers.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          Pin a stock to see its live price here from anywhere in the app.
+          {t('pinnedEmptyHint')}
         </p>
       ) : (
         <div className="space-y-0.5">
@@ -93,8 +95,8 @@ export function PinnedTickersPanel({ active, onNavigate }: Props) {
                 <button
                   type="button"
                   onClick={() => removeTicker(symbol)}
-                  aria-label={`Unpin ${symbol}`}
-                  title={`Unpin ${symbol}`}
+                  aria-label={t('pinnedUnpinLabel', { symbol })}
+                  title={t('pinnedUnpinLabel', { symbol })}
                   className="shrink-0 rounded p-0.5 text-muted-foreground/80 opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100 focus-visible:opacity-100"
                 >
                   <X className="h-3.5 w-3.5" />
@@ -108,7 +110,7 @@ export function PinnedTickersPanel({ active, onNavigate }: Props) {
       <TickerSelector
         value={pendingSelect}
         onChange={addTicker}
-        placeholder={pinnedTickers.length >= MAX_PINNED ? `Up to ${MAX_PINNED} pins` : 'Add a ticker to pin...'}
+        placeholder={pinnedTickers.length >= MAX_PINNED ? t('pinnedUpToLimit', { max: MAX_PINNED }) : t('pinnedAddPlaceholder')}
         disabled={pinnedTickers.length >= MAX_PINNED}
       />
     </div>

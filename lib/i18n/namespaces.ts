@@ -9,15 +9,23 @@
  * safe (i18next just gets an empty resource) but pointless until then.
  */
 
-export const NAMESPACES = ['common', 'settings', 'languages', 'tools', 'stock', 'holdings', 'user', 'ai', 'discover', 'market', 'auth', 'academy', 'billing', 'watchlist'] as const;
+export const NAMESPACES = ['common', 'settings', 'languages', 'tools', 'stock', 'holdings', 'user', 'ai', 'discover', 'market', 'auth', 'academy', 'billing', 'watchlist', 'navigation'] as const;
 export type Namespace = (typeof NAMESPACES)[number];
 
 /**
  * Always loaded for every route, regardless of path — small enough that
  * bundling them beats a waterfall on first paint. Everything else lazy-loads
  * per the route→namespace mapping below as Phase 1 adds namespaces.
+ *
+ * `navigation` is the one exception to "namespaces lazy-load unless mapped
+ * to a route prefix": Navigation.tsx/MobileTabBar.tsx render immediately on
+ * every authenticated page load (via AuthNavigation, not behind a click like
+ * settings/ai/market/auth), so lazy-loading it would reintroduce exactly the
+ * flash-of-English Phase 0 was built to kill, just for the header/tab-bar
+ * chrome instead of the whole page. Its catalog is small (~40 keys), so the
+ * bundle-size cost of bundling it everywhere is negligible.
  */
-export const ALWAYS_LOADED: readonly Namespace[] = ['common', 'languages'];
+export const ALWAYS_LOADED: readonly Namespace[] = ['common', 'languages', 'navigation'];
 
 /**
  * Which extra namespace(s) a route's OWN page content needs preloaded on the

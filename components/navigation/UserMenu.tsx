@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/use-auth';
 import { signOut } from '@/lib/auth/auth';
 import {
@@ -35,6 +36,7 @@ interface UserMenuProps {
 }
 
 export function UserMenu({ forceDark = false, open, onOpenChange }: UserMenuProps = {}) {
+  const { t } = useTranslation('navigation');
   const router = useRouter();
   const { user, isLoading, isAuthenticated } = useAuth();
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -70,14 +72,14 @@ export function UserMenu({ forceDark = false, open, onOpenChange }: UserMenuProp
           onClick={() => router.push('/login')}
           className="transition-all hover:scale-105 hover:bg-accent/50"
         >
-          Sign In
+          {t('navSignIn')}
         </Button>
         <Button
           size="sm"
           onClick={() => router.push('/register')}
           className="transition-all hover:scale-105 active:scale-95"
         >
-          Sign Up
+          {t('navSignUp')}
         </Button>
       </div>
     );
@@ -110,7 +112,7 @@ export function UserMenu({ forceDark = false, open, onOpenChange }: UserMenuProp
         <Button
           variant="ghost"
           className="relative h-9 w-9 rounded-full transition-all hover:scale-105 focus:ring-2 focus:ring-ring p-0"
-          aria-label="Account menu"
+          aria-label={t('navAccountMenuAriaLabel')}
         >
           <ProfileAvatar
             avatarUrl={user.avatar_url}
@@ -137,7 +139,7 @@ export function UserMenu({ forceDark = false, open, onOpenChange }: UserMenuProp
                 <ProBadge />
               ) : (
                 <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  Free
+                  {t('navFreeBadge')}
                 </span>
               )}
             </div>
@@ -154,7 +156,7 @@ export function UserMenu({ forceDark = false, open, onOpenChange }: UserMenuProp
           className="cursor-pointer transition-all hover:translate-x-1"
         >
           <User className="mr-2 h-4 w-4" />
-          <span>Profile</span>
+          <span>{t('navProfile')}</span>
         </DropdownMenuItem>
 
         {userIsPro ? (
@@ -168,7 +170,7 @@ export function UserMenu({ forceDark = false, open, onOpenChange }: UserMenuProp
             ) : (
               <CreditCard className="mr-2 h-4 w-4" />
             )}
-            <span>Manage subscription</span>
+            <span>{t('navManageSubscription')}</span>
           </DropdownMenuItem>
         ) : (
           <DropdownMenuItem
@@ -176,7 +178,7 @@ export function UserMenu({ forceDark = false, open, onOpenChange }: UserMenuProp
             className="cursor-pointer text-primary transition-all hover:translate-x-1 focus:text-primary"
           >
             <Sparkles className="mr-2 h-4 w-4" />
-            <span>Upgrade to Pro</span>
+            <span>{t('navUpgradeToPro')}</span>
           </DropdownMenuItem>
         )}
 
@@ -184,21 +186,21 @@ export function UserMenu({ forceDark = false, open, onOpenChange }: UserMenuProp
           <>
             <DropdownMenuSeparator />
             <DropdownMenuLabel className="text-[11px] uppercase tracking-widest text-muted-foreground/80 font-semibold">
-              Admin
+              {t('navAdminLabel')}
             </DropdownMenuLabel>
             <DropdownMenuItem
               onClick={() => router.push('/admin/costs')}
               className="cursor-pointer transition-all hover:translate-x-1"
             >
               <Shield className="mr-2 h-4 w-4" />
-              <span>AI Costs</span>
+              <span>{t('navAiCosts')}</span>
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => router.push('/admin/feedback')}
               className="cursor-pointer transition-all hover:translate-x-1"
             >
               <Inbox className="mr-2 h-4 w-4" />
-              <span>Feedback</span>
+              <span>{t('navFeedbackLabel')}</span>
             </DropdownMenuItem>
           </>
         )}
@@ -209,7 +211,7 @@ export function UserMenu({ forceDark = false, open, onOpenChange }: UserMenuProp
           className="cursor-pointer transition-all hover:translate-x-1"
         >
           <MessageSquarePlus className="mr-2 h-4 w-4" />
-          <span>Report a bug or idea</span>
+          <span>{t('navReportBugOrIdea')}</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
@@ -223,7 +225,7 @@ export function UserMenu({ forceDark = false, open, onOpenChange }: UserMenuProp
           ) : (
             <LogOut className="mr-2 h-4 w-4" />
           )}
-          <span>Sign Out</span>
+          <span>{t('navSignOut')}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
       <ProfileModal open={profileOpen} onOpenChange={setProfileOpen} />
