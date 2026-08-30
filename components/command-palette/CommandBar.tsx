@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { useCommandPalette } from './CommandPaletteProvider';
 import { useSearchShortcut } from '@/hooks/use-search-shortcut';
 import { Search } from 'lucide-react';
@@ -9,6 +10,7 @@ import { Search } from 'lucide-react';
  * Clicking opens the command palette (Ctrl+K on Windows, ⌘K on Mac).
  */
 export function CommandBar() {
+  const { t } = useTranslation('command-palette');
   const { open } = useCommandPalette();
   const searchShortcut = useSearchShortcut();
 
@@ -20,7 +22,7 @@ export function CommandBar() {
     >
       <Search className="h-5 w-5 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
       <span className="flex-1 text-base text-muted-foreground group-hover:text-foreground transition-colors">
-        Search companies, filings, metrics, or ask Bull
+        {t('searchPlaceholder')}
       </span>
       <kbd className="hidden sm:inline-flex h-7 items-center gap-0.5 rounded border bg-muted/80 px-2 text-xs font-medium text-muted-foreground">
         {searchShortcut}

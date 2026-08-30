@@ -9,7 +9,7 @@
  * safe (i18next just gets an empty resource) but pointless until then.
  */
 
-export const NAMESPACES = ['common', 'settings', 'languages', 'tools', 'stock', 'holdings', 'user', 'ai', 'discover', 'market', 'auth', 'academy', 'billing', 'watchlist', 'navigation', 'alerts'] as const;
+export const NAMESPACES = ['common', 'settings', 'languages', 'tools', 'stock', 'holdings', 'user', 'ai', 'discover', 'market', 'auth', 'academy', 'billing', 'watchlist', 'navigation', 'alerts', 'command-palette'] as const;
 export type Namespace = (typeof NAMESPACES)[number];
 
 /**

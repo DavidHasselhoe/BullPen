@@ -1,0 +1,40 @@
+{
+  "quickActionAskBull": "Ask Bull",
+  "quickActionHoldings": "My Holdings",
+  "quickActionScreener": "Stock Screener",
+  "quickActionDiscover": "Discover",
+  "quickActionMembers": "Browse Members",
+
+  "searchPlaceholder": "Search companies, filings, metrics, or ask Bull",
+
+  "dialogTitle": "Command Palette",
+  "dialogDescription": "Search companies, ask AI, or navigate",
+  "quickActionsHeading": "Quick actions",
+  "helperText": "Search 10,000+ stocks, ETFs, crypto & commodities, or ask in plain English.",
+
+  "groupCrypto": "Crypto",
+  "groupCommodities": "Commodities",
+  "groupStocksEtfs": "Stocks & ETFs",
+  "actionsForTicker": "Actions for {{ticker}}",
+  "tellMeAboutQuery": "Tell me about {{ticker}}",
+  "deepDiveLabel": "Deep dive",
+  "compareLabel": "Compare",
+  "askBullAboutLabel": "Ask Bull about",
+  "setPriceAlertForLabel": "Set price alert for",
+
+  "askBullLabel": "Ask Bull",
+  "aboutMutedLabel": "about",
+
+  "peopleHeading": "People",
+  "anonymousFallback": "Anonymous",
+  "browseAllMembersMatching": "Browse all members matching",
+
+  "searchingLabel": "Searching…",
+  "searchFailedLabel": "Search failed. Try again.",
+  "noCompaniesFoundPrefix": "No companies found. Try",
+  "noCompaniesFoundSuffix": "above for natural-language queries.",
+
+  "navigateLabel": "Navigate",
+  "openLabel": "Open",
+  "closeLabel": "Close"
+}

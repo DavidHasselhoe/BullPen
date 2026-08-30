@@ -2,6 +2,8 @@
 
 import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -47,13 +49,15 @@ interface SearchResponse {
 }
 
 
-const QUICK_ACTIONS = [
-  { id: 'ai', label: 'Ask Bull', href: '/tools/ai-chat', icon: AskBullIcon, opensAIPanel: true },
-  { id: 'holdings', label: 'My Holdings', href: '/holdings', icon: Briefcase },
-  { id: 'screener', label: 'Stock Screener', href: '/tools/screener', icon: Filter },
-  { id: 'discover', label: 'Discover', href: '/', icon: TrendingUp },
-  { id: 'members', label: 'Browse Members', href: '/users', icon: Users },
-];
+function getQuickActions(t: TFunction) {
+  return [
+    { id: 'ai', label: t('quickActionAskBull'), href: '/tools/ai-chat', icon: AskBullIcon, opensAIPanel: true },
+    { id: 'holdings', label: t('quickActionHoldings'), href: '/holdings', icon: Briefcase },
+    { id: 'screener', label: t('quickActionScreener'), href: '/tools/screener', icon: Filter },
+    { id: 'discover', label: t('quickActionDiscover'), href: '/', icon: TrendingUp },
+    { id: 'members', label: t('quickActionMembers'), href: '/users', icon: Users },
+  ];
+}
 
 /** Small keycap used in the footer hint bar. */
 function Kbd({ children }: { children: React.ReactNode }) {
@@ -79,9 +83,11 @@ interface CommandPaletteProps {
 }
 
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
+  const { t } = useTranslation('command-palette');
   const router = useRouter();
   const { open: openAIPanel } = useAIPanel();
   const [searchQuery, setSearchQuery] = useState('');
+  const QUICK_ACTIONS = getQuickActions(t);
 
   // 500 ms reduces intermediate API calls significantly for average typing speeds
   const debouncedQuery = useDebounce(searchQuery, 500);
@@ -203,8 +209,8 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         className="top-[14vh] translate-y-0 gap-0 overflow-hidden rounded-2xl border-border/60 p-0 shadow-2xl shadow-black/30 sm:max-w-[640px]"
       >
         <DialogHeader className="sr-only">
-          <DialogTitle>Command Palette</DialogTitle>
-          <DialogDescription>Search companies, ask AI, or navigate</DialogDescription>
+          <DialogTitle>{t('dialogTitle')}</DialogTitle>
+          <DialogDescription>{t('dialogDescription')}</DialogDescription>
         </DialogHeader>
         <Command
           shouldFilter={false}
@@ -212,7 +218,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         >
           <div className="relative">
             <CommandInput
-              placeholder="Search companies, filings, metrics, or ask Bull"
+              placeholder={t('searchPlaceholder')}
               value={searchQuery}
               onValueChange={setSearchQuery}
               onKeyDown={(e) => {
@@ -231,7 +237,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
           <CommandList className="h-[368px] max-h-[368px] px-1.5 pb-2">
             {!hasQuery ? (
               <>
-                <CommandGroup heading="Quick actions">
+                <CommandGroup heading={t('quickActionsHeading')}>
                   {QUICK_ACTIONS.map((action) => {
                     const Icon = action.icon;
                     return (
@@ -251,7 +257,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                   })}
                 </CommandGroup>
                 <p className="px-3 pt-2 text-center text-xs text-muted-foreground/80">
-                  Search 10,000+ stocks, ETFs, crypto &amp; commodities, or ask in plain English.
+                  {t('helperText')}
                 </p>
               </>
             ) : (
@@ -295,17 +301,17 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                       return (
                         <>
                           {crypto.length > 0 && (
-                            <CommandGroup heading="Crypto">
+                            <CommandGroup heading={t('groupCrypto')}>
                               {crypto.map(renderItem)}
                             </CommandGroup>
                           )}
                           {commodities.length > 0 && (
-                            <CommandGroup heading="Commodities">
+                            <CommandGroup heading={t('groupCommodities')}>
                               {commodities.map(renderItem)}
                             </CommandGroup>
                           )}
                           {stocks.length > 0 && (
-                            <CommandGroup heading="Stocks & ETFs">
+                            <CommandGroup heading={t('groupStocksEtfs')}>
                               {stocks.map(renderItem)}
                             </CommandGroup>
                           )}
@@ -318,12 +324,12 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                       const firstType = inferAssetType(first.ticker, first.instrument_type);
                       const isStock = firstType === 'stock' || firstType === 'etf';
                       return (
-                        <CommandGroup heading={`Actions for ${first.ticker}`}>
+                        <CommandGroup heading={t('actionsForTicker', { ticker: first.ticker })}>
                           <CommandItem value="deep-dive-first" onSelect={() => handleDeepDive(first.ticker)} className={itemClass}>
                             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted/60 text-muted-foreground group-data-[selected=true]:bg-primary/10 group-data-[selected=true]:text-foreground">
                               <Microscope className="h-4 w-4" />
                             </span>
-                            <span className="flex-1">Deep dive <span className="font-medium">{first.ticker}</span></span>
+                            <span className="flex-1">{t('deepDiveLabel')} <span className="font-medium">{first.ticker}</span></span>
                             <ReturnHint />
                           </CommandItem>
                           {isStock && (
@@ -331,22 +337,22 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                               <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted/60 text-muted-foreground group-data-[selected=true]:bg-primary/10 group-data-[selected=true]:text-foreground">
                                 <Scale className="h-4 w-4" />
                               </span>
-                              <span className="flex-1">Compare <span className="font-medium">{first.ticker}</span></span>
+                              <span className="flex-1">{t('compareLabel')} <span className="font-medium">{first.ticker}</span></span>
                               <ReturnHint />
                             </CommandItem>
                           )}
-                          <CommandItem value="ask-about-first" onSelect={() => handleAskAI(`Tell me about ${first.ticker}`)} className={itemClass}>
+                          <CommandItem value="ask-about-first" onSelect={() => handleAskAI(t('tellMeAboutQuery', { ticker: first.ticker }))} className={itemClass}>
                             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted/60 text-muted-foreground group-data-[selected=true]:bg-primary/10 group-data-[selected=true]:text-foreground">
                               <AskBullIcon className="h-4 w-4" />
                             </span>
-                            <span className="flex-1">Ask Bull about <span className="font-medium">{first.ticker}</span></span>
+                            <span className="flex-1">{t('askBullAboutLabel')} <span className="font-medium">{first.ticker}</span></span>
                             <ReturnHint />
                           </CommandItem>
                           <CommandItem value="alert-first" onSelect={() => handlePriceAlert(first.ticker, first.name)} className={itemClass}>
                             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted/60 text-muted-foreground group-data-[selected=true]:bg-primary/10 group-data-[selected=true]:text-foreground">
                               <Bell className="h-4 w-4" />
                             </span>
-                            <span className="flex-1">Set price alert for <span className="font-medium">{first.ticker}</span></span>
+                            <span className="flex-1">{t('setPriceAlertForLabel')} <span className="font-medium">{first.ticker}</span></span>
                             <ReturnHint />
                           </CommandItem>
                         </CommandGroup>
@@ -356,7 +362,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                 ) : null}
 
                 {/* Ask Bull — at the bottom so stocks are always first */}
-                <CommandGroup heading="Ask Bull">
+                <CommandGroup heading={t('askBullLabel')}>
                   <CommandItem
                     value="ask-ai"
                     onSelect={() => handleAskAI()}
@@ -366,16 +372,16 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                       <AskBullIcon className="h-4 w-4" />
                     </span>
                     <span className="flex-1 truncate">
-                      Ask Bull <span className="text-muted-foreground">about</span>{' '}
+                      {t('askBullLabel')} <span className="text-muted-foreground">{t('aboutMutedLabel')}</span>{' '}
                       <span className="font-medium">&ldquo;{searchQuery}&rdquo;</span>
                     </span>
                     <ReturnHint />
                   </CommandItem>
                 </CommandGroup>
                 {peopleResults && peopleResults.length > 0 && (
-                  <CommandGroup heading="People">
+                  <CommandGroup heading={t('peopleHeading')}>
                     {peopleResults.map((person) => {
-                      const displayName = person.full_name || person.username || 'Anonymous';
+                      const displayName = person.full_name || person.username || t('anonymousFallback');
                       const profileSlug = person.username ? encodeURIComponent(person.username) : person.id;
                       const href = profileSlug ? `/users/${profileSlug}` : '#';
                       const initials = displayName.slice(0, 2).toUpperCase();
@@ -420,7 +426,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted/60 text-muted-foreground group-data-[selected=true]:bg-primary/10 group-data-[selected=true]:text-foreground">
                         <Users className="h-4 w-4" />
                       </span>
-                      <span className="flex-1 truncate">Browse all members matching &ldquo;{debouncedQuery}&rdquo;</span>
+                      <span className="flex-1 truncate">{t('browseAllMembersMatching')} &ldquo;{debouncedQuery}&rdquo;</span>
                       <ReturnHint />
                     </CommandItem>
                   </CommandGroup>
@@ -430,13 +436,13 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                     {isSearching ? (
                       <div className="flex flex-col items-center gap-2 py-12 text-sm text-muted-foreground/85">
                         <Loader2 className="size-5 animate-spin text-muted-foreground/80" />
-                        Searching…
+                        {t('searchingLabel')}
                       </div>
                     ) : searchError ? (
-                      <div className="py-12 text-center text-sm text-muted-foreground">Search failed. Try again.</div>
+                      <div className="py-12 text-center text-sm text-muted-foreground">{t('searchFailedLabel')}</div>
                     ) : (
                       <div className="px-6 py-12 text-center text-sm text-muted-foreground/85">
-                        No companies found. Try <span className="font-medium text-foreground">Ask Bull</span> above for natural-language queries.
+                        {t('noCompaniesFoundPrefix')} <span className="font-medium text-foreground">{t('askBullLabel')}</span> {t('noCompaniesFoundSuffix')}
                       </div>
                     )}
                   </CommandEmpty>
@@ -451,18 +457,18 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
               <span className="flex items-center gap-1">
                 <Kbd>↑</Kbd>
                 <Kbd>↓</Kbd>
-                <span className="ml-0.5">Navigate</span>
+                <span className="ml-0.5">{t('navigateLabel')}</span>
               </span>
               <span className="flex items-center gap-1">
                 <Kbd>
                   <CornerDownLeft className="h-2.5 w-2.5" />
                 </Kbd>
-                <span className="ml-0.5">Open</span>
+                <span className="ml-0.5">{t('openLabel')}</span>
               </span>
             </div>
             <span className="flex items-center gap-1 text-[11px] text-muted-foreground/85">
               <Kbd>esc</Kbd>
-              <span className="ml-0.5">Close</span>
+              <span className="ml-0.5">{t('closeLabel')}</span>
             </span>
           </div>
         </Command>
