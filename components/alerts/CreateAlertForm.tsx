@@ -3,12 +3,13 @@
 import { useMemo, useState } from 'react';
 import { Loader2, Zap } from 'lucide-react';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { TickerSelector, type SearchResult } from '@/components/tools/buy-here/TickerSelector';
 import { AlertTypePicker } from './AlertTypePicker';
-import { describeAlert, type AlertType, type CreateAlertPayload } from '@/types/alerts';
+import { describeAlert, FREE_ACTIVE_ALERT_LIMIT, type AlertType, type CreateAlertPayload } from '@/types/alerts';
 
 interface Props {
   onCreated: () => void;
@@ -23,6 +24,7 @@ interface Props {
 }
 
 export function CreateAlertForm({ onCreated, onCancel, onCreate, initialTicker, initialAlertType, initialThreshold }: Props) {
+  const { t } = useTranslation('alerts');
   const [ticker, setTicker] = useState<SearchResult | null>(
     initialTicker
       ? { ticker: initialTicker.ticker, name: initialTicker.name, cik: '', has_data: true }
@@ -53,8 +55,11 @@ export function CreateAlertForm({ onCreated, onCancel, onCreate, initialTicker, 
 
   const preview = useMemo(() => {
     if (!ticker || !alertType || parsedThreshold === null) return null;
-    return `You'll be alerted when ${ticker.ticker} ${describeAlert({ alertType, threshold: parsedThreshold }).toLowerCase()}.`;
-  }, [ticker, alertType, parsedThreshold]);
+    return t('previewText', {
+      ticker: ticker.ticker,
+      description: describeAlert({ alertType, threshold: parsedThreshold }, t).toLowerCase(),
+    });
+  }, [ticker, alertType, parsedThreshold, t]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -74,7 +79,7 @@ export function CreateAlertForm({ onCreated, onCancel, onCreate, initialTicker, 
     } else if (res.code === 'free_limit_reached') {
       setLimitReached(true);
     } else {
-      setError(res.error ?? "Couldn't create the alert. Please try again.");
+      setError(res.error ?? t('genericCreateError'));
     }
   }
 
@@ -93,12 +98,12 @@ export function CreateAlertForm({ onCreated, onCancel, onCreate, initialTicker, 
       ) : (
         <div className="space-y-1.5">
           <label className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground/80">
-            Stock
+            {t('stepStock')}
           </label>
           <TickerSelector
             value={ticker}
             onChange={setTicker}
-            placeholder="Search a stock (e.g. AAPL)"
+            placeholder={t('searchStockPlaceholder')}
           />
         </div>
       )}
@@ -106,7 +111,7 @@ export function CreateAlertForm({ onCreated, onCancel, onCreate, initialTicker, 
       {/* Step 2 — condition */}
       <div className="space-y-2">
         <label className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground/80">
-          Condition
+          {t('stepCondition')}
         </label>
         <AlertTypePicker value={alertType} onChange={setAlertType} />
       </div>
@@ -115,7 +120,7 @@ export function CreateAlertForm({ onCreated, onCancel, onCreate, initialTicker, 
       {needsThreshold && (
         <div className="space-y-1.5">
           <label className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground/80">
-            {isPriceType ? 'Target price' : 'Threshold (%)'}
+            {isPriceType ? t('stepTargetPrice') : t('stepThresholdPercent')}
           </label>
           <div className="relative">
             {isPriceType && (
@@ -147,7 +152,7 @@ export function CreateAlertForm({ onCreated, onCancel, onCreate, initialTicker, 
       {preview && (
         <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/[0.04] px-3 py-2">
           <p className="text-xs text-foreground/85 leading-relaxed">
-            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-500/80 mr-1.5">Preview</span>
+            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-500/80 mr-1.5">{t('previewLabel')}</span>
             {preview}
           </p>
         </div>
@@ -158,11 +163,11 @@ export function CreateAlertForm({ onCreated, onCancel, onCreate, initialTicker, 
         <div className="rounded-lg border border-amber-500/30 bg-amber-500/[0.06] px-3 py-2.5 flex items-start gap-2">
           <Zap className="h-3.5 w-3.5 text-amber-400 shrink-0 mt-0.5" />
           <div>
-            <p className="text-xs text-amber-300 font-medium">You&apos;ve reached the 5-stock limit on the free plan.</p>
+            <p className="text-xs text-amber-300 font-medium">{t('limitReachedTitle', { limit: FREE_ACTIVE_ALERT_LIMIT })}</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Pause all alerts on a stock to free up a slot, or{' '}
-              <Link href="/pricing" className="text-amber-400 hover:underline">upgrade to Pro</Link>
-              {' '}for unlimited stocks.
+              {t('limitReachedBeforeLink')}{' '}
+              <Link href="/pricing" className="text-amber-400 hover:underline">{t('upgradeToProLink')}</Link>
+              {' '}{t('limitReachedAfterLink')}
             </p>
           </div>
         </div>
@@ -178,7 +183,7 @@ export function CreateAlertForm({ onCreated, onCancel, onCreate, initialTicker, 
       {/* Actions */}
       <div className="flex items-center justify-end gap-2 pt-1">
         <Button type="button" variant="ghost" size="sm" onClick={onCancel} disabled={submitting}>
-          Cancel
+          {t('cancelButton')}
         </Button>
         <Button
           type="submit"
@@ -186,7 +191,7 @@ export function CreateAlertForm({ onCreated, onCancel, onCreate, initialTicker, 
           disabled={!canSubmit}
           className="bg-emerald-500 hover:bg-emerald-600 text-white"
         >
-          {submitting ? <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />Creating…</> : 'Create alert'}
+          {submitting ? <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />{t('creatingButton')}</> : t('submitCreateButton')}
         </Button>
       </div>
     </form>

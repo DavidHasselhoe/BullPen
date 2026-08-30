@@ -1,8 +1,9 @@
 'use client';
 
 import { ArrowUp, ArrowDown, TrendingUp, TrendingDown, ChevronsUp, ChevronsDown, Trophy } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
-import { ALERT_TYPE_GROUPS, alertTypeLabel, type AlertType } from '@/types/alerts';
+import { ALERT_TYPE_GROUPS, alertTypeLabel, groupLabel, type AlertType } from '@/types/alerts';
 
 /** Shared per-condition icon language — also used by AlertCard for scannable row glyphs. */
 export const ALERT_TYPE_ICON: Record<AlertType, React.ComponentType<{ className?: string }>> = {
@@ -21,22 +22,24 @@ interface Props {
 }
 
 export function AlertTypePicker({ value, onChange }: Props) {
+  const { t } = useTranslation('alerts');
+
   return (
     <div className="space-y-3">
       {ALERT_TYPE_GROUPS.map(({ group, types }) => (
         <div key={group}>
           <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground/85 mb-1.5 px-0.5">
-            {group}
+            {groupLabel(group, t)}
           </div>
           <div className={cn('grid gap-2', types.length === 1 ? 'grid-cols-1' : 'grid-cols-2')}>
-            {types.map((t) => {
-              const Icon = ALERT_TYPE_ICON[t];
-              const selected = value === t;
+            {types.map((type) => {
+              const Icon = ALERT_TYPE_ICON[type];
+              const selected = value === type;
               return (
                 <button
-                  key={t}
+                  key={type}
                   type="button"
-                  onClick={() => onChange(t)}
+                  onClick={() => onChange(type)}
                   className={cn(
                     'flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left transition-all',
                     selected
@@ -48,7 +51,7 @@ export function AlertTypePicker({ value, onChange }: Props) {
                   <Icon
                     className={cn('h-3.5 w-3.5 shrink-0', selected ? 'text-emerald-500' : 'text-muted-foreground/80')}
                   />
-                  <span className="text-xs font-medium">{alertTypeLabel(t)}</span>
+                  <span className="text-xs font-medium">{alertTypeLabel(type, t)}</span>
                 </button>
               );
             })}

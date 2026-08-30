@@ -2,12 +2,19 @@
 
 import { useMemo, useState } from 'react';
 import { Plus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { AlertCard } from './AlertCard';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { cn } from '@/lib/utils';
 import type { UserAlert } from '@/types/alerts';
 
 type Filter = 'all' | 'active' | 'paused';
+
+const FILTER_LABEL_KEYS: Record<Filter, 'filterAll' | 'filterActive' | 'filterPaused'> = {
+  all: 'filterAll',
+  active: 'filterActive',
+  paused: 'filterPaused',
+};
 
 interface Props {
   alerts: UserAlert[];
@@ -23,6 +30,7 @@ interface StockGroup {
 }
 
 export function AlertList({ alerts, onToggle, onDelete, onAddCondition }: Props) {
+  const { t } = useTranslation('alerts');
   const [filter, setFilter] = useState<Filter>('all');
 
   // Group all alerts by symbol, preserving insertion order of first occurrence
@@ -58,11 +66,11 @@ export function AlertList({ alerts, onToggle, onDelete, onAddCondition }: Props)
       <div className="flex items-center justify-between gap-3 px-1">
         <div className="flex items-baseline gap-2">
           <h2 className="text-[11px] font-bold uppercase tracking-[0.22em] text-muted-foreground/80">
-            Your alerts
+            {t('sectionTitle')}
           </h2>
           <span className="text-[11px] font-mono text-muted-foreground/80">
-            {activeStockCount} {activeStockCount === 1 ? 'stock' : 'stocks'}
-            {totalConditions > 0 && ` · ${totalConditions} ${totalConditions === 1 ? 'condition' : 'conditions'}`}
+            {t('stockCount', { count: activeStockCount })}
+            {totalConditions > 0 && ` · ${t('conditionCount', { count: totalConditions })}`}
           </span>
         </div>
         <div className="flex items-center gap-0.5 rounded-md border border-border/40 bg-card/30 p-0.5">
@@ -78,7 +86,7 @@ export function AlertList({ alerts, onToggle, onDelete, onAddCondition }: Props)
                   : 'text-muted-foreground/80 hover:text-foreground'
               )}
             >
-              {f}
+              {t(FILTER_LABEL_KEYS[f])}
             </button>
           ))}
         </div>
@@ -88,7 +96,7 @@ export function AlertList({ alerts, onToggle, onDelete, onAddCondition }: Props)
       {filteredGroups.length === 0 ? (
         <div className="rounded-2xl border border-border/30 border-dashed py-10 text-center">
           <p className="text-xs text-muted-foreground/80">
-            {filter === 'paused' ? 'No paused alerts.' : 'No alerts in this view.'}
+            {filter === 'paused' ? t('emptyPaused') : t('emptyDefault')}
           </p>
         </div>
       ) : (
@@ -116,14 +124,14 @@ export function AlertList({ alerts, onToggle, onDelete, onAddCondition }: Props)
                   </span>
                 )}
                 <span className="ml-auto text-[11px] font-mono text-muted-foreground/80 shrink-0">
-                  {group.alerts.length} {group.alerts.length === 1 ? 'condition' : 'conditions'}
+                  {t('conditionCount', { count: group.alerts.length })}
                 </span>
                 <button
                   type="button"
                   onClick={() => onAddCondition(group.symbol, group.companyName)}
                   className="h-6 w-6 shrink-0 rounded flex items-center justify-center text-muted-foreground/80 hover:text-foreground hover:bg-muted/60 transition-colors"
-                  title={`Add condition to ${group.symbol}`}
-                  aria-label={`Add condition to ${group.symbol}`}
+                  title={t('addConditionTo', { symbol: group.symbol })}
+                  aria-label={t('addConditionTo', { symbol: group.symbol })}
                 >
                   <Plus className="h-3.5 w-3.5" />
                 </button>

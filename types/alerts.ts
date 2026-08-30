@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { TFunction } from 'i18next';
 
 // ─── Alert type taxonomy ─────────────────────────────────────────────────────
 
@@ -13,11 +14,14 @@ export const AlertTypeSchema = z.enum([
 ]);
 export type AlertType = z.infer<typeof AlertTypeSchema>;
 
+export type AlertTypeGroupName = 'Price' | 'Momentum' | 'Proximity' | 'Milestone';
+
 /**
  * Grouping for the UI's type picker. Keep stable — drives layout order.
+ * `group` is a stable English identifier, not display text — see groupLabel().
  */
 export const ALERT_TYPE_GROUPS: Array<{
-  group: 'Price' | 'Momentum' | 'Proximity' | 'Milestone';
+  group: AlertTypeGroupName;
   types: AlertType[];
 }> = [
   { group: 'Price',     types: ['price_above', 'price_below'] },
@@ -25,6 +29,32 @@ export const ALERT_TYPE_GROUPS: Array<{
   { group: 'Proximity', types: ['near_52w_high', 'near_52w_low'] },
   { group: 'Milestone', types: ['all_time_high'] },
 ];
+
+const GROUP_LABELS: Record<AlertTypeGroupName, string> = {
+  Price: 'Price',
+  Momentum: 'Momentum',
+  Proximity: 'Proximity',
+  Milestone: 'Milestone',
+};
+
+const GROUP_LABEL_KEYS: Record<AlertTypeGroupName, string> = {
+  Price: 'groupPrice',
+  Momentum: 'groupMomentum',
+  Proximity: 'groupProximity',
+  Milestone: 'groupMilestone',
+};
+
+/**
+ * `t` is optional so this stays callable from server code with no i18next
+ * context (lib/notifications/notification-creators.ts writes a plain-English
+ * message straight into a stored notification row; lib/ai/tools.ts builds a
+ * string fed back to the LLM) — both keep today's English behavior
+ * unchanged. Client UI call sites pass `t` from useTranslation('alerts') to
+ * get a real translation.
+ */
+export function groupLabel(group: AlertTypeGroupName, t?: TFunction): string {
+  return t ? t(GROUP_LABEL_KEYS[group]) : GROUP_LABELS[group];
+}
 
 // ─── DB row → client shape ───────────────────────────────────────────────────
 
@@ -78,19 +108,45 @@ const TYPE_LABELS: Record<AlertType, string> = {
   all_time_high:   'All-time high',
 };
 
-export function alertTypeLabel(t: AlertType): string {
-  return TYPE_LABELS[t];
+const TYPE_LABEL_KEYS: Record<AlertType, string> = {
+  price_above:     'typePriceAbove',
+  price_below:     'typePriceBelow',
+  pct_change_up:   'typePctChangeUp',
+  pct_change_down: 'typePctChangeDown',
+  near_52w_high:   'typeNear52wHigh',
+  near_52w_low:    'typeNear52wLow',
+  all_time_high:   'typeAllTimeHigh',
+};
+
+/** See groupLabel() above for why `t` is optional. */
+export function alertTypeLabel(type: AlertType, t?: TFunction): string {
+  return t ? t(TYPE_LABEL_KEYS[type]) : TYPE_LABELS[type];
 }
 
-/** Compact human summary for the alert card. */
-export function describeAlert(a: Pick<UserAlert, 'alertType' | 'threshold'>): string {
+/** Compact human summary for the alert card. `t` is optional — see groupLabel() above. */
+export function describeAlert(a: Pick<UserAlert, 'alertType' | 'threshold'>, t?: TFunction): string {
+  const price = a.threshold.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  const pct = (a.threshold * 100).toFixed(1);
+
+  if (t) {
+    switch (a.alertType) {
+      case 'price_above':     return t('describePriceAbove', { price });
+      case 'price_below':     return t('describePriceBelow', { price });
+      case 'pct_change_up':   return t('describePctChangeUp', { pct });
+      case 'pct_change_down': return t('describePctChangeDown', { pct });
+      case 'near_52w_high':   return t('describeNear52wHigh', { pct });
+      case 'near_52w_low':    return t('describeNear52wLow', { pct });
+      case 'all_time_high':   return t('describeAllTimeHigh');
+    }
+  }
+
   switch (a.alertType) {
-    case 'price_above':     return `Price ≥ $${a.threshold.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
-    case 'price_below':     return `Price ≤ $${a.threshold.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
-    case 'pct_change_up':   return `Daily gain ≥ ${(a.threshold * 100).toFixed(1)}%`;
-    case 'pct_change_down': return `Daily drop ≥ ${(a.threshold * 100).toFixed(1)}%`;
-    case 'near_52w_high':   return `Within ${(a.threshold * 100).toFixed(1)}% of 52-week high`;
-    case 'near_52w_low':    return `Within ${(a.threshold * 100).toFixed(1)}% of 52-week low`;
+    case 'price_above':     return `Price ≥ $${price}`;
+    case 'price_below':     return `Price ≤ $${price}`;
+    case 'pct_change_up':   return `Daily gain ≥ ${pct}%`;
+    case 'pct_change_down': return `Daily drop ≥ ${pct}%`;
+    case 'near_52w_high':   return `Within ${pct}% of 52-week high`;
+    case 'near_52w_low':    return `Within ${pct}% of 52-week low`;
     case 'all_time_high':   return 'New all-time high';
   }
 }

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Bell, Plus, ExternalLink, Pause, Play, Trash2, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -25,6 +26,7 @@ interface Props {
 }
 
 export function AlertDialog({ symbol, companyName, trigger }: Props) {
+  const { t } = useTranslation('alerts');
   const { isAuthenticated } = useAuth();
   const { alerts, isLoading, create, toggle, remove } = useAlerts();
   const [composerOpen, setComposerOpen] = useState(false);
@@ -52,7 +54,7 @@ export function AlertDialog({ symbol, companyName, trigger }: Props) {
       className={cn('gap-2 relative', activeCount > 0 && 'border-emerald-500/40 text-emerald-600 dark:text-emerald-400')}
     >
       <Bell className="h-4 w-4" />
-      Alert
+      {t('triggerButtonLabel')}
       {activeCount > 0 && (
         <span className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-emerald-500 text-[11px] font-bold text-white flex items-center justify-center">
           {activeCount}
@@ -69,15 +71,15 @@ export function AlertDialog({ symbol, companyName, trigger }: Props) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base">
             <Bell className="h-4 w-4 text-emerald-500" />
-            Alerts for <span className="font-mono">{symbol}</span>
+            {t('dialogTitlePrefix')} <span className="font-mono">{symbol}</span>
           </DialogTitle>
         </DialogHeader>
 
         {!isAuthenticated ? (
           <div className="py-6 text-center space-y-3">
-            <p className="text-sm text-muted-foreground">Sign in to create price alerts.</p>
+            <p className="text-sm text-muted-foreground">{t('signInPrompt')}</p>
             <Button asChild size="sm">
-              <Link href={`/login?redirectTo=/stock/${symbol}`}>Sign in</Link>
+              <Link href={`/login?redirectTo=/stock/${symbol}`}>{t('signInButton')}</Link>
             </Button>
           </div>
         ) : (
@@ -109,7 +111,7 @@ export function AlertDialog({ symbol, companyName, trigger }: Props) {
                         )}
                       />
                       <span className="flex-1 text-xs font-mono text-muted-foreground">
-                        {describeAlert(alert)}
+                        {describeAlert(alert, t)}
                       </span>
                       <div className="flex items-center gap-0.5 shrink-0">
                         <button
@@ -117,7 +119,7 @@ export function AlertDialog({ symbol, companyName, trigger }: Props) {
                           disabled={isBusy}
                           onClick={() => handleToggle(alert.id, !alert.isActive)}
                           className="h-6 w-6 rounded flex items-center justify-center text-muted-foreground/85 hover:text-foreground hover:bg-muted/60 transition-colors"
-                          title={alert.isActive ? 'Pause' : 'Resume'}
+                          title={alert.isActive ? t('actionPause') : t('actionResume')}
                         >
                           {isBusy && busy === alert.id ? (
                             <Loader2 className="h-3 w-3 animate-spin" />
@@ -132,7 +134,7 @@ export function AlertDialog({ symbol, companyName, trigger }: Props) {
                           disabled={isBusy}
                           onClick={() => handleDelete(alert.id)}
                           className="h-6 w-6 rounded flex items-center justify-center text-muted-foreground/85 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                          title="Delete"
+                          title={t('actionDelete')}
                         >
                           {isBusy && busy === `del-${alert.id}` ? (
                             <Loader2 className="h-3 w-3 animate-spin" />
@@ -163,7 +165,7 @@ export function AlertDialog({ symbol, companyName, trigger }: Props) {
                 onClick={() => setComposerOpen(true)}
               >
                 <Plus className="h-3.5 w-3.5" />
-                {tickerAlerts.length === 0 ? 'Create alert' : 'Add another alert'}
+                {tickerAlerts.length === 0 ? t('createAlertButton') : t('addAnotherAlertButton')}
               </Button>
             )}
 
@@ -175,7 +177,7 @@ export function AlertDialog({ symbol, companyName, trigger }: Props) {
                   className="flex items-center gap-1.5 text-xs text-muted-foreground/80 hover:text-foreground transition-colors"
                 >
                   <ExternalLink className="h-3 w-3" />
-                  Manage all alerts
+                  {t('manageAllAlertsLink')}
                 </Link>
               </div>
             )}

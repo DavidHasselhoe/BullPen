@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { Pause, Play, Trash2, Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { cn } from '@/lib/utils';
 import { ALERT_TYPE_ICON } from './AlertTypePicker';
 import { describeAlert, type UserAlert } from '@/types/alerts';
@@ -12,23 +14,24 @@ interface Props {
   onDelete: (id: string) => Promise<void>;
 }
 
-function formatRelativeTime(iso: string | null): string {
-  if (!iso) return 'Never triggered';
+function formatRelativeTime(iso: string | null, t: TFunction): string {
+  if (!iso) return t('relativeNeverTriggered');
   const ms = Date.now() - new Date(iso).getTime();
-  if (ms < 0) return 'Just now';
+  if (ms < 0) return t('relativeJustNow');
   const minutes = Math.floor(ms / 60_000);
-  if (minutes < 1) return 'Just now';
-  if (minutes < 60) return `${minutes}m ago`;
+  if (minutes < 1) return t('relativeJustNow');
+  if (minutes < 60) return t('relativeMinutesAgo', { count: minutes });
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
+  if (hours < 24) return t('relativeHoursAgo', { count: hours });
   const days = Math.floor(hours / 24);
-  if (days === 1) return 'Yesterday';
-  if (days < 30) return `${days}d ago`;
-  return `${Math.floor(days / 30)}mo ago`;
+  if (days === 1) return t('relativeYesterday');
+  if (days < 30) return t('relativeDaysAgo', { count: days });
+  return t('relativeMonthsAgo', { count: Math.floor(days / 30) });
 }
 
 /** Compact sub-row inside a grouped stock card. No logo/company — those live in the group header. */
 export function AlertCard({ alert, onToggle, onDelete }: Props) {
+  const { t } = useTranslation('alerts');
   const [busy, setBusy] = useState<'toggle' | 'delete' | null>(null);
 
   const triggeredRecently =
@@ -76,9 +79,9 @@ export function AlertCard({ alert, onToggle, onDelete }: Props) {
 
       {/* Description + last triggered */}
       <div className="flex-1 min-w-0 flex items-center gap-2 flex-wrap">
-        <span className="text-xs font-mono text-foreground/90">{describeAlert(alert)}</span>
+        <span className="text-xs font-mono text-foreground/90">{describeAlert(alert, t)}</span>
         <span className="text-[11px] text-muted-foreground/80">
-          {formatRelativeTime(alert.lastTriggeredAt)}
+          {formatRelativeTime(alert.lastTriggeredAt, t)}
         </span>
       </div>
 
@@ -89,7 +92,7 @@ export function AlertCard({ alert, onToggle, onDelete }: Props) {
           onClick={handleToggle}
           disabled={busy !== null}
           className="h-6 w-6 rounded flex items-center justify-center text-muted-foreground/80 hover:text-foreground hover:bg-muted/60 transition-colors"
-          title={alert.isActive ? 'Pause' : 'Resume'}
+          title={alert.isActive ? t('actionPause') : t('actionResume')}
         >
           {busy === 'toggle'
             ? <Loader2 className="h-3 w-3 animate-spin" />
@@ -100,7 +103,7 @@ export function AlertCard({ alert, onToggle, onDelete }: Props) {
           onClick={handleDelete}
           disabled={busy !== null}
           className="h-6 w-6 rounded flex items-center justify-center text-muted-foreground/80 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-          title="Delete"
+          title={t('actionDelete')}
         >
           {busy === 'delete'
             ? <Loader2 className="h-3 w-3 animate-spin" />

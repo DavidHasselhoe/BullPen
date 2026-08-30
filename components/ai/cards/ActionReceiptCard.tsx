@@ -9,7 +9,7 @@ import type { ClientAction, ActionOutcome } from '@/lib/ai/tool-ux';
 
 export type ActionableClientAction = Exclude<ClientAction, { type: 'navigate' }>;
 
-function describeAction(action: ActionableClientAction, t: TFunction): string {
+function describeAction(action: ActionableClientAction, t: TFunction, tAlerts: TFunction): string {
   switch (action.type) {
     case 'addHolding': {
       const qty = action.quantity != null ? t('receiptQtySharesOf', { quantity: action.quantity }) : '';
@@ -27,9 +27,9 @@ function describeAction(action: ActionableClientAction, t: TFunction): string {
       return t('receiptRemoveHolding', { ticker: action.ticker });
     case 'createAlert':
       return t('receiptCreateAlert', {
-        alertType: alertTypeLabel(action.alertType),
+        alertType: alertTypeLabel(action.alertType, tAlerts),
         ticker: action.ticker,
-        details: describeAlert({ alertType: action.alertType, threshold: action.threshold }),
+        details: describeAlert({ alertType: action.alertType, threshold: action.threshold }, tAlerts),
       });
   }
 }
@@ -57,7 +57,8 @@ interface ActionReceiptCardProps {
 
 export function ActionReceiptCard({ action, outcome, isHistorical, onRetry }: ActionReceiptCardProps) {
   const { t } = useTranslation('ai');
-  const description = describeAction(action, t);
+  const { t: tAlerts } = useTranslation('alerts');
+  const description = describeAction(action, t, tAlerts);
 
   // Historical messages never had their outcome recorded in this session —
   // show a neutral "requested" view instead of a fake or stuck-forever status.
