@@ -1,5 +1,11 @@
 [
   {
+    "date": "2026-08-30",
+    "entries": [
+      { "type": "improved", "text": "The rest of the app, including price alerts and the search/command menu, now displays in your selected language. Translation coverage is now complete across every part of BullPen" }
+    ]
+  },
+  {
     "date": "2026-08-29",
     "entries": [
       { "type": "improved", "text": "More of the app now displays in your selected language, including the Upgrade/Pricing pages, Watchlist, and the main navigation menu, with more areas being translated over time" }
