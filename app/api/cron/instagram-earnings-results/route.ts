@@ -5,8 +5,10 @@
  * Runs Saturday, looking back at the Monday-Friday that just ended (see
  * .github/workflows/cron-instagram-earnings-results.yml). Generates the
  * "how did the week's earnings go" beat/missed recap carousel, stages it in
- * instagram_posts (status: 'ready'), and posts a Discord preview — same
- * review-then-manual-publish flow as instagram-earnings-weekly. This route
+ * instagram_posts (status: 'ready'), and posts a Discord preview with a
+ * "Publish Now" button. app/api/cron/instagram-earnings-results-publish
+ * auto-publishes whatever is still 'ready' the next day — same
+ * review-then-auto-publish flow as instagram-earnings-weekly. This route
  * itself never calls the Instagram API.
  *
  * Idempotent per ISO week (period_key), scoped to this content_type so it
@@ -21,33 +23,13 @@ import { createServerClient } from '@/lib/supabase/client';
 import { generateEarningsResultsContent } from '@/lib/instagram/content/earnings-results';
 import { totalSlideCount } from '@/lib/instagram/render/slides';
 import { sendDiscordBotMessage } from '@/lib/discord/bot-message';
-import { isoWeekKey } from '@/lib/instagram/period-key';
+import { isoWeekKey, lastTradingWeek } from '@/lib/instagram/period-key';
 import { instagramBioLink } from '@/lib/instagram/utm-link';
 import type { EarningsResultsSlides } from '@/lib/instagram/content/schema';
 
 export const maxDuration = 60;
 
 const CONTENT_TYPE = 'earnings_results';
-
-/**
- * The most recently completed Monday-Friday relative to `reference`.
- * Designed to be triggered Saturday (daysSinceFriday=1) or Sunday
- * (daysSinceFriday=2), but stays correct for any manual trigger day —
- * e.g. triggered on Friday itself (daysSinceFriday=0) targets that same
- * week, triggered on Monday (daysSinceFriday=3) targets the week that just
- * ended. Mirror image of instagram-earnings-weekly's nextTradingWeek,
- * which jumps forward instead of back.
- */
-function lastTradingWeek(reference: Date): { weekStart: string; weekEnd: string } {
-  const dow = reference.getDay(); // 0=Sun..6=Sat
-  const daysSinceFriday = (dow - 5 + 7) % 7;
-  const friday = new Date(reference);
-  friday.setDate(reference.getDate() - daysSinceFriday);
-  const monday = new Date(friday);
-  monday.setDate(friday.getDate() - 4);
-  const fmt = (d: Date) => d.toISOString().slice(0, 10);
-  return { weekStart: fmt(monday), weekEnd: fmt(friday) };
-}
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const cronSecret = process.env.CRON_SECRET;

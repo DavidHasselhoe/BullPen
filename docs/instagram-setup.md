@@ -2,7 +2,12 @@
 
 Prerequisite steps to take on Meta's side before anything can actually post. Until these are done, the pipeline runs in dry-run mode: content still generates, renders, and stages on schedule (see `app/api/cron/instagram-earnings-weekly/route.ts`), and both the Monday auto-publish cron (`app/api/cron/instagram-earnings-publish/route.ts`) and the manual `scripts/publish-instagram.ts` print what they would have posted instead of calling the real API.
 
-**Once these are set, publishing is automatic** — every Sunday 12:00 UTC stages next week's carousel and posts a Discord preview; every Monday 11:00 UTC publishes whatever is still `status: 'ready'`. There's no manual approval step in between, so the Sunday Discord preview is the only window to catch something wrong before it goes live (delete the row, or run the earnings-web-search step again, before Monday morning).
+**Once these are set, publishing is automatic** for both content types the pipeline generates:
+
+- **Earnings calendar** — Sunday 12:00 UTC stages next week's carousel + Discord preview; Monday 11:00 UTC publishes whatever is still `status: 'ready'`.
+- **Earnings results recap** — Saturday 14:00 UTC stages the past week's beat/missed carousel + Discord preview; Sunday 15:00 UTC publishes whatever is still `status: 'ready'`.
+
+There's no manual approval step in between either flow, so the Discord preview (with the "Publish Now" button from §5b) is the only window to catch something wrong before it goes live — delete the row, or click "Publish Now" early if you're confident, before the next day's auto-publish cron runs.
 
 This uses **Business Login for Instagram** (the Instagram Platform API's Facebook-Page-free auth path), not the older Facebook Login / Graph-API-through-a-Page flow — this pipeline only ever needs to publish, never ads or Business Manager features, so there's no reason to require a linked Facebook Page.
 
@@ -97,4 +102,7 @@ npm run trigger-instagram-earnings           # generates + stages next week's ca
 # open http://localhost:3000/api/instagram/render/<postId>/0, /1, ... in a browser to see each slide
 npm run instagram-publish -- --id=<postId>   # dry-runs cleanly without Meta credentials
 npm run trigger-instagram-earnings-publish   # same dry-run check, but via the Monday auto-publish cron's own lookup logic
+
+npm run trigger-instagram-earnings-results           # generates + stages the past week's recap carousel
+npm run trigger-instagram-earnings-results-publish   # dry-run check via the Sunday auto-publish cron's own lookup logic
 ```
