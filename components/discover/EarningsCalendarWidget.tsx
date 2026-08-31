@@ -12,6 +12,7 @@ import { useUserSettings } from '@/hooks/use-user-settings';
 import { useAuth } from '@/hooks/use-auth';
 import type { EarningsCalendarItem, EarningsCalendar } from '@/lib/twelvedata/twelvedata-client';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
+import { CompanyLogo } from '@/components/company/CompanyLogo';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -20,10 +21,16 @@ interface EarningsRow {
   name?: string;
   date: string;
   time?: string;
+  logoUrl?: string | null;
 }
 
-function fromCalendarItem(item: EarningsCalendarItem): EarningsRow {
-  return { symbol: item.symbol, name: item.name, date: item.date, time: item.time };
+/** `/api/calendar/earnings` attaches this server-side (lib/market-data/calendar-market-cap.ts)
+ *  on top of the raw TwelveData shape — not declared on EarningsCalendarItem itself since
+ *  that type also describes provider responses with no such enrichment. */
+type EnrichedEarningsCalendarItem = EarningsCalendarItem & { logo_url?: string | null };
+
+function fromCalendarItem(item: EnrichedEarningsCalendarItem): EarningsRow {
+  return { symbol: item.symbol, name: item.name, date: item.date, time: item.time, logoUrl: item.logo_url };
 }
 
 function fromHoldingEarning(e: EarningsCalendar): EarningsRow {
@@ -138,10 +145,19 @@ function DayColumn({
                 <Link
                   key={`${row.symbol}-${i}`}
                   href={slugToAssetPath(row.symbol)}
-                  className="group flex items-center justify-between gap-1 rounded-md bg-muted/40 px-2.5 py-[7px] hover:bg-accent/60 transition-colors"
+                  className="group flex items-center justify-between gap-1 rounded-md bg-muted/40 pl-1.5 pr-2.5 py-[7px] hover:bg-accent/60 transition-colors"
                 >
-                  <span className="text-[11px] font-bold text-foreground group-hover:text-primary transition-colors truncate leading-none">
-                    {row.symbol}
+                  <span className="flex min-w-0 items-center gap-1.5">
+                    <CompanyLogo
+                      name={row.name || row.symbol}
+                      ticker={row.symbol}
+                      logoUrl={row.logoUrl}
+                      size={16}
+                      className="ring-1 ring-border/40"
+                    />
+                    <span className="text-[11px] font-bold text-foreground group-hover:text-primary transition-colors truncate leading-none">
+                      {row.symbol}
+                    </span>
                   </span>
                   {tag && (
                     <span className={cn(

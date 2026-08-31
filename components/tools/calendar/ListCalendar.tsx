@@ -14,13 +14,14 @@ interface ListCalendarProps {
   days: DayModel[];
   today: string;
   mySymbols: Set<string>;
+  holdingSymbols: Set<string>;
   onOpenDay: (date: string) => void;
 }
 
 /** Rows rendered per day before deferring the rest to the day dialog. */
 const ROWS_PER_DAY = 12;
 
-function EventListRow({ event, isMine }: { event: UnifiedEvent; isMine: boolean }) {
+function EventListRow({ event, isMine, isOwned }: { event: UnifiedEvent; isMine: boolean; isOwned: boolean }) {
   const { t } = useTranslation('tools');
   const typeLabels = getTypeLabels(t);
   const Icon = TYPE_ICONS[event.type];
@@ -42,7 +43,7 @@ function EventListRow({ event, isMine }: { event: UnifiedEvent; isMine: boolean 
           <span className="font-mono text-sm font-bold text-foreground">{event.symbol || '—'}</span>
           {isMine && (
             <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-xs font-semibold leading-none text-primary">
-              {t('calendarYoursBadge')}
+              {isOwned ? t('calendarOwnedBadge') : t('calendarWatchingBadge')}
             </span>
           )}
         </span>
@@ -82,7 +83,7 @@ function EventListRow({ event, isMine }: { event: UnifiedEvent; isMine: boolean 
  * grids on desktop for anyone who would rather read a schedule than scan one.
  * Empty days are skipped entirely rather than rendered as blank headers.
  */
-export function ListCalendar({ days, today, mySymbols, onOpenDay }: ListCalendarProps) {
+export function ListCalendar({ days, today, mySymbols, holdingSymbols, onOpenDay }: ListCalendarProps) {
   const { t } = useTranslation('tools');
   const withEvents = days.filter((d) => d.total > 0);
 
@@ -117,6 +118,7 @@ export function ListCalendar({ days, today, mySymbols, onOpenDay }: ListCalendar
                   key={`${event.type}-${event.symbol}-${i}`}
                   event={event}
                   isMine={mySymbols.has(event.symbol.toUpperCase())}
+                  isOwned={holdingSymbols.has(event.symbol.toUpperCase())}
                 />
               ))}
 

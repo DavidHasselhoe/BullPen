@@ -95,12 +95,16 @@ export function CalendarClientPage() {
 
   const { data: holdings } = useHoldings();
   const { data: watchlist } = useWatchlist();
-  const mySymbols = useMemo(() => {
+  const holdingSymbols = useMemo(() => {
     const set = new Set<string>();
     for (const h of holdings ?? []) set.add(h.symbol.toUpperCase());
+    return set;
+  }, [holdings]);
+  const mySymbols = useMemo(() => {
+    const set = new Set(holdingSymbols);
     for (const w of watchlist ?? []) set.add(w.symbol.toUpperCase());
     return set;
-  }, [holdings, watchlist]);
+  }, [holdingSymbols, watchlist]);
 
   const cellLimit = view === 'month' ? MONTH_CELL_LIMIT : WEEK_CELL_LIMIT;
   const days = useMemo(
@@ -259,13 +263,13 @@ export function CalendarClientPage() {
                 </div>
                 <div className="sm:hidden">
                   {hasAnyEvents
-                    ? <ListCalendar days={days} today={today} mySymbols={mySymbols} onOpenDay={setOpenDate} />
+                    ? <ListCalendar days={days} today={today} mySymbols={mySymbols} holdingSymbols={holdingSymbols} onOpenDay={setOpenDate} />
                     : <EmptyRange />}
                 </div>
               </>
             ) : (
               hasAnyEvents
-                ? <ListCalendar days={days} today={today} mySymbols={mySymbols} onOpenDay={setOpenDate} />
+                ? <ListCalendar days={days} today={today} mySymbols={mySymbols} holdingSymbols={holdingSymbols} onOpenDay={setOpenDate} />
                 : <EmptyRange />
             )}
           </CardContent>

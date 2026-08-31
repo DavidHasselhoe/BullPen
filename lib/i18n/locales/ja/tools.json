@@ -61,7 +61,6 @@
   "calendarViewWeek": "週",
   "calendarWeekGridAriaLabel": "週カレンダー",
   "calendarYourEvents": "あなたのイベント",
-  "calendarYoursBadge": "あなた",
   "buyHereCalculateButton": "計算",
   "buyHereCalculating": "計算中...",
   "buyHereCompareToggleLabel": "S&P 500（SPY）と比較",
@@ -490,6 +489,7 @@
   "screenerDescriptionWatchlist": "ウォッチリストをスクリーニング中",
   "screenerDividendYieldLabel": "配当利回り",
   "screenerEditView": "ビューを編集",
+  "screenerEnterKey": "Enter キーを押す",
   "screenerExportCsvProOnly": "CSV出力はProの機能です",
   "screenerExportCsvTitle": "すべての結果をCSVにエクスポート",
   "screenerFiltersLabel": "フィルター",
@@ -584,8 +584,9 @@
   "toolsPageSubtitle": "計算ツール、分析ツール、市場インサイト",
   "toolsPageTitle": "投資ツール",
   "tryAgainButton": "もう一度試す",
+  "calendarOwnedBadge": "保有中",
+  "calendarWatchingBadge": "ウォッチ中",
   "portfolioBuilderBullCase": "Bull case",
   "portfolioBuilderBullThesis": "Bull thesis",
-  "screenerColRvolLabel": "RVOL",
-  "screenerEnterKey": "Enter キーを押す"
+  "screenerColRvolLabel": "RVOL"
 }

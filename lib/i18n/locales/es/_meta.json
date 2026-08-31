@@ -413,7 +413,6 @@
   "tools.calendarViewWeek": "e78041ab51a818a22e2cfea6c15fe72e9e20092246f496f1670f7be3e42177a6",
   "tools.calendarWeekGridAriaLabel": "5b2cfcd2db3cadbea965b433a5aa22d000ca6366940c122bfc611f5b43c4113b",
   "tools.calendarYourEvents": "8be4be4fb7c69bb8726c99f138f1e6564592c8abfe569e5652b0777cad3d408e",
-  "tools.calendarYoursBadge": "54b26f7d3d0ddc663e4c70e3b258a424af7930131b8c43384b0e9086f2a8b32a",
   "tools.buyHereCompareToggleLabel": "c9f1170ccf00d20116647cc0728ff7b13393e7207268f9c2c69a55ff778555df",
   "tools.buyHereFromLabel": "218197693424e0154cefc0af31aed96c084b987e08136e91d5528ddbb5461e24",
   "tools.buyHereTimePreset10Years": "b5dbae5bc9a65f93ce2b66899d34ec42121b4629518880374f59c589fbbde20c",
@@ -2188,5 +2187,7 @@
   "command-palette.noCompaniesFoundSuffix": "ceae0ab136fcb5f43617323f0b67d8d9043dc71a445a953b24db2509a20fab13",
   "command-palette.navigateLabel": "5ea5fbe811dbe99a3f3d0d79704d2f54194692b349f2d682bd6fb86a9cbf8f12",
   "command-palette.openLabel": "ed077f3d8125d60dca1979c7133601bd187d47c73ed9975028f677e49e709942",
-  "command-palette.closeLabel": "7d9eb7acb13e24625c404401d8e88b2350e32162455885f18276cf802f7701ed"
+  "command-palette.closeLabel": "7d9eb7acb13e24625c404401d8e88b2350e32162455885f18276cf802f7701ed",
+  "tools.calendarOwnedBadge": "17b760c41cd2093315bba1008eaae9c4c05e3aa0fbbcf7477abfb775e62d6c5c",
+  "tools.calendarWatchingBadge": "fbc594054d512e5d877fd840baa6f8742d5891de3f488306a6b915de395f5707"
 }
