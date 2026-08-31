@@ -101,8 +101,15 @@ export default function HoldingsPage() {
     [userCurrency, exchangeRates.data]
   );
 
-  // Live price stream — updates prices in real time via WsManager SSE
-  const holdingSymbols = useMemo(() => (holdings ?? []).map((h) => h.symbol), [holdings]);
+  // Live price stream — updates prices in real time via WsManager SSE.
+  // Holdings pinned to a specific listing (mic_code set) are excluded: the WS
+  // tick stream has no mic_code concept and would key off the bare symbol,
+  // silently overwriting a correctly mic_code-pinned REST price (from the
+  // quotesData query below) with a price for the wrong listing.
+  const holdingSymbols = useMemo(
+    () => (holdings ?? []).filter((h) => !h.mic_code).map((h) => h.symbol),
+    [holdings]
+  );
   const livePrices = useLivePrices(holdingSymbols);
   // Throttle the live price Map so the holdingsWithPrices memo (and every downstream
   // component) re-renders at most once every 3 s instead of on every WS tick.
@@ -122,6 +129,14 @@ export default function HoldingsPage() {
       const sectorMap: Record<string, string | null> = {};
 
       const tickers = holdings.map((h) => h.symbol);
+
+      // Pin the exact listing for any holding resolved against a specific
+      // mic_code (e.g. an import that verified Kongsberg Gruppen on XSTU) so
+      // the batch quote fetch doesn't re-guess from the bare symbol.
+      const micCodes: Record<string, string> = {};
+      for (const h of holdings) {
+        if (h.mic_code) micCodes[h.symbol] = h.mic_code;
+      }
 
       // Fetch cached sectors + companies (for sector fallback) in parallel
       const [{ data: companiesData }, { data: cachedSectors }] = await Promise.all([
@@ -168,7 +183,11 @@ export default function HoldingsPage() {
       const batchRes = await fetch('/api/quotes/batch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ symbols: tickers, prepost: wantsExtendedPricing }),
+        body: JSON.stringify({
+          symbols: tickers,
+          prepost: wantsExtendedPricing,
+          ...(Object.keys(micCodes).length > 0 ? { micCodes } : {}),
+        }),
       });
       const batchData = await batchRes.json();
       if (batchRes.status === 429) {

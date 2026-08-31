@@ -363,16 +363,32 @@ export async function batchFetch<T>(
 
 export async function getStockQuotes(
   symbols: string[],
-  options?: { prepost?: boolean }
+  options?: {
+    prepost?: boolean;
+    /**
+     * Optional per-symbol mic_code (ISO 10383), keyed by the same symbol
+     * string passed in `symbols`. Confirmed live that TwelveData's /batch
+     * endpoint honors mic_code independently per sub-request line, so a
+     * single batch can mix plain and disambiguated symbols freely. Use for
+     * a symbol pinned to a specific listing (see UserHolding.mic_code) —
+     * without it, a bare symbol can resolve to an unrelated instrument on a
+     * different exchange (e.g. bare "KOG" is The Kroger Co., not Kongsberg
+     * Gruppen).
+     */
+    micCodes?: Record<string, string>;
+  }
 ): Promise<Map<string, StockQuote>> {
   if (symbols.length === 0) return new Map();
   const apiKey = getApiKey();
   const prepost = options?.prepost ?? false;
+  const micCodes = options?.micCodes;
 
   // Build one batch request — all quotes in a single POST instead of N sequential GETs
   const requests: Record<string, string> = {};
   for (const sym of symbols) {
-    const base = `/quote?symbol=${encodeURIComponent(sym.toUpperCase())}&apikey=${apiKey}`;
+    let base = `/quote?symbol=${encodeURIComponent(sym.toUpperCase())}&apikey=${apiKey}`;
+    const micCode = micCodes?.[sym];
+    if (micCode) base += `&mic_code=${encodeURIComponent(micCode)}`;
     requests[sym] = prepost ? `${base}&prepost=true` : base;
   }
 

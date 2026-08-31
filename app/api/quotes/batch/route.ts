@@ -35,10 +35,17 @@ function deriveChange(price: number, changePercent: number | null): number {
   return price - previousClose;
 }
 
+/** ISO 10383 mic_codes are short uppercase-letter codes (e.g. XNGS, XSTU) —
+ *  validated defensively since this becomes part of a TwelveData URL query
+ *  string, even though it's meant to originate from our own DB, not
+ *  arbitrary user input. */
+const MIC_CODE_RE = /^[A-Z0-9]{2,10}$/;
+
 async function handler(request: NextRequest) {
   try {
     const body = await request.json();
     const symbols = body?.symbols;
+    const rawMicCodes = body?.micCodes;
 
     if (!Array.isArray(symbols) || symbols.length === 0) {
       return NextResponse.json(
@@ -55,6 +62,21 @@ async function handler(request: NextRequest) {
       if (valid && normalized) unique.push(normalized);
     }
     const capped = unique.slice(0, MAX_SYMBOLS);
+
+    // Optional per-symbol mic_code — a holding pinned to a specific listing
+    // (see UserHolding.mic_code) needs it threaded through to avoid a bare
+    // symbol resolving to an unrelated instrument. Keyed and validated
+    // against the already-validated `capped` list, never trusted raw.
+    const micCodes: Record<string, string> | undefined = (() => {
+      if (!rawMicCodes || typeof rawMicCodes !== 'object') return undefined;
+      const out: Record<string, string> = {};
+      for (const sym of capped) {
+        const mic = (rawMicCodes as Record<string, unknown>)[sym];
+        if (typeof mic === 'string' && MIC_CODE_RE.test(mic)) out[sym] = mic;
+      }
+      return Object.keys(out).length > 0 ? out : undefined;
+    })();
+    const micPinnedSymbols = new Set(Object.keys(micCodes ?? {}));
 
     const quotes: Record<string, BatchQuote> = {};
 
@@ -74,11 +96,19 @@ async function handler(request: NextRequest) {
       }
       await Promise.all(chunks.map(async (chunk) => {
         try {
-          const quoteMap = await getStockQuotes(chunk, { prepost });
+          const quoteMap = await getStockQuotes(chunk, { prepost, micCodes });
           for (const [symbol, q] of quoteMap.entries()) {
             if (q.c > 0) {
               quotes[symbol] = { price: q.c, change: q.d, changePercent: q.dp };
-              cacheLastPrice(symbol, { price: q.c, changePercent: isFinite(q.dp) ? q.dp : null });
+              // Never write a mic_code-pinned quote into the shared,
+              // bare-symbol-keyed last-price cache — a different feature
+              // fetching the same bare symbol without a mic_code could read
+              // back a price for the wrong listing (e.g. "KOZ1" without
+              // disambiguation is a different instrument than the
+              // XSTU-listed Kongsberg Gruppen this holding was pinned to).
+              if (!micPinnedSymbols.has(symbol)) {
+                cacheLastPrice(symbol, { price: q.c, changePercent: isFinite(q.dp) ? q.dp : null });
+              }
             }
           }
         } catch (err) {
@@ -108,7 +138,10 @@ async function handler(request: NextRequest) {
     // symbol a fresh quote didn't cover — a chunk failure above, a rate limit,
     // or a market-closed gap. Marked `stale` so the client can render it as
     // "last close" rather than live, same treatment as the Screener's columns.
-    const stillMissing = capped.filter((s) => !quotes[s]);
+    // Skipped for mic_code-pinned symbols: this cache has no mic_code
+    // dimension, so a hit could be a stale price for an unrelated listing —
+    // showing nothing is safer than showing a wrong company's price.
+    const stillMissing = capped.filter((s) => !quotes[s] && !micPinnedSymbols.has(s));
     if (stillMissing.length > 0) {
       const fallback = await getLastPrices(stillMissing);
       for (const symbol of stillMissing) {

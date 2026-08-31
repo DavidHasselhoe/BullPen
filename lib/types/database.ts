@@ -135,6 +135,12 @@ export interface UserHolding {
   purchase_fx_rate: number | null;
   /** ISO 4217 currency the asset trades in (e.g. 'USD', 'NOK', 'EUR') — the currency avg_price is in. NULL = unknown. */
   trading_currency: string | null;
+  /** ISO 10383 market identifier code for the specific listing this holding
+   *  was resolved to (e.g. 'XNGS', 'XSTU'). NULL = no specific listing
+   *  pinned; quote fetches fall back to an ambiguous bare-symbol lookup. */
+  mic_code: string | null;
+  /** Human-readable exchange name paired with mic_code, display only. */
+  exchange: string | null;
   created_at: string;
   updated_at: string;
   /** Not a real `user_holdings` column — attached by getHoldings() from `companies.logo_url` so the first fetch already carries it, instead of a second client-side query. */

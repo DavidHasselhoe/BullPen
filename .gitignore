@@ -52,3 +52,7 @@ next-env.d.ts
 skills-lock.json
 .superpowers/
 .impeccable/
+
+# Real broker exports used as manual test fixtures for the import pipeline
+# (lib/import/) — personal financial data, never commit.
+scripts/fixtures/

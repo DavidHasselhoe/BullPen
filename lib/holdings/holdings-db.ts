@@ -68,6 +68,25 @@ export interface AddHoldingResult {
   success: boolean;
   holding?: UserHolding;
   error?: string;
+  /** id of the holding_purchases lot this call created, when awaitLots is set. */
+  purchaseLotId?: string;
+}
+
+/**
+ * Shared opt-in behavior overrides for the bulk-import replay path.
+ * Both default to today's existing behavior, so no existing caller changes:
+ *  - recordActivity: whether to fire the social-feed 'opened'/'increased'
+ *    event. A 54-transaction import would otherwise spam ~54 feed events;
+ *    the caller emits its own single summary event per security instead.
+ *  - awaitLots: recordHoldingPurchase is normally fire-and-forget (`void`)
+ *    and swallows its own errors — fine for one interactive add, but a
+ *    replay of many transactions in quick succession risks a race between
+ *    the lot insert and the next quantity update. Import awaits and
+ *    surfaces failures instead.
+ */
+export interface HoldingMutationOpts {
+  recordActivity?: boolean;
+  awaitLots?: boolean;
 }
 
 export interface UpdateHoldingResult {
@@ -90,7 +109,7 @@ export async function getHoldings(userId: string): Promise<GetHoldingsResult> {
 
     const { data: holdings, error } = await supabase
       .from('user_holdings')
-      .select('id, user_id, symbol, company_name, quantity, avg_price, date_purchased, asset_type, source, brokerage_account_id, alerts_enabled, purchase_currency, purchase_fx_rate, trading_currency, created_at, updated_at')
+      .select('id, user_id, symbol, company_name, quantity, avg_price, date_purchased, asset_type, source, brokerage_account_id, alerts_enabled, purchase_currency, purchase_fx_rate, trading_currency, mic_code, exchange, created_at, updated_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
@@ -157,7 +176,7 @@ async function recordHoldingPurchase(
     asset_type?: string | null;
   },
   lot: { quantity: number; price: number; purchaseDate: string }
-): Promise<void> {
+): Promise<{ id: string } | null> {
   const insert: Omit<InsertHoldingPurchase, 'id'> = {
     user_id: userId,
     holding_id: holding.id,
@@ -171,10 +190,12 @@ async function recordHoldingPurchase(
     trading_currency: holding.trading_currency ?? null,
     asset_type: holding.asset_type ?? null,
   };
-  const { error } = await supabase.from('holding_purchases').insert(insert);
+  const { data, error } = await supabase.from('holding_purchases').insert(insert).select('id').single();
   if (error) {
     logger.error('Error recording holding purchase lot:', error);
+    return null;
   }
+  return { id: data.id as string };
 }
 
 /**
@@ -182,8 +203,10 @@ async function recordHoldingPurchase(
  */
 export async function addHolding(
   userId: string,
-  holding: Omit<InsertUserHolding, 'user_id'>
+  holding: Omit<InsertUserHolding, 'user_id'>,
+  opts: HoldingMutationOpts = {}
 ): Promise<AddHoldingResult> {
+  const { recordActivity = true, awaitLots = false } = opts;
   try {
     const supabase = createServerClient();
 
@@ -217,6 +240,8 @@ export async function addHolding(
       purchase_currency?: string | null;
       purchase_fx_rate?: number | null;
       trading_currency?: string | null;
+      mic_code?: string | null;
+      exchange?: string | null;
     };
     const { data: newHolding, error: insertError } = await supabase
       .from('user_holdings')
@@ -231,6 +256,8 @@ export async function addHolding(
         purchase_currency: h.purchase_currency ?? 'USD',
         purchase_fx_rate: h.purchase_fx_rate ?? null,
         trading_currency: h.trading_currency ?? null,
+        mic_code: h.mic_code ?? null,
+        exchange: h.exchange ?? null,
       })
       .select()
       .single();
@@ -243,19 +270,29 @@ export async function addHolding(
       };
     }
 
-    void recordPortfolioActivity(userId, newHolding.symbol, newHolding.company_name, 'opened');
+    if (recordActivity) {
+      void recordPortfolioActivity(userId, newHolding.symbol, newHolding.company_name, 'opened');
+    }
 
+    let purchaseLotId: string | undefined;
     if (newHolding.quantity != null && newHolding.quantity > 0 && newHolding.avg_price != null && newHolding.avg_price > 0) {
-      void recordHoldingPurchase(supabase, userId, newHolding as UserHolding, {
+      const lot = {
         quantity: newHolding.quantity,
         price: newHolding.avg_price,
         purchaseDate: newHolding.date_purchased ?? new Date().toISOString().slice(0, 10),
-      });
+      };
+      if (awaitLots) {
+        const inserted = await recordHoldingPurchase(supabase, userId, newHolding as UserHolding, lot);
+        purchaseLotId = inserted?.id;
+      } else {
+        void recordHoldingPurchase(supabase, userId, newHolding as UserHolding, lot);
+      }
     }
 
     return {
       success: true,
       holding: newHolding as UserHolding,
+      purchaseLotId,
     };
   } catch (error) {
     logger.error('Error in addHolding:', error);
@@ -272,8 +309,10 @@ export async function addHolding(
  */
 export async function addOrUpdateHolding(
   userId: string,
-  holding: Omit<InsertUserHolding, 'user_id'>
+  holding: Omit<InsertUserHolding, 'user_id'>,
+  opts: HoldingMutationOpts = {}
 ): Promise<AddHoldingResult> {
+  const { recordActivity = true, awaitLots = false } = opts;
   try {
     const supabase = createServerClient();
 
@@ -286,7 +325,7 @@ export async function addOrUpdateHolding(
 
     const { data: existing } = await supabase
       .from('user_holdings')
-      .select('id, quantity, avg_price, date_purchased, purchase_currency, purchase_fx_rate, trading_currency, asset_type')
+      .select('id, quantity, avg_price, date_purchased, purchase_currency, purchase_fx_rate, trading_currency, asset_type, mic_code, exchange')
       .eq('user_id', userId)
       .eq('symbol', holding.symbol.toUpperCase())
       .maybeSingle();
@@ -306,6 +345,7 @@ export async function addOrUpdateHolding(
         }
       }
 
+      const h = holding as { trading_currency?: string | null; purchase_currency?: string | null; purchase_fx_rate?: number | null; asset_type?: string | null; mic_code?: string | null; exchange?: string | null };
       const { data: updated, error } = await supabase
         .from('user_holdings')
         .update({
@@ -313,6 +353,15 @@ export async function addOrUpdateHolding(
           avg_price: newAvgPrice,
           company_name: holding.company_name,
           updated_at: new Date().toISOString(),
+          // Backfill-only: never overwrite a value the holding already has —
+          // only fills in a currently-NULL field (e.g. a holding created
+          // before trading_currency was captured, or a first import top-up).
+          ...(existing.trading_currency == null && h.trading_currency ? { trading_currency: h.trading_currency } : {}),
+          ...(existing.purchase_currency == null && h.purchase_currency ? { purchase_currency: h.purchase_currency } : {}),
+          ...(existing.purchase_fx_rate == null && h.purchase_fx_rate != null ? { purchase_fx_rate: h.purchase_fx_rate } : {}),
+          ...(existing.asset_type == null && h.asset_type ? { asset_type: h.asset_type } : {}),
+          ...(existing.mic_code == null && h.mic_code ? { mic_code: h.mic_code } : {}),
+          ...(existing.exchange == null && h.exchange ? { exchange: h.exchange } : {}),
         })
         .eq('id', existing.id)
         .eq('user_id', userId)
@@ -323,6 +372,7 @@ export async function addOrUpdateHolding(
         return { success: false, error: error.message };
       }
 
+      let purchaseLotId: string | undefined;
       if (addQty > 0 && holding.avg_price != null && holding.avg_price > 0) {
         const { count: existingLotCount, error: lotCountErr } = await supabase
           .from('holding_purchases')
@@ -336,7 +386,7 @@ export async function addOrUpdateHolding(
         // has no date to backfill at — see "Lazy backfill" in
         // docs/superpowers/specs/2026-08-21-holding-purchase-lots-design.md.
         if (!lotCountErr && !existingLotCount && existingQty > 0 && existing.avg_price != null && existing.date_purchased) {
-          void recordHoldingPurchase(
+          const backfillLot = recordHoldingPurchase(
             supabase,
             userId,
             {
@@ -350,9 +400,10 @@ export async function addOrUpdateHolding(
             },
             { quantity: existingQty, price: existing.avg_price, purchaseDate: existing.date_purchased }
           );
+          if (awaitLots) await backfillLot; else void backfillLot;
         }
 
-        void recordHoldingPurchase(
+        const newLot = recordHoldingPurchase(
           supabase,
           userId,
           {
@@ -366,18 +417,26 @@ export async function addOrUpdateHolding(
           },
           { quantity: addQty, price: holding.avg_price, purchaseDate: holding.date_purchased ?? new Date().toISOString().slice(0, 10) }
         );
+        if (awaitLots) {
+          const inserted = await newLot;
+          purchaseLotId = inserted?.id;
+        } else {
+          void newLot;
+        }
       }
 
-      if (existingQty <= 0) {
-        void recordPortfolioActivity(userId, updated.symbol, updated.company_name, 'opened');
-      } else {
-        void recordPortfolioActivity(userId, updated.symbol, updated.company_name, 'increased', (addQty / existingQty) * 100);
+      if (recordActivity) {
+        if (existingQty <= 0) {
+          void recordPortfolioActivity(userId, updated.symbol, updated.company_name, 'opened');
+        } else {
+          void recordPortfolioActivity(userId, updated.symbol, updated.company_name, 'increased', (addQty / existingQty) * 100);
+        }
       }
 
-      return { success: true, holding: updated as UserHolding };
+      return { success: true, holding: updated as UserHolding, purchaseLotId };
     }
 
-    return addHolding(userId, holding);
+    return addHolding(userId, holding, opts);
   } catch (error) {
     logger.error('Error in addOrUpdateHolding:', error);
     return {
@@ -601,8 +660,10 @@ const SELL_EPSILON = 1e-9;
 export async function sellHolding(
   userId: string,
   holdingId: string,
-  input: { quantitySold: number; salePrice: number; saleDate: string }
+  input: { quantitySold: number; salePrice: number; saleDate: string },
+  opts: HoldingMutationOpts = {}
 ): Promise<SellHoldingResult> {
+  const { recordActivity = true } = opts;
   try {
     if (!(input.quantitySold > 0)) {
       return { success: false, error: 'Quantity sold must be greater than zero' };
@@ -674,10 +735,12 @@ export async function sellHolding(
       return { success: false, sale: sale as HoldingSale, error: `Sale recorded, but updating quantity failed: ${updateErr.message}` };
     }
 
-    if (newQuantity <= SELL_EPSILON) {
-      void recordPortfolioActivity(userId, holding.symbol, holding.company_name, 'closed');
-    } else {
-      void recordPortfolioActivity(userId, holding.symbol, holding.company_name, 'trimmed', (input.quantitySold / currentQty) * 100);
+    if (recordActivity) {
+      if (newQuantity <= SELL_EPSILON) {
+        void recordPortfolioActivity(userId, holding.symbol, holding.company_name, 'closed');
+      } else {
+        void recordPortfolioActivity(userId, holding.symbol, holding.company_name, 'trimmed', (input.quantitySold / currentQty) * 100);
+      }
     }
 
     return { success: true, sale: sale as HoldingSale, holding: updatedHolding as UserHolding };
