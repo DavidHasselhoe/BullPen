@@ -1,14 +1,19 @@
 name: Cron — Academy Weekly Course Generation
 
-# Monday 06:00 UTC. Drafts the next course in the 10-week roadmap
+# Monday 06:17 UTC. Drafts the next course in the 10-week roadmap
 # (lib/academy/academy-roadmap.ts) via Claude and stages it unpublished.
 # Time-tolerant (a weekly content drop, not market-hours-sensitive), same
 # reasoning as the other non-Vercel crons in this repo. Requires explicit
 # human approval at /admin/academy-roadmap before a course goes live — there
 # is no auto-publish step, unlike the Instagram earnings pipeline.
+# Offset 17 minutes past the hour on purpose: on-the-hour schedules are
+# GitHub's most congested queue slot and can be delayed *or dropped entirely*
+# under load — confirmed 2026-08-31, when this run never fired (not even
+# late) while other jobs sharing this repo's on-the-hour slots eventually
+# ran hours late instead of being skipped outright.
 on:
   schedule:
-    - cron: '0 6 * * 1'
+    - cron: '17 6 * * 1'
   workflow_dispatch:
 
 jobs:
