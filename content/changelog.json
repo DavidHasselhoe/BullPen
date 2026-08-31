@@ -1,5 +1,14 @@
 [
   {
+    "date": "2026-08-31",
+    "entries": [
+      { "type": "new", "text": "Import transactions from any brokerage export, in any format or language, from My Holdings. Upload your trade history and it's read automatically, matched to the right tickers, and turned into your full buy and sell history, not just a snapshot" },
+      { "type": "fixed", "text": "Fixed the Disconnect button in Connected Brokerages doing nothing for some accounts" },
+      { "type": "improved", "text": "The Market Calendar now shows \"Owned\" or \"Watching\" instead of a generic label so you can tell at a glance which stocks you hold" },
+      { "type": "improved", "text": "The earnings-this-week widget on Discover now shows each company's logo" }
+    ]
+  },
+  {
     "date": "2026-08-30",
     "entries": [
       { "type": "improved", "text": "The rest of the app, including price alerts and the search/command menu, now displays in your selected language. Translation coverage is now complete across every part of BullPen" }
