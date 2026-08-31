@@ -253,6 +253,12 @@ export function BrokerageConnect() {
               {syncMutation.error instanceof Error ? syncMutation.error.message : 'Sync failed'}
             </div>
           )}
+          {disconnectMutation.isError && (
+            <div className="flex items-center gap-1.5 text-xs text-red-500 mt-1">
+              <AlertCircle className="h-3.5 w-3.5" />
+              {disconnectMutation.error instanceof Error ? disconnectMutation.error.message : 'Disconnect failed'}
+            </div>
+          )}
         </CardHeader>
 
         {expanded && (
