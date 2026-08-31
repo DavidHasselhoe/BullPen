@@ -9,6 +9,7 @@ import '@/components/landing/landing-styles.css';
 export const metadata: Metadata = {
   title: 'Help Center',
   description: 'Answers to common questions about BullPen.',
+  alternates: { canonical: '/help' },
 };
 
 export default function HelpCenterPage() {

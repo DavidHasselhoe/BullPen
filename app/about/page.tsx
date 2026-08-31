@@ -8,6 +8,7 @@ import '@/components/landing/landing-styles.css';
 export const metadata: Metadata = {
   title: 'About',
   description: 'What BullPen is, who it\'s for, and who builds it.',
+  alternates: { canonical: '/about' },
 };
 
 export default function AboutPage() {

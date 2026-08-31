@@ -9,6 +9,7 @@ import '@/components/landing/landing-styles.css';
 export const metadata: Metadata = {
   title: 'Cookie Policy',
   description: 'How BullPen uses cookies and similar tracking technologies.',
+  alternates: { canonical: '/cookies' },
 };
 
 // Self-hosted (not the live Termly embed used by /terms and /privacy): Termly's

@@ -43,9 +43,6 @@ export const metadata: Metadata = {
     default: "BullPen — Invest smarter",
   },
   description: "Track your portfolio, screen stocks, set price alerts, and get AI-powered market insights, all in one place.",
-  alternates: {
-    canonical: "/",
-  },
   openGraph: {
     siteName: "BullPen",
     type: "website",
@@ -73,6 +70,13 @@ const ORGANIZATION_JSON_LD = {
   logo: "https://bullpen.no/icon-light.png",
   description:
     "Investment research and portfolio-tracking platform for everyday investors — real-time market data, AI-powered analysis, and educational tools.",
+  // Ties the bullpen.no entity to its real public profiles — one of the few
+  // legitimate levers for a bare, one-word brand query ("bullpen") to
+  // resolve to us rather than an unrelated same-name result.
+  sameAs: [
+    "https://www.instagram.com/bullpen.no/",
+    "https://discord.gg/RkTFXyjZSY",
+  ],
 };
 
 const WEBSITE_JSON_LD = {

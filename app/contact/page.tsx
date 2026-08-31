@@ -8,6 +8,7 @@ import '@/components/landing/landing-styles.css';
 export const metadata: Metadata = {
   title: 'Contact',
   description: 'Get in touch with the BullPen team.',
+  alternates: { canonical: '/contact' },
 };
 
 export default function ContactPage() {

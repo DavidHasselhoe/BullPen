@@ -9,6 +9,7 @@ import '@/components/landing/landing-styles.css';
 export const metadata: Metadata = {
   title: 'Glossary',
   description: 'Plain-English explanations of financial terms used throughout BullPen.',
+  alternates: { canonical: '/glossary' },
 };
 
 export default function GlossaryPage() {

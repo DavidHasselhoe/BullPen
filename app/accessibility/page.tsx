@@ -8,6 +8,7 @@ import '@/components/landing/landing-styles.css';
 export const metadata: Metadata = {
   title: 'Accessibility Statement',
   description: 'Our commitment to accessibility and how to reach us about it.',
+  alternates: { canonical: '/accessibility' },
 };
 
 export default function AccessibilityStatementPage() {

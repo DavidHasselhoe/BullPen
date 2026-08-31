@@ -8,6 +8,7 @@ import '@/components/landing/landing-styles.css';
 export const metadata: Metadata = {
   title: 'Privacy Policy',
   description: 'How BullPen collects, uses, and protects your personal information.',
+  alternates: { canonical: '/privacy' },
 };
 
 export default function PrivacyPolicyPage() {

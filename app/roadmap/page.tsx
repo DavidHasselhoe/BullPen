@@ -10,6 +10,7 @@ import '@/components/landing/landing-styles.css';
 export const metadata: Metadata = {
   title: 'Roadmap',
   description: "Where BullPen has been, and what's next.",
+  alternates: { canonical: '/roadmap' },
 };
 
 interface HistoryEntry {

@@ -8,6 +8,7 @@ import '@/components/landing/landing-styles.css';
 export const metadata: Metadata = {
   title: 'Security',
   description: 'How BullPen protects your data.',
+  alternates: { canonical: '/security' },
 };
 
 export default function SecurityPage() {

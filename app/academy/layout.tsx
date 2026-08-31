@@ -2,6 +2,7 @@
 
 import { GraduationCap } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { useBackground } from '@/hooks/use-background';
 import { AuthGate } from '@/components/ui/AuthGate';
@@ -11,12 +12,17 @@ export default function AcademyLayout({ children }: { children: React.ReactNode 
   const { t } = useTranslation('academy');
   const { isAuthenticated, isLoading } = useAuth();
   const { hasAnimatedBackground } = useBackground();
+  const pathname = usePathname();
+  // Only the course catalog itself (/academy exactly) is a public preview for
+  // SEO/conversion — see app/api/academy/courses/route.ts. Every sub-route
+  // (a lesson, quiz, leaderboard, completion screen) stays fully gated.
+  const isPublicCatalog = pathname === '/academy';
 
   if (isLoading) {
     return <div className="min-h-screen" />;
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated && !isPublicCatalog) {
     return (
       <AuthGate
         icon={<GraduationCap className="h-7 w-7" />}
@@ -25,6 +31,10 @@ export default function AcademyLayout({ children }: { children: React.ReactNode 
         signInHref="/login?redirectTo=/academy"
       />
     );
+  }
+
+  if (!isAuthenticated) {
+    return <div className="min-h-screen"><div className="mx-auto max-w-2xl px-4 py-6 sm:px-6 lg:py-8">{children}</div></div>;
   }
 
   return (

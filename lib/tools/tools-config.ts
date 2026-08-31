@@ -124,7 +124,7 @@ export const TOOLS: ToolConfig[] = [
  * "Tools" title — confirmed live, /tools/compare, /tools/screener, etc. all
  * rendered the identical title regardless of which tool it was.
  */
-export function getToolMetadata(id: string): { title: string; description: string } | undefined {
+export function getToolMetadata(id: string): { title: string; description: string; alternates: { canonical: string } } | undefined {
   const tool = TOOLS.find((t) => t.id === id);
-  return tool ? { title: tool.name, description: tool.description } : undefined;
+  return tool ? { title: tool.name, description: tool.description, alternates: { canonical: tool.href } } : undefined;
 }

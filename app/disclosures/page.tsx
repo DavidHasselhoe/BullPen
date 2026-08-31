@@ -7,6 +7,7 @@ import '@/components/landing/landing-styles.css';
 export const metadata: Metadata = {
   title: 'Disclosures',
   description: 'Important disclosures about BullPen\'s data, AI features, and brokerage connections.',
+  alternates: { canonical: '/disclosures' },
 };
 
 export default function DisclosuresPage() {

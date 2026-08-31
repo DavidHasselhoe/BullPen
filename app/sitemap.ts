@@ -17,7 +17,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const routes: { path: string; priority: number; changeFrequency: MetadataRoute.Sitemap[number]['changeFrequency'] }[] = [
     { path: '/', priority: 1.0, changeFrequency: 'daily' },
-    { path: '/pricing', priority: 0.9, changeFrequency: 'monthly' },
+    { path: '/upgrade', priority: 0.9, changeFrequency: 'monthly' },
     { path: '/academy', priority: 0.8, changeFrequency: 'weekly' },
     { path: '/discover', priority: 0.8, changeFrequency: 'daily' },
     // Bull's Weekly Pick track record — public (see app/api/picks/*), and the

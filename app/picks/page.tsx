@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   title: "Bull's Track Record — BullPen",
   description:
     "Every AI stock pick BullPen has made, priced at the next market open and tracked from there — winners and losers, against the S&P bought on the same days.",
+  alternates: { canonical: '/picks' },
 };
 
 export default function PicksPage() {

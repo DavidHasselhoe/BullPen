@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '@/hooks/use-auth';
 import { groupIntoChapters, findCurrentCourse, nodeOffset } from '@/lib/academy/path-chapters';
 import { ChapterBanner } from './ChapterBanner';
 import { PathNode } from './PathNode';
@@ -32,13 +33,17 @@ export function AcademyPath({ courses }: Props) {
   const [pathD, setPathD] = useState<PathD>({ done: '', todo: '' });
   const [svgSize, setSvgSize] = useState({ width: 0, height: 0 });
 
+  const { isAuthenticated } = useAuth();
   const currentCourse = findCurrentCourse(courses);
   const chapters = groupIntoChapters(courses);
 
+  // Authenticated-only endpoint — the countdown teaser just doesn't render for
+  // the anonymous /academy preview rather than firing a fetch that 401s.
   const { data: countdown } = useQuery<NextCourseCountdownResponse>({
     queryKey: ['academy-next-course-countdown'],
     queryFn: () => fetch('/api/academy/next-course-countdown').then((r) => r.json()),
     staleTime: 60 * 60 * 1000, // an hour is plenty — this changes at most daily
+    enabled: isAuthenticated,
   });
   // Below ~420px, a full-magnitude zigzag offset combined with a left-aligned
   // label can push text past the viewport edge — scale the offset down once

@@ -12,6 +12,7 @@ import '@/components/landing/landing-styles.css';
 export const metadata: Metadata = {
   title: 'Changelog',
   description: "What's new in BullPen — features, improvements, and fixes.",
+  alternates: { canonical: '/changelog' },
 };
 
 type ChangelogEntryType = 'new' | 'improved' | 'fixed';

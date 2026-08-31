@@ -18,7 +18,7 @@ interface StatsResponse {
 
 export const ACADEMY_STATS_QUERY_KEY = ['academy-stats'] as const;
 
-export function useAcademyStats() {
+export function useAcademyStats(enabled = true) {
   return useQuery<AcademyStats>({
     queryKey: ACADEMY_STATS_QUERY_KEY,
     queryFn: async () => {
@@ -29,5 +29,6 @@ export function useAcademyStats() {
     },
     staleTime: 30 * 1000,
     gcTime: 5 * 60 * 1000,
+    enabled,
   });
 }

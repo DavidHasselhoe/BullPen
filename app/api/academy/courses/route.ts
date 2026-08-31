@@ -4,10 +4,16 @@
  * and locked state. Progression unlock is sequential *within a gating track*
  * (free vs Pro), so a paying user isn't forced through every free course before
  * reaching their first Pro course.
+ *
+ * Public (optional auth): an anonymous caller gets the same shape with zero
+ * progress, which the existing sequential-unlock math naturally turns into a
+ * "preview the first course in each track, the rest show locked" curriculum
+ * view — the public /academy catalog reuses this rather than a separate
+ * endpoint. Individual lessons still require signing in (app/academy/layout.tsx).
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
+import { withOptionalAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
 import { getTier, isPro } from '@/lib/billing/tier';
 import type { CourseWithProgress } from '@/types/academy';
@@ -29,7 +35,7 @@ interface CourseRow {
 async function handler(
   _req: NextRequest,
   _ctx: unknown,
-  session: { userId: string }
+  session: { userId: string } | null
 ): Promise<NextResponse> {
   const supabase = createServerClient();
 
@@ -42,21 +48,19 @@ async function handler(
     supabase
       .from('academy_lessons')
       .select('id, course_id'),
-    supabase
-      .from('academy_user_lesson_progress')
-      .select('lesson_id')
-      .eq('user_id', session.userId),
-    supabase
-      .from('academy_user_course_progress')
-      .select('course_id, completed_at')
-      .eq('user_id', session.userId),
-    getTier(session.userId),
+    session
+      ? supabase.from('academy_user_lesson_progress').select('lesson_id').eq('user_id', session.userId)
+      : Promise.resolve({ data: [] }),
+    session
+      ? supabase.from('academy_user_course_progress').select('course_id, completed_at').eq('user_id', session.userId)
+      : Promise.resolve({ data: [] }),
+    session ? getTier(session.userId) : Promise.resolve(null),
     supabase
       .from('academy_course_quizzes')
       .select('course_id'),
   ]);
 
-  const userIsPro = isPro(tier);
+  const userIsPro = tier ? isPro(tier) : false;
 
   const courses = (coursesRes.data ?? []) as CourseRow[];
   const lessons = (lessonsRes.data ?? []) as Array<{ id: string; course_id: string }>;
@@ -135,4 +139,4 @@ async function handler(
   return addSecurityHeaders(NextResponse.json({ success: true, courses: result }));
 }
 
-export const GET = withAuth(handler);
+export const GET = withOptionalAuth(handler);
