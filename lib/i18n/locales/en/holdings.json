@@ -68,6 +68,7 @@
   "csvImportPhaseExtracting": "Extracting transaction type…",
   "csvImportPhaseMatching": "Matching your holdings to tickers…",
   "csvImportPhaseReading": "Reading your file…",
+  "csvImportProcessingComplete": "All done!",
   "csvImportProcessingSubtext": "This usually takes a few seconds.",
   "csvImportReminderDividendsBody": "No need to add dividends or corporate events. They're accounted for separately.",
   "csvImportReminderDividendsTitle": "Dividends handled automatically",

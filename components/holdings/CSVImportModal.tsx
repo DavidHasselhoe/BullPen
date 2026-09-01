@@ -53,15 +53,22 @@ export function CSVImportModal({ open, onOpenChange }: Props) {
   const [summary, setSummary] = useState<ParseSummary | null>(null);
   const [importId, setImportId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // True for a brief hold once the request has actually resolved, before
+  // swapping to the success screen — lets the progress bar visibly finish
+  // its run to 100% instead of jumping from ~91% straight to the result.
+  const [completing, setCompleting] = useState(false);
+  const completeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const phaseLabels = [t('csvImportPhaseReading'), t('csvImportPhaseExtracting'), t('csvImportPhaseMatching')];
 
   const reset = useCallback(() => {
+    if (completeTimeoutRef.current) clearTimeout(completeTimeoutRef.current);
     setStep('upload');
     setPhaseIndex(0);
     setSummary(null);
     setImportId(null);
     setErrorMessage(null);
+    setCompleting(false);
   }, []);
 
   const handleClose = useCallback((next: boolean) => {
@@ -69,14 +76,20 @@ export function CSVImportModal({ open, onOpenChange }: Props) {
     onOpenChange(next);
   }, [onOpenChange, reset]);
 
+  useEffect(() => {
+    return () => {
+      if (completeTimeoutRef.current) clearTimeout(completeTimeoutRef.current);
+    };
+  }, []);
+
   // Advance the simulated phase while a parse request is in flight.
   useEffect(() => {
-    if (step !== 'processing') return;
+    if (step !== 'processing' || completing) return;
     const id = setInterval(() => {
       setPhaseIndex((i) => Math.min(i + 1, PHASE_COUNT - 1));
     }, PHASE_HOLD_MS);
     return () => clearInterval(id);
-  }, [step]);
+  }, [step, completing]);
 
   const processFile = useCallback(async (file: File) => {
     setStep('processing');
@@ -100,9 +113,13 @@ export function CSVImportModal({ open, onOpenChange }: Props) {
       if (!res.ok) {
         throw new Error(data.error ?? t('csvImportFailed'));
       }
-      setSummary(data.summary);
-      setImportId(data.importId);
-      setStep('success');
+      setSummary(data.summary as ParseSummary);
+      setImportId(data.importId ?? null);
+      // Hold on the processing screen with the bar driven to 100% for a
+      // beat, rather than cutting straight to the result the instant the
+      // request resolves — see ProcessingScreen's `complete` prop.
+      setCompleting(true);
+      completeTimeoutRef.current = setTimeout(() => setStep('success'), 1200);
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : t('csvImportFailed'));
       setStep('error');
@@ -194,6 +211,8 @@ export function CSVImportModal({ open, onOpenChange }: Props) {
             <ProcessingScreen
               phase={{ index: phaseIndex, total: PHASE_COUNT, label: phaseLabels[phaseIndex] }}
               subtext={t('csvImportProcessingSubtext')}
+              complete={completing}
+              completeMessage={t('csvImportProcessingComplete')}
             />
           </div>
         )}

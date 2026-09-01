@@ -1,16 +1,18 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
+import { useHoldings } from '@/hooks/use-holdings';
 import { AuthGate } from '@/components/ui/AuthGate';
 import { Button } from '@/components/ui/button';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { TickerFixPopover, type FixedResolution } from './TickerFixPopover';
 import type { DateFormat } from '@/lib/import/dates';
-import { AlertCircle, CheckCircle2, X, RotateCcw, ChevronLeft, Loader2, GraduationCap } from 'lucide-react';
+import { AlertCircle, CheckCircle2, X, RotateCcw, ChevronLeft, Loader2, GraduationCap, PlusCircle, RefreshCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 
@@ -110,6 +112,13 @@ export function ImportReviewClient({ importId }: { importId: string }) {
   // and can only be discovered by actually attempting the replay, since they
   // depend on chronological order across the whole file, not one row.
   const [replayFlags, setReplayFlags] = useState<Map<number, string>>(new Map());
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  // Whether a re-imported ticker should stack on top of what's already
+  // there, or replace it outright. Defaults to 'add' — the existing
+  // behavior — so nothing changes for anyone who doesn't touch this.
+  const [importMode, setImportMode] = useState<'add' | 'replace'>('add');
+
+  const { data: existingHoldings } = useHoldings();
 
   const draft = data?.import.parsed;
 
@@ -133,7 +142,32 @@ export function ImportReviewClient({ importId }: { importId: string }) {
   const readyRows = activeRows.filter((r) => resolutions[r.securityKey]?.status === 'resolved' && !replayFlags.has(r.sourceLine));
   const brokenRows = activeRows.filter((r) => resolutions[r.securityKey]?.status !== 'resolved' || replayFlags.has(r.sourceLine));
 
+  // Manually-entered holdings this import would land on top of. Only
+  // 'manual' holdings are eligible for replace — a SnapTrade-synced holding
+  // is never something an import should delete or reset.
+  const overlappingHoldings = useMemo(() => {
+    if (!existingHoldings) return [];
+    const importSymbols = new Set<string>();
+    for (const t of activeRows) {
+      const r = resolutions[t.securityKey];
+      if (r?.status === 'resolved') importSymbols.add(r.candidate.symbol);
+    }
+    return existingHoldings.filter((h) => h.source === 'manual' && importSymbols.has(h.symbol));
+  }, [existingHoldings, activeRows, resolutions]);
+
   const securityLabel = (t: RawTransaction) => t.name ?? t.rawSymbol ?? t.isin ?? 'Unknown security';
+
+  // Warn on tab close / refresh — this whole review is throwaway until Save
+  // actually commits it, and losing an AI-mapped, ticker-resolved draft to
+  // an accidental reload means starting the entire import over.
+  useEffect(() => {
+    function handleBeforeUnload(e: BeforeUnloadEvent) {
+      e.preventDefault();
+      e.returnValue = '';
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
 
   function scrollToLine(line: number) {
     const el = rowRefs.current.get(line);
@@ -160,7 +194,11 @@ export function ImportReviewClient({ importId }: { importId: string }) {
       });
       if (!patchRes.ok) throw new Error((await patchRes.json()).error ?? 'Failed to save changes');
 
-      const commitRes = await fetch(`/api/holdings/import/${importId}/commit`, { method: 'POST' });
+      const commitRes = await fetch(`/api/holdings/import/${importId}/commit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: importMode }),
+      });
       const commitData = await commitRes.json();
       if (!commitRes.ok) {
         if (Array.isArray(commitData.flags) && commitData.flags.length > 0) {
@@ -222,9 +260,12 @@ export function ImportReviewClient({ importId }: { importId: string }) {
       <header className="sticky top-0 z-10 border-b border-border/60 bg-background/95 px-4 py-3 backdrop-blur sm:px-6">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <Link href="/holdings" className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
+            <button
+              onClick={() => setShowLeaveConfirm(true)}
+              className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
               <ChevronLeft className="h-3.5 w-3.5" /> Back
-            </Link>
+            </button>
             <div className="min-w-0">
               <h1 className="truncate text-sm font-semibold text-foreground">Review your import</h1>
               <p className="truncate text-xs text-muted-foreground">{draft.fileName} · {draft.spec.fileFormatLabel}</p>
@@ -246,6 +287,51 @@ export function ImportReviewClient({ importId }: { importId: string }) {
               </AccordionContent>
             </AccordionItem>
           </Accordion>
+        )}
+
+        {overlappingHoldings.length > 0 && (
+          <div className="mb-4 rounded-xl border border-border/40 p-4">
+            <p className="text-xs font-medium text-foreground/80 mb-1">
+              You already hold {overlappingHoldings.length === 1 ? overlappingHoldings[0].symbol : `${overlappingHoldings.length} of these tickers`}
+            </p>
+            <p className="text-[11px] text-muted-foreground/85 leading-relaxed mb-3">
+              Choose whether this import should add to those positions or replace them outright.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setImportMode('add')}
+                className={cn(
+                  'flex items-start gap-2 rounded-lg border p-3 text-left transition-colors',
+                  importMode === 'add' ? 'border-primary bg-primary/5' : 'border-border/40 hover:bg-muted/30'
+                )}
+              >
+                <PlusCircle className={cn('h-4 w-4 mt-0.5 shrink-0', importMode === 'add' ? 'text-primary' : 'text-muted-foreground')} />
+                <span className="min-w-0">
+                  <span className="block text-xs font-medium text-foreground">Add to existing</span>
+                  <span className="block text-[11px] text-muted-foreground mt-0.5">
+                    Imported buys and sells stack on top of what you already have.
+                  </span>
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setImportMode('replace')}
+                className={cn(
+                  'flex items-start gap-2 rounded-lg border p-3 text-left transition-colors',
+                  importMode === 'replace' ? 'border-primary bg-primary/5' : 'border-border/40 hover:bg-muted/30'
+                )}
+              >
+                <RefreshCcw className={cn('h-4 w-4 mt-0.5 shrink-0', importMode === 'replace' ? 'text-primary' : 'text-muted-foreground')} />
+                <span className="min-w-0">
+                  <span className="block text-xs font-medium text-foreground">Replace existing</span>
+                  <span className="block text-[11px] text-muted-foreground mt-0.5">
+                    Your current position in {overlappingHoldings.length === 1 ? overlappingHoldings[0].symbol : 'these tickers'} is cleared first, then rebuilt from this file alone.
+                  </span>
+                </span>
+              </button>
+            </div>
+          </div>
         )}
 
         <div className="overflow-x-auto rounded-xl border border-border/40">
@@ -401,6 +487,26 @@ export function ImportReviewClient({ importId }: { importId: string }) {
           </Button>
         </div>
       </div>
+
+      <Dialog open={showLeaveConfirm} onOpenChange={setShowLeaveConfirm}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-base font-semibold">Leave without saving?</DialogTitle>
+            <DialogDescription className="text-xs">
+              You haven&apos;t saved this import yet. Going back now discards everything you&apos;ve reviewed here,
+              and you&apos;ll need to import the file again.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" size="sm" onClick={() => setShowLeaveConfirm(false)}>
+              Keep reviewing
+            </Button>
+            <Button size="sm" variant="destructive" onClick={() => router.push('/holdings')}>
+              Leave and discard
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

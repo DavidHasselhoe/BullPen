@@ -28,6 +28,18 @@ async function handler(request: NextRequest, context: unknown, session: { userId
   const { id } = await (context as { params: Promise<{ id: string }> }).params;
   const supabase = createServerClient();
 
+  // 'replace' clears the user's current manual position in every ticker
+  // this import touches before replaying, instead of stacking imported
+  // buys/sells on top of what's already there. Defaults to 'add' (the
+  // original behavior) for any caller that doesn't send a mode.
+  let mode: 'add' | 'replace' = 'add';
+  try {
+    const body = await request.json();
+    if (body?.mode === 'replace') mode = 'replace';
+  } catch {
+    // no body / not JSON — keep the 'add' default
+  }
+
   const { data: row, error } = await supabase
     .from('holdings_imports')
     .select('id, status, parsed')
@@ -96,6 +108,29 @@ async function handler(request: NextRequest, context: unknown, session: { userId
       { id: r.id as string, symbol: r.symbol as string, quantity: (r.quantity as number) ?? 0, source: r.source as 'manual' | 'snaptrade' },
     ])
   );
+
+  if (mode === 'replace') {
+    // Only ever clears a MANUAL holding in a symbol this import actually
+    // touches — a SnapTrade-synced position is never deleted by an import,
+    // same guard plan-replay already applies to selling against one.
+    // Deleting cascades to holding_purchases (its lots) but only detaches
+    // holding_sales.original_holding_id, so past realized sales stay intact.
+    const importedSymbols = new Set([...bySecurityKey.values()].map((v) => v.symbol));
+    const toReplace = [...existingHoldings.values()].filter((h) => h.source === 'manual' && importedSymbols.has(h.symbol));
+    if (toReplace.length > 0) {
+      const { error: deleteError } = await supabase
+        .from('user_holdings')
+        .delete()
+        .eq('user_id', session.userId)
+        .in('id', toReplace.map((h) => h.id));
+      if (deleteError) {
+        return addSecurityHeaders(
+          NextResponse.json({ error: 'Failed to clear your existing holdings before replacing them.' }, { status: 500 })
+        );
+      }
+      for (const h of toReplace) existingHoldings.delete(h.symbol);
+    }
+  }
 
   const plan = planReplay(activeTransactions, bySecurityKey, existingHoldings);
   if (plan.blocked) {
