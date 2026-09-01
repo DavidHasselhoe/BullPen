@@ -226,8 +226,6 @@
   "insiderInsightNetSold_other": "Insiders verkauften netto {{amount}} Aktien über {{count}} aktuelle Transaktionen",
   "insiderSentimentBalanced": "Ausgeglichen",
   "insiderSentimentNet": "Netto {{sign}}{{amount}}",
-  "insiderShowMoreTransactions_one": "{{count}} weitere Transaktion anzeigen",
-  "insiderShowMoreTransactions_other": "{{count}} weitere Transaktionen anzeigen",
   "insiderSimplifiedDescription": "Sehe, wenn Führungskräfte ihre eigenen Aktien kaufen oder verkaufen",
   "insiderSimplifiedExplainer": "Wenn Unternehmensführer ihre eigenen Aktien kaufen oder verkaufen, kann das Vertrauen in die zukünftige Entwicklung des Unternehmens signalisieren.",
   "insiderTypeBought": "Gekauft",
@@ -339,7 +337,12 @@
   "financialsRowEpsBasic": "EPS (Basic)",
   "financialsRowEpsDiluted": "EPS (Diluted)",
   "insiderColumnInsider": "Insider",
+  "insiderFilterAll": "Alle",
+  "insiderFilterEmpty": "Keine Transaktionen entsprechen diesem Filter.",
+  "insiderModalTitle": "{{ticker}} Insidertransaktionen",
   "insiderUpgradeButton": "Upgrade",
+  "insiderViewAllTransactions_one": "{{count}} Transaktion anzeigen",
+  "insiderViewAllTransactions_other": "Alle {{count}} Transaktionen anzeigen",
   "statisticsGridBandMega": "Mega",
   "statisticsGridForwardPe": "Forward P/E {{value}}"
 }
