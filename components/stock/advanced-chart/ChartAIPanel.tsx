@@ -2,6 +2,7 @@
 
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
+import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { useEffect, useMemo, useRef, useState, memo } from 'react';
 import Image from 'next/image';
@@ -18,7 +19,7 @@ import { AiPaywallDialog } from '@/components/billing/AiPaywallDialog';
 import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import { ToolResultCard } from '@/components/ai/ToolResultCard';
 import { BullAiIcon } from '@/components/ai/BullAiIcon';
-import { getActiveToolName, getToolStatusLabel, getCompletedToolCalls, getFollowups, extractTickers } from '@/lib/ai/tool-ux';
+import { getActiveToolName, getToolStatusLabel, getCompletedToolCalls, getFollowups, extractTickers, useNavigateConfirmations } from '@/lib/ai/tool-ux';
 import type { QuotaState } from '@/lib/billing/quotas';
 import type { ChartAction, ChartSnapshot } from './chart-context';
 import type { TFunction } from 'i18next';
@@ -105,6 +106,8 @@ export function ChartAIPanel({ open, symbol, snapshot, onAction, onClose }: Prop
   const { t, i18n } = useTranslation('stock');
   const invalidateQuota = useInvalidateQuota();
   const { noteTicker } = useAIPanel();
+  const router = useRouter();
+  const { getDecision: getNavigateDecision, confirm: confirmNavigate, decline: declineNavigate } = useNavigateConfirmations(router.push);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const inputRef = useRef('');
@@ -136,6 +139,14 @@ export function ChartAIPanel({ open, symbol, snapshot, onAction, onClose }: Prop
           await onAction(action);
         } catch {
           /* a single failed action shouldn't break the rest */
+        }
+      }
+      // Navigate actions the model marked explicit run immediately, same as
+      // BullpenChat; anything requiring confirmation waits for the user to
+      // click Yes/No on its NavigateConfirmCard (wired in the render below).
+      for (const call of getCompletedToolCalls(message)) {
+        if (call.clientAction?.type === 'navigate' && !call.clientAction.requiresConfirmation) {
+          router.push(call.clientAction.path);
         }
       }
     },
@@ -311,9 +322,28 @@ export function ChartAIPanel({ open, symbol, snapshot, onAction, onClose }: Prop
                   <span className="whitespace-pre-wrap break-words">{text}</span>
                 ) : (
                   <>
-                    {toolCalls.map((call, i) => (
-                      <ToolResultCard key={`${message.id}-tool-${i}`} toolName={call.toolName} output={call.output} />
-                    ))}
+                    {toolCalls.map((call, i) => {
+                      const actionKey = `${message.id}::${i}`;
+                      // Chart control tools (setTimeframe, addIndicator, …) also embed
+                      // a __clientAction, but a chart_* one — already fully handled
+                      // above via extractChartActions/onAction. ToolResultCard's
+                      // clientAction prop is typed for lib/ai/tool-ux's ClientAction
+                      // union (navigate/addHolding/…), which a chart_* action isn't a
+                      // real member of, so only ever pass through the navigate case.
+                      const navigateAction = call.clientAction?.type === 'navigate' ? call.clientAction : undefined;
+                      return (
+                        <ToolResultCard
+                          key={`${message.id}-tool-${i}`}
+                          toolName={call.toolName}
+                          output={call.output}
+                          clientAction={navigateAction}
+                          navigateDecision={navigateAction ? getNavigateDecision(actionKey) : undefined}
+                          onConfirmNavigate={navigateAction ? () => confirmNavigate(actionKey, navigateAction.path) : undefined}
+                          onDeclineNavigate={navigateAction ? () => declineNavigate(actionKey) : undefined}
+                          isHistorical={false}
+                        />
+                      );
+                    })}
                     {text && (
                       <AssistantContent text={text} isStreaming={isStreaming && message.id === messages[messages.length - 1]?.id} />
                     )}

@@ -106,6 +106,10 @@
   "whyTodayUpgradeNotice": "リアルタイム AI ニュース分析は <pro>Pro</pro> 機能です。",
   "financialsCapex": "CapEx",
   "healthScoreNotAvailable": "N/A",
+  "navigateNo": "いいえ",
+  "navigateStayingHere": "わかりました。ここに留まります。",
+  "navigateTakingYouThere": "移動中です…",
+  "navigateYes": "はい",
   "statisticsBeta": "Beta",
   "statisticsEvEbitda": "EV/EBITDA",
   "termsGateBeta": "Beta"

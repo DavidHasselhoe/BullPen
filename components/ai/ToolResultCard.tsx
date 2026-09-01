@@ -10,7 +10,8 @@ import { CompanyMetricsResultCard, type CompanyMetricsOutput } from './cards/Com
 import { ComparisonResultCard, type ComparisonOutput } from './cards/ComparisonResultCard';
 import { InsiderActivityResultCard, type InsiderActivityOutput } from './cards/InsiderActivityResultCard';
 import { ActionReceiptCard } from './cards/ActionReceiptCard';
-import type { ClientAction, ActionOutcome } from '@/lib/ai/tool-ux';
+import { NavigateConfirmCard } from './cards/NavigateConfirmCard';
+import type { ClientAction, ActionOutcome, NavigateDecision } from '@/lib/ai/tool-ux';
 
 /**
  * Dispatches a completed AI tool call to its matching visual card instead of
@@ -44,6 +45,9 @@ export function ToolResultCard({
   siblingCalls,
   clientAction,
   actionOutcome,
+  navigateDecision,
+  onConfirmNavigate,
+  onDeclineNavigate,
   isHistorical,
   onRetryAction,
 }: {
@@ -54,10 +58,25 @@ export function ToolResultCard({
   /** Present only when this call is a write-action (addHolding/updateHolding/removeHolding/createAlert/navigate). */
   clientAction?: ClientAction;
   actionOutcome?: ActionOutcome;
+  /** Present only for a navigate clientAction that requires confirmation. */
+  navigateDecision?: NavigateDecision;
+  onConfirmNavigate?: () => void;
+  onDeclineNavigate?: () => void;
   isHistorical?: boolean;
   onRetryAction?: () => void;
 }) {
-  if (clientAction && clientAction.type !== 'navigate') {
+  if (clientAction && clientAction.type === 'navigate') {
+    if (!clientAction.requiresConfirmation) return null;
+    return (
+      <NavigateConfirmCard
+        decision={navigateDecision}
+        isHistorical={!!isHistorical}
+        onConfirm={onConfirmNavigate ?? (() => {})}
+        onDecline={onDeclineNavigate ?? (() => {})}
+      />
+    );
+  }
+  if (clientAction) {
     return (
       <ActionReceiptCard
         action={clientAction}

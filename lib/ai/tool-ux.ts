@@ -4,8 +4,10 @@
  *  - a friendly "doing X" status label while a tool is in flight
  *  - follow-up prompt suggestions based on which tool(s) just ran
  *  - extracting ticker symbols mentioned in tool calls (for cross-surface context)
+ *  - confirming a navigation before it happens, when the user didn't explicitly ask for it
  */
 
+import { useCallback, useState } from 'react';
 import type { AlertType } from '@/types/alerts';
 
 /** Minimal shape of a `tool-*` UIMessage part — loosely typed like the rest of this codebase's message-part helpers. */
@@ -20,9 +22,21 @@ interface MessageLike {
   parts?: ToolPart[];
 }
 
-/** A tool result's embedded `__clientAction` — an instruction the frontend executes after the message finishes streaming. */
+/**
+ * A tool result's embedded `__clientAction` — an instruction the frontend
+ * executes after the message finishes streaming.
+ *
+ * `navigate`'s `requiresConfirmation` is the model's own judgment call (see
+ * the `explicitUserRequest` param on every navigation tool in lib/ai/tools.ts
+ * and the system prompt's guidance on setting it): true when the user
+ * explicitly asked to be taken somewhere ("take me to GOOGL"), false when
+ * Bull is offering navigation as a helpful next step to an informational
+ * question ("where can I manage my alerts?"). Only the false case renders a
+ * confirm card instead of navigating immediately — see NavigateConfirmCard
+ * and useNavigateConfirmations below.
+ */
 export type ClientAction =
-  | { type: 'navigate'; path: string }
+  | { type: 'navigate'; path: string; label: string; requiresConfirmation: boolean }
   | { type: 'addHolding'; ticker: string; company_name: string; quantity?: number | null; avg_price?: number | null; date_purchased?: string | null }
   | { type: 'updateHolding'; ticker: string; quantity?: number | null; avg_price?: number | null }
   | { type: 'removeHolding'; ticker: string }
@@ -56,6 +70,8 @@ const STATUS_LABELS: Record<string, string> = {
   openTools: 'Opening tools…',
   openCompanyEarnings: 'Opening earnings calendar…',
   openCompanyNews: 'Opening news…',
+  openDividendCalculator: 'Opening dividend calculator…',
+  navigateTo: 'Finding that page…',
   addHolding: 'Adding to your holdings…',
   updateHolding: 'Updating your holding…',
   removeHolding: 'Removing holding…',
@@ -154,4 +170,29 @@ export function extractTickers(message: MessageLike | undefined): string[] {
     }
   }
   return [...out];
+}
+
+export type NavigateDecision = 'confirmed' | 'declined';
+
+/**
+ * Tracks the user's Yes/No decision on each navigate-with-confirmation
+ * prompt, keyed the same way BullpenChat keys actionOutcomes
+ * (`${message.id}::${toolCallIndex}`). Shared by BullpenChat and
+ * ChartAIPanel so both surfaces confirm-before-navigate identically —
+ * `push` is injected (rather than this hook importing next/navigation
+ * itself) so it works with either surface's own `useRouter().push`.
+ */
+export function useNavigateConfirmations(push: (path: string) => void) {
+  const [decisions, setDecisions] = useState<Record<string, NavigateDecision>>({});
+
+  const confirm = useCallback((key: string, path: string) => {
+    setDecisions((prev) => ({ ...prev, [key]: 'confirmed' }));
+    push(path);
+  }, [push]);
+
+  const decline = useCallback((key: string) => {
+    setDecisions((prev) => ({ ...prev, [key]: 'declined' }));
+  }, []);
+
+  return { getDecision: (key: string) => decisions[key], confirm, decline };
 }

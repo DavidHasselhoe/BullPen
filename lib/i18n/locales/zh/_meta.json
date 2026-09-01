@@ -2192,5 +2192,9 @@
   "billing.whyTodayPreviewBecause": "17f39d662f91c4820f23f2a8dbfeb9a6d10163a2d7a66e5cf099c117e3ab169d",
   "billing.riskAnalysisPreviewAnalyzing": "7de6f4be87e55de61617f51da19834507e90f436dcc0dc7cdf3f4a9127995a7f",
   "billing.riskAnalysisPreviewAnalyzingMore_one": "711f4a3c5d74b8d95067d76678a2ebbf693df28bb7f3ada5a4495c8e0fb23268",
-  "billing.riskAnalysisPreviewAnalyzingMore_other": "711f4a3c5d74b8d95067d76678a2ebbf693df28bb7f3ada5a4495c8e0fb23268"
+  "billing.riskAnalysisPreviewAnalyzingMore_other": "711f4a3c5d74b8d95067d76678a2ebbf693df28bb7f3ada5a4495c8e0fb23268",
+  "ai.navigateNo": "1ea442a134b2a184bd5d40104401f2a37fbc09ccf3f4bc9da161c6099be3691d",
+  "ai.navigateStayingHere": "cef3f38c0d697fb700529d9e063879bce21e1db5b991cbe45227f8e45ad04d4d",
+  "ai.navigateTakingYouThere": "96336a3659f0cc1b56574b3b0e835fab1bdbd7b689540330f61b542d7dad6f12",
+  "ai.navigateYes": "85a39ab345d672ff8ca9b9c6876f3adcacf45ee7c1e2dbd2408fd338bd55e07e"
 }

@@ -11,9 +11,9 @@ import { streamText, convertToModelMessages, stepCountIs } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import type { UIMessage } from 'ai';
 import { CHART_TOOLS } from './chart-tools';
-import { COMPANY_DATA_TOOLS } from './tools';
+import { COMPANY_DATA_TOOLS, navigateTo, openCompanyPage } from './tools';
 
-const ALL_TOOLS = { ...CHART_TOOLS, ...COMPANY_DATA_TOOLS };
+const ALL_TOOLS = { ...CHART_TOOLS, ...COMPANY_DATA_TOOLS, navigateTo, openCompanyPage };
 
 // Loose shape — mirrors ChartSnapshot from the chart-context module. Kept local
 // so this server file doesn't import a client component.
@@ -62,6 +62,11 @@ You are NOT limited to the chart snapshot below — you have live tools for fund
 - compareCompanies — side-by-side metrics for 2+ tickers.
 
 The chart is for the symbol in the snapshot below, but the user can ask about ANY company — if they name a different ticker, use that one for your data tool calls (the chart itself stays on the original symbol unless they ask to change it).
+
+## Navigating elsewhere in BullPen
+You can also send the user to another page in the app: navigateTo covers the watchlist, price alerts, Academy, the Portfolio Builder, the market calendar, and more (see its tool description for the full list); openCompanyPage opens a different company's stock page entirely (use this instead of switching the current chart when the user wants to leave this page for another ticker's full page, not just look up its data here).
+Both take explicitUserRequest: set it true only when the user's own message directly asked to be taken/navigated somewhere ("take me to GOOGL's page", "open my watchlist"); set it false when you're volunteering navigation as a helpful next step to a question they actually asked (e.g. they ask where alerts are managed and you offer to take them there — they haven't consented to leave this chart yet, so let them confirm). Never invent a destination or send the user outside BullPen — if what they want isn't one of the listed destinations, say so.
+Critical: never write an offer like "want me to take you there?" without calling the tool in that same turn — the Yes/No buttons the user needs to respond come from the tool call itself, not your words. A reply that proposes a destination with no matching tool call leaves the user with a question they have no way to answer.
 
 ## Reading the chart
 You are given a CHART SNAPSHOT with the current timeframe, price, window stats, moving averages, RSI, and the recent close path. Ground every analysis in those numbers — cite the actual figures (e.g. "RSI is 71, so it's stretched"; "price is above its 50- and 200-day averages — a healthy uptrend"). If a value is null it means there aren't enough bars in the current timeframe; say so and offer to switch to a longer view.

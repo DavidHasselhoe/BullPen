@@ -24,7 +24,7 @@ import { useInvalidateQuota } from '@/hooks/use-quota';
 import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import { ToolResultCard } from '@/components/ai/ToolResultCard';
 import { BullAiIcon } from '@/components/ai/BullAiIcon';
-import { getActiveToolName, getToolStatusLabel, getCompletedToolCalls, getFollowups, extractTickers, type ClientAction, type ActionOutcome } from '@/lib/ai/tool-ux';
+import { getActiveToolName, getToolStatusLabel, getCompletedToolCalls, getFollowups, extractTickers, useNavigateConfirmations, type ClientAction, type ActionOutcome } from '@/lib/ai/tool-ux';
 
 // Byte-identical to AISidePanel's starterPromptHealthCheck/InsiderBuying/GrowthStocks — reused rather than duplicated.
 function getDefaultStarterPrompts(t: TFunction): string[] {
@@ -188,6 +188,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
   const [ownConversationId] = useState(() => conversationId ?? crypto.randomUUID());
   const activeConversationId = conversationId ?? ownConversationId;
   const [actionOutcomes, setActionOutcomes] = useState<Record<string, ActionOutcome>>({});
+  const { getDecision: getNavigateDecision, confirm: confirmNavigate, decline: declineNavigate } = useNavigateConfirmations(router.push);
   // Message ids present when this chat mounted (i.e. loaded from a saved conversation) —
   // anything appended afterward is "live" and gets real pending/success/error tracking.
   const [historicalMessageIds] = useState(() => new Set((initialMessages ?? []).map((m) => m.id)));
@@ -342,6 +343,10 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
       const tickers = extractTickers(message);
       if (tickers.length) noteTicker(tickers[tickers.length - 1]);
       getCompletedToolCalls(message).forEach((call, i) => {
+        // A navigate action that requires confirmation waits for the user to
+        // click Yes/No on its NavigateConfirmCard instead of running here —
+        // see confirmNavigate/declineNavigate, wired to that card below.
+        if (call.clientAction?.type === 'navigate' && call.clientAction.requiresConfirmation) return;
         if (call.clientAction) {
           void runClientAction(call.clientAction, `${message.id}::${i}`);
         }
@@ -545,6 +550,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
                       const toolCalls = getCompletedToolCalls(message);
                       return toolCalls.map((call, i) => {
                         const actionKey = `${message.id}::${i}`;
+                        const navigateAction = call.clientAction?.type === 'navigate' ? call.clientAction : undefined;
                         return (
                           <ToolResultCard
                             key={`${message.id}-tool-${i}`}
@@ -553,6 +559,9 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
                             siblingCalls={toolCalls}
                             clientAction={call.clientAction}
                             actionOutcome={call.clientAction ? actionOutcomes[actionKey] : undefined}
+                            navigateDecision={navigateAction ? getNavigateDecision(actionKey) : undefined}
+                            onConfirmNavigate={navigateAction ? () => confirmNavigate(actionKey, navigateAction.path) : undefined}
+                            onDeclineNavigate={navigateAction ? () => declineNavigate(actionKey) : undefined}
                             isHistorical={historicalMessageIds.has(message.id)}
                             onRetryAction={call.clientAction ? () => runClientAction(call.clientAction!, actionKey) : undefined}
                           />

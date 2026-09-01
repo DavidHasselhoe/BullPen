@@ -30,6 +30,7 @@ import { getTier, isPro } from '@/lib/billing/tier';
 import { AlertTypeSchema, alertTypeLabel, describeAlert, FREE_ACTIVE_ALERT_LIMIT, type AlertType } from '@/types/alerts';
 import { DIVIDEND_QUICK_PICKS } from '@/lib/finance/dividend-quick-picks';
 import { getHoldings } from '@/lib/holdings/holdings-db';
+import { APP_DESTINATIONS, APP_DESTINATION_IDS, type AppDestinationId } from '@/lib/ai/app-destinations';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -388,28 +389,62 @@ function clientAction<T extends Record<string, unknown>>(action: T) {
   return { [CLIENT_ACTION]: action } as { __clientAction: T };
 }
 
+/**
+ * Every navigation tool shares one schema field: `explicitUserRequest`. The
+ * model sets it based on whether the user's own message directly asked to
+ * be taken somewhere ("take me to X", "open X") vs. Bull volunteering
+ * navigation as a helpful next step to an informational question ("where
+ * can I manage my alerts?"). `false` renders a Yes/No confirm prompt
+ * client-side instead of navigating immediately — see the system prompt's
+ * "Navigation confirmation" section for the full judgment rule, and
+ * NavigateConfirmCard for the client-side prompt itself.
+ */
+const EXPLICIT_USER_REQUEST_SCHEMA = {
+  type: 'boolean' as const,
+  description:
+    "True only if the user's own message directly asked to be taken/navigated somewhere " +
+    '(e.g. "take me to GOOGL", "open the screener", "go to my watchlist"). False if you are ' +
+    'volunteering navigation as a helpful next step to an informational question the user asked ' +
+    '(e.g. "where can I manage my alerts?", "how do I add a holding?") — in that case the user has ' +
+    "not yet consented to leave the page they're on, so this must be false and they'll be asked to confirm.",
+};
+
+function navigateAction(path: string, label: string, explicitUserRequest: boolean) {
+  return clientAction({ type: 'navigate', path, label, requiresConfirmation: !explicitUserRequest });
+}
+
 export const openCompanyPage = tool({
   description:
     'Open a company\'s stock page in BullPen. Use when the user asks to open, view, go to, or show a company\'s page. ' +
-    'Examples: "open NVIDIA", "show me Apple\'s page", "go to NVDA", "take me to Microsoft".',
-  inputSchema: jsonSchema<{ ticker: string }>({
+    'Examples: "open NVIDIA", "show me Apple\'s page", "go to NVDA", "take me to Microsoft" — these are all explicit ' +
+    'requests (explicitUserRequest: true). If you are instead suggesting a company\'s page as a helpful next step to a ' +
+    'different question, set explicitUserRequest: false.',
+  inputSchema: jsonSchema<{ ticker: string; explicitUserRequest: boolean }>({
     type: 'object',
-    properties: { ticker: { type: 'string', description: 'Stock ticker symbol, e.g. NVDA, AAPL' } },
-    required: ['ticker'],
+    properties: {
+      ticker: { type: 'string', description: 'Stock ticker symbol, e.g. NVDA, AAPL' },
+      explicitUserRequest: EXPLICIT_USER_REQUEST_SCHEMA,
+    },
+    required: ['ticker', 'explicitUserRequest'],
     additionalProperties: false,
   }),
-  execute: async ({ ticker }) => {
+  execute: async ({ ticker, explicitUserRequest }) => {
     const company = await resolveCompanyId(ticker);
     if (!company) return { error: `Company "${ticker}" not found.` };
-    return { ...clientAction({ type: 'navigate', path: `/stock/${ticker.toUpperCase()}` }), opened: company.name };
+    return {
+      ...navigateAction(`/stock/${ticker.toUpperCase()}`, `${company.name}'s page`, explicitUserRequest),
+      opened: company.name,
+    };
   },
 });
 
 export const openComparison = tool({
   description:
     'Open the stock screener or comparison view. Use when the user asks to compare companies, ' +
-    'e.g. "compare NVIDIA and AMD", "show me NVDA vs AMD", "compare these companies".',
-  inputSchema: jsonSchema<{ tickers: string[] }>({
+    'e.g. "compare NVIDIA and AMD", "show me NVDA vs AMD", "compare these companies" — these are explicit requests ' +
+    '(explicitUserRequest: true). If you are suggesting a comparison as a helpful next step rather than something ' +
+    'the user asked to see, set explicitUserRequest: false.',
+  inputSchema: jsonSchema<{ tickers: string[]; explicitUserRequest: boolean }>({
     type: 'object',
     properties: {
       tickers: {
@@ -419,14 +454,15 @@ export const openComparison = tool({
         maxItems: 5,
         description: 'Ticker symbols to compare',
       },
+      explicitUserRequest: EXPLICIT_USER_REQUEST_SCHEMA,
     },
-    required: ['tickers'],
+    required: ['tickers', 'explicitUserRequest'],
     additionalProperties: false,
   }),
-  execute: async ({ tickers }) => {
+  execute: async ({ tickers, explicitUserRequest }) => {
     const normalized = tickers.slice(0, 5).map((t) => t.toUpperCase());
     const params = new URLSearchParams({ tickers: normalized.join(',') });
-    return clientAction({ type: 'navigate', path: `/tools/compare?${params.toString()}` });
+    return navigateAction(`/tools/compare?${params.toString()}`, `a comparison of ${normalized.join(', ')}`, explicitUserRequest);
   },
 });
 
@@ -434,7 +470,9 @@ export const openScreener = tool({
   description:
     'Open the BullPen stock screener, optionally pre-applying filters so the user sees results immediately. ' +
     'Use whenever the user asks to find, screen, filter, or browse stocks — even vague requests like ' +
-    '"show me value stocks", "find tech growth plays", or "I want dividend ideas". ' +
+    '"show me value stocks", "find tech growth plays", or "I want dividend ideas". These are all explicit action ' +
+    'requests — the tool only exists to be triggered this way, so explicitUserRequest is almost always true here; ' +
+    'set it false only on the rare case where you are suggesting the screener unprompted, mid-answer to something else. ' +
     'Map natural language criteria to filter params: ' +
     '"large-cap" → marketCapMin=10, "mega-cap" → marketCapMin=200, "small-cap" → marketCapMax=2, ' +
     '"deep value" → peMax=15 + pbMax=2, "growth stocks" → revenueGrowthMin=15, ' +
@@ -460,6 +498,7 @@ export const openScreener = tool({
     revenueGrowthMax?: number;
     week52ChangeMin?: number;
     week52ChangeMax?: number;
+    explicitUserRequest: boolean;
   }>({
     type: 'object',
     properties: {
@@ -481,7 +520,9 @@ export const openScreener = tool({
       revenueGrowthMax: { type: 'number', description: 'Max revenue growth YoY as a percentage' },
       week52ChangeMin:  { type: 'number', description: 'Min 52-week price change % — e.g. -30 for stocks down >30% (beaten-down)' },
       week52ChangeMax:  { type: 'number', description: 'Max 52-week price change % — e.g. 0 for stocks still below prior high' },
+      explicitUserRequest: EXPLICIT_USER_REQUEST_SCHEMA,
     },
+    required: ['explicitUserRequest'],
     additionalProperties: false,
   }),
   execute: async (filters) => {
@@ -512,7 +553,7 @@ export const openScreener = tool({
     const path = qs ? `/tools/screener?${qs}` : '/tools/screener';
     const appliedCount = [...params.keys()].length;
     return {
-      ...clientAction({ type: 'navigate', path }),
+      ...navigateAction(path, 'the stock screener', filters.explicitUserRequest),
       ...(appliedCount > 0 ? { filtersApplied: appliedCount, description: `Screener opened with ${appliedCount} filter(s)` } : {}),
     };
   },
@@ -521,66 +562,87 @@ export const openScreener = tool({
 export const openHoldings = tool({
   description:
     'Open the user\'s holdings page. Use when the user asks to view holdings, portfolio, or my positions.',
-  inputSchema: jsonSchema<Record<string, never>>({
+  inputSchema: jsonSchema<{ explicitUserRequest: boolean }>({
     type: 'object',
-    properties: {},
+    properties: { explicitUserRequest: EXPLICIT_USER_REQUEST_SCHEMA },
+    required: ['explicitUserRequest'],
     additionalProperties: false,
   }),
-  execute: async () => clientAction({ type: 'navigate', path: '/holdings' }),
+  execute: async ({ explicitUserRequest }) => navigateAction('/holdings', 'your holdings', explicitUserRequest),
 });
 
 export const openDiscover = tool({
   description:
-    'Open the Discover / home page. Use when the user asks to go home, see the dashboard, or discover page.',
-  inputSchema: jsonSchema<Record<string, never>>({
+    'Open the user\'s home dashboard. Use when the user asks to go home or see the dashboard. ' +
+    'For the separate Discover page (curated market content), use navigateTo with destination "discover" instead.',
+  inputSchema: jsonSchema<{ explicitUserRequest: boolean }>({
     type: 'object',
-    properties: {},
+    properties: { explicitUserRequest: EXPLICIT_USER_REQUEST_SCHEMA },
+    required: ['explicitUserRequest'],
     additionalProperties: false,
   }),
-  execute: async () => clientAction({ type: 'navigate', path: '/dashboard' }),
+  execute: async ({ explicitUserRequest }) => navigateAction('/dashboard', 'your dashboard', explicitUserRequest),
 });
 
 export const openTools = tool({
   description:
     'Open the BullPen tools hub. Use when the user asks for tools, utilities, screeners, or the tools page.',
-  inputSchema: jsonSchema<Record<string, never>>({
+  inputSchema: jsonSchema<{ explicitUserRequest: boolean }>({
     type: 'object',
-    properties: {},
+    properties: { explicitUserRequest: EXPLICIT_USER_REQUEST_SCHEMA },
+    required: ['explicitUserRequest'],
     additionalProperties: false,
   }),
-  execute: async () => clientAction({ type: 'navigate', path: '/tools' }),
+  execute: async ({ explicitUserRequest }) => navigateAction('/tools', 'the tools hub', explicitUserRequest),
 });
 
 export const openCompanyEarnings = tool({
   description:
     'Open a company\'s stock page and scroll to the earnings calendar. Use when the user asks about earnings dates, ' +
-    'next earnings, when a company reports, or to see the earnings calendar.',
-  inputSchema: jsonSchema<{ ticker: string }>({
+    'next earnings, when a company reports, or to see the earnings calendar. Most of these are informational ' +
+    'questions rather than a direct "take me there" request — set explicitUserRequest accordingly (usually false ' +
+    'unless the user explicitly asked to be shown/opened to the earnings calendar itself).',
+  inputSchema: jsonSchema<{ ticker: string; explicitUserRequest: boolean }>({
     type: 'object',
-    properties: { ticker: { type: 'string', description: 'Stock ticker symbol' } },
-    required: ['ticker'],
+    properties: {
+      ticker: { type: 'string', description: 'Stock ticker symbol' },
+      explicitUserRequest: EXPLICIT_USER_REQUEST_SCHEMA,
+    },
+    required: ['ticker', 'explicitUserRequest'],
     additionalProperties: false,
   }),
-  execute: async ({ ticker }) => {
+  execute: async ({ ticker, explicitUserRequest }) => {
     const company = await resolveCompanyId(ticker);
     if (!company) return { error: `Company "${ticker}" not found.` };
-    return { ...clientAction({ type: 'navigate', path: `/stock/${ticker.toUpperCase()}#earnings` }), opened: company.name };
+    return {
+      ...navigateAction(`/stock/${ticker.toUpperCase()}#earnings`, `${company.name}'s earnings calendar`, explicitUserRequest),
+      opened: company.name,
+    };
   },
 });
 
 export const openCompanyNews = tool({
   description:
-    'Open a company\'s stock page and scroll to the news section. Use when the user asks for news, headlines, or recent updates about a company.',
-  inputSchema: jsonSchema<{ ticker: string }>({
+    'Open a company\'s stock page and scroll to the news section. Use when the user asks for news, headlines, or ' +
+    'recent updates about a company. Most of these are informational questions rather than a direct "take me there" ' +
+    'request — set explicitUserRequest accordingly (usually false unless the user explicitly asked to be shown/opened ' +
+    'to the news section itself).',
+  inputSchema: jsonSchema<{ ticker: string; explicitUserRequest: boolean }>({
     type: 'object',
-    properties: { ticker: { type: 'string', description: 'Stock ticker symbol' } },
-    required: ['ticker'],
+    properties: {
+      ticker: { type: 'string', description: 'Stock ticker symbol' },
+      explicitUserRequest: EXPLICIT_USER_REQUEST_SCHEMA,
+    },
+    required: ['ticker', 'explicitUserRequest'],
     additionalProperties: false,
   }),
-  execute: async ({ ticker }) => {
+  execute: async ({ ticker, explicitUserRequest }) => {
     const company = await resolveCompanyId(ticker);
     if (!company) return { error: `Company "${ticker}" not found.` };
-    return { ...clientAction({ type: 'navigate', path: `/stock/${ticker.toUpperCase()}#news` }), opened: company.name };
+    return {
+      ...navigateAction(`/stock/${ticker.toUpperCase()}#news`, `${company.name}'s news`, explicitUserRequest),
+      opened: company.name,
+    };
   },
 });
 
@@ -671,10 +733,61 @@ export const openDividendCalculator = tool({
     if (years != null) params.set('years', String(Math.round(years)));
 
     return {
-      ...clientAction({ type: 'navigate', path: `/tools/dividend?${params.toString()}` }),
+      // Always auto-navigates, no confirmation — "build/create a dividend
+      // portfolio" is itself the explicit request; this tool only ever runs
+      // in response to that, never as an unprompted suggestion.
+      ...navigateAction(`/tools/dividend?${params.toString()}`, 'the Dividend Calculator', true),
       addedStocks: resolved.map((r) => `${r.ticker} ($${Number(r.value).toLocaleString('en-US')})`),
       description: `Opened the Dividend Calculator with ${resolved.length} stock(s) pre-filled.`,
     };
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tool: Navigate To (client action — general-purpose internal navigation)
+//
+// Covers every plain destination none of the more specific navigation tools
+// above already own (see lib/ai/app-destinations.ts for the full list and
+// why each entry is or isn't there). Every path resolves from that fixed
+// registry — this tool has no way to navigate anywhere outside BullPen.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const navigateTo = tool({
+  description:
+    'Navigate the user to a page elsewhere in BullPen — anything not covered by a more specific navigation tool ' +
+    '(openCompanyPage for a stock, openComparison for comparing companies, openScreener for the screener, ' +
+    'openHoldings for holdings, openDiscover for the home dashboard, openTools for the tools hub, ' +
+    'openDividendCalculator for the dividend calculator). Use this for: the Discover page, Academy (and its ' +
+    'leaderboard), watchlist, price alerts, the Portfolio Builder, the market events calendar, "If You Bought Here", ' +
+    'Market Mood, the S&P 500 Heatmap, the community feed, browsing members, notifications, the Upgrade page, and ' +
+    "Bull's Weekly Pick. Also use this for the AI Deep Dive report on a specific ticker (destination: \"deep_dive\", " +
+    'with ticker set). BullPen has no other pages to send someone to — never invent a path or send the user to an ' +
+    'external site; if what they want genuinely does not exist in the app, say so instead of guessing a destination.',
+  inputSchema: jsonSchema<{ destination: AppDestinationId | 'deep_dive'; ticker?: string; explicitUserRequest: boolean }>({
+    type: 'object',
+    properties: {
+      destination: {
+        type: 'string',
+        enum: [...APP_DESTINATION_IDS, 'deep_dive'],
+        description:
+          'Which page to open. "deep_dive" requires ticker to be set; every other value is a fixed, ' +
+          'ticker-independent page.',
+      },
+      ticker: { type: 'string', description: 'Stock ticker symbol — required when destination is "deep_dive", ignored otherwise.' },
+      explicitUserRequest: EXPLICIT_USER_REQUEST_SCHEMA,
+    },
+    required: ['destination', 'explicitUserRequest'],
+    additionalProperties: false,
+  }),
+  execute: async ({ destination, ticker, explicitUserRequest }) => {
+    if (destination === 'deep_dive') {
+      if (!ticker) return { error: 'ticker is required when destination is "deep_dive".' };
+      const sym = ticker.toUpperCase();
+      return navigateAction(`/tools/deep-dive/${sym}`, `the AI Deep Dive on ${sym}`, explicitUserRequest);
+    }
+    const dest = APP_DESTINATIONS[destination];
+    if (!dest) return { error: `Unknown destination "${destination}".` };
+    return navigateAction(dest.path, dest.label, explicitUserRequest);
   },
 });
 
@@ -1311,6 +1424,7 @@ export const BULLPEN_TOOLS = {
   openCompanyEarnings,
   openCompanyNews,
   openDividendCalculator,
+  navigateTo,
   // Portfolio management
   addHolding,
   updateHolding,

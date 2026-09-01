@@ -106,6 +106,10 @@
   "whyTodaySearching": "正在网络搜索 ${{ticker}} 今天的新闻……",
   "whyTodayUpgradeCta": "升级到 Pro →",
   "whyTodayUpgradeNotice": "实时 AI 新闻分析是 <pro>Pro</pro> 功能。",
+  "navigateNo": "否",
+  "navigateStayingHere": "好的，留在这里。",
+  "navigateTakingYouThere": "正在带你过去…",
+  "navigateYes": "是",
   "statisticsBeta": "Beta",
   "statisticsEvEbitda": "EV/EBITDA",
   "termsGateBeta": "Beta"
