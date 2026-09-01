@@ -106,12 +106,22 @@ async function handler(request: NextRequest, _ctx: unknown, session: { userId: s
     await Promise.all(
       batch.map(async ([key, txns]) => {
         const first = txns[0];
-        resolutions[key] = await resolveSecurity({
-          isin: first.isin,
-          rawSymbol: first.rawSymbol,
-          name: first.name,
-          priceCurrency: first.priceCurrency,
-        });
+        try {
+          resolutions[key] = await resolveSecurity({
+            isin: first.isin,
+            rawSymbol: first.rawSymbol,
+            name: first.name,
+            priceCurrency: first.priceCurrency,
+          });
+        } catch (err) {
+          // A transient TwelveData failure (502/520, timeout, etc.) on one
+          // security must not crash the whole import — the user has already
+          // waited through AI schema mapping for every other row. Fall back
+          // to unmatched so this security surfaces in the review grid for
+          // manual symbol entry instead of losing the entire draft.
+          console.error(`[holdings/import/parse] resolveSecurity failed for "${key}":`, err);
+          resolutions[key] = { status: 'unmatched', bestGuesses: [], creditsUsed: 0 };
+        }
       })
     );
   }

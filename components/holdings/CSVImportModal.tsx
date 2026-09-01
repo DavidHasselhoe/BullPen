@@ -89,7 +89,14 @@ export function CSVImportModal({ open, onOpenChange }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fileBase64, fileName: file.name }),
       });
-      const data = await res.json();
+      let data: { error?: string; summary?: unknown; importId?: string };
+      try {
+        data = await res.json();
+      } catch {
+        // A server crash (e.g. an unhandled upstream error) can return an
+        // empty or non-JSON body — don't surface the raw parse TypeError.
+        throw new Error(t('csvImportFailed'));
+      }
       if (!res.ok) {
         throw new Error(data.error ?? t('csvImportFailed'));
       }
