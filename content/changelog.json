@@ -1,5 +1,20 @@
 [
   {
+    "date": "2026-09-01",
+    "entries": [
+      { "type": "improved", "text": "Ask Bull now checks with you before taking you to a different page, with a quick yes or no, unless you directly asked to be taken there" },
+      { "type": "fixed", "text": "Fixed Ask Bull sometimes only opening a stock's regular page when you asked for fullscreen chart mode instead" },
+      { "type": "improved", "text": "Insider Transactions no longer stretches a stock's page for companies with long trade histories. Viewing everything now opens in its own scrollable window, with filters for buy, sell, or other transaction types" },
+      { "type": "improved", "text": "Pro feature previews, like Why Today, now show real, live data for the stock you're looking at instead of a generic example" },
+      { "type": "improved", "text": "Polished the CSV import for My Holdings. The progress bar now finishes cleanly, leaving the review screen before you finish warns you first, and you can choose to add to or replace your existing holdings when an import overlaps with what you already own" },
+      { "type": "fixed", "text": "Fixed changing your profile picture sometimes failing with a permission error" },
+      { "type": "fixed", "text": "Fixed importing a CSV to My Holdings sometimes failing instantly when one ticker in the file couldn't be matched" },
+      { "type": "fixed", "text": "Fixed the left-side navigation on stock pages and the Daily Brief reader not highlighting the last section once you'd scrolled all the way down" },
+      { "type": "fixed", "text": "Fixed the Academy streak reminder notifying you even when you didn't have a streak going" },
+      { "type": "improved", "text": "Streamlined signing up, with fewer password fields to fill in and clearer step-by-step progress during onboarding" }
+    ]
+  },
+  {
     "date": "2026-08-31",
     "entries": [
       { "type": "new", "text": "Import transactions from any brokerage export, in any format or language, from My Holdings. Upload your trade history and it's read automatically, matched to the right tickers, and turned into your full buy and sell history, not just a snapshot" },
