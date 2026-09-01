@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Crown } from 'lucide-react';
 import type { QuotaState } from '@/lib/billing/quotas';
 import { AiPaywallContent } from './AiPaywallContent';
-import { getAiPaywallConfig } from './paywall-config';
+import { getAiPaywallConfig, type PaywallPreviewContext } from './paywall-config';
 
 interface Props {
   open: boolean;
@@ -17,6 +17,11 @@ interface Props {
   featureName: string;
   /** Quota state from the 402 response (used to compose the message). Optional — falls back to generic copy. */
   quota?: QuotaState;
+  /** Real data the trigger site already had on screen (ticker, day change,
+   *  portfolio symbols, …) — lets the feature-specific preview lead with
+   *  something real instead of a fabricated example. Optional; each preview
+   *  falls back to its static example when omitted. */
+  previewContext?: PaywallPreviewContext;
 }
 
 function formatReset(iso: string, period: 'day' | 'month'): string {
@@ -25,7 +30,7 @@ function formatReset(iso: string, period: 'day' | 'month'): string {
   return `on ${d.toLocaleDateString(undefined, { month: 'long', day: 'numeric' })}`;
 }
 
-export function AiPaywallDialog({ open, onOpenChange, featureName, quota }: Props) {
+export function AiPaywallDialog({ open, onOpenChange, featureName, quota, previewContext }: Props) {
   const { t } = useTranslation('billing');
   const isProOnly = quota?.reason === 'pro_only';
   // Pro user who hit a cost-protection soft cap — they're already Pro, so don't upsell.
@@ -44,7 +49,7 @@ export function AiPaywallDialog({ open, onOpenChange, featureName, quota }: Prop
   // getAiPaywallConfig — one shared AiPaywallContent, only the benefits/preview
   // differ per feature. isProCap still falls through to the generic "Got it"
   // content below since that user is already Pro and shouldn't be upsold.
-  const config = getAiPaywallConfig(t)[featureName];
+  const config = getAiPaywallConfig(t, previewContext)[featureName];
   if (config && !isProCap) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>

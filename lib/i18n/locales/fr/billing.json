@@ -100,6 +100,14 @@
   "upgradeCompareFeature": "Fonctionnalité",
   "upgradeCompareFree": "Gratuit",
   "upgradeComparePro": "Pro",
+  "askBullPreviewUserMessageTicker": "{{ticker}} est-il toujours un bon achat en ce moment ?",
   "whyTodayPreviewTicker": "$NVDA",
+  "whyTodayPreviewTeaserUp": "a augmenté de {{pct}}% aujourd'hui",
+  "whyTodayPreviewTeaserDown": "a baissé de {{pct}}% aujourd'hui",
+  "whyTodayPreviewBecause": "parce que—",
+  "deepDivePreviewFor": "Deep Dive : {{ticker}}",
+  "riskAnalysisPreviewAnalyzing": "Analyse de {{tickers}}…",
+  "riskAnalysisPreviewAnalyzingMore_one": "Analyse de {{tickers}} & {{count}} de plus…",
+  "riskAnalysisPreviewAnalyzingMore_other": "Analyse de {{tickers}} & {{count}} de plus…",
   "upgradeQuestionsHeading": "Questions"
 }

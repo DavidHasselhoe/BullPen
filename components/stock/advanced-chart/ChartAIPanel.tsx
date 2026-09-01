@@ -252,6 +252,7 @@ export function ChartAIPanel({ open, symbol, snapshot, onAction, onClose }: Prop
         onOpenChange={(o) => !o && setPaywallQuota(null)}
         featureName={t('chartToolbarAskBull')}
         quota={paywallQuota ?? undefined}
+        previewContext={{ ticker: symbol }}
       />
 
       {/* Messages */}

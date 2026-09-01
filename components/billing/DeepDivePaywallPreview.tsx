@@ -8,11 +8,21 @@ const TONE_FILL: Record<'good' | 'mixed', string> = {
   mixed: 'bg-amber-500',
 };
 
+interface Props {
+  /** Real ticker (and optionally company name) being deep-dived, if known
+   *  at the trigger site — the deep-dive page always has the ticker. */
+  ticker?: string;
+  companyName?: string;
+}
+
 /**
- * Static, fabricated Deep Dive report snapshot used purely as a paywall
- * teaser. Never a real analysis.
+ * Fabricated Deep Dive report snapshot used purely as a paywall teaser. The
+ * score/verdict stay fabricated and blurred on purpose — that's the actual
+ * paid result, not something this dialog can know in advance. When the
+ * real ticker is known, though, an unblurred "Deep Dive: $AAPL" line leads
+ * the preview — that part is simply true, not a fabricated result.
  */
-export function DeepDivePaywallPreview() {
+export function DeepDivePaywallPreview({ ticker, companyName }: Props) {
   const { t } = useTranslation('billing');
   const mockSections: { label: string; pct: number; tone: 'good' | 'mixed' }[] = [
     { label: t('deepDivePreviewGrowth'), pct: 82, tone: 'good' },
@@ -21,6 +31,11 @@ export function DeepDivePaywallPreview() {
   ];
   return (
     <div className="relative select-none bg-card px-6 pb-8 pt-7" aria-hidden="true">
+      {ticker && (
+        <p className="mb-3 text-left text-xs font-medium text-foreground">
+          {t('deepDivePreviewFor', { ticker: companyName ? `${ticker} · ${companyName}` : ticker })}
+        </p>
+      )}
       <div className="pointer-events-none opacity-70 blur-[3px]">
         <div className="flex items-baseline gap-2">
           <span className="font-mono text-3xl font-bold tabular-nums text-foreground">

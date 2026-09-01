@@ -101,5 +101,13 @@
   "upgradeCompareFree": "無料",
   "upgradeComparePro": "Pro",
   "upgradeQuestionsHeading": "ご質問",
-  "whyTodayPreviewTicker": "$NVDA"
+  "askBullPreviewUserMessageTicker": "{{ticker}}は今でも良い買い物ですか？",
+  "whyTodayPreviewTicker": "$NVDA",
+  "whyTodayPreviewTeaserUp": "本日{{pct}}%上昇しました",
+  "whyTodayPreviewTeaserDown": "本日{{pct}}%下落しました",
+  "whyTodayPreviewBecause": "理由は—",
+  "deepDivePreviewFor": "Deep Dive: {{ticker}}",
+  "riskAnalysisPreviewAnalyzing": "{{tickers}}を分析中…",
+  "riskAnalysisPreviewAnalyzingMore_one": "{{tickers}}ほか{{count}}銘柄を分析中…",
+  "riskAnalysisPreviewAnalyzingMore_other": "{{tickers}}ほか{{count}}銘柄を分析中…"
 }

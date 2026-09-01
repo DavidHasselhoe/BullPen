@@ -101,5 +101,13 @@
   "upgradeCompareFree": "免费版",
   "upgradeComparePro": "Pro",
   "upgradeQuestionsHeading": "有问题吗？",
-  "whyTodayPreviewTicker": "$NVDA"
+  "askBullPreviewUserMessageTicker": "{{ticker}} 现在还是好的买入机会吗？",
+  "whyTodayPreviewTicker": "$NVDA",
+  "whyTodayPreviewTeaserUp": "今天上涨了 {{pct}}%",
+  "whyTodayPreviewTeaserDown": "今天下跌了 {{pct}}%",
+  "whyTodayPreviewBecause": "因为—",
+  "deepDivePreviewFor": "Deep Dive: {{ticker}}",
+  "riskAnalysisPreviewAnalyzing": "正在分析 {{tickers}}…",
+  "riskAnalysisPreviewAnalyzingMore_one": "正在分析 {{tickers}} 及其他 {{count}} 只…",
+  "riskAnalysisPreviewAnalyzingMore_other": "正在分析 {{tickers}} 及其他 {{count}} 只…"
 }

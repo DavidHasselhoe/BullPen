@@ -2,19 +2,28 @@
 
 import { useTranslation } from 'react-i18next';
 
+interface Props {
+  /** Real ticker the chart/page was showing when the gate fired, if known
+   *  — the in-chart assistant (ChartAIPanel) always has this. */
+  ticker?: string;
+}
+
 /**
- * Static, fabricated chat exchange used purely as a paywall teaser for Ask
- * Bull (both the main chat and the in-chart assistant share this feature
- * name, so they share this preview). Never a real conversation.
+ * Fabricated chat exchange used purely as a paywall teaser for Ask Bull
+ * (both the main chat and the in-chart assistant share this feature name,
+ * so they share this preview). Bull's reply stays fabricated on purpose —
+ * it's the actual paid answer. The user's question swaps in the real
+ * ticker when known, since asking about the stock the reader is actually
+ * looking at reads as an invitation, not a fabricated result.
  */
-export function AskBullPaywallPreview() {
+export function AskBullPaywallPreview({ ticker }: Props) {
   const { t } = useTranslation('billing');
   return (
     <div className="relative select-none bg-card px-6 pb-8 pt-7" aria-hidden="true">
       <div className="pointer-events-none space-y-2.5 opacity-70 blur-[3px]">
         <div className="flex justify-end">
           <div className="max-w-[75%] rounded-2xl rounded-br-sm bg-primary/10 px-3 py-2 text-left text-xs text-foreground">
-            {t('askBullPreviewUserMessage')}
+            {ticker ? t('askBullPreviewUserMessageTicker', { ticker: `$${ticker}` }) : t('askBullPreviewUserMessage')}
           </div>
         </div>
         <div className="flex justify-start">

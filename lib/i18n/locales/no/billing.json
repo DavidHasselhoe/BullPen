@@ -101,5 +101,13 @@
   "upgradeCompareFree": "Gratis",
   "upgradeComparePro": "Pro",
   "upgradeQuestionsHeading": "Spørsmål",
-  "whyTodayPreviewTicker": "$NVDA"
+  "askBullPreviewUserMessageTicker": "Er {{ticker}} fortsatt et godt kjøp nå?",
+  "whyTodayPreviewTicker": "$NVDA",
+  "whyTodayPreviewTeaserUp": "steg {{pct}}% i dag",
+  "whyTodayPreviewTeaserDown": "falt {{pct}}% i dag",
+  "whyTodayPreviewBecause": "fordi—",
+  "deepDivePreviewFor": "Deep Dive: {{ticker}}",
+  "riskAnalysisPreviewAnalyzing": "Analyserer {{tickers}}…",
+  "riskAnalysisPreviewAnalyzingMore_one": "Analyserer {{tickers}} & {{count}} til…",
+  "riskAnalysisPreviewAnalyzingMore_other": "Analyserer {{tickers}} & {{count}} til…"
 }

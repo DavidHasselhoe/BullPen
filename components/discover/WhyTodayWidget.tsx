@@ -128,6 +128,7 @@ export function WhyTodayWidget() {
         onOpenChange={setPaywallOpen}
         featureName={t('whyTodayWidgetFeatureName')}
         quota={paywallQuota}
+        previewContext={featured ? { ticker: featured.symbol, changePercent: featured.changePercent } : undefined}
       />
     </div>
   );

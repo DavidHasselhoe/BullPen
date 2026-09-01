@@ -882,6 +882,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
         onOpenChange={setPaywallOpen}
         featureName="Why Today"
         quota={paywallQuota}
+        previewContext={{ ticker, changePercent: changePct }}
       />
     </div>
   );

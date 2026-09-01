@@ -9,22 +9,42 @@ const TIER_FILL: Record<'risk' | 'caution' | 'neutral', string> = {
   neutral: 'bg-emerald-500',
 };
 
+interface Props {
+  /** Real symbols in the portfolio about to be analyzed, if known at the
+   *  trigger site (PortfolioRiskAnalysis always has this — see holdings). */
+  tickers?: string[];
+}
+
 /**
- * Static, fabricated mini risk-analysis visual used purely as a paywall
- * teaser. Never real user data — this dialog has no access to it, and
- * showing real numbers here would be misleading the moment they're wrong.
- * Blurred and labeled "Preview" so it always reads as an example of the
- * feature, never as an actual result.
+ * Fabricated mini risk-analysis visual used purely as a paywall teaser. The
+ * score/bars stay fabricated and blurred on purpose — this dialog has no
+ * access to a real result, and showing real-looking numbers here would be
+ * misleading the moment they're wrong. When the caller has the real
+ * portfolio's symbols, though, an unblurred "Analyzing AAPL, MSFT…" line
+ * leads the preview — that part IS true, it's just what's in the user's
+ * own portfolio, not a fabricated result.
  */
-export function RiskAnalysisPaywallPreview() {
+export function RiskAnalysisPaywallPreview({ tickers }: Props) {
   const { t } = useTranslation('billing');
   const mockBars: { label: string; pct: number; tier: 'risk' | 'caution' | 'neutral' }[] = [
     { label: t('riskAnalysisPreviewTechConcentration'), pct: 74, tier: 'risk' },
     { label: t('riskAnalysisPreviewSectorDiversification'), pct: 46, tier: 'caution' },
     { label: t('riskAnalysisPreviewLiquidity'), pct: 22, tier: 'neutral' },
   ];
+  const shown = (tickers ?? []).slice(0, 3);
+  const moreCount = (tickers?.length ?? 0) - shown.length;
+  const analyzingLine =
+    shown.length > 0
+      ? moreCount > 0
+        ? t('riskAnalysisPreviewAnalyzingMore', { tickers: shown.join(', '), count: moreCount })
+        : t('riskAnalysisPreviewAnalyzing', { tickers: shown.join(', ') })
+      : null;
+
   return (
     <div className="relative select-none bg-card px-6 pb-8 pt-7" aria-hidden="true">
+      {analyzingLine && (
+        <p className="mb-3 text-left text-xs font-medium text-foreground">{analyzingLine}</p>
+      )}
       <div className="pointer-events-none opacity-70 blur-[3px]">
         <div className="flex items-baseline gap-2">
           <span className="font-mono text-3xl font-bold tabular-nums text-foreground">

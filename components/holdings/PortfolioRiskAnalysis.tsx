@@ -385,6 +385,7 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
         onOpenChange={setShowPaywall}
         featureName={t('riskAnalysisTitle')}
         quota={paywallQuota ?? undefined}
+        previewContext={{ tickers: holdings.map((h) => h.symbol) }}
       />
     </>
   );
