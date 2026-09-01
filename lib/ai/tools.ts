@@ -418,21 +418,26 @@ export const openCompanyPage = tool({
     'Open a company\'s stock page in BullPen. Use when the user asks to open, view, go to, or show a company\'s page. ' +
     'Examples: "open NVIDIA", "show me Apple\'s page", "go to NVDA", "take me to Microsoft" — these are all explicit ' +
     'requests (explicitUserRequest: true). If you are instead suggesting a company\'s page as a helpful next step to a ' +
-    'different question, set explicitUserRequest: false.',
-  inputSchema: jsonSchema<{ ticker: string; explicitUserRequest: boolean }>({
+    'different question, set explicitUserRequest: false. ' +
+    'Set fullscreen: true when the user specifically asks for the fullscreen chart / "fullscreen stock mode" / the advanced ' +
+    'chart view (e.g. "open GOOGL in fullscreen mode", "show me the full chart for TSLA") rather than the regular page.',
+  inputSchema: jsonSchema<{ ticker: string; fullscreen?: boolean; explicitUserRequest: boolean }>({
     type: 'object',
     properties: {
       ticker: { type: 'string', description: 'Stock ticker symbol, e.g. NVDA, AAPL' },
+      fullscreen: { type: 'boolean', description: 'True to open directly into the fullscreen advanced chart instead of the regular stock page. Defaults to false.' },
       explicitUserRequest: EXPLICIT_USER_REQUEST_SCHEMA,
     },
     required: ['ticker', 'explicitUserRequest'],
     additionalProperties: false,
   }),
-  execute: async ({ ticker, explicitUserRequest }) => {
+  execute: async ({ ticker, fullscreen, explicitUserRequest }) => {
     const company = await resolveCompanyId(ticker);
     if (!company) return { error: `Company "${ticker}" not found.` };
+    const path = fullscreen ? `/stock/${ticker.toUpperCase()}?chart=fullscreen` : `/stock/${ticker.toUpperCase()}`;
+    const label = fullscreen ? `${company.name}'s page in fullscreen chart mode` : `${company.name}'s page`;
     return {
-      ...navigateAction(`/stock/${ticker.toUpperCase()}`, `${company.name}'s page`, explicitUserRequest),
+      ...navigateAction(path, label, explicitUserRequest),
       opened: company.name,
     };
   },

@@ -1,9 +1,10 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import dynamic from 'next/dynamic';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Maximize2, Sparkles, X } from 'lucide-react';
 
 import { useQuery } from '@tanstack/react-query';
@@ -154,6 +155,23 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const { isSimplified } = useExperienceLevel();
   const { requestWhyToday, paywallOpen, setPaywallOpen, paywallQuota } = useWhyTodayGate();
+
+  // Lets Bull (or a shared link) deep-link straight into fullscreen chart mode via
+  // ?chart=fullscreen — see openCompanyPage's `fullscreen` param in lib/ai/tools.ts.
+  // Stripped from the URL right after so a refresh or the back button doesn't
+  // reopen the modal.
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  useEffect(() => {
+    if (searchParams.get('chart') !== 'fullscreen') return;
+    setAdvancedOpen(true);
+    const params = new URLSearchParams(searchParams);
+    params.delete('chart');
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   function toggleIndicator(key: Indicator) {
     setActiveIndicators((prev) => {
