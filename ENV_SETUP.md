@@ -53,14 +53,16 @@ LOGO_DEV_KEY=your-logo-dev-key
 # Create an Incoming Webhook: Discord channel Settings → Integrations → Webhooks → New Webhook
 DISCORD_CHANGELOG_WEBHOOK_URL=https://discord.com/api/webhooks/your-changelog-webhook
 
-# Discord notifications (optional) — posts publish confirmations/failures after a post goes live
-# Separate webhook/channel from the changelog one above. See docs/instagram-setup.md.
+# Discord notifications (optional) — posts a pre-publish preview and the publish
+# confirmation/failure for every Instagram cron (market movers, earnings calendar,
+# earnings results). Separate webhook/channel from the changelog one above.
+# See docs/instagram-setup.md.
 DISCORD_INSTAGRAM_WEBHOOK_URL=https://discord.com/api/webhooks/your-instagram-webhook
 
-# Discord bot (optional) — posts the weekly Instagram review preview with a one-click
-# "Publish Now" button, so publishing doesn't require opening a terminal. Separate from
-# the webhook above because a button click has to route back to our own app. See
-# docs/instagram-setup.md for the Developer Portal setup steps.
+# Discord bot (optional, currently unused by the Instagram pipeline — every cron
+# auto-publishes immediately now, so there's nothing left for a "Publish Now" button
+# to do). Left documented in case it's wanted again for something else later; see
+# docs/instagram-setup.md §5b.
 DISCORD_BOT_TOKEN=your-bot-token
 DISCORD_PUBLIC_KEY=your-application-public-key
 DISCORD_INSTAGRAM_CHANNEL_ID=your-target-channel-id

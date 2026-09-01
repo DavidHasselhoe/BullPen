@@ -1,8 +1,7 @@
 /**
- * ISO 8601 week key, e.g. "2026-W33" — the idempotency/lookup key shared by
- * a content type's generation cron and its publish cron. Both need the same
- * definition of "which week is this" so a post staged under one key is
- * reliably found under the same key when it's time to publish it.
+ * ISO 8601 week key, e.g. "2026-W33" — the idempotency/lookup key for a
+ * content type's generation cron, so a re-run for the same week finds the
+ * row it already staged instead of duplicating it.
  */
 export function isoWeekKey(date: Date): string {
   const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
@@ -14,13 +13,10 @@ export function isoWeekKey(date: Date): string {
 }
 
 /**
- * The most recently completed Monday-Friday relative to `reference`. Shared
- * by instagram-earnings-results (generates Saturday, looking back at the
- * week that just ended) and instagram-earnings-results-publish (runs
- * Sunday, still targeting that same week) — both need to resolve to the
- * same period_key regardless of which of those two days they run on.
- * Designed to be triggered Saturday (daysSinceFriday=1) or Sunday
- * (daysSinceFriday=2), but stays correct for any manual trigger day — e.g.
+ * The most recently completed Monday-Friday relative to `reference` —
+ * used by instagram-earnings-results, which generates Saturday looking back
+ * at the week that just ended. Designed to be triggered Saturday
+ * (daysSinceFriday=1), but stays correct for any manual trigger day — e.g.
  * triggered on Friday itself (daysSinceFriday=0) targets that same week,
  * triggered on Monday (daysSinceFriday=3) targets the week that just ended.
  * Mirror image of nextTradingWeek, which jumps forward instead of back.

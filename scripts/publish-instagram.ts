@@ -1,10 +1,8 @@
 /**
  * Publish a staged Instagram post — the manual, on-demand version of the
- * "actually make it go live" step. app/api/cron/instagram-earnings-weekly
- * generates and stages content automatically every Sunday; this script lets
- * you publish a specific post by id right now instead of waiting for the
- * Monday morning auto-publish cron (app/api/cron/instagram-earnings-publish)
- * — useful for testing, or publishing early/late by hand.
+ * "actually make it go live" step. Every generation cron auto-publishes on
+ * its own now (see lib/instagram/publish.ts), so this is mainly useful for
+ * testing, or republishing a post that ended up 'failed' or 'draft'.
  *
  * Usage: npm run instagram-publish -- --id=<postId>
  *

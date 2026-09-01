@@ -1,13 +1,8 @@
 # Instagram Setup — Automated Content Pipeline
 
-Prerequisite steps to take on Meta's side before anything can actually post. Until these are done, the pipeline runs in dry-run mode: content still generates, renders, and stages on schedule (see `app/api/cron/instagram-earnings-weekly/route.ts`), and both the Monday auto-publish cron (`app/api/cron/instagram-earnings-publish/route.ts`) and the manual `scripts/publish-instagram.ts` print what they would have posted instead of calling the real API.
+Prerequisite steps to take on Meta's side before anything can actually post. Until these are done, the pipeline runs in dry-run mode: content still generates, renders, stages, and attempts to publish on schedule (see `app/api/cron/instagram-earnings-weekly/route.ts`), but `publishStagedPost()` (`lib/instagram/publish.ts`) and the manual `scripts/publish-instagram.ts` print what they would have posted instead of calling the real API.
 
-**Once these are set, publishing is automatic** for both content types the pipeline generates:
-
-- **Earnings calendar** — Sunday 12:00 UTC stages next week's carousel + Discord preview; Monday 11:00 UTC publishes whatever is still `status: 'ready'`.
-- **Earnings results recap** — Saturday 14:00 UTC stages the past week's beat/missed carousel + Discord preview; Sunday 15:00 UTC publishes whatever is still `status: 'ready'`.
-
-There's no manual approval step in between either flow, so the Discord preview (with the "Publish Now" button from §5b) is the only window to catch something wrong before it goes live — delete the row, or click "Publish Now" early if you're confident, before the next day's auto-publish cron runs.
+**Once these are set, publishing is automatic and immediate** for every content type the pipeline generates — market movers, the earnings deep-dive, the weekly earnings calendar, and the weekly earnings-results recap all call `publishStagedPost()` in the same run that stages the content. There is no next-day publish cron and no manual approval step anywhere in the pipeline anymore: the Discord message posted alongside each one is a confirmation, not a review gate — by the time it's readable, the post is already live. Catching something wrong after the fact means deleting/editing the post from the Instagram app directly; this pipeline has no unpublish endpoint.
 
 This uses **Business Login for Instagram** (the Instagram Platform API's Facebook-Page-free auth path), not the older Facebook Login / Graph-API-through-a-Page flow — this pipeline only ever needs to publish, never ads or Business Manager features, so there's no reason to require a linked Facebook Page.
 
@@ -62,21 +57,11 @@ INSTAGRAM_ACCESS_TOKEN=your-long-lived-access-token
 INSTAGRAM_USER_ID=your-instagram-scoped-user-id
 ```
 
-Also set `DISCORD_INSTAGRAM_WEBHOOK_URL` (Discord channel → Integrations → Webhooks → New Webhook) so publish confirmations/failures have somewhere to land — separate from `DISCORD_CHANGELOG_WEBHOOK_URL` so Instagram doesn't mix into the changelog channel. This is only used for that one-line confirmation after a publish attempt; the review preview itself is posted by the bot in step 5b below.
+Also set `DISCORD_INSTAGRAM_WEBHOOK_URL` (Discord channel → Integrations → Webhooks → New Webhook) so both the pre-publish preview and the post-publish confirmation/failure have somewhere to land — separate from `DISCORD_CHANGELOG_WEBHOOK_URL` so Instagram doesn't mix into the changelog channel. Every generation cron posts through this one plain webhook; without it set, they just skip the notification and publish anyway (the `webhookUrl` guard logs a warning, nothing more).
 
-## 5b. Set up the Discord "Publish Now" button
+## 5b. Discord bot infrastructure (currently unused)
 
-The weekly review previews (from `instagram-earnings-weekly` and `instagram-earnings-results`) are posted by a Discord bot instead of a plain webhook, with a **Publish Now** button attached — clicking it calls `publishStagedPost()` directly (same code path as `app/api/instagram/publish-by-id`), so publishing a staged post no longer requires opening a terminal. This needs its own small Discord Application (buttons only route to an application that owns the message; a plain incoming webhook has no application to route the click to).
-
-1. Go to the [Discord Developer Portal](https://discord.com/developers/applications) → New Application (e.g. "BullPen Bot").
-2. **Bot** tab → Add Bot → Reset Token → copy it → this is `DISCORD_BOT_TOKEN`.
-3. **General Information** tab → copy **Public Key** → this is `DISCORD_PUBLIC_KEY`.
-4. **OAuth2 → URL Generator** → scope `bot` → bot permissions `Send Messages` + `Embed Links` → open the generated URL → authorize it into the server that has the Instagram review channel.
-5. Enable Developer Mode (Discord User Settings → Advanced), right-click the target channel → Copy Channel ID → this is `DISCORD_INSTAGRAM_CHANNEL_ID`.
-6. Add all three env vars (`DISCORD_BOT_TOKEN`, `DISCORD_PUBLIC_KEY`, `DISCORD_INSTAGRAM_CHANNEL_ID`) to Vercel → deploy.
-7. Back in the Developer Portal, **General Information** tab → **Interactions Endpoint URL** → set to `https://bullpen.no/api/discord/interactions` → Save. The route must already be live in production for this save to succeed — Discord sends a verification `PING` to it immediately and rejects the URL if it doesn't respond correctly (see `app/api/discord/interactions/route.ts`).
-
-Without this set up, the review previews fall back to no notification at all for the two generation crons (the `channelId` guard just logs a warning) — publishing still works via `app/api/instagram/publish-by-id` or the manual script, there's just no Discord button.
+An earlier version of this pipeline posted the weekly previews through a Discord bot with a **Publish Now** button (`lib/discord/bot-message.ts`, `app/api/discord/interactions/route.ts`, `DISCORD_BOT_TOKEN`/`DISCORD_PUBLIC_KEY`/`DISCORD_INSTAGRAM_CHANNEL_ID`), so a staged post could be published early without opening a terminal. Now that every content type auto-publishes immediately on staging, that button is never useful — nothing is ever still "staged" by the time a human could click it. The code is left in place in case it's wanted again for something else later, but nothing in this pipeline calls it, and none of those three env vars are required for publishing to work.
 
 ## 6. App Review (only needed to go fully live)
 
@@ -98,11 +83,9 @@ Put a recurring reminder on the calendar, or watch for publish failures with an 
 
 ```bash
 npm run dev
-npm run trigger-instagram-earnings           # generates + stages next week's carousel, posts Discord preview if configured
+npm run trigger-instagram-earnings      # generates, stages, posts Discord preview if configured, and attempts to publish next week's carousel
+npm run trigger-instagram-earnings-results   # same, for the past week's beat/missed recap carousel
 # open http://localhost:3000/api/instagram/render/<postId>/0, /1, ... in a browser to see each slide
-npm run instagram-publish -- --id=<postId>   # dry-runs cleanly without Meta credentials
-npm run trigger-instagram-earnings-publish   # same dry-run check, but via the Monday auto-publish cron's own lookup logic
 
-npm run trigger-instagram-earnings-results           # generates + stages the past week's recap carousel
-npm run trigger-instagram-earnings-results-publish   # dry-run check via the Sunday auto-publish cron's own lookup logic
+npm run instagram-publish -- --id=<postId>   # republish a specific post by id; dry-runs cleanly without Meta credentials
 ```

@@ -15,9 +15,11 @@
  * check, same reason: keep it out of reach of anyone without the secret),
  * but on-demand only, so it deliberately lives outside app/api/cron/ rather
  * than needing a workflow scheduler (see scripts/test-cron-coverage.ts).
- * Unlike instagram-earnings-publish (the Monday auto-publish cron, scoped to
- * content_type 'earnings_calendar' + the current ISO week), this takes an
- * explicit post id and works for any content_type/period_key.
+ * Every generation cron now calls publishStagedPost() directly instead of
+ * going through this route (see lib/instagram/publish.ts) — this endpoint
+ * remains for manual/on-demand republishing by id, and is what
+ * scripts/watch-earnings.ts hits to auto-publish an earnings deep-dive the
+ * moment it finishes extracting actuals from the 8-K.
  */
 
 import { NextRequest, NextResponse } from 'next/server';

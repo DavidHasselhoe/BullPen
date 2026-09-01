@@ -7,14 +7,13 @@
  * command and message-component (button) click here instead of us
  * needing a persistent bot process with a live Gateway connection.
  *
- * Right now the only interaction handled is the "Publish Now" button
- * added to the Instagram review messages posted by
- * app/api/cron/instagram-earnings-weekly and
- * app/api/cron/instagram-earnings-results (see lib/discord/bot-message.ts).
- * Its custom_id is `publish:<postId>`; clicking it calls the same
+ * The only interaction handled is a "Publish Now" button, custom_id
+ * `publish:<postId>` (see lib/discord/bot-message.ts), which calls the same
  * publishStagedPost() used by scripts/publish-instagram.ts and
- * app/api/instagram/publish-by-id, so it goes live immediately from
- * Discord without anyone needing to open a terminal.
+ * app/api/instagram/publish-by-id. Nothing currently sends that button —
+ * every Instagram generation cron auto-publishes immediately on staging now,
+ * so there's never a still-'ready' post left for it to act on. This handler
+ * is left in place in case a button is wanted again for something else.
  *
  * Every request must be signed-verified with the app's public key before
  * touching the body — this is Discord's replacement for a shared-secret

@@ -1,9 +1,9 @@
 /**
  * Publish a single staged instagram_posts row — shared by the manual
- * publish script (scripts/publish-instagram.ts) and the automated Monday
- * publish cron (app/api/cron/instagram-earnings-publish). Both need the
- * exact same fetch → dry-run-or-publish → status update → Discord notify
- * sequence; this is the one place it's implemented.
+ * publish script (scripts/publish-instagram.ts), app/api/instagram/publish-by-id,
+ * and every generation cron (they all call this immediately after staging,
+ * so the fetch → dry-run-or-publish → status update → Discord notify
+ * sequence only needs implementing once).
  */
 import { createServerClient } from '@/lib/supabase/client';
 import { publishCarousel, isInstagramConfigured } from '@/lib/instagram/client';

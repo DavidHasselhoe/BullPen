@@ -5,11 +5,9 @@
  * Runs Saturday, looking back at the Monday-Friday that just ended (see
  * .github/workflows/cron-instagram-earnings-results.yml). Generates the
  * "how did the week's earnings go" beat/missed recap carousel, stages it in
- * instagram_posts (status: 'ready'), and posts a Discord preview with a
- * "Publish Now" button. app/api/cron/instagram-earnings-results-publish
- * auto-publishes whatever is still 'ready' the next day — same
- * review-then-auto-publish flow as instagram-earnings-weekly. This route
- * itself never calls the Instagram API.
+ * instagram_posts, posts a Discord preview, then immediately publishes it
+ * via publishStagedPost in the same run — no separate next-day publish cron
+ * anymore, same immediate-publish shape as instagram-earnings-weekly.
  *
  * Idempotent per ISO week (period_key), scoped to this content_type so it
  * can share the same period_key as an earnings_calendar row for the same
@@ -22,9 +20,10 @@ import { logSecurityEvent } from '@/lib/security/security-events';
 import { createServerClient } from '@/lib/supabase/client';
 import { generateEarningsResultsContent } from '@/lib/instagram/content/earnings-results';
 import { totalSlideCount } from '@/lib/instagram/render/slides';
-import { sendDiscordBotMessage } from '@/lib/discord/bot-message';
+import { postToDiscord } from '@/lib/discord/post-message';
 import { isoWeekKey, lastTradingWeek } from '@/lib/instagram/period-key';
 import { instagramBioLink } from '@/lib/instagram/utm-link';
+import { publishStagedPost } from '@/lib/instagram/publish';
 import type { EarningsResultsSlides } from '@/lib/instagram/content/schema';
 
 export const maxDuration = 60;
@@ -97,7 +96,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   const postId = inserted.id as string;
 
-  // ── Review notification ─────────────────────────────────────────────────
+  // ── Pre-publish notification ────────────────────────────────────────────
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bullpen.no';
   const slideCount = totalSlideCount(content);
   const previewLinks = Array.from({ length: slideCount }, (_, i) =>
@@ -106,29 +105,31 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   const bioLink = instagramBioLink(CONTENT_TYPE, periodKey);
 
-  const channelId = process.env.DISCORD_INSTAGRAM_CHANNEL_ID;
-  if (channelId) {
+  const webhookUrl = process.env.DISCORD_INSTAGRAM_WEBHOOK_URL;
+  if (webhookUrl) {
     try {
-      await sendDiscordBotMessage(channelId, {
+      await postToDiscord(webhookUrl, {
         embeds: [
           {
-            title: `Earnings results ready for review — week of ${content.weekLabel}`,
+            title: `Earnings results auto-publishing — week of ${content.weekLabel}`,
             description: `${content.beatCount} beat, ${content.missedCount} missed (${content.companies.length} companies), ${slideCount} slides.\n\n${previewLinks}\n\n**Caption:**\n${content.caption}`,
             color: 0x34d399,
-            fields: [{ name: 'Bio link (if publishing)', value: bioLink }],
+            fields: [{ name: 'Bio link', value: bioLink }],
             timestamp: new Date().toISOString(),
           },
         ],
-        buttons: [{ label: 'Publish Now', customId: `publish:${postId}`, style: 'success' }],
       });
     } catch (err) {
-      // Never fail the cron over a notification failure — the row is already
-      // staged and can still be published manually via app/api/instagram/publish-by-id.
+      // Never fail the cron over a notification failure — publishing below
+      // doesn't depend on it.
       console.error('[instagram-earnings-results] Discord notification failed:', err);
     }
   } else {
-    console.warn('[instagram-earnings-results] DISCORD_INSTAGRAM_CHANNEL_ID not set, skipping review notification');
+    console.warn('[instagram-earnings-results] DISCORD_INSTAGRAM_WEBHOOK_URL not set, skipping pre-publish notification');
   }
+
+  // ── Publish ──────────────────────────────────────────────────────────────
+  const publishResult = await publishStagedPost(postId);
 
   return NextResponse.json({
     success: true,
@@ -139,5 +140,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     missedCount: content.missedCount,
     companies: content.companies.length,
     slideCount,
+    publish: publishResult,
   });
 }

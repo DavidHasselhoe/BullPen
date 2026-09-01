@@ -1,9 +1,9 @@
 name: Cron — Instagram Earnings Calendar
 
-# Sunday 12:00 UTC, ahead of the coming trading week. Generates + stages the
-# carousel and posts a Discord preview for review — it does NOT publish to
-# Instagram itself (see scripts/publish-instagram.ts for that manual step).
-# Time-tolerant (a weekly digest, not a market-hours-sensitive job), so
+# Sunday 12:00 UTC, ahead of the coming trading week. Generates, stages, and
+# immediately publishes the carousel to Instagram, posting a Discord
+# notification alongside it. Time-tolerant (a weekly digest, not a
+# market-hours-sensitive job), so
 # GitHub Actions' lower scheduling precision doesn't matter here — same
 # reasoning as the other non-Vercel crons in this repo.
 on:

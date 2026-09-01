@@ -4,11 +4,15 @@
  *
  * Runs Sunday, ahead of the coming trading week (see
  * .github/workflows/cron-instagram-earnings.yml). Generates the earnings-
- * calendar carousel for next Monday-Friday, stages it in instagram_posts
- * (status: 'ready'), and posts a Discord preview. Monday morning,
- * app/api/cron/instagram-earnings-publish auto-publishes whatever is still
- * 'ready' — the Discord preview is the review window, not a manual gate
- * anymore. This route itself never calls the Instagram API.
+ * calendar carousel for next Monday-Friday, stages it in instagram_posts,
+ * posts a Discord preview, then immediately publishes it via
+ * publishStagedPost in the same run — there's no next-day publish cron
+ * anymore (a stage-then-wait window doesn't buy anything once nothing reads
+ * it before publishing happens anyway).
+ *
+ * Note the bio-link UTM field in the Discord message now needs to be updated
+ * proactively (before this runs), not reactively off the notification — by
+ * the time anyone reads it, the post claiming that link is already live.
  *
  * Idempotent per ISO week (period_key): skips if a row already exists.
  *
@@ -21,9 +25,10 @@ import { logSecurityEvent } from '@/lib/security/security-events';
 import { createServerClient } from '@/lib/supabase/client';
 import { generateEarningsCalendarContent } from '@/lib/instagram/content/earnings-calendar';
 import { totalSlideCount } from '@/lib/instagram/render/slides';
-import { sendDiscordBotMessage } from '@/lib/discord/bot-message';
+import { postToDiscord } from '@/lib/discord/post-message';
 import { isoWeekKey } from '@/lib/instagram/period-key';
 import { instagramBioLink } from '@/lib/instagram/utm-link';
+import { publishStagedPost } from '@/lib/instagram/publish';
 import type { EarningsCalendarSlides } from '@/lib/instagram/content/schema';
 
 export const maxDuration = 60;
@@ -116,7 +121,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   const postId = inserted.id as string;
 
-  // ── Review notification ─────────────────────────────────────────────────
+  // ── Pre-publish notification ────────────────────────────────────────────
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bullpen.no';
   const slideCount = totalSlideCount(content);
   const previewLinks = Array.from({ length: slideCount }, (_, i) =>
@@ -125,29 +130,31 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   const bioLink = instagramBioLink(CONTENT_TYPE, periodKey);
 
-  const channelId = process.env.DISCORD_INSTAGRAM_CHANNEL_ID;
-  if (channelId) {
+  const webhookUrl = process.env.DISCORD_INSTAGRAM_WEBHOOK_URL;
+  if (webhookUrl) {
     try {
-      await sendDiscordBotMessage(channelId, {
+      await postToDiscord(webhookUrl, {
         embeds: [
           {
-            title: `Earnings calendar ready for review — week of ${content.weekLabel}`,
+            title: `Earnings calendar auto-publishing — week of ${content.weekLabel}`,
             description: `${content.companies.length} companies, ${slideCount} slides.\n\n${previewLinks}\n\n**Caption:**\n${content.caption}`,
             color: 0x34d399,
-            fields: [{ name: '⚠️ Update bio link before Monday', value: bioLink }],
+            fields: [{ name: 'Bio link', value: bioLink }],
             timestamp: new Date().toISOString(),
           },
         ],
-        buttons: [{ label: 'Publish Now', customId: `publish:${postId}`, style: 'success' }],
       });
     } catch (err) {
-      // Never fail the cron over a notification failure — Monday's
-      // auto-publish cron still picks this row up if still 'ready'.
+      // Never fail the cron over a notification failure — publishing below
+      // doesn't depend on it.
       console.error('[instagram-earnings-weekly] Discord notification failed:', err);
     }
   } else {
-    console.warn('[instagram-earnings-weekly] DISCORD_INSTAGRAM_CHANNEL_ID not set, skipping review notification');
+    console.warn('[instagram-earnings-weekly] DISCORD_INSTAGRAM_WEBHOOK_URL not set, skipping pre-publish notification');
   }
+
+  // ── Publish ──────────────────────────────────────────────────────────────
+  const publishResult = await publishStagedPost(postId);
 
   return NextResponse.json({
     success: true,
@@ -156,5 +163,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     weekLabel: content.weekLabel,
     companies: content.companies.length,
     slideCount,
+    publish: publishResult,
   });
 }

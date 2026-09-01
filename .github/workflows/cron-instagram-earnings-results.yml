@@ -1,11 +1,10 @@
 name: Cron — Instagram Earnings Results
 
 # Saturday 14:00 UTC, looking back at the Monday-Friday that just ended.
-# Generates + stages the beat/missed recap carousel and posts a Discord
-# preview for review — it does NOT publish to Instagram itself (see
-# scripts/publish-instagram.ts for that manual step). Time-tolerant (a
-# weekly digest, not a market-hours-sensitive job), same reasoning as the
-# other non-Vercel crons in this repo.
+# Generates, stages, and immediately publishes the beat/missed recap
+# carousel to Instagram, posting a Discord notification alongside it.
+# Time-tolerant (a weekly digest, not a market-hours-sensitive job), same
+# reasoning as the other non-Vercel crons in this repo.
 on:
   schedule:
     - cron: '0 14 * * 6'
