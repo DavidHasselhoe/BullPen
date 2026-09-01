@@ -38,7 +38,23 @@ export function StockNavSidebar({ sections }: { sections: StockNavSection[] }) {
       if (el) observer.observe(el);
     });
 
-    return () => observer.disconnect();
+    // A short final section can finish scrolling past without ever
+    // entering the observer's trigger band above — the page runs out of
+    // room to scroll before the section's top reaches it, leaving an
+    // earlier section highlighted even once there's nothing left below.
+    // At the very bottom of the page, force the last section active.
+    function handleScroll() {
+      const doc = document.documentElement;
+      const atBottom = window.innerHeight + window.scrollY >= doc.scrollHeight - 2;
+      if (atBottom) setActiveId(sections[sections.length - 1].id);
+    }
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('scroll', handleScroll);
+    };
   }, [sections]);
 
   const handleClick = (id: string) => {

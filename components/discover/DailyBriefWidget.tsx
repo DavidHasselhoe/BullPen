@@ -551,6 +551,13 @@ function BriefReader({
         active = section.slug;
       }
     }
+    // A short final section can end before its top ever crosses
+    // triggerOffset, leaving an earlier section highlighted even once
+    // there's nothing left to scroll to. At the very bottom, force the
+    // last section active so the nav always agrees with what's on screen.
+    if (el.scrollTop >= max - 2 && sections.length > 0) {
+      active = sections[sections.length - 1].slug;
+    }
     setActiveSlug(active);
   }
 
