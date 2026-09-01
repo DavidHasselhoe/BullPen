@@ -9,9 +9,9 @@
  *   2. Poll data.sec.gov every --interval seconds. The instant a new 8-K
  *      with Item 2.02 shows up for the given CIK, fetch its press-release
  *      exhibit (and CFO-commentary exhibit if one exists), extract actuals
- *      via Claude, and flip the row to 'ready' — same review-then-manual-
- *      publish flow as every other Instagram content type here
- *      (`npm run instagram-publish -- --id=<postId>`).
+ *      via Claude, flip the row to 'ready', and immediately auto-publish it
+ *      for real through Vercel's production runtime (see publishViaProd
+ *      below) — no manual `npm run instagram-publish` step needed anymore.
  *
  * Usage:
  *   npm run watch-earnings -- --ticker=NVDA --cik=1045810 --report-date=2026-08-26 --timing=AMC --segment="Data Center"
@@ -42,6 +42,40 @@ function parseArg(name: string): string | undefined {
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Fires the real publish through Vercel's own runtime rather than locally —
+ * INSTAGRAM_ACCESS_TOKEN/INSTAGRAM_USER_ID deliberately aren't in .env.local
+ * (see docs/instagram-setup.md), so a local call would just dry-run. Reads
+ * APP_URL rather than NEXT_PUBLIC_APP_URL on purpose: this script has no use
+ * for the localhost default other scripts here fall back to — Meta creds
+ * only exist in production, so there's nothing to test by hitting local dev.
+ */
+async function publishViaProd(postId: string): Promise<void> {
+  const secret = process.env.CRON_SECRET;
+  if (!secret) {
+    console.error('[watch-earnings] CRON_SECRET not set — cannot auto-publish. Publish manually once it is set:');
+    console.error(`  npm run instagram-publish -- --id=${postId}`);
+    return;
+  }
+
+  const base = process.env.APP_URL || 'https://bullpen.no';
+  const res = await fetch(`${base}/api/instagram/publish-by-id?id=${postId}`, {
+    headers: { Authorization: `Bearer ${secret}` },
+  });
+  const body = await res.json().catch(() => ({}));
+
+  if (body.dryRun) {
+    console.log('[watch-earnings] Production Instagram credentials are not configured — dry run only, post left as \'ready\'.');
+    console.log(`  Publish for real once configured: npm run instagram-publish -- --id=${postId}`);
+  } else if (body.success) {
+    console.log(`[watch-earnings] Published to Instagram. Media id: ${body.mediaId}`);
+    if (body.permalink) console.log(`  Permalink: ${body.permalink}`);
+  } else {
+    console.error('[watch-earnings] Auto-publish failed:', body.error ?? res.status);
+    console.error(`  Retry manually: npm run instagram-publish -- --id=${postId}`);
+  }
 }
 
 async function main() {
@@ -109,7 +143,9 @@ async function main() {
       console.log(`  EPS: ${final.epsActual} vs ${final.epsEstimate} (${final.epsStatus})`);
       console.log(`  Revenue: ${final.revenueActual} vs ${final.revenueEstimate} (${final.revenueStatus})`);
       console.log(`  Headline: ${final.headline}`);
-      console.log(`\nPublish with: npm run instagram-publish -- --id=${postId}`);
+
+      console.log('[watch-earnings] Auto-publishing to Instagram...');
+      await publishViaProd(postId);
       process.exit(0);
     }
 

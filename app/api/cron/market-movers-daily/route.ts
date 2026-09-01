@@ -9,10 +9,12 @@
  * time. 3x/week rather than every weekday to avoid feed fatigue on top of
  * the existing 2x/week earnings content). Generates that day's
  * top-10-gainers/top-10-losers carousel (S&P 500 + Nasdaq 100 only), stages
- * it in instagram_posts (status: 'ready'), and posts a Discord preview — no
- * auto-publish yet, same review-then-manual-publish flow as
- * instagram-earnings-results. This route itself never calls the Instagram
- * API.
+ * it in instagram_posts, then immediately publishes it for real via
+ * publishStagedPost — market movers are inherently same-day news, so unlike
+ * the weekly earnings-calendar/results posts there's no useful "review
+ * window" to wait out; a day-late top-10 list is stale. The pre-publish
+ * Discord message still posts slide-preview links for a quick sanity check,
+ * and publishStagedPost sends its own follow-up confirmation once live.
  *
  * Idempotent per ET trading day (period_key), scoped to this content_type.
  * Unlike the earnings posts, there is no "skip if nothing happened" case —
@@ -27,6 +29,7 @@ import { totalSlideCount } from '@/lib/instagram/render/slides';
 import { contentVersion } from '@/lib/instagram/render/cache-bust';
 import { postToDiscord } from '@/lib/discord/post-message';
 import { instagramBioLink } from '@/lib/instagram/utm-link';
+import { publishStagedPost } from '@/lib/instagram/publish';
 import type { MarketMoversSlides } from '@/lib/instagram/content/schema';
 
 // 60s was too tight and timed out intermittently in production: fetchRankedQuotes
@@ -114,7 +117,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   const postId = inserted.id as string;
 
-  // ── Review notification ─────────────────────────────────────────────────
+  // ── Pre-publish notification ────────────────────────────────────────────
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bullpen.no';
   const slideCount = totalSlideCount(content);
   // ?v=<content hash> so a later fix to this same post (a manual DB patch, a
@@ -135,25 +138,30 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       await postToDiscord(webhookUrl, {
         embeds: [
           {
-            title: `${content.sessionLabel ? `${content.sessionLabel} m` : 'M'}arket movers ready for review — ${content.dateLabel}`,
+            title: `${content.sessionLabel ? `${content.sessionLabel} m` : 'M'}arket movers auto-publishing — ${content.dateLabel}`,
             description: `Top gainer: ${topGainer.symbol} +${topGainer.changePercent.toFixed(2)}%. Top loser: ${topLoser.symbol} ${topLoser.changePercent.toFixed(2)}%. ${slideCount} slides.\n\n${previewLinks}\n\n**Caption:**\n${content.caption}`,
             color: 0x34d399,
             fields: [
-              { name: 'Publish', value: `\`npm run instagram-publish -- --id=${postId}\`` },
-              { name: 'Bio link (if publishing)', value: bioLink },
+              { name: 'Bio link', value: bioLink },
             ],
             timestamp: new Date().toISOString(),
           },
         ],
       });
     } catch (err) {
-      // Never fail the cron over a notification failure — the row is already
-      // staged and can still be published manually by id.
+      // Never fail the cron over a notification failure — publishing below
+      // doesn't depend on it.
       console.error('[market-movers-daily] Discord notification failed:', err);
     }
   } else {
-    console.warn('[market-movers-daily] DISCORD_INSTAGRAM_WEBHOOK_URL not set, skipping review notification');
+    console.warn('[market-movers-daily] DISCORD_INSTAGRAM_WEBHOOK_URL not set, skipping pre-publish notification');
   }
+
+  // ── Publish ──────────────────────────────────────────────────────────────
+  // Same-day news — publish immediately rather than waiting for a manual
+  // step or a next-cycle cron. publishStagedPost posts its own Discord
+  // confirmation (or failure) message and updates the row's status.
+  const publishResult = await publishStagedPost(postId);
 
   return NextResponse.json({
     success: true,
@@ -161,6 +169,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     periodKey,
     dateLabel: content.dateLabel,
     topGainer: `${topGainer.symbol} +${topGainer.changePercent.toFixed(2)}%`,
+    publish: publishResult,
     topLoser: `${topLoser.symbol} ${topLoser.changePercent.toFixed(2)}%`,
     slideCount,
   });
