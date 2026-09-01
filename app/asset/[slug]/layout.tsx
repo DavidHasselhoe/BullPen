@@ -16,12 +16,14 @@ export async function generateMetadata({
 }: {
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
-  const { slug } = await params;
-  const symbol = slugToSymbol(slug.toUpperCase());
+  const { slug: rawSlug } = await params;
+  const slug = rawSlug.toUpperCase();
+  const symbol = slugToSymbol(slug);
 
   return {
     title: `${symbol} Price`,
     description: `Real-time price and chart for ${symbol} on BullPen.`,
+    alternates: { canonical: `/asset/${slug}` },
   };
 }
 

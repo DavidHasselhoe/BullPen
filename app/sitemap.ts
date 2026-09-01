@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { canonicalGlossaryTerms, glossarySlug } from '@/lib/finance/glossary';
 import { createServerClient } from '@/lib/supabase/client';
+import { SIGNIFICANT_TICKERS } from '@/lib/market-data/significant-tickers';
 
 /**
  * Served at /sitemap.xml.
@@ -67,5 +68,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.5,
   }));
 
-  return [...staticEntries, ...glossaryEntries, ...pickEntries];
+  // The curated crawl-allow set from robots.ts (S&P 500 + Nasdaq 100) —
+  // everything else under /stock/ stays both disallowed and un-sitemapped.
+  // Live price data, so 'daily' and a moderate priority (below the static
+  // content pages above, which change far less often but matter more).
+  const stockEntries = [...SIGNIFICANT_TICKERS].map((ticker) => ({
+    url: `${BASE_URL}/stock/${ticker}`,
+    lastModified,
+    changeFrequency: 'daily' as const,
+    priority: 0.6,
+  }));
+
+  return [...staticEntries, ...glossaryEntries, ...pickEntries, ...stockEntries];
 }
