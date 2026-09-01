@@ -9,6 +9,7 @@ import { AuthOAuthButtons } from '@/components/auth/AuthOAuthButtons';
 import { AuthFormLogin } from '@/components/auth/AuthFormLogin';
 import { Separator } from '@/components/ui/separator';
 import { motion } from 'framer-motion';
+import { trackEvent } from '@/lib/analytics/track';
 
 function LoginContent() {
   const router = useRouter();
@@ -29,16 +30,19 @@ function LoginContent() {
   const handleGoogleSignIn = async () => {
     setError('');
     setIsGoogleLoading(true);
+    trackEvent('login_form_submitted', { source: 'login', method: 'google' });
 
     try {
       const result = await signInWithGoogle(redirectTo !== '/' ? redirectTo : undefined);
       if (!result.success) {
         setError(result.error || 'Failed to sign in with Google');
         setIsGoogleLoading(false);
+        trackEvent('login_form_failed', { source: 'login', method: 'google' });
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unexpected error occurred');
       setIsGoogleLoading(false);
+      trackEvent('login_form_failed', { source: 'login', method: 'google' });
     }
   };
 
@@ -102,6 +106,7 @@ function LoginContent() {
           onSuccess={handleSuccess}
           onError={setError}
           redirectTo={redirectTo}
+          source="login"
         />
 
         <motion.div

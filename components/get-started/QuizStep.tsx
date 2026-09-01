@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
+import { OnboardingProgress } from './OnboardingProgress';
 import type { QuizOption, QuizQuestion } from './quiz-questions';
 
 interface QuizStepProps<K extends string, V extends string> {
@@ -29,22 +30,7 @@ export function QuizStep<K extends string, V extends string>({
       transition={{ duration: 0.2 }}
       style={{ maxWidth: 520, margin: '0 auto', width: '100%' }}
     >
-      {/* Progress dots */}
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 32 }}>
-        {Array.from({ length: totalSteps }).map((_, i) => (
-          <div
-            key={i}
-            style={{
-              height: 6,
-              borderRadius: 999,
-              width: i === stepIndex ? 24 : 6,
-              background: i <= stepIndex ? 'var(--accent)' : 'var(--border-strong)',
-              opacity: i < stepIndex ? 0.5 : 1,
-              transition: 'all 300ms cubic-bezier(0.22,1,0.36,1)',
-            }}
-          />
-        ))}
-      </div>
+      <OnboardingProgress stepIndex={stepIndex} totalSteps={totalSteps} />
 
       {onBack && (
         <button

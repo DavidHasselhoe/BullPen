@@ -9,15 +9,18 @@ import { PasswordInput } from './PasswordInput';
 import { Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { signIn } from '@/lib/auth/auth';
+import { trackEvent } from '@/lib/analytics/track';
 
 interface AuthFormLoginProps {
   onSuccess?: () => void;
   onError?: (error: string) => void;
   onForgotPassword?: () => void;
   redirectTo?: string;
+  /** Which surface this form is embedded in, for login_form_* events — e.g. 'login', 'modal'. */
+  source?: string;
 }
 
-export function AuthFormLogin({ onSuccess, onError, onForgotPassword }: AuthFormLoginProps) {
+export function AuthFormLogin({ onSuccess, onError, onForgotPassword, source = 'unknown' }: AuthFormLoginProps) {
   const { t } = useTranslation('auth');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -36,6 +39,7 @@ export function AuthFormLogin({ onSuccess, onError, onForgotPassword }: AuthForm
     }
 
     setIsLoading(true);
+    trackEvent('login_form_submitted', { source, method: 'email' });
 
     try {
       const result = await signIn({ email, password });
@@ -44,16 +48,19 @@ export function AuthFormLogin({ onSuccess, onError, onForgotPassword }: AuthForm
         const errorMsg = result.error || t('loginFailed');
         setError(errorMsg);
         onError?.(errorMsg);
+        trackEvent('login_form_failed', { source, method: 'email' });
         setIsLoading(false);
         return;
       }
 
+      trackEvent('login_form_succeeded', { source, method: 'email' });
       setIsLoading(false);
       onSuccess?.();
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : t('unexpectedError');
       setError(errorMsg);
       onError?.(errorMsg);
+      trackEvent('login_form_failed', { source, method: 'email' });
       setIsLoading(false);
     }
   };

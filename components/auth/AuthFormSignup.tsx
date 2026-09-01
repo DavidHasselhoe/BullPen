@@ -10,6 +10,7 @@ import { Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { signUp } from '@/lib/auth/auth';
 import { cn } from '@/lib/utils';
+import { trackEvent } from '@/lib/analytics/track';
 
 interface AuthFormSignupProps {
   onSuccess?: () => void;
@@ -17,6 +18,8 @@ interface AuthFormSignupProps {
   submitLabel?: string;
   submitLoadingLabel?: string;
   submitClassName?: string;
+  /** Which funnel this form is embedded in, for signup_form_* events — e.g. 'register', 'get_started'. */
+  source?: string;
 }
 
 export function AuthFormSignup({
@@ -25,11 +28,11 @@ export function AuthFormSignup({
   submitLabel,
   submitLoadingLabel,
   submitClassName,
+  source = 'unknown',
 }: AuthFormSignupProps) {
   const { t } = useTranslation('auth');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -49,9 +52,6 @@ export function AuthFormSignup({
     if (password.length < 8) {
       return t('signupPasswordTooShort');
     }
-    if (password !== confirmPassword) {
-      return t('signupPasswordMismatch');
-    }
     return null;
   };
 
@@ -67,6 +67,7 @@ export function AuthFormSignup({
     }
 
     setIsLoading(true);
+    trackEvent('signup_form_submitted', { source, method: 'email' });
 
     try {
       const result = await signUp({ email, password });
@@ -75,6 +76,7 @@ export function AuthFormSignup({
         const errorMsg = result.error || t('signupFailed');
         setError(errorMsg);
         onError?.(errorMsg);
+        trackEvent('signup_form_failed', { source, method: 'email', reason: 'signup_error' });
         setIsLoading(false);
         return;
       }
@@ -91,20 +93,27 @@ export function AuthFormSignup({
         const errorMsg = t('signupCheckInbox');
         setError(errorMsg);
         onError?.(errorMsg);
+        // Genuinely ambiguous here (by design, see above) whether this was a
+        // real signup or a masked duplicate-email attempt — tracked as its
+        // own outcome rather than folded into failed/succeeded, which would
+        // misrepresent one of the two real cases either way.
+        trackEvent('signup_form_email_confirmation_required', { source, method: 'email' });
         setIsLoading(false);
         return;
       }
 
+      trackEvent('signup_form_succeeded', { source, method: 'email' });
       onSuccess?.();
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : t('unexpectedError');
       setError(errorMsg);
       onError?.(errorMsg);
+      trackEvent('signup_form_failed', { source, method: 'email', reason: 'exception' });
       setIsLoading(false);
     }
   };
 
-  const isValid = email.includes('@') && password.length >= 8 && password === confirmPassword;
+  const isValid = email.includes('@') && password.length >= 8;
 
   return (
     <motion.form
@@ -150,25 +159,6 @@ export function AuthFormSignup({
           minLength={8}
         />
         <p className="text-xs text-muted-foreground">{t('signupPasswordHint')}</p>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="signup-confirm-password" className="text-sm font-medium">
-          {t('signupConfirmPasswordLabel')}
-        </Label>
-        <PasswordInput
-          id="signup-confirm-password"
-          placeholder="••••••••"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          disabled={isLoading}
-          required
-          autoComplete="new-password"
-          aria-invalid={!!error && error.toLowerCase().includes('match')}
-        />
-        {confirmPassword && password !== confirmPassword && (
-          <p className="text-xs text-destructive">{t('signupPasswordMismatch')}</p>
-        )}
       </div>
 
       <Button

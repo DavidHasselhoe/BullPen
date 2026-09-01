@@ -4,15 +4,18 @@ import { motion } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
 import { describeAnswer, QUIZ_QUESTIONS } from './quiz-questions';
 import { GetStartedSignupForm } from './GetStartedSignupForm';
+import { OnboardingProgress } from './OnboardingProgress';
 import { buildRevealSummary } from '@/lib/onboarding/reveal-copy';
 import type { CompleteQuizAnswers } from '@/lib/onboarding/pending-onboarding';
 
 interface RevealStepProps {
   answers: CompleteQuizAnswers;
   onBack: () => void;
+  stepIndex: number;
+  totalSteps: number;
 }
 
-export function RevealStep({ answers, onBack }: RevealStepProps) {
+export function RevealStep({ answers, onBack, stepIndex, totalSteps }: RevealStepProps) {
   const summary = buildRevealSummary(answers);
 
   const chips = QUIZ_QUESTIONS.map((q) => ({
@@ -28,6 +31,8 @@ export function RevealStep({ answers, onBack }: RevealStepProps) {
       transition={{ duration: 0.2 }}
       style={{ maxWidth: 560, margin: '0 auto', width: '100%' }}
     >
+      <OnboardingProgress stepIndex={stepIndex} totalSteps={totalSteps} />
+
       <button
         type="button"
         onClick={onBack}

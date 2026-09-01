@@ -13,6 +13,7 @@ import { AuthOAuthButtons } from './AuthOAuthButtons';
 import { AuthFormLogin } from './AuthFormLogin';
 import { AuthFormSignup } from './AuthFormSignup';
 import { AuthFormForgotPassword } from './AuthFormForgotPassword';
+import { trackEvent } from '@/lib/analytics/track';
 
 export type AuthMode = 'login' | 'signup' | 'forgot-password';
 
@@ -44,17 +45,21 @@ export function AuthModal({ open, onOpenChange, initialMode = 'login', redirectT
   const handleGoogleAuth = async () => {
     setError('');
     setIsGoogleLoading(true);
+    const eventBase = mode === 'signup' ? 'signup_form' : 'login_form';
+    trackEvent(`${eventBase}_submitted`, { source: 'modal', method: 'google' });
 
     try {
       const result = await signInWithGoogle(redirectTo);
       if (!result.success) {
         setError(result.error || t('modalGoogleFailed'));
         setIsGoogleLoading(false);
+        trackEvent(`${eventBase}_failed`, { source: 'modal', method: 'google' });
       }
       // If successful, redirect will happen automatically via OAuth flow
     } catch (err) {
       setError(err instanceof Error ? err.message : t('unexpectedError'));
       setIsGoogleLoading(false);
+      trackEvent(`${eventBase}_failed`, { source: 'modal', method: 'google' });
     }
   };
 
@@ -167,6 +172,7 @@ export function AuthModal({ open, onOpenChange, initialMode = 'login', redirectT
                 onError={setError}
                 onForgotPassword={() => handleModeChange('forgot-password')}
                 redirectTo={redirectTo}
+                source="modal"
               />
             )}
 
@@ -175,6 +181,7 @@ export function AuthModal({ open, onOpenChange, initialMode = 'login', redirectT
                 key="signup"
                 onSuccess={handleSuccess}
                 onError={setError}
+                source="modal"
               />
             )}
 

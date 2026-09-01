@@ -8,6 +8,7 @@ import { AuthOAuthButtons } from '@/components/auth/AuthOAuthButtons';
 import { AuthFormSignup } from '@/components/auth/AuthFormSignup';
 import { Separator } from '@/components/ui/separator';
 import { motion } from 'framer-motion';
+import { trackEvent } from '@/lib/analytics/track';
 
 function RegisterContent() {
   const router = useRouter();
@@ -24,17 +25,20 @@ function RegisterContent() {
   const handleGoogleSignIn = async () => {
     setError('');
     setIsGoogleLoading(true);
+    trackEvent('signup_form_submitted', { source: 'register', method: 'google' });
 
     try {
       const result = await signInWithGoogle(redirectTo !== '/dashboard' ? redirectTo : undefined);
       if (!result.success) {
         setError(result.error || 'Failed to sign in with Google');
         setIsGoogleLoading(false);
+        trackEvent('signup_form_failed', { source: 'register', method: 'google' });
       }
       // If successful, redirect will happen automatically via OAuth flow
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unexpected error occurred');
       setIsGoogleLoading(false);
+      trackEvent('signup_form_failed', { source: 'register', method: 'google' });
     }
   };
 
@@ -97,7 +101,7 @@ function RegisterContent() {
         </div>
 
         {/* Signup Form */}
-        <AuthFormSignup onSuccess={handleSuccess} onError={setError} />
+        <AuthFormSignup onSuccess={handleSuccess} onError={setError} source="register" />
 
         {/* Footer */}
         <motion.div

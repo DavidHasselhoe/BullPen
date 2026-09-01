@@ -6,6 +6,7 @@ import { Separator } from '@/components/ui/separator';
 import { AuthOAuthButtons } from '@/components/auth/AuthOAuthButtons';
 import { AuthFormSignup } from '@/components/auth/AuthFormSignup';
 import { signInWithGoogle } from '@/lib/auth/auth';
+import { trackEvent } from '@/lib/analytics/track';
 
 /**
  * The signup form embedded at the bottom of the reveal screen. Composition
@@ -19,22 +20,31 @@ export function GetStartedSignupForm() {
   const [error, setError] = useState('');
 
   const handleSuccess = () => {
+    // Only reachable for the email path — a successful Google sign-in below
+    // never returns to this component (full-page OAuth redirect), so it has
+    // no success event of its own. That's still visible in PostHog as the
+    // automatic $pageview for /dashboard shortly after signup_form_submitted
+    // with method "google" and no matching signup_form_failed.
+    trackEvent('get_started_completed', {});
     router.replace('/dashboard');
   };
 
   const handleGoogleSignIn = async () => {
     setError('');
     setIsGoogleLoading(true);
+    trackEvent('signup_form_submitted', { source: 'get_started', method: 'google' });
     try {
       const result = await signInWithGoogle();
       if (!result.success) {
         setError(result.error || 'Failed to sign in with Google');
         setIsGoogleLoading(false);
+        trackEvent('signup_form_failed', { source: 'get_started', method: 'google' });
       }
-      // On success, the OAuth redirect takes over from here.
+      // On success, the OAuth redirect takes over from here — see handleSuccess's comment.
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unexpected error occurred');
       setIsGoogleLoading(false);
+      trackEvent('signup_form_failed', { source: 'get_started', method: 'google' });
     }
   };
 
@@ -84,6 +94,7 @@ export function GetStartedSignupForm() {
         submitLabel="Save my profile"
         submitLoadingLabel="Saving..."
         submitClassName="btn-brand-solid"
+        source="get_started"
       />
 
       <p style={{ marginTop: 16, fontSize: 12, color: 'var(--fg-dim)', textAlign: 'center' }}>

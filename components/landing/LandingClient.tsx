@@ -4,6 +4,7 @@ import { lazy, Suspense, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { startCheckout } from '@/lib/billing/checkout';
+import { trackEvent } from '@/lib/analytics/track';
 import type { AuthMode } from '@/components/auth/AuthModal';
 
 // Auth forms (Supabase client, validation) only download when a CTA is clicked —
@@ -32,11 +33,13 @@ export function LandingClient({ shots }: { shots: Shot[] }) {
   const [authMode, setAuthMode] = useState<AuthMode>('signup');
   const [redirectTo, setRedirectTo] = useState('/dashboard');
 
-  const openSignUp = () => {
+  const openSignUp = (location: string) => {
+    trackEvent('landing_cta_clicked', { location, action: 'sign_up' });
     if (isAuthenticated) { router.push('/dashboard'); return; }
     router.push('/get-started');
   };
-  const openSignIn = () => {
+  const openSignIn = (location: string) => {
+    trackEvent('landing_cta_clicked', { location, action: 'sign_in' });
     if (isAuthenticated) { router.push('/dashboard'); return; }
     setRedirectTo('/dashboard');
     setAuthMode('login');
@@ -46,6 +49,7 @@ export function LandingClient({ shots }: { shots: Shot[] }) {
   // Pro CTA: already signed in → straight to Stripe checkout; otherwise sign up
   // first, then resume checkout on /upgrade with the chosen plan.
   const openSubscribe = async (cycle: 'monthly' | 'annual') => {
+    trackEvent('landing_cta_clicked', { location: 'pricing', action: 'subscribe', cycle });
     if (isAuthenticated) {
       const result = await startCheckout(cycle);
       if (result.url) { window.location.href = result.url; return; }
@@ -71,16 +75,16 @@ export function LandingClient({ shots }: { shots: Shot[] }) {
       <div className="page-noise" aria-hidden />
 
       <div className="content-layer">
-        <Nav onSignIn={openSignIn} onSignUp={openSignUp} />
-        <Hero onSignUp={openSignUp} />
+        <Nav onSignIn={() => openSignIn('nav')} onSignUp={() => openSignUp('nav')} />
+        <Hero onSignUp={() => openSignUp('hero')} />
         <TickerStrip />
         <Features />
         <HowItWorks />
         <Peek shots={shots} />
         <Toolkit />
-        <Pricing onSignUp={openSignUp} onSubscribe={openSubscribe} />
+        <Pricing onSignUp={() => openSignUp('pricing')} onSubscribe={openSubscribe} />
         <FAQ />
-        <FinalCTA onSignUp={openSignUp} />
+        <FinalCTA onSignUp={() => openSignUp('final_cta')} />
         <Footer />
       </div>
 

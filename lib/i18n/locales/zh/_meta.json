@@ -1701,11 +1701,9 @@
   "auth.signupEmailRequired": "aae9291101244de96843e6ceb6731fad05ed4b8280a7767e070c4bbc97dc28e6",
   "auth.signupPasswordRequired": "7aeae1412484f6378e5877b660a41baa6a521988eb8b2620ca3223b05e2ff20c",
   "auth.signupPasswordTooShort": "e3b8d09d1ac4b9f1e0b6e75e0d853aa9ef284bf6da50bdc3c4fbd03fa6ab7b02",
-  "auth.signupPasswordMismatch": "b6eb82cd3300c838f99773b371b2f81d5ad517b3ba903de637d3e5920de7c04f",
   "auth.signupFailed": "d1890b44295245dc64a9e3aba91fc8e1ef5b87e25f60e58a28cb6686ee250726",
   "auth.signupCheckInbox": "fa4f44f513c292cefbb86a1232f2c024c40be05c39371ae8494be90873a35efd",
   "auth.signupPasswordHint": "76f7472e24631c135ae70ffcd98715f215bb063a0cab86e58a1437f86dd3b5f7",
-  "auth.signupConfirmPasswordLabel": "c292210c44167923a75b092a008f9d2b194fb08631a6aa43d753ed7931ad4d5e",
   "auth.modalGoogleFailed": "fcbc94634f1f5c9d71a6dc8a2d6ec78237709827efaa7908313f217b83b731c4",
   "auth.modalTitleLogin": "6621249514b7887c17369adf4f98a88b98aea84edfc4b845b4e469d5765d37b2",
   "auth.modalTitleSignup": "86033f75a4c0876adfabca55e558f0ae8f9fa098506123fae47b7601411cc3e2",
@@ -2199,5 +2197,6 @@
   "stock.insiderFilterEmpty": "0ffdcf863e0ece516a6e3cf90ceb8b5b61c69b182d3a1d6ea7685d2f925aea7a",
   "stock.insiderModalTitle": "075bac6ac65070ed06e5ebec7191e99777de30ac73fe5b7746f0894319f39136",
   "stock.insiderViewAllTransactions_one": "bc7a0de8a3bad448829f6553cccca1279b347b0cdf25cf6a31328bea4c137a26",
-  "stock.insiderViewAllTransactions_other": "c6445aeb99e88c9e38e712aa6a5349299ca3a0c614db44ef1f88339973bee2b7"
+  "stock.insiderViewAllTransactions_other": "c6445aeb99e88c9e38e712aa6a5349299ca3a0c614db44ef1f88339973bee2b7",
+  "auth.emailPlaceholder": "53e6cdc30765aade0129f85e5aeb50124b1d3f5bb9a70373be31e4eb328371e0"
 }
