@@ -17,6 +17,37 @@ export function StockNavSidebar({ sections }: { sections: StockNavSection[] }) {
   useEffect(() => {
     if (sections.length === 0) return;
 
+    const lastId = sections[sections.length - 1].id;
+
+    // A short final section can finish scrolling past without ever
+    // entering the observer's trigger band below — the page runs out of
+    // room to scroll before the section's top reaches it. Both the
+    // IntersectionObserver callback and the scroll listener route through
+    // this one function (rather than each calling setActiveId
+    // independently) so the "at bottom" check is always the last word —
+    // two independent setActiveId callers race, and whichever fired most
+    // recently wins, which let the observer's own band-based pick clobber
+    // the bottom override right back to an earlier section.
+    //
+    // The "at bottom" check itself is deliberately NOT window.scrollY vs
+    // document.documentElement.scrollHeight — this app's shared shell
+    // (AIPanelProvider) scrolls an inner flex container, not the window,
+    // so those two are permanently 0 and innerHeight here and the check
+    // would be true from the very first render. getBoundingClientRect is
+    // always viewport-relative regardless of which ancestor actually owns
+    // the scrollbar, so checking whether the last section's own bottom
+    // edge has scrolled into view works no matter which element scrolls.
+    function computeActive() {
+      const lastEl = document.getElementById(lastId);
+      if (lastEl && lastEl.getBoundingClientRect().bottom <= window.innerHeight + 4) {
+        setActiveId(lastId);
+        return;
+      }
+      // Always highlight the topmost visible section in document order
+      const first = sections.find((s) => intersectingIds.current.has(s.id));
+      if (first) setActiveId(first.id);
+    }
+
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -26,9 +57,7 @@ export function StockNavSidebar({ sections }: { sections: StockNavSection[] }) {
             intersectingIds.current.delete(entry.target.id);
           }
         });
-        // Always highlight the topmost visible section in document order
-        const first = sections.find((s) => intersectingIds.current.has(s.id));
-        if (first) setActiveId(first.id);
+        computeActive();
       },
       { rootMargin: '-12% 0px -75% 0px', threshold: 0 }
     );
@@ -38,22 +67,17 @@ export function StockNavSidebar({ sections }: { sections: StockNavSection[] }) {
       if (el) observer.observe(el);
     });
 
-    // A short final section can finish scrolling past without ever
-    // entering the observer's trigger band above — the page runs out of
-    // room to scroll before the section's top reaches it, leaving an
-    // earlier section highlighted even once there's nothing left below.
-    // At the very bottom of the page, force the last section active.
-    function handleScroll() {
-      const doc = document.documentElement;
-      const atBottom = window.innerHeight + window.scrollY >= doc.scrollHeight - 2;
-      if (atBottom) setActiveId(sections[sections.length - 1].id);
-    }
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll();
+    // "scroll" doesn't bubble, so a listener on window in the bubble phase
+    // never sees it fire on a nested scrollable ancestor. A capture-phase
+    // listener does — this fires for a scroll on window OR any descendant
+    // scrollable container, so it works regardless of which one this page
+    // actually uses.
+    window.addEventListener('scroll', computeActive, { capture: true, passive: true });
+    computeActive();
 
     return () => {
       observer.disconnect();
-      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('scroll', computeActive, { capture: true });
     };
   }, [sections]);
 

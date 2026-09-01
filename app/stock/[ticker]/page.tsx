@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -257,7 +257,11 @@ export default function StockDetailPage() {
 
   // Visuals lead: data sections come first, prose (Profile) trails just
   // before Community — see PRODUCT.md "visual, not text-and-numbers" goal.
-  const navSections: StockNavSection[] = [
+  // Memoized so StockNavSidebar's scroll-spy effect (IntersectionObserver +
+  // scroll listener) doesn't tear down and rebuild on every re-render this
+  // page gets from live price ticks — a fresh array identity here every few
+  // seconds was making that effect's own bottom-of-page detection racier.
+  const navSections: StockNavSection[] = useMemo(() => [
     { id: 'nav-overview',    label: 'Overview' },
     ...(showFundamentals ? [{ id: 'nav-health', label: 'Health Score' }] : []),
     { id: 'nav-statistics',  label: 'Key Numbers' },
@@ -269,7 +273,7 @@ export default function StockDetailPage() {
     ] : []),
     { id: 'nav-profile',    label: 'Profile' },
     { id: 'nav-community', label: 'Community' },
-  ];
+  ], [showFundamentals]);
 
   if (isNotFound) {
     return (
