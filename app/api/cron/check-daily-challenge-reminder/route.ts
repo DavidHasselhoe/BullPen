@@ -4,20 +4,30 @@
  *
  * Runs once in the evening ET. For every user who:
  *   1. Has daily_challenge_reminder notifications enabled (default true)
- *   2. Has an active Academy streak (current_streak >= 1)
- *   3. Hasn't done anything in Academy yet today (lesson or daily challenge —
- *      last_activity_date != today's ET date)
+ *   2. Was active in Academy yesterday (ET) and hasn't been active yet today —
+ *      i.e. today is the one day where acting still saves the streak
+ *   3. Has current_streak >= 1 (defensive; follows from #2 by construction)
  * ...creates a "keep your streak alive" reminder notification.
  *
- * Deliberately scoped to users with an existing streak, not every user —
- * this is a "don't lose what you have" nudge, not cold-start Academy
- * marketing to people who've never opened it.
+ * Deliberately scoped to users with a genuinely live streak, not every
+ * user — this is a "don't lose what you have" nudge, not cold-start
+ * Academy marketing to people who've never opened it. `last_activity_date`
+ * is write-time-only (see lib/academy/streak.ts's applyActivityAndXp) — it
+ * only gets corrected the next time a user is actually active in Academy,
+ * so `current_streak >= 1` alone is not proof of a live streak: someone
+ * who was active two days in a row and then never came back keeps a
+ * frozen current_streak >= 1 forever, since nothing re-evaluates it while
+ * they're gone. Requiring last_activity_date to be exactly yesterday (not
+ * just "not today") is what actually distinguishes a real, currently-at-risk
+ * streak from a stale one belonging to someone who's since moved on to
+ * using the app for research, not Academy — confirmed live: this filter
+ * previously pinged that second group indefinitely.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { logSecurityEvent } from '@/lib/security/security-events';
 import { createServerClient } from '@/lib/supabase/client';
-import { todayInET } from '@/lib/academy/streak';
+import { yesterdayInET } from '@/lib/academy/streak';
 import { createDailyChallengeReminderNotification } from '@/lib/notifications/notification-creators';
 
 export const maxDuration = 60;
@@ -39,16 +49,17 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   };
 
   try {
-    // ── 1. Users with an active streak who haven't been active today ────────
+    // ── 1. Users with a genuinely live streak they haven't saved yet today ──
     // Queried first (not from `users`) since academy_user_stats is far smaller
     // than the full user base — narrows the candidate set before checking
     // notification settings, rather than scanning every user first.
-    const today = todayInET();
+    // last_activity_date must be exactly yesterday, not just "not today" —
+    // see the file header for why that distinction is load-bearing.
     const { data: atRisk, error: statsErr } = await supabase
       .from('academy_user_stats')
       .select('user_id, current_streak')
       .gte('current_streak', 1)
-      .neq('last_activity_date', today) as unknown as
+      .eq('last_activity_date', yesterdayInET()) as unknown as
       { data: Array<{ user_id: string; current_streak: number }> | null; error: unknown };
 
     if (statsErr || !atRisk?.length) {

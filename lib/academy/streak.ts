@@ -18,6 +18,15 @@ export function todayInET(): string {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
 }
 
+/** YYYY-MM-DD for the ET calendar day before today. Pure date-string
+ *  arithmetic on todayInET()'s already-resolved ET day, not a fresh
+ *  timezone conversion — safe across DST since it never touches wall-clock
+ *  time, only calendar-date subtraction. */
+export function yesterdayInET(): string {
+  const d = new Date(Date.parse(todayInET()) - 86_400_000);
+  return d.toISOString().slice(0, 10);
+}
+
 export function isoDateBefore(a: string, b: string): boolean {
   return Date.parse(a) < Date.parse(b);
 }
