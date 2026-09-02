@@ -112,6 +112,8 @@ export function FinancialsTrendChart({
                 borderRadius: 10,
                 fontSize: 12,
               }}
+              labelStyle={{ color: 'var(--muted-foreground)' }}
+              itemStyle={{ color: 'var(--popover-foreground)' }}
               formatter={(value: number | string, name: string) => [format(Number(value)), name]}
             />
             <Bar
