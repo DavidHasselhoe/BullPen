@@ -514,6 +514,16 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
 
         {messages.map((message) => {
           const isUser = message.role === 'user';
+          const toolCalls = isUser ? [] : getCompletedToolCalls(message);
+          const hasText = message.parts.some((p) => p.type === 'text' && p.text.trim().length > 0);
+          // While the newest assistant message is still fully empty (no tool
+          // output, no text yet), the dedicated thinking/tool-status bubble
+          // below covers that state on its own — rendering this bubble too
+          // would show a bare blinking cursor right next to "Reasoning…",
+          // reading as two separate replies instead of one in-progress one.
+          const isEmptyStreamingReply =
+            !isUser && isStreaming && message.id === lastMessage?.id && !hasText && toolCalls.length === 0;
+          if (isEmptyStreamingReply) return null;
           return (
             <motion.div
               key={message.id}
@@ -546,28 +556,25 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
                   </div>
                 ) : (
                   <>
-                    {(() => {
-                      const toolCalls = getCompletedToolCalls(message);
-                      return toolCalls.map((call, i) => {
-                        const actionKey = `${message.id}::${i}`;
-                        const navigateAction = call.clientAction?.type === 'navigate' ? call.clientAction : undefined;
-                        return (
-                          <ToolResultCard
-                            key={`${message.id}-tool-${i}`}
-                            toolName={call.toolName}
-                            output={call.output}
-                            siblingCalls={toolCalls}
-                            clientAction={call.clientAction}
-                            actionOutcome={call.clientAction ? actionOutcomes[actionKey] : undefined}
-                            navigateDecision={navigateAction ? getNavigateDecision(actionKey) : undefined}
-                            onConfirmNavigate={navigateAction ? () => confirmNavigate(actionKey, navigateAction.path) : undefined}
-                            onDeclineNavigate={navigateAction ? () => declineNavigate(actionKey) : undefined}
-                            isHistorical={historicalMessageIds.has(message.id)}
-                            onRetryAction={call.clientAction ? () => runClientAction(call.clientAction!, actionKey) : undefined}
-                          />
-                        );
-                      });
-                    })()}
+                    {toolCalls.map((call, i) => {
+                      const actionKey = `${message.id}::${i}`;
+                      const navigateAction = call.clientAction?.type === 'navigate' ? call.clientAction : undefined;
+                      return (
+                        <ToolResultCard
+                          key={`${message.id}-tool-${i}`}
+                          toolName={call.toolName}
+                          output={call.output}
+                          siblingCalls={toolCalls}
+                          clientAction={call.clientAction}
+                          actionOutcome={call.clientAction ? actionOutcomes[actionKey] : undefined}
+                          navigateDecision={navigateAction ? getNavigateDecision(actionKey) : undefined}
+                          onConfirmNavigate={navigateAction ? () => confirmNavigate(actionKey, navigateAction.path) : undefined}
+                          onDeclineNavigate={navigateAction ? () => declineNavigate(actionKey) : undefined}
+                          isHistorical={historicalMessageIds.has(message.id)}
+                          onRetryAction={call.clientAction ? () => runClientAction(call.clientAction!, actionKey) : undefined}
+                        />
+                      );
+                    })}
                     <AssistantMessageContent
                       text={message.parts
                         .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
