@@ -115,6 +115,22 @@ function inRange(value: number | null, min: number | undefined, max: number | un
   return true;
 }
 
+/**
+ * screener_stats stores dividend_yield/profit_margin/payout_ratio as
+ * TwelveData's raw 0..1 fraction, but filter inputs from the UI are
+ * percent-scale (0..100) — see the matching comment in screener-columns.tsx.
+ * Route every fraction-stored field's range check through this helper rather
+ * than hand-writing `* 100`; that repetition is exactly how the dividend
+ * yield filter (625cc70) and the identical payout-ratio display bug happened.
+ */
+function inRangeFractionAsPct(
+  value: number | null,
+  min: number | undefined,
+  max: number | undefined
+): boolean {
+  return inRange(value != null ? value * 100 : null, min, max);
+}
+
 async function handler(request: NextRequest) {
   const supabase = createServerClient();
   const sp = request.nextUrl.searchParams;
@@ -262,11 +278,8 @@ async function handler(request: NextRequest) {
 
     // Dividend yield and profit margin are both stored as 0..1
     // (TwelveData's own scale) — filter inputs are percent (0..100).
-    const dividendYieldPct = r.dividend_yield != null ? r.dividend_yield * 100 : null;
-    if (!inRange(dividendYieldPct, divYieldMin, divYieldMax)) return false;
-
-    const profitMarginPct = r.profit_margin != null ? r.profit_margin * 100 : null;
-    if (!inRange(profitMarginPct, profitMarginMin, profitMarginMax)) return false;
+    if (!inRangeFractionAsPct(r.dividend_yield, divYieldMin, divYieldMax)) return false;
+    if (!inRangeFractionAsPct(r.profit_margin, profitMarginMin, profitMarginMax)) return false;
 
     if (!inRange(r.revenue_growth_yoy, revenueGrowthMin, revenueGrowthMax)) return false;
 

@@ -54,6 +54,7 @@ import { getCached, setCached } from '@/lib/cache/market-data-cache';
 import { SIGNIFICANT_TICKERS } from '@/lib/market-data/significant-tickers';
 import { getActiveUniverse } from '@/lib/market-data/screener-universe';
 import { waitForCronCreditBudget } from '@/lib/twelvedata/credit-budget';
+import { parseStats as parseScreenerStatsRow, type TwelveDataStatisticsRaw } from '@/lib/market-data/screener-stats';
 
 export const maxDuration = 60;
 
@@ -154,38 +155,20 @@ function parseStats(sym: string, raw: RawStats | undefined) {
   };
 }
 
+/**
+ * Maps raw /statistics to a screener_stats row via the same parser the
+ * nightly refresh cron uses (lib/market-data/screener-stats.ts) — this file
+ * used to hand-roll a second, divergent copy that had drifted onto wrong
+ * TwelveData field names for day50_ma/day200_ma/revenue_ttm/eps_ttm. Preserves
+ * the null-guard the old buildScreenerRow had, so an errored/empty response
+ * skips the symbol instead of upserting an all-null row. Deliberately omits
+ * health_score/health_score_grade/exchange, same as before — parseStats()
+ * itself doesn't touch those, they're bolted on only by the other writer
+ * (fetchAndUpsertScreenerStats), and PostgREST upsert leaves absent keys alone.
+ */
 function buildScreenerRow(sym: string, raw: RawStats | undefined) {
   if (!raw || raw.code || raw.status === 'error' || !raw.statistics) return null;
-  const s = raw.statistics;
-  const v = (s.valuations_metrics as Record<string, number>) ?? {};
-  const sp = (s.stock_price_summary as Record<string, number>) ?? {};
-  const f = (s.financials as Record<string, unknown>) ?? {};
-  const fi = ((f.income_statement ?? {}) as Record<string, number>);
-  const d = (s.dividends_and_splits as Record<string, number>) ?? {};
-  const revGrowth = fi.quarterly_revenue_growth;
-  const earningsGrowth = fi.quarterly_earnings_growth_yoy;
-  return {
-    ticker: sym,
-    market_cap: v.market_capitalization ? Math.round(v.market_capitalization) : null,
-    pe_ratio: v.trailing_pe ?? null,
-    forward_pe: v.forward_pe ?? null,
-    pb_ratio: v.price_to_book_mrq ?? null,
-    ps_ratio: v.price_to_sales_ttm ?? null,
-    ev_to_ebitda: v.enterprise_to_ebitda ?? null,
-    beta: sp.beta ?? null,
-    week52_high: sp.fifty_two_week_high ?? null,
-    week52_low: sp.fifty_two_week_low ?? null,
-    day50_ma: sp.fifty_day_ma ?? null,
-    day200_ma: sp.two_hundred_day_ma ?? null,
-    dividend_yield: d.forward_annual_dividend_yield ?? null,
-    payout_ratio: d.payout_ratio ?? null,
-    profit_margin: (f.profit_margin as number) ?? null,
-    revenue_ttm: (f.total_revenue as number) ? Math.round(f.total_revenue as number) : null,
-    eps_ttm: (f.diluted_eps as number) ?? null,
-    revenue_growth_yoy: revGrowth != null ? revGrowth * 100 : null,
-    earnings_growth_yoy: earningsGrowth != null ? earningsGrowth * 100 : null,
-    updated_at: new Date().toISOString(),
-  };
+  return parseScreenerStatsRow(raw as unknown as TwelveDataStatisticsRaw, sym);
 }
 
 /**

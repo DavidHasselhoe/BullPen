@@ -27,6 +27,24 @@ function fmtPct(v: number | null, decimals = 1): string {
   return `${v.toFixed(decimals)}%`;
 }
 
+/**
+ * screener_stats mixes two conventions for percent-like fields depending on
+ * how TwelveData itself returns them: revenue/earnings growth are stored
+ * already-multiplied-by-100 (see screener-stats.ts's parseStats), while
+ * dividend_yield, payout_ratio and profit_margin are stored as TwelveData's
+ * raw 0..1 fraction. A column reading a fraction-stored field MUST route
+ * both getValue and render through this helper — hand-writing `* 100` per
+ * column is exactly how the dividend-yield bug (625cc70) and the identical
+ * payout-ratio bug happened. Columns whose field is already percent-scale
+ * (revenue_growth_yoy, earnings_growth_yoy) should call fmtPct directly.
+ */
+function fmtFractionAsPct(v: number | null, decimals = 1): string {
+  return fmtPct(v != null ? v * 100 : null, decimals);
+}
+function fractionToPct(v: number | null): number | null {
+  return v != null ? v * 100 : null;
+}
+
 function fmtPrice(v: number | null): string {
   if (v == null) return '—';
   return `$${v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -290,13 +308,13 @@ export function getScreenerColumns(t: TFunction): ScreenerColumn[] {
     group: 'profitability',
     defaultVisible: true,
     width: 76,
-    getValue: (row) => (row.profit_margin != null ? row.profit_margin * 100 : null),
+    getValue: (row) => fractionToPct(row.profit_margin),
     render: (row) => (
       <span className={cn(
         row.profit_margin != null && row.profit_margin < 0 && 'text-red-500',
         row.profit_margin != null && row.profit_margin > 0.2 && 'text-emerald-600 dark:text-emerald-400',
       )}>
-        {row.profit_margin != null ? fmtPct(row.profit_margin * 100, 1) : '—'}
+        {row.profit_margin != null ? fmtFractionAsPct(row.profit_margin, 1) : '—'}
       </span>
     ),
   },
@@ -362,8 +380,8 @@ export function getScreenerColumns(t: TFunction): ScreenerColumn[] {
     width: 76,
     // Stored as 0..1 (TwelveData's forward_annual_dividend_yield), same as
     // profit_margin above — convert to percent here, not at write time.
-    getValue: (row) => (row.dividend_yield != null ? row.dividend_yield * 100 : null),
-    render: (row) => (row.dividend_yield != null && row.dividend_yield > 0 ? fmtPct(row.dividend_yield * 100, 2) : '—'),
+    getValue: (row) => fractionToPct(row.dividend_yield),
+    render: (row) => (row.dividend_yield != null && row.dividend_yield > 0 ? fmtFractionAsPct(row.dividend_yield, 2) : '—'),
   },
   {
     key: 'payout_ratio',
@@ -372,8 +390,10 @@ export function getScreenerColumns(t: TFunction): ScreenerColumn[] {
     group: 'risk',
     defaultVisible: false,
     width: 72,
-    getValue: (row) => row.payout_ratio,
-    render: (row) => (row.payout_ratio != null && row.payout_ratio > 0 ? fmtPct(row.payout_ratio, 0) : '—'),
+    // Stored as 0..1 (TwelveData's payout_ratio), same convention as
+    // dividend_yield above — convert to percent here, not at write time.
+    getValue: (row) => fractionToPct(row.payout_ratio),
+    render: (row) => (row.payout_ratio != null && row.payout_ratio > 0 ? fmtFractionAsPct(row.payout_ratio, 0) : '—'),
   },
 
   // ── Price levels ──

@@ -75,7 +75,7 @@ const CREDITS_PER_STATS_SYMBOL = 53;
  *  STATS_BATCH_SIZE in prefetch-market-data for the same reason. */
 const CHUNK_SIZE = 5;
 
-interface TwelveDataStatisticsRaw {
+export interface TwelveDataStatisticsRaw {
   meta?: {
     symbol?: string;
     name?: string;
@@ -102,8 +102,8 @@ interface TwelveDataStatisticsRaw {
       beta?: number | null;
       fifty_two_week_high?: number | null;
       fifty_two_week_low?: number | null;
-      fifty_day_ma?: number | null;
-      two_hundred_day_ma?: number | null;
+      day_50_ma?: number | null;
+      day_200_ma?: number | null;
     };
     dividends_and_splits?: {
       forward_annual_dividend_yield?: number | null;
@@ -111,9 +111,9 @@ interface TwelveDataStatisticsRaw {
     };
     financials?: {
       profit_margin?: number | null;
-      total_revenue?: number | null;
-      diluted_eps?: number | null;
       income_statement?: {
+        revenue_ttm?: number | null;
+        diluted_eps_ttm?: number | null;
         quarterly_revenue_growth?: number | null;
         quarterly_earnings_growth_yoy?: number | null;
       };
@@ -145,13 +145,13 @@ export function parseStats(raw: TwelveDataStatisticsRaw, sym: string) {
     avg_volume: s.stock_statistics?.avg_90_volume ? Math.round(s.stock_statistics.avg_90_volume) : null,
     week52_high: sp.fifty_two_week_high ?? null,
     week52_low: sp.fifty_two_week_low ?? null,
-    day50_ma: sp.fifty_day_ma ?? null,
-    day200_ma: sp.two_hundred_day_ma ?? null,
+    day50_ma: sp.day_50_ma ?? null,
+    day200_ma: sp.day_200_ma ?? null,
     dividend_yield: d.forward_annual_dividend_yield ?? null,
     payout_ratio: d.payout_ratio ?? null,
     profit_margin: f.profit_margin ?? null,
-    revenue_ttm: f.total_revenue ? Math.round(f.total_revenue) : null,
-    eps_ttm: f.diluted_eps ?? null,
+    revenue_ttm: fi.revenue_ttm ? Math.round(fi.revenue_ttm) : null,
+    eps_ttm: fi.diluted_eps_ttm ?? null,
     revenue_growth_yoy: fi.quarterly_revenue_growth != null ? fi.quarterly_revenue_growth * 100 : null,
     earnings_growth_yoy: fi.quarterly_earnings_growth_yoy != null ? fi.quarterly_earnings_growth_yoy * 100 : null,
     updated_at: new Date().toISOString(),
