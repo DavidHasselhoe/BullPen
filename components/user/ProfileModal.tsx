@@ -89,6 +89,11 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
   const isInitializedRef = useRef(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const persistProfileRef = useRef<() => Promise<void>>();
+  // Tracks the last-persisted values of the free-text fields so blur only
+  // saves when something actually changed (typing pattern, not click pattern —
+  // see docs/… best-practice split: discrete controls autosave on change,
+  // text fields save on blur).
+  const savedTextRef = useRef({ fullName: '', username: '', bio: '' });
 
   // Load user data
   useEffect(() => {
@@ -102,6 +107,11 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
       setRiskProfile(user.risk_profile || '');
       setAvatarUrl(user.avatar_url || '');
       setError(null);
+      savedTextRef.current = {
+        fullName: user.full_name || '',
+        username: user.username || '',
+        bio: user.bio || '',
+      };
       const t = setTimeout(() => {
         isInitializedRef.current = true;
       }, 400);
@@ -165,6 +175,7 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
         throw new Error(updateError.message || t('profileModalUpdateDbFailed'));
       }
 
+      savedTextRef.current = { fullName, username, bio };
       window.dispatchEvent(new Event('auth:refresh'));
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : t('profileModalUpdateFailed');
@@ -176,7 +187,9 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
     persistProfileRef.current = persistProfile;
   });
 
-  // Autosave — debounced 500 ms after any profile field change (same pattern as Settings)
+  // Autosave — debounced 500 ms after a discrete-control change (selects, avatar
+  // upload). Free-text fields (name/username/bio) save on blur instead, below —
+  // see handleTextFieldBlur.
   useEffect(() => {
     if (!isInitializedRef.current || !user) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -191,7 +204,22 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fullName, username, bio, experienceLevel, marketFocus, riskProfile, avatarUrl]);
+  }, [experienceLevel, marketFocus, riskProfile, avatarUrl]);
+
+  // Text fields save on blur, not while typing, so a pause mid-sentence never
+  // triggers a save.
+  const handleTextFieldBlur = async () => {
+    if (!isInitializedRef.current || !user) return;
+    const unchanged =
+      fullName === savedTextRef.current.fullName &&
+      username === savedTextRef.current.username &&
+      bio === savedTextRef.current.bio;
+    if (unchanged || !persistProfileRef.current) return;
+    setSaveStatus('saving');
+    await persistProfileRef.current();
+    setSaveStatus('saved');
+    setTimeout(() => setSaveStatus('idle'), 1500);
+  };
 
   const getInitials = () => {
     if (fullName) {
@@ -399,6 +427,7 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
                         placeholder={t('profileModalDisplayNamePlaceholder')}
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
+                        onBlur={handleTextFieldBlur}
                       />
                     </div>
 
@@ -409,6 +438,7 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
                         placeholder={t('profileModalUsernamePlaceholder')}
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
+                        onBlur={handleTextFieldBlur}
                       />
                     </div>
 
@@ -419,6 +449,7 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
                         placeholder={t('profileModalBioPlaceholder')}
                         value={bio}
                         onChange={(e) => setBio(e.target.value)}
+                        onBlur={handleTextFieldBlur}
                         rows={4}
                         maxLength={500}
                       />
