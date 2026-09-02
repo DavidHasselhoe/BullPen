@@ -37,7 +37,7 @@ async function handler(
   const language = (body?.language as string) ?? null;
 
   try {
-    const result = await runChartAgent(messages, snapshot, experienceLevel, language);
+    const result = await runChartAgent(messages, snapshot, experienceLevel, language, req.signal);
 
     void result.usage.then((usage) => {
       void logAiCall({

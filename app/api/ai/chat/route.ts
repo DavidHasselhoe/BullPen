@@ -48,7 +48,7 @@ async function handler(
   const allowHoldingsContext = body?.allowHoldingsContext === true;
 
   try {
-    const result = await runAgent(messages, context, experienceLevel, language, riskProfile, investmentHorizon, responseStyle, session.userId, allowHoldingsContext);
+    const result = await runAgent(messages, context, experienceLevel, language, riskProfile, investmentHorizon, responseStyle, session.userId, allowHoldingsContext, req.signal);
 
     // Log usage when stream finishes (non-blocking — response streams immediately).
     void result.usage.then((usage) => {

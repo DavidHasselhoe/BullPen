@@ -437,13 +437,20 @@ export const openCompanyPage = tool({
     additionalProperties: false,
   }),
   execute: async ({ ticker, fullscreen, explicitUserRequest }) => {
-    const company = await resolveCompanyId(ticker);
-    if (!company) return { error: `Company "${ticker}" not found.` };
+    // resolveCompanyName, not resolveCompanyId: only a display name is needed
+    // here (the path is built from the ticker directly), and resolveCompanyId
+    // only checks the small hand-ingested `companies` table (SEC-filing
+    // coverage, not the full S&P 500 + Nasdaq 100 universe) — it returned
+    // null for MU (Micron) despite MU being a perfectly valid, heavily
+    // covered ticker elsewhere in the app, making this tool fail outright for
+    // any ticker outside that subset. resolveCompanyName falls back through
+    // company_index and finally the ticker itself, so it never fails.
+    const name = await resolveCompanyName(ticker);
     const path = fullscreen ? `/stock/${ticker.toUpperCase()}?chart=fullscreen` : `/stock/${ticker.toUpperCase()}`;
-    const label = fullscreen ? `${company.name}'s page in fullscreen chart mode` : `${company.name}'s page`;
+    const label = fullscreen ? `${name}'s page in fullscreen chart mode` : `${name}'s page`;
     return {
       ...navigateAction(path, label, explicitUserRequest),
-      opened: company.name,
+      opened: name,
     };
   },
 });
@@ -622,11 +629,13 @@ export const openCompanyEarnings = tool({
     additionalProperties: false,
   }),
   execute: async ({ ticker, explicitUserRequest }) => {
-    const company = await resolveCompanyId(ticker);
-    if (!company) return { error: `Company "${ticker}" not found.` };
+    // See openCompanyPage above — resolveCompanyName, not resolveCompanyId,
+    // since only a display name is needed and the latter fails for tickers
+    // outside the small hand-ingested `companies` table.
+    const name = await resolveCompanyName(ticker);
     return {
-      ...navigateAction(`/stock/${ticker.toUpperCase()}#earnings`, `${company.name}'s earnings calendar`, explicitUserRequest),
-      opened: company.name,
+      ...navigateAction(`/stock/${ticker.toUpperCase()}#earnings`, `${name}'s earnings calendar`, explicitUserRequest),
+      opened: name,
     };
   },
 });
@@ -647,11 +656,13 @@ export const openCompanyNews = tool({
     additionalProperties: false,
   }),
   execute: async ({ ticker, explicitUserRequest }) => {
-    const company = await resolveCompanyId(ticker);
-    if (!company) return { error: `Company "${ticker}" not found.` };
+    // See openCompanyPage above — resolveCompanyName, not resolveCompanyId,
+    // since only a display name is needed and the latter fails for tickers
+    // outside the small hand-ingested `companies` table.
+    const name = await resolveCompanyName(ticker);
     return {
-      ...navigateAction(`/stock/${ticker.toUpperCase()}#news`, `${company.name}'s news`, explicitUserRequest),
-      opened: company.name,
+      ...navigateAction(`/stock/${ticker.toUpperCase()}#news`, `${name}'s news`, explicitUserRequest),
+      opened: name,
     };
   },
 });

@@ -107,6 +107,7 @@ export async function runChartAgent(
   snapshot: ChartSnapshot | null,
   experienceLevel?: 'beginner' | 'intermediate' | 'advanced' | null,
   language?: string | null,
+  abortSignal?: AbortSignal,
 ) {
   const modelMessages = await convertToModelMessages(messages);
 
@@ -131,9 +132,14 @@ export async function runChartAgent(
     system,
     messages: modelMessages,
     tools: ALL_TOOLS,
+    // See lib/ai/agent.ts — no output cap existed here at all previously.
+    maxOutputTokens: 2048,
     stopWhen: stepCountIs(8),
     // See lib/ai/agent.ts — OpenAI 429s (tokens-per-minute) are retryable and
     // typically clear within a few seconds as the rolling window advances.
     maxRetries: 3,
+    // See lib/ai/agent.ts — without this, a cancelled/abandoned request keeps
+    // stepping and retrying (up to 8 steps here) and billing regardless.
+    abortSignal,
   });
 }

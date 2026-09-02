@@ -29,6 +29,7 @@ export async function runAgent(
   responseStyle?: 'concise' | 'balanced' | 'detailed' | null,
   userId?: string | null,
   allowHoldingsContext?: boolean | null,
+  abortSignal?: AbortSignal,
 ) {
   const modelMessages = await convertToModelMessages(messages);
 
@@ -88,8 +89,10 @@ export async function runAgent(
     system: languagePrefix + experiencePrefix + riskPrefix + horizonPrefix + stylePrefix + contextPrefix + SYSTEM_PROMPT,
     messages: modelMessages,
     tools,
-    maxSteps: 5,
-    maxTokens: 2048,
+    // Was `maxTokens` — not a real field on this SDK version (silently
+    // dropped, so this cap was never actually enforced). The correct name is
+    // maxOutputTokens.
+    maxOutputTokens: 2048,
     // Allow up to 5 steps so the model can call tools, receive results, and generate text.
     // Default stopWhen: stepCountIs(1) stops after the first turn (tool calls) before the model
     // gets a second turn to incorporate tool results into its response.
@@ -99,6 +102,15 @@ export async function runAgent(
     // advances — a couple of extra retries with backoff meaningfully cuts how
     // often a transient org-wide TPM spike reaches the user as a hard error.
     maxRetries: 3,
+    // Without this, a client-side cancellation (the user sends a new message,
+    // navigates away, or closes the panel while a reply is still streaming)
+    // never reached OpenAI — the route handler's request signal was never
+    // threaded through, so every in-flight step (and any of its retries) ran
+    // to completion and was billed regardless of whether anyone was still
+    // waiting on it. Each step here resends the full system prompt + every
+    // tool schema (~10k+ tokens before any real content), so an abandoned
+    // request that keeps stepping/retrying is expensive, not just wasted.
+    abortSignal,
   });
 
   return result;
