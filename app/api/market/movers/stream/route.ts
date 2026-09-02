@@ -20,6 +20,12 @@ import type { PriceTick } from '@/lib/market-data/ws-manager';
 import { SP500_TICKERS } from '@/lib/market-data/sp500';
 import { getMarketMovers } from '@/lib/twelvedata/twelvedata-client';
 
+// Matches the 4.5-min self-close below — without this, an unset maxDuration
+// was letting Vercel kill the function before that self-close ran, forcing
+// constant client reconnects (see the repeated "Task timed out after 60
+// seconds" errors on this route in production).
+export const maxDuration = 300;
+
 // Per-client symbol cap for custom ?symbols= requests
 const MAX_CLIENT_SYMBOLS = 500;
 

@@ -5,6 +5,11 @@ import { withRateLimit } from '@/lib/security/api-security';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+// Matches SESSION_TTL_MS below — without this, an unset maxDuration was
+// letting Vercel kill the function before the stream's own 5-min self-close,
+// forcing constant client reconnects (see the repeated "Task timed out after
+// 60 seconds" errors on this route in production).
+export const maxDuration = 300;
 
 const MAX_SYMBOLS = 600;
 const SESSION_TTL_MS = 5 * 60 * 1000;

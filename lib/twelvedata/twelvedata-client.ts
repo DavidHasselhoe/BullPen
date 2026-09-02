@@ -9,6 +9,23 @@ import { getTickerOverride } from '@/lib/market-data/ticker-overrides';
 
 const TWELVE_DATA_BASE_URL = 'https://api.twelvedata.com';
 
+/**
+ * Every TwelveData call in this file goes through this instead of bare
+ * `fetch()`. Route handlers here have maxDuration 30-300s, but a plain
+ * fetch() has no default timeout — a stalled upstream connection hangs until
+ * Vercel force-kills the whole function, burning its entire duration/CPU
+ * budget on one bad request. Confirmed in production: repeated "Task timed
+ * out after 60/300 seconds" errors on /api/calendar/earnings, /api/quotes/batch,
+ * and the prefetch crons, all of which call through this client. Failing
+ * fast here lets each caller's existing retry/fallback logic take over
+ * instead of the request just hanging for the full budget.
+ */
+const TD_FETCH_TIMEOUT_MS = 15_000;
+
+function tdFetch(url: string, init: RequestInit = {}): Promise<Response> {
+  return fetch(url, { ...init, signal: init.signal ?? AbortSignal.timeout(TD_FETCH_TIMEOUT_MS) });
+}
+
 /** Thrown when the Twelve Data API rate limit (610 credits/min on the current Venture plan) is exceeded */
 export class TwelveDataRateLimitError extends Error {
   constructor(message: string = 'Market data rate limit exceeded. Please try again in a minute.') {
@@ -302,7 +319,7 @@ function parseQuoteResponse(data: TwelveDataQuoteResponse, symbol: string, useEx
 export async function getStockQuote(symbol: string): Promise<StockQuote> {
   logUsage('quote', symbol);
   const url = buildUrl('/quote', { symbol: symbol.toUpperCase() });
-  const response = await fetch(url);
+  const response = await tdFetch(url);
   const data = (await response.json()) as TwelveDataQuoteResponse;
   if (!response.ok) {
     const msg = data.message || `Twelve Data API error: ${response.status}`;
@@ -341,7 +358,7 @@ export async function batchFetch<T>(
     Object.entries(requests).map(([id, url]) => [id, { url }])
   );
   logUsage('batch', `${Object.keys(requests).length} requests`);
-  const res = await fetch(`${TWELVE_DATA_BASE_URL}/batch`, {
+  const res = await tdFetch(`${TWELVE_DATA_BASE_URL}/batch`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -494,7 +511,7 @@ export async function getStockCandles(
     prepost: options?.extendedHours ? '1' : undefined, // TwelveData param for pre/post market
   });
 
-  const response = await fetch(url);
+  const response = await tdFetch(url);
   const data = (await response.json()) as TwelveDataTimeSeriesResponse;
   logUsage('time_series', symbol);
 
@@ -751,7 +768,7 @@ export async function getEarningsCalendar(
   // Use /earnings (per-symbol, 20 credits) — returns past + upcoming events in one call.
   // /earnings_calendar is a global date-range endpoint with a completely different response shape.
   const url = buildUrl('/earnings', { symbol: symbol.toUpperCase(), outputsize: 8 });
-  const response = await fetch(url);
+  const response = await tdFetch(url);
   logUsage('earnings', symbol);
 
   interface EarningsApiItem { date: string; time?: string; eps_estimate?: number | null; eps_actual?: number | null; }
@@ -887,7 +904,7 @@ export async function getCompanyEarnings(
   limit: number = 4
 ): Promise<CompanyEarnings[]> {
   const url = buildUrl('/earnings', { symbol: symbol.toUpperCase() });
-  const response = await fetch(url);
+  const response = await tdFetch(url);
   logCreditHeaders(response, 'earnings');
   const data = (await response.json()) as TwelveDataEarningsResponse;
   logUsage('earnings', symbol);
@@ -993,7 +1010,7 @@ export async function getStatistics(symbol: string): Promise<CompanyStatistics> 
   }
   logUsage('statistics', symbol);
   const url = buildUrl('/statistics', { symbol: symbol.toUpperCase() });
-  const response = await fetch(url);
+  const response = await tdFetch(url);
   logCreditHeaders(response, 'statistics');
   const data = (await response.json()) as TwelveDataStatisticsResponse;
 
@@ -1093,7 +1110,7 @@ export async function getIncomeStatement(
     period,
     outputsize,
   });
-  const response = await fetch(url);
+  const response = await tdFetch(url);
   logCreditHeaders(response, 'income_statement');
   const data = (await response.json()) as TwelveDataIncomeResponse;
 
@@ -1182,7 +1199,7 @@ export async function getBalanceSheet(
     period,
     outputsize,
   });
-  const response = await fetch(url);
+  const response = await tdFetch(url);
   logCreditHeaders(response, 'balance_sheet');
   const data = (await response.json()) as TwelveDataBalanceResponse;
 
@@ -1258,7 +1275,7 @@ export async function getCashFlow(
     period,
     outputsize,
   });
-  const response = await fetch(url);
+  const response = await tdFetch(url);
   logCreditHeaders(response, 'cash_flow');
   const data = (await response.json()) as TwelveDataCashFlowResponse;
 
@@ -1322,7 +1339,7 @@ export async function getDividends(symbol: string): Promise<DividendItem[]> {
     start_date: start.toISOString().slice(0, 10),
     end_date: end.toISOString().slice(0, 10),
   });
-  const response = await fetch(url);
+  const response = await tdFetch(url);
   const data = (await response.json()) as TwelveDataDividendsResponse;
 
   if (!response.ok || data.code || data.status === 'error') {
@@ -1409,7 +1426,7 @@ export async function getCompanyProfile(symbol: string): Promise<CompanyProfile>
   }
   logUsage('profile', symbol);
   const url = buildUrl('/profile', { symbol: symbol.toUpperCase() });
-  const response = await fetch(url);
+  const response = await tdFetch(url);
   const data = (await response.json()) as TwelveDataProfileResponse;
 
   if (!response.ok || data.code || data.status === 'error') {
@@ -1472,7 +1489,7 @@ interface TwelveDataExecutivesResponse {
 export async function getKeyExecutives(symbol: string): Promise<KeyExecutive[]> {
   logUsage('key_executives', symbol);
   const url = buildUrl('/key_executives', { symbol: symbol.toUpperCase() });
-  const response = await fetch(url);
+  const response = await tdFetch(url);
   const data = (await response.json()) as TwelveDataExecutivesResponse;
 
   if (!response.ok || data.code || data.status === 'error') {
@@ -1508,7 +1525,7 @@ export interface TwelveDataLogoResponse {
 export async function getLogoUrl(symbol: string): Promise<string | null> {
   logUsage('/logo', symbol);
   const url = buildUrl('/logo', { symbol: symbol.toUpperCase() });
-  const res = await fetch(url, {
+  const res = await tdFetch(url, {
     next: { revalidate: 86400 }, // cache 24 h server-side
   });
   if (!res.ok) return null;
@@ -1541,7 +1558,7 @@ export async function symbolSearch(
 ): Promise<SymbolSearchResult[]> {
   logUsage('/symbol_search', query);
   const url = buildUrl('/symbol_search', { symbol: query, outputsize });
-  const res = await fetch(url, { cache: 'no-store' });
+  const res = await tdFetch(url, { cache: 'no-store' });
   if (!res.ok) throw new Error(`TwelveData symbol_search HTTP ${res.status}`);
   const json = (await res.json()) as { data?: SymbolSearchResult[]; status?: string; message?: string };
   if (json.status === 'error') throw new Error(json.message ?? 'TwelveData symbol_search error');
@@ -1587,7 +1604,7 @@ export async function getUsStocksList(
     country: opts.country ?? 'United States',
     exchange: opts.exchange,
   });
-  const res = await fetch(url, { cache: 'no-store' });
+  const res = await tdFetch(url, { cache: 'no-store' });
   if (!res.ok) throw new Error(`TwelveData /stocks HTTP ${res.status}`);
   const json = (await res.json()) as TwelveDataStocksResponse;
   if (json.status === 'error') throw new Error(json.message ?? 'TwelveData /stocks error');
@@ -1667,7 +1684,7 @@ export async function getPressReleases(
   logUsage('/press_releases', sym);
   const cappedSize = Math.min(Math.max(outputsize, 1), 10);
   const url = buildUrl('/press_releases', { symbol: sym, outputsize: cappedSize });
-  const res = await fetch(url, { next: { revalidate: 3600 } }); // cache 1 h
+  const res = await tdFetch(url, { next: { revalidate: 3600 } }); // cache 1 h
   const json = (await res.json()) as TwelveDataPressReleasesResponse;
   if (isTwelveDataHttpError(json, res)) {
     const msg = json.message ?? `press_releases error: ${res.status}`;
@@ -1724,7 +1741,7 @@ interface TwelveDataSplitsResponse {
 export async function getSplits(symbol: string): Promise<SplitItem[]> {
   logUsage('/splits', symbol);
   const url = buildUrl('/splits', { symbol: symbol.toUpperCase() });
-  const res = await fetch(url, { next: { revalidate: 86400 } }); // cache 24 h
+  const res = await tdFetch(url, { next: { revalidate: 86400 } }); // cache 24 h
   const json = (await res.json()) as TwelveDataSplitsResponse;
   if (!res.ok || json.code || json.status === 'error') {
     const msg = json.message ?? `splits error: ${res.status}`;
@@ -1766,7 +1783,7 @@ export async function getIndicator(
 ): Promise<{ values: IndicatorValue[]; meta: Record<string, unknown> }> {
   logUsage(`/${indicator}`, symbol);
   const url = buildUrl(`/${indicator}`, { symbol: symbol.toUpperCase(), ...params });
-  const res = await fetch(url, { next: { revalidate: 300 } }); // cache 5 min
+  const res = await tdFetch(url, { next: { revalidate: 300 } }); // cache 5 min
   const json = (await res.json()) as TwelveDataIndicatorResponse;
   const apiFailed =
     !res.ok ||
@@ -1900,7 +1917,7 @@ export async function getEarningsCalendarRange(
   // cache layer under our own explicit per-day Supabase cache, so a response
   // captured weeks ago (when few of a day's companies had confirmed dates)
   // kept being served as current. TTL policy lives in calendar-days.ts alone.
-  const res = await fetch(url, { cache: 'no-store' });
+  const res = await tdFetch(url, { cache: 'no-store' });
   const json = (await res.json()) as TwelveDataEarningsCalResponse;
 
   const apiFailed =
@@ -2092,7 +2109,7 @@ export async function getDividendsCalendar(
     end_date: endDate,
     ...(outputsize ? { outputsize } : {}),
   });
-  const res = await fetch(url, { next: { revalidate: 3600 } });
+  const res = await tdFetch(url, { next: { revalidate: 3600 } });
   const json = (await res.json()) as TwelveDataDivCalResponse;
   if (!Array.isArray(json)) {
     const msg = json.message ?? `dividends_calendar error: ${res.status}`;
@@ -2146,7 +2163,7 @@ export async function getSplitsCalendar(
 ): Promise<SplitsCalendarItem[]> {
   logUsage('/splits_calendar', `${startDate}..${endDate}`);
   const url = buildUrl('/splits_calendar', { start_date: startDate, end_date: endDate });
-  const res = await fetch(url, { next: { revalidate: 3600 } });
+  const res = await tdFetch(url, { next: { revalidate: 3600 } });
   const json = (await res.json()) as TwelveDataSplitsCalResponse;
   if (!Array.isArray(json)) {
     const msg = json.message ?? `splits_calendar error: ${res.status}`;
@@ -2210,7 +2227,7 @@ export async function getIPOCalendar(
 ): Promise<IPOCalendarItem[]> {
   logUsage('/ipo_calendar', `${startDate}..${endDate}`);
   const url = buildUrl('/ipo_calendar', { start_date: startDate, end_date: endDate });
-  const res = await fetch(url, { next: { revalidate: 3600 } });
+  const res = await tdFetch(url, { next: { revalidate: 3600 } });
   const json = (await res.json()) as TwelveDataIPOCalResponse;
   const ipoFailed = !res.ok || json.status === 'error' || (typeof json.code === 'number' && json.code >= 400);
   if (ipoFailed) {
@@ -2272,7 +2289,7 @@ export async function getExtendedHoursQuote(
   logUsage('/quote (extended)', symbol);
   // prepost=true is required for TwelveData to include extended_* fields (Pro plan+).
   const url = buildUrl('/quote', { symbol: symbol.toUpperCase(), prepost: 'true' });
-  const res = await fetch(url);
+  const res = await tdFetch(url);
   if (!res.ok) return null;
   const data = (await res.json()) as TwelveDataQuoteExtended;
   if (data.status === 'error' || data.code) return null;
@@ -2349,7 +2366,7 @@ function parseTransactionType(description: string): InsiderTransaction['transact
 export async function getInsiderTransactions(symbol: string): Promise<InsiderTransaction[]> {
   logUsage('/insider_transactions', symbol);
   const url = buildUrl('/insider_transactions', { symbol: symbol.toUpperCase() });
-  const res = await fetch(url, { next: { revalidate: 3600 } }); // cache 1 hour
+  const res = await tdFetch(url, { next: { revalidate: 3600 } }); // cache 1 hour
   const json = (await res.json()) as TwelveDataInsiderResponse;
 
   if (!res.ok || json.code || json.status === 'error') {
@@ -2387,7 +2404,7 @@ export interface FundamentalsLastChange {
 export async function getFundamentalsLastChange(symbol: string): Promise<FundamentalsLastChange> {
   logUsage('/fundamentals/last_changes', symbol);
   const url = buildUrl('/fundamentals/last_changes', { symbol: symbol.toUpperCase() });
-  const res = await fetch(url, { cache: 'no-store' }); // always need fresh timestamps
+  const res = await tdFetch(url, { cache: 'no-store' }); // always need fresh timestamps
   const json = (await res.json()) as FundamentalsLastChange & { code?: number; status?: string; message?: string };
 
   if (!res.ok || json.code || json.status === 'error') {
