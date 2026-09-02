@@ -17,6 +17,8 @@ import { RotateCcw, HelpCircle } from 'lucide-react';
 export interface ScreenerFilterValues {
   sector: string;
   industry: string;
+  healthScoreMin: string;
+  healthScoreMax: string;
   marketCapMin: string;
   marketCapMax: string;
   peMin: string;
@@ -38,6 +40,8 @@ export interface ScreenerFilterValues {
 export const EMPTY_FILTERS: ScreenerFilterValues = {
   sector: '',
   industry: '',
+  healthScoreMin: '',
+  healthScoreMax: '',
   marketCapMin: '',
   marketCapMax: '',
   peMin: '',
@@ -64,6 +68,7 @@ interface Preset {
 function getPresets(t: TFunction): Preset[] {
   return [
     { label: t('screenerPresetAll'),          filters: {} },
+    { label: t('screenerPresetHighHealth'),    filters: { healthScoreMin: '70' } },
     { label: t('screenerPresetDeepValue'),     filters: { peMax: '15', pbMax: '2' } },
     { label: t('screenerPresetGrowth'),        filters: { revenueGrowthMin: '15' } },
     { label: t('screenerPresetDividend'),      filters: { divYieldMin: '2.5' } },
@@ -243,6 +248,14 @@ export function ScreenerFilters({ filters, sectors, industries, onChange, onRese
           </div>
         )}
       </div>
+
+      {/* Health Score */}
+      {show('health_score', 'healthScoreMin', 'healthScoreMax') && (
+        <div className="space-y-0.5">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/85 pb-1">{t('screenerGroupHealthScore')}</p>
+          <RangeFilter label={t('screenerHealthScoreLabel')} hint={t('screenerHealthScoreHint')} minKey="healthScoreMin" maxKey="healthScoreMax" filters={filters} onChange={onChange} step="5" />
+        </div>
+      )}
 
       {/* Valuation */}
       {(show('market_cap', 'marketCapMin', 'marketCapMax') ||

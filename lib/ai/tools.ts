@@ -494,11 +494,14 @@ export const openScreener = tool({
     '"large-cap" → marketCapMin=10, "mega-cap" → marketCapMin=200, "small-cap" → marketCapMax=2, ' +
     '"deep value" → peMax=15 + pbMax=2, "growth stocks" → revenueGrowthMin=15, ' +
     '"high quality" → profitMarginMin=15 + revenueGrowthMin=10, "dividend" → divYieldMin=2.5, ' +
-    '"low volatility" → betaMax=0.8, "high volatility" → betaMin=1.5. ' +
+    '"low volatility" → betaMax=0.8, "high volatility" → betaMin=1.5, ' +
+    '"financially healthy" / "strong fundamentals" / "well-run companies" → healthScoreMin=70. ' +
     'Always prefer this over openComparison when the user wants to browse visually.',
   inputSchema: jsonSchema<{
     sector?: string;
     industry?: string;
+    healthScoreMin?: number;
+    healthScoreMax?: number;
     marketCapMin?: number;
     marketCapMax?: number;
     peMin?: number;
@@ -521,6 +524,8 @@ export const openScreener = tool({
     properties: {
       sector:           { type: 'string', description: 'Sector name, e.g. "Technology", "Healthcare", "Energy", "Financials", "Consumer Cyclical"' },
       industry:         { type: 'string', description: 'Industry within the sector, e.g. "Semiconductors", "Software—Application", "Biotechnology"' },
+      healthScoreMin:   { type: 'number', description: 'Min BullPen Health Score, 0-100 (profitability, balance sheet strength, valuation, growth, market risk combined into one number) — e.g. 70 for financially healthy companies' },
+      healthScoreMax:   { type: 'number', description: 'Max BullPen Health Score, 0-100' },
       marketCapMin:     { type: 'number', description: 'Min market cap in billions USD (e.g. 10 = $10B, 200 = $200B)' },
       marketCapMax:     { type: 'number', description: 'Max market cap in billions USD' },
       peMin:            { type: 'number', description: 'Min P/E ratio (TTM)' },
@@ -549,6 +554,8 @@ export const openScreener = tool({
     };
     add('sector',           filters.sector);
     add('industry',         filters.industry);
+    add('healthScoreMin',   filters.healthScoreMin);
+    add('healthScoreMax',   filters.healthScoreMax);
     add('marketCapMin',     filters.marketCapMin);
     add('marketCapMax',     filters.marketCapMax);
     add('peMin',            filters.peMin);

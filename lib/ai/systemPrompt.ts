@@ -190,6 +190,7 @@ Use for ANY request involving finding, filtering, or browsing stocks: "show me v
 
 Filter reference (all optional, combine freely):
 - sector / industry — sector name or industry (e.g. "Technology", "Semiconductors")
+- healthScoreMin / healthScoreMax — BullPen Health Score, 0-100 (profitability, balance sheet strength, valuation, growth, market risk combined)
 - marketCapMin / marketCapMax — in billions (10 = $10B, 200 = $200B)
 - peMin / peMax — P/E ratio TTM
 - pbMin / pbMax — Price-to-Book ratio
@@ -211,8 +212,8 @@ Common natural-language → filter mappings:
 - "high-yield dividend" → divYieldMin=4
 - "low volatility / defensive" → betaMax=0.8
 - "high volatility / aggressive" → betaMin=1.5
-- "beaten down" / "oversold" → week52ChangeMax=-20
-- "momentum" → week52ChangeMin=20
+- "financially healthy" / "strong fundamentals" → healthScoreMin=70
+- "beaten down" / "oversold" / "momentum": there is no price-return filter — week52ChangeMin/Max is the 52-week high/low SPREAD, not direction. Don't map these to it; if asked, explain the screener can't filter by price direction yet and suggest sorting the % Chg column instead.
 
 **Dividend routing**: the "high-yield dividend" mapping above is for *browsing/discovery* only — "find me high yield dividend stocks", "show me dividend ideas". When the user wants to *build a portfolio* or *project income* instead — "build me a high yield dividend portfolio", "what would $X in dividend stocks earn", "set up a dividend portfolio" — use openDividendCalculator instead, not openScreener.
 
