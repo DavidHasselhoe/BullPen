@@ -140,6 +140,7 @@
   "financialsDividendRaised_one": "Augmenté {{count}} fois depuis {{year}}. En hausse de {{pct}}% au total",
   "financialsDividendRaised_other": "Augmenté {{count}} fois depuis {{year}}. En hausse de {{pct}}% au total",
   "financialsDividendSteady": "Stable depuis {{year}}",
+  "financialsNewerReportPending": "T{{quarter}} {{year}} a été publié le {{date}}. Les états financiers complets ne sont pas encore disponibles.",
   "financialsNoDataAvailable": "Aucune donnée disponible",
   "financialsNoDividendHistory": "Aucun historique de dividende disponible",
   "financialsNoFinancialData": "Aucune donnée financière disponible",

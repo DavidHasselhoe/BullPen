@@ -144,6 +144,7 @@
   "financialsDividendRaised_one": "{{year}}年以降{{count}}回引き上げ。全体で{{pct}}%増加",
   "financialsDividendRaised_other": "{{year}}年以降{{count}}回引き上げ。全体で{{pct}}%増加",
   "financialsDividendSteady": "{{year}}年以降据え置き",
+  "financialsNewerReportPending": "第{{quarter}}四半期 {{year}}年は{{date}}に発表されました。詳細な財務諸表はまだ利用できません。",
   "financialsNoDataAvailable": "利用可能なデータがありません",
   "financialsNoDividendHistory": "配当履歴がありません",
   "financialsNoFinancialData": "財務データがありません",

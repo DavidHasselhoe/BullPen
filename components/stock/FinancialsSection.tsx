@@ -16,6 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { TermTooltip } from '@/components/ui/TermTooltip';
 import { useExperienceLevel } from '@/hooks/use-experience-level';
 import { useAIPanel } from '@/components/ai/AIPanelProvider';
+import { useEarningsHistory } from '@/hooks/use-earnings-history';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
@@ -61,6 +62,11 @@ function fmtEps(v: number | null | undefined): string {
 /** $0.2050 → "$0.205", $0.2700 → "$0.27" — precise but not noisy. */
 function fmtDividend(v: number): string {
   return `$${v.toFixed(4).replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '')}`;
+}
+
+/** "2026-08-26" → "Aug 26" — matches the compact style used inline in a hint. */
+function fmtShortDate(dateStr: string): string {
+  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(new Date(dateStr + 'T12:00:00Z'));
 }
 
 // ---- Trend helpers ----
@@ -474,6 +480,27 @@ export function FinancialsSection({ ticker }: { ticker: string }) {
     staleTime: 15 * 60 * 1000,
   });
 
+  // ── Newest report vs. newest available statement ────────────────────────
+  // Earnings calls happen same-day; the filed statement TwelveData ingests
+  // typically trails by 1–4 weeks. When that gap is more than one quarter's
+  // worth, the newest report's period genuinely isn't in the data yet — say
+  // so instead of silently showing a chart that looks one quarter stale.
+  const { data: earningsData } = useEarningsHistory(ticker);
+  const pendingReportNote = (() => {
+    if (activeTab !== 'income' && activeTab !== 'balance' && activeTab !== 'cashflow') return null;
+    if (!data?.success || !data.data || data.data.length === 0) return null;
+    if (!earningsData || earningsData.length === 0) return null;
+    const today = new Date().toISOString().split('T')[0];
+    const newestReport = earningsData
+      .filter((e) => e.date < today)
+      .sort((a, b) => b.date.localeCompare(a.date))[0];
+    if (!newestReport || !newestReport.quarter || !newestReport.year) return null;
+    const newestFiscalDate = (data.data[0] as { fiscal_date: string }).fiscal_date;
+    const gapDays = (new Date(newestReport.date).getTime() - new Date(newestFiscalDate).getTime()) / 86_400_000;
+    if (gapDays <= 95) return null;
+    return { quarter: newestReport.quarter, year: newestReport.year, date: newestReport.date };
+  })();
+
   // ── Chart-first lead per statement tab ─────────────────────────────────
   let chart: React.ReactNode = null;
   if (!isLoading && data?.success && data.data) {
@@ -613,6 +640,15 @@ export function FinancialsSection({ ticker }: { ticker: string }) {
 
         {!isLoading && data?.success && data.data && (
           <>
+            {pendingReportNote && (
+              <p className="-mt-1 mb-4 text-xs text-muted-foreground">
+                {t('financialsNewerReportPending', {
+                  quarter: pendingReportNote.quarter,
+                  year: pendingReportNote.year,
+                  date: fmtShortDate(pendingReportNote.date),
+                })}
+              </p>
+            )}
             {chart}
 
             {/* ── Simple mode: Key Takeaways + optional full breakdown ──── */}

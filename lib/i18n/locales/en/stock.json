@@ -144,6 +144,7 @@
   "financialsDividendRaised_one": "Raised {{count}} time since {{year}}. Up {{pct}}% overall",
   "financialsDividendRaised_other": "Raised {{count}} times since {{year}}. Up {{pct}}% overall",
   "financialsDividendSteady": "Held steady since {{year}}",
+  "financialsNewerReportPending": "Q{{quarter}} {{year}} was reported {{date}}. Full financial statements aren't available yet.",
   "financialsNoDataAvailable": "No data available",
   "financialsNoDividendHistory": "No dividend history available",
   "financialsNoFinancialData": "No financial data available",

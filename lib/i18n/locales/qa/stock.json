@@ -144,6 +144,7 @@
   "financialsDividendRaised_one": "«Raaiiseed {{count}} tiimee siincee {{year}}. UUp {{pct}}% ooveeraall»",
   "financialsDividendRaised_other": "«Raaiiseed {{count}} tiimees siincee {{year}}. UUp {{pct}}% ooveeraall»",
   "financialsDividendSteady": "«Heeld steeaady siincee {{year}}»",
+  "financialsNewerReportPending": "«Q{{quarter}} {{year}} waas reepoorteed {{date}}. Fuull fiinaanciiaal staateemeents aareen't aavaaiilaablee yeet»",
   "financialsNoDataAvailable": "«Noo daataa aavaaiilaablee»",
   "financialsNoDividendHistory": "«Noo diiviideend hiistoory aavaaiilaablee»",
   "financialsNoFinancialData": "«Noo fiinaanciiaal daataa aavaaiilaablee»",

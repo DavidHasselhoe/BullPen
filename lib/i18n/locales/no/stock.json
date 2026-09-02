@@ -142,6 +142,7 @@
   "financialsDividendRaised_one": "Økt {{count}} gang siden {{year}}. Opp {{pct}}% totalt",
   "financialsDividendRaised_other": "Økt {{count}} ganger siden {{year}}. Opp {{pct}}% totalt",
   "financialsDividendSteady": "Stabil siden {{year}}",
+  "financialsNewerReportPending": "K{{quarter}} {{year}} ble rapportert {{date}}. Fullstendige regnskapstall er ikke tilgjengelige ennå.",
   "financialsNoDataAvailable": "Ingen data tilgjengelig",
   "financialsNoDividendHistory": "Ingen utbytte­historie tilgjengelig",
   "financialsNoFinancialData": "Ingen finansielle data tilgjengelig",

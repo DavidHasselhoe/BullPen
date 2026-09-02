@@ -12,19 +12,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { useQuery } from '@tanstack/react-query';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { useExperienceLevel } from '@/hooks/use-experience-level';
+import { useEarningsHistory } from '@/hooks/use-earnings-history';
 import { DeltaBar } from '@/components/viz/DeltaBar';
 import type { EarningsCalendar as EarningsItem } from '@/lib/finnhub/finnhub-client';
-
-interface EarningsCalendarResponse {
-  success: boolean;
-  earnings?: EarningsItem[];
-  error?: string;
-}
 
 function formatDate(dateStr: string): string {
   return new Intl.DateTimeFormat('en-US', {
@@ -49,24 +43,7 @@ export function EarningsCalendar({ ticker }: { ticker: string }) {
   const { isSimplified } = useExperienceLevel();
   const today = new Date().toISOString().split('T')[0];
 
-  const { data, isLoading } = useQuery<EarningsItem[]>({
-    queryKey: ['earnings-history', ticker],
-    queryFn: async () => {
-      const historyFrom = new Date(Date.now() - 455 * 86_400_000).toISOString().split('T')[0];
-      const to = new Date(Date.now() + 120 * 86_400_000).toISOString().split('T')[0];
-      const res = await fetch(`/api/stock/${ticker}/earnings-calendar?from=${historyFrom}&to=${to}`);
-      if (!res.ok) return [];
-      const result: EarningsCalendarResponse = await res.json();
-      if (!result.success || !result.earnings) return [];
-      // Finnhub returns a company's full earnings history when `symbol` is set,
-      // ignoring from/to — clip to the requested window ourselves so a stray
-      // decade-old record (seen on some ETFs) can't slip into "Recent Reports".
-      return result.earnings.filter((e) => e.date >= historyFrom);
-    },
-    enabled: !!ticker,
-    staleTime: 1000 * 60 * 60 * 6,
-    gcTime: 1000 * 60 * 60 * 6,
-  });
+  const { data, isLoading } = useEarningsHistory(ticker);
 
   if (isLoading) {
     return (

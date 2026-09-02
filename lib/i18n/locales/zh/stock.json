@@ -144,6 +144,7 @@
   "financialsDividendRaised_one": "自{{year}}年以来提高{{count}}次，累计上升{{pct}}%",
   "financialsDividendRaised_other": "自{{year}}年以来提高{{count}}次，累计上升{{pct}}%",
   "financialsDividendSteady": "自{{year}}年以来保持稳定",
+  "financialsNewerReportPending": "{{year}}年第{{quarter}}季度已于{{date}}公布。完整财务报表尚未发布。",
   "financialsNoDataAvailable": "暂无数据",
   "financialsNoDividendHistory": "暂无股息历史",
   "financialsNoFinancialData": "暂无财务数据",
