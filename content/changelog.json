@@ -1,5 +1,27 @@
 [
   {
+    "date": "2026-09-02",
+    "entries": [
+      { "type": "new", "text": "You can now save your own filter combinations in the stock screener and reload them anytime" },
+      { "type": "new", "text": "Added Health Score as a filter in the stock screener, so you can screen for financially healthy companies directly" },
+      { "type": "new", "text": "Click a stock's Health Score in the screener to see the full breakdown behind the score" },
+      { "type": "new", "text": "You can now select multiple stocks in the screener to compare them side by side or add them all to a watchlist at once" },
+      { "type": "improved", "text": "Screener column headers and filters now explain what each metric means and what a good range looks like. The column picker is also organized into groups, and the header row stays visible as you scroll" },
+      { "type": "improved", "text": "Returning signed-in visitors now go straight to the dashboard instead of seeing the marketing homepage first" },
+      { "type": "improved", "text": "Simplified appearance settings to Dark and Light, removing the gradient background themes" },
+      { "type": "improved", "text": "Removed the pin, settings, and notification icons from the navigation bar for signed-out visitors, since they don't apply until you're signed in" },
+      { "type": "fixed", "text": "Fixed several stock screener columns showing wrong or missing data, including dividend yield displaying 100 times too small, payout ratio, EPS, and revenue. Removed two columns that never worked correctly" },
+      { "type": "fixed", "text": "Fixed Ask Bull being unable to take you to certain stock pages" },
+      { "type": "fixed", "text": "Fixed adding a stock to your watchlist sometimes failing with an error" },
+      { "type": "fixed", "text": "Fixed Pro-only content sometimes still showing up briefly right after signing out" },
+      { "type": "fixed", "text": "Added a note on a stock's financials when the newest quarter's full report isn't available yet, so the numbers you see aren't mistaken for missing or out of date" },
+      { "type": "fixed", "text": "Fixed the financials chart tooltip being hard to read in dark mode" },
+      { "type": "fixed", "text": "Fixed Ask Bull sometimes showing an extra empty chat bubble while a reply was still loading" },
+      { "type": "fixed", "text": "Fixed the Bull mascot being hard to see in dark mode" },
+      { "type": "fixed", "text": "Fixed your name, username, and bio in Profile Settings sometimes saving mid-sentence while you were still typing" }
+    ]
+  },
+  {
     "date": "2026-09-01",
     "entries": [
       { "type": "improved", "text": "Ask Bull now checks with you before taking you to a different page, with a quick yes or no, unless you directly asked to be taken there" },
