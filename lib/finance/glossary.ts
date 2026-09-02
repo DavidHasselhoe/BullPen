@@ -32,6 +32,14 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     plainLabel: 'Daily Trading Activity',
     description: 'Average number of shares traded per day. Higher volume means it\'s easier to buy and sell without affecting the price.',
   },
+  'Avg Vol': {
+    plainLabel: 'Daily Trading Activity',
+    description: 'Average number of shares traded per day. Higher volume means it\'s easier to buy and sell without affecting the price.',
+  },
+  'Volume': {
+    plainLabel: 'Today\'s Trading Activity',
+    description: 'Number of shares traded so far today. Unusually high volume compared to the average often means something is moving the stock.',
+  },
   'Shares Float': {
     plainLabel: 'Shares Available to Trade',
     description: 'The number of shares that can actually be bought and sold by the public. Low float = price can move more dramatically.',
@@ -41,6 +49,10 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     description: 'How much investors pay per $1 of profit the company earned in the past 12 months. Lower often signals better value, but context matters.',
   },
   'Forward P/E': {
+    plainLabel: 'Price vs Expected Earnings',
+    description: 'Like P/E but uses analyst estimates for future earnings. Useful for fast-growing companies where future profits matter more than past ones.',
+  },
+  'Fwd P/E': {
     plainLabel: 'Price vs Expected Earnings',
     description: 'Like P/E but uses analyst estimates for future earnings. Useful for fast-growing companies where future profits matter more than past ones.',
   },
@@ -56,6 +68,10 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     plainLabel: 'Company Value vs Operating Profit',
     description: 'Compares the total company price tag to its operating profit before taxes and non-cash costs. Used to compare companies across industries.',
   },
+  'EV/EB': {
+    plainLabel: 'Company Value vs Operating Profit',
+    description: 'Compares the total company price tag to its operating profit before taxes and non-cash costs. Used to compare companies across industries.',
+  },
   'Short Ratio': {
     plainLabel: 'Bearish Pressure Score',
     description: 'How many days it would take all short-sellers (investors betting the price falls) to cover their positions. High values can signal extra selling pressure.',
@@ -68,7 +84,15 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     plainLabel: '52-Week High Price',
     description: 'The highest price this stock has traded at in the past year. Useful for understanding how far it is from its recent best.',
   },
+  '52W Hi': {
+    plainLabel: '52-Week High Price',
+    description: 'The highest price this stock has traded at in the past year. Useful for understanding how far it is from its recent best.',
+  },
   '52W Low': {
+    plainLabel: '52-Week Low Price',
+    description: 'The lowest price this stock has traded at in the past year. Shows how far it could have fallen from its recent peak.',
+  },
+  '52W Lo': {
     plainLabel: '52-Week Low Price',
     description: 'The lowest price this stock has traded at in the past year. Shows how far it could have fallen from its recent peak.',
   },
@@ -76,13 +100,33 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     plainLabel: 'Annual Dividend %',
     description: 'Annual dividend payments as a percentage of the stock price. A 3% yield means you\'d earn $3 per year for every $100 invested, if dividends stay the same.',
   },
+  'Div Yld': {
+    plainLabel: 'Annual Dividend %',
+    description: 'Annual dividend payments as a percentage of the stock price. A 3% yield means you\'d earn $3 per year for every $100 invested, if dividends stay the same.',
+  },
+  'Payout': {
+    plainLabel: 'Share of Profit Paid Out',
+    description: 'The percentage of profit paid to shareholders as dividends rather than reinvested. Very high payout ratios can be harder for a company to sustain.',
+  },
   'Profit Margin': {
+    plainLabel: 'Profit per $1 of Revenue',
+    description: 'What percentage of revenue the company keeps as profit after all costs. A 20% margin means the company keeps $0.20 for every $1.00 it earns.',
+  },
+  'Margin': {
     plainLabel: 'Profit per $1 of Revenue',
     description: 'What percentage of revenue the company keeps as profit after all costs. A 20% margin means the company keeps $0.20 for every $1.00 it earns.',
   },
   'Rev Growth': {
     plainLabel: 'Revenue Growth Rate',
     description: 'How fast the company\'s total sales are growing year-over-year. Positive means the business is expanding.',
+  },
+  'Rev Gth': {
+    plainLabel: 'Revenue Growth Rate',
+    description: 'How fast the company\'s total sales are growing year-over-year. Positive means the business is expanding.',
+  },
+  'Earn Gth': {
+    plainLabel: 'Earnings Growth Rate',
+    description: 'How fast the company\'s profit is growing year-over-year, compared to the same quarter last year. Positive means profit is rising.',
   },
 
   // ── Financials: Income Statement ───────────────────────────────────────────
@@ -110,6 +154,10 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   'EPS (Diluted)': {
     plainLabel: 'Profit per Share',
     description: 'Net income divided by the number of shares. Shows how much profit each share of stock represents.',
+  },
+  'EPS': {
+    plainLabel: 'Profit per Share',
+    description: 'Net income divided by the number of shares, trailing 12 months. Shows how much profit each share of stock represents.',
   },
   'EPS (Basic)': {
     plainLabel: 'Profit per Share (Basic)',

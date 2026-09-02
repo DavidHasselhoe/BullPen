@@ -24,6 +24,7 @@ import type { ScreenerRow } from '@/app/api/screener/route';
 import type { HeatmapPriceEntry } from '@/hooks/use-heatmap-stream';
 import { cn } from '@/lib/utils';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
+import { getGlossaryEntry } from '@/lib/finance/glossary';
 import { SCREENER_COLUMNS, getScreenerColumns, type ScreenerColumn } from './screener-columns';
 import { AlertDialog } from '@/components/alerts/AlertDialog';
 
@@ -214,7 +215,12 @@ export function ScreenerResults({
                 <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5">
                   {columns.slice(0, 4).map((col) => (
                     <div key={col.key} className="flex items-center justify-between gap-2">
-                      <span className="truncate text-[11px] text-muted-foreground">{col.label}</span>
+                      <span
+                        className="truncate text-[11px] text-muted-foreground"
+                        title={getGlossaryEntry(col.label)?.description ?? col.tip}
+                      >
+                        {col.label}
+                      </span>
                       <span className="text-xs font-medium tabular-nums text-foreground">{col.render(row, live)}</span>
                     </div>
                   ))}
@@ -246,7 +252,12 @@ export function ScreenerResults({
                   key={col.key}
                   className="text-right"
                   style={{ width: col.width, minWidth: col.width }}
-                  title={col.tip}
+                  // Sortable header, so a Radix TermTooltip can't nest inside the
+                  // sort button — mirrors WatchlistTable.tsx's native-title pattern,
+                  // sourced from the shared glossary so screener/watchlist/stock-page
+                  // copy for the same metric never drifts. col.tip is the fallback for
+                  // the few columns (Price, % Chg) with no glossary entry.
+                  title={getGlossaryEntry(col.label)?.description ?? col.tip}
                 >
                   <button
                     onClick={() => toggleSort(col.key)}
