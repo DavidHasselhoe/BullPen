@@ -34,6 +34,7 @@ config({ path: '.env.local' });
 import { findEarnings8K, fetchFilingIndex, pickPressReleaseFile, pickCommentaryFile, fetchExhibitText } from '../lib/edgar/edgar-watch';
 import { seedEarningsDeepDiveDraft, completeEarningsDeepDiveFromFiling } from '../lib/instagram/content/earnings-deep-dive';
 import { extractEarningsActuals } from '../lib/instagram/content/earnings-deep-dive-extract';
+import { getMarketSession } from '../lib/cache/redis-cache';
 
 function parseArg(name: string): string | undefined {
   const arg = process.argv.find((a) => a.startsWith(`--${name}=`));
@@ -42,6 +43,25 @@ function parseArg(name: string): string | undefined {
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * An AMC 8-K can't legally exist before the market closes, so hammering
+ * EDGAR every --interval seconds for the hours before that is pure waste —
+ * both on SEC's servers and on whoever's watching this terminal. Sleeps in
+ * 5-minute chunks (so progress is still visible) until getMarketSession()
+ * leaves 'regular', then returns and lets the real poll loop take over.
+ * ponytail: doesn't know about early-close days (day after Thanksgiving,
+ * Dec 24) — worst case on one of those it starts polling ~3h later than it
+ * could have, still well inside typical AMC filing windows. Fix if that
+ * ever actually matters: teach getMarketSession() the NYSE holiday calendar.
+ */
+async function waitForAmcWindow(): Promise<void> {
+  const CHECK_INTERVAL_MS = 5 * 60_000;
+  while (getMarketSession() === 'regular') {
+    console.log('[watch-earnings] AMC report — market still open, waiting for close before polling...');
+    await sleep(CHECK_INTERVAL_MS);
+  }
 }
 
 /**
@@ -102,6 +122,8 @@ async function main() {
     segmentLabel: segment,
   });
   console.log(`[watch-earnings] Draft post ${postId} ${alreadyExisted ? '(already existed)' : '(created)'}.`);
+
+  if (timing === 'AMC') await waitForAmcWindow();
 
   console.log(`[watch-earnings] Polling SEC EDGAR every ${intervalSeconds}s for CIK ${cik}'s next 8-K (Item 2.02) filed on/after ${reportDate}...`);
 
