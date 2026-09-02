@@ -109,6 +109,15 @@
   --grid: oklch(0 0 0 / 0.045);
 }
 
+/* Logo mark swap (BullPenMark, components/landing/Atoms.tsx) — deliberately
+   NOT Tailwind's dark: variant, which is driven by <html class="dark"> (set
+   app-wide by ThemeProvider) rather than this page's own local light-preview
+   toggle. Default/dark state shows the pale mark; light-preview flips it. */
+.bullpen-landing-root .logo-mark-light { display: none; }
+.bullpen-landing-root .logo-mark-dark { display: block; }
+.bullpen-landing-root.landing-light-preview .logo-mark-light { display: block; }
+.bullpen-landing-root.landing-light-preview .logo-mark-dark { display: none; }
+
 .bullpen-landing-root *,
 .bullpen-landing-root *::before,
 .bullpen-landing-root *::after {

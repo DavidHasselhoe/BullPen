@@ -8,16 +8,38 @@ import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 
 // (landing-styles.css — "the only theme we ship publicly"), independent of the
 // app-wide theme toggle, so the white/inverted variant is used unconditionally here.
 export function BullPenMark({ size = 28 }: { size?: number }) {
+  // BullPenLogo-dark.png is the pale mark drawn FOR dark backgrounds — nearly
+  // invisible on light (this is the bug the light-preview screenshot caught).
+  // BullPenLogo.png (no suffix) is the black mark for light backgrounds.
+  // NOT Tailwind's dark: variant — that's driven by <html class="dark">
+  // (ThemeProvider, app-wide default for guests), which is a different
+  // ancestor than this page's own local .landing-light-preview toggle and
+  // doesn't react to it. Plain classes + the scoped rules in
+  // landing-styles.css (.landing-light-preview .logo-mark-*) mirror the same
+  // block/hidden swap without depending on that outer element.
   return (
-    <Image
-      src="/BullPenLogo-dark.png"
-      alt=""
-      width={size}
-      height={size}
-      priority
-      style={{ objectFit: 'contain' }}
-      aria-hidden="true"
-    />
+    <>
+      <Image
+        src="/BullPenLogo.png"
+        alt=""
+        width={size}
+        height={size}
+        priority
+        style={{ objectFit: 'contain' }}
+        aria-hidden="true"
+        className="logo-mark-light"
+      />
+      <Image
+        src="/BullPenLogo-dark.png"
+        alt=""
+        width={size}
+        height={size}
+        priority
+        style={{ objectFit: 'contain' }}
+        aria-hidden="true"
+        className="logo-mark-dark"
+      />
+    </>
   );
 }
 
