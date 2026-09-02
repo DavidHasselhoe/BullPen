@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { useRouter } from 'next/navigation';
 import { useEntitlements } from '@/hooks/use-entitlements';
+import { useAuth } from '@/hooks/use-auth';
+import { useAddToWatchlist, useWatchlistLists, useCreateWatchlistList } from '@/hooks/use-watchlist';
 import { ProBadge } from '@/components/billing/ProBadge';
 import {
   Table,
@@ -17,7 +19,8 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Bell, Download } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Bell, Download, Scale, ListPlus, X, Loader2 } from 'lucide-react';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { EmptyState } from '@/components/ui/EmptyState';
 import type { ScreenerRow } from '@/app/api/screener/route';
@@ -30,6 +33,8 @@ import { AlertDialog } from '@/components/alerts/AlertDialog';
 
 type SortDir = 'asc' | 'desc';
 const PAGE_SIZE_OPTIONS = [25, 50, 100];
+const COMPARE_MIN = 2;
+const COMPARE_MAX = 5;
 
 /** Rows older than this (mid/small caps on the slower refresh tier) get a freshness marker. */
 const STALE_AFTER_DAYS = 3;
@@ -67,10 +72,32 @@ export function ScreenerResults({
   const { t } = useTranslation('tools');
   const router = useRouter();
   const { isPro } = useEntitlements();
+  const { isAuthenticated } = useAuth();
+  const addToWatchlist = useAddToWatchlist();
+  const { data: watchlistLists } = useWatchlistLists();
+  const createWatchlistList = useCreateWatchlistList();
   const fallbackColumns = useMemo(() => getScreenerColumns(t), [t]);
   const columns = visibleColumns ?? fallbackColumns;
   const [sortKey, setSortKey] = useState<string>('market_cap');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [isBulkAdding, setIsBulkAdding] = useState(false);
+
+  // Selection is a UI-only convenience over the current result set — reset it
+  // whenever the underlying rows change (new filters/view), rather than let it
+  // silently keep referencing tickers that scrolled out of the current screen.
+  useEffect(() => {
+    setSelected(new Set());
+  }, [data]);
+
+  const toggleSelected = useCallback((ticker: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(ticker)) next.delete(ticker);
+      else next.add(ticker);
+      return next;
+    });
+  }, []);
 
   const sorted = useMemo(() => {
     const col = SCREENER_COLUMNS.find((c) => c.key === sortKey);
@@ -94,6 +121,54 @@ export function ScreenerResults({
     () => sorted.slice((page - 1) * pageSize, page * pageSize),
     [sorted, page, pageSize]
   );
+
+  const allOnPageSelected = paginated.length > 0 && paginated.every((r) => selected.has(r.ticker));
+  const toggleSelectAllOnPage = useCallback(() => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      const allSelected = paginated.every((r) => next.has(r.ticker));
+      for (const r of paginated) {
+        if (allSelected) next.delete(r.ticker);
+        else next.add(r.ticker);
+      }
+      return next;
+    });
+  }, [paginated]);
+
+  const selectedTickers = useMemo(() => [...selected], [selected]);
+  const canCompare = selectedTickers.length >= COMPARE_MIN && selectedTickers.length <= COMPARE_MAX;
+
+  const compareSelected = useCallback(() => {
+    if (!canCompare) return;
+    router.push(`/tools/compare?tickers=${selectedTickers.join(',')}`);
+  }, [canCompare, selectedTickers, router]);
+
+  const addSelectedToWatchlist = useCallback(async () => {
+    if (!isAuthenticated) { router.push('/login'); return; }
+    setIsBulkAdding(true);
+    try {
+      // user_watchlist.list_id is NOT NULL (migration 047) — every add needs a
+      // real list. Mirror app/watchlist/page.tsx's handleAdd: use the user's
+      // first existing list, or auto-create "Watchlist 1" if they have none.
+      let listId = watchlistLists?.[0]?.id;
+      if (!listId) {
+        const res = await createWatchlistList.mutateAsync({ name: 'Watchlist 1', color: null });
+        if (!res.success || !res.list) return;
+        listId = res.list.id;
+      }
+      // Best-effort: add every selection; one failure shouldn't abort the rest
+      // (same pattern as WatchlistTemplatesDialog's bulk add).
+      await Promise.allSettled(
+        selectedTickers.map((ticker) => {
+          const row = data.find((r) => r.ticker === ticker);
+          return addToWatchlist.mutateAsync({ symbol: ticker, company_name: row?.name ?? ticker, listId });
+        })
+      );
+      setSelected(new Set());
+    } finally {
+      setIsBulkAdding(false);
+    }
+  }, [isAuthenticated, selectedTickers, data, addToWatchlist, watchlistLists, createWatchlistList, router]);
 
   const exportCSV = useCallback(() => {
     // CSV export is a Pro feature — free users are routed to /upgrade.
@@ -156,6 +231,45 @@ export function ScreenerResults({
 
   return (
     <div className="space-y-3">
+      {selected.size > 0 && (
+        <div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/30 px-3 py-2">
+          <span className="text-xs font-medium text-foreground">
+            {t('screenerSelectedCount', { count: selected.size })}
+          </span>
+          <div className="ml-auto flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 gap-1.5 text-xs"
+              disabled={!canCompare}
+              onClick={compareSelected}
+              title={canCompare ? undefined : t('screenerCompareBoundsHint', { min: COMPARE_MIN, max: COMPARE_MAX })}
+            >
+              <Scale className="h-3.5 w-3.5" />
+              {t('screenerCompareSelected')}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 gap-1.5 text-xs"
+              disabled={isBulkAdding}
+              onClick={addSelectedToWatchlist}
+            >
+              {isBulkAdding ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ListPlus className="h-3.5 w-3.5" />}
+              {t('screenerAddSelectedToWatchlist')}
+            </Button>
+            <button
+              type="button"
+              onClick={() => setSelected(new Set())}
+              className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
+              aria-label={t('screenerClearSelection')}
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ── Mobile: sort control + card list (the table is unusable < md) ── */}
       <div className="space-y-2 md:hidden">
         <div className="flex items-center gap-2">
@@ -186,17 +300,25 @@ export function ScreenerResults({
           return (
             <div key={row.ticker} className="rounded-xl border bg-card p-3">
               <div className="flex items-start justify-between gap-2">
-                <Link href={slugToAssetPath(row.ticker)} className="flex min-w-0 items-center gap-2.5">
-                  <CompanyLogo name={row.name} ticker={row.ticker} logoUrl={row.logo_url} size={32} className="shrink-0 rounded" />
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-sm font-semibold text-foreground">{row.ticker}</span>
-                      {stale && <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-400/70" title={stale} />}
-                      {row.sector && <Badge variant="outline" className="px-1 py-0 text-[11px]">{row.sector}</Badge>}
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <Checkbox
+                    checked={selected.has(row.ticker)}
+                    onCheckedChange={() => toggleSelected(row.ticker)}
+                    aria-label={t('screenerSelectRow', { ticker: row.ticker })}
+                    className="shrink-0"
+                  />
+                  <Link href={slugToAssetPath(row.ticker)} className="flex min-w-0 items-center gap-2.5">
+                    <CompanyLogo name={row.name} ticker={row.ticker} logoUrl={row.logo_url} size={32} className="shrink-0 rounded" />
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm font-semibold text-foreground">{row.ticker}</span>
+                        {stale && <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-400/70" title={stale} />}
+                        {row.sector && <Badge variant="outline" className="px-1 py-0 text-[11px]">{row.sector}</Badge>}
+                      </div>
+                      <span className="block truncate text-xs text-muted-foreground">{row.name}</span>
                     </div>
-                    <span className="block truncate text-xs text-muted-foreground">{row.name}</span>
-                  </div>
-                </Link>
+                  </Link>
+                </div>
                 <AlertDialog
                   symbol={row.ticker}
                   companyName={row.name}
@@ -235,8 +357,15 @@ export function ScreenerResults({
         <Table>
           <TableHeader className="sticky top-0 z-20 bg-background shadow-sm">
             <TableRow>
+              <TableHead className="sticky left-0 z-30 bg-background" style={{ width: 36, minWidth: 36 }}>
+                <Checkbox
+                  checked={allOnPageSelected}
+                  onCheckedChange={toggleSelectAllOnPage}
+                  aria-label={t('screenerSelectAllOnPage')}
+                />
+              </TableHead>
               <TableHead
-                className="sticky left-0 z-30 bg-background"
+                className="sticky left-9 z-30 bg-background"
                 style={{ width: 240, minWidth: 220 }}
               >
                 <button
@@ -274,8 +403,15 @@ export function ScreenerResults({
             {paginated.map((row) => {
               const live = livePrices?.get(row.ticker);
               return (
-                <TableRow key={row.ticker} className="hover:bg-muted/40">
+                <TableRow key={row.ticker} className={cn('hover:bg-muted/40', selected.has(row.ticker) && 'bg-muted/30')}>
                   <TableCell className="sticky left-0 z-10 bg-background">
+                    <Checkbox
+                      checked={selected.has(row.ticker)}
+                      onCheckedChange={() => toggleSelected(row.ticker)}
+                      aria-label={t('screenerSelectRow', { ticker: row.ticker })}
+                    />
+                  </TableCell>
+                  <TableCell className="sticky left-9 z-10 bg-background">
                     <div className="flex items-center gap-2.5 group/row">
                       <Link
                         href={slugToAssetPath(row.ticker)}
