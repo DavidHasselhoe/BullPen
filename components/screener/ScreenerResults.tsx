@@ -7,7 +7,7 @@ import type { TFunction } from 'i18next';
 import { useRouter } from 'next/navigation';
 import { useEntitlements } from '@/hooks/use-entitlements';
 import { useAuth } from '@/hooks/use-auth';
-import { useAddToWatchlist, useWatchlistLists, useCreateWatchlistList } from '@/hooks/use-watchlist';
+import { useAddToWatchlist } from '@/hooks/use-watchlist';
 import { ProBadge } from '@/components/billing/ProBadge';
 import {
   Table,
@@ -74,8 +74,6 @@ export function ScreenerResults({
   const { isPro } = useEntitlements();
   const { isAuthenticated } = useAuth();
   const addToWatchlist = useAddToWatchlist();
-  const { data: watchlistLists } = useWatchlistLists();
-  const createWatchlistList = useCreateWatchlistList();
   const fallbackColumns = useMemo(() => getScreenerColumns(t), [t]);
   const columns = visibleColumns ?? fallbackColumns;
   const [sortKey, setSortKey] = useState<string>('market_cap');
@@ -147,28 +145,21 @@ export function ScreenerResults({
     if (!isAuthenticated) { router.push('/login'); return; }
     setIsBulkAdding(true);
     try {
-      // user_watchlist.list_id is NOT NULL (migration 047) — every add needs a
-      // real list. Mirror app/watchlist/page.tsx's handleAdd: use the user's
-      // first existing list, or auto-create "Watchlist 1" if they have none.
-      let listId = watchlistLists?.[0]?.id;
-      if (!listId) {
-        const res = await createWatchlistList.mutateAsync({ name: 'Watchlist 1', color: null });
-        if (!res.success || !res.list) return;
-        listId = res.list.id;
-      }
-      // Best-effort: add every selection; one failure shouldn't abort the rest
-      // (same pattern as WatchlistTemplatesDialog's bulk add).
+      // No listId passed — POST /api/watchlist resolves the caller's first
+      // list (or creates a default one) server-side when it's omitted.
+      // Best-effort: add every selection; one failure shouldn't abort the
+      // rest (same pattern as WatchlistTemplatesDialog's bulk add).
       await Promise.allSettled(
         selectedTickers.map((ticker) => {
           const row = data.find((r) => r.ticker === ticker);
-          return addToWatchlist.mutateAsync({ symbol: ticker, company_name: row?.name ?? ticker, listId });
+          return addToWatchlist.mutateAsync({ symbol: ticker, company_name: row?.name ?? ticker });
         })
       );
       setSelected(new Set());
     } finally {
       setIsBulkAdding(false);
     }
-  }, [isAuthenticated, selectedTickers, data, addToWatchlist, watchlistLists, createWatchlistList, router]);
+  }, [isAuthenticated, selectedTickers, data, addToWatchlist, router]);
 
   const exportCSV = useCallback(() => {
     // CSV export is a Pro feature — free users are routed to /upgrade.

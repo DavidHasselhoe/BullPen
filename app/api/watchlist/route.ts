@@ -39,7 +39,7 @@ async function postHandler(
   const body = await req.json().catch(() => null);
   const symbol = (body?.symbol as string | undefined)?.toUpperCase().trim();
   const company_name = (body?.company_name as string | undefined)?.trim() || symbol;
-  const list_id = (body?.list_id as string | undefined) ?? null;
+  let list_id = (body?.list_id as string | undefined) ?? null;
 
   if (!symbol || symbol.length > 12 || !/^[A-Z0-9.^-]+$/.test(symbol)) {
     return addSecurityHeaders(
@@ -49,8 +49,8 @@ async function postHandler(
 
   const supabase = createServerClient();
 
-  // If a list_id was provided, verify it belongs to the calling user
   if (list_id) {
+    // A list_id was provided — verify it belongs to the calling user.
     const { data: listRow } = await supabase
       .from('watchlist_lists')
       .select('id')
@@ -62,12 +62,42 @@ async function postHandler(
         NextResponse.json({ success: false, error: 'List not found' }, { status: 404 })
       );
     }
+  } else {
+    // user_watchlist.list_id has been NOT NULL since migration 047, so every
+    // insert needs a real list — resolve to the caller's first list, or
+    // create a default one if they have none yet. Mirrors the client-side
+    // fallback app/watchlist/page.tsx's handleAdd already uses for the same
+    // reason; doing it here means every caller gets it for free instead of
+    // each one having to duplicate the resolve-or-create dance.
+    const { data: firstList } = await supabase
+      .from('watchlist_lists')
+      .select('id')
+      .eq('user_id', session.userId)
+      .order('position', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (firstList) {
+      list_id = firstList.id;
+    } else {
+      const { data: newList, error: createError } = await supabase
+        .from('watchlist_lists')
+        .insert({ user_id: session.userId, name: 'Watchlist 1' })
+        .select('id')
+        .single();
+      if (createError || !newList) {
+        return addSecurityHeaders(
+          NextResponse.json({ success: false, error: 'Failed to create a default watchlist' }, { status: 500 })
+        );
+      }
+      list_id = newList.id;
+    }
   }
 
   const { data, error } = await supabase
     .from('user_watchlist')
     .upsert(
-      { user_id: session.userId, symbol, company_name, ...(list_id ? { list_id } : {}) },
+      { user_id: session.userId, symbol, company_name, list_id },
       { onConflict: 'user_id,symbol', ignoreDuplicates: false }
     )
     .select()
