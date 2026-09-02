@@ -78,6 +78,37 @@
   overflow-x: hidden;
 }
 
+/* LIGHT preview — prototype only, gated behind ?theme=light (see LandingClient.tsx).
+   Not wired into any real navigation yet. Reuses the app's own already-contrast-
+   verified light-mode tokens (app/globals.css :root) rather than deriving new
+   ones, so nothing here needs re-checking against WCAG: --brand steps down to
+   emerald-700 (5.45:1 on white, same reasoning documented there), and --up/--down
+   reuse --cal-up/--cal-down (emerald-700 / red-700), the pair already verified at
+   4.5:1+ for small signed numerals on a card, which is exactly this page's usage
+   (floating ticker %, chart panel %). --surface intentionally is NOT pure white
+   (unlike app/globals.css's --card) — the landing's floating cards need a background
+   step, not just a border, to read as elevated against the page. */
+.bullpen-landing-root.landing-light-preview {
+  --accent: oklch(0.508 0.118 165.612);
+  --accent-soft: oklch(0.508 0.118 165.612 / 0.12);
+  --accent-glow: oklch(0.508 0.118 165.612 / 0.25);
+  --accent-ink: oklch(0.985 0 0);
+
+  --up: #047857;   /* emerald-700 — app/globals.css --cal-up */
+  --down: #b91c1c; /* red-700 — app/globals.css --cal-down */
+
+  --bg: oklch(1 0 0);
+  --bg-2: oklch(0.97 0 0);
+  --surface: oklch(0.97 0 0);
+  --surface-2: oklch(0.94 0 0);
+  --border: oklch(0.922 0 0);
+  --border-strong: oklch(0.85 0 0);
+  --fg: oklch(0.145 0 0);
+  --fg-muted: oklch(0.32 0 0);
+  --fg-dim: oklch(0.556 0 0);
+  --grid: oklch(0 0 0 / 0.045);
+}
+
 .bullpen-landing-root *,
 .bullpen-landing-root *::before,
 .bullpen-landing-root *::after {

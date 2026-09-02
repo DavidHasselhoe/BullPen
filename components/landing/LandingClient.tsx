@@ -1,6 +1,6 @@
 'use client';
 
-import { lazy, Suspense, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { startCheckout } from '@/lib/billing/checkout';
@@ -27,6 +27,16 @@ import './landing-styles.css';
 export function LandingClient({ shots }: { shots: Shot[] }) {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
+  // Design prototype only — not a real setting, not linked from anywhere.
+  // ?theme=light lets us preview a light landing. Swaps the class imperatively
+  // post-mount rather than through React state: the root always server-renders
+  // `dark` (matches today's real behavior exactly, zero hydration-mismatch
+  // risk), and only a client-only debug flag flips it after the fact.
+  const rootRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const isLight = new URLSearchParams(window.location.search).get('theme') === 'light';
+    if (isLight) rootRef.current?.classList.replace('dark', 'landing-light-preview');
+  }, []);
   const [authOpen, setAuthOpen] = useState(false);
   // Once true, the modal stays mounted so close animations and state survive.
   const [authMounted, setAuthMounted] = useState(false);
@@ -69,7 +79,11 @@ export function LandingClient({ shots }: { shots: Shot[] }) {
     // app theme is 'light', which otherwise made shadcn-themed pieces here (e.g. the account
     // avatar in Nav's UserMenu) render in near-black light-mode colors — invisible against
     // this page's independently dark background until a hover state happened to add contrast.
-    <div className="bullpen-landing-root dark">
+    // Client-only ?theme=light preview (see rootRef effect above) swaps this
+    // to .landing-light-preview after mount. Known gap: Nav's UserMenu avatar
+    // (signed-in visitors only, rare on the marketing page) isn't re-verified
+    // against light yet.
+    <div ref={rootRef} className="bullpen-landing-root dark">
       <div className="page-bg" aria-hidden />
       <div className="page-grid" aria-hidden />
       <div className="page-noise" aria-hidden />
