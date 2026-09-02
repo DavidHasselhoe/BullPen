@@ -10,6 +10,7 @@ import { X, ArrowUpRight, ChevronLeft, ChevronRight, ChevronDown, ExternalLink, 
 import { cn } from '@/lib/utils';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
 import { Sparkline } from '@/components/viz/Sparkline';
+import { useAuth } from '@/hooks/use-auth';
 
 interface BriefSource {
   url: string;
@@ -759,6 +760,7 @@ function BriefReader({
 
 export function DailyBriefWidget() {
   const { t } = useTranslation('discover');
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
 
   const { data, isLoading, error } = useQuery({
@@ -770,6 +772,10 @@ export function DailyBriefWidget() {
       const json = await res.json();
       return { brief: json.brief, is_today: json.is_today };
     },
+    // Signed-out visitors never even fetch — avoids a pointless 401 round
+    // trip and, more importantly, means there's nothing here for `brief`/
+    // `isLocked` below to fall back to.
+    enabled: !authLoading && isAuthenticated,
     staleTime: 5 * 60_000,
     retry: false,
     // Keep polling until today's brief actually exists. The 06:30 UTC cron can
@@ -788,11 +794,16 @@ export function DailyBriefWidget() {
 
   if (error) return null;
 
-  const isLocked = data?.locked === true;
-  const brief = data?.brief ?? null;
+  // `data` can still hold a previously-authenticated session's real brief —
+  // TanStack Query doesn't clear cached results just because a query goes
+  // from enabled to disabled. Signing out (or never having signed in) must
+  // always win over whatever is sitting in cache, so this reads `isAuthenticated`
+  // live rather than trusting the query's own success/locked state.
+  const isLocked = !isAuthenticated || data?.locked === true;
+  const brief = isAuthenticated ? (data?.brief ?? null) : null;
   const isToday = data?.is_today !== false;
 
-  if (isLoading) {
+  if (authLoading || (isAuthenticated && isLoading)) {
     return (
       <div className="min-w-0">
         <div className="flex items-center gap-3 mb-3">

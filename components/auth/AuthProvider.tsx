@@ -22,6 +22,7 @@ import {
   useCallback,
 } from 'react';
 import type { Session } from '@supabase/supabase-js';
+import { useQueryClient } from '@tanstack/react-query';
 import { createBrowserClient } from '@/lib/supabase/client';
 import type { AuthUser } from '@/lib/auth/auth';
 import { flushPendingOnboardingData } from '@/lib/onboarding/flush';
@@ -91,6 +92,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const lastErrorRef = useRef(0);
   const supabase = useMemo(() => createBrowserClient(), []);
+  const queryClient = useQueryClient();
+  // Tracks whose data is currently cached in TanStack Query, so a sign-out or
+  // an account switch in the same tab can drop it before the next widget
+  // renders. Without this, a Pro-gated widget that only checks its own query's
+  // cached success state (rather than live auth) keeps showing the previous
+  // session's real content after that session ends.
+  const cachedForUserIdRef = useRef<string | null>(null);
 
   const refresh = useCallback(async () => {
     try {
@@ -144,6 +152,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!mounted) return;
 
       if (event === 'SIGNED_OUT') {
+        queryClient.clear();
+        cachedForUserIdRef.current = null;
         setUser(null);
         setIsLoading(false);
         return;
@@ -157,6 +167,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           event === 'USER_UPDATED') &&
         session?.user
       ) {
+        // A different account signed in on top of cached data from a previous
+        // one (same tab, no full reload) — drop it so nothing from that
+        // earlier session bleeds into this one.
+        if (cachedForUserIdRef.current && cachedForUserIdRef.current !== session.user.id) {
+          queryClient.clear();
+        }
+        cachedForUserIdRef.current = session.user.id;
+
         const isNewSignIn = event === 'SIGNED_IN';
         try {
           const profile = await loadUserFromSession(
@@ -195,7 +213,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [supabase]);
+  }, [supabase, queryClient]);
 
   useEffect(() => {
     const handler = () => refresh();
