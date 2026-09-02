@@ -197,7 +197,7 @@ Filter reference (all optional, combine freely):
 - divYieldMin / divYieldMax — dividend yield in % (e.g. 2.5 = 2.5%)
 - profitMarginMin / profitMarginMax — profit margin in %
 - revenueGrowthMin / revenueGrowthMax — YoY revenue growth in %
-- week52ChangeMin / week52ChangeMax — 52-week price change in %
+- week52ChangeMin / week52ChangeMax — gap between the 52-week low and high, as % of the high (NOT price return; higher = wider trading range this year)
 
 Common natural-language → filter mappings:
 - "large-cap" → marketCapMin=10

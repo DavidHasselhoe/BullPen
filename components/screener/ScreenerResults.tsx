@@ -233,10 +233,10 @@ export function ScreenerResults({
 
       <div className="hidden md:block rounded-md border overflow-x-auto">
         <Table>
-          <TableHeader>
+          <TableHeader className="sticky top-0 z-20 bg-background shadow-sm">
             <TableRow>
               <TableHead
-                className="sticky left-0 z-10 bg-background"
+                className="sticky left-0 z-30 bg-background"
                 style={{ width: 240, minWidth: 220 }}
               >
                 <button

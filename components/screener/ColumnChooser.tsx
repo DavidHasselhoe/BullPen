@@ -1,12 +1,13 @@
 'use client';
 
+import { Fragment } from 'react';
 import { Reorder, useDragControls } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { SlidersHorizontal, GripVertical, Eye, EyeOff, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import type { ScreenerColumn } from './screener-columns';
+import { getGroupLabels, type ScreenerColumn } from './screener-columns';
 import type { UseScreenerColumns } from '@/hooks/use-screener-columns';
 
 interface Props {
@@ -62,6 +63,7 @@ export function ColumnChooser({ columns }: Props) {
   const { orderedColumns, isHidden, toggle, showAll, hideAll, reorder, reset } = columns;
   const visibleCount = orderedColumns.filter((c) => !isHidden(c.key)).length;
   const orderedKeys = orderedColumns.map((c) => c.key);
+  const groupLabels = getGroupLabels(t);
 
   return (
     <Popover>
@@ -107,15 +109,29 @@ export function ColumnChooser({ columns }: Props) {
         </div>
 
         <div className="max-h-[55vh] overflow-y-auto">
+          {/* Group labels render as plain <li> siblings (not a wrapping <div>) so
+             every Reorder.Item stays a direct child of Reorder.Group's <ul> —
+             both for valid list markup and so Framer Motion's drag-reorder
+             layout measurement sees real sibling elements, not nested ones. */}
           <Reorder.Group axis="y" values={orderedKeys} onReorder={reorder} className="space-y-0.5">
-            {orderedColumns.map((col) => (
-              <ColumnItem
-                key={col.key}
-                col={col}
-                hidden={isHidden(col.key)}
-                onToggle={() => toggle(col.key)}
-              />
-            ))}
+            {orderedColumns.map((col, i) => {
+              const prevGroup = i > 0 ? orderedColumns[i - 1].group : null;
+              const showGroupLabel = col.group !== prevGroup;
+              return (
+                <Fragment key={col.key}>
+                  {showGroupLabel && (
+                    <li className="px-1.5 pb-1 pt-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 first:pt-0.5">
+                      {groupLabels[col.group]}
+                    </li>
+                  )}
+                  <ColumnItem
+                    col={col}
+                    hidden={isHidden(col.key)}
+                    onToggle={() => toggle(col.key)}
+                  />
+                </Fragment>
+              );
+            })}
           </Reorder.Group>
         </div>
       </PopoverContent>
