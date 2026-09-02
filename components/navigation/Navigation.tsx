@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/hooks/use-auth';
 import { UserMenu } from './UserMenu';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -28,6 +29,11 @@ import { getNavItems, COMMUNITY_LINKS } from '@/lib/navigation/nav-items';
 
 export function Navigation() {
   const { t } = useTranslation('navigation');
+  // Optimistic-guest default (matches UserMenu's own isAuthenticated branch):
+  // pinned tickers, settings, and notifications are all account-scoped, so a
+  // guest sees three dead icon buttons alongside Sign In/Sign Up — hide them
+  // until auth resolves true instead of flashing them in then out.
+  const { isAuthenticated } = useAuth();
   const pathname = usePathname();
   const queryClient = useQueryClient();
   const { open: openCommandPalette = () => {} } = useCommandPalette();
@@ -255,41 +261,45 @@ export function Navigation() {
               <span className="hidden md:inline">{t('navSearchPlaceholderText')}</span>
               <kbd className="hidden lg:inline-flex h-5 items-center rounded border px-1.5 text-[11px]">{searchShortcut}</kbd>
             </button>
-            <Popover
-              open={activeMenu === 'pinned'}
-              onOpenChange={(val) => setActiveMenu(val ? 'pinned' : null)}
-            >
-              <PopoverTrigger asChild>
+            {isAuthenticated && (
+              <>
+                <Popover
+                  open={activeMenu === 'pinned'}
+                  onOpenChange={(val) => setActiveMenu(val ? 'pinned' : null)}
+                >
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="transition-all hover:scale-105"
+                      aria-label={t('navPinnedTickersLabel')}
+                      title={t('navPinnedTickersLabel')}
+                    >
+                      <Pin className="h-5 w-5" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent align="end">
+                    <PinnedTickersPanel
+                      active={activeMenu === 'pinned'}
+                      onNavigate={() => setActiveMenu(null)}
+                    />
+                  </PopoverContent>
+                </Popover>
                 <Button
                   variant="ghost"
                   size="icon"
+                  onClick={() => setSettingsOpen(true)}
                   className="transition-all hover:scale-105"
-                  aria-label={t('navPinnedTickersLabel')}
-                  title={t('navPinnedTickersLabel')}
+                  aria-label={t('navOpenSettingsAriaLabel')}
                 >
-                  <Pin className="h-5 w-5" />
+                  <Settings className="h-5 w-5" />
                 </Button>
-              </PopoverTrigger>
-              <PopoverContent align="end">
-                <PinnedTickersPanel
-                  active={activeMenu === 'pinned'}
-                  onNavigate={() => setActiveMenu(null)}
+                <NotificationBell
+                  open={activeMenu === 'notifications'}
+                  onOpenChange={(val) => setActiveMenu(val ? 'notifications' : null)}
                 />
-              </PopoverContent>
-            </Popover>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setSettingsOpen(true)}
-              className="transition-all hover:scale-105"
-              aria-label={t('navOpenSettingsAriaLabel')}
-            >
-              <Settings className="h-5 w-5" />
-            </Button>
-            <NotificationBell
-              open={activeMenu === 'notifications'}
-              onOpenChange={(val) => setActiveMenu(val ? 'notifications' : null)}
-            />
+              </>
+            )}
             <UserMenu
               open={activeMenu === 'user'}
               onOpenChange={(val) => setActiveMenu(val ? 'user' : null)}
