@@ -58,18 +58,6 @@ function fmtVolume(v: number | null): string {
   return String(Math.round(v));
 }
 
-// ─── RVOL ─────────────────────────────────────────────────────────────────────
-// Relative volume = live cumulative day volume / 90-day average volume.
-// Null unless we have both a live volume tick and a stored avg baseline
-// (i.e. only meaningful during market hours).
-
-export function computeRvol(row: ScreenerRow, live?: HeatmapPriceEntry): number | null {
-  if (!live?.volume || !row.avg_volume || row.avg_volume <= 0) return null;
-  return live.volume / row.avg_volume;
-}
-
-const RVOL_SURGE = 2; // ≥2× average = unusual activity
-
 // ─── Column registry ──────────────────────────────────────────────────────────
 
 export type ColumnGroup = 'health' | 'price' | 'volume' | 'valuation' | 'profitability' | 'risk';
@@ -177,33 +165,6 @@ export function getScreenerColumns(t: TFunction): ScreenerColumn[] {
 
   // ── Volume ──
   {
-    key: 'rvol',
-    label: t('screenerColRvolLabel'),
-    tip: t('screenerColRvolTip'),
-    group: 'volume',
-    defaultVisible: true,
-    width: 72,
-    getValue: (row, live) => computeRvol(row, live),
-    render: (row, live) => {
-      const rvol = computeRvol(row, live);
-      if (rvol == null) return '—';
-      const surge = rvol >= RVOL_SURGE;
-      const up = (live?.changePercent ?? 0) >= 0;
-      return (
-        <span
-          className={cn(
-            'inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[11px] font-semibold tabular-nums',
-            surge && up && 'bg-emerald-500/15 text-emerald-500',
-            surge && !up && 'bg-red-500/15 text-red-500',
-            !surge && 'text-muted-foreground',
-          )}
-        >
-          {rvol.toFixed(1)}×
-        </span>
-      );
-    },
-  },
-  {
     key: 'volume',
     label: t('screenerColVolumeLabel'),
     tip: t('screenerColVolumeTip'),
@@ -298,6 +259,16 @@ export function getScreenerColumns(t: TFunction): ScreenerColumn[] {
         {row.eps_ttm != null ? `$${row.eps_ttm.toFixed(2)}` : '—'}
       </span>
     ),
+  },
+  {
+    key: 'revenue_ttm',
+    label: t('screenerColRevenueTtmLabel'),
+    tip: t('screenerColRevenueTtmTip'),
+    group: 'valuation',
+    defaultVisible: false,
+    width: 84,
+    getValue: (row) => row.revenue_ttm,
+    render: (row) => fmtCap(row.revenue_ttm),
   },
 
   // ── Profitability ──
@@ -416,26 +387,6 @@ export function getScreenerColumns(t: TFunction): ScreenerColumn[] {
     width: 92,
     getValue: (row) => row.week52_low,
     render: (row) => <span className="text-muted-foreground">{fmtPrice(row.week52_low)}</span>,
-  },
-  {
-    key: 'day50_ma',
-    label: t('screenerColDay50MaLabel'),
-    tip: t('screenerColDay50MaTip'),
-    group: 'price',
-    defaultVisible: false,
-    width: 92,
-    getValue: (row) => row.day50_ma,
-    render: (row) => <span className="text-muted-foreground">{fmtPrice(row.day50_ma)}</span>,
-  },
-  {
-    key: 'day200_ma',
-    label: t('screenerColDay200MaLabel'),
-    tip: t('screenerColDay200MaTip'),
-    group: 'price',
-    defaultVisible: false,
-    width: 96,
-    getValue: (row) => row.day200_ma,
-    render: (row) => <span className="text-muted-foreground">{fmtPrice(row.day200_ma)}</span>,
   },
   ];
 }

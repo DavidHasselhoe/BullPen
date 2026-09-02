@@ -33,8 +33,6 @@ export interface ScreenerFilterValues {
   revenueGrowthMax: string;
   week52ChangeMin: string;
   week52ChangeMax: string;
-  // Client-only: relative volume (live ÷ 90-day avg). Not sent to the API.
-  rvolMin: string;
 }
 
 export const EMPTY_FILTERS: ScreenerFilterValues = {
@@ -56,7 +54,6 @@ export const EMPTY_FILTERS: ScreenerFilterValues = {
   revenueGrowthMax: '',
   week52ChangeMin: '',
   week52ChangeMax: '',
-  rvolMin: '',
 };
 
 interface Preset {
@@ -72,7 +69,6 @@ function getPresets(t: TFunction): Preset[] {
     { label: t('screenerPresetDividend'),      filters: { divYieldMin: '2.5' } },
     { label: t('screenerPresetQuality'),       filters: { profitMarginMin: '15', revenueGrowthMin: '10' } },
     { label: t('screenerPresetLargeCap'),      filters: { marketCapMin: '100' } },
-    { label: t('screenerPresetVolumeSurge'),   filters: { rvolMin: '2' } },
   ];
 }
 
@@ -299,28 +295,6 @@ export function ScreenerFilters({ filters, sectors, industries, onChange, onRese
         <div className="space-y-0.5">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/85 pb-1">{t('screenerPriceRangeHeading')}</p>
           <RangeFilter label={t('screener52wSpreadLabel')} unit="%" minKey="week52ChangeMin" maxKey="week52ChangeMax" filters={filters} onChange={onChange} step="5" />
-        </div>
-      )}
-
-      {/* Volume */}
-      {show('rvol', 'rvolMin') && (
-        <div className="space-y-1.5">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/85 pb-1">{t('screenerVolumeHeading')}</p>
-          <Label className="text-xs font-medium text-muted-foreground">
-            {t('screenerMinRelativeVolumeLabel')} <span className="ml-1 opacity-60">{t('screenerTimesUnit')}</span>
-          </Label>
-          <Input
-            type="number"
-            placeholder={t('screenerRvolPlaceholder')}
-            value={filters.rvolMin}
-            onChange={(e) => onChange({ ...filters, rvolMin: e.target.value })}
-            className="h-8 text-xs"
-            step="0.5"
-            min="0"
-          />
-          <p className="text-[11px] text-muted-foreground/85 leading-snug">
-            {t('screenerRvolHint')}
-          </p>
         </div>
       )}
     </div>

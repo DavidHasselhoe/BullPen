@@ -24,7 +24,7 @@ import type { ScreenerRow } from '@/app/api/screener/route';
 import type { HeatmapPriceEntry } from '@/hooks/use-heatmap-stream';
 import { cn } from '@/lib/utils';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
-import { SCREENER_COLUMNS, getScreenerColumns, computeRvol, type ScreenerColumn } from './screener-columns';
+import { SCREENER_COLUMNS, getScreenerColumns, type ScreenerColumn } from './screener-columns';
 import { AlertDialog } from '@/components/alerts/AlertDialog';
 
 type SortDir = 'asc' | 'desc';
@@ -48,8 +48,6 @@ interface ScreenerResultsProps {
   livePrices?: Map<string, HeatmapPriceEntry>;
   /** Ordered, visibility-filtered columns from the column chooser. */
   visibleColumns?: ScreenerColumn[];
-  /** Client-side minimum relative-volume filter (live-derived, can't be server-side). */
-  rvolMin?: number;
   page: number;
   pageSize: number;
   onPageChange: (page: number) => void;
@@ -60,7 +58,6 @@ export function ScreenerResults({
   data,
   livePrices,
   visibleColumns,
-  rvolMin,
   page,
   pageSize,
   onPageChange,
@@ -74,19 +71,9 @@ export function ScreenerResults({
   const [sortKey, setSortKey] = useState<string>('market_cap');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
 
-  // Client-side RVOL filter — applied before sort/pagination because relative
-  // volume depends on the live stream and isn't available to the server.
-  const filtered = useMemo(() => {
-    if (rvolMin == null || !isFinite(rvolMin) || rvolMin <= 0) return data;
-    return data.filter((r) => {
-      const rvol = computeRvol(r, livePrices?.get(r.ticker));
-      return rvol != null && rvol >= rvolMin;
-    });
-  }, [data, rvolMin, livePrices]);
-
   const sorted = useMemo(() => {
     const col = SCREENER_COLUMNS.find((c) => c.key === sortKey);
-    return [...filtered].sort((a, b) => {
+    return [...data].sort((a, b) => {
       if (sortKey === 'ticker') {
         return sortDir === 'asc'
           ? a.ticker.localeCompare(b.ticker)
@@ -99,7 +86,7 @@ export function ScreenerResults({
       if (bv == null) return -1;
       return sortDir === 'asc' ? av - bv : bv - av;
     });
-  }, [filtered, sortKey, sortDir, livePrices]);
+  }, [data, sortKey, sortDir, livePrices]);
 
   const totalPages = Math.ceil(sorted.length / pageSize);
   const paginated = useMemo(

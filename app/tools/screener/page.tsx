@@ -34,9 +34,6 @@ export const dynamic = 'force-dynamic';
 
 const FILTER_KEYS = Object.keys(EMPTY_FILTERS) as (keyof ScreenerFilterValues)[];
 const BILLION_KEYS = new Set(['marketCapMin', 'marketCapMax']);
-// Filters applied client-side only (derived from the live stream) — never sent
-// to /api/screener, so they don't pollute the server query or its cache key.
-const CLIENT_ONLY_KEYS = new Set<keyof ScreenerFilterValues>(['rvolMin']);
 
 function filtersFromParams(sp: URLSearchParams): ScreenerFilterValues {
   const f = { ...EMPTY_FILTERS };
@@ -54,7 +51,6 @@ function buildQueryString(filters: ScreenerFilterValues, symbols: string | null,
   for (const key of FILTER_KEYS) {
     const val = filters[key];
     if (!val) continue;
-    if (CLIENT_ONLY_KEYS.has(key)) continue; // applied client-side, not server-side
     if (BILLION_KEYS.has(key)) {
       const n = parseFloat(val);
       if (isFinite(n)) params.set(key, String(n * 1e9));
@@ -528,7 +524,6 @@ function ScreenerContent() {
                 data={results}
                 livePrices={livePrices}
                 visibleColumns={screenerColumns.visibleColumns}
-                rvolMin={debouncedFilters.rvolMin ? parseFloat(debouncedFilters.rvolMin) : undefined}
                 page={page}
                 pageSize={pageSize}
                 onPageChange={setPage}
