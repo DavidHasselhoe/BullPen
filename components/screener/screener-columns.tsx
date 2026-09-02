@@ -5,7 +5,7 @@ import type { TFunction } from 'i18next';
 import { cn } from '@/lib/utils';
 import type { ScreenerRow } from '@/app/api/screener/route';
 import type { HeatmapPriceEntry } from '@/hooks/use-heatmap-stream';
-import { HealthRing } from '@/components/finance/HealthRing';
+import { HealthScoreDrillIn } from './HealthScoreDrillIn';
 
 // ─── Formatters ───────────────────────────────────────────────────────────────
 
@@ -104,9 +104,7 @@ export function getScreenerColumns(t: TFunction): ScreenerColumn[] {
       const grade = row.health_score_grade;
       if (score == null || !grade) return <span className="text-muted-foreground/80">—</span>;
       return (
-        <span className="inline-flex items-center" title={t('screenerColHealthTitle', { score, grade })}>
-          <HealthRing score={score} grade={grade as 'A' | 'B' | 'C' | 'D' | 'F'} size={34} className="text-foreground" />
-        </span>
+        <HealthScoreDrillIn ticker={row.ticker} score={score} grade={grade as 'A' | 'B' | 'C' | 'D' | 'F'} />
       );
     },
   },

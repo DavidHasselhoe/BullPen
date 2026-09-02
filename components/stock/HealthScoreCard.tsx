@@ -123,7 +123,7 @@ function MethodologyPopover({ onClose, anchorRect }: { onClose: () => void; anch
 
 // ─── Category bar ─────────────────────────────────────────────────────────────
 
-function CategoryBar({ cat }: { cat: CategoryScore }) {
+export function CategoryBar({ cat }: { cat: CategoryScore }) {
   const { t } = useTranslation('stock');
   const unavailable = cat.dataAvailable === false;
   const ratio = cat.max > 0 ? cat.score / cat.max : 0;
