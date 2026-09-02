@@ -27,15 +27,16 @@ import './landing-styles.css';
 export function LandingClient({ shots }: { shots: Shot[] }) {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
-  // Design prototype only — not a real setting, not linked from anywhere.
-  // ?theme=light lets us preview a light landing. Swaps the class imperatively
-  // post-mount rather than through React state: the root always server-renders
-  // `dark` (matches today's real behavior exactly, zero hydration-mismatch
-  // risk), and only a client-only debug flag flips it after the fact.
+  // Light is the default for now (David evaluating it live, 2026-09) — see
+  // docs/landing-page-light-mode-research.md. ?theme=dark is the escape hatch
+  // back to the old page for comparison during the trial. Root server-renders
+  // light unconditionally (matches the new default exactly, zero
+  // hydration-mismatch risk); the client-only override only ever swaps TO
+  // dark, post-mount.
   const rootRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const isLight = new URLSearchParams(window.location.search).get('theme') === 'light';
-    if (isLight) rootRef.current?.classList.replace('dark', 'landing-light-preview');
+    const wantsDark = new URLSearchParams(window.location.search).get('theme') === 'dark';
+    if (wantsDark) rootRef.current?.classList.replace('landing-light-preview', 'dark');
   }, []);
   const [authOpen, setAuthOpen] = useState(false);
   // Once true, the modal stays mounted so close animations and state survive.
@@ -74,16 +75,17 @@ export function LandingClient({ shots }: { shots: Shot[] }) {
   };
 
   return (
-    // `dark` re-asserts shadcn's dark-mode tokens locally: the landing page is dark-only by
-    // design, but ThemeProvider strips `.dark` off <html> for any signed-in user whose saved
-    // app theme is 'light', which otherwise made shadcn-themed pieces here (e.g. the account
-    // avatar in Nav's UserMenu) render in near-black light-mode colors — invisible against
-    // this page's independently dark background until a hover state happened to add contrast.
-    // Client-only ?theme=light preview (see rootRef effect above) swaps this
-    // to .landing-light-preview after mount. Known gap: Nav's UserMenu avatar
-    // (signed-in visitors only, rare on the marketing page) isn't re-verified
-    // against light yet.
-    <div ref={rootRef} className="bullpen-landing-root dark">
+    // Light by default now (see rootRef effect above for the ?theme=dark
+    // escape hatch). KNOWN GAP, not yet fixed: AuthModal and Nav's UserMenu
+    // avatar both use the *global* shadcn theme tokens (driven by
+    // <html class="dark">, which ThemeProvider still sets for guests
+    // regardless of this page's own local tokens), not this page's — so the
+    // sign-up modal and the signed-in avatar dropdown still render dark
+    // against this now-light page. Flagged to David rather than silently
+    // patched; fixing it properly means either overriding shadcn's tokens
+    // locally on those portaled components or having this page temporarily
+    // own <html>'s class while mounted, and deserves its own pass.
+    <div ref={rootRef} className="bullpen-landing-root landing-light-preview">
       <div className="page-bg" aria-hidden />
       <div className="page-grid" aria-hidden />
       <div className="page-noise" aria-hidden />
