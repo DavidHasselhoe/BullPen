@@ -8,7 +8,6 @@ import "./globals.css";
 import { Providers } from "./providers";
 import { getRequestLocale, getRequestPathname, loadResources } from "@/lib/i18n/server";
 import { AuthNavigation } from "@/components/navigation/AuthNavigation";
-import { BackgroundProvider } from "@/components/backgrounds/BackgroundProvider";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { AIPanelProvider } from "@/components/ai/AIPanelProvider";
 import { AIPanelToggle } from "@/components/ai/AIPanelToggle";
@@ -119,7 +118,6 @@ export default async function RootLayout({
           <ThemeProvider>
             <AIPanelProvider>
               <CommandPaletteProvider>
-                <BackgroundProvider />
                 <AuthNavigation />
                 <PendingOnboardingFlush />
                 <NotificationToastListener />

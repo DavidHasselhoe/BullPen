@@ -73,9 +73,9 @@ type SettingsSection =
   | 'ai'
   | 'danger';
 
-type ThemeValue = 'dark' | 'light' | 'gradient-purple' | 'gradient-blue' | 'gradient-midnight' | 'gradient-embers';
+type ThemeValue = 'dark' | 'light';
 
-const VALID_THEMES: ThemeValue[] = ['dark', 'light', 'gradient-purple', 'gradient-blue', 'gradient-midnight', 'gradient-embers'];
+const VALID_THEMES: ThemeValue[] = ['dark', 'light'];
 
 function minimalStockPick(ticker: string): SearchResult {
   const t = ticker.toUpperCase();
@@ -812,10 +812,6 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                       <SelectContent>
                         <SelectItem value="dark">{t('themeDark')}</SelectItem>
                         <SelectItem value="light">{t('themeLight')}</SelectItem>
-                        <SelectItem value="gradient-purple">{t('themeGradientPurple')}</SelectItem>
-                        <SelectItem value="gradient-blue">{t('themeGradientBlue')}</SelectItem>
-                        <SelectItem value="gradient-midnight">{t('themeGradientMidnight')}</SelectItem>
-                        <SelectItem value="gradient-embers">{t('themeGradientEmbers')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
