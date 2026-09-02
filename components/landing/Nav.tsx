@@ -10,9 +10,14 @@ import { UserMenu } from '@/components/navigation/UserMenu';
 interface Props {
   onSignIn: () => void;
   onSignUp: () => void;
+  // Whether the landing page is currently showing its dark (?theme=dark
+  // escape hatch) or light (default) variant — passed through to UserMenu so
+  // its portaled dropdown forces the matching shadcn tokens. See
+  // LandingClient's isDarkLanding.
+  isDarkLanding: boolean;
 }
 
-export function Nav({ onSignIn, onSignUp }: Props) {
+export function Nav({ onSignIn, onSignUp, isDarkLanding }: Props) {
   const [scrolled, setScrolled] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const { isAuthenticated, isLoading } = useAuth();
@@ -117,7 +122,7 @@ export function Nav({ onSignIn, onSignUp }: Props) {
                 Open dashboard
                 <Icon name="arrowRight" size={14} />
               </Link>
-              <UserMenu forceDark />
+              <UserMenu forceDark={isDarkLanding} forceLight={!isDarkLanding} />
             </>
           ) : (
             <>

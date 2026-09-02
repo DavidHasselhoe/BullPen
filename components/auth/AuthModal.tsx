@@ -14,6 +14,7 @@ import { AuthFormLogin } from './AuthFormLogin';
 import { AuthFormSignup } from './AuthFormSignup';
 import { AuthFormForgotPassword } from './AuthFormForgotPassword';
 import { trackEvent } from '@/lib/analytics/track';
+import { cn } from '@/lib/utils';
 
 export type AuthMode = 'login' | 'signup' | 'forgot-password';
 
@@ -22,9 +23,15 @@ interface AuthModalProps {
   onOpenChange: (open: boolean) => void;
   initialMode?: AuthMode;
   redirectTo?: string;
+  // Dialog portals to document.body, outside any local theme override — set
+  // by LandingClient only, since that page can now default to a different
+  // theme than <html>'s app-wide one (ThemeProvider, dark by default for any
+  // guest). See the .landing-force-light rule in app/globals.css and
+  // UserMenu's forceDark/forceLight, the same fix for the same class of bug.
+  forceLight?: boolean;
 }
 
-export function AuthModal({ open, onOpenChange, initialMode = 'login', redirectTo }: AuthModalProps) {
+export function AuthModal({ open, onOpenChange, initialMode = 'login', redirectTo, forceLight = false }: AuthModalProps) {
   const { t } = useTranslation('auth');
   const router = useRouter();
   const [mode, setMode] = useState<AuthMode>(initialMode);
@@ -101,7 +108,15 @@ export function AuthModal({ open, onOpenChange, initialMode = 'login', redirectT
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md p-0 sm:p-8 gap-0">
+      {/* text-foreground explicit: components/ui/dialog.tsx's DialogContent never
+          sets it (unlike dropdown-menu.tsx's text-popover-foreground), so it was
+          only ever getting the right color by inheriting whatever <body>'s
+          already-resolved (theme-dependent) color happened to be — invisible
+          everywhere else, but broke the moment forceLight redefines --foreground
+          locally: a variable redefinition doesn't retroactively change an
+          already-inherited `color` value unless something re-references the
+          variable within the overridden subtree. */}
+      <DialogContent className={cn('max-w-md p-0 sm:p-8 gap-0 text-foreground', forceLight && 'landing-force-light')}>
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}

@@ -24,18 +24,22 @@ import { startPortal } from '@/lib/billing/checkout';
 import { cn } from '@/lib/utils';
 
 interface UserMenuProps {
-  // Landing page forces dark mode locally (see LandingClient's `dark` class) but
-  // DropdownMenuContent portals to document.body, outside that scope — so a
-  // signed-in user with a 'light' app theme would otherwise see a light-themed
-  // menu float over the always-dark landing page. Set by Nav.tsx only.
+  // The landing page locally overrides its own theme (see LandingClient), but
+  // DropdownMenuContent portals to document.body, outside that scope, where
+  // only <html>'s app-wide theme (ThemeProvider) applies — a mismatch either
+  // direction: a signed-in 'light'-theme user on the landing's dark mode, or
+  // any guest (<html> defaults dark) on the landing's now-default light mode.
+  // Mutually exclusive; set by Nav.tsx only, based on the landing's own
+  // current theme.
   forceDark?: boolean;
+  forceLight?: boolean;
   // Controlled open state — lets Navigation.tsx close this menu when another
   // header dropdown (notifications, pinned tickers) opens. Uncontrolled when omitted.
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }
 
-export function UserMenu({ forceDark = false, open, onOpenChange }: UserMenuProps = {}) {
+export function UserMenu({ forceDark = false, forceLight = false, open, onOpenChange }: UserMenuProps = {}) {
   const { t } = useTranslation('navigation');
   const router = useRouter();
   const { user, isLoading, isAuthenticated } = useAuth();
@@ -127,7 +131,7 @@ export function UserMenu({ forceDark = false, open, onOpenChange }: UserMenuProp
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
-        className={cn('w-56 animate-fade-in-up', forceDark && 'dark')}
+        className={cn('w-56 animate-fade-in-up', forceDark && 'dark', forceLight && 'landing-force-light')}
         align="end"
         forceMount
       >

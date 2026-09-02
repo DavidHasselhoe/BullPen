@@ -251,6 +251,46 @@
   --cal-down: #f87171;         /* red-400 */
 }
 
+/* Forces the LIGHT shadcn tokens regardless of <html>'s own .dark class —
+   the mirror of .dark itself, for the opposite problem. .dark exists because
+   ThemeProvider only toggles <html>, so a component that needs to render dark
+   REGARDLESS of the visitor's actual saved theme (e.g. UserMenu's forceDark,
+   for the landing page's own dark mode) applies .dark directly on itself.
+   This is that same trick run backwards: components/landing's page now
+   defaults to LIGHT, but <html> still defaults dark for guests (ThemeProvider
+   has no idea this page overrode its own theme locally), so anything
+   Radix-portals out of the page's DOM subtree (AuthModal's DialogContent,
+   UserMenu's DropdownMenuContent) — which breaks normal CSS descendant
+   scoping — still inherited dark from <html> even though the light landing
+   page around it doesn't. Scoped to just the tokens auth UI actually uses,
+   not the full chart/sidebar/picks/cal set those forms never touch. Values
+   copied verbatim from :root above — not re-derived, so no new contrast
+   verification needed. */
+.landing-force-light {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --brand: oklch(0.508 0.118 165.612);
+  --brand-ink: oklch(0.985 0 0);
+  --brand-soft: oklch(0.508 0.118 165.612 / 0.12);
+  --brand-glow: oklch(0.508 0.118 165.612 / 0.25);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

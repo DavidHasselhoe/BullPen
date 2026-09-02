@@ -38,6 +38,13 @@ export function LandingClient({ shots }: { shots: Shot[] }) {
     const wantsDark = new URLSearchParams(window.location.search).get('theme') === 'dark';
     if (wantsDark) rootRef.current?.classList.replace('landing-light-preview', 'dark');
   }, []);
+  // Not React state — a plain per-render read, deliberately. Only feeds
+  // AuthModal (mounts solely on click) and Nav's UserMenu (only rendered once
+  // isAuthenticated resolves true, which starts false during SSR) — neither
+  // is part of the hydration-critical initial paint, so there's no mismatch
+  // risk in reading window here unguarded, unlike the root div's own class
+  // above which IS part of that paint and needs the effect + ref dance.
+  const isDarkLanding = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('theme') === 'dark';
   const [authOpen, setAuthOpen] = useState(false);
   // Once true, the modal stays mounted so close animations and state survive.
   const [authMounted, setAuthMounted] = useState(false);
@@ -76,22 +83,21 @@ export function LandingClient({ shots }: { shots: Shot[] }) {
 
   return (
     // Light by default now (see rootRef effect above for the ?theme=dark
-    // escape hatch). KNOWN GAP, not yet fixed: AuthModal and Nav's UserMenu
-    // avatar both use the *global* shadcn theme tokens (driven by
-    // <html class="dark">, which ThemeProvider still sets for guests
-    // regardless of this page's own local tokens), not this page's — so the
-    // sign-up modal and the signed-in avatar dropdown still render dark
-    // against this now-light page. Flagged to David rather than silently
-    // patched; fixing it properly means either overriding shadcn's tokens
-    // locally on those portaled components or having this page temporarily
-    // own <html>'s class while mounted, and deserves its own pass.
+    // escape hatch). Nav's UserMenu and AuthModal both portal outside this
+    // div (DropdownMenuContent/DialogContent → document.body), where only
+    // <html>'s app-wide theme applies — isDarkLanding tells them which way
+    // to force their own local shadcn tokens so they match whichever theme
+    // this page is actually showing, regardless of the visitor's own saved
+    // preference or ThemeProvider's guest default. See UserMenu's
+    // forceDark/forceLight and AuthModal's forceLight, and the
+    // .landing-force-light rule in app/globals.css.
     <div ref={rootRef} className="bullpen-landing-root landing-light-preview">
       <div className="page-bg" aria-hidden />
       <div className="page-grid" aria-hidden />
       <div className="page-noise" aria-hidden />
 
       <div className="content-layer">
-        <Nav onSignIn={() => openSignIn('nav')} onSignUp={() => openSignUp('nav')} />
+        <Nav onSignIn={() => openSignIn('nav')} onSignUp={() => openSignUp('nav')} isDarkLanding={isDarkLanding} />
         <Hero onSignUp={() => openSignUp('hero')} />
         <TickerStrip />
         <Features />
@@ -106,7 +112,13 @@ export function LandingClient({ shots }: { shots: Shot[] }) {
 
       {authMounted && (
         <Suspense fallback={null}>
-          <AuthModal open={authOpen} onOpenChange={setAuthOpen} initialMode={authMode} redirectTo={redirectTo} />
+          <AuthModal
+            open={authOpen}
+            onOpenChange={setAuthOpen}
+            initialMode={authMode}
+            redirectTo={redirectTo}
+            forceLight={!isDarkLanding}
+          />
         </Suspense>
       )}
     </div>
