@@ -50,9 +50,14 @@ function fmt(n: number | null): string {
   return `${sign}$${n.toFixed(2)}`;
 }
 
+// Every current caller (dividendYield, profitMargin, revenueGrowthTTM,
+// epsGrowthTTM from getStatistics()) is TwelveData's own 0..1 scale, so this
+// multiplies by 100 — same convention StatisticsGrid's fmt('percent') uses
+// for the identical fields. Passing an already-percent-scale value in here
+// would need a new helper, not a change to this one.
 function fmtPct(n: number | null): string {
   if (n == null) return 'N/A';
-  return `${n.toFixed(1)}%`;
+  return `${(n * 100).toFixed(1)}%`;
 }
 
 /** Resolve a ticker to a company_id (returns null if not found). */

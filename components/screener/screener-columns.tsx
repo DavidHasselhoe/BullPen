@@ -360,8 +360,10 @@ export function getScreenerColumns(t: TFunction): ScreenerColumn[] {
     group: 'risk',
     defaultVisible: true,
     width: 76,
-    getValue: (row) => row.dividend_yield,
-    render: (row) => (row.dividend_yield != null && row.dividend_yield > 0 ? fmtPct(row.dividend_yield, 2) : '—'),
+    // Stored as 0..1 (TwelveData's forward_annual_dividend_yield), same as
+    // profit_margin above — convert to percent here, not at write time.
+    getValue: (row) => (row.dividend_yield != null ? row.dividend_yield * 100 : null),
+    render: (row) => (row.dividend_yield != null && row.dividend_yield > 0 ? fmtPct(row.dividend_yield * 100, 2) : '—'),
   },
   {
     key: 'payout_ratio',

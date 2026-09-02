@@ -259,9 +259,12 @@ async function handler(request: NextRequest) {
     if (!inRange(r.pe_ratio, peMin, peMax)) return false;
     if (!inRange(r.pb_ratio, pbMin, pbMax)) return false;
     if (!inRange(r.beta, betaMin, betaMax)) return false;
-    if (!inRange(r.dividend_yield, divYieldMin, divYieldMax)) return false;
 
-    // Profit margin stored as 0..1, filter in percent (0..100)
+    // Dividend yield and profit margin are both stored as 0..1
+    // (TwelveData's own scale) — filter inputs are percent (0..100).
+    const dividendYieldPct = r.dividend_yield != null ? r.dividend_yield * 100 : null;
+    if (!inRange(dividendYieldPct, divYieldMin, divYieldMax)) return false;
+
     const profitMarginPct = r.profit_margin != null ? r.profit_margin * 100 : null;
     if (!inRange(profitMarginPct, profitMarginMin, profitMarginMax)) return false;
 
