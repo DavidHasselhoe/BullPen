@@ -326,6 +326,16 @@ export async function signIn(params: SignInParams): Promise<AuthResult> {
     });
 
     if (authError) {
+      const code = (authError as { code?: string }).code;
+      const isUnconfirmed = code === 'email_not_confirmed' || /email.*not.*confirmed/i.test(authError.message);
+      if (isUnconfirmed) {
+        // Not a credential failure — the password was correct, so this shouldn't
+        // count toward the lockout mechanism (see reportLoginOutcome below).
+        return {
+          success: false,
+          error: 'Please confirm your email before signing in. Check your inbox (and spam folder) for the confirmation link.',
+        };
+      }
       const isNetworkError = /fetch|network|timeout|abort|signal/i.test(authError.message);
       // Only count genuine credential failures toward lockout — a dropped
       // connection isn't evidence of a guessed password.
