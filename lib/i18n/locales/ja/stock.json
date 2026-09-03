@@ -144,6 +144,7 @@
   "financialsDividendRaised_one": "{{year}}年以降{{count}}回引き上げ。全体で{{pct}}%増加",
   "financialsDividendRaised_other": "{{year}}年以降{{count}}回引き上げ。全体で{{pct}}%増加",
   "financialsDividendSteady": "{{year}}年以降据え置き",
+  "financialsNewerReportPending": "Q{{quarter}} {{year}} は {{date}} に報告されました。完全な財務諸表はまだ利用できません。",
   "financialsNoDataAvailable": "利用可能なデータがありません",
   "financialsNoDividendHistory": "配当履歴がありません",
   "financialsNoFinancialData": "財務データがありません",
@@ -345,12 +346,10 @@
   "volatilityIndustry": "業界",
   "volatilityLow": "低い",
   "websiteLabel": "ウェブサイト",
-  "financialsNewerReportPending": "Q{{quarter}} {{year}} は {{date}} に報告されました。完全な財務諸表はまだ利用できません。",
   "thesisSectionTitle": "コミュニティの見方",
   "thesisFilterAll": "すべて",
   "thesisSentimentBull": "Bull",
   "thesisSentimentNeutral": "ニュートラル",
-  "thesisSentimentBear": "Bear",
   "thesisShareTakePlaceholder": "{{symbol}} についてのご意見をシェアしてください…",
   "thesisFormPlaceholder": "{{symbol}} についてのテーマは何ですか？",
   "thesisCancelButton": "キャンセル",
@@ -374,5 +373,7 @@
   "thesisHrsAgo_one": "{{count}}h 前",
   "thesisHrsAgo_other": "{{count}}h 前",
   "thesisDaysAgo_one": "{{count}}d 前",
-  "thesisDaysAgo_other": "{{count}}d 前"
+  "thesisDaysAgo_other": "{{count}}d 前",
+  "sankeyExplainButton": "説明",
+  "thesisSentimentBear": "弱気"
 }

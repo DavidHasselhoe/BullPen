@@ -263,6 +263,7 @@
   "sankeyConfidenceHigh": "High confidence",
   "sankeyConfidenceLow": "Low confidence",
   "sankeyConfidenceMedium": "Medium confidence",
+  "sankeyExplainButton": "Explain",
   "sankeyNoData": "Financial flow data not available for this period",
   "sankeyNodeCostOfRevenue": "Cost of Revenue",
   "sankeyNodeCostsAndTax": "Costs & Tax",

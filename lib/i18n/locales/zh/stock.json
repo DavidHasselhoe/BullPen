@@ -144,6 +144,7 @@
   "financialsDividendRaised_one": "自{{year}}年以来提高{{count}}次，累计上升{{pct}}%",
   "financialsDividendRaised_other": "自{{year}}年以来提高{{count}}次，累计上升{{pct}}%",
   "financialsDividendSteady": "自{{year}}年以来保持稳定",
+  "financialsNewerReportPending": "Q{{quarter}} {{year}} 已于 {{date}} 报告。完整财务报表尚未公布。",
   "financialsNoDataAvailable": "暂无数据",
   "financialsNoDividendHistory": "暂无股息历史",
   "financialsNoFinancialData": "暂无财务数据",
@@ -345,10 +346,8 @@
   "volatilityIndustry": "行业",
   "volatilityLow": "低",
   "websiteLabel": "网站",
-  "financialsNewerReportPending": "Q{{quarter}} {{year}} 已于 {{date}} 报告。完整财务报表尚未公布。",
   "thesisSectionTitle": "社区观点",
   "thesisFilterAll": "全部",
-  "thesisSentimentBull": "Bull",
   "thesisSentimentNeutral": "中立",
   "thesisSentimentBear": "看空",
   "thesisShareTakePlaceholder": "分享你对 {{symbol}} 的看法…",
@@ -374,5 +373,7 @@
   "thesisHrsAgo_one": "{{count}} 小时前",
   "thesisHrsAgo_other": "{{count}} 小时前",
   "thesisDaysAgo_one": "{{count}} 天前",
-  "thesisDaysAgo_other": "{{count}} 天前"
+  "thesisDaysAgo_other": "{{count}} 天前",
+  "sankeyExplainButton": "解释",
+  "thesisSentimentBull": "Bull"
 }

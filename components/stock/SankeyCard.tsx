@@ -8,9 +8,10 @@ import { sankey, sankeyLinkHorizontal, sankeyLeft } from 'd3-sankey';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
-import { Network, Lock } from 'lucide-react';
+import { Network, Lock, Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
+import { useAIPanel } from '@/components/ai/AIPanelProvider';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -179,6 +180,46 @@ function deriveConfidence(row: IncomeStatementPeriod): Confidence {
   if (core === 3 && detail) return 'high';
   if (core >= 2)            return 'medium';
   return 'low';
+}
+
+// [display:...] is stripped in BullpenChat before rendering — the full prompt still reaches the AI
+function buildExplainQuery(
+  ticker: string,
+  revenue: number,
+  periodLabel: string,
+  graph: { nodes: RawNode[]; links: RawLink[] }
+): string {
+  const flowLines = graph.links
+    .map((l) => `  ${l.source} -> ${l.target}: ${fmtVal(l.value)} (${fmtPct(l.value, revenue)} of revenue)`)
+    .join('\n');
+
+  return `[display:Explain ${ticker} Revenue Flow]\nYou are a financial analyst inside Bullpen. Explain how ${ticker}'s revenue breaks down into costs and profit for ${periodLabel}, using the flow data below.
+
+## Input Data
+Company: ${ticker}
+Period: ${periodLabel}
+Total Revenue: ${fmtVal(revenue)}
+Flow (each line is a dollar amount moving from one bucket to the next):
+${flowLines}
+
+## Output Format (follow exactly)
+
+**${ticker} — Revenue Flow: ${periodLabel}**
+
+**Bottom Line**
+2 sentences max: how much of each revenue dollar survives to net income, and the single biggest driver of where the rest goes.
+
+**Where the Money Goes**
+2-4 bullets, one per major bucket (cost of revenue, R&D, SG&A, tax, etc.) — dollar amount, % of revenue, and one sharp sentence on what it signals about the business.
+
+**How to Interpret This**
+2-3 bullets on what stands out here — margin structure, cost discipline, anything unusual for this kind of company.
+
+## Rules
+- Max ~180 words total
+- No filler, no definitions of basic accounting terms — assume the reader can read a sankey chart
+- Every sentence must add new information
+- Do NOT restate every line of the flow — synthesize`;
 }
 
 // ─── Tooltip ─────────────────────────────────────────────────────────────────
@@ -351,6 +392,7 @@ function SankeyChart({ graph, width, revenue, isDark, ticker, onTip }: SankeyCha
 
 export function SankeyCard({ ticker }: { ticker: string }) {
   const { t } = useTranslation('stock');
+  const { open: openAIPanel } = useAIPanel();
   const { resolvedTheme } = useTheme();
   // mounted guard prevents hydration mismatch — node colours flash on first render otherwise
   const [mounted, setMounted] = useState(false);
@@ -423,6 +465,17 @@ export function SankeyCard({ ticker }: { ticker: string }) {
                 })} />
                 {conf === 'high' ? t('sankeyConfidenceHigh') : conf === 'medium' ? t('sankeyConfidenceMedium') : t('sankeyConfidenceLow')}
               </span>
+            )}
+
+            {/* Explain button */}
+            {!isLoading && !noData && !isPlanRestricted && graph && row && (
+              <button
+                onClick={() => openAIPanel({ query: buildExplainQuery(ticker, revenue, fmtLabel(row.fiscal_date, period), graph) })}
+                className="flex items-center gap-1.5 rounded-lg border border-border bg-muted/40 px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              >
+                <Sparkles className="h-3 w-3" />
+                {t('sankeyExplainButton')}
+              </button>
             )}
 
             {/* Annual / Quarterly toggle */}
