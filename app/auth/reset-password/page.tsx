@@ -16,6 +16,7 @@
 import { Suspense, useEffect, useState, FormEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createBrowserClient } from '@/lib/supabase/client';
+import { getPasswordStrengthError } from '@/lib/auth/password-strength';
 import { PasswordInput } from '@/components/auth/PasswordInput';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -58,7 +59,8 @@ function ResetPasswordContent() {
     });
   }, [searchParams]);
 
-  const isValid = password.length >= 8 && password === confirmPassword;
+  const passwordError = getPasswordStrengthError(password);
+  const isValid = passwordError === null && password === confirmPassword;
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -181,9 +183,15 @@ function ResetPasswordContent() {
             autoComplete="new-password"
             autoFocus
             minLength={8}
-            aria-invalid={!!error}
+            aria-invalid={!!error || (!!password && passwordError !== null)}
           />
-          <p className="text-xs text-muted-foreground">Must be at least 8 characters</p>
+          <p className="text-xs text-muted-foreground">
+            {password && passwordError === 'tooCommon'
+              ? 'That password is too common. Choose something more unique.'
+              : password && passwordError === 'tooWeak'
+                ? 'Must include a letter and a number'
+                : 'At least 8 characters, with a letter and a number'}
+          </p>
         </div>
 
         <div className="space-y-2">

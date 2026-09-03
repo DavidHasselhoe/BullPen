@@ -9,6 +9,7 @@ import { PasswordInput } from './PasswordInput';
 import { Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { signUp } from '@/lib/auth/auth';
+import { getPasswordStrengthError } from '@/lib/auth/password-strength';
 import { cn } from '@/lib/utils';
 import { trackEvent } from '@/lib/analytics/track';
 
@@ -49,9 +50,10 @@ export function AuthFormSignup({
     if (!password) {
       return t('signupPasswordRequired');
     }
-    if (password.length < 8) {
-      return t('signupPasswordTooShort');
-    }
+    const strengthError = getPasswordStrengthError(password);
+    if (strengthError === 'tooShort') return t('signupPasswordTooShort');
+    if (strengthError === 'tooWeak') return t('signupPasswordTooWeak');
+    if (strengthError === 'tooCommon') return t('signupPasswordTooCommon');
     return null;
   };
 
@@ -113,7 +115,7 @@ export function AuthFormSignup({
     }
   };
 
-  const isValid = email.includes('@') && password.length >= 8;
+  const isValid = email.includes('@') && getPasswordStrengthError(password) === null;
 
   return (
     <motion.form

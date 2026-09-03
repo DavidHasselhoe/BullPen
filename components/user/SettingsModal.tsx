@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/use-auth';
 import { SUPPORTED_LANGUAGES, isSupportedLanguage } from '@/lib/i18n/language-names';
 import { writeLocaleCookie } from '@/lib/i18n/locale-cookie';
+import { getPasswordStrengthError } from '@/lib/auth/password-strength';
 import {
   Dialog,
   DialogContent,
@@ -431,8 +432,17 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
       setError(t('errorPasswordFieldsRequired'));
       return;
     }
-    if (passwordNew.length < 8) {
+    const strengthError = getPasswordStrengthError(passwordNew);
+    if (strengthError === 'tooShort') {
       setError(t('errorPasswordTooShort'));
+      return;
+    }
+    if (strengthError === 'tooWeak') {
+      setError(t('errorPasswordTooWeak'));
+      return;
+    }
+    if (strengthError === 'tooCommon') {
+      setError(t('errorPasswordTooCommon'));
       return;
     }
     if (passwordNew !== passwordConfirm) {
