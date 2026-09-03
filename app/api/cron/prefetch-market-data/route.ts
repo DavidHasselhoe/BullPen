@@ -49,6 +49,7 @@ import {
   withRateLimitRetry,
   TwelveDataRateLimitError,
   reportDateToFiscalQuarter,
+  sanitizeDividendYield,
 } from '@/lib/twelvedata/twelvedata-client';
 import { getCached, setCached } from '@/lib/cache/market-data-cache';
 import { SIGNIFICANT_TICKERS } from '@/lib/market-data/significant-tickers';
@@ -133,7 +134,7 @@ function parseStats(sym: string, raw: RawStats | undefined) {
   const ss = (s.stock_statistics as Record<string, number>) ?? {};
   const f = (s.financials as Record<string, unknown>) ?? {};
   const fi = (f.income_statement as Record<string, number>) ?? {};
-  const d = (s.dividends_and_splits as Record<string, number>) ?? {};
+  const d = (s.dividends_and_splits as { trailing_annual_dividend_yield?: number; dividend_date?: string }) ?? {};
   return {
     symbol: sym,
     marketCap: v.market_capitalization ?? null,
@@ -148,7 +149,7 @@ function parseStats(sym: string, raw: RawStats | undefined) {
     avgVolume: ss.avg_90_volume ?? null,
     sharesFloat: ss.float_shares ?? null,
     shortRatio: ss.short_ratio ?? null,
-    dividendYield: d.forward_annual_dividend_yield ?? null,
+    dividendYield: sanitizeDividendYield(d),
     profitMargin: (f.profit_margin as number) ?? null,
     revenueGrowthTTM: fi.quarterly_revenue_growth ?? null,
     epsGrowthTTM: fi.quarterly_earnings_growth_yoy ?? null,

@@ -7,7 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { batchFetch, getStockQuote, withRateLimitRetry, TwelveDataRateLimitError, TwelveDataInvalidSymbolError, reportDateToFiscalQuarter } from '@/lib/twelvedata/twelvedata-client';
+import { batchFetch, getStockQuote, withRateLimitRetry, TwelveDataRateLimitError, TwelveDataInvalidSymbolError, reportDateToFiscalQuarter, sanitizeDividendYield } from '@/lib/twelvedata/twelvedata-client';
 import { getCached, getCachedWithMeta, getCachedStale, getCachedStaleWithMeta, setCached } from '@/lib/cache/market-data-cache';
 import { tryReserveOrganicCredits } from '@/lib/twelvedata/credit-budget';
 import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
@@ -154,7 +154,7 @@ async function handler(
         const ss = (s.stock_statistics as Record<string, number>) ?? {};
         const f = (s.financials as Record<string, unknown>) ?? {};
         const fi = (f.income_statement as Record<string, number>) ?? {};
-        const d = (s.dividends_and_splits as Record<string, number>) ?? {};
+        const d = (s.dividends_and_splits as { trailing_annual_dividend_yield?: number; dividend_date?: string }) ?? {};
         statistics = {
           marketCap: v.market_capitalization ?? null,
           enterpriseValue: v.enterprise_value ?? null,
@@ -169,7 +169,7 @@ async function handler(
           avgVolume: ss.avg_90_volume ?? null,
           sharesFloat: ss.float_shares ?? null,
           shortRatio: ss.short_ratio ?? null,
-          dividendYield: d.forward_annual_dividend_yield ?? null,
+          dividendYield: sanitizeDividendYield(d),
           profitMargin: (f.profit_margin as number) ?? null,
           revenueGrowthTTM: fi.quarterly_revenue_growth ?? null,
           epsGrowthTTM: fi.quarterly_earnings_growth_yoy ?? null,

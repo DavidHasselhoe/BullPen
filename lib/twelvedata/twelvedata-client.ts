@@ -987,6 +987,8 @@ interface TwelveDataStatisticsResponse {
     };
     dividends_and_splits?: {
       forward_annual_dividend_yield?: number | null;
+      trailing_annual_dividend_yield?: number | null;
+      dividend_date?: string | null;
     };
     financials?: {
       profit_margin?: number | null;
@@ -999,6 +1001,33 @@ interface TwelveDataStatisticsResponse {
   status?: string;
   code?: number;
   message?: string;
+}
+
+/** Dividends this stale mean the company isn't currently paying (e.g. GNRC's
+ *  last payment was 2013) — TD's /statistics still reports a nonzero yield
+ *  for these by naively annualizing that ancient payment. */
+const STALE_DIVIDEND_MONTHS = 14;
+
+/**
+ * TD's forward_annual_dividend_yield is computed by multiplying the most
+ * recent single dividend payment by 4, with no check for whether that
+ * payment was a one-time special (inflating REIT/true-up payers like HST,
+ * whose $0.92 special got annualized into a 16.6% yield vs. its real ~3.6%
+ * regular rate) or whether the company has stopped paying entirely (GNRC,
+ * dead since 2013 but still carrying an 11% "forward" yield off that last
+ * payment). trailing_annual_dividend_yield (real TTM cash paid) plus a
+ * recency guard on dividend_date fixes the dead-payer case; it doesn't fully
+ * fix the special-dividend overstatement, which would need recomputing from
+ * full dividend history.
+ */
+export function sanitizeDividendYield(d: {
+  trailing_annual_dividend_yield?: number | null;
+  dividend_date?: string | null;
+} | undefined): number | null {
+  if (!d?.dividend_date) return null;
+  const monthsSinceLastDividend = (Date.now() - new Date(d.dividend_date).getTime()) / (1000 * 60 * 60 * 24 * 30.44);
+  if (monthsSinceLastDividend > STALE_DIVIDEND_MONTHS) return 0;
+  return d.trailing_annual_dividend_yield ?? null;
 }
 
 export async function getStatistics(symbol: string): Promise<CompanyStatistics> {
@@ -1044,7 +1073,7 @@ export async function getStatistics(symbol: string): Promise<CompanyStatistics> 
     avgVolume: s.avg_90_volume ?? null,
     sharesFloat: s.float_shares ?? null,
     shortRatio: s.short_ratio ?? null,
-    dividendYield: d.forward_annual_dividend_yield ?? null,
+    dividendYield: sanitizeDividendYield(d),
     profitMargin: f.profit_margin ?? null,
     revenueGrowthTTM: fi.quarterly_revenue_growth ?? null,
     epsGrowthTTM: fi.quarterly_earnings_growth_yoy ?? null,

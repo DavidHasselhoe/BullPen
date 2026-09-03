@@ -47,6 +47,7 @@
 import { createServerClient } from '@/lib/supabase/client';
 import {
   batchFetch,
+  sanitizeDividendYield,
   type CompanyStatistics,
   type IncomeStatementPeriod,
   type BalanceSheetPeriod,
@@ -107,6 +108,8 @@ export interface TwelveDataStatisticsRaw {
     };
     dividends_and_splits?: {
       forward_annual_dividend_yield?: number | null;
+      trailing_annual_dividend_yield?: number | null;
+      dividend_date?: string | null;
       payout_ratio?: number | null;
     };
     financials?: {
@@ -147,7 +150,7 @@ export function parseStats(raw: TwelveDataStatisticsRaw, sym: string) {
     week52_low: sp.fifty_two_week_low ?? null,
     day50_ma: sp.day_50_ma ?? null,
     day200_ma: sp.day_200_ma ?? null,
-    dividend_yield: d.forward_annual_dividend_yield ?? null,
+    dividend_yield: sanitizeDividendYield(d),
     payout_ratio: d.payout_ratio ?? null,
     profit_margin: f.profit_margin ?? null,
     revenue_ttm: fi.revenue_ttm ? Math.round(fi.revenue_ttm) : null,
@@ -181,7 +184,7 @@ function rawToCompanyStats(raw: TwelveDataStatisticsRaw, sym: string): CompanySt
     avgVolume: ss.avg_90_volume ?? null,
     sharesFloat: ss.float_shares ?? null,
     shortRatio: ss.short_ratio ?? null,
-    dividendYield: d.forward_annual_dividend_yield ?? null,
+    dividendYield: sanitizeDividendYield(d),
     profitMargin: f.profit_margin ?? null,
     revenueGrowthTTM: fi.quarterly_revenue_growth ?? null,
     epsGrowthTTM: fi.quarterly_earnings_growth_yoy ?? null,
