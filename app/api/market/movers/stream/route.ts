@@ -14,7 +14,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withRateLimit } from '@/lib/security/api-security';
 import { WsManager } from '@/lib/market-data/ws-manager';
-import { getStorageLogoUrl } from '@/lib/logos/logos-storage';
+import { getLogoManifest, logoUrlFromManifest, type LogoManifest } from '@/lib/logos/logo-manifest';
 import { createServerClient } from '@/lib/supabase/client';
 import type { PriceTick } from '@/lib/market-data/ws-manager';
 import { SP500_TICKERS } from '@/lib/market-data/sp500';
@@ -111,8 +111,16 @@ async function streamHandler(request: NextRequest) {
   // getMarketMovers is cached (5 min), so this is nearly free on warm requests.
   const seedNameMap = new Map<string, string>();
   const initialQuotes = new Map<string, MoverUpdate>();
+  // Fetched once per connection (memoized/cached, see logo-manifest.ts) and
+  // closed over below — onTick fires many times per second per symbol, so it
+  // must stay synchronous rather than awaiting the manifest per tick.
+  let logoManifest: LogoManifest = new Map();
   try {
-    const { gainers: seedGainers, losers: seedLosers } = await getMarketMovers('stocks', 50);
+    const [{ gainers: seedGainers, losers: seedLosers }, manifest] = await Promise.all([
+      getMarketMovers('stocks', 50),
+      getLogoManifest(),
+    ]);
+    logoManifest = manifest;
     for (const m of [...seedGainers, ...seedLosers]) {
       WsManager.seedPrevClose(m.symbol, m.previousClose);
       if (m.name) seedNameMap.set(m.symbol, m.name);
@@ -124,7 +132,7 @@ async function streamHandler(request: NextRequest) {
         changePercent: m.changePercent,
         previousClose: m.previousClose,
         dayVolume: 0,
-        logoUrl: getStorageLogoUrl(m.symbol),
+        logoUrl: logoUrlFromManifest(logoManifest, m.symbol) ?? undefined,
       });
     }
   } catch {
@@ -190,7 +198,7 @@ async function streamHandler(request: NextRequest) {
             changePercent: tick.changePercent,
             previousClose: tick.previousClose,
             dayVolume: tick.dayVolume ?? 0,
-            logoUrl: getStorageLogoUrl(tick.symbol),
+            logoUrl: logoUrlFromManifest(logoManifest, tick.symbol) ?? undefined,
           });
 
           // Throttle: emit at most once per EMIT_INTERVAL_MS (leading — first tick

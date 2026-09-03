@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/client';
-import { getStorageLogoUrl } from '@/lib/logos/logos-storage';
+import { getLogoManifest, logoUrlFromManifest } from '@/lib/logos/logo-manifest';
 import { withRateLimit, addSecurityHeaders, validateTickerParam } from '@/lib/security/api-security';
 import { logger } from '@/lib/utils/logger';
 import type { Company } from '@/lib/types/database';
@@ -24,11 +24,14 @@ async function handler(
     }
 
     const supabase = createServerClient();
-    const { data, error } = await supabase
-      .from('companies')
-      .select('*')
-      .eq('ticker', tickerValidation.normalized!)
-      .single();
+    const [{ data, error }, logoManifest] = await Promise.all([
+      supabase
+        .from('companies')
+        .select('*')
+        .eq('ticker', tickerValidation.normalized!)
+        .single(),
+      getLogoManifest(),
+    ]);
 
     if (error || !data) {
       return addSecurityHeaders(
@@ -42,7 +45,7 @@ async function handler(
     const company = data as Company;
     const enriched = {
       ...company,
-      logo_url: company.logo_url || getStorageLogoUrl(company.ticker),
+      logo_url: company.logo_url || logoUrlFromManifest(logoManifest, company.ticker),
     };
     return addSecurityHeaders(
       NextResponse.json({ success: true, company: enriched })

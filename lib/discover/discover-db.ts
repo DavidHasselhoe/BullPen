@@ -2,11 +2,11 @@
 // Read-only queries for the Discover/Home page
 
 import { createServerClient } from '../supabase/client';
-import { getStorageLogoUrl } from '../logos/logos-storage';
+import { getLogoManifest, logoUrlFromManifest, type LogoManifest } from '../logos/logo-manifest';
 import type { Trend, Signal, Company } from '../types/database';
 
-function enrichCompanyLogo<T extends { ticker: string; logo_url?: string | null }>(company: T): T {
-  return { ...company, logo_url: company.logo_url || getStorageLogoUrl(company.ticker) };
+function enrichCompanyLogo<T extends { ticker: string; logo_url?: string | null }>(company: T, manifest: LogoManifest): T {
+  return { ...company, logo_url: company.logo_url || logoUrlFromManifest(manifest, company.ticker) };
 }
 
 export interface DiscoverDBResult<T> {
@@ -34,11 +34,15 @@ export async function getRecentFundamentalChanges(
   const supabase = createServerClient();
 
   try {
+    // Fired now, awaited just before first use — resolves concurrently with
+    // the trends/signals queries below instead of adding its own latency.
+    const logoManifestPromise = getLogoManifest();
+
     // Add timeout wrapper for queries
     const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> => {
       return Promise.race([
         promise,
-        new Promise<T>((_, reject) => 
+        new Promise<T>((_, reject) =>
           setTimeout(() => reject(new Error(`Query timeout after ${ms}ms`)), ms)
         ),
       ]);
@@ -84,6 +88,7 @@ export async function getRecentFundamentalChanges(
     // Cast to proper types
     const trends = (trendsData || []) as Array<Trend & { company?: Company }>;
     const signals = (signalsData || []) as Array<Signal & { company?: Company }>;
+    const logoManifest = await logoManifestPromise;
 
     // Combine and format results
     const changes: Array<{
@@ -110,7 +115,7 @@ export async function getRecentFundamentalChanges(
 
       changes.push({
         type: 'trend',
-        company: enrichCompanyLogo(company),
+        company: enrichCompanyLogo(company, logoManifest),
         trend: {
           id: trend.id,
           company_id: trend.company_id,
@@ -147,7 +152,10 @@ export async function getRecentFundamentalChanges(
 
       changes.push({
         type: 'signal',
-        company,
+        // Was pushed unenriched — trends got a logo fallback above, signals
+        // never did, for no evident reason. Matching them now that this
+        // function is already being touched for the extension-guessing fix.
+        company: enrichCompanyLogo(company, logoManifest),
         signal: {
           id: signal.id,
           company_id: signal.company_id,
@@ -203,11 +211,14 @@ export async function getCompaniesToWatch(
   const supabase = createServerClient();
 
   try {
+    // Fired now, awaited just before first use.
+    const logoManifestPromise = getLogoManifest();
+
     // Add timeout wrapper for queries
     const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> => {
       return Promise.race([
         promise,
-        new Promise<T>((_, reject) => 
+        new Promise<T>((_, reject) =>
           setTimeout(() => reject(new Error(`Query timeout after ${ms}ms`)), ms)
         ),
       ]);
@@ -260,8 +271,9 @@ export async function getCompaniesToWatch(
     });
 
     // Combine and rank companies (enrich logo from storage when DB has none)
+    const logoManifest = await logoManifestPromise;
     const ranked = companiesList.map((company) => {
-      const enriched = enrichCompanyLogo(company);
+      const enriched = enrichCompanyLogo(company, logoManifest);
       const trend = trendMap.get(company.id) || null;
 
       const supportingLabel: string | null = trend
