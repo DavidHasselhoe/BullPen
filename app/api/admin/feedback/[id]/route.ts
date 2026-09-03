@@ -67,4 +67,4 @@ async function handler(
   return addSecurityHeaders(NextResponse.json({ success: true }));
 }
 
-export const PATCH = withAuth(handler);
+export const PATCH = withAuth(handler, { rateLimit: { windowMs: 60_000, maxRequests: 20 } });

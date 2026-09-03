@@ -81,4 +81,4 @@ async function handler(
   return addSecurityHeaders(NextResponse.json(response));
 }
 
-export const GET = withAuth(handler);
+export const GET = withAuth(handler, { rateLimit: { windowMs: 60_000, maxRequests: 30 } });

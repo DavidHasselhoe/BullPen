@@ -61,5 +61,5 @@ async function rejectHandler(
   return addSecurityHeaders(NextResponse.json({ success: true }));
 }
 
-export const POST = withAuth(approveHandler);
-export const DELETE = withAuth(rejectHandler);
+export const POST = withAuth(approveHandler, { rateLimit: { windowMs: 60_000, maxRequests: 20 } });
+export const DELETE = withAuth(rejectHandler, { rateLimit: { windowMs: 60_000, maxRequests: 20 } });
