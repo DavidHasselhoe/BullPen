@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
@@ -12,6 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { AlertCircle, ArrowLeft, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useBackground } from '@/hooks/use-background';
+import { useAuth } from '@/hooks/use-auth';
 import { useExperienceLevel } from '@/hooks/use-experience-level';
 import { useHoldings } from '@/hooks/use-holdings';
 import { useAIPanel } from '@/components/ai/AIPanelProvider';
@@ -45,9 +46,11 @@ interface StatusResponse {
 export default function DeepDivePage() {
   const { t } = useTranslation('tools');
   const params = useParams();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const rawTicker = (params.ticker as string) ?? '';
   const symbol = rawTicker.toUpperCase();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
 
   const divePhaseLabels = [
     t('deepDivePhaseReadingData', 'Reading fundamentals…'),
@@ -132,8 +135,12 @@ export default function DeepDivePage() {
   }, [rawTicker, symbol, stopPolling, invalidateQuota, queryClient, markEntityRead]);
 
   // On mount: show the latest saved dive, or resume polling if one is still
-  // generating (e.g. the user started it, left, and came back).
+  // generating (e.g. the user started it, left, and came back). Skipped for
+  // guests entirely — the render guard below shows a sign-in prompt instead,
+  // and this would otherwise 401 silently on every guest page view.
   useEffect(() => {
+    if (authLoading) return;
+    if (!isAuthenticated) { setPhase('idle'); return; }
     let cancelled = false;
     (async () => {
       try {
@@ -161,7 +168,7 @@ export default function DeepDivePage() {
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rawTicker]);
+  }, [rawTicker, authLoading, isAuthenticated]);
 
   const generate = useCallback(async (useLens: DeepDiveLens) => {
     stopPolling();
@@ -202,6 +209,41 @@ export default function DeepDivePage() {
       query: `I just read the AI deep dive on $${symbol}. What's the single most important thing to watch from here, and what would change the thesis?`,
     });
   }, [openAIPanel, symbol, report]);
+
+  // Deep dives are a real-money AI call (Claude with extended thinking) —
+  // gated behind auth for cost/quota reasons, not just to nudge signup.
+  // Gate here, before ever hitting the API, so a guest gets a clear prompt
+  // instead of a raw 401 from generate()'s fetch.
+  if (!authLoading && !isAuthenticated) {
+    return (
+      <div className={cn('min-h-screen', hasAnimatedBackground ? '' : 'bg-background')}>
+        <main className="container mx-auto max-w-3xl py-8 px-4 sm:px-6 lg:px-8">
+          <Link
+            href="/tools/deep-dive"
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-5"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" /> {t('deepDiveAllDivesLink', 'All deep dives')}
+          </Link>
+          <Card>
+            <CardContent className="p-6 sm:p-8 text-center">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
+                <Sparkles className="h-6 w-6 text-primary" />
+              </div>
+              <h1 className="text-xl font-bold tracking-tight">{t('deepDiveSignInTitle', 'Sign in to run a deep dive')}</h1>
+              <p className="text-sm text-muted-foreground mt-1.5 max-w-md mx-auto leading-relaxed">
+                {t('deepDiveSignInDescription', 'Create a free account to generate an AI deep dive: results, guidance, valuation, bull vs bear, catalysts and risks.')}
+              </p>
+              <div className="mt-6">
+                <Button size="lg" onClick={() => router.push(`/login?redirect=${encodeURIComponent(`/tools/deep-dive/${rawTicker}`)}`)}>
+                  {t('deepDiveSignInButton', 'Sign in')}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className={cn('min-h-screen', hasAnimatedBackground ? '' : 'bg-background')}>
