@@ -7,12 +7,12 @@ import type { TFunction } from 'i18next';
 import { Button } from '@/components/ui/button';
 import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import { useExperienceLevel } from '@/hooks/use-experience-level';
-import { Info, RefreshCw, ListPlus, Sparkles, Check, ExternalLink } from 'lucide-react';
+import { Info, RefreshCw, ListPlus, Sparkles, Check, ExternalLink, HelpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { Portfolio } from '@/lib/ai/portfolio-builder/schema';
 import { PortfolioHero } from './PortfolioHero';
 import { AllocationBars } from './AllocationBars';
-import { HoldingsList } from './HoldingsList';
 import { KeyRisks } from './KeyRisks';
 import { BullBearCase } from './BullBearCase';
 import { PortfolioNotes } from './PortfolioNotes';
@@ -24,17 +24,6 @@ interface Props {
   thesis: string;
   createdAt?: string | null;
   onReset: () => void;
-}
-
-function formatWhen(iso: string, t: TFunction): string {
-  const d = new Date(iso);
-  const diff = Date.now() - d.getTime();
-  const mins = Math.floor(diff / 60_000);
-  if (mins < 1) return t('portfolioBuilderJustNow');
-  if (mins < 60) return t('portfolioBuilderMinsAgo', { count: mins });
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return t('portfolioBuilderHrsAgo', { count: hrs });
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 // [display:...] is stripped in BullpenChat before rendering — the full prompt still reaches the AI.
@@ -120,14 +109,31 @@ export function PortfolioResult({ portfolio, logoMap, replacedTickers, thesis, c
         </div>
       )}
 
-      <PortfolioHero portfolio={portfolio} />
+      <PortfolioHero portfolio={portfolio} when={createdAt ?? new Date().toISOString()} />
 
       <div className="space-y-6 border-t border-border/20 pt-6">
         <div>
-          <h3 className="mb-3 text-sm font-semibold text-foreground">{t('portfolioBuilderAllocationHeading')}</h3>
-          <AllocationBars holdings={portfolio.holdings} />
+          <div className="mb-3 flex items-center gap-1.5">
+            <h3 className="text-sm font-semibold text-foreground">{t('portfolioBuilderAllocationHeading')}</h3>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  aria-label={t('portfolioBuilderTierLegendAriaLabel')}
+                  className="text-muted-foreground/85 hover:text-muted-foreground transition-colors"
+                >
+                  <HelpCircle className="h-3.5 w-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-[260px] space-y-1 text-left leading-snug bg-popover text-popover-foreground border border-border shadow-lg">
+                <p className="text-xs">{t('portfolioBuilderTierLegendCore')}</p>
+                <p className="text-xs">{t('portfolioBuilderTierLegendSecondary')}</p>
+                <p className="text-xs">{t('portfolioBuilderTierLegendSatellite')}</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+          <AllocationBars holdings={portfolio.holdings} logoMap={logoMap} isSimplified={isSimplified} />
         </div>
-        <HoldingsList holdings={portfolio.holdings} logoMap={logoMap} isSimplified={isSimplified} />
         <KeyRisks risks={portfolio.key_risks} />
         <BullBearCase bullCase={portfolio.bull_case} bearCase={portfolio.bear_case} />
       </div>
@@ -136,10 +142,7 @@ export function PortfolioResult({ portfolio, logoMap, replacedTickers, thesis, c
         <PortfolioNotes portfolio={portfolio} />
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/20 pt-6">
-        <span className="text-[11px] font-mono uppercase tracking-[0.15em] text-muted-foreground/80">
-          {createdAt ? t('portfolioBuilderGeneratedAt', { when: formatWhen(createdAt, t) }) : t('portfolioBuilderGeneratedJustNow')}
-        </span>
+      <div className="flex flex-wrap items-center justify-end gap-3 border-t border-border/20 pt-6">
         <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => openAIPanel({

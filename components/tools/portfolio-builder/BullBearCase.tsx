@@ -3,6 +3,7 @@
 import { useTranslation } from 'react-i18next';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { useExperienceLevel } from '@/hooks/use-experience-level';
+import { glossaryText } from '@/components/ui/GlossaryText';
 
 interface Props {
   bullCase: string[];
@@ -18,6 +19,7 @@ interface Props {
 export function BullBearCase({ bullCase, bearCase }: Props) {
   const { t } = useTranslation('tools');
   const { isSimplified } = useExperienceLevel();
+  const seen = new Set<string>();
   if (!bullCase?.length && !bearCase?.length) return null;
 
   return (
@@ -34,7 +36,7 @@ export function BullBearCase({ bullCase, bearCase }: Props) {
                 <span className="mt-0.5 shrink-0 font-mono text-xs font-semibold text-emerald-400/60 tabular-nums">
                   {String(i + 1).padStart(2, '0')}
                 </span>
-                <span>{point}</span>
+                <span>{glossaryText(point, seen)}</span>
               </li>
             ))}
           </ol>
@@ -52,7 +54,7 @@ export function BullBearCase({ bullCase, bearCase }: Props) {
                 <span className="mt-0.5 shrink-0 font-mono text-xs font-semibold text-red-400/60 tabular-nums">
                   {String(i + 1).padStart(2, '0')}
                 </span>
-                <span>{point}</span>
+                <span>{glossaryText(point, seen)}</span>
               </li>
             ))}
           </ol>

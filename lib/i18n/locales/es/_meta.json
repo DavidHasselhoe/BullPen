@@ -478,9 +478,8 @@
   "tools.portfolioBuilderRecentPortfolios": "66d92432c1a1088e2fdfe1f89787443de009ec519c047066586bde971c210937",
   "tools.portfolioBuilderRequestFailed": "7a7ccdba9ab0a79a9ab4cc0c0a6ba8f04aee434e45e7802a109d0ffba6d9caf5",
   "tools.portfolioBuilderRoleCore": "70ea1983c983deacc1b61805aea3d43648afd932f346fb2e5d9b15facd4035c2",
-  "tools.portfolioBuilderRoleHedge": "fd66f3ee721062adcc7143b8c0d9b470363217ed265818debb3f03d15b150e39",
   "tools.portfolioBuilderRolePlainCore": "053d16497b6e87b9f98f7da130b2d920715851efc3a9741165398cad9ef218be",
-  "tools.portfolioBuilderRolePlainHedge": "dd1673f29f7e627e45312d02a3b385a7c01f1c906af03c79012af6f0b149ffdd",
+  "tools.portfolioBuilderRolePlainHedge": "36eb7e40ab7ec46741f102f31a831557b22bce7b8ab0862e009dc7aef559a0b4",
   "tools.portfolioBuilderRolePlainSecondary": "1a499c865a5703055b863e4c4e843aa14eb0a85e4e9634be87f71ca1b4e63cb7",
   "tools.portfolioBuilderRoleSecondary": "62f2ccfffcc5103eabb193172833e6d95db890898849ea1ce84b8d7843997539",
   "tools.portfolioBuilderSaveButton": "a67ddf31bf3c221dfefaa079495d4f41e0fb22bb85b9287e618d8309db7c95bd",
@@ -2237,5 +2236,12 @@
   "stock.thesisDaysAgo_one": "477879d991b4f84f84011ea85e3e3f55bd1e0f64148a26a0cdb4d59a478d1cde",
   "stock.thesisDaysAgo_other": "477879d991b4f84f84011ea85e3e3f55bd1e0f64148a26a0cdb4d59a478d1cde",
   "stock.sankeyExplainButton": "3b61e4e9365235501dca9ed55c630b3e3950ca45b6cdc908c8d2f37880c71c57",
-  "stock.thesisSentimentBear": "8c578ed3e9d5fec6f0f1f46402fdb52e4b6174ae74aef1487b1905d0b666c168"
+  "stock.thesisSentimentBear": "8c578ed3e9d5fec6f0f1f46402fdb52e4b6174ae74aef1487b1905d0b666c168",
+  "tools.portfolioBuilderTierLegendAriaLabel": "1661db67c3f26026469b4b2f9f9c9260ff9bbe6a410383e23c086e0dd083f9e2",
+  "tools.portfolioBuilderTierLegendCore": "87fabe80b3c1c6fc918a03b8c70b8dbc0639c7dc7e55ef71b185449b0605898b",
+  "tools.portfolioBuilderTierLegendSecondary": "bc1eed488bf67d02acaa19b1002b502fb145e96cc57b50f7ec9fb8d2291aee69",
+  "tools.portfolioBuilderTierLegendSatellite": "a153d3dae4ae740b5faa797c22e2bbf6b0d7b96cc16b405f18b1fe823515593d",
+  "tools.portfolioBuilderConcentrationWarningFull": "f9cc5041b963466f32f1bf02784af04b94ac02449438303284f2c2e01ef5f410",
+  "tools.portfolioBuilderConcentrationWarningPartial": "6330c979fa90c8ae3dd2f3ca6746e9271ad65fdee897ba68274a0d0fe6951326",
+  "tools.portfolioBuilderMetaLine": "47754062390a2172ec9bd3dc500db0d3a9a48192259ac337fa36ef7dd2a77bd8"
 }

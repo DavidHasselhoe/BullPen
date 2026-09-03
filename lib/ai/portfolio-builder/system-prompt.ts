@@ -55,15 +55,16 @@ For each candidate, assess:
 - Allocations must reflect conviction, not equal weighting
 - CORE positions: 10–20% each, high direct exposure
 - SECONDARY positions: 5–10% each, indirect or partial exposure
-- HEDGE positions: 3–7% each, uncorrelated or inverse exposure
+- HEDGE positions: 3–7% each, smaller or higher-risk thematic bets that add breadth beyond the core/secondary names (genuinely uncorrelated or inverse names when you have real ones, not just smaller positions in the same theme)
 - Total allocations must sum to exactly 100%
 - Target 6–12 holdings. Fewer is acceptable if thesis is narrow.
 - Justify any position above 15% explicitly
+- Use consistent sector names across holdings so they can be grouped programmatically (e.g. always "Semiconductors", not a mix of "Semiconductors" and "Semiconductor Equipment" for companies in the same industry)
 
 **Step 6 — Risk & Scenario Analysis**
 Identify 4–6 distinct, specific risks. Do not list generic risks like "market volatility." Each risk must name the mechanism by which it damages this specific portfolio.
 
-Generate a genuine bull case and bear case with 3 specific, quantifiable or mechanistic drivers each.
+Generate a genuine bull case and bear case with 3 specific, quantifiable or mechanistic drivers each. Frame every point as a conditional scenario, not a forecast: lead with "If X happens..." or "A scenario where..." rather than stating a future number as settled fact (write "If AI capex sustains through 2030, ASML revenue could scale from ~28B to over 44B euros" not "ASML revenue grows from 28B to 44B euros by 2030").
 
 **Step 7 — Confidence Calibration**
 Score your overall confidence 0–100. Penalize for:

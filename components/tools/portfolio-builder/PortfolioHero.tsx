@@ -1,13 +1,30 @@
 'use client';
 
+import { AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { cn } from '@/lib/utils';
 import type { Portfolio } from '@/lib/ai/portfolio-builder/schema';
 import { confidenceTier } from './colors';
+import { topSectorConcentration } from './concentration';
 import { tierTextClass } from '@/lib/ui/severity-tiers';
+import { glossaryText } from '@/components/ui/GlossaryText';
+
+function formatWhen(iso: string, t: TFunction): string {
+  const d = new Date(iso);
+  const diff = Date.now() - d.getTime();
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 1) return t('portfolioBuilderJustNow');
+  if (mins < 60) return t('portfolioBuilderMinsAgo', { count: mins });
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return t('portfolioBuilderHrsAgo', { count: hrs });
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
 
 interface Props {
   portfolio: Portfolio;
+  /** ISO timestamp this portfolio was generated/restored — drives the "Generated X ago" meta line. */
+  when: string;
 }
 
 /** Same calm→volatile gauge as Risk Analysis's RiskScoreHero, but the scale
@@ -43,12 +60,16 @@ function Highlight({ label, title, detail }: { label: string; title: string; det
   );
 }
 
-export function PortfolioHero({ portfolio }: Props) {
+export function PortfolioHero({ portfolio, when }: Props) {
   const { t } = useTranslation('tools');
   const tier = confidenceTier(portfolio.confidence_score);
   const topHolding = [...portfolio.holdings].sort((a, b) => b.allocation_pct - a.allocation_pct)[0];
   const primaryRisk = portfolio.key_risks?.[0];
   const bullPoint = portfolio.bull_case?.[0];
+  const concentration = topSectorConcentration(portfolio.holdings);
+  // One Set per hero render — jargon in theme_summary/macro_thesis gets the
+  // tooltip treatment only on first mention, same convention as Deep Dive.
+  const seen = new Set<string>();
 
   return (
     <div className="space-y-5">
@@ -69,12 +90,29 @@ export function PortfolioHero({ portfolio }: Props) {
             {portfolio.investment_horizon}
           </span>
         </div>
-        <ConfidenceScale score={portfolio.confidence_score} />
+        <div className="flex flex-col items-end gap-1.5">
+          <ConfidenceScale score={portfolio.confidence_score} />
+          <p className="text-[10px] text-muted-foreground/70 text-right">
+            {t('portfolioBuilderMetaLine', { when: formatWhen(when, t) })}
+          </p>
+        </div>
       </div>
 
+      {concentration && (
+        <div className="flex items-start gap-2 rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2.5 text-xs">
+          <AlertTriangle className="h-3.5 w-3.5 text-amber-400 shrink-0 mt-0.5" />
+          <span className="text-amber-400">
+            {t(
+              concentration.pct >= 95 ? 'portfolioBuilderConcentrationWarningFull' : 'portfolioBuilderConcentrationWarningPartial',
+              { pct: Math.round(concentration.pct), sector: concentration.sector }
+            )}
+          </span>
+        </div>
+      )}
+
       <div>
-        <h2 className="text-lg font-semibold leading-tight text-foreground">{portfolio.theme_summary}</h2>
-        <p className="mt-1.5 max-w-prose text-sm leading-relaxed text-foreground/85">{portfolio.macro_thesis}</p>
+        <h2 className="text-lg font-semibold leading-tight text-foreground">{glossaryText(portfolio.theme_summary, seen)}</h2>
+        <p className="mt-1.5 max-w-prose text-sm leading-relaxed text-foreground/85">{glossaryText(portfolio.macro_thesis, seen)}</p>
         {portfolio.subsectors.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1.5">
             {portfolio.subsectors.map((sub) => (
