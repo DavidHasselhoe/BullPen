@@ -112,6 +112,17 @@ export interface BarChartProps {
 
 const DEFAULT_MARGIN: Margin = { top: 40, right: 40, bottom: 40, left: 40 };
 
+/**
+ * Cap on `timeScale` mode's auto-computed bar width. Without this, width is
+ * `innerWidth / data.length` with no ceiling — fine for a normal dense range
+ * (hundreds of candles), but when very few points are available (e.g. the
+ * first few minutes of pre-market, before a full day's candles exist) the
+ * same formula produces one or two bars wide enough to dominate the whole
+ * chart. Only affects `timeScale` mode, currently used solely by the stock
+ * page's volume strip.
+ */
+const MAX_TIME_BAR_WIDTH_PX = 14;
+
 // Extract bar configs from children synchronously
 function extractBarConfigs(children: ReactNode): LineConfig[] {
   const configs: LineConfig[] = [];
@@ -286,7 +297,7 @@ const ChartCore = memo(function ChartCore({
       return 0;
     }
     const step = innerWidth / data.length;
-    return Math.max(1, step * (1 - barGap));
+    return Math.min(Math.max(1, step * (1 - barGap)), MAX_TIME_BAR_WIDTH_PX);
   }, [timeXScale, data.length, innerWidth, barGap]);
 
   const timeCategoryScale = useMemo(() => {

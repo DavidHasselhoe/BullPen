@@ -810,6 +810,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
               dataKey="volume"
               fadedOpacity={0.5}
               fillAccessor={(d) => (d.isUp ? '#22c55e' : '#ef4444')}
+              minBarHeight={2}
             />
           </BarChart>
         </div>
