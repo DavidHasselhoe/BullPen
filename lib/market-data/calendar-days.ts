@@ -51,7 +51,7 @@ import {
   type IPOCalendarItem,
 } from '@/lib/twelvedata/twelvedata-client';
 import { fetchNasdaqEarningsDay, type NasdaqEarningsRow } from './nasdaq-earnings-calendar';
-import { getCachedMany, getCachedManyStale, setCached } from '@/lib/cache/market-data-cache';
+import { getCachedMany, getCachedManyStale, getCachedStale, setCached } from '@/lib/cache/market-data-cache';
 import { tryReserveCredits, waitForCronCreditBudget } from '@/lib/twelvedata/credit-budget';
 import { addDays, todayET } from '@/lib/dates/calendar-format';
 
@@ -150,6 +150,31 @@ async function fetchEarningsDayWithNasdaqFill(date: string): Promise<EarningsCal
     });
   }
 
+  return [...bySymbol.values()];
+}
+
+/**
+ * Merges a fresh earnings fetch for a day that has already happened (or is
+ * happening today) with whatever was cached before, keyed by symbol.
+ * TwelveData's /earnings_calendar is a forward-looking "scheduled events"
+ * feed, not a stable historical record — verified live 2026-09-03: a date
+ * one day in the past that had shown real earnings (CSCO, PANW, IBM, ...)
+ * during the day itself returned only a handful of unrelated OTC rows once
+ * re-fetched after the day ended. Before this fix, that response replaced
+ * the cache wholesale via setCached, silently wiping the day's real entries
+ * — exactly the "yesterday's earnings disappeared" symptom reported live.
+ * A company that already reported doesn't stop having reported because a
+ * later fetch didn't include it, so for a day at or before today, a
+ * re-fetch may only add or update rows, never drop one seen before.
+ */
+function mergeSettledEarningsDay(
+  existing: EarningsCalendarItem[] | null,
+  fresh: EarningsCalendarItem[]
+): EarningsCalendarItem[] {
+  if (!existing || existing.length === 0) return fresh;
+  const bySymbol = new Map<string, EarningsCalendarItem>();
+  for (const row of existing) if (row.symbol) bySymbol.set(row.symbol.toUpperCase(), row);
+  for (const row of fresh) if (row.symbol) bySymbol.set(row.symbol.toUpperCase(), row);
   return [...bySymbol.values()];
 }
 
@@ -302,15 +327,21 @@ async function fetchAndCacheUnit(
   }
 
   await Promise.all(
-    [...byDate.entries()].map(([date, dayRows]) =>
-      setCached(
+    [...byDate.entries()].map(async ([date, dayRows]) => {
+      let rowsToWrite = dayRows;
+      if (kind === 'earnings' && dayDeltaFromToday(date, today) <= 0) {
+        const existing = await getCachedStale<EarningsCalendarItem[]>(calendarDayKey(kind, date));
+        rowsToWrite = mergeSettledEarningsDay(existing, dayRows as EarningsCalendarItem[]);
+        byDate.set(date, rowsToWrite);
+      }
+      return setCached(
         calendarDayKey(kind, date),
         '_market',
         dataTypeFor(kind),
-        dayRows,
+        rowsToWrite,
         calendarDayTtl(date, today)
-      )
-    )
+      );
+    })
   );
 
   return byDate;
