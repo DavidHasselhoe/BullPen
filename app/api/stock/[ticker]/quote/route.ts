@@ -3,8 +3,9 @@ import { getStockQuote, TwelveDataRateLimitError } from '@/lib/market-data';
 import { logger } from '@/lib/utils/logger';
 import { slugToSymbol } from '@/lib/assets/asset-type';
 import { humanizeError } from '@/lib/errors/humanize';
+import { withRateLimit } from '@/lib/security/api-security';
 
-export async function GET(
+async function handler(
   request: NextRequest,
   context: { params: Promise<{ ticker: string }> }
 ) {
@@ -39,3 +40,7 @@ export async function GET(
     );
   }
 }
+
+// No caching in getStockQuote itself — every call is a real TwelveData request.
+// Matches candles/route.ts's live-polling limit.
+export const GET = withRateLimit(handler, { windowMs: 60 * 1000, maxRequests: 120 });

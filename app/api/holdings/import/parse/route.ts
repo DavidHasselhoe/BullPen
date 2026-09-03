@@ -52,6 +52,11 @@ async function handler(request: NextRequest, _ctx: unknown, session: { userId: s
   if (!body.fileBase64 || !body.fileName) {
     return addSecurityHeaders(NextResponse.json({ error: 'fileBase64 and fileName are required' }, { status: 400 }));
   }
+  // Matches the file picker's own accept list (CSVImportModal.tsx) — the picker is
+  // just a UI hint, so anything hitting this route directly still needs enforcing.
+  if (!/\.(csv|txt)$/i.test(body.fileName)) {
+    return addSecurityHeaders(NextResponse.json({ error: 'Only .csv or .txt files are supported.' }, { status: 400 }));
+  }
 
   let bytes: Uint8Array;
   try {

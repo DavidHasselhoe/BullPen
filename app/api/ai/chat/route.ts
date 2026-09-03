@@ -13,6 +13,7 @@ import { logAiCall } from '@/lib/billing/log-ai-call';
 import { toSafeErrorMessage } from '@/lib/ai/error-utils';
 import { saveConversation } from '@/lib/ai/conversations';
 import { validateUUID } from '@/lib/security/input-validation';
+import { isSupportedLanguage } from '@/lib/i18n/language-names';
 
 async function handler(
   req: NextRequest,
@@ -35,13 +36,16 @@ async function handler(
   }
 
   const body = await req.json().catch(() => ({}));
-  const messages = body?.messages ?? [];
+  const messages = Array.isArray(body?.messages) ? body.messages : [];
   const context = body?.context ?? null;
   const conversationId = typeof body?.conversationId === 'string' && validateUUID(body.conversationId)
     ? body.conversationId
     : null;
   const experienceLevel = (body?.experienceLevel as 'beginner' | 'intermediate' | 'advanced') ?? null;
-  const language = (body?.language as string) ?? null;
+  // language is interpolated directly into the system prompt (languageName()
+  // falls back to the raw code for unknown values) — an unvalidated string
+  // here is a prompt-injection vector, not just a cosmetic fallback.
+  const language = typeof body?.language === 'string' && isSupportedLanguage(body.language) ? body.language : null;
   const riskProfile = (body?.riskProfile as 'conservative' | 'balanced' | 'aggressive') ?? null;
   const investmentHorizon = (body?.investmentHorizon as 'short' | 'medium' | 'long') ?? null;
   const responseStyle = (body?.responseStyle as 'concise' | 'balanced' | 'detailed') ?? null;
