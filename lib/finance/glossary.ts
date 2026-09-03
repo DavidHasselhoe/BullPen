@@ -56,6 +56,14 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     plainLabel: 'Price vs Expected Earnings',
     description: 'Like P/E but uses analyst estimates for future earnings. Useful for fast-growing companies where future profits matter more than past ones.',
   },
+  'TTM': {
+    plainLabel: 'Trailing Twelve Months',
+    description: 'The last four reported quarters added together, the standard way analysts say "as of right now" instead of using a calendar year.',
+  },
+  'NTM': {
+    plainLabel: 'Next Twelve Months',
+    description: 'Analysts\' forward-looking estimate for the coming four quarters, used when a company\'s future looks meaningfully different from its past.',
+  },
   'P/S': {
     plainLabel: 'Price vs Sales',
     description: 'How much investors pay per $1 of revenue the company brings in. Useful when a company isn\'t profitable yet, since P/E doesn\'t work without earnings.',
@@ -116,6 +124,14 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     plainLabel: 'Profit per $1 of Revenue',
     description: 'What percentage of revenue the company keeps as profit after all costs. A 20% margin means the company keeps $0.20 for every $1.00 it earns.',
   },
+  'Gross Margin': {
+    plainLabel: 'Profit Before Operating Costs',
+    description: 'Revenue minus the direct cost of making the product or service, as a percentage of revenue. Higher means more room to cover marketing, R&D, and overhead.',
+  },
+  'Operating Margin': {
+    plainLabel: 'Profit From Core Operations',
+    description: 'Profit from running the core business, before interest and taxes, as a percentage of revenue. Strips out one-off items to show how the business itself performs.',
+  },
   'Rev Growth': {
     plainLabel: 'Revenue Growth Rate',
     description: 'How fast the company\'s total sales are growing year-over-year. Positive means the business is expanding.',
@@ -128,12 +144,24 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     plainLabel: 'Earnings Growth Rate',
     description: 'How fast the company\'s profit is growing year-over-year, compared to the same quarter last year. Positive means profit is rising.',
   },
+  'YoY': {
+    plainLabel: 'Year-over-Year',
+    description: 'Compared to the same period one year ago. The standard way to compare growth without seasonal swings distorting the picture.',
+  },
+  'Constant Currency': {
+    plainLabel: 'Growth Without FX Swings',
+    description: 'Growth with exchange-rate swings stripped out, so a stronger or weaker dollar doesn\'t make the underlying business look better or worse than it really is.',
+  },
 
   // ── Financials: Income Statement ───────────────────────────────────────────
 
   'Revenue': {
     plainLabel: 'Total Sales',
     description: 'All money the company earned from selling products or services, before any costs are subtracted.',
+  },
+  'RPO': {
+    plainLabel: 'Contracted Future Revenue',
+    description: 'Remaining Performance Obligations: revenue from signed contracts that hasn\'t been delivered or booked yet. A preview of sales still to come, common for subscription and cloud businesses.',
   },
   'Gross Profit': {
     plainLabel: 'Sales Profit (Before Expenses)',
@@ -230,6 +258,10 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     description: 'Cash spent on physical assets like equipment, factories, or property. Necessary for growth but reduces free cash flow.',
   },
   'Free Cash Flow': {
+    plainLabel: 'Cash Left After Investments',
+    description: 'Operating cash flow minus capital expenditures. Money the company can use to pay dividends, buy back shares, or pay down debt.',
+  },
+  'FCF': {
     plainLabel: 'Cash Left After Investments',
     description: 'Operating cash flow minus capital expenditures. Money the company can use to pay dividends, buy back shares, or pay down debt.',
   },
@@ -485,10 +517,10 @@ export function getGlossaryEntry(term: string): GlossaryEntry | undefined {
  * sync when adding a new section above.
  */
 export const GLOSSARY_CATEGORIES: { name: string; terms: string[] }[] = [
-  { name: 'Statistics & Valuation', terms: ['Market Cap', 'Enterprise Value', 'Beta', 'Avg Volume', 'Shares Float', 'P/E (TTM)', 'P/E', 'Forward P/E', 'P/S', 'P/B', 'EV/EBITDA', 'Short Ratio', '52W Range', '52W High', '52W Low', 'Dividend Yield', 'Profit Margin', 'Rev Growth'] },
-  { name: 'Income Statement', terms: ['Revenue', 'Gross Profit', 'Operating Income', 'EBITDA', 'Net Income', 'EPS (Diluted)', 'EPS (Basic)', 'R&D Expenses', 'SG&A Expenses', 'Interest Expense', 'Income Tax'] },
+  { name: 'Statistics & Valuation', terms: ['Market Cap', 'Enterprise Value', 'Beta', 'Avg Volume', 'Shares Float', 'P/E (TTM)', 'P/E', 'Forward P/E', 'TTM', 'NTM', 'P/S', 'P/B', 'EV/EBITDA', 'Short Ratio', '52W Range', '52W High', '52W Low', 'Dividend Yield', 'Profit Margin', 'Gross Margin', 'Operating Margin', 'Rev Growth', 'YoY', 'Constant Currency'] },
+  { name: 'Income Statement', terms: ['Revenue', 'RPO', 'Gross Profit', 'Operating Income', 'EBITDA', 'Net Income', 'EPS (Diluted)', 'EPS (Basic)', 'R&D Expenses', 'SG&A Expenses', 'Interest Expense', 'Income Tax'] },
   { name: 'Balance Sheet', terms: ['Total Assets', 'Current Assets', 'Cash & Equivalents', 'Goodwill & Intangibles', 'Total Liabilities', 'Current Liabilities', 'Long-Term Debt', "Stockholders' Equity", 'Retained Earnings'] },
-  { name: 'Cash Flow', terms: ['Operating Cash Flow', 'Capital Expenditures', 'Free Cash Flow', 'D&A', 'Investing Activities', 'Financing Activities', 'Dividends Paid'] },
+  { name: 'Cash Flow', terms: ['Operating Cash Flow', 'Capital Expenditures', 'Free Cash Flow', 'FCF', 'D&A', 'Investing Activities', 'Financing Activities', 'Dividends Paid'] },
   { name: 'Technical Indicators', terms: ['SMA 50', 'SMA 200', 'EMA 20', 'BB', 'RSI', 'MACD'] },
   { name: 'Portfolio & Holdings', terms: ['Total Value', 'Cost Basis', 'Market Value', 'Unrealized P/L', 'Total P/L', 'Today P&L', 'Day Change', 'Avg Price', 'Allocation', 'Earnings', 'Thesis'] },
   { name: 'Health Score', terms: ['Health', 'Profitability', 'Financial Strength', 'Valuation', 'Growth', 'Market Risk', 'Current Ratio', 'Debt-to-Equity'] },

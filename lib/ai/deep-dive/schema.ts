@@ -76,6 +76,10 @@ const PriceTargetsBlock = z.object({
   type: z.literal('price_targets'),
   title: z.string().optional(),
   current: z.string().optional(),        // current price for context
+  currentPrice: z.number().optional(),   // numeric twin of `current` — powers the range bar
+  low: z.number().optional(),
+  high: z.number().optional(),
+  mean: z.number().optional(),
   items: z.array(z.object({
     source: z.string(),                  // e.g. "HSBC", "Consensus"
     value: z.string(),
@@ -90,14 +94,23 @@ const MetricTableBlock = z.object({
     label: z.string(),
     value: z.string(),
     note: z.string().optional(),
+    source: z.string().optional(),
   })).min(1),
 });
+
+// A bullet is either a plain string (legacy shape, still emitted freely by
+// the model and how every already-saved report stores its bull/bear points)
+// or a structured point carrying an optional source citation.
+const BullBearPoint = z.union([
+  z.string(),
+  z.object({ text: z.string(), source: z.string().optional() }),
+]);
 
 const BullBearBlock = z.object({
   type: z.literal('bull_bear'),
   title: z.string().optional(),
-  bull: z.array(z.string()).min(1),
-  bear: z.array(z.string()).min(1),
+  bull: z.array(BullBearPoint).min(1),
+  bear: z.array(BullBearPoint).min(1),
 });
 
 const CatalystsBlock = z.object({
@@ -108,6 +121,7 @@ const CatalystsBlock = z.object({
     detail: z.string().optional(),
     timeframe: z.string().optional(),
     direction: DirectionEnum.optional(),
+    source: z.string().optional(),
   })).min(1),
 });
 
@@ -118,6 +132,7 @@ const RisksBlock = z.object({
     title: z.string(),
     detail: z.string().optional(),
     severity: SeverityEnum.optional(),
+    source: z.string().optional(),
   })).min(1),
 });
 
@@ -149,6 +164,7 @@ export const ModelReportSchema = z.object({
 export type Block = z.infer<typeof BlockSchema>;
 export type Verdict = z.infer<typeof VerdictSchema>;
 export type ModelReport = z.infer<typeof ModelReportSchema>;
+export type BullBearPoint = z.infer<typeof BullBearPoint>;
 
 /** Stored/rendered report: model output + server-owned provenance fields. */
 export interface DeepDiveReport extends ModelReport {
