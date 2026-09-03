@@ -5,14 +5,17 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { getGlossaryEntry } from '@/lib/finance/glossary';
 import { HelpCircle } from 'lucide-react';
 
-// Jargon terms Deep Dive prose uses without explanation (RPO, FCF, EV/EBITDA,
-// TTM/NTM, constant-currency growth, YoY, forward P/E, gross/operating
-// margin). Deliberately a short curated list, not the full ~150-entry
-// GLOSSARY — sweeping every mention of "Revenue" or "Growth" would recreate
-// the wall-of-tooltips density problem this component exists to fix.
-const DEEP_DIVE_JARGON_TERMS = [
-  'EV/EBITDA', 'Forward P/E', 'Fwd P/E', 'Constant Currency',
-  'Operating Margin', 'Gross Margin', 'RPO', 'FCF', 'TTM', 'NTM', 'YoY',
+// Jargon Deep Dive and Portfolio Builder prose both use without explanation
+// (RPO, FCF, EV/EBITDA, TTM/NTM, constant-currency growth, YoY, forward P/E,
+// gross/operating margin, EUV, CoWoS, HPC, basis points). Deliberately a
+// short curated list, not the full ~150-entry GLOSSARY — sweeping every
+// mention of "Revenue" or "Growth" would recreate the wall-of-tooltips
+// density problem this component exists to fix. Shared across both report
+// types rather than duplicated — none of these terms have a plausible
+// false-positive context in either.
+const JARGON_TERMS = [
+  'EV/EBITDA', 'Forward P/E', 'Fwd P/E', 'Constant Currency', 'Basis Points',
+  'Operating Margin', 'Gross Margin', 'CoWoS', 'RPO', 'FCF', 'TTM', 'NTM', 'YoY', 'EUV', 'HPC', 'bps',
 ].sort((a, b) => b.length - a.length);
 
 function escapeRegExp(s: string): string {
@@ -26,19 +29,19 @@ function termPattern(term: string): string {
   return escapeRegExp(term).replace(/\s+/g, '[\\s-]+');
 }
 
-const JARGON_REGEX = new RegExp(`\\b(${DEEP_DIVE_JARGON_TERMS.map(termPattern).join('|')})\\b`, 'gi');
+const JARGON_REGEX = new RegExp(`\\b(${JARGON_TERMS.map(termPattern).join('|')})\\b`, 'gi');
 
 // GLOSSARY is keyed by exact casing ("TTM", not "ttm") and a literal space
 // ("Constant Currency"), so a lowercase or hyphenated mention in AI-generated
 // prose still needs to resolve to the right entry.
 function canonicalTerm(matched: string): string | undefined {
   const normalized = matched.toLowerCase().replace(/[\s-]+/g, ' ');
-  return DEEP_DIVE_JARGON_TERMS.find((t) => t.toLowerCase() === normalized);
+  return JARGON_TERMS.find((t) => t.toLowerCase() === normalized);
 }
 
 /**
- * Renders `text` with the first mention of each Deep Dive jargon term (per
- * `seen`) wrapped in a hover tooltip; later mentions render as plain text.
+ * Renders `text` with the first mention of each jargon term (per `seen`)
+ * wrapped in a hover tooltip; later mentions render as plain text.
  *
  * Deliberately a plain function, NOT a React component — call it directly
  * from a parent block's render body (`{glossaryText(item.label, seen)}`),

@@ -17,7 +17,7 @@ import {
 import { cn } from '@/lib/utils';
 import { tierBadgeClass, tierTextClass, type Tier } from '@/lib/ui/severity-tiers';
 import { RangeBar } from '@/components/viz/RangeBar';
-import { glossaryText } from './GlossaryText';
+import { glossaryText } from '@/components/ui/GlossaryText';
 import type { Block, BullBearPoint } from '@/lib/ai/deep-dive/schema';
 
 /** Trailing muted citation, e.g. "(10-Q Q3 2026)". Skips rendering when absent. */

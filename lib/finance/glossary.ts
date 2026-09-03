@@ -502,6 +502,33 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     plainLabel: 'Economic Downturn',
     description: 'A significant, widespread decline in economic activity lasting more than a few months, typically marked by falling output, employment, and spending.',
   },
+
+  // ── Deep Dive / Portfolio Builder jargon ────────────────────────────────────
+
+  'Basis Points': {
+    plainLabel: 'Hundredths of a Percent',
+    description: 'A basis point is 1/100th of a percentage point. "300 basis points" means 3 percentage points, a precise way analysts describe small changes in margins, rates, or yields.',
+  },
+  'bps': {
+    plainLabel: 'Hundredths of a Percent',
+    description: 'A basis point is 1/100th of a percentage point. "300 bps" means 3 percentage points, a precise way analysts describe small changes in margins, rates, or yields.',
+  },
+  'EUV': {
+    plainLabel: 'Extreme Ultraviolet Lithography',
+    description: 'The most advanced, expensive chipmaking technology, used to print the smallest, densest circuits. Only ASML makes the machines that do this, making it a chokepoint in the whole chip supply chain.',
+  },
+  'CoWoS': {
+    plainLabel: 'Advanced Chip Packaging',
+    description: "TSMC's technique for stacking and connecting multiple chips (like a processor and memory) into one package. It's a major bottleneck for AI chip production, since demand for it has outpaced capacity.",
+  },
+  'HPC': {
+    plainLabel: 'High-Performance Computing',
+    description: 'Computing built for heavy workloads like AI training, scientific simulation, or data centers, using far more processing power than a typical computer.',
+  },
+  'Thesis exposure': {
+    plainLabel: 'How Directly This Fits the Thesis',
+    description: "How directly a holding's revenue is exposed to the investment thesis, on a scale of 1 to 10. A 10 means the company is a pure play; a low score means the connection is more indirect.",
+  },
 };
 
 /** Look up a glossary entry, returning undefined if not found. */
