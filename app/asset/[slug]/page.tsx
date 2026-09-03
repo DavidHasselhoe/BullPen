@@ -160,7 +160,7 @@ export default function AssetPage() {
                     <AddToListPicker symbol={symbol} companyName={displayName} />
                     <Button variant="outline" size="sm" onClick={() => openAIPanel()} className="gap-2">
                       <MessageSquare className="h-4 w-4" />
-                      Ask AI
+                      Ask Bull
                     </Button>
                   </div>
                 </div>

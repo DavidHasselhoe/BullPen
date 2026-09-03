@@ -94,7 +94,6 @@
   "buyHereYourInvestment": "{{ticker}} — あなたの投資",
   "compareAddCompany": "企業を追加",
   "compareAllSelected": "選択した企業は既に比較に含まれています。",
-  "compareAskAiButton": "Ask Bull に聞く",
   "compareBiggestDifferencesTitle": "最大の違い",
   "compareBusinessDescriptionUnavailable": "ビジネス説明は利用できません。",
   "compareBusinessHeading": "ビジネス",
@@ -605,6 +604,13 @@
   "toolsPageSubtitle": "計算ツール、分析ツール、市場インサイト",
   "toolsPageTitle": "投資ツール",
   "tryAgainButton": "もう一度試す",
+  "compareAskAiButton": "Ask Bull",
+  "deepDiveSignInButton": "サインイン",
+  "deepDiveSignInDescription": "無料アカウントを作成して、AI Deep Diveを生成します：結果、ガイダンス、バリュエーション、強気材料と弱気材料、触媒とリスク。",
+  "deepDiveSignInTitle": "Deep Diveを実行するにはサインインしてください",
   "portfolioBuilderBullCase": "Bull case",
-  "portfolioBuilderBullThesis": "Bull thesis"
+  "portfolioBuilderBullThesis": "Bull thesis",
+  "portfolioBuilderSignInButton": "サインイン",
+  "portfolioBuilderSignInDescription": "無料アカウントを作成して、投資テーゼからテーマ別ポートフォリオを生成します。",
+  "portfolioBuilderSignInTitle": "ポートフォリオを構築するにはサインインしてください"
 }

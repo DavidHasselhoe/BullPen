@@ -32,7 +32,7 @@
   "scenarioLessonContinue": "«Coontiinuuee»",
   "completionCelebrationXpEarned": "«XP eeaarneed»",
   "readLessonAskAiQuery": "«Caan yoouu eexplaaiin {{term}} iin mooree deepth, wiith aa siimplee eexaamplee? Quuiick deefiiniitiioon II aalreeaady haavee: {{definition}}»",
-  "readLessonAskAiForMore": "«AAsk AAII foor mooree»",
+  "readLessonAskAiForMore": "«AAsk Buull foor mooree»",
   "readLessonFunFact": "«Fuun faact»",
   "quizLessonProgress": "«{{current}}/{{total}}»",
   "quizLessonCorrect": "«Niicee, thaat's riight»",

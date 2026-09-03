@@ -94,7 +94,6 @@
   "buyHereYourInvestment": "{{ticker}} — 你的投资",
   "compareAddCompany": "添加公司",
   "compareAllSelected": "已选公司已在对比中。",
-  "compareAskAiButton": "询问 AI",
   "compareBiggestDifferencesTitle": "最大差异",
   "compareBusinessDescriptionUnavailable": "业务描述不可用。",
   "compareBusinessHeading": "业务",
@@ -603,8 +602,15 @@
   "toolsPageSubtitle": "计算器、分析工具和市场洞察",
   "toolsPageTitle": "投资工具",
   "tryAgainButton": "重试",
+  "compareAskAiButton": "Ask Bull",
+  "deepDiveSignInButton": "登录",
+  "deepDiveSignInDescription": "创建免费账户以生成 AI 深度分析：结果、指导、估值、看涨 vs 看跌、催化剂和风险。",
+  "deepDiveSignInTitle": "登录以运行深度分析",
   "portfolioBuilderBullCase": "Bull case",
   "portfolioBuilderBullThesis": "Bull thesis",
+  "portfolioBuilderSignInButton": "登录",
+  "portfolioBuilderSignInDescription": "创建免费账户，根据你的投资论点生成主题投资组合。",
+  "portfolioBuilderSignInTitle": "登录以构建投资组合",
   "screenerBetaLabel": "Beta",
   "screenerColBetaLabel": "Beta"
 }

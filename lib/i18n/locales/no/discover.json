@@ -14,6 +14,7 @@
   "briefRelativeLessThanHour": "mindre enn 1t siden",
   "briefSourceCount_one": "{{count}} kilde",
   "briefSourceCount_other": "{{count}} kilder",
+  "briefTldrLabel": "SAMMENDRAG",
   "briefTocHeading": "I denne oversikten",
   "briefTocSectionsAriaLabel": "Seksjoner",
   "briefUpgradeCta": "Oppgrader",
@@ -59,7 +60,6 @@
   "portfolioWidgetWeekChange": "{{amount}} ({{pct}}%) denne uken",
   "recentlyViewedInlineLabel": "Nylig",
   "recentlyViewedTitle": "Nylig vist",
-  "rowActionsAskAi": "Spør AI",
   "rowActionsAskAiQuery": "Fortell meg om {{ticker}}",
   "rowActionsCompare": "Sammenlign",
   "rowActionsViewCompany": "Vis selskap",
@@ -79,5 +79,5 @@
   "whyTodayWidgetLabel": "Hvorfor i dag",
   "whyTodayWidgetNoData": "Ingen prisdata tilgjengelig nå. Kom tilbake senere.",
   "whyTodayWidgetWhyButton": "Hvorfor?",
-  "briefTldrLabel": "SAMMENDRAG"
+  "rowActionsAskAi": "Ask Bull"
 }

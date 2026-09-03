@@ -273,7 +273,7 @@ export default function EtfDetailPage() {
                     <AddToListPicker symbol={ticker} companyName={displayName} />
                     <Button variant="outline" size="sm" onClick={() => openAIPanel()} className="gap-2">
                       <MessageSquare className="h-4 w-4" />
-                      Ask AI
+                      Ask Bull
                     </Button>
                   </div>
                 </div>

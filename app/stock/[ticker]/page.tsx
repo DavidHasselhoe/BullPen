@@ -385,7 +385,7 @@ export default function StockDetailPage() {
                           <AlertDialog symbol={ticker} companyName={displayName} />
                           <Button variant="outline" size="sm" onClick={() => openAIPanel()} className="gap-2">
                             <MessageSquare className="h-4 w-4" />
-                            Ask AI
+                            Ask Bull
                           </Button>
                           {showFundamentals && (
                             <Button asChild size="sm" className="gap-2">

@@ -14,6 +14,7 @@
   "briefRelativeLessThanHour": "hace menos de 1h",
   "briefSourceCount_one": "{{count}} fuente",
   "briefSourceCount_other": "{{count}} fuentes",
+  "briefTldrLabel": "Resumen",
   "briefTocHeading": "En este resumen",
   "briefTocSectionsAriaLabel": "Secciones",
   "briefUpgradeCta": "Actualizar",
@@ -59,7 +60,6 @@
   "portfolioWidgetWeekChange": "{{amount}} ({{pct}}%) esta semana",
   "recentlyViewedInlineLabel": "Reciente",
   "recentlyViewedTitle": "Visto recientemente",
-  "rowActionsAskAi": "Pregunta a IA",
   "rowActionsAskAiQuery": "Cuéntame sobre {{ticker}}",
   "rowActionsCompare": "Comparar",
   "rowActionsViewCompany": "Ver empresa",
@@ -79,5 +79,5 @@
   "whyTodayWidgetLabel": "Por qué hoy",
   "whyTodayWidgetNoData": "No hay datos de precio disponibles en este momento. Vuelve más tarde.",
   "whyTodayWidgetWhyButton": "¿Por qué?",
-  "briefTldrLabel": "Resumen"
+  "rowActionsAskAi": "Ask Bull"
 }

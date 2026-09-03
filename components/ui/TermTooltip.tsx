@@ -78,7 +78,7 @@ export function TermTooltip({ term, className, ticker, onAskAI }: TermTooltipPro
             }}
             className="mt-2 block w-full text-left text-xs text-primary hover:underline"
           >
-            ✦ Ask AI about this
+            ✦ Ask Bull about this
           </button>
         )}
       </TooltipContent>
