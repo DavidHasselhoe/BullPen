@@ -2,6 +2,7 @@
 
 import { BullpenChat } from '@/components/ai/BullpenChat';
 import { AiTermsGate } from '@/components/ai/AiTermsGate';
+import { AuthGate } from '@/components/ai/AuthGate';
 import { BullAiIcon } from '@/components/ai/BullAiIcon';
 import { useAuth } from '@/hooks/use-auth';
 import { useAiTerms } from '@/hooks/use-ai-terms';
@@ -9,11 +10,13 @@ import { useTranslation } from 'react-i18next';
 
 export default function AIChatClientPage() {
   const { t } = useTranslation('tools');
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { hasAccepted } = useAiTerms();
-  // Signed-out visitors fall through to BullpenChat as before (the server route
-  // 401s) — the terms gate only makes sense once there's a user to record it for.
   const needsAiTermsGate = isAuthenticated && !hasAccepted;
+  // Ask Bull is a real-money per-message AI call, gated behind auth server-side.
+  // Guests used to fall through to BullpenChat and hit a raw 401 from its own
+  // fetch — now gated the same way as the side panel's AuthGate.
+  const needsSignIn = !authLoading && !isAuthenticated;
 
   // Was a module-scope STARTER_PROMPTS const — i18next-cli's instrument
   // correctly refused to wrap it (a t() call there runs once at import time,
@@ -42,7 +45,11 @@ export default function AIChatClientPage() {
           {t('aiChatSubtitle', 'Investment research assistant. Ask about SEC filings, metrics, or concepts')}
         </p>
       </div>
-      {needsAiTermsGate ? (
+      {needsSignIn ? (
+        <div className="flex min-h-[420px] rounded-2xl border border-border/60">
+          <AuthGate redirectTo="/tools/ai-chat" />
+        </div>
+      ) : needsAiTermsGate ? (
         <div className="flex min-h-[420px] rounded-2xl border border-border/60">
           <AiTermsGate />
         </div>

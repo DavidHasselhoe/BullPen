@@ -4,14 +4,14 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ThesisInput } from './ThesisInput';
 import { ProcessingScreen } from '@/components/ui/ProcessingScreen';
 import { PortfolioResult } from './PortfolioResult';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, Clock, ChevronRight, Trash2, Search, X } from 'lucide-react';
+import { AlertCircle, Clock, ChevronRight, Trash2, Search, Sparkles, X } from 'lucide-react';
 import type { Portfolio } from '@/lib/ai/portfolio-builder/schema';
 import type { SavedGeneration } from '@/app/api/ai/portfolio-builder/history/route';
 import type { QuotaState } from '@/lib/billing/quotas';
@@ -20,6 +20,7 @@ import { QuotaIndicator } from '@/components/billing/QuotaIndicator';
 import { AiPaywallDialog } from '@/components/billing/AiPaywallDialog';
 import { useInvalidateQuota } from '@/hooks/use-quota';
 import { useMarkEntityNotificationsRead } from '@/hooks/use-notifications';
+import { useAuth } from '@/hooks/use-auth';
 
 type Phase = 'idle' | 'streaming' | 'composing' | 'validating' | 'done' | 'error';
 type ErrorCode = 'invalid_key' | 'payment_required' | 'rate_limited' | 'parse_failed' | 'too_few_valid_tickers' | 'quota_exceeded' | 'unknown';
@@ -57,7 +58,9 @@ const POLL_INTERVAL_MS = 2500;
 
 export function PortfolioBuilderClient() {
   const { t } = useTranslation('tools');
+  const router = useRouter();
   const searchParams = useSearchParams();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [phase, setPhase] = useState<Phase>('idle');
   const [result, setResult] = useState<DoneEvent | null>(null);
   const [errorCode, setErrorCode] = useState<ErrorCode>('unknown');
@@ -104,6 +107,7 @@ export function PortfolioBuilderClient() {
       return fetch(`/api/ai/portfolio-builder/history${qs ? `?${qs}` : ''}`).then((r) => r.json());
     },
     staleTime: 30_000,
+    enabled: isAuthenticated,
   });
   const history = historyData?.generations ?? [];
   const historyTotal = historyData?.total ?? history.length;
@@ -170,7 +174,10 @@ export function PortfolioBuilderClient() {
 
   // On mount: load a specific generation from a notification deep link
   // (?id=...), or resume polling if the user left mid-build and came back.
+  // Skipped for guests — the render guard below shows a sign-in prompt
+  // instead, and this would otherwise 401 silently on every guest page view.
   useEffect(() => {
+    if (authLoading || !isAuthenticated) return;
     let cancelled = false;
     const linkedId = searchParams.get('id');
 
@@ -211,7 +218,7 @@ export function PortfolioBuilderClient() {
 
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [authLoading, isAuthenticated]);
 
   const submit = async (submittedThesis: string) => {
     stopPolling();
@@ -252,6 +259,30 @@ export function PortfolioBuilderClient() {
       setPhase('error');
     }
   };
+
+  // Portfolio Builder is a real-money AI call, gated behind auth for
+  // cost/quota reasons — gate here, before ever hitting the API, so a guest
+  // gets a clear prompt instead of a raw 401 from submit()'s fetch.
+  if (!authLoading && !isAuthenticated) {
+    return (
+      <Card>
+        <CardContent className="p-6 sm:p-8 text-center">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
+            <Sparkles className="h-6 w-6 text-primary" />
+          </div>
+          <h1 className="text-xl font-bold tracking-tight">{t('portfolioBuilderSignInTitle')}</h1>
+          <p className="text-sm text-muted-foreground mt-1.5 max-w-md mx-auto leading-relaxed">
+            {t('portfolioBuilderSignInDescription')}
+          </p>
+          <div className="mt-6">
+            <Button size="lg" onClick={() => router.push(`/login?redirect=${encodeURIComponent('/tools/portfolio-builder')}`)}>
+              {t('portfolioBuilderSignInButton')}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (phase === 'idle') {
     return (
