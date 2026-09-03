@@ -66,6 +66,15 @@ function fmtAbsolute(dateStr: string): string {
   return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+const STALE_DATA_DAYS = 14;
+
+function isStale(dateStr: string): boolean {
+  const [y, m, d] = dateStr.slice(0, 10).split('-').map(Number);
+  if (!y || !m || !d) return false;
+  const days = (Date.now() - new Date(y, m - 1, d).getTime()) / (24 * 60 * 60 * 1000);
+  return days > STALE_DATA_DAYS;
+}
+
 function Highlight({ label, title, detail }: { label: string; title: string; detail?: string }) {
   return (
     <div className="min-w-0">
@@ -125,7 +134,14 @@ export function DeepDiveHero({ report, when }: Props) {
           <BullBearGauge verdict={report.verdict} />
           <p className="text-[10px] text-muted-foreground/70 text-right leading-snug">
             Generated {fmtRelative(when)}
-            {report.dataAsOf ? ` · fundamentals as of ${fmtAbsolute(report.dataAsOf)}` : ''}
+            {report.dataAsOf && (
+              <>
+                {' · fundamentals as of '}
+                <span className={cn(isStale(report.dataAsOf) && 'text-amber-500 font-medium')}>
+                  {fmtAbsolute(report.dataAsOf)}
+                </span>
+              </>
+            )}
             {' · AI-generated — verify before acting.'}
           </p>
         </div>
