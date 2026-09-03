@@ -188,11 +188,10 @@ export async function signUp(params: SignUpParams): Promise<AuthResult> {
     while (attempts < maxAttempts && !userProfile) {
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      const { data: profile, error: profileError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', authData.user.id)
-        .single();
+      // Sensitive columns aren't selectable via the base table for the
+      // browser client anymore — see migration 121_users_column_scoping.sql.
+      // This RPC is scoped hard to auth.uid() server-side.
+      const { data: profile, error: profileError } = await supabase.rpc('get_own_profile');
 
       if (profile && !profileError) {
         userProfile = profile;
@@ -281,11 +280,12 @@ async function fetchUserProfileWithRetry(
 ): Promise<{ data: AuthUser | null; error: string | null }> {
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', userId)
-        .single();
+      // Sensitive columns aren't selectable via the base table for the
+      // browser client anymore — see migration 121_users_column_scoping.sql.
+      // This RPC is scoped hard to auth.uid() server-side, so it's already
+      // implicitly filtered to the caller's own row (userId is always the
+      // current session's own id here).
+      const { data, error } = await supabase.rpc('get_own_profile');
 
       if (!error && data) return { data: data as AuthUser, error: null };
       const msg = error?.message ?? '';
@@ -471,11 +471,10 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
       return null;
     }
 
-    const { data: userProfile, error: profileError } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', authUser.id)
-      .single();
+    // Sensitive columns aren't selectable via the base table for the
+    // browser client anymore — see migration 121_users_column_scoping.sql.
+    // This RPC is scoped hard to auth.uid() server-side.
+    const { data: userProfile, error: profileError } = await supabase.rpc('get_own_profile');
 
     if (profileError || !userProfile) {
       return null;

@@ -286,6 +286,14 @@ export interface Database {
           last_clicked_at: string;
         }>;
       };
+      // SECURITY DEFINER, scoped hard to auth.uid() — see
+      // migration 121_users_column_scoping.sql. Returns the caller's own
+      // full users row (including columns no longer selectable via the
+      // base table for the browser client).
+      get_own_profile: {
+        Args: Record<string, never>;
+        Returns: User;
+      };
     };
     Enums: Record<string, never>;
   };

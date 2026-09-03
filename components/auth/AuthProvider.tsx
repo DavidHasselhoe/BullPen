@@ -47,11 +47,11 @@ async function fetchUserProfile(
   if (now - lastErrorRef.current < USERS_FETCH_COOLDOWN_MS) return null;
 
   try {
-    const { data, error } = await supabase
-      .from('users')
-      .select('id, email, username, full_name, avatar_url, role, bio, experience_level, market_focus, risk_profile, account_tier, pro_bonus_until, created_at, updated_at, last_login_at, settings')
-      .eq('id', userId)
-      .single();
+    // Sensitive columns (email/role/account_tier/pro_bonus_until/stripe_*)
+    // are no longer selectable via the base table for the browser client —
+    // see migration 121_users_column_scoping.sql. This RPC is scoped hard
+    // to auth.uid() server-side, so it only ever returns the caller's own row.
+    const { data, error } = await supabase.rpc('get_own_profile');
 
     if (error || !data) {
       lastErrorRef.current = Date.now();
