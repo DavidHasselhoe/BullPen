@@ -1,5 +1,5 @@
 import { createServerClient } from '@/lib/supabase/client';
-import { getStorageLogoUrl } from '@/lib/logos/logos-storage';
+import { getLogoManifest, logoUrlFromManifest } from '@/lib/logos/logo-manifest';
 import { getCached, getCachedStale, setCached } from '@/lib/cache/market-data-cache';
 import {
   getIncomeStatement,
@@ -190,7 +190,7 @@ interface CompanyRow {
 export async function fetchCompareCompany(ticker: string): Promise<CompareCompany | null> {
   const supabase = createServerClient();
 
-  const [{ data: companyRow }, quarterlyIncome, quarterlyBalance, quarterlyCashflow] = await Promise.all([
+  const [{ data: companyRow }, quarterlyIncome, quarterlyBalance, quarterlyCashflow, logoManifest] = await Promise.all([
     supabase
       .from('companies')
       .select('ticker, name, sector, industry, description, logo_url, employee_count, fiscal_year_end, sic_code, incorporation_location')
@@ -201,6 +201,8 @@ export async function fetchCompareCompany(ticker: string): Promise<CompareCompan
     getCached<IncomeStatementPeriod[]>(`financials:${ticker}:income:quarterly`),
     getCached<BalanceSheetPeriod[]>(`financials:${ticker}:balance:quarterly`),
     getCached<CashFlowPeriod[]>(`financials:${ticker}:cashflow:quarterly`),
+    // Cached/memoized (see logo-manifest.ts) — not a per-request Supabase hit.
+    getLogoManifest(),
   ]);
 
   const ttmMetrics = buildTtmMetrics(quarterlyIncome, quarterlyBalance, quarterlyCashflow);
@@ -270,7 +272,14 @@ export async function fetchCompareCompany(ticker: string): Promise<CompareCompan
     sector: companyRow?.sector ?? null,
     industry: companyRow?.industry ?? null,
     description: companyRow?.description ?? null,
-    logo_url: companyRow?.logo_url || getStorageLogoUrl(ticker),
+    // getStorageLogoUrl always guessed a .jpg URL regardless of the real
+    // stored extension (png/svg get uploaded too — see uploadLogoToStorage),
+    // so any ticker whose logo isn't a jpg 404'd here and fell through to
+    // CompanyLogo's initials fallback even though a real logo existed one
+    // request away at /api/logo/[ticker]. The manifest tracks the real
+    // extension per ticker; null (no bucket object yet) correctly defers to
+    // that self-healing proxy instead of emitting a second wrong guess.
+    logo_url: companyRow?.logo_url || logoUrlFromManifest(logoManifest, ticker),
     employee_count: companyRow?.employee_count ?? null,
     fiscal_year_end: companyRow?.fiscal_year_end ?? null,
     sic_code: companyRow?.sic_code ?? null,
