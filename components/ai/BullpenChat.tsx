@@ -73,7 +73,15 @@ interface BullpenChatProps {
 // error payload — org IDs, rate-limit internals, stack-shaped text — never
 // renders directly to a user.
 function friendlyChatError(message: string | undefined, t: TFunction): string {
-  if (!message) return t('chatGenericError');
+  // The server's onError sanitizer (toSafeErrorMessage) returns one of these
+  // stable codes rather than English prose — it runs with no access to the
+  // user's language, so the actual copy has to come from the client's own
+  // i18n instead. Anything else reaching here is an unexpected raw error
+  // (network failure, a future regression) and falls through to the same
+  // "technical-looking → generic" heuristic as before.
+  if (message === 'rate_limited') return t('chatRateLimited');
+  if (message === 'unavailable') return t('chatUnavailable');
+  if (message === 'generic' || !message) return t('chatGenericError');
   const looksTechnical =
     message.length > 160 ||
     /"(type|code|error)"\s*:/i.test(message) ||
@@ -516,14 +524,16 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
           const isUser = message.role === 'user';
           const toolCalls = isUser ? [] : getCompletedToolCalls(message);
           const hasText = message.parts.some((p) => p.type === 'text' && p.text.trim().length > 0);
-          // While the newest assistant message is still fully empty (no tool
-          // output, no text yet), the dedicated thinking/tool-status bubble
-          // below covers that state on its own — rendering this bubble too
-          // would show a bare blinking cursor right next to "Reasoning…",
+          // True while this is the newest assistant message and no text has
+          // streamed in for its CURRENT step yet — including right after a
+          // tool call (e.g. a navigate action) completes and the model moves
+          // into another step before producing text. The dedicated
+          // thinking/tool-status bubble below covers that state on its own;
+          // rendering AssistantMessageContent's empty-text cursor here too
+          // would show a second, bare bubble right next to "Reasoning…",
           // reading as two separate replies instead of one in-progress one.
-          const isEmptyStreamingReply =
-            !isUser && isStreaming && message.id === lastMessage?.id && !hasText && toolCalls.length === 0;
-          if (isEmptyStreamingReply) return null;
+          const isAwaitingNextStep = !isUser && isStreaming && message.id === lastMessage?.id && !hasText;
+          if (isAwaitingNextStep && toolCalls.length === 0) return null;
           return (
             <motion.div
               key={message.id}
@@ -575,7 +585,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
                         />
                       );
                     })}
-                    <AssistantMessageContent
+                    {!isAwaitingNextStep && <AssistantMessageContent
                       text={message.parts
                         .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
                         .map((p) => p.text)
@@ -584,7 +594,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
                         isStreaming &&
                         message.id === messages[messages.length - 1]?.id
                       }
-                    />
+                    />}
                   </>
                 )}
               </div>

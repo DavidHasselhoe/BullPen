@@ -1,7 +1,13 @@
 import { APICallError } from 'ai';
 
+/** Stable, localizable codes — mapped to real copy client-side (BullpenChat's
+ *  friendlyChatError). Not the message text itself: this runs server-side
+ *  with no access to the user's language, and used to return hardcoded
+ *  English sentences that reached the chat UI verbatim regardless of locale. */
+export type SafeErrorCode = 'rate_limited' | 'unavailable' | 'generic';
+
 /**
- * Turns a provider-level error into a short, user-safe message. The AI SDK's
+ * Turns a provider-level error into a short, user-safe code. The AI SDK's
  * default error formatter just does `error.message` (or JSON.stringify for
  * non-Error values) with no sanitization — and @ai-sdk/openai's APICallError
  * embeds the raw upstream response body in `.message`, so an OpenAI 429 like
@@ -9,16 +15,12 @@ import { APICallError } from 'ai';
  * Limit 30000, Used 24998..." would otherwise reach the chat UI verbatim.
  * Always logs the full raw error server-side before returning the safe copy.
  */
-export function toSafeErrorMessage(error: unknown): string {
+export function toSafeErrorMessage(error: unknown): SafeErrorCode {
   console.error('[ai] stream error:', error);
 
   if (APICallError.isInstance(error)) {
-    if (error.statusCode === 429) {
-      return 'BullPen AI is handling a lot of requests right now. Please try again in a few seconds.';
-    }
-    if (error.statusCode != null && error.statusCode >= 500) {
-      return 'The AI service is temporarily unavailable. Please try again shortly.';
-    }
+    if (error.statusCode === 429) return 'rate_limited';
+    if (error.statusCode != null && error.statusCode >= 500) return 'unavailable';
   }
-  return 'Something went wrong generating a response. Please try again.';
+  return 'generic';
 }
