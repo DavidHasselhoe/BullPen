@@ -342,7 +342,7 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
             <div className="flex flex-col items-center py-7 gap-3 text-center">
               <AlertTriangle className="h-7 w-7 text-destructive/80" />
               <p className="text-sm text-destructive/90">{errorMessage || t('riskAnalysisGenericError')}</p>
-              <Button variant="outline" size="sm" onClick={analyze} className="gap-1.5 animate-ai-sweep">
+              <Button size="sm" onClick={analyze} className="gap-1.5 rounded-full animate-ai-pill-shine">
                 <RefreshCw className="h-3 w-3" /> {t('riskAnalysisTryAgain')}
               </Button>
             </div>

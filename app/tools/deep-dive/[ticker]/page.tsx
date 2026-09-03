@@ -332,7 +332,7 @@ export default function DeepDivePage() {
                   <h3 className="text-sm font-semibold text-foreground mb-1">{errorTitle(errorCode, t)}</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">{errorBody(errorCode, errorMessage, t)}</p>
                   <div className="mt-4">
-                    <Button onClick={() => generate(lens)} size="sm" variant="outline" className="animate-ai-sweep">{t('tryAgainButton', 'Try again')}</Button>
+                    <Button onClick={() => generate(lens)} size="sm" className="rounded-full animate-ai-pill-shine">{t('tryAgainButton', 'Try again')}</Button>
                   </div>
                 </div>
               </div>

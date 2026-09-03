@@ -45,11 +45,11 @@ export function DeepDiveReport({ report, createdAt, onRegenerate, regenerating, 
           <div className="flex items-center gap-1.5 shrink-0">
             {onAsk && (
               <Button variant="outline" size="sm" onClick={onAsk} className="h-8 gap-1.5 text-xs">
-                <MessageSquare className="h-3.5 w-3.5" /> Ask AI
+                <MessageSquare className="h-3.5 w-3.5" /> Ask Bull
               </Button>
             )}
             {onRegenerate && (
-              <Button variant="outline" size="sm" onClick={onRegenerate} disabled={regenerating} className="h-8 gap-1.5 text-xs animate-ai-sweep">
+              <Button size="sm" onClick={onRegenerate} disabled={regenerating} className="h-8 gap-1.5 text-xs rounded-full animate-ai-pill-shine">
                 <RefreshCw className={cn('h-3.5 w-3.5', regenerating && 'animate-spin')} /> Regenerate
               </Button>
             )}
