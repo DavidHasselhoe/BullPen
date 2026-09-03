@@ -89,6 +89,37 @@ const COUNTRY = 'United States';
  */
 const NASDAQ_MERGE_DAYS_AHEAD = 21;
 
+/**
+ * Rolling window the pre-warm cron keeps hot.
+ *
+ * `today - 7` covers "what just reported" (the list view's recent-past section
+ * and the daily brief's yesterday lookup); `today + 45` covers this week, this
+ * month and next month from any point in a month, plus the Instagram
+ * carousel's next-week lookahead. Declared up here (rather than by
+ * buildWarmPlan below, where it's mainly used) because NASDAQ_MERGE_DAYS_BACK
+ * references WARM_DAYS_BACK too.
+ */
+export const WARM_DAYS_BACK = 7;
+export const WARM_DAYS_FORWARD = 45;
+
+/**
+ * How many days *behind* "today" also get Nasdaq merged in. TD's calendar
+ * degrades once a date is in the past — not just sparse like the near-future
+ * case above, but actively wrong: verified live 2026-09-03 that a date one
+ * day prior, which had shown real earnings (CSCO, PANW, IBM, ...) while it
+ * was still today, returned only 5 unrelated OTC rows once re-queried after
+ * the fact. nasdaq-earnings-calendar.ts's own file header already documents
+ * a "PAST-DATE BONUS" (verified live 2026-08-22) — queried for an
+ * already-happened date, the same endpoint returns real `eps`/`surprise`
+ * alongside the original estimate — but this window never used it for
+ * anything but future dates until now. Matches WARM_DAYS_BACK (the same
+ * "recent past we still actively care about" window the pre-warm cron
+ * uses) rather than calendarDayTtl's 3-day settle point, so Nasdaq keeps
+ * backing up TD for the whole span still getting the aggressive 6-hour
+ * refresh below.
+ */
+const NASDAQ_MERGE_DAYS_BACK = WARM_DAYS_BACK;
+
 function dayDeltaFromToday(date: string, today: string): number {
   const delta = (Date.parse(`${date}T12:00:00Z`) - Date.parse(`${today}T12:00:00Z`)) / 86_400_000;
   return Number.isFinite(delta) ? Math.round(delta) : NaN;
@@ -96,7 +127,7 @@ function dayDeltaFromToday(date: string, today: string): number {
 
 function isWithinNasdaqMergeWindow(date: string, today: string): boolean {
   const delta = dayDeltaFromToday(date, today);
-  return delta >= 0 && delta <= NASDAQ_MERGE_DAYS_AHEAD;
+  return delta >= -NASDAQ_MERGE_DAYS_BACK && delta <= NASDAQ_MERGE_DAYS_AHEAD;
 }
 
 function mapNasdaqRowToEarningsItem(row: NasdaqEarningsRow, date: string): EarningsCalendarItem {
@@ -116,14 +147,17 @@ function mapNasdaqRowToEarningsItem(row: NasdaqEarningsRow, date: string): Earni
 
 /**
  * Merges TD's /earnings_calendar rows with Nasdaq's free calendar for one
- * near-term day. TD stays the base row for any symbol it has (so its other
- * fields are kept when present); Nasdaq fills in any symbol TD is missing
- * entirely, and backfills `time`/`eps_estimate` on a TD row that came back
- * empty for them — TD's /earnings_calendar returns `time: ""` on effectively
- * every row (see components/tools/calendar/EventRows.tsx's dead-code-removal
- * comment), so Nasdaq is what makes real BMO/AMC timing possible at all.
- * Nasdaq's own fetch fails soft (see its file header), so a scrape breakage
- * degrades this to "TD-only for that day," never a thrown error.
+ * day, near-term future or recent past. TD stays the base row for any symbol
+ * it has (so its other fields — notably revenue_estimate/revenue_actual,
+ * which Nasdaq's feed doesn't carry — are kept when present); Nasdaq fills
+ * in any symbol TD is missing entirely, and backfills whatever TD came back
+ * empty for: `time`/`eps_estimate` always (TD's /earnings_calendar returns
+ * `time: ""` on effectively every row — see components/tools/calendar/
+ * EventRows.tsx's dead-code-removal comment), plus `eps_actual`/`surprise`
+ * for a past date via Nasdaq's "PAST-DATE BONUS" (see nasdaq-earnings-
+ * calendar.ts's file header). Nasdaq's own fetch fails soft (see its file
+ * header), so a scrape breakage degrades this to "TD-only for that day,"
+ * never a thrown error.
  */
 async function fetchEarningsDayWithNasdaqFill(date: string): Promise<EarningsCalendarItem[]> {
   const [tdRows, nasdaqRows] = await Promise.all([
@@ -147,6 +181,8 @@ async function fetchEarningsDayWithNasdaqFill(date: string): Promise<EarningsCal
       name: existing.name || nRow.name,
       time: existing.time || nRow.time || '',
       eps_estimate: existing.eps_estimate ?? nRow.epsEstimate,
+      eps_actual: existing.eps_actual ?? nRow.epsActual,
+      surprise: existing.surprise ?? nRow.surprisePercent,
     });
   }
 
@@ -455,17 +491,6 @@ export interface WarmUnit {
   from: string;
   to: string;
 }
-
-/**
- * Rolling window the pre-warm cron keeps hot.
- *
- * `today - 7` covers "what just reported" (the list view's recent-past section
- * and the daily brief's yesterday lookup); `today + 45` covers this week, this
- * month and next month from any point in a month, plus the Instagram
- * carousel's next-week lookahead.
- */
-export const WARM_DAYS_BACK = 7;
-export const WARM_DAYS_FORWARD = 45;
 
 /**
  * Deterministic, stable-order unit list. Derived from `today` alone so a
