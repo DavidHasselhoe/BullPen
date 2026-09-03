@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -14,30 +15,34 @@ import type { Thesis } from '@/app/api/social/thesis/[symbol]/route';
 import type { ThesisReply } from '@/app/api/social/thesis/[symbol]/replies/route';
 
 const SENTIMENTS = [
-  { key: 'bull' as const, label: 'Bull', icon: TrendingUp, color: 'text-emerald-500', bg: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400' },
-  { key: 'neutral' as const, label: 'Neutral', icon: Minus, color: 'text-muted-foreground', bg: 'bg-muted text-muted-foreground border-muted' },
-  { key: 'bear' as const, label: 'Bear', icon: TrendingDown, color: 'text-red-500', bg: 'bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400' },
+  { key: 'bull' as const, labelKey: 'thesisSentimentBull', icon: TrendingUp, color: 'text-emerald-500', bg: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400' },
+  { key: 'neutral' as const, labelKey: 'thesisSentimentNeutral', icon: Minus, color: 'text-muted-foreground', bg: 'bg-muted text-muted-foreground border-muted' },
+  { key: 'bear' as const, labelKey: 'thesisSentimentBear', icon: TrendingDown, color: 'text-red-500', bg: 'bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400' },
 ];
 
 function SentimentPill({ sentiment }: { sentiment: Thesis['sentiment'] }) {
+  const { t } = useTranslation('stock');
   const s = SENTIMENTS.find((x) => x.key === sentiment)!;
   const Icon = s.icon;
   return (
     <span className={cn('inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border', s.bg)}>
       <Icon className="h-2.5 w-2.5" />
-      {s.label}
+      {t(s.labelKey)}
     </span>
   );
 }
 
-function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const m = Math.floor(diff / 60000);
-  if (m < 1) return 'just now';
-  if (m < 60) return `${m}m ago`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  return `${Math.floor(h / 24)}d ago`;
+function useTimeAgo() {
+  const { t } = useTranslation('stock');
+  return (dateStr: string): string => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const m = Math.floor(diff / 60000);
+    if (m < 1) return t('thesisJustNow');
+    if (m < 60) return t('thesisMinsAgo', { count: m });
+    const h = Math.floor(m / 60);
+    if (h < 24) return t('thesisHrsAgo', { count: h });
+    return t('thesisDaysAgo', { count: Math.floor(h / 24) });
+  };
 }
 
 function UserAvatar({ avatarUrl, displayName, size = 28 }: { avatarUrl: string | null; displayName: string; size?: number }) {
@@ -61,6 +66,8 @@ interface ThesisRepliesProps {
 }
 
 function ThesisReplies({ thesisId, replyCount, defaultOpen = false }: ThesisRepliesProps) {
+  const { t } = useTranslation('stock');
+  const timeAgo = useTimeAgo();
   const [open, setOpen] = useState(defaultOpen);
   const [showForm, setShowForm] = useState(defaultOpen);
   const [content, setContent] = useState('');
@@ -150,7 +157,7 @@ function ThesisReplies({ thesisId, replyCount, defaultOpen = false }: ThesisRepl
           className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
         >
           <CornerDownRight className="h-3 w-3" />
-          Reply
+          {t('thesisReplyButton')}
         </button>
         {liveCount > 0 && (
           <button
@@ -158,7 +165,7 @@ function ThesisReplies({ thesisId, replyCount, defaultOpen = false }: ThesisRepl
             className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
           >
             {open ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-            {liveCount} {liveCount === 1 ? 'reply' : 'replies'}
+            {t('thesisReplyCount', { count: liveCount })}
           </button>
         )}
       </div>
@@ -170,7 +177,7 @@ function ThesisReplies({ thesisId, replyCount, defaultOpen = false }: ThesisRepl
             <Skeleton className="h-12 rounded-lg" />
           ) : (
             (replies ?? []).map((reply) => {
-              const name = reply.full_name || reply.username || 'Anonymous';
+              const name = reply.full_name || reply.username || t('thesisAnonymousName');
               const profileHref = `/users/${encodeURIComponent(reply.username ?? reply.user_id)}`;
               const isEditing = editingId === reply.id;
               const isBusy = deletingId === reply.id;
@@ -199,7 +206,7 @@ function ThesisReplies({ thesisId, replyCount, defaultOpen = false }: ThesisRepl
                           <span className="text-[11px] text-muted-foreground">{editContent.length}/280</span>
                           <div className="flex gap-1.5">
                             <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={cancelEdit} disabled={isBusy}>
-                              Cancel
+                              {t('thesisCancelButton')}
                             </Button>
                             <Button
                               size="sm"
@@ -207,7 +214,7 @@ function ThesisReplies({ thesisId, replyCount, defaultOpen = false }: ThesisRepl
                               disabled={!editContent.trim() || isBusy}
                               onClick={() => saveEdit(reply.id)}
                             >
-                              {isBusy ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Save'}
+                              {isBusy ? <Loader2 className="h-3 w-3 animate-spin" /> : t('thesisSaveButton')}
                             </Button>
                           </div>
                         </div>
@@ -222,7 +229,7 @@ function ThesisReplies({ thesisId, replyCount, defaultOpen = false }: ThesisRepl
                         onClick={() => startEdit(reply)}
                         disabled={isBusy}
                         className="p-0.5 rounded text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-                        aria-label="Edit reply"
+                        aria-label={t('thesisReplyEditAriaLabel')}
                       >
                         <Pencil className="h-3 w-3" />
                       </button>
@@ -230,7 +237,7 @@ function ThesisReplies({ thesisId, replyCount, defaultOpen = false }: ThesisRepl
                         onClick={() => handleDelete(reply.id)}
                         disabled={isBusy}
                         className="p-0.5 rounded text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
-                        aria-label="Delete reply"
+                        aria-label={t('thesisReplyDeleteAriaLabel')}
                       >
                         {isBusy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
                       </button>
@@ -247,7 +254,7 @@ function ThesisReplies({ thesisId, replyCount, defaultOpen = false }: ThesisRepl
               <Textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                placeholder="Write a reply…"
+                placeholder={t('thesisReplyPlaceholder')}
                 className="resize-none text-xs min-h-[60px]"
                 maxLength={280}
                 autoFocus
@@ -256,7 +263,7 @@ function ThesisReplies({ thesisId, replyCount, defaultOpen = false }: ThesisRepl
                 <span className="text-[11px] text-muted-foreground">{content.length}/280</span>
                 <div className="flex gap-1.5">
                   <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => { setShowForm(false); setContent(''); }}>
-                    Cancel
+                    {t('thesisCancelButton')}
                   </Button>
                   <Button
                     size="sm"
@@ -264,7 +271,7 @@ function ThesisReplies({ thesisId, replyCount, defaultOpen = false }: ThesisRepl
                     disabled={!content.trim() || postReply.isPending}
                     onClick={() => postReply.mutate()}
                   >
-                    {postReply.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Post'}
+                    {postReply.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : t('thesisPostButton')}
                   </Button>
                 </div>
               </div>
@@ -286,7 +293,9 @@ interface ThesisCardProps {
 }
 
 function ThesisCard({ thesis, onDelete, onEdit, isDeleting }: ThesisCardProps) {
-  const displayName = thesis.full_name || thesis.username || 'Anonymous';
+  const { t } = useTranslation('stock');
+  const timeAgo = useTimeAgo();
+  const displayName = thesis.full_name || thesis.username || t('thesisAnonymousName');
   const profileHref = `/users/${encodeURIComponent(thesis.username ?? thesis.user_id)}`;
 
   return (
@@ -310,7 +319,7 @@ function ThesisCard({ thesis, onDelete, onEdit, isDeleting }: ThesisCardProps) {
             <button
               onClick={() => onEdit(thesis)}
               className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-              aria-label="Edit"
+              aria-label={t('thesisEditAriaLabel')}
             >
               <Pencil className="h-3.5 w-3.5" />
             </button>
@@ -318,7 +327,7 @@ function ThesisCard({ thesis, onDelete, onEdit, isDeleting }: ThesisCardProps) {
               onClick={() => onDelete(thesis.id)}
               disabled={isDeleting}
               className="p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
-              aria-label="Delete"
+              aria-label={t('thesisDeleteAriaLabel')}
             >
               {isDeleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
             </button>
@@ -335,7 +344,15 @@ function ThesisCard({ thesis, onDelete, onEdit, isDeleting }: ThesisCardProps) {
 
 // ─── Main section ─────────────────────────────────────────────────────────────
 
+const FILTER_LABEL_KEYS = {
+  all: 'thesisFilterAll',
+  bull: 'thesisSentimentBull',
+  neutral: 'thesisSentimentNeutral',
+  bear: 'thesisSentimentBear',
+} as const;
+
 export function ThesisSection({ symbol }: { symbol: string }) {
+  const { t } = useTranslation('stock');
   const { isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<'all' | 'bull' | 'bear' | 'neutral'>('all');
@@ -405,7 +422,7 @@ export function ThesisSection({ symbol }: { symbol: string }) {
         <div className="flex items-center gap-2">
           <MessageCircle className="h-4 w-4 text-muted-foreground" />
           <h2 className="text-base font-semibold text-foreground">
-            Community Theses
+            {t('thesisSectionTitle')}
             {(theses?.length ?? 0) > 0 && (
               <span className="ml-1.5 text-xs font-normal text-muted-foreground">· {theses!.length}</span>
             )}
@@ -423,7 +440,7 @@ export function ThesisSection({ symbol }: { symbol: string }) {
                   : 'border-border text-muted-foreground hover:text-foreground hover:border-foreground/30'
               )}
             >
-              {f}
+              {t(FILTER_LABEL_KEYS[f])}
             </button>
           ))}
         </div>
@@ -435,7 +452,7 @@ export function ThesisSection({ symbol }: { symbol: string }) {
           onClick={() => setShowForm(true)}
           className="w-full rounded-xl border border-dashed border-border px-4 py-3 text-sm text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors text-left"
         >
-          Share your take on {symbol}…
+          {t('thesisShareTakePlaceholder', { symbol })}
         </button>
       )}
 
@@ -454,7 +471,7 @@ export function ThesisSection({ symbol }: { symbol: string }) {
                   )}
                 >
                   <Icon className="h-3 w-3" />
-                  {s.label}
+                  {t(s.labelKey)}
                 </button>
               );
             })}
@@ -462,7 +479,7 @@ export function ThesisSection({ symbol }: { symbol: string }) {
           <Textarea
             value={formContent}
             onChange={(e) => setFormContent(e.target.value)}
-            placeholder={`What's your thesis on ${symbol}?`}
+            placeholder={t('thesisFormPlaceholder', { symbol })}
             className="resize-none text-sm min-h-[80px]"
             maxLength={500}
           />
@@ -470,14 +487,14 @@ export function ThesisSection({ symbol }: { symbol: string }) {
             <span className="text-xs text-muted-foreground">{formContent.length}/500</span>
             <div className="flex gap-2">
               <Button variant="ghost" size="sm" onClick={() => { setShowForm(false); setEditingThesis(null); setFormContent(''); }}>
-                Cancel
+                {t('thesisCancelButton')}
               </Button>
               <Button
                 size="sm"
                 onClick={() => submitMutation.mutate()}
                 disabled={!formContent.trim() || submitMutation.isPending}
               >
-                {submitMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : editingThesis ? 'Update' : 'Post'}
+                {submitMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : editingThesis ? t('thesisUpdateButton') : t('thesisPostButton')}
               </Button>
             </div>
           </div>
@@ -490,7 +507,7 @@ export function ThesisSection({ symbol }: { symbol: string }) {
           Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (theses?.length ?? 0) === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-6">
-            No {filter === 'all' ? '' : filter} theses yet. Be the first.
+            {filter === 'all' ? t('thesisNoneYetAll') : t('thesisNoneYetFiltered', { sentiment: t(FILTER_LABEL_KEYS[filter]) })}
           </p>
         ) : (
           theses!.map((t) => (
