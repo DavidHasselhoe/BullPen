@@ -246,37 +246,49 @@ All API routes live under `app/api/`. They follow these patterns:
 
 ### Scheduled work
 
-Split across two schedulers. All cron routes are protected by the `CRON_SECRET` bearer header regardless of who triggers them. Local manual trigger: `npm run trigger-cron` (or `trigger-alerts`). Run `npm run test-cron-coverage` after touching any cron route or scheduler — it fails if a route has no scheduler pointing at it, or a scheduler references a route that doesn't exist.
+Split across three schedulers. All cron routes are protected by the `CRON_SECRET` bearer header regardless of who triggers them. Local manual trigger: `npm run trigger-cron` (or `trigger-alerts`). Run `npm run test-cron-coverage` after touching any cron route or scheduler — it fails if a route has no scheduler pointing at it, or a scheduler references a route that doesn't exist.
 
-**Vercel crons** (`vercel.json`) — time-critical, capped at 2 by the Hobby plan, both currently in use:
+**Historical note (2026-09-03):** this used to be split "Vercel = 2 time-critical crons, GitHub Actions = everything else," with the reasoning that Vercel's Hobby plan capped projects at 2 cron jobs. That cap was removed Vercel-side on 2026-01-20 (`vercel.json` cron entries now go up to 100/project on every plan, confirmed live against Vercel's own docs) — it had just never been revisited. GitHub Actions' own scheduler is measurably unreliable regardless: typical drift is 15-20 min, but multi-hour delays and occasional dropped runs are common industry-wide in 2026, this repo included. The jobs below were re-sorted onto **whichever scheduler's actual constraints fit each job**, not habit.
+
+**Vercel crons** (`vercel.json`) — anything that fits Hobby's "once per day" cadence limit (a job that never fires twice in the same calendar day, regardless of which days of week) gets Vercel's own scheduler: tighter timing than GitHub Actions, and no separate service to manage. Vercel's cron invoker sends `Authorization: Bearer $CRON_SECRET` automatically when that env var is set — same header these routes already checked for GitHub Actions, so migrating a job here is a `vercel.json` edit only, never a route change.
 
 | Endpoint | Schedule (UTC) | Purpose |
 |---|---|---|
 | `/api/cron/generate-daily-brief` | `30 6 * * *` | Generate AI daily brief for Pro users (Anthropic Claude) |
 | `/api/cron/generate-weekly-pick` | `30 6 * * 1` | Generate Bull's Weekly Pick, published before pre-market so it's actionable from that session's open |
-
-**GitHub Actions crons** (`.github/workflows/cron-*.yml`) — time-tolerant jobs. Each workflow `POST`s/`GET`s the same Vercel route with `Bearer $CRON_SECRET`, so the route code is unchanged; only the scheduler differs. GH cron drift is usually ~5–15 min but has been observed running hours late during high scheduler load — fine for these, which is why anything timing-sensitive (weekly pick, alerts) lives on Vercel instead:
-
-| Endpoint | Schedule (UTC) | Purpose |
-|---|---|---|
-| `/api/cron/check-user-alerts` | `30 14-21 * * 1-5` | Evaluate user-defined price/metric alerts hourly through market hours (can't be a Vercel cron — Hobby plan only allows once-per-day schedules) |
+| `/api/cron/generate-academy-course` | `17 6 * * 1` | Draft the next course in the 10-week Academy roadmap (`lib/academy/academy-roadmap.ts`) via Claude and stage it unpublished for review at `/admin/academy-roadmap`. No auto-publish — requires explicit approval. |
+| `/api/cron/check-daily-challenge-reminder` | `0 1 * * *` | Evening (~9pm ET) nudge for users with an active Academy streak who haven't done anything in Academy yet today |
+| `/api/cron/check-dividends-upcoming` | `0 8 * * *` | Notify users about held/watched stocks going ex-dividend in 3 days |
 | `/api/cron/check-earnings-upcoming` | `0 8 * * *` | Email users about upcoming earnings in held/watched stocks |
 | `/api/cron/check-price-moves` | `30 21 * * 1-5` | Email on 5%+ price moves for held/watched stocks |
-| `/api/cron/check-dividends-upcoming` | `0 8 * * *` | Notify users about held/watched stocks going ex-dividend in 3 days |
-| `/api/cron/check-daily-challenge-reminder` | `0 1 * * *` | Evening (~9pm ET) nudge for users with an active Academy streak who haven't done anything in Academy yet today |
-| `/api/cron/generate-academy-course` | `17 6 * * 1` | Draft the next course in the 10-week Academy roadmap (`lib/academy/academy-roadmap.ts`) via Claude and stage it unpublished for review at `/admin/academy-roadmap`. No auto-publish — requires explicit approval. |
-| `/api/cron/prefetch-market-data` | `0 5 * * *` | Pre-cache S&P 500 + NASDAQ 100 stats/earnings |
-| `/api/cron/prefetch-market-data?phase=financials` | `30 7 * * *` | Pre-cache income/balance/cash-flow for the full screener universe (own workflow, `cron-prefetch-financials.yml`, since it no longer fits in the same job as the stats phase). Runs right after the stats prefetch hands off, so it clears before market open instead of competing with peak organic traffic. |
-| `/api/cron/prefetch-calendar` | `0 4 * * *` | Warm the per-day market-calendar caches (earnings, dividends, splits, IPOs) over a rolling today-7 to today+45 window. Serves the calendar tool, the Discover earnings widget, the daily brief, the earnings-upcoming email and the Instagram carousel from one cache. Scheduled at 04:00 so it clears before the 06:30 daily brief and 08:00 earnings email, making both free cache hits. |
-| `/api/screener/refresh` (active mode) | `0 22 * * *` | Refresh `/statistics` + health score for the top half of the active screener universe by market cap (`cron-refresh-screener-stats.yml`) |
-| `/api/screener/refresh` (active + discovery mode) | `0 3 * * *` | Covers the rest of the active universe, then sweeps tier-0 tickers for promotion (`cron-refresh-screener-extended.yml`). Both this and the 22:00 job skip any ticker whose `screener_stats` row is <12h old, so they don't re-fetch what `prefetch-market-data` just warmed. |
 | `/api/cron/instagram-earnings-weekly` | `0 12 * * 0` | Generate, stage, and immediately publish next week's earnings-calendar Instagram carousel; notify Discord. Own `content_type` (`earnings_calendar`). |
 | `/api/cron/instagram-earnings-results` | `0 14 * * 6` | Generate, stage, and immediately publish the past week's beat/missed earnings-results recap carousel; notify Discord. Own `content_type` (`earnings_results`), can share a `period_key` with an `earnings_calendar` row for the same week without colliding. |
 | `/api/cron/market-movers-daily` | `30 21 * * 1,3,5` | Generate, stage, and immediately publish that day's top-10-gainers/top-10-losers Instagram carousel (S&P 500 + Nasdaq 100 only); notify Discord. `?preMarket=true&contextNote=...` triggers an off-schedule special edition (e.g. ahead of a market-moving event). |
 
 All three Instagram crons above publish for real in the same run they stage in — see `lib/instagram/publish.ts` and `docs/instagram-setup.md` for Meta credential setup. There is no next-day publish step or manual approval gate; the Discord message posted alongside each is a confirmation, not a review window.
 
-`cron-sync-index-constituents.yml` (`scripts/sync-index-constituents.ts`, `0 5 * * 1`) doesn't fit the table above — it's not a `/api/cron/*` route call, it's a repo-native script that refreshes `lib/market-data/sp500.ts` / `nasdaq100.ts` against real index membership (SPY's daily holdings disclosure for the S&P 500, Nasdaq's own constituents API for the Nasdaq-100 — TwelveData has no index-constituents endpoint) and commits any diff straight to `preview`. No manual review gate: both sources are official/fund-mandated daily disclosures, not a scrape. Posts to Discord (`DISCORD_INDEX_SYNC_WEBHOOK_URL`) only when membership actually changed. See `lib/market-data/index-sync.ts` for the fetch/parse logic.
+**Upstash QStash** — for a job that's both sub-daily (violates Hobby's once/day cadence) and genuinely time-sensitive, so "runs sometime in the next hour" (Hobby's own timing guarantee even if the cadence fit) isn't good enough either:
+
+| Endpoint | Schedule (UTC) | Purpose |
+|---|---|---|
+| `/api/cron/check-user-alerts` | `30 14-21 * * 1-5` | Evaluate user-defined price/metric alerts hourly through market hours |
+
+**Status: not yet migrated.** This still runs on GitHub Actions (`cron-check-user-alerts.yml`) pending a QStash schedule being created in the Upstash console (same account already used for Redis — QStash is a separate tab/token, `QSTASH_TOKEN`) pointed at this route with the same `Authorization: Bearer $CRON_SECRET` header. Don't delete the GitHub Actions workflow until the QStash schedule is confirmed firing — this is the one user-facing job in the whole scheduled-work list where a silent gap actually matters.
+
+**GitHub Actions crons** (`.github/workflows/cron-*.yml`) — reserved for jobs that need something GitHub Actions actually provides beyond scheduling: a runner that can stay alive for hours pacing batched TwelveData calls (a single serverless function invocation can't), or real git checkout+commit access. Each workflow `POST`s/`GET`s the same Vercel route with `Bearer $CRON_SECRET`; the route code is unchanged, only the scheduler differs.
+
+| Endpoint | Schedule (UTC) | Why this stays on GitHub Actions |
+|---|---|---|
+| `/api/cron/prefetch-market-data` | `0 5 * * *` | Loops ~121 batches (5 symbols each) with a 75s sleep between calls, up to ~2.5h total — needs a long-lived runner, not a single request/response |
+| `/api/cron/prefetch-market-data?phase=financials` | `30 7 * * *` | Own workflow (`cron-prefetch-financials.yml`) since it no longer fits in the same job as the stats phase. Loops up to 300 batches (one symbol each) with a 65s sleep, up to ~5.5h total |
+| `/api/cron/prefetch-calendar` | `0 4 * * *` | Loops up to 40 batches with a 65s sleep, up to ~45 min total |
+| `/api/screener/refresh` (active mode) | `0 22 * * *` | `cron-refresh-screener-stats.yml` — loops ~122 batches with a 65s sleep, up to ~160 min total |
+| `/api/screener/refresh` (active + discovery mode) | `0 3 * * *` | `cron-refresh-screener-extended.yml` — two chained batch loops (up to 279 + 15 batches), up to ~180 min total. Both this and the 22:00 job skip any ticker whose `screener_stats` row is <12h old, so they don't re-fetch what `prefetch-market-data` just warmed |
+| `/api/cron/check-user-alerts` | `30 14-21 * * 1-5` | Temporary — see QStash section above, not staying here for a batch-loop reason |
+
+`cron-sync-index-constituents.yml` (`scripts/sync-index-constituents.ts`, `0 5 * * 1`) also stays on GitHub Actions, for a different reason than the batch-loop jobs above — it's not a `/api/cron/*` route call at all, it's a repo-native script that refreshes `lib/market-data/sp500.ts` / `nasdaq100.ts` against real index membership (SPY's daily holdings disclosure for the S&P 500, Nasdaq's own constituents API for the Nasdaq-100 — TwelveData has no index-constituents endpoint) and commits any diff straight to `preview`, which needs GitHub Actions' git checkout+commit access — no serverless cron can do that. No manual review gate: both sources are official/fund-mandated daily disclosures, not a scrape. Posts to Discord (`DISCORD_INDEX_SYNC_WEBHOOK_URL`) only when membership actually changed. See `lib/market-data/index-sync.ts` for the fetch/parse logic.
+
+`cron-generate-weekly-pick.yml` still exists but is `workflow_dispatch`-only (a manual re-run trigger from the Actions tab, not a second scheduler) — that route's real schedule lives in `vercel.json` above.
 
 `seed-screener-universe.yml` (`/api/screener/seed-universe`) is `workflow_dispatch`-only — a manual/occasional bootstrap for newly-listed tickers, not a recurring schedule.
 
