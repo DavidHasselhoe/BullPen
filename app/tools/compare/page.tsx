@@ -1053,6 +1053,11 @@ function CompareContent() {
                             const m = key as keyof typeof companies[0]['metrics'];
                             const values = companies.map((c) => c.metrics[m] as number | null);
                             const betterIdx = computeBetterIndex(values, true);
+                            const worseIdx = computeBetterIndex(values, false);
+                            // Only a real winner/loser when they're different companies —
+                            // a single data point (everyone else null) or a full tie across
+                            // every company would otherwise mark the same cell as both.
+                            const hasSpread = betterIdx !== null && worseIdx !== null && betterIdx !== worseIdx;
                             const diffRes =
                               companies.length === 2
                                 ? computeDiff(values[0], values[1], isPct)
@@ -1098,11 +1103,18 @@ function CompareContent() {
                                   </td>
                                 {companies.map((c, i) => {
                                   const val = c.metrics[m];
-                                  const isBetter = betterIdx === i && val != null;
+                                  const isBetter = hasSpread && betterIdx === i && val != null;
+                                  const isWorse = hasSpread && worseIdx === i && val != null;
                                   return (
                                     <td
                                       key={c.ticker}
-                                      className={`text-right py-3 px-4 font-mono tabular-nums align-middle ${isBetter ? 'border-l-2 border-l-primary/50 bg-primary/5 dark:bg-primary/10' : ''}`}
+                                      className={`text-right py-3 px-4 font-mono tabular-nums align-middle ${
+                                        isBetter
+                                          ? 'border-l-2 border-l-emerald-400/50 bg-emerald-400/5 dark:bg-emerald-400/10'
+                                          : isWorse
+                                            ? 'border-l-2 border-l-red-400/50 bg-red-400/5 dark:bg-red-400/10'
+                                            : ''
+                                      }`}
                                     >
                                       {formatter(val as number | null)}
                                     </td>
