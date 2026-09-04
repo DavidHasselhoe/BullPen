@@ -1,5 +1,15 @@
 [
   {
+    "date": "2026-09-04",
+    "entries": [
+      { "type": "new", "text": "Added Portfolio Health to My Holdings: a single score showing how financially healthy your holdings are overall, weighted by how much of your portfolio each one makes up. Click into any category to see which holdings are pulling it up or down" },
+      { "type": "improved", "text": "AI Deep Dive reports now show the company logo, and key risk/catalyst details no longer get cut off mid-sentence" },
+      { "type": "improved", "text": "Picking a different lens on an AI Deep Dive report now updates the link, so refreshing or sharing the page keeps your chosen lens" },
+      { "type": "improved", "text": "Clarified in the Screener why a stock's Payout ratio can show over 100%, so it doesn't look like broken data" },
+      { "type": "fixed", "text": "Fixed a chart tooltip on AI Deep Dive reports leaving trailing copies behind when moving the mouse quickly between bars" }
+    ]
+  },
+  {
     "date": "2026-09-03",
     "entries": [
       { "type": "new", "text": "Ask Bull can now explain the revenue flow chart on a stock's page, breaking down where the money goes and why it matters" },
