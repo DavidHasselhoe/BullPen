@@ -263,7 +263,7 @@ Split across three schedulers. All cron routes are protected by the `CRON_SECRET
 | `/api/cron/check-price-moves` | `30 21 * * 1-5` | Email on 5%+ price moves for held/watched stocks |
 | `/api/cron/instagram-earnings-weekly` | `0 12 * * 0` | Generate, stage, and immediately publish next week's earnings-calendar Instagram carousel; notify Discord. Own `content_type` (`earnings_calendar`). |
 | `/api/cron/instagram-earnings-results` | `0 14 * * 6` | Generate, stage, and immediately publish the past week's beat/missed earnings-results recap carousel; notify Discord. Own `content_type` (`earnings_results`), can share a `period_key` with an `earnings_calendar` row for the same week without colliding. |
-| `/api/cron/market-movers-daily` | `30 21 * * 1,3,5` | Generate, stage, and immediately publish that day's top-10-gainers/top-10-losers Instagram carousel (S&P 500 + Nasdaq 100 only); notify Discord. `?preMarket=true&contextNote=...` triggers an off-schedule special edition (e.g. ahead of a market-moving event). |
+| `/api/cron/market-movers-daily` | `30 21 * * 1-5` | Generate, stage, and immediately publish that day's top-10-gainers/top-10-losers Instagram carousel (S&P 500 + Nasdaq 100 only); notify Discord. `?preMarket=true&contextNote=...` triggers an off-schedule special edition (e.g. ahead of a market-moving event). |
 
 All three Instagram crons above publish for real in the same run they stage in — see `lib/instagram/publish.ts` and `docs/instagram-setup.md` for Meta credential setup. There is no next-day publish step or manual approval gate; the Discord message posted alongside each is a confirmation, not a review window.
 
@@ -426,3 +426,13 @@ TWELVE_DATA_API_KEY
 ```
 
 Optional but used in production: `FINNHUB_API_KEY`, `RESEND_API_KEY`, `CRON_SECRET`, `LOGO_DEV_KEY`, `NEXT_PUBLIC_APP_URL`, `ANTHROPIC_API_KEY` (Why Today? + Daily Brief), `SNAPTRADE_CLIENT_ID`, `SNAPTRADE_CONSUMER_KEY`, `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`, `DISCORD_CHANGELOG_WEBHOOK_URL` (Discord changelog announcements — see `scripts/post-changelog-discord.ts`), `DISCORD_INSTAGRAM_WEBHOOK_URL`, `INSTAGRAM_APP_ID`, `INSTAGRAM_APP_SECRET`, `INSTAGRAM_ACCESS_TOKEN`, `INSTAGRAM_USER_ID` (automated Instagram content pipeline, Business Login for Instagram — see `docs/instagram-setup.md`), `DISCORD_INDEX_SYNC_WEBHOOK_URL` (index-constituent sync change notifications — see `scripts/sync-index-constituents.ts`), `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST` (product analytics, gated behind cookie consent — see `components/analytics/PostHogProvider.tsx`).
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
