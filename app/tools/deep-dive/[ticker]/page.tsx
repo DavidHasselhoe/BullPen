@@ -75,7 +75,14 @@ export default function DeepDivePage() {
   })();
 
   const [phase, setPhase] = useState<Phase>('loading');
-  const [lens, setLens] = useState<DeepDiveLens>(initialLens);
+  const [lens, setLensState] = useState<DeepDiveLens>(initialLens);
+
+  const setLens = useCallback((next: DeepDiveLens) => {
+    setLensState(next);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('lens', next);
+    router.replace(`/tools/deep-dive/${rawTicker}?${params.toString()}`, { scroll: false });
+  }, [rawTicker, router, searchParams]);
   const [report, setReport] = useState<Report | null>(null);
   const [createdAt, setCreatedAt] = useState<string | null>(null);
   const [genPhase, setGenPhase] = useState<DivePhase>('reading_data');
@@ -132,7 +139,7 @@ export default function DeepDivePage() {
         // Transient network hiccup — keep polling, the next tick will retry.
       }
     }, POLL_INTERVAL_MS);
-  }, [rawTicker, symbol, stopPolling, invalidateQuota, queryClient, markEntityRead]);
+  }, [rawTicker, symbol, stopPolling, invalidateQuota, queryClient, markEntityRead, setLens]);
 
   // On mount: show the latest saved dive, or resume polling if one is still
   // generating (e.g. the user started it, left, and came back). Skipped for
