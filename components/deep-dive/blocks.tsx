@@ -120,6 +120,7 @@ function BarChartBlock({ block }: { block: Extract<Block, { type: 'bar_chart' }>
             contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--card)' }}
             formatter={(v) => [fmt(Number(v)), ''] as [string, string]}
             labelStyle={{ color: 'var(--muted-foreground)' }}
+            isAnimationActive={false}
           />
           <Bar dataKey="value" radius={[4, 4, 0, 0]} isAnimationActive={false}>
             {block.series.map((s, i) => (

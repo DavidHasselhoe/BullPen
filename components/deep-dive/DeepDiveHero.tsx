@@ -2,6 +2,7 @@
 
 import { Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { LENS_LABELS, type DeepDiveReport as Report } from '@/lib/ai/deep-dive/schema';
 
 const STANCE_STYLE: Record<Report['verdict']['stance'], { label: string; cls: string }> = {
@@ -79,8 +80,8 @@ function Highlight({ label, title, detail }: { label: string; title: string; det
   return (
     <div className="min-w-0">
       <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80">{label}</div>
-      <div className="mt-0.5 text-sm font-medium text-foreground truncate">{title}</div>
-      {detail && <div className="text-[13px] text-muted-foreground truncate">{detail}</div>}
+      <div className="mt-0.5 text-sm font-medium text-foreground">{title}</div>
+      {detail && <div className="text-[13px] text-muted-foreground">{detail}</div>}
     </div>
   );
 }
@@ -114,17 +115,20 @@ export function DeepDiveHero({ report, when }: Props) {
   return (
     <div className="space-y-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0 space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-widest text-primary">
-              <Sparkles className="h-3 w-3" /> AI Deep Dive
-            </span>
-            <span className="text-[11px] text-muted-foreground/85">·</span>
-            <span className="text-[11px] text-muted-foreground/80">{LENS_LABELS[report.lens]}</span>
+        <div className="flex min-w-0 items-start gap-3">
+          <CompanyLogo name={report.companyName} ticker={report.ticker} size={40} className="mt-0.5 border border-border/50" loading="eager" />
+          <div className="min-w-0 space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-widest text-primary">
+                <Sparkles className="h-3 w-3" /> AI Deep Dive
+              </span>
+              <span className="text-[11px] text-muted-foreground/85">·</span>
+              <span className="text-[11px] text-muted-foreground/80">{LENS_LABELS[report.lens]}</span>
+            </div>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground leading-tight">
+              {report.companyName} <span className="text-muted-foreground font-mono text-base">${report.ticker}</span>
+            </h1>
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground leading-tight">
-            {report.companyName} <span className="text-muted-foreground font-mono text-base">${report.ticker}</span>
-          </h1>
         </div>
         <div className="flex w-full shrink-0 flex-col items-end gap-1.5 sm:w-auto sm:max-w-[240px]">
           <span className={cn('text-xs font-bold px-2.5 py-1 rounded-full border', stance.cls)}>
