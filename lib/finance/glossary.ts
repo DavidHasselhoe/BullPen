@@ -114,7 +114,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   'Payout': {
     plainLabel: 'Share of Profit Paid Out',
-    description: 'The percentage of profit paid to shareholders as dividends rather than reinvested. Very high payout ratios can be harder for a company to sustain.',
+    description: 'The percentage of profit paid to shareholders as dividends rather than reinvested. A ratio over 100% usually means the company held its dividend steady through a weak earnings year, not that something is broken, but it is worth watching if it stays that high for long.',
   },
   'Profit Margin': {
     plainLabel: 'Profit per $1 of Revenue',
