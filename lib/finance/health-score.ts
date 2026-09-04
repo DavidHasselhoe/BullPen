@@ -35,11 +35,13 @@ export interface CategoryScore {
   dataAvailable?: boolean;
 }
 
+export type HealthGrade = 'A' | 'B' | 'C' | 'D' | 'F';
+
 export interface HealthScore {
   /** Aggregate score 0–100 */
   score: number;
   /** Letter grade */
-  grade: 'A' | 'B' | 'C' | 'D' | 'F';
+  grade: HealthGrade;
   /** One-word summary */
   label: string;
   /** One-sentence plain-English summary for beginners */
@@ -61,7 +63,7 @@ function pct(n: number | null): number {
   return n != null ? n * 100 : 0;
 }
 
-function catLabel(score: number, max: number): string {
+export function catLabel(score: number, max: number): string {
   const ratio = max > 0 ? score / max : 0;
   if (ratio >= 0.8) return 'Excellent';
   if (ratio >= 0.6) return 'Good';
@@ -318,6 +320,30 @@ function buildSummary(
     return 'Below-average fundamentals — this carries higher risk and requires careful due diligence.';
   }
   return 'Significant risk signals across multiple areas. High-risk profile — research thoroughly before investing.';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// screener_stats column mapping
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface CategoryColumns {
+  health_profitability: number;
+  health_financial_strength: number;
+  health_valuation: number;
+  health_growth: number;
+  health_market_risk: number;
+}
+
+/** Maps by category name, not array position — safe if computeHealthScore ever reorders categories. */
+export function categoriesToColumns(categories: CategoryScore[]): CategoryColumns {
+  const byName = new Map(categories.map((c) => [c.name, c.score]));
+  return {
+    health_profitability: byName.get('Profitability') ?? 0,
+    health_financial_strength: byName.get('Financial Strength') ?? 0,
+    health_valuation: byName.get('Valuation') ?? 0,
+    health_growth: byName.get('Growth') ?? 0,
+    health_market_risk: byName.get('Market Risk') ?? 0,
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

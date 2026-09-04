@@ -91,6 +91,11 @@ export interface ScreenerRow {
   day200_ma: number | null;
   health_score: number | null;
   health_score_grade: string | null;
+  health_profitability: number | null;
+  health_financial_strength: number | null;
+  health_valuation: number | null;
+  health_growth: number | null;
+  health_market_risk: number | null;
   updated_at: string;
   /**
    * Last-known price/change from the most recent quote — hydrated only in the

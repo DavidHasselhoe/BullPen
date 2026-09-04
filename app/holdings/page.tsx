@@ -7,6 +7,7 @@ import { AddHoldingModal } from '@/components/holdings/AddHoldingModal';
 import { CSVImportModal } from '@/components/holdings/CSVImportModal';
 import { HoldingsPieChart } from '@/components/holdings/HoldingsPieChart';
 import { PortfolioDashboard } from '@/components/holdings/PortfolioDashboard';
+import { PortfolioHealthCard } from '@/components/holdings/PortfolioHealthCard';
 import { PortfolioRiskAnalysis } from '@/components/holdings/PortfolioRiskAnalysis';
 import { PortfolioPerformanceChart } from '@/components/holdings/PortfolioPerformanceChart';
 import { PerformanceCalendarCard } from '@/components/holdings/performance-calendar/PerformanceCalendarCard';
@@ -387,6 +388,11 @@ export default function HoldingsPage() {
 
       {/* Stats row — 4 cards */}
       <PortfolioDashboard holdings={throttledHoldings} currency={userCurrency} isLoading={statsLoading} />
+
+      {/* Portfolio-level Financial Health bloom */}
+      {(statsLoading || throttledHoldings.length > 0) && (
+        <PortfolioHealthCard holdings={throttledHoldings} isLoading={statsLoading} />
+      )}
 
       {/* Performance chart + Allocation side-by-side */}
       {(statsLoading || throttledHoldings.length > 0) && (

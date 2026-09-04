@@ -22,7 +22,7 @@ import {
 } from '@/lib/twelvedata/twelvedata-client';
 import { getCached, getCachedStale, setCached } from '@/lib/cache/market-data-cache';
 import { coalesce } from '@/lib/cache/request-coalesce';
-import { computeHealthScore, type HealthScore } from '@/lib/finance/health-score';
+import { computeHealthScore, categoriesToColumns, type HealthScore } from '@/lib/finance/health-score';
 import { recordHealthScoreSnapshot } from '@/lib/finance/health-score-history';
 import { createServerClient } from '@/lib/supabase/client';
 
@@ -66,7 +66,11 @@ export async function computeAndSyncHealthScore(
   if (!degraded) {
     void createServerClient()
       .from('screener_stats')
-      .update({ health_score: computed.score, health_score_grade: computed.grade })
+      .update({
+        health_score: computed.score,
+        health_score_grade: computed.grade,
+        ...categoriesToColumns(computed.categories),
+      })
       .eq('ticker', sym)
       .then(({ error }) => {
         if (error) console.warn('[health-score] screener_stats sync failed:', error.message);

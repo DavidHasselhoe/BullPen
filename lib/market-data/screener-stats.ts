@@ -54,7 +54,7 @@ import {
   type CashFlowPeriod,
 } from '@/lib/twelvedata/twelvedata-client';
 import { getCached, getCachedStale } from '@/lib/cache/market-data-cache';
-import { computeHealthScore } from '@/lib/finance/health-score';
+import { computeHealthScore, categoriesToColumns } from '@/lib/finance/health-score';
 import { recordHealthScoreSnapshot } from '@/lib/finance/health-score-history';
 import { waitForCronCreditBudget } from '@/lib/twelvedata/credit-budget';
 import { notifyHealthScoreChanges, type HealthScoreChange } from '@/lib/notifications/notification-creators';
@@ -349,6 +349,7 @@ export async function fetchAndUpsertScreenerStats(symbols: string[]): Promise<Sc
         exchange: null,
         health_score: healthScore.score,
         health_score_grade: healthScore.grade,
+        ...categoriesToColumns(healthScore.categories),
       } as ScreenerRow);
     }
   }
@@ -360,10 +361,19 @@ export async function fetchAndUpsertScreenerStats(symbols: string[]): Promise<Sc
   if (rows.length > 0) {
     const { data: priorRows } = await supabase
       .from('screener_stats')
-      .select('ticker, health_score, health_score_grade')
+      .select('ticker, health_score, health_score_grade, health_profitability, health_financial_strength, health_valuation, health_growth, health_market_risk')
       .in('ticker', rows.map((r) => r.ticker));
+    type PriorHealthRow = {
+      health_score: number | null;
+      health_score_grade: string | null;
+      health_profitability: number | null;
+      health_financial_strength: number | null;
+      health_valuation: number | null;
+      health_growth: number | null;
+      health_market_risk: number | null;
+    };
     const priorMap = new Map(
-      (priorRows ?? []).map((r) => [(r as { ticker: string }).ticker, r as { health_score: number | null; health_score_grade: string | null }])
+      (priorRows ?? []).map((r) => [(r as { ticker: string }).ticker, r as PriorHealthRow])
     );
 
     const gradeChanges: HealthScoreChange[] = [];
@@ -379,6 +389,11 @@ export async function fetchAndUpsertScreenerStats(symbols: string[]): Promise<Sc
         if (prior && prior.health_score != null) {
           row.health_score = prior.health_score;
           row.health_score_grade = prior.health_score_grade as ScreenerRow['health_score_grade'];
+          row.health_profitability = prior.health_profitability;
+          row.health_financial_strength = prior.health_financial_strength;
+          row.health_valuation = prior.health_valuation;
+          row.health_growth = prior.health_growth;
+          row.health_market_risk = prior.health_market_risk;
         }
         continue;
       }
