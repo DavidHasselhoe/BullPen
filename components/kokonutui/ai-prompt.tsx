@@ -11,7 +11,7 @@
  */
 
 import { ArrowRight, Bot, Check, ChevronDown, Paperclip } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 import Anthropic from "@/components/kokonutui/anthropic";
 import AnthropicDark from "@/components/kokonutui/anthropic-dark";

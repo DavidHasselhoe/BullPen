@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useSpring } from "motion/react";
+import { motion, useSpring } from "framer-motion";
 import { memo, useMemo, useRef } from "react";
 
 const TICKER_ITEM_HEIGHT = 24;

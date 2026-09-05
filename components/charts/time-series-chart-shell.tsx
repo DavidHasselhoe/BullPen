@@ -7,7 +7,7 @@ import { bisector } from "d3-array";
 // Matches chart-context.tsx's own local ScaleTime alias — avoids reaching
 // into d3-scale directly (a transitive, undeclared dependency).
 type ScaleTime<Output> = ReturnType<typeof scaleTime<Output>>;
-import type { Transition } from "motion/react";
+import type { Transition } from "framer-motion";
 import {
   Children,
   cloneElement,

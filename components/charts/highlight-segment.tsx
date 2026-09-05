@@ -1,6 +1,6 @@
 "use client";
 
-import { type MotionValue, motion } from "motion/react";
+import { type MotionValue, motion } from "framer-motion";
 import { type RefObject, useId } from "react";
 
 // Hover-highlight overlay: re-strokes the base path `d`, clipped to a vertical

@@ -1,7 +1,7 @@
 "use client";
 
 import { ParentSize } from "@visx/responsive";
-import type { Transition } from "motion/react";
+import type { Transition } from "framer-motion";
 import {
   Children,
   type CSSProperties,

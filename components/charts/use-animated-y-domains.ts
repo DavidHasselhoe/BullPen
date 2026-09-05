@@ -1,6 +1,6 @@
 "use client";
 
-import { animate, useReducedMotion } from "motion/react";
+import { animate, useReducedMotion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import type { ChartPhase } from "./chart-phase";
 import { LINE_LOADING_PULSE_EASE } from "./line-loading-timing";

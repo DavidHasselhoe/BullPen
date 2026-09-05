@@ -1,7 +1,7 @@
 'use client';
 
 import { forwardRef } from 'react';
-import { motion, useReducedMotion } from 'motion/react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import type { CategoryScore } from '@/lib/finance/health-score';
 import { bandColor, gradeColor, TRACK, type HealthGrade } from './health-colors';

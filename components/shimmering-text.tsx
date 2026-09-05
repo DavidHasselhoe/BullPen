@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useReducedMotion, type Variants } from "motion/react";
+import { motion, useReducedMotion, type Variants } from "framer-motion";
 import { type ComponentProps, useCallback } from "react";
 import { cn } from "@/lib/utils";
 

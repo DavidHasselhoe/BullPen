@@ -12,7 +12,7 @@ type ScaleBand<Domain extends { toString(): string }> = ReturnType<
   typeof scaleBand<Domain>
 >;
 
-import type { Transition } from "motion/react";
+import type { Transition } from "framer-motion";
 import {
   createContext,
   type Dispatch,

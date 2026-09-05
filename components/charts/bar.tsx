@@ -1,8 +1,8 @@
 "use client";
 
 import type { scaleBand } from "@visx/scale";
-import type { Transition } from "motion/react";
-import { motion } from "motion/react";
+import type { Transition } from "framer-motion";
+import { motion } from "framer-motion";
 import { memo, useId, useMemo } from "react";
 import { barDepthAndRise, barDepthMaxDepth } from "./bar-depth-geometry";
 import {

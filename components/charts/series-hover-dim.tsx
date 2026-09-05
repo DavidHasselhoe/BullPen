@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "motion/react";
+import { motion } from "framer-motion";
 import type { ReactNode } from "react";
 import { useChartHover } from "./chart-context";
 import { useChartLegendHover } from "./chart-legend-hover";

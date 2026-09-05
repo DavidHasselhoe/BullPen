@@ -3,7 +3,7 @@
 import { ParentSize } from "@visx/responsive";
 import { scaleLinear, scaleTime } from "@visx/scale";
 import { bisector } from "d3-array";
-import type { Transition } from "motion/react";
+import type { Transition } from "framer-motion";
 import {
   Children,
   isValidElement,

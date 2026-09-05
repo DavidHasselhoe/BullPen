@@ -1,111 +1,33 @@
 'use client';
 
-import { useEffect, useRef, ReactNode } from 'react';
-import { gsap } from 'gsap';
+import { motion } from 'framer-motion';
+import type { ReactNode } from 'react';
 
 interface AnimatedContentProps {
   children: ReactNode;
-  container?: string | HTMLElement | null;
-  distance?: number;
-  direction?: 'vertical' | 'horizontal';
+  /** Slide up from below (true) or down from above (false) while fading in. */
   reverse?: boolean;
-  duration?: number;
-  ease?: string;
-  initialOpacity?: number;
-  animateOpacity?: boolean;
-  scale?: number;
-  threshold?: number;
   delay?: number;
-  onComplete?: () => void;
-  dissappearAfter?: number;
-  disappearDuration?: number;
-  disappearEase?: string;
-  onDisappearanceComplete?: () => void;
   className?: string;
 }
 
+/** Fade + slide-up reveal on mount, used for every section entrance across
+ * the stock/ETF/asset/dashboard pages — every call site uses the same
+ * vertical slide, just staggered by `delay`. */
 export default function AnimatedContent({
   children,
-  distance = 100,
-  direction = 'vertical',
-  reverse = false,
-  duration = 0.8,
-  ease = 'power3.out',
-  initialOpacity = 0,
-  animateOpacity = true,
-  scale = 1,
+  reverse = true,
   delay = 0,
-  onComplete,
-  dissappearAfter = 0,
-  disappearDuration = 0.5,
-  disappearEase = 'power3.in',
-  onDisappearanceComplete,
-  className = ''
+  className = '',
 }: AnimatedContentProps) {
-  const elementRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!elementRef.current || typeof window === 'undefined') return;
-
-    const element = elementRef.current;
-
-    const isVertical = direction === 'vertical';
-    const translateProperty = isVertical ? 'y' : 'x';
-    const translateValue = reverse ? distance : -distance;
-
-    gsap.set(element, {
-      [translateProperty]: translateValue,
-      opacity: animateOpacity ? initialOpacity : 1,
-      scale: scale
-    });
-
-    const tl = gsap.timeline({
-      delay: delay,
-      onComplete: onComplete
-    });
-
-    tl.to(element, {
-      [translateProperty]: 0,
-      opacity: animateOpacity ? 1 : initialOpacity,
-      scale: 1,
-      duration: duration,
-      ease: ease
-    });
-
-    if (dissappearAfter > 0) {
-      tl.to(element, {
-        [translateProperty]: reverse ? -distance : distance,
-        opacity: 0,
-        duration: disappearDuration,
-        ease: disappearEase,
-        delay: dissappearAfter,
-        onComplete: onDisappearanceComplete
-      });
-    }
-
-    return () => {
-      tl.kill();
-    };
-  }, [
-    distance,
-    direction,
-    reverse,
-    duration,
-    ease,
-    initialOpacity,
-    animateOpacity,
-    scale,
-    delay,
-    onComplete,
-    dissappearAfter,
-    disappearDuration,
-    disappearEase,
-    onDisappearanceComplete
-  ]);
-
   return (
-    <div ref={elementRef} className={className}>
+    <motion.div
+      initial={{ y: reverse ? 100 : -100, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.8, ease: 'easeOut', delay }}
+      className={className}
+    >
       {children}
-    </div>
+    </motion.div>
   );
 }

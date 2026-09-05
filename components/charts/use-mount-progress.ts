@@ -1,6 +1,6 @@
 "use client";
 
-import { animate, type Transition, useMotionValue } from "motion/react";
+import { animate, type Transition, useMotionValue } from "framer-motion";
 import { useEffect, useRef } from "react";
 import { DEFAULT_CHART_ENTER_TRANSITION } from "./animation";
 

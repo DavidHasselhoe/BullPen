@@ -1,7 +1,7 @@
 "use client";
 
-import type { Transition } from "motion/react";
-import { motion } from "motion/react";
+import type { Transition } from "framer-motion";
+import { motion } from "framer-motion";
 import { memo, useMemo } from "react";
 import { useChart } from "./chart-context";
 import { useChartLegendHover } from "./chart-legend-hover";

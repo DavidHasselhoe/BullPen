@@ -4,7 +4,7 @@ import { localPoint } from "@visx/event";
 import { ParentSize } from "@visx/responsive";
 import { scaleBand, scaleLinear, scaleTime } from "@visx/scale";
 import { extent } from "d3-array";
-import type { Transition } from "motion/react";
+import type { Transition } from "framer-motion";
 import {
   type CSSProperties,
   memo,

@@ -1,4 +1,4 @@
-import type { Transition } from "motion/react";
+import type { Transition } from "framer-motion";
 import { DEFAULT_CHART_ENTER_TRANSITION } from "./animation";
 
 export function transitionWithDelay(

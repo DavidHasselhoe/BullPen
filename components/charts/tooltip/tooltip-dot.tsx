@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useSpring, useTransform } from "motion/react";
+import { motion, useSpring, useTransform } from "framer-motion";
 import { type SpringConfig, useChartConfig } from "../chart-config-context";
 import { chartCssVars } from "../chart-context";
 

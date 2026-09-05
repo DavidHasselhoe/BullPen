@@ -1,7 +1,7 @@
 "use client";
 
-import type { Variants } from "motion/react";
-import { motion } from "motion/react";
+import type { Variants } from "framer-motion";
+import { motion } from "framer-motion";
 import { memo } from "react";
 import { DEFAULT_CHART_ENTER_TRANSITION } from "./animation";
 

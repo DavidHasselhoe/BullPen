@@ -1,7 +1,7 @@
 "use client";
 
-import type { Transition } from "motion/react";
-import { motion } from "motion/react";
+import type { Transition } from "framer-motion";
+import { motion } from "framer-motion";
 import { clipRevealTransition } from "./animation";
 
 export type ChartRevealClipMode = "reveal" | "conceal";

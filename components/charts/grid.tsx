@@ -1,7 +1,7 @@
 "use client";
 
 import { GridColumns, GridRows } from "@visx/grid";
-import { motion } from "motion/react";
+import { motion } from "framer-motion";
 import { useId } from "react";
 import { chartCssVars, useChartStable, useYScale } from "./chart-context";
 import { useGridShimmer } from "./use-grid-shimmer";
