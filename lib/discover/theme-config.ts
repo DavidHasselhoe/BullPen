@@ -104,9 +104,9 @@ export const THEME_DISPLAY_ORDER: ThemeEntry[] = [
     title: 'Robotics Stocks',
     tagline: 'Automation, machine vision, and robotic arms',
     description:
-      'From surgical robots to warehouse automation, these companies build the arms, vision systems, and control software turning physical work over to machines.',
+      'From humanoid robots to surgical arms and warehouse automation, these companies build the hardware, vision systems, and control software turning physical work over to machines.',
     icon: Bot,
-    tickers: ['ISRG', 'ROK', 'TER', 'CGNX', 'ZBRA', 'SYM', 'AVAV', 'PATH'],
+    tickers: ['TSLA', 'ISRG', 'ROK', 'TER', 'CGNX', 'ZBRA', 'SYM', 'AVAV', 'PATH'],
   },
 ];
 
