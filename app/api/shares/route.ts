@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
 import { computeTodaySparkline, getTodayCandlesForSymbol, type SparklineHolding, type CandleData } from '@/lib/holdings/today-sparkline';
-import { generateShareId } from '@/lib/shares/generate-share-id';
+import { randomBytes } from 'crypto';
 
 interface CreateShareBody {
   includeAmount?: boolean;
@@ -75,7 +75,11 @@ async function handler(
 
   // Retry once on the astronomically-rare slug collision (unique violation).
   for (let attempt = 0; attempt < 2; attempt++) {
-    const id = generateShareId();
+    // 8-char URL-safe, cryptographically random slug (e.g. "xK3mQ2Fh") — not
+    // sequential, so shares can't be enumerated by incrementing an ID. 6
+    // random bytes / base64url gives ~2.8×10^14 possible values; collision
+    // risk against this table is negligible even at scale.
+    const id = randomBytes(6).toString('base64url');
     const { error } = await supabase.from('portfolio_shares').insert({
       id,
       user_id: session.userId,
