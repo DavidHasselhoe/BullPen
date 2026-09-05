@@ -5,15 +5,12 @@ import { getTier, isAdmin } from '@/lib/billing/tier';
 import { logSecurityEvent } from '@/lib/security/security-events';
 import { checkAndInvalidateFundamentals } from '@/lib/cache/fundamentals-freshness';
 import { waitForCronCreditBudget } from '@/lib/twelvedata/credit-budget';
+import { sleep } from '@/lib/utils';
 
 const BATCH_SIZE = 5;
 const BATCH_DELAY_MS = 1000; // 1 second between batches → ~300 credits/min max, well under 610 limit
 /** 1 credit per company (the /fundamentals/last_changes check this route makes). */
 const CREDITS_PER_COMPANY = 1;
-
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
 /**
  * GET /api/admin/refresh-fundamentals

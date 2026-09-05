@@ -35,14 +35,11 @@ import { findEarnings8K, fetchFilingIndex, pickPressReleaseFile, pickCommentaryF
 import { seedEarningsDeepDiveDraft, completeEarningsDeepDiveFromFiling } from '../lib/instagram/content/earnings-deep-dive';
 import { extractEarningsActuals } from '../lib/instagram/content/earnings-deep-dive-extract';
 import { getMarketSession } from '../lib/cache/redis-cache';
+import { sleep } from '../lib/utils';
 
 function parseArg(name: string): string | undefined {
   const arg = process.argv.find((a) => a.startsWith(`--${name}=`));
   return arg ? arg.slice(name.length + 3) : undefined;
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
