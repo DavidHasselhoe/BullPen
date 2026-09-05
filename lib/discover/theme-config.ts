@@ -11,7 +11,7 @@
  */
 
 import type { LucideIcon } from 'lucide-react';
-import { Server, Gem, Rocket, Sparkles, Stethoscope, TrendingUp, Fuel, Brain } from 'lucide-react';
+import { Server, Gem, Rocket, Sparkles, Stethoscope, TrendingUp, Fuel, Brain, Bot } from 'lucide-react';
 
 export interface ThemeEntry {
   /** Stable key used in the route and as the React key. */
@@ -98,6 +98,15 @@ export const THEME_DISPLAY_ORDER: ThemeEntry[] = [
       'The largest technology platforms are reshaping their core products around AI — these are the companies with the scale and distribution to put it in front of the most people.',
     icon: Brain,
     tickers: ['MSFT', 'GOOGL', 'META', 'AMZN', 'NVDA', 'AAPL'],
+  },
+  {
+    slug: 'robotics',
+    title: 'Robotics Stocks',
+    tagline: 'Automation, machine vision, and robotic arms',
+    description:
+      'From surgical robots to warehouse automation, these companies build the arms, vision systems, and control software turning physical work over to machines.',
+    icon: Bot,
+    tickers: ['ISRG', 'ROK', 'TER', 'CGNX', 'ZBRA', 'SYM', 'AVAV', 'PATH'],
   },
 ];
 
