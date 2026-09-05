@@ -52,8 +52,10 @@ export function UserMenu({ forceDark = false, forceLight = false, open, onOpenCh
     setIsSigningOut(true);
     const result = await signOut();
     if (result.success) {
-      // Full page reload guarantees UI reflects logged-out state
-      window.location.href = '/';
+      // AuthProvider's SIGNED_OUT listener already clears the query cache
+      // and flips isAuthenticated, so a client-side transition is safe here
+      // — no need for a full reload.
+      router.push('/');
       return;
     }
     setIsSigningOut(false);
