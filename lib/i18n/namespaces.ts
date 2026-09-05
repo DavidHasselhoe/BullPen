@@ -47,6 +47,10 @@ export function namespacesForPath(pathname: string): Namespace[] {
   if (pathname.startsWith('/stock') || pathname.startsWith('/asset')) return ['stock'];
   if (pathname.startsWith('/holdings')) return ['holdings'];
   if (pathname.startsWith('/users')) return ['user'];
+  // Theme drill-down reuses the screener table, whose column labels live in
+  // 'tools' (screener-columns.tsx) — checked before the general /discover
+  // match below so it gets both, not just 'discover'.
+  if (pathname.startsWith('/discover/ideas')) return ['discover', 'tools'];
   if (pathname.startsWith('/discover') || pathname.startsWith('/dashboard')) return ['discover'];
   if (pathname.startsWith('/academy')) return ['academy'];
   if (pathname.startsWith('/upgrade') || pathname.startsWith('/pricing')) return ['billing'];

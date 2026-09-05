@@ -10,6 +10,7 @@ import { LivePriceContext } from './LivePriceContext';
 import { DiscoverHeader } from './DiscoverHeader';
 import { MarketPulse } from './MarketPulse';
 import { SectorPerformance } from './SectorPerformance';
+import { ThemeGrid } from './ThemeGrid';
 import { IdeaCollections } from './IdeaCollections';
 import { WeeklyPickHero, CURRENT_PICK_QUERY } from '@/components/picks/WeeklyPickHero';
 import type { DiscoverFeed } from '@/lib/discover/discover-config';
@@ -88,6 +89,7 @@ export function DiscoverClient() {
       <WeeklyPickHero />
       <MarketPulse indices={feed.indices} />
       <SectorPerformance sectors={feed.sectors} />
+      <ThemeGrid />
       <IdeaCollections collections={feed.collections} />
     </LivePriceContext.Provider>
   );
