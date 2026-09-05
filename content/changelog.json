@@ -1,5 +1,12 @@
 [
   {
+    "date": "2026-09-05",
+    "entries": [
+      { "type": "new", "text": "Added Investing Ideas to Discover: browse curated stock themes like AI Infrastructure, Robotics, and Undervalued Healthcare, then open any theme to see the full list of companies in it with key stats" },
+      { "type": "improved", "text": "Page animations now respect your device's reduce motion setting" }
+    ]
+  },
+  {
     "date": "2026-09-04",
     "entries": [
       { "type": "new", "text": "Added Portfolio Health to My Holdings: a single score showing how financially healthy your holdings are overall, weighted by how much of your portfolio each one makes up. Click into any category to see which holdings are pulling it up or down" },
