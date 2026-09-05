@@ -2,7 +2,7 @@
 
 import { Suspense, useState } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { Check, X, Sparkles, ArrowLeft, Loader2, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,7 @@ function UpgradeContent() {
   const { isAuthenticated } = useAuth();
   const { isPro } = useEntitlements();
   const searchParams = useSearchParams();
+  const router = useRouter();
 
   const FAQ = [
     { q: t('upgradeFaqTrialQ'), a: t('upgradeFaqTrialA', { trialDays: PRICING.trialDays, moneyBackDays: PRICING.moneyBackDays }) },
@@ -50,7 +51,7 @@ function UpgradeContent() {
     if (!isAuthenticated) {
       // Send them through signup, then back here with the chosen plan to finish checkout.
       const back = `/upgrade?checkout=${cycle}`;
-      window.location.href = `/register?redirect=${encodeURIComponent(back)}`;
+      router.push(`/register?redirect=${encodeURIComponent(back)}`);
       return;
     }
     setStatus('loading');

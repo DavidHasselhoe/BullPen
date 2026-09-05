@@ -382,7 +382,6 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
   const isIntradayRange = range === '1D' || range === '1W' || range === '1M';
   const displayData = useMemo<ChartPoint[]>(() => {
     if (!isIntradayRange || !isLive || !live || !chartData.length) return chartData;
-    // eslint-disable-next-line react-hooks/purity
     const nowSec = Math.floor(Date.now() / 1000);
     const last = chartData[chartData.length - 1];
     const gap = nowSec - last.time;
