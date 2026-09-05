@@ -3,6 +3,7 @@ import type Stripe from 'stripe';
 import { createServerClient } from '@/lib/supabase/client';
 import { getStripe, statusGrantsPro, TIER_PRO, TIER_FREE } from '@/lib/billing/stripe';
 import { sendRenewalReminderEmail } from '@/lib/email/billing-reminder';
+import { logSecurityEvent } from '@/lib/security/security-events';
 
 // Stripe needs the raw request body to verify the signature — never cache/parse.
 export const runtime = 'nodejs';
@@ -63,6 +64,18 @@ export async function POST(request: NextRequest) {
           (session.metadata?.supabase_user_id as string | undefined) ||
           null;
         if (await isStaleEvent(customerId, userId, eventCreatedAt)) break;
+
+        // Stripe doesn't guarantee this fires before/after
+        // customer.subscription.created, so re-check here too — otherwise a
+        // blocked trial could still get granted Pro via this event alone.
+        if (subscriptionId) {
+          const stripe = getStripe();
+          const sub = stripe ? await stripe.subscriptions.retrieve(subscriptionId) : null;
+          if (sub?.status === 'trialing' && (await enforceTrialFingerprint(sub, customerId, userId))) {
+            break;
+          }
+        }
+
         await grantPro(customerId, userId, subscriptionId, 'active', eventCreatedAt);
         break;
       }
@@ -74,6 +87,16 @@ export async function POST(request: NextRequest) {
         const customerId = asId(sub.customer);
         const userId = (sub.metadata?.supabase_user_id as string | undefined) || null;
         if (await isStaleEvent(customerId, userId, eventCreatedAt)) break;
+
+        if (event.type === 'customer.subscription.created' && sub.status === 'trialing') {
+          // Card already claimed a trial on a different account — collapse
+          // this one to $0 days instead of granting another 14. The
+          // trial_end update below fires its own subscription.updated event
+          // with the real post-charge status, so skip granting Pro here.
+          const revoked = await enforceTrialFingerprint(sub, customerId, userId);
+          if (revoked) break;
+        }
+
         const grantsPro = event.type !== 'customer.subscription.deleted' && statusGrantsPro(sub.status);
         await setTier(customerId, userId, grantsPro ? TIER_PRO : TIER_FREE, {
           subscriptionId: sub.id,
@@ -203,6 +226,63 @@ async function setTier(
     if (customerId) patch.stripe_customer_id = customerId;
     await db.from('users').update(patch).eq('id', userId);
   }
+}
+
+/**
+ * Free-trial abuse guard: emails/IPs are trivially spoofed by making a new
+ * account, but the card is not. Looks up the trialing subscription's payment
+ * method fingerprint against every fingerprint that's ever started a trial;
+ * if it belongs to a different Stripe customer, ends this trial immediately
+ * (`trial_end: 'now'`, which triggers an immediate charge attempt) instead
+ * of letting a second account ride the same card for another 14 days.
+ * Returns true if the trial was revoked.
+ */
+async function enforceTrialFingerprint(
+  sub: Stripe.Subscription,
+  customerId: string | null,
+  userId: string | null
+): Promise<boolean> {
+  const stripe = getStripe();
+  if (!stripe || !customerId) return false;
+
+  let pmId = asId(sub.default_payment_method);
+  if (!pmId) {
+    // Not always attached by the time this event is sent — refetch once.
+    const fresh = await stripe.subscriptions.retrieve(sub.id);
+    pmId = asId(fresh.default_payment_method);
+  }
+  if (!pmId) return false;
+
+  const pm = await stripe.paymentMethods.retrieve(pmId);
+  const fingerprint = pm.card?.fingerprint;
+  if (!fingerprint) return false;
+
+  const supabase = createServerClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = supabase as any;
+  const { data: existing } = await db
+    .from('stripe_trial_fingerprints')
+    .select('customer_id')
+    .eq('fingerprint', fingerprint)
+    .maybeSingle();
+
+  if (!existing) {
+    await db
+      .from('stripe_trial_fingerprints')
+      .insert({ fingerprint, user_id: userId, customer_id: customerId, subscription_id: sub.id });
+    return false;
+  }
+
+  // Same account re-subscribing (e.g. after a cancel) — not abuse.
+  if (existing.customer_id === customerId) return false;
+
+  await stripe.subscriptions.update(sub.id, { trial_end: 'now' });
+  logSecurityEvent('trial_abuse_blocked', {
+    userId,
+    identifier: fingerprint,
+    metadata: { customerId, previousCustomerId: existing.customer_id, subscriptionId: sub.id },
+  });
+  return true;
 }
 
 /** Stripe fields are `string | { id } | null` depending on expansion. */
