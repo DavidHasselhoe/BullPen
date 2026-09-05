@@ -260,21 +260,40 @@ async function enforceTrialFingerprint(
   const supabase = createServerClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any;
+  // Atomic claim via INSERT ... ON CONFLICT (fingerprint) DO NOTHING: a plain
+  // check-then-insert has a race where two webhook deliveries for the same
+  // card (exactly the abuse case this guard exists for) can both see "no
+  // row" and both grant a trial before either insert lands. Whichever
+  // delivery's upsert actually commits first wins the fingerprint; the
+  // loser's `inserted` comes back empty and falls through to the lookup below.
+  const { data: inserted, error: upsertError } = await db
+    .from('stripe_trial_fingerprints')
+    .upsert(
+      { fingerprint, user_id: userId, customer_id: customerId, subscription_id: sub.id },
+      { onConflict: 'fingerprint', ignoreDuplicates: true }
+    )
+    .select();
+
+  if (upsertError) {
+    // Fail open on a DB hiccup rather than block a legitimate trial — same
+    // posture as every other best-effort path in this webhook.
+    console.error('[stripe webhook] trial fingerprint upsert failed:', upsertError.message);
+    return false;
+  }
+
+  if (inserted && inserted.length > 0) {
+    // We won the race — this customer legitimately claims the fingerprint.
+    return false;
+  }
+
   const { data: existing } = await db
     .from('stripe_trial_fingerprints')
     .select('customer_id')
     .eq('fingerprint', fingerprint)
     .maybeSingle();
 
-  if (!existing) {
-    await db
-      .from('stripe_trial_fingerprints')
-      .insert({ fingerprint, user_id: userId, customer_id: customerId, subscription_id: sub.id });
-    return false;
-  }
-
   // Same account re-subscribing (e.g. after a cancel) — not abuse.
-  if (existing.customer_id === customerId) return false;
+  if (!existing || existing.customer_id === customerId) return false;
 
   await stripe.subscriptions.update(sub.id, { trial_end: 'now' });
   logSecurityEvent('trial_abuse_blocked', {

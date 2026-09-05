@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import type { ReactNode } from 'react';
 
 interface AnimatedContentProps {
@@ -20,6 +20,12 @@ export default function AnimatedContent({
   delay = 0,
   className = '',
 }: AnimatedContentProps) {
+  const reducedMotion = useReducedMotion();
+
+  if (reducedMotion) {
+    return <div className={className}>{children}</div>;
+  }
+
   return (
     <motion.div
       initial={{ y: reverse ? 100 : -100, opacity: 0 }}
