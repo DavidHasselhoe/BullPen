@@ -273,7 +273,7 @@ All three Instagram crons above publish for real in the same run they stage in �
 |---|---|---|
 | `/api/cron/check-user-alerts` | `30 14-21 * * 1-5` | Evaluate user-defined price/metric alerts hourly through market hours |
 
-**Status: not yet migrated.** This still runs on GitHub Actions (`cron-check-user-alerts.yml`) pending a QStash schedule being created in the Upstash console (same account already used for Redis — QStash is a separate tab/token, `QSTASH_TOKEN`) pointed at this route with the same `Authorization: Bearer $CRON_SECRET` header. Don't delete the GitHub Actions workflow until the QStash schedule is confirmed firing — this is the one user-facing job in the whole scheduled-work list where a silent gap actually matters.
+Migrated 2026-09-05: QStash schedule created in the Upstash console (EU region), confirmed delivering `200` on both a manual trigger and the first real fire. Auth header is passed through via `Upstash-Forward-Authorization: Bearer $CRON_SECRET`, method pinned via `Upstash-Method: GET`. The old `cron-check-user-alerts.yml` GitHub Actions workflow has been deleted.
 
 **GitHub Actions crons** (`.github/workflows/cron-*.yml`) — reserved for jobs that need something GitHub Actions actually provides beyond scheduling: a runner that can stay alive for hours pacing batched TwelveData calls (a single serverless function invocation can't), or real git checkout+commit access. Each workflow `POST`s/`GET`s the same Vercel route with `Bearer $CRON_SECRET`; the route code is unchanged, only the scheduler differs.
 
@@ -284,7 +284,6 @@ All three Instagram crons above publish for real in the same run they stage in �
 | `/api/cron/prefetch-calendar` | `0 4 * * *` | Loops up to 40 batches with a 65s sleep, up to ~45 min total |
 | `/api/screener/refresh` (active mode) | `0 22 * * *` | `cron-refresh-screener-stats.yml` — loops ~122 batches with a 65s sleep, up to ~160 min total |
 | `/api/screener/refresh` (active + discovery mode) | `0 3 * * *` | `cron-refresh-screener-extended.yml` — two chained batch loops (up to 279 + 15 batches), up to ~180 min total. Both this and the 22:00 job skip any ticker whose `screener_stats` row is <12h old, so they don't re-fetch what `prefetch-market-data` just warmed |
-| `/api/cron/check-user-alerts` | `30 14-21 * * 1-5` | Temporary — see QStash section above, not staying here for a batch-loop reason |
 
 `cron-sync-index-constituents.yml` (`scripts/sync-index-constituents.ts`, `0 5 * * 1`) also stays on GitHub Actions, for a different reason than the batch-loop jobs above — it's not a `/api/cron/*` route call at all, it's a repo-native script that refreshes `lib/market-data/sp500.ts` / `nasdaq100.ts` against real index membership (SPY's daily holdings disclosure for the S&P 500, Nasdaq's own constituents API for the Nasdaq-100 — TwelveData has no index-constituents endpoint) and commits any diff straight to `preview`, which needs GitHub Actions' git checkout+commit access — no serverless cron can do that. No manual review gate: both sources are official/fund-mandated daily disclosures, not a scrape. Posts to Discord (`DISCORD_INDEX_SYNC_WEBHOOK_URL`) only when membership actually changed. See `lib/market-data/index-sync.ts` for the fetch/parse logic.
 
