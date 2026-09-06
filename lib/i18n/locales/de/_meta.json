@@ -2215,5 +2215,12 @@
   "tools.portfolioBuilderTierLegendSatellite": "a153d3dae4ae740b5faa797c22e2bbf6b0d7b96cc16b405f18b1fe823515593d",
   "tools.portfolioBuilderConcentrationWarningFull": "f9cc5041b963466f32f1bf02784af04b94ac02449438303284f2c2e01ef5f410",
   "tools.portfolioBuilderConcentrationWarningPartial": "6330c979fa90c8ae3dd2f3ca6746e9271ad65fdee897ba68274a0d0fe6951326",
-  "tools.portfolioBuilderMetaLine": "47754062390a2172ec9bd3dc500db0d3a9a48192259ac337fa36ef7dd2a77bd8"
+  "tools.portfolioBuilderMetaLine": "47754062390a2172ec9bd3dc500db0d3a9a48192259ac337fa36ef7dd2a77bd8",
+  "discover.ideasThemeAvgHealth": "af8e7557b4207874c37346f96b5e86fe5beeff675725f98fd1950dbaaa7600df",
+  "discover.ideasThemeAvgPe": "84c41f8a120bc47562a429add251300ffdfea5dd04ca4c00a4310c85f3100256",
+  "discover.ideasThemeAvgYield": "1d13b4f1bff0915f804a765a4066a197325eb8bfb07c66d2e17f1a853c255e5f",
+  "discover.ideasThemeBackToDiscover": "02935bb03dd67500433b3a24f21c0254a61a288a4a72bf85538c5c7615498dac",
+  "discover.ideasThemeCompaniesCount_one": "834932bad759775a011db8a89951aa473ec8696bf6fee8d7fd6dbd2f69cbb84e",
+  "discover.ideasThemeCompaniesCount_other": "bb1503fcc53c9f89d9242532aa8dfbdf640c92e87f07cf31e375dc0b30a47aab",
+  "discover.ideasThemesHeading": "50fbce28c469653c53cb38a0ade26dfc7a83c38e569a2bdc6571fc2d95a963a1"
 }

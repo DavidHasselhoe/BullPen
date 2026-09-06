@@ -45,10 +45,6 @@
   "ideasNearLowsTitle": "Nær 52-ukers laveste",
   "ideasPushingHighsTitle": "Når 52-ukers høyder",
   "ideasQualityDiscountTitle": "Kvalitet til rabatt",
-  "ideasThemeBackToDiscover": "Tilbake til Oppdag",
-  "ideasThemeCompaniesCount_one": "{{count}} selskap",
-  "ideasThemeCompaniesCount_other": "{{count}} selskaper",
-  "ideasThemesHeading": "Investeringsideer",
   "ideasTrendingPersonalized": "På grunn av hva du følger",
   "ideasTrendingToday": "Trending i dag",
   "indexTileTrendAriaLabel": "{{label}} trend i dag",
@@ -83,5 +79,12 @@
   "whyTodayWidgetLabel": "Hvorfor i dag",
   "whyTodayWidgetNoData": "Ingen prisdata tilgjengelig nå. Kom tilbake senere.",
   "whyTodayWidgetWhyButton": "Hvorfor?",
+  "ideasThemeAvgHealth": "Gjennomsnittlig helsescore {{score}}",
+  "ideasThemeAvgPe": "Gjennomsnittlig P/E {{pe}}x",
+  "ideasThemeAvgYield": "Gjennomsnittlig avkastning {{pct}}%",
+  "ideasThemeBackToDiscover": "Tilbake til Oppdag",
+  "ideasThemeCompaniesCount_one": "{{count}} selskap",
+  "ideasThemeCompaniesCount_other": "{{count}} selskaper",
+  "ideasThemesHeading": "Investeringsidéer",
   "rowActionsAskAi": "Ask Bull"
 }

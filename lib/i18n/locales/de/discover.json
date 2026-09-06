@@ -44,10 +44,6 @@
   "ideasNearLowsTitle": "In der Nähe von 52-Wochen-Tiefs",
   "ideasPushingHighsTitle": "52-Wochen-Hochs erreichend",
   "ideasQualityDiscountTitle": "Qualität mit Rabatt",
-  "ideasThemeBackToDiscover": "Zurück zu Entdecken",
-  "ideasThemeCompaniesCount_one": "{{count}} Unternehmen",
-  "ideasThemeCompaniesCount_other": "{{count}} Unternehmen",
-  "ideasThemesHeading": "Investitionsideen",
   "ideasTrendingPersonalized": "Weil du das verfolgst",
   "ideasTrendingToday": "Heute Trending",
   "indexTileTrendAriaLabel": "{{label}} Trend heute",
@@ -62,6 +58,7 @@
   "portfolioWidgetWeekChange": "{{amount}} ({{pct}}%) diese Woche",
   "recentlyViewedInlineLabel": "Kürzlich",
   "recentlyViewedTitle": "Kürzlich angesehen",
+  "rowActionsAskAi": "Ask Bull",
   "rowActionsAskAiQuery": "Erzähl mir von {{ticker}}",
   "rowActionsCompare": "Vergleichen",
   "rowActionsViewCompany": "Unternehmen ansehen",
@@ -82,6 +79,12 @@
   "whyTodayWidgetNoData": "Momentan keine Kursdaten verfügbar. Schau später vorbei.",
   "whyTodayWidgetWhyButton": "Warum?",
   "briefUpgradeCta": "Upgrade",
-  "portfolioWidgetLabel": "Portfolio",
-  "rowActionsAskAi": "Ask Bull"
+  "ideasThemeAvgHealth": "Durchschn. Gesundheitsscore {{score}}",
+  "ideasThemeAvgPe": "Durchschn. P/E {{pe}}x",
+  "ideasThemeAvgYield": "Durchschn. Rendite {{pct}}%",
+  "ideasThemeBackToDiscover": "Zurück zu Entdecken",
+  "ideasThemeCompaniesCount_one": "{{count}} Unternehmen",
+  "ideasThemeCompaniesCount_other": "{{count}} Unternehmen",
+  "ideasThemesHeading": "Investitionsideen",
+  "portfolioWidgetLabel": "Portfolio"
 }

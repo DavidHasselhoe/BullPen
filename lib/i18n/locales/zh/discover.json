@@ -45,10 +45,6 @@
   "ideasNearLowsTitle": "接近52周低点",
   "ideasPushingHighsTitle": "接近52周高点",
   "ideasQualityDiscountTitle": "质优且折扣",
-  "ideasThemeBackToDiscover": "返回发现页",
-  "ideasThemeCompaniesCount_one": "{{count}} 家公司",
-  "ideasThemeCompaniesCount_other": "{{count}} 家公司",
-  "ideasThemesHeading": "投资灵感",
   "ideasTrendingPersonalized": "基于你关注的内容",
   "ideasTrendingToday": "今日热门",
   "indexTileTrendAriaLabel": "{{label}} 今日走势",
@@ -64,6 +60,7 @@
   "portfolioWidgetWeekChange": "本周 {{amount}}（{{pct}}%）",
   "recentlyViewedInlineLabel": "最近",
   "recentlyViewedTitle": "最近查看",
+  "rowActionsAskAi": "Ask Bull",
   "rowActionsAskAiQuery": "告诉我关于 {{ticker}} 的信息",
   "rowActionsCompare": "比较",
   "rowActionsViewCompany": "查看公司",
@@ -83,5 +80,11 @@
   "whyTodayWidgetLabel": "为什么今天",
   "whyTodayWidgetNoData": "暂无价格数据。请稍后再试。",
   "whyTodayWidgetWhyButton": "为什么？",
-  "rowActionsAskAi": "Ask Bull"
+  "ideasThemeAvgHealth": "平均健康分数 {{score}}",
+  "ideasThemeAvgPe": "平均 P/E {{pe}}x",
+  "ideasThemeAvgYield": "平均收益率 {{pct}}%",
+  "ideasThemeBackToDiscover": "返回发现",
+  "ideasThemeCompaniesCount_one": "{{count}} 家公司",
+  "ideasThemeCompaniesCount_other": "{{count}} 家公司",
+  "ideasThemesHeading": "投资想法"
 }

@@ -42,10 +42,6 @@
   "ideasNearLowsTitle": "Près des creux de 52 semaines",
   "ideasPushingHighsTitle": "Approchant les sommets de 52 semaines",
   "ideasQualityDiscountTitle": "Qualité à prix réduit",
-  "ideasThemeBackToDiscover": "Retour à Découvrir",
-  "ideasThemeCompaniesCount_one": "{{count}} entreprise",
-  "ideasThemeCompaniesCount_other": "{{count}} entreprises",
-  "ideasThemesHeading": "Idées d'investissement",
   "ideasTrendingPersonalized": "En fonction de ce que vous suivez",
   "ideasTrendingToday": "Tendances du jour",
   "indexTileTrendAriaLabel": "Tendance {{label}} aujourd'hui",
@@ -61,6 +57,7 @@
   "portfolioWidgetWeekChange": "{{amount}} ({{pct}}%) cette semaine",
   "recentlyViewedInlineLabel": "Récent",
   "recentlyViewedTitle": "Récemment consultés",
+  "rowActionsAskAi": "Ask Bull",
   "rowActionsAskAiQuery": "Parlez-moi de {{ticker}}",
   "rowActionsCompare": "Comparer",
   "rowActionsViewCompany": "Voir l'entreprise",
@@ -83,5 +80,11 @@
   "briefSourceCount_one": "{{count}} source",
   "briefSourceCount_other": "{{count}} sources",
   "briefTocSectionsAriaLabel": "Sections",
-  "rowActionsAskAi": "Ask Bull"
+  "ideasThemeAvgHealth": "Score de santé moyen {{score}}",
+  "ideasThemeAvgPe": "P/E moyen {{pe}}x",
+  "ideasThemeAvgYield": "Rendement moyen {{pct}}%",
+  "ideasThemeBackToDiscover": "Retour à Découvrir",
+  "ideasThemeCompaniesCount_one": "{{count}} entreprise",
+  "ideasThemeCompaniesCount_other": "{{count}} entreprises",
+  "ideasThemesHeading": "Idées d'investissement"
 }

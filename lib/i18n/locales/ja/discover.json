@@ -45,10 +45,6 @@
   "ideasNearLowsTitle": "52週間安値付近",
   "ideasPushingHighsTitle": "52週間高値を更新中",
   "ideasQualityDiscountTitle": "割安な優良銘柄",
-  "ideasThemeBackToDiscover": "発見に戻る",
-  "ideasThemeCompaniesCount_one": "{{count}}社",
-  "ideasThemeCompaniesCount_other": "{{count}}社",
-  "ideasThemesHeading": "投資アイデア",
   "ideasTrendingPersonalized": "フォローしている銘柄に関連",
   "ideasTrendingToday": "今日のトレンド",
   "indexTileTrendAriaLabel": "{{label}}のトレンド（本日）",
@@ -64,6 +60,7 @@
   "portfolioWidgetWeekChange": "今週{{amount}}（{{pct}}%）",
   "recentlyViewedInlineLabel": "最近",
   "recentlyViewedTitle": "最近見た銘柄",
+  "rowActionsAskAi": "Ask Bull",
   "rowActionsAskAiQuery": "{{ticker}}について教えてください",
   "rowActionsCompare": "比較",
   "rowActionsViewCompany": "企業情報を表示",
@@ -83,5 +80,11 @@
   "whyTodayWidgetLabel": "なぜ今日",
   "whyTodayWidgetNoData": "現在、価格データは利用できません。後でもう一度確認してください。",
   "whyTodayWidgetWhyButton": "なぜ？",
-  "rowActionsAskAi": "Ask Bull"
+  "ideasThemeAvgHealth": "平均健康スコア {{score}}",
+  "ideasThemeAvgPe": "平均 P/E {{pe}}x",
+  "ideasThemeAvgYield": "平均利回り {{pct}}%",
+  "ideasThemeBackToDiscover": "ディスカバーに戻る",
+  "ideasThemeCompaniesCount_one": "{{count}} 社",
+  "ideasThemeCompaniesCount_other": "{{count}} 社",
+  "ideasThemesHeading": "投資アイデア"
 }

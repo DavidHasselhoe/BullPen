@@ -49,6 +49,24 @@ export function ThemeDetailClient({ slug }: { slug: string }) {
     [tTools],
   );
 
+  // Basket-level averages from the same rows already fetched for the table —
+  // no extra request. Health/P·E average only over rows that have a value
+  // (nulls excluded); dividend yield zero-fills non-payers so it reads as the
+  // basket's blended yield, not just an average across payers.
+  const stats = useMemo(() => {
+    const rows = data?.results ?? [];
+    if (rows.length === 0) return null;
+    const avg = (vals: number[]) => (vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null);
+    const healthScores = rows.map((r) => r.health_score).filter((v): v is number => v != null);
+    const peRatios = rows.map((r) => r.pe_ratio).filter((v): v is number => v != null && v > 0);
+    return {
+      count: rows.length,
+      avgHealth: avg(healthScores),
+      avgPe: avg(peRatios),
+      avgYieldPct: avg(rows.map((r) => (r.dividend_yield ?? 0) * 100)),
+    };
+  }, [data?.results]);
+
   if (!theme) return null;
 
   const Icon = theme.icon;
@@ -68,6 +86,18 @@ export function ThemeDetailClient({ slug }: { slug: string }) {
         <div>
           <h1 className="text-2xl font-bold text-foreground">{theme.title}</h1>
           <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted-foreground/90">{theme.description}</p>
+          {stats && (
+            <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground/80">
+              <span>{t('ideasThemeCompaniesCount', { count: stats.count })}</span>
+              {stats.avgHealth != null && (
+                <span>· {t('ideasThemeAvgHealth', { score: Math.round(stats.avgHealth) })}</span>
+              )}
+              {stats.avgPe != null && <span>· {t('ideasThemeAvgPe', { pe: stats.avgPe.toFixed(1) })}</span>}
+              {stats.avgYieldPct != null && (
+                <span>· {t('ideasThemeAvgYield', { pct: stats.avgYieldPct.toFixed(2) })}</span>
+              )}
+            </p>
+          )}
         </div>
       </div>
 
