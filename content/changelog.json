@@ -1,5 +1,11 @@
 [
   {
+    "date": "2026-09-06",
+    "entries": [
+      { "type": "improved", "text": "Each Investing Ideas theme now shows quick averages for health score, P/E, and dividend yield at the top, so you can size up a theme before scrolling the full list" }
+    ]
+  },
+  {
     "date": "2026-09-05",
     "entries": [
       { "type": "new", "text": "Added Investing Ideas to Discover: browse curated stock themes like AI Infrastructure, Robotics, and Undervalued Healthcare, then open any theme to see the full list of companies in it with key stats" },
