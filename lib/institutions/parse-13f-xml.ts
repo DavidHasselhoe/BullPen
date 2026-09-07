@@ -5,13 +5,17 @@
  * (confirmed before writing this), and the information table is flat,
  * non-nested, machine-generated XML with a fixed small tag set, matching the
  * house style already used for HTML-table parsing in lib/edgar/edgar-watch.ts's
- * fetchFilingIndex(). Verified live against Berkshire Hathaway's 2026-08-14
- * 13F-HR (accession 0001193125-26-352200): uses a plain default namespace
- * (`xmlns="http://www.sec.gov/edgar/document/thirteenf/informationtable"`,
- * no prefix), so unprefixed tag matching works directly — no namespace
- * handling needed. If a future filer's XML turns out to use a namespace
- * prefix, this needs an optional `[a-z0-9]+:` prefix in the tag patterns;
- * not added speculatively since the one real filing checked doesn't need it.
+ * fetchFilingIndex().
+ *
+ * Namespace prefixes are NOT consistent across filers — Berkshire Hathaway's
+ * filing agent emits a plain default namespace (`<infoTable>`, no prefix),
+ * but Bridgewater's emits everything prefixed (`<ns1:infoTable>`,
+ * `<ns1:cusip>`, ...). Verified live: the unprefixed-only version of this
+ * parser silently returned zero holdings for Bridgewater/Third
+ * Point/Baupost's filings during Phase 1 validation, caught immediately
+ * because "0 positions" is an impossible result for an active fund's 13F,
+ * not a subtly-wrong number like the earlier value-scale bug. Every tag
+ * pattern here now tolerates an optional `prefix:` before the tag name.
  *
  * CRITICAL: a single filing can contain MULTIPLE <infoTable> entries for the
  * SAME CUSIP — verified live on the same Berkshire filing (89 raw <infoTable>
@@ -31,8 +35,10 @@ export interface Raw13FHolding {
   putCall: string | null;     // 'PUT' | 'CALL' | null for plain equity
 }
 
+const PREFIX = '(?:[a-zA-Z0-9]+:)?';
+
 function extractTag(block: string, tag: string): string | null {
-  const re = new RegExp(`<${tag}>([^<]*)</${tag}>`, 'i');
+  const re = new RegExp(`<${PREFIX}${tag}>([^<]*)</${PREFIX}${tag}>`, 'i');
   const m = re.exec(block);
   return m ? m[1].trim() : null;
 }
@@ -56,7 +62,8 @@ export function parsePeriodOfReport(coverPageXml: string): string | null {
 
 /** Parses every <infoTable> block, aggregating multiple entries for the same CUSIP. */
 export function parseInfoTable(xml: string): Raw13FHolding[] {
-  const blocks = xml.match(/<infoTable>[\s\S]*?<\/infoTable>/gi) ?? [];
+  const blockRe = new RegExp(`<${PREFIX}infoTable>[\\s\\S]*?</${PREFIX}infoTable>`, 'gi');
+  const blocks = xml.match(blockRe) ?? [];
   const byCusip = new Map<string, Raw13FHolding>();
 
   for (const block of blocks) {
