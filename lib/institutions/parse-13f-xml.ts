@@ -37,10 +37,30 @@ export interface Raw13FHolding {
 
 const PREFIX = '(?:[a-zA-Z0-9]+:)?';
 
+/** SEC XML text content escapes &, <, >, etc. — decode standard XML entities
+ *  (named + numeric) so e.g. "ELI LILLY &amp; CO" renders as "ELI LILLY & CO"
+ *  instead of the literal escaped text. Single-pass so "&amp;lt;" (a literal
+ *  "&lt;" in the source data) can't get double-decoded into "<". */
+export function decodeXmlEntities(text: string): string {
+  return text.replace(/&(amp|lt|gt|quot|apos|#\d+|#x[0-9a-fA-F]+);/g, (match, entity: string) => {
+    switch (entity) {
+      case 'amp': return '&';
+      case 'lt': return '<';
+      case 'gt': return '>';
+      case 'quot': return '"';
+      case 'apos': return "'";
+      default:
+        if (entity.startsWith('#x')) return String.fromCharCode(parseInt(entity.slice(2), 16));
+        if (entity.startsWith('#')) return String.fromCharCode(Number(entity.slice(1)));
+        return match;
+    }
+  });
+}
+
 function extractTag(block: string, tag: string): string | null {
   const re = new RegExp(`<${PREFIX}${tag}>([^<]*)</${PREFIX}${tag}>`, 'i');
   const m = re.exec(block);
-  return m ? m[1].trim() : null;
+  return m ? decodeXmlEntities(m[1].trim()) : null;
 }
 
 /**

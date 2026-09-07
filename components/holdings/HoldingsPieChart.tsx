@@ -15,7 +15,10 @@ interface HoldingsPieChartProps {
   isLoading?: boolean;
 }
 
-const SECTOR_COLORS = [
+/** Shared categorical palette for allocation-style breakdowns app-wide — also
+ *  used by InstitutionalHoldingsPieChart so both "part of a whole" charts
+ *  read as the same visual language. */
+export const SECTOR_COLORS = [
   '#3b82f6', // blue
   '#06b6d4', // cyan
   '#f59e0b', // amber

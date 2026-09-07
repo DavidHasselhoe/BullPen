@@ -6,8 +6,11 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Lock, TrendingUp, TrendingDown } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { AiPaywallDialog } from '@/components/billing/AiPaywallDialog';
+import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { FundAvatar } from './FundAvatar';
 import { Filing13FDisclaimer } from './Filing13FDisclaimer';
+import { InstitutionalHoldingsPieChart } from './InstitutionalHoldingsPieChart';
+import { fmtUsd } from '@/lib/institutions/format';
 import type { InstitutionalFundSummary } from '@/app/api/institutions/route';
 import type { DiffableHolding, HoldingsDiff } from '@/lib/institutions/compute-diff';
 
@@ -19,13 +22,6 @@ interface HoldingsResponse {
   diff?: HoldingsDiff | null;
   availableQuarters?: string[];
   error?: string;
-}
-
-function fmtUsd(n: number): string {
-  const abs = Math.abs(n);
-  if (abs >= 1e9) return `$${(n / 1e9).toFixed(2)}B`;
-  if (abs >= 1e6) return `$${(n / 1e6).toFixed(2)}M`;
-  return `$${n.toLocaleString()}`;
 }
 
 function fmtDate(iso: string): string {
@@ -118,15 +114,25 @@ export function InstitutionalFundDetailClient({ slug }: { slug: string }) {
       )}
 
       {!locked && holdingsLoading && (
-        <div className="space-y-2">
-          {Array.from({ length: 8 }, (_, i) => (
-            <div key={i} className="h-10 rounded-lg animate-shimmer" />
-          ))}
+        <div className="space-y-6">
+          <div className="h-[360px] rounded-xl border border-border/50 animate-shimmer" />
+          <div className="space-y-2">
+            {Array.from({ length: 8 }, (_, i) => (
+              <div key={i} className="h-10 rounded-lg animate-shimmer" />
+            ))}
+          </div>
         </div>
       )}
 
       {unlocked && holdingsData?.holdings && (
-        <HoldingsTable holdings={holdingsData.holdings} diff={holdingsData.diff} />
+        <>
+          <InstitutionalHoldingsPieChart
+            holdings={holdingsData.holdings}
+            totalValueUsd={holdingsData.filing?.totalValueUsd}
+            className="mb-6"
+          />
+          <HoldingsTable holdings={holdingsData.holdings} diff={holdingsData.diff} />
+        </>
       )}
 
       <AiPaywallDialog
@@ -167,18 +173,23 @@ function HoldingsTable({ holdings, diff }: { holdings: DiffableHolding[]; diff?:
             const changePct = changedByCusip.get(h.cusip);
             const isNew = newCusips.has(h.cusip);
             return (
-              <tr key={h.cusip} className="border-b border-border/30 last:border-0">
+              <tr key={h.cusip} className="border-b border-border/30 transition-colors last:border-0 hover:bg-muted/30">
                 <td className="px-4 py-3">
-                  {h.symbol ? (
-                    <Link href={`/stock/${h.symbol}`} className="font-mono font-semibold text-foreground hover:text-primary">
-                      {h.symbol}
-                    </Link>
-                  ) : (
-                    <span className="text-foreground">{h.nameOfIssuer}</span>
-                  )}
-                  {h.symbol && (
-                    <span className="ml-2 text-xs text-muted-foreground/70">{h.nameOfIssuer}</span>
-                  )}
+                  <div className="flex items-center gap-2.5">
+                    {h.symbol && <CompanyLogo ticker={h.symbol} name={h.nameOfIssuer} size={24} />}
+                    <div className="min-w-0">
+                      {h.symbol ? (
+                        <Link href={`/stock/${h.symbol}`} className="font-mono font-semibold text-foreground hover:text-primary">
+                          {h.symbol}
+                        </Link>
+                      ) : (
+                        <span className="text-foreground">{h.nameOfIssuer}</span>
+                      )}
+                      {h.symbol && (
+                        <span className="ml-2 text-xs text-muted-foreground/70">{h.nameOfIssuer}</span>
+                      )}
+                    </div>
+                  </div>
                 </td>
                 <td className="px-4 py-3 text-right font-mono tabular-nums text-foreground/90">
                   {h.portfolioPct != null ? `${h.portfolioPct.toFixed(2)}%` : '—'}
@@ -213,15 +224,18 @@ function HoldingsTable({ holdings, diff }: { holdings: DiffableHolding[]; diff?:
                 </td>
               </tr>
               {diff.exited.map((h) => (
-                <tr key={`exited-${h.cusip}`} className="border-b border-border/30 last:border-0 opacity-60">
+                <tr key={`exited-${h.cusip}`} className="border-b border-border/30 opacity-60 transition-colors last:border-0 hover:bg-muted/30 hover:opacity-80">
                   <td className="px-4 py-3">
-                    {h.symbol ? (
-                      <Link href={`/stock/${h.symbol}`} className="font-mono font-semibold text-foreground hover:text-primary">
-                        {h.symbol}
-                      </Link>
-                    ) : (
-                      <span className="text-foreground">{h.nameOfIssuer}</span>
-                    )}
+                    <div className="flex items-center gap-2.5">
+                      {h.symbol && <CompanyLogo ticker={h.symbol} name={h.nameOfIssuer} size={24} />}
+                      {h.symbol ? (
+                        <Link href={`/stock/${h.symbol}`} className="font-mono font-semibold text-foreground hover:text-primary">
+                          {h.symbol}
+                        </Link>
+                      ) : (
+                        <span className="text-foreground">{h.nameOfIssuer}</span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-right text-muted-foreground/60">—</td>
                   <td className="px-4 py-3 text-right font-mono tabular-nums text-muted-foreground/60">

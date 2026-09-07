@@ -45,6 +45,39 @@ interface HoldingsResponse {
   availableQuarters: string[];
 }
 
+const PAGE_SIZE = 1000; // PostgREST's default max-rows cap — must page past it explicitly or a >1000-position fund (Citadel, Renaissance Tech) silently loses everything past row 1000
+
+/**
+ * Fetches every holdings row for a filing, paging past PostgREST's default
+ * 1000-row response cap. A single unbounded `.select()` was silently
+ * truncating large funds — verified live: Citadel's 7166-position filing
+ * only ever returned 1000 rows, understating total value and corrupting
+ * every "% of Portfolio" figure derived from it. `.order('cusip')` makes the
+ * pagination itself deterministic (`.range()` without a stable order can
+ * skip or repeat rows across pages) — cusip is unique per filing since
+ * migration 129's constraint, so this can't drop or duplicate a row.
+ */
+async function fetchAllHoldings(
+  supabase: ReturnType<typeof createServerClient>,
+  filingId: string
+): Promise<HoldingRow[]> {
+  const rows: HoldingRow[] = [];
+  let offset = 0;
+  for (;;) {
+    const { data } = await supabase
+      .from('institutional_holdings')
+      .select('symbol, name_of_issuer, cusip, value_usd, shares, portfolio_pct')
+      .eq('filing_id', filingId)
+      .order('cusip', { ascending: true })
+      .range(offset, offset + PAGE_SIZE - 1);
+    const batch = (data as HoldingRow[] | null) ?? [];
+    rows.push(...batch);
+    if (batch.length < PAGE_SIZE) break;
+    offset += PAGE_SIZE;
+  }
+  return rows;
+}
+
 function toDiffable(row: HoldingRow): DiffableHolding {
   return {
     cusip: row.cusip,
@@ -107,21 +140,14 @@ async function handler(
     const currentFiling = filingRows[currentIndex === -1 ? 0 : currentIndex];
     const previousFiling = filingRows[(currentIndex === -1 ? 0 : currentIndex) + 1] ?? null;
 
-    const { data: currentHoldingsRaw } = await supabase
-      .from('institutional_holdings')
-      .select('symbol, name_of_issuer, cusip, value_usd, shares, portfolio_pct')
-      .eq('filing_id', currentFiling.id);
+    const currentHoldingsRaw = await fetchAllHoldings(supabase, currentFiling.id);
 
     let previousHoldings: DiffableHolding[] | null = null;
     if (previousFiling) {
-      const { data: prevRaw } = await supabase
-        .from('institutional_holdings')
-        .select('symbol, name_of_issuer, cusip, value_usd, shares, portfolio_pct')
-        .eq('filing_id', previousFiling.id);
-      previousHoldings = ((prevRaw as HoldingRow[] | null) ?? []).map(toDiffable);
+      previousHoldings = (await fetchAllHoldings(supabase, previousFiling.id)).map(toDiffable);
     }
 
-    const holdings = ((currentHoldingsRaw as HoldingRow[] | null) ?? []).map(toDiffable);
+    const holdings = currentHoldingsRaw.map(toDiffable);
     const diff = computeHoldingsDiff(holdings, previousHoldings);
 
     const response: HoldingsResponse = {
