@@ -9,7 +9,7 @@ import { runChartAgent } from '@/lib/ai/chart-agent';
 import { withAuth, rejectIfTooLarge } from '@/lib/security/api-security';
 import { checkRateLimit } from '@/lib/security/rate-limiter';
 import { checkQuota } from '@/lib/billing/quotas';
-import { logAiCall } from '@/lib/billing/log-ai-call';
+import { logAiCallPending, updateAiCallUsage } from '@/lib/billing/log-ai-call';
 import { toSafeErrorMessage } from '@/lib/ai/error-utils';
 
 async function handler(
@@ -39,14 +39,13 @@ async function handler(
   try {
     const result = await runChartAgent(messages, snapshot, experienceLevel, language, req.signal);
 
+    // See app/api/ai/chat/route.ts for why this logs 'success' immediately
+    // rather than only after the stream finishes — otherwise an aborted
+    // request never counts against the shared 'chat' daily quota.
+    const usageRowId = await logAiCallPending({ userId: session.userId, feature: 'chat', model: 'gpt-4o' });
+
     void result.usage.then((usage) => {
-      void logAiCall({
-        userId: session.userId,
-        feature: 'chat',
-        model: 'gpt-4o',
-        inputTokens: usage.inputTokens,
-        outputTokens: usage.outputTokens,
-      });
+      if (usageRowId) void updateAiCallUsage(usageRowId, 'gpt-4o', usage.inputTokens, usage.outputTokens);
     }).catch(() => { /* logging never blocks */ });
 
     return result.toUIMessageStreamResponse({ onError: toSafeErrorMessage });

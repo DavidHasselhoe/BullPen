@@ -9,7 +9,7 @@ import { runAgent } from '@/lib/ai/agent';
 import { withAuth, rejectIfTooLarge } from '@/lib/security/api-security';
 import { checkRateLimit } from '@/lib/security/rate-limiter';
 import { checkQuota } from '@/lib/billing/quotas';
-import { logAiCall } from '@/lib/billing/log-ai-call';
+import { logAiCallPending, updateAiCallUsage } from '@/lib/billing/log-ai-call';
 import { toSafeErrorMessage } from '@/lib/ai/error-utils';
 import { saveConversation } from '@/lib/ai/conversations';
 import { validateUUID } from '@/lib/security/input-validation';
@@ -54,15 +54,16 @@ async function handler(
   try {
     const result = await runAgent(messages, context, experienceLevel, language, riskProfile, investmentHorizon, responseStyle, session.userId, allowHoldingsContext, req.signal);
 
-    // Log usage when stream finishes (non-blocking — response streams immediately).
+    // Logged as 'success' immediately (the model request is already
+    // dispatched at this point) so checkQuota counts it even if the client
+    // aborts before the stream finishes — the post-completion .then() below
+    // never runs on abort, and quota only counts status='success' rows, so
+    // this used to be an easy way to bypass the 15/day free limit entirely.
+    const usageRowId = await logAiCallPending({ userId: session.userId, feature: 'chat', model: 'gpt-4o' });
+
+    // Backfill real token counts + cost when the stream finishes (non-blocking).
     void result.usage.then((usage) => {
-      void logAiCall({
-        userId: session.userId,
-        feature: 'chat',
-        model: 'gpt-4o',
-        inputTokens: usage.inputTokens,
-        outputTokens: usage.outputTokens,
-      });
+      if (usageRowId) void updateAiCallUsage(usageRowId, 'gpt-4o', usage.inputTokens, usage.outputTokens);
     }).catch(() => { /* logging never blocks */ });
 
     // onError sanitizes any error that surfaces while the stream is being
