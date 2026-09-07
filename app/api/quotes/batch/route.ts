@@ -12,6 +12,7 @@ import { withRateLimit } from '@/lib/security/api-security';
 import { validateTicker } from '@/lib/security/input-validation';
 import { humanizeError } from '@/lib/errors/humanize';
 import { getLastPrices, cacheLastPrice } from '@/lib/market-data/last-price-cache';
+import { tryReserveOrganicCredits } from '@/lib/twelvedata/credit-budget';
 
 export const maxDuration = 30;
 
@@ -94,7 +95,15 @@ async function handler(request: NextRequest) {
       for (let i = 0; i < capped.length; i += BATCH_CHUNK) {
         chunks.push(capped.slice(i, i + BATCH_CHUNK));
       }
+      // Reserve against the shared per-minute credit budget (lib/twelvedata/
+      // credit-budget.ts) before each chunk's live fetch — this route has no
+      // cache of its own (quotes must stay fresh) and MAX_SYMBOLS(300) x the
+      // 60/min rate limit could otherwise burn up to 18,000 credits/min from
+      // one caller, blowing past the account's 610/min cap. A denied chunk
+      // just falls through to the last-price fallback below, same graceful
+      // degradation already used for a network failure.
       await Promise.all(chunks.map(async (chunk) => {
+        if (!(await tryReserveOrganicCredits(chunk.length))) return;
         try {
           const quoteMap = await getStockQuotes(chunk, { prepost, micCodes });
           for (const [symbol, q] of quoteMap.entries()) {

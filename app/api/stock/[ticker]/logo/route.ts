@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getLogoUrl, TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
-import { addSecurityHeaders } from '@/lib/security/api-security';
+import { addSecurityHeaders, withRateLimit } from '@/lib/security/api-security';
 
 /**
  * GET /api/stock/[ticker]/logo
@@ -49,5 +49,8 @@ async function handler(
   }
 }
 
-export const GET = handler;
-export const POST = handler;
+// No prior rate limiting at all — the Cache-Control header only helps repeat
+// requests for the SAME ticker at the CDN layer; a script cycling through
+// many distinct tickers got an unbounded, uncapped 1-credit fetch every time.
+export const GET = withRateLimit(handler, { windowMs: 60 * 1000, maxRequests: 60 });
+export const POST = withRateLimit(handler, { windowMs: 60 * 1000, maxRequests: 60 });

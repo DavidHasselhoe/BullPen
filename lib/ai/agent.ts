@@ -10,7 +10,7 @@ import { streamText, convertToModelMessages, stepCountIs } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import type { UIMessage } from 'ai';
 import { SYSTEM_PROMPT } from './systemPrompt';
-import { BULLPEN_TOOLS, createAlertTool, getPortfolioContextTool } from './tools';
+import { BULLPEN_TOOLS, createAlertTool, getPortfolioContextTool, getInsiderActivityTool } from './tools';
 import { languageName } from '@/lib/i18n/language-names';
 import { assertNoMutatingToolsWithExternalContent } from './tool-boundary';
 
@@ -81,6 +81,9 @@ export async function runAgent(
     ...BULLPEN_TOOLS,
     ...(userId ? { createAlert: createAlertTool(userId) } : {}),
     ...(userId && allowHoldingsContext ? { getPortfolioContext: getPortfolioContextTool(userId) } : {}),
+    // Pro-gated (see /api/stock/[ticker]/insider-transactions) — needs userId
+    // to check tier server-side, so it can't live in the static tool map.
+    ...(userId ? { getInsiderActivity: getInsiderActivityTool(userId) } : {}),
   };
   assertNoMutatingToolsWithExternalContent(Object.keys(tools));
 

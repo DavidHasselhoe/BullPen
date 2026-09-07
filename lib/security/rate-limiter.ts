@@ -138,10 +138,17 @@ export function rateLimit(
  */
 export function getClientIdentifier(request: NextRequest): string {
   const first = (h: string | null) => h?.split(',')[0]?.trim() || '';
+  // Platform-set headers first: Vercel's edge and Cloudflare both overwrite
+  // these themselves, so a client can't spoof them. x-forwarded-for and
+  // x-real-ip are checked last as a fallback for non-Vercel/local
+  // environments only — on Vercel, x-forwarded-for is client-appended-to,
+  // not replaced, so a caller sending its own X-Forwarded-For header keeps
+  // that value as the leftmost token, minting a fresh rate-limit identity on
+  // every request if it were trusted first.
   const ip =
-    first(request.headers.get('x-forwarded-for')) ||
     first(request.headers.get('x-vercel-forwarded-for')) ||
     first(request.headers.get('cf-connecting-ip')) ||
+    first(request.headers.get('x-forwarded-for')) ||
     first(request.headers.get('x-real-ip'));
   return ip || 'unknown';
 }

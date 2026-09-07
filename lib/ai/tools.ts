@@ -25,6 +25,9 @@ import {
   type BalanceSheetPeriod,
   type CashFlowPeriod,
 } from '@/lib/twelvedata/twelvedata-client';
+import { getCached, getCachedStale, setCached } from '@/lib/cache/market-data-cache';
+import { coalesce } from '@/lib/cache/request-coalesce';
+import { tryReserveOrganicCredits } from '@/lib/twelvedata/credit-budget';
 import { getHealthScoreForSymbol } from '@/lib/finance/get-health-score';
 import { getTier, isPro } from '@/lib/billing/tier';
 import { AlertTypeSchema, alertTypeLabel, describeAlert, FREE_ACTIVE_ALERT_LIMIT, type AlertType } from '@/types/alerts';
@@ -148,7 +151,57 @@ const CASH_FLOW_METRICS: Record<string, (r: CashFlowPeriod) => number | null> = 
   capital_expenditures: (r) => r.capital_expenditures,
 };
 
-/** Fetches `outputsize` periods for `metric` from whichever TwelveData statement endpoint carries it. */
+// ─────────────────────────────────────────────────────────────────────────────
+// Cache + credit-budget gate for expensive TwelveData calls. Every equivalent
+// stock-page route (app/api/stock/[ticker]/statistics|financials|earnings)
+// checks Supabase cache and reserves against the shared per-minute credit
+// budget before firing a live fetch; these AI tools call the exact same
+// TwelveData endpoints and must go through the same gate, or a single chat
+// message ("compare these 15 tickers' financials") can fan out into
+// thousands of uncapped, uncached credits with nothing to stop it repeating.
+const STATS_TTL_SECONDS = 24 * 60 * 60;
+const FINANCIALS_TTL_SECONDS = 24 * 60 * 60;
+const EARNINGS_TTL_SECONDS = 24 * 60 * 60;
+
+async function gatedFetch<T>(
+  cacheKey: string,
+  ticker: string,
+  dataType: string,
+  cost: number,
+  ttlSeconds: number,
+  fetcher: () => Promise<T>
+): Promise<{ denied: true } | { denied: false; data: T }> {
+  const cached = await getCached<T>(cacheKey);
+  if (cached !== null) return { denied: false, data: cached };
+
+  if (await tryReserveOrganicCredits(cost)) {
+    const data = await coalesce(cacheKey, fetcher);
+    if (Array.isArray(data) ? data.length > 0 : !!data) {
+      void setCached(cacheKey, ticker, dataType, data, ttlSeconds);
+    }
+    return { denied: false, data };
+  }
+
+  const stale = await getCachedStale<T>(cacheKey);
+  if (stale !== null) return { denied: false, data: stale };
+  return { denied: true };
+}
+
+/** Same cache key shape as app/api/stock/[ticker]/financials/route.ts, so tool calls and page views share hits. */
+async function fetchGatedStatementRows(
+  ticker: string,
+  statementType: 'income' | 'balance' | 'cashflow',
+  period: 'annual' | 'quarterly'
+): Promise<{ denied: true } | { denied: false; data: unknown[] }> {
+  const cacheKey = `financials:${ticker}:${statementType}:${period}`;
+  const fetcher =
+    statementType === 'income' ? () => getIncomeStatement(ticker, period)
+    : statementType === 'balance' ? () => getBalanceSheet(ticker, period)
+    : () => getCashFlow(ticker, period);
+  return gatedFetch<unknown[]>(cacheKey, ticker, 'financials', 101, FINANCIALS_TTL_SECONDS, fetcher);
+}
+
+/** Fetches up to `outputsize` periods for `metric` from whichever TwelveData statement endpoint carries it. */
 async function fetchMetricPeriods(
   ticker: string,
   metric: string,
@@ -156,18 +209,21 @@ async function fetchMetricPeriods(
   outputsize: number
 ): Promise<{ fiscalDate: string; value: number | null }[]> {
   if (metric in INCOME_STATEMENT_METRICS) {
-    const rows = await getIncomeStatement(ticker, period, outputsize);
+    const outcome = await fetchGatedStatementRows(ticker, 'income', period);
+    if (outcome.denied) return [];
     const extract = INCOME_STATEMENT_METRICS[metric];
-    return rows.map((r) => ({ fiscalDate: r.fiscal_date, value: extract(r) }));
+    return (outcome.data as IncomeStatementPeriod[]).slice(0, outputsize).map((r) => ({ fiscalDate: r.fiscal_date, value: extract(r) }));
   }
   if (metric in BALANCE_SHEET_METRICS) {
-    const rows = await getBalanceSheet(ticker, period, outputsize);
+    const outcome = await fetchGatedStatementRows(ticker, 'balance', period);
+    if (outcome.denied) return [];
     const extract = BALANCE_SHEET_METRICS[metric];
-    return rows.map((r) => ({ fiscalDate: r.fiscal_date, value: extract(r) }));
+    return (outcome.data as BalanceSheetPeriod[]).slice(0, outputsize).map((r) => ({ fiscalDate: r.fiscal_date, value: extract(r) }));
   }
-  const rows = await getCashFlow(ticker, period, outputsize);
+  const outcome = await fetchGatedStatementRows(ticker, 'cashflow', period);
+  if (outcome.denied) return [];
   const extract = CASH_FLOW_METRICS[metric];
-  return rows.map((r) => ({ fiscalDate: r.fiscal_date, value: extract(r) }));
+  return (outcome.data as CashFlowPeriod[]).slice(0, outputsize).map((r) => ({ fiscalDate: r.fiscal_date, value: extract(r) }));
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1151,7 +1207,10 @@ const getKeyStatistics = tool({
   }),
   execute: async ({ ticker }) => {
     try {
-      const s = await getStatistics(ticker.toUpperCase());
+      const symbol = ticker.toUpperCase();
+      const outcome = await gatedFetch(`stats:${symbol}`, symbol, 'statistics', 50, STATS_TTL_SECONDS, () => getStatistics(symbol));
+      if (outcome.denied) return { error: 'Rate limit reached fetching statistics. Try again shortly.' };
+      const s = outcome.data;
       return {
         ticker: s.symbol,
         marketCap: fmt(s.marketCap),
@@ -1203,8 +1262,10 @@ const getCompanyFinancials = tool({
   execute: async ({ ticker, type, period }) => {
     try {
       const sym = ticker.toUpperCase();
+      const outcome = await fetchGatedStatementRows(sym, type, period);
+      if (outcome.denied) return { error: 'Rate limit reached fetching financials. Try again shortly.' };
       if (type === 'income') {
-        const rows = await getIncomeStatement(sym, period);
+        const rows = outcome.data as IncomeStatementPeriod[];
         return rows.slice(0, 4).map((r) => ({
           period: r.fiscal_date,
           revenue: fmt(r.revenue),
@@ -1216,7 +1277,7 @@ const getCompanyFinancials = tool({
           epsDiluted: r.eps_diluted?.toFixed(2) ?? 'N/A',
         }));
       } else if (type === 'balance') {
-        const rows = await getBalanceSheet(sym, period);
+        const rows = outcome.data as BalanceSheetPeriod[];
         return rows.slice(0, 4).map((r) => ({
           period: r.fiscal_date,
           totalAssets: fmt(r.total_assets),
@@ -1228,7 +1289,7 @@ const getCompanyFinancials = tool({
           retainedEarnings: fmt(r.retained_earnings),
         }));
       } else {
-        const rows = await getCashFlow(sym, period);
+        const rows = outcome.data as CashFlowPeriod[];
         return rows.slice(0, 4).map((r) => ({
           period: r.fiscal_date,
           operatingCashFlow: fmt(r.operating_cash_flow),
@@ -1295,7 +1356,13 @@ const getEarningsData = tool({
   }),
   execute: async ({ ticker }) => {
     try {
-      const earnings = await getCompanyEarnings(ticker.toUpperCase(), 8);
+      const symbol = ticker.toUpperCase();
+      const outcome = await gatedFetch(
+        `ai-earnings:${symbol}`, symbol, 'earnings_history', 20, EARNINGS_TTL_SECONDS,
+        () => getCompanyEarnings(symbol, 8)
+      );
+      if (outcome.denied) return { error: 'Rate limit reached fetching earnings. Try again shortly.' };
+      const earnings = outcome.data;
       return earnings.map((e) => {
         const beat = e.actual != null && e.estimate != null
           ? e.actual >= e.estimate ? 'Beat' : 'Missed'
@@ -1317,65 +1384,86 @@ const getEarningsData = tool({
   },
 });
 
-const getInsiderActivity = tool({
-  description:
-    'Fetch recent insider trading activity for a stock — buys and sells by executives, directors, and ' +
-    '10%+ shareholders, aggregated into net buy/sell value plus the top individual trades. ' +
-    'Use only when the user explicitly asks about insider buying/selling, executive trades, or insider ' +
-    'sentiment — do not call this speculatively. Costs ~200 API credits.',
-  inputSchema: jsonSchema<{ ticker: string }>({
-    type: 'object',
-    properties: {
-      ticker: { type: 'string', description: 'Stock ticker symbol' },
-    },
-    required: ['ticker'],
-  }),
-  execute: async ({ ticker }) => {
-    try {
-      const symbol = ticker.toUpperCase();
-      const transactions = await getInsiderTransactions(symbol);
-      if (transactions.length === 0) {
-        return { ticker: symbol, tradeCount: 0, note: 'No recent insider transactions found.' };
+const INSIDER_TTL_SECONDS = 7 * 24 * 60 * 60;
+
+/**
+ * Per-request factory (like createAlertTool/getPortfolioContextTool) because
+ * this needs the caller's tier: /api/stock/[ticker]/insider-transactions
+ * gates this data to Pro on the page, and this tool must match — otherwise a
+ * free-tier chat user gets a Pro-only, 200-credit-per-symbol feature for free
+ * just by asking Bull instead of visiting the page.
+ */
+export function getInsiderActivityTool(userId: string) {
+  return tool({
+    description:
+      'Fetch recent insider trading activity for a stock — buys and sells by executives, directors, and ' +
+      '10%+ shareholders, aggregated into net buy/sell value plus the top individual trades. ' +
+      'Use only when the user explicitly asks about insider buying/selling, executive trades, or insider ' +
+      'sentiment — do not call this speculatively. Pro feature. Costs ~200 API credits.',
+    inputSchema: jsonSchema<{ ticker: string }>({
+      type: 'object',
+      properties: {
+        ticker: { type: 'string', description: 'Stock ticker symbol' },
+      },
+      required: ['ticker'],
+    }),
+    execute: async ({ ticker }) => {
+      try {
+        const tier = await getTier(userId);
+        if (!isPro(tier)) {
+          return { error: 'Insider activity is a Pro feature. Let the user know they can upgrade to unlock it.' };
+        }
+
+        const symbol = ticker.toUpperCase();
+        const outcome = await gatedFetch(
+          `insider:${symbol}`, symbol, 'insider_transactions', 200, INSIDER_TTL_SECONDS,
+          () => getInsiderTransactions(symbol)
+        );
+        if (outcome.denied) return { error: 'Rate limit reached fetching insider activity. Try again shortly.' };
+        const transactions = outcome.data;
+        if (transactions.length === 0) {
+          return { ticker: symbol, tradeCount: 0, note: 'No recent insider transactions found.' };
+        }
+
+        const buys = transactions.filter((t) => t.transaction_type === 'buy');
+        const sells = transactions.filter((t) => t.transaction_type === 'sell');
+        const buyValueRaw = buys.reduce((sum, t) => sum + Math.abs(t.value || 0), 0);
+        const sellValueRaw = sells.reduce((sum, t) => sum + Math.abs(t.value || 0), 0);
+        const netValueRaw = buyValueRaw - sellValueRaw;
+        const sentiment: 'bullish' | 'bearish' | 'neutral' =
+          netValueRaw > 0 ? 'bullish' : netValueRaw < 0 ? 'bearish' : 'neutral';
+
+        const topTransactions = transactions
+          .slice()
+          .sort((a, b) => Math.abs(b.value || 0) - Math.abs(a.value || 0))
+          .slice(0, 3)
+          .map((t) => ({
+            name: t.full_name,
+            position: t.position,
+            type: t.transaction_type,
+            value: fmt(Math.abs(t.value)),
+            date: t.date_reported,
+          }));
+
+        return {
+          ticker: symbol,
+          buyValue: fmt(buyValueRaw),
+          sellValue: fmt(sellValueRaw),
+          netValue: `${netValueRaw >= 0 ? '+' : '-'}${fmt(Math.abs(netValueRaw))}`,
+          buyValueRaw,
+          sellValueRaw,
+          netValueRaw,
+          tradeCount: transactions.length,
+          sentiment,
+          topTransactions,
+        };
+      } catch (err) {
+        if (err instanceof TwelveDataRateLimitError) return { error: 'Rate limit reached. Try again shortly.' };
+        return { error: `Could not fetch insider activity for ${ticker}: ${(err as Error).message}` };
       }
-
-      const buys = transactions.filter((t) => t.transaction_type === 'buy');
-      const sells = transactions.filter((t) => t.transaction_type === 'sell');
-      const buyValueRaw = buys.reduce((sum, t) => sum + Math.abs(t.value || 0), 0);
-      const sellValueRaw = sells.reduce((sum, t) => sum + Math.abs(t.value || 0), 0);
-      const netValueRaw = buyValueRaw - sellValueRaw;
-      const sentiment: 'bullish' | 'bearish' | 'neutral' =
-        netValueRaw > 0 ? 'bullish' : netValueRaw < 0 ? 'bearish' : 'neutral';
-
-      const topTransactions = transactions
-        .slice()
-        .sort((a, b) => Math.abs(b.value || 0) - Math.abs(a.value || 0))
-        .slice(0, 3)
-        .map((t) => ({
-          name: t.full_name,
-          position: t.position,
-          type: t.transaction_type,
-          value: fmt(Math.abs(t.value)),
-          date: t.date_reported,
-        }));
-
-      return {
-        ticker: symbol,
-        buyValue: fmt(buyValueRaw),
-        sellValue: fmt(sellValueRaw),
-        netValue: `${netValueRaw >= 0 ? '+' : '-'}${fmt(Math.abs(netValueRaw))}`,
-        buyValueRaw,
-        sellValueRaw,
-        netValueRaw,
-        tradeCount: transactions.length,
-        sentiment,
-        topTransactions,
-      };
-    } catch (err) {
-      if (err instanceof TwelveDataRateLimitError) return { error: 'Rate limit reached. Try again shortly.' };
-      return { error: `Could not fetch insider activity for ${ticker}: ${(err as Error).message}` };
-    }
-  },
-});
+    },
+  });
+}
 
 const getHealthScore = tool({
   description:
@@ -1466,7 +1554,6 @@ export const BULLPEN_TOOLS = {
   getEarningsData,
   getHealthScore,
   getLiveCompanyProfile,
-  getInsiderActivity,
 };
 
 export const CLIENT_ACTION_KEY = '__clientAction';

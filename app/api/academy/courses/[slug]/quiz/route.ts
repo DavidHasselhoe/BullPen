@@ -47,6 +47,10 @@ async function handler(
   const tier = await getTier(session.userId);
   const locked = course.requires_pro && !isPro(tier);
 
+  if (locked) {
+    return addSecurityHeaders(NextResponse.json({ success: true, quiz: null, locked }));
+  }
+
   const quiz: CourseFinalQuiz = {
     questions: quizRow.questions,
     passThreshold: quizRow.pass_threshold,
