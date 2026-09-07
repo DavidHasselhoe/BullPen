@@ -28,7 +28,7 @@ export default function GetStartedPage() {
       <div className="page-noise" aria-hidden />
 
       <div className="content-layer">
-        <header style={{ padding: '24px 0' }}>
+        <header style={{ borderBottom: '1px solid var(--border)', padding: '24px 0' }}>
           <div className="wrap" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Link href="/" aria-label="BullPen home">
               <Logo size="sm" />

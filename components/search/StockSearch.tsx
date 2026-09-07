@@ -13,6 +13,7 @@ import {
   CommandList,
 } from '@/components/ui/command';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Search } from 'lucide-react';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { useDebounce } from '@/hooks/use-debounce';
 import { fetchWithTimeout } from '@/lib/utils';
@@ -185,21 +186,7 @@ export function StockSearch() {
         className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 md:px-4 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
         aria-label="Search companies"
       >
-        <svg
-          className="h-4 w-4 shrink-0"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          xmlns="http://www.w3.org/2000/svg"
-          aria-hidden
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-          />
-        </svg>
+        <Search className="h-4 w-4 shrink-0" aria-hidden />
         <span className="hidden md:inline">Search companies...</span>
       </button>
     </>

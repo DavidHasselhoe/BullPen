@@ -36,10 +36,13 @@ interface HealthRingProps {
   className?: string;
 }
 
-const EMERALD = '#10b981';
+// emerald-400 / amber-400 / red-400 — matches DESIGN.md's documented product-surface signal shades.
+const EMERALD = '#34d399';
 const AMBER = '#fbbf24';
-const RED = '#ef4444';
-const TRACK = 'rgba(148, 163, 184, 0.18)';
+const RED = '#f87171';
+// currentColor + low opacity instead of a fixed slate rgba, so the track
+// stays correctly muted in both themes instead of one fixed dark-mode tone.
+const TRACK_OPACITY = 0.14;
 
 const SEG = 72; // 360 / 5 pillars
 
@@ -93,7 +96,7 @@ export function HealthRing({
       const ratio = p.max > 0 ? Math.max(0, Math.min(1, p.score / p.max)) : 0;
       const fillEnd = segStart + (segEnd - segStart) * ratio;
       arcs.push(
-        <path key={`t${i}`} d={arcPath(c, c, r, segStart, segEnd)} fill="none" stroke={TRACK} strokeWidth={w} strokeLinecap="round" />
+        <path key={`t${i}`} d={arcPath(c, c, r, segStart, segEnd)} fill="none" stroke="currentColor" strokeOpacity={TRACK_OPACITY} strokeWidth={w} strokeLinecap="round" />
       );
       if (available && fillEnd - segStart > 0.5) {
         arcs.push(
@@ -107,7 +110,7 @@ export function HealthRing({
     const end = 360 - gap / 2;
     const ratio = Math.max(0, Math.min(1, score / 100));
     const fillEnd = start + (end - start) * ratio;
-    arcs.push(<path key="t" d={arcPath(c, c, r, start, end)} fill="none" stroke={TRACK} strokeWidth={w} strokeLinecap="round" />);
+    arcs.push(<path key="t" d={arcPath(c, c, r, start, end)} fill="none" stroke="currentColor" strokeOpacity={TRACK_OPACITY} strokeWidth={w} strokeLinecap="round" />);
     if (fillEnd - start > 0.5) {
       arcs.push(<path key="f" d={arcPath(c, c, r, start, fillEnd)} fill="none" stroke={gradeColor(grade)} strokeWidth={w} strokeLinecap="round" />);
     }

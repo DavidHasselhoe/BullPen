@@ -7,6 +7,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CheckCircle2, XCircle, Loader2, RefreshCw } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 
 type Status = 'syncing' | 'success' | 'error' | 'cancelled';
@@ -59,17 +60,23 @@ function BrokerageCallbackContent() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <div className="max-w-md w-full space-y-6 text-center">
+      <motion.div
+        key={status}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2 }}
+        className="max-w-md w-full space-y-6 text-center"
+      >
         {/* Icon */}
         <div className="flex justify-center">
           {status === 'syncing' && (
             <Loader2 className="h-16 w-16 text-muted-foreground animate-spin" />
           )}
           {status === 'success' && (
-            <CheckCircle2 className="h-16 w-16 text-emerald-500" />
+            <CheckCircle2 className="h-16 w-16 text-primary" />
           )}
           {(status === 'error' || status === 'cancelled') && (
-            <XCircle className="h-16 w-16 text-red-500" />
+            <XCircle className="h-16 w-16 text-destructive" />
           )}
         </div>
 
@@ -86,7 +93,7 @@ function BrokerageCallbackContent() {
 
         {/* Sync count badge */}
         {status === 'success' && syncedCount != null && syncedCount > 0 && (
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-sm font-medium text-emerald-500">
+          <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
             <RefreshCw className="h-3.5 w-3.5" />
             {syncedCount} position{syncedCount === 1 ? '' : 's'} imported
           </div>
@@ -131,7 +138,7 @@ function BrokerageCallbackContent() {
             )}
           </div>
         )}
-      </div>
+      </motion.div>
     </div>
   );
 }
