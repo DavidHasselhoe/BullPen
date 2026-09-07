@@ -10,26 +10,18 @@ export function getShareRefCookie(): string | null {
 }
 
 /**
- * If a bp_ref cookie is present and this account hasn't already been
- * attributed, tags settings.acquired_via_share_id and grants the "give a
- * month, get a month" referral reward to both the new signup and the share's
- * owner (migrations 114/115 — bonus Pro access, notifications on both sides).
- * Safe to call on every login/signup completion — a no-op whenever there's
- * no cookie or the account is already attributed.
+ * If a bp_ref cookie is present, asks the server to attribute this signup and
+ * grant the "give a month, get a month" referral reward to both the new
+ * signup and the share's owner (migrations 114/115/124 — bonus Pro access,
+ * notifications on both sides). The RPC derives the caller from auth.uid()
+ * and is itself idempotent (checks + sets settings.acquired_via_share_id
+ * atomically), so this is safe to call on every login/signup completion —
+ * a no-op whenever there's no cookie or the account is already attributed.
  */
-export async function maybeClaimShareAttribution(userId: string): Promise<void> {
+export async function maybeClaimShareAttribution(): Promise<void> {
   const shareId = getShareRefCookie();
   if (!shareId) return;
 
   const supabase = createBrowserClient();
-  const { data: row } = await supabase.from('users').select('settings').eq('id', userId).single();
-  const settings = ((row as { settings: Record<string, unknown> } | null)?.settings) ?? {};
-  if (settings.acquired_via_share_id) return;
-
-  await supabase
-    .from('users')
-    .update({ settings: { ...settings, acquired_via_share_id: shareId } } as never)
-    .eq('id', userId);
-
-  await supabase.rpc('grant_share_referral_reward' as never, { share_id: shareId, new_user_id: userId } as never);
+  await supabase.rpc('grant_share_referral_reward' as never, { share_id_param: shareId } as never);
 }

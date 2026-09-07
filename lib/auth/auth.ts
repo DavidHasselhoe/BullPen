@@ -242,7 +242,7 @@ export async function signUp(params: SignUpParams): Promise<AuthResult> {
     }
 
     if (userProfile) {
-      await maybeClaimShareAttribution((userProfile as AuthUser).id);
+      await maybeClaimShareAttribution();
     }
 
     return {
@@ -363,7 +363,7 @@ export async function signIn(params: SignInParams): Promise<AuthResult> {
     // returns before a session exists there, so it can't claim attribution
     // itself — the user's first real sign-in does it instead. No-ops
     // instantly once already attributed, so safe on every sign-in.
-    await maybeClaimShareAttribution(userId);
+    await maybeClaimShareAttribution();
 
     // Fetch user profile (with retry on abort)
     const { data: userProfile, error: profileError } = await fetchUserProfileWithRetry(supabase, userId);

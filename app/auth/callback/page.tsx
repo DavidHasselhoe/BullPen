@@ -64,7 +64,7 @@ function AuthCallbackContent() {
 
       if (data.session) {
         setLastUsedAuthMethod('google');
-        void maybeClaimShareAttribution(data.session.user.id);
+        void maybeClaimShareAttribution();
         redirectHome();
       }
     };
