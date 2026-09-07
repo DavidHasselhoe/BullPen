@@ -1,5 +1,11 @@
 [
   {
+    "date": "2026-09-07",
+    "entries": [
+      { "type": "new", "text": "Added Institutional Holdings to Discover: see what well-known investors like Warren Buffett, Ray Dalio, and Michael Burry actually own, based on the filings they submit to the SEC every quarter. Open any fund to see its biggest positions in a chart, how much of the portfolio each one makes up, and what changed since the previous quarter. Full holdings are a Pro feature" }
+    ]
+  },
+  {
     "date": "2026-09-06",
     "entries": [
       { "type": "improved", "text": "Each Investing Ideas theme now shows quick averages for health score, P/E, and dividend yield at the top, so you can size up a theme before scrolling the full list" }
