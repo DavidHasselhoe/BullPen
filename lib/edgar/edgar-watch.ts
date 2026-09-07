@@ -186,6 +186,19 @@ export function pickCommentaryFile(files: EdgarFilingFile[]): EdgarFilingFile | 
 }
 
 /**
+ * Fetches one raw file from a filing's Archives directory as text —
+ * unlike fetchExhibitText, this does NOT strip tags (13F information-table
+ * XML needs its structure intact for parsing, not a plain-text flattening).
+ */
+export async function fetchFilingDocument(cik: string | number, accessionNumber: string, fileName: string): Promise<string> {
+  const paddedCik = padCik(cik);
+  const accNoDash = accessionNumber.replace(/-/g, '');
+  const res = await edgarFetch(`https://www.sec.gov/Archives/edgar/data/${Number(paddedCik)}/${accNoDash}/${fileName}`);
+  if (!res.ok) throw new Error(`SEC filing document fetch failed: ${res.status} for ${fileName}`);
+  return res.text();
+}
+
+/**
  * Fetches one exhibit and returns it as plain text — HTML tags stripped,
  * block-level boundaries (`<p>`, `<tr>`, `<div>`, `<br>`) converted to
  * newlines first so numbers in adjacent table cells don't get smashed
