@@ -120,7 +120,7 @@ export function InstitutionalHoldingsPieChart({
     <Card className={className}>
       <CardContent className="pt-6">
         {headline && (
-          <p className="mb-6 max-w-prose text-[0.9375rem] leading-snug text-foreground/90">{headline}</p>
+          <p className="mb-6 max-w-prose text-base leading-snug text-foreground/90">{headline}</p>
         )}
 
         <div
