@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { LayoutGrid } from 'lucide-react';
+import { ALLOCATION_COLORS } from '@/lib/charts/allocation-colors';
 import type { HoldingWithPrice } from './types';
 import type { CurrencyCode } from '@/lib/currency/currency-conversion';
 
@@ -14,23 +15,6 @@ interface HoldingsPieChartProps {
   onSectorHover?: (sector: string | null) => void;
   isLoading?: boolean;
 }
-
-/** Shared categorical palette for allocation-style breakdowns app-wide — also
- *  used by InstitutionalHoldingsPieChart so both "part of a whole" charts
- *  read as the same visual language. */
-export const SECTOR_COLORS = [
-  '#3b82f6', // blue
-  '#06b6d4', // cyan
-  '#f59e0b', // amber
-  '#f43f5e', // rose
-  '#10b981', // emerald
-  '#a78bfa', // violet
-  '#6366f1', // indigo
-  '#fbbf24', // yellow
-  '#8b5cf6', // purple
-  '#94a3b8', // slate
-  '#34d399', // teal
-];
 
 function shortenSector(sector: string): string {
   return sector
@@ -118,7 +102,7 @@ export function HoldingsPieChart({ holdings, onSectorHover, isLoading }: Holding
                 <div className="flex items-center gap-2.5 min-w-0">
                   <span
                     className="h-2 w-2 rounded-full shrink-0"
-                    style={{ backgroundColor: SECTOR_COLORS[i % SECTOR_COLORS.length] }}
+                    style={{ backgroundColor: ALLOCATION_COLORS[i % ALLOCATION_COLORS.length] }}
                   />
                   <span className="text-sm text-foreground/85 truncate">{sector.name}</span>
                 </div>
@@ -131,7 +115,7 @@ export function HoldingsPieChart({ holdings, onSectorHover, isLoading }: Holding
                   className="h-full rounded-full transition-all duration-700"
                   style={{
                     width: `${sector.allocation}%`,
-                    backgroundColor: SECTOR_COLORS[i % SECTOR_COLORS.length],
+                    backgroundColor: ALLOCATION_COLORS[i % ALLOCATION_COLORS.length],
                   }}
                 />
               </div>

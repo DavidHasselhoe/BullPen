@@ -46,5 +46,13 @@ export default async function InstitutionalFundPage({
   const { 'fund-slug': slug } = await params;
   if (!isInstitutionalFundSlug(slug)) notFound();
 
-  return <InstitutionalFundDetailClient slug={slug} />;
+  // Same container as /discover (its page.tsx) — without it this page rendered
+  // edge to edge, stretching the holdings bars to ~2000px on a wide screen,
+  // where neither the bar lengths nor a row's ticker and its percentage could
+  // be compared without crossing the whole viewport.
+  return (
+    <main className="container mx-auto max-w-6xl py-8 px-4 sm:px-6 lg:px-8 min-w-0 page-enter">
+      <InstitutionalFundDetailClient slug={slug} />
+    </main>
+  );
 }

@@ -78,6 +78,23 @@ export async function resolveFromLogoDev(sym: string): Promise<ResolvedLogoImage
 }
 
 /**
+ * logo.dev's other lookup key: a company domain rather than a listed ticker.
+ * Needed for anything without a ticker at all — the 13F funds
+ * (Bridgewater, Citadel, ...) are private partnerships, so `/ticker/` can
+ * never resolve them. Same fallback=404 discipline as above: a miss must be a
+ * 404, never a generated monogram we'd then store as if it were a real logo.
+ */
+export async function resolveFromLogoDevDomain(
+  domain: string,
+  size = 256
+): Promise<ResolvedLogoImage | null> {
+  const token = process.env.LOGO_DEV_KEY;
+  if (!token) return null;
+  const url = `https://img.logo.dev/${encodeURIComponent(domain)}?token=${token}&format=png&size=${size}&fallback=404`;
+  return downloadAndValidateLogo(url);
+}
+
+/**
  * Full pipeline: TwelveData first, logo.dev fallback, upload the winner to
  * our own `company-logos` bucket, and persist it on the company row if one
  * exists. Does not touch the market_data_cache negative/positive cache —

@@ -1,15 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Lock, TrendingUp, TrendingDown } from 'lucide-react';
+import { ArrowLeft, Lock } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { AiPaywallDialog } from '@/components/billing/AiPaywallDialog';
-import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { FundAvatar } from './FundAvatar';
 import { Filing13FDisclaimer } from './Filing13FDisclaimer';
 import { InstitutionalHoldingsPieChart } from './InstitutionalHoldingsPieChart';
+import { HoldingsBarList } from './HoldingsBarList';
+import { buildAllocation } from '@/lib/institutions/allocation';
+import { ALLOCATION_COLORS } from '@/lib/charts/allocation-colors';
 import { fmtUsd } from '@/lib/institutions/format';
 import type { InstitutionalFundSummary } from '@/app/api/institutions/route';
 import type { DiffableHolding, HoldingsDiff } from '@/lib/institutions/compute-diff';
@@ -45,7 +47,11 @@ export function InstitutionalFundDetailClient({ slug }: { slug: string }) {
     },
     staleTime: 10 * 60 * 1000,
   });
-  const fundSummary = listData?.funds?.find((f) => f.slug === slug);
+  const fundIndex = listData?.funds?.findIndex((f) => f.slug === slug) ?? -1;
+  const fundSummary = fundIndex >= 0 ? listData?.funds?.[fundIndex] : undefined;
+  // Same color the fund's card carries on Discover, so arriving here reads as
+  // the same fund rather than a different page about one.
+  const accentColor = fundIndex >= 0 ? ALLOCATION_COLORS[fundIndex % ALLOCATION_COLORS.length] : undefined;
 
   const { data: holdingsData, isLoading: holdingsLoading } = useQuery({
     queryKey: ['institutions-holdings', slug],
@@ -64,6 +70,13 @@ export function InstitutionalFundDetailClient({ slug }: { slug: string }) {
   const displayName = holdingsData?.fund?.displayName ?? fundSummary?.displayName ?? slug;
   const managerName = holdingsData?.fund?.managerName ?? fundSummary?.managerName ?? null;
 
+  // One allocation model drives both the donut and the bar list, so a ticker's
+  // color is the same in both. Memoized on the holdings array: for a fund like
+  // Citadel this sorts 7000+ rows, and highlight hover state re-renders often.
+  const holdings = holdingsData?.holdings;
+  const allocation = useMemo(() => (holdings ? buildAllocation(holdings) : null), [holdings]);
+  const [highlightedKey, setHighlightedKey] = useState<string | null>(null);
+
   return (
     <div>
       <Link
@@ -75,7 +88,12 @@ export function InstitutionalFundDetailClient({ slug }: { slug: string }) {
       </Link>
 
       <div className="mb-2 flex items-center gap-3">
-        <FundAvatar displayName={displayName} size={44} />
+        <FundAvatar
+          displayName={displayName}
+          size={44}
+          accentColor={accentColor}
+          logoUrl={fundSummary?.logoUrl}
+        />
         <div>
           <h1 className="text-xl font-bold tracking-tight text-foreground">{displayName}</h1>
           {managerName && <p className="text-sm text-muted-foreground/85">{managerName}</p>}
@@ -124,14 +142,21 @@ export function InstitutionalFundDetailClient({ slug }: { slug: string }) {
         </div>
       )}
 
-      {unlocked && holdingsData?.holdings && (
+      {unlocked && allocation && (
         <>
           <InstitutionalHoldingsPieChart
-            holdings={holdingsData.holdings}
-            totalValueUsd={holdingsData.filing?.totalValueUsd}
+            allocation={allocation}
+            totalValueUsd={holdingsData?.filing?.totalValueUsd}
+            highlightedKey={highlightedKey}
+            onHighlight={setHighlightedKey}
             className="mb-6"
           />
-          <HoldingsTable holdings={holdingsData.holdings} diff={holdingsData.diff} />
+          <HoldingsBarList
+            allocation={allocation}
+            diff={holdingsData?.diff}
+            highlightedKey={highlightedKey}
+            onHighlight={setHighlightedKey}
+          />
         </>
       )}
 
@@ -142,113 +167,6 @@ export function InstitutionalFundDetailClient({ slug }: { slug: string }) {
         quota={{ allowed: false, used: 0, limit: 0, period: 'month', resetsAt: new Date().toISOString(), reason: 'pro_only' }}
         previewContext={{ fundName: displayName }}
       />
-    </div>
-  );
-}
-
-function HoldingsTable({ holdings, diff }: { holdings: DiffableHolding[]; diff?: HoldingsDiff | null }) {
-  const changedByCusip = new Map<string, number>();
-  if (diff) {
-    for (const h of diff.increased) changedByCusip.set(h.cusip, h.valueChangePct);
-    for (const h of diff.decreased) changedByCusip.set(h.cusip, h.valueChangePct);
-  }
-  const newCusips = new Set(diff?.newPositions.map((h) => h.cusip) ?? []);
-
-  const sorted = [...holdings].sort((a, b) => b.valueUsd - a.valueUsd);
-
-  return (
-    <div className="overflow-x-auto rounded-xl border border-border/50">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-border/50 text-left text-xs uppercase tracking-wide text-muted-foreground/80">
-            <th className="px-4 py-3 font-medium">Company</th>
-            <th className="px-4 py-3 text-right font-medium">% of Portfolio</th>
-            <th className="px-4 py-3 text-right font-medium">Value</th>
-            <th className="px-4 py-3 text-right font-medium">Shares</th>
-            <th className="px-4 py-3 text-right font-medium">QoQ Change</th>
-          </tr>
-        </thead>
-        <tbody>
-          {sorted.map((h) => {
-            const changePct = changedByCusip.get(h.cusip);
-            const isNew = newCusips.has(h.cusip);
-            return (
-              <tr key={h.cusip} className="border-b border-border/30 transition-colors last:border-0 hover:bg-muted/30">
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-2.5">
-                    {h.symbol && <CompanyLogo ticker={h.symbol} name={h.nameOfIssuer} size={24} />}
-                    <div className="min-w-0">
-                      {h.symbol ? (
-                        <Link href={`/stock/${h.symbol}`} className="font-mono font-semibold text-foreground hover:text-primary">
-                          {h.symbol}
-                        </Link>
-                      ) : (
-                        <span className="text-foreground">{h.nameOfIssuer}</span>
-                      )}
-                      {h.symbol && (
-                        <span className="ml-2 text-xs text-muted-foreground/70">{h.nameOfIssuer}</span>
-                      )}
-                    </div>
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-right font-mono tabular-nums text-foreground/90">
-                  {h.portfolioPct != null ? `${h.portfolioPct.toFixed(2)}%` : '—'}
-                </td>
-                <td className="px-4 py-3 text-right font-mono tabular-nums text-foreground/90">{fmtUsd(h.valueUsd)}</td>
-                <td className="px-4 py-3 text-right font-mono tabular-nums text-muted-foreground">
-                  {h.shares.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                </td>
-                <td className="px-4 py-3 text-right">
-                  {isNew ? (
-                    <span className="text-xs font-medium text-emerald-400">New</span>
-                  ) : changePct != null ? (
-                    <span
-                      className={`inline-flex items-center gap-1 font-mono text-xs tabular-nums ${changePct > 0 ? 'text-emerald-400' : 'text-red-400'}`}
-                    >
-                      {changePct > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                      {changePct > 0 ? '+' : ''}
-                      {changePct.toFixed(1)}%
-                    </span>
-                  ) : (
-                    <span className="text-xs text-muted-foreground/60">—</span>
-                  )}
-                </td>
-              </tr>
-            );
-          })}
-          {diff?.exited && diff.exited.length > 0 && (
-            <>
-              <tr>
-                <td colSpan={5} className="px-4 pt-4 pb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground/70">
-                  Exited since last quarter
-                </td>
-              </tr>
-              {diff.exited.map((h) => (
-                <tr key={`exited-${h.cusip}`} className="border-b border-border/30 opacity-60 transition-colors last:border-0 hover:bg-muted/30 hover:opacity-80">
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2.5">
-                      {h.symbol && <CompanyLogo ticker={h.symbol} name={h.nameOfIssuer} size={24} />}
-                      {h.symbol ? (
-                        <Link href={`/stock/${h.symbol}`} className="font-mono font-semibold text-foreground hover:text-primary">
-                          {h.symbol}
-                        </Link>
-                      ) : (
-                        <span className="text-foreground">{h.nameOfIssuer}</span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-right text-muted-foreground/60">—</td>
-                  <td className="px-4 py-3 text-right font-mono tabular-nums text-muted-foreground/60">
-                    {fmtUsd(h.valueUsd)}
-                  </td>
-                  <td className="px-4 py-3 text-right text-muted-foreground/60">—</td>
-                  <td className="px-4 py-3 text-right text-xs font-medium text-red-400">Exited</td>
-                </tr>
-              ))}
-            </>
-          )}
-        </tbody>
-      </table>
     </div>
   );
 }

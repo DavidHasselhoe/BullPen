@@ -1,29 +1,25 @@
 'use client';
 
 /**
- * Donut allocation chart for a fund's top holdings — sits above the full
- * HoldingsTable (which stays the accessible, sortable data-table version of
- * the same numbers; this is a faster-to-scan visual on top of it, not a
- * replacement). Capped at TOP_N slices + one aggregated "Other" wedge so a
- * fund with 50+ positions never renders an unreadable wheel of slivers.
+ * Donut allocation chart for a fund's top holdings, and the lead visual on the
+ * fund detail page — the holdings bar list below it is the same data read a
+ * second way, sharing one color per ticker via buildAllocation().
  *
- * Colors reuse the app's existing SECTOR_COLORS categorical palette (see
- * HoldingsPieChart) so both "part of a whole" charts in the product read as
- * the same visual language — "Other" is deliberately neutral gray rather
- * than the next color in the ramp, since it isn't a real single holding.
+ * Capped at ALLOCATION_TOP_N wedges plus one aggregated "Other", so a fund
+ * with thousands of positions never renders an unreadable wheel of slivers.
+ * "Other" is neutral gray rather than the next color in the ramp, since it
+ * isn't a single holding competing for identity with the named ones.
  */
 
 import { useEffect, useState } from 'react';
-import { PieChart as PieChartIcon } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
-import { SECTOR_COLORS } from '@/components/holdings/HoldingsPieChart';
+import { ALLOCATION_OTHER_COLOR } from '@/lib/charts/allocation-colors';
+import { allocationHeadline } from '@/lib/institutions/allocation';
 import { fmtUsd } from '@/lib/institutions/format';
-import type { DiffableHolding } from '@/lib/institutions/compute-diff';
+import type { Allocation } from '@/lib/institutions/allocation';
 
-const TOP_N = 6;
-const OTHER_COLOR = 'var(--muted-foreground)';
 const OTHER_KEY = '__other__';
 
 interface Slice {
@@ -32,43 +28,36 @@ interface Slice {
   name: string;
   value: number;
   pct: number;
+  color: string;
   isOther: boolean;
   // recharts' Pie `data` prop is typed as Record<string, unknown>[]
   [key: string]: unknown;
 }
 
-function buildSlices(holdings: DiffableHolding[]): { slices: Slice[]; total: number } {
-  const total = holdings.reduce((sum, h) => sum + h.valueUsd, 0);
-  const sorted = [...holdings].sort((a, b) => b.valueUsd - a.valueUsd);
-  const top = sorted.slice(0, TOP_N);
-  const rest = sorted.slice(TOP_N);
-  const restValue = rest.reduce((sum, h) => sum + h.valueUsd, 0);
-
-  const slices: Slice[] = top.map((h) => ({
-    key: h.cusip,
+function toSlices(allocation: Allocation): Slice[] {
+  const slices: Slice[] = allocation.top.map((h) => ({
+    key: h.key,
     symbol: h.symbol,
-    name: h.nameOfIssuer,
+    name: h.name,
     value: h.valueUsd,
-    pct: total > 0 ? (h.valueUsd / total) * 100 : 0,
+    pct: h.pct,
+    color: h.color,
     isOther: false,
   }));
 
-  if (rest.length > 0) {
+  if (allocation.rest.length > 0) {
     slices.push({
       key: OTHER_KEY,
       symbol: null,
-      name: `${rest.length} more position${rest.length === 1 ? '' : 's'}`,
-      value: restValue,
-      pct: total > 0 ? (restValue / total) * 100 : 0,
+      name: `${allocation.rest.length.toLocaleString()} more position${allocation.rest.length === 1 ? '' : 's'}`,
+      value: allocation.restValue,
+      pct: allocation.restPct,
+      color: ALLOCATION_OTHER_COLOR,
       isOther: true,
     });
   }
 
-  return { slices, total };
-}
-
-function colorFor(slice: Slice, index: number): string {
-  return slice.isOther ? OTHER_COLOR : SECTOR_COLORS[index % SECTOR_COLORS.length];
+  return slices;
 }
 
 function PieTooltip({ active, payload }: { active?: boolean; payload?: Array<{ payload: Slice }> }) {
@@ -89,13 +78,22 @@ function PieTooltip({ active, payload }: { active?: boolean; payload?: Array<{ p
 }
 
 interface InstitutionalHoldingsPieChartProps {
-  holdings: DiffableHolding[];
+  allocation: Allocation;
   totalValueUsd?: number | null;
+  /** Ticker currently hovered anywhere on the page, so the donut and the bar
+   *  list below highlight the same holding together. */
+  highlightedKey: string | null;
+  onHighlight: (key: string | null) => void;
   className?: string;
 }
 
-export function InstitutionalHoldingsPieChart({ holdings, totalValueUsd, className }: InstitutionalHoldingsPieChartProps) {
-  const [hoveredKey, setHoveredKey] = useState<string | null>(null);
+export function InstitutionalHoldingsPieChart({
+  allocation,
+  totalValueUsd,
+  highlightedKey,
+  onHighlight,
+  className,
+}: InstitutionalHoldingsPieChartProps) {
   const [reducedMotion, setReducedMotion] = useState(
     () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
   );
@@ -107,35 +105,38 @@ export function InstitutionalHoldingsPieChart({ holdings, totalValueUsd, classNa
     return () => mq.removeEventListener('change', handler);
   }, []);
 
-  if (holdings.length === 0) return null;
+  if (allocation.top.length === 0) return null;
 
-  const { slices, total } = buildSlices(holdings);
-  const centerValue = totalValueUsd ?? total;
+  const slices = toSlices(allocation);
+  const centerValue = totalValueUsd ?? allocation.total;
+  const headline = allocationHeadline(allocation);
   const topSlice = slices[0];
 
-  const ariaLabel = `Portfolio allocation donut chart. Largest holding: ${topSlice.symbol ?? topSlice.name} at ${topSlice.pct.toFixed(1)}% of the portfolio${
+  const ariaLabel = `Portfolio allocation. Largest holding: ${topSlice.symbol ?? topSlice.name} at ${topSlice.pct.toFixed(1)}% of the portfolio${
     slices.length > 1 ? `, plus ${slices.length - 1} more shown` : ''
-  }. Full breakdown in the table below.`;
+  }. Full breakdown in the list below.`;
 
   return (
     <Card className={className}>
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-          <PieChartIcon className="h-4 w-4 text-muted-foreground/80" aria-hidden />
-          Top Holdings
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-[220px_1fr] sm:items-center" role="img" aria-label={ariaLabel}>
-          <div className="relative mx-auto h-[220px] w-[220px]" aria-hidden>
+      <CardContent className="pt-6">
+        {headline && (
+          <p className="mb-6 max-w-prose text-[0.9375rem] leading-snug text-foreground/90">{headline}</p>
+        )}
+
+        <div
+          className="grid grid-cols-1 gap-8 sm:grid-cols-[280px_1fr] sm:items-center"
+          role="img"
+          aria-label={ariaLabel}
+        >
+          <div className="relative mx-auto h-[280px] w-[280px]" aria-hidden>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={slices}
                   dataKey="value"
                   nameKey="name"
-                  innerRadius={68}
-                  outerRadius={96}
+                  innerRadius={86}
+                  outerRadius={126}
                   paddingAngle={2}
                   cornerRadius={4}
                   startAngle={90}
@@ -146,15 +147,15 @@ export function InstitutionalHoldingsPieChart({ holdings, totalValueUsd, classNa
                   animationDuration={450}
                   animationEasing="ease-out"
                 >
-                  {slices.map((s, i) => {
-                    const dimmed = hoveredKey !== null && hoveredKey !== s.key;
+                  {slices.map((s) => {
+                    const dimmed = highlightedKey !== null && highlightedKey !== s.key;
                     return (
                       <Cell
                         key={s.key}
-                        fill={colorFor(s, i)}
+                        fill={s.color}
                         fillOpacity={s.isOther ? 0.35 : dimmed ? 0.3 : 1}
-                        onMouseEnter={() => setHoveredKey(s.key)}
-                        onMouseLeave={() => setHoveredKey(null)}
+                        onMouseEnter={() => onHighlight(s.key)}
+                        onMouseLeave={() => onHighlight(null)}
                       />
                     );
                   })}
@@ -163,34 +164,38 @@ export function InstitutionalHoldingsPieChart({ holdings, totalValueUsd, classNa
               </PieChart>
             </ResponsiveContainer>
             <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-              <span className="font-mono text-lg font-semibold tabular-nums text-foreground">{fmtUsd(centerValue)}</span>
-              <span className="text-xs text-muted-foreground/80">Total 13F Value</span>
+              <span className="font-mono text-2xl font-semibold tabular-nums text-foreground">
+                {fmtUsd(centerValue)}
+              </span>
+              <span className="mt-0.5 text-xs text-muted-foreground/80">Total 13F Value</span>
             </div>
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            {slices.map((s, i) => {
-              const color = colorFor(s, i);
-              const dimmed = hoveredKey !== null && hoveredKey !== s.key;
+          {/* Two columns on wide screens: one tall column leaves a ticker and
+              its percentage separated by most of the card, which is a long way
+              for the eye to travel to read one row. */}
+          <div className="grid grid-cols-1 gap-x-8 gap-y-1.5 lg:grid-cols-2">
+            {slices.map((s) => {
+              const dimmed = highlightedKey !== null && highlightedKey !== s.key;
               return (
                 <div
                   key={s.key}
                   className="-mx-1.5 flex items-center gap-2.5 rounded-md px-1.5 py-1 transition-opacity duration-150"
                   style={{ opacity: dimmed ? 0.5 : 1 }}
-                  onMouseEnter={() => setHoveredKey(s.key)}
-                  onMouseLeave={() => setHoveredKey(null)}
+                  onMouseEnter={() => onHighlight(s.key)}
+                  onMouseLeave={() => onHighlight(null)}
                 >
                   {s.symbol ? (
                     <div
                       className="shrink-0 rounded-full ring-2 ring-offset-2 ring-offset-card"
-                      style={{ '--tw-ring-color': color } as React.CSSProperties}
+                      style={{ '--tw-ring-color': s.color } as React.CSSProperties}
                     >
                       <CompanyLogo ticker={s.symbol} name={s.name} size={22} />
                     </div>
                   ) : (
                     <span
                       className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white"
-                      style={{ backgroundColor: color }}
+                      style={{ backgroundColor: s.color }}
                     >
                       &hellip;
                     </span>
