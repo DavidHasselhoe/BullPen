@@ -24,6 +24,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logSecurityEvent } from '@/lib/security/security-events';
 import { createServerClient } from '@/lib/supabase/client';
+import { getClosedHolidays } from '@/lib/market/exchange-holidays';
 import { generateMarketMoversContent } from '@/lib/instagram/content/market-movers';
 import { totalSlideCount } from '@/lib/instagram/render/slides';
 import { contentVersion } from '@/lib/instagram/render/cache-bust';
@@ -72,6 +73,19 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   const basePeriodKey = todayEtDateKey();
   const periodKey = preMarket ? `${basePeriodKey}-premarket` : basePeriodKey;
+
+  // ── Market holiday guard ─────────────────────────────────────────────────
+  // NYSE/NASDAQ full closures (Labor Day, Thanksgiving, Christmas, ...) —
+  // the cron's own schedule (Mon-Fri) already skips weekends but knows
+  // nothing about holidays. Without this, TwelveData's /quote still returns
+  // the last real session's change on a closed day, so this would just
+  // repost the prior trading day's already-published movers as if new.
+  // Early-close days aren't included here (getClosedHolidays only returns
+  // type: 'closed') since those days still have real intraday moves.
+  const holidays = await getClosedHolidays(['NYSE', 'NASDAQ'], basePeriodKey, basePeriodKey);
+  if (holidays.length > 0) {
+    return NextResponse.json({ success: true, skipped: true, periodKey, reason: 'market_holiday', holiday: holidays[0].label });
+  }
 
   // ── Idempotency ──────────────────────────────────────────────────────────
   const { data: existing } = await db
