@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import type { TFunction } from 'i18next';
 import {
-  ShieldAlert, Zap, Sparkles, MessageCircle, Wand2, FileSearch,
+  ShieldAlert, Zap, Sparkles, MessageCircle, Wand2, FileSearch, Landmark,
 } from 'lucide-react';
 import type { PaywallBenefit } from './AiPaywallContent';
 import { RiskAnalysisPaywallPreview } from './RiskAnalysisPaywallPreview';
@@ -9,6 +9,7 @@ import { WhyTodayPaywallPreview } from './WhyTodayPaywallPreview';
 import { AskBullPaywallPreview } from './AskBullPaywallPreview';
 import { PortfolioBuilderPaywallPreview } from './PortfolioBuilderPaywallPreview';
 import { DeepDivePaywallPreview } from './DeepDivePaywallPreview';
+import { InstitutionalHoldingsPaywallPreview } from './InstitutionalHoldingsPaywallPreview';
 
 export interface PaywallConfig {
   benefits: PaywallBenefit[];
@@ -28,6 +29,7 @@ export interface PaywallPreviewContext {
   companyName?: string;
   changePercent?: number;
   tickers?: string[];
+  fundName?: string;
 }
 
 /**
@@ -89,6 +91,14 @@ export function getAiPaywallConfig(t: TFunction, context?: PaywallPreviewContext
         { icon: Zap, text: t('paywallBenefitDailyBrief') },
       ],
       preview: <DeepDivePaywallPreview ticker={context?.ticker} companyName={context?.companyName} />,
+    },
+    'Institutional Holdings': {
+      benefits: [
+        { icon: Landmark, text: 'Full 13F holdings for 15+ legendary investors, updated quarterly' },
+        { icon: ShieldAlert, text: t('paywallBenefitUnlimitedRiskAnalysis') },
+        { icon: Zap, text: t('paywallBenefitDailyBrief') },
+      ],
+      preview: <InstitutionalHoldingsPaywallPreview fundName={context?.fundName} />,
     },
   };
 }

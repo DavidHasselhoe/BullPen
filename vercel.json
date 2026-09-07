@@ -39,6 +39,10 @@
     {
       "path": "/api/cron/market-movers-daily",
       "schedule": "30 21 * * 1-5"
+    },
+    {
+      "path": "/api/cron/sync-institutional-holdings",
+      "schedule": "0 7 * * 1"
     }
   ]
 }

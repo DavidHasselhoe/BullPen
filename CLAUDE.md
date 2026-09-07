@@ -257,6 +257,7 @@ Split across three schedulers. All cron routes are protected by the `CRON_SECRET
 | `/api/cron/generate-daily-brief` | `30 6 * * *` | Generate AI daily brief for Pro users (Anthropic Claude) |
 | `/api/cron/generate-weekly-pick` | `30 6 * * 1` | Generate Bull's Weekly Pick, published before pre-market so it's actionable from that session's open |
 | `/api/cron/generate-academy-course` | `17 6 * * 1` | Draft the next course in the 10-week Academy roadmap (`lib/academy/academy-roadmap.ts`) via Claude and stage it unpublished for review at `/admin/academy-roadmap`. No auto-publish — requires explicit approval. |
+| `/api/cron/sync-institutional-holdings` | `0 7 * * 1` | Pull the newest 13F-HR filing for each curated fund in `institutional_investors` from SEC EDGAR, resolve CUSIPs to tickers, and upsert holdings (Discover page's institutional-holdings Pro feature). One fund's parse failure never blocks another's; supports `?slug=<fund-slug>` for a scoped rerun. |
 | `/api/cron/check-daily-challenge-reminder` | `0 1 * * *` | Evening (~9pm ET) nudge for users with an active Academy streak who haven't done anything in Academy yet today |
 | `/api/cron/check-dividends-upcoming` | `0 8 * * *` | Notify users about held/watched stocks going ex-dividend in 3 days |
 | `/api/cron/check-earnings-upcoming` | `0 8 * * *` | Email users about upcoming earnings in held/watched stocks |

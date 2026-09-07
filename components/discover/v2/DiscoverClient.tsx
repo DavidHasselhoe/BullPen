@@ -13,6 +13,7 @@ import { SectorPerformance } from './SectorPerformance';
 import { ThemeGrid } from './ThemeGrid';
 import { IdeaCollections } from './IdeaCollections';
 import { WeeklyPickHero, CURRENT_PICK_QUERY } from '@/components/picks/WeeklyPickHero';
+import { InstitutionalHoldingsSection } from '@/components/institutions/InstitutionalHoldingsSection';
 import type { DiscoverFeed } from '@/lib/discover/discover-config';
 
 const FEED_QUERY_KEY = ['discover-feed'];
@@ -91,6 +92,7 @@ export function DiscoverClient() {
       <SectorPerformance sectors={feed.sectors} />
       <ThemeGrid />
       <IdeaCollections collections={feed.collections} />
+      <InstitutionalHoldingsSection />
     </LivePriceContext.Provider>
   );
 }
