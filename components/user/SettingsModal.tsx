@@ -210,6 +210,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
     daily_brief_ready: true,
     dividend_reminder: true,
     daily_challenge_reminder: true,
+    institution_filing: true,
   });
 
   // Jump to initialTab when modal opens (e.g. from AI panel gear icon)
@@ -255,6 +256,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
         daily_brief_ready: settings.notifications?.daily_brief_ready !== false,
         dividend_reminder: settings.notifications?.dividend_reminder !== false,
         daily_challenge_reminder: settings.notifications?.daily_challenge_reminder !== false,
+        institution_filing: settings.notifications?.institution_filing !== false,
       });
       const dh = (settings.default_homepage as string) || '/dashboard';
       setDefaultHomepage(dh);
@@ -889,6 +891,12 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                     description={t('notifWeeklyPickDescription')}
                     checked={notifications.weekly_pick}
                     onCheckedChange={(checked) => setNotifications({ ...notifications, weekly_pick: checked })}
+                  />
+                  <ToggleSetting
+                    label={t('notifInstitutionFilingLabel')}
+                    description={t('notifInstitutionFilingDescription')}
+                    checked={notifications.institution_filing}
+                    onCheckedChange={(checked) => setNotifications({ ...notifications, institution_filing: checked })}
                   />
                   <ToggleSetting
                     label={t('notifDailyChallengeLabel')}

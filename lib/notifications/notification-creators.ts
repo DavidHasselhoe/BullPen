@@ -479,3 +479,93 @@ export async function createEarningsUpcomingNotification(
   const result = await createNotification(input);
   return result.success;
 }
+
+// ─── Institutional 13F filings ───────────────────────────────────────────────
+
+export interface InstitutionFilingNotice {
+  investorId: string;
+  slug: string;
+  displayName: string;
+  /** Uniquely identifies the filing. Doubles as the dedupe key. */
+  accessionNumber: string;
+  periodOfReport: string;
+  /** Already-templated summary of what moved, or null when nothing notable
+   *  changed (or there was no prior quarter to compare against). */
+  summary: string | null;
+}
+
+/** "2026-06-30" to "Q2 2026". */
+function quarterLabel(iso: string): string {
+  const [year, month] = iso.split('-').map(Number);
+  if (!year || !month) return iso;
+  return `Q${Math.floor((month - 1) / 3) + 1} ${year}`;
+}
+
+/**
+ * Tells everyone following a fund that it filed new holdings.
+ *
+ * Structurally the same as notifyHealthScoreChanges: resolve the audience,
+ * drop anyone who turned this notification type off, create one row each.
+ * The difference is cadence — a 13F lands once a quarter per fund, so the
+ * 12-hour alreadyNotifiedToday window every other creator relies on would not
+ * protect anything here. The accession number does: it is unique per filing,
+ * so re-running the weekly cron can never produce a second notification for a
+ * filing already announced.
+ */
+export async function notifyInstitutionFilingChange(notice: InstitutionFilingNotice): Promise<number> {
+  const supabase = createServerClient();
+
+  const { data: follows } = (await supabase
+    .from('user_institution_follows')
+    .select('user_id')
+    .eq('investor_id', notice.investorId)) as unknown as {
+    data: Array<{ user_id: string }> | null;
+  };
+
+  const followerIds = (follows ?? []).map((f) => f.user_id);
+  if (followerIds.length === 0) return 0;
+
+  const { data: users } = (await supabase
+    .from('users')
+    .select('id, settings')
+    .in('id', followerIds)) as unknown as {
+    data: Array<{ id: string; settings: { notifications?: Record<string, boolean> } | null }> | null;
+  };
+
+  // Absent means enabled, matching every other notification preference.
+  const enabled = (users ?? [])
+    .filter((u) => u.settings?.notifications?.institution_filing !== false)
+    .map((u) => u.id);
+  if (enabled.length === 0) return 0;
+
+  const entityId = `institution:${notice.slug}:${notice.accessionNumber}`;
+  const quarter = quarterLabel(notice.periodOfReport);
+
+  let sent = 0;
+  for (const userId of enabled) {
+    // Idempotent on the filing itself, not on a time window.
+    const { data: existing } = await supabase
+      .from('notifications')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('type', 'institution_filing')
+      .eq('entity_id', entityId)
+      .limit(1)
+      .maybeSingle<{ id: string }>();
+    if (existing) continue;
+
+    const input: CreateNotificationInput = {
+      user_id: userId,
+      type: 'institution_filing',
+      title: `${notice.displayName} filed ${quarter} holdings`,
+      message: notice.summary ?? `See what changed in the ${quarter} portfolio.`,
+      entity_type: 'institution',
+      entity_id: entityId,
+      severity: 'info',
+    };
+    const result = await createNotification(input);
+    if (result.success) sent++;
+  }
+
+  return sent;
+}

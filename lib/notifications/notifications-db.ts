@@ -6,10 +6,10 @@ import { createServerClient } from '@/lib/supabase/client';
 export interface Notification {
   id: string;
   user_id: string;
-  type: 'price_move' | 'earnings' | 'ai_insight' | 'market' | 'dividend' | 'academy' | 'health_score' | 'weekly_pick' | 'daily_brief' | 'referral';
+  type: 'price_move' | 'earnings' | 'ai_insight' | 'market' | 'dividend' | 'academy' | 'health_score' | 'weekly_pick' | 'daily_brief' | 'referral' | 'institution_filing';
   title: string;
   message: string;
-  entity_type: 'stock' | 'portfolio' | 'market' | 'user' | null;
+  entity_type: 'stock' | 'portfolio' | 'market' | 'user' | 'institution' | null;
   entity_id: string | null;
   severity: 'info' | 'warning' | 'critical';
   is_read: boolean;
@@ -24,10 +24,10 @@ export interface NotificationDBResult<T> {
 
 export interface CreateNotificationInput {
   user_id: string;
-  type: 'price_move' | 'earnings' | 'ai_insight' | 'market' | 'dividend' | 'academy' | 'health_score' | 'weekly_pick' | 'daily_brief' | 'referral';
+  type: 'price_move' | 'earnings' | 'ai_insight' | 'market' | 'dividend' | 'academy' | 'health_score' | 'weekly_pick' | 'daily_brief' | 'referral' | 'institution_filing';
   title: string;
   message: string;
-  entity_type?: 'stock' | 'portfolio' | 'market' | 'user' | null;
+  entity_type?: 'stock' | 'portfolio' | 'market' | 'user' | 'institution' | null;
   entity_id?: string | null;
   severity?: 'info' | 'warning' | 'critical';
 }
@@ -119,7 +119,7 @@ export async function isNotificationEnabled(
   userId: string,
   key: 'ai_insights' | 'portfolio_recap' | 'upcoming_earnings' | 'price_alerts'
     | 'health_score_change' | 'weekly_pick' | 'daily_brief_ready' | 'dividend_reminder'
-    | 'daily_challenge_reminder'
+    | 'daily_challenge_reminder' | 'institution_filing'
 ): Promise<boolean> {
   const supabase = createServerClient();
   const { data } = await supabase

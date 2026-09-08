@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowUpRight, ArrowDownRight, BarChart2, Sparkles, Bell, ChevronRight, Coins, GraduationCap, HeartPulse, Star, Newspaper, Crown } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, BarChart2, Sparkles, Bell, ChevronRight, Coins, GraduationCap, HeartPulse, Landmark, Star, Newspaper, Crown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import type { Notification } from '@/lib/notifications/notifications-db';
@@ -127,6 +127,11 @@ function GenericIcon({ type }: { type: Notification['type'] }) {
       <Star className={cn(base, 'text-amber-400')} />
     </div>
   );
+  if (type === 'institution_filing') return (
+    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-500/10">
+      <Landmark className={cn(base, 'text-indigo-400')} />
+    </div>
+  );
   if (type === 'daily_brief') return (
     <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-500/10">
       <Newspaper className={cn(base, 'text-blue-400')} />
@@ -196,6 +201,11 @@ function notificationSource(n: Notification): { label: string; href: string } | 
   }
   if (n.type === 'referral') {
     return { label: 'Your Pro perks', href: '/upgrade' };
+  }
+  // entity_id is "institution:<slug>:<accession>" — the slug is the route.
+  if (n.type === 'institution_filing' && n.entity_id?.startsWith('institution:')) {
+    const slug = n.entity_id.split(':')[1];
+    if (slug) return { label: '13F holdings', href: `/discover/institutions/${slug}` };
   }
 
   // entity_type is typed narrower than runtime — the alert cron writes 'user_alert'.

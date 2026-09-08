@@ -8,6 +8,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { AiPaywallDialog } from '@/components/billing/AiPaywallDialog';
 import { FundAvatar } from './FundAvatar';
 import { Filing13FDisclaimer } from './Filing13FDisclaimer';
+import { FollowFundButton } from './FollowFundButton';
 import { InstitutionalHoldingsPieChart } from './InstitutionalHoldingsPieChart';
 import { HoldingsBarList } from './HoldingsBarList';
 import { buildAllocation } from '@/lib/institutions/allocation';
@@ -95,10 +96,11 @@ export function InstitutionalFundDetailClient({ slug }: { slug: string }) {
           accentColor={accentColor}
           logoUrl={fundSummary?.logoUrl}
         />
-        <div>
+        <div className="min-w-0 flex-1">
           <h1 className="text-xl font-bold tracking-tight text-foreground">{displayName}</h1>
           {managerName && <p className="text-sm text-muted-foreground/85">{managerName}</p>}
         </div>
+        <FollowFundButton slug={slug} displayName={displayName} />
       </div>
 
       {unlocked && holdingsData?.filing && (

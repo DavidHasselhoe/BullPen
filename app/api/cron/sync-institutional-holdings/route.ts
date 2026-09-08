@@ -36,7 +36,9 @@ async function syncFund(supabase: ReturnType<typeof createServerClient>, investo
   if (!latest13F) {
     return { slug: investor.slug, status: 'no_filing_found' as const };
   }
-  return ingestFiling(supabase, investor, latest13F);
+  // The cron only ever sees a genuinely new filing, so this is where
+  // followers get told. The backfill script leaves notify off.
+  return ingestFiling(supabase, investor, latest13F, { notify: true });
 }
 
 export async function GET(request: NextRequest) {

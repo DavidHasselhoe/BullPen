@@ -16,6 +16,9 @@ import { fetchRecentFilings, fetchFilingIndex, fetchFilingDocument, type EdgarFi
 import { parseInfoTable, parsePeriodOfReport } from '@/lib/institutions/parse-13f-xml';
 import { resolveHoldingsForFiling } from '@/lib/institutions/resolve-cusip';
 import { invalidateCachedPrefix } from '@/lib/cache/market-data-cache';
+import { computeHoldingsDiff, type DiffableHolding } from '@/lib/institutions/compute-diff';
+import { buildAllocation, quarterHeadline } from '@/lib/institutions/allocation';
+import { notifyInstitutionFilingChange } from '@/lib/notifications/notification-creators';
 import type { createServerClient } from '@/lib/supabase/client';
 
 /**
@@ -68,6 +71,13 @@ export interface IngestOptions {
    * resolve only the top N by value, since that is all the UI renders.
    */
   resolveSymbols?: boolean;
+  /**
+   * Tell followers this filing landed. Off by default so the historical
+   * backfill stays silent: five quarters across fifteen funds would otherwise
+   * arrive as one notification storm for anything already followed. The weekly
+   * cron, which only ever ingests a genuinely new filing, turns it on.
+   */
+  notify?: boolean;
 }
 
 /** Every 13F-HR for a CIK, newest first. Excludes amendments (13F-HR/A). */
@@ -84,7 +94,7 @@ export async function ingestFiling(
   filing: EdgarFiling,
   opts: IngestOptions = {}
 ): Promise<IngestResult> {
-  const { resolveSymbols = true } = opts;
+  const { resolveSymbols = true, notify = false } = opts;
   const base = { slug: investor.slug, accessionNumber: filing.accessionNumber };
 
   const { data: existing } = await supabase
@@ -225,6 +235,10 @@ export async function ingestFiling(
     // the backfill can forget.
     await invalidateCachedPrefix(`institutions:holdings:${investor.slug}:`);
 
+    if (notify) {
+      await notifyFollowers(supabase, investor, filing, periodOfReport, filingId);
+    }
+
     const resolvedCount = resolved.filter((h) => h.symbol != null).length;
     return {
       ...base,
@@ -241,4 +255,123 @@ export async function ingestFiling(
       .eq('id', filingId);
     return { ...base, status: 'parse_failed', periodOfReport, error: message };
   }
+}
+
+/**
+ * Announce a newly ingested filing to the fund's followers, describing what
+ * actually moved rather than just that something did.
+ *
+ * The diff needs the previous quarter's holdings, which for a fund like
+ * Citadel is another 6700 rows. notifyInstitutionFilingChange resolves the
+ * audience first and returns 0 when nobody follows the fund, but that check
+ * happens after this load — so the follower count is checked HERE too, before
+ * paying for the read. Most funds have no followers most of the time.
+ *
+ * Never throws: a filing that ingested correctly must not be marked
+ * parse_failed because a notification could not be sent.
+ */
+async function notifyFollowers(
+  supabase: ReturnType<typeof createServerClient>,
+  investor: IngestTarget,
+  filing: EdgarFiling,
+  periodOfReport: string,
+  filingId: string
+): Promise<void> {
+  try {
+    const { count } = await supabase
+      .from('user_institution_follows')
+      .select('id', { count: 'exact', head: true })
+      .eq('investor_id', investor.id);
+    if (!count) return;
+
+    const { data: investorRow } = await supabase
+      .from('institutional_investors')
+      .select('display_name')
+      .eq('id', investor.id)
+      .maybeSingle<{ display_name: string }>();
+
+    const summary = await buildChangeSummary(supabase, investor.id, filingId, periodOfReport);
+
+    await notifyInstitutionFilingChange({
+      investorId: investor.id,
+      slug: investor.slug,
+      displayName: investorRow?.display_name ?? investor.slug,
+      accessionNumber: filing.accessionNumber,
+      periodOfReport,
+      summary,
+    });
+  } catch (err) {
+    console.error(`[ingest-filing] follower notification failed for ${investor.slug}:`, err);
+  }
+}
+
+/**
+ * The same templated sentence the fund page shows, from the same function, so
+ * the two can't describe a quarter in contradictory terms.
+ *
+ * Not identical output, though: the page also passes share history, so it can
+ * say "for the second straight quarter" where this says only what moved.
+ * Loading several more quarters here to match would cost another few thousand
+ * rows per fund for one clause in a notification.
+ */
+async function buildChangeSummary(
+  supabase: ReturnType<typeof createServerClient>,
+  investorId: string,
+  filingId: string,
+  periodOfReport: string
+): Promise<string | null> {
+  const { data: prior } = await supabase
+    .from('institutional_filings')
+    .select('id')
+    .eq('investor_id', investorId)
+    .eq('parse_status', 'ok')
+    .lt('period_of_report', periodOfReport)
+    .order('period_of_report', { ascending: false })
+    .limit(1)
+    .maybeSingle<{ id: string }>();
+  if (!prior) return null;
+
+  const [current, previous] = await Promise.all([
+    loadDiffable(supabase, filingId),
+    loadDiffable(supabase, prior.id),
+  ]);
+  if (current.length === 0 || previous.length === 0) return null;
+
+  const diff = computeHoldingsDiff(current, previous);
+  return quarterHeadline(diff, buildAllocation(current));
+}
+
+const DIFF_PAGE_SIZE = 1000; // PostgREST's default cap; page past it explicitly
+
+async function loadDiffable(
+  supabase: ReturnType<typeof createServerClient>,
+  filingId: string
+): Promise<DiffableHolding[]> {
+  const rows: DiffableHolding[] = [];
+  let offset = 0;
+  for (;;) {
+    const { data } = await supabase
+      .from('institutional_holdings')
+      .select('symbol, name_of_issuer, cusip, value_usd, shares, portfolio_pct')
+      .eq('filing_id', filingId)
+      .order('cusip', { ascending: true })
+      .range(offset, offset + DIFF_PAGE_SIZE - 1);
+    const batch = (data as Array<{
+      symbol: string | null; name_of_issuer: string; cusip: string;
+      value_usd: number; shares: number; portfolio_pct: number | null;
+    }> | null) ?? [];
+    for (const r of batch) {
+      rows.push({
+        cusip: r.cusip,
+        symbol: r.symbol,
+        nameOfIssuer: r.name_of_issuer,
+        valueUsd: r.value_usd,
+        shares: r.shares,
+        portfolioPct: r.portfolio_pct,
+      });
+    }
+    if (batch.length < DIFF_PAGE_SIZE) break;
+    offset += DIFF_PAGE_SIZE;
+  }
+  return rows;
 }
