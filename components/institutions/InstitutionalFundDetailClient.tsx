@@ -22,6 +22,7 @@ interface HoldingsResponse {
   filing?: { periodOfReport: string; filedDate: string; totalValueUsd: number | null; totalPositions: number | null };
   holdings?: DiffableHolding[];
   diff?: HoldingsDiff | null;
+  sharesHistory?: Record<string, number[]>;
   availableQuarters?: string[];
   error?: string;
 }
@@ -147,6 +148,8 @@ export function InstitutionalFundDetailClient({ slug }: { slug: string }) {
           <InstitutionalHoldingsPieChart
             allocation={allocation}
             totalValueUsd={holdingsData?.filing?.totalValueUsd}
+            diff={holdingsData?.diff}
+            sharesHistory={holdingsData?.sharesHistory}
             highlightedKey={highlightedKey}
             onHighlight={setHighlightedKey}
             className="mb-6"

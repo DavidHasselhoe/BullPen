@@ -42,6 +42,9 @@ interface HoldingsResponse {
   filing: { periodOfReport: string; filedDate: string; totalValueUsd: number | null; totalPositions: number | null };
   holdings: DiffableHolding[];
   diff: HoldingsDiff | null;
+  /** Share count per quarter, newest first, for the few positions the
+   *  takeaway sentence may name. Empty when there is no useful history. */
+  sharesHistory: Record<string, number[]>;
   availableQuarters: string[];
 }
 
@@ -76,6 +79,63 @@ async function fetchAllHoldings(
     offset += PAGE_SIZE;
   }
   return rows;
+}
+
+/**
+ * Share counts for the handful of positions the takeaway sentence might name,
+ * across every quarter on file, newest first. That is what lets it say
+ * "trimmed Apple for the third straight quarter" instead of only describing
+ * the single most recent move.
+ *
+ * Deliberately narrow: this reads one indexed row per (filing, cusip) for at
+ * most STREAK_CANDIDATES positions, not whole filings. Loading five quarters
+ * of holdings in full would be 35,000 rows for a fund like Citadel, to answer
+ * a question about one company.
+ */
+const STREAK_CANDIDATES = 12;
+
+async function fetchSharesHistory(
+  supabase: ReturnType<typeof createServerClient>,
+  filingRows: FilingRow[],
+  currentIndex: number,
+  diff: HoldingsDiff | null
+): Promise<Record<string, number[]>> {
+  if (!diff) return {};
+
+  const olderFilings = filingRows.slice(currentIndex);
+  if (olderFilings.length < 3) return {}; // no room for a streak worth naming
+
+  const candidates = [...diff.increased, ...diff.decreased]
+    .sort((a, b) => (b.portfolioPct ?? 0) - (a.portfolioPct ?? 0))
+    .slice(0, STREAK_CANDIDATES)
+    .map((h) => h.cusip);
+  if (candidates.length === 0) return {};
+
+  const { data } = await supabase
+    .from('institutional_holdings')
+    .select('filing_id, cusip, shares')
+    .in('filing_id', olderFilings.map((f) => f.id))
+    .in('cusip', candidates);
+
+  const byFiling = new Map<string, Map<string, number>>();
+  for (const row of (data as Array<{ filing_id: string; cusip: string; shares: number }> | null) ?? []) {
+    if (!byFiling.has(row.filing_id)) byFiling.set(row.filing_id, new Map());
+    byFiling.get(row.filing_id)!.set(row.cusip, row.shares);
+  }
+
+  const history: Record<string, number[]> = {};
+  for (const cusip of candidates) {
+    // Newest first, stopping at the first quarter the fund didn't hold it —
+    // a streak can't run through a gap.
+    const series: number[] = [];
+    for (const filing of olderFilings) {
+      const shares = byFiling.get(filing.id)?.get(cusip);
+      if (shares == null) break;
+      series.push(shares);
+    }
+    if (series.length >= 3) history[cusip] = series;
+  }
+  return history;
 }
 
 function toDiffable(row: HoldingRow): DiffableHolding {
@@ -149,6 +209,7 @@ async function handler(
 
     const holdings = currentHoldingsRaw.map(toDiffable);
     const diff = computeHoldingsDiff(holdings, previousHoldings);
+    const sharesHistory = await fetchSharesHistory(supabase, filingRows, currentIndex === -1 ? 0 : currentIndex, diff);
 
     const response: HoldingsResponse = {
       fund: {
@@ -165,6 +226,7 @@ async function handler(
       },
       holdings,
       diff,
+      sharesHistory,
       availableQuarters: filingRows.map((f) => f.period_of_report),
     };
 

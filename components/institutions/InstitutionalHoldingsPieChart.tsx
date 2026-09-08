@@ -16,9 +16,10 @@ import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { Card, CardContent } from '@/components/ui/card';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { ALLOCATION_OTHER_COLOR } from '@/lib/charts/allocation-colors';
-import { allocationHeadline } from '@/lib/institutions/allocation';
+import { allocationHeadline, quarterHeadline } from '@/lib/institutions/allocation';
 import { fmtUsd } from '@/lib/institutions/format';
 import type { Allocation } from '@/lib/institutions/allocation';
+import type { HoldingsDiff } from '@/lib/institutions/compute-diff';
 
 const OTHER_KEY = '__other__';
 
@@ -63,6 +64,12 @@ function toSlices(allocation: Allocation): Slice[] {
 interface InstitutionalHoldingsPieChartProps {
   allocation: Allocation;
   totalValueUsd?: number | null;
+  /** Prior-quarter comparison, when one exists. Null for the first quarter
+   *  tracked for a fund, which falls the headline back to concentration. */
+  diff?: HoldingsDiff | null;
+  /** Share count per quarter, newest first, keyed by cusip — lets the headline
+   *  say "for the third straight quarter" instead of only naming one move. */
+  sharesHistory?: Record<string, number[]>;
   /** Ticker currently hovered anywhere on the page, so the donut and the bar
    *  list below highlight the same holding together. */
   highlightedKey: string | null;
@@ -73,6 +80,8 @@ interface InstitutionalHoldingsPieChartProps {
 export function InstitutionalHoldingsPieChart({
   allocation,
   totalValueUsd,
+  diff,
+  sharesHistory,
   highlightedKey,
   onHighlight,
   className,
@@ -92,7 +101,11 @@ export function InstitutionalHoldingsPieChart({
 
   const slices = toSlices(allocation);
   const centerValue = totalValueUsd ?? allocation.total;
-  const headline = allocationHeadline(allocation);
+  // What the fund DID beats what it holds: a reader who already saw this
+  // page last quarter learns nothing new from the concentration sentence.
+  // Falls back to it when there is no prior quarter, or no move worth naming.
+  const headline =
+    quarterHeadline(diff ?? null, allocation, sharesHistory ?? {}) ?? allocationHeadline(allocation);
   const topSlice = slices[0];
   const positionCount = allocation.top.length + allocation.rest.length;
   // The donut's hole is the readout. A floating tooltip would have to be

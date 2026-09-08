@@ -191,3 +191,21 @@ export async function setCached<T>(
     console.error('[market-data-cache] write exception:', error);
   }
 }
+
+/**
+ * Drop every cached row under a key prefix, for when new data invalidates a
+ * whole family of keys at once rather than one of them. Non-throwing like the
+ * rest of this module: a failed bust means a stale read until the TTL expires,
+ * which must never take down the write that triggered it.
+ */
+export async function invalidateCachedPrefix(keyPrefix: string): Promise<void> {
+  try {
+    const supabase = createServerClient();
+    const { error } = await supabase.from(TABLE).delete().like('cache_key', `${keyPrefix}%`);
+    if (error) {
+      console.error('[market-data-cache] prefix invalidation failed:', error);
+    }
+  } catch (error) {
+    console.error('[market-data-cache] prefix invalidation exception:', error);
+  }
+}

@@ -12,13 +12,20 @@
  * also expands in pages rather than mounting every row at once.
  */
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ChevronDown, TrendingDown, TrendingUp } from 'lucide-react';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 import { fmtShares, fmtUsd } from '@/lib/institutions/format';
+import { buildStatusIndex } from '@/lib/institutions/compute-diff';
 import type { Allocation, AllocationEntry } from '@/lib/institutions/allocation';
-import type { HoldingsDiff } from '@/lib/institutions/compute-diff';
+import type { HoldingChange, HoldingsDiff, HoldingStatus } from '@/lib/institutions/compute-diff';
 
 /** Rows revealed per "show more" step once the tail is expanded. */
 const REST_PAGE_SIZE = 50;
@@ -26,37 +33,64 @@ const REST_PAGE_SIZE = 50;
 const MIN_BAR_PCT = 1.5;
 
 interface QoqChange {
-  changePct?: number;
-  isNew?: boolean;
+  status: HoldingStatus;
+  change?: HoldingChange;
 }
 
-function QoqBadge({ changePct, isNew }: QoqChange) {
-  if (isNew) {
+/**
+ * What the fund did with this position since last quarter. Silent when there
+ * is no prior filing to compare against -- `hasDiff` is false for the first
+ * quarter we ever tracked for a fund, and a row with no badge is correct there
+ * rather than one claiming "Unchanged" against nothing.
+ *
+ * The tooltip carries the value move alongside the share move. That is what
+ * makes an uncorrected stock split legible: shares +300% beside value +2% is
+ * obviously a split, not a conviction buy (see compute-diff.ts).
+ */
+function QoqBadge({ status, change, hasDiff }: QoqChange & { hasDiff: boolean }) {
+  if (!hasDiff) return null;
+
+  if (status === 'new') {
     return (
       <span className="shrink-0 rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
-        New
+        New Buy
       </span>
     );
   }
-  if (changePct == null) return null;
-  const up = changePct > 0;
+
+  if (status === 'unchanged' || !change) {
+    return (
+      <span className="shrink-0 rounded-full bg-muted/60 px-1.5 py-0.5 text-xs font-medium text-muted-foreground">
+        Unchanged
+      </span>
+    );
+  }
+
+  const up = status === 'increased';
   const Icon = up ? TrendingUp : TrendingDown;
+  const pct = change.sharesChangePct;
   return (
     <span
       className={`inline-flex shrink-0 items-center gap-0.5 font-mono text-xs tabular-nums ${
         up ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
       }`}
-      title={`${up ? 'Increased' : 'Reduced'} ${Math.abs(changePct).toFixed(1)}% since last quarter`}
+      title={
+        `${up ? 'Increased' : 'Reduced'} shares ${Math.abs(pct).toFixed(1)}% since last quarter ` +
+        `(value ${change.valueChangePct >= 0 ? '+' : ''}${change.valueChangePct.toFixed(1)}%)`
+      }
     >
       <Icon className="h-3 w-3" aria-hidden />
       {up ? '+' : ''}
-      {changePct.toFixed(1)}%
+      {pct.toFixed(1)}%
     </span>
   );
 }
 
 interface HoldingRowProps {
   entry: AllocationEntry;
+  /** False for the first quarter tracked for a fund: no prior filing to
+   *  compare against, so every row's badge stays silent. */
+  hasDiff: boolean;
   /** Largest holding's pct, so bars share one scale across the whole list. */
   maxPct: number;
   change: QoqChange;
@@ -67,7 +101,7 @@ interface HoldingRowProps {
   onHighlight: (key: string | null) => void;
 }
 
-function HoldingRow({ entry, maxPct, change, highlighted, onHighlight }: HoldingRowProps) {
+function HoldingRow({ entry, hasDiff, maxPct, change, highlighted, onHighlight }: HoldingRowProps) {
   const barPct = Math.max(MIN_BAR_PCT, maxPct > 0 ? (entry.pct / maxPct) * 100 : 0);
 
   return (
@@ -109,7 +143,7 @@ function HoldingRow({ entry, maxPct, change, highlighted, onHighlight }: Holding
               {fmtUsd(entry.valueUsd)}
               <span className="hidden lg:inline"> &middot; {fmtShares(entry.shares)}</span>
             </span>
-            <QoqBadge {...change} />
+            <QoqBadge {...change} hasDiff={hasDiff} />
             <span className="w-[4.5rem] shrink-0 text-right font-mono text-sm font-semibold tabular-nums text-foreground">
               {entry.pct.toFixed(2)}%
             </span>
@@ -138,14 +172,14 @@ export function HoldingsBarList({ allocation, diff, highlightedKey, onHighlight 
   const [expanded, setExpanded] = useState(false);
   const [visibleRest, setVisibleRest] = useState(REST_PAGE_SIZE);
 
-  const changeByCusip = new Map<string, number>();
-  for (const h of diff?.increased ?? []) changeByCusip.set(h.cusip, h.valueChangePct);
-  for (const h of diff?.decreased ?? []) changeByCusip.set(h.cusip, h.valueChangePct);
-  const newCusips = new Set(diff?.newPositions.map((h) => h.cusip) ?? []);
+  // One index over the diff's arrays instead of three hand-built maps. The
+  // status never travels over the wire -- see buildStatusIndex's comment.
+  const { statusFor, changeFor: qoqChangeFor } = useMemo(() => buildStatusIndex(diff ?? null), [diff]);
+  const hasDiff = !!diff;
 
   const changeFor = (key: string): QoqChange => ({
-    changePct: changeByCusip.get(key),
-    isNew: newCusips.has(key),
+    status: statusFor(key),
+    change: qoqChangeFor(key),
   });
 
   const maxPct = allocation.top[0]?.pct ?? 0;
@@ -167,6 +201,7 @@ export function HoldingsBarList({ allocation, diff, highlightedKey, onHighlight 
           <HoldingRow
             key={entry.key}
             entry={entry}
+            hasDiff={hasDiff}
             maxPct={maxPct}
             change={changeFor(entry.key)}
             highlighted={highlightedKey === entry.key}
@@ -178,6 +213,7 @@ export function HoldingsBarList({ allocation, diff, highlightedKey, onHighlight 
           <HoldingRow
             key={entry.key}
             entry={entry}
+            hasDiff={hasDiff}
             maxPct={maxPct}
             change={changeFor(entry.key)}
             highlighted={highlightedKey === entry.key}
@@ -237,38 +273,55 @@ export function HoldingsBarList({ allocation, diff, highlightedKey, onHighlight 
         </div>
       )}
 
+      {/* Collapsed by default: these are positions the fund no longer holds,
+          which is context for the list above rather than part of it, and an
+          always-open second list reads as a wall (DESIGN.md 6). */}
       {exited.length > 0 && (
         <div className="border-t border-border/50 bg-muted/10">
-          <p className="px-4 pb-1 pt-3 text-xs font-medium uppercase tracking-wide text-muted-foreground/70">
-            Sold since last quarter
-          </p>
-          <ul className="divide-y divide-border/20">
-            {exited.map((h) => (
-              <li key={`exited-${h.cusip}`} className="flex items-center gap-3 px-4 py-2.5">
-                {h.symbol ? (
-                  <CompanyLogo ticker={h.symbol} name={h.nameOfIssuer} size={22} />
-                ) : (
-                  <span className="h-[22px] w-[22px] shrink-0 rounded-full bg-muted/60" aria-hidden />
-                )}
-                <span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
-                  {h.symbol ? (
-                    <Link
-                      href={`/stock/${h.symbol}`}
-                      className="font-mono font-semibold text-foreground/70 transition-colors hover:text-primary"
-                    >
-                      {h.symbol}
-                    </Link>
-                  ) : (
-                    h.nameOfIssuer
-                  )}
-                  {h.symbol && <span className="ml-2 text-xs text-muted-foreground/70">{h.nameOfIssuer}</span>}
+          <Accordion type="single" collapsible>
+            <AccordionItem value="exited" className="border-none">
+              <AccordionTrigger className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground/70 hover:no-underline">
+                Exited positions this quarter
+                <span className="ml-2 font-mono normal-case tracking-normal text-muted-foreground/60">
+                  {exited.length}
                 </span>
-                <span className="shrink-0 font-mono text-xs tabular-nums text-muted-foreground/70">
-                  was {fmtUsd(h.valueUsd)}
-                </span>
-              </li>
-            ))}
-          </ul>
+              </AccordionTrigger>
+              <AccordionContent className="pb-0">
+                <ul className="divide-y divide-border/20 border-t border-border/20">
+                  {exited.map((h) => (
+                    <li key={`exited-${h.cusip}`} className="flex items-center gap-3 px-4 py-2.5">
+                      {h.symbol ? (
+                        <CompanyLogo ticker={h.symbol} name={h.nameOfIssuer} size={22} />
+                      ) : (
+                        <span className="h-[22px] w-[22px] shrink-0 rounded-full bg-muted/60" aria-hidden />
+                      )}
+                      <span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
+                        {h.symbol ? (
+                          <Link
+                            href={`/stock/${h.symbol}`}
+                            className="font-mono font-semibold text-foreground/70 transition-colors hover:text-primary"
+                          >
+                            {h.symbol}
+                          </Link>
+                        ) : (
+                          h.nameOfIssuer
+                        )}
+                        {h.symbol && (
+                          <span className="ml-2 text-xs text-muted-foreground/70">{h.nameOfIssuer}</span>
+                        )}
+                      </span>
+                      {/* Prior quarter's weight, not its dollar value: "was 4.3%
+                          of the portfolio" says how much the fund cared about
+                          this name in a way a raw figure does not. */}
+                      <span className="shrink-0 font-mono text-xs tabular-nums text-muted-foreground/70">
+                        {h.portfolioPct != null ? `was ${h.portfolioPct.toFixed(2)}%` : `was ${fmtUsd(h.valueUsd)}`}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </div>
       )}
     </div>

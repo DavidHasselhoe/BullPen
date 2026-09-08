@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "backfill-logos": "tsx scripts/backfill-logos.ts",
+    "backfill-institution-filings": "tsx scripts/backfill-institution-filings.ts",
     "upload-commodity-logos": "tsx scripts/upload-commodity-logos.ts",
     "create-logo-bucket": "tsx scripts/create-logo-bucket.ts",
     "dev": "next dev",
@@ -44,7 +45,8 @@
     "instagram-publish": "tsx scripts/publish-instagram.ts",
     "trigger-market-movers": "tsx scripts/trigger-market-movers.ts",
     "sync-index-constituents": "tsx scripts/sync-index-constituents.ts",
-    "watch-earnings": "tsx scripts/watch-earnings.ts"
+    "watch-earnings": "tsx scripts/watch-earnings.ts",
+    "test-holdings-diff": "tsx scripts/test-holdings-diff.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.33",

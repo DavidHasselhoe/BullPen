@@ -7,29 +7,21 @@
  * window, so a weekly poll catches a new filing within 7 days without cron
  * needing a native "quarterly" concept.
  *
- * Loops every active fund in institutional_investors. Each fund's work is
- * fully independent and commits as it completes — one fund's bad filing or
- * a mid-run timeout never blocks or corrupts another fund's data:
- *   1. Find the fund's newest 13F-HR via SEC EDGAR (lib/edgar/edgar-watch.ts).
- *   2. Skip if already ingested (parse_status='ok' for that accession).
- *   3. Insert the filing row as 'pending' first, so a crash mid-parse leaves
- *      a debuggable stuck row instead of silent data loss.
- *   4. Locate + fetch the "INFORMATION TABLE" XML, parse + aggregate by
- *      CUSIP (a filing can report the same CUSIP multiple times across
- *      sub-managers — verified live against Berkshire Hathaway's own filing).
- *   5. Resolve CUSIPs to tickers (cache-first, credit-budget-gated).
- *   6. Bulk-insert holdings, mark the filing 'ok' with computed totals.
+ * Loops every active fund in institutional_investors and ingests its newest
+ * 13F-HR. Each fund's work is fully independent and commits as it completes —
+ * one fund's bad filing or a mid-run timeout never blocks or corrupts
+ * another fund's data.
  *
- * Amendments (13F-HR/A) are not ingested in v1 — a restated filing just
- * won't be reflected; a known, accepted v1 gap, not a bug.
+ * The parse pipeline itself lives in lib/institutions/ingest-filing.ts,
+ * shared with scripts/backfill-institution-filings.ts, which walks further
+ * back than "newest" to seed quarter-over-quarter history. This route only
+ * decides WHICH filing to hand it.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { logSecurityEvent } from '@/lib/security/security-events';
 import { createServerClient } from '@/lib/supabase/client';
-import { fetchRecentFilings, fetchFilingIndex, fetchFilingDocument } from '@/lib/edgar/edgar-watch';
-import { parseInfoTable, parsePeriodOfReport } from '@/lib/institutions/parse-13f-xml';
-import { resolveHoldingsForFiling } from '@/lib/institutions/resolve-cusip';
+import { ingestFiling, list13FFilings, type IngestTarget } from '@/lib/institutions/ingest-filing';
 
 export const maxDuration = 300;
 
@@ -39,136 +31,12 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-interface InvestorRow {
-  id: string;
-  slug: string;
-  cik: string;
-}
-
-async function syncFund(supabase: ReturnType<typeof createServerClient>, investor: InvestorRow) {
-  const filings = await fetchRecentFilings(investor.cik);
-  const latest13F = filings
-    .filter((f) => f.form === '13F-HR')
-    .sort((a, b) => b.filingDate.localeCompare(a.filingDate))[0];
-
+async function syncFund(supabase: ReturnType<typeof createServerClient>, investor: IngestTarget) {
+  const latest13F = (await list13FFilings(investor.cik))[0];
   if (!latest13F) {
     return { slug: investor.slug, status: 'no_filing_found' as const };
   }
-
-  const { data: existing } = await supabase
-    .from('institutional_filings')
-    .select('id, parse_status')
-    .eq('investor_id', investor.id)
-    .eq('accession_number', latest13F.accessionNumber)
-    .maybeSingle<{ id: string; parse_status: string }>();
-
-  if (existing?.parse_status === 'ok') {
-    return { slug: investor.slug, status: 'already_ingested' as const };
-  }
-
-  // Locate both documents in the filing before creating/updating the DB row,
-  // so period_of_report (the cover page's periodOfReport, not the filing
-  // date) is correct from the first insert rather than backfilled later.
-  const files = await fetchFilingIndex(investor.cik, latest13F.accessionNumber);
-  const infoTableFile = files.find((f) => /information table/i.test(f.type ?? ''));
-  const coverPageFile = files.find((f) => f.name.toLowerCase().endsWith('.xml') && f !== infoTableFile);
-
-  let periodOfReport = latest13F.filingDate; // fallback if the cover page is missing/unparseable
-  if (coverPageFile) {
-    try {
-      const coverXml = await fetchFilingDocument(investor.cik, latest13F.accessionNumber, coverPageFile.name);
-      periodOfReport = parsePeriodOfReport(coverXml) ?? periodOfReport;
-    } catch {
-      // Fall back to filing date -- not fatal, the filing itself still gets ingested.
-    }
-  }
-
-  const filingId = existing
-    ? existing.id
-    : (
-        await supabase
-          .from('institutional_filings')
-          .insert({
-            investor_id: investor.id,
-            accession_number: latest13F.accessionNumber,
-            period_of_report: periodOfReport,
-            filed_date: latest13F.filingDate,
-            form_type: '13F-HR',
-            parse_status: 'pending',
-          } as never)
-          .select('id')
-          .single<{ id: string }>()
-      ).data?.id;
-
-  if (!filingId) {
-    return { slug: investor.slug, status: 'parse_failed' as const, error: 'Could not create filing row' };
-  }
-
-  try {
-    if (!infoTableFile) {
-      throw new Error('No "INFORMATION TABLE" document found in filing index');
-    }
-
-    const xml = await fetchFilingDocument(investor.cik, latest13F.accessionNumber, infoTableFile.name);
-    const rawHoldings = parseInfoTable(xml);
-    if (rawHoldings.length === 0) {
-      throw new Error('Parsed zero holdings from information table XML');
-    }
-
-    const resolved = await resolveHoldingsForFiling(rawHoldings);
-    const totalValueUsd = resolved.reduce((sum, h) => sum + h.valueUsd, 0);
-
-    // Concentration weights, stored on the filing rather than derived per
-    // request: the public fund list needs them to label a fund's shape, but
-    // the holdings they come from are Pro-gated and run to 7000+ rows for the
-    // largest funds. Migration 132 backfilled these for filings ingested
-    // before this ran.
-    const byValueDesc = [...resolved].sort((a, b) => b.valueUsd - a.valueUsd);
-    const pctOfTotal = (v: number) =>
-      totalValueUsd > 0 ? Math.round((v / totalValueUsd) * 100000) / 1000 : null;
-    const topHoldingPct = pctOfTotal(byValueDesc[0]?.valueUsd ?? 0);
-    const top5Pct = pctOfTotal(byValueDesc.slice(0, 5).reduce((sum, h) => sum + h.valueUsd, 0));
-
-    const holdingsRows = resolved.map((h) => ({
-      filing_id: filingId,
-      cusip: h.cusip,
-      name_of_issuer: h.nameOfIssuer,
-      symbol: h.symbol,
-      value_usd: h.valueUsd,
-      shares: h.shares,
-      share_type: h.shareType,
-      put_call: h.putCall,
-      portfolio_pct: totalValueUsd > 0 ? Math.round((h.valueUsd / totalValueUsd) * 100000) / 1000 : null,
-    }));
-
-    // Clear any partial holdings from a prior crashed attempt at this same accession before re-inserting.
-    await supabase.from('institutional_holdings').delete().eq('filing_id', filingId);
-    const { error: insertError } = await supabase.from('institutional_holdings').insert(holdingsRows as never);
-    if (insertError) throw new Error(`Holdings insert failed: ${insertError.message}`);
-
-    await supabase
-      .from('institutional_filings')
-      .update({
-        total_value_usd: totalValueUsd,
-        total_positions: resolved.length,
-        top_holding_pct: topHoldingPct,
-        top5_pct: top5Pct,
-        parse_status: 'ok',
-        parse_error: null,
-        ingested_at: new Date().toISOString(),
-      } as never)
-      .eq('id', filingId);
-
-    const resolvedCount = resolved.filter((h) => h.symbol != null).length;
-    return { slug: investor.slug, status: 'ok' as const, positions: resolved.length, resolved: resolvedCount };
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    await supabase
-      .from('institutional_filings')
-      .update({ parse_status: 'parse_failed', parse_error: message } as never)
-      .eq('id', filingId);
-    return { slug: investor.slug, status: 'parse_failed' as const, error: message };
-  }
+  return ingestFiling(supabase, investor, latest13F);
 }
 
 export async function GET(request: NextRequest) {
@@ -198,7 +66,7 @@ export async function GET(request: NextRequest) {
   }
 
   const results = [];
-  for (const investor of investors as InvestorRow[]) {
+  for (const investor of investors as IngestTarget[]) {
     const result = await syncFund(supabase, investor);
     results.push(result);
     await sleep(INTER_FUND_DELAY_MS);

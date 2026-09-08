@@ -6,7 +6,8 @@
  */
 
 import { ALLOCATION_COLORS, ALLOCATION_OTHER_COLOR } from '@/lib/charts/allocation-colors';
-import type { DiffableHolding } from './compute-diff';
+import { UNCHANGED_BAND_PCT } from './compute-diff';
+import type { DiffableHolding, HoldingsDiff } from './compute-diff';
 
 /** How many holdings get their own color + detail row before the tail is
  *  collapsed. 8 is the legibility ceiling for a donut — past it, adjacent
@@ -63,12 +64,40 @@ const NAME_SUFFIXES = new Set([
   'INC', 'INC.', 'CORP', 'CORP.', 'CO', 'CO.', 'COM', 'PLC', 'LTD', 'LTD.',
   'LP', 'LLC', 'NV', 'SA', 'AG', 'TR', 'TRUST', 'CL', 'THE', 'HLDG', 'HLDGS',
   'HOLDINGS', 'GROUP', 'GRP', '&',
+  // SEC truncates the issuer field at a fixed width, so a trailing legal
+  // suffix often arrives cut in half: "LIVE NATION ENTERTAINMENT IN",
+  // "SEAGATE TECHNOLOGY HLDNGS PL". Drop those the same way.
+  'IN', 'PL', 'HLDNGS', 'INTL', 'CORPORATIO', 'INCORPORAT',
 ]);
 
 /**
+ * Words that same truncation chops mid-token. Expanded rather than dropped,
+ * because they carry meaning: "Bank Of Amer" reads as a typo, "Bank of
+ * America" reads as the company. Only entries actually observed in tracked
+ * funds' holdings are listed — a fixed lookup, not a spell-checker.
+ */
+const NAME_EXPANSIONS: Record<string, string> = {
+  AMER: 'America',
+  MANUFAC: 'Manufacturing',
+  TECHNOL: 'Technology',
+  COMMUN: 'Communications',
+  PHARMACEUT: 'Pharmaceuticals',
+  FINL: 'Financial',
+  INDS: 'Industries',
+  SVCS: 'Services',
+  NATL: 'National',
+  MTG: 'Mortgage',
+};
+
+/** Lowercased inside a name, so it reads "Bank of America" rather than the
+ *  title-cased "Bank Of America". */
+const MINOR_WORDS = new Set(['OF', 'AND', 'THE', 'FOR', 'IN', 'AT', 'TO', 'DE']);
+
+/**
  * Turns an SEC issuer name into something a beginner reads as a company:
- * "AMERICAN EXPRESS CO" to "American Express". Tokens carrying a non-letter
- * keep their original casing so "3M" and "AT&T" don't become "3m"/"At&t".
+ * "AMERICAN EXPRESS CO" to "American Express", "BANK OF AMER CORP" to "Bank of
+ * America". Tokens carrying a non-letter keep their original casing so "3M"
+ * and "AT&T" don't become "3m"/"At&t".
  */
 export function friendlyIssuerName(name: string): string {
   const words = name.trim().split(/\s+/).filter(Boolean);
@@ -76,7 +105,12 @@ export function friendlyIssuerName(name: string): string {
     words.pop();
   }
   return words
-    .map((w) => (/[^A-Za-z]/.test(w) ? w : w[0].toUpperCase() + w.slice(1).toLowerCase()))
+    .map((w, i) => {
+      const upper = w.toUpperCase();
+      if (NAME_EXPANSIONS[upper]) return NAME_EXPANSIONS[upper];
+      if (i > 0 && MINOR_WORDS.has(upper)) return upper.toLowerCase();
+      return /[^A-Za-z]/.test(w) ? w : w[0].toUpperCase() + w.slice(1).toLowerCase();
+    })
     .join(' ');
 }
 
@@ -199,4 +233,117 @@ export function concentrationRead(
           : 'focused';
 
   return { level, ...CONCENTRATION_READS[level] };
+}
+
+/**
+ * The fund's most notable move since last quarter, in one sentence, or null
+ * when there is nothing worth reporting.
+ *
+ * Templated rather than AI-written on purpose. Every fact in the sentence is
+ * already in the diff, so generating it would spend money and latency to
+ * restate data we hold, and would introduce the one failure mode this surface
+ * cannot afford: a model inventing a trade a fund did not make.
+ *
+ * "Notable" is weight-based, not percentage-based. A fund tripling a 0.02%
+ * position is a bigger percentage move than trimming a 22% one, and nobody
+ * cares about the former. Ranking on the position's share of the portfolio is
+ * what makes the sentence read like a person wrote it.
+ */
+export function quarterHeadline(
+  diff: HoldingsDiff | null,
+  allocation: Allocation,
+  sharesHistory: Record<string, number[]> = {}
+): string | null {
+  if (!diff) return null;
+
+  /** Only moves in positions big enough for a reader to have heard of. */
+  const NOTABLE_WEIGHT_PCT = 1;
+
+  const weight = (cusip: string) =>
+    allocation.top.find((h) => h.key === cusip)?.pct ??
+    allocation.rest.find((h) => h.key === cusip)?.pct ??
+    0;
+
+  const biggest = <T extends { cusip: string }>(rows: T[]): T | undefined =>
+    [...rows].sort((a, b) => weight(b.cusip) - weight(a.cusip))[0];
+
+  const notable = <T extends { cusip: string }>(rows: T[]): T | undefined => {
+    const top = biggest(rows);
+    return top && weight(top.cusip) >= NOTABLE_WEIGHT_PCT ? top : undefined;
+  };
+
+  const clauses: string[] = [];
+
+  const trim = notable(diff.decreased);
+  if (trim) {
+    clauses.push(`trimmed ${friendlyIssuerName(trim.nameOfIssuer)}${streakSuffix(sharesHistory[trim.cusip], 'down')}`);
+  }
+
+  // A brand-new position is more notable than adding to an existing one, so
+  // it wins the "bought" slot when both happened.
+  const opened = notable(diff.newPositions);
+  const added = notable(diff.increased);
+  if (opened) {
+    clauses.push(`opened a new position in ${friendlyIssuerName(opened.nameOfIssuer)}`);
+  } else if (added) {
+    clauses.push(`added to ${friendlyIssuerName(added.nameOfIssuer)}${streakSuffix(sharesHistory[added.cusip], 'up')}`);
+  }
+
+  // An exited position has no current weight, so rank it by what it was worth
+  // last quarter instead.
+  if (clauses.length === 0) {
+    const exit = [...diff.exited].sort((a, b) => (b.portfolioPct ?? 0) - (a.portfolioPct ?? 0))[0];
+    if (exit && (exit.portfolioPct ?? 0) >= NOTABLE_WEIGHT_PCT) {
+      clauses.push(`sold out of ${friendlyIssuerName(exit.nameOfIssuer)}`);
+    }
+  }
+
+  if (clauses.length === 0) return null;
+
+  // A clause carrying a streak goes first. Left in place it lands at the end
+  // of the sentence, where "trimmed X and added to Y for the second straight
+  // quarter" reads as if the streak covers both halves. Fronting it keeps the
+  // suffix next to the position it describes.
+  const ordered = [...clauses].sort(
+    (a, b) => Number(b.includes(STREAK_MARKER)) - Number(a.includes(STREAK_MARKER))
+  );
+
+  const sentence = ordered.join(' and ');
+  return sentence[0].toUpperCase() + sentence.slice(1) + '.';
+}
+
+
+
+const STREAK_MARKER = ' straight quarter';
+
+/** Ordinals for the streak clause. Beyond this a reader stops counting and
+ *  "for years" would be the honest phrasing, which needs data we don't keep. */
+const ORDINALS = ['', '', 'second', 'third', 'fourth', 'fifth', 'sixth'];
+
+/**
+ * " for the third straight quarter", when the fund has moved this position the
+ * same way in consecutive filings. Needs at least three data points (two
+ * moves) to say anything, and returns '' rather than guessing when the history
+ * is short — the sentence still reads fine without it.
+ */
+function streakSuffix(series: number[] | undefined, direction: 'up' | 'down'): string {
+  if (!series || series.length < 3) return '';
+
+  // series is newest-first, so each pair is (newer, older).
+  let moves = 0;
+  for (let i = 0; i < series.length - 1; i++) {
+    const newer = series[i];
+    const older = series[i + 1];
+    if (older <= 0) break;
+    const changePct = ((newer - older) / older) * 100;
+    const matches = direction === 'up'
+      ? changePct > UNCHANGED_BAND_PCT
+      : changePct < -UNCHANGED_BAND_PCT;
+    if (!matches) break;
+    moves++;
+  }
+
+  if (moves < 2) return '';
+  const ordinal = ORDINALS[Math.min(moves, ORDINALS.length - 1)];
+  return ` for the ${ordinal} straight quarter`;
 }
