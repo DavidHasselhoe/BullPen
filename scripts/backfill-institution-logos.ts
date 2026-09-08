@@ -63,22 +63,20 @@ const FUND_DOMAINS: Record<string, string[]> = {
   'renaissance-tech': ['rentec.com', 'renaissance.com'],
   'ark-invest': ['ark-invest.com', 'ark-funds.com'],
   'pershing-square': ['pershingsquareholdings.com', 'pershingsquare.com'],
-  'scion-asset-mgmt': ['scionasset.com'],
   'baupost-group': ['baupost.com'],
   'third-point': ['thirdpoint.com'],
   'tiger-global': ['tigerglobal.com'],
   'soros-fund-mgmt': ['soros.com', 'sorosfundmgmt.com'],
-  'greenlight-capital': ['greenlightcapital.com', 'greenlightre.com'],
   'coatue-management': ['coatue.com'],
   'viking-global': ['vikingglobal.com'],
   'lone-pine-capital': ['lonepinecapital.com'],
   'duquesne-family': ['duquesne.com', 'duquesnefamilyoffice.com'],
-  // Appaloosa Management has essentially no web presence, and logo.dev has
-  // nothing for appaloosamanagement.com. Do NOT "fix" this with appaloosa.com
-  // or tepper.com: both return a real image, and both are somebody else
-  // (appaloosa.com is the Appaloosa Horse Club — verified 2026-09-07). It
-  // falls back to the initials avatar, which is the correct outcome.
-  appaloosa: ['appaloosalp.com', 'appaloosamanagement.com'],
+  // If Appaloosa is ever re-added (see migration 130), note that it has
+  // essentially no web presence and logo.dev has nothing for
+  // appaloosamanagement.com or appaloosalp.com. Do NOT "fix" that with
+  // appaloosa.com or tepper.com: both return a real image, and both are
+  // somebody else (appaloosa.com is the Appaloosa Horse Club, verified
+  // 2026-09-07). The initials avatar is the correct outcome.
 };
 
 /** Storage key prefix, so a fund can never collide with a ticker's object. */
