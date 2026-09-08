@@ -8,6 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { ALLOCATION_COLORS } from '@/lib/charts/allocation-colors';
 import { concentrationRead } from '@/lib/institutions/allocation';
 import { FundAvatar } from './FundAvatar';
+import { FollowFundButton } from './FollowFundButton';
 import { Filing13FDisclaimer } from './Filing13FDisclaimer';
 import type { InstitutionalFundSummary } from '@/app/api/institutions/route';
 import type { ConcentrationRead } from '@/lib/institutions/allocation';
@@ -209,10 +210,17 @@ export function InstitutionalHoldingsSection() {
                   )}
                 </p>
               </div>
-              <ArrowUpRight
-                className="h-4 w-4 shrink-0 self-start text-muted-foreground/50 transition-colors group-hover:text-foreground"
-                aria-hidden
-              />
+              {/* A column rather than absolute positioning: the arrow stays
+                  pinned to the top corner and the follow button to the bottom
+                  one, without either overlapping the concentration row when a
+                  fund name wraps to two lines. */}
+              <div className="flex shrink-0 flex-col items-end justify-between self-stretch gap-2">
+                <ArrowUpRight
+                  className="h-4 w-4 shrink-0 text-muted-foreground/50 transition-colors group-hover:text-foreground"
+                  aria-hidden
+                />
+                <FollowFundButton slug={fund.slug} displayName={fund.displayName} compact />
+              </div>
             </div>
           );
         })}

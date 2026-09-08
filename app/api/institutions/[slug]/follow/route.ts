@@ -1,5 +1,5 @@
 /**
- * POST / DELETE / GET /api/institutions/[slug]/follow
+ * POST / DELETE /api/institutions/[slug]/follow
  *
  * Follow or unfollow a tracked 13F fund. Following is what puts a user on the
  * fan-out list when the weekly sync ingests that fund's next filing (see
@@ -44,16 +44,6 @@ async function handler(
     return addSecurityHeaders(NextResponse.json({ success: false, error: 'not_found' }, { status: 404 }));
   }
 
-  if (request.method === 'GET') {
-    const { data } = await supabase
-      .from('user_institution_follows')
-      .select('id')
-      .eq('user_id', session.userId)
-      .eq('investor_id', investorId)
-      .maybeSingle<{ id: string }>();
-    return addSecurityHeaders(NextResponse.json({ success: true, following: !!data }));
-  }
-
   if (request.method === 'DELETE') {
     const { error } = await supabase
       .from('user_institution_follows')
@@ -81,6 +71,8 @@ async function handler(
 
 const options = { rateLimit: { windowMs: 60 * 1000, maxRequests: 30 } };
 
-export const GET = withAuth(handler, options);
+// No GET here on purpose: reading follow state one fund at a time would be
+// fifteen requests to draw the Discover grid. GET /api/institutions/follows
+// returns the whole set in one.
 export const POST = withAuth(handler, options);
 export const DELETE = withAuth(handler, options);

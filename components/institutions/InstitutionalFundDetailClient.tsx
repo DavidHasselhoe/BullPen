@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Lock } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { AiPaywallDialog } from '@/components/billing/AiPaywallDialog';
@@ -10,6 +10,7 @@ import { FundAvatar } from './FundAvatar';
 import { Filing13FDisclaimer } from './Filing13FDisclaimer';
 import { FollowFundButton } from './FollowFundButton';
 import { FundAskBullPrompts } from './FundAskBullPrompts';
+import { QuarterPicker } from './QuarterPicker';
 import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import { InstitutionalHoldingsPieChart } from './InstitutionalHoldingsPieChart';
 import { HoldingsBarList } from './HoldingsBarList';
@@ -57,15 +58,26 @@ export function InstitutionalFundDetailClient({ slug }: { slug: string }) {
   // the same fund rather than a different page about one.
   const accentColor = fundIndex >= 0 ? ALLOCATION_COLORS[fundIndex % ALLOCATION_COLORS.length] : undefined;
 
-  const { data: holdingsData, isLoading: holdingsLoading } = useQuery({
-    queryKey: ['institutions-holdings', slug],
+  // Null means "whatever the newest filing is", which is what the route
+  // returns with no quarter param and what the page loads with.
+  const [quarter, setQuarter] = useState<string | null>(null);
+
+  const { data: holdingsData, isLoading: holdingsLoading, isFetching } = useQuery({
+    queryKey: ['institutions-holdings', slug, quarter],
     queryFn: async (): Promise<HoldingsResponse> => {
-      const res = await fetch(`/api/institutions/${slug}/holdings`);
+      const url = quarter
+        ? `/api/institutions/${slug}/holdings?quarter=${quarter}`
+        : `/api/institutions/${slug}/holdings`;
+      const res = await fetch(url);
       return res.json();
     },
     enabled: isAuthenticated,
     retry: false,
     staleTime: 10 * 60 * 1000,
+    // Keep the quarter on screen while the next one loads. Without this the
+    // whole page drops to its skeleton on every change, which reads as a
+    // navigation rather than as swapping one number set for another.
+    placeholderData: keepPreviousData,
   });
 
   const locked = !isAuthenticated || holdingsData?.error === 'pro_required';
@@ -120,11 +132,19 @@ export function InstitutionalFundDetailClient({ slug }: { slug: string }) {
       </div>
 
       {unlocked && holdingsData?.filing && (
-        <p className="mb-4 text-sm text-muted-foreground">
-          Filed {fmtDate(holdingsData.filing.filedDate)} for the quarter ended{' '}
-          {fmtDate(holdingsData.filing.periodOfReport)} · {fmtUsd(holdingsData.filing.totalValueUsd ?? 0)} across{' '}
-          {holdingsData.filing.totalPositions} positions
-        </p>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-muted-foreground">
+            Filed {fmtDate(holdingsData.filing.filedDate)} for the quarter ended{' '}
+            {fmtDate(holdingsData.filing.periodOfReport)} · {fmtUsd(holdingsData.filing.totalValueUsd ?? 0)} across{' '}
+            {holdingsData.filing.totalPositions} positions
+          </p>
+          <QuarterPicker
+            quarters={holdingsData.availableQuarters ?? []}
+            value={quarter}
+            onChange={setQuarter}
+            busy={isFetching}
+          />
+        </div>
       )}
 
       <div className="mb-6">

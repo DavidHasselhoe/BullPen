@@ -17,25 +17,48 @@ import { useAuth } from '@/hooks/use-auth';
 import { useIsFollowingFund, useToggleFundFollow } from '@/hooks/use-institution-follow';
 import { cn } from '@/lib/utils';
 
-export function FollowFundButton({ slug, displayName }: { slug: string; displayName: string }) {
+interface FollowFundButtonProps {
+  slug: string;
+  displayName: string;
+  /**
+   * Icon-only, for the Discover cards where a labelled pill would compete
+   * with the fund name for the eye. The label still reaches screen readers
+   * through aria-label, which carries the fund name either way.
+   */
+  compact?: boolean;
+  className?: string;
+}
+
+export function FollowFundButton({ slug, displayName, compact, className }: FollowFundButtonProps) {
   const { isAuthenticated } = useAuth();
-  const { data: following = false } = useIsFollowingFund(slug);
+  const following = useIsFollowingFund(slug);
   const toggle = useToggleFundFollow(slug);
 
   if (!isAuthenticated) return null;
 
+  const label = following ? `Stop following ${displayName}` : `Follow ${displayName}`;
+
   return (
     <button
       type="button"
-      onClick={() => toggle.mutate(!following)}
+      onClick={(e) => {
+        // On a card this sits on top of a stretched link covering the whole
+        // tile, so a follow must not also navigate to the fund.
+        e.preventDefault();
+        e.stopPropagation();
+        toggle.mutate(!following);
+      }}
       aria-pressed={following}
-      aria-label={following ? `Stop following ${displayName}` : `Follow ${displayName}`}
+      aria-label={label}
+      title={label}
       className={cn(
-        'inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors',
+        'relative z-10 inline-flex shrink-0 items-center justify-center border transition-colors',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+        compact ? 'h-7 w-7 rounded-full' : 'gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium',
         following
           ? 'border-border/60 bg-muted/50 text-foreground hover:bg-muted/70'
-          : 'border-border/60 bg-transparent text-muted-foreground hover:border-border hover:text-foreground'
+          : 'border-border/60 bg-transparent text-muted-foreground hover:border-border hover:text-foreground',
+        className
       )}
     >
       {following ? (
@@ -43,7 +66,7 @@ export function FollowFundButton({ slug, displayName }: { slug: string; displayN
       ) : (
         <Plus className="h-3.5 w-3.5" aria-hidden />
       )}
-      {following ? 'Following' : 'Follow'}
+      {!compact && (following ? 'Following' : 'Follow')}
     </button>
   );
 }
