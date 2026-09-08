@@ -118,6 +118,17 @@ async function syncFund(supabase: ReturnType<typeof createServerClient>, investo
     const resolved = await resolveHoldingsForFiling(rawHoldings);
     const totalValueUsd = resolved.reduce((sum, h) => sum + h.valueUsd, 0);
 
+    // Concentration weights, stored on the filing rather than derived per
+    // request: the public fund list needs them to label a fund's shape, but
+    // the holdings they come from are Pro-gated and run to 7000+ rows for the
+    // largest funds. Migration 132 backfilled these for filings ingested
+    // before this ran.
+    const byValueDesc = [...resolved].sort((a, b) => b.valueUsd - a.valueUsd);
+    const pctOfTotal = (v: number) =>
+      totalValueUsd > 0 ? Math.round((v / totalValueUsd) * 100000) / 1000 : null;
+    const topHoldingPct = pctOfTotal(byValueDesc[0]?.valueUsd ?? 0);
+    const top5Pct = pctOfTotal(byValueDesc.slice(0, 5).reduce((sum, h) => sum + h.valueUsd, 0));
+
     const holdingsRows = resolved.map((h) => ({
       filing_id: filingId,
       cusip: h.cusip,
@@ -140,6 +151,8 @@ async function syncFund(supabase: ReturnType<typeof createServerClient>, investo
       .update({
         total_value_usd: totalValueUsd,
         total_positions: resolved.length,
+        top_holding_pct: topHoldingPct,
+        top5_pct: top5Pct,
         parse_status: 'ok',
         parse_error: null,
         ingested_at: new Date().toISOString(),

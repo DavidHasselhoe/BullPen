@@ -2,10 +2,11 @@
 
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight, HelpCircle } from 'lucide-react';
 import { ProBadge } from '@/components/billing/ProBadge';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ALLOCATION_COLORS } from '@/lib/charts/allocation-colors';
-import { concentrationFromPositionCount } from '@/lib/institutions/allocation';
+import { concentrationRead } from '@/lib/institutions/allocation';
 import { FundAvatar } from './FundAvatar';
 import { Filing13FDisclaimer } from './Filing13FDisclaimer';
 import type { InstitutionalFundSummary } from '@/app/api/institutions/route';
@@ -58,26 +59,55 @@ function isStaleQuarter(periodIso: string | null): boolean {
  * Four dots reading how concentrated the fund is, so "7166 positions" lands as
  * a shape instead of a number a beginner has to calibrate against nothing. The
  * word label carries the same meaning, so this never depends on color or on
- * counting dots.
+ * counting dots, and both come off the same concentrationRead() tier -- the
+ * dot count is never set independently of the word.
+ *
+ * "Concentrated" and "Very broad" are our vocabulary, not something a beginner
+ * arrives already knowing, so the whole thing is a popover trigger explaining
+ * the tier in one sentence. A Popover rather than a Tooltip because this has
+ * to open on a tap: Radix tooltips are hover/focus only, and this sits on a
+ * card grid people mostly meet on a phone.
  */
 function ConcentrationDots({ read, color }: { read: ConcentrationRead; color: string }) {
   return (
-    <span className="inline-flex items-center gap-1.5">
-      <span className="flex items-center gap-[3px]" aria-hidden>
-        {[0, 1, 2, 3].map((i) => (
-          <span
-            key={i}
-            className="h-1.5 w-1.5 rounded-full"
-            style={
-              i < read.filled
-                ? { backgroundColor: color }
-                : { backgroundColor: 'var(--muted-foreground)', opacity: 0.25 }
-            }
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          // The card is one big link behind this row, so a click here must not
+          // also navigate to the fund.
+          onClick={(e) => e.stopPropagation()}
+          aria-label={`What "${read.label}" means`}
+          className="group/conc relative z-10 -mx-1 inline-flex items-center gap-1.5 rounded px-1 py-0.5 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <span className="flex items-center gap-[3px]" aria-hidden>
+            {[0, 1, 2, 3].map((i) => (
+              <span
+                key={i}
+                className="h-1.5 w-1.5 rounded-full"
+                style={
+                  i < read.filled
+                    ? { backgroundColor: color }
+                    : { backgroundColor: 'var(--muted-foreground)', opacity: 0.25 }
+                }
+              />
+            ))}
+          </span>
+          {read.label}
+          <HelpCircle
+            className="h-3 w-3 shrink-0 opacity-40 transition-opacity group-hover/conc:opacity-90"
+            aria-hidden
           />
-        ))}
-      </span>
-      {read.label}
-    </span>
+        </button>
+      </PopoverTrigger>
+      {/* Opens downward: anchored to the top it covered the card's own name,
+          which is the one thing you need to still see. Radix flips it back up
+          on the bottom row. */}
+      <PopoverContent side="bottom" align="start" sideOffset={6} className="w-64 p-3">
+        <p className="text-xs font-semibold text-foreground">{read.label}</p>
+        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{read.blurb}</p>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -124,17 +154,29 @@ export function InstitutionalHoldingsSection() {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {data.funds.map((fund, i) => {
           const color = ALLOCATION_COLORS[i % ALLOCATION_COLORS.length];
-          const concentration = concentrationFromPositionCount(fund.totalPositions);
+          const concentration = concentrationRead(
+            fund.totalPositions,
+            fund.topHoldingPct,
+            fund.top5Pct
+          );
           const quarter = formatQuarter(fund.lastPeriodOfReport);
           const filed = formatFiledDate(fund.lastFiledDate);
           const stale = isStaleQuarter(fund.lastPeriodOfReport);
 
+          // The whole card is the link, but the concentration label inside it
+          // is its own button, and a <button> may not live inside an <a>. So
+          // the link is a transparent overlay across the card and the label
+          // sits above it, rather than the card being one big <a>.
           return (
-            <Link
+            <div
               key={fund.slug}
-              href={`/discover/institutions/${fund.slug}`}
-              className="group flex items-center gap-3 rounded-xl border border-border/50 bg-card/40 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-border hover:bg-card/70 active:translate-y-0 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              className="group relative flex items-center gap-3 rounded-xl border border-border/50 bg-card/40 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-border hover:bg-card/70 active:translate-y-0 active:scale-[0.99] focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 focus-within:ring-offset-background"
             >
+              <Link
+                href={`/discover/institutions/${fund.slug}`}
+                aria-label={fund.displayName}
+                className="absolute inset-0 z-0 rounded-xl focus:outline-none"
+              />
               <FundAvatar
                 displayName={fund.displayName}
                 size={40}
@@ -142,10 +184,13 @@ export function InstitutionalHoldingsSection() {
                 logoUrl={fund.logoUrl}
               />
               <div className="min-w-0 flex-1">
-                <p className="truncate font-medium text-foreground">{fund.displayName}</p>
+                {/* Wraps to a second line rather than truncating. There is
+                    vertical room, and "ARK Investment Management …" read like
+                    a rendering bug rather than a shortened name. */}
+                <p className="font-medium leading-snug text-foreground">{fund.displayName}</p>
                 <p className="truncate text-xs text-muted-foreground/85">{fund.managerName ?? ' '}</p>
                 <p
-                  className="mt-1.5 flex items-center gap-2 truncate text-xs text-muted-foreground/70"
+                  className="mt-1.5 flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground/70"
                   title={filed ? `${fund.totalPositions ?? '?'} positions · filed ${filed}` : undefined}
                 >
                   {concentration ? (
@@ -165,10 +210,10 @@ export function InstitutionalHoldingsSection() {
                 </p>
               </div>
               <ArrowUpRight
-                className="h-4 w-4 shrink-0 text-muted-foreground/50 transition-colors group-hover:text-foreground"
+                className="h-4 w-4 shrink-0 self-start text-muted-foreground/50 transition-colors group-hover:text-foreground"
                 aria-hidden
               />
-            </Link>
+            </div>
           );
         })}
       </div>

@@ -110,20 +110,93 @@ export type ConcentrationLevel = 'concentrated' | 'focused' | 'diversified' | 'b
 export interface ConcentrationRead {
   level: ConcentrationLevel;
   label: string;
-  /** Dots to fill, out of 4 — more filled dots means more spread out. */
+  /** Dots to fill, out of 4 -- more filled dots means more spread out. */
   filled: number;
+  /** One-sentence plain-language gloss, shown in the card's info popover. */
+  blurb: string;
 }
 
 /**
- * Position count read as a shape, for the fund cards on Discover, where the
- * full holdings (and so any real weight-based concentration measure) are
- * Pro-gated and not fetched. A raw "7166 positions" means nothing to a
- * beginner; "Broad" plus four dots does.
+ * The thresholds behind every concentration label. Tune here and the dots,
+ * the word, and the popover copy all move together -- they are all read off
+ * this one table, never set independently.
  */
-export function concentrationFromPositionCount(count: number | null): ConcentrationRead | null {
-  if (count == null || count <= 0) return null;
-  if (count <= 25) return { level: 'concentrated', label: 'Concentrated', filled: 1 };
-  if (count <= 100) return { level: 'focused', label: 'Focused', filled: 2 };
-  if (count <= 750) return { level: 'diversified', label: 'Diversified', filled: 3 };
-  return { level: 'broad', label: 'Very broad', filled: 4 };
+export const CONCENTRATION_THRESHOLDS = {
+  /** Any one of these alone makes a fund concentrated. */
+  concentrated: { topHoldingPct: 20, top5Pct: 60, maxPositions: 15 },
+  /** Both must hold. */
+  broad: { minPositions: 500, top5PctUnder: 40 },
+  /** Both must hold. */
+  diversified: { minPositions: 75, top5PctUnder: 35 },
+} as const;
+
+const CONCENTRATION_READS: Record<ConcentrationLevel, Omit<ConcentrationRead, 'level'>> = {
+  concentrated: {
+    label: 'Concentrated',
+    filled: 1,
+    blurb: 'Fewer than 15 holdings, or one stock worth over 20% of the portfolio.',
+  },
+  focused: {
+    label: 'Focused',
+    filled: 2,
+    blurb: 'The five largest holdings are roughly 35% to 60% of the portfolio.',
+  },
+  diversified: {
+    label: 'Diversified',
+    filled: 3,
+    blurb: '75 or more holdings, with the five largest under 35% of the portfolio.',
+  },
+  broad: {
+    label: 'Very broad',
+    filled: 4,
+    blurb: '500 or more holdings, with the five largest under 40% of the portfolio.',
+  },
+};
+
+/**
+ * How concentrated a fund's portfolio is, as one plain-language shape a
+ * beginner can read before parsing any individual number.
+ *
+ * Measured from the filing's own weights, not from how many names it holds.
+ * Position count alone was the previous rule and it lied in both directions:
+ * Berkshire holds 29 names with one of them at 22% of the book and came out
+ * "Focused", while a 997-name fund came out "Very broad" purely on the count
+ * even though its top five are a third of the portfolio.
+ *
+ * The order of these checks is the rule, and it is deliberate:
+ *
+ *   1. Concentrated wins outright. A fund with one 25% position is
+ *      concentrated no matter how long its tail is, so this is tested before
+ *      anything that looks at position count.
+ *   2. Very broad needs BOTH a long tail and a light top. Count alone would
+ *      catch Bridgewater's 997 names, but its top five are 33% of the book,
+ *      which is not what "very broad" should mean.
+ *   3. Diversified is the same shape one step down.
+ *   4. Focused is the remainder, which in practice lands where its blurb
+ *      says: a top five worth 35% to 60%.
+ *
+ * Returns null when the filing has no parsed holdings to measure, so the card
+ * shows no label rather than an invented one.
+ */
+export function concentrationRead(
+  totalPositions: number | null,
+  topHoldingPct: number | null,
+  top5Pct: number | null
+): ConcentrationRead | null {
+  if (totalPositions == null || totalPositions <= 0) return null;
+  if (topHoldingPct == null || top5Pct == null) return null;
+
+  const t = CONCENTRATION_THRESHOLDS;
+  const level: ConcentrationLevel =
+    topHoldingPct > t.concentrated.topHoldingPct ||
+    top5Pct > t.concentrated.top5Pct ||
+    totalPositions < t.concentrated.maxPositions
+      ? 'concentrated'
+      : totalPositions >= t.broad.minPositions && top5Pct < t.broad.top5PctUnder
+        ? 'broad'
+        : totalPositions >= t.diversified.minPositions && top5Pct < t.diversified.top5PctUnder
+          ? 'diversified'
+          : 'focused';
+
+  return { level, ...CONCENTRATION_READS[level] };
 }

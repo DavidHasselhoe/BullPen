@@ -7,9 +7,12 @@
  * (via /api/institutions/[slug]/holdings) are Pro-gated.
  *
  * institutional_filings is Pro-gated at the RLS layer (migration 127), so
- * this route uses the service-role client to read just the two safe
- * aggregate columns (filed_date, total_positions) per fund — the underlying
+ * this route uses the service-role client to read only safe per-filing
+ * aggregates (filed date, position count, and the top-holding / top-five
+ * weights the concentration label is computed from) — the underlying
  * holdings stay behind the Pro gate regardless of this route's own access.
+ * Those two weights say how lopsided a portfolio is without naming a single
+ * position, which is the shape the free teaser layer already advertises.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -29,6 +32,19 @@ export interface InstitutionalFundSummary {
   lastFiledDate: string | null;
   lastPeriodOfReport: string | null;
   totalPositions: number | null;
+  /** Largest holding as % of the filing's value; null until parsed. */
+  topHoldingPct: number | null;
+  /** Five largest holdings as % of the filing's value; null until parsed. */
+  top5Pct: number | null;
+}
+
+/** Postgres NUMERIC can arrive as a string over PostgREST depending on the
+ *  driver path; the concentration thresholds compare with `>`, where a string
+ *  would silently compare lexically. */
+function asNumber(v: number | string | null | undefined): number | null {
+  if (v == null) return null;
+  const n = typeof v === 'number' ? v : Number(v);
+  return Number.isFinite(n) ? n : null;
 }
 
 interface InvestorRow {
@@ -44,6 +60,8 @@ interface FilingAggRow {
   filed_date: string;
   period_of_report: string;
   total_positions: number | null;
+  top_holding_pct: number | string | null;
+  top5_pct: number | string | null;
   parse_status: string;
 }
 
@@ -70,7 +88,7 @@ async function handler(_request: NextRequest): Promise<NextResponse> {
 
     const { data: filings } = await supabase
       .from('institutional_filings')
-      .select('investor_id, filed_date, period_of_report, total_positions, parse_status')
+      .select('investor_id, filed_date, period_of_report, total_positions, top_holding_pct, top5_pct, parse_status')
       .in('investor_id', investorIds)
       .eq('parse_status', 'ok')
       .order('period_of_report', { ascending: false });
@@ -93,6 +111,8 @@ async function handler(_request: NextRequest): Promise<NextResponse> {
         lastFiledDate: latest?.filed_date ?? null,
         lastPeriodOfReport: latest?.period_of_report ?? null,
         totalPositions: latest?.total_positions ?? null,
+        topHoldingPct: asNumber(latest?.top_holding_pct),
+        top5Pct: asNumber(latest?.top5_pct),
       };
     });
 
