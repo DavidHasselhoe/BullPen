@@ -23,6 +23,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { fmtShares, fmtUsd } from '@/lib/institutions/format';
+import { useOwnedSymbols } from '@/hooks/use-owned-symbols';
 import { buildStatusIndex } from '@/lib/institutions/compute-diff';
 import type { Allocation, AllocationEntry } from '@/lib/institutions/allocation';
 import type { HoldingChange, HoldingsDiff, HoldingStatus } from '@/lib/institutions/compute-diff';
@@ -91,6 +92,8 @@ interface HoldingRowProps {
   /** False for the first quarter tracked for a fund: no prior filing to
    *  compare against, so every row's badge stays silent. */
   hasDiff: boolean;
+  /** The signed-in user holds this ticker too. Always false when logged out. */
+  owned: boolean;
   /** Largest holding's pct, so bars share one scale across the whole list. */
   maxPct: number;
   change: QoqChange;
@@ -101,7 +104,7 @@ interface HoldingRowProps {
   onHighlight: (key: string | null) => void;
 }
 
-function HoldingRow({ entry, hasDiff, maxPct, change, highlighted, onHighlight }: HoldingRowProps) {
+function HoldingRow({ entry, hasDiff, owned, maxPct, change, highlighted, onHighlight }: HoldingRowProps) {
   const barPct = Math.max(MIN_BAR_PCT, maxPct > 0 ? (entry.pct / maxPct) * 100 : 0);
 
   return (
@@ -132,6 +135,14 @@ function HoldingRow({ entry, hasDiff, maxPct, change, highlighted, onHighlight }
               </Link>
             ) : (
               <span className="shrink-0 truncate text-sm text-foreground">{entry.name}</span>
+            )}
+            {owned && (
+              <span
+                className="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide leading-none text-primary"
+                title="This is in your portfolio"
+              >
+                You own this
+              </span>
             )}
             {/* The issuer name is the first thing dropped as width tightens:
                 the logo and ticker already say which company this is, while a
@@ -177,6 +188,11 @@ export function HoldingsBarList({ allocation, diff, highlightedKey, onHighlight 
   const { statusFor, changeFor: qoqChangeFor } = useMemo(() => buildStatusIndex(diff ?? null), [diff]);
   const hasDiff = !!diff;
 
+  // Empty set for logged-out visitors and for anyone with no holdings, so no
+  // row is marked and there is nothing to hide.
+  const ownedSymbols = useOwnedSymbols();
+  const isOwned = (symbol: string | null) => !!symbol && ownedSymbols.has(symbol.toUpperCase());
+
   const changeFor = (key: string): QoqChange => ({
     status: statusFor(key),
     change: qoqChangeFor(key),
@@ -202,6 +218,7 @@ export function HoldingsBarList({ allocation, diff, highlightedKey, onHighlight 
             key={entry.key}
             entry={entry}
             hasDiff={hasDiff}
+            owned={isOwned(entry.symbol)}
             maxPct={maxPct}
             change={changeFor(entry.key)}
             highlighted={highlightedKey === entry.key}
@@ -214,6 +231,7 @@ export function HoldingsBarList({ allocation, diff, highlightedKey, onHighlight 
             key={entry.key}
             entry={entry}
             hasDiff={hasDiff}
+            owned={isOwned(entry.symbol)}
             maxPct={maxPct}
             change={changeFor(entry.key)}
             highlighted={highlightedKey === entry.key}

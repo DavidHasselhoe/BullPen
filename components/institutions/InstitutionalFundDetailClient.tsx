@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Lock } from 'lucide-react';
@@ -9,6 +9,8 @@ import { AiPaywallDialog } from '@/components/billing/AiPaywallDialog';
 import { FundAvatar } from './FundAvatar';
 import { Filing13FDisclaimer } from './Filing13FDisclaimer';
 import { FollowFundButton } from './FollowFundButton';
+import { FundAskBullPrompts } from './FundAskBullPrompts';
+import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import { InstitutionalHoldingsPieChart } from './InstitutionalHoldingsPieChart';
 import { HoldingsBarList } from './HoldingsBarList';
 import { buildAllocation } from '@/lib/institutions/allocation';
@@ -78,6 +80,20 @@ export function InstitutionalFundDetailClient({ slug }: { slug: string }) {
   const holdings = holdingsData?.holdings;
   const allocation = useMemo(() => (holdings ? buildAllocation(holdings) : null), [holdings]);
   const [highlightedKey, setHighlightedKey] = useState<string | null>(null);
+
+  // Give the always-present "Ask Bull" button this fund's context, the same
+  // way a stock page does. Capped at the top holdings: a fund like Citadel has
+  // 7166 positions and the chat route rejects a body over 200 KB.
+  const { setAIContext } = useAIPanel();
+  const contextTickers = useMemo(
+    () => (allocation?.top ?? []).map((h) => h.symbol).filter((s): s is string => !!s).slice(0, 10),
+    [allocation]
+  );
+  useEffect(() => {
+    if (contextTickers.length === 0) return;
+    setAIContext({ tickers: contextTickers, label: displayName });
+    return () => setAIContext(null);
+  }, [contextTickers, displayName, setAIContext]);
 
   return (
     <div>
@@ -154,7 +170,14 @@ export function InstitutionalFundDetailClient({ slug }: { slug: string }) {
             sharesHistory={holdingsData?.sharesHistory}
             highlightedKey={highlightedKey}
             onHighlight={setHighlightedKey}
-            className="mb-6"
+          />
+          <FundAskBullPrompts
+            fundName={displayName}
+            allocation={allocation}
+            diff={holdingsData?.diff}
+            totalValueUsd={holdingsData?.filing?.totalValueUsd}
+            positionCount={holdingsData?.filing?.totalPositions}
+            className="my-6"
           />
           <HoldingsBarList
             allocation={allocation}
