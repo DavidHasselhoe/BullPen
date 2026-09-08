@@ -33,7 +33,7 @@ interface QoqChange {
 function QoqBadge({ changePct, isNew }: QoqChange) {
   if (isNew) {
     return (
-      <span className="shrink-0 rounded-full bg-emerald-400/10 px-1.5 py-0.5 text-xs font-medium text-emerald-400">
+      <span className="shrink-0 rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
         New
       </span>
     );
@@ -44,7 +44,7 @@ function QoqBadge({ changePct, isNew }: QoqChange) {
   return (
     <span
       className={`inline-flex shrink-0 items-center gap-0.5 font-mono text-xs tabular-nums ${
-        up ? 'text-emerald-400' : 'text-red-400'
+        up ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
       }`}
       title={`${up ? 'Increased' : 'Reduced'} ${Math.abs(changePct).toFixed(1)}% since last quarter`}
     >

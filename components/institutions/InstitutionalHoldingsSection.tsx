@@ -92,11 +92,11 @@ function ConcentrationDots({ read, color }: { read: ConcentrationRead; color: st
  * tier check anywhere else in this app to intercept the click with).
  *
  * Each card gets a color from the shared allocation palette, assigned by
- * position in the (stable, sort_order'd) list. It carries no meaning beyond
- * "this is a different fund than the one next to it" — which is the whole
- * point, since a grid of identical gray cards gives the eye nothing to
- * navigate by. Rendered as a background tint plus a glow behind the initials,
- * never a left-border stripe (DESIGN.md §6 rules those out).
+ * position in the (stable, sort_order'd) list, and carried through to the
+ * fund's detail page so arriving there reads as the same fund. It is spent on
+ * the concentration dots and the initials only: tinting every card and haloing
+ * every avatar made the grid read as decoration rather than as a dozen funds,
+ * and the color means nothing beyond "not the one next to it".
  */
 export function InstitutionalHoldingsSection() {
   const { data, isLoading, error } = useQuery(FUNDS_QUERY);
@@ -105,7 +105,7 @@ export function InstitutionalHoldingsSection() {
   if (error || !data?.funds?.length) return null;
 
   return (
-    <section aria-labelledby="institutional-holdings-heading" className="mb-10">
+    <section aria-labelledby="institutional-holdings-heading" className="mt-12 mb-10">
       <div className="flex items-end justify-between mb-1 gap-3">
         <div className="flex items-center gap-2">
           <h2
@@ -133,8 +133,7 @@ export function InstitutionalHoldingsSection() {
             <Link
               key={fund.slug}
               href={`/discover/institutions/${fund.slug}`}
-              className="group flex items-center gap-3 rounded-xl border border-border/50 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-border hover:shadow-md hover:shadow-black/20 active:translate-y-0 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-              style={{ backgroundColor: `${color}0f` }}
+              className="group flex items-center gap-3 rounded-xl border border-border/50 bg-card/40 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-border hover:bg-card/70 active:translate-y-0 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
               <FundAvatar
                 displayName={fund.displayName}
@@ -157,10 +156,10 @@ export function InstitutionalHoldingsSection() {
                   {quarter && concentration && (
                     <>
                       <span aria-hidden>·</span>
-                      <span className={`font-mono tabular-nums ${stale ? 'text-amber-400/90' : ''}`}>
+                      <span className={`font-mono tabular-nums ${stale ? 'text-amber-600 dark:text-amber-400' : ''}`}>
                         {quarter}
                       </span>
-                      {stale && <span className="text-amber-400/90">Outdated</span>}
+                      {stale && <span className="text-amber-600 dark:text-amber-400">Outdated</span>}
                     </>
                   )}
                 </p>
@@ -179,7 +178,7 @@ export function InstitutionalHoldingsSection() {
 
 function SectionSkeleton() {
   return (
-    <section className="mb-10" aria-hidden>
+    <section className="mt-12 mb-10" aria-hidden>
       <div className="mb-1 h-3.5 w-52 rounded animate-shimmer" />
       <div className="mb-3 h-3 w-80 max-w-full rounded animate-shimmer" />
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">

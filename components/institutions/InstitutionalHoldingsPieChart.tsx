@@ -12,7 +12,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { Card, CardContent } from '@/components/ui/card';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { ALLOCATION_OTHER_COLOR } from '@/lib/charts/allocation-colors';
@@ -60,23 +60,6 @@ function toSlices(allocation: Allocation): Slice[] {
   return slices;
 }
 
-function PieTooltip({ active, payload }: { active?: boolean; payload?: Array<{ payload: Slice }> }) {
-  if (!active || !payload?.length) return null;
-  const s = payload[0].payload;
-  return (
-    <div
-      className="rounded-[10px] border px-3 py-2 text-xs"
-      style={{ background: 'var(--popover)', borderColor: 'var(--border)' }}
-    >
-      <p className="mb-0.5 font-semibold text-popover-foreground">{s.symbol ?? s.name}</p>
-      {s.symbol && <p className="mb-1 text-muted-foreground">{s.name}</p>}
-      <p className="font-mono tabular-nums text-popover-foreground">
-        {fmtUsd(s.value)} &middot; {s.pct.toFixed(1)}%
-      </p>
-    </div>
-  );
-}
-
 interface InstitutionalHoldingsPieChartProps {
   allocation: Allocation;
   totalValueUsd?: number | null;
@@ -111,6 +94,11 @@ export function InstitutionalHoldingsPieChart({
   const centerValue = totalValueUsd ?? allocation.total;
   const headline = allocationHeadline(allocation);
   const topSlice = slices[0];
+  const positionCount = allocation.top.length + allocation.rest.length;
+  // The donut's hole is the readout. A floating tooltip would have to be
+  // drawn somewhere, and inside a donut the only free space is the hole —
+  // where it landed on top of the total and made both unreadable.
+  const hovered = slices.find((s) => s.key === highlightedKey) ?? null;
 
   const ariaLabel = `Portfolio allocation. Largest holding: ${topSlice.symbol ?? topSlice.name} at ${topSlice.pct.toFixed(1)}% of the portfolio${
     slices.length > 1 ? `, plus ${slices.length - 1} more shown` : ''
@@ -148,26 +136,38 @@ export function InstitutionalHoldingsPieChart({
                   animationEasing="ease-out"
                 >
                   {slices.map((s) => {
-                    const dimmed = highlightedKey !== null && highlightedKey !== s.key;
+                    // Highlight wins over the "Other" mute, or hovering the
+                    // Other wedge left it at the same flat 0.35 every dimmed
+                    // wedge got, and nothing on the chart appeared to react.
+                    const opacity =
+                      highlightedKey === s.key ? 1 : highlightedKey ? 0.35 : s.isOther ? 0.45 : 1;
                     return (
                       <Cell
                         key={s.key}
                         fill={s.color}
-                        fillOpacity={s.isOther ? 0.35 : dimmed ? 0.3 : 1}
+                        fillOpacity={opacity}
                         onMouseEnter={() => onHighlight(s.key)}
                         onMouseLeave={() => onHighlight(null)}
                       />
                     );
                   })}
                 </Pie>
-                <Tooltip content={<PieTooltip />} />
               </PieChart>
             </ResponsiveContainer>
-            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-              <span className="font-mono text-2xl font-semibold tabular-nums text-foreground">
-                {fmtUsd(centerValue)}
+            {/* Three fixed lines in both states, so hovering across the donut
+                swaps the numbers without the block growing and shrinking. */}
+            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-14 text-center">
+              <span className="w-full truncate text-xs font-semibold tracking-wide text-muted-foreground/80">
+                {hovered ? (hovered.symbol ?? 'Everything else') : 'Total 13F Value'}
               </span>
-              <span className="mt-0.5 text-xs text-muted-foreground/80">Total 13F Value</span>
+              <span className="mt-1 font-mono text-2xl font-semibold tabular-nums text-foreground">
+                {fmtUsd(hovered ? hovered.value : centerValue)}
+              </span>
+              <span className="mt-0.5 font-mono text-xs tabular-nums text-muted-foreground/70">
+                {hovered
+                  ? `${hovered.pct.toFixed(1)}% of portfolio`
+                  : `${positionCount.toLocaleString()} position${positionCount === 1 ? '' : 's'}`}
+              </span>
             </div>
           </div>
 
@@ -177,6 +177,9 @@ export function InstitutionalHoldingsPieChart({
           <div className="grid grid-cols-1 gap-x-8 gap-y-1.5 lg:grid-cols-2">
             {slices.map((s) => {
               const dimmed = highlightedKey !== null && highlightedKey !== s.key;
+              // The wedge color rings the logo with no ring-offset: offset it
+              // reads as a floating halo rather than as this holding's color,
+              // which is the only job it has here.
               return (
                 <div
                   key={s.key}
@@ -187,7 +190,7 @@ export function InstitutionalHoldingsPieChart({
                 >
                   {s.symbol ? (
                     <div
-                      className="shrink-0 rounded-full ring-2 ring-offset-2 ring-offset-card"
+                      className="shrink-0 rounded-full ring-2"
                       style={{ '--tw-ring-color': s.color } as React.CSSProperties}
                     >
                       <CompanyLogo ticker={s.symbol} name={s.name} size={22} />

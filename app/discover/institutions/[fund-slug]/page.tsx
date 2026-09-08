@@ -28,7 +28,7 @@ export async function generateMetadata({
   const displayName = fund?.display_name ?? slug.replace(/-/g, ' ');
   const title = `${displayName} 13F holdings | BullPen`;
   const description = fund?.manager_name
-    ? `${displayName}'s quarterly SEC 13F holdings, run by ${fund.manager_name} — tracked and updated every quarter.`
+    ? `${displayName}'s quarterly SEC 13F holdings, run by ${fund.manager_name}, tracked and updated every quarter.`
     : `${displayName}'s quarterly SEC 13F holdings, tracked and updated every quarter.`;
   return {
     title,

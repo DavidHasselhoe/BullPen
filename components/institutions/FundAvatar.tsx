@@ -11,11 +11,13 @@
  * rather than as a JS fallback, so a logo that fails to load degrades to them
  * with no error handling and no client component.
  *
- * `accentColor` is the fund's assigned categorical color (see
- * InstitutionalHoldingsSection): it tints the initials and lays a soft glow
- * behind the avatar, which is what lets a grid of otherwise-identical cards be
- * told apart at a glance, and what carries the fund's identity through to its
- * detail page. Without it this stays grayscale.
+ * The chip is a rounded square, not a circle: these marks are square artwork
+ * (and several are wide wordmarks), so a circle clips the corners and forces
+ * enough padding that the logo floats in a ring of dead white space.
+ *
+ * `accentColor` tints the initials only. It deliberately does not tint the
+ * card or throw a glow behind the avatar — a grid of a dozen differently
+ * washed, haloed cards reads as decoration, not as information.
  */
 export function FundAvatar({
   displayName,
@@ -37,7 +39,7 @@ export function FundAvatar({
 
   return (
     <div
-      className="relative flex shrink-0 items-center justify-center overflow-hidden rounded-full font-semibold"
+      className="relative flex shrink-0 items-center justify-center overflow-hidden rounded-xl font-semibold"
       style={{
         width: size,
         height: size,
@@ -47,7 +49,6 @@ export function FundAvatar({
         // that the mark stays the legible thing, not the color.
         backgroundColor: logoUrl ? '#ffffff' : accentColor ? `${accentColor}24` : 'var(--muted)',
         color: accentColor ?? 'var(--muted-foreground)',
-        boxShadow: accentColor ? `0 0 18px -4px ${accentColor}80` : undefined,
       }}
       aria-hidden
     >
@@ -59,10 +60,13 @@ export function FundAvatar({
           alt=""
           width={size}
           height={size}
-          loading="lazy"
+          // Eager, not lazy: a not-yet-loaded logo is a blank chip, and this
+          // renders as a grid of a dozen at once, so lazily they pop in one by
+          // one as the grid scrolls past. They are ~40px each.
+          loading="eager"
           decoding="async"
           className="h-full w-full object-contain"
-          style={{ padding: size * 0.14 }}
+          style={{ padding: size * 0.08 }}
         />
       )}
     </div>
