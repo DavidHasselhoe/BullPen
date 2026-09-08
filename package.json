@@ -46,7 +46,8 @@
     "trigger-market-movers": "tsx scripts/trigger-market-movers.ts",
     "sync-index-constituents": "tsx scripts/sync-index-constituents.ts",
     "watch-earnings": "tsx scripts/watch-earnings.ts",
-    "test-holdings-diff": "tsx scripts/test-holdings-diff.ts"
+    "test-holdings-diff": "tsx scripts/test-holdings-diff.ts",
+    "import-institution-logo": "tsx scripts/import-institution-logo.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.33",

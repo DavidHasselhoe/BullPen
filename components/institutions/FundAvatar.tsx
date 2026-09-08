@@ -65,8 +65,10 @@ export function FundAvatar({
           // one as the grid scrolls past. They are ~40px each.
           loading="eager"
           decoding="async"
+          // No padding: object-contain never crops, so a full-bleed brand tile
+          // fills the chip and picks up its rounded corners, while a mark on
+          // white keeps the breathing room already baked into its own artwork.
           className="h-full w-full object-contain"
-          style={{ padding: size * 0.08 }}
         />
       )}
     </div>

@@ -71,12 +71,13 @@ const FUND_DOMAINS: Record<string, string[]> = {
   'viking-global': ['vikingglobal.com'],
   'lone-pine-capital': ['lonepinecapital.com'],
   'duquesne-family': ['duquesne.com', 'duquesnefamilyoffice.com'],
-  // If Appaloosa is ever re-added (see migration 130), note that it has
-  // essentially no web presence and logo.dev has nothing for
-  // appaloosamanagement.com or appaloosalp.com. Do NOT "fix" that with
-  // appaloosa.com or tepper.com: both return a real image, and both are
-  // somebody else (appaloosa.com is the Appaloosa Horse Club, verified
-  // 2026-09-07). The initials avatar is the correct outcome.
+  // Appaloosa is absent on purpose: it has essentially no web presence and
+  // logo.dev has nothing for appaloosamanagement.com or appaloosalp.com. Do
+  // NOT "fix" that with appaloosa.com or tepper.com — both return a real
+  // image, and both are somebody else (appaloosa.com is the Appaloosa Horse
+  // Club, verified 2026-09-07). Its logo now comes from a supplied file via
+  // scripts/import-institution-logo.ts, as do the six other funds this
+  // resolver could never reach.
 };
 
 /** Storage key prefix, so a fund can never collide with a ticker's object. */
