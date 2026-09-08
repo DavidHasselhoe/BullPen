@@ -1,571 +1,1460 @@
 [
   {
+    "date": "2026-09-08",
+    "entries": [
+      {
+        "type": "new",
+        "text": "Institutional Holdings now shows what each investor actually did last quarter. Every position is marked as a new buy, an increase, a reduction, or unchanged, with a separate list of the positions they sold out of completely. Each fund also gets a plain summary at the top, like 'Trimmed Micron Technology for the second straight quarter and opened a new position in Apple'"
+      },
+      {
+        "type": "new",
+        "text": "You can now follow a fund from Discover or from its page. When a fund you follow files new holdings, you get a notification telling you what changed. You can turn these off in Settings"
+      },
+      {
+        "type": "new",
+        "text": "Fund pages now go back five quarters. Use the quarter picker to see what a portfolio looked like at any point and what moved between then and the quarter before"
+      },
+      {
+        "type": "new",
+        "text": "Stocks you already own are now marked with a badge when they appear in a fund’s holdings, so you can see where your portfolio overlaps with theirs"
+      },
+      {
+        "type": "new",
+        "text": "Added suggested questions to fund pages that open Ask Bull already knowing the fund’s holdings, including one that compares the fund against your own portfolio"
+      },
+      {
+        "type": "fixed",
+        "text": "The concentration label on each fund card was based on how many stocks a fund held rather than how concentrated it actually was. Berkshire Hathaway read as \"Focused\" while holding 22% of its portfolio in a single stock. Labels are now based on real portfolio weight, and a question mark next to each one explains what it means"
+      },
+      {
+        "type": "improved",
+        "text": "Redesigned the fund cards and the allocation chart. Colors are now easier to tell apart, the chart shows details in the center instead of a tooltip that covered the total, and every fund now has its real logo"
+      },
+      {
+        "type": "improved",
+        "text": "Removed three funds that had stopped filing with the SEC, so nothing on the page is years out of date. Appaloosa is back with current holdings after being tracked under the wrong registration"
+      }
+    ]
+  },
+  {
     "date": "2026-09-07",
     "entries": [
-      { "type": "new", "text": "Added Institutional Holdings to Discover: see what well-known investors like Warren Buffett, Ray Dalio, and Michael Burry actually own, based on the filings they submit to the SEC every quarter. Open any fund to see its biggest positions in a chart, how much of the portfolio each one makes up, and what changed since the previous quarter. Full holdings are a Pro feature" }
+      {
+        "type": "new",
+        "text": "Added Institutional Holdings to Discover: see what well-known investors like Warren Buffett, Ray Dalio, and Michael Burry actually own, based on the filings they submit to the SEC every quarter. Open any fund to see its biggest positions in a chart, how much of the portfolio each one makes up, and what changed since the previous quarter. Full holdings are a Pro feature"
+      }
     ]
   },
   {
     "date": "2026-09-06",
     "entries": [
-      { "type": "improved", "text": "Each Investing Ideas theme now shows quick averages for health score, P/E, and dividend yield at the top, so you can size up a theme before scrolling the full list" }
+      {
+        "type": "improved",
+        "text": "Each Investing Ideas theme now shows quick averages for health score, P/E, and dividend yield at the top, so you can size up a theme before scrolling the full list"
+      }
     ]
   },
   {
     "date": "2026-09-05",
     "entries": [
-      { "type": "new", "text": "Added Investing Ideas to Discover: browse curated stock themes like AI Infrastructure, Robotics, and Undervalued Healthcare, then open any theme to see the full list of companies in it with key stats" },
-      { "type": "improved", "text": "Page animations now respect your device's reduce motion setting" }
+      {
+        "type": "new",
+        "text": "Added Investing Ideas to Discover: browse curated stock themes like AI Infrastructure, Robotics, and Undervalued Healthcare, then open any theme to see the full list of companies in it with key stats"
+      },
+      {
+        "type": "improved",
+        "text": "Page animations now respect your device's reduce motion setting"
+      }
     ]
   },
   {
     "date": "2026-09-04",
     "entries": [
-      { "type": "new", "text": "Added Portfolio Health to My Holdings: a single score showing how financially healthy your holdings are overall, weighted by how much of your portfolio each one makes up. Click into any category to see which holdings are pulling it up or down" },
-      { "type": "improved", "text": "AI Deep Dive reports now show the company logo, and key risk/catalyst details no longer get cut off mid-sentence" },
-      { "type": "improved", "text": "Picking a different lens on an AI Deep Dive report now updates the link, so refreshing or sharing the page keeps your chosen lens" },
-      { "type": "improved", "text": "Clarified in the Screener why a stock's Payout ratio can show over 100%, so it doesn't look like broken data" },
-      { "type": "fixed", "text": "Fixed a chart tooltip on AI Deep Dive reports leaving trailing copies behind when moving the mouse quickly between bars" }
+      {
+        "type": "new",
+        "text": "Added Portfolio Health to My Holdings: a single score showing how financially healthy your holdings are overall, weighted by how much of your portfolio each one makes up. Click into any category to see which holdings are pulling it up or down"
+      },
+      {
+        "type": "improved",
+        "text": "AI Deep Dive reports now show the company logo, and key risk/catalyst details no longer get cut off mid-sentence"
+      },
+      {
+        "type": "improved",
+        "text": "Picking a different lens on an AI Deep Dive report now updates the link, so refreshing or sharing the page keeps your chosen lens"
+      },
+      {
+        "type": "improved",
+        "text": "Clarified in the Screener why a stock's Payout ratio can show over 100%, so it doesn't look like broken data"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed a chart tooltip on AI Deep Dive reports leaving trailing copies behind when moving the mouse quickly between bars"
+      }
     ]
   },
   {
     "date": "2026-09-03",
     "entries": [
-      { "type": "new", "text": "Ask Bull can now explain the revenue flow chart on a stock's page, breaking down where the money goes and why it matters" },
-      { "type": "improved", "text": "AI Deep Dive reports are easier to read: unfamiliar terms like RPO, EV/EBITDA, or forward P/E now show a plain-English explanation on hover, the bull vs bear case reads as short, scannable points, and the price chart now appears directly in the report" },
-      { "type": "improved", "text": "AI Portfolio Builder now warns you when a portfolio leans heavily into one sector, shows sources for its claims, and merges the Allocation and Holdings sections so each stock only appears once. The confusing \"Hedge\" label has also been renamed to \"Satellite\" to reflect what those positions actually are" },
-      { "type": "improved", "text": "The Compare tool now highlights the best and worst value in green and red for each metric, so you can spot winners and losers at a glance" },
-      { "type": "improved", "text": "Risk Analysis results now show the AI's assessment before your analysis history, so you see the actual findings first" },
-      { "type": "improved", "text": "Passwords now require a mix of letters and numbers and can't be a commonly used password, for better account security" },
-      { "type": "fixed", "text": "Fixed the Market Calendar losing past earnings results for stocks you'd already viewed" },
-      { "type": "fixed", "text": "Fixed some company logos not showing up in the Compare tool and a few other places" },
-      { "type": "fixed", "text": "Fixed Bull chat sometimes showing a duplicate empty reply bubble" },
-      { "type": "fixed", "text": "Fixed a confusing error message when signing in before confirming your email" },
-      { "type": "fixed", "text": "Fixed guests seeing a raw error instead of a sign-in prompt when trying to use Deep Dive or Portfolio Builder" },
-      { "type": "fixed", "text": "Fixed the volume bars on a stock's price chart looking cut off or invisible on low-volume days" },
-      { "type": "fixed", "text": "Fixed dividend yield showing wildly incorrect numbers for some stocks" },
-      { "type": "fixed", "text": "Fixed the Community Theses section on stock pages not translating into your selected language" }
+      {
+        "type": "new",
+        "text": "Ask Bull can now explain the revenue flow chart on a stock's page, breaking down where the money goes and why it matters"
+      },
+      {
+        "type": "improved",
+        "text": "AI Deep Dive reports are easier to read: unfamiliar terms like RPO, EV/EBITDA, or forward P/E now show a plain-English explanation on hover, the bull vs bear case reads as short, scannable points, and the price chart now appears directly in the report"
+      },
+      {
+        "type": "improved",
+        "text": "AI Portfolio Builder now warns you when a portfolio leans heavily into one sector, shows sources for its claims, and merges the Allocation and Holdings sections so each stock only appears once. The confusing \"Hedge\" label has also been renamed to \"Satellite\" to reflect what those positions actually are"
+      },
+      {
+        "type": "improved",
+        "text": "The Compare tool now highlights the best and worst value in green and red for each metric, so you can spot winners and losers at a glance"
+      },
+      {
+        "type": "improved",
+        "text": "Risk Analysis results now show the AI's assessment before your analysis history, so you see the actual findings first"
+      },
+      {
+        "type": "improved",
+        "text": "Passwords now require a mix of letters and numbers and can't be a commonly used password, for better account security"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed the Market Calendar losing past earnings results for stocks you'd already viewed"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed some company logos not showing up in the Compare tool and a few other places"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed Bull chat sometimes showing a duplicate empty reply bubble"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed a confusing error message when signing in before confirming your email"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed guests seeing a raw error instead of a sign-in prompt when trying to use Deep Dive or Portfolio Builder"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed the volume bars on a stock's price chart looking cut off or invisible on low-volume days"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed dividend yield showing wildly incorrect numbers for some stocks"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed the Community Theses section on stock pages not translating into your selected language"
+      }
     ]
   },
   {
     "date": "2026-09-02",
     "entries": [
-      { "type": "new", "text": "You can now save your own filter combinations in the stock screener and reload them anytime" },
-      { "type": "new", "text": "Added Health Score as a filter in the stock screener, so you can screen for financially healthy companies directly" },
-      { "type": "new", "text": "Click a stock's Health Score in the screener to see the full breakdown behind the score" },
-      { "type": "new", "text": "You can now select multiple stocks in the screener to compare them side by side or add them all to a watchlist at once" },
-      { "type": "improved", "text": "Screener column headers and filters now explain what each metric means and what a good range looks like. The column picker is also organized into groups, and the header row stays visible as you scroll" },
-      { "type": "improved", "text": "Returning signed-in visitors now go straight to the dashboard instead of seeing the marketing homepage first" },
-      { "type": "improved", "text": "Simplified appearance settings to Dark and Light, removing the gradient background themes" },
-      { "type": "improved", "text": "Removed the pin, settings, and notification icons from the navigation bar for signed-out visitors, since they don't apply until you're signed in" },
-      { "type": "fixed", "text": "Fixed several stock screener columns showing wrong or missing data, including dividend yield displaying 100 times too small, payout ratio, EPS, and revenue. Removed two columns that never worked correctly" },
-      { "type": "fixed", "text": "Fixed Ask Bull being unable to take you to certain stock pages" },
-      { "type": "fixed", "text": "Fixed adding a stock to your watchlist sometimes failing with an error" },
-      { "type": "fixed", "text": "Fixed Pro-only content sometimes still showing up briefly right after signing out" },
-      { "type": "fixed", "text": "Added a note on a stock's financials when the newest quarter's full report isn't available yet, so the numbers you see aren't mistaken for missing or out of date" },
-      { "type": "fixed", "text": "Fixed the financials chart tooltip being hard to read in dark mode" },
-      { "type": "fixed", "text": "Fixed Ask Bull sometimes showing an extra empty chat bubble while a reply was still loading" },
-      { "type": "fixed", "text": "Fixed the Bull mascot being hard to see in dark mode" },
-      { "type": "fixed", "text": "Fixed your name, username, and bio in Profile Settings sometimes saving mid-sentence while you were still typing" }
+      {
+        "type": "new",
+        "text": "You can now save your own filter combinations in the stock screener and reload them anytime"
+      },
+      {
+        "type": "new",
+        "text": "Added Health Score as a filter in the stock screener, so you can screen for financially healthy companies directly"
+      },
+      {
+        "type": "new",
+        "text": "Click a stock's Health Score in the screener to see the full breakdown behind the score"
+      },
+      {
+        "type": "new",
+        "text": "You can now select multiple stocks in the screener to compare them side by side or add them all to a watchlist at once"
+      },
+      {
+        "type": "improved",
+        "text": "Screener column headers and filters now explain what each metric means and what a good range looks like. The column picker is also organized into groups, and the header row stays visible as you scroll"
+      },
+      {
+        "type": "improved",
+        "text": "Returning signed-in visitors now go straight to the dashboard instead of seeing the marketing homepage first"
+      },
+      {
+        "type": "improved",
+        "text": "Simplified appearance settings to Dark and Light, removing the gradient background themes"
+      },
+      {
+        "type": "improved",
+        "text": "Removed the pin, settings, and notification icons from the navigation bar for signed-out visitors, since they don't apply until you're signed in"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed several stock screener columns showing wrong or missing data, including dividend yield displaying 100 times too small, payout ratio, EPS, and revenue. Removed two columns that never worked correctly"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed Ask Bull being unable to take you to certain stock pages"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed adding a stock to your watchlist sometimes failing with an error"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed Pro-only content sometimes still showing up briefly right after signing out"
+      },
+      {
+        "type": "fixed",
+        "text": "Added a note on a stock's financials when the newest quarter's full report isn't available yet, so the numbers you see aren't mistaken for missing or out of date"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed the financials chart tooltip being hard to read in dark mode"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed Ask Bull sometimes showing an extra empty chat bubble while a reply was still loading"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed the Bull mascot being hard to see in dark mode"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed your name, username, and bio in Profile Settings sometimes saving mid-sentence while you were still typing"
+      }
     ]
   },
   {
     "date": "2026-09-01",
     "entries": [
-      { "type": "improved", "text": "Ask Bull now checks with you before taking you to a different page, with a quick yes or no, unless you directly asked to be taken there" },
-      { "type": "fixed", "text": "Fixed Ask Bull sometimes only opening a stock's regular page when you asked for fullscreen chart mode instead" },
-      { "type": "improved", "text": "Insider Transactions no longer stretches a stock's page for companies with long trade histories. Viewing everything now opens in its own scrollable window, with filters for buy, sell, or other transaction types" },
-      { "type": "improved", "text": "Pro feature previews, like Why Today, now show real, live data for the stock you're looking at instead of a generic example" },
-      { "type": "improved", "text": "Polished the CSV import for My Holdings. The progress bar now finishes cleanly, leaving the review screen before you finish warns you first, and you can choose to add to or replace your existing holdings when an import overlaps with what you already own" },
-      { "type": "fixed", "text": "Fixed changing your profile picture sometimes failing with a permission error" },
-      { "type": "fixed", "text": "Fixed importing a CSV to My Holdings sometimes failing instantly when one ticker in the file couldn't be matched" },
-      { "type": "fixed", "text": "Fixed the left-side navigation on stock pages and the Daily Brief reader not highlighting the last section once you'd scrolled all the way down" },
-      { "type": "fixed", "text": "Fixed the Academy streak reminder notifying you even when you didn't have a streak going" },
-      { "type": "improved", "text": "Streamlined signing up, with fewer password fields to fill in and clearer step-by-step progress during onboarding" }
+      {
+        "type": "improved",
+        "text": "Ask Bull now checks with you before taking you to a different page, with a quick yes or no, unless you directly asked to be taken there"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed Ask Bull sometimes only opening a stock's regular page when you asked for fullscreen chart mode instead"
+      },
+      {
+        "type": "improved",
+        "text": "Insider Transactions no longer stretches a stock's page for companies with long trade histories. Viewing everything now opens in its own scrollable window, with filters for buy, sell, or other transaction types"
+      },
+      {
+        "type": "improved",
+        "text": "Pro feature previews, like Why Today, now show real, live data for the stock you're looking at instead of a generic example"
+      },
+      {
+        "type": "improved",
+        "text": "Polished the CSV import for My Holdings. The progress bar now finishes cleanly, leaving the review screen before you finish warns you first, and you can choose to add to or replace your existing holdings when an import overlaps with what you already own"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed changing your profile picture sometimes failing with a permission error"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed importing a CSV to My Holdings sometimes failing instantly when one ticker in the file couldn't be matched"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed the left-side navigation on stock pages and the Daily Brief reader not highlighting the last section once you'd scrolled all the way down"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed the Academy streak reminder notifying you even when you didn't have a streak going"
+      },
+      {
+        "type": "improved",
+        "text": "Streamlined signing up, with fewer password fields to fill in and clearer step-by-step progress during onboarding"
+      }
     ]
   },
   {
     "date": "2026-08-31",
     "entries": [
-      { "type": "new", "text": "Import transactions from any brokerage export, in any format or language, from My Holdings. Upload your trade history and it's read automatically, matched to the right tickers, and turned into your full buy and sell history, not just a snapshot" },
-      { "type": "fixed", "text": "Fixed the Disconnect button in Connected Brokerages doing nothing for some accounts" },
-      { "type": "improved", "text": "The Market Calendar now shows \"Owned\" or \"Watching\" instead of a generic label so you can tell at a glance which stocks you hold" },
-      { "type": "improved", "text": "The earnings-this-week widget on Discover now shows each company's logo" }
+      {
+        "type": "new",
+        "text": "Import transactions from any brokerage export, in any format or language, from My Holdings. Upload your trade history and it's read automatically, matched to the right tickers, and turned into your full buy and sell history, not just a snapshot"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed the Disconnect button in Connected Brokerages doing nothing for some accounts"
+      },
+      {
+        "type": "improved",
+        "text": "The Market Calendar now shows \"Owned\" or \"Watching\" instead of a generic label so you can tell at a glance which stocks you hold"
+      },
+      {
+        "type": "improved",
+        "text": "The earnings-this-week widget on Discover now shows each company's logo"
+      }
     ]
   },
   {
     "date": "2026-08-30",
     "entries": [
-      { "type": "improved", "text": "The rest of the app, including price alerts and the search/command menu, now displays in your selected language. Translation coverage is now complete across every part of BullPen" }
+      {
+        "type": "improved",
+        "text": "The rest of the app, including price alerts and the search/command menu, now displays in your selected language. Translation coverage is now complete across every part of BullPen"
+      }
     ]
   },
   {
     "date": "2026-08-29",
     "entries": [
-      { "type": "improved", "text": "More of the app now displays in your selected language, including the Upgrade/Pricing pages, Watchlist, and the main navigation menu, with more areas being translated over time" }
+      {
+        "type": "improved",
+        "text": "More of the app now displays in your selected language, including the Upgrade/Pricing pages, Watchlist, and the main navigation menu, with more areas being translated over time"
+      }
     ]
   },
   {
     "date": "2026-08-28",
     "entries": [
-      { "type": "improved", "text": "More of the app now displays in your selected language, including My Holdings, your profile, Ask Bull, Discover, Market tools, and Academy, with more areas being translated over time" }
+      {
+        "type": "improved",
+        "text": "More of the app now displays in your selected language, including My Holdings, your profile, Ask Bull, Discover, Market tools, and Academy, with more areas being translated over time"
+      }
     ]
   },
   {
     "date": "2026-08-27",
     "entries": [
-      { "type": "fixed", "text": "Stock pages no longer show a false \"not found\" error for a real ticker after a brief data hiccup" },
-      { "type": "fixed", "text": "Fixed My Holdings' daily change sometimes not matching the after-hours or pre-market change shown on a stock's own page" },
-      { "type": "fixed", "text": "Daily Brief now checks our own live after-hours price data before describing how a stock reacted to earnings, instead of relying only on early news coverage that can be outdated by the time you read it" },
-      { "type": "fixed", "text": "Fixed the sign-up form sometimes showing the same error message twice, and clarified the message you see when an email is already registered" },
-      { "type": "fixed", "text": "Fixed the Screener's \"View all\" pill showing placeholder text instead of the actual number of stocks" },
-      { "type": "fixed", "text": "Fixed the \"Save my profile\" button on the onboarding flow looking greyed out even when it was ready to use" },
-      { "type": "improved", "text": "Refreshed the Profile Settings modal (from the account menu) with a clearer layout, matching the rest of Settings, and a way to update your photo by clicking directly on it" }
+      {
+        "type": "fixed",
+        "text": "Stock pages no longer show a false \"not found\" error for a real ticker after a brief data hiccup"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed My Holdings' daily change sometimes not matching the after-hours or pre-market change shown on a stock's own page"
+      },
+      {
+        "type": "fixed",
+        "text": "Daily Brief now checks our own live after-hours price data before describing how a stock reacted to earnings, instead of relying only on early news coverage that can be outdated by the time you read it"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed the sign-up form sometimes showing the same error message twice, and clarified the message you see when an email is already registered"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed the Screener's \"View all\" pill showing placeholder text instead of the actual number of stocks"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed the \"Save my profile\" button on the onboarding flow looking greyed out even when it was ready to use"
+      },
+      {
+        "type": "improved",
+        "text": "Refreshed the Profile Settings modal (from the account menu) with a clearer layout, matching the rest of Settings, and a way to update your photo by clicking directly on it"
+      }
     ]
   },
   {
     "date": "2026-08-26",
     "entries": [
-      { "type": "fixed", "text": "Fixed a few company logos that were showing up as blank white squares instead of the company's initials" },
-      { "type": "improved", "text": "Parts of the app, including the tools section and stock screener, now display in your selected language if you've set one in Settings, with more areas being translated over time" }
+      {
+        "type": "fixed",
+        "text": "Fixed a few company logos that were showing up as blank white squares instead of the company's initials"
+      },
+      {
+        "type": "improved",
+        "text": "Parts of the app, including the tools section and stock screener, now display in your selected language if you've set one in Settings, with more areas being translated over time"
+      }
     ]
   },
   {
     "date": "2026-08-25",
     "entries": [
-      { "type": "new", "text": "The Holdings Daily performance card now labels which day of the week each bar is" },
-      { "type": "fixed", "text": "Fixed company logos that were sometimes missing or broken, with a new fallback source so one almost always loads" },
-      { "type": "fixed", "text": "Fixed the Market Calendar sometimes showing few or no earnings dates for the next few weeks even though companies had already confirmed them" },
-      { "type": "fixed", "text": "Daily Brief and Market Movers no longer show stale data until you manually reload the page" }
+      {
+        "type": "new",
+        "text": "The Holdings Daily performance card now labels which day of the week each bar is"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed company logos that were sometimes missing or broken, with a new fallback source so one almost always loads"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed the Market Calendar sometimes showing few or no earnings dates for the next few weeks even though companies had already confirmed them"
+      },
+      {
+        "type": "fixed",
+        "text": "Daily Brief and Market Movers no longer show stale data until you manually reload the page"
+      }
     ]
   },
   {
     "date": "2026-08-24",
     "entries": [
-      { "type": "new", "text": "Referring a friend now gives you both a free month of Pro when they sign up from your shared portfolio card" },
-      { "type": "improved", "text": "Free accounts can now read the full reasoning behind one of Bull's Weekly Picks each month, not just the ticker and price" },
-      { "type": "improved", "text": "When you re-run Portfolio Risk Analysis, it now explains what changed since last time if the score is different, even when your holdings stayed the same" },
-      { "type": "fixed", "text": "Notifications for AI features like Risk Analysis and Deep Dive now clear automatically once you've seen the result, and tapping one now takes you to the right place instead of a generic page" },
-      { "type": "fixed", "text": "Fixed Bull's Weekly Pick track record, Discover, and public profiles not loading properly when you weren't signed in" }
+      {
+        "type": "new",
+        "text": "Referring a friend now gives you both a free month of Pro when they sign up from your shared portfolio card"
+      },
+      {
+        "type": "improved",
+        "text": "Free accounts can now read the full reasoning behind one of Bull's Weekly Picks each month, not just the ticker and price"
+      },
+      {
+        "type": "improved",
+        "text": "When you re-run Portfolio Risk Analysis, it now explains what changed since last time if the score is different, even when your holdings stayed the same"
+      },
+      {
+        "type": "fixed",
+        "text": "Notifications for AI features like Risk Analysis and Deep Dive now clear automatically once you've seen the result, and tapping one now takes you to the right place instead of a generic page"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed Bull's Weekly Pick track record, Discover, and public profiles not loading properly when you weren't signed in"
+      }
     ]
   },
   {
     "date": "2026-08-23",
     "entries": [
-      { "type": "fixed", "text": "Academy streak reminder notifications no longer show a day count that can be out of date by the time you read them, since your streak can reset in between" }
+      {
+        "type": "fixed",
+        "text": "Academy streak reminder notifications no longer show a day count that can be out of date by the time you read them, since your streak can reset in between"
+      }
     ]
   },
   {
     "date": "2026-08-21",
     "entries": [
-      { "type": "new", "text": "Stock charts now show a dot for every time you bought shares, at the real price and date, instead of one dot averaged across all your purchases. You can now log a purchase against a holding you already track, or enter multiple buy dates when adding a new one" },
-      { "type": "new", "text": "Added Tokyo, Korea, and Shanghai to Market Hours, including their midday trading breaks" },
-      { "type": "fixed", "text": "Fixed Portfolio Risk Analysis sometimes giving a different score on back-to-back runs even though your holdings hadn't changed" }
+      {
+        "type": "new",
+        "text": "Stock charts now show a dot for every time you bought shares, at the real price and date, instead of one dot averaged across all your purchases. You can now log a purchase against a holding you already track, or enter multiple buy dates when adding a new one"
+      },
+      {
+        "type": "new",
+        "text": "Added Tokyo, Korea, and Shanghai to Market Hours, including their midday trading breaks"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed Portfolio Risk Analysis sometimes giving a different score on back-to-back runs even though your holdings hadn't changed"
+      }
     ]
   },
   {
     "date": "2026-08-20",
     "entries": [
-      { "type": "improved", "text": "Risk Analysis, Portfolio Builder, Deep Dive, and Company Compare loading screens no longer sit stuck at 100% while still finishing up, and the finished screen now stays visible long enough to actually see it before the result appears" },
-      { "type": "improved", "text": "Finishing a Pro upgrade now shows a summary of everything you just unlocked instead of a small easy-to-miss note, and managing your subscription now returns you to your dashboard afterward" },
-      { "type": "fixed", "text": "Fixed the notifications panel and account menu sometimes overlapping instead of the first one closing when you opened the other, and fixed the notifications panel closing instantly instead of animating shut" }
+      {
+        "type": "improved",
+        "text": "Risk Analysis, Portfolio Builder, Deep Dive, and Company Compare loading screens no longer sit stuck at 100% while still finishing up, and the finished screen now stays visible long enough to actually see it before the result appears"
+      },
+      {
+        "type": "improved",
+        "text": "Finishing a Pro upgrade now shows a summary of everything you just unlocked instead of a small easy-to-miss note, and managing your subscription now returns you to your dashboard afterward"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed the notifications panel and account menu sometimes overlapping instead of the first one closing when you opened the other, and fixed the notifications panel closing instantly instead of animating shut"
+      }
     ]
   },
   {
     "date": "2026-08-19",
     "entries": [
-      { "type": "improved", "text": "Portfolio Builder and Deep Dive results now match the redesigned Portfolio Risk Analysis layout, with clearer sections you can expand and collapse" },
-      { "type": "improved", "text": "Upgrade prompts for Why Today, Ask Bull, Portfolio Builder, and Deep Dive now preview what you'd get with Pro, the same way Portfolio Risk Analysis's prompt already did" },
-      { "type": "improved", "text": "Why Today now shows the upgrade prompt instantly for free accounts instead of after a short delay" },
-      { "type": "improved", "text": "Loading screens for Risk Analysis, Portfolio Builder, Deep Dive, and Company Compare now show smoothly moving progress and no longer jump straight to the finished result the instant it's ready" },
-      { "type": "improved", "text": "Dropdown menus and dialogs across the app, including Settings and Notifications, now animate open instead of appearing instantly" },
-      { "type": "improved", "text": "Academy leaderboard now shows plain rank numbers for the top 3 instead of medal emojis" },
-      { "type": "improved", "text": "Removed the \"Generated by Claude\" labels shown under Daily Brief, Why Today, Deep Dive, and Portfolio Builder results, since sources are already listed for anyone who wants to check them" },
-      { "type": "fixed", "text": "Fixed some stocks' earnings staying marked Unconfirmed indefinitely, even once the report was clearly correct" },
-      { "type": "fixed", "text": "Fixed the Weekly Picks table sometimes showing blank Now, Return, and vs S&P columns even after refreshing" },
-      { "type": "fixed", "text": "Fixed a stray unlabeled chart appearing in the Portfolio Risk Analysis history section" }
+      {
+        "type": "improved",
+        "text": "Portfolio Builder and Deep Dive results now match the redesigned Portfolio Risk Analysis layout, with clearer sections you can expand and collapse"
+      },
+      {
+        "type": "improved",
+        "text": "Upgrade prompts for Why Today, Ask Bull, Portfolio Builder, and Deep Dive now preview what you'd get with Pro, the same way Portfolio Risk Analysis's prompt already did"
+      },
+      {
+        "type": "improved",
+        "text": "Why Today now shows the upgrade prompt instantly for free accounts instead of after a short delay"
+      },
+      {
+        "type": "improved",
+        "text": "Loading screens for Risk Analysis, Portfolio Builder, Deep Dive, and Company Compare now show smoothly moving progress and no longer jump straight to the finished result the instant it's ready"
+      },
+      {
+        "type": "improved",
+        "text": "Dropdown menus and dialogs across the app, including Settings and Notifications, now animate open instead of appearing instantly"
+      },
+      {
+        "type": "improved",
+        "text": "Academy leaderboard now shows plain rank numbers for the top 3 instead of medal emojis"
+      },
+      {
+        "type": "improved",
+        "text": "Removed the \"Generated by Claude\" labels shown under Daily Brief, Why Today, Deep Dive, and Portfolio Builder results, since sources are already listed for anyone who wants to check them"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed some stocks' earnings staying marked Unconfirmed indefinitely, even once the report was clearly correct"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed the Weekly Picks table sometimes showing blank Now, Return, and vs S&P columns even after refreshing"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed a stray unlabeled chart appearing in the Portfolio Risk Analysis history section"
+      }
     ]
   },
   {
     "date": "2026-08-18",
     "entries": [
-      { "type": "new", "text": "Academy courses now end with a short quiz you need to pass before the next course unlocks. If you already know the material, you can skip straight to the quiz instead of doing every lesson" },
-      { "type": "new", "text": "The Academy path now shows a countdown for when the next new course is coming, so there's always something to look forward to" },
-      { "type": "improved", "text": "Redesigned the Portfolio Risk Analysis results screen with a clearer risk score gauge, ranked risk factors, stress test scenarios, and a trend view of your past analyses" },
-      { "type": "improved", "text": "Refreshed the upgrade prompts you see when you hit a free plan limit, with clearer benefits and pricing shown up front. Portfolio Risk Analysis's prompt also now previews what a real analysis looks like" },
-      { "type": "fixed", "text": "Fixed a display bug on the Academy path where some course icons could look broken or see-through" },
-      { "type": "fixed", "text": "Fixed a display glitch in Portfolio Risk Analysis history where a stray colored line could appear and your saved analyses looked squeezed together" }
+      {
+        "type": "new",
+        "text": "Academy courses now end with a short quiz you need to pass before the next course unlocks. If you already know the material, you can skip straight to the quiz instead of doing every lesson"
+      },
+      {
+        "type": "new",
+        "text": "The Academy path now shows a countdown for when the next new course is coming, so there's always something to look forward to"
+      },
+      {
+        "type": "improved",
+        "text": "Redesigned the Portfolio Risk Analysis results screen with a clearer risk score gauge, ranked risk factors, stress test scenarios, and a trend view of your past analyses"
+      },
+      {
+        "type": "improved",
+        "text": "Refreshed the upgrade prompts you see when you hit a free plan limit, with clearer benefits and pricing shown up front. Portfolio Risk Analysis's prompt also now previews what a real analysis looks like"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed a display bug on the Academy path where some course icons could look broken or see-through"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed a display glitch in Portfolio Risk Analysis history where a stray colored line could appear and your saved analyses looked squeezed together"
+      }
     ]
   },
   {
     "date": "2026-08-17",
     "entries": [
-      { "type": "new", "text": "Added a temporary lock on your account after several failed login attempts, which lifts automatically after a short wait" },
-      { "type": "improved", "text": "If You Bought Here now lets you set a custom end date instead of always calculating your return through today" },
-      { "type": "improved", "text": "Changing your password now automatically signs you out of your other devices" }
+      {
+        "type": "new",
+        "text": "Added a temporary lock on your account after several failed login attempts, which lifts automatically after a short wait"
+      },
+      {
+        "type": "improved",
+        "text": "If You Bought Here now lets you set a custom end date instead of always calculating your return through today"
+      },
+      {
+        "type": "improved",
+        "text": "Changing your password now automatically signs you out of your other devices"
+      }
     ]
   },
   {
     "date": "2026-08-15",
     "entries": [
-      { "type": "fixed", "text": "Fixed the Daily Brief not generating for the last couple of days" },
-      { "type": "fixed", "text": "Fixed text across the app rendering in a plain system font instead of BullPen's actual typeface, which made it look softer and blurrier than intended" },
-      { "type": "improved", "text": "Increased the size of small, hard-to-read text in badges and labels throughout the app" }
+      {
+        "type": "fixed",
+        "text": "Fixed the Daily Brief not generating for the last couple of days"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed text across the app rendering in a plain system font instead of BullPen's actual typeface, which made it look softer and blurrier than intended"
+      },
+      {
+        "type": "improved",
+        "text": "Increased the size of small, hard-to-read text in badges and labels throughout the app"
+      }
     ]
   },
   {
     "date": "2026-08-14",
     "entries": [
-      { "type": "new", "text": "Added a reminder to help you keep your Academy streak alive if you haven't done today's challenge yet, with an on/off toggle in Settings > Notifications" },
-      { "type": "improved", "text": "Company Compare now shows real loading progress with the bull mascot while it fetches each company's data, instead of a plain skeleton screen" },
-      { "type": "improved", "text": "Refreshed the Risk Analysis, Deep Dive, Portfolio Builder, and Explain Differences buttons with a bolder emerald style and a subtle shine effect" },
-      { "type": "improved", "text": "The Ask Bull icon in the bottom corner now fills its circle properly instead of looking small and padded" },
-      { "type": "fixed", "text": "Fixed the Financials charts (Income Statement, Balance Sheet, Cash Flow) showing periods in the opposite order from the table right below them" },
-      { "type": "fixed", "text": "Fixed some stocks' dividend history showing a dividend amount from a different country's stock listing, in the wrong currency" },
-      { "type": "fixed", "text": "Fixed stock peer and competitor suggestions sometimes showing unrelated companies from the wrong industry" },
-      { "type": "fixed", "text": "Fixed the heatmap tooltip showing a positive dollar amount next to a negative percentage change" },
-      { "type": "fixed", "text": "Fixed an issue that could cause the Daily Brief to fail to generate for some Pro users" },
-      { "type": "fixed", "text": "Fixed the Risk Analysis, Deep Dive, Portfolio Builder, and Explain Differences buttons sometimes rendering invisible" }
+      {
+        "type": "new",
+        "text": "Added a reminder to help you keep your Academy streak alive if you haven't done today's challenge yet, with an on/off toggle in Settings > Notifications"
+      },
+      {
+        "type": "improved",
+        "text": "Company Compare now shows real loading progress with the bull mascot while it fetches each company's data, instead of a plain skeleton screen"
+      },
+      {
+        "type": "improved",
+        "text": "Refreshed the Risk Analysis, Deep Dive, Portfolio Builder, and Explain Differences buttons with a bolder emerald style and a subtle shine effect"
+      },
+      {
+        "type": "improved",
+        "text": "The Ask Bull icon in the bottom corner now fills its circle properly instead of looking small and padded"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed the Financials charts (Income Statement, Balance Sheet, Cash Flow) showing periods in the opposite order from the table right below them"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed some stocks' dividend history showing a dividend amount from a different country's stock listing, in the wrong currency"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed stock peer and competitor suggestions sometimes showing unrelated companies from the wrong industry"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed the heatmap tooltip showing a positive dollar amount next to a negative percentage change"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed an issue that could cause the Daily Brief to fail to generate for some Pro users"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed the Risk Analysis, Deep Dive, Portfolio Builder, and Explain Differences buttons sometimes rendering invisible"
+      }
     ]
   },
   {
     "date": "2026-08-13",
     "entries": [
-      { "type": "new", "text": "Academy courses are now shown as a path — each course unlocks once you finish the one before it, instead of a flat list of everything at once" },
-      { "type": "new", "text": "Notification settings have been reorganized and expanded. You can now turn on alerts for Financial Health Score changes, Bull's Weekly Pick, your Daily Brief, and upcoming ex-dividend dates" },
-      { "type": "new", "text": "Asking Bull to compare companies now shows a visual comparison card instead of just a text answer" },
-      { "type": "new", "text": "Added a hover price preview when placing an alert on the full screen chart" },
-      { "type": "new", "text": "Added a reminder email before your Pro subscription renews and charges automatically" },
-      { "type": "new", "text": "Ask Bull now offers supportive resources if a conversation touches on personal crisis topics" },
-      { "type": "fixed", "text": "Fixed Company Compare sometimes failing to load a comparison" },
-      { "type": "fixed", "text": "Fixed share links showing a generic error instead of a clear No trades yet message when appropriate" },
-      { "type": "fixed", "text": "Deleting your account now also removes your profile picture" }
+      {
+        "type": "new",
+        "text": "Academy courses are now shown as a path — each course unlocks once you finish the one before it, instead of a flat list of everything at once"
+      },
+      {
+        "type": "new",
+        "text": "Notification settings have been reorganized and expanded. You can now turn on alerts for Financial Health Score changes, Bull's Weekly Pick, your Daily Brief, and upcoming ex-dividend dates"
+      },
+      {
+        "type": "new",
+        "text": "Asking Bull to compare companies now shows a visual comparison card instead of just a text answer"
+      },
+      {
+        "type": "new",
+        "text": "Added a hover price preview when placing an alert on the full screen chart"
+      },
+      {
+        "type": "new",
+        "text": "Added a reminder email before your Pro subscription renews and charges automatically"
+      },
+      {
+        "type": "new",
+        "text": "Ask Bull now offers supportive resources if a conversation touches on personal crisis topics"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed Company Compare sometimes failing to load a comparison"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed share links showing a generic error instead of a clear No trades yet message when appropriate"
+      },
+      {
+        "type": "fixed",
+        "text": "Deleting your account now also removes your profile picture"
+      }
     ]
   },
   {
     "date": "2026-08-12",
     "entries": [
-      { "type": "improved", "text": "Portfolio Risk Analysis now keeps running in the background if you leave the page. You'll get notified when it's done, and it picks back up automatically if you return while it's still working" },
-      { "type": "fixed", "text": "Fixed Top Market Movers occasionally showing none of your holdings up or down when it had actually failed to load your data, instead of showing an error you could retry" },
-      { "type": "improved", "text": "If You Bought Here now shows how much you gained or lost in your currency, not just the percent. Hovering over a holding's day change in My Holdings shows the same" },
-      { "type": "improved", "text": "The How this is measured section on Bull's Weekly Pick is now a set of expandable questions instead of five paragraphs shown all at once" },
-      { "type": "improved", "text": "Academy course cards now use a distinct color per course instead of every card looking the same" },
-      { "type": "improved", "text": "Heatmap and Market Mood now show a clearer message when there's no data or something goes wrong, instead of a plain error icon" },
-      { "type": "improved", "text": "Ask Bull inside the full screen stock chart now remembers your conversation if you close and reopen the panel, as long as the chart stays open" }
+      {
+        "type": "improved",
+        "text": "Portfolio Risk Analysis now keeps running in the background if you leave the page. You'll get notified when it's done, and it picks back up automatically if you return while it's still working"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed Top Market Movers occasionally showing none of your holdings up or down when it had actually failed to load your data, instead of showing an error you could retry"
+      },
+      {
+        "type": "improved",
+        "text": "If You Bought Here now shows how much you gained or lost in your currency, not just the percent. Hovering over a holding's day change in My Holdings shows the same"
+      },
+      {
+        "type": "improved",
+        "text": "The How this is measured section on Bull's Weekly Pick is now a set of expandable questions instead of five paragraphs shown all at once"
+      },
+      {
+        "type": "improved",
+        "text": "Academy course cards now use a distinct color per course instead of every card looking the same"
+      },
+      {
+        "type": "improved",
+        "text": "Heatmap and Market Mood now show a clearer message when there's no data or something goes wrong, instead of a plain error icon"
+      },
+      {
+        "type": "improved",
+        "text": "Ask Bull inside the full screen stock chart now remembers your conversation if you close and reopen the panel, as long as the chart stays open"
+      }
     ]
   },
   {
     "date": "2026-08-11",
     "entries": [
-      { "type": "improved", "text": "The Market Calendar's week view now uses bigger, clearer tiles with the ticker shown under each logo instead of squeezed beside it, and opening a day's full list now shows a logo for every stock too" },
-      { "type": "fixed", "text": "Fixed the Last used badge on the Google sign-in button being too faint to read" },
-      { "type": "new", "text": "The Daily Brief now shows its sources. Tap the source icons at the bottom of a brief to see and open the original articles it was built from" },
-      { "type": "improved", "text": "Date pickers throughout the app (adding or editing a holding, the Buy Here tool) now use a proper calendar dropdown with quick year and month selection, instead of your browser's plain date field" },
-      { "type": "improved", "text": "Redesigned the Market Calendar with a company logo next to every ticker, ranked by market cap so the biggest companies show first. Added new List and Week views alongside the existing Month view" }
+      {
+        "type": "improved",
+        "text": "The Market Calendar's week view now uses bigger, clearer tiles with the ticker shown under each logo instead of squeezed beside it, and opening a day's full list now shows a logo for every stock too"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed the Last used badge on the Google sign-in button being too faint to read"
+      },
+      {
+        "type": "new",
+        "text": "The Daily Brief now shows its sources. Tap the source icons at the bottom of a brief to see and open the original articles it was built from"
+      },
+      {
+        "type": "improved",
+        "text": "Date pickers throughout the app (adding or editing a holding, the Buy Here tool) now use a proper calendar dropdown with quick year and month selection, instead of your browser's plain date field"
+      },
+      {
+        "type": "improved",
+        "text": "Redesigned the Market Calendar with a company logo next to every ticker, ranked by market cap so the biggest companies show first. Added new List and Week views alongside the existing Month view"
+      }
     ]
   },
   {
     "date": "2026-08-10",
     "entries": [
-      { "type": "new", "text": "Added a Recently compared quick action to Company Compare, so you can reopen a past comparison in one click instead of picking the companies again" },
-      { "type": "improved", "text": "The Pro badge now stands out more clearly on Members, public profiles, and the Academy leaderboard" },
-      { "type": "improved", "text": "Compare's Explain Differences button now shows a loading animation while it works, and the AI explanation fades in instead of popping in instantly" },
-      { "type": "improved", "text": "The Last used badge on the Google sign-in button got a cleaner, more visible design" },
-      { "type": "improved", "text": "The AI chat assistant is now called Ask Bull everywhere in the app, including the command palette and search, instead of the old BullPen AI name" },
-      { "type": "improved", "text": "Cleaned up the Discover page: the explanation for each Worth a look collection now lives in an expandable FAQ instead of always taking up space on screen" },
-      { "type": "fixed", "text": "Fixed paid accounts being labeled Enterprise instead of Pro on the Academy leaderboard, public profiles, and Members" },
-      { "type": "fixed", "text": "Fixed the portfolio movers card saying No data available when you simply had no holdings up or down that day, instead of saying so directly" },
-      { "type": "fixed", "text": "Fixed your Financial Health Score history sometimes showing an outdated score for the current quarter instead of the latest one" },
-      { "type": "fixed", "text": "Fixed the full screen stock chart's Ask Bull panel covering part of the price axis" },
-      { "type": "fixed", "text": "Fixed the Market Calendar sometimes showing far fewer earnings, dividends, splits, and IPOs than were actually scheduled for a busy week, including entire days going missing. It now fetches and caches each day individually so nothing gets silently dropped" }
+      {
+        "type": "new",
+        "text": "Added a Recently compared quick action to Company Compare, so you can reopen a past comparison in one click instead of picking the companies again"
+      },
+      {
+        "type": "improved",
+        "text": "The Pro badge now stands out more clearly on Members, public profiles, and the Academy leaderboard"
+      },
+      {
+        "type": "improved",
+        "text": "Compare's Explain Differences button now shows a loading animation while it works, and the AI explanation fades in instead of popping in instantly"
+      },
+      {
+        "type": "improved",
+        "text": "The Last used badge on the Google sign-in button got a cleaner, more visible design"
+      },
+      {
+        "type": "improved",
+        "text": "The AI chat assistant is now called Ask Bull everywhere in the app, including the command palette and search, instead of the old BullPen AI name"
+      },
+      {
+        "type": "improved",
+        "text": "Cleaned up the Discover page: the explanation for each Worth a look collection now lives in an expandable FAQ instead of always taking up space on screen"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed paid accounts being labeled Enterprise instead of Pro on the Academy leaderboard, public profiles, and Members"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed the portfolio movers card saying No data available when you simply had no holdings up or down that day, instead of saying so directly"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed your Financial Health Score history sometimes showing an outdated score for the current quarter instead of the latest one"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed the full screen stock chart's Ask Bull panel covering part of the price axis"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed the Market Calendar sometimes showing far fewer earnings, dividends, splits, and IPOs than were actually scheduled for a busy week, including entire days going missing. It now fetches and caches each day individually so nothing gets silently dropped"
+      }
     ]
   },
   {
     "date": "2026-08-08",
     "entries": [
-      { "type": "fixed", "text": "Fixed avatar upload failures showing a generic error message instead of explaining what actually went wrong, like a missing photo or a permissions issue" }
+      {
+        "type": "fixed",
+        "text": "Fixed avatar upload failures showing a generic error message instead of explaining what actually went wrong, like a missing photo or a permissions issue"
+      }
     ]
   },
   {
     "date": "2026-08-07",
     "entries": [
-      { "type": "new", "text": "Stock charts now show green dots where you bought and red dots where you sold, helping you visualize your trading history at a glance. Turn it on in the Overlays section of the chart settings" },
-      { "type": "fixed", "text": "The Earnings Calendar now shows recent earnings reports that couldn't be immediately verified, instead of going blank. They're marked as unconfirmed so you know they're not official yet" },
-      { "type": "new", "text": "Added Price-to-Sales ratio to the Valuation section on stock detail pages, with automatic adjustment based on the company's sector so you can compare fairly across different industries" }
+      {
+        "type": "new",
+        "text": "Stock charts now show green dots where you bought and red dots where you sold, helping you visualize your trading history at a glance. Turn it on in the Overlays section of the chart settings"
+      },
+      {
+        "type": "fixed",
+        "text": "The Earnings Calendar now shows recent earnings reports that couldn't be immediately verified, instead of going blank. They're marked as unconfirmed so you know they're not official yet"
+      },
+      {
+        "type": "new",
+        "text": "Added Price-to-Sales ratio to the Valuation section on stock detail pages, with automatic adjustment based on the company's sector so you can compare fairly across different industries"
+      }
     ]
   },
   {
     "date": "2026-08-06",
     "entries": [
-      { "type": "improved", "text": "AI Deep Dive now uses the same ticker search you'll find everywhere else in BullPen, so you can look up a company by name or ticker and see its logo before running an analysis" },
-      { "type": "fixed", "text": "Fixed the Market Calendar and Earnings this week widget showing almost nothing outside of peak earnings season. They now pull from a much wider set of tracked companies, and explain when a week genuinely has no confirmed dates yet instead of just looking empty" },
-      { "type": "fixed", "text": "Fixed a recurring problem where heavy background data traffic could slow down market data across the app or cause price alerts to intermittently not fire" }
+      {
+        "type": "improved",
+        "text": "AI Deep Dive now uses the same ticker search you'll find everywhere else in BullPen, so you can look up a company by name or ticker and see its logo before running an analysis"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed the Market Calendar and Earnings this week widget showing almost nothing outside of peak earnings season. They now pull from a much wider set of tracked companies, and explain when a week genuinely has no confirmed dates yet instead of just looking empty"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed a recurring problem where heavy background data traffic could slow down market data across the app or cause price alerts to intermittently not fire"
+      }
     ]
   },
   {
     "date": "2026-08-05",
     "entries": [
-      { "type": "new", "text": "Added two new Academy courses on how the bigger economy moves the market: the Fed, jobs reports, inflation, and oil prices. The free course covers the basics, and the Pro course goes deeper with a hands-on tour of the Market Mood tool" },
-      { "type": "new", "text": "The S&P 500 Heatmap now has a My Stocks view. Switch to it to see your own holdings and watchlist sized by market cap and colored by today's performance, the same way the main heatmap works" },
-      { "type": "improved", "text": "The sign-in page now shows a small badge on Continue with Google if that's how you signed in last time, so you don't have to guess whether you used Google or your email and password" },
-      { "type": "fixed", "text": "Fixed Ask Bull sometimes answering about a stock from earlier in the conversation, or saying your holdings weren't enabled when you had already turned that on, if you kept chatting for a while" },
-      { "type": "fixed", "text": "Fixed Google (GOOG/GOOGL) showing up as two separate tiles on the S&P 500 Heatmap. Now shown as one" },
-      { "type": "fixed", "text": "Fixed the My Stocks Heatmap still showing a stock you had fully sold" }
+      {
+        "type": "new",
+        "text": "Added two new Academy courses on how the bigger economy moves the market: the Fed, jobs reports, inflation, and oil prices. The free course covers the basics, and the Pro course goes deeper with a hands-on tour of the Market Mood tool"
+      },
+      {
+        "type": "new",
+        "text": "The S&P 500 Heatmap now has a My Stocks view. Switch to it to see your own holdings and watchlist sized by market cap and colored by today's performance, the same way the main heatmap works"
+      },
+      {
+        "type": "improved",
+        "text": "The sign-in page now shows a small badge on Continue with Google if that's how you signed in last time, so you don't have to guess whether you used Google or your email and password"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed Ask Bull sometimes answering about a stock from earlier in the conversation, or saying your holdings weren't enabled when you had already turned that on, if you kept chatting for a while"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed Google (GOOG/GOOGL) showing up as two separate tiles on the S&P 500 Heatmap. Now shown as one"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed the My Stocks Heatmap still showing a stock you had fully sold"
+      }
     ]
   },
   {
     "date": "2026-08-04",
     "entries": [
-      { "type": "new", "text": "Bull can now reference your holdings and watchlist when you ask about your own portfolio, so questions like \"how much of my portfolio is in tech\" work without you listing everything out first. This is off by default and can be turned on in Settings under Ask Bull" },
-      { "type": "improved", "text": "Redesigned the S&P 500 Sector Heatmap. Prices stream live so there is no refresh button to press, the colours now match the rest of the app, and the sector list underneath is a ranked leaderboard showing which parts of the market are leading and lagging" },
-      { "type": "fixed", "text": "Fixed a problem that could make market data across the app slow or briefly unavailable when too many background data requests overlapped" },
-      { "type": "fixed", "text": "Fixed the Company Compare tool showing a raw error code instead of a readable message when it could not load data. It now explains what happened and offers a retry" },
-      { "type": "fixed", "text": "Fixed Company Compare showing an empty screen while loading, and its layout breaking on phones when comparing three or more companies" },
-      { "type": "fixed", "text": "Fixed the heatmap tooltip labelling pre-market and after-hours prices as just \"Extended\" instead of naming the actual trading session" }
+      {
+        "type": "new",
+        "text": "Bull can now reference your holdings and watchlist when you ask about your own portfolio, so questions like \"how much of my portfolio is in tech\" work without you listing everything out first. This is off by default and can be turned on in Settings under Ask Bull"
+      },
+      {
+        "type": "improved",
+        "text": "Redesigned the S&P 500 Sector Heatmap. Prices stream live so there is no refresh button to press, the colours now match the rest of the app, and the sector list underneath is a ranked leaderboard showing which parts of the market are leading and lagging"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed a problem that could make market data across the app slow or briefly unavailable when too many background data requests overlapped"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed the Company Compare tool showing a raw error code instead of a readable message when it could not load data. It now explains what happened and offers a retry"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed Company Compare showing an empty screen while loading, and its layout breaking on phones when comparing three or more companies"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed the heatmap tooltip labelling pre-market and after-hours prices as just \"Extended\" instead of naming the actual trading session"
+      }
     ]
   },
   {
     "date": "2026-08-03",
     "entries": [
-      { "type": "new", "text": "You can now report a bug or suggest a new feature right from your profile menu, no need to leave the app" },
-      { "type": "improved", "text": "The Market Calendar's timeframe options are now This week, This month, and Next month, with a full calendar view for month mode, plus the ability to page back to any previous month to look up past earnings, dividends, splits, and IPOs" },
-      { "type": "improved", "text": "The Daily Performance card on the Holdings page is now compact by default, showing a quick summary strip instead of the full month grid. Click Expand to see the full interactive calendar" },
-      { "type": "fixed", "text": "Fixed the Daily Performance calendar showing blank, unexplained days on market holidays like Memorial Day or Juneteenth. Those days now show which holiday closed the market instead of looking like missing data" },
-      { "type": "fixed", "text": "Fixed the S&P 500 Sector Heatmap showing a hard error message when live prices were briefly unavailable. It now falls back to the last available snapshot instead" },
-      { "type": "fixed", "text": "Fixed the Financial Health history list showing a date that didn't match when the company actually reported earnings. It now shows the quarter instead, matching the chart above it" }
+      {
+        "type": "new",
+        "text": "You can now report a bug or suggest a new feature right from your profile menu, no need to leave the app"
+      },
+      {
+        "type": "improved",
+        "text": "The Market Calendar's timeframe options are now This week, This month, and Next month, with a full calendar view for month mode, plus the ability to page back to any previous month to look up past earnings, dividends, splits, and IPOs"
+      },
+      {
+        "type": "improved",
+        "text": "The Daily Performance card on the Holdings page is now compact by default, showing a quick summary strip instead of the full month grid. Click Expand to see the full interactive calendar"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed the Daily Performance calendar showing blank, unexplained days on market holidays like Memorial Day or Juneteenth. Those days now show which holiday closed the market instead of looking like missing data"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed the S&P 500 Sector Heatmap showing a hard error message when live prices were briefly unavailable. It now falls back to the last available snapshot instead"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed the Financial Health history list showing a date that didn't match when the company actually reported earnings. It now shows the quarter instead, matching the chart above it"
+      }
     ]
   },
   {
     "date": "2026-08-02",
     "entries": [
-      { "type": "fixed", "text": "Fixed the password reset flow sometimes leaving you looking signed out right after setting a new password. The session was valid the whole time, but the page didn't know it until you refreshed manually" },
-      { "type": "fixed", "text": "Fixed signing in with Google failing without any error message. You'll now see what went wrong instead of the button just resetting with no explanation" },
-      { "type": "fixed", "text": "Fixed an empty gap that appeared partway down the dashboard homepage for most returning users" },
-      { "type": "fixed", "text": "Fixed stock pages and some dashboard sections not loading properly when browsing without signing in" }
+      {
+        "type": "fixed",
+        "text": "Fixed the password reset flow sometimes leaving you looking signed out right after setting a new password. The session was valid the whole time, but the page didn't know it until you refreshed manually"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed signing in with Google failing without any error message. You'll now see what went wrong instead of the button just resetting with no explanation"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed an empty gap that appeared partway down the dashboard homepage for most returning users"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed stock pages and some dashboard sections not loading properly when browsing without signing in"
+      }
     ]
   },
   {
     "date": "2026-08-01",
     "entries": [
-      { "type": "new", "text": "Added a self-service \"Forgot password?\" flow to the sign-in screen. Enter your email, get a reset link, and set a new password without needing to contact support" }
+      {
+        "type": "new",
+        "text": "Added a self-service \"Forgot password?\" flow to the sign-in screen. Enter your email, get a reset link, and set a new password without needing to contact support"
+      }
     ]
   },
   {
     "date": "2026-07-31",
     "entries": [
-      { "type": "new", "text": "You can now share your portfolio's daily gain or loss as a link, right from the Holdings page. It shows a preview card with your return and a mini chart, and you choose whether to include the dollar amount or post anonymously" },
-      { "type": "new", "text": "Added a Daily Performance calendar to the Holdings page (and as an optional homepage widget). See your portfolio's gain or loss for every day of the month at a glance, with the top contributing stocks shown when you click into a day" }
+      {
+        "type": "new",
+        "text": "You can now share your portfolio's daily gain or loss as a link, right from the Holdings page. It shows a preview card with your return and a mini chart, and you choose whether to include the dollar amount or post anonymously"
+      },
+      {
+        "type": "new",
+        "text": "Added a Daily Performance calendar to the Holdings page (and as an optional homepage widget). See your portfolio's gain or loss for every day of the month at a glance, with the top contributing stocks shown when you click into a day"
+      }
     ]
   },
   {
     "date": "2026-07-30",
     "entries": [
-      { "type": "new", "text": "Completely redesigned the Market Calendar into a personalized weekly grid. See your own holdings and watchlist highlighted on each day, click into any day for full earnings, dividends, splits, and IPO details, and filter by event type" },
-      { "type": "improved", "text": "The Market Calendar now shows a company's actual reported earnings, with a beat/miss indicator, once they're out, instead of just the pre-earnings estimate" },
-      { "type": "improved", "text": "Sold Positions has moved from a card on the Holdings page into a compact \"History\" button, and you can now edit a recorded sale's quantity, price, or date directly instead of undoing it and re-entering it from scratch" },
-      { "type": "improved", "text": "Stock and portfolio charts now show the year in the hover tooltip when viewing a year or more of history, and the YTD tab now comes before 1Y in the range picker" },
-      { "type": "improved", "text": "Made the benchmark bars on stock pages (Profit Margin, Revenue Growth, P/E, and more) easier to read, with clear scale labels and a visible zero line" },
-      { "type": "fixed", "text": "Fixed stock and portfolio performance charts showing an oversized blank gap over weekends and holidays, which made trading days look squeezed together" },
-      { "type": "fixed", "text": "Fixed Google (GOOG/GOOGL) showing up as two separate entries in Market Movers and the Screener. Now shown as one" },
-      { "type": "fixed", "text": "Fixed the Sell modal sometimes asking for a sale price in the wrong currency. It now always asks in USD, matching how your cost basis is stored" },
-      { "type": "fixed", "text": "Fixed a fully-sold holding still showing up as a row in your Holdings table" },
-      { "type": "fixed", "text": "Fixed Financial Health score history occasionally showing the wrong quarter's date" },
-      { "type": "fixed", "text": "Fixed the stock pages for CTRA and K sometimes showing data for the wrong company" },
-      { "type": "fixed", "text": "Fixed a stock's after-hours price briefly disappearing overnight before the next trading session started" }
+      {
+        "type": "new",
+        "text": "Completely redesigned the Market Calendar into a personalized weekly grid. See your own holdings and watchlist highlighted on each day, click into any day for full earnings, dividends, splits, and IPO details, and filter by event type"
+      },
+      {
+        "type": "improved",
+        "text": "The Market Calendar now shows a company's actual reported earnings, with a beat/miss indicator, once they're out, instead of just the pre-earnings estimate"
+      },
+      {
+        "type": "improved",
+        "text": "Sold Positions has moved from a card on the Holdings page into a compact \"History\" button, and you can now edit a recorded sale's quantity, price, or date directly instead of undoing it and re-entering it from scratch"
+      },
+      {
+        "type": "improved",
+        "text": "Stock and portfolio charts now show the year in the hover tooltip when viewing a year or more of history, and the YTD tab now comes before 1Y in the range picker"
+      },
+      {
+        "type": "improved",
+        "text": "Made the benchmark bars on stock pages (Profit Margin, Revenue Growth, P/E, and more) easier to read, with clear scale labels and a visible zero line"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed stock and portfolio performance charts showing an oversized blank gap over weekends and holidays, which made trading days look squeezed together"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed Google (GOOG/GOOGL) showing up as two separate entries in Market Movers and the Screener. Now shown as one"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed the Sell modal sometimes asking for a sale price in the wrong currency. It now always asks in USD, matching how your cost basis is stored"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed a fully-sold holding still showing up as a row in your Holdings table"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed Financial Health score history occasionally showing the wrong quarter's date"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed the stock pages for CTRA and K sometimes showing data for the wrong company"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed a stock's after-hours price briefly disappearing overnight before the next trading session started"
+      }
     ]
   },
   {
     "date": "2026-07-29",
     "entries": [
-      { "type": "new", "text": "Financial Health score history now shows exactly what changed between quarters. Expand any entry to see the score change for each of the 5 categories (Profitability, Financial Strength, Valuation, Growth, Market Risk), not just the overall total" },
-      { "type": "new", "text": "Price Alerts: you can now add more conditions to a stock you're already tracking with a \"+\" button, instead of having to delete and recreate the alert" },
-      { "type": "improved", "text": "Clarified that VAT is included in the Pro subscription price shown on the pricing page, not added on top" }
+      {
+        "type": "new",
+        "text": "Financial Health score history now shows exactly what changed between quarters. Expand any entry to see the score change for each of the 5 categories (Profitability, Financial Strength, Valuation, Growth, Market Risk), not just the overall total"
+      },
+      {
+        "type": "new",
+        "text": "Price Alerts: you can now add more conditions to a stock you're already tracking with a \"+\" button, instead of having to delete and recreate the alert"
+      },
+      {
+        "type": "improved",
+        "text": "Clarified that VAT is included in the Pro subscription price shown on the pricing page, not added on top"
+      }
     ]
   },
   {
     "date": "2026-07-28",
     "entries": [
-      { "type": "improved", "text": "Improved text contrast throughout the app for easier reading, especially dimmed labels and timestamps on dark backgrounds" },
-      { "type": "fixed", "text": "Fixed sector and industry benchmark comparisons (the \"typical for its sector\" markers next to Key Numbers) that had been silently failing to update since the feature launched" },
-      { "type": "fixed", "text": "Fixed prices in Holdings and Watchlist going blank if a live quote briefly failed to load. You'll now see the last known price instead, clearly marked as not live" }
+      {
+        "type": "improved",
+        "text": "Improved text contrast throughout the app for easier reading, especially dimmed labels and timestamps on dark backgrounds"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed sector and industry benchmark comparisons (the \"typical for its sector\" markers next to Key Numbers) that had been silently failing to update since the feature launched"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed prices in Holdings and Watchlist going blank if a live quote briefly failed to load. You'll now see the last known price instead, clearly marked as not live"
+      }
     ]
   },
   {
     "date": "2026-07-27",
     "entries": [
-      { "type": "fixed", "text": "Fixed a brief flash in the Holdings table where a price could appear under the wrong currency label right after switching your display currency, before exchange rates finished loading" },
-      { "type": "fixed", "text": "Fixed \"Why Today?\" restarting from scratch every time a stock's price ticked while you had it open. It now lives inside the Ask Bull panel, where it opens once and stays put" },
-      { "type": "fixed", "text": "Fixed the Holdings performance chart showing the wrong currency and hard-to-read abbreviated numbers (like \"4.8K\"). It now matches your account's currency and shows full numbers, in line with the totals above it" },
-      { "type": "fixed", "text": "Fixed the main navigation bar and Ask Bull button showing up on top of the getting-started signup flow" },
-      { "type": "improved", "text": "Ask Bull's stock price answers now show the company logo, with a link straight through to that stock's page" }
+      {
+        "type": "fixed",
+        "text": "Fixed a brief flash in the Holdings table where a price could appear under the wrong currency label right after switching your display currency, before exchange rates finished loading"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed \"Why Today?\" restarting from scratch every time a stock's price ticked while you had it open. It now lives inside the Ask Bull panel, where it opens once and stays put"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed the Holdings performance chart showing the wrong currency and hard-to-read abbreviated numbers (like \"4.8K\"). It now matches your account's currency and shows full numbers, in line with the totals above it"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed the main navigation bar and Ask Bull button showing up on top of the getting-started signup flow"
+      },
+      {
+        "type": "improved",
+        "text": "Ask Bull's stock price answers now show the company logo, with a link straight through to that stock's page"
+      }
     ]
   },
   {
     "date": "2026-07-26",
     "entries": [
-      { "type": "new", "text": "Introducing Bull's Weekly Pick: every Monday, an AI-generated stock pick with a full, permanent public track record. Anyone can check the Track Record page to see how every past pick has done, winners and losers alike; the full reasoning behind each pick is a Pro feature" },
-      { "type": "improved", "text": "The Discover page has been redesigned around a quick market read: how the S&P 500, Nasdaq, Dow, and small caps are doing today, a market mood gauge, which sectors are leading or lagging, and a curated set of names worth a look, including stocks trading cheap for their sector and ones near their 52-week highs and lows" },
-      { "type": "improved", "text": "The stock price chart has been rebuilt for smoother rendering, with a subtle pattern now marking stretches when the market was closed and the intraday tooltip showing the time of day, not just the price. The log/linear price-scale option has been removed" },
-      { "type": "fixed", "text": "Fixed sector and industry benchmark comparisons (the \"typical for its sector\" markers next to Key Numbers) not updating for most sectors after a data refresh issue" }
+      {
+        "type": "new",
+        "text": "Introducing Bull's Weekly Pick: every Monday, an AI-generated stock pick with a full, permanent public track record. Anyone can check the Track Record page to see how every past pick has done, winners and losers alike; the full reasoning behind each pick is a Pro feature"
+      },
+      {
+        "type": "improved",
+        "text": "The Discover page has been redesigned around a quick market read: how the S&P 500, Nasdaq, Dow, and small caps are doing today, a market mood gauge, which sectors are leading or lagging, and a curated set of names worth a look, including stocks trading cheap for their sector and ones near their 52-week highs and lows"
+      },
+      {
+        "type": "improved",
+        "text": "The stock price chart has been rebuilt for smoother rendering, with a subtle pattern now marking stretches when the market was closed and the intraday tooltip showing the time of day, not just the price. The log/linear price-scale option has been removed"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed sector and industry benchmark comparisons (the \"typical for its sector\" markers next to Key Numbers) not updating for most sectors after a data refresh issue"
+      }
     ]
   },
   {
     "date": "2026-07-25",
     "entries": [
-      { "type": "new", "text": "Added an Activity tab to profile pages. See a feed of portfolio activity alongside the existing Portfolio tab" }
+      {
+        "type": "new",
+        "text": "Added an Activity tab to profile pages. See a feed of portfolio activity alongside the existing Portfolio tab"
+      }
     ]
   },
   {
     "date": "2026-07-24",
     "entries": [
-      { "type": "fixed", "text": "Fixed Financial Health Scores not picking up a company's latest quarterly report for many stocks, due to an intermittent data-fetching issue" }
+      {
+        "type": "fixed",
+        "text": "Fixed Financial Health Scores not picking up a company's latest quarterly report for many stocks, due to an intermittent data-fetching issue"
+      }
     ]
   },
   {
     "date": "2026-07-23",
     "entries": [
-      { "type": "new", "text": "You can now record selling shares of a manually-tracked holding instead of just deleting it. Sell all or part of a position, and your portfolio's performance chart keeps its full history intact instead of rewriting the past. Sold positions show up in a new \"Sold Positions\" list with your locked-in gain or loss, and you can undo a sale if you made a mistake" },
-      { "type": "new", "text": "AI Deep Dive reports and the AI Portfolio Builder now keep generating in the background even if you leave the page. You'll get a notification the moment it's ready, wherever you are in the app" },
-      { "type": "new", "text": "Added a cookie consent banner. Choose \"Necessary only\" or \"Accept all\" the first time you visit; we only use cookies to keep you logged in, no ad trackers" },
-      { "type": "improved", "text": "The Volatility (Beta) card on stock pages now shows a clearer low-to-high gauge with your stock's exact spot on it, plus a marker for its industry or sector average" },
-      { "type": "fixed", "text": "Fixed sector and industry benchmark comparisons (the \"typical for its sector\" markers next to Key Numbers) sometimes missing or showing the wrong average. Benchmarks now compare against a company's specific industry, not just its broader sector, and are sourced from more accurate company data" },
-      { "type": "fixed", "text": "Fixed the Bull mascot blending into the background when you complete an Academy lesson, making the celebration hard to see in some themes" }
+      {
+        "type": "new",
+        "text": "You can now record selling shares of a manually-tracked holding instead of just deleting it. Sell all or part of a position, and your portfolio's performance chart keeps its full history intact instead of rewriting the past. Sold positions show up in a new \"Sold Positions\" list with your locked-in gain or loss, and you can undo a sale if you made a mistake"
+      },
+      {
+        "type": "new",
+        "text": "AI Deep Dive reports and the AI Portfolio Builder now keep generating in the background even if you leave the page. You'll get a notification the moment it's ready, wherever you are in the app"
+      },
+      {
+        "type": "new",
+        "text": "Added a cookie consent banner. Choose \"Necessary only\" or \"Accept all\" the first time you visit; we only use cookies to keep you logged in, no ad trackers"
+      },
+      {
+        "type": "improved",
+        "text": "The Volatility (Beta) card on stock pages now shows a clearer low-to-high gauge with your stock's exact spot on it, plus a marker for its industry or sector average"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed sector and industry benchmark comparisons (the \"typical for its sector\" markers next to Key Numbers) sometimes missing or showing the wrong average. Benchmarks now compare against a company's specific industry, not just its broader sector, and are sourced from more accurate company data"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed the Bull mascot blending into the background when you complete an Academy lesson, making the celebration hard to see in some themes"
+      }
     ]
   },
   {
     "date": "2026-07-22",
     "entries": [
-      { "type": "fixed", "text": "Fixed earnings dates showing the wrong fiscal quarter, and a phantom \"already reported\" earnings entry appearing for some stocks that hadn't actually reported yet" },
-      { "type": "fixed", "text": "Fixed Ask Bull opening the public landing page instead of your dashboard when asked to go home or show market movers" },
-      { "type": "fixed", "text": "Fixed AI features (like Portfolio Risk Analysis) occasionally showing a raw technical error message instead of a normal \"please try again\" message" }
+      {
+        "type": "fixed",
+        "text": "Fixed earnings dates showing the wrong fiscal quarter, and a phantom \"already reported\" earnings entry appearing for some stocks that hadn't actually reported yet"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed Ask Bull opening the public landing page instead of your dashboard when asked to go home or show market movers"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed AI features (like Portfolio Risk Analysis) occasionally showing a raw technical error message instead of a normal \"please try again\" message"
+      }
     ]
   },
   {
     "date": "2026-07-21",
     "entries": [
-      { "type": "new", "text": "New Pro courses in Academy. Go beyond the basics with intermediate and advanced lessons on valuation, reading financial statements, portfolio risk, and researching with AI, each with hands-on practice inside the real app: filter the screener for cheap stocks, read a real company's numbers, stress-test a portfolio, and research why a stock moved" },
-      { "type": "new", "text": "Ask Bull to build you a dividend portfolio. Say something like \"build me a high-yield dividend portfolio\" and Bull opens the dividend calculator already filled in with picks you can edit" },
-      { "type": "improved", "text": "The price alerts page got a visual refresh. Each stock now shows its logo, and every alert has a clear icon for its type (price target, daily move, 52-week extreme, or all-time high)" },
-      { "type": "fixed", "text": "Fixed a handful of stocks showing wildly wrong figures in the screener (such as an impossible market cap) caused by a data mix-up with same-named foreign listings" }
+      {
+        "type": "new",
+        "text": "New Pro courses in Academy. Go beyond the basics with intermediate and advanced lessons on valuation, reading financial statements, portfolio risk, and researching with AI, each with hands-on practice inside the real app: filter the screener for cheap stocks, read a real company's numbers, stress-test a portfolio, and research why a stock moved"
+      },
+      {
+        "type": "new",
+        "text": "Ask Bull to build you a dividend portfolio. Say something like \"build me a high-yield dividend portfolio\" and Bull opens the dividend calculator already filled in with picks you can edit"
+      },
+      {
+        "type": "improved",
+        "text": "The price alerts page got a visual refresh. Each stock now shows its logo, and every alert has a clear icon for its type (price target, daily move, 52-week extreme, or all-time high)"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed a handful of stocks showing wildly wrong figures in the screener (such as an impossible market cap) caused by a data mix-up with same-named foreign listings"
+      }
     ]
   },
   {
     "date": "2026-07-20",
     "entries": [
-      { "type": "improved", "text": "Key Numbers on stock pages now tell you whether a stock's P/E, profit margin, dividend, and volatility are high or low for its sector, with a \"typical\" marker on each meter and a plain-language note like \"Cheaper than most Technology companies\"" },
-      { "type": "improved", "text": "Added plain-language explanations across your portfolio and watchlist. Hover a metric label like Unrealized P/L, Cost Basis, P/E, or a Financial Health category to see what it means" },
-      { "type": "improved", "text": "The Financial Health gauge is now easier to read. Each category is colour-keyed to its slice of the ring and you can hover any category name for a plain explanation" },
-      { "type": "improved", "text": "Crypto and commodity pages now show the same visual stats as stocks, including a 24-hour range bar and plain-language takeaways" },
-      { "type": "new", "text": "New to BullPen? A getting-started card now greets brand-new accounts with a few first steps, and disappears on its own once you get going" },
-      { "type": "improved", "text": "The Daily Brief now shows a mini price trend next to each featured stock" },
-      { "type": "improved", "text": "Financials charts (Income Statement, Balance Sheet, and Cash Flow) are now colour-coded and animate in. The Balance Sheet shows what a company owns versus what it owes at a glance" },
-      { "type": "improved", "text": "The stock price chart is clearer and more accurate, and its indicator legend now shows a live value for each line as you move across the chart" },
-      { "type": "improved", "text": "The screener now falls back to the last known price when the market is closed, instead of showing blanks" },
-      { "type": "improved", "text": "The Community page now features an Academy XP leaderboard" },
-      { "type": "fixed", "text": "Fixed the Compare tool, and Ask Bull's company-metrics and company-comparison answers, which had stopped working after an underlying data source was retired" },
-      { "type": "fixed", "text": "Fixed the activity heatmap's month labels drifting out of line with their columns, which could make a month look empty" },
-      { "type": "fixed", "text": "Fixed the stock chart briefly looking empty at the very start of the trading day, before the first prices of the day come in" }
+      {
+        "type": "improved",
+        "text": "Key Numbers on stock pages now tell you whether a stock's P/E, profit margin, dividend, and volatility are high or low for its sector, with a \"typical\" marker on each meter and a plain-language note like \"Cheaper than most Technology companies\""
+      },
+      {
+        "type": "improved",
+        "text": "Added plain-language explanations across your portfolio and watchlist. Hover a metric label like Unrealized P/L, Cost Basis, P/E, or a Financial Health category to see what it means"
+      },
+      {
+        "type": "improved",
+        "text": "The Financial Health gauge is now easier to read. Each category is colour-keyed to its slice of the ring and you can hover any category name for a plain explanation"
+      },
+      {
+        "type": "improved",
+        "text": "Crypto and commodity pages now show the same visual stats as stocks, including a 24-hour range bar and plain-language takeaways"
+      },
+      {
+        "type": "new",
+        "text": "New to BullPen? A getting-started card now greets brand-new accounts with a few first steps, and disappears on its own once you get going"
+      },
+      {
+        "type": "improved",
+        "text": "The Daily Brief now shows a mini price trend next to each featured stock"
+      },
+      {
+        "type": "improved",
+        "text": "Financials charts (Income Statement, Balance Sheet, and Cash Flow) are now colour-coded and animate in. The Balance Sheet shows what a company owns versus what it owes at a glance"
+      },
+      {
+        "type": "improved",
+        "text": "The stock price chart is clearer and more accurate, and its indicator legend now shows a live value for each line as you move across the chart"
+      },
+      {
+        "type": "improved",
+        "text": "The screener now falls back to the last known price when the market is closed, instead of showing blanks"
+      },
+      {
+        "type": "improved",
+        "text": "The Community page now features an Academy XP leaderboard"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed the Compare tool, and Ask Bull's company-metrics and company-comparison answers, which had stopped working after an underlying data source was retired"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed the activity heatmap's month labels drifting out of line with their columns, which could make a month look empty"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed the stock chart briefly looking empty at the very start of the trading day, before the first prices of the day come in"
+      }
     ]
   },
   {
     "date": "2026-07-19",
     "entries": [
-      { "type": "improved", "text": "Ask Bull's answers are now much more visual. Health scores, prices, key stats, financials, earnings, screener results, and more now show as charts and cards instead of plain text" },
-      { "type": "new", "text": "Ask Bull can now check a stock's recent insider buying and selling activity" },
-      { "type": "improved", "text": "When you ask Bull to add, update, or remove a holding, or create a price alert, you'll now see a clear confirmation it worked, or a clear error with a retry button if it didn't" },
-      { "type": "improved", "text": "Refreshed Ask Bull's starter prompts to show what it can really do: add a holding, set an alert, check insider activity, and removed ones that led to a broken tool" },
-      { "type": "fixed", "text": "Fixed profile picture uploads failing to save" }
+      {
+        "type": "improved",
+        "text": "Ask Bull's answers are now much more visual. Health scores, prices, key stats, financials, earnings, screener results, and more now show as charts and cards instead of plain text"
+      },
+      {
+        "type": "new",
+        "text": "Ask Bull can now check a stock's recent insider buying and selling activity"
+      },
+      {
+        "type": "improved",
+        "text": "When you ask Bull to add, update, or remove a holding, or create a price alert, you'll now see a clear confirmation it worked, or a clear error with a retry button if it didn't"
+      },
+      {
+        "type": "improved",
+        "text": "Refreshed Ask Bull's starter prompts to show what it can really do: add a holding, set an alert, check insider activity, and removed ones that led to a broken tool"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed profile picture uploads failing to save"
+      }
     ]
   },
   {
     "date": "2026-07-18",
     "entries": [
-      { "type": "improved", "text": "Stock pages got a big visual upgrade. Key Numbers, Earnings, Financials, and Insider Transactions now show as charts, meters, and range bars instead of plain tables, each with a plain-language takeaway" },
-      { "type": "fixed", "text": "Fixed the Earnings section's \"Recent Reports\" almost always showing empty. Past earnings now actually appear" }
+      {
+        "type": "improved",
+        "text": "Stock pages got a big visual upgrade. Key Numbers, Earnings, Financials, and Insider Transactions now show as charts, meters, and range bars instead of plain tables, each with a plain-language takeaway"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed the Earnings section's \"Recent Reports\" almost always showing empty. Past earnings now actually appear"
+      }
     ]
   },
   {
     "date": "2026-07-16",
     "entries": [
-      { "type": "new", "text": "You can now pin your favorite stocks and assets for quick access. Pin from any stock page, then see their live prices anytime from a new button in the top navigation" },
-      { "type": "improved", "text": "The AI assistant got a friendlier new look and is now called Ask Bull, with a waving bull mascot welcoming you in" },
-      { "type": "improved", "text": "You can now hide individual cards inside Market Context on your dashboard, instead of having to remove the whole section" },
-      { "type": "improved", "text": "Highlighted terms in Academy lessons now open the full AI assistant when you ask for more, so you can keep asking follow-up questions" },
-      { "type": "improved", "text": "The 5-day stock chart now includes pre-market and after-hours price moves, so you always see the latest action" },
-      { "type": "fixed", "text": "Fixed live prices sometimes failing to load on the screener, watchlist, heatmap, and stock pages" },
-      { "type": "fixed", "text": "Fixed some valid stocks, like ExxonMobil, occasionally showing a \"not found\" page by mistake" },
-      { "type": "fixed", "text": "Fixed the \"Build your portfolio\" prompt appearing on the wrong pages and for people who already have holdings" },
-      { "type": "new", "text": "Ask Bull now remembers your past conversations. Open the history icon in the chat panel to pick up where you left off" },
-      { "type": "new", "text": "The Beyond Stocks: ETFs & Crypto Academy course can now be skipped if you're not interested, without blocking later courses" },
-      { "type": "improved", "text": "More Ask Bull polish: a bigger, easier-to-read chat icon, clearer status messages while it's working, and smoother text as answers come in" },
-      { "type": "new", "text": "Ask Bull now shows a quick one-time screen the first time you chat, explaining how your messages are used" }
+      {
+        "type": "new",
+        "text": "You can now pin your favorite stocks and assets for quick access. Pin from any stock page, then see their live prices anytime from a new button in the top navigation"
+      },
+      {
+        "type": "improved",
+        "text": "The AI assistant got a friendlier new look and is now called Ask Bull, with a waving bull mascot welcoming you in"
+      },
+      {
+        "type": "improved",
+        "text": "You can now hide individual cards inside Market Context on your dashboard, instead of having to remove the whole section"
+      },
+      {
+        "type": "improved",
+        "text": "Highlighted terms in Academy lessons now open the full AI assistant when you ask for more, so you can keep asking follow-up questions"
+      },
+      {
+        "type": "improved",
+        "text": "The 5-day stock chart now includes pre-market and after-hours price moves, so you always see the latest action"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed live prices sometimes failing to load on the screener, watchlist, heatmap, and stock pages"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed some valid stocks, like ExxonMobil, occasionally showing a \"not found\" page by mistake"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed the \"Build your portfolio\" prompt appearing on the wrong pages and for people who already have holdings"
+      },
+      {
+        "type": "new",
+        "text": "Ask Bull now remembers your past conversations. Open the history icon in the chat panel to pick up where you left off"
+      },
+      {
+        "type": "new",
+        "text": "The Beyond Stocks: ETFs & Crypto Academy course can now be skipped if you're not interested, without blocking later courses"
+      },
+      {
+        "type": "improved",
+        "text": "More Ask Bull polish: a bigger, easier-to-read chat icon, clearer status messages while it's working, and smoother text as answers come in"
+      },
+      {
+        "type": "new",
+        "text": "Ask Bull now shows a quick one-time screen the first time you chat, explaining how your messages are used"
+      }
     ]
   },
   {
     "date": "2026-07-14",
     "entries": [
-      { "type": "new", "text": "Sign-up now starts with a few quick questions about your investing experience, risk tolerance, timeframe, and goals, so the app and AI assistant feel tailored to you right away" },
-      { "type": "new", "text": "You can now browse past Daily Briefs and step back and forth through them, so missing a morning doesn't mean missing the brief" },
-      { "type": "new", "text": "Added four new Academy courses: Company Fundamentals, Building a Portfolio, Dividends & Passive Income, and Beyond Stocks: ETFs & Crypto" },
-      { "type": "improved", "text": "Renamed the Reading a Stock Price course to Why Stocks Move and refreshed its content so it no longer overlaps with Reading a Stock Quote" },
-      { "type": "improved", "text": "Simplified the holdings performance chart by removing the confusing \"Since Purchase\" timeframe, since MAX already showed the same numbers" },
-      { "type": "improved", "text": "Sped up the stock screener's live price updates" },
-      { "type": "fixed", "text": "Fixed new dashboard widgets getting buried at the bottom if you'd already customized your homepage layout" },
-      { "type": "fixed", "text": "Fixed the Academy lesson-complete celebration taking several seconds to appear, and made the bull mascot easier to see" },
-      { "type": "fixed", "text": "Fixed the AI assistant occasionally showing a raw technical error message instead of a plain one when it hit a rate limit" },
-      { "type": "fixed", "text": "Fixed recently-viewed stocks not updating for tickers not yet in our database" },
-      { "type": "fixed", "text": "Fixed the Academy welcome banner popping up at the wrong time, and added a loading placeholder for the daily challenge" },
-      { "type": "fixed", "text": "Fixed Financial Health scores occasionally showing different values on different pages for the same stock" }
+      {
+        "type": "new",
+        "text": "Sign-up now starts with a few quick questions about your investing experience, risk tolerance, timeframe, and goals, so the app and AI assistant feel tailored to you right away"
+      },
+      {
+        "type": "new",
+        "text": "You can now browse past Daily Briefs and step back and forth through them, so missing a morning doesn't mean missing the brief"
+      },
+      {
+        "type": "new",
+        "text": "Added four new Academy courses: Company Fundamentals, Building a Portfolio, Dividends & Passive Income, and Beyond Stocks: ETFs & Crypto"
+      },
+      {
+        "type": "improved",
+        "text": "Renamed the Reading a Stock Price course to Why Stocks Move and refreshed its content so it no longer overlaps with Reading a Stock Quote"
+      },
+      {
+        "type": "improved",
+        "text": "Simplified the holdings performance chart by removing the confusing \"Since Purchase\" timeframe, since MAX already showed the same numbers"
+      },
+      {
+        "type": "improved",
+        "text": "Sped up the stock screener's live price updates"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed new dashboard widgets getting buried at the bottom if you'd already customized your homepage layout"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed the Academy lesson-complete celebration taking several seconds to appear, and made the bull mascot easier to see"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed the AI assistant occasionally showing a raw technical error message instead of a plain one when it hit a rate limit"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed recently-viewed stocks not updating for tickers not yet in our database"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed the Academy welcome banner popping up at the wrong time, and added a loading placeholder for the daily challenge"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed Financial Health scores occasionally showing different values on different pages for the same stock"
+      }
     ]
   },
   {
     "date": "2026-07-13",
     "entries": [
-      { "type": "new", "text": "Added a new Academy course, Reading a Stock Quote, covering price, bid/ask spreads, and trading volume" },
-      { "type": "new", "text": "The Academy daily challenge is live again with a fresh question every day" },
-      { "type": "fixed", "text": "Fixed Academy sending signed-out visitors straight to the sign-in page instead of showing what they'd be learning first" },
-      { "type": "fixed", "text": "Fixed the Community \"Browse Members\" page showing no one when you weren't signed in" },
-      { "type": "fixed", "text": "Fixed the \"Why Today?\" explanation showing a technical error message instead of a plain one when something went wrong" }
+      {
+        "type": "new",
+        "text": "Added a new Academy course, Reading a Stock Quote, covering price, bid/ask spreads, and trading volume"
+      },
+      {
+        "type": "new",
+        "text": "The Academy daily challenge is live again with a fresh question every day"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed Academy sending signed-out visitors straight to the sign-in page instead of showing what they'd be learning first"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed the Community \"Browse Members\" page showing no one when you weren't signed in"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed the \"Why Today?\" explanation showing a technical error message instead of a plain one when something went wrong"
+      }
     ]
   },
   {
     "date": "2026-07-12",
     "entries": [
-      { "type": "new", "text": "Added a Why Today widget to your dashboard. See the biggest mover in your holdings and watchlist at a glance, and ask why with one click" }
+      {
+        "type": "new",
+        "text": "Added a Why Today widget to your dashboard. See the biggest mover in your holdings and watchlist at a glance, and ask why with one click"
+      }
     ]
   },
   {
     "date": "2026-07-10",
     "entries": [
-      { "type": "fixed", "text": "Fixed stock pages occasionally failing to load Financials or the Revenue Flow chart on first visit, and the Financial Health score not updating after a temporary data hiccup" }
+      {
+        "type": "fixed",
+        "text": "Fixed stock pages occasionally failing to load Financials or the Revenue Flow chart on first visit, and the Financial Health score not updating after a temporary data hiccup"
+      }
     ]
   },
   {
     "date": "2026-07-09",
     "entries": [
-      { "type": "new", "text": "Added a new interactive Academy course, Reading Charts, that walks you through reading a price chart step by step" },
-      { "type": "new", "text": "The Financial Health score now tracks history over time, with a trend indicator and a chart showing how it's changed since the last earnings report" },
-      { "type": "new", "text": "Added Norwegian as a supported language" },
-      { "type": "new", "text": "Added a quick \"Why?\" button next to a stock's price that explains what's driving today's move, powered by AI with live web search" },
-      { "type": "improved", "text": "AI features across the app, including the AI assistant, now reply in your chosen language instead of always English" },
-      { "type": "fixed", "text": "Fixed notifications occasionally showing implausible price swings, and made the wording clearer" },
-      { "type": "improved", "text": "Sped up API responses across the app by skipping an unnecessary network check on requests that didn't need it" }
+      {
+        "type": "new",
+        "text": "Added a new interactive Academy course, Reading Charts, that walks you through reading a price chart step by step"
+      },
+      {
+        "type": "new",
+        "text": "The Financial Health score now tracks history over time, with a trend indicator and a chart showing how it's changed since the last earnings report"
+      },
+      {
+        "type": "new",
+        "text": "Added Norwegian as a supported language"
+      },
+      {
+        "type": "new",
+        "text": "Added a quick \"Why?\" button next to a stock's price that explains what's driving today's move, powered by AI with live web search"
+      },
+      {
+        "type": "improved",
+        "text": "AI features across the app, including the AI assistant, now reply in your chosen language instead of always English"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed notifications occasionally showing implausible price swings, and made the wording clearer"
+      },
+      {
+        "type": "improved",
+        "text": "Sped up API responses across the app by skipping an unnecessary network check on requests that didn't need it"
+      }
     ]
   },
   {
     "date": "2026-07-08",
     "entries": [
-      { "type": "new", "text": "Save and reuse your favorite dividend calculator setups, with a one-click option to fill it in from your holdings" },
-      { "type": "improved", "text": "Automatic brokerage account syncing is now a Pro feature; manually adding holdings or importing from CSV stays free for everyone" },
-      { "type": "fixed", "text": "Fixed pre-market price changes sometimes showing as stuck at 0%" }
+      {
+        "type": "new",
+        "text": "Save and reuse your favorite dividend calculator setups, with a one-click option to fill it in from your holdings"
+      },
+      {
+        "type": "improved",
+        "text": "Automatic brokerage account syncing is now a Pro feature; manually adding holdings or importing from CSV stays free for everyone"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed pre-market price changes sometimes showing as stuck at 0%"
+      }
     ]
   },
   {
     "date": "2026-07-07",
     "entries": [
-      { "type": "new", "text": "Added the BullPen logo throughout the app and as your browser tab icon" },
-      { "type": "new", "text": "The AI assistant can now look up any company's Financial Health score and profile, even ones not yet in our database" },
-      { "type": "fixed", "text": "Fixed financial health scores occasionally showing incorrect or missing data during high-traffic periods" }
+      {
+        "type": "new",
+        "text": "Added the BullPen logo throughout the app and as your browser tab icon"
+      },
+      {
+        "type": "new",
+        "text": "The AI assistant can now look up any company's Financial Health score and profile, even ones not yet in our database"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed financial health scores occasionally showing incorrect or missing data during high-traffic periods"
+      }
     ]
   }
 ]
