@@ -145,20 +145,6 @@ function mapNasdaqRowToEarningsItem(row: NasdaqEarningsRow, date: string): Earni
   };
 }
 
-/**
- * Merges TD's /earnings_calendar rows with Nasdaq's free calendar for one
- * day, near-term future or recent past. TD stays the base row for any symbol
- * it has (so its other fields — notably revenue_estimate/revenue_actual,
- * which Nasdaq's feed doesn't carry — are kept when present); Nasdaq fills
- * in any symbol TD is missing entirely, and backfills whatever TD came back
- * empty for: `time`/`eps_estimate` always (TD's /earnings_calendar returns
- * `time: ""` on effectively every row — see components/tools/calendar/
- * EventRows.tsx's dead-code-removal comment), plus `eps_actual`/`surprise`
- * for a past date via Nasdaq's "PAST-DATE BONUS" (see nasdaq-earnings-
- * calendar.ts's file header). Nasdaq's own fetch fails soft (see its file
- * header), so a scrape breakage degrades this to "TD-only for that day,"
- * never a thrown error.
- */
 /** Below this many rows sharing the exact same (estimate, actual) pair we
  *  don't treat it as the fabricated-stub fingerprint — see stripFabricatedEpsStubs. */
 const MIN_STUB_GROUP_SIZE = 2;
@@ -178,6 +164,12 @@ const MIN_STUB_GROUP_SIZE = 2;
  * the fingerprint this strips. Blanks the eps fields rather than dropping
  * the row: we're confident the numbers are fake, not that the date itself
  * is (Nasdaq's absence is suggestive, not proof).
+ *
+ * Applied to TD's rows BEFORE merging with Nasdaq in
+ * fetchEarningsDayWithNasdaqFill (not after) — nulling the fabricated field
+ * first lets that merge's existing `existing.field ?? nRow.field` fallback
+ * pull Nasdaq's real number in automatically, same as it already does for
+ * any field TD came back empty for.
  */
 export function stripFabricatedEpsStubs(rows: EarningsCalendarItem[]): EarningsCalendarItem[] {
   const groups = new Map<string, EarningsCalendarItem[]>();
@@ -202,11 +194,30 @@ export function stripFabricatedEpsStubs(rows: EarningsCalendarItem[]): EarningsC
   );
 }
 
+/**
+ * Merges TD's /earnings_calendar rows with Nasdaq's free calendar for one
+ * day, near-term future or recent past. TD's rows are sanitized against the
+ * fabricated-stub fingerprint (stripFabricatedEpsStubs) before anything else
+ * happens, so a stubbed TD row is treated exactly like a genuinely empty one
+ * for the merge below. TD stays the base row for any symbol it has (so its
+ * other fields — notably revenue_estimate/revenue_actual, which Nasdaq's
+ * feed doesn't carry — are kept when present); Nasdaq fills in any symbol TD
+ * is missing entirely, and backfills whatever TD came back empty for (fake
+ * or otherwise): `time`/`eps_estimate` always (TD's /earnings_calendar
+ * returns `time: ""` on effectively every row — see components/tools/
+ * calendar/EventRows.tsx's dead-code-removal comment), plus `eps_actual`/
+ * `surprise` for a past date via Nasdaq's "PAST-DATE BONUS" (see nasdaq-
+ * earnings-calendar.ts's file header). Nasdaq's own fetch fails soft (see
+ * its file header), so a scrape breakage degrades this to "TD-only for that
+ * day" (fabricated fields still stripped, just left blank instead of
+ * backfilled), never a thrown error.
+ */
 async function fetchEarningsDayWithNasdaqFill(date: string): Promise<EarningsCalendarItem[]> {
-  const [tdRows, nasdaqRows] = await Promise.all([
+  const [tdRowsRaw, nasdaqRows] = await Promise.all([
     getEarningsCalendarRange(date, date, COUNTRY),
     fetchNasdaqEarningsDay(date),
   ]);
+  const tdRows = stripFabricatedEpsStubs(tdRowsRaw);
 
   const bySymbol = new Map<string, EarningsCalendarItem>();
   for (const row of tdRows) {
@@ -345,7 +356,9 @@ async function fetchFromProvider(
       if (from === to && isWithinNasdaqMergeWindow(from, today)) {
         return fetchEarningsDayWithNasdaqFill(from);
       }
-      return getEarningsCalendarRange(from, to, COUNTRY);
+      // Outside the merge window there's no Nasdaq row to fall back to, so a
+      // fabricated field just ends up blank rather than backfilled.
+      return stripFabricatedEpsStubs(await getEarningsCalendarRange(from, to, COUNTRY));
     case 'dividends':
       return getDividendsCalendar(from, to, DIVIDENDS_OUTPUTSIZE);
     case 'splits':
@@ -371,8 +384,7 @@ async function fetchAndCacheUnit(
   to: string,
   today: string
 ): Promise<Map<string, CalendarRow[]>> {
-  const rawRows = await fetchFromProvider(kind, from, to, today);
-  const rows = kind === 'earnings' ? stripFabricatedEpsStubs(rawRows as EarningsCalendarItem[]) : rawRows;
+  const rows = await fetchFromProvider(kind, from, to, today);
   const dates = datesBetween(from, to);
 
   const byDate = new Map<string, CalendarRow[]>();
