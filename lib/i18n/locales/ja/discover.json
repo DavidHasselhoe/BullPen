@@ -84,6 +84,7 @@
   "ideasThemeAvgPe": "平均 P/E {{pe}}x",
   "ideasThemeAvgYield": "平均利回り {{pct}}%",
   "ideasThemeBackToDiscover": "ディスカバーに戻る",
+  "ideasThemeBecauseYouOwn": "{{ticker}} を保有しているため",
   "ideasThemeChipGrowth": "成長性が高い",
   "ideasThemeChipStable": "最も安定",
   "ideasThemeChipValue": "割安",

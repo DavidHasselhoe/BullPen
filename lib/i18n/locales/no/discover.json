@@ -83,6 +83,7 @@
   "ideasThemeAvgPe": "Gjennomsnittlig P/E {{pe}}x",
   "ideasThemeAvgYield": "Gjennomsnittlig avkastning {{pct}}%",
   "ideasThemeBackToDiscover": "Tilbake til Oppdag",
+  "ideasThemeBecauseYouOwn": "Fordi du eier {{ticker}}",
   "ideasThemeChipGrowth": "Høyest vekst",
   "ideasThemeChipStable": "Mest stabil",
   "ideasThemeChipValue": "Best verdi",

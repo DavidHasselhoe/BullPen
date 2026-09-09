@@ -84,6 +84,7 @@
   "ideasThemeAvgPe": "P/E promedio {{pe}}x",
   "ideasThemeAvgYield": "Rendimiento promedio {{pct}}%",
   "ideasThemeBackToDiscover": "Volver a Descubrir",
+  "ideasThemeBecauseYouOwn": "Porque tienes {{ticker}}",
   "ideasThemeChipGrowth": "Mayor crecimiento",
   "ideasThemeChipStable": "Más estable",
   "ideasThemeChipValue": "Mejor valor",

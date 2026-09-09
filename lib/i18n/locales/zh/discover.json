@@ -84,6 +84,7 @@
   "ideasThemeAvgPe": "平均 P/E {{pe}}x",
   "ideasThemeAvgYield": "平均收益率 {{pct}}%",
   "ideasThemeBackToDiscover": "返回发现",
+  "ideasThemeBecauseYouOwn": "因为你持有 {{ticker}}",
   "ideasThemeChipGrowth": "增长最高",
   "ideasThemeChipStable": "最稳定",
   "ideasThemeChipValue": "估值最佳",
