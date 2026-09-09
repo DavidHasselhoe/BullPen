@@ -1,5 +1,34 @@
 [
   {
+    "date": "2026-09-09",
+    "entries": [
+      {
+        "type": "new",
+        "text": "Investing Ideas pages now have quick filters to sort by highest growth, best value, or most stable, on top of the existing column sorting"
+      },
+      {
+        "type": "new",
+        "text": "Investing Ideas now shows a personalized card when you own a stock that appears in more than one of our lists, making it easy to find related ideas"
+      },
+      {
+        "type": "improved",
+        "text": "Investing Ideas cards now show an average health score for each list, plus a cleaner company preview instead of a cluster of overlapping logos"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed a bug in the Market Calendar where several unrelated stocks showed the exact same, made up earnings estimate. Real estimates now show up in their place"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed missing logos and stock links on institutional holdings pages for companies we already had data for, including well known names like Micron"
+      },
+      {
+        "type": "fixed",
+        "text": "Fixed a slowdown on institutional holdings pages for large funds when opening the list of positions a fund exited during the quarter"
+      }
+    ]
+  },
+  {
     "date": "2026-09-08",
     "entries": [
       {
