@@ -159,6 +159,49 @@ function mapNasdaqRowToEarningsItem(row: NasdaqEarningsRow, date: string): Earni
  * header), so a scrape breakage degrades this to "TD-only for that day,"
  * never a thrown error.
  */
+/** Below this many rows sharing the exact same (estimate, actual) pair we
+ *  don't treat it as the fabricated-stub fingerprint — see stripFabricatedEpsStubs. */
+const MIN_STUB_GROUP_SIZE = 2;
+
+/**
+ * TwelveData's earnings feed occasionally attaches a fabricated near-term
+ * date to a company with a stub consensus figure instead of a real one, for
+ * both /earnings_calendar and the per-symbol /earnings endpoint — verified
+ * live 2026-09-09: PEP, AME, VRSN, KMX and GME all carried an identical
+ * eps_estimate = eps_actual = 0.27 (surprise 0) for 2026-09-08, a date none
+ * of them report on by their real historical cadence (confirmed against
+ * each symbol's own earnings history), and Nasdaq's calendar — the near-
+ * term source of truth this module merges in — has no entry for any of
+ * them that day either. A single company landing exactly on estimate is
+ * possible; several unrelated companies sharing the exact same estimate AND
+ * actual, to the penny, with zero surprise, on the same day is not — that's
+ * the fingerprint this strips. Blanks the eps fields rather than dropping
+ * the row: we're confident the numbers are fake, not that the date itself
+ * is (Nasdaq's absence is suggestive, not proof).
+ */
+export function stripFabricatedEpsStubs(rows: EarningsCalendarItem[]): EarningsCalendarItem[] {
+  const groups = new Map<string, EarningsCalendarItem[]>();
+  for (const row of rows) {
+    if (row.eps_estimate == null || row.eps_actual == null) continue;
+    if (row.eps_estimate !== row.eps_actual) continue;
+    if ((row.surprise ?? 0) !== 0) continue;
+    const key = String(row.eps_estimate);
+    const group = groups.get(key);
+    if (group) group.push(row);
+    else groups.set(key, [row]);
+  }
+
+  const fabricated = new Set<EarningsCalendarItem>();
+  for (const group of groups.values()) {
+    if (group.length >= MIN_STUB_GROUP_SIZE) for (const row of group) fabricated.add(row);
+  }
+  if (fabricated.size === 0) return rows;
+
+  return rows.map((row) =>
+    fabricated.has(row) ? { ...row, eps_estimate: null, eps_actual: null, surprise: null } : row
+  );
+}
+
 async function fetchEarningsDayWithNasdaqFill(date: string): Promise<EarningsCalendarItem[]> {
   const [tdRows, nasdaqRows] = await Promise.all([
     getEarningsCalendarRange(date, date, COUNTRY),
@@ -328,7 +371,8 @@ async function fetchAndCacheUnit(
   to: string,
   today: string
 ): Promise<Map<string, CalendarRow[]>> {
-  const rows = await fetchFromProvider(kind, from, to, today);
+  const rawRows = await fetchFromProvider(kind, from, to, today);
+  const rows = kind === 'earnings' ? stripFabricatedEpsStubs(rawRows as EarningsCalendarItem[]) : rawRows;
   const dates = datesBetween(from, to);
 
   const byDate = new Map<string, CalendarRow[]>();
