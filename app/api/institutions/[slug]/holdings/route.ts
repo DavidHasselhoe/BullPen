@@ -49,6 +49,7 @@ interface HoldingsResponse {
 }
 
 const PAGE_SIZE = 1000; // PostgREST's default max-rows cap — must page past it explicitly or a >1000-position fund (Citadel, Renaissance Tech) silently loses everything past row 1000
+const CUSIP_LOOKUP_CHUNK = 500; // keep the reconciliation .in() query well under PostgREST's URL length limits
 
 /**
  * Fetches every holdings row for a filing, paging past PostgREST's default
@@ -59,6 +60,17 @@ const PAGE_SIZE = 1000; // PostgREST's default max-rows cap — must page past i
  * pagination itself deterministic (`.range()` without a stable order can
  * skip or repeat rows across pages) — cusip is unique per filing since
  * migration 129's constraint, so this can't drop or duplicate a row.
+ *
+ * `symbol` on a row is a snapshot taken at ingestion time (see
+ * resolveHoldingsForFiling), but `cusip_ticker_map` keeps resolving CUSIPs
+ * afterward — from other funds' ingestions, later credit budget, or a
+ * historical backfill deliberately run with symbol resolution off entirely.
+ * Nothing writes newly-resolved cache entries back into old holdings rows,
+ * so a name like Citadel's Micron position can sit at symbol=NULL forever
+ * even after the cache learns MU — verified live, 0/6500+ resolved across
+ * every backfilled quarter. Reconcile the gap here, the one place every
+ * consumer (top holdings, rest, exited list, diff) reads through, so it
+ * self-heals as the cache grows instead of needing a re-ingest.
  */
 async function fetchAllHoldings(
   supabase: ReturnType<typeof createServerClient>,
@@ -78,6 +90,27 @@ async function fetchAllHoldings(
     if (batch.length < PAGE_SIZE) break;
     offset += PAGE_SIZE;
   }
+
+  const missing = rows.filter((r) => r.symbol == null);
+  if (missing.length > 0) {
+    const resolvedByCusip = new Map<string, string>();
+    for (let i = 0; i < missing.length; i += CUSIP_LOOKUP_CHUNK) {
+      const cusips = missing.slice(i, i + CUSIP_LOOKUP_CHUNK).map((r) => r.cusip);
+      const { data } = await supabase
+        .from('cusip_ticker_map')
+        .select('cusip, symbol')
+        .in('cusip', cusips)
+        .not('symbol', 'is', null);
+      for (const r of (data as { cusip: string; symbol: string }[] | null) ?? []) {
+        resolvedByCusip.set(r.cusip, r.symbol);
+      }
+    }
+    for (const row of missing) {
+      const symbol = resolvedByCusip.get(row.cusip);
+      if (symbol) row.symbol = symbol;
+    }
+  }
+
   return rows;
 }
 
