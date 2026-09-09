@@ -25,31 +25,49 @@ export interface ThemeCardData {
   tagline: string;
   count: number;
   logos: Array<{ ticker: string; name: string; logoUrl: string | null }>;
+  /** Average of screener_stats.health_score across the theme's tickers that
+   *  have one computed. Null if none do yet. */
+  avgHealth: number | null;
 }
 
 export async function GET(): Promise<NextResponse> {
   const allTickers = [...new Set(THEME_DISPLAY_ORDER.flatMap((t) => t.tickers))];
 
   const supabase = createServerClient();
-  const { data } = await supabase
-    .from('companies')
-    .select('ticker, name, logo_url')
-    .in('ticker', allTickers)
-    .returns<Array<{ ticker: string; name: string; logo_url: string | null }>>();
+  const [{ data }, { data: healthRows }] = await Promise.all([
+    supabase
+      .from('companies')
+      .select('ticker, name, logo_url')
+      .in('ticker', allTickers)
+      .returns<Array<{ ticker: string; name: string; logo_url: string | null }>>(),
+    supabase
+      .from('screener_stats')
+      .select('ticker, health_score')
+      .in('ticker', allTickers)
+      .returns<Array<{ ticker: string; health_score: number | null }>>(),
+  ]);
 
   const meta = new Map<string, CompanyMeta>((data ?? []).map((c) => [c.ticker, { name: c.name, logo_url: c.logo_url }]));
+  const healthByTicker = new Map<string, number>(
+    (healthRows ?? []).filter((r): r is { ticker: string; health_score: number } => r.health_score != null)
+      .map((r) => [r.ticker, r.health_score])
+  );
 
-  const themes: ThemeCardData[] = THEME_DISPLAY_ORDER.map((theme) => ({
-    slug: theme.slug,
-    title: theme.title,
-    tagline: theme.tagline,
-    count: theme.tickers.length,
-    logos: theme.tickers.slice(0, LOGOS_PER_CARD).map((ticker) => ({
-      ticker,
-      name: meta.get(ticker)?.name ?? ticker,
-      logoUrl: meta.get(ticker)?.logo_url ?? null,
-    })),
-  }));
+  const themes: ThemeCardData[] = THEME_DISPLAY_ORDER.map((theme) => {
+    const scores = theme.tickers.map((t) => healthByTicker.get(t)).filter((v): v is number => v != null);
+    return {
+      slug: theme.slug,
+      title: theme.title,
+      tagline: theme.tagline,
+      count: theme.tickers.length,
+      logos: theme.tickers.slice(0, LOGOS_PER_CARD).map((ticker) => ({
+        ticker,
+        name: meta.get(ticker)?.name ?? ticker,
+        logoUrl: meta.get(ticker)?.logo_url ?? null,
+      })),
+      avgHealth: scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null,
+    };
+  });
 
   const response = NextResponse.json({ success: true, themes });
   response.headers.set('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400');
