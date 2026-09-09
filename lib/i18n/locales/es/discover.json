@@ -84,6 +84,9 @@
   "ideasThemeAvgPe": "P/E promedio {{pe}}x",
   "ideasThemeAvgYield": "Rendimiento promedio {{pct}}%",
   "ideasThemeBackToDiscover": "Volver a Descubrir",
+  "ideasThemeChipGrowth": "Mayor crecimiento",
+  "ideasThemeChipStable": "Más estable",
+  "ideasThemeChipValue": "Mejor valor",
   "ideasThemeCompaniesCount_one": "{{count}} empresa",
   "ideasThemeCompaniesCount_other": "{{count}} empresas",
   "ideasThemesHeading": "Ideas de inversión"

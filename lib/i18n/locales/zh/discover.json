@@ -84,6 +84,9 @@
   "ideasThemeAvgPe": "平均 P/E {{pe}}x",
   "ideasThemeAvgYield": "平均收益率 {{pct}}%",
   "ideasThemeBackToDiscover": "返回发现",
+  "ideasThemeChipGrowth": "增长最高",
+  "ideasThemeChipStable": "最稳定",
+  "ideasThemeChipValue": "估值最佳",
   "ideasThemeCompaniesCount_one": "{{count}} 家公司",
   "ideasThemeCompaniesCount_other": "{{count}} 家公司",
   "ideasThemesHeading": "投资想法"

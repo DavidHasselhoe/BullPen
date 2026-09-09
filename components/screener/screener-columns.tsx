@@ -109,6 +109,46 @@ export function getScreenerColumns(t: TFunction): ScreenerColumn[] {
     },
   },
 
+  // ── Health score subcategories ──
+  // Not shown by default (defaultVisible: false) — these exist as real,
+  // sortable SCREENER_COLUMNS entries so a caller (the Investing Ideas
+  // "Highest growth" / "Best value" / "Most stable" filter chips, initially)
+  // can set sortKey to one of these and get a real reorder rather than a
+  // silent no-op: ScreenerResults' sort comparator looks the key up in this
+  // list and treats an unknown key as "no column" (both sides null → every
+  // row compares equal). A user can still surface any of these as a visible
+  // column via the column picker like any other entry here.
+  {
+    key: 'health_growth',
+    label: t('screenerColHealthGrowthLabel'),
+    tip: t('screenerColHealthGrowthTip'),
+    group: 'health',
+    defaultVisible: false,
+    width: 72,
+    getValue: (row) => row.health_growth,
+    render: (row) => fmtNum(row.health_growth, 0),
+  },
+  {
+    key: 'health_valuation',
+    label: t('screenerColHealthValuationLabel'),
+    tip: t('screenerColHealthValuationTip'),
+    group: 'valuation',
+    defaultVisible: false,
+    width: 72,
+    getValue: (row) => row.health_valuation,
+    render: (row) => fmtNum(row.health_valuation, 0),
+  },
+  {
+    key: 'health_market_risk',
+    label: t('screenerColHealthMarketRiskLabel'),
+    tip: t('screenerColHealthMarketRiskTip'),
+    group: 'risk',
+    defaultVisible: false,
+    width: 72,
+    getValue: (row) => row.health_market_risk,
+    render: (row) => fmtNum(row.health_market_risk, 0),
+  },
+
   // ── Price ──
   // Falls back to the last quoted price/change (`row.last_price`/`last_change_pct`,
   // hydrated server-side in /api/screener) whenever the live SSE stream has no

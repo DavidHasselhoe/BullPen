@@ -58,6 +58,13 @@ interface ScreenerResultsProps {
   pageSize: number;
   onPageChange: (page: number) => void;
   onPageSizeChange: (size: number) => void;
+  /** Seeds the initial sort only — a preset starting point, not a lock. The
+   *  column headers (and the mobile sort dropdown) still control sortKey/
+   *  sortDir exactly as before once mounted. A caller that wants to change
+   *  the preset after the fact (e.g. a filter chip) should remount via a
+   *  `key` change rather than expect these to react to a later prop update. */
+  initialSortKey?: string;
+  initialSortDir?: SortDir;
 }
 
 export function ScreenerResults({
@@ -68,6 +75,8 @@ export function ScreenerResults({
   pageSize,
   onPageChange,
   onPageSizeChange,
+  initialSortKey = 'market_cap',
+  initialSortDir = 'desc',
 }: ScreenerResultsProps) {
   const { t } = useTranslation('tools');
   const router = useRouter();
@@ -76,8 +85,8 @@ export function ScreenerResults({
   const addToWatchlist = useAddToWatchlist();
   const fallbackColumns = useMemo(() => getScreenerColumns(t), [t]);
   const columns = visibleColumns ?? fallbackColumns;
-  const [sortKey, setSortKey] = useState<string>('market_cap');
-  const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [sortKey, setSortKey] = useState<string>(initialSortKey);
+  const [sortDir, setSortDir] = useState<SortDir>(initialSortDir);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [isBulkAdding, setIsBulkAdding] = useState(false);
 
