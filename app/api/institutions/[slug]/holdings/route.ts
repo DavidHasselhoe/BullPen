@@ -200,12 +200,11 @@ async function handler(
     const currentFiling = filingRows[currentIndex === -1 ? 0 : currentIndex];
     const previousFiling = filingRows[(currentIndex === -1 ? 0 : currentIndex) + 1] ?? null;
 
-    const currentHoldingsRaw = await fetchAllHoldings(supabase, currentFiling.id);
-
-    let previousHoldings: DiffableHolding[] | null = null;
-    if (previousFiling) {
-      previousHoldings = (await fetchAllHoldings(supabase, previousFiling.id)).map(toDiffable);
-    }
+    const [currentHoldingsRaw, previousHoldingsRaw] = await Promise.all([
+      fetchAllHoldings(supabase, currentFiling.id),
+      previousFiling ? fetchAllHoldings(supabase, previousFiling.id) : Promise.resolve(null),
+    ]);
+    const previousHoldings: DiffableHolding[] | null = previousHoldingsRaw?.map(toDiffable) ?? null;
 
     const holdings = currentHoldingsRaw.map(toDiffable);
     const diff = computeHoldingsDiff(holdings, previousHoldings);

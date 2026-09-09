@@ -182,6 +182,7 @@ interface HoldingsBarListProps {
 export function HoldingsBarList({ allocation, diff, highlightedKey, onHighlight }: HoldingsBarListProps) {
   const [expanded, setExpanded] = useState(false);
   const [visibleRest, setVisibleRest] = useState(REST_PAGE_SIZE);
+  const [visibleExited, setVisibleExited] = useState(REST_PAGE_SIZE);
 
   // One index over the diff's arrays instead of three hand-built maps. The
   // status never travels over the wire -- see buildStatusIndex's comment.
@@ -306,7 +307,7 @@ export function HoldingsBarList({ allocation, diff, highlightedKey, onHighlight 
               </AccordionTrigger>
               <AccordionContent className="pb-0">
                 <ul className="divide-y divide-border/20 border-t border-border/20">
-                  {exited.map((h) => (
+                  {exited.slice(0, visibleExited).map((h) => (
                     <li key={`exited-${h.cusip}`} className="flex items-center gap-3 px-4 py-2.5">
                       {h.symbol ? (
                         <CompanyLogo ticker={h.symbol} name={h.nameOfIssuer} size={22} />
@@ -337,6 +338,18 @@ export function HoldingsBarList({ allocation, diff, highlightedKey, onHighlight 
                     </li>
                   ))}
                 </ul>
+                {exited.length > visibleExited && (
+                  <button
+                    type="button"
+                    onClick={() => setVisibleExited((n) => n + REST_PAGE_SIZE)}
+                    className="w-full border-t border-border/20 px-4 py-2.5 text-left text-sm font-medium text-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+                  >
+                    Show {Math.min(REST_PAGE_SIZE, exited.length - visibleExited)} more
+                    <span className="ml-1.5 font-normal text-muted-foreground">
+                      ({(exited.length - visibleExited).toLocaleString()} left)
+                    </span>
+                  </button>
+                )}
               </AccordionContent>
             </AccordionItem>
           </Accordion>
