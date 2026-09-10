@@ -36,23 +36,29 @@ export function DeepDiveReport({ report, createdAt, onRegenerate, regenerating, 
   return (
     <Card className="overflow-hidden">
       <CardContent className="px-5 sm:px-6 py-6 space-y-7">
-        <div className="flex items-start justify-between gap-3 flex-wrap">
-          <div className="flex-1 min-w-0">
-            <DeepDiveHero report={report} when={when} />
-          </div>
-          <div className="flex items-center gap-1.5 shrink-0">
-            {onAsk && (
-              <Button variant="outline" size="sm" onClick={onAsk} className="h-8 gap-1.5 text-xs">
-                <MessageSquare className="h-3.5 w-3.5" /> Ask Bull
-              </Button>
-            )}
-            {onRegenerate && (
-              <Button size="sm" onClick={onRegenerate} disabled={regenerating} className="h-8 gap-1.5 text-xs rounded-full animate-ai-pill-shine">
-                <RefreshCw className={cn('h-3.5 w-3.5', regenerating && 'animate-spin')} /> Regenerate
-              </Button>
-            )}
-          </div>
-        </div>
+        {/* The actions belong to the hero's own top row, not to a flex sibling
+            wrapping the whole hero. As siblings they reserved their width down
+            the hero's entire height, so the verdict bar and the prose under it
+            were squeezed to about two thirds of the card with dead space
+            beside them. */}
+        <DeepDiveHero
+          report={report}
+          when={when}
+          actions={
+            <>
+              {onAsk && (
+                <Button variant="outline" size="sm" onClick={onAsk} className="h-8 gap-1.5 text-xs">
+                  <MessageSquare className="h-3.5 w-3.5" /> Ask Bull
+                </Button>
+              )}
+              {onRegenerate && (
+                <Button size="sm" onClick={onRegenerate} disabled={regenerating} className="h-8 gap-1.5 text-xs rounded-full animate-ai-pill-shine">
+                  <RefreshCw className={cn('h-3.5 w-3.5', regenerating && 'animate-spin')} /> Regenerate
+                </Button>
+              )}
+            </>
+          }
+        />
 
         <StockPricePanel ticker={report.ticker} />
 

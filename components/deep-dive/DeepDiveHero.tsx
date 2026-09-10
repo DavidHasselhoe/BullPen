@@ -52,6 +52,10 @@ interface Props {
   report: Report;
   /** ISO timestamp this report was created/restored — drives the "Generated X ago" meta line. */
   when: string;
+  /** Ask Bull / Regenerate, rendered in the top row. Passed in rather than
+   *  rendered by the parent beside the hero, so they don't reserve width down
+   *  the whole hero column. */
+  actions?: React.ReactNode;
 }
 
 /**
@@ -67,7 +71,7 @@ interface Props {
  * resolved in layer 2, when these are replaced by the "3 things that matter"
  * strip and the full blocks start skipping their first item.
  */
-export function DeepDiveHero({ report, when }: Props) {
+export function DeepDiveHero({ report, when, actions }: Props) {
   const risksBlock = report.blocks.find((b) => b.type === 'risks');
   const catalystsBlock = report.blocks.find((b) => b.type === 'catalysts');
   const topRisk = risksBlock?.type === 'risks' ? risksBlock.items[0] : undefined;
@@ -96,18 +100,21 @@ export function DeepDiveHero({ report, when }: Props) {
             </h1>
           </div>
         </div>
-        <p className="shrink-0 text-[10px] leading-snug text-muted-foreground/70 sm:max-w-[240px] sm:text-right">
-          {LENS_LABELS[report.lens]} · Generated {fmtRelative(when)}
-          {report.dataAsOf && (
-            <>
-              {' · fundamentals as of '}
-              <span className={cn(isStale(report.dataAsOf) && 'text-amber-500 font-medium')}>
-                {fmtAbsolute(report.dataAsOf)}
-              </span>
-            </>
-          )}
-          {' · AI-generated, verify before acting.'}
-        </p>
+        <div className="flex shrink-0 flex-col items-start gap-2 sm:items-end">
+          {actions && <div className="flex items-center gap-1.5">{actions}</div>}
+          <p className="text-[10px] leading-snug text-muted-foreground/70 sm:max-w-[260px] sm:text-right">
+            {LENS_LABELS[report.lens]} · Generated {fmtRelative(when)}
+            {report.dataAsOf && (
+              <>
+                {' · fundamentals as of '}
+                <span className={cn(isStale(report.dataAsOf) && 'text-amber-500 font-medium')}>
+                  {fmtAbsolute(report.dataAsOf)}
+                </span>
+              </>
+            )}
+            {' · AI-generated, verify before acting.'}
+          </p>
+        </div>
       </div>
 
       <VerdictBar ticker={report.ticker} verdict={report.verdict} />
