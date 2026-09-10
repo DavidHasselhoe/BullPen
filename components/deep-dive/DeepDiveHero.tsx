@@ -38,16 +38,6 @@ function isStale(dateStr: string): boolean {
   return days > STALE_DATA_DAYS;
 }
 
-function Highlight({ label, title, detail }: { label: string; title: string; detail?: string }) {
-  return (
-    <div className="min-w-0">
-      <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80">{label}</div>
-      <div className="mt-0.5 text-sm font-medium text-foreground">{title}</div>
-      {detail && <div className="text-[13px] text-muted-foreground">{detail}</div>}
-    </div>
-  );
-}
-
 interface Props {
   report: Report;
   /** ISO timestamp this report was created/restored — drives the "Generated X ago" meta line. */
@@ -66,17 +56,11 @@ interface Props {
  * health score instead of a lookup-table percentage (see VerdictBar's header
  * for why that number was removed rather than restyled).
  *
- * Risk/catalyst highlights are still rendered here and still duplicate the
- * full risks/catalysts blocks further down the report. That duplication is
- * resolved in layer 2, when these are replaced by the "3 things that matter"
- * strip and the full blocks start skipping their first item.
+ * The risk/catalyst highlight strip that used to close this component moved to
+ * ThreeThings (layer 2), which renders it from authored sentences rather than
+ * repeating risks[0] and catalysts[0] verbatim.
  */
 export function DeepDiveHero({ report, when, actions }: Props) {
-  const risksBlock = report.blocks.find((b) => b.type === 'risks');
-  const catalystsBlock = report.blocks.find((b) => b.type === 'catalysts');
-  const topRisk = risksBlock?.type === 'risks' ? risksBlock.items[0] : undefined;
-  const topCatalyst = catalystsBlock?.type === 'catalysts' ? catalystsBlock.items[0] : undefined;
-
   return (
     <div className="space-y-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -130,21 +114,6 @@ export function DeepDiveHero({ report, when, actions }: Props) {
         </p>
       </div>
 
-      {(topRisk || topCatalyst) && (
-        // Stacked full-width, not side-by-side: the card's content width is
-        // capped (max-w-3xl page), so a 2-column split never actually had
-        // room to breathe -- each column landed around 320px regardless of
-        // screen size, which wrapped the detail sentence into five or six
-        // choppy lines. Full width reads it in two or three.
-        <div className="space-y-3.5 border-t border-border/20 pt-4">
-          {topRisk && (
-            <Highlight label="Key risk" title={topRisk.title} detail={topRisk.detail} />
-          )}
-          {topCatalyst && (
-            <Highlight label="Catalyst to watch" title={topCatalyst.title} detail={topCatalyst.timeframe} />
-          )}
-        </div>
-      )}
     </div>
   );
 }

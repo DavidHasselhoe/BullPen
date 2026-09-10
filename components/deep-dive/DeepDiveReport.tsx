@@ -7,6 +7,7 @@ import { RefreshCw, MessageSquare, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { BlockRenderer } from './blocks';
 import { DeepDiveHero } from './DeepDiveHero';
+import { ThreeThings } from './ThreeThings';
 import type { DeepDiveReport as Report } from '@/lib/ai/deep-dive/schema';
 
 const StockPricePanel = dynamic(
@@ -59,6 +60,8 @@ export function DeepDiveReport({ report, createdAt, onRegenerate, regenerating, 
             </>
           }
         />
+
+        <ThreeThings report={report} />
 
         <StockPricePanel ticker={report.ticker} />
 
