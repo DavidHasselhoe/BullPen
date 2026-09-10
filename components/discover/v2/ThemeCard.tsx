@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import type { LucideIcon } from 'lucide-react';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
+import { HealthRing } from '@/components/finance/HealthRing';
 import { cn } from '@/lib/utils';
 import type { ThemeCardData } from '@/app/api/discover/themes/route';
 
@@ -13,21 +14,9 @@ interface Props {
   companiesLabel: string;
 }
 
-/** Same 70/45 bands as lib/finance's canonical health-colors.ts, expressed as
- *  Tailwind classes for a compact pill (that file returns hex for the SVG
- *  ring instead) — same duplication WatchlistCard's own gradeColor already
- *  accepts rather than sharing one cross-format util for a single pill. */
-function healthBandClasses(score: number): string {
-  const ratio = score / 100;
-  if (ratio >= 0.7) return 'bg-emerald-500/15 text-emerald-500';
-  if (ratio >= 0.45) return 'bg-amber-500/15 text-amber-500';
-  return 'bg-red-500/15 text-red-500';
-}
-
 export function ThemeCard({ theme, icon: Icon, companiesLabel }: Props) {
   const { t } = useTranslation('discover');
-  const [leadLogo] = theme.logos;
-  const moreCount = theme.count - (leadLogo ? 1 : 0);
+  const moreCount = theme.count - theme.logos.length;
   return (
     <Link
       href={`/discover/ideas/${theme.slug}`}
@@ -50,31 +39,36 @@ export function ThemeCard({ theme, icon: Icon, companiesLabel }: Props) {
       </div>
 
       <div className="flex items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-1.5">
-          {leadLogo && (
+        <div className="flex min-w-0 items-center gap-1">
+          {theme.logos.map((logo) => (
             <CompanyLogo
-              name={leadLogo.name}
-              ticker={leadLogo.ticker}
-              logoUrl={leadLogo.logoUrl}
-              size={22}
+              key={logo.ticker}
+              name={logo.name}
+              ticker={logo.ticker}
+              logoUrl={logo.logoUrl}
+              size={20}
               className="shrink-0"
             />
-          )}
+          ))}
           {moreCount > 0 && (
-            <span className="truncate text-xs text-muted-foreground/70">
+            <span className="truncate text-xs text-muted-foreground/70 ml-0.5">
               {t('earningsWidgetMoreCount', { count: moreCount })}
             </span>
           )}
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
-          {theme.avgHealth != null && (
-            <span
-              className={cn('rounded px-1.5 py-0.5 text-xs font-semibold tabular-nums', healthBandClasses(theme.avgHealth))}
-              title={t('ideasThemeAvgHealth', { score: theme.avgHealth })}
-            >
-              {theme.avgHealth}
-            </span>
+          {theme.avgHealth != null && theme.avgHealthGrade != null && (
+            // Same mark as the stock detail page's health score, not a bare
+            // number -- users already know how to read this ring, where a
+            // number alone (was: a colored "70" pill) told them nothing on
+            // its own.
+            <HealthRing
+              score={theme.avgHealth}
+              grade={theme.avgHealthGrade}
+              size={26}
+              className="shrink-0"
+            />
           )}
           <span className="text-xs font-medium text-muted-foreground/80 whitespace-nowrap">
             {companiesLabel}

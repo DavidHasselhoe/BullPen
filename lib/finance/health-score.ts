@@ -71,6 +71,17 @@ export function catLabel(score: number, max: number): string {
   return 'Weak';
 }
 
+/** Same thresholds computeHealthScore uses for a full report's grade — the
+ *  one place to convert a bare 0-100 score (e.g. a theme basket's average)
+ *  into the letter grade HealthRing needs to color itself correctly. */
+export function scoreToGrade(score: number): HealthGrade {
+  if (score >= 85) return 'A';
+  if (score >= 70) return 'B';
+  if (score >= 55) return 'C';
+  if (score >= 40) return 'D';
+  return 'F';
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Category scorers
 // ─────────────────────────────────────────────────────────────────────────────
@@ -372,11 +383,7 @@ export function computeHealthScore(
     { name: 'Market Risk',          score: mkt.score,  max: 10, label: catLabel(mkt.score, 10) },
   ];
 
-  const grade: HealthScore['grade'] =
-    total >= 85 ? 'A' :
-    total >= 70 ? 'B' :
-    total >= 55 ? 'C' :
-    total >= 40 ? 'D' : 'F';
+  const grade: HealthScore['grade'] = scoreToGrade(total);
 
   const label =
     total >= 85 ? 'Strong' :

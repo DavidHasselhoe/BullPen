@@ -13,6 +13,7 @@ import { NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/client';
 import { addSecurityHeaders } from '@/lib/security/api-security';
 import { THEME_DISPLAY_ORDER } from '@/lib/discover/theme-config';
+import { scoreToGrade, type HealthGrade } from '@/lib/finance/health-score';
 
 /** Logos shown per card before the row starts truncating with a "+N companies" tail. */
 const LOGOS_PER_CARD = 5;
@@ -28,6 +29,9 @@ export interface ThemeCardData {
   /** Average of screener_stats.health_score across the theme's tickers that
    *  have one computed. Null if none do yet. */
   avgHealth: number | null;
+  /** Letter grade for avgHealth, via the same bands a single stock's score
+   *  uses — lets the card render the same HealthRing mark. Null iff avgHealth is. */
+  avgHealthGrade: HealthGrade | null;
 }
 
 export async function GET(): Promise<NextResponse> {
@@ -55,6 +59,7 @@ export async function GET(): Promise<NextResponse> {
 
   const themes: ThemeCardData[] = THEME_DISPLAY_ORDER.map((theme) => {
     const scores = theme.tickers.map((t) => healthByTicker.get(t)).filter((v): v is number => v != null);
+    const avgHealth = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
     return {
       slug: theme.slug,
       title: theme.title,
@@ -65,7 +70,8 @@ export async function GET(): Promise<NextResponse> {
         name: meta.get(ticker)?.name ?? ticker,
         logoUrl: meta.get(ticker)?.logo_url ?? null,
       })),
-      avgHealth: scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null,
+      avgHealth,
+      avgHealthGrade: avgHealth != null ? scoreToGrade(avgHealth) : null,
     };
   });
 
