@@ -189,9 +189,30 @@ function KvTable({ block }: { block: Extract<Block, { type: 'kv_table' }> }) {
 
 // ─── price_targets ────────────────────────────────────────────────────────────
 
+/** "$325.99" -> 325.99. Null when there's no number to read. */
+function parseTargetValue(v: string): number | null {
+  const n = Number(v.replace(/[^0-9.]/g, ''));
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
 function PriceTargets({ block }: { block: Extract<Block, { type: 'price_targets' }> }) {
   const hasRange = block.low != null && block.high != null && block.high > block.low;
   const anchor = block.currentPrice ?? block.mean ?? (hasRange ? (block.low! + block.high!) / 2 : undefined);
+
+  // The range bar already draws low, high and mean, and the model tends to
+  // repeat those same three as named rows ("Bear case (low) $180", "Consensus
+  // $325.99"), so the reader met each number twice in a row. Drop only the
+  // rows that restate a number the bar is already showing; the per-firm
+  // targets around them are real information the bar can't convey and stay.
+  const barValues = hasRange
+    ? [block.low, block.high, block.mean].filter((v): v is number => v != null)
+    : [];
+  const items = barValues.length
+    ? block.items.filter((item) => {
+        const value = parseTargetValue(item.value);
+        return value == null || !barValues.some((bv) => Math.abs(bv - value) < 0.01);
+      })
+    : block.items;
   // Wide analyst disagreement is a signal worth flagging on its own, not just
   // a table row — computed client-side (more reliable than trusting the
   // model to self-assess "is this a wide spread").
@@ -221,7 +242,7 @@ function PriceTargets({ block }: { block: Extract<Block, { type: 'price_targets'
         </div>
       )}
       <div className="divide-y divide-border/40">
-        {block.items.map((item, i) => (
+        {items.map((item, i) => (
           <div key={i} className="flex items-center justify-between gap-3 py-2">
             <span className="text-sm text-muted-foreground">{item.source}</span>
             <span className={cn('text-sm font-semibold tabular-nums', toneText(item.tone))}>{item.value}</span>

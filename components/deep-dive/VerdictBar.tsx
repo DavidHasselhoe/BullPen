@@ -23,6 +23,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { HealthRing } from '@/components/finance/HealthRing';
 import { useStockQuote } from '@/hooks/use-stock-price';
+import { useLivePrices } from '@/hooks/use-live-prices';
 import { cn } from '@/lib/utils';
 import type { HealthScore } from '@/lib/finance/health-score';
 import type { Verdict } from '@/lib/ai/deep-dive/schema';
@@ -80,14 +81,30 @@ export function VerdictBar({ ticker, verdict }: { ticker: string; verdict: Verdi
     retry: false,
   });
 
-  // Cached quote rather than the live SSE stream on purpose: StockPricePanel
-  // below already holds the one live connection for this page, and
-  // useLivePrices opens a fresh EventSource per call site. This figure is
-  // context for a report, not a ticker to trade off, and the live chart is a
-  // few hundred pixels below it.
+  // The quote seeds the number; the live stream keeps it honest.
+  //
+  // This deliberately subscribes even though StockPricePanel below holds its
+  // own subscription for the same symbol (useLivePrices opens one EventSource
+  // per call site, it doesn't share). On the cached quote alone this cell drifts
+  // from the chart a few hundred pixels beneath it, and the gap widens the
+  // longer the page sits open: 1 cent apart on first look, 7 by the next.
+  // Two different numbers for one fact on one screen is the kind of thing that
+  // makes a reader stop trusting every other number on the page, which costs
+  // more than a second stream on a low-traffic Pro page.
+  //
+  // The real fix is one shared subscription per page. That means teaching
+  // StockPricePanel to accept a price instead of fetching its own, which is a
+  // change to a 900-line component that isn't worth bundling into this.
   const { data: quote } = useStockQuote(ticker);
-  const price = quote?.c ?? null;
-  const changePct = quote?.dp ?? null;
+  const live = useLivePrices([ticker]).get(ticker);
+
+  const prevClose = quote?.pc ?? 0;
+  const price = live?.price ?? quote?.c ?? null;
+  // Derived from prevClose rather than taken from whichever source supplied the
+  // price, so the percentage can never describe a different price than the one
+  // shown next to it.
+  const changePct =
+    price != null && prevClose > 0 ? ((price - prevClose) / prevClose) * 100 : (quote?.dp ?? null);
   const up = (changePct ?? 0) >= 0;
 
   const stance = STANCE_STYLE[verdict.stance];

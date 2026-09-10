@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { getGlossaryEntry } from '@/lib/finance/glossary';
 import { HelpCircle } from 'lucide-react';
 
@@ -16,6 +16,11 @@ import { HelpCircle } from 'lucide-react';
 const JARGON_TERMS = [
   'EV/EBITDA', 'Forward P/E', 'Fwd P/E', 'Constant Currency', 'Basis Points',
   'Operating Margin', 'Gross Margin', 'CoWoS', 'RPO', 'FCF', 'TTM', 'NTM', 'YoY', 'EUV', 'HPC', 'bps',
+  // Added after a live report used all of these with nothing to explain them.
+  // 'Beta' and 'P/E' already had glossary entries and simply were never swept.
+  // Sorting by length below is what keeps 'P/E' from stealing the match inside
+  // 'Forward P/E', so these are safe to add flat.
+  'Sequential Growth', 'Hyperscaler', 'TAM', 'Beta', 'P/E',
 ].sort((a, b) => b.length - a.length);
 
 function escapeRegExp(s: string): string {
@@ -41,7 +46,7 @@ function canonicalTerm(matched: string): string | undefined {
 
 /**
  * Renders `text` with the first mention of each jargon term (per `seen`)
- * wrapped in a hover tooltip; later mentions render as plain text.
+ * wrapped in a tap/click popover; later mentions render as plain text.
  *
  * Deliberately a plain function, NOT a React component — call it directly
  * from a parent block's render body (`{glossaryText(item.label, seen)}`),
@@ -68,21 +73,27 @@ export function glossaryText(text: string, seen: Set<string>): ReactNode {
     if (!term || !entry || seen.has(term)) return <span key={i}>{part}</span>;
     seen.add(term);
     return (
-      <Tooltip key={i}>
-        <TooltipTrigger asChild>
-          <span className="inline-flex items-center gap-0.5 cursor-default border-b border-dotted border-muted-foreground/50">
+      // Popover, not Tooltip. A Radix tooltip opens on hover and focus and
+      // never on tap, so on a phone the "?" was decoration: the definition was
+      // unreachable for every touch reader, which for a beginner-first product
+      // is most of them. A popover opens on click, which a tap satisfies, and
+      // keeps keyboard access via a real button.
+      <Popover key={i}>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            aria-label={`What does ${part} mean?`}
+            className="inline-flex items-center gap-0.5 border-b border-dotted border-muted-foreground/50 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
+          >
             {part}
-            <HelpCircle className="h-2.5 w-2.5 text-muted-foreground/70" />
-          </span>
-        </TooltipTrigger>
-        <TooltipContent
-          side="top"
-          className="max-w-[240px] text-center leading-snug bg-popover text-popover-foreground border border-border shadow-lg"
-        >
-          <p className="font-medium text-xs mb-1 text-foreground/70">{entry.plainLabel}</p>
-          <p className="text-xs">{entry.description}</p>
-        </TooltipContent>
-      </Tooltip>
+            <HelpCircle className="h-2.5 w-2.5 text-muted-foreground/70" aria-hidden />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent side="top" className="w-[260px] p-3 leading-snug shadow-lg">
+          <p className="mb-1 text-xs font-medium text-foreground/70">{entry.plainLabel}</p>
+          <p className="text-xs text-popover-foreground">{entry.description}</p>
+        </PopoverContent>
+      </Popover>
     );
   });
 }

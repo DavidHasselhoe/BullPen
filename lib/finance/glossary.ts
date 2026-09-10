@@ -529,6 +529,18 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     plainLabel: 'How Directly This Fits the Thesis',
     description: "How directly a holding's revenue is exposed to the investment thesis, on a scale of 1 to 10. A 10 means the company is a pure play; a low score means the connection is more indirect.",
   },
+  'TAM': {
+    plainLabel: 'Total Market Size',
+    description: 'Total addressable market: every dollar a company could theoretically earn if it sold to every possible customer. A big number that shows the ceiling, not what the company will actually capture.',
+  },
+  'Hyperscaler': {
+    plainLabel: 'Giant Cloud Company',
+    description: 'One of the handful of companies running the world\'s biggest data centers, such as Amazon, Microsoft, Google and Meta. They buy computing hardware in enormous volumes, so their spending plans move whole industries.',
+  },
+  'Sequential Growth': {
+    plainLabel: 'Growth vs Last Quarter',
+    description: 'Growth compared with the previous quarter rather than the same quarter a year ago. It shows the most recent trend, so it turns down sooner than year-over-year growth when a business is slowing.',
+  },
 };
 
 /** Look up a glossary entry, returning undefined if not found. */
