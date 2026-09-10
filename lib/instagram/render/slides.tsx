@@ -810,6 +810,31 @@ function formatPercentSigned(v: number, decimals = 1): string {
   return `${sign}${v.toFixed(decimals)}%`;
 }
 
+/**
+ * A guidance range, without printing one whose ends look identical.
+ *
+ * formatUsdCompact rounds to one decimal, so Adobe guiding $6.80B to $6.85B
+ * rendered as "$6.8B–$6.8B" — a range that reads as broken while hiding a real
+ * $50M spread. When both ends collapse to the same string, go one decimal
+ * deeper rather than show that.
+ */
+function formatUsdRange(low: number, high: number): string {
+  const lo = formatUsdCompact(low);
+  const hi = formatUsdCompact(high);
+  if (lo !== hi) return `${lo}–${hi}`;
+
+  const abs = Math.abs(high);
+  const scale = abs >= 1e9 ? 1e9 : abs >= 1e6 ? 1e6 : 0;
+  if (scale === 0) return lo; // sub-million: already 2dp, genuinely the same number
+
+  const unit = scale === 1e9 ? 'B' : 'M';
+  const precise = (v: number) => `${v < 0 ? '-' : ''}$${Math.abs(v / scale).toFixed(2)}${unit}`;
+  const loPrecise = precise(low);
+  const hiPrecise = precise(high);
+  // Still identical at 2dp means it really is one number, not a range.
+  return loPrecise === hiPrecise ? lo : `${loPrecise}–${hiPrecise}`;
+}
+
 /** BEAT (emerald) / MISS (red) / IN LINE (amber) — the one deep-dive
  *  component with a third neutral state: a same-as-consensus result is
  *  common enough on revenue/EPS that forcing it into beat-or-miss would
@@ -937,6 +962,54 @@ export function DeepDiveSummarySlide({ data }: DeepDiveSlideProps): any {
   const marginFootnote = marginQoqLabel(data.grossMarginPriorQuarterPercent, data.grossMarginActualPercent);
   const hasGuidanceRange = data.guidanceRevenueLow != null && data.guidanceRevenueHigh != null;
 
+  /**
+   * The second row is built from whatever we actually have, rather than being
+   * two fixed cards that fall back to "N/A".
+   *
+   * A card reading GROSS MARGIN / Prior 89.2% / N/A shipped on the Adobe post:
+   * it occupies a quarter of the image to announce a number we don't know,
+   * while showing a prior-quarter figure right above the hole, which reads as
+   * a rendering fault rather than missing data. Better to drop the card and
+   * let its neighbour take the row.
+   *
+   * secondaryMetricValue (free cash flow, or operating margin) is computed in
+   * earnings-deep-dive.ts and was never rendered anywhere. It stands in when
+   * gross margin is missing, so a company that reports one but not the other
+   * still fills the row.
+   */
+  const secondRow = [
+    data.grossMarginActualPercent != null ? (
+      <MetricCell
+        key="margin"
+        label="Gross Margin"
+        fromValue={data.grossMarginPriorQuarterPercent != null ? `Prior ${data.grossMarginPriorQuarterPercent.toFixed(1)}%` : null}
+        toValue={`${data.grossMarginActualPercent.toFixed(1)}%`}
+        footnote={marginFootnote}
+      />
+    ) : data.secondaryMetricValue != null && data.secondaryMetricLabel ? (
+      <MetricCell
+        key="secondary"
+        label={data.secondaryMetricLabel}
+        fromValue={null}
+        toValue={
+          data.secondaryMetricIsCurrency
+            ? formatUsdCompact(data.secondaryMetricValue)
+            : `${data.secondaryMetricValue.toFixed(1)}%`
+        }
+      />
+    ) : null,
+    hasGuidanceRange ? (
+      <MetricCell
+        key="guidance"
+        label="Next Q Guidance"
+        fromValue={null}
+        toValue={formatUsdRange(data.guidanceRevenueLow as number, data.guidanceRevenueHigh as number)}
+        status={guidanceStatus(data.guidanceRevenueLow, data.guidanceRevenueHigh, data.guidanceConsensus)}
+        footnote={data.guidanceConsensus != null ? `vs. ${formatUsdCompact(data.guidanceConsensus)} consensus` : null}
+      />
+    ) : null,
+  ].filter(Boolean);
+
   return (
     <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: 88, backgroundColor: BG, color: FG }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
@@ -971,21 +1044,9 @@ export function DeepDiveSummarySlide({ data }: DeepDiveSlideProps): any {
             footnote={data.revenueYoyGrowthPercent != null ? `${formatPercentSigned(data.revenueYoyGrowthPercent)} YoY` : null}
           />
         </div>
-        <div style={{ display: 'flex', gap: 20 }}>
-          <MetricCell
-            label="Gross Margin"
-            fromValue={data.grossMarginPriorQuarterPercent != null ? `Prior ${data.grossMarginPriorQuarterPercent.toFixed(1)}%` : null}
-            toValue={data.grossMarginActualPercent != null ? `${data.grossMarginActualPercent.toFixed(1)}%` : 'N/A'}
-            footnote={marginFootnote}
-          />
-          <MetricCell
-            label="Next Q Guidance"
-            fromValue={null}
-            toValue={hasGuidanceRange ? `${formatUsdCompact(data.guidanceRevenueLow as number)}–${formatUsdCompact(data.guidanceRevenueHigh as number)}` : 'N/A'}
-            status={guidanceStatus(data.guidanceRevenueLow, data.guidanceRevenueHigh, data.guidanceConsensus)}
-            footnote={data.guidanceConsensus != null ? `vs. ${formatUsdCompact(data.guidanceConsensus)} consensus` : null}
-          />
-        </div>
+        {secondRow.length > 0 && (
+          <div style={{ display: 'flex', gap: 20 }}>{secondRow}</div>
+        )}
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18 }}>
