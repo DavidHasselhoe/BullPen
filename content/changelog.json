@@ -1,5 +1,50 @@
 [
   {
+    "date": "2026-09-10",
+    "entries": [
+      {
+        "type": "new",
+        "text": "AI Deep Dive reports have been rebuilt around the answer instead of the analysis. The verdict now sits at the very top with a health score ring, the report's view, and today's price, followed by three short cards covering growth, the biggest risk, and what to watch next. Everything else is grouped into Financials, Bull vs bear, Risks, Catalysts and Analyst views, all collapsed until you want them, so you can read the conclusion without scrolling past a single table"
+      },
+      {
+        "type": "new",
+        "text": "Deep dive reports now give separate advice depending on whether you already own the stock or are only thinking about buying it, instead of one blended paragraph that assumed you held a position"
+      },
+      {
+        "type": "new",
+        "text": "Opening a deep dive for a stock you have already analysed now tells you a report exists and offers to regenerate it, instead of quietly showing you an old one"
+      },
+      {
+        "type": "improved",
+        "text": "Financial terms in deep dive reports now open their plain-English definition when you tap them. They previously only worked on hover, so on a phone they could not be opened at all. Total addressable market, hyperscaler, beta and price to earnings have been added as well"
+      },
+      {
+        "type": "improved",
+        "text": "Prices on a deep dive now say whether they are live or 15 minutes delayed, and every price on the page always matches"
+      },
+      {
+        "type": "improved",
+        "text": "Investing Ideas cards now show five company logos instead of one, and the same health score ring used on stock pages rather than a bare number"
+      },
+      {
+        "type": "improved",
+        "text": "Results from Deep Dive, Portfolio Builder, Risk Analysis, Compare and CSV import now fade in when they finish instead of appearing all at once"
+      },
+      {
+        "type": "improved",
+        "text": "Institution pages for very large funds load faster and no longer stutter while scrolling the holdings list"
+      },
+      {
+        "type": "fixed",
+        "text": "The progress bar while an AI feature is working no longer sits frozen at 99%. It keeps moving until the result is actually ready"
+      },
+      {
+        "type": "fixed",
+        "text": "When an AI feature fails for a reason on our side, it now shows a simple message saying we have been notified, instead of technical wording about API credits or keys"
+      }
+    ]
+  },
+  {
     "date": "2026-09-09",
     "entries": [
       {
