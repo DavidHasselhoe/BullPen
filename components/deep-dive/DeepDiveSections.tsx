@@ -144,7 +144,7 @@ function summarize(key: SectionKey, blocks: Block[]): string | null {
   }
 }
 
-export function DeepDiveSections({ report }: { report: Report }) {
+export function DeepDiveSections({ report, currentPrice }: { report: Report; currentPrice?: number | null }) {
   const grouped = new Map<SectionKey, Block[]>();
   for (const block of report.blocks) {
     const key = BLOCK_SECTION[block.type];
@@ -189,7 +189,7 @@ export function DeepDiveSections({ report }: { report: Report }) {
             <AccordionContent className="px-4 pb-4">
               <div className="space-y-7 border-t border-border/30 pt-4">
                 {blocks.map((block, i) => (
-                  <BlockRenderer key={i} block={block} />
+                  <BlockRenderer key={i} block={block} currentPrice={currentPrice} />
                 ))}
               </div>
             </AccordionContent>

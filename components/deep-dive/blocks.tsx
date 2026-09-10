@@ -195,9 +195,22 @@ function parseTargetValue(v: string): number | null {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
-function PriceTargets({ block }: { block: Extract<Block, { type: 'price_targets' }> }) {
+function PriceTargets({
+  block,
+  currentPrice,
+}: {
+  block: Extract<Block, { type: 'price_targets' }>;
+  /** Today's real price. Prefer it over the model's own snapshot. */
+  currentPrice?: number | null;
+}) {
+  // block.currentPrice is whatever the price was when the report was written,
+  // and the report outlives that by design. Checked live: a report a few hours
+  // old carried 228.07 for a stock trading at 218, so the range bar drew its
+  // "you are here" marker 4.5% off while the top of the same page showed the
+  // real number. The stored value is the fallback, not the source.
+  const livePrice = currentPrice ?? block.currentPrice;
   const hasRange = block.low != null && block.high != null && block.high > block.low;
-  const anchor = block.currentPrice ?? block.mean ?? (hasRange ? (block.low! + block.high!) / 2 : undefined);
+  const anchor = livePrice ?? block.mean ?? (hasRange ? (block.low! + block.high!) / 2 : undefined);
 
   // The range bar already draws low, high and mean, and the model tends to
   // repeat those same three as named rows ("Bear case (low) $180", "Consensus
@@ -222,16 +235,17 @@ function PriceTargets({ block }: { block: Extract<Block, { type: 'price_targets'
   return (
     <section>
       <SectionTitle>{block.title ?? 'Analyst price targets'}</SectionTitle>
-      {block.current && (
-        <p className="text-xs text-muted-foreground mb-2">Current: <span className="text-foreground font-medium tabular-nums">{block.current}</span></p>
-      )}
+      {/* block.current is the model's own formatted string and goes stale the
+          same way block.currentPrice does. The range bar's marker carries the
+          live price now, and the verdict bar at the top of the report states
+          it outright, so a third stale copy of it here earns nothing. */}
       {hasRange && (
         <div className="mb-3">
           <RangeBar
             low={block.low!}
             high={block.high!}
-            current={block.currentPrice}
-            srLabel={`Analyst price target range: $${block.low} to $${block.high}${block.currentPrice ? `, current price $${block.currentPrice}` : ''}`}
+            current={livePrice ?? undefined}
+            srLabel={`Analyst price target range: $${block.low} to $${block.high}${livePrice ? `, current price $${livePrice.toFixed(2)}` : ''}`}
           />
           {wideDisagreement && (
             <p className="mt-2 flex items-start gap-1.5 text-[11px] text-amber-600 dark:text-amber-400">
@@ -458,13 +472,20 @@ function Prose({ block }: { block: Extract<Block, { type: 'prose' }> }) {
 
 // ─── Dispatcher ───────────────────────────────────────────────────────────────
 
-export function BlockRenderer({ block }: { block: Block }) {
+export function BlockRenderer({
+  block,
+  currentPrice,
+}: {
+  block: Block;
+  /** Today's price, resolved once per report. Only price_targets uses it. */
+  currentPrice?: number | null;
+}) {
   switch (block.type) {
     case 'kpi_grid':      return <KpiGrid block={block} />;
     case 'bar_chart':     return <BarChartBlock block={block} />;
     case 'segment_bars':  return <SegmentBars block={block} />;
     case 'kv_table':      return <KvTable block={block} />;
-    case 'price_targets': return <PriceTargets block={block} />;
+    case 'price_targets': return <PriceTargets block={block} currentPrice={currentPrice} />;
     case 'metric_table':  return <MetricTable block={block} />;
     case 'bull_bear':     return <BullBear block={block} />;
     case 'catalysts':     return <Catalysts block={block} />;

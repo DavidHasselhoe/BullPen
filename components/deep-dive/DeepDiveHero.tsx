@@ -4,6 +4,7 @@ import { Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { VerdictBar } from './VerdictBar';
+import type { DeepDivePrice } from '@/hooks/use-deep-dive-price';
 import { LENS_LABELS, type DeepDiveReport as Report } from '@/lib/ai/deep-dive/schema';
 
 // Relative for the first 24h, then an absolute date — used for BOTH
@@ -46,6 +47,8 @@ interface Props {
    *  rendered by the parent beside the hero, so they don't reserve width down
    *  the whole hero column. */
   actions?: React.ReactNode;
+  /** Resolved once per report by DeepDiveReport, so every price agrees. */
+  price: DeepDivePrice;
 }
 
 /**
@@ -60,7 +63,7 @@ interface Props {
  * ThreeThings (layer 2), which renders it from authored sentences rather than
  * repeating risks[0] and catalysts[0] verbatim.
  */
-export function DeepDiveHero({ report, when, actions }: Props) {
+export function DeepDiveHero({ report, when, actions, price }: Props) {
   return (
     <div className="space-y-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -101,7 +104,7 @@ export function DeepDiveHero({ report, when, actions }: Props) {
         </div>
       </div>
 
-      <VerdictBar ticker={report.ticker} verdict={report.verdict} />
+      <VerdictBar ticker={report.ticker} verdict={report.verdict} price={price} />
 
       {/* The report's own title, then its single most important takeaway.
           These are the only two prose elements above the fold. */}

@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { DeepDiveHero } from './DeepDiveHero';
 import { ThreeThings } from './ThreeThings';
 import { DeepDiveSections } from './DeepDiveSections';
+import { useDeepDivePrice } from '@/hooks/use-deep-dive-price';
 import type { DeepDiveReport as Report } from '@/lib/ai/deep-dive/schema';
 
 const StockPricePanel = dynamic(
@@ -38,6 +39,11 @@ interface Props {
 export function DeepDiveReport({ report, createdAt, onRegenerate, regenerating, onAsk }: Props) {
   const when = createdAt ?? report.generatedAt;
 
+  // Resolved once, here, and passed down. Every current price on this report
+  // has to be the same number: the verdict bar states it, and the analyst
+  // price-target bar draws its "you are here" marker at it.
+  const price = useDeepDivePrice(report.ticker);
+
   return (
     <Card className="overflow-hidden">
       <CardContent className="px-5 sm:px-6 py-6 space-y-7">
@@ -49,6 +55,7 @@ export function DeepDiveReport({ report, createdAt, onRegenerate, regenerating, 
         <DeepDiveHero
           report={report}
           when={when}
+          price={price}
           actions={
             <>
               {onAsk && (
@@ -70,7 +77,7 @@ export function DeepDiveReport({ report, createdAt, onRegenerate, regenerating, 
         <StockPricePanel ticker={report.ticker} />
 
         <div className="border-t border-border/20 pt-6">
-          <DeepDiveSections report={report} />
+          <DeepDiveSections report={report} currentPrice={price.price} />
         </div>
 
         <div className="flex justify-end border-t border-border/20 pt-6">

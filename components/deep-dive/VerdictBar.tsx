@@ -22,9 +22,9 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { HealthRing } from '@/components/finance/HealthRing';
-import { useStockQuote } from '@/hooks/use-stock-price';
-import { useLivePrices } from '@/hooks/use-live-prices';
+import { DELAYED_QUOTE_MINUTES } from '@/lib/market-data/ws-coverage';
 import { cn } from '@/lib/utils';
+import type { DeepDivePrice } from '@/hooks/use-deep-dive-price';
 import type { HealthScore } from '@/lib/finance/health-score';
 import type { Verdict } from '@/lib/ai/deep-dive/schema';
 
@@ -67,7 +67,16 @@ function Cell({ label, children }: { label: string; children: React.ReactNode })
   );
 }
 
-export function VerdictBar({ ticker, verdict }: { ticker: string; verdict: Verdict }) {
+export function VerdictBar({
+  ticker,
+  verdict,
+  price: priceInfo,
+}: {
+  ticker: string;
+  verdict: Verdict;
+  /** Resolved once per report by the parent, so every price on the page agrees. */
+  price: DeepDivePrice;
+}) {
   const { data: health, isLoading: healthLoading } = useQuery({
     queryKey: ['health-score', ticker],
     queryFn: async (): Promise<HealthScore | null> => {
@@ -81,30 +90,7 @@ export function VerdictBar({ ticker, verdict }: { ticker: string; verdict: Verdi
     retry: false,
   });
 
-  // The quote seeds the number; the live stream keeps it honest.
-  //
-  // This deliberately subscribes even though StockPricePanel below holds its
-  // own subscription for the same symbol (useLivePrices opens one EventSource
-  // per call site, it doesn't share). On the cached quote alone this cell drifts
-  // from the chart a few hundred pixels beneath it, and the gap widens the
-  // longer the page sits open: 1 cent apart on first look, 7 by the next.
-  // Two different numbers for one fact on one screen is the kind of thing that
-  // makes a reader stop trusting every other number on the page, which costs
-  // more than a second stream on a low-traffic Pro page.
-  //
-  // The real fix is one shared subscription per page. That means teaching
-  // StockPricePanel to accept a price instead of fetching its own, which is a
-  // change to a 900-line component that isn't worth bundling into this.
-  const { data: quote } = useStockQuote(ticker);
-  const live = useLivePrices([ticker]).get(ticker);
-
-  const prevClose = quote?.pc ?? 0;
-  const price = live?.price ?? quote?.c ?? null;
-  // Derived from prevClose rather than taken from whichever source supplied the
-  // price, so the percentage can never describe a different price than the one
-  // shown next to it.
-  const changePct =
-    price != null && prevClose > 0 ? ((price - prevClose) / prevClose) * 100 : (quote?.dp ?? null);
+  const { price, changePct, isLive } = priceInfo;
   const up = (changePct ?? 0) >= 0;
 
   const stance = STANCE_STYLE[verdict.stance];
@@ -165,6 +151,14 @@ export function VerdictBar({ ticker, verdict }: { ticker: string; verdict: Verdi
                 >
                   {up ? '+' : ''}
                   {changePct.toFixed(2)}% today
+                </p>
+              )}
+              {/* Say which feed this is. A delayed number presented as live is
+                  the kind of quiet inaccuracy that costs trust in every other
+                  figure on the page. */}
+              {!isLive && (
+                <p className="mt-1 text-[10px] leading-tight text-muted-foreground/70">
+                  {DELAYED_QUOTE_MINUTES} min delayed
                 </p>
               )}
             </>
