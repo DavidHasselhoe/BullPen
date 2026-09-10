@@ -75,7 +75,7 @@ export function DeepDiveReport({ report, createdAt, onRegenerate, regenerating, 
 
         <div className="flex justify-end border-t border-border/20 pt-6">
           <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground/70">
-            <Sparkles className="h-3 w-3" /> Educational only — not investment advice
+            <Sparkles className="h-3 w-3" /> Educational only. Not investment advice.
           </span>
         </div>
       </CardContent>
