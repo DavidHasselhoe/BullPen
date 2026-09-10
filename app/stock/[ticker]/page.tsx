@@ -389,7 +389,7 @@ export default function StockDetailPage() {
                           </Button>
                           {showFundamentals && (
                             <Button asChild size="sm" className="gap-2">
-                              <Link href={`/tools/deep-dive/${ticker}`}>
+                              <Link href={`/tools/deep-dive/${ticker}?new=1`}>
                                 <Telescope className="h-4 w-4" />
                                 Deep Dive
                               </Link>

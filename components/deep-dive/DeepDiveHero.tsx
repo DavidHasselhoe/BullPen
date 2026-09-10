@@ -47,7 +47,7 @@ function BullBearGauge({ verdict }: { verdict: Report['verdict'] }) {
 // Relative for the first 24h, then an absolute date — used for BOTH
 // generatedAt and dataAsOf so the two dates in the meta line never mismatch
 // in format (previously dataAsOf was interpolated raw/unformatted).
-function fmtRelative(iso: string): string {
+export function fmtRelative(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(diff / 60_000);
   if (mins < 1) return 'just now';
@@ -118,12 +118,20 @@ export function DeepDiveHero({ report, when }: Props) {
         <div className="flex min-w-0 items-start gap-3">
           <CompanyLogo name={report.companyName} ticker={report.ticker} size={40} className="mt-0.5 border border-border/50" loading="eager" />
           <div className="min-w-0 space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-widest text-primary">
-                <Sparkles className="h-3 w-3" /> AI Deep Dive
+            {/* One truncatable text flow, not three flex-laid spans -- the
+                old layout let the row get squeezed by the stance badge/gauge
+                column on the right until it wrapped word-by-word ("AI DEEP
+                DIVE" / "Full" / "deep" / "dive" each on their own line).
+                Truncating with an ellipsis if it's ever this tight reads far
+                better than a broken multi-line eyebrow label. */}
+            <div className="flex min-w-0 items-center gap-1.5">
+              <Sparkles className="h-3 w-3 shrink-0 text-primary" />
+              <span className="truncate text-[11px] font-bold uppercase tracking-widest text-primary">
+                AI Deep Dive{' '}
+                <span className="font-normal normal-case tracking-normal text-muted-foreground/80">
+                  · {LENS_LABELS[report.lens]}
+                </span>
               </span>
-              <span className="text-[11px] text-muted-foreground/85">·</span>
-              <span className="text-[11px] text-muted-foreground/80">{LENS_LABELS[report.lens]}</span>
             </div>
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground leading-tight">
               {report.companyName} <span className="text-muted-foreground font-mono text-base">${report.ticker}</span>
@@ -158,7 +166,12 @@ export function DeepDiveHero({ report, when }: Props) {
       </div>
 
       {(topRisk || topCatalyst) && (
-        <div className="grid grid-cols-1 gap-4 border-t border-border/20 pt-4 sm:grid-cols-2">
+        // Stacked full-width, not side-by-side: the card's content width is
+        // capped (max-w-3xl page), so a 2-column split never actually had
+        // room to breathe -- each column landed around 320px regardless of
+        // screen size, which wrapped the detail sentence into five or six
+        // choppy lines. Full width reads it in two or three.
+        <div className="space-y-3.5 border-t border-border/20 pt-4">
           {topRisk && (
             <Highlight label="Key risk" title={topRisk.title} detail={topRisk.detail} />
           )}

@@ -55,7 +55,7 @@ export default function DeepDiveLanding() {
   const go = (sym: string) => {
     const clean = sym.trim().toUpperCase().replace(/[^A-Z0-9.\-]/g, '');
     if (!clean) return;
-    router.push(`/tools/deep-dive/${clean}?lens=${lens}`);
+    router.push(`/tools/deep-dive/${clean}?lens=${lens}&new=1`);
   };
 
   return (

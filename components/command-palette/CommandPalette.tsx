@@ -180,7 +180,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     (ticker: string) => {
       onOpenChange(false);
       setSearchQuery('');
-      router.push(`/tools/deep-dive/${encodeURIComponent(ticker)}`);
+      router.push(`/tools/deep-dive/${encodeURIComponent(ticker)}?new=1`);
     },
     [router, onOpenChange]
   );

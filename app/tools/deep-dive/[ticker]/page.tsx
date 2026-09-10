@@ -9,7 +9,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertCircle, ArrowLeft, Sparkles } from 'lucide-react';
+import { AlertCircle, ArrowLeft, RefreshCw, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useBackground } from '@/hooks/use-background';
 import { useAuth } from '@/hooks/use-auth';
@@ -20,7 +20,9 @@ import { useMarkEntityNotificationsRead } from '@/hooks/use-notifications';
 import { useInvalidateQuota } from '@/hooks/use-quota';
 import { QuotaIndicator } from '@/components/billing/QuotaIndicator';
 import { AiPaywallDialog } from '@/components/billing/AiPaywallDialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { DeepDiveReport } from '@/components/deep-dive/DeepDiveReport';
+import { fmtRelative } from '@/components/deep-dive/DeepDiveHero';
 import { LensPicker } from '@/components/deep-dive/LensPicker';
 import { ProcessingScreen } from '@/components/ui/ProcessingScreen';
 import { isLens, type DeepDiveLens, type DeepDiveReport as Report } from '@/lib/ai/deep-dive/schema';
@@ -73,6 +75,13 @@ export default function DeepDivePage() {
     const q = searchParams.get('lens');
     return q && isLens(q) ? q : 'full';
   })();
+  // Set only by entry points that mean "generate a new one" (the stock page's
+  // Deep Dive button, command palette, the tool's own search) -- not by a
+  // notification link or the list page's card, which already know a report
+  // exists and mean to view it. Read once: the value that matters is what the
+  // user clicked to land here, not whatever the URL holds after lens changes
+  // re-write it (see setLens below).
+  const cameToGenerate = useRef(searchParams.get('new') === '1');
 
   const [phase, setPhase] = useState<Phase>('loading');
   const [lens, setLensState] = useState<DeepDiveLens>(initialLens);
@@ -89,6 +98,7 @@ export default function DeepDivePage() {
   const [errorCode, setErrorCode] = useState<ErrorCode>('unknown');
   const [errorMessage, setErrorMessage] = useState('');
   const [paywallQuota, setPaywallQuota] = useState<QuotaState | null>(null);
+  const [showExistingDialog, setShowExistingDialog] = useState(false);
   // True for a brief hold after the real report lands, before swapping the
   // loading screen out for the result — otherwise the bar hits 100% and the
   // whole screen changes in the same instant.
@@ -162,6 +172,12 @@ export default function DeepDivePage() {
           // Landed here from a notification (or just revisiting) — the
           // report is already on screen, so clear its unread notification.
           markEntityRead.mutate(`${symbol}:deep_dive`);
+          // Landed here via a "generate" entry point (stock page button,
+          // command palette, the tool's own search) but a report already
+          // exists — surface that instead of silently swapping in the old
+          // one, which read as a bug when it happened for a stock the user
+          // hadn't looked at in months.
+          if (cameToGenerate.current) setShowExistingDialog(true);
         } else if (data?.success && data.pendingId) {
           setGenPhase((data.pendingPhase as DivePhase) ?? 'reading_data');
           setPhase('generating');
@@ -313,7 +329,7 @@ export default function DeepDivePage() {
         )}
 
         {phase === 'done' && report && (
-          <div className="space-y-4">
+          <div className="space-y-4 page-enter">
             <DeepDiveReport
               report={report}
               createdAt={createdAt}
@@ -354,6 +370,30 @@ export default function DeepDivePage() {
           quota={paywallQuota ?? undefined}
           previewContext={{ ticker: symbol, companyName: report?.companyName }}
         />
+
+        <Dialog open={showExistingDialog} onOpenChange={setShowExistingDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{t('deepDiveExistingTitle', 'Already generated for {{symbol}}', { symbol })}</DialogTitle>
+              <DialogDescription>
+                {createdAt
+                  ? t('deepDiveExistingDescriptionWithDate', "You generated a deep dive for {{symbol}} {{when}}. Here it is below, or regenerate for a fresh take with today's data.", { symbol, when: fmtRelative(createdAt) })
+                  : t('deepDiveExistingDescription', "You've already generated a deep dive for {{symbol}}. Here it is below, or regenerate for a fresh take with today's data.", { symbol })}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowExistingDialog(false)}>
+                {t('deepDiveExistingViewButton', 'View existing')}
+              </Button>
+              <Button
+                onClick={() => { setShowExistingDialog(false); generate(lens); }}
+                className="gap-1.5 rounded-full animate-ai-pill-shine"
+              >
+                <RefreshCw className="h-3.5 w-3.5" /> {t('deepDiveExistingRegenerateButton', 'Regenerate')}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
