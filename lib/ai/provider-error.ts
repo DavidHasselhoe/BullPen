@@ -11,12 +11,19 @@
 
 export type AiErrorCode = 'invalid_key' | 'payment_required' | 'rate_limited' | 'parse_failed' | 'unknown';
 
+// invalid_key/payment_required/parse_failed/unknown share one message on
+// purpose: none of them are the user's fault or anything they can act on, so
+// there's nothing a more specific message would help them do differently.
+// rate_limited is the one code where the user actually caused it and can fix
+// it themselves (slow down), so it keeps its own actionable wording.
+const NOT_YOUR_FAULT = "This is on our end, not yours. We've been notified and are working on it. Try again shortly.";
+
 const SAFE_MESSAGES: Record<AiErrorCode, string> = {
-  invalid_key: 'This AI feature is temporarily unavailable. Please try again shortly.',
-  payment_required: 'This AI feature is temporarily unavailable. Please try again shortly.',
+  invalid_key: NOT_YOUR_FAULT,
+  payment_required: NOT_YOUR_FAULT,
   rate_limited: "You're sending requests too quickly. Please wait a moment and try again.",
-  parse_failed: 'The AI returned an unexpected response. Please try again.',
-  unknown: 'Something went wrong generating this. Please try again.',
+  parse_failed: NOT_YOUR_FAULT,
+  unknown: NOT_YOUR_FAULT,
 };
 
 const SAFE_STATUS: Record<AiErrorCode, number> = {

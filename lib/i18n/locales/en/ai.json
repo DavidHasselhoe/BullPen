@@ -110,7 +110,7 @@
   "termsGateIntro": "Research companies and explore investment ideas with BullPen's AI assistant.",
   "trendSrLabel": "{{metric}} for {{subject}} across {{count}} periods, latest {{formatted}}",
   "whyTodayChangeSummary": "{{change}} ({{changePct}}%) today",
-  "whyTodayGenericError": "Couldn't load an explanation right now. Please try again shortly.",
+  "whyTodayGenericError": "This is on our end, not yours. We've been notified and are working on it. Try again shortly.",
   "whyTodayRateLimited": "Too many requests. Please wait a moment and try again.",
   "whyTodaySearching": "Searching the web for today's news on ${{ticker}}…",
   "whyTodayUpgradeCta": "Upgrade to Pro →",
