@@ -91,7 +91,9 @@ export function VerdictBar({
   });
 
   const { price, changePct, isLive } = priceInfo;
-  const up = (changePct ?? 0) >= 0;
+  // Flat is its own state, not a gain. `>= 0` painted an unchanged price
+  // emerald with a "+" in front of it, which reads as a small rise.
+  const direction = changePct == null || Math.abs(changePct) < 0.005 ? 'flat' : changePct > 0 ? 'up' : 'down';
 
   const stance = STANCE_STYLE[verdict.stance];
   const note = health ? mismatchNote(health.score, verdict.stance) : null;
@@ -146,10 +148,12 @@ export function VerdictBar({
                 <p
                   className={cn(
                     'mt-1.5 text-[11px] font-medium tabular-nums leading-tight',
-                    up ? 'text-emerald-500' : 'text-red-500'
+                    direction === 'up' && 'text-emerald-500',
+                    direction === 'down' && 'text-red-500',
+                    direction === 'flat' && 'text-muted-foreground'
                   )}
                 >
-                  {up ? '+' : ''}
+                  {direction === 'up' ? '+' : ''}
                   {changePct.toFixed(2)}% today
                 </p>
               )}
