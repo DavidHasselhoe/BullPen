@@ -97,13 +97,20 @@ interface UserPromptParams {
   today: string; // YYYY-MM-DD
 }
 
+/**
+ * These differ in DENSITY as well as vocabulary. The beginner note used to
+ * differ only in wording, which meant a beginner got the same five screens of
+ * report with slightly plainer words in it. Verified before rewriting: every
+ * deep dive ever generated ran at `intermediate`, so beginner output had never
+ * actually been read by anyone when it became the default.
+ */
 const EXPERIENCE_NOTE: Record<UserPromptParams['experienceLevel'], string> = {
   beginner:
-    'Reader is a BEGINNER. Keep language plain and define a term only if unavoidable. Favor clarity over jargon, but keep the analytical rigor.',
+    'Reader is a BEGINNER and has likely never read an earnings report. Prefer short sentences and concrete everyday words over precise financial vocabulary. When a technical term is genuinely unavoidable, say what it means in the same sentence in ordinary English. Keep every real number and all of the analytical rigor, but cut any sentence that exists only to sound thorough. Aim for the FEWER end of the block range, each block making one clear point, rather than a longer report.',
   intermediate:
-    'Reader is INTERMEDIATE. Use standard financial terminology without over-explaining.',
+    'Reader is INTERMEDIATE. Use standard financial terminology without over-explaining. Aim for the middle of the block range.',
   advanced:
-    'Reader is ADVANCED. Be dense and technical; skip basics and focus on second-order insights.',
+    'Reader is ADVANCED. Be dense and technical, skip the basics, and focus on second-order insights. Use the fuller end of the block range where you have real substance for it.',
 };
 
 const LENS_INSTRUCTION: Record<DeepDiveLens, string> = {

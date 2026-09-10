@@ -182,11 +182,23 @@ async function postHandler(
 
   // Body
   let lens: DeepDiveLens = 'full';
-  let experienceLevel: ExperienceLevel = 'intermediate';
+  // Matches use-experience-level's fallback: a request that omits the level
+  // gets the beginner report, not the intermediate one.
+  let experienceLevel: ExperienceLevel = 'beginner';
   try {
     const body = await request.json().catch(() => ({}));
     if (typeof body.lens === 'string' && isLens(body.lens)) lens = body.lens;
-    if (body.experienceLevel === 'beginner' || body.experienceLevel === 'advanced') experienceLevel = body.experienceLevel;
+    // Must list every level, including intermediate. This used to check only
+    // beginner/advanced and let intermediate fall through to the default,
+    // which was harmless while the default was itself intermediate and would
+    // silently downgrade every intermediate reader now that it isn't.
+    if (
+      body.experienceLevel === 'beginner' ||
+      body.experienceLevel === 'intermediate' ||
+      body.experienceLevel === 'advanced'
+    ) {
+      experienceLevel = body.experienceLevel;
+    }
   } catch { /* defaults */ }
   // `holds` used to be read here and told the prompt to orient the whole
   // takeaway toward hold/add/trim. verdict.bottomLine now always covers both
