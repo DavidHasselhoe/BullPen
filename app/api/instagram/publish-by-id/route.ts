@@ -55,6 +55,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   if (result.outcome === 'not_ready') {
     return NextResponse.json({ success: false, postId: id, error: 'not_ready', status: result.status }, { status: 409 });
   }
+  if (result.outcome === 'blocked') {
+    // 409, not 500: the pipeline worked, the post just isn't fit to publish.
+    return NextResponse.json(
+      { success: false, postId: id, error: 'incomplete_post', problems: result.problems },
+      { status: 409 }
+    );
+  }
 
   return NextResponse.json({ success: false, postId: id, error: result.error }, { status: 500 });
 }

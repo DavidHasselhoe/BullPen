@@ -10,6 +10,7 @@ import { publishCarousel, isInstagramConfigured } from '@/lib/instagram/client';
 import { totalSlideCount, altTextForSlide } from '@/lib/instagram/render/slides';
 import { postToDiscord } from '@/lib/discord/post-message';
 import { instagramBioLink } from '@/lib/instagram/utm-link';
+import { checkPublishable } from '@/lib/instagram/content/publish-guard';
 import type { InstagramPostSlides } from '@/lib/instagram/content/schema';
 
 interface InstagramPostRow {
@@ -24,6 +25,7 @@ interface InstagramPostRow {
 export type PublishStagedPostResult =
   | { outcome: 'not_found' }
   | { outcome: 'not_ready'; status: string }
+  | { outcome: 'blocked'; problems: string[] }
   | { outcome: 'dry_run'; imageUrls: string[]; caption: string }
   | { outcome: 'published'; mediaId: string; permalink: string | null }
   | { outcome: 'failed'; error: string };
@@ -41,6 +43,27 @@ export async function publishStagedPost(id: string): Promise<PublishStagedPostRe
 
   if (!post) return { outcome: 'not_found' };
   if (post.status !== 'ready') return { outcome: 'not_ready', status: post.status };
+
+  // Every publish path in the app comes through here, so this is the one place
+  // that can stop an incomplete post reaching Instagram. Deliberately before
+  // the dry-run branch: a dry run should report the same verdict a real
+  // publish would, or it isn't a rehearsal.
+  const guard = checkPublishable(post.slides);
+  if (!guard.ok) {
+    // Left at 'ready' on purpose: the data may be fixable, and a person can
+    // still publish deliberately once it is.
+    const webhookUrl = process.env.DISCORD_EARNINGS_DEEPDIVE_WEBHOOK_URL || process.env.DISCORD_INSTAGRAM_WEBHOOK_URL;
+    if (webhookUrl) {
+      await postToDiscord(webhookUrl, {
+        content:
+          `🚧 **Held back a post that wasn't complete.** \`${post.content_type}\` · \`${post.period_key}\`\n` +
+          guard.problems.map((p) => `• ${p}`).join('\n') +
+          `\n\nNothing was published. Fix the data and publish with \`npm run instagram-publish -- --id=${post.id}\`, or leave it.`,
+      }).catch((err) => console.error('[instagram-publish] Discord block notice failed:', err));
+    }
+    console.error(`[instagram-publish] blocked ${post.id} (${post.period_key}):`, guard.problems.join('; '));
+    return { outcome: 'blocked', problems: guard.problems };
+  }
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bullpen.no';
   const slideCount = totalSlideCount(post.slides);
