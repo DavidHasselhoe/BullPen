@@ -147,10 +147,52 @@ export const BlockSchema = z.discriminatedUnion('type', [
   MetricTableBlock, BullBearBlock, CatalystsBlock, RisksBlock, ProseBlock,
 ]);
 
+/**
+ * The "3 things that matter" strip: one short sentence each, authored for that
+ * card rather than scraped out of a block.
+ *
+ * `risk` and `watch` overlap in subject with the risks/catalysts blocks by
+ * design (they summarize the top item of each), but they are written as
+ * standalone sentences, where a block item is a title fragment plus a longer
+ * detail paragraph and reads badly as a card.
+ *
+ * `growth` has no block equivalent at all. It deliberately isn't scraped from
+ * kpi_grid: the metric that actually describes growth varies by sector, so a
+ * heuristic would pull revenue growth for one company, EPS for another, and
+ * nothing sensible for a pre-revenue name.
+ */
+const ThreeThingsSchema = z.object({
+  growth: z.string(),
+  risk: z.string(),
+  watch: z.string(),
+});
+
+/**
+ * The bottom line, split by whether the reader already owns the stock.
+ *
+ * Previously this was a single blended paragraph written under a prompt that
+ * was told whether the reader holds the stock, so a holder got "trim 10-15%"
+ * framing and a non-holder could get it too once the report was cached. Both
+ * lines are now always produced and the reader picks the one that applies.
+ */
+const BottomLineSchema = z.object({
+  /** For someone who does not own it yet. */
+  considering: z.string(),
+  /** For someone who already holds a position. */
+  holding: z.string(),
+});
+
 export const VerdictSchema = z.object({
   stance: StanceEnum,
   confidence: ConfidenceEnum,
   oneLiner: z.string(),
+  // Both optional on purpose. Validation runs only on fresh model output, so
+  // marking these required would fail an entire expensive report whenever the
+  // model omitted one. Reports saved before these fields existed also lack
+  // them, and every consumer already has to handle that, so absence is a
+  // supported state rather than an error. The prompt asks for them firmly.
+  threeThings: ThreeThingsSchema.optional(),
+  bottomLine: BottomLineSchema.optional(),
 });
 
 /** What the model returns. */

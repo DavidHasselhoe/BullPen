@@ -26,7 +26,16 @@ Respond with EXACTLY ONE JSON object and nothing else. No markdown fences, no pr
   "verdict": {
     "stance": "bullish" | "neutral" | "bearish" | "mixed",
     "confidence": "low" | "medium" | "high",
-    "oneLiner": string                // the single most important takeaway, one sentence
+    "oneLiner": string,               // the single most important takeaway, one sentence
+    "threeThings": {                  // REQUIRED. The three things a reader must know. One sentence each.
+      "growth": string,               // what is driving (or stalling) growth
+      "risk": string,                 // the single biggest risk
+      "watch": string                 // the next thing that would change the picture
+    },
+    "bottomLine": {                   // REQUIRED. Same analysis, two readers.
+      "considering": string,          // for someone who does NOT own it yet
+      "holding": string               // for someone who ALREADY holds a position
+    }
   },
   "blocks": Block[]                   // 5–10 blocks, ordered for narrative flow
 }
@@ -52,11 +61,23 @@ Each Block is one of these shapes (pick whichever best presents each point; incl
 - prose:        { "type":"prose", "title"?, "markdown" }   // narrative ("Bottom Line"). Keep tight; **bold** and "- " bullets allowed.
 
 # Composition rules
-- Lead with the substance. A strong default order: a kpi_grid of the latest-quarter headline numbers → a bar_chart of the multi-year revenue or EPS trajectory (with projected bars for guidance) → segment_bars (if mix is known) → kv_table of forward guidance/targets → price_targets → metric_table valuation snapshot → bull_bear → catalysts → risks → a short prose "Bottom Line".
+- Lead with the substance. A strong default order: a kpi_grid of the latest-quarter headline numbers → a bar_chart of the multi-year revenue or EPS trajectory (with projected bars for guidance) → segment_bars (if mix is known) → kv_table of forward guidance/targets → price_targets → metric_table valuation snapshot → bull_bear → catalysts → risks.
+- Do NOT end with a prose "Bottom Line" block. verdict.bottomLine is the report's conclusion and it renders above the blocks, so a closing prose block would state the same conclusion twice. Use a prose block only for genuine narrative that has no better-fitting block type.
 - Only include a block if you have real content for it. Omit segment_bars / price_targets if research didn't yield reliable data. 5–10 blocks total — be selective, every block must earn its place.
 - Set tone/severity/direction so the UI can color signals correctly (e.g. a contracting margin is tone "negative").
 - Don't restate a fact or number you already gave full weight to earlier in the report. State it once, with the number, where it matters most (usually kpi_grid, bar_chart, or the headline); later blocks may reference it briefly by name without repeating the figure (e.g. "Azure's reacceleration (above) also de-risks..." not a second "43% growth").
 - The verdict must be justified by the blocks above it. Don't hedge into meaninglessness — commit to a stance and state confidence honestly.
+
+# verdict.threeThings and verdict.bottomLine — REQUIRED, and read before anything else
+These five sentences are rendered above the fold, before the reader has seen a single block. They are the most-read text in the report. Write them last, once the blocks are settled, so they reflect the actual analysis.
+
+- Every one is ONE sentence. No sentence fragments, no bullet lists, no semicolon-chained clauses standing in for two sentences.
+- Plain language, and this rule is stricter here than anywhere else in the report: no unexplained jargon at all. Not TAM, not hyperscaler, not multiple compression, not secular tailwind. A first-time investor reads these five sentences and nothing else. If a technical term is genuinely load-bearing, spend the words to say what it means in ordinary English.
+- threeThings.risk summarizes the SAME risk you rank first in the risks block, and threeThings.watch the SAME item you rank first in catalysts. Say it as a plain sentence here; the block carries the severity, timeframe and detail. Do not introduce a risk here that appears nowhere below.
+- threeThings.growth has no block counterpart. Name the metric that actually describes this company's growth (revenue, subscribers, bookings, margin, pipeline, whatever fits the business) with a real figure where you have one, and say whether it's accelerating, steady or slowing.
+- bottomLine.considering and bottomLine.holding are the same analysis addressed to two different readers, NOT two different opinions. If you are bearish, both stay bearish. "considering" answers whether to start a position now and at what kind of price or on what trigger. "holding" answers what to do with an existing position: add, hold, trim, exit, and on what signal.
+- Write "holding" for someone who may hold any size of position. Never assume they hold a lot, and never open with a trim instruction unless the analysis genuinely supports trimming.
+- Neither line is personalized financial advice. Describe what the analysis implies and what it depends on, not what the reader personally should do with their money.
 - Attach "source" (a plain-text field on bull_bear/catalysts/risks/metric_table items) when citing a specific, checkable figure you found via web_search, e.g. "10-Q Q3 2026" or "Q2 2026 earnings call". Use a plain string (bull_bear) or omit the field for general analysis or opinion — don't force a source onto every point.
 
 # Voice
@@ -69,7 +90,6 @@ interface UserPromptParams {
   symbol: string;
   companyName: string;
   experienceLevel: 'beginner' | 'intermediate' | 'advanced';
-  holds: boolean;
   lens: DeepDiveLens;
   archetypeHint: string;
   dataBlock: string;
@@ -99,13 +119,14 @@ const LENS_INSTRUCTION: Record<DeepDiveLens, string> = {
 };
 
 export function buildUserPrompt(params: UserPromptParams): string {
-  const { symbol, companyName, experienceLevel, holds, lens, archetypeHint, dataBlock, today } = params;
+  const { symbol, companyName, experienceLevel, lens, archetypeHint, dataBlock, today } = params;
 
   return `Write a deep-dive equity research report on ${companyName} ($${symbol}). Today is ${today}.
 
 ANALYSIS LENS: ${LENS_INSTRUCTION[lens]}
 COMPANY LENS (from its fundamentals): ${archetypeHint}
-READER: ${EXPERIENCE_NOTE[experienceLevel]}${holds ? '\nThe reader currently HOLDS this stock — orient the takeaway toward hold/add/trim considerations.' : ''}
+READER: ${EXPERIENCE_NOTE[experienceLevel]}
+Write for both a reader who owns this stock and one who doesn't. verdict.bottomLine covers each of them separately, so don't skew the report toward either.
 
 Use web_search for the latest quarter, guidance, analyst price targets, segment mix, and recent catalysts. Ground everything else in the data below.
 

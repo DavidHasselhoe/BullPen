@@ -35,9 +35,8 @@ async function runDeepDive(params: {
   symbol: string;
   lens: DeepDiveLens;
   experienceLevel: ExperienceLevel;
-  holds: boolean;
 }): Promise<void> {
-  const { id, userId, symbol, lens, experienceLevel, holds } = params;
+  const { id, userId, symbol, lens, experienceLevel } = params;
   const supabase = createServerClient();
   const setPhase = (phase: DivePhase) => supabase.from('stock_deep_dives').update({ phase }).eq('id', id);
 
@@ -50,7 +49,7 @@ async function runDeepDive(params: {
     const today = new Date().toISOString().slice(0, 10);
 
     const userPrompt = buildUserPrompt({
-      symbol, companyName, experienceLevel, holds, lens,
+      symbol, companyName, experienceLevel, lens,
       archetypeHint: archetype.hint, dataBlock, today,
     });
 
@@ -184,13 +183,15 @@ async function postHandler(
   // Body
   let lens: DeepDiveLens = 'full';
   let experienceLevel: ExperienceLevel = 'intermediate';
-  let holds = false;
   try {
     const body = await request.json().catch(() => ({}));
     if (typeof body.lens === 'string' && isLens(body.lens)) lens = body.lens;
     if (body.experienceLevel === 'beginner' || body.experienceLevel === 'advanced') experienceLevel = body.experienceLevel;
-    holds = body.holds === true;
   } catch { /* defaults */ }
+  // `holds` used to be read here and told the prompt to orient the whole
+  // takeaway toward hold/add/trim. verdict.bottomLine now always covers both
+  // readers, so the body field is ignored: the client still sends it, and the
+  // UI uses its own copy to decide which line to lead with.
 
   const supabase = createServerClient();
   const { data: inserted, error: insertErr } = await supabase
@@ -213,7 +214,7 @@ async function postHandler(
 
   const id = inserted.id as string;
 
-  after(() => runDeepDive({ id, userId: session.userId, symbol, lens, experienceLevel, holds }));
+  after(() => runDeepDive({ id, userId: session.userId, symbol, lens, experienceLevel }));
 
   return addSecurityHeaders(NextResponse.json({ id, status: 'pending' }));
 }
