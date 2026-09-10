@@ -11,7 +11,7 @@
  * isn't a single holding competing for identity with the named ones.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { Card, CardContent } from '@/components/ui/card';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
@@ -97,15 +97,21 @@ export function InstitutionalHoldingsPieChart({
     return () => mq.removeEventListener('change', handler);
   }, []);
 
+  // What the fund DID beats what it holds: a reader who already saw this
+  // page last quarter learns nothing new from the concentration sentence.
+  // Falls back to it when there is no prior quarter, or no move worth naming.
+  // Memoized: `highlightedKey` (set on every row hover in a list that can run
+  // to 7000+ rows) lives above this component, so without this it recomputed
+  // on every mouse move over the holdings list.
+  const headline = useMemo(
+    () => quarterHeadline(diff ?? null, allocation, sharesHistory ?? {}) ?? allocationHeadline(allocation),
+    [diff, allocation, sharesHistory]
+  );
+
   if (allocation.top.length === 0) return null;
 
   const slices = toSlices(allocation);
   const centerValue = totalValueUsd ?? allocation.total;
-  // What the fund DID beats what it holds: a reader who already saw this
-  // page last quarter learns nothing new from the concentration sentence.
-  // Falls back to it when there is no prior quarter, or no move worth naming.
-  const headline =
-    quarterHeadline(diff ?? null, allocation, sharesHistory ?? {}) ?? allocationHeadline(allocation);
   const topSlice = slices[0];
   const positionCount = allocation.top.length + allocation.rest.length;
   // The donut's hole is the readout. A floating tooltip would have to be

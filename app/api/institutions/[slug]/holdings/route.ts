@@ -74,20 +74,37 @@ const CUSIP_LOOKUP_CHUNK = 500; // keep the reconciliation .in() query well unde
  */
 async function fetchAllHoldings(
   supabase: ReturnType<typeof createServerClient>,
-  filingId: string
+  filingId: string,
+  totalPositions: number | null
 ): Promise<HoldingRow[]> {
-  const rows: HoldingRow[] = [];
-  let offset = 0;
-  for (;;) {
+  const fetchPage = async (offset: number): Promise<HoldingRow[]> => {
     const { data } = await supabase
       .from('institutional_holdings')
       .select('symbol, name_of_issuer, cusip, value_usd, shares, portfolio_pct')
       .eq('filing_id', filingId)
       .order('cusip', { ascending: true })
       .range(offset, offset + PAGE_SIZE - 1);
-    const batch = (data as HoldingRow[] | null) ?? [];
+    return (data as HoldingRow[] | null) ?? [];
+  };
+
+  // The filing's own total_positions lets every page fire in parallel instead
+  // of one round trip at a time -- for a 7000+-position fund (Citadel) that's
+  // 8 sequential round trips collapsed into 1, which was the main source of
+  // load lag on this page. Never trusted for correctness: if the count is
+  // missing or understates the real row set, the while-loop below keeps
+  // paging past it the old way.
+  const estimatedPages = totalPositions && totalPositions > 0 ? Math.ceil(totalPositions / PAGE_SIZE) : 1;
+  const firstBatches = await Promise.all(
+    Array.from({ length: estimatedPages }, (_, i) => fetchPage(i * PAGE_SIZE))
+  );
+  const rows: HoldingRow[] = firstBatches.flat();
+
+  let offset = estimatedPages * PAGE_SIZE;
+  let lastBatchLength = firstBatches[firstBatches.length - 1]?.length ?? 0;
+  while (lastBatchLength === PAGE_SIZE) {
+    const batch = await fetchPage(offset);
     rows.push(...batch);
-    if (batch.length < PAGE_SIZE) break;
+    lastBatchLength = batch.length;
     offset += PAGE_SIZE;
   }
 
@@ -234,8 +251,10 @@ async function handler(
     const previousFiling = filingRows[(currentIndex === -1 ? 0 : currentIndex) + 1] ?? null;
 
     const [currentHoldingsRaw, previousHoldingsRaw] = await Promise.all([
-      fetchAllHoldings(supabase, currentFiling.id),
-      previousFiling ? fetchAllHoldings(supabase, previousFiling.id) : Promise.resolve(null),
+      fetchAllHoldings(supabase, currentFiling.id, currentFiling.total_positions),
+      previousFiling
+        ? fetchAllHoldings(supabase, previousFiling.id, previousFiling.total_positions)
+        : Promise.resolve(null),
     ]);
     const previousHoldings: DiffableHolding[] | null = previousHoldingsRaw?.map(toDiffable) ?? null;
 

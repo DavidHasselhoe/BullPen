@@ -259,10 +259,13 @@ export function quarterHeadline(
   /** Only moves in positions big enough for a reader to have heard of. */
   const NOTABLE_WEIGHT_PCT = 1;
 
-  const weight = (cusip: string) =>
-    allocation.top.find((h) => h.key === cusip)?.pct ??
-    allocation.rest.find((h) => h.key === cusip)?.pct ??
-    0;
+  // Map lookup, not a linear .find() over allocation.rest -- that scan ran
+  // inside a sort comparator called once per candidate, which on a
+  // 7000+-position fund like Citadel was tens of millions of comparisons.
+  const pctByCusip = new Map<string, number>();
+  for (const h of allocation.top) pctByCusip.set(h.key, h.pct);
+  for (const h of allocation.rest) pctByCusip.set(h.key, h.pct);
+  const weight = (cusip: string) => pctByCusip.get(cusip) ?? 0;
 
   const biggest = <T extends { cusip: string }>(rows: T[]): T | undefined =>
     [...rows].sort((a, b) => weight(b.cusip) - weight(a.cusip))[0];
