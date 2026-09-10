@@ -351,6 +351,7 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
           {/* ── Results ─────────────────────────────────────────────────────── */}
           {state === 'loaded' && analysis && (
             <RiskAnalysisResult
+              className="page-enter"
               analysis={analysis}
               displayedTimestamp={restoredFrom ?? analysis.generatedAt}
               history={history}

@@ -315,14 +315,16 @@ export function PortfolioBuilderClient() {
 
   if (phase === 'done' && result) {
     return (
-      <PortfolioResult
-        portfolio={result.portfolio}
-        logoMap={result.logoMap}
-        replacedTickers={result.replacedTickers}
-        thesis={thesis}
-        createdAt={result.createdAt}
-        onReset={reset}
-      />
+      <div className="page-enter">
+        <PortfolioResult
+          portfolio={result.portfolio}
+          logoMap={result.logoMap}
+          replacedTickers={result.replacedTickers}
+          thesis={thesis}
+          createdAt={result.createdAt}
+          onReset={reset}
+        />
+      </div>
     );
   }
 

@@ -3,6 +3,7 @@
 
 import type { RiskAnalysis } from './types';
 import type { SavedRiskAnalysis } from '@/app/api/holdings/risk-analysis/history/route';
+import { cn } from '@/lib/utils';
 import { RiskScoreHero } from './RiskScoreHero';
 import { RiskProfile } from './RiskProfile';
 import { TopRisks } from './TopRisks';
@@ -19,6 +20,7 @@ interface Props {
   onRestore: (id: string) => void;
   onDelete: (id: string) => void;
   footer: React.ReactNode;
+  className?: string;
 }
 
 // Hierarchy order: score/summary -> risk profile -> top risks -> scenarios ->
@@ -28,9 +30,9 @@ interface Props {
 // result's actual findings -- the reason anyone opened this in the first
 // place. History is still worth keeping (is this score new or old?), just
 // after the assessment it's providing context for, not before it.
-export function RiskAnalysisResult({ analysis, displayedTimestamp, history, onRestore, onDelete, footer }: Props) {
+export function RiskAnalysisResult({ analysis, displayedTimestamp, history, onRestore, onDelete, footer, className }: Props) {
   return (
-    <div className="space-y-7">
+    <div className={cn('space-y-7', className)}>
       <RiskScoreHero analysis={analysis} displayedTimestamp={displayedTimestamp} history={history} />
 
       <div className="space-y-6 border-t border-border/20 pt-6">

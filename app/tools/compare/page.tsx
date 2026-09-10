@@ -766,7 +766,7 @@ function CompareContent() {
           subtext={t('compareProcessingSubtext')}
         />
       ) : (
-        <>
+        <div className="page-enter">
           <div className="mb-8">
             <div className="flex items-center justify-between gap-4 mb-1">
               <div className="flex items-center gap-3">
@@ -1249,7 +1249,7 @@ function CompareContent() {
               </Card>
             </section>
           </div>
-        </>
+        </div>
       )}
     </div>
   );

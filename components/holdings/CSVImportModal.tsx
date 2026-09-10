@@ -218,7 +218,7 @@ export function CSVImportModal({ open, onOpenChange }: Props) {
         )}
 
         {step === 'success' && summary && (
-          <>
+          <div className="page-enter">
             <DialogHeader className="px-6 pt-6 pb-4 border-b border-border/40">
               <DialogTitle className="flex items-center gap-2 text-base font-semibold">
                 {t('csvImportSuccessTitle')}
@@ -266,7 +266,7 @@ export function CSVImportModal({ open, onOpenChange }: Props) {
                 {t('csvImportContinueToReview')} <ArrowRight className="h-3.5 w-3.5" />
               </Button>
             </div>
-          </>
+          </div>
         )}
 
         {step === 'error' && (
