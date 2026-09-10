@@ -32,7 +32,7 @@ import { config } from 'dotenv';
 config({ path: '.env.local' });
 
 import { findEarnings8K, fetchFilingIndex, pickPressReleaseFile, pickCommentaryFile, fetchExhibitText } from '../lib/edgar/edgar-watch';
-import { seedEarningsDeepDiveDraft, completeEarningsDeepDiveFromFiling } from '../lib/instagram/content/earnings-deep-dive';
+import { seedEarningsDeepDiveDraft, refreshDraftEstimates, completeEarningsDeepDiveFromFiling } from '../lib/instagram/content/earnings-deep-dive';
 import { extractEarningsActuals } from '../lib/instagram/content/earnings-deep-dive-extract';
 import { sleep } from '../lib/utils';
 
@@ -138,6 +138,27 @@ async function main() {
   console.log(`[watch-earnings] Draft post ${postId} ${alreadyExisted ? '(already existed)' : '(created)'}.`);
 
   if (timing === 'AMC') await waitForAmcWindow();
+
+  // Second run at the consensus figures, now that the trading day's worth of
+  // preview coverage exists. Skips itself when the seed already found them, so
+  // this costs a search only when there's something to fix. See
+  // refreshDraftEstimates for why the timing changes the outcome.
+  const refresh = await refreshDraftEstimates({ ticker, reportDate, segmentLabel: segment });
+  if (refresh.attempted) {
+    if (refresh.filled.length > 0) {
+      console.log(`[watch-earnings] Estimates refreshed, filled: ${refresh.filled.join(', ')}.`);
+    } else {
+      console.log('[watch-earnings] Estimates refreshed, still nothing found.');
+    }
+    if (refresh.stillMissing.length > 0) {
+      // The publish guard refuses a deep dive with no beat/miss, so say now
+      // that this post is on track to be held rather than at 4:05pm.
+      console.warn(
+        `[watch-earnings] WARNING: still missing ${refresh.stillMissing.join(', ')}. ` +
+        'A deep dive without a consensus comparison will be blocked at publish time.'
+      );
+    }
+  }
 
   console.log(`[watch-earnings] Polling SEC EDGAR every ${intervalSeconds}s for CIK ${cik}'s next 8-K (Item 2.02) filed on/after ${reportDate}...`);
 

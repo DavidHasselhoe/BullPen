@@ -158,6 +158,100 @@ export async function seedEarningsDeepDiveDraft(params: {
   return { postId: inserted.id as string, alreadyExisted: false };
 }
 
+/** The consensus figures, in the order a reader misses them. */
+const ESTIMATE_FIELDS = [
+  'epsEstimate',
+  'revenueEstimate',
+  'guidanceConsensus',
+  'grossMarginPriorQuarterPercent',
+] as const;
+
+/**
+ * Fill in any consensus figures the seed step couldn't find, by searching
+ * again closer to the report.
+ *
+ * The estimates matter as much as the actuals here: the beat or miss against
+ * consensus is what moves the stock, so a report without them isn't a thinner
+ * post, it's a post missing the part that explains the reaction. The publish
+ * guard blocks on exactly that, which makes an empty seed a silent kill for
+ * the whole post rather than a cosmetic gap.
+ *
+ * Why a second attempt finds what the first couldn't: the search depends on
+ * pre-earnings preview coverage, and that gets published through the US
+ * trading day. Measured across the six deep dives generated so far, the four
+ * seeded between 9:33 and 11:01 ET all came back with estimates, and the two
+ * seeded at 7:19 ET, before the market opened, came back with none of them.
+ * Running again once the market has closed puts the search where the coverage
+ * is.
+ *
+ * Only touches a draft, and only writes fields that are still null. A fresh
+ * null never overwrites a figure the seed already confirmed, and once the row
+ * has left 'draft' the actuals are merged in, where a late estimate change
+ * would quietly rewrite a beat into a miss.
+ */
+export async function refreshDraftEstimates(params: {
+  ticker: string;
+  reportDate: string;
+  segmentLabel?: string;
+}): Promise<{ attempted: boolean; filled: string[]; stillMissing: string[] }> {
+  const ticker = params.ticker.toUpperCase();
+  const periodKey = periodKeyFor(ticker, params.reportDate);
+
+  const supabase = createServerClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = supabase as any;
+
+  const { data: row } = (await db
+    .from('instagram_posts')
+    .select('id, status, slides')
+    .eq('content_type', CONTENT_TYPE)
+    .eq('period_key', periodKey)
+    .maybeSingle()) as { data: InstagramPostRow | null };
+
+  if (!row || row.status !== 'draft') return { attempted: false, filled: [], stillMissing: [] };
+
+  const data = row.slides.data;
+  const missingBefore = ESTIMATE_FIELDS.filter((k) => data[k] == null);
+  if (missingBefore.length === 0) return { attempted: false, filled: [], stillMissing: [] };
+
+  const fresh = await fetchDeepDiveEstimates(ticker, params.segmentLabel);
+
+  const merged: EarningsDeepDiveData = { ...data };
+  const filled: string[] = [];
+
+  if (merged.epsEstimate == null && fresh.epsEstimate != null) {
+    merged.epsEstimate = fresh.epsEstimate;
+    filled.push('epsEstimate');
+  }
+  if (merged.revenueEstimate == null && fresh.revenueEstimate != null) {
+    merged.revenueEstimate = fresh.revenueEstimate;
+    filled.push('revenueEstimate');
+  }
+  if (merged.guidanceConsensus == null && fresh.guidanceConsensus != null) {
+    merged.guidanceConsensus = fresh.guidanceConsensus;
+    filled.push('guidanceConsensus');
+  }
+  if (merged.grossMarginPriorQuarterPercent == null && fresh.grossMarginPriorQuarterPercent != null) {
+    merged.grossMarginPriorQuarterPercent = fresh.grossMarginPriorQuarterPercent;
+    filled.push('grossMarginPriorQuarterPercent');
+  }
+  // The seed falls back to the bare ticker when the name search came up empty.
+  if (merged.companyName === ticker && fresh.companyName) merged.companyName = fresh.companyName;
+
+  if (filled.length > 0) {
+    await db
+      .from('instagram_posts')
+      .update({ slides: { contentType: CONTENT_TYPE, data: merged } satisfies EarningsDeepDiveSlides })
+      .eq('id', row.id);
+  }
+
+  return {
+    attempted: true,
+    filled,
+    stillMissing: ESTIMATE_FIELDS.filter((k) => merged[k] == null),
+  };
+}
+
 async function writeHeadlineAndCaption(data: EarningsDeepDiveData): Promise<{ headline: string; caption: string }> {
   const spend = await checkAnthropicDailySpend();
   if (!spend.allowed) {
