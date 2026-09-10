@@ -67,16 +67,34 @@ interface Props {
 /**
  * Real progress (items done / phase index) only ever moves in a few big,
  * infrequent steps — jumping the bar straight between those values reads as
- * broken ("is this stuck?"), and a single phase can legitimately run
- * 30-90s (extended thinking) with zero real signal in between. This
- * simulates continuous motion on top of the real signal: within the current
- * band [bandStart, bandEnd), the ceiling itself creeps forward with elapsed
- * time (not just distance), asymptotically approaching but never reaching
- * bandEnd — so the bar stays visibly alive no matter how long a single band
- * lasts, without ever claiming to be further along than the real signal
- * allows. A real band change (the next item/phase) snaps the clock and
- * lets the bar jump forward again. `complete` overrides everything to 100.
+ * broken ("is this stuck?"), and a single phase can legitimately run well
+ * past a minute (extended thinking, a slow composing pass) with zero real
+ * signal in between. This simulates continuous motion on top of the real
+ * signal: within the current band [bandStart, bandEnd), the ceiling itself
+ * creeps forward with elapsed time (not just distance) — so the bar stays
+ * visibly alive no matter how long a single band lasts, without ever
+ * claiming to be further along than the real signal allows. A real band
+ * change (the next item/phase) snaps the clock and lets the bar jump forward
+ * again. `complete` overrides everything to 100.
+ *
+ * The easing is `t / (t + T)`, not `1 - e^(-t/T)`. The exponential version
+ * used here previously reaches ~99% of its ceiling within about 3*T seconds
+ * and is then, in whole-percent display terms, flat — which is exactly what
+ * was reported as "stuck at 99% for a long time" on Deep Dive's last phase,
+ * which has no next band to jump to. `t/(t+T)` has no such plateau: its
+ * remaining gap shrinks like `1/t` rather than `e^(-t)`, so it keeps
+ * producing a visible (if increasingly slow) tick upward for as long as the
+ * band runs, however long that turns out to be.
+ *
+ * The band ceiling is also reserved short of a literal 100 whenever this is
+ * the last band (no further item/phase is coming) — otherwise the curve
+ * would legitimately reach 100 on its own before the real result lands,
+ * which is the one number this simulation must never show without
+ * `complete` actually being true.
  */
+const SIMULATED_TIME_CONSTANT_SEC = 8; // half the band's remaining gap closes every ~8s early on, then keeps slowly closing without ever fully stopping
+const LAST_BAND_CEILING = 99;
+
 function useSimulatedPercent(bandStart: number, bandEnd: number, complete: boolean): number {
   const [display, setDisplay] = useState(1);
   // null until the first effect run sets it — avoids calling the impure
@@ -93,6 +111,9 @@ function useSimulatedPercent(bandStart: number, bandEnd: number, complete: boole
   }, [bandStart]);
 
   useEffect(() => {
+    const isLastBand = bandEnd >= 100;
+    const effectiveBandEnd = isLastBand ? Math.min(bandEnd, LAST_BAND_CEILING) : bandEnd;
+
     const id = setInterval(() => {
       setDisplay((d) => {
         if (complete) {
@@ -100,8 +121,8 @@ function useSimulatedPercent(bandStart: number, bandEnd: number, complete: boole
           return Math.min(d + Math.max((100 - d) * 0.12, 3), 100);
         }
         const elapsedSec = (Date.now() - (bandStartedAtRef.current ?? Date.now())) / 1000;
-        const eased = 1 - Math.exp(-elapsedSec / 12); // ~63% of the way in 12s, ~95% by 36s
-        const target = Math.max(d, bandStart + (bandEnd - bandStart) * 0.95 * eased);
+        const eased = elapsedSec / (elapsedSec + SIMULATED_TIME_CONSTANT_SEC);
+        const target = Math.max(d, bandStart + (effectiveBandEnd - bandStart) * eased);
         if (d >= target) return d;
         return Math.min(d + Math.max((target - d) * 0.15, 0.15), target);
       });
