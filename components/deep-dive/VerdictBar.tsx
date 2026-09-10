@@ -56,10 +56,16 @@ function mismatchNote(score: number, stance: Verdict['stance']): string | null {
   return null;
 }
 
+/**
+ * Equal thirds, everything centered. The first cut sized the columns
+ * [auto 1fr 1fr] with left-aligned content, so the health cell took the width
+ * its ring needed and the other two sat against their left edges with a gap
+ * of dead space trailing each one.
+ */
 function Cell({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="min-w-0 sm:px-4 sm:first:pl-0 sm:last:pr-0">
-      <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/80">
+    <div className="flex min-w-0 flex-col items-center justify-center text-center sm:px-4">
+      <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/80">
         {label}
       </p>
       {children}
@@ -103,26 +109,29 @@ export function VerdictBar({
     <div className="rounded-xl border border-border/50 bg-muted/20 p-4">
       <div
         className={cn(
-          'grid gap-4 sm:divide-x sm:divide-border/40',
-          showHealth ? 'sm:grid-cols-[auto_1fr_1fr]' : 'sm:grid-cols-2'
+          'grid gap-5 sm:divide-x sm:divide-border/40',
+          showHealth ? 'sm:grid-cols-3' : 'sm:grid-cols-2'
         )}
       >
         {showHealth && (
           <Cell label="Financial health">
             {healthLoading || !health ? (
-              <div className="h-16 w-16 animate-shimmer rounded-full" />
+              <div className="h-[68px] w-[68px] animate-shimmer rounded-full" />
             ) : (
-              <div className="flex items-center gap-3">
+              // Ring and words as one centered unit. The words stay left
+              // aligned against each other so "Good" and the line under it
+              // share an edge rather than centering into a ragged stack.
+              <div className="flex items-center justify-center gap-3">
                 <HealthRing
                   score={health.score}
                   grade={health.grade}
                   pillars={health.categories}
-                  size={64}
+                  size={68}
                   className="shrink-0 text-foreground"
                 />
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-foreground">{health.label}</p>
-                  <p className="text-[11px] leading-tight text-muted-foreground/85">
+                <div className="min-w-0 text-left">
+                  <p className="text-lg font-bold leading-tight text-foreground">{health.label}</p>
+                  <p className="text-xs leading-tight text-muted-foreground/85">
                     What the numbers say
                   </p>
                 </div>
@@ -132,8 +141,8 @@ export function VerdictBar({
         )}
 
         <Cell label="AI view">
-          <p className={cn('text-xl font-bold leading-none', stance.cls)}>{stance.label}</p>
-          <p className="mt-1.5 text-[11px] leading-tight text-muted-foreground/85">
+          <p className={cn('text-2xl font-bold leading-none', stance.cls)}>{stance.label}</p>
+          <p className="mt-2 text-xs leading-tight text-muted-foreground/85">
             {CONFIDENCE_LABEL[verdict.confidence]}
           </p>
         </Cell>
@@ -141,13 +150,13 @@ export function VerdictBar({
         <Cell label="Price today">
           {price != null ? (
             <>
-              <p className="text-xl font-bold tabular-nums leading-none text-foreground">
+              <p className="text-2xl font-bold tabular-nums leading-none text-foreground">
                 ${price.toFixed(2)}
               </p>
               {changePct != null && (
                 <p
                   className={cn(
-                    'mt-1.5 text-[11px] font-medium tabular-nums leading-tight',
+                    'mt-2 text-xs font-medium tabular-nums leading-tight',
                     direction === 'up' && 'text-emerald-500',
                     direction === 'down' && 'text-red-500',
                     direction === 'flat' && 'text-muted-foreground'
@@ -167,7 +176,7 @@ export function VerdictBar({
               )}
             </>
           ) : (
-            <div className="h-6 w-20 animate-shimmer rounded" />
+            <div className="h-7 w-24 animate-shimmer rounded" />
           )}
         </Cell>
       </div>
