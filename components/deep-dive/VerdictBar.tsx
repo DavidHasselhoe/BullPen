@@ -118,9 +118,14 @@ export function VerdictBar({
             {healthLoading || !health ? (
               <div className="h-[68px] w-[68px] animate-shimmer rounded-full" />
             ) : (
-              // Ring and words as one centered unit. The words stay left
-              // aligned against each other so "Good" and the line under it
-              // share an edge rather than centering into a ragged stack.
+              // Ring and word as one centered unit, and nothing else. A
+              // "What the numbers say" gloss used to sit under the word; at a
+              // third of the bar's width it wrapped to two lines while the
+              // other two cells kept single-line sub-text, which is exactly
+              // the lopsidedness this layout is meant to remove. The cell
+              // label already says these are the financials, and the note
+              // under the bar explains the split when the two readings
+              // actually disagree.
               <div className="flex items-center justify-center gap-3">
                 <HealthRing
                   score={health.score}
@@ -129,12 +134,7 @@ export function VerdictBar({
                   size={68}
                   className="shrink-0 text-foreground"
                 />
-                <div className="min-w-0 text-left">
-                  <p className="text-lg font-bold leading-tight text-foreground">{health.label}</p>
-                  <p className="text-xs leading-tight text-muted-foreground/85">
-                    What the numbers say
-                  </p>
-                </div>
+                <p className="text-lg font-bold leading-tight text-foreground">{health.label}</p>
               </div>
             )}
           </Cell>
