@@ -34,7 +34,6 @@ config({ path: '.env.local' });
 import { findEarnings8K, fetchFilingIndex, pickPressReleaseFile, pickCommentaryFile, fetchExhibitText } from '../lib/edgar/edgar-watch';
 import { seedEarningsDeepDiveDraft, completeEarningsDeepDiveFromFiling } from '../lib/instagram/content/earnings-deep-dive';
 import { extractEarningsActuals } from '../lib/instagram/content/earnings-deep-dive-extract';
-import { getMarketSession } from '../lib/cache/redis-cache';
 import { sleep } from '../lib/utils';
 
 function parseArg(name: string): string | undefined {
@@ -42,21 +41,39 @@ function parseArg(name: string): string | undefined {
   return arg ? arg.slice(name.length + 3) : undefined;
 }
 
+/** Minutes past ET midnight, right now. */
+function etMinutesNow(): number {
+  const et = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York', hour12: false }));
+  return et.getHours() * 60 + et.getMinutes();
+}
+
+/** 4:00 PM ET, the earliest an AMC release can land. */
+const MARKET_CLOSE_ET_MINUTES = 16 * 60;
+
 /**
  * An AMC 8-K can't legally exist before the market closes, so hammering
  * EDGAR every --interval seconds for the hours before that is pure waste —
  * both on SEC's servers and on whoever's watching this terminal. Sleeps in
- * 5-minute chunks (so progress is still visible) until getMarketSession()
- * leaves 'regular', then returns and lets the real poll loop take over.
+ * 5-minute chunks (so progress is still visible) until the ET clock passes
+ * 4:00 PM, then returns and lets the real poll loop take over.
+ *
+ * Deliberately reads the ET clock rather than getMarketSession(). That helper
+ * reports 'extended' for BOTH pre-market (4:00-9:30) and after-hours
+ * (16:00-20:00), so a "wait while it's 'regular'" check can't tell the hours
+ * before the close from the hours after it. Started pre-market it waited for
+ * nothing: verified live on 2026-09-10, ORCL and ADBE watchers launched at
+ * 7:20 AM ET polled straight through the morning and both gave up at 11:20 AM,
+ * roughly five hours before either company could possibly have reported.
+ *
  * ponytail: doesn't know about early-close days (day after Thanksgiving,
- * Dec 24) — worst case on one of those it starts polling ~3h later than it
- * could have, still well inside typical AMC filing windows. Fix if that
- * ever actually matters: teach getMarketSession() the NYSE holiday calendar.
+ * Dec 24). On one of those it starts polling ~3h later than it could have,
+ * still well inside typical AMC filing windows. Fix if that ever actually
+ * matters: teach getMarketSession() the NYSE holiday calendar.
  */
 async function waitForAmcWindow(): Promise<void> {
   const CHECK_INTERVAL_MS = 5 * 60_000;
-  while (getMarketSession() === 'regular') {
-    console.log('[watch-earnings] AMC report — market still open, waiting for close before polling...');
+  while (etMinutesNow() < MARKET_CLOSE_ET_MINUTES) {
+    console.log('[watch-earnings] AMC report — market has not closed yet, waiting before polling...');
     await sleep(CHECK_INTERVAL_MS);
   }
 }
