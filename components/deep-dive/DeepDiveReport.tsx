@@ -5,9 +5,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, MessageSquare, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { BlockRenderer } from './blocks';
 import { DeepDiveHero } from './DeepDiveHero';
 import { ThreeThings } from './ThreeThings';
+import { DeepDiveSections } from './DeepDiveSections';
 import type { DeepDiveReport as Report } from '@/lib/ai/deep-dive/schema';
 
 const StockPricePanel = dynamic(
@@ -23,14 +23,18 @@ interface Props {
   onAsk?: () => void;
 }
 
-// Hierarchy mirrors Risk Analysis's redesign brief: hero/summary -> price
-// chart -> data-driven blocks (this feature's own information architecture —
-// the model decides which block types apply, unlike RA's fixed schema) ->
-// footer. Staleness + the AI-generated disclaimer moved up into the hero's
-// meta line (directly under the verdict badge) since burying them in tiny
-// text at the very bottom of a five-screen report meant nobody saw them;
-// the footer disclaimer stays too as cheap, low-risk redundancy for
-// legally-sensitive copy.
+// Three layers, in the order a reader needs them:
+//   1. DeepDiveHero    verdict, health score, price, one sentence
+//   2. ThreeThings     growth / biggest risk / what to watch next
+//   3. DeepDiveSections everything else, grouped and collapsed by default
+// with the price chart between 2 and 3. The point of the split is that the
+// answer to "should I buy this" is readable without scrolling past a single
+// table, while every table is still one click away.
+//
+// Staleness and the AI-generated disclaimer live in the hero's meta line,
+// since burying them at the bottom of a five-screen report meant nobody saw
+// them; the footer disclaimer stays as cheap redundancy for legally
+// sensitive copy.
 export function DeepDiveReport({ report, createdAt, onRegenerate, regenerating, onAsk }: Props) {
   const when = createdAt ?? report.generatedAt;
 
@@ -65,10 +69,8 @@ export function DeepDiveReport({ report, createdAt, onRegenerate, regenerating, 
 
         <StockPricePanel ticker={report.ticker} />
 
-        <div className="space-y-7 border-t border-border/20 pt-6">
-          {report.blocks.map((block, i) => (
-            <BlockRenderer key={i} block={block} />
-          ))}
+        <div className="border-t border-border/20 pt-6">
+          <DeepDiveSections report={report} />
         </div>
 
         <div className="flex justify-end border-t border-border/20 pt-6">
