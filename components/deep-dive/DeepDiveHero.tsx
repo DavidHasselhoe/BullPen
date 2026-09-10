@@ -118,19 +118,19 @@ export function DeepDiveHero({ report, when }: Props) {
         <div className="flex min-w-0 items-start gap-3">
           <CompanyLogo name={report.companyName} ticker={report.ticker} size={40} className="mt-0.5 border border-border/50" loading="eager" />
           <div className="min-w-0 space-y-1">
-            {/* One truncatable text flow, not three flex-laid spans -- the
-                old layout let the row get squeezed by the stance badge/gauge
-                column on the right until it wrapped word-by-word ("AI DEEP
-                DIVE" / "Full" / "deep" / "dive" each on their own line).
-                Truncating with an ellipsis if it's ever this tight reads far
-                better than a broken multi-line eyebrow label. */}
-            <div className="flex min-w-0 items-center gap-1.5">
+            {/* Lens name deliberately lives in the meta line on the right,
+                not here. This column sits beside the stance/gauge block
+                (shrink-0, up to 240px) inside a card capped at max-w-3xl, so
+                it never has more than ~120-150px to work with -- "AI Deep
+                Dive · Full deep dive" doesn't fit there at any screen size,
+                which first wrapped word-by-word and then, truncated, clipped
+                down to an unreadable "AI DEEP DIVE · F...". "AI Deep Dive"
+                alone reliably fits; the meta paragraph below already wraps
+                freely and has the room the lens name actually needs. */}
+            <div className="flex items-center gap-1.5">
               <Sparkles className="h-3 w-3 shrink-0 text-primary" />
-              <span className="truncate text-[11px] font-bold uppercase tracking-widest text-primary">
-                AI Deep Dive{' '}
-                <span className="font-normal normal-case tracking-normal text-muted-foreground/80">
-                  · {LENS_LABELS[report.lens]}
-                </span>
+              <span className="text-[11px] font-bold uppercase tracking-widest text-primary">
+                AI Deep Dive
               </span>
             </div>
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground leading-tight">
@@ -145,7 +145,7 @@ export function DeepDiveHero({ report, when }: Props) {
           </span>
           <BullBearGauge verdict={report.verdict} />
           <p className="text-[10px] text-muted-foreground/70 text-right leading-snug">
-            Generated {fmtRelative(when)}
+            {LENS_LABELS[report.lens]} · Generated {fmtRelative(when)}
             {report.dataAsOf && (
               <>
                 {' · fundamentals as of '}
