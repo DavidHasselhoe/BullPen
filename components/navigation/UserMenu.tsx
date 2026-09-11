@@ -16,7 +16,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { User, LogOut, Loader2, Shield, CreditCard, Sparkles, MessageSquarePlus, Inbox } from 'lucide-react';
 import { ProfileModal } from '@/components/user/ProfileModal';
-import { ProfileAvatar } from '@/components/user/ProfileAvatar';
+import { ProfileAvatar, getUserDisplayName, getUserInitials } from '@/components/user/ProfileAvatar';
 import { ProBadge } from '@/components/billing/ProBadge';
 import { ReportFeedbackDialog } from '@/components/feedback/ReportFeedbackDialog';
 import { isAdmin, isPro, tierFromUser } from '@/lib/billing/tier';
@@ -91,23 +91,7 @@ export function UserMenu({ forceDark = false, forceLight = false, open, onOpenCh
     );
   }
 
-  // Get user initials for avatar fallback
-  const getInitials = () => {
-    if (user.full_name) {
-      return user.full_name
-        .split(' ')
-        .map((n) => n[0])
-        .join('')
-        .toUpperCase()
-        .slice(0, 2);
-    }
-    if (user.username) {
-      return user.username.slice(0, 2).toUpperCase();
-    }
-    return user.email.slice(0, 2).toUpperCase();
-  };
-
-  const displayName = user.full_name || user.username || user.email.split('@')[0];
+  const displayName = getUserDisplayName(user);
   const tier = tierFromUser(user.account_tier, user.role, user.pro_bonus_until);
   const userIsAdmin = isAdmin(tier);
   const userIsPro = isPro(tier);
@@ -123,7 +107,7 @@ export function UserMenu({ forceDark = false, forceLight = false, open, onOpenCh
           <ProfileAvatar
             avatarUrl={user.avatar_url}
             displayName={displayName}
-            fallback={getInitials()}
+            fallback={getUserInitials(user)}
             tier={user.account_tier ?? 1}
             size="md"
             showTooltip={false}

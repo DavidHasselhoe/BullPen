@@ -25,6 +25,32 @@ const SIZE_CLASSES = {
   xl: 'h-24 w-24',
 } as const;
 
+/** The fields any signed-in user shape needs to render an avatar. */
+type AvatarUser = { full_name?: string | null; username?: string | null; email: string };
+
+/**
+ * Initials shown when a user has no avatar image. Shared so the same user never
+ * renders as "DA" in one place and "D" in another: full name gives two initials,
+ * then username, then email, each trimmed to two characters.
+ */
+export function getUserInitials(user: AvatarUser): string {
+  if (user.full_name) {
+    return user.full_name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  }
+  if (user.username) return user.username.slice(0, 2).toUpperCase();
+  return user.email.slice(0, 2).toUpperCase();
+}
+
+/** The name to show beside or instead of the avatar. */
+export function getUserDisplayName(user: AvatarUser): string {
+  return user.full_name || user.username || user.email.split('@')[0];
+}
+
 interface ProfileAvatarProps {
   avatarUrl?: string | null;
   displayName?: string;

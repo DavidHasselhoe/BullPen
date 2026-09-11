@@ -7,13 +7,13 @@ import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { useEffect, useRef, useState, useCallback, forwardRef, useImperativeHandle, memo } from 'react';
-import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Send, Square, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ProfileAvatar, getUserDisplayName, getUserInitials } from '@/components/user/ProfileAvatar';
 import type { AuthUser } from '@/lib/auth/auth';
 import type { QuotaState } from '@/lib/billing/quotas';
 import { useAddOrUpdateHolding, useUpdateHoldingBySymbol, useRemoveHoldingBySymbol } from '@/hooks/use-holdings';
@@ -571,23 +571,22 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
                 )}
               </div>
               {isUser && (
-                <div className="shrink-0 rounded-full overflow-hidden mb-0.5 h-8 w-8 ring-2 ring-primary/30">
-                  {user?.avatar_url ? (
-                    <Image
-                      src={user.avatar_url}
-                      alt={user.full_name ?? user.email}
-                      width={32}
-                      height={32}
-                      className="object-cover"
-                    />
-                  ) : (
-                    <div className="h-full w-full flex items-center justify-center bg-primary text-primary-foreground text-sm font-semibold">
-                      {user
-                        ? (user.full_name ?? user.email).charAt(0).toUpperCase()
-                        : <User className="h-4 w-4" />}
-                    </div>
-                  )}
-                </div>
+                user ? (
+                  <ProfileAvatar
+                    avatarUrl={user.avatar_url}
+                    displayName={getUserDisplayName(user)}
+                    fallback={getUserInitials(user)}
+                    tier={user.account_tier ?? 1}
+                    size="sm"
+                    showTooltip={false}
+                    showCrown={false}
+                    className="shrink-0 mb-0.5 [&_[data-slot=avatar-fallback]]:text-sm"
+                  />
+                ) : (
+                  <div className="shrink-0 mb-0.5 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                    <User className="h-4 w-4" />
+                  </div>
+                )
               )}
             </motion.div>
           );

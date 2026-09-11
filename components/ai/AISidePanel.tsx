@@ -1,7 +1,6 @@
 'use client';
 
 import { lazy, Suspense, useEffect, useRef, useState, useCallback } from 'react';
-import Image from 'next/image';
 import { X, PanelRightClose, Settings, History, SquarePen, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -25,6 +24,7 @@ const BullpenChat = lazy(() => import('./BullpenChat').then((m) => ({ default: m
 import { useAuth } from '@/hooks/use-auth';
 import { useIsMobile } from '@/hooks/use-is-mobile';
 import { cn } from '@/lib/utils';
+import { ProfileAvatar, getUserDisplayName, getUserInitials } from '@/components/user/ProfileAvatar';
 import { WhyTodayView } from './WhyTodayView';
 import type { AIContext, WhyTodayPayload } from './AIPanelProvider';
 
@@ -270,21 +270,16 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
                   </TooltipTrigger>
                   <TooltipContent side="bottom">{t('sidePanelAiSettings')}</TooltipContent>
                 </Tooltip>
-                <div className="h-7 w-7 rounded-full overflow-hidden ring-2 ring-border">
-                  {user.avatar_url ? (
-                    <Image
-                      src={user.avatar_url}
-                      alt={user.full_name ?? user.email}
-                      width={28}
-                      height={28}
-                      className="object-cover"
-                    />
-                  ) : (
-                    <div className="h-full w-full flex items-center justify-center bg-primary text-primary-foreground text-xs font-semibold">
-                      {(user.full_name ?? user.email).charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                </div>
+                <ProfileAvatar
+                  avatarUrl={user.avatar_url}
+                  displayName={getUserDisplayName(user)}
+                  fallback={getUserInitials(user)}
+                  tier={user.account_tier ?? 1}
+                  size="sm"
+                  showTooltip={false}
+                  showCrown={false}
+                  className="h-7 w-7 [&_[data-slot=avatar-fallback]]:text-xs"
+                />
               </>
             )}
             <button
