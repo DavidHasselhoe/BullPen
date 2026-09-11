@@ -16,6 +16,7 @@ import { PendingOnboardingFlush } from "@/components/onboarding/PendingOnboardin
 import { NotificationToastListener } from "@/components/notifications/NotificationToastListener";
 import { CookieConsentBanner } from "@/components/cookie-consent/CookieConsentBanner";
 import { PostHogProvider } from "@/components/analytics/PostHogProvider";
+import { PageTransition } from "@/components/ui/PageTransition";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -123,7 +124,7 @@ export default async function RootLayout({
                 <NotificationToastListener />
                 <CookieConsentBanner />
                 <PostHogProvider />
-                {children}
+                <PageTransition>{children}</PageTransition>
                 <AIPanelToggle />
                 {process.env.VERCEL === '1' && (
                   <>

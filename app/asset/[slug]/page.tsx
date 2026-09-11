@@ -9,7 +9,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { EmptyState } from '@/components/ui/EmptyState';
-import AnimatedContent from '@/components/ui/AnimatedContent';
 import { useBackground } from '@/hooks/use-background';
 import { AddToListPicker } from '@/components/watchlist/AddToListPicker';
 import { useAIPanel } from '@/components/ai/AIPanelProvider';
@@ -123,73 +122,65 @@ export default function AssetPage() {
             </CardHeader>
           </Card>
         ) : (
-          <AnimatedContent reverse={true}>
-            <Card className="mb-8">
-              <CardHeader>
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3">
-                      <CompanyLogo
-                        name={displayName}
-                        ticker={symbol}
-                        logoUrl={profile?.logoUrl ?? null}
-                        size={64}
-                        loading="eager"
-                      />
-                      <div>
-                        <h1 className="text-3xl font-semibold text-foreground">{displayName}</h1>
-                        <div className="mt-1 flex items-center gap-2">
-                          <Badge variant="outline" className="font-mono text-sm">
-                            {symbol}
-                          </Badge>
-                          {assetType !== 'unknown' && (
-                            <span className="text-sm text-muted-foreground">
-                              {ASSET_TYPE_LABEL[assetType] ?? assetType}
-                            </span>
-                          )}
-                          {profile?.exchange && (
-                            <span className="text-sm text-muted-foreground">
-                              · {profile.exchange}
-                            </span>
-                          )}
-                        </div>
+          <Card className="mb-8">
+            <CardHeader>
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3">
+                    <CompanyLogo
+                      name={displayName}
+                      ticker={symbol}
+                      logoUrl={profile?.logoUrl ?? null}
+                      size={64}
+                      loading="eager"
+                    />
+                    <div>
+                      <h1 className="text-3xl font-semibold text-foreground">{displayName}</h1>
+                      <div className="mt-1 flex items-center gap-2">
+                        <Badge variant="outline" className="font-mono text-sm">
+                          {symbol}
+                        </Badge>
+                        {assetType !== 'unknown' && (
+                          <span className="text-sm text-muted-foreground">
+                            {ASSET_TYPE_LABEL[assetType] ?? assetType}
+                          </span>
+                        )}
+                        {profile?.exchange && (
+                          <span className="text-sm text-muted-foreground">
+                            · {profile.exchange}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
-                  <div className="flex shrink-0 items-center gap-2 flex-wrap justify-end">
-                    <AddToListPicker symbol={symbol} companyName={displayName} />
-                    <Button variant="outline" size="sm" onClick={() => openAIPanel()} className="gap-2">
-                      <MessageSquare className="h-4 w-4" />
-                      Ask Bull
-                    </Button>
-                  </div>
                 </div>
-              </CardHeader>
-            </Card>
-          </AnimatedContent>
+                <div className="flex shrink-0 items-center gap-2 flex-wrap justify-end">
+                  <AddToListPicker symbol={symbol} companyName={displayName} />
+                  <Button variant="outline" size="sm" onClick={() => openAIPanel()} className="gap-2">
+                    <MessageSquare className="h-4 w-4" />
+                    Ask Bull
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+          </Card>
         )}
 
         {/* Price panel — slug is passed as ticker; routes convert slug → symbol internally */}
-        <AnimatedContent reverse={true} delay={0.05}>
-          <StockPricePanel ticker={slug.toUpperCase()} />
-        </AnimatedContent>
+        <StockPricePanel ticker={slug.toUpperCase()} />
 
         {/* Asset-specific stats card for non-equity assets */}
         {assetType !== 'stock' && assetType !== 'unknown' && (
-          <AnimatedContent reverse={true} delay={0.1}>
-            <AssetStatsCard ticker={slug.toUpperCase()} assetType={assetType} />
-          </AnimatedContent>
+          <AssetStatsCard ticker={slug.toUpperCase()} assetType={assetType} />
         )}
 
         {/* Description from profile (for commodity/forex) */}
         {profile?.description && (
-          <AnimatedContent reverse={true} delay={0.15}>
-            <Card className="mb-8">
-              <CardHeader>
-                <p className="text-sm leading-relaxed text-muted-foreground">{profile.description}</p>
-              </CardHeader>
-            </Card>
-          </AnimatedContent>
+          <Card className="mb-8">
+            <CardHeader>
+              <p className="text-sm leading-relaxed text-muted-foreground">{profile.description}</p>
+            </CardHeader>
+          </Card>
         )}
 
       </div>

@@ -13,7 +13,6 @@ import { TopMoversCard } from './TopMoversCard';
 import { MarketNewsCard } from './MarketNewsCard';
 import { Button } from '@/components/ui/button';
 import { Briefcase, Globe } from 'lucide-react';
-import AnimatedContent from '@/components/ui/AnimatedContent';
 import {
   Tooltip,
   TooltipContent,
@@ -123,7 +122,7 @@ export function MarketContextSection() {
 
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 min-w-0">
         {showLeftColumn && (
-          <AnimatedContent reverse={true} className="min-w-0">
+          <div className="min-w-0">
             <div className="space-y-4 min-w-0">
               {showMarketHours && (
                 <MarketHoursCard
@@ -147,10 +146,10 @@ export function MarketContextSection() {
                 />
               )}
             </div>
-          </AnimatedContent>
+          </div>
         )}
         {showTopMovers && (
-          <AnimatedContent reverse={true} delay={0.05} className="min-w-0">
+          <div className="min-w-0">
             {effectiveHoldingsMode && tickers.length === 0 ? (
               <Card className="border-border/50 min-w-0">
                 <CardContent className="flex flex-col items-center justify-center py-12 text-center">
@@ -173,10 +172,10 @@ export function MarketContextSection() {
                 isHoldingsMode={!!effectiveHoldingsMode}
               />
             )}
-          </AnimatedContent>
+          </div>
         )}
         {showMarketNews && (
-          <AnimatedContent reverse={true} delay={0.1} className="min-w-0">
+          <div className="min-w-0">
             {effectiveHoldingsMode && tickers.length === 0 ? (
               <Card className="border-border/50 min-w-0">
                 <CardContent className="flex flex-col items-center justify-center py-12 text-center">
@@ -198,7 +197,7 @@ export function MarketContextSection() {
                 isHoldingsMode={!!effectiveHoldingsMode}
               />
             )}
-          </AnimatedContent>
+          </div>
         )}
       </div>
     </section>

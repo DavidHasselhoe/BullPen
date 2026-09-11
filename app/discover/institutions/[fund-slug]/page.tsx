@@ -51,7 +51,7 @@ export default async function InstitutionalFundPage({
   // where neither the bar lengths nor a row's ticker and its percentage could
   // be compared without crossing the whole viewport.
   return (
-    <main className="container mx-auto max-w-6xl py-8 px-4 sm:px-6 lg:px-8 min-w-0 page-enter">
+    <main className="container mx-auto max-w-6xl py-8 px-4 sm:px-6 lg:px-8 min-w-0">
       <InstitutionalFundDetailClient slug={slug} />
     </main>
   );

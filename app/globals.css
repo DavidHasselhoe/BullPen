@@ -366,35 +366,37 @@ html.animated-background-active [data-slot="dialog-content"] {
 }
 
 @layer utilities {
-  /* Page-level entry animation — applied to top-level page wrappers */
+  /* ── Page entrance ───────────────────────────────────────────────────────
+     The one entrance animation in the app. <PageTransition> applies it to
+     every route and re-triggers it on client-side navigation, so nothing
+     below page level needs its own mount animation.
+
+     Deliberately small and short: it softens the swap between routes, it is
+     not a performance. 8px of travel over 240ms reads as the page settling
+     into place; anything longer or further starts to feel like waiting.
+
+     No fill mode, deliberately. With `forwards`/`both` the finished animation
+     keeps applying its last frame, and even an identity transform leaves the
+     wrapper a containing block for every position:fixed descendant, forever
+     (verified in the browser: it computes to matrix(1,0,0,1,0,0), not none).
+     Unfilled, the transform is gone the moment the animation ends. There is no
+     delay, so the 0% frame is what paints first either way.
+
+     Reduced motion is handled by the global rule at the bottom of this file,
+     which collapses every animation to a single frame. */
   @keyframes pageEnter {
     from {
       opacity: 0;
-      transform: translateY(10px);
+      transform: translate3d(0, 8px, 0);
     }
     to {
       opacity: 1;
-      transform: translateY(0);
+      transform: none;
     }
   }
   .page-enter {
-    animation: pageEnter 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation: pageEnter 240ms cubic-bezier(0.16, 1, 0.3, 1);
   }
-
-  /* Staggered child fade-in — each child with data-stagger gets a delay */
-  @keyframes staggerFade {
-    from { opacity: 0; transform: translateY(8px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  [data-stagger] {
-    opacity: 0;
-    animation: staggerFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  }
-  [data-stagger="1"] { animation-delay: 0ms; }
-  [data-stagger="2"] { animation-delay: 60ms; }
-  [data-stagger="3"] { animation-delay: 120ms; }
-  [data-stagger="4"] { animation-delay: 180ms; }
-  [data-stagger="5"] { animation-delay: 240ms; }
 
   /* Custom animations for completion */
   @keyframes scaleIn {

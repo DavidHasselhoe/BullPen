@@ -31,7 +31,7 @@ export default function PicksClientPage() {
 
   return (
     <div className={cn('min-h-screen', hasAnimatedBackground ? '' : 'bg-background')}>
-      <main className="container mx-auto min-w-0 max-w-6xl px-4 py-8 sm:px-6 lg:px-8 page-enter">
+      <main className="container mx-auto min-w-0 max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
         <Link
           href="/discover"
           className="mb-6 inline-flex items-center gap-1.5 rounded text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"

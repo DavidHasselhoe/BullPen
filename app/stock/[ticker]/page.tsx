@@ -19,7 +19,6 @@ import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import { Button } from '@/components/ui/button';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { EmptyState } from '@/components/ui/EmptyState';
-import AnimatedContent from '@/components/ui/AnimatedContent';
 import { useBackground } from '@/hooks/use-background';
 import { AddToListPicker } from '@/components/watchlist/AddToListPicker';
 import { PinToggleButton } from '@/components/navigation/PinToggleButton';
@@ -348,70 +347,66 @@ export default function StockDetailPage() {
             {/* Company header */}
             <div id="nav-overview" className="scroll-mt-20">
               {(company || (!companyLoading && ticker)) && (
-                <AnimatedContent reverse={true}>
-                  <Card className="mb-8">
-                    <CardHeader>
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3">
-                            <CompanyLogo
-                              name={displayName}
-                              ticker={ticker}
-                              logoUrl={company?.logo_url}
-                              size={64}
-                              loading="eager"
-                            />
-                            <div>
-                              <h1 className="text-3xl font-semibold text-foreground">{displayName}</h1>
-                              <div className="mt-1 flex items-center gap-2">
-                                <Badge variant="outline" className="font-mono text-sm">
-                                  {ticker}
-                                </Badge>
-                                {resolvedSector && (
-                                  <span className="text-sm text-muted-foreground">
-                                    {resolvedSector}
-                                    {resolvedIndustry && ` • ${resolvedIndustry}`}
-                                  </span>
-                                )}
-                              </div>
-                              <CompetitorPills ticker={ticker} />
+                <Card className="mb-8">
+                  <CardHeader>
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3">
+                          <CompanyLogo
+                            name={displayName}
+                            ticker={ticker}
+                            logoUrl={company?.logo_url}
+                            size={64}
+                            loading="eager"
+                          />
+                          <div>
+                            <h1 className="text-3xl font-semibold text-foreground">{displayName}</h1>
+                            <div className="mt-1 flex items-center gap-2">
+                              <Badge variant="outline" className="font-mono text-sm">
+                                {ticker}
+                              </Badge>
+                              {resolvedSector && (
+                                <span className="text-sm text-muted-foreground">
+                                  {resolvedSector}
+                                  {resolvedIndustry && ` • ${resolvedIndustry}`}
+                                </span>
+                              )}
                             </div>
+                            <CompetitorPills ticker={ticker} />
                           </div>
                         </div>
-                        <div className="flex shrink-0 items-center gap-2 flex-wrap justify-end">
-                          <ExperienceLevelToggle />
-                          <PinToggleButton symbol={ticker} />
-                          <AddToListPicker symbol={ticker} companyName={displayName} />
-                          <AlertDialog symbol={ticker} companyName={displayName} />
-                          <Button variant="outline" size="sm" onClick={() => openAIPanel()} className="gap-2">
-                            <MessageSquare className="h-4 w-4" />
-                            Ask Bull
-                          </Button>
-                          {showFundamentals && (
-                            <Button asChild size="sm" className="gap-2">
-                              <Link href={`/tools/deep-dive/${ticker}?new=1`}>
-                                <Telescope className="h-4 w-4" />
-                                Deep Dive
-                              </Link>
-                            </Button>
-                          )}
-                        </div>
                       </div>
-                    </CardHeader>
-                    {company?.description && (
-                      <CardContent>
-                        <Separator className="mb-4" />
-                        <p className="text-sm leading-relaxed text-muted-foreground">{company.description}</p>
-                      </CardContent>
-                    )}
-                  </Card>
-                </AnimatedContent>
+                      <div className="flex shrink-0 items-center gap-2 flex-wrap justify-end">
+                        <ExperienceLevelToggle />
+                        <PinToggleButton symbol={ticker} />
+                        <AddToListPicker symbol={ticker} companyName={displayName} />
+                        <AlertDialog symbol={ticker} companyName={displayName} />
+                        <Button variant="outline" size="sm" onClick={() => openAIPanel()} className="gap-2">
+                          <MessageSquare className="h-4 w-4" />
+                          Ask Bull
+                        </Button>
+                        {showFundamentals && (
+                          <Button asChild size="sm" className="gap-2">
+                            <Link href={`/tools/deep-dive/${ticker}?new=1`}>
+                              <Telescope className="h-4 w-4" />
+                              Deep Dive
+                            </Link>
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </CardHeader>
+                  {company?.description && (
+                    <CardContent>
+                      <Separator className="mb-4" />
+                      <p className="text-sm leading-relaxed text-muted-foreground">{company.description}</p>
+                    </CardContent>
+                  )}
+                </Card>
               )}
 
               {/* Price panel — needs only ticker, not DB record */}
-              <AnimatedContent reverse={true} delay={0.05}>
-                <StockPricePanel ticker={ticker} />
-              </AnimatedContent>
+              <StockPricePanel ticker={ticker} />
             </div>
 
             {/* Financial Health Score — only for stocks with financials */}
@@ -419,9 +414,7 @@ export default function StockDetailPage() {
               <div id="nav-health" className="scroll-mt-20">
                 <LazySection key={`health-${ticker}`} minHeight={220}>
                   <StockSectionBoundary>
-                    <AnimatedContent reverse={true} delay={0.08}>
-                      <HealthScoreCard ticker={ticker} onSignalsReady={setMetricSignals} />
-                    </AnimatedContent>
+                    <HealthScoreCard ticker={ticker} onSignalsReady={setMetricSignals} />
                   </StockSectionBoundary>
                 </LazySection>
               </div>
@@ -430,15 +423,13 @@ export default function StockDetailPage() {
             {/* Key Numbers (TwelveData statistics) — available for both stocks and ETFs */}
             <div id="nav-statistics" className="scroll-mt-20">
               <StockSectionBoundary>
-                <AnimatedContent reverse={true} delay={0.12}>
-                  <StatisticsGrid
-                    ticker={ticker}
-                    signals={metricSignals}
-                    currentPrice={snapshot.data?.quote?.price ?? null}
-                    sector={resolvedSector}
-                    industry={resolvedIndustry}
-                  />
-                </AnimatedContent>
+                <StatisticsGrid
+                  ticker={ticker}
+                  signals={metricSignals}
+                  currentPrice={snapshot.data?.quote?.price ?? null}
+                  sector={resolvedSector}
+                  industry={resolvedIndustry}
+                />
               </StockSectionBoundary>
             </div>
 
@@ -448,9 +439,7 @@ export default function StockDetailPage() {
                 <div id="nav-financials" className="scroll-mt-20">
                   <LazySection key={`financials-${ticker}`} minHeight={400}>
                     <StockSectionBoundary>
-                      <AnimatedContent reverse={true} delay={0.16}>
-                        <FinancialsSection ticker={ticker} />
-                      </AnimatedContent>
+                      <FinancialsSection ticker={ticker} />
                     </StockSectionBoundary>
                   </LazySection>
                 </div>
@@ -458,9 +447,7 @@ export default function StockDetailPage() {
                 <div id="nav-revenue" className="scroll-mt-20">
                   <LazySection key={`sankey-${ticker}`} minHeight={300}>
                     <StockSectionBoundary>
-                      <AnimatedContent reverse={true} delay={0.2}>
-                        <SankeyCard ticker={ticker} />
-                      </AnimatedContent>
+                      <SankeyCard ticker={ticker} />
                     </StockSectionBoundary>
                   </LazySection>
                 </div>
@@ -468,9 +455,7 @@ export default function StockDetailPage() {
                 <div id="nav-earnings" className="scroll-mt-20">
                   <LazySection key={`earnings-${ticker}`} minHeight={300}>
                     <StockSectionBoundary>
-                      <AnimatedContent reverse={true} delay={0.22}>
-                        <EarningsCalendar ticker={ticker} />
-                      </AnimatedContent>
+                      <EarningsCalendar ticker={ticker} />
                     </StockSectionBoundary>
                   </LazySection>
                 </div>
@@ -478,9 +463,7 @@ export default function StockDetailPage() {
                 <div id="nav-insiders" className="scroll-mt-20">
                   <LazySection key={`insiders-${ticker}`} minHeight={300}>
                     <StockSectionBoundary>
-                      <AnimatedContent reverse={true} delay={0.24}>
-                        <InsiderTransactionsCard ticker={ticker} />
-                      </AnimatedContent>
+                      <InsiderTransactionsCard ticker={ticker} />
                     </StockSectionBoundary>
                   </LazySection>
                 </div>
@@ -491,9 +474,7 @@ export default function StockDetailPage() {
             <div id="nav-profile" className="scroll-mt-20">
               <LazySection key={`profile-${ticker}`} minHeight={300}>
                 <StockSectionBoundary>
-                  <AnimatedContent reverse={true} delay={0.26}>
-                    <CompanyProfileCard ticker={ticker} />
-                  </AnimatedContent>
+                  <CompanyProfileCard ticker={ticker} />
                 </StockSectionBoundary>
               </LazySection>
             </div>
@@ -502,13 +483,11 @@ export default function StockDetailPage() {
             <div id="nav-community" className="scroll-mt-20">
               <LazySection key={`community-${ticker}`} minHeight={200}>
                 <StockSectionBoundary>
-                  <AnimatedContent reverse={true} delay={0.3}>
-                    <Card>
-                      <CardContent className="pt-6">
-                        <ThesisSection symbol={ticker} />
-                      </CardContent>
-                    </Card>
-                  </AnimatedContent>
+                  <Card>
+                    <CardContent className="pt-6">
+                      <ThesisSection symbol={ticker} />
+                    </CardContent>
+                  </Card>
                 </StockSectionBoundary>
               </LazySection>
             </div>

@@ -179,7 +179,16 @@ Sidebar/top nav uses the same neutral surface tokens as cards (`--sidebar`, one 
 ### Signature Component: The Serif Accent Headline
 The landing page's defining move: a bold Geist Sans headline with exactly one word swapped into italic Instrument Serif, colored in Signal Emerald (`"The market, *explained.*"`). It's the single most identity-carrying detail in the whole system — worth protecting from dilution (don't add a second serif word, don't use it outside marketing headlines).
 
-## 6. Do's and Don'ts
+## 6. Motion
+
+One entrance animation, applied once, at page level. `<PageTransition>` (`components/ui/PageTransition.tsx`) wraps every route in the root layout and replays `.page-enter` (`globals.css`) on each client-side navigation: opacity 0 → 1 with 8px of upward travel over 240ms on `cubic-bezier(0.16, 1, 0.3, 1)`. Sections, cards and widgets below it get no entrance animation of their own — the page arrives as one object.
+
+Everything else that moves is a response to something the user did (hover lift, press scale, accordion expand, a results panel replacing a loading screen) or a live state change (streaming text, a price tick). 150-300ms, transform and opacity only, ease-out on enter.
+
+### Named Rules
+**The One-Entrance Rule.** A page animates in once, as a whole. If two animations are running on first paint — a container fading while its children slide in behind it — that is one too many, and it reads as slow no matter how each one is tuned individually. Staggered section reveals are the specific thing this rule exists to prevent: on data pages the content arrives asynchronously anyway, so a stagger animates skeletons, not information.
+
+## 7. Do's and Don'ts
 
 ### Do:
 - **Do** spend Signal Emerald / Signal Red only on financial direction (gains/losses), the landing brand moment, and primary AI-action buttons (see §5 Buttons) — everything else stays neutral.

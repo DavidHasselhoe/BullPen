@@ -1,21 +1,35 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { usePathname } from 'next/navigation';
+import { useLayoutEffect, useRef, type ReactNode } from 'react';
 
-interface PageTransitionProps {
-  children: React.ReactNode;
-  className?: string;
-}
+/**
+ * Applies the app's one page entrance animation (`.page-enter` in globals.css)
+ * to whatever route is currently rendered, and replays it on every client-side
+ * navigation.
+ *
+ * The replay is done by removing the class, forcing a reflow and re-adding it,
+ * rather than by `key={pathname}` on the wrapper. A key would remount the whole
+ * subtree on every navigation — including nested layouts that App Router is
+ * meant to keep alive (the Academy XP bar, the tools shell), which would refetch
+ * and re-animate on each step inside a section. Restarting the animation on a
+ * stable node leaves the tree untouched.
+ */
+export function PageTransition({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+  const ref = useRef<HTMLDivElement>(null);
 
-export function PageTransition({ children, className = '' }: PageTransitionProps) {
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.classList.remove('page-enter');
+    void el.offsetWidth; // reflow — without it the re-added class is a no-op
+    el.classList.add('page-enter');
+  }, [pathname]);
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-      className={className}
-    >
+    <div ref={ref} className="page-enter">
       {children}
-    </motion.div>
+    </div>
   );
 }

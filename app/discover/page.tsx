@@ -9,7 +9,7 @@ export default function DiscoverPage() {
 
   return (
     <div className={cn('min-h-screen', hasAnimatedBackground ? '' : 'bg-background')}>
-      <main className="container mx-auto max-w-6xl py-8 px-4 sm:px-6 lg:px-8 min-w-0 page-enter">
+      <main className="container mx-auto max-w-6xl py-8 px-4 sm:px-6 lg:px-8 min-w-0">
         <DiscoverClient />
       </main>
     </div>
