@@ -133,7 +133,16 @@ export function AIPanelProvider({ children }: { children: React.ReactNode }) {
       }}
     >
       <div className="flex h-screen min-h-full w-full overflow-x-hidden">
-        <div className="flex-1 min-w-0 flex flex-col min-h-0 overflow-auto overflow-x-hidden scrollbar-hide">
+        {/* `relative` is load-bearing: this is the app's real scroll container, and
+            without it any absolutely positioned descendant that has no positioned
+            ancestor of its own resolves against the initial containing block
+            instead. Such an element is not clipped by this container's overflow,
+            so its position in document space extends the *document's* scroll
+            height — producing a second, near-invisible scrollbar on the window
+            that scrolls the whole app shell up and exposes empty page behind it.
+            Tailwind's `sr-only` is absolute, so every screen-reader-only label
+            deep in a page was doing exactly that. */}
+        <div className="relative flex-1 min-w-0 flex flex-col min-h-0 overflow-auto overflow-x-hidden scrollbar-hide">
           {children}
         </div>
         <AISidePanel
