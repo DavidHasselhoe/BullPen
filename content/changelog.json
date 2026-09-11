@@ -1,5 +1,38 @@
 [
   {
+    "date": "2026-09-11",
+    "entries": [
+      {
+        "type": "improved",
+        "text": "Search is now instant. Results appear as you type, on the keystroke itself, with no pause and no waiting spinner. Company names rank by size too, so typing \"micro\" leads with Microsoft and Micron rather than the smallest companies that happen to match"
+      },
+      {
+        "type": "new",
+        "text": "Index funds are now supported alongside ETFs. Search for VFIAX, FXAIX, VTSAX or any of the major index funds and you get a real page with price, chart and profile, correctly labelled as a fund rather than a stock"
+      },
+      {
+        "type": "improved",
+        "text": "Stock pages and the dashboard load much faster. Prices, key numbers and market movers now arrive with the page instead of being fetched after it appears, so there is far less watching empty cards fill in"
+      },
+      {
+        "type": "improved",
+        "text": "Ask Bull now formats its answers as it writes them. Bold text and lists appear properly while the reply streams, instead of showing raw symbols until it finished"
+      },
+      {
+        "type": "improved",
+        "text": "Every page now opens with the same quick, quiet entrance. The old effect slid each section up the screen separately and took over a second to settle"
+      },
+      {
+        "type": "fixed",
+        "text": "Removed a faint second scrollbar that could appear at the edge of the window. Dragging it pushed the whole app upward and left an empty band across the bottom of the screen"
+      },
+      {
+        "type": "fixed",
+        "text": "Your profile picture in the Ask Bull panel now matches the one in the top bar. It previously showed a single initial in a different style"
+      }
+    ]
+  },
+  {
     "date": "2026-09-10",
     "entries": [
       {
