@@ -26,7 +26,7 @@ import type { Company } from '@/lib/types/database';
 import { HOT_PICKS_QUERY_KEY } from '@/lib/discover/hot-picks-query';
 import { postStockVisit } from '@/lib/discover/post-stock-visit';
 import { StockSectionBoundary } from '@/components/stock/StockSectionBoundary';
-import { slugToSymbol, inferAssetType } from '@/lib/assets/asset-type';
+import { slugToSymbol, inferAssetType, fundLabel } from '@/lib/assets/asset-type';
 
 const StockPricePanel = dynamic(
   () => import('@/components/stock/StockPricePanel').then((m) => ({ default: m.StockPricePanel })),
@@ -90,6 +90,10 @@ export default function EtfDetailPage() {
       router.replace(`/stock/${ticker}`);
     }
   }, [snapshotAssetType, snapshot.isLoading, ticker, router]);
+
+  // This route serves every fund shape, so the badge says which one. An index
+  // fund labelled "ETF" is a small lie that a beginner has no way to catch.
+  const assetLabel = fundLabel(snapshot.data?.instrumentType);
 
   // Hot Picks visit is recorded further down — only once the symbol is confirmed
   // real, so bogus tickers never pollute "Trending this week".
@@ -196,7 +200,7 @@ export default function EtfDetailPage() {
             <EmptyState
               pose="error"
               title={`“${ticker}” not found`}
-              description="We couldn't find an ETF with that symbol."
+              description="We couldn't find a fund with that symbol."
             >
               <Button onClick={() => router.push('/dashboard')}>Back to Dashboard</Button>
             </EmptyState>
@@ -256,7 +260,7 @@ export default function EtfDetailPage() {
                           {ticker}
                         </Badge>
                         <Badge variant="secondary" className="text-xs font-medium">
-                          ETF
+                          {assetLabel}
                         </Badge>
                         {company?.sector && (
                           <span className="text-sm text-muted-foreground">{company.sector}</span>

@@ -1599,10 +1599,11 @@ export async function symbolSearch(
  * timeout above: /stocks is a ~5.6MB body that takes ~35s to transfer and /etf
  * ~3MB. The timeout exists to stop a *stalled* connection burning a function's
  * whole budget, not to cap a transfer that is genuinely this large, and both
- * callers are crons with minutes of headroom. Measured at 35-80s depending on
- * how loaded the upstream is, so the ceiling has real room above that.
+ * callers are crons with minutes of headroom. The same /stocks call has been
+ * measured at 6s, 32s and 153s within the same hour, so the ceiling is set well
+ * above the good case on purpose.
  */
-const REFERENCE_LIST_TIMEOUT_MS = 150_000;
+const REFERENCE_LIST_TIMEOUT_MS = 240_000;
 
 // -------- Stocks reference list --------
 
@@ -1691,6 +1692,104 @@ export async function getUsEtfList(
     currency: d.currency ?? '',
     type: d.type ?? 'ETF',
   })).filter((d) => d.symbol);
+}
+
+/**
+ * Fetch the TwelveData funds catalogue (GET /funds), paged.
+ *
+ * This is where mutual funds live: /stocks has no funds at all and /etf has only
+ * exchange-traded ones. Everything awkward about this function comes from the
+ * endpoint, so the measurements are recorded here:
+ *
+ * - Unpaged it is a single ~40MB body for the US. That download succeeded three
+ *   times and then failed six in a row (UND_ERR_SOCKET after ~1MB, or no
+ *   response inside four minutes). It is not usable as one request.
+ * - `outputsize` is honoured up to 500 and ignored above it: 500 returns 146KB
+ *   in ~2s, while 1000 and 5000 both return the entire 40MB catalogue. So the
+ *   page size is 500, and covering 134k rows takes ~270 requests of ~2s.
+ * - That puts a full pass around ten minutes, which is why the caller is a
+ *   scheduled script on a long-lived runner and not a serverless route.
+ *
+ * `filter` runs per row as pages arrive, so only what a caller wants is kept.
+ * Its "Mutual Fund" type is a catch-all covering structured notes and bank CDs
+ * ("JPMorgan Chase Bank, N.A. Point to Point CD AAAPTXX"), so callers should
+ * filter on symbol shape rather than trust the type.
+ */
+export async function getUsFundsList(
+  opts: {
+    country?: string;
+    filter?: (row: StockReference) => boolean;
+    /** Called after each page so long runs can report progress. */
+    onProgress?: (scanned: number, kept: number) => void;
+    /** First page to fetch, 1-based. */
+    startPage?: number;
+    /** How many pages to fetch before returning. Lets a caller with a time
+     *  budget (a serverless invocation) walk the catalogue across several runs. */
+    maxPages?: number;
+  } = {}
+): Promise<{ rows: StockReference[]; nextPage: number | null }> {
+  const PAGE_SIZE = 500;
+  /** 134k rows at 500 a page is ~270; this only bounds a runaway loop. */
+  const HARD_PAGE_CAP = 400;
+  const startPage = opts.startPage ?? 1;
+  const maxPages = opts.maxPages ?? HARD_PAGE_CAP;
+
+  logUsage('/funds', opts.country ?? 'all');
+  const out: StockReference[] = [];
+  let scanned = 0;
+  let lastPage = startPage - 1;
+
+  for (let page = startPage; page < startPage + maxPages && page <= HARD_PAGE_CAP; page++) {
+    const url = buildUrl('/funds', {
+      country: opts.country ?? 'United States',
+      outputsize: String(PAGE_SIZE),
+      page: String(page),
+    });
+
+    // One flaky page should not end a ten-minute pass.
+    let list: TwelveDataStocksResponse['data'] = [];
+    let lastError: unknown;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const res = await tdFetch(url, { cache: 'no-store' });
+        if (!res.ok) throw new Error(`TwelveData /funds HTTP ${res.status}`);
+        const json = (await res.json()) as {
+          result?: { list?: TwelveDataStocksResponse['data'] };
+          status?: string;
+          message?: string;
+        };
+        if (json.status === 'error') throw new Error(json.message ?? 'TwelveData /funds error');
+        list = json.result?.list ?? [];
+        lastError = undefined;
+        break;
+      } catch (err) {
+        lastError = err;
+        if (attempt < 2) await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)));
+      }
+    }
+    if (lastError) throw lastError;
+
+    for (const d of list) {
+      if (!d.symbol) continue;
+      const row: StockReference = {
+        symbol: d.symbol,
+        name: d.name ?? d.symbol,
+        exchange: d.exchange ?? '',
+        mic_code: d.mic_code ?? '',
+        country: d.country ?? '',
+        currency: d.currency ?? '',
+        type: d.type ?? '',
+      };
+      if (!opts.filter || opts.filter(row)) out.push(row);
+    }
+
+    scanned += list.length;
+    opts.onProgress?.(scanned, out.length);
+    if (list.length < PAGE_SIZE) return { rows: out, nextPage: null };
+    lastPage = page;
+  }
+
+  return { rows: out, nextPage: lastPage >= HARD_PAGE_CAP ? null : lastPage + 1 };
 }
 
 // -------- Press Releases --------

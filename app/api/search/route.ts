@@ -52,6 +52,7 @@ const RELEVANT_TYPES = new Set([
   'Preferred Stock',
   'Closed-end Fund',
   'Exchange-Traded Note',
+  'Mutual Fund',
   'Unit',
   // Crypto & commodity
   'Digital Currency',

@@ -85,7 +85,9 @@ export function slugToAssetPath(symbolOrSlug: string, instrumentType?: string): 
 const CRYPTO_TYPES    = new Set(['Digital Currency', 'Cryptocurrency']);
 const COMMODITY_TYPES = new Set(['Commodity', 'Physical Currency']);
 const FOREX_TYPES     = new Set(['Currency', 'Forex']);
-const ETF_TYPES       = new Set(['ETF', 'Exchange-Traded Note', 'Closed-end Fund']);
+// Mutual funds route and render exactly like ETFs: same price/chart page, same
+// absence of earnings and financials. Only the label differs, via fundLabel().
+const ETF_TYPES       = new Set(['ETF', 'Exchange-Traded Note', 'Closed-end Fund', 'Mutual Fund']);
 
 export function inferAssetType(symbol: string, instrumentType?: string): AssetType {
   if (instrumentType) {
@@ -124,3 +126,15 @@ export const has24hTrading = (t: AssetType): boolean => t === 'crypto';
 export const hasEarnings   = (t: AssetType): boolean => t === 'stock' || t === 'etf';
 export const hasFinancials = (t: AssetType): boolean => t === 'stock';
 export const isCrypto      = (t: AssetType): boolean => t === 'crypto';
+
+/**
+ * What to call a fund on screen. The page is shared between ETFs and mutual
+ * funds, but calling an index fund an ETF is simply wrong, and this is exactly
+ * the kind of detail a beginner would take at face value.
+ */
+export function fundLabel(instrumentType?: string): string {
+  if (instrumentType === 'Mutual Fund') return 'Index fund';
+  if (instrumentType === 'Closed-end Fund') return 'Closed-end fund';
+  if (instrumentType === 'Exchange-Traded Note') return 'ETN';
+  return 'ETF';
+}

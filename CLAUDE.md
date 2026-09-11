@@ -162,11 +162,11 @@ TypeScript build errors are intentionally suppressed in `next.config.ts` (Supaba
 
 ### Symbol search
 
-Search does not call the server per keystroke. `/api/search/index` serves the whole catalogue (~17k US stocks and ETFs, ~810KB of tab-separated text, ~165KB over the wire, CDN-cached 6h) and the browser fetches it once during idle time, then answers every keystroke locally in well under a millisecond via `lib/search/local-index.ts`. `useInstantSearch()` (`hooks/use-symbol-index.ts`) is the single entry point every search surface uses — command palette, stock search, watchlist, screener, compare, add-holding, buy-here.
+Search does not call the server per keystroke. `/api/search/index` serves the whole catalogue (~18k US stocks, ETFs and index funds, ~810KB of tab-separated text, ~165KB over the wire, CDN-cached 6h) and the browser fetches it once during idle time, then answers every keystroke locally in well under a millisecond via `lib/search/local-index.ts`. `useInstantSearch()` (`hooks/use-symbol-index.ts`) is the single entry point every search surface uses — command palette, stock search, watchlist, screener, compare, add-holding, buy-here.
 
 `/api/search` (TwelveData `symbol_search`, 0.5-2.4s) still runs behind a 250ms debounce and its results are appended below the local ones, because the catalogue is US stocks and ETFs only: crypto pairs, foreign listings and very new symbols exist only there. Two slots are always reserved for it so a full local list can't crowd out BTC/USD.
 
-Ranking is precomputed server-side into a 0-99 `rank` column (market-cap magnitude for stocks, a name/ticker heuristic for ETFs — see `lib/search/index-rank.ts`) so the per-keystroke loop only adds integers. `npm run test-search-ranking` asserts the cases that were actually wrong before ranks existed; `--live` benchmarks against a running dev server.
+Index funds are in there too: TwelveData's `/funds` catalogue is 122k US mutual funds, of which the ~850 whose name says "index" are kept (five-letter ticker ending in X, USD). They route to `/etf/[ticker]` like any other fund and the page labels them via `fundLabel()`. Ranking is precomputed server-side into a 0-99 `rank` column (market-cap magnitude for stocks, a name/ticker heuristic for ETFs, flat for index funds — see `lib/search/index-rank.ts`) so the per-keystroke loop only adds integers. `npm run test-search-ranking` asserts the cases that were actually wrong before ranks existed; `--live` benchmarks against a running dev server.
 
 ### Asset type system
 
@@ -264,7 +264,6 @@ Split across three schedulers. All cron routes are protected by the `CRON_SECRET
 |---|---|---|
 | `/api/cron/generate-daily-brief` | `30 6 * * *` | Generate AI daily brief for Pro users (Anthropic Claude) |
 | `/api/cron/generate-weekly-pick` | `30 6 * * 1` | Generate Bull's Weekly Pick, published before pre-market so it's actionable from that session's open |
-| `/api/cron/refresh-search-index` | `45 6 * * 1` | Rebuild `search_index` (the symbol catalogue the browser downloads for instant search) from TwelveData `/stocks` + `/etf`. ~17k US stocks and ETFs with a precomputed popularity rank. |
 | `/api/cron/generate-academy-course` | `17 6 * * 1` | Draft the next course in the 10-week Academy roadmap (`lib/academy/academy-roadmap.ts`) via Claude and stage it unpublished for review at `/admin/academy-roadmap`. No auto-publish — requires explicit approval. |
 | `/api/cron/sync-institutional-holdings` | `0 7 * * 1` | Pull the newest 13F-HR filing for each curated fund in `institutional_investors` from SEC EDGAR, resolve CUSIPs to tickers, and upsert holdings (Discover page's institutional-holdings Pro feature). One fund's parse failure never blocks another's; supports `?slug=<fund-slug>` for a scoped rerun. |
 | `/api/cron/check-daily-challenge-reminder` | `0 1 * * *` | Evening (~9pm ET) nudge for users with an active Academy streak who haven't done anything in Academy yet today |
@@ -292,6 +291,7 @@ Migrated 2026-09-05: QStash schedule created in the Upstash console (EU region),
 | `/api/cron/prefetch-market-data` | `0 5 * * *` | Loops ~121 batches (5 symbols each) with a 75s sleep between calls, up to ~2.5h total — needs a long-lived runner, not a single request/response |
 | `/api/cron/prefetch-market-data?phase=financials` | `30 7 * * *` | Own workflow (`cron-prefetch-financials.yml`) since it no longer fits in the same job as the stats phase. Loops up to 300 batches (one symbol each) with a 65s sleep, up to ~5.5h total |
 | `/api/cron/prefetch-calendar` | `0 4 * * *` | Loops up to 40 batches with a 65s sleep, up to ~45 min total |
+| `/api/cron/refresh-search-index` (`?part=`, `&from=`) | `45 6 * * 1` | `cron-refresh-search-index.yml` — three multi-megabyte TwelveData reference feeds with wildly unstable timings (the same `/stocks` call measured at 6s, 32s and 153s in one hour). The funds catalogue alone is ~270 paged requests, because `outputsize` is honoured up to 500 and silently ignored above it. Driven in windows, each its own invocation |
 | `/api/screener/refresh` (active mode) | `0 22 * * *` | `cron-refresh-screener-stats.yml` — loops ~122 batches with a 65s sleep, up to ~160 min total |
 | `/api/screener/refresh` (active + discovery mode) | `0 3 * * *` | `cron-refresh-screener-extended.yml` — two chained batch loops (up to 279 + 15 batches), up to ~180 min total. Both this and the 22:00 job skip any ticker whose `screener_stats` row is <12h old, so they don't re-fetch what `prefetch-market-data` just warmed |
 

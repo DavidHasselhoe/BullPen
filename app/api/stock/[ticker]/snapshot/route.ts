@@ -8,6 +8,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { batchFetch, getStockQuote, withRateLimitRetry, TwelveDataRateLimitError, TwelveDataInvalidSymbolError, reportDateToFiscalQuarter, sanitizeDividendYield } from '@/lib/twelvedata/twelvedata-client';
+import { getIndexedKind, instrumentTypeForKind } from '@/lib/search/refresh-index';
 import { getCached, getCachedWithMeta, getCachedStale, getCachedStaleWithMeta, setCached } from '@/lib/cache/market-data-cache';
 import { tryReserveOrganicCredits } from '@/lib/twelvedata/credit-budget';
 import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
@@ -217,6 +218,12 @@ async function handler(
       setCached(`stats:${sym}`, sym, 'statistics', { symbol: sym, ...statistics }, STATS_TTL).catch(() => {});
     }
 
+    // TwelveData's /quote carries no `type` for funds (confirmed for VFIAX),
+    // which left every index fund looking like a stock to the callers that route
+    // and label on this field. The catalogue knows what it is.
+    const resolvedType =
+      instrumentType ?? instrumentTypeForKind(await getIndexedKind(sym));
+
     return addSecurityHeaders(
       NextResponse.json({
         success: true,
@@ -226,7 +233,7 @@ async function handler(
         statistics,
         statsFetchedAt,
         earnings,
-        instrumentType,
+        instrumentType: resolvedType,
       }, { headers: { 'Cache-Control': 'private, max-age=60' } })
     );
   } catch (err) {

@@ -22,7 +22,7 @@ import { useDebounce } from '@/hooks/use-debounce';
 import { useInstantSearch } from '@/hooks/use-symbol-index';
 import { fetchWithTimeout } from '@/lib/utils';
 import { Briefcase, Filter, TrendingUp, Scale, Users, Loader2, CornerDownLeft, Microscope, Bell } from 'lucide-react';
-import { slugToAssetPath, inferAssetType } from '@/lib/assets/asset-type';
+import { slugToAssetPath, inferAssetType, fundLabel } from '@/lib/assets/asset-type';
 import type { PublicUser } from '@/app/api/users/search/route';
 
 /** Matches the LucideIcon call signature (`<Icon className="..." />`) so it
@@ -30,6 +30,10 @@ import type { PublicUser } from '@/app/api/users/search/route';
 function AskBullIcon({ className }: { className?: string }) {
   return <BullAiIcon pose="idle" size={16} className={className} />;
 }
+
+/** Types whose raw TwelveData string is not what a reader should see: "Mutual
+ *  Fund" is technically right and useless, "Index fund" is what it is. */
+const FUND_TYPES = new Set(['Mutual Fund', 'Closed-end Fund', 'Exchange-Traded Note']);
 
 interface SearchResult {
   ticker: string;
@@ -267,7 +271,11 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                               <span className="font-mono text-sm font-semibold tracking-tight">{result.ticker}</span>
                               {result.exchange && <span className={pillClass}>{result.exchange}</span>}
                               {result.instrument_type && result.instrument_type !== 'Common Stock' && (
-                                <span className={pillClass}>{result.instrument_type}</span>
+                                <span className={pillClass}>
+                                  {FUND_TYPES.has(result.instrument_type)
+                                    ? fundLabel(result.instrument_type)
+                                    : result.instrument_type}
+                                </span>
                               )}
                             </div>
                             <span className="block truncate text-xs text-muted-foreground">{result.name}</span>

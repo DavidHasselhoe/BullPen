@@ -26,6 +26,7 @@
     "test-credit-budget": "tsx scripts/test-credit-budget.ts",
     "test-cron-coverage": "tsx scripts/test-cron-coverage.ts",
     "test-search-ranking": "tsx scripts/test-search-ranking.ts",
+    "refresh-search-index": "tsx scripts/refresh-search-index.ts",
     "test-import": "tsx scripts/test-import.ts",
     "trigger-cron": "tsx scripts/trigger-cron.ts",
     "trigger-alerts": "tsx scripts/trigger-alerts-cron.ts",

@@ -83,6 +83,9 @@ interface RemoteSearchResponse {
   results?: InstantSearchResult[];
 }
 
+/** Catalogue kind → the TwelveData instrument_type string the app routes on. */
+const INSTRUMENT_TYPE = { s: 'Common Stock', e: 'ETF', f: 'Mutual Fund' } as const;
+
 function toResult(entry: SymbolEntry): InstantSearchResult {
   return {
     ticker: entry.ticker,
@@ -90,7 +93,7 @@ function toResult(entry: SymbolEntry): InstantSearchResult {
     exchange: undefined,
     country: 'United States',
     currency: 'USD',
-    instrument_type: entry.kind === 'e' ? 'ETF' : 'Common Stock',
+    instrument_type: INSTRUMENT_TYPE[entry.kind],
     cik: '',
     has_data: true,
     logo_url: null,

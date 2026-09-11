@@ -16,8 +16,8 @@
 export interface SymbolEntry {
   ticker: string;
   name: string;
-  /** 's' = stock, 'e' = ETF */
-  kind: 's' | 'e';
+  /** 's' = stock, 'e' = ETF, 'f' = index fund */
+  kind: 's' | 'e' | 'f';
   /** 0-99 popularity, precomputed server-side (see lib/search/index-rank.ts). */
   rank: number;
   /** Lowercased once at parse time so the hot loop never calls toLowerCase. */
@@ -36,7 +36,7 @@ export function parseSearchIndex(payload: string): SymbolEntry[] {
     out.push({
       ticker,
       name,
-      kind: kind === 'e' ? 'e' : 's',
+      kind: kind === 'e' || kind === 'f' ? kind : 's',
       rank: Number(rank) || 0,
       tl: ticker.toLowerCase(),
       nl: name.toLowerCase(),

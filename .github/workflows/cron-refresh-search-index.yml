@@ -1,0 +1,83 @@
+name: Cron — Refresh Search Index
+
+# Monday 06:45 UTC. Rebuilds `search_index`, the symbol catalogue the browser
+# downloads once and then searches locally on every keystroke (see
+# /api/search/index and lib/search/local-index.ts).
+#
+# WHY THIS IS NOT A VERCEL CRON: the three sources are multi-megabyte reference
+# feeds from TwelveData, and none of their timings are stable. The same /stocks
+# call has been measured at 6s, 32s and 153s within one hour. The funds
+# catalogue is worse: unpaged it is a single ~40MB body that fails more often
+# than it succeeds, and paged it is ~270 requests, because `outputsize` is
+# honoured up to 500 and silently ignored above it. That is minutes of work, so
+# the route takes `?part=` and `&from=` and this workflow drives it in windows,
+# each a separate invocation well inside the 300s function ceiling.
+#
+# Each part prunes only its own rows, so a failure in one leaves the other
+# catalogues exactly as they were. The funds walk prunes only once it has seen
+# the whole catalogue, so a partial sweep never deletes anything.
+#
+# Weekly is plenty: this is a catalogue of what exists and what it is called,
+# not market data. The popularity ranks it stores come from market caps we
+# already hold, so they stay current between runs regardless.
+on:
+  schedule:
+    - cron: '45 6 * * 1'
+  workflow_dispatch:
+
+jobs:
+  refresh-search-index:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Rebuild the symbol catalogue, one source at a time
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          APP_URL: ${{ vars.APP_URL || 'https://bullpen.no' }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::CRON_SECRET secret is not configured in repo settings"
+            exit 1
+          fi
+
+          OK=0
+          for part in stocks etfs; do
+            echo "→ Refreshing $part"
+            if RESPONSE=$(curl -fsS --max-time 600 -X POST \
+              -H "Authorization: Bearer ${CRON_SECRET}" \
+              "${APP_URL}/api/cron/refresh-search-index?part=${part}"); then
+              echo "$RESPONSE"
+              OK=$((OK + 1))
+            else
+              echo "::warning::$part refresh failed — its existing rows are kept"
+            fi
+            sleep 10
+          done
+
+          # Funds are walked a window at a time until nextFundPage comes back
+          # null. Twenty windows of 30 pages covers the ~270-page catalogue with
+          # room to spare.
+          FROM=1
+          for window in $(seq 1 20); do
+            echo "→ Refreshing funds from page $FROM"
+            RESPONSE=$(curl -fsS --max-time 600 -X POST \
+              -H "Authorization: Bearer ${CRON_SECRET}" \
+              "${APP_URL}/api/cron/refresh-search-index?part=funds&from=${FROM}") || {
+              echo "::warning::funds window from $FROM failed — existing fund rows are kept"
+              break
+            }
+            echo "$RESPONSE"
+            NEXT=$(echo "$RESPONSE" | jq -r '.nextFundPage // "null"')
+            if [ "$NEXT" = "null" ]; then
+              echo "Funds catalogue complete."
+              OK=$((OK + 1))
+              break
+            fi
+            FROM="$NEXT"
+            sleep 5
+          done
+
+          if [ "$OK" -eq 0 ]; then
+            echo "::error::every part failed"
+            exit 1
+          fi

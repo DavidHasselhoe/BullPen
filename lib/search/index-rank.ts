@@ -49,3 +49,15 @@ export function rankFromEtfName(ticker: string, name: string): number {
  * with NVR over NVIDIA: real market caps got overwritten by a constant.
  */
 export const INDEX_MEMBER_RANK = 50;
+
+/**
+ * Index funds. They are all index funds by construction (the refresh only takes
+ * the ones whose name says so), and we hold no AUM to separate them, so they get
+ * one flat rank: below a core ETF, above a four-letter niche one.
+ *
+ * The effect is that a name search like "vanguard 500" leads with VOO and offers
+ * VFIAX just under it, which matches how people actually buy: the ETF is the
+ * more liquid wrapper of the same index. Typing the fund's own ticker is an
+ * exact match and unaffected by any of this.
+ */
+export const INDEX_FUND_RANK = 35;

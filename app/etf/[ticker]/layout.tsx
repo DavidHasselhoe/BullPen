@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { getIndexedKind } from '@/lib/search/refresh-index';
 
 /**
  * page.tsx is a client component, which can't export generateMetadata — same
@@ -21,9 +22,13 @@ export async function generateMetadata({
   const { ticker: rawTicker } = await params;
   const ticker = rawTicker.toUpperCase();
 
+  // This route serves index funds as well as ETFs, and calling a Vanguard fund
+  // an ETF in the browser tab is the same small lie as doing it on the page.
+  const noun = (await getIndexedKind(ticker)) === 'f' ? 'Index Fund' : 'ETF';
+
   return {
-    title: `${ticker} ETF Price`,
-    description: `Real-time price, holdings, and analysis for the ${ticker} ETF on BullPen.`,
+    title: `${ticker} ${noun} Price`,
+    description: `Real-time price, chart and key numbers for the ${ticker} ${noun.toLowerCase()} on BullPen.`,
     alternates: { canonical: `/etf/${ticker}` },
   };
 }
