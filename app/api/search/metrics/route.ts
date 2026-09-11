@@ -25,9 +25,34 @@ async function getHandler(request: NextRequest) {
       return NextResponse.json({ success: true, data: [] });
     }
 
+    // Company name and logo come back with the tickers rather than leaving the
+    // caller to fetch them: Hot Picks used to wait for this response and then
+    // fire /api/companies/batch, two sequential round trips for one card, which
+    // measured 746ms + 745ms in production. One query here costs nothing extra.
+    const picks = (data ?? []) as Array<{ ticker: string }>;
+    const tickers = picks.map((p) => p.ticker.toUpperCase());
+    let companies = new Map<string, { name: string | null; logo_url: string | null }>();
+    if (tickers.length > 0) {
+      const { data: rows } = await supabase
+        .from('companies')
+        .select('ticker, name, logo_url')
+        .in('ticker', tickers);
+      companies = new Map(
+        ((rows ?? []) as Array<{ ticker: string; name: string | null; logo_url: string | null }>)
+          .map((r) => [r.ticker.toUpperCase(), { name: r.name, logo_url: r.logo_url }])
+      );
+    }
+
     return NextResponse.json({
       success: true,
-      data: data || [],
+      data: picks.map((p) => {
+        const company = companies.get(p.ticker.toUpperCase());
+        return {
+          ...p,
+          name: company?.name ?? null,
+          logo_url: company?.logo_url ?? null,
+        };
+      }),
     });
   } catch {
     return NextResponse.json({ success: true, data: [] });

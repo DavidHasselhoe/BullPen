@@ -197,21 +197,14 @@ export function TopMoversCard({ gainers, losers, isLoading, isError, isHoldingsM
 
   const { data: sparklines } = useMoversSparklines(allTickers, !isLoading && allTickers.length > 0);
 
-  const { data: companyBatch } = useQuery({
-    queryKey: ['companies-batch', allTickers],
-    queryFn: async () => {
-      if (allTickers.length === 0) return [];
-      const res = await fetch('/api/companies/batch', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tickers: allTickers }),
-      });
-      const json = await res.json();
-      return (json.data || []) as Array<{ ticker: string; name: string; logo_url: string | null }>;
-    },
-    enabled: allTickers.length > 0 && !isLoading,
-    staleTime: 5 * 60 * 1000,
-  });
+  // Names and logos now arrive with the movers themselves. This used to be a
+  // separate POST to /api/companies/batch that could not start until the movers
+  // response landed, so the card's content appeared a full round trip late.
+  const companyBatch = [...(gainers || []), ...(losers || [])].map((m) => ({
+    ticker: m.symbol,
+    name: m.name ?? m.symbol,
+    logo_url: (m as { logo_url?: string | null }).logo_url ?? null,
+  }));
 
   // Build name map: TwelveData REST names first, then Supabase batch (only real names, not ticker-fallbacks)
   const companyNameMap = new Map<string, string>([

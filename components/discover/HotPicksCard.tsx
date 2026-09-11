@@ -53,28 +53,13 @@ export function HotPicksCard() {
         const data: HotPicksResponse = await response.json();
         if (!data.success || !data.data?.length) return [];
 
-        const tickers = data.data.map((pick) => pick.ticker);
-        const batchRes = await fetch('/api/companies/batch', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ tickers }),
-        });
-        const batchData = (batchRes.ok
-          ? await batchRes.json()
-          : { data: [] }) as {
-          data?: Array<{ ticker: string; name: string; logo_url: string | null }>;
-        };
-        const companyMap = new Map(
-          (batchData.data || []).map((c) => [
-            c.ticker,
-            { name: c.name, logo_url: c.logo_url },
-          ])
-        );
-
+        // Names and logos arrive with the picks. This used to be a second
+        // request to /api/companies/batch that could only start once this one
+        // came back — 746ms then 745ms in production, for one card.
         return data.data.map((pick) => ({
           ...pick,
-          name: companyMap.get(pick.ticker)?.name || pick.ticker,
-          logo_url: companyMap.get(pick.ticker)?.logo_url || null,
+          name: pick.name || pick.ticker,
+          logo_url: pick.logo_url ?? null,
         }));
       } catch (e) {
         const err = e as Error;
