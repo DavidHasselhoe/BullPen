@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
+import { fetchQuotesBatched } from '@/lib/market-data/quote-batcher';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
@@ -42,14 +43,11 @@ export function WhyTodayWidget() {
     queryKey: ['why-today-quotes', symbols],
     queryFn: async (): Promise<Record<string, Quote>> => {
       if (symbols.length === 0) return {};
-      const res = await fetch('/api/quotes/batch', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ symbols }),
-      });
-      if (!res.ok) return {};
-      const json = await res.json();
-      return json.success ? json.quotes : {};
+      try {
+        return await fetchQuotesBatched(symbols);
+      } catch {
+        return {};
+      }
     },
     enabled: symbols.length > 0,
     staleTime: 3 * 60 * 1000,

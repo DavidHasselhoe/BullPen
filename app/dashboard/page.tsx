@@ -1,134 +1,47 @@
-'use client';
+/**
+ * Dashboard shell.
+ *
+ * The dashboard itself stays a client component — it is almost entirely
+ * interactive, per-user and live. What this server component adds is the two
+ * slowest things on it that are the same for everybody: top movers (1059ms in
+ * production) and Hot Picks (746ms), both fetched here and handed over already
+ * resolved.
+ *
+ * Neither depends on who is signed in, which is what makes them safe to render
+ * on the server and to cache. Everything user-specific — holdings, watchlist,
+ * the daily brief — still loads on the client where the session lives.
+ *
+ * loading.tsx streams the shell so this never costs a blank screen.
+ */
 
-import { Pencil } from 'lucide-react';
-import { HomepageRedirect } from '@/components/navigation/HomepageRedirect';
-import { CommandBar } from '@/components/command-palette/CommandBar';
-import { WelcomeMessage } from '@/components/ui/WelcomeMessage';
-import { Button } from '@/components/ui/button';
-import { useBackground } from '@/hooks/use-background';
-import { MarketContextSection } from '@/components/market/MarketContextSection';
-import { HotPicksCard } from '@/components/discover/HotPicksCard';
-import { RecentlyViewedInline } from '@/components/discover/RecentlyViewedInline';
-import { PortfolioSummaryWidget } from '@/components/discover/PortfolioSummaryWidget';
-import { EarningsCalendarWidget } from '@/components/discover/EarningsCalendarWidget';
-import { DailyBriefWidget } from '@/components/discover/DailyBriefWidget';
-import { WhyTodayWidget } from '@/components/discover/WhyTodayWidget';
-import { QuoteDisplay } from '@/components/ui/QuoteDisplay';
-import { useUserSettings } from '@/hooks/use-user-settings';
-import { CryptoMarketCard } from '@/components/asset/CryptoMarketCard';
-import { GettingStartedCard } from '@/components/onboarding/GettingStartedCard';
-import { PerformanceCalendarWidget } from '@/components/discover/PerformanceCalendarWidget';
-import { resolveWidgetOrder } from '@/lib/dashboard/widgets';
+import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query';
+import { getEnrichedMovers } from '@/lib/market-data/movers-enriched';
+import { getHotPicks } from '@/lib/discover/hot-picks';
+import { HOT_PICKS_QUERY_KEY } from '@/lib/discover/hot-picks-query';
+import DashboardClient from './DashboardClient';
 
-function WidgetSlot({ id }: { id: string }) {
-  switch (id) {
-    case 'recently_viewed':
-      return <RecentlyViewedInline />;
-    case 'performance_calendar':
-      return (
-        <section className="min-w-0 overflow-hidden">
-          <PerformanceCalendarWidget />
-        </section>
-      );
-    case 'daily_brief':
-      return (
-        <section className="min-w-0 overflow-hidden">
-          <DailyBriefWidget />
-        </section>
-      );
-    case 'why_today':
-      return (
-        <section className="min-w-0 overflow-hidden">
-          <WhyTodayWidget />
-        </section>
-      );
-    case 'market_context':
-      return <MarketContextSection />;
-    case 'earnings_calendar':
-      return (
-        <section className="min-w-0 overflow-hidden">
-          <EarningsCalendarWidget />
-        </section>
-      );
-    case 'hot_picks':
-      return (
-        <section className="min-w-0 overflow-hidden">
-          <HotPicksCard />
-        </section>
-      );
-    case 'crypto_market':
-      return (
-        <section className="min-w-0 overflow-hidden">
-          <CryptoMarketCard />
-        </section>
-      );
-    case 'investing_quote':
-      return (
-        <footer className="min-w-0">
-          <QuoteDisplay enabled />
-        </footer>
-      );
-    default:
-      return null;
-  }
-}
+export default async function DashboardPage() {
+  const queryClient = new QueryClient();
 
-export default function DiscoverPage() {
-  const { hasAnimatedBackground } = useBackground();
-  const { showWelcomeText, homepageWidgetOrder, homepageWidgetHidden } = useUserSettings();
-
-  const resolvedOrder = resolveWidgetOrder(homepageWidgetOrder, homepageWidgetHidden);
-
-  const openCustomize = () => {
-    window.dispatchEvent(new CustomEvent('settings:open', { detail: { tab: 'customize' } }));
-  };
+  // Prefetched in parallel and individually non-fatal: a failure here just means
+  // the client asks for that one itself, exactly as it did before.
+  await Promise.allSettled([
+    queryClient.prefetchQuery({
+      // Must match useTopMoversWithStream(5, null) — ['market','movers','rest',limit,symbolsKey]
+      // with an empty symbols key for the all-markets mode the dashboard
+      // defaults to. Holdings mode is per-user and stays on the client.
+      queryKey: ['market', 'movers', 'rest', 5, ''],
+      queryFn: () => getEnrichedMovers(5, null),
+    }),
+    queryClient.prefetchQuery({
+      queryKey: HOT_PICKS_QUERY_KEY,
+      queryFn: () => getHotPicks(168, 8),
+    }),
+  ]);
 
   return (
-    <HomepageRedirect>
-    <div className={`min-h-screen ${hasAnimatedBackground ? '' : 'bg-background'}`}>
-      <main className="container mx-auto max-w-6xl py-8 px-4 sm:px-6 lg:px-8 min-w-0">
-        {/* SECTION: Search / Command bar — fixed header, not reorderable */}
-        <section className="mb-10">
-          <div className="flex flex-col gap-4">
-            {showWelcomeText && <WelcomeMessage />}
-            <div className="flex flex-col sm:flex-row gap-4 items-stretch">
-              <div className="flex-1 min-w-0">
-                <CommandBar />
-              </div>
-              <div className="sm:w-72 shrink-0">
-                <PortfolioSummaryWidget />
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Customize control */}
-        <div className="flex justify-end mb-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={openCustomize}
-            className="gap-1.5 h-7 px-2 text-xs text-muted-foreground/80 hover:text-foreground"
-          >
-            <Pencil className="h-3 w-3" />
-            Customize
-          </Button>
-        </div>
-
-        {/* Getting-started card — self-hides once the user has any holding or
-            watchlist item, so it only greets genuinely new accounts. Margin
-            lives on the card itself (not this wrapper) so hidden state
-            doesn't leave a dead gap for returning users. */}
-        <GettingStartedCard />
-
-        {/* Reorderable widget stack */}
-        <div className="space-y-16">
-          {resolvedOrder.map((id) => (
-            <WidgetSlot key={id} id={id} />
-          ))}
-        </div>
-      </main>
-    </div>
-    </HomepageRedirect>
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <DashboardClient />
+    </HydrationBoundary>
   );
 }

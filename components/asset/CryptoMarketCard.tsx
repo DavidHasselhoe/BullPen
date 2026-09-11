@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
+import { fetchQuotesBatched } from '@/lib/market-data/quote-batcher';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -32,14 +33,7 @@ export function CryptoMarketCard() {
   const { data: quotes } = useQuery<Record<string, AssetQuote>>({
     queryKey: ['crypto-market-card-quotes', symbols],
     queryFn: async () => {
-      const res = await fetch('/api/quotes/batch', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ symbols }),
-      });
-      const json = await res.json();
-      const raw = json.quotes as Record<string, { price: number; changePercent: number }> ?? {};
-      return raw;
+      return await fetchQuotesBatched(symbols);
     },
     staleTime: 60 * 1000,
     refetchInterval: 2 * 60 * 1000,
