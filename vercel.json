@@ -9,6 +9,10 @@
       "schedule": "30 6 * * 1"
     },
     {
+      "path": "/api/cron/refresh-search-index",
+      "schedule": "45 6 * * 1"
+    },
+    {
       "path": "/api/cron/generate-academy-course",
       "schedule": "17 6 * * 1"
     },

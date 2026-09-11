@@ -2,10 +2,9 @@
 
 import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useQuery } from '@tanstack/react-query';
 import { Search, X } from 'lucide-react';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
-import { useDebounce } from '@/hooks/use-debounce';
+import { useInstantSearch } from '@/hooks/use-symbol-index';
 import { cn } from '@/lib/utils';
 import type { ScreenerRow } from '@/app/api/screener/route';
 
@@ -48,22 +47,16 @@ export function ScreenerSearchBar({ universe, value, onChange }: Props) {
   // Remote symbol search — covers anything the local universe misses (e.g. rows
   // whose stored name is just the ticker, so a company-name search would fail).
   // Same TwelveData-backed endpoint the command palette uses; debounced + cached.
-  const debouncedQuery = useDebounce(query.trim(), 250);
-  const { data: remote = [] } = useQuery<Option[]>({
-    queryKey: ['screener-symbol-search', debouncedQuery.toLowerCase()],
-    queryFn: async () => {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(debouncedQuery)}`);
-      if (!res.ok) return [];
-      const d = await res.json();
-      return (d.results ?? []).map((r: { ticker: string; name: string; logo_url?: string | null }) => ({
+  const { results: searchHits } = useInstantSearch(query.trim(), 8);
+  const remote: Option[] = useMemo(
+    () =>
+      searchHits.map((r) => ({
         ticker: r.ticker.toUpperCase(),
         name: r.name,
         logo_url: r.logo_url ?? null,
-      }));
-    },
-    enabled: debouncedQuery.length >= 2,
-    staleTime: 60_000,
-  });
+      })),
+    [searchHits]
+  );
 
   const suggestions: Option[] = useMemo(() => {
     const q = query.trim().toUpperCase();

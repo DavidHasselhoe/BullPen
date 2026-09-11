@@ -19,6 +19,7 @@ import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { ProfileAvatar } from '@/components/user/ProfileAvatar';
 import { BullAiIcon } from '@/components/ai/BullAiIcon';
 import { useDebounce } from '@/hooks/use-debounce';
+import { useInstantSearch } from '@/hooks/use-symbol-index';
 import { fetchWithTimeout } from '@/lib/utils';
 import { Briefcase, Filter, TrendingUp, Scale, Users, Loader2, CornerDownLeft, Microscope, Bell } from 'lucide-react';
 import { slugToAssetPath, inferAssetType } from '@/lib/assets/asset-type';
@@ -40,12 +41,6 @@ interface SearchResult {
   cik: string;
   has_data: boolean;
   logo_url?: string | null;
-}
-
-interface SearchResponse {
-  success: boolean;
-  results?: SearchResult[];
-  error?: string;
 }
 
 
@@ -89,32 +84,15 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const QUICK_ACTIONS = getQuickActions(t);
 
-  // 500 ms reduces intermediate API calls significantly for average typing speeds
-  const debouncedQuery = useDebounce(searchQuery, 500);
+  // Company search. Local matches over the downloaded catalogue appear on the
+  // keystroke itself; the server fills in crypto, foreign listings and anything
+  // newer than the catalogue a moment later. See hooks/use-symbol-index.ts.
+  const { results: searchResults, isLoading: isSearching } = useInstantSearch(searchQuery, 8);
+  const searchError = null;
 
-  // Company search
-  const {
-    data: searchResults,
-    isLoading: isSearching,
-    error: searchError,
-  } = useQuery({
-    queryKey: ['command-palette-search', debouncedQuery],
-    queryFn: async (): Promise<SearchResult[]> => {
-      if (!debouncedQuery || debouncedQuery.trim().length < 2) return [];
-      const response = await fetchWithTimeout(
-        `/api/search?q=${encodeURIComponent(debouncedQuery)}`,
-        {},
-        8000
-      );
-      if (!response.ok) throw new Error('Search failed');
-      const data: SearchResponse = await response.json();
-      if (data.success && data.results) return data.results;
-      return [];
-    },
-    enabled: debouncedQuery.trim().length >= 2,
-    staleTime: 30 * 1000,
-    refetchOnWindowFocus: false,
-  });
+  // People search still goes to the server on every query, so it keeps a longer
+  // debounce than symbols do.
+  const debouncedQuery = useDebounce(searchQuery, 400);
 
   // People search (parallel to company search)
   const { data: peopleResults } = useQuery({

@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useQuery, useQueries } from '@tanstack/react-query';
+import { useInstantSearch } from '@/hooks/use-symbol-index';
 import Link from 'next/link';
 import {
   Dialog,
@@ -433,18 +434,7 @@ function CompareContent() {
     return () => clearTimeout(t);
   }, [searchQuery]);
 
-  const { data: searchResults, isLoading: isSearching } = useQuery({
-    queryKey: ['stock-search', debouncedQuery],
-    queryFn: async (): Promise<SearchResult[]> => {
-      if (!debouncedQuery || debouncedQuery.trim().length < 2) return [];
-      const res = await fetch(`/api/search?q=${encodeURIComponent(debouncedQuery)}`);
-      const data = await res.json();
-      if (data.success && data.results) return data.results;
-      return [];
-    },
-    enabled: debouncedQuery.trim().length >= 2 && pickerOpen,
-    staleTime: 30_000,
-  });
+  const { results: searchResults, isLoading: isSearching } = useInstantSearch(searchQuery, 8);
 
   const openPicker = useCallback((slot: number) => {
     setPickerSlot(slot);

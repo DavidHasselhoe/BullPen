@@ -160,6 +160,14 @@ TypeScript build errors are intentionally suppressed in `next.config.ts` (Supaba
 3. `useAssetProfile(slug)` calls `/api/asset/[slug]/profile` — returns `{ assetType, name, symbol, logoUrl }`
 4. All stock API routes (`/api/stock/[ticker]/...`) accept slugs via `slugToSymbol(ticker)` at entry; asset-type guards (`hasEarnings`, `has24hTrading`) skip irrelevant sub-requests
 
+### Symbol search
+
+Search does not call the server per keystroke. `/api/search/index` serves the whole catalogue (~17k US stocks and ETFs, ~810KB of tab-separated text, ~165KB over the wire, CDN-cached 6h) and the browser fetches it once during idle time, then answers every keystroke locally in well under a millisecond via `lib/search/local-index.ts`. `useInstantSearch()` (`hooks/use-symbol-index.ts`) is the single entry point every search surface uses — command palette, stock search, watchlist, screener, compare, add-holding, buy-here.
+
+`/api/search` (TwelveData `symbol_search`, 0.5-2.4s) still runs behind a 250ms debounce and its results are appended below the local ones, because the catalogue is US stocks and ETFs only: crypto pairs, foreign listings and very new symbols exist only there. Two slots are always reserved for it so a full local list can't crowd out BTC/USD.
+
+Ranking is precomputed server-side into a 0-99 `rank` column (market-cap magnitude for stocks, a name/ticker heuristic for ETFs — see `lib/search/index-rank.ts`) so the per-keystroke loop only adds integers. `npm run test-search-ranking` asserts the cases that were actually wrong before ranks existed; `--live` benchmarks against a running dev server.
+
 ### Asset type system
 
 `lib/assets/asset-type.ts` is the single source of truth:
@@ -256,6 +264,7 @@ Split across three schedulers. All cron routes are protected by the `CRON_SECRET
 |---|---|---|
 | `/api/cron/generate-daily-brief` | `30 6 * * *` | Generate AI daily brief for Pro users (Anthropic Claude) |
 | `/api/cron/generate-weekly-pick` | `30 6 * * 1` | Generate Bull's Weekly Pick, published before pre-market so it's actionable from that session's open |
+| `/api/cron/refresh-search-index` | `45 6 * * 1` | Rebuild `search_index` (the symbol catalogue the browser downloads for instant search) from TwelveData `/stocks` + `/etf`. ~17k US stocks and ETFs with a precomputed popularity rank. |
 | `/api/cron/generate-academy-course` | `17 6 * * 1` | Draft the next course in the 10-week Academy roadmap (`lib/academy/academy-roadmap.ts`) via Claude and stage it unpublished for review at `/admin/academy-roadmap`. No auto-publish — requires explicit approval. |
 | `/api/cron/sync-institutional-holdings` | `0 7 * * 1` | Pull the newest 13F-HR filing for each curated fund in `institutional_investors` from SEC EDGAR, resolve CUSIPs to tickers, and upsert holdings (Discover page's institutional-holdings Pro feature). One fund's parse failure never blocks another's; supports `?slug=<fund-slug>` for a scoped rerun. |
 | `/api/cron/check-daily-challenge-reminder` | `0 1 * * *` | Evening (~9pm ET) nudge for users with an active Academy streak who haven't done anything in Academy yet today |

@@ -1594,6 +1594,16 @@ export async function symbolSearch(
   return json.data ?? [];
 }
 
+/**
+ * The reference catalogues are the one legitimate exception to the 15s fetch
+ * timeout above: /stocks is a ~5.6MB body that takes ~35s to transfer and /etf
+ * ~3MB. The timeout exists to stop a *stalled* connection burning a function's
+ * whole budget, not to cap a transfer that is genuinely this large, and both
+ * callers are crons with minutes of headroom. Measured at 35-80s depending on
+ * how loaded the upstream is, so the ceiling has real room above that.
+ */
+const REFERENCE_LIST_TIMEOUT_MS = 150_000;
+
 // -------- Stocks reference list --------
 
 export interface StockReference {
@@ -1633,7 +1643,10 @@ export async function getUsStocksList(
     country: opts.country ?? 'United States',
     exchange: opts.exchange,
   });
-  const res = await tdFetch(url, { cache: 'no-store' });
+  const res = await tdFetch(url, {
+    cache: 'no-store',
+    signal: AbortSignal.timeout(REFERENCE_LIST_TIMEOUT_MS),
+  });
   if (!res.ok) throw new Error(`TwelveData /stocks HTTP ${res.status}`);
   const json = (await res.json()) as TwelveDataStocksResponse;
   if (json.status === 'error') throw new Error(json.message ?? 'TwelveData /stocks error');
@@ -1645,6 +1658,38 @@ export async function getUsStocksList(
     country: d.country ?? '',
     currency: d.currency ?? '',
     type: d.type ?? '',
+  })).filter((d) => d.symbol);
+}
+
+/**
+ * Fetch the TwelveData ETF reference list. Same catalogue shape as /stocks and
+ * the same very low credit cost — the two together are what the search index is
+ * built from, since /stocks alone has no funds in it (no SPY, no QQQ).
+ * Endpoint: GET /etf.
+ */
+export async function getUsEtfList(
+  opts: { country?: string; exchange?: string } = {}
+): Promise<StockReference[]> {
+  logUsage('/etf', opts.exchange ?? opts.country ?? 'all');
+  const url = buildUrl('/etf', {
+    country: opts.country ?? 'United States',
+    exchange: opts.exchange,
+  });
+  const res = await tdFetch(url, {
+    cache: 'no-store',
+    signal: AbortSignal.timeout(REFERENCE_LIST_TIMEOUT_MS),
+  });
+  if (!res.ok) throw new Error(`TwelveData /etf HTTP ${res.status}`);
+  const json = (await res.json()) as TwelveDataStocksResponse;
+  if (json.status === 'error') throw new Error(json.message ?? 'TwelveData /etf error');
+  return (json.data ?? []).map((d) => ({
+    symbol: d.symbol ?? '',
+    name: d.name ?? d.symbol ?? '',
+    exchange: d.exchange ?? '',
+    mic_code: d.mic_code ?? '',
+    country: d.country ?? '',
+    currency: d.currency ?? '',
+    type: d.type ?? 'ETF',
   })).filter((d) => d.symbol);
 }
 

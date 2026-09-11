@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
 import {
   Command,
@@ -15,8 +15,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Search } from 'lucide-react';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
-import { useDebounce } from '@/hooks/use-debounce';
-import { fetchWithTimeout } from '@/lib/utils';
+import { useInstantSearch } from '@/hooks/use-symbol-index';
 import { humanizeError } from '@/lib/errors/humanize';
 
 interface SearchResult {
@@ -28,58 +27,18 @@ interface SearchResult {
   instrument_type?: string;
 }
 
-interface SearchResponse {
-  success: boolean;
-  results?: SearchResult[];
-  error?: string;
-}
-
 export function StockSearch() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const debouncedQuery = useDebounce(searchQuery, 300);
-
-  const {
-    data: searchResults,
-    isLoading: isSearching,
-    error: searchError,
-  } = useQuery({
-    queryKey: ['stock-search', debouncedQuery],
-    queryFn: async (): Promise<SearchResult[]> => {
-      if (!debouncedQuery || debouncedQuery.trim().length < 2) {
-        return [];
-      }
-
-      const response = await fetchWithTimeout(
-        `/api/search?q=${encodeURIComponent(debouncedQuery)}`,
-        {},
-        8000
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Search failed: ${response.status}`);
-      }
-
-      const data: SearchResponse = await response.json();
-
-      if (data.success && data.results) {
-        return data.results;
-      }
-
-      if (!data.success) {
-        throw new Error(data.error || 'Search failed');
-      }
-
-      return [];
-    },
-    enabled: debouncedQuery.trim().length >= 2,
-    staleTime: 30 * 1000,
-    retry: false,
-  });
+  // Matches from the downloaded catalogue render on the keystroke itself; the
+  // server route fills in anything it does not carry (crypto, foreign listings,
+  // very new symbols) a moment later. See hooks/use-symbol-index.ts.
+  const { results: searchResults, isLoading: isSearching } = useInstantSearch(searchQuery, 8);
+  const searchError = null;
+  const debouncedQuery = searchQuery.trim();
 
   const prefetchSnapshot = useCallback((ticker: string) => {
     queryClient.prefetchQuery({

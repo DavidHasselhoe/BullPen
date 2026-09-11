@@ -2,10 +2,9 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useQuery } from '@tanstack/react-query';
 import { Search, X } from 'lucide-react';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
-import { useDebounce } from '@/hooks/use-debounce';
+import { useInstantSearch } from '@/hooks/use-symbol-index';
 import { cn } from '@/lib/utils';
 
 export interface SearchResult {
@@ -39,20 +38,7 @@ export function TickerSelector({
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const debouncedQuery = useDebounce(query, 250);
-
-  const { data: results, isLoading } = useQuery({
-    queryKey: ['ticker-search', debouncedQuery],
-    queryFn: async (): Promise<SearchResult[]> => {
-      if (!debouncedQuery || debouncedQuery.trim().length < 2) return [];
-      const res = await fetch(`/api/search?q=${encodeURIComponent(debouncedQuery)}`);
-      const data = await res.json();
-      if (data.success && data.results) return data.results;
-      return [];
-    },
-    enabled: debouncedQuery.trim().length >= 2,
-    staleTime: 30_000,
-  });
+  const { results, isLoading } = useInstantSearch(query, 8);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {

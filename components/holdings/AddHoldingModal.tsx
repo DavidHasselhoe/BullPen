@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
+import { useInstantSearch } from '@/hooks/use-symbol-index';
 import {
   Dialog,
   DialogContent,
@@ -41,12 +42,6 @@ interface SearchResult {
   cik: string;
   has_data: boolean;
   logo_url?: string | null;
-}
-
-interface SearchResponse {
-  success: boolean;
-  results?: SearchResult[];
-  error?: string;
 }
 
 interface AddHoldingModalProps {
@@ -125,40 +120,8 @@ export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
     gcTime: 7 * 24 * 60 * 60 * 1000,
   });
 
-  // Search query
-  const {
-    data: searchResults,
-    isLoading: isSearching,
-  } = useQuery({
-    queryKey: ['stock-search', debouncedQuery],
-    queryFn: async (): Promise<SearchResult[]> => {
-      if (!debouncedQuery || debouncedQuery.trim().length < 2) {
-        return [];
-      }
-
-      const response = await fetch(`/api/search?q=${encodeURIComponent(debouncedQuery)}`);
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Search failed: ${response.status}`);
-      }
-
-      const data: SearchResponse = await response.json();
-
-      if (data.success && data.results) {
-        return data.results;
-      }
-
-      if (!data.success) {
-        throw new Error(data.error || 'Search failed');
-      }
-
-      return [];
-    },
-    enabled: debouncedQuery.trim().length >= 2 && open,
-    staleTime: 30 * 1000,
-    retry: false,
-  });
+  // Local catalogue answers on the keystroke; the server fills in the rest.
+  const { results: searchResults, isLoading: isSearching } = useInstantSearch(searchQuery, 8);
 
   const handleSelect = useCallback(
     (result: SearchResult) => {

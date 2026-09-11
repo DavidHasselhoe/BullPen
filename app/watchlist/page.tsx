@@ -8,7 +8,7 @@ import { useWatchlist, useWatchlistLists, useWatchlistItems, useAddToWatchlist, 
 import { useAlerts } from '@/hooks/use-alerts';
 import { useWatchlistEnhanced } from '@/hooks/use-watchlist-enhanced';
 import { WatchlistListTabs } from '@/components/watchlist/WatchlistListTabs';
-import { useDebounce } from '@/hooks/use-debounce';
+import { useInstantSearch } from '@/hooks/use-symbol-index';
 import { useLivePrices } from '@/hooks/use-live-prices';
 import { WatchlistCard } from '@/components/watchlist/WatchlistCard';
 import { WatchlistTable } from '@/components/watchlist/WatchlistTable';
@@ -18,7 +18,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { AuthGate } from '@/components/ui/AuthGate';
 import Link from 'next/link';
 import { Bookmark, Search, Plus, Radio, TrendingUp, LayoutGrid, List, Sparkles } from 'lucide-react';
-import { fetchWithTimeout } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 
 type ViewMode = 'grid' | 'table';
@@ -63,7 +62,6 @@ export default function WatchlistPage() {
     const saved = localStorage.getItem('watchlist-view') as ViewMode | null;
     return saved === 'grid' || saved === 'table' ? saved : 'grid';
   });
-  const debouncedQuery = useDebounce(searchQuery, 280);
 
   function switchView(mode: ViewMode) {
     setViewMode(mode);
@@ -87,19 +85,8 @@ export default function WatchlistPage() {
   const displayItems = activeListId ? (listItems ?? []) : (watchlist ?? []);
   const displayLoading = activeListId ? listItemsLoading : watchlistLoading;
 
-  // Company search for adding stocks
-  const { data: searchResults } = useQuery({
-    queryKey: ['watchlist-search', debouncedQuery],
-    queryFn: async (): Promise<SearchResult[]> => {
-      if (debouncedQuery.length < 2) return [];
-      const res = await fetchWithTimeout(`/api/search?q=${encodeURIComponent(debouncedQuery)}`, {}, 8000);
-      if (!res.ok) return [];
-      const data = await res.json();
-      return (data.results ?? []).slice(0, 6);
-    },
-    enabled: debouncedQuery.length >= 2,
-    staleTime: 30_000,
-  });
+  // Company search for adding stocks — local catalogue first, server behind it.
+  const { results: searchResults } = useInstantSearch(searchQuery, 6);
 
   // Live price stream for all watchlist symbols via WsManager SSE
   const allSymbols = (watchlist ?? []).map((w) => w.symbol);
