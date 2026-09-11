@@ -106,37 +106,9 @@ const MARKDOWN_CLS = cn(
 );
 
 /**
- * Word-by-word fade-in reveal for streamed text.
- *
- * Splitting on whitespace (keeping the separators as their own tokens) gives
- * each word a stable index as long as new text is only appended — which is
- * always true for a token stream. React reuses the same span for words already
- * on screen (their animation never restarts, even as the trailing word grows
- * character-by-character), and only genuinely new words mount with a fresh
- * fade. That avoids the flash/jitter of re-fading an entire growing block of
- * text on every token.
- */
-function StreamingText({ text }: { text: string }) {
-  const words = text.split(/(\s+)/);
-  return (
-    <>
-      {words.map((word, i) => (
-        <motion.span
-          key={i}
-          initial={{ opacity: 0, y: 2 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.18, ease: 'easeOut' }}
-        >
-          {word}
-        </motion.span>
-      ))}
-    </>
-  );
-}
-
-/**
- * During streaming: plain-text word-by-word fade for a smooth, natural reveal.
- * After streaming: full ReactMarkdown with formatting.
+ * Markdown renders while streaming too, so bold, lists and headings format as
+ * they arrive instead of showing raw syntax until the stream ends. Partial
+ * syntax (an unclosed `**`) stays literal until its closer arrives.
  * Memoized so completed messages skip re-renders on every incoming token.
  */
 const AssistantMessageContent = memo(function AssistantMessageContent({
@@ -148,10 +120,10 @@ const AssistantMessageContent = memo(function AssistantMessageContent({
 }) {
   if (isStreaming) {
     return (
-      <div className={MARKDOWN_CLS}>
-        <span className="whitespace-pre-wrap text-sm leading-relaxed">
-          <StreamingText text={text} />
-        </span>
+      // `[&>p:last-child]:inline` keeps the caret on the same line as the last
+      // paragraph instead of dropping it onto a line of its own.
+      <div className={cn(MARKDOWN_CLS, '[&>p:last-child]:inline')}>
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
         <motion.span
           className="inline-block w-[2px] h-[1em] bg-current ml-0.5 align-middle rounded-full"
           animate={{ opacity: [1, 0] }}

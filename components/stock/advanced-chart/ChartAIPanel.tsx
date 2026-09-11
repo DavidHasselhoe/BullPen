@@ -76,11 +76,12 @@ function extractChartActions(message: {
 }
 
 const AssistantContent = memo(function AssistantContent({ text, isStreaming }: { text: string; isStreaming: boolean }) {
-  // While streaming, render plain text so partial markdown (e.g. an unclosed **) doesn't flicker.
+  // Markdown renders while streaming too, so formatting appears as it arrives.
+  // `[&>p:last-child]:inline` keeps the caret beside the last paragraph.
   if (isStreaming) {
     return (
-      <div className={MARKDOWN_CLS}>
-        <span className="whitespace-pre-wrap">{text}</span>
+      <div className={cn(MARKDOWN_CLS, '[&>p:last-child]:inline')}>
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
         <motion.span
           className="ml-0.5 inline-block h-[1em] w-[2px] translate-y-[2px] rounded-full bg-current"
           animate={{ opacity: [1, 0] }}
