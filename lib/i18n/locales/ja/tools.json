@@ -484,6 +484,7 @@
   "screenerCompanyColumnLabel": "企業",
   "screenerCreatingView": "作成中…",
   "screenerCsvLabel": "CSV",
+  "screenerExportLabel": "エクスポート",
   "screenerCsvSector": "セクター",
   "screenerCsvTicker": "ティッカー",
   "screenerDescriptionAll": "BullPenのデータベースのすべての株式：{{total}}銘柄のリアルタイム価格とファンダメンタルデータ",

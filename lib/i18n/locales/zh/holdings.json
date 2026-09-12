@@ -92,6 +92,7 @@
   "holdingsTableEmptyDescription": "添加股票以跟踪你的投资组合、查看表现并获得 AI 驱动的洞察。",
   "holdingsTableEmptyTitle": "还没有持仓",
   "holdingsTableExportCsv": "导出 CSV",
+  "holdingsTableExport": "导出",
   "holdingsTableExportProOnlyTitle": "导出功能仅限 BullPen Pro",
   "holdingsTableExportTitle": "将持仓导出为 CSV",
   "holdingsTableFieldDay": "日期",

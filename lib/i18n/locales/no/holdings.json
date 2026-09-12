@@ -91,6 +91,7 @@
   "holdingsTableEmptyDescription": "Legg til aksjer for å spore porteføljen din, se resultater og få AI-drevne innsikter.",
   "holdingsTableEmptyTitle": "Ingen beholdninger ennå",
   "holdingsTableExportCsv": "Eksporter CSV",
+  "holdingsTableExport": "Eksporter",
   "holdingsTableExportProOnlyTitle": "Eksport er en Pro-funksjon",
   "holdingsTableExportTitle": "Eksporter beholdninger til CSV",
   "holdingsTableFieldDay": "Dag",

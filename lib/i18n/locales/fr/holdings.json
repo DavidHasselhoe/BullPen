@@ -89,6 +89,7 @@
   "holdingsTableEmptyDescription": "Ajoutez des actions pour suivre votre portefeuille, voir vos performances et obtenir des insights alimentés par l'IA.",
   "holdingsTableEmptyTitle": "Aucun titre pour le moment",
   "holdingsTableExportCsv": "Exporter en CSV",
+  "holdingsTableExport": "Exporter",
   "holdingsTableExportProOnlyTitle": "L'export est une fonctionnalité Pro",
   "holdingsTableExportTitle": "Exporter les titres en CSV",
   "holdingsTableFieldDay": "Jour",

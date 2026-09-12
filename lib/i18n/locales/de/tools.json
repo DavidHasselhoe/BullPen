@@ -477,6 +477,7 @@
   "screenerCompanyColumnLabel": "Unternehmen",
   "screenerCreatingView": "Wird erstellt…",
   "screenerCsvLabel": "CSV",
+  "screenerExportLabel": "Exportieren",
   "screenerCsvSector": "Sektor",
   "screenerDescriptionAll": "Jede Aktie in BullPens Datenbank: {{total}} Ticker mit Live-Kursen und Fundamentaldaten.",
   "screenerDescriptionCherryPicked_one": "Vergleiche {{count}} ausgewählte Aktie. Leere die Suche, um zu deiner Übersicht zurückzukehren.",

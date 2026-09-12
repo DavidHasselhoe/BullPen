@@ -118,6 +118,7 @@
   "holdingsTableEmptyDescription": "Add stocks to track your portfolio, see performance, and get AI-powered insights.",
   "holdingsTableEmptyTitle": "No holdings yet",
   "holdingsTableExportCsv": "Export CSV",
+  "holdingsTableExport": "Export",
   "holdingsTableExportProOnlyTitle": "Exporting is a Pro feature",
   "holdingsTableExportTitle": "Export holdings to CSV",
   "holdingsTableFieldDay": "Day",

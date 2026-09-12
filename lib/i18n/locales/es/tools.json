@@ -483,6 +483,7 @@
   "screenerCompanyColumnLabel": "Empresa",
   "screenerCreatingView": "Creando…",
   "screenerCsvLabel": "CSV",
+  "screenerExportLabel": "Exportar",
   "screenerCsvTicker": "Símbolo",
   "screenerDescriptionAll": "Cada acción en la base de datos de BullPen: {{total}} tickers con precios en vivo y datos fundamentales.",
   "screenerDescriptionCherryPicked_one": "Comparando {{count}} acción seleccionada. Limpia la búsqueda para volver a tu vista.",

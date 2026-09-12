@@ -8,7 +8,9 @@ import { useRouter } from 'next/navigation';
 import { useEntitlements } from '@/hooks/use-entitlements';
 import { useAuth } from '@/hooks/use-auth';
 import { useAddToWatchlist } from '@/hooks/use-watchlist';
-import { ProBadge } from '@/components/billing/ProBadge';
+import { ExportMenu } from '@/components/export/ExportMenu';
+import { buildCsv, downloadCsv, exportStem } from '@/lib/export/csv';
+import { downloadPdf } from '@/lib/export/pdf';
 import {
   Table,
   TableBody,
@@ -20,7 +22,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Bell, Download, Scale, ListPlus, X, Loader2 } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Bell, Scale, ListPlus, X, Loader2 } from 'lucide-react';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { EmptyState } from '@/components/ui/EmptyState';
 import type { ScreenerRow } from '@/app/api/screener/route';
@@ -170,32 +172,63 @@ export function ScreenerResults({
     }
   }, [isAuthenticated, selectedTickers, data, addToWatchlist, router]);
 
-  const exportCSV = useCallback(() => {
-    // CSV export is a Pro feature — free users are routed to /upgrade.
-    if (!isPro) { router.push('/upgrade'); return; }
-    const headers = [t('screenerCompanyColumnLabel'), t('screenerCsvTicker'), t('screenerCsvSector'), ...columns.map((c) => c.label)];
+  /**
+   * One row model for both formats.
+   *
+   * Values come from each column's `getValue`, which returns a raw number and
+   * already normalises percent scale (fractionToPct), so the file agrees with
+   * the screen and a spreadsheet reads every figure as a number. The old
+   * version hand-rolled its own CSV here, quoting only the company name and
+   * shipping no BOM; it now goes through lib/export/csv like holdings does.
+   */
+  const buildExportTable = useCallback(() => {
+    const headers = [
+      t('screenerCompanyColumnLabel'),
+      t('screenerCsvTicker'),
+      t('screenerCsvSector'),
+      ...columns.map((c) => c.label),
+    ];
     const rows = sorted.map((row) => {
       const live = livePrices?.get(row.ticker);
-      const cells = [
-        `"${row.name.replace(/"/g, '""')}"`,
+      return [
+        row.name,
         row.ticker,
         row.sector ?? '',
-        ...columns.map((col) => {
-          const v = col.getValue(row, live);
-          return v == null ? '' : String(v);
-        }),
+        ...columns.map((col) => col.getValue(row, live)),
       ];
-      return cells.join(',');
     });
-    const csv = [headers.join(','), ...rows].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `screener-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }, [sorted, columns, livePrices, isPro, router, t]);
+    // Company, Ticker and Sector are text; every column after them is a figure.
+    const numericColumns = columns.map((_, i) => i + 3);
+    return { headers, rows, numericColumns };
+  }, [sorted, columns, livePrices, t]);
+
+  const exportMeta = useMemo(
+    () => ({
+      Exported: new Date().toISOString().slice(0, 10),
+      Rows: String(sorted.length),
+      // Records which columns were on, so a file is reproducible after the
+      // fact rather than an anonymous grid of numbers.
+      Columns: columns.map((c) => c.label).join(' | '),
+    }),
+    [sorted.length, columns]
+  );
+
+  const handleExportCsv = useCallback(() => {
+    const { headers, rows } = buildExportTable();
+    downloadCsv(`${exportStem('screener')}.csv`, buildCsv({ headers, rows, meta: exportMeta }));
+  }, [buildExportTable, exportMeta]);
+
+  const handleExportPdf = useCallback(async () => {
+    const { headers, rows, numericColumns } = buildExportTable();
+    await downloadPdf(`${exportStem('screener')}.pdf`, {
+      title: t('screenerTitle', { defaultValue: 'Stock Screener' }),
+      meta: exportMeta,
+      headers,
+      rows,
+      numericColumns,
+      orientation: 'landscape',
+    });
+  }, [buildExportTable, exportMeta, t]);
 
   const toggleSort = (key: string) => {
     if (sortKey === key) {
@@ -489,16 +522,16 @@ export function ScreenerResults({
           <p className="text-xs text-muted-foreground">
             {t('screenerShowingResults', { start: startItem, end: endItem, total: sorted.length })}
           </p>
-          <button
-            type="button"
-            onClick={exportCSV}
-            className="flex items-center gap-1 text-xs text-muted-foreground/80 hover:text-foreground transition-colors"
+          <ExportMenu
+            onExportCsv={handleExportCsv}
+            onExportPdf={handleExportPdf}
+            isPro={isPro}
+            disabled={sorted.length === 0}
+            label={t('screenerExportLabel')}
+            csvLabel="CSV"
+            pdfLabel="PDF"
             title={isPro ? t('screenerExportCsvTitle') : t('screenerExportCsvProOnly')}
-          >
-            <Download className="h-3 w-3" />
-            {t('screenerCsvLabel')}
-            {!isPro && <ProBadge className="ml-0.5" />}
-          </button>
+          />
         </div>
         <div className="flex items-center gap-3">
           {/* Page size */}

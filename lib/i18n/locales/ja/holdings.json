@@ -92,6 +92,7 @@
   "holdingsTableEmptyDescription": "ポートフォリオを追跡するための株を追加し、パフォーマンスを確認し、AI搭載のインサイトを取得します。",
   "holdingsTableEmptyTitle": "保有銘柄はまだありません",
   "holdingsTableExportCsv": "CSVをエクスポート",
+  "holdingsTableExport": "エクスポート",
   "holdingsTableExportProOnlyTitle": "エクスポートはPro機能です",
   "holdingsTableExportTitle": "保有銘柄をCSVにエクスポート",
   "holdingsTableFieldDay": "日",

@@ -26,7 +26,7 @@ export const PRICING = {
 
 // ── Pro-only feature flags ───────────────────────────────────────────────────
 export type ProFeature =
-  | 'exports'               // CSV / PDF exports (screener, holdings, dividend)
+  | 'exports'               // CSV + PDF exports (screener, holdings). No dividend export exists.
   | 'insider'               // insider transactions (200-credit endpoint)
   | 'daily_brief'
   | 'why_today'

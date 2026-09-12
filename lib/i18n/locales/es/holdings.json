@@ -92,6 +92,7 @@
   "holdingsTableEmptyDescription": "Añade acciones para rastrear tu cartera, ver el rendimiento y obtener información impulsada por IA.",
   "holdingsTableEmptyTitle": "Sin posiciones aún",
   "holdingsTableExportCsv": "Exportar CSV",
+  "holdingsTableExport": "Exportar",
   "holdingsTableExportProOnlyTitle": "Exportar es una función de Pro",
   "holdingsTableExportTitle": "Exportar posiciones a CSV",
   "holdingsTableFieldDay": "Día",

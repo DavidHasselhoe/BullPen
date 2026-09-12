@@ -499,6 +499,7 @@
   "screenerCompanyColumnLabel": "Company",
   "screenerCreatingView": "Creating…",
   "screenerCsvLabel": "CSV",
+  "screenerExportLabel": "Export",
   "screenerCsvSector": "Sector",
   "screenerCsvTicker": "Ticker",
   "screenerDescriptionAll": "Every stock in BullPen's database: {{total}} tickers with live prices and fundamental data.",

@@ -474,6 +474,7 @@
   "screenerCompanyColumnLabel": "Entreprise",
   "screenerCreatingView": "Création en cours…",
   "screenerCsvLabel": "CSV",
+  "screenerExportLabel": "Exporter",
   "screenerCsvSector": "Secteur",
   "screenerCsvTicker": "Symbole",
   "screenerDescriptionAll": "Tous les titres de la base de données BullPen : {{total}} symboles avec prix en direct et données fondamentales.",

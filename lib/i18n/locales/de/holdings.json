@@ -90,6 +90,7 @@
   "holdingsTableEmptyDescription": "Füge Aktien hinzu, um dein Portfolio zu verfolgen, die Performance zu sehen und KI-gestützte Einblicke zu erhalten.",
   "holdingsTableEmptyTitle": "Noch keine Positionen",
   "holdingsTableExportCsv": "Als CSV exportieren",
+  "holdingsTableExport": "Exportieren",
   "holdingsTableExportProOnlyTitle": "Exportieren ist eine Pro-Funktion",
   "holdingsTableExportTitle": "Positionen als CSV exportieren",
   "holdingsTableFieldDay": "Tag",
