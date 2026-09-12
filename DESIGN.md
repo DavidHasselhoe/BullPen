@@ -43,6 +43,14 @@ typography:
   numeric:
     fontFamily: "var(--font-geist-mono), ui-monospace, monospace"
     fontFeature: "tnum"
+  scale:
+    title: "1.125rem"
+    marketing-body: "15px"
+    marketing-ui: "16px"
+    marketing-lead: "19px"
+    marketing-subhead: "22px"
+    marketing-title: "26px"
+    marketing-display: "28px"
 rounded:
   sm: "6px"
   md: "8px"
