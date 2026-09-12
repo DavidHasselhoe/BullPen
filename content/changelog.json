@@ -1,5 +1,26 @@
 [
   {
+    "date": "2026-09-12",
+    "entries": [
+      {
+        "type": "new",
+        "text": "Pro members can now export the screener and their holdings as a PDF as well as a spreadsheet. The PDF is a proper document with a title, the filters you used, the date and page numbers, so it reads well printed or forwarded on"
+      },
+      {
+        "type": "fixed",
+        "text": "The screener was only ever working with the first 1,000 companies. Viewing all stocks showed 999 of them, the count on the tab disagreed with the table below it, and a spreadsheet export was quietly missing two thirds of the companies. All 3,050 are there now"
+      },
+      {
+        "type": "improved",
+        "text": "Spreadsheet exports now open correctly outside the US. A comma-separated file used to arrive as one long column in Norwegian, German, French and Spanish Excel. Exports also tell you when something goes wrong instead of appearing to do nothing"
+      },
+      {
+        "type": "improved",
+        "text": "Number fields across the app, in the screener filters, price alerts and the holdings forms, no longer show the browser's tiny up and down arrows. They were easy to nudge by accident and sat on top of the value you were typing"
+      }
+    ]
+  },
+  {
     "date": "2026-09-11",
     "entries": [
       {
