@@ -711,7 +711,13 @@
   color: var(--accent) !important;
   font-family: var(--font-sans) !important;
 }
-.bullpen-landing-root .legal-doc a {
+/* :not(.btn) so this prose-link styling stops at real prose links.
+   Without it the selector (0,2,1) outranked .btn-primary (0,2,0) and repainted
+   any button inside a .legal-doc page in --accent, which is the same colour as
+   the button's own fill: the glossary term pages shipped a solid emerald pill
+   with an invisible label ("See <term> on a real stock, free") at a 1:1
+   contrast ratio, plus a stray underline. */
+.bullpen-landing-root .legal-doc a:not(.btn) {
   color: var(--accent);
   text-decoration: underline;
   text-underline-offset: 2px;
