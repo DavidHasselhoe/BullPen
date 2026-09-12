@@ -14,6 +14,9 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           "placeholder:text-muted-foreground",
           "focus-visible:outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:bg-muted/20",
           "disabled:cursor-not-allowed disabled:opacity-50",
+          // The native number stepper is two 8px arrows nobody aims at, and it
+          // eats the right edge of the field. Typing is the real input path.
+          "[&[type=number]]:[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none",
           "aria-invalid:border-destructive aria-invalid:ring-destructive/20",
           className
         )}
