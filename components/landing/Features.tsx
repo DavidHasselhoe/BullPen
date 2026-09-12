@@ -114,8 +114,8 @@ function Shot({ file, alt, priority }: { file: string; alt: string; priority: bo
       <Image
         src={`/screenshots/${file}`}
         alt={alt}
-        width={1600}
-        height={1000}
+        width={1280}
+        height={800}
         priority={priority}
         sizes="(max-width: 900px) 100vw, 640px"
         style={{ width: '100%', height: 'auto', display: 'block' }}

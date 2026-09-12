@@ -179,8 +179,8 @@ export function Peek({ shots }: { shots: Shot[] }) {
                 <Image
                   src={`/screenshots/${active.file}`}
                   alt={active.alt}
-                  width={1600}
-                  height={1000}
+                  width={1280}
+                  height={800}
                   sizes="(max-width: 1240px) 100vw, 1200px"
                   style={{ width: '100%', height: 'auto', display: 'block' }}
                 />

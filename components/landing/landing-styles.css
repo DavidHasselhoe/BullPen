@@ -66,7 +66,6 @@
      --surface but measured 4.42:1 on --surface-2, e.g. the hero's
      "Why Today" bubble list items, confirmed via an axe-core scan). */
   --fg-dim: oklch(0.64 0.01 162);
-  --grid: oklch(1 0 0 / 0.04);
 
   background: var(--bg);
   color: var(--fg);
@@ -114,7 +113,6 @@
      It only passed on plain white, which is the one background those labels
      are rarely on. 0.50 measures 6.01 / 5.51 / 5.04 on bg / bg-2 / surface-2. */
   --fg-dim: oklch(0.50 0 0);
-  --grid: oklch(0 0 0 / 0.045);
 }
 
 /* Logo mark swap (BullPenMark, components/landing/Atoms.tsx) — deliberately
@@ -147,7 +145,13 @@
   color: var(--fg);
 }
 
-/* Page atmosphere — radial spotlights + faint grid */
+/* Page atmosphere — radial spotlights.
+   There used to be a `.page-grid` layer here too: two hairline gradients tiled
+   on a fixed 64px cell, radially masked behind the hero. It was removed because
+   it aligned to nothing and measured nothing — it was texture for its own sake,
+   and a two-axis hairline grid is one of the more recognisable generated-landing-
+   page tells. Compared side by side the page reads cleaner without it and the
+   headline carries more, which is the whole point of a palette this quiet. */
 .bullpen-landing-root .page-bg {
   position: fixed;
   inset: 0;
@@ -158,19 +162,6 @@
     radial-gradient(50% 40% at 90% 8%, oklch(0.6 0.18 270 / 0.18), transparent 65%),
     radial-gradient(80% 60% at 50% 110%, var(--accent-soft), transparent 60%);
   opacity: 0.65;
-}
-
-.bullpen-landing-root .page-grid {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  background-image:
-    linear-gradient(to right, var(--grid) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--grid) 1px, transparent 1px);
-  background-size: 64px 64px;
-  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, black 30%, transparent 80%);
-          mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, black 30%, transparent 80%);
 }
 
 .bullpen-landing-root .content-layer {
@@ -608,12 +599,18 @@
   gap: 56px;
   align-items: center;
 }
+/* The track sizes have to flip with the items. `order` only changes which cell
+   each child lands in, not how wide that cell is, so flipping the order alone
+   dropped every second screenshot into the 1fr track and rendered the four
+   captures at alternating widths (606px / 526px at 1440). */
+.bullpen-landing-root .feat-row[data-flip='true'] { grid-template-columns: 1.15fr 1fr; }
 .bullpen-landing-root .feat-row[data-flip='true'] .feat-row-copy { order: 2; }
 .bullpen-landing-root .feat-row[data-flip='true'] .feat-row-shot { order: 1; }
 
 @media (max-width: 900px) {
   .bullpen-landing-root .feat-rows { gap: 64px; }
-  .bullpen-landing-root .feat-row {
+  .bullpen-landing-root .feat-row,
+  .bullpen-landing-root .feat-row[data-flip='true'] {
     grid-template-columns: 1fr;
     gap: 24px;
   }

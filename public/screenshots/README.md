@@ -28,23 +28,35 @@ by both:
 
 ## Capture settings
 
-- **Viewport `1600 x 1000`.** Any 16:10 viewport works (`why-today.png` is
-  1920x1200 because the stock page's side panel squeezes the top nav at 1600 —
-  see below), but the aspect ratio must stay 16:10 or the Peek tab strip jumps
-  height as you switch tabs.
+- **Viewport `1280 x 800`.** The aspect ratio must stay 16:10 across every file
+  or the Peek tab strip jumps height as you switch tabs. 1280 rather than 1600
+  is deliberate: each capture is displayed at roughly 640px (Features) or
+  1190px (Peek), so a 1600px source renders everything at ~40% and the text
+  turns to mush. 1280 is the widest source that still keeps labels readable at
+  the sizes these are actually shown at.
 - **Dark theme.** The app is dark by default and the landing page is light, so
   the captures read as screens rather than as part of the page. Do not switch
   the app to light to match the landing page.
+- **Strip the app navigation.** These shots exist to show content, not chrome.
+  Hide the top nav and the floating Ask Bull launcher (which otherwise clips
+  whatever card is under it, reading as a rendering bug in a still image):
+  ```js
+  document.head.insertAdjacentHTML('beforeend', '<style>' +
+    'header,[role="banner"]{display:none!important}' +
+    '[class*="fixed"][class*="bottom-"][class*="right-"]{display:none!important}' +
+    'main{padding-top:0!important}</style>');
+  ```
+  On stock pages also hide the left section rail and the Back link. Use
+  `visibility:hidden`, **not** `display:none` — the rail is a grid column, and
+  removing it collapses the main content into a narrow strip. The blank gutter
+  it leaves reads as margin.
 - Capture the **content area only** — `Peek` draws its own browser chrome
   (traffic lights + URL bar), so a shot including a real browser frame looks
   doubled.
-- **Hide the floating Ask Bull launcher** before capturing. It sits over the
-  bottom-right corner and clips whatever card is under it, which reads as a
-  rendering bug in a still image:
-  ```js
-  document.head.insertAdjacentHTML('beforeend',
-    '<style>[class*="fixed"][class*="bottom-"][class*="right-"]{display:none!important}</style>');
-  ```
+- **Check every number rendered.** The screener's unfiltered S&P 500 view had a
+  blank price for AAPL at capture time; applying the High Health preset both
+  avoided it and made a better shot, because it shows the tool filtering rather
+  than just listing.
 - Let live data finish loading. Empty skeletons photograph badly, and the
   holdings page in particular can 429 on first load with a large portfolio
   (10 simultaneous `MAX`-range candle requests) — reload and re-check that the
