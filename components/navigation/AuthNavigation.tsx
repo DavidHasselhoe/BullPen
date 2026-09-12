@@ -23,17 +23,37 @@ const NO_APP_NAV_ROUTES = [
   '/help',
   '/disclosures',
   '/security',
+  // Dynamic, so it never had an exact path to list: one route per share.
+  '/share',
 ];
+
+/**
+ * True for a standalone page and anything nested under one.
+ *
+ * The membership test used to be a bare `includes(pathname)`, an exact string
+ * match, so it covered /glossary but not /glossary/free-cash-flow. Every
+ * glossary term page therefore rendered the authenticated app nav stacked on
+ * top of the marketing header the page draws for itself: two nav bars, with
+ * the app one clipping its own links at 1280px. Those term pages are SEO entry
+ * points, so the people most likely to hit it were strangers, which is exactly
+ * what this list exists to prevent.
+ *
+ * '/' is matched exactly and never as a prefix, or it would swallow the app.
+ */
+function isStandalonePage(pathname: string): boolean {
+  if (pathname === '/') return true;
+  return NO_APP_NAV_ROUTES.some(
+    (route) => route !== '/' && (pathname === route || pathname.startsWith(`${route}/`))
+  );
+}
 
 export function AuthNavigation() {
   const pathname = usePathname();
 
-  // /share/[id] is dynamic (one per share, not a fixed path) — a prefix check
-  // since it can't live in the exact-match list above. Same reasoning as every
-  // other route here: a share link is a standalone landing page, viewed by
-  // strangers, and must never leak the authenticated app's nav/notifications
-  // even when the viewer (e.g. the sharer themselves) happens to be logged in.
-  if (NO_APP_NAV_ROUTES.includes(pathname) || pathname.startsWith('/share/')) {
+  // Every route in the list is a standalone landing page that strangers can
+  // reach, so none of them may leak the authenticated app's nav or
+  // notifications, even when the viewer happens to be logged in.
+  if (isStandalonePage(pathname)) {
     return null;
   }
 
