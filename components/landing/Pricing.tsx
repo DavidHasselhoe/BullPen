@@ -64,12 +64,13 @@ const PLANS: Plan[] = [
     highlight: true,
     features: [
       'Everything in Free',
-      'Daily Brief — AI market recap every morning',
+      'Daily Brief: an AI market recap every morning',
       '“Why Today?” move explanations',
       'Unlimited AI chat, Portfolio Builder & Checkup',
-      "Bull's Weekly Pick — full thesis",
+      "Bull's Weekly Pick, with the full thesis",
       'Automatic brokerage sync (SnapTrade)',
       'Unlimited watchlists & price alerts',
+      'Institutional 13F holdings from 15 funds',
       'Insider transactions, exports & advanced Academy',
     ],
   },
@@ -79,9 +80,9 @@ export function Pricing({ onSignUp, onSubscribe }: Props) {
   const [annual, setAnnual] = useState(true);
 
   return (
-    <section id="pricing" style={{ padding: '120px 0 80px', position: 'relative' }}>
+    <section id="pricing" style={{ padding: '104px 0 96px', position: 'relative' }}>
       <div className="wrap">
-        <SectionHeading
+        <SectionHeading
           title={
             <>
               Free to start.{' '}

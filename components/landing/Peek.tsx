@@ -21,6 +21,10 @@ import type { Shot } from '@/lib/landing/screenshots';
  * are gone. Drop real captures into /public/screenshots (see the README there)
  * and each one appears automatically.
  *
+ * This is the whole-app tour: five complete screens, in browser chrome. The
+ * four feature-specific captures live in Features.tsx and are not repeated
+ * here, so no visitor sees the same screenshot twice on one page.
+ *
  * `shots` is resolved on the server (lib/landing/screenshots.ts), so a missing
  * capture is never requested by the browser and the section renders nothing at
  * all until at least one exists.
@@ -103,7 +107,7 @@ export function Peek({ shots }: { shots: Shot[] }) {
   const active = shots[Math.min(idx, shots.length - 1)];
 
   return (
-    <section id="peek" style={{ padding: '120px 0 60px', position: 'relative' }}>
+    <section id="peek" style={{ padding: '104px 0 96px', position: 'relative' }}>
       <div className="wrap">
         <SectionHeading
           title={
@@ -168,11 +172,16 @@ export function Peek({ shots }: { shots: Shot[] }) {
           <div onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
             <BrowserChrome url={active.url}>
               <div key={active.id} style={{ animation: 'bp-fade-up 0.4s ease-out', background: 'var(--bg)' }}>
+                {/* `sizes` matters here: without it Next defaults to 100vw and
+                    requests the 3840-wide variant for a box that is never wider
+                    than ~1190px, upscaling a 1600px source and paying for the
+                    bytes. The frame is the wrap's width minus its gutters. */}
                 <Image
                   src={`/screenshots/${active.file}`}
                   alt={active.alt}
                   width={1600}
                   height={1000}
+                  sizes="(max-width: 1240px) 100vw, 1200px"
                   style={{ width: '100%', height: 'auto', display: 'block' }}
                 />
               </div>

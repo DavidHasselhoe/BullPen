@@ -60,6 +60,8 @@ const GROUPS: Group[] = [
       { label: 'Financials, statistics & health score' },
       { label: 'Market events calendar' },
       { label: 'S&P 500 sector heatmap' },
+      { label: 'Investing Ideas theme baskets' },
+      { label: 'Institutional 13F holdings', pro: true },
       { label: 'Insider transactions', pro: true },
     ],
   },
@@ -85,7 +87,7 @@ const GROUPS: Group[] = [
       { label: 'Academy: beginner courses' },
       { label: 'Daily challenge' },
       { label: 'Plain-language glossary' },
-      { label: 'Community, profiles & theses' },
+      { label: 'Community, profiles & shareable theses' },
       { label: 'Market Mood index' },
       { label: 'Academy: intermediate & advanced', pro: true },
     ],
@@ -116,7 +118,7 @@ function ProTag() {
 
 export function Toolkit() {
   return (
-    <section id="toolkit" style={{ padding: '120px 0 80px', position: 'relative' }}>
+    <section id="toolkit" style={{ padding: '104px 0 96px', position: 'relative' }}>
       <div className="wrap">
         <SectionHeading
           title={
