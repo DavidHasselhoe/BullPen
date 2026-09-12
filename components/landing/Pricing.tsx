@@ -42,7 +42,7 @@ const PLANS: Plan[] = [
     tagline: 'Everything to start exploring.',
     monthly: 0,
     annualMo: 0,
-    cta: 'Sign up free',
+    cta: 'Start for free',
     ctaStyle: 'ghost',
     features: [
       'Live US quotes, charts & indicators',
@@ -155,7 +155,12 @@ export function Pricing({ onSignUp, onSubscribe }: Props) {
                     letterSpacing: '0.04em',
                   }}
                 >
-                  −{Math.round((1 - PRICING.proAnnualPerMonth / PRICING.proMonthly) * 100)}%
+                  {(() => {
+                    const monthsFree = Math.round(
+                      12 * (1 - PRICING.proAnnualPerMonth / PRICING.proMonthly)
+                    );
+                    return `${monthsFree} months free`;
+                  })()}
                 </span>
               </button>
             </div>

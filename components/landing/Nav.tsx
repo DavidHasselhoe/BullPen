@@ -171,7 +171,7 @@ export function Nav({ onSignIn, onSignUp, isDarkLanding }: Props) {
                 className="btn btn-primary"
                 style={{ padding: '10px 18px', fontSize: 14 }}
               >
-                Sign up free
+                Start for free
                 <Icon name="arrowRight" size={14} />
               </button>
             </>
