@@ -475,6 +475,7 @@
   "screenerCreatingView": "Création en cours…",
   "screenerCsvLabel": "CSV",
   "screenerExportLabel": "Exporter",
+  "screenerExportFailed": "Échec de l'export",
   "screenerCsvSector": "Secteur",
   "screenerCsvTicker": "Symbole",
   "screenerDescriptionAll": "Tous les titres de la base de données BullPen : {{total}} symboles avec prix en direct et données fondamentales.",

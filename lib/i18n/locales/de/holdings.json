@@ -91,6 +91,7 @@
   "holdingsTableEmptyTitle": "Noch keine Positionen",
   "holdingsTableExportCsv": "Als CSV exportieren",
   "holdingsTableExport": "Exportieren",
+  "holdingsTableExportFailed": "Export fehlgeschlagen",
   "holdingsTableExportProOnlyTitle": "Exportieren ist eine Pro-Funktion",
   "holdingsTableExportTitle": "Positionen als CSV exportieren",
   "holdingsTableFieldDay": "Tag",

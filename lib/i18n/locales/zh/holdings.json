@@ -93,6 +93,7 @@
   "holdingsTableEmptyTitle": "还没有持仓",
   "holdingsTableExportCsv": "导出 CSV",
   "holdingsTableExport": "导出",
+  "holdingsTableExportFailed": "导出失败",
   "holdingsTableExportProOnlyTitle": "导出功能仅限 BullPen Pro",
   "holdingsTableExportTitle": "将持仓导出为 CSV",
   "holdingsTableFieldDay": "日期",

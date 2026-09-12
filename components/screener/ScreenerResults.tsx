@@ -530,6 +530,7 @@ export function ScreenerResults({
             label={t('screenerExportLabel')}
             csvLabel="CSV"
             pdfLabel="PDF"
+            errorLabel={t('screenerExportFailed')}
             title={isPro ? t('screenerExportCsvTitle') : t('screenerExportCsvProOnly')}
           />
         </div>

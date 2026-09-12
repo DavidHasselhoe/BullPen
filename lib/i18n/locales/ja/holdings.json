@@ -93,6 +93,7 @@
   "holdingsTableEmptyTitle": "保有銘柄はまだありません",
   "holdingsTableExportCsv": "CSVをエクスポート",
   "holdingsTableExport": "エクスポート",
+  "holdingsTableExportFailed": "エクスポート失敗",
   "holdingsTableExportProOnlyTitle": "エクスポートはPro機能です",
   "holdingsTableExportTitle": "保有銘柄をCSVにエクスポート",
   "holdingsTableFieldDay": "日",

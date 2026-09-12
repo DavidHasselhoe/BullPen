@@ -868,6 +868,7 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
                 label={t('holdingsTableExport')}
                 csvLabel="CSV"
                 pdfLabel="PDF"
+                errorLabel={t('holdingsTableExportFailed')}
                 title={isPro ? t('holdingsTableExportTitle') : t('holdingsTableExportProOnlyTitle')}
                 className="h-8 gap-1.5 rounded-lg border border-border/60 bg-muted/30 px-3 font-medium text-muted-foreground hover:border-border hover:bg-muted/60"
               />

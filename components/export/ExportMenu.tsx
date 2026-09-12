@@ -34,6 +34,8 @@ export interface ExportMenuProps {
   pdfLabel: string;
   /** Tooltip on the trigger, typically differing for free vs Pro. */
   title?: string;
+  /** Shown on the trigger after a failed export. */
+  errorLabel: string;
   className?: string;
 }
 
@@ -49,23 +51,34 @@ export function ExportMenu({
   csvLabel,
   pdfLabel,
   title,
+  errorLabel,
   className,
 }: ExportMenuProps) {
   const router = useRouter();
   const [isBuilding, setIsBuilding] = useState(false);
 
-  const handlePdf = useCallback(async () => {
-    // A large PDF takes a moment to lay out and the browser shows nothing until
-    // the file lands, so the trigger owns the spinner.
+  // A failed export used to be completely silent: the CSV path had no error
+  // handling at all and the PDF path logged to the console and stopped. On a
+  // paid feature a click that does nothing is indistinguishable from a broken
+  // entitlement, so failures surface on the trigger itself. The app has no
+  // toast system and this is not the place to introduce one.
+  const [failed, setFailed] = useState(false);
+
+  const run = useCallback(async (task: () => void | Promise<void>, kind: string) => {
+    setFailed(false);
     setIsBuilding(true);
     try {
-      await onExportPdf();
+      await task();
     } catch (error) {
-      logger.error('PDF export failed', error);
+      logger.error(`${kind} export failed`, error);
+      setFailed(true);
     } finally {
       setIsBuilding(false);
     }
-  }, [onExportPdf]);
+  }, []);
+
+  const handleCsv = useCallback(() => { void run(onExportCsv, 'CSV'); }, [run, onExportCsv]);
+  const handlePdf = useCallback(() => { void run(onExportPdf, 'PDF'); }, [run, onExportPdf]);
 
   // Free users get a button, not a menu: the click is the upsell. Opening a
   // menu of two disabled rows reads as broken rather than as something to buy.
@@ -94,11 +107,11 @@ export function ExportMenu({
           className={cn(TRIGGER_CLASS, className)}
         >
           {isBuilding ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
-          {label}
+          <span className={cn(failed && 'text-destructive')}>{failed ? errorLabel : label}</span>
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="min-w-[9rem]">
-        <DropdownMenuItem onSelect={onExportCsv} className="gap-2 text-xs">
+        <DropdownMenuItem onSelect={handleCsv} className="gap-2 text-xs">
           <FileSpreadsheet className="h-3.5 w-3.5" />
           {csvLabel}
         </DropdownMenuItem>

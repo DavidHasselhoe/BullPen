@@ -119,6 +119,7 @@
   "holdingsTableEmptyTitle": "«Noo hooldiings yeet»",
   "holdingsTableExportCsv": "«EExpoort CSV»",
   "holdingsTableExport": "«EExpoort»",
+  "holdingsTableExportFailed": "«EExpoort faaileed»",
   "holdingsTableExportProOnlyTitle": "«EExpoortiing iis aa Proo feeaatuuree»",
   "holdingsTableExportTitle": "«EExpoort hooldiings too CSV»",
   "holdingsTableFieldDay": "«Daay»",

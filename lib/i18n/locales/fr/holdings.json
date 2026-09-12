@@ -90,6 +90,7 @@
   "holdingsTableEmptyTitle": "Aucun titre pour le moment",
   "holdingsTableExportCsv": "Exporter en CSV",
   "holdingsTableExport": "Exporter",
+  "holdingsTableExportFailed": "Échec de l'export",
   "holdingsTableExportProOnlyTitle": "L'export est une fonctionnalité Pro",
   "holdingsTableExportTitle": "Exporter les titres en CSV",
   "holdingsTableFieldDay": "Jour",

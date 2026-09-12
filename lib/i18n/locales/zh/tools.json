@@ -483,6 +483,7 @@
   "screenerCreatingView": "正在创建…",
   "screenerCsvLabel": "CSV",
   "screenerExportLabel": "导出",
+  "screenerExportFailed": "导出失败",
   "screenerCsvSector": "行业",
   "screenerCsvTicker": "股票代码",
   "screenerDescriptionAll": "BullPen数据库中的每只股票：{{total}}个代码，包含实时价格和基本面数据。",

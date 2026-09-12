@@ -25,7 +25,20 @@ export interface PdfDocument {
   numericColumns?: number[];
   /** Landscape is the sane default for anything past ~8 columns. */
   orientation?: 'portrait' | 'landscape';
+  /**
+   * Row ceiling, default {@link PDF_MAX_ROWS}.
+   *
+   * A PDF is a document someone reads; a CSV is a dataset someone queries.
+   * Once the screener stopped truncating at PostgREST's 1000-row cap, "All"
+   * became 3050 rows, which autotable renders as a 118-page, 10MB file in
+   * 800ms. It is not slow, it is just not a document anyone wants. The cap
+   * keeps the PDF readable and the note below keeps the truncation visible,
+   * which is the part that matters: the CSV alongside it has every row.
+   */
+  maxRows?: number;
 }
+
+export const PDF_MAX_ROWS = 500;
 
 /** Signal Emerald, matching DESIGN.md's brand value, as the RGB jsPDF wants. */
 const BRAND: [number, number, number] = [4, 120, 87];
@@ -38,6 +51,10 @@ export async function downloadPdf(filename: string, doc: PdfDocument): Promise<v
     import('jspdf-autotable'),
   ]);
 
+  const limit = doc.maxRows ?? PDF_MAX_ROWS;
+  const truncated = doc.rows.length > limit;
+  const rows = truncated ? doc.rows.slice(0, limit) : doc.rows;
+
   const orientation = doc.orientation ?? (doc.headers.length > 8 ? 'landscape' : 'portrait');
   const pdf = new jsPDF({ orientation, unit: 'pt', format: 'a4' });
   const pageWidth = pdf.internal.pageSize.getWidth();
@@ -49,6 +66,17 @@ export async function downloadPdf(filename: string, doc: PdfDocument): Promise<v
   pdf.text(doc.title, margin, 46);
 
   let y = 62;
+  if (truncated) {
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(9);
+    pdf.setTextColor(...BRAND);
+    pdf.text(
+      `Showing the first ${limit.toLocaleString('en-US')} of ${doc.rows.length.toLocaleString('en-US')} rows. The CSV export has every row.`,
+      margin,
+      y
+    );
+    y += 14;
+  }
   if (doc.meta) {
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(9);
@@ -67,7 +95,7 @@ export async function downloadPdf(filename: string, doc: PdfDocument): Promise<v
     head: [doc.headers],
     // Same cleaning as the CSV, so the two formats can never disagree about a
     // figure (63.663000000000004 in one and 63.663 in the other).
-    body: doc.rows.map((r) =>
+    body: rows.map((r) =>
       r.map((c) => (c == null ? '' : typeof c === 'number' ? String(cleanNumber(c)) : String(c)))
     ),
     startY: y + 8,

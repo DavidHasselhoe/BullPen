@@ -58,7 +58,12 @@ function cell(value: string | number | null | undefined): string {
 }
 
 export function buildCsv({ headers, rows, meta }: CsvDocument): string {
-  const lines: string[] = [];
+  // Excel picks its delimiter from the user's locale, so a comma-separated file
+  // opens as a single column in Norwegian, German, French and Spanish Excel.
+  // This directive overrides that, and Excel is the one tool that both needs it
+  // and honours it. The file already carries a "# ..." preamble, so a parser
+  // reading it raw needs to skip leading lines either way.
+  const lines: string[] = ['sep=,'];
   if (meta) {
     for (const [key, value] of Object.entries(meta)) {
       if (value) lines.push(csvEscape(`# ${key}: ${value}`));

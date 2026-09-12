@@ -482,6 +482,7 @@
   "screenerCreatingView": "Oppretter…",
   "screenerCsvLabel": "CSV",
   "screenerExportLabel": "Eksporter",
+  "screenerExportFailed": "Eksport mislyktes",
   "screenerCsvSector": "Sektor",
   "screenerDescriptionAll": "Hver aksje i BullPens database: {{total}} tickere med live-priser og grunnleggende data.",
   "screenerDescriptionCherryPicked_one": "Sammenligner {{count}} utvalgt aksje. Fjern søket for å gå tilbake til visningen din.",

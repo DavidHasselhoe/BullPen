@@ -119,6 +119,7 @@
   "holdingsTableEmptyTitle": "No holdings yet",
   "holdingsTableExportCsv": "Export CSV",
   "holdingsTableExport": "Export",
+  "holdingsTableExportFailed": "Export failed",
   "holdingsTableExportProOnlyTitle": "Exporting is a Pro feature",
   "holdingsTableExportTitle": "Export holdings to CSV",
   "holdingsTableFieldDay": "Day",

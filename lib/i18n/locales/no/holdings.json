@@ -92,6 +92,7 @@
   "holdingsTableEmptyTitle": "Ingen beholdninger ennå",
   "holdingsTableExportCsv": "Eksporter CSV",
   "holdingsTableExport": "Eksporter",
+  "holdingsTableExportFailed": "Eksport mislyktes",
   "holdingsTableExportProOnlyTitle": "Eksport er en Pro-funksjon",
   "holdingsTableExportTitle": "Eksporter beholdninger til CSV",
   "holdingsTableFieldDay": "Dag",

@@ -500,6 +500,7 @@
   "screenerCreatingView": "«Creeaatiing…»",
   "screenerCsvLabel": "«CSV»",
   "screenerExportLabel": "«EExpoort»",
+  "screenerExportFailed": "«EExpoort faaileed»",
   "screenerCsvSector": "«Seectoor»",
   "screenerCsvTicker": "«Tiickeer»",
   "screenerDescriptionAll": "«EEveery stoock iin BuullPeen's daataabaasee: {{total}} tiickeers wiith liivee priicees aand fuundaameentaal daataa.»",
