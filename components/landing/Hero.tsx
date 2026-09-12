@@ -368,7 +368,7 @@ export function Hero({ onSignUp }: Props) {
   const liveQuotes = useLiveQuotes();
 
   return (
-    <section id="top" style={{ position: 'relative', padding: '60px 0 80px' }}>
+    <section id="top" style={{ position: 'relative', padding: '40px 0 80px' }}>
       <div className="wrap">
         <Reveal>
           <div
@@ -382,7 +382,7 @@ export function Hero({ onSignUp }: Props) {
               border: '1px solid oklch(from var(--accent) l c h / 0.3)',
               fontSize: 13,
               color: 'var(--fg-muted)',
-              margin: '0 auto 28px',
+              margin: '0 auto 20px',
               boxShadow: '0 0 24px -10px var(--accent-glow)',
             }}
           >
@@ -421,7 +421,7 @@ export function Hero({ onSignUp }: Props) {
           <Reveal delay={2}>
             <p
               style={{
-                margin: '28px auto 0',
+                margin: '24px auto 0',
                 fontSize: 'clamp(17px, 1.6vw, 20px)',
                 lineHeight: 1.55,
                 color: 'var(--fg-muted)',
@@ -440,7 +440,7 @@ export function Hero({ onSignUp }: Props) {
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 12,
-                marginTop: 36,
+                marginTop: 28,
                 flexWrap: 'wrap',
               }}
             >
@@ -457,7 +457,7 @@ export function Hero({ onSignUp }: Props) {
           <Reveal delay={4}>
             <div
               style={{
-                marginTop: 22,
+                marginTop: 18,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -471,12 +471,12 @@ export function Hero({ onSignUp }: Props) {
                 <Icon name="check" size={14} style={{ color: 'var(--accent)' }} />
                 No card required
               </span>
-              <span style={{ width: 3, height: 3, background: 'var(--fg-dim)', borderRadius: 99, opacity: 0.5 }} />
+              <span className="hero-trust-dot" aria-hidden style={{ width: 3, height: 3, background: 'var(--fg-dim)', borderRadius: 99, opacity: 0.5 }} />
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                 <Icon name="check" size={14} style={{ color: 'var(--accent)' }} />
                 Free forever plan
               </span>
-              <span style={{ width: 3, height: 3, background: 'var(--fg-dim)', borderRadius: 99, opacity: 0.5 }} />
+              <span className="hero-trust-dot" aria-hidden style={{ width: 3, height: 3, background: 'var(--fg-dim)', borderRadius: 99, opacity: 0.5 }} />
               {/* Was "10,000+ tickers" — an unverifiable count, and one that
                   implied real-time coverage across all of it. Real-time is US
                   equities and ETFs; global equities are end-of-day. Naming the
@@ -489,7 +489,16 @@ export function Hero({ onSignUp }: Props) {
           </Reveal>
         </div>
 
-        <Reveal delay={5}>
+        {/* Deliberately NOT wrapped in <Reveal>. Its box starts below the fold
+            on a 900px viewport, so the IntersectionObserver that adds `.in`
+            never fired at scroll 0 and the whole visual sat at opacity 0 until
+            the visitor scrolled: the first screen rendered blank below the
+            trust row, which is the opposite of what a hero is for. The panel,
+            tickers, bubble and brief card each already carry their own keyframe
+            entrance (bp-panel-in, bp-card-in-*, bp-bubble-in, bp-brief-in), so
+            the arrival stays choreographed without a scroll trigger, and
+            DESIGN.md §6 asks for one entrance per page rather than a stagger. */}
+        <div>
           <div className="hero-visual-wrap">
             <div
               style={{
@@ -508,10 +517,37 @@ export function Hero({ onSignUp }: Props) {
               <HeroChartPanel liveQuotes={liveQuotes} />
             </div>
           </div>
-        </Reveal>
+        </div>
 
         <Reveal delay={6}>
           <div style={{ marginTop: 110, textAlign: 'center' }}>
+            {/* Proof of substance rather than proof of popularity.
+                Every clause here is checked, not rounded up:
+                  - 1 May 2026 to 12 Sep 2026 contains exactly 92 US market days
+                    (96 weekdays minus Memorial Day, Juneteenth, 3 July and
+                    Labor Day), and daily_briefs holds exactly 92 rows across 92
+                    distinct dates. "Unbroken" is literal.
+                  - institutional_investors holds 15 curated funds, parsed from
+                    75 13F filings pulled from SEC EDGAR.
+                  - screener_stats holds 3,053 rows, so "more than 3,000" is a
+                    floor that stays true as the universe grows.
+                Deliberately a sentence, not a row of big numerals with small
+                labels underneath: that template is the reflex, and at this
+                stage the specificity is what persuades, not the size of the
+                digits. Re-check the numbers before changing this copy. */}
+            <p
+              style={{
+                margin: '0 auto 36px',
+                maxWidth: 680,
+                fontSize: 15,
+                lineHeight: 1.6,
+                color: 'var(--fg-muted)',
+                textWrap: 'pretty',
+              }}
+            >
+              A Daily Brief every market morning since 1 May, unbroken. 13F filings from 15 funds,
+              read straight out of SEC EDGAR. Live fundamentals on more than 3,000 US stocks and ETFs.
+            </p>
             <div
               style={{
                 fontSize: 12,

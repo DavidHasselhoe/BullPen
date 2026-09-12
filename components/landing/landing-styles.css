@@ -264,7 +264,13 @@
 .bullpen-landing-root .hero-visual-wrap {
   position: relative;
   max-width: 720px;
-  margin: 220px auto 0;
+  /* 220px -> 186px. This gap exists to clear the "Why Today?" bubble, which is
+     absolutely positioned at bottom: calc(100% + 22px) on .hero-stage and so
+     renders entirely ABOVE the panel: 144px tall plus its 22px offset needs
+     166px of headroom, and 186 leaves 20px of breathing room. The old 220 was
+     54px more than the composition required, and every one of those pixels
+     pushed the product further below the fold. */
+  margin: 186px auto 0;
 }
 .bullpen-landing-root .hero-stage {
   position: relative;
@@ -572,6 +578,10 @@
   .bullpen-landing-root .nav-menu-toggle { display: flex; }
 }
 @media (max-width: 560px) {
+  /* The trust row wraps to two lines at this width, which left a dangling
+     separator dot at the end of the first line, reading as a typo. The line
+     break does the separating on its own. */
+  .bullpen-landing-root .hero-trust-dot { display: none; }
   .bullpen-landing-root .nav-signin { display: none; }
   .bullpen-landing-root .nav-mobile-signin { display: block; }
 }
