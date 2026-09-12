@@ -575,10 +575,6 @@
   .bullpen-landing-root .nav-signin { display: none; }
   .bullpen-landing-root .nav-mobile-signin { display: block; }
 }
-@media (max-width: 900px) {
-  .bullpen-landing-root .steps-grid { grid-template-columns: 1fr !important; }
-  .bullpen-landing-root .step-line { display: none !important; }
-}
 @media (max-width: 700px) {
   .bullpen-landing-root .pricing-grid { grid-template-columns: 1fr !important; }
 }
@@ -618,6 +614,27 @@
      screenshot above the sentence that explains it. */
   .bullpen-landing-root .feat-row[data-flip='true'] .feat-row-copy { order: 0; }
   .bullpen-landing-root .feat-row[data-flip='true'] .feat-row-shot { order: 0; }
+}
+
+/* How-it-works steps — ruled columns, the same index treatment as the Toolkit
+   below. No card chrome and no connector line: both existed to hold three
+   drawn mockups that are gone. */
+.bullpen-landing-root .steps-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+/* Kept next to the rule it overrides. The previous version lived up with the
+   other breakpoints, several hundred lines ABOVE this declaration, so at equal
+   specificity the base rule won and the three steps stayed side by side at
+   390px, about three words to a line. It only ever worked because the old
+   inline style forced an !important here. */
+@media (max-width: 900px) {
+  .bullpen-landing-root .steps-grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
 }
 
 /* Toolkit inventory — auto-fit so the four groups reflow 4→2→1 without

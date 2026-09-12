@@ -1,208 +1,60 @@
 'use client';
 
-import type { ReactNode } from 'react';
 import { Reveal, SectionHeading } from './Atoms';
-import { Icon, type IconName } from './Icon';
+import { Icon } from './Icon';
+
+/**
+ * The three steps, as a ruled index rather than three cards of drawn UI.
+ *
+ * This section used to draw a miniature of the app inside each card: a fake
+ * signup form with a blinking caret, a fake search dropdown, and a fake Daily
+ * Brief carrying invented percentages (AAPL +1.5%, NVDA +2.1%, TSLA -0.4%).
+ * They were the last hand-drawn mockups left on the page after Features moved
+ * to real captures, and the third one was the worst of them: a fabricated Daily
+ * Brief sitting a few hundred pixels below an actual screenshot of the real
+ * Daily Brief, with no "Example" tag to tell the two apart.
+ *
+ * They are not replaced with screenshots. This section sits between Features
+ * (four large captures) and Peek (a full-width framed gallery), so a third
+ * image-bearing section would make the middle of the page image-image-image
+ * with nowhere to rest. The steps are simple enough to read as words, and the
+ * quiet beat between two loud sections is worth more than a third picture.
+ *
+ * The ruled-column treatment is deliberately the same one `Toolkit.tsx` uses,
+ * for the same reason given there: it reads as an index, it needs no card
+ * chrome, and two uses make it the page's structural texture rather than a
+ * one-off.
+ */
 
 interface Step {
   n: string;
-  icon: IconName;
   title: string;
   desc: string;
-  visual: ReactNode;
 }
 
 const STEPS: Step[] = [
   {
     n: '01',
-    icon: 'check',
     title: 'Sign up in 30 seconds',
-    desc: 'Email or Google. No card, no broker connection, no waitlist. Start exploring instantly.',
-    visual: (
-      <div style={{ background: 'var(--bg-2)', border: '1px solid var(--border)', borderRadius: 12, padding: 14 }}>
-        <div
-          style={{
-            fontSize: 11,
-            color: 'var(--fg-dim)',
-            fontFamily: 'var(--font-mono)',
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-            marginBottom: 10,
-          }}
-        >
-          Create account
-        </div>
-        <div
-          style={{
-            background: 'var(--surface)',
-            border: '1px solid var(--border)',
-            borderRadius: 8,
-            padding: '10px 12px',
-            fontSize: 13,
-            color: 'var(--fg)',
-            marginBottom: 8,
-            fontFamily: 'var(--font-mono)',
-          }}
-        >
-          you@email.com
-          <span
-            style={{
-              display: 'inline-block',
-              width: 7,
-              height: 14,
-              background: 'var(--accent)',
-              marginLeft: 2,
-              verticalAlign: 'middle',
-              animation: 'bp-blink 1s infinite',
-            }}
-          />
-        </div>
-        <div
-          style={{
-            width: '100%',
-            background: 'var(--accent)',
-            color: 'var(--accent-ink)',
-            border: 'none',
-            borderRadius: 8,
-            padding: '10px',
-            fontWeight: 600,
-            fontSize: 13,
-            textAlign: 'center',
-          }}
-        >
-          Continue with email →
-        </div>
-        {/* Google is the only OAuth provider wired up (lib/auth/auth.ts exports
-            signInWithGoogle and nothing else) — Apple and GitHub were listed
-            here but have never existed. */}
-        <div style={{ marginTop: 8, fontSize: 10, color: 'var(--fg-dim)', textAlign: 'center' }}>
-          Or continue with Google
-        </div>
-      </div>
-    ),
+    desc: 'Email or Google. No card, no brokerage connection, no waitlist.',
   },
   {
     n: '02',
-    icon: 'plus',
     title: 'Build your watchlist',
     desc: 'Search stocks, ETFs, crypto and commodities, then ask Bull why any of them just moved.',
-    visual: (
-      <div style={{ background: 'var(--bg-2)', border: '1px solid var(--border)', borderRadius: 12, padding: 14 }}>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            background: 'var(--surface)',
-            border: '1px solid var(--border)',
-            borderRadius: 8,
-            padding: '10px 12px',
-            marginBottom: 10,
-          }}
-        >
-          <Icon name="search" size={14} style={{ color: 'var(--fg-dim)' }} />
-          <span style={{ fontSize: 13, color: 'var(--fg)' }}>nvi</span>
-          <span style={{ width: 7, height: 14, background: 'var(--accent)', animation: 'bp-blink 1s infinite' }} />
-          <span style={{ marginLeft: 'auto', fontSize: 10, color: 'var(--fg-dim)', fontFamily: 'var(--font-mono)' }}>⌘K</span>
-        </div>
-        {[
-          { t: 'NVDA', n: 'NVIDIA Corporation', tag: 'Stock' },
-          { t: 'NVDY', n: 'YieldMax NVDA Option Income', tag: 'ETF' },
-          { t: 'NVTS', n: 'Navitas Semiconductor', tag: 'Stock' },
-        ].map((r, i) => (
-          <div
-            key={r.t}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              padding: '8px 10px',
-              borderRadius: 8,
-              background: i === 0 ? 'var(--accent-soft)' : 'transparent',
-              border: i === 0 ? '1px solid var(--accent)' : '1px solid transparent',
-            }}
-          >
-            <span style={{ fontWeight: 700, fontSize: 12, color: i === 0 ? 'var(--accent)' : 'var(--fg)', width: 50 }}>{r.t}</span>
-            <span style={{ flex: 1, fontSize: 11, color: 'var(--fg-muted)' }}>{r.n}</span>
-            <span
-              style={{
-                fontSize: 9,
-                padding: '2px 6px',
-                borderRadius: 4,
-                background: 'var(--surface-2)',
-                color: 'var(--fg-dim)',
-                fontFamily: 'var(--font-mono)',
-                letterSpacing: '0.05em',
-              }}
-            >
-              {r.tag.toUpperCase()}
-            </span>
-          </div>
-        ))}
-      </div>
-    ),
   },
   {
     n: '03',
-    icon: 'sparkles',
     title: 'Wake up to your Daily Brief',
-    desc: 'Every morning, a personalized summary lands in your inbox: what moved, what mattered, and what to watch today.',
-    visual: (
-      <div style={{ background: 'var(--bg-2)', border: '1px solid var(--border)', borderRadius: 12, padding: 14, position: 'relative' }}>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            fontSize: 10,
-            color: 'var(--fg-dim)',
-            marginBottom: 8,
-            fontFamily: 'var(--font-mono)',
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-          }}
-        >
-          <span>Tue · 6:30 AM</span>
-          <span style={{ color: 'var(--accent)' }}>● Pro</span>
-        </div>
-        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)', marginBottom: 6 }}>
-          Good morning. Here&apos;s your market, in a minute.
-        </div>
-        {/* Previously asserted a specific analyst action ("AAPL leads after Citi
-            upgrade to Buy") that never happened. Describes the brief instead. */}
-        <div style={{ fontSize: 11.5, color: 'var(--fg-muted)', lineHeight: 1.55, marginBottom: 10 }}>
-          How your watchlist moved overnight, which of your holdings report today, and the one
-          macro event worth knowing about before the open.
-        </div>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {[
-            { l: 'AAPL', v: '+1.5%', up: true },
-            { l: 'NVDA', v: '+2.1%', up: true },
-            { l: 'TSLA', v: '-0.4%', up: false },
-          ].map((m) => (
-            <span
-              key={m.l}
-              className="mono"
-              style={{
-                fontSize: 10,
-                padding: '3px 7px',
-                borderRadius: 6,
-                background: 'var(--surface)',
-                border: '1px solid var(--border)',
-                fontWeight: 600,
-                color: 'var(--fg)',
-              }}
-            >
-              {m.l} <span style={{ color: m.up ? 'var(--up)' : 'var(--down)' }}>{m.v}</span>
-            </span>
-          ))}
-        </div>
-      </div>
-    ),
+    // Was "lands in your inbox", which is not what happens: the brief is
+    // generated at 06:30 UTC and surfaced on the dashboard with an in-app
+    // notification (lib/notifications/notification-creators.ts,
+    // createDailyBriefReadyNotification). Nothing is emailed.
+    desc: 'A personalized summary of what moved, what mattered and what to watch, waiting on your dashboard before the open.',
   },
 ];
 
-export function HowItWorks() {
+export function HowItWorks({ onSignUp }: { onSignUp: () => void }) {
   return (
     <section id="how" style={{ padding: '104px 0 96px', position: 'relative' }}>
       <div className="wrap">
@@ -215,83 +67,64 @@ export function HowItWorks() {
               </span>
             </>
           }
-          sub="Three steps. No broker handshake, no jargon to wade through, no learning curve before you can see something useful."
+          sub="Three steps. You don't need to connect a brokerage, learn new vocabulary, or wait for anything to sync."
         />
 
-        <div className="steps-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24, position: 'relative' }}>
-          <div
-            className="step-line"
-            style={{
-              position: 'absolute',
-              left: '12%',
-              right: '12%',
-              top: 38,
-              height: 1,
-              background: 'linear-gradient(to right, transparent, var(--border-strong) 20%, var(--border-strong) 80%, transparent)',
-              zIndex: 0,
-            }}
-          />
-
+        <div className="steps-grid">
           {STEPS.map((s, i) => (
             <Reveal key={s.n} delay={i + 1}>
-              <div
-                style={{
-                  position: 'relative',
-                  zIndex: 1,
-                  background: 'var(--surface)',
-                  border: '1px solid var(--border)',
-                  borderRadius: 20,
-                  padding: 24,
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  transition: 'border-color 200ms',
-                }}
-              >
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 18 }}>
-                  <span
-                    className="mono"
-                    style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: 10,
-                      background: 'var(--accent)',
-                      color: 'var(--accent-ink)',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 700,
-                      fontSize: 13,
-                      letterSpacing: '0.04em',
-                      boxShadow: '0 6px 20px -6px var(--accent-glow)',
-                    }}
-                  >
-                    {s.n}
-                  </span>
-                  <Icon name={s.icon} size={16} style={{ color: 'var(--fg-dim)' }} />
-                </div>
-
+              <div style={{ borderTop: '1px solid var(--border-strong)', paddingTop: 18 }}>
+                <span
+                  className="mono"
+                  style={{
+                    display: 'block',
+                    marginBottom: 12,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    letterSpacing: '0.08em',
+                    color: 'var(--accent)',
+                  }}
+                >
+                  {s.n}
+                </span>
                 <h3
                   style={{
                     margin: '0 0 8px',
-                    fontSize: 20,
+                    fontSize: 19,
                     fontWeight: 700,
-                    letterSpacing: '-0.02em',
+                    letterSpacing: '-0.015em',
                     color: 'var(--fg)',
                     textWrap: 'balance',
                   }}
                 >
                   {s.title}
                 </h3>
-                <p style={{ margin: '0 0 20px', fontSize: 14, lineHeight: 1.55, color: 'var(--fg-muted)', textWrap: 'pretty' }}>
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: 15,
+                    lineHeight: 1.6,
+                    color: 'var(--fg-muted)',
+                    textWrap: 'pretty',
+                  }}
+                >
                   {s.desc}
                 </p>
-
-                <div style={{ marginTop: 'auto' }}>{s.visual}</div>
               </div>
             </Reveal>
           ))}
         </div>
+
+        {/* The section argues the product is fast to start, then used to offer
+            no way to start it — the next CTA was all the way down at Pricing. */}
+        <Reveal delay={4}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 56 }}>
+            <button type="button" onClick={onSignUp} className="btn btn-primary">
+              Start for free
+              <Icon name="arrowRight" size={15} />
+            </button>
+          </div>
+        </Reveal>
       </div>
     </section>
   );

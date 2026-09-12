@@ -100,7 +100,7 @@ export function LandingClient({ shots }: { shots: Shot[] }) {
         <Hero onSignUp={() => openSignUp('hero')} />
         <TickerStrip />
         <Features />
-        <HowItWorks />
+        <HowItWorks onSignUp={() => openSignUp('how_it_works')} />
         <Peek shots={shots} />
         <Toolkit />
         <Pricing onSignUp={() => openSignUp('pricing')} onSubscribe={openSubscribe} />
