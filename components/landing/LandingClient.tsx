@@ -93,7 +93,6 @@ export function LandingClient({ shots }: { shots: Shot[] }) {
     // .landing-force-light rule in app/globals.css.
     <div ref={rootRef} className="bullpen-landing-root landing-light-preview">
       <div className="page-bg" aria-hidden />
-      <div className="page-grid" aria-hidden />
       <div className="page-noise" aria-hidden />
 
       <div className="content-layer">

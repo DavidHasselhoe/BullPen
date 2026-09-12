@@ -133,6 +133,21 @@ The palette is almost entirely achromatic — a grayscale ramp doing the structu
 - **Title** (600, ~1.125rem, tight leading): card titles, section headers, modal headers.
 - **Body** (400, 0.875rem, line-height 1.55): descriptions, paragraph copy. Caps at ~65-75ch measure in prose contexts.
 - **Label** (500, 0.75rem): form labels, stat labels, badges — occasionally uppercase with wide tracking for status pills only, never as a default section eyebrow.
+
+### The marketing ramp
+
+The sizes above are the **product** register: dense screens where 14px body and a 18px title are correct, because the reader is scanning a table, not being addressed. The **marketing** surfaces (the landing page, `/get-started`, the changelog and the other logged-out pages, all scoped under `.bullpen-landing-root`) run one step larger throughout, because there the reader is being spoken to and the line lengths are much shorter:
+
+- **Feature title** (700, 26px, tracking -0.025em): the headline on a feature row.
+- **Section subhead** (700, 22px): sub-section headings inside a marketing section.
+- **Lead** (400, 19px): a sentence introducing a section, sitting under a heading.
+- **Marketing body** (400, 15px, line-height 1.6): paragraph copy on a marketing surface. This is the single most-used size on the landing page and the direct counterpart of the product register's 14px Body.
+- **Marketing UI** (500, 16px): touch targets on marketing surfaces — mobile menu rows, list links.
+- **Marketing display** (700, 28px): the largest non-hero heading.
+
+This ramp existed in the code long before it was written down here, which meant every one of its sizes read as drift against a hierarchy that only ever described the product register. It is one system with two registers, not a violation of one.
+
+**The Two-Registers Rule.** A marketing size never appears in product UI and a product size never appears in marketing copy. If a screen needs 15px body it is a marketing surface; if it needs 14px it is a product surface. Mixing them inside one screen is what makes a page feel assembled from two different products.
 - **Numeric** (Geist Mono, tabular figures): every price, percentage, and financial statistic. This is a hard rule, not a style preference — misaligned numeral widths undermine the "confident ledger" feel immediately.
 
 ### Named Rules

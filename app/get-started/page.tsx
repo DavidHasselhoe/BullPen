@@ -24,7 +24,6 @@ export default function GetStartedPage() {
   return (
     <div className="bullpen-landing-root dark">
       <div className="page-bg" aria-hidden />
-      <div className="page-grid" aria-hidden />
       <div className="page-noise" aria-hidden />
 
       <div className="content-layer">
