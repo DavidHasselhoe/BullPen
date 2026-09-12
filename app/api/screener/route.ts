@@ -107,6 +107,38 @@ export interface ScreenerRow {
   last_change_pct?: number | null;
 }
 
+/**
+ * PostgREST caps an unbounded `select()` at 1000 rows and says nothing about
+ * it. Three queries in this file were silently truncating because of that: the
+ * "All" view returned 997 of 3053 rows, the default active view 1000 of 1219,
+ * and the `countOnly` query behind the "View all (N)" pill read 999. The first
+ * two reached the Pro CSV/PDF export, so a paid file was quietly missing two
+ * thirds of the universe, which is the worst way for a paid feature to fail.
+ *
+ * Lives at module scope on purpose: as a `const` inside the handler, `PAGE` sat
+ * in a temporal dead zone for the `countOnly` branch that runs above it, and
+ * the hoisted function threw "Cannot access 'PAGE' before initialization".
+ *
+ * Callers must supply a stable sort. `market_cap` is not unique, so every call
+ * site adds `ticker` as a tiebreaker to stop rows shifting between pages.
+ */
+const PAGE = 1000;
+
+async function fetchAllPages<T>(
+  build: () => PromiseLike<{ data: T[] | null; error: { message: string } | null }> & {
+    range: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>;
+  }
+): Promise<{ rows: T[]; error: string | null }> {
+  const rows: T[] = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await build().range(from, from + PAGE - 1);
+    if (error) return { rows, error: error.message };
+    const page = data ?? [];
+    rows.push(...page);
+    if (page.length < PAGE) return { rows, error: null };
+  }
+}
+
 function parseNum(val: string | null): number | undefined {
   if (val == null) return undefined;
   const n = parseFloat(val);
@@ -161,11 +193,15 @@ async function handler(request: NextRequest) {
   // dual-class dedup as the full "all" scope below, so this stays exactly
   // consistent with what that view's own `total` would read.
   if (scopeAll && sp.get('countOnly') === '1') {
-    const { data, error } = await supabase.from('screener_stats').select('ticker');
+    // Needs the ticker strings rather than a head count, because duplicate
+    // share classes are filtered in JS below.
+    const { rows, error } = await fetchAllPages<{ ticker: string }>(() =>
+      supabase.from('screener_stats').select('ticker').order('ticker', { ascending: true })
+    );
     if (error) {
-      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+      return NextResponse.json({ success: false, error }, { status: 500 });
     }
-    const total = ((data ?? []) as { ticker: string }[]).filter((r) => !isDuplicateShareClass(r.ticker)).length;
+    const total = rows.filter((r) => !isDuplicateShareClass(r.ticker)).length;
     return NextResponse.json({ success: true, total });
   }
 
@@ -219,23 +255,29 @@ async function handler(request: NextRequest) {
     }
     baseRows = (data ?? []) as ScreenerRow[];
   } else if (scopeAll) {
-    // "All" view — every row in screener_stats, no tier restriction
-    const { data, error } = await supabase
-      .from('screener_stats')
-      .select('*')
-      .order('market_cap', { ascending: false, nullsFirst: false });
+    // "All" view — every row in screener_stats, no tier restriction.
+    const { rows, error } = await fetchAllPages<ScreenerRow>(() =>
+      supabase
+        .from('screener_stats')
+        .select('*')
+        .order('market_cap', { ascending: false, nullsFirst: false })
+        .order('ticker', { ascending: true })
+    );
     if (error) {
-      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+      return NextResponse.json({ success: false, error }, { status: 500 });
     }
-    baseRows = (data ?? []) as ScreenerRow[];
+    baseRows = rows;
   } else {
-    const { data, error } = await supabase
-      .rpc('screener_active_rows')
-      .order('market_cap', { ascending: false, nullsFirst: false });
+    const { rows, error } = await fetchAllPages<ScreenerRow>(() =>
+      supabase
+        .rpc('screener_active_rows')
+        .order('market_cap', { ascending: false, nullsFirst: false })
+        .order('ticker', { ascending: true })
+    );
     if (error) {
-      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+      return NextResponse.json({ success: false, error }, { status: 500 });
     }
-    baseRows = (data ?? []) as ScreenerRow[];
+    baseRows = rows;
   }
 
   // Dual-class pairs (GOOG/GOOGL, FOX/FOXA, NWS/NWSA...) are both real index
