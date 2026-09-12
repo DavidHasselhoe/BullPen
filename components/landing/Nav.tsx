@@ -19,6 +19,7 @@ interface Props {
 
 export function Nav({ onSignIn, onSignUp, isDarkLanding }: Props) {
   const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const { isAuthenticated, isLoading } = useAuth();
 
@@ -109,6 +110,21 @@ export function Nav({ onSignIn, onSignUp, isDarkLanding }: Props) {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {/* Below 880px the pill of section links is hidden (landing-styles.css).
+              Until now nothing replaced it, so a phone visitor had no way to
+              reach Pricing or the FAQ except by scrolling the entire page —
+              12,758px of it at 390px wide. This button is that way. */}
+          <button
+            type="button"
+            className="nav-menu-toggle"
+            aria-expanded={menuOpen}
+            aria-controls="landing-mobile-menu"
+            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+            onClick={() => setMenuOpen((o) => !o)}
+          >
+            <span className="nav-menu-bar" data-open={menuOpen ? 'true' : undefined} />
+            <span className="nav-menu-bar" data-open={menuOpen ? 'true' : undefined} />
+          </button>
           {isLoading ? (
             // Reserve space while auth resolves — avoids a flash of the wrong CTAs.
             <div style={{ width: 40, height: 40 }} aria-hidden />
@@ -126,9 +142,14 @@ export function Nav({ onSignIn, onSignUp, isDarkLanding }: Props) {
             </>
           ) : (
             <>
+              {/* Hidden below 560px, where the menu toggle plus both auth
+                  buttons squeeze the wordmark down to "bullpe". Sign in moves
+                  into the mobile menu at that width; the primary CTA and the
+                  logo are what stay in the bar. */}
               <button
                 type="button"
                 onClick={onSignIn}
+                className="nav-signin"
                 style={{
                   fontSize: 14,
                   fontWeight: 500,
@@ -157,6 +178,28 @@ export function Nav({ onSignIn, onSignUp, isDarkLanding }: Props) {
           )}
         </div>
       </div>
+
+      {menuOpen && (
+        <div id="landing-mobile-menu" className="nav-mobile-menu">
+          {links.map((l) => (
+            <a key={l.href} href={l.href} onClick={() => setMenuOpen(false)}>
+              {l.label}
+            </a>
+          ))}
+          {!isLoading && !isAuthenticated && (
+            <button
+              type="button"
+              className="nav-mobile-signin"
+              onClick={() => {
+                setMenuOpen(false);
+                onSignIn();
+              }}
+            >
+              Sign in
+            </button>
+          )}
+        </div>
+      )}
       </nav>
     </>
   );

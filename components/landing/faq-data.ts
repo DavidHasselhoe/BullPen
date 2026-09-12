@@ -7,11 +7,11 @@ export const FAQ_ITEMS = [
     // hand — this answer previously claimed "20 AI chat messages a month"
     // against a real limit of 15 per day.
     q: 'Is BullPen actually free?',
-    a: `Yes. The Free plan stays free forever — live quotes, charts, unlimited stock pages, the full screener, holdings tracking, ${FREE_WATCHLISTS} watchlists and ${QUOTAS.chat.count} AI chat messages a day. Pro unlocks the Daily Brief, "Why Today?" explanations, unlimited AI, and automatic brokerage sync.`,
+    a: `Yes. The Free plan stays free forever: live quotes, charts, unlimited stock pages, the full screener, holdings tracking, ${FREE_WATCHLISTS} watchlists and ${QUOTAS.chat.count} AI chat messages a day. Pro unlocks the Daily Brief, "Why Today?" explanations, unlimited AI, and automatic brokerage sync.`,
   },
   {
     q: 'Do I have to connect a brokerage?',
-    a: 'Never. You can use BullPen without connecting anything — just track holdings manually or follow a watchlist. If you want live portfolio sync, we partner with SnapTrade (Schwab, Fidelity, Robinhood, IBKR and 100+ more) — all opt-in, OAuth-only.',
+    a: 'Never. You can use BullPen without connecting anything. Just track holdings manually or follow a watchlist. If you want live portfolio sync, we partner with SnapTrade (Schwab, Fidelity, Robinhood, IBKR and 100+ more), all opt-in and OAuth-only.',
   },
   {
     q: 'How fresh is the market data?',

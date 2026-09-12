@@ -146,7 +146,7 @@ const STEPS: Step[] = [
     n: '03',
     icon: 'sparkles',
     title: 'Wake up to your Daily Brief',
-    desc: 'Every morning, a personalized summary lands in your inbox — what moved, what mattered, and what to watch today.',
+    desc: 'Every morning, a personalized summary lands in your inbox: what moved, what mattered, and what to watch today.',
     visual: (
       <div style={{ background: 'var(--bg-2)', border: '1px solid var(--border)', borderRadius: 12, padding: 14, position: 'relative' }}>
         <div
@@ -204,7 +204,7 @@ const STEPS: Step[] = [
 
 export function HowItWorks() {
   return (
-    <section id="how" style={{ padding: '120px 0 80px', position: 'relative' }}>
+    <section id="how" style={{ padding: '104px 0 96px', position: 'relative' }}>
       <div className="wrap">
         <SectionHeading
           title={

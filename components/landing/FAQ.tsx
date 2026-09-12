@@ -64,7 +64,7 @@ export function FAQ() {
   const [open, setOpen] = useState<number>(0);
 
   return (
-    <section id="faq" style={{ padding: '120px 0 80px' }}>
+    <section id="faq" style={{ padding: '104px 0 96px' }}>
       <div className="wrap">
         <SectionHeading
           title={

@@ -429,7 +429,7 @@ export function Hero({ onSignUp }: Props) {
                 textWrap: 'pretty',
               }}
             >
-              Ask why any stock moved and get a real answer — sources included. Every morning, a Daily Brief tells you before you ask. Built for investors who want to understand, not just watch.
+              Ask why any stock moved and get a real answer, sources included. Every morning, a Daily Brief tells you before you ask. Built for investors who want to understand, not just watch.
             </p>
           </Reveal>
 
