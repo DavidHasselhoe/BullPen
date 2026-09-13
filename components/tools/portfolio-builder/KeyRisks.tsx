@@ -26,7 +26,10 @@ export function KeyRisks({ risks }: Props) {
             <AccordionTrigger className="py-3 hover:no-underline">
               <div className="flex min-w-0 items-baseline gap-3 text-left">
                 <span className="font-mono text-xs text-muted-foreground/70 tabular-nums">{String(i + 1).padStart(2, '0')}</span>
-                <span className="truncate text-sm font-medium text-foreground">{glossaryText(risk.title, seen)}</span>
+                {/* Plain text: the trigger is itself a button, so a glossary
+                    popover button here would nest buttons and toggle the row.
+                    The description below still explains the term. */}
+                <span className="truncate text-sm font-medium text-foreground">{risk.title}</span>
                 <span className={cn('shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide', tierBadgeClass(riskLevelTier(risk.severity)))}>
                   {risk.severity}
                 </span>

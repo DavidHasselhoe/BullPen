@@ -44,4 +44,20 @@ const singleInline = [row('MSFT', 4.24, 4.24, 0), row('CASY', 6.6, 5.77, -12.58)
 const singleCleaned = stripFabricatedEpsStubs(singleInline);
 assert.equal(singleCleaned.find((r) => r.symbol === 'MSFT')!.eps_actual, 4.24, 'lone in-line result must not be stripped');
 
+// Two real companies landing on the same penny estimate the same day is ordinary.
+const twoInline = [row('FAST', 0.33, 0.33, 0), row('TFIN', 0.33, 0.33, 0)];
+for (const r of stripFabricatedEpsStubs(twoInline)) {
+  assert.equal(r.eps_actual, 0.33, `${r.symbol}: a pair of in-line results must not be stripped`);
+}
+
+// The same figure on different days is not one batch.
+const acrossDays = [
+  { ...row('AAA', 0.5, 0.5, 0), date: '2026-09-08' },
+  { ...row('BBB', 0.5, 0.5, 0), date: '2026-09-09' },
+  { ...row('CCC', 0.5, 0.5, 0), date: '2026-09-10' },
+];
+for (const r of stripFabricatedEpsStubs(acrossDays)) {
+  assert.equal(r.eps_actual, 0.5, `${r.symbol}: matches on different days must not be grouped`);
+}
+
 console.log('stripFabricatedEpsStubs: all assertions passed');

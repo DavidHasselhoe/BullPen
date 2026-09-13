@@ -5,14 +5,16 @@ import { withRateLimit } from '@/lib/security/api-security';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
-// Matches SESSION_TTL_MS below — without this, an unset maxDuration was
-// letting Vercel kill the function before the stream's own 5-min self-close,
-// forcing constant client reconnects (see the repeated "Task timed out after
-// 60 seconds" errors on this route in production).
+// Without this, an unset maxDuration let Vercel kill the function at 60s,
+// forcing constant client reconnects.
 export const maxDuration = 300;
 
 const MAX_SYMBOLS = 600;
-const SESSION_TTL_MS = 5 * 60 * 1000;
+// Deliberately under maxDuration. At exactly 300s the platform's kill won the
+// race against this self-close every time, logging "Task timed out after 300
+// seconds" per session (228 in production). Closing first ends the response
+// cleanly and EventSource reconnects on its own.
+const SESSION_TTL_MS = 290 * 1000;
 
 async function streamHandler(request: NextRequest) {
   const sp = request.nextUrl.searchParams;

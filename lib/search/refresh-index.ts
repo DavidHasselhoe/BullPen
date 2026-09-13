@@ -133,6 +133,11 @@ export async function refreshSearchIndex(
     // pushed the pair past its timeout. The market-cap query is a different
     // resource, so that one does overlap.
     const capsPromise = marketCaps();
+    // Awaited only after minutes of feed downloads. Without a handler attached
+    // now, a rejection in that window (or a feed throwing first, so it's never
+    // awaited) is an unhandled rejection that takes the invocation down. The
+    // later `await` still sees the error.
+    capsPromise.catch(() => {});
     const stocks = parts.includes('stocks') ? await getUsStocksList({ country: 'United States' }) : [];
     const etfs = parts.includes('etfs') ? await getUsEtfList({ country: 'United States' }) : [];
     // The funds catalogue is ~270 paged requests and takes about ten minutes.

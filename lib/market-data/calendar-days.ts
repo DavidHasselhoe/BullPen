@@ -145,9 +145,12 @@ function mapNasdaqRowToEarningsItem(row: NasdaqEarningsRow, date: string): Earni
   };
 }
 
-/** Below this many rows sharing the exact same (estimate, actual) pair we
- *  don't treat it as the fabricated-stub fingerprint — see stripFabricatedEpsStubs. */
-const MIN_STUB_GROUP_SIZE = 2;
+/** Below this many rows sharing the exact same (date, estimate, actual) we
+ *  don't treat it as the fabricated-stub fingerprint — see stripFabricatedEpsStubs.
+ *  3, not 2: every fabricated batch confirmed so far had 5 to 267 rows, while
+ *  two real companies landing exactly on the same penny estimate on a busy
+ *  reporting day is ordinary, and at 2 both lost their real numbers. */
+const MIN_STUB_GROUP_SIZE = 3;
 
 /**
  * TwelveData's earnings feed occasionally attaches a fabricated near-term
@@ -177,7 +180,9 @@ export function stripFabricatedEpsStubs(rows: EarningsCalendarItem[]): EarningsC
     if (row.eps_estimate == null || row.eps_actual == null) continue;
     if (row.eps_estimate !== row.eps_actual) continue;
     if ((row.surprise ?? 0) !== 0) continue;
-    const key = String(row.eps_estimate);
+    // Per date: the range path passes several days in one array, and the
+    // fingerprint is "same figure on the same day", not across a week.
+    const key = `${row.date}|${row.eps_estimate}`;
     const group = groups.get(key);
     if (group) group.push(row);
     else groups.set(key, [row]);

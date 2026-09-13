@@ -55,10 +55,18 @@ interface SnapshotQuote {
   previousClose: number;
 }
 
+/** The instrument type rides along because a cache hit skips the /quote that
+ *  carries it, and without it a fund the catalogue doesn't know reads as a stock. */
+interface CachedQuote {
+  quote: SnapshotQuote;
+  type: string | null;
+}
+
 /** Shared with nothing else on purpose: the SSE seed cache (`seed:`) holds only
- *  price and previous close, and this response also renders open, high and low. */
+ *  price and previous close, and this response also renders open, high and low.
+ *  `snapq2` because the stored shape changed from the bare quote. */
 function quoteCacheKey(sym: string): string {
-  return `snapq:${sym}`;
+  return `snapq2:${sym}`;
 }
 
 export interface StockSnapshot {
@@ -92,7 +100,7 @@ export async function buildSnapshot(tickerParam: string): Promise<StockSnapshot>
       // single page load produces, and for every other viewer of the same
       // ticker in that window. TTL follows the market session: 10s while the
       // market is open, 300s when it is closed and the number cannot change.
-      rget<SnapshotQuote>(quoteCacheKey(sym)),
+      rget<CachedQuote>(quoteCacheKey(sym)),
     ]);
     const cachedStats = cachedStatsMeta?.payload ?? null;
     let statsFetchedAt: string | null = cachedStatsMeta?.fetchedAt ?? null;
@@ -132,12 +140,14 @@ export async function buildSnapshot(tickerParam: string): Promise<StockSnapshot>
     // stock page's not-found gate can safely trust. See TwelveDataInvalidSymbolError.
     let quoteConfirmedInvalid = false;
 
-    if (cachedQuote) {
-      quote = cachedQuote;
-    }
-
     const q = raw.quote as Record<string, string | number> | undefined;
-    if (q && !q.code && q.status !== 'error') {
+    if (cachedQuote) {
+      // A hit sends no /quote, so `q` is undefined here by design. Falling
+      // through to the branches below used to treat that as a failed quote and
+      // fire the 1-credit single-symbol fallback on every warm load.
+      quote = cachedQuote.quote;
+      instrumentType = cachedQuote.type;
+    } else if (q && !q.code && q.status !== 'error') {
       const close = parseFloat(String(q.close ?? 0));
       const change = parseFloat(String(q.change ?? 0));
       const pc = parseFloat(String(q.previous_close ?? close - change));
@@ -151,7 +161,7 @@ export async function buildSnapshot(tickerParam: string): Promise<StockSnapshot>
         previousClose: pc,
       };
       instrumentType = q.type != null ? String(q.type) : null;
-      void rset(quoteCacheKey(sym), quote, candleTtlSeconds());
+      void rset<CachedQuote>(quoteCacheKey(sym), { quote, type: instrumentType }, candleTtlSeconds());
     } else {
       // The batched /quote sub-request came back missing or errored even
       // though the overall /batch call succeeded — a per-symbol hiccup within
