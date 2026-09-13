@@ -62,11 +62,9 @@ function AuthCallbackContent() {
         return;
       }
 
-      if (data.session) {
-        setLastUsedAuthMethod('google');
-        void maybeClaimShareAttribution();
-        redirectHome();
-      }
+      // One-time sign-in side effects live in the SIGNED_IN listener below,
+      // not here: this success branch is usually never reached (see there).
+      if (data.session) redirectHome();
     };
 
     const checkSession = () =>
@@ -79,11 +77,18 @@ function AuthCallbackContent() {
       // createBrowserClient() has detectSessionInUrl: true, so the SDK often
       // exchanges the ?code= itself before runExchange()'s own manual call
       // below gets to it — that manual call then fails with an "already used"
-      // code error and falls through to its no-op recovery branch, never
-      // reaching the setLastUsedAuthMethod() call in its success path. This
-      // listener fires on SIGNED_IN regardless of which side wins that race,
-      // so it's the reliable place to record it.
-      if (event === 'SIGNED_IN' && session) setLastUsedAuthMethod('google');
+      // code error and falls through to its no-op recovery branch, so nothing
+      // in its success path runs. This listener fires on SIGNED_IN regardless
+      // of which side wins that race, so it's the reliable place for one-time
+      // sign-in side effects. The share-referral RPC is idempotent (row lock +
+      // referral_reward_claimed_at check), so a repeat SIGNED_IN is harmless.
+      // INITIAL_SESSION covers the SDK finishing its exchange before this
+      // listener subscribed: it then only ever sees INITIAL_SESSION, never
+      // SIGNED_IN. Gated on `code` so a plain visit with an old session no-ops.
+      if ((event === 'SIGNED_IN' || (event === 'INITIAL_SESSION' && code)) && session) {
+        setLastUsedAuthMethod('google');
+        void maybeClaimShareAttribution();
+      }
       if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) redirectHome();
     });
 
