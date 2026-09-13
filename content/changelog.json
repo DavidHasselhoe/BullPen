@@ -1,5 +1,38 @@
 [
   {
+    "date": "2026-09-13",
+    "entries": [
+      {
+        "type": "new",
+        "text": "Pro members can now export Dividend Calculator results as a spreadsheet or PDF. The file has the year by year projection plus everything you entered, so you can see exactly how the numbers were worked out"
+      },
+      {
+        "type": "new",
+        "text": "Tick a few rows in the screener and you can now export just those. The file notes how many rows you picked out of the full results"
+      },
+      {
+        "type": "improved",
+        "text": "Market cap and revenue in screener exports are now shown in billions, so Apple reads 4848.6 instead of a thirteen digit number, and the figure is the same in the spreadsheet and the PDF"
+      },
+      {
+        "type": "improved",
+        "text": "Going back to a stock page you viewed a moment ago is now close to instant. The latest price was meant to be reused for a few seconds but was being fetched again every time"
+      },
+      {
+        "type": "fixed",
+        "text": "Signing up with Google from a friend's shared portfolio card now gives you both the free month of Pro. It only worked for email sign ups before"
+      },
+      {
+        "type": "fixed",
+        "text": "On busy earnings days, two companies that reported exactly in line with the same estimate could have their real results blanked in the Market Calendar. They now show"
+      },
+      {
+        "type": "fixed",
+        "text": "In the Portfolio Builder's risk list, tapping an explained term in a risk's title no longer opens and closes the row at the same time"
+      }
+    ]
+  },
+  {
     "date": "2026-09-12",
     "entries": [
       {
