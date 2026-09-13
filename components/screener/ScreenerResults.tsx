@@ -181,54 +181,57 @@ export function ScreenerResults({
    * version hand-rolled its own CSV here, quoting only the company name and
    * shipping no BOM; it now goes through lib/export/csv like holdings does.
    */
-  const buildExportTable = useCallback(() => {
+  const buildExportTable = useCallback((source: ScreenerRow[]) => {
     const headers = [
       t('screenerCompanyColumnLabel'),
       t('screenerCsvTicker'),
       t('screenerCsvSector'),
-      ...columns.map((c) => c.label),
+      ...columns.map((c) => (c.exportInBillions ? `${c.label} ($B)` : c.label)),
     ];
-    const rows = sorted.map((row) => {
+    const rows = source.map((row) => {
       const live = livePrices?.get(row.ticker);
       return [
         row.name,
         row.ticker,
         row.sector ?? '',
-        ...columns.map((col) => col.getValue(row, live)),
+        ...columns.map((col) => {
+          const value = col.getValue(row, live);
+          // 3 dp so a $12M company reads 0.012 rather than rounding to zero.
+          return col.exportInBillions && value != null ? Number((value / 1e9).toFixed(3)) : value;
+        }),
       ];
     });
     // Company, Ticker and Sector are text; every column after them is a figure.
     const numericColumns = columns.map((_, i) => i + 3);
-    return { headers, rows, numericColumns };
-  }, [sorted, columns, livePrices, t]);
-
-  const exportMeta = useMemo(
-    () => ({
+    const meta = {
       Exported: new Date().toISOString().slice(0, 10),
-      Rows: String(sorted.length),
+      Rows: source.length === sorted.length ? String(source.length) : `${source.length} selected of ${sorted.length}`,
       // Records which columns were on, so a file is reproducible after the
       // fact rather than an anonymous grid of numbers.
-      Columns: columns.map((c) => c.label).join(' | '),
-    }),
-    [sorted.length, columns]
-  );
+      Columns: headers.slice(3).join(' | '),
+    };
+    return { headers, rows, numericColumns, meta };
+  }, [sorted.length, columns, livePrices, t]);
 
-  const handleExportCsv = useCallback(() => {
-    const { headers, rows } = buildExportTable();
-    downloadCsv(`${exportStem('screener')}.csv`, buildCsv({ headers, rows, meta: exportMeta }));
-  }, [buildExportTable, exportMeta]);
+  const exportCsv = useCallback((source: ScreenerRow[]) => {
+    const { headers, rows, meta } = buildExportTable(source);
+    downloadCsv(`${exportStem('screener')}.csv`, buildCsv({ headers, rows, meta }));
+  }, [buildExportTable]);
 
-  const handleExportPdf = useCallback(async () => {
-    const { headers, rows, numericColumns } = buildExportTable();
+  const exportPdf = useCallback(async (source: ScreenerRow[]) => {
+    const { headers, rows, numericColumns, meta } = buildExportTable(source);
     await downloadPdf(`${exportStem('screener')}.pdf`, {
       title: t('screenerTitle', { defaultValue: 'Stock Screener' }),
-      meta: exportMeta,
+      meta,
       headers,
       rows,
       numericColumns,
       orientation: 'landscape',
     });
-  }, [buildExportTable, exportMeta, t]);
+  }, [buildExportTable, t]);
+
+  // In table order, so a selected export matches what the user sees.
+  const selectedRows = useMemo(() => sorted.filter((r) => selected.has(r.ticker)), [sorted, selected]);
 
   const toggleSort = (key: string) => {
     if (sortKey === key) {
@@ -270,6 +273,17 @@ export function ScreenerResults({
             {t('screenerSelectedCount', { count: selected.size })}
           </span>
           <div className="ml-auto flex flex-wrap items-center gap-2">
+            <ExportMenu
+              onExportCsv={() => exportCsv(selectedRows)}
+              onExportPdf={() => exportPdf(selectedRows)}
+              isPro={isPro}
+              label={t('screenerExportLabel')}
+              csvLabel="CSV"
+              pdfLabel="PDF"
+              errorLabel={t('screenerExportFailed')}
+              title={isPro ? undefined : t('screenerExportCsvProOnly')}
+              className="h-7 gap-1.5 rounded-md border bg-background px-2.5 font-medium text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50"
+            />
             <Button
               variant="outline"
               size="sm"
@@ -523,8 +537,8 @@ export function ScreenerResults({
             {t('screenerShowingResults', { start: startItem, end: endItem, total: sorted.length })}
           </p>
           <ExportMenu
-            onExportCsv={handleExportCsv}
-            onExportPdf={handleExportPdf}
+            onExportCsv={() => exportCsv(sorted)}
+            onExportPdf={() => exportPdf(sorted)}
             isPro={isPro}
             disabled={sorted.length === 0}
             label={t('screenerExportLabel')}

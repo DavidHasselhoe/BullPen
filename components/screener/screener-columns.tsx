@@ -83,6 +83,13 @@ export interface ScreenerColumn {
   width: number;
   /** Numeric value used for sorting (reads live or static data). null sorts last. */
   getValue: (row: ScreenerRow, live?: HeatmapPriceEntry) => number | null;
+  /**
+   * Exports write the value in billions under a "($B)" header. A raw
+   * 5271048388530 is unreadable in the PDF, but formatting it as "$5.27T" there
+   * alone would make the PDF and CSV disagree; this keeps one plain number that
+   * reads in both and still sums in a spreadsheet.
+   */
+  exportInBillions?: boolean;
   /** Display cell content. */
   render: (row: ScreenerRow, live?: HeatmapPriceEntry) => ReactNode;
 }
@@ -232,6 +239,7 @@ export function getScreenerColumns(t: TFunction): ScreenerColumn[] {
     defaultVisible: true,
     width: 84,
     getValue: (row) => row.market_cap,
+    exportInBillions: true,
     render: (row) => fmtCap(row.market_cap),
   },
   {
@@ -306,6 +314,7 @@ export function getScreenerColumns(t: TFunction): ScreenerColumn[] {
     defaultVisible: false,
     width: 84,
     getValue: (row) => row.revenue_ttm,
+    exportInBillions: true,
     render: (row) => fmtCap(row.revenue_ttm),
   },
 

@@ -35,6 +35,10 @@ import { makeFullFormatter, makeCompactFormatter } from '@/lib/currency/format';
 import { DIVIDEND_QUICK_PICKS } from '@/lib/finance/dividend-quick-picks';
 import { useDividendPresets, type DividendPreset } from '@/hooks/use-dividend-presets';
 import { DividendPresetMenu } from '@/components/tools/DividendPresetMenu';
+import { useEntitlements } from '@/hooks/use-entitlements';
+import { ExportMenu } from '@/components/export/ExportMenu';
+import { buildCsv, csvNum, csvShares, downloadCsv, exportStem } from '@/lib/export/csv';
+import { downloadPdf } from '@/lib/export/pdf';
 
 // Chart palette — explicit hex so colors never depend on CSS vars (this app's
 // theme tokens are oklch, so hsl(var(--primary)) renders invalid/invisible).
@@ -631,9 +635,15 @@ export default function DividendClientPage({
               transition={{ duration: 0.3 }}
               className="rounded-2xl border border-border/50 bg-background/60 backdrop-blur-xl shadow-xl p-6 sm:p-8"
             >
-              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-6">
-                {t('dividendResultsLabel', 'Results')}
-              </p>
+              <div className="mb-6 flex items-center justify-between gap-3">
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  {t('dividendResultsLabel', 'Results')}
+                </p>
+                {/* Not in the Academy demo: an upsell mid-lesson is noise. */}
+                {!embedded && result.success && (result.years?.length ?? 0) > 0 && (
+                  <ResultsExport result={result} drip={drip} userCurrency={userCurrency} rates={rates} />
+                )}
+              </div>
 
               {!result.success ? (
                 <div className="flex items-start gap-4 rounded-xl border border-destructive/30 bg-destructive/10 p-4">
@@ -673,6 +683,82 @@ export default function DividendClientPage({
         {inner}
       </main>
     </div>
+  );
+}
+
+/**
+ * Pro export of a finished projection.
+ *
+ * Both writers take a single table, so the table is the year-by-year projection
+ * the charts plot, and the inputs plus the per-stock breakdown ride along as
+ * header lines. A projection file without its inputs can't be reproduced.
+ */
+function ResultsExport({
+  result, drip, userCurrency, rates,
+}: {
+  result: DividendResult;
+  drip: boolean;
+  userCurrency: CurrencyCode;
+  rates: ExchangeRates | null;
+}) {
+  const { t } = useTranslation('tools');
+  const { isPro } = useEntitlements();
+
+  const build = () => {
+    const toDisplay = (usd: number) =>
+      userCurrency === 'USD' ? usd : convertCurrency(usd, 'USD', userCurrency, rates);
+    const headers = [
+      'Year',
+      `Annual income (${userCurrency})`,
+      `Cumulative income (${userCurrency})`,
+      `Portfolio value (${userCurrency})`,
+    ];
+    const rows = (result.years ?? []).map((r) => [
+      r.year,
+      csvNum(toDisplay(r.annualIncome)),
+      csvNum(toDisplay(r.cumulativeIncome)),
+      csvNum(toDisplay(r.portfolioValue)),
+    ]);
+    const meta: Record<string, string> = {
+      Exported: new Date().toISOString().slice(0, 10),
+      Currency: userCurrency,
+      'Dividend reinvestment': drip ? 'On' : 'Off',
+      Invested: csvNum(toDisplay(result.totalInvested ?? 0)),
+      'Blended yield %': csvNum(result.blendedYield ?? 0),
+      'Break-even year': result.breakEvenYear != null ? String(result.breakEvenYear) : 'Not within the projection',
+    };
+    for (const h of result.holdings ?? []) {
+      meta[h.ticker] =
+        `${csvShares(h.sharesStart)} shares, ${csvNum(toDisplay(h.invested))} invested, ` +
+        `${h.noDividends ? 'no dividend' : `${csvNum(h.dividendYield)}% yield`}, ` +
+        `${csvNum(toDisplay(h.year1Income))} year 1 income`;
+    }
+    return { headers, rows, meta };
+  };
+
+  return (
+    <ExportMenu
+      onExportCsv={() => {
+        const { headers, rows, meta } = build();
+        downloadCsv(`${exportStem('dividends')}.csv`, buildCsv({ headers, rows, meta }));
+      }}
+      onExportPdf={async () => {
+        const { headers, rows, meta } = build();
+        await downloadPdf(`${exportStem('dividends')}.pdf`, {
+          title: t('dividendTitle', 'Dividend Calculator'),
+          meta,
+          headers,
+          rows,
+          numericColumns: [1, 2, 3],
+        });
+      }}
+      isPro={isPro}
+      label={t('screenerExportLabel')}
+      csvLabel="CSV"
+      pdfLabel="PDF"
+      errorLabel={t('screenerExportFailed')}
+      title={isPro ? undefined : t('screenerExportCsvProOnly')}
+    />
   );
 }
 
