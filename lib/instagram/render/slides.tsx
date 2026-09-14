@@ -119,8 +119,9 @@ export function altTextForSlide(
 ): string {
   if (content.contentType === 'market_movers') {
     const kind = slideKindAt(slideIndex, content);
-    if (kind === 'winners') return `Today's top S&P 500 and Nasdaq 100 gainers on BullPen: ${content.winners.map((w) => w.symbol).join(', ')}.`;
-    if (kind === 'losers') return `Today's top S&P 500 and Nasdaq 100 losers on BullPen: ${content.losers.map((l) => l.symbol).join(', ')}.`;
+    const when = content.period ? `This ${content.period}'s` : "Today's";
+    if (kind === 'winners') return `${when} top S&P 500 and Nasdaq 100 gainers on BullPen: ${content.winners.map((w) => w.symbol).join(', ')}.`;
+    if (kind === 'losers') return `${when} top S&P 500 and Nasdaq 100 losers on BullPen: ${content.losers.map((l) => l.symbol).join(', ')}.`;
     return 'Open the BullPen app to track every S&P 500 and Nasdaq 100 stock in real time.';
   }
   if (content.contentType === 'earnings_deep_dive') {

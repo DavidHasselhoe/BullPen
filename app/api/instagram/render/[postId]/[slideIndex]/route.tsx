@@ -69,6 +69,8 @@ export async function GET(
     post.content_type !== 'earnings_calendar' &&
     post.content_type !== 'earnings_results' &&
     post.content_type !== 'market_movers' &&
+    post.content_type !== 'market_movers_weekly' &&
+    post.content_type !== 'market_movers_monthly' &&
     post.content_type !== 'earnings_deep_dive'
   ) {
     // Only content types built so far — a future content type would branch here.

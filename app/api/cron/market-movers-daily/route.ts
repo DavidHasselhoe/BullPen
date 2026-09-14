@@ -26,11 +26,7 @@ import { logSecurityEvent } from '@/lib/security/security-events';
 import { createServerClient } from '@/lib/supabase/client';
 import { getClosedHolidays } from '@/lib/market/exchange-holidays';
 import { generateMarketMoversContent } from '@/lib/instagram/content/market-movers';
-import { totalSlideCount } from '@/lib/instagram/render/slides';
-import { contentVersion } from '@/lib/instagram/render/cache-bust';
-import { postToDiscord } from '@/lib/discord/post-message';
-import { instagramBioLink } from '@/lib/instagram/utm-link';
-import { publishStagedPost } from '@/lib/instagram/publish';
+import { stageAndPublishMovers, type StagedMovers } from '@/lib/instagram/movers-stage';
 import type { MarketMoversSlides } from '@/lib/instagram/content/schema';
 
 // 60s was too tight and timed out intermittently in production: fetchRankedQuotes
@@ -111,80 +107,30 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     );
   }
 
-  // ── Persist ──────────────────────────────────────────────────────────────
-  const { data: inserted, error: insertError } = await db
-    .from('instagram_posts')
-    .insert({
-      content_type: CONTENT_TYPE,
-      period_key: periodKey,
-      status: 'ready',
-      slides: content,
-      caption: content.caption,
-    })
-    .select('id')
-    .single();
-
-  if (insertError || !inserted) {
-    console.error('[market-movers-daily] insert failed:', insertError);
-    return NextResponse.json({ success: false, error: insertError?.message ?? 'insert_failed' }, { status: 500 });
+  // ── Stage, notify, publish ───────────────────────────────────────────────
+  // Same-day news: published immediately, see stageAndPublishMovers.
+  let staged: StagedMovers;
+  try {
+    staged = await stageAndPublishMovers({ contentType: CONTENT_TYPE, periodKey, content });
+  } catch (err) {
+    console.error('[market-movers-daily] insert failed:', err);
+    return NextResponse.json(
+      { success: false, error: err instanceof Error ? err.message : 'insert_failed' },
+      { status: 500 }
+    );
   }
 
-  const postId = inserted.id as string;
-
-  // ── Pre-publish notification ────────────────────────────────────────────
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bullpen.no';
-  const slideCount = totalSlideCount(content);
-  // ?v=<content hash> so a later fix to this same post (a manual DB patch, a
-  // re-notify) produces genuinely different URLs — see contentVersion's doc
-  // comment for why a same-URL cache silently defeats a same-URL fix.
-  const v = contentVersion(content);
-  const previewLinks = Array.from({ length: slideCount }, (_, i) =>
-    `[Slide ${i + 1}](${appUrl}/api/instagram/render/${postId}/${i}?v=${v})`
-  ).join(' · ');
-
-  const bioLink = instagramBioLink(CONTENT_TYPE, periodKey);
   const topGainer = content.winners[0];
   const topLoser = content.losers[0];
 
-  const webhookUrl = process.env.DISCORD_INSTAGRAM_WEBHOOK_URL;
-  if (webhookUrl) {
-    try {
-      await postToDiscord(webhookUrl, {
-        embeds: [
-          {
-            title: `${content.sessionLabel ? `${content.sessionLabel} m` : 'M'}arket movers auto-publishing — ${content.dateLabel}`,
-            description: `Top gainer: ${topGainer.symbol} +${topGainer.changePercent.toFixed(2)}%. Top loser: ${topLoser.symbol} ${topLoser.changePercent.toFixed(2)}%. ${slideCount} slides.\n\n${previewLinks}\n\n**Caption:**\n${content.caption}`,
-            color: 0x34d399,
-            fields: [
-              { name: 'Bio link', value: bioLink },
-            ],
-            timestamp: new Date().toISOString(),
-          },
-        ],
-      });
-    } catch (err) {
-      // Never fail the cron over a notification failure — publishing below
-      // doesn't depend on it.
-      console.error('[market-movers-daily] Discord notification failed:', err);
-    }
-  } else {
-    console.warn('[market-movers-daily] DISCORD_INSTAGRAM_WEBHOOK_URL not set, skipping pre-publish notification');
-  }
-
-  // ── Publish ──────────────────────────────────────────────────────────────
-  // Same-day news — publish immediately rather than waiting for a manual
-  // step or a next-cycle cron. publishStagedPost posts its own Discord
-  // confirmation (or failure) message and updates the row's status.
-  const publishResult = await publishStagedPost(postId);
-
   return NextResponse.json({
     success: true,
-    postId,
+    postId: staged.postId,
     periodKey,
     dateLabel: content.dateLabel,
     topGainer: `${topGainer.symbol} +${topGainer.changePercent.toFixed(2)}%`,
-    publish: publishResult,
+    publish: staged.publish,
     topLoser: `${topLoser.symbol} ${topLoser.changePercent.toFixed(2)}%`,
-    slideCount,
+    slideCount: staged.slideCount,
   });
 }

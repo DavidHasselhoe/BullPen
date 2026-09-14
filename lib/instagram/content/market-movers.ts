@@ -27,7 +27,8 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
-import { getStockQuotes, withRateLimitRetry } from '@/lib/twelvedata/twelvedata-client';
+import { batchFetch, getStockQuotes, withRateLimitRetry } from '@/lib/twelvedata/twelvedata-client';
+import type { DailyClose, MoversPeriod, PeriodMove } from '@/lib/instagram/movers-period';
 import { waitForCronCreditBudget } from '@/lib/twelvedata/credit-budget';
 import { SIGNIFICANT_TICKERS } from '@/lib/market-data/significant-tickers';
 import { attachCalendarMeta } from '@/lib/market-data/calendar-market-cap';
@@ -61,6 +62,15 @@ Output ONLY a JSON object with exactly two fields, nothing else, no markdown fen
 }`;
 
 const PRE_MARKET_ADDENDUM = `\n\nThis is a special PRE-MARKET edition, posted before the US market opens. These are live pre-market price moves, not the regular post-close change — make that explicit in both the headline and caption (e.g. "before the bell", "pre-market"), so nobody mistakes this for the usual after-close movers post.`;
+
+/** Weekly/monthly edition: the numbers span the whole period, not one session. */
+function periodAddendum(period: MoversPeriod): string {
+  return `\n\nThis is the ${period === 'week' ? 'WEEKLY' : 'MONTHLY'} edition. Every % change is over the whole ${period}, from the last close before it began to this close. Say "this ${period}", never "today" or "the day", in both the headline and caption.`;
+}
+
+function periodDisclaimer(period: MoversPeriod): string {
+  return `Not financial advice. % changes are close to close over the ${period}, prices as of market close.`;
+}
 
 interface RankedQuote {
   symbol: string;
@@ -107,11 +117,49 @@ async function fetchRankedQuotes(preMarket: boolean): Promise<RankedQuote[]> {
   return ranked;
 }
 
+/**
+ * The last 40 daily closes for every S&P 500 + Nasdaq 100 ticker, for the
+ * weekly and monthly editions: enough to reach the close before any month
+ * began, with room for a manual run a few weeks back. /time_series costs 1
+ * credit per symbol through /batch regardless of outputsize, so this is the
+ * same ~518 credits and chunking as fetchRankedQuotes.
+ */
+export async function fetchDailyCloses(): Promise<Map<string, DailyClose[]>> {
+  const apiKey = process.env.TWELVE_DATA_API_KEY ?? '';
+  const symbols = [...SIGNIFICANT_TICKERS];
+  const closes = new Map<string, DailyClose[]>();
+
+  for (let i = 0; i < symbols.length; i += QUOTE_CHUNK_SIZE) {
+    const chunk = symbols.slice(i, i + QUOTE_CHUNK_SIZE);
+    await waitForCronCreditBudget(chunk.length * CREDITS_PER_QUOTE);
+    const requests: Record<string, string> = {};
+    for (const symbol of chunk) {
+      requests[symbol] = `/time_series?symbol=${encodeURIComponent(symbol)}&interval=1day&outputsize=40&apikey=${apiKey}`;
+    }
+    try {
+      const raw = await withRateLimitRetry(() =>
+        batchFetch<{ values?: { datetime: string; close: string }[] }>(requests)
+      );
+      for (const [symbol, data] of Object.entries(raw)) {
+        const series = (data.values ?? [])
+          .map((v) => ({ date: v.datetime.slice(0, 10), close: parseFloat(v.close) }))
+          .filter((c) => isFinite(c.close));
+        if (series.length > 0) closes.set(symbol, series);
+      }
+    } catch (err) {
+      console.error(`[market-movers] closes chunk failed (${chunk[0]}..${chunk[chunk.length - 1]}):`, err);
+      // Non-fatal — the route refuses to rank if too few symbols came back.
+    }
+  }
+
+  return closes;
+}
+
 async function writeCaption(
   winners: MarketMoverEntry[],
   losers: MarketMoverEntry[],
   dateLabel: string,
-  opts: { preMarket?: boolean; contextNote?: string } = {}
+  opts: { preMarket?: boolean; contextNote?: string; period?: MoversPeriod } = {}
 ): Promise<string> {
   const listText = [
     'Winners:',
@@ -120,11 +168,13 @@ async function writeCaption(
     ...losers.map((l) => `- ${l.symbol} (${l.name}): ${l.changePercent.toFixed(2)}%`),
   ].join('\n');
 
-  const sessionText = opts.preMarket ? "Today's S&P 500 + Nasdaq 100 pre-market movers" : "Today's S&P 500 + Nasdaq 100 movers";
+  const sessionText = opts.period
+    ? `This ${opts.period}'s S&P 500 + Nasdaq 100 movers, close to close`
+    : opts.preMarket ? "Today's S&P 500 + Nasdaq 100 pre-market movers" : "Today's S&P 500 + Nasdaq 100 movers";
   const contextText = opts.contextNote ? `\n\nVERIFIED CONTEXT (real, confirmed — you may reference this, nothing else): ${opts.contextNote}` : '';
   const userPrompt = `${dateLabel}. ${sessionText} (use ONLY these):\n${listText}${contextText}\n\nWrite the headline and caption now.`;
 
-  const system = SYSTEM_PROMPT + (opts.preMarket ? PRE_MARKET_ADDENDUM : '');
+  const system = SYSTEM_PROMPT + (opts.preMarket ? PRE_MARKET_ADDENDUM : '') + (opts.period ? periodAddendum(opts.period) : '');
 
   const message = await anthropic.messages.create({
     model: MODEL,
@@ -139,7 +189,7 @@ async function writeCaption(
     model: MODEL,
     inputTokens: message.usage.input_tokens,
     outputTokens: message.usage.output_tokens,
-    metadata: { contentType: 'market_movers', dateLabel, preMarket: opts.preMarket ?? false },
+    metadata: { contentType: 'market_movers', dateLabel, preMarket: opts.preMarket ?? false, period: opts.period ?? 'day' },
   });
 
   const textBlock = message.content.find((b) => b.type === 'text');
@@ -153,7 +203,9 @@ async function writeCaption(
   // every other generator in this pipeline already validates against,
   // rather than adding a second near-duplicate schema for one field.
   const { caption } = parseHookAndCaption(textBlock.text);
-  const disclaimer = opts.preMarket ? MARKET_DATA_DISCLAIMER_PRE_MARKET : MARKET_DATA_DISCLAIMER;
+  const disclaimer = opts.period
+    ? periodDisclaimer(opts.period)
+    : opts.preMarket ? MARKET_DATA_DISCLAIMER_PRE_MARKET : MARKET_DATA_DISCLAIMER;
   return `${caption}\n\n${disclaimer}\n\n${FIXED_HASHTAGS}`;
 }
 
@@ -221,6 +273,10 @@ export interface GenerateMarketMoversOptions {
    *  prompt still forbids Claude from speculating about any OTHER stock's
    *  move beyond what's in this note. */
   contextNote?: string;
+  /** Weekly or monthly edition. The caller ranks from daily closes
+   *  (fetchDailyCloses + periodMoves) and passes the moves in, since one fetch
+   *  serves both editions on a day that ends a week and a month. */
+  period?: { kind: MoversPeriod; moves: PeriodMove[]; dateLabel: string };
 }
 
 /**
@@ -231,8 +287,8 @@ export async function generateMarketMoversContent(
   dateET: string,
   opts: GenerateMarketMoversOptions = {}
 ): Promise<MarketMoversSlides> {
-  const { preMarket = false, contextNote } = opts;
-  const ranked = await fetchRankedQuotes(preMarket);
+  const { preMarket = false, contextNote, period } = opts;
+  const ranked: RankedQuote[] = period ? period.moves : await fetchRankedQuotes(preMarket);
 
   const winnersRanked = [...ranked].sort((a, b) => b.changePercent - a.changePercent).slice(0, TOP_N);
   const losersRanked = [...ranked].sort((a, b) => a.changePercent - b.changePercent).slice(0, TOP_N);
@@ -259,13 +315,14 @@ export async function generateMarketMoversContent(
   const winners = winnersRanked.map((r, i) => toEntry(r, winnersMeta[i]));
   const losers = losersRanked.map((r, i) => toEntry(r, losersMeta[i]));
 
-  const dateLabel = formatDateLabel(dateET);
-  const caption = await writeCaption(winners, losers, dateLabel, { preMarket, contextNote });
+  const dateLabel = period?.dateLabel ?? formatDateLabel(dateET);
+  const caption = await writeCaption(winners, losers, dateLabel, { preMarket, contextNote, period: period?.kind });
 
   return {
     contentType: 'market_movers',
     dateLabel,
-    sessionLabel: preMarket ? 'Pre-Market' : undefined,
+    period: period?.kind,
+    sessionLabel: period ? (period.kind === 'week' ? 'Weekly' : 'Monthly') : preMarket ? 'Pre-Market' : undefined,
     winners,
     losers,
     caption,

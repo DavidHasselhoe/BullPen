@@ -144,7 +144,10 @@ export interface MarketMoverEntry {
 
 export interface MarketMoversSlides {
   contentType: 'market_movers';
-  dateLabel: string; // e.g. "Aug 24, 2026"
+  dateLabel: string; // e.g. "Aug 24, 2026", "Sep 7-11, 2026", "September 2026"
+  /** 'week' or 'month' for those editions (content types market_movers_weekly
+   *  and market_movers_monthly); undefined for the daily post. */
+  period?: 'week' | 'month';
   /** Set for an off-schedule special edition (e.g. "Pre-Market") — undefined
    *  for the regular post-close 3x/week post, which reads as "Daily". */
   sessionLabel?: string;
