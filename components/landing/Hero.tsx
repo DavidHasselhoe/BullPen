@@ -527,8 +527,8 @@ export function Hero({ onSignUp }: Props) {
                     (96 weekdays minus Memorial Day, Juneteenth, 3 July and
                     Labor Day), and daily_briefs holds exactly 92 rows across 92
                     distinct dates. "Unbroken" is literal.
-                  - institutional_investors holds 15 curated funds, parsed from
-                    75 13F filings pulled from SEC EDGAR.
+                  - institutional_investors holds 16 curated funds, parsed from
+                    80 13F filings pulled from SEC EDGAR (checked 2026-09-14).
                   - screener_stats holds 3,053 rows, so "more than 3,000" is a
                     floor that stays true as the universe grows.
                 Deliberately a sentence, not a row of big numerals with small
@@ -545,7 +545,7 @@ export function Hero({ onSignUp }: Props) {
                 textWrap: 'pretty',
               }}
             >
-              A Daily Brief every market morning since 1 May, unbroken. 13F filings from 15 funds,
+              A Daily Brief every market morning since 1 May, unbroken. 13F filings from 16 funds,
               read straight out of SEC EDGAR. Live fundamentals on more than 3,000 US stocks and ETFs.
             </p>
             <div

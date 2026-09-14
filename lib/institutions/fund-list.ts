@@ -30,6 +30,7 @@ export const INSTITUTIONAL_FUND_SLUGS = [
   'viking-global',
   'lone-pine-capital',
   'citadel-advisors',
+  'situational-awareness',
 ] as const;
 
 export type InstitutionalFundSlug = typeof INSTITUTIONAL_FUND_SLUGS[number];
