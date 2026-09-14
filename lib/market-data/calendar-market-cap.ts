@@ -8,8 +8,12 @@ interface MarketCapRow {
   name: string | null;
 }
 
-const UNIVERSE_MAP_KEY = 'screener-universe-meta-map';
+// v2: names now fall back to search_index (see getUniverseMetaMap). A new key so
+// a map cached before that doesn't keep serving ticker-as-name for 6 hours.
+const UNIVERSE_MAP_KEY = 'screener-universe-meta-map:v2';
 const UNIVERSE_MAP_TTL = 6 * 60 * 60;
+/** Tickers per search_index lookup, keeping each query string small. */
+const NAME_CHUNK = 200;
 
 /** Compact wire shape for the cached map: [market_cap, name] per ticker. */
 type UniverseMetaRow = [number | null, string | null];
@@ -53,6 +57,26 @@ async function getUniverseMetaMap(): Promise<Map<string, UniverseMetaRow>> {
       obj[row.ticker.toUpperCase()] = [row.market_cap, row.name];
     }
     if (!data || data.length < PAGE) break;
+  }
+
+  // screener_stats.name is empty or just the ticker for most rows (2,585 of
+  // 3,053 on 2026-09-14), which put "HPE  HPE" on Instagram movers slides. The
+  // search catalogue names every listed US stock and ETF, so fill from it.
+  const unnamed = Object.keys(obj).filter((t) => !obj[t][1] || obj[t][1]!.toUpperCase() === t);
+  for (let i = 0; i < unnamed.length; i += NAME_CHUNK) {
+    const { data, error } = await supabase
+      .from('search_index')
+      .select('ticker, name')
+      .in('ticker', unnamed.slice(i, i + NAME_CHUNK))
+      .returns<{ ticker: string; name: string }[]>();
+    if (error) {
+      console.error('[calendar-meta] search_index names failed:', error.message);
+      break;
+    }
+    for (const row of data ?? []) {
+      const entry = obj[row.ticker.toUpperCase()];
+      if (entry && row.name) entry[1] = row.name;
+    }
   }
 
   if (Object.keys(obj).length > 0) {
