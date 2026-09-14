@@ -48,6 +48,8 @@ interface StatusResponse {
   analysis?: RiskAnalysis | null;
   errorCode?: ErrorCode | null;
   errorMessage?: string | null;
+  /** The analysis row's created_at, the same timestamp history entries carry. */
+  createdAt?: string;
 }
 
 interface PortfolioRiskAnalysisProps {
@@ -108,6 +110,11 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
   const [justCompleted, setJustCompleted] = useState(false);
   const [analysis, setAnalysis] = useState<RiskAnalysis | null>(null);
   const [restoredFrom, setRestoredFrom] = useState<string | null>(null);
+  // created_at of a freshly generated analysis. The trend delta finds the
+  // previous analysis as the newest history entry older than what's on screen,
+  // and history is keyed by created_at; generatedAt is set when the run
+  // finishes, later than its own created_at, so it matched itself ("No change").
+  const [freshCreatedAt, setFreshCreatedAt] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [showPaywall, setShowPaywall] = useState(false);
   const [paywallQuota, setPaywallQuota] = useState<QuotaState | null>(null);
@@ -184,6 +191,7 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
           stopPolling();
           setAnalysis(data.analysis);
           setRestoredFrom(null);
+          setFreshCreatedAt(data.createdAt ?? null);
           queryClient.invalidateQueries({ queryKey: HISTORY_KEY });
           // Generated while the user was watching — its notification would
           // otherwise sit unread until they separately opened the bell.
@@ -353,7 +361,7 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
             <RiskAnalysisResult
               className="page-enter"
               analysis={analysis}
-              displayedTimestamp={restoredFrom ?? analysis.generatedAt}
+              displayedTimestamp={restoredFrom ?? freshCreatedAt ?? analysis.generatedAt}
               history={history}
               onRestore={restoreAnalysis}
               onDelete={(id) => deleteMutation.mutate(id)}

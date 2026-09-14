@@ -11,7 +11,8 @@ import { levelTier, topRiskTier, tierTextClass, splitImpact, drawdownMagnitude }
 
 interface Props {
   analysis: RiskAnalysis;
-  /** ISO timestamp of the analysis currently on screen — analysis.generatedAt, or the restored-from timestamp. */
+  /** created_at of the analysis on screen, the same timestamp its history entry carries, so the
+   *  trend delta never compares an analysis against itself. generatedAt only as a fallback. */
   displayedTimestamp: string;
   history: SavedRiskAnalysis[];
 }
