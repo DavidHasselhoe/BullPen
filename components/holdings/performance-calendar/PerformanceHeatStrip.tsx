@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { fmtWeekRange, monthKeyOf, todayET, weekRangeOf } from '@/lib/dates/calendar-format';
-import { summarize } from '@/lib/holdings/daily-performance';
+import { summarize, withLiveDay, type DailyPerformanceDay } from '@/lib/holdings/daily-performance';
 import type { CurrencyCode } from '@/lib/currency/currency-conversion';
 import { useDailyPerformance } from './use-daily-performance';
 import { CalendarGrid } from './CalendarGrid';
@@ -16,6 +16,8 @@ import { buildWeekRow, fmtSignedCurrency, fmtSignedPercent, textClass } from './
 interface Props {
   currency?: CurrencyCode;
   fxRate?: number;
+  /** Today's cell from the Holdings table's live quotes, see liveDay(). */
+  liveToday?: DailyPerformanceDay | null;
   onExpand: () => void;
 }
 
@@ -33,7 +35,7 @@ interface Props {
  * requested and merged; the second query is skipped entirely (`enabled`)
  * when the week doesn't cross a boundary, which is true almost every week.
  */
-export function PerformanceHeatStrip({ currency = 'USD', fxRate = 1, onExpand }: Props) {
+export function PerformanceHeatStrip({ currency = 'USD', fxRate = 1, liveToday = null, onExpand }: Props) {
   const { t } = useTranslation('holdings');
   const today = todayET();
   const { from: weekFrom, to: weekTo } = useMemo(() => weekRangeOf(today), [today]);
@@ -50,8 +52,9 @@ export function PerformanceHeatStrip({ currency = 'USD', fxRate = 1, onExpand }:
   const weekRow = useMemo(() => {
     const days = crossesMonth ? [...resultA.days, ...resultB.days] : resultA.days;
     const holidays = crossesMonth ? [...resultA.holidays, ...resultB.holidays] : resultA.holidays;
-    return buildWeekRow(weekFrom, weekTo, days, holidays);
-  }, [weekFrom, weekTo, crossesMonth, resultA.days, resultA.holidays, resultB.days, resultB.holidays]);
+    const live = liveToday && !holidays.some((h) => h.date === liveToday.date) ? liveToday : null;
+    return buildWeekRow(weekFrom, weekTo, withLiveDay(days, live), holidays);
+  }, [weekFrom, weekTo, crossesMonth, resultA.days, resultA.holidays, resultB.days, resultB.holidays, liveToday]);
   const weekData = useMemo(() => weekRow.flatMap((c) => (c.data ? [c.data] : [])), [weekRow]);
   const total = summarize(weekData);
   const hasData = weekData.length > 0;

@@ -14,7 +14,7 @@ import {
   monthWeeks,
   shiftMonth,
 } from '@/lib/dates/calendar-format';
-import { summarize } from '@/lib/holdings/daily-performance';
+import { summarize, withLiveDay, type DailyPerformanceDay } from '@/lib/holdings/daily-performance';
 import type { CurrencyCode } from '@/lib/currency/currency-conversion';
 import { CalendarGrid } from './CalendarGrid';
 import { useDailyPerformance } from './use-daily-performance';
@@ -32,6 +32,8 @@ interface Props {
   /** Tighter cells and a trimmed summary, for the homepage widget. */
   compact?: boolean;
   className?: string;
+  /** Today's cell from the Holdings table's live quotes, see liveDay(). */
+  liveToday?: DailyPerformanceDay | null;
 }
 
 export function PerformanceCalendar({
@@ -39,12 +41,18 @@ export function PerformanceCalendar({
   fxRate = 1,
   compact = false,
   className,
+  liveToday = null,
 }: Props) {
   const { t } = useTranslation('holdings');
   const thisMonth = currentMonthKey();
   const [month, setMonth] = useState(thisMonth);
 
-  const { days, holidays, isLoading, isGated } = useDailyPerformance(month);
+  const { days: fetchedDays, holidays, isLoading, isGated } = useDailyPerformance(month);
+  const days = useMemo(() => {
+    const live =
+      month === thisMonth && liveToday && !holidays.some((h) => h.date === liveToday.date) ? liveToday : null;
+    return withLiveDay(fetchedDays, live);
+  }, [month, thisMonth, liveToday, fetchedDays, holidays]);
 
   const weeks = useMemo(() => buildMonthGrid(month, days, holidays), [month, days, holidays]);
   const total = useMemo(() => summarize(days), [days]);

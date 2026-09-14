@@ -6,12 +6,15 @@ import { CalendarDays } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import type { CurrencyCode } from '@/lib/currency/currency-conversion';
+import type { DailyPerformanceDay } from '@/lib/holdings/daily-performance';
 import { PerformanceCalendar } from './PerformanceCalendar';
 import { PerformanceHeatStrip } from './PerformanceHeatStrip';
 
 interface Props {
   currency?: CurrencyCode;
   fxRate?: number;
+  /** Today's cell from the Holdings table's live quotes, see liveDay(). */
+  liveToday?: DailyPerformanceDay | null;
 }
 
 /**
@@ -26,7 +29,7 @@ interface Props {
  * per-day contributors) is unchanged, just moved behind "Expand" into a
  * dialog instead of being on the page by default.
  */
-export function PerformanceCalendarCard({ currency = 'USD', fxRate = 1 }: Props) {
+export function PerformanceCalendarCard({ currency = 'USD', fxRate = 1, liveToday = null }: Props) {
   const { t } = useTranslation('holdings');
   const [expanded, setExpanded] = useState(false);
 
@@ -39,7 +42,7 @@ export function PerformanceCalendarCard({ currency = 'USD', fxRate = 1 }: Props)
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <PerformanceHeatStrip currency={currency} fxRate={fxRate} onExpand={() => setExpanded(true)} />
+        <PerformanceHeatStrip currency={currency} fxRate={fxRate} liveToday={liveToday} onExpand={() => setExpanded(true)} />
       </CardContent>
 
       <Dialog open={expanded} onOpenChange={setExpanded}>
@@ -50,7 +53,7 @@ export function PerformanceCalendarCard({ currency = 'USD', fxRate = 1 }: Props)
               {t('perfCalTitle')}
             </DialogTitle>
           </DialogHeader>
-          <PerformanceCalendar currency={currency} fxRate={fxRate} />
+          <PerformanceCalendar currency={currency} fxRate={fxRate} liveToday={liveToday} />
         </DialogContent>
       </Dialog>
     </Card>

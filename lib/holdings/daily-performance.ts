@@ -244,6 +244,63 @@ export function computeDailyPerformance(
   return days;
 }
 
+/** A priced holding as the Holdings page already has it. USD price, FX-free percent. */
+export interface LiveHolding {
+  symbol: string;
+  company_name: string | null;
+  quantity: number | null;
+  currentPriceUSD?: number;
+  dayChangePercent?: number;
+  isPriceStale?: boolean;
+}
+
+/**
+ * Today's cell built from the same quotes as the Holdings table's Day Change.
+ *
+ * TwelveData has no daily bar for today until the regular session opens, and
+ * the bar it does have is cached for minutes, so a closes-only calendar showed
+ * nothing pre-market while the table right below it showed a real move. Built
+ * from the table's own numbers, the two can't disagree. Stale last-close
+ * prices are skipped: their percent is the previous session's move.
+ */
+export function liveDay(date: string, holdings: LiveHolding[], maxContributors = 5): DailyPerformanceDay | null {
+  let prevValue = 0;
+  let pnlUsd = 0;
+  const contributors: Contributor[] = [];
+
+  for (const h of holdings) {
+    const shares = h.quantity ?? 0;
+    const price = h.currentPriceUSD;
+    const pct = h.dayChangePercent;
+    if (shares <= 0 || !price || pct == null || !isFinite(pct) || h.isPriceStale) continue;
+
+    const prevClose = price / (1 + pct / 100);
+    const pnl = shares * (price - prevClose);
+    prevValue += shares * prevClose;
+    pnlUsd += pnl;
+    if (pnl !== 0) {
+      contributors.push({ symbol: h.symbol, name: h.company_name, pnlUsd: pnl, pricePct: pct, shares });
+    }
+  }
+
+  if (prevValue <= 0) return null;
+  contributors.sort((a, b) => Math.abs(b.pnlUsd) - Math.abs(a.pnlUsd));
+
+  return {
+    date,
+    pct: (pnlUsd / prevValue) * 100,
+    pnlUsd,
+    prevValueUsd: prevValue,
+    contributors: contributors.slice(0, maxContributors),
+  };
+}
+
+/** Replace (or add) the fetched day matching `live.date` with the live one. */
+export function withLiveDay(days: DailyPerformanceDay[], live: DailyPerformanceDay | null): DailyPerformanceDay[] {
+  if (!live) return days;
+  return [...days.filter((d) => d.date !== live.date), live];
+}
+
 /**
  * Roll a set of days up into one figure. Works for a week, a month, or any
  * other slice — the calendar uses it for both the week-total column and the

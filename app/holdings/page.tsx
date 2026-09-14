@@ -11,6 +11,8 @@ import { PortfolioHealthCard } from '@/components/holdings/PortfolioHealthCard';
 import { PortfolioRiskAnalysis } from '@/components/holdings/PortfolioRiskAnalysis';
 import { PortfolioPerformanceChart } from '@/components/holdings/PortfolioPerformanceChart';
 import { PerformanceCalendarCard } from '@/components/holdings/performance-calendar/PerformanceCalendarCard';
+import { liveDay } from '@/lib/holdings/daily-performance';
+import { todayET } from '@/lib/dates/calendar-format';
 import { useHoldings } from '@/hooks/use-holdings';
 import { useAuth } from '@/hooks/use-auth';
 import { useLivePrices } from '@/hooks/use-live-prices';
@@ -321,6 +323,14 @@ export default function HoldingsPage() {
   const hasPricedHoldings = throttledHoldings.some((h) => h.currentPrice !== undefined);
   const statsLoading = holdingsLoading || quotesData.isLoading || (!!holdings?.length && !hasPricedHoldings);
 
+  // Today's calendar cell from the same numbers as the Day Change column. Only
+  // while a session is live: after the close the fetched daily bar is the real
+  // close, and overnight/weekends have no session to show.
+  const liveToday = useMemo(
+    () => (session === 'pre-market' || session === 'regular' ? liveDay(todayET(), throttledHoldings) : null),
+    [session, throttledHoldings]
+  );
+
   if (!isAuthenticated) {
     return (
       <AuthGate
@@ -408,7 +418,7 @@ export default function HoldingsPage() {
 
       {/* Day-by-day performance calendar */}
       {throttledHoldings.length > 0 && (
-        <PerformanceCalendarCard currency={userCurrency} fxRate={currentFxRate} />
+        <PerformanceCalendarCard currency={userCurrency} fxRate={currentFxRate} liveToday={liveToday} />
       )}
 
       {/* Holdings table */}
