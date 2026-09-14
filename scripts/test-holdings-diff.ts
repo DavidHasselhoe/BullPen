@@ -101,5 +101,14 @@ assert.equal(parsed.length, 2, 'shares and the put are two rows');
 assert.equal(parsed.find((p) => !p.putCall)!.shares, 15, 'sub-account rows still sum');
 assert.equal(parsed.find((p) => p.putCall)!.putCall, 'PUT', 'put/call normalized to upper case');
 assert.equal(parsed.find((p) => p.putCall)!.valueUsd, 900);
+assert.equal(parsed.find((p) => !p.putCall)!.valueUsd, 150, 'a whole-dollar filing is left alone');
+
+// A filer still writing <value> in thousands (Baupost's real Q2 2026 rows) is
+// converted to dollars.
+const plainRow = (cusip: string, value: number, shares: number) =>
+  `<infoTable><nameOfIssuer>X</nameOfIssuer><cusip>${cusip}</cusip><value>${value}</value>` +
+  `<shrsOrPrnAmt><sshPrnamt>${shares}</sshPrnamt><sshPrnamtType>SH</sshPrnamtType></shrsOrPrnAmt></infoTable>`;
+const thousands = parseInfoTable(plainRow('023135106', 892310, 3743854) + plainRow('02079K107', 484744, 1371931));
+assert.equal(thousands.find((p) => p.cusip === '023135106')!.valueUsd, 892_310_000, 'thousands-scale filing is converted');
 
 console.log('holdings diff: all assertions passed');

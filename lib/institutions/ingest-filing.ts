@@ -28,9 +28,10 @@ import type { createServerClient } from '@/lib/supabase/client';
  * mistake inflated every holding 1000x on the first ingestion run. Anything
  * older than this is refused rather than silently ingested at the wrong scale.
  *
- * ponytail: hard floor, not a format sniff. Lift it by adding a median
- * implied-price check (value/shares < $1 means thousands) inside
- * parseInfoTable, only if deep history is ever actually wanted.
+ * ponytail: hard floor. parseInfoTable now has the median implied-price check
+ * (scaleThousands) that should also read pre-2023 filings at the right scale;
+ * lift this only if deep history is ever actually wanted, and spot-check a
+ * quarter against a known price first.
  */
 export const EARLIEST_SUPPORTED_PERIOD = '2023-06-30';
 

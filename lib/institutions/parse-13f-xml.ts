@@ -111,7 +111,8 @@ export function parseInfoTable(xml: string): Raw13FHolding[] {
     // real AAPL price; treating the field as thousands (an easy mistake,
     // since it's the widely-cited older convention) inflated every holding
     // 1000x on the first ingestion run, caught by the Phase 1 validation
-    // spot-check before this ever reached real users.
+    // spot-check before this ever reached real users. Not every filer
+    // follows the schema, though: see scaleThousands().
     const valueUsd = Number(valueRaw);
     const shares = Number(sshPrnamt);
     if (!isFinite(valueUsd) || !isFinite(shares)) continue;
@@ -129,5 +130,29 @@ export function parseInfoTable(xml: string): Raw13FHolding[] {
     }
   }
 
-  return Array.from(byKey.values());
+  return scaleThousands(Array.from(byKey.values()));
+}
+
+/**
+ * Below this median share price, a filing's <value> is in thousands of dollars.
+ *
+ * Schema X0202 requires whole dollars, but some filers still write thousands:
+ * Baupost and Duquesne did in every quarter we hold (Baupost's AMZN row, value
+ * 892310 for 3,743,854 shares). A portfolio's median share price is tens of
+ * dollars; a thousands-scale one comes out at a few cents. Across all 80
+ * stored filings the lowest correct median was $20.57 and the highest
+ * thousands-scale one $0.13, so $1 sits well inside the gap.
+ */
+const THOUSANDS_MEDIAN_PRICE = 1;
+
+/** Converts a thousands-scale filing to dollars. Shares only feed the median:
+ *  a bond's principal (PRN) prices near $1, and an option's value is notional. */
+function scaleThousands(holdings: Raw13FHolding[]): Raw13FHolding[] {
+  const prices = holdings
+    .filter((h) => h.shareType?.toUpperCase() === 'SH' && !h.putCall && h.shares > 0)
+    .map((h) => h.valueUsd / h.shares)
+    .sort((a, b) => a - b);
+  if (prices.length === 0) return holdings;
+  if (prices[Math.floor(prices.length / 2)] >= THOUSANDS_MEDIAN_PRICE) return holdings;
+  return holdings.map((h) => ({ ...h, valueUsd: h.valueUsd * 1000 }));
 }
