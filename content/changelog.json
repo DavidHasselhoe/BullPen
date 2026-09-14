@@ -1,5 +1,50 @@
 [
   {
+    "date": "2026-09-14",
+    "entries": [
+      {
+        "type": "new",
+        "text": "Situational Awareness LP, the AI focused fund run by Leopold Aschenbrenner, is now in Institutional Holdings with five quarters of history"
+      },
+      {
+        "type": "improved",
+        "text": "Portfolio Risk Analysis now reads each holding's real sector, company size, volatility and health score instead of estimating them, and can point out a large position with weak finances. Your portfolio's business quality now shows next to the risk score, with a link to the full breakdown"
+      },
+      {
+        "type": "improved",
+        "text": "Before the market opens and during the day, today's square in Daily performance now shows the same number as your Today P&L. Before the week's first session it shows the empty week instead of saying you held nothing"
+      },
+      {
+        "type": "improved",
+        "text": "The Ask Bull panel no longer shows your profile picture a third time in its header"
+      },
+      {
+        "type": "fixed",
+        "text": "Institutional Holdings no longer counts a fund's puts and calls as shares of the stock. Options now have their own labeled list and stay out of the portfolio percentages, which mattered most for Citadel"
+      },
+      {
+        "type": "fixed",
+        "text": "Baupost and Duquesne showed holdings a thousand times too small. Their values are now in dollars like every other fund"
+      },
+      {
+        "type": "fixed",
+        "text": "Honeywell showed a dividend yield of 56% because a spin-off was counted as a dividend. It now shows its real yield of about 1.4%, and the Dividend Calculator no longer includes one off payments like that"
+      },
+      {
+        "type": "fixed",
+        "text": "Trending this week and the Discover page now show company names for every stock instead of repeating the ticker"
+      },
+      {
+        "type": "fixed",
+        "text": "A new risk analysis no longer says No change vs previous analysis when your score has actually moved"
+      },
+      {
+        "type": "fixed",
+        "text": "Companies in the Market Calendar that only showed a ticker now show their full name"
+      }
+    ]
+  },
+  {
     "date": "2026-09-13",
     "entries": [
       {
