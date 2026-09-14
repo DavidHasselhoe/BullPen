@@ -24,7 +24,6 @@ const BullpenChat = lazy(() => import('./BullpenChat').then((m) => ({ default: m
 import { useAuth } from '@/hooks/use-auth';
 import { useIsMobile } from '@/hooks/use-is-mobile';
 import { cn } from '@/lib/utils';
-import { ProfileAvatar, getUserDisplayName, getUserInitials } from '@/components/user/ProfileAvatar';
 import { WhyTodayView } from './WhyTodayView';
 import type { AIContext, WhyTodayPayload } from './AIPanelProvider';
 
@@ -270,16 +269,6 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
                   </TooltipTrigger>
                   <TooltipContent side="bottom">{t('sidePanelAiSettings')}</TooltipContent>
                 </Tooltip>
-                <ProfileAvatar
-                  avatarUrl={user.avatar_url}
-                  displayName={getUserDisplayName(user)}
-                  fallback={getUserInitials(user)}
-                  tier={user.account_tier ?? 1}
-                  size="sm"
-                  showTooltip={false}
-                  showCrown={false}
-                  className="h-7 w-7 [&_[data-slot=avatar-fallback]]:text-xs"
-                />
               </>
             )}
             <button
