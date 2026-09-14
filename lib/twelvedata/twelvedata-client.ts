@@ -1016,18 +1016,26 @@ const STALE_DIVIDEND_MONTHS = 14;
  * regular rate) or whether the company has stopped paying entirely (GNRC,
  * dead since 2013 but still carrying an 11% "forward" yield off that last
  * payment). trailing_annual_dividend_yield (real TTM cash paid) plus a
- * recency guard on dividend_date fixes the dead-payer case; it doesn't fully
- * fix the special-dividend overstatement, which would need recomputing from
- * full dividend history.
+ * recency guard on dividend_date fixes the dead-payer case.
+ *
+ * Trailing breaks the other way when TD books a spin-off as a cash dividend:
+ * HON's 2026-06-29 aerospace separation landed as a $115.89 "dividend", giving
+ * a 56% trailing yield against a real 1.4% forward one. So take the lower of
+ * the two: each figure's failure mode (one-off special annualized x4 vs. a
+ * one-off spin-off counted in TTM) only ever inflates it.
  */
 export function sanitizeDividendYield(d: {
   trailing_annual_dividend_yield?: number | null;
+  forward_annual_dividend_yield?: number | null;
   dividend_date?: string | null;
 } | undefined): number | null {
   if (!d?.dividend_date) return null;
   const monthsSinceLastDividend = (Date.now() - new Date(d.dividend_date).getTime()) / (1000 * 60 * 60 * 24 * 30.44);
   if (monthsSinceLastDividend > STALE_DIVIDEND_MONTHS) return 0;
-  return d.trailing_annual_dividend_yield ?? null;
+  const trailing = d.trailing_annual_dividend_yield ?? null;
+  const forward = d.forward_annual_dividend_yield ?? null;
+  if (trailing == null) return forward;
+  return forward != null && forward > 0 ? Math.min(trailing, forward) : trailing;
 }
 
 export async function getStatistics(symbol: string): Promise<CompanyStatistics> {

@@ -134,7 +134,7 @@ function parseStats(sym: string, raw: RawStats | undefined) {
   const ss = (s.stock_statistics as Record<string, number>) ?? {};
   const f = (s.financials as Record<string, unknown>) ?? {};
   const fi = (f.income_statement as Record<string, number>) ?? {};
-  const d = (s.dividends_and_splits as { trailing_annual_dividend_yield?: number; dividend_date?: string }) ?? {};
+  const d = (s.dividends_and_splits as { trailing_annual_dividend_yield?: number; forward_annual_dividend_yield?: number; dividend_date?: string }) ?? {};
   return {
     symbol: sym,
     marketCap: v.market_capitalization ?? null,

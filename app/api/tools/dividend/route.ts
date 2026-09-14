@@ -66,11 +66,18 @@ interface DividendResult {
  * the yield (e.g. KO showing ~3.1% instead of ~2.5%).
  */
 function computeAnnualDividendPerShare(dividends: DividendItem[]): number {
-  const valid = dividends
+  const all = dividends
     .filter((d) => d.amount > 0 && d.ex_dividend_date)
     .map((d) => ({ t: new Date(d.ex_dividend_date).getTime(), a: d.amount }))
     .filter((d) => !Number.isNaN(d.t))
     .sort((a, b) => b.t - a.t);
+
+  // Drop one-off payments far above the typical one: TD books spin-offs as cash
+  // dividends (HON's $115.89 on 2026-06-29 vs. ~$1.19 quarterly), and a
+  // special shouldn't be projected as recurring income either.
+  const amounts = all.map((d) => d.a).sort((a, b) => a - b);
+  const typical = amounts[Math.floor(amounts.length / 2)];
+  const valid = all.filter((d) => d.a <= typical * 5);
 
   if (valid.length === 0) return 0;
   if (valid.length === 1) return valid[0].a * 4; // single record — assume quarterly
