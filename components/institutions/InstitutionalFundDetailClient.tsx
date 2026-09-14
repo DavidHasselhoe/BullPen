@@ -14,7 +14,7 @@ import { QuarterPicker } from './QuarterPicker';
 import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import { InstitutionalHoldingsPieChart } from './InstitutionalHoldingsPieChart';
 import { HoldingsBarList } from './HoldingsBarList';
-import { buildAllocation } from '@/lib/institutions/allocation';
+import { buildAllocation, optionPositions } from '@/lib/institutions/allocation';
 import { ALLOCATION_COLORS } from '@/lib/charts/allocation-colors';
 import { fmtUsd } from '@/lib/institutions/format';
 import type { InstitutionalFundSummary } from '@/app/api/institutions/route';
@@ -91,6 +91,8 @@ export function InstitutionalFundDetailClient({ slug }: { slug: string }) {
   // Citadel this sorts 7000+ rows, and highlight hover state re-renders often.
   const holdings = holdingsData?.holdings;
   const allocation = useMemo(() => (holdings ? buildAllocation(holdings) : null), [holdings]);
+  const options = useMemo(() => (holdings ? optionPositions(holdings) : []), [holdings]);
+  const optionsValue = useMemo(() => options.reduce((sum, h) => sum + h.valueUsd, 0), [options]);
   const [highlightedKey, setHighlightedKey] = useState<string | null>(null);
 
   // Give the always-present "Ask Bull" button this fund's context, the same
@@ -137,6 +139,7 @@ export function InstitutionalFundDetailClient({ slug }: { slug: string }) {
             Filed {fmtDate(holdingsData.filing.filedDate)} for the quarter ended{' '}
             {fmtDate(holdingsData.filing.periodOfReport)} · {fmtUsd(holdingsData.filing.totalValueUsd ?? 0)} across{' '}
             {holdingsData.filing.totalPositions} positions
+            {options.length > 0 && <>, plus {fmtUsd(optionsValue)} in options</>}
           </p>
           <QuarterPicker
             quarters={holdingsData.availableQuarters ?? []}
@@ -201,6 +204,7 @@ export function InstitutionalFundDetailClient({ slug }: { slug: string }) {
           />
           <HoldingsBarList
             allocation={allocation}
+            options={options}
             diff={holdingsData?.diff}
             highlightedKey={highlightedKey}
             onHighlight={setHighlightedKey}

@@ -6,7 +6,7 @@
  */
 
 import { ALLOCATION_COLORS, ALLOCATION_OTHER_COLOR } from '@/lib/charts/allocation-colors';
-import { UNCHANGED_BAND_PCT } from './compute-diff';
+import { UNCHANGED_BAND_PCT, holdingKey } from './compute-diff';
 import type { DiffableHolding, HoldingsDiff } from './compute-diff';
 
 /** How many holdings get their own color + detail row before the tail is
@@ -37,12 +37,16 @@ export interface Allocation {
 }
 
 export function buildAllocation(holdings: DiffableHolding[]): Allocation {
-  const total = holdings.reduce((sum, h) => sum + h.valueUsd, 0);
-  const sorted = [...holdings].sort((a, b) => b.valueUsd - a.valueUsd);
+  // Shares only. A 13F values an option at the shares it covers, not at what
+  // the fund paid for it, so counting puts here would make a bet against a
+  // stock read as one of its largest holdings. See optionPositions().
+  const shares = holdings.filter((h) => !h.putCall);
+  const total = shares.reduce((sum, h) => sum + h.valueUsd, 0);
+  const sorted = [...shares].sort((a, b) => b.valueUsd - a.valueUsd);
   const pctOf = (v: number) => (total > 0 ? (v / total) * 100 : 0);
 
   const toEntry = (h: DiffableHolding, color: string): AllocationEntry => ({
-    key: h.cusip,
+    key: holdingKey(h),
     symbol: h.symbol,
     name: h.nameOfIssuer,
     valueUsd: h.valueUsd,
@@ -58,6 +62,11 @@ export function buildAllocation(holdings: DiffableHolding[]): Allocation {
   const restValue = rest.reduce((sum, h) => sum + h.valueUsd, 0);
 
   return { top, rest, restValue, restPct: pctOf(restValue), total };
+}
+
+/** A fund's puts and calls, largest reported value first. */
+export function optionPositions(holdings: DiffableHolding[]): DiffableHolding[] {
+  return holdings.filter((h) => !!h.putCall).sort((a, b) => b.valueUsd - a.valueUsd);
 }
 
 const NAME_SUFFIXES = new Set([
@@ -262,24 +271,26 @@ export function quarterHeadline(
   // Map lookup, not a linear .find() over allocation.rest -- that scan ran
   // inside a sort comparator called once per candidate, which on a
   // 7000+-position fund like Citadel was tens of millions of comparisons.
-  const pctByCusip = new Map<string, number>();
-  for (const h of allocation.top) pctByCusip.set(h.key, h.pct);
-  for (const h of allocation.rest) pctByCusip.set(h.key, h.pct);
-  const weight = (cusip: string) => pctByCusip.get(cusip) ?? 0;
+  // Options have no weight here (buildAllocation leaves them out), so they can
+  // never be the move a headline names.
+  const pctByKey = new Map<string, number>();
+  for (const h of allocation.top) pctByKey.set(h.key, h.pct);
+  for (const h of allocation.rest) pctByKey.set(h.key, h.pct);
+  const weight = (h: DiffableHolding) => pctByKey.get(holdingKey(h)) ?? 0;
 
-  const biggest = <T extends { cusip: string }>(rows: T[]): T | undefined =>
-    [...rows].sort((a, b) => weight(b.cusip) - weight(a.cusip))[0];
+  const biggest = <T extends DiffableHolding>(rows: T[]): T | undefined =>
+    [...rows].sort((a, b) => weight(b) - weight(a))[0];
 
-  const notable = <T extends { cusip: string }>(rows: T[]): T | undefined => {
+  const notable = <T extends DiffableHolding>(rows: T[]): T | undefined => {
     const top = biggest(rows);
-    return top && weight(top.cusip) >= NOTABLE_WEIGHT_PCT ? top : undefined;
+    return top && weight(top) >= NOTABLE_WEIGHT_PCT ? top : undefined;
   };
 
   const clauses: string[] = [];
 
   const trim = notable(diff.decreased);
   if (trim) {
-    clauses.push(`trimmed ${friendlyIssuerName(trim.nameOfIssuer)}${streakSuffix(sharesHistory[trim.cusip], 'down')}`);
+    clauses.push(`trimmed ${friendlyIssuerName(trim.nameOfIssuer)}${streakSuffix(sharesHistory[holdingKey(trim)], 'down')}`);
   }
 
   // A brand-new position is more notable than adding to an existing one, so
@@ -289,13 +300,13 @@ export function quarterHeadline(
   if (opened) {
     clauses.push(`opened a new position in ${friendlyIssuerName(opened.nameOfIssuer)}`);
   } else if (added) {
-    clauses.push(`added to ${friendlyIssuerName(added.nameOfIssuer)}${streakSuffix(sharesHistory[added.cusip], 'up')}`);
+    clauses.push(`added to ${friendlyIssuerName(added.nameOfIssuer)}${streakSuffix(sharesHistory[holdingKey(added)], 'up')}`);
   }
 
   // An exited position has no current weight, so rank it by what it was worth
   // last quarter instead.
   if (clauses.length === 0) {
-    const exit = [...diff.exited].sort((a, b) => (b.portfolioPct ?? 0) - (a.portfolioPct ?? 0))[0];
+    const exit = diff.exited.filter((h) => !h.putCall).sort((a, b) => (b.portfolioPct ?? 0) - (a.portfolioPct ?? 0))[0];
     if (exit && (exit.portfolioPct ?? 0) >= NOTABLE_WEIGHT_PCT) {
       clauses.push(`sold out of ${friendlyIssuerName(exit.nameOfIssuer)}`);
     }
@@ -312,7 +323,8 @@ export function quarterHeadline(
   );
 
   const sentence = ordered.join(' and ');
-  return sentence[0].toUpperCase() + sentence.slice(1) + '.';
+  // A name can already end the sentence with its own dot ("Nebius Group N.V.").
+  return sentence[0].toUpperCase() + sentence.slice(1) + (sentence.endsWith('.') ? '' : '.');
 }
 
 

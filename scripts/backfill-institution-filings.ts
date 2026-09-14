@@ -3,7 +3,7 @@
  * newest N filings per fund, not just the newest one.
  *
  * Usage:
- *   npx tsx scripts/backfill-institution-filings.ts [--slug=<fund>] [--quarters=5] [--no-resolve] [--dry-run]
+ *   npx tsx scripts/backfill-institution-filings.ts [--slug=<fund>] [--quarters=5] [--no-resolve] [--reingest] [--dry-run]
  *
  * Why a script and not a cron route: the weekly sync is capped at
  * maxDuration=300 and Citadel alone is 7166 holdings per quarter. A local run
@@ -14,6 +14,10 @@
  * `already_ingested` for any accession already at parse_status='ok', and
  * retries 'pending'/'parse_failed' rows in place. Kill it mid-run and re-run
  * the identical command.
+ *
+ * --reingest re-parses filings that are already stored, for a parser fix (e.g.
+ * migration 138 keeping options apart from shares). Without it those filings
+ * report already_ingested and are left as they are.
  *
  * For the two giant funds, prefer running them alone and shallow:
  *   npx tsx scripts/backfill-institution-filings.ts --slug=citadel-advisors --quarters=2 --no-resolve
@@ -53,6 +57,7 @@ async function main() {
   const quarters = Number(flag('quarters') ?? 5);
   const resolveSymbols = flag('no-resolve') === undefined;
   const dryRun = flag('dry-run') !== undefined;
+  const reingest = flag('reingest') !== undefined;
 
   if (!Number.isInteger(quarters) || quarters < 1) {
     console.error(`Invalid --quarters=${flag('quarters')}; expected a positive integer.`);
@@ -106,7 +111,7 @@ async function main() {
         continue;
       }
 
-      const result = await ingestFiling(supabase, investor, filing, { resolveSymbols });
+      const result = await ingestFiling(supabase, investor, filing, { resolveSymbols, reingest });
       tally[result.status] = (tally[result.status] ?? 0) + 1;
       results.push({ ...result, fund: investor.slug });
 

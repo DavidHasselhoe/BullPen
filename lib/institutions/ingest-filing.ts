@@ -78,6 +78,13 @@ export interface IngestOptions {
    * cron, which only ever ingests a genuinely new filing, turns it on.
    */
   notify?: boolean;
+  /**
+   * Re-parse a filing already at parse_status='ok' instead of skipping it, for
+   * a parser fix. The quarter stays on the fund page while its rows are
+   * replaced; a failure marks it parse_failed like any other ingest, and
+   * re-running retries it.
+   */
+  reingest?: boolean;
 }
 
 /** Every 13F-HR for a CIK, newest first. Excludes amendments (13F-HR/A). */
@@ -94,7 +101,7 @@ export async function ingestFiling(
   filing: EdgarFiling,
   opts: IngestOptions = {}
 ): Promise<IngestResult> {
-  const { resolveSymbols = true, notify = false } = opts;
+  const { resolveSymbols = true, notify = false, reingest = false } = opts;
   const base = { slug: investor.slug, accessionNumber: filing.accessionNumber };
 
   const { data: existing } = await supabase
@@ -104,7 +111,7 @@ export async function ingestFiling(
     .eq('accession_number', filing.accessionNumber)
     .maybeSingle<{ id: string; parse_status: string }>();
 
-  if (existing?.parse_status === 'ok') {
+  if (existing?.parse_status === 'ok' && !reingest) {
     return { ...base, status: 'already_ingested' };
   }
 
@@ -180,14 +187,18 @@ export async function ingestFiling(
     const resolved = resolveSymbols
       ? await resolveHoldingsForFiling(rawHoldings)
       : rawHoldings.map((h) => ({ ...h, symbol: null }));
-    const totalValueUsd = resolved.reduce((sum, h) => sum + h.valueUsd, 0);
+    // Options are stored but left out of every total and weight: 13F values an
+    // option at the shares it covers, so a large put would read as a large
+    // long position. Same rule as buildAllocation().
+    const shareHoldings = resolved.filter((h) => !h.putCall);
+    const totalValueUsd = shareHoldings.reduce((sum, h) => sum + h.valueUsd, 0);
 
     // Concentration weights, stored on the filing rather than derived per
     // request: the public fund list needs them to label a fund's shape, but
     // the holdings they come from are Pro-gated and run to 7000+ rows for the
     // largest funds. Migration 132 backfilled these for filings ingested
     // before this ran.
-    const byValueDesc = [...resolved].sort((a, b) => b.valueUsd - a.valueUsd);
+    const byValueDesc = [...shareHoldings].sort((a, b) => b.valueUsd - a.valueUsd);
     const pctOfTotal = (v: number) =>
       totalValueUsd > 0 ? Math.round((v / totalValueUsd) * 100000) / 1000 : null;
     const topHoldingPct = pctOfTotal(byValueDesc[0]?.valueUsd ?? 0);
@@ -202,7 +213,7 @@ export async function ingestFiling(
       shares: h.shares,
       share_type: h.shareType,
       put_call: h.putCall,
-      portfolio_pct: totalValueUsd > 0 ? Math.round((h.valueUsd / totalValueUsd) * 100000) / 1000 : null,
+      portfolio_pct: !h.putCall && totalValueUsd > 0 ? Math.round((h.valueUsd / totalValueUsd) * 100000) / 1000 : null,
     }));
 
     // Clear any partial holdings from a prior crashed attempt at this same accession before re-inserting.
@@ -220,7 +231,7 @@ export async function ingestFiling(
       .from('institutional_filings')
       .update({
         total_value_usd: totalValueUsd,
-        total_positions: resolved.length,
+        total_positions: shareHoldings.length,
         top_holding_pct: topHoldingPct,
         top5_pct: top5Pct,
         parse_status: 'ok',
@@ -352,17 +363,20 @@ async function loadDiffable(
   for (;;) {
     const { data } = await supabase
       .from('institutional_holdings')
-      .select('symbol, name_of_issuer, cusip, value_usd, shares, portfolio_pct')
+      .select('symbol, name_of_issuer, cusip, put_call, value_usd, shares, portfolio_pct')
       .eq('filing_id', filingId)
+      // (cusip, put_call) is unique per filing, so this order is stable across pages.
       .order('cusip', { ascending: true })
+      .order('put_call', { ascending: true, nullsFirst: true })
       .range(offset, offset + DIFF_PAGE_SIZE - 1);
     const batch = (data as Array<{
-      symbol: string | null; name_of_issuer: string; cusip: string;
+      symbol: string | null; name_of_issuer: string; cusip: string; put_call: 'PUT' | 'CALL' | null;
       value_usd: number; shares: number; portfolio_pct: number | null;
     }> | null) ?? [];
     for (const r of batch) {
       rows.push({
         cusip: r.cusip,
+        putCall: r.put_call,
         symbol: r.symbol,
         nameOfIssuer: r.name_of_issuer,
         valueUsd: r.value_usd,

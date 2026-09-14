@@ -16,6 +16,8 @@
 
 export interface DiffableHolding {
   cusip: string;
+  /** 'PUT' or 'CALL' for an option on the issuer, null for its shares. */
+  putCall?: 'PUT' | 'CALL' | null;
   symbol: string | null;
   nameOfIssuer: string;
   valueUsd: number;
@@ -51,11 +53,21 @@ export type HoldingStatus = 'new' | 'sold_out' | 'increased' | 'reduced' | 'unch
  */
 export const UNCHANGED_BAND_PCT = 1;
 
+/**
+ * A position's identity within a filing. An option carries its underlying's
+ * CUSIP, so the CUSIP alone would fold a fund's puts on a stock into its shares
+ * of it. Shares keep the plain CUSIP.
+ */
+export function holdingKey(h: Pick<DiffableHolding, 'cusip' | 'putCall'>): string {
+  return h.putCall ? `${h.cusip}:${h.putCall}` : h.cusip;
+}
+
 export function computeHoldingsDiff(
   current: DiffableHolding[],
   previous: DiffableHolding[] | null
 ): HoldingsDiff | null {
-  const concentrationTop10 = [...current]
+  const concentrationTop10 = current
+    .filter((h) => !h.putCall)
     .sort((a, b) => b.valueUsd - a.valueUsd)
     .slice(0, 10);
 
@@ -63,15 +75,15 @@ export function computeHoldingsDiff(
     return null; // no prior quarter to compare against (fund just added, or first quarter tracked)
   }
 
-  const prevByCusip = new Map(previous.map((h) => [h.cusip, h]));
-  const currentCusips = new Set(current.map((h) => h.cusip));
+  const prevByKey = new Map(previous.map((h) => [holdingKey(h), h]));
+  const currentKeys = new Set(current.map(holdingKey));
 
   const newPositions: DiffableHolding[] = [];
   const increased: HoldingChange[] = [];
   const decreased: HoldingChange[] = [];
 
   for (const holding of current) {
-    const prior = prevByCusip.get(holding.cusip);
+    const prior = prevByKey.get(holdingKey(holding));
     if (!prior) {
       newPositions.push(holding);
       continue;
@@ -97,7 +109,7 @@ export function computeHoldingsDiff(
     // Within the band: omitted from both arrays, which IS "unchanged".
   }
 
-  const exited = previous.filter((h) => !currentCusips.has(h.cusip));
+  const exited = previous.filter((h) => !currentKeys.has(holdingKey(h)));
 
   increased.sort((a, b) => b.sharesChangePct - a.sharesChangePct);
   decreased.sort((a, b) => a.sharesChangePct - b.sharesChangePct);
@@ -116,8 +128,8 @@ export function computeHoldingsDiff(
  * "unchanged" is the free complement of the four sets.
  */
 export function buildStatusIndex(diff: HoldingsDiff | null): {
-  statusFor: (cusip: string) => HoldingStatus;
-  changeFor: (cusip: string) => HoldingChange | undefined;
+  statusFor: (key: string) => HoldingStatus;
+  changeFor: (key: string) => HoldingChange | undefined;
 } {
   if (!diff) {
     return { statusFor: () => 'unchanged', changeFor: () => undefined };
@@ -126,20 +138,20 @@ export function buildStatusIndex(diff: HoldingsDiff | null): {
   const status = new Map<string, HoldingStatus>();
   const changes = new Map<string, HoldingChange>();
 
-  for (const h of diff.newPositions) status.set(h.cusip, 'new');
-  for (const h of diff.exited) status.set(h.cusip, 'sold_out');
+  for (const h of diff.newPositions) status.set(holdingKey(h), 'new');
+  for (const h of diff.exited) status.set(holdingKey(h), 'sold_out');
   for (const h of diff.increased) {
-    status.set(h.cusip, 'increased');
-    changes.set(h.cusip, h);
+    status.set(holdingKey(h), 'increased');
+    changes.set(holdingKey(h), h);
   }
   for (const h of diff.decreased) {
-    status.set(h.cusip, 'reduced');
-    changes.set(h.cusip, h);
+    status.set(holdingKey(h), 'reduced');
+    changes.set(holdingKey(h), h);
   }
 
   return {
-    statusFor: (cusip) => status.get(cusip) ?? 'unchanged',
-    changeFor: (cusip) => changes.get(cusip),
+    statusFor: (key) => status.get(key) ?? 'unchanged',
+    changeFor: (key) => changes.get(key),
   };
 }
 

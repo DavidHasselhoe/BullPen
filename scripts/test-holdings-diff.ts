@@ -10,7 +10,9 @@
  */
 
 import assert from 'node:assert/strict';
-import { computeHoldingsDiff, buildStatusIndex, type DiffableHolding } from '../lib/institutions/compute-diff';
+import { computeHoldingsDiff, buildStatusIndex, holdingKey, type DiffableHolding } from '../lib/institutions/compute-diff';
+import { buildAllocation, optionPositions } from '../lib/institutions/allocation';
+import { parseInfoTable } from '../lib/institutions/parse-13f-xml';
 
 function h(cusip: string, shares: number, valueUsd: number): DiffableHolding {
   return { cusip, symbol: cusip, nameOfIssuer: cusip, valueUsd, shares, portfolioPct: null };
@@ -71,5 +73,33 @@ assert.equal(empty.changeFor('ANY'), undefined);
 // Sorting: biggest share move first in each direction.
 assert.ok(diff.increased[0].sharesChangePct >= diff.increased[diff.increased.length - 1].sharesChangePct);
 assert.ok(diff.decreased[0].sharesChangePct <= diff.decreased[diff.decreased.length - 1].sharesChangePct);
+
+// Options carry their underlying's CUSIP but are separate positions.
+const nvda = h('NVDA', 1000, 100_000);
+const nvdaPut = (shares: number, valueUsd: number): DiffableHolding => ({ ...h('NVDA', shares, valueUsd), putCall: 'PUT' });
+const optDiff = computeHoldingsDiff([nvda, nvdaPut(2000, 200_000)], [nvda, nvdaPut(1000, 100_000)])!;
+const opt = buildStatusIndex(optDiff);
+assert.equal(opt.statusFor('NVDA'), 'unchanged', 'a bigger put is not more shares');
+assert.equal(opt.statusFor(holdingKey(nvdaPut(0, 0))), 'increased');
+assert.equal(optDiff.exited.length, 0);
+
+// ...and never count toward the portfolio.
+const withPut = [nvda, nvdaPut(5000, 500_000)];
+assert.equal(buildAllocation(withPut).total, 100_000, 'put notional stays out of the total');
+assert.equal(buildAllocation(withPut).top.length, 1);
+assert.equal(optionPositions(withPut).length, 1);
+
+// Parser: sub-account rows of one position sum; a put on the same CUSIP does not.
+const infoRow = (value: number, shares: number, putCall = '') =>
+  `<ns1:infoTable><ns1:nameOfIssuer>NVIDIA CORP</ns1:nameOfIssuer><ns1:cusip>67066G104</ns1:cusip>` +
+  `<ns1:value>${value}</ns1:value><ns1:shrsOrPrnAmt><ns1:sshPrnamt>${shares}</ns1:sshPrnamt>` +
+  `<ns1:sshPrnamtType>SH</ns1:sshPrnamtType></ns1:shrsOrPrnAmt>` +
+  (putCall ? `<ns1:putCall>${putCall}</ns1:putCall>` : '') +
+  `</ns1:infoTable>`;
+const parsed = parseInfoTable(infoRow(100, 10) + infoRow(50, 5) + infoRow(900, 90, 'Put'));
+assert.equal(parsed.length, 2, 'shares and the put are two rows');
+assert.equal(parsed.find((p) => !p.putCall)!.shares, 15, 'sub-account rows still sum');
+assert.equal(parsed.find((p) => p.putCall)!.putCall, 'PUT', 'put/call normalized to upper case');
+assert.equal(parsed.find((p) => p.putCall)!.valueUsd, 900);
 
 console.log('holdings diff: all assertions passed');

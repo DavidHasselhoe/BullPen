@@ -24,9 +24,9 @@ import {
 } from '@/components/ui/accordion';
 import { fmtShares, fmtUsd } from '@/lib/institutions/format';
 import { useOwnedSymbols } from '@/hooks/use-owned-symbols';
-import { buildStatusIndex } from '@/lib/institutions/compute-diff';
+import { buildStatusIndex, holdingKey } from '@/lib/institutions/compute-diff';
 import type { Allocation, AllocationEntry } from '@/lib/institutions/allocation';
-import type { HoldingChange, HoldingsDiff, HoldingStatus } from '@/lib/institutions/compute-diff';
+import type { DiffableHolding, HoldingChange, HoldingsDiff, HoldingStatus } from '@/lib/institutions/compute-diff';
 
 /** Rows revealed per "show more" step once the tail is expanded. */
 const REST_PAGE_SIZE = 50;
@@ -83,6 +83,20 @@ function QoqBadge({ status, change, hasDiff }: QoqChange & { hasDiff: boolean })
       <Icon className="h-3 w-3" aria-hidden />
       {up ? '+' : ''}
       {pct.toFixed(1)}%
+    </span>
+  );
+}
+
+/** Put or Call, spelled out: the one fact that flips what an options row means. */
+function PutCallTag({ putCall }: { putCall: DiffableHolding['putCall'] }) {
+  if (!putCall) return null;
+  const put = putCall === 'PUT';
+  return (
+    <span
+      className="ml-2 shrink-0 rounded-full border border-border/60 px-1.5 py-0.5 align-middle text-xs font-semibold uppercase tracking-wide leading-none text-muted-foreground"
+      title={put ? 'A put pays off if the stock falls' : 'A call pays off if the stock rises'}
+    >
+      {put ? 'Put' : 'Call'}
     </span>
   );
 }
@@ -174,15 +188,19 @@ function HoldingRow({ entry, hasDiff, owned, maxPct, change, highlighted, onHigh
 
 interface HoldingsBarListProps {
   allocation: Allocation;
+  /** Puts and calls, kept out of the allocation above. See optionPositions(). */
+  options: DiffableHolding[];
   diff?: HoldingsDiff | null;
   highlightedKey: string | null;
   onHighlight: (key: string | null) => void;
 }
 
-export function HoldingsBarList({ allocation, diff, highlightedKey, onHighlight }: HoldingsBarListProps) {
+export function HoldingsBarList({ allocation, options, diff, highlightedKey, onHighlight }: HoldingsBarListProps) {
   const [expanded, setExpanded] = useState(false);
   const [visibleRest, setVisibleRest] = useState(REST_PAGE_SIZE);
   const [visibleExited, setVisibleExited] = useState(REST_PAGE_SIZE);
+  const [visibleOptions, setVisibleOptions] = useState(REST_PAGE_SIZE);
+  const optionsValue = useMemo(() => options.reduce((sum, h) => sum + h.valueUsd, 0), [options]);
 
   // One index over the diff's arrays instead of three hand-built maps. The
   // status never travels over the wire -- see buildStatusIndex's comment.
@@ -292,6 +310,81 @@ export function HoldingsBarList({ allocation, diff, highlightedKey, onHighlight 
         </div>
       )}
 
+      {/* Collapsed unless the options outweigh the shares above, as they do
+          for a fund whose 13F is mostly puts: there they are the picture. */}
+      {options.length > 0 && (
+        <div className="border-t border-border/50">
+          <Accordion
+            type="single"
+            collapsible
+            defaultValue={optionsValue > allocation.total ? 'options' : undefined}
+          >
+            <AccordionItem value="options" className="border-none">
+              <AccordionTrigger className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground/70 hover:no-underline">
+                Options
+                <span className="ml-2 font-mono normal-case tracking-normal text-muted-foreground/60">
+                  {options.length}
+                </span>
+              </AccordionTrigger>
+              <AccordionContent className="pb-0">
+                <p className="border-t border-border/20 px-4 py-2.5 text-xs text-muted-foreground">
+                  Shown at the value of the shares each contract covers, which is how 13F filings report
+                  them. Not counted in the portfolio percentages above.
+                </p>
+                <ul className="divide-y divide-border/20 border-t border-border/20">
+                  {options.slice(0, visibleOptions).map((h) => {
+                    const key = holdingKey(h);
+                    return (
+                      <li key={key} className="flex items-center gap-3 px-4 py-2.5">
+                        {h.symbol ? (
+                          <CompanyLogo ticker={h.symbol} name={h.nameOfIssuer} size={22} />
+                        ) : (
+                          <span className="h-[22px] w-[22px] shrink-0 rounded-full bg-muted/60" aria-hidden />
+                        )}
+                        <span className="min-w-0 flex-1 truncate text-sm text-foreground">
+                          {h.symbol ? (
+                            <Link
+                              href={`/stock/${h.symbol}`}
+                              className="font-mono font-semibold transition-colors hover:text-primary"
+                            >
+                              {h.symbol}
+                            </Link>
+                          ) : (
+                            h.nameOfIssuer
+                          )}
+                          <PutCallTag putCall={h.putCall} />
+                          {h.symbol && (
+                            <span className="ml-2 hidden text-xs text-muted-foreground/70 sm:inline">
+                              {h.nameOfIssuer}
+                            </span>
+                          )}
+                        </span>
+                        <span className="shrink-0 font-mono text-xs tabular-nums text-muted-foreground/75">
+                          {fmtUsd(h.valueUsd)}
+                        </span>
+                        <QoqBadge {...changeFor(key)} hasDiff={hasDiff} />
+                      </li>
+                    );
+                  })}
+                </ul>
+                {options.length > visibleOptions && (
+                  <button
+                    type="button"
+                    onClick={() => setVisibleOptions((n) => n + REST_PAGE_SIZE)}
+                    className="w-full border-t border-border/20 px-4 py-2.5 text-left text-sm font-medium text-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+                  >
+                    Show {Math.min(REST_PAGE_SIZE, options.length - visibleOptions)} more
+                    <span className="ml-1.5 font-normal text-muted-foreground">
+                      ({(options.length - visibleOptions).toLocaleString()} left)
+                    </span>
+                  </button>
+                )}
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </div>
+      )}
+
       {/* Collapsed by default: these are positions the fund no longer holds,
           which is context for the list above rather than part of it, and an
           always-open second list reads as a wall (DESIGN.md 6). */}
@@ -308,7 +401,7 @@ export function HoldingsBarList({ allocation, diff, highlightedKey, onHighlight 
               <AccordionContent className="pb-0">
                 <ul className="divide-y divide-border/20 border-t border-border/20">
                   {exited.slice(0, visibleExited).map((h) => (
-                    <li key={`exited-${h.cusip}`} className="flex items-center gap-3 px-4 py-2.5">
+                    <li key={`exited-${holdingKey(h)}`} className="flex items-center gap-3 px-4 py-2.5">
                       {h.symbol ? (
                         <CompanyLogo ticker={h.symbol} name={h.nameOfIssuer} size={22} />
                       ) : (
@@ -325,6 +418,7 @@ export function HoldingsBarList({ allocation, diff, highlightedKey, onHighlight 
                         ) : (
                           h.nameOfIssuer
                         )}
+                        <PutCallTag putCall={h.putCall} />
                         {h.symbol && (
                           <span className="ml-2 text-xs text-muted-foreground/70">{h.nameOfIssuer}</span>
                         )}

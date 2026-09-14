@@ -24,6 +24,10 @@
  * the same position. parseInfoTable() aggregates by CUSIP within one filing
  * (summing value + shares) so the stored holding reflects the manager's true
  * aggregate position, not an inflated per-sub-account row count.
+ *
+ * The aggregation key is (CUSIP, put/call), not CUSIP alone. A put or call is
+ * reported under the CUSIP of the stock it covers, so summing by CUSIP turned
+ * a fund's puts on a stock into more of that stock.
  */
 
 export interface Raw13FHolding {
@@ -32,7 +36,7 @@ export interface Raw13FHolding {
   valueUsd: number;
   shares: number;
   shareType: string | null;   // 'SH' | 'PRN'
-  putCall: string | null;     // 'PUT' | 'CALL' | null for plain equity
+  putCall: 'PUT' | 'CALL' | null; // null for the shares themselves
 }
 
 const PREFIX = '(?:[a-zA-Z0-9]+:)?';
@@ -80,11 +84,17 @@ export function parsePeriodOfReport(coverPageXml: string): string | null {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-/** Parses every <infoTable> block, aggregating multiple entries for the same CUSIP. */
+/** Filers write "Put", "PUT" or "put". Anything else is not an option. */
+function normalizePutCall(raw: string | null): 'PUT' | 'CALL' | null {
+  const v = raw?.toUpperCase();
+  return v === 'PUT' || v === 'CALL' ? v : null;
+}
+
+/** Parses every <infoTable> block, aggregating multiple entries for the same CUSIP and put/call. */
 export function parseInfoTable(xml: string): Raw13FHolding[] {
   const blockRe = new RegExp(`<${PREFIX}infoTable>[\\s\\S]*?</${PREFIX}infoTable>`, 'gi');
   const blocks = xml.match(blockRe) ?? [];
-  const byCusip = new Map<string, Raw13FHolding>();
+  const byKey = new Map<string, Raw13FHolding>();
 
   for (const block of blocks) {
     const cusip = extractTag(block, 'cusip');
@@ -107,16 +117,17 @@ export function parseInfoTable(xml: string): Raw13FHolding[] {
     if (!isFinite(valueUsd) || !isFinite(shares)) continue;
 
     const shareType = extractTag(block, 'sshPrnamtType');
-    const putCall = extractTag(block, 'putCall');
+    const putCall = normalizePutCall(extractTag(block, 'putCall'));
+    const key = `${cusip}|${putCall ?? ''}`;
 
-    const existing = byCusip.get(cusip);
+    const existing = byKey.get(key);
     if (existing) {
       existing.valueUsd += valueUsd;
       existing.shares += shares;
     } else {
-      byCusip.set(cusip, { cusip, nameOfIssuer, valueUsd, shares, shareType, putCall });
+      byKey.set(key, { cusip, nameOfIssuer, valueUsd, shares, shareType, putCall });
     }
   }
 
-  return Array.from(byCusip.values());
+  return Array.from(byKey.values());
 }

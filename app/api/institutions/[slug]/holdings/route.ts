@@ -24,6 +24,7 @@ interface HoldingRow {
   symbol: string | null;
   name_of_issuer: string;
   cusip: string;
+  put_call: 'PUT' | 'CALL' | null;
   value_usd: number;
   shares: number;
   portfolio_pct: number | null;
@@ -58,8 +59,8 @@ const CUSIP_LOOKUP_CHUNK = 500; // keep the reconciliation .in() query well unde
  * only ever returned 1000 rows, understating total value and corrupting
  * every "% of Portfolio" figure derived from it. `.order('cusip')` makes the
  * pagination itself deterministic (`.range()` without a stable order can
- * skip or repeat rows across pages) — cusip is unique per filing since
- * migration 129's constraint, so this can't drop or duplicate a row.
+ * skip or repeat rows across pages) — (cusip, put_call) is unique per filing
+ * since migration 138's constraint, so this can't drop or duplicate a row.
  *
  * `symbol` on a row is a snapshot taken at ingestion time (see
  * resolveHoldingsForFiling), but `cusip_ticker_map` keeps resolving CUSIPs
@@ -80,9 +81,10 @@ async function fetchAllHoldings(
   const fetchPage = async (offset: number): Promise<HoldingRow[]> => {
     const { data } = await supabase
       .from('institutional_holdings')
-      .select('symbol, name_of_issuer, cusip, value_usd, shares, portfolio_pct')
+      .select('symbol, name_of_issuer, cusip, put_call, value_usd, shares, portfolio_pct')
       .eq('filing_id', filingId)
       .order('cusip', { ascending: true })
+      .order('put_call', { ascending: true, nullsFirst: true })
       .range(offset, offset + PAGE_SIZE - 1);
     return (data as HoldingRow[] | null) ?? [];
   };
@@ -155,7 +157,10 @@ async function fetchSharesHistory(
   const olderFilings = filingRows.slice(currentIndex);
   if (olderFilings.length < 3) return {}; // no room for a streak worth naming
 
+  // Shares only: the headline never names an option (see quarterHeadline), and
+  // a share row's holdingKey is its plain cusip.
   const candidates = [...diff.increased, ...diff.decreased]
+    .filter((h) => !h.putCall)
     .sort((a, b) => (b.portfolioPct ?? 0) - (a.portfolioPct ?? 0))
     .slice(0, STREAK_CANDIDATES)
     .map((h) => h.cusip);
@@ -165,7 +170,8 @@ async function fetchSharesHistory(
     .from('institutional_holdings')
     .select('filing_id, cusip, shares')
     .in('filing_id', olderFilings.map((f) => f.id))
-    .in('cusip', candidates);
+    .in('cusip', candidates)
+    .is('put_call', null);
 
   const byFiling = new Map<string, Map<string, number>>();
   for (const row of (data as Array<{ filing_id: string; cusip: string; shares: number }> | null) ?? []) {
@@ -191,6 +197,7 @@ async function fetchSharesHistory(
 function toDiffable(row: HoldingRow): DiffableHolding {
   return {
     cusip: row.cusip,
+    putCall: row.put_call,
     symbol: row.symbol,
     nameOfIssuer: row.name_of_issuer,
     valueUsd: row.value_usd,
