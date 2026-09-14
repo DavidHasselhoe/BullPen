@@ -21,6 +21,17 @@ import { createNotification, isNotificationEnabled } from '@/lib/notifications/n
 import { createServerClient } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/types';
 import { classifyAiError, parseFailure } from '@/lib/ai/provider-error';
+import { catLabel, type HealthGrade } from '@/lib/finance/health-score';
+import { computePortfolioHealth, type TickerHealth } from '@/lib/finance/portfolio-health';
+import {
+  buildHistoryContext,
+  buildPrompt,
+  toSnapshot,
+  type HoldingFundamentals,
+  type HoldingInput,
+  type HoldingSnapshotEntry,
+  type PortfolioHealthSummary,
+} from '@/lib/ai/risk-analysis-prompt';
 
 export const maxDuration = 300;
 
@@ -70,6 +81,11 @@ Output this exact schema:
   "portfolioSummary": <string>
 }
 
+Data rules:
+- Each holding line may carry reported data after a "|": sector and industry, market cap (USD), beta, and a 0-100 health score with its category scores. When present, use it instead of estimating: marketCapBias and liquidityRisk from the market caps, volatilityExposure and correlationRisk from the betas and sectors, sectorBreakdown from the given sectors. Estimate only for holdings marked "fundamentals: none on file", and say in that metric's detail which holdings were estimated.
+- Health measures business quality, where higher is better: the opposite direction of your risk scores. A large position with a weak category (for example Financial Strength under 10/25, or a D or F grade) is a risk worth naming in topRisks, with the ticker and the category.
+- Never invent a sector, market cap, beta or health score that was not given.
+
 Scoring guidelines:
 - scoreChangeReason: null unless the user message gives you prior-analysis context to compare against. When context is given and your score matches the prior score exactly, set this to null. When context is given and your score differs from the prior score (whether because holdings changed or because you identified a new external risk factor), this field is REQUIRED: 2-3 sentences starting with "Since your last analysis," that name the SPECIFIC cause — the exact holdings added/removed/resized, or the exact external event (a rate decision, an earnings miss, a guidance cut, a sector-wide selloff) — never a vague statement like "market conditions changed."
 - overallRiskScore: weighted average — concentration 25%, sectorDiversification 20%, marketCapBias 15%, volatilityExposure 20%, correlationRisk 10%, liquidityRisk 10%
@@ -88,113 +104,84 @@ Scoring guidelines:
 - Use professional financial language; do not sugarcoat high-risk findings
 - In all string fields, never use an em dash (—) or en dash (–) to connect clauses. Use a period, comma, or colon instead.`;
 
-interface HoldingInput {
-  symbol: string;
-  company_name: string;
-  allocation?: number;
-  marketValue?: number;
-  quantity?: number | null;
-  dayChangePercent?: number;
-  unrealizedPLPercent?: number;
-}
+const HEALTH_CATEGORY_COLUMNS = [
+  ['Profitability', 'health_profitability', 30],
+  ['Financial Strength', 'health_financial_strength', 25],
+  ['Valuation', 'health_valuation', 20],
+  ['Growth', 'health_growth', 15],
+  ['Market Risk', 'health_market_risk', 10],
+] as const;
 
-// Minimal position fingerprint — deliberately excludes allocation/marketValue/
-// dayChangePercent/unrealizedPLPercent, which drift every run regardless of
-// whether the user actually bought or sold anything. Only share count and
-// symbol membership represent a real position change.
-interface HoldingSnapshotEntry {
-  symbol: string;
-  quantity: number | null;
-}
+type HealthCategoryColumn = (typeof HEALTH_CATEGORY_COLUMNS)[number][1];
 
-interface SnapshotDiff {
-  added: string[];
-  removed: string[];
-  resized: Array<{ symbol: string; from: number | null; to: number | null }>;
-}
+type ScreenerFundamentalsRow = {
+  ticker: string;
+  sector: string | null;
+  industry: string | null;
+  market_cap: number | null;
+  beta: number | null;
+  health_score: number | null;
+  health_score_grade: string | null;
+} & Record<HealthCategoryColumn, number | null>;
 
-function toSnapshot(holdings: HoldingInput[]): HoldingSnapshotEntry[] {
-  return holdings.map((h) => ({ symbol: h.symbol, quantity: h.quantity ?? null }));
-}
+/**
+ * Reported data for each holding, read here on the server rather than taken
+ * from the request so an analysis can't be fed invented numbers. Symbols the
+ * screener has no row for (crypto, very new listings) are simply absent, and
+ * the prompt marks them as having nothing on file.
+ */
+async function loadFundamentals(
+  supabase: ReturnType<typeof createServerClient>,
+  symbols: string[]
+): Promise<Map<string, HoldingFundamentals>> {
+  const { data } = await supabase
+    .from('screener_stats')
+    .select(`ticker, sector, industry, market_cap, beta, health_score, health_score_grade, ${HEALTH_CATEGORY_COLUMNS.map(([, col]) => col).join(', ')}`)
+    .in('ticker', symbols)
+    .returns<ScreenerFundamentalsRow[]>();
 
-function diffHoldingsSnapshot(prior: HoldingSnapshotEntry[], current: HoldingSnapshotEntry[]): SnapshotDiff {
-  const priorMap = new Map(prior.map((h) => [h.symbol, h.quantity]));
-  const currentMap = new Map(current.map((h) => [h.symbol, h.quantity]));
-
-  const added = current.filter((h) => !priorMap.has(h.symbol)).map((h) => h.symbol);
-  const removed = prior.filter((h) => !currentMap.has(h.symbol)).map((h) => h.symbol);
-  const resized: SnapshotDiff['resized'] = [];
-  for (const [symbol, priorQty] of priorMap) {
-    if (!currentMap.has(symbol)) continue;
-    const currentQty = currentMap.get(symbol) ?? null;
-    if (Math.abs((priorQty ?? 0) - (currentQty ?? 0)) > 1e-6) {
-      resized.push({ symbol, from: priorQty, to: currentQty });
-    }
-  }
-
-  return { added, removed, resized };
-}
-
-function isUnchanged(diff: SnapshotDiff): boolean {
-  return diff.added.length === 0 && diff.removed.length === 0 && diff.resized.length === 0;
+  return new Map((data ?? []).map((r) => [r.ticker.toUpperCase(), {
+    sector: r.sector,
+    industry: r.industry,
+    marketCap: r.market_cap,
+    beta: r.beta,
+    healthScore: r.health_score,
+    healthGrade: r.health_score_grade as HealthGrade | null,
+    categories: HEALTH_CATEGORY_COLUMNS.map(([name, col, max]) => ({ name, score: r[col], max })),
+  }]));
 }
 
 /**
- * Builds a prompt suffix anchoring the model to the previous score when the
- * portfolio hasn't actually changed, so identical holdings don't get a
- * re-rolled score purely from LLM sampling variance. When holdings HAVE
- * changed, the model is told exactly what changed and asked to explain the
- * delta rather than starting from a totally independent number.
+ * The portfolio's business-quality score, from the same computePortfolioHealth
+ * the petal card on the Holdings page uses, over the same screener_stats data
+ * (see app/api/holdings/health-summary/route.ts), so the two can't disagree.
  */
-function buildHistoryContext(
-  prior: { score: number; level: string; snapshot: HoldingSnapshotEntry[] } | null,
-  currentHoldings: HoldingInput[]
-): string {
-  if (!prior) return '';
-
-  const diff = diffHoldingsSnapshot(prior.snapshot, toSnapshot(currentHoldings));
-
-  if (isUnchanged(diff)) {
-    return `\n\nIMPORTANT: You scored this exact portfolio (same holdings, same share counts) ${prior.score}/100 (${prior.level}) last time. Keep the overall score and risk level the same unless you identify a genuinely new external risk factor since then (e.g. a specific holding entered financial distress, a sector-specific shock occurred). Do not vary the score merely due to re-analysis or normal sampling variation: an unchanged portfolio should produce an unchanged score. If you do change it anyway, scoreChangeReason MUST name the specific external event that justifies it — you have no live news access, so only cite something you are genuinely confident happened, never a generic hedge.`;
+function summarizePortfolioHealth(
+  holdings: HoldingInput[],
+  fundamentals: Map<string, HoldingFundamentals>
+): PortfolioHealthSummary | null {
+  const healthBySymbol = new Map<string, TickerHealth>();
+  for (const [symbol, f] of fundamentals) {
+    if (f.healthScore == null || !f.healthGrade) continue;
+    healthBySymbol.set(symbol, {
+      score: f.healthScore,
+      grade: f.healthGrade,
+      categories: f.categories.map((c) => ({
+        name: c.name,
+        score: c.score ?? 0,
+        max: c.max,
+        label: c.score == null ? 'Unavailable' : catLabel(c.score, c.max),
+        dataAvailable: c.score != null,
+      })),
+    });
   }
-
-  const changes: string[] = [];
-  if (diff.added.length > 0) changes.push(`added: ${diff.added.join(', ')}`);
-  if (diff.removed.length > 0) changes.push(`removed: ${diff.removed.join(', ')}`);
-  if (diff.resized.length > 0) {
-    changes.push(`resized: ${diff.resized.map((r) => `${r.symbol} (${r.from ?? 0} -> ${r.to ?? 0} shares)`).join(', ')}`);
-  }
-
-  return `\n\nSince the last analysis (scored ${prior.score}/100, ${prior.level}), the portfolio changed: ${changes.join('; ')}. Reassess from first principles based on the current holdings below, and use scoreChangeReason to explain how this specific change moved the score relative to last time.`;
-}
-
-// Currency display helpers
-const CURRENCY_PREFIXES: Record<string, string> = {
-  USD: '$', EUR: '€', GBP: '£', JPY: '¥',
-  CAD: 'CA$', AUD: 'A$', CHF: 'Fr.',
-};
-function currencyPrefix(code: string): string {
-  return CURRENCY_PREFIXES[code] ?? `${code} `;
-}
-
-function buildPrompt(holdings: HoldingInput[], currency: string): string {
-  const prefix = currencyPrefix(currency);
-  const totalValue = holdings.reduce((sum, h) => sum + (h.marketValue ?? 0), 0);
-
-  const lines = holdings.map((h) => {
-    const parts: string[] = [`${h.symbol} (${h.company_name})`];
-    if (h.allocation != null) parts.push(`allocation: ${h.allocation.toFixed(1)}%`);
-    if (h.marketValue != null) parts.push(`value: ${prefix}${h.marketValue.toFixed(0)}`);
-    if (h.quantity != null) parts.push(`shares: ${h.quantity}`);
-    if (h.dayChangePercent != null)
-      parts.push(`today: ${h.dayChangePercent >= 0 ? '+' : ''}${h.dayChangePercent.toFixed(2)}%`);
-    if (h.unrealizedPLPercent != null)
-      parts.push(`unrealized P/L: ${h.unrealizedPLPercent >= 0 ? '+' : ''}${h.unrealizedPLPercent.toFixed(2)}%`);
-    return parts.join(', ');
-  });
-
-  const currencyNote = currency !== 'USD' ? `\nAll portfolio values are in ${currency}.` : '';
-  return `Analyze this portfolio${totalValue > 0 ? ` (total value: ${prefix}${totalValue.toFixed(0)})` : ''}:${currencyNote}\n\n${lines.join('\n')}`;
+  const health = computePortfolioHealth(
+    holdings.map((h) => ({ symbol: h.symbol.toUpperCase(), marketValue: h.marketValue })),
+    healthBySymbol
+  );
+  return health
+    ? { score: health.score, grade: health.grade, coveredCount: health.coveredCount, totalCount: health.totalCount }
+    : null;
 }
 
 /**
@@ -233,13 +220,17 @@ async function runRiskAnalysis(params: {
             score: priorAnalysis.overallRiskScore,
             level: priorAnalysis.riskLevel,
             snapshot: priorRow.holdings_snapshot as unknown as HoldingSnapshotEntry[],
+            // Every grounded analysis stores the key, null included.
+            grounded: 'portfolioHealth' in priorAnalysis,
           },
           holdings
         );
       }
     }
 
-    const prompt = buildPrompt(holdings, currency) + historyContext;
+    const fundamentals = await loadFundamentals(supabase, holdings.map((h) => h.symbol.toUpperCase()));
+    const portfolioHealth = summarizePortfolioHealth(holdings, fundamentals);
+    const prompt = buildPrompt(holdings, currency, fundamentals, portfolioHealth) + historyContext;
 
     const stream = anthropic.messages.stream({
       model: MODEL,
@@ -284,6 +275,9 @@ async function runRiskAnalysis(params: {
       return;
     }
     analysis.generatedAt = new Date().toISOString();
+    // Saved with the analysis so a restored one shows the quality it was
+    // scored against, not today's. Null (not absent) when nothing had data.
+    analysis.portfolioHealth = portfolioHealth;
 
     type RiskUpdate = Database['public']['Tables']['risk_analyses']['Update'];
     await supabase.from('risk_analyses').update({

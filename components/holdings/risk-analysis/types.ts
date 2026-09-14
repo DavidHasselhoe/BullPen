@@ -20,6 +20,10 @@ export interface RiskAnalysis {
   /** Why the score differs from the prior analysis; null on a first analysis or when the score didn't change. */
   scoreChangeReason: string | null;
   generatedAt: string;
+  /** Business quality of the holdings when this ran: the petal card's
+   *  value-weighted health score. Absent on analyses from before it was
+   *  recorded; null when no holding had health data. */
+  portfolioHealth?: { score: number; grade: string; coveredCount: number; totalCount: number } | null;
   metrics: {
     concentration: RiskMetric;
     sectorDiversification: RiskMetric;

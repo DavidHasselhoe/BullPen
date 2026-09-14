@@ -77,7 +77,9 @@ export function PortfolioHealthCard({ holdings, isLoading }: PortfolioHealthCard
   const toggleCategory = (name: string) => setOpenCategory((prev) => (prev === name ? null : name));
 
   return (
-    <div className="rounded-xl border border-border/50 bg-card p-5">
+    // id: the risk analysis result links here ("See breakdown"). scroll-mt keeps
+    // the card clear of the sticky nav when the browser jumps to it.
+    <div id="portfolio-health" className="scroll-mt-24 rounded-xl border border-border/50 bg-card p-5">
       <div className="mb-3 flex items-center gap-1.5">
         <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
           {t('portfolioHealthCardTitle')}

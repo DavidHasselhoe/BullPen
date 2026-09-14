@@ -50,6 +50,7 @@
     "watch-earnings": "tsx scripts/watch-earnings.ts",
     "test-holdings-diff": "tsx scripts/test-holdings-diff.ts",
     "test-movers-period": "tsx scripts/test-movers-period.ts",
+    "test-risk-analysis-prompt": "tsx scripts/test-risk-analysis-prompt.ts",
     "import-institution-logo": "tsx scripts/import-institution-logo.ts"
   },
   "dependencies": {

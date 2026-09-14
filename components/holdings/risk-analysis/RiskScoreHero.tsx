@@ -60,6 +60,24 @@ function TrendDelta({ analysis, displayedTimestamp, history, t }: Props & { t: T
   );
 }
 
+/** The petal card's quality score at the time of this analysis. Links up to the
+ *  card rather than repeating its breakdown here. */
+function BusinessQuality({ health, t }: { health: RiskAnalysis['portfolioHealth']; t: TFunction }) {
+  if (!health) return null;
+  return (
+    <div className="text-xs text-muted-foreground">
+      {t('riskHeroBusinessQuality', { grade: health.grade, score: health.score })}
+      <span aria-hidden="true"> · </span>
+      <a
+        href="#portfolio-health"
+        className="font-medium text-foreground/85 underline-offset-2 transition-colors hover:text-foreground hover:underline"
+      >
+        {t('riskHeroBusinessQualityLink')}
+      </a>
+    </div>
+  );
+}
+
 function ScoreChangeReason({ reason, t }: { reason: string | null | undefined; t: TFunction }) {
   if (!reason) return null;
   return (
@@ -104,6 +122,7 @@ export function RiskScoreHero({ analysis, displayedTimestamp, history }: Props) 
           </div>
           <div className={cn('text-base font-semibold', tierTextClass(tier))}>{t('riskHeroLevelSuffix', { level: analysis.riskLevel })}</div>
           <TrendDelta analysis={analysis} displayedTimestamp={displayedTimestamp} history={history} t={t} />
+          <BusinessQuality health={analysis.portfolioHealth} t={t} />
         </div>
         <RiskScale score={analysis.overallRiskScore} t={t} />
       </div>

@@ -2273,5 +2273,21 @@
   "tools.screenerColHealthValuationLabel": "8e37953d23daca5ff01b8282c33f4e0a2152f1d1885f94c06418617e3ee1d24e",
   "tools.screenerColHealthValuationTip": "fe72050ee92469b49b505da5b1264f6801abb04e887b71031c3ab20ab2f90a4b",
   "ai.chatRateLimited": "5afef838a0fdb3766284980d56609b7de06a5bab3b3d10b21ef34bbd7a1f056b",
-  "ai.chatUnavailable": "393a7a68c381ef52b6c3b9d6e31fcb14bd7de908bca90a52c2291954b7960159"
+  "ai.chatUnavailable": "393a7a68c381ef52b6c3b9d6e31fcb14bd7de908bca90a52c2291954b7960159",
+  "holdings.holdingsTableExport": "3664895579f0a7e68c4aa09c91316e20239bc74499010e6423ece40cad7c28f7",
+  "holdings.holdingsTableExportFailed": "e94d3ee06ecf6aacdf8caf324ce34fef57c55aebc5b39496d42f724fe094cb35",
+  "holdings.portfolioHealthCardTitle": "9e63080a23d51cd130ae151a71228f367b9865930e50b45537e69dea9e897c84",
+  "holdings.portfolioHealthCoverage": "d6d2d92de941d45775b3c80860a5a2d54026c35ba6de419219c7a6129feda8b8",
+  "holdings.portfolioHealthExplainAriaLabel": "86e169c81bd7f7253423a796cb677520904edcb9c5e8c963f773140e7c1b2cb7",
+  "holdings.portfolioHealthExplainHeading": "3c478cbfc4ab4b26bb8270f8cd297c398cd48d3661ebd511de1b6bc1d8b932d3",
+  "holdings.portfolioHealthExplainIntro": "7c2d0754ff8fdb1fdb2b27166f4bdfbe626b39ce6fee4c0abdebb93e49864f40",
+  "holdings.portfolioHealthGradeThresholdsHeading": "6d169e1719f08bfd9a9119493e06664c416ffcef13af276325dead49e4a03ec0",
+  "holdings.portfolioHealthDrillInEmpty": "02d1d931d3d0988f1fc80f0fbfc98a6ffb5bd902b3beefa7f82845bfb558c7fb",
+  "holdings.portfolioHealthGradeStrong": "30a04fdcb6bb10b03f55db14e88d7c1f5bcc9129d511e9b6b7dadd49bcb1a755",
+  "holdings.portfolioHealthGradeGood": "c939327ca16dcf97ca32521d8b834bf1de16573d21deda3bb2a337cf403787a6",
+  "holdings.portfolioHealthGradeFair": "f7b19afcde965ea4942b878d266f89f8ba9a5a833e60f7f901358a34c1f8710c",
+  "holdings.portfolioHealthGradeWeak": "8d6cea2517ff74f7ea6625ef037926d8599796f71989db85cb282984f3a5e785",
+  "holdings.portfolioHealthGradeAtRisk": "368f66a82a1e2d31440c4a3a13ff5e80bb6e4eca5bcb8f910aedfe58c0e29aa5",
+  "holdings.riskHeroBusinessQuality": "d9733335c6efa46d02bb06c30a7e12c0d501ec9d4ff97765d7e0f496c50a4478",
+  "holdings.riskHeroBusinessQualityLink": "6c618fddf6af3af0fa280a88666a6138a601be92443211b4ad395c6308a4d040"
 }

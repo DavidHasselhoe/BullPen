@@ -204,6 +204,8 @@
   "riskAskBullDisplayLabel": "Explain my portfolio risk analysis",
   "riskAskBullFollowup": "Can you walk me through what this means in plain terms, and tell me which recommendation to prioritize first?",
   "riskAskBullQuery": "A risk analysis just ran on my portfolio ({{tickers}}). Overall risk: {{riskLevel}} ({{score}}/100).\n\nTop risk factors:\n{{topRisks}}\n\nRecommendations given:\n{{recommendations}}",
+  "riskHeroBusinessQuality": "Business quality {{grade}} · {{score}}/100",
+  "riskHeroBusinessQualityLink": "See breakdown",
   "riskHeroLevelSuffix": "{{level}} Risk",
   "riskHeroNoChange": "No change vs previous analysis",
   "riskHeroPrimaryRisk": "Primary risk",
