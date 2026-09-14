@@ -55,12 +55,23 @@ async function fetchCompanyMeta(tickers: string[]): Promise<Map<string, CompanyM
   if (tickers.length === 0) return new Map();
   const upper = [...new Set(tickers.map((t) => t.toUpperCase()))];
   const supabase = createServerClient();
-  const { data } = await supabase
-    .from('companies')
-    .select('ticker, name, logo_url')
-    .in('ticker', upper)
-    .returns<Array<{ ticker: string; name: string; logo_url: string | null }>>();
-  return new Map((data ?? []).map((c) => [c.ticker, { name: c.name, logo_url: c.logo_url }]));
+  // `companies` only holds a few dozen enriched tickers; the search catalogue
+  // names every listed US stock and ETF, so it fills the rest.
+  const [{ data }, { data: indexRows }] = await Promise.all([
+    supabase
+      .from('companies')
+      .select('ticker, name, logo_url')
+      .in('ticker', upper)
+      .returns<Array<{ ticker: string; name: string; logo_url: string | null }>>(),
+    supabase
+      .from('search_index')
+      .select('ticker, name')
+      .in('ticker', upper)
+      .returns<Array<{ ticker: string; name: string }>>(),
+  ]);
+  const meta = new Map<string, CompanyMeta>((indexRows ?? []).map((r) => [r.ticker, { name: r.name, logo_url: null }]));
+  for (const c of data ?? []) meta.set(c.ticker, { name: c.name || meta.get(c.ticker)?.name || c.ticker, logo_url: c.logo_url });
+  return meta;
 }
 
 // ── Index strip ──────────────────────────────────────────────────────────────
