@@ -29,9 +29,16 @@ import { postToDiscord } from '@/lib/discord/post-message';
 import { isoWeekKey } from '@/lib/instagram/period-key';
 import { instagramBioLink } from '@/lib/instagram/utm-link';
 import { publishStagedPost } from '@/lib/instagram/publish';
+import { formatWeekLabel } from '@/lib/instagram/content/shared';
+import { postSkipNotice, tooFewCompaniesMessage, type TooFewCompanies } from '@/lib/instagram/content/earnings-minimum';
 import type { EarningsCalendarSlides } from '@/lib/instagram/content/schema';
 
-export const maxDuration = 60;
+// Was 60s. The web-search gap-fill plus a carousel publish (Meta processes each
+// image before the post goes live) can outrun that, and the W37 and W38 2026
+// calendar posts were both left 'ready' with no media id, no error and no
+// Discord confirmation, the shape of a run cut off mid-publish. Same budget as
+// the movers crons.
+export const maxDuration = 300;
 
 const CONTENT_TYPE = 'earnings_calendar';
 
@@ -82,7 +89,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   }
 
   // ── Generate ─────────────────────────────────────────────────────────────
-  let content: EarningsCalendarSlides | null;
+  let content: EarningsCalendarSlides | TooFewCompanies;
   try {
     content = await generateEarningsCalendarContent(weekStart, weekEnd);
   } catch (err) {
@@ -93,12 +100,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     );
   }
 
-  // No allowlisted (S&P 500 / Nasdaq 100 / TSM) company has a confirmed
-  // report this week — skip entirely rather than stage a "quiet week"
-  // filler post. No row, no Discord notification, no Claude cost (the
-  // generator already returned before calling Claude in this case).
-  if (content === null) {
-    return NextResponse.json({ success: true, skipped: true, periodKey, reason: 'no_companies' });
+  // Fewer than MIN_EARNINGS_COMPANIES allowlisted companies report this week
+  // (see earnings-minimum.ts). No row, no publish, no caption call; Discord
+  // says why, so a quiet week is visible rather than silently missing.
+  if ('skipped' in content) {
+    await postSkipNotice(tooFewCompaniesMessage('upcoming earnings', formatWeekLabel(weekStart, weekEnd), content.names));
+    return NextResponse.json({ success: true, skipped: true, periodKey, reason: content.skipped, companies: content.names });
   }
 
   // ── Persist ──────────────────────────────────────────────────────────────

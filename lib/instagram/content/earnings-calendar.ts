@@ -49,6 +49,7 @@ import { INSTAGRAM_ALLOWLIST, NASDAQ100_SET } from './allowlist';
 import { FIXED_DISCLAIMER, FIXED_HASHTAGS, formatWeekLabel, resolveLogoUrl } from './shared';
 import type { EarningsCalendarSlides, EarningsSlideCompany } from './schema';
 import type { WebSearchEarningsHit } from './earnings-web-search';
+import { tooFewCompanies, type TooFewCompanies } from './earnings-minimum';
 
 const MODEL = 'claude-sonnet-4-6';
 /** Companies per carousel — caps the list slides at a sane carousel length
@@ -118,17 +119,18 @@ async function writeHookAndCaption(
  * Builds the full slide content for a week's earnings-calendar carousel.
  * Real data first, Claude second, grounded in that data — see file header.
  *
- * Returns null when no allowlisted company has a confirmed report that
- * week — the caller skips posting entirely rather than publishing a
- * "quiet week" filler post. The Claude fallback call still runs even on an
- * apparently-quiet week (Nasdaq's calendar coming back empty isn't
- * distinguishable from "not populated yet" without asking), but it's a
- * single targeted search rather than the old whole-week discovery call.
+ * Returns TooFewCompanies when fewer than MIN_EARNINGS_COMPANIES allowlisted
+ * companies have a confirmed report that week — the caller skips posting and
+ * says why in Discord rather than publishing a thin post. The Claude fallback
+ * search still runs first, since it is how the week's companies are found
+ * (Nasdaq's calendar coming back short isn't distinguishable from "not
+ * populated yet" without asking); the check sits right after it, before the
+ * caption call and logo work.
  */
 export async function generateEarningsCalendarContent(
   weekStart: string,
   weekEnd: string
-): Promise<EarningsCalendarSlides | null> {
+): Promise<EarningsCalendarSlides | TooFewCompanies> {
   // WHICH companies + WHEN: Nasdaq's free calendar API first (zero cost),
   // then Claude web search only for whatever it's missing — see this file's
   // header and earnings-web-search.ts's for why both are needed. Neither
@@ -155,7 +157,8 @@ export async function generateEarningsCalendarContent(
       return a.symbol.localeCompare(b.symbol);
     });
 
-  if (filtered.length === 0) return null;
+  const tooFew = await tooFewCompanies(filtered);
+  if (tooFew) return tooFew;
 
   const withMeta = await attachCalendarMeta(filtered);
   const shown = withMeta.slice(0, MAX_COMPANIES);

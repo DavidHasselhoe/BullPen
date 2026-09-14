@@ -24,9 +24,14 @@ import { postToDiscord } from '@/lib/discord/post-message';
 import { isoWeekKey, lastTradingWeek } from '@/lib/instagram/period-key';
 import { instagramBioLink } from '@/lib/instagram/utm-link';
 import { publishStagedPost } from '@/lib/instagram/publish';
+import { formatWeekLabel } from '@/lib/instagram/content/shared';
+import { postSkipNotice, tooFewCompaniesMessage, type TooFewCompanies } from '@/lib/instagram/content/earnings-minimum';
 import type { EarningsResultsSlides } from '@/lib/instagram/content/schema';
 
-export const maxDuration = 60;
+// Was 60s, the same limit that cut instagram-earnings-weekly off mid-publish.
+// A carousel publish waits on Meta to process every image. Same budget as the
+// movers crons.
+export const maxDuration = 300;
 
 const CONTENT_TYPE = 'earnings_results';
 
@@ -59,7 +64,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   }
 
   // ── Generate ─────────────────────────────────────────────────────────────
-  let content: EarningsResultsSlides | null;
+  let content: EarningsResultsSlides | TooFewCompanies;
   try {
     content = await generateEarningsResultsContent(weekStart, weekEnd);
   } catch (err) {
@@ -70,10 +75,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     );
   }
 
-  // No allowlisted company had a confirmed estimate+actual pair for the
-  // week — skip entirely rather than stage a filler post.
-  if (content === null) {
-    return NextResponse.json({ success: true, skipped: true, periodKey, reason: 'no_companies' });
+  // Fewer than MIN_EARNINGS_COMPANIES allowlisted companies had a confirmed
+  // estimate+actual pair for the week (see earnings-minimum.ts). No row, no
+  // publish; Discord says why.
+  if ('skipped' in content) {
+    await postSkipNotice(tooFewCompaniesMessage('earnings results', formatWeekLabel(weekStart, weekEnd), content.names));
+    return NextResponse.json({ success: true, skipped: true, periodKey, reason: content.skipped, companies: content.names });
   }
 
   // ── Persist ──────────────────────────────────────────────────────────────

@@ -47,6 +47,7 @@ import { INSTAGRAM_ALLOWLIST, NASDAQ100_SET } from './allowlist';
 import { FIXED_DISCLAIMER, FIXED_HASHTAGS, formatWeekLabel, resolveLogoUrl } from './shared';
 import type { EarningsResultsSlides, EarningsResultCompany } from './schema';
 import type { WebSearchEarningsHit } from './earnings-web-search';
+import { tooFewCompanies, type TooFewCompanies } from './earnings-minimum';
 
 const MODEL = 'claude-sonnet-4-6';
 /** Same cap as earnings-calendar.ts, kept as an independent constant since
@@ -165,14 +166,15 @@ async function writeHookAndCaption(
 
 /**
  * Builds the full slide content for the week-just-ended's earnings-results
- * carousel. Returns null when no allowlisted company has a confirmed
- * estimate+actual pair for the week — the caller skips posting entirely
- * rather than publishing a filler post.
+ * carousel. Returns TooFewCompanies when fewer than MIN_EARNINGS_COMPANIES
+ * allowlisted companies have a confirmed estimate+actual pair for the week —
+ * the caller skips posting and says why in Discord rather than publishing a
+ * thin post.
  */
 export async function generateEarningsResultsContent(
   weekStart: string,
   weekEnd: string
-): Promise<EarningsResultsSlides | null> {
+): Promise<EarningsResultsSlides | TooFewCompanies> {
   const hits = await fetchNasdaqEarningsCalendar(weekStart, weekEnd, INSTAGRAM_ALLOWLIST);
 
   const bySymbol = new Map<string, WebSearchEarningsHit>();
@@ -180,6 +182,12 @@ export async function generateEarningsResultsContent(
     if (!bySymbol.has(hit.symbol)) bySymbol.set(hit.symbol, hit); // first occurrence wins
   }
   const confirmed = [...bySymbol.values()];
+
+  // The fallback below only fills in figures for companies Nasdaq already
+  // confirmed, so a week short of the minimum here can't reach it afterwards.
+  // Skip before spending its TwelveData credits (20 per symbol).
+  const tooFewConfirmed = await tooFewCompanies(confirmed);
+  if (tooFewConfirmed) return tooFewConfirmed;
 
   const needsFallback = confirmed.filter((h) => h.epsEstimate == null || h.epsActual == null);
   const fallback = await fetchFallbackActuals(needsFallback.map((h) => h.symbol), weekStart, weekEnd);
@@ -208,7 +216,9 @@ export async function generateEarningsResultsContent(
     });
   }
 
-  if (resolved.length === 0) return null;
+  // Some confirmed reporters can still drop out for a missing figure.
+  const tooFew = await tooFewCompanies(resolved);
+  if (tooFew) return tooFew;
 
   const sorted = resolved.sort((a, b) => {
     const aTier = NASDAQ100_SET.has(a.symbol) ? 0 : 1;
