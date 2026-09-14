@@ -55,6 +55,11 @@ export function PerformanceHeatStrip({ currency = 'USD', fxRate = 1, onExpand }:
   const weekData = useMemo(() => weekRow.flatMap((c) => (c.data ? [c.data] : [])), [weekRow]);
   const total = summarize(weekData);
   const hasData = weekData.length > 0;
+  // Monday pre-market (or the day after a Monday holiday) has no closed session
+  // to measure yet. That's not the same as holding nothing, so show the empty
+  // week instead of claiming no positions were held.
+  const weekStarted = weekRow.some((c, i) => i < 5 && c.date! < today && c.state !== 'holiday');
+  const showEmptyWeek = !hasData && !isGated && !weekStarted;
 
   return (
     <div className="min-w-0">
@@ -78,7 +83,9 @@ export function PerformanceHeatStrip({ currency = 'USD', fxRate = 1, onExpand }:
           <span className="text-xs text-muted-foreground">
             {isGated
               ? t('perfCalGatedShort')
-              : t('perfCalNoPositionsWeek', { range: fmtWeekRange(weekFrom, weekTo) })}
+              : showEmptyWeek
+                ? fmtWeekRange(weekFrom, weekTo)
+                : t('perfCalNoPositionsWeek', { range: fmtWeekRange(weekFrom, weekTo) })}
           </span>
         )}
 
@@ -96,7 +103,7 @@ export function PerformanceHeatStrip({ currency = 'USD', fxRate = 1, onExpand }:
             <Skeleton key={i} className="h-[48px] sm:h-[64px] rounded-lg" />
           ))}
         </div>
-      ) : hasData ? (
+      ) : hasData || showEmptyWeek ? (
         <CalendarGrid weeks={[weekRow]} fxRate={fxRate} currency={currency} compact />
       ) : null}
     </div>
