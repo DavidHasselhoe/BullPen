@@ -202,7 +202,7 @@
   "compareYearColumnHeader": "年",
   "deepDiveAllDivesLink": "すべてのディープダイブ",
   "deepDiveAnalyzeButton": "分析する",
-  "deepDiveAnalyzingSubtext": "${{symbol}} を分析中。通常 20～40 秒かかります。",
+  "deepDiveAnalyzingSubtext": "${{symbol}} を分析中。通常 1 分から 2 分かかります。",
   "deepDiveCancelButton": "キャンセル",
   "deepDiveChooseLens": "レンズを選択",
   "deepDiveDeleteAriaLabel": "{{symbol}} のディープダイブを削除",

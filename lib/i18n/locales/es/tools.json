@@ -202,7 +202,7 @@
   "compareYearColumnHeader": "Año",
   "deepDiveAllDivesLink": "Todos los análisis profundos",
   "deepDiveAnalyzeButton": "Analizar",
-  "deepDiveAnalyzingSubtext": "Analizando ${{symbol}}. Esto suele tomar 20-40 segundos.",
+  "deepDiveAnalyzingSubtext": "Analizando ${{symbol}}. Esto suele tomar entre 1 y 2 minutos.",
   "deepDiveCancelButton": "Cancelar",
   "deepDiveChooseLens": "Elige una perspectiva",
   "deepDiveDeleteAriaLabel": "Eliminar análisis profundo de {{symbol}}",

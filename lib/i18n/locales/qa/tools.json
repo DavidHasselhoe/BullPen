@@ -202,7 +202,7 @@
   "compareYearColumnHeader": "«Yeeaar»",
   "deepDiveAllDivesLink": "«AAll deeeep diivees»",
   "deepDiveAnalyzeButton": "«AAnaalyzee»",
-  "deepDiveAnalyzingSubtext": "«AAnaalyziing ${{symbol}}. Thiis uusuuaally taakees 20-40 seecoonds.»",
+  "deepDiveAnalyzingSubtext": "«AAnaalyziing ${{symbol}}. Thiis uusuuaally taakees beetweeeen 1 aand 2 miinuutees.»",
   "deepDiveCancelButton": "«Caanceel»",
   "deepDiveChooseLens": "«Choooosee aa leens»",
   "deepDiveDeleteAriaLabel": "«Deeleetee {{symbol}} deeeep diivee»",

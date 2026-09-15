@@ -322,7 +322,7 @@ export default function DeepDivePage() {
               total: divePhaseLabels.length,
               label: divePhaseLabels[DIVE_PHASE_ORDER[genPhase]],
             }}
-            subtext={t('deepDiveAnalyzingSubtext', 'Analyzing ${{symbol}}. This usually takes 20-40 seconds.', { symbol })}
+            subtext={t('deepDiveAnalyzingSubtext', 'Analyzing ${{symbol}}. This usually takes between 1 and 2 minutes.', { symbol })}
             complete={justCompleted}
             expectedSeconds={100} // measured median 99s (p10 89s, max 118s)
             leavePageHint
