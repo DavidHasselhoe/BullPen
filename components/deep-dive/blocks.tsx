@@ -6,7 +6,7 @@
  * (Card surfaces, tabular-nums, emerald/amber/red signal colors).
  */
 
-import { useState, type ComponentType } from 'react';
+import { useEffect, useRef, useState, type ComponentType } from 'react';
 import { useTheme } from 'next-themes';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LabelList,
@@ -144,7 +144,7 @@ function SegmentBars({ block }: { block: Extract<Block, { type: 'segment_bars' }
       <div className="space-y-2.5">
         {block.items.map((item, i) => (
           <div key={i} className="flex items-center gap-3">
-            <span className="text-xs text-foreground w-28 shrink-0 truncate">{item.label}</span>
+            <span className="text-xs leading-tight text-foreground w-28 shrink-0 break-words">{item.label}</span>
             <div className="flex-1 h-2.5 rounded-full bg-muted overflow-hidden">
               <div
                 className="h-full rounded-full transition-all"
@@ -276,17 +276,20 @@ function MetricTable({ block }: { block: Extract<Block, { type: 'metric_table' }
       <SectionTitle>{block.title}</SectionTitle>
       <div className="divide-y divide-border/40">
         {block.rows.map((row, i) => (
-          <div key={i} className="flex items-baseline justify-between gap-3 py-2.5">
-            <span className="text-sm text-muted-foreground shrink-0">{glossaryText(row.label, seen)}</span>
-            <span className="flex items-baseline gap-2 min-w-0 justify-end text-right">
-              <span className="text-sm font-medium tabular-nums text-foreground">{row.value}</span>
-              {row.note && (
-                <span className="text-[11px] text-muted-foreground/80 truncate">
-                  {glossaryText(row.note, seen)}
-                  <Source source={row.source} />
-                </span>
-              )}
-            </span>
+          // Note on its own full-width line: sharing the row with label and
+          // value, it was truncated with no way to read the rest, and squeezed
+          // values like "85/100 (A, Strong)" onto two lines.
+          <div key={i} className="py-2.5">
+            <div className="flex items-baseline justify-between gap-3">
+              <span className="text-sm text-muted-foreground">{glossaryText(row.label, seen)}</span>
+              <span className="text-sm font-medium tabular-nums text-foreground text-right">{row.value}</span>
+            </div>
+            {row.note && (
+              <p className="mt-0.5 text-[11px] text-muted-foreground/80">
+                {glossaryText(row.note, seen)}
+                <Source source={row.source} />
+              </p>
+            )}
           </div>
         ))}
       </div>
@@ -295,11 +298,6 @@ function MetricTable({ block }: { block: Extract<Block, { type: 'metric_table' }
 }
 
 // ─── bull_bear ──────────────────────────────────────────────────────────────
-
-// Length heuristic rather than measured overflow — good enough to catch the
-// full-paragraph bullets this is meant to fix; upgrade to ref-measured
-// overflow if it under/over-triggers in practice.
-const LONG_BULLET_THRESHOLD = 120;
 
 function BulletItem({
   point, seen, icon: Icon, iconColor,
@@ -310,20 +308,36 @@ function BulletItem({
   iconColor: string;
 }) {
   const [expanded, setExpanded] = useState(false);
+  // Measured, not guessed from length: a 120-char cutoff missed bullets that
+  // wrap past two lines in the narrow two-column layout (~90 chars), which
+  // were clamped with no Show more and never readable in full.
+  const [clamped, setClamped] = useState(false);
+  const textRef = useRef<HTMLSpanElement>(null);
   const text = typeof point === 'string' ? point : point.text;
   const source = typeof point === 'string' ? undefined : point.source;
-  const long = text.length > LONG_BULLET_THRESHOLD;
+
+  useEffect(() => {
+    const el = textRef.current;
+    if (!el || expanded) return;
+    const check = () => setClamped(el.scrollHeight > el.clientHeight + 1);
+    check();
+    const observer = new ResizeObserver(check);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [expanded]);
 
   return (
     <li className="flex gap-2 text-sm text-foreground/90">
       <Icon className={cn('h-3.5 w-3.5 mt-0.5 shrink-0', iconColor)} />
       <span className="min-w-0">
-        <span className={cn(!expanded && long && 'line-clamp-2')}>
+        <span ref={textRef} className={cn(!expanded && 'line-clamp-2')}>
           {glossaryText(text, seen)}
           <Source source={source} />
         </span>
-        {long && (
+        {(clamped || expanded) && (
           <button
+            type="button"
+            aria-expanded={expanded}
             onClick={() => setExpanded((v) => !v)}
             className="block text-[11px] text-muted-foreground/70 hover:text-foreground mt-0.5"
           >
