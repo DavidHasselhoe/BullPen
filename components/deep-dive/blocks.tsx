@@ -23,7 +23,10 @@ import type { Block, BullBearPoint } from '@/lib/ai/deep-dive/schema';
 /** Trailing muted citation, e.g. "(10-Q Q3 2026)". Skips rendering when absent. */
 function Source({ source }: { source?: string }) {
   if (!source) return null;
-  return <span className="ml-1.5 text-[10px] text-muted-foreground/60 whitespace-nowrap">({source})</span>;
+  // Wraps like prose: nowrap let multi-source citations ("NVIDIA Q2 FY27 press
+  // release; Barchart analysis; ...") run up to 80px past a phone-width row,
+  // where the report card's overflow-hidden cut them off.
+  return <span className="ml-1.5 text-[10px] text-muted-foreground/60">({source})</span>;
 }
 
 // ─── Shared helpers ───────────────────────────────────────────────────────────
