@@ -22,6 +22,7 @@ import { createServerClient } from '@/lib/supabase/client';
 import { resolveSecurity } from '@/lib/import/resolve-security';
 import { tryReserveCredits } from '@/lib/twelvedata/credit-budget';
 import type { Raw13FHolding } from './parse-13f-xml';
+import { normalizeShareClassSymbol } from './symbol-format';
 
 export interface ResolvedHolding extends Raw13FHolding {
   symbol: string | null;
@@ -78,7 +79,7 @@ async function matchCompanyIndex(nameOfIssuer: string): Promise<CompanyIndexMatc
   if (error || !data) return null;
   const row = (data as { ticker: string; name: string; similarity: number }[])[0];
   if (!row) return null;
-  return { symbol: row.ticker, companyName: row.name, similarity: row.similarity };
+  return { symbol: normalizeShareClassSymbol(row.ticker), companyName: row.name, similarity: row.similarity };
 }
 
 /**
@@ -149,10 +150,12 @@ export async function resolveHoldingsForFiling(holdings: Raw13FHolding[]): Promi
     });
 
     if (resolution.status === 'resolved') {
-      cacheMap.set(cusip, resolution.candidate.symbol);
+      // ISIN search can answer "BRK-B"; everything else in the app keys on "BRK.B".
+      const symbol = normalizeShareClassSymbol(resolution.candidate.symbol);
+      cacheMap.set(cusip, symbol);
       await supabase.from('cusip_ticker_map').upsert({
         cusip,
-        symbol: resolution.candidate.symbol,
+        symbol,
         mic_code: resolution.candidate.mic_code || null,
         currency: resolution.quote.currency || null,
         company_name: resolution.candidate.instrument_name,

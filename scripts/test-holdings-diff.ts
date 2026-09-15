@@ -13,6 +13,15 @@ import assert from 'node:assert/strict';
 import { computeHoldingsDiff, buildStatusIndex, holdingKey, type DiffableHolding } from '../lib/institutions/compute-diff';
 import { buildAllocation, optionPositions } from '../lib/institutions/allocation';
 import { parseInfoTable } from '../lib/institutions/parse-13f-xml';
+import { normalizeShareClassSymbol } from '../lib/institutions/symbol-format';
+
+// Share classes are dot-spelled everywhere else in the app; ISIN search can return a hyphen.
+assert.equal(normalizeShareClassSymbol('BRK-B'), 'BRK.B');
+assert.equal(normalizeShareClassSymbol('BF-A'), 'BF.A');
+assert.equal(normalizeShareClassSymbol('MOG-A'), 'MOG.A');
+assert.equal(normalizeShareClassSymbol('BRK.B'), 'BRK.B', 'already dotted is unchanged');
+assert.equal(normalizeShareClassSymbol('NVDA'), 'NVDA', 'plain ticker unchanged');
+assert.equal(normalizeShareClassSymbol('ABC-WS'), 'ABC-WS', 'only a single-letter class is rewritten');
 
 function h(cusip: string, shares: number, valueUsd: number): DiffableHolding {
   return { cusip, symbol: cusip, nameOfIssuer: cusip, valueUsd, shares, portfolioPct: null };

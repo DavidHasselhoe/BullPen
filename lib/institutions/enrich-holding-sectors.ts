@@ -38,10 +38,20 @@ export interface EnrichSectorsResult {
 }
 
 /**
- * ponytail: a ticker TwelveData has no sector for is asked again on every run,
- * since ticker_sectors cannot hold a null. `limit` bounds that to a fixed
- * credit spend per run; record misses in their own table if it ever matters.
+ * Records a ticker TwelveData couldn't give a sector for. The candidate RPC
+ * skips it for 30 days (migration 142); without this the same high-value misses
+ * came back at the top of every batch and starved real new positions. A rate
+ * limit is never recorded: that's the budget talking, not the ticker.
  */
+async function recordMiss(
+  supabase: ReturnType<typeof createServerClient>,
+  ticker: string,
+  reason: 'no_sector' | 'lookup_failed'
+): Promise<void> {
+  await supabase
+    .from('ticker_sector_misses' as never)
+    .upsert({ ticker, reason, last_attempt_at: new Date().toISOString() } as never, { onConflict: 'ticker' });
+}
 export async function enrichHoldingSectors(
   supabase: ReturnType<typeof createServerClient>,
   { limit = 300 }: { limit?: number } = {}
@@ -62,6 +72,7 @@ export async function enrichHoldingSectors(
           const sector = normalizeSector((await getCompanyProfile(symbol)).sector);
           if (!sector) {
             result.noSector++;
+            await recordMiss(supabase, symbol, 'no_sector');
             return;
           }
           const { error: upsertError } = await supabase
@@ -70,8 +81,12 @@ export async function enrichHoldingSectors(
           if (upsertError) result.failed++;
           else result.resolved++;
         } catch (err) {
-          if (err instanceof TwelveDataRateLimitError) result.rateLimited = true;
-          else result.failed++;
+          if (err instanceof TwelveDataRateLimitError) {
+            result.rateLimited = true;
+          } else {
+            result.failed++;
+            await recordMiss(supabase, symbol, 'lookup_failed').catch(() => {});
+          }
         }
       })
     );
