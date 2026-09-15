@@ -45,6 +45,14 @@
       {
         "type": "fixed",
         "text": "Adding your first stocks to a new watchlist no longer occasionally fails when several are added at once"
+      },
+      {
+        "type": "improved",
+        "text": "After you sign up, the page waits while you confirm your email and then takes you to your free week on its own, even if you open the link on another device"
+      },
+      {
+        "type": "fixed",
+        "text": "Signing up with an email that already has an account now says so and offers to sign you in, instead of asking you to check an inbox that never gets an email"
       }
     ]
   },
