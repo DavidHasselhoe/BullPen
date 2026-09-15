@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { MailCheck } from 'lucide-react';
+import { MailCheck, UserCheck } from 'lucide-react';
 import { AuthOAuthButtons } from '@/components/auth/AuthOAuthButtons';
 import { AuthFormSignup } from '@/components/auth/AuthFormSignup';
 import { signInWithGoogle } from '@/lib/auth/auth';
@@ -21,6 +21,7 @@ export function GetStartedSignupForm() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState('');
   const [sentTo, setSentTo] = useState<string | null>(null);
+  const [inUse, setInUse] = useState<string | null>(null);
 
   const handleSuccess = () => {
     // Only reachable for the email path when no confirmation is needed. A
@@ -49,10 +50,6 @@ export function GetStartedSignupForm() {
   };
 
   if (sentTo) {
-    // Worded for both outcomes on purpose: Supabase sends nothing when the
-    // address already has an account, and says so to nobody (a signup form
-    // must not reveal which emails are registered). So this never claims an
-    // email was sent, and signing in is offered just as prominently.
     return (
       <div
         role="status"
@@ -72,21 +69,14 @@ export function GetStartedSignupForm() {
         </span>
         <h2 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 700, color: 'var(--fg)' }}>Check your inbox</h2>
         <p style={{ margin: 0, fontSize: 15, lineHeight: 1.6, color: 'var(--fg-muted)', textWrap: 'pretty' }}>
-          If <strong style={{ color: 'var(--fg)', fontWeight: 600 }}>{sentTo}</strong> is new to BullPen, a confirmation
-          link is on its way. Open it on this device to finish. It can take a minute, so check spam too.
+          We sent a confirmation link to <strong style={{ color: 'var(--fg)', fontWeight: 600 }}>{sentTo}</strong>.
+          Open it on this device to finish. It can take a minute, so check spam too.
         </p>
-        <Link
-          href={SIGN_IN_HREF}
-          className="btn btn-ghost"
-          style={{ marginTop: 20, width: '100%', justifyContent: 'center' }}
-        >
-          Already have an account? Sign in
-        </Link>
         <button
           type="button"
           onClick={() => setSentTo(null)}
           style={{
-            marginTop: 12, padding: '8px 12px', fontSize: 14, color: 'var(--fg-dim)',
+            marginTop: 16, padding: '8px 12px', fontSize: 14, color: 'var(--fg-dim)',
             background: 'transparent', border: 'none', cursor: 'pointer', textDecoration: 'underline',
           }}
         >
@@ -101,6 +91,24 @@ export function GetStartedSignupForm() {
       <h2 style={{ margin: '0 0 16px', textAlign: 'center', fontSize: 19, fontWeight: 600, color: 'var(--fg)' }}>
         Save it to a free account
       </h2>
+
+      {inUse && (
+        <div
+          role="alert"
+          style={{
+            display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, padding: '12px 14px', borderRadius: 14,
+            border: '1px solid var(--border-strong)', background: 'var(--surface)',
+          }}
+        >
+          <UserCheck size={18} aria-hidden style={{ flexShrink: 0, color: 'var(--fg-muted)' }} />
+          <p style={{ flex: 1, minWidth: 0, margin: 0, fontSize: 14, lineHeight: 1.5, color: 'var(--fg)' }}>
+            <strong style={{ fontWeight: 600 }}>{inUse}</strong> already has an account.
+          </p>
+          <Link href={SIGN_IN_HREF} className="btn btn-primary" style={{ flexShrink: 0, padding: '8px 14px', fontSize: 14 }}>
+            Sign in
+          </Link>
+        </div>
+      )}
 
       {error && (
         <div
@@ -125,8 +133,9 @@ export function GetStartedSignupForm() {
 
       <AuthFormSignup
         onSuccess={handleSuccess}
-        onError={setError}
+        onError={(msg) => { setInUse(null); setError(msg); }}
         onConfirmationRequired={setSentTo}
+        onEmailInUse={(email) => { setError(''); setInUse(email); }}
         submitLabel="Create my BullPen"
         submitLoadingLabel="Creating..."
         submitClassName="btn btn-primary"

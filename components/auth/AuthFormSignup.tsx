@@ -25,6 +25,8 @@ interface AuthFormSignupProps {
   emailRedirectPath?: string;
   /** Replaces the inline "check your inbox" error with the caller's own confirmation screen. */
   onConfirmationRequired?: (email: string) => void;
+  /** Replaces the inline "email already in use" error with the caller's own notice. */
+  onEmailInUse?: (email: string) => void;
 }
 
 export function AuthFormSignup({
@@ -36,6 +38,7 @@ export function AuthFormSignup({
   source = 'unknown',
   emailRedirectPath,
   onConfirmationRequired,
+  onEmailInUse,
 }: AuthFormSignupProps) {
   const { t } = useTranslation('auth');
   const [email, setEmail] = useState('');
@@ -79,6 +82,19 @@ export function AuthFormSignup({
 
     try {
       const result = await signUp({ email, password, next: emailRedirectPath });
+
+      if (result.emailInUse) {
+        trackEvent('signup_form_failed', { source, method: 'email', reason: 'email_in_use' });
+        setIsLoading(false);
+        if (onEmailInUse) {
+          onEmailInUse(email);
+        } else {
+          const errorMsg = t('signupEmailInUse');
+          setError(errorMsg);
+          onError?.(errorMsg);
+        }
+        return;
+      }
 
       if (!result.success) {
         const errorMsg = result.error || t('signupFailed');

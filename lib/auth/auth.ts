@@ -45,7 +45,11 @@ export interface AuthResult {
   user?: AuthUser | null;
   error?: string;
   requiresEmailConfirmation?: boolean;
+  /** Signup only: the address already has an account. */
+  emailInUse?: boolean;
 }
+
+const EMAIL_IN_USE_ERROR = 'An account with this email already exists. Sign in instead.';
 
 const RATE_LIMITED_ERROR = 'Too many attempts. Please wait a few minutes and try again.';
 
@@ -111,33 +115,18 @@ export async function signUp(params: SignUpParams): Promise<AuthResult> {
     });
 
     if (authError) {
-      // Supabase reports a duplicate signup distinctly from other failures
-      // (code 'user_already_exists'/'email_exists', or message text on older
-      // SDK/server versions). Surfacing that verbatim lets an attacker
-      // enumerate registered emails via the signup form, so it gets the same
-      // generic "check your email" response as a fresh signup — indistinguishable
-      // from the outside, same as the password-reset-request flow already is.
+      // Duplicates used to be masked as a successful "check your inbox" so the
+      // form couldn't reveal which emails are registered. That left real users
+      // waiting for an email Supabase never sends, so they are now told the
+      // address is taken (David's call, 2026-09-15). checkAuthThrottle above
+      // still rate-limits probing.
       const code = (authError as { code?: string }).code;
       const isDuplicate =
         code === 'user_already_exists' ||
         code === 'email_exists' ||
         /already registered|already exists/i.test(authError.message);
       if (isDuplicate) {
-        return {
-          success: true,
-          user: {
-            id: '',
-            email: params.email,
-            username: null,
-            full_name: null,
-            avatar_url: null,
-            role: 'user',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            last_login_at: null,
-          } as AuthUser,
-          requiresEmailConfirmation: true,
-        };
+        return { success: false, error: EMAIL_IN_USE_ERROR, emailInUse: true };
       }
 
       const msg = /fetch|network|timeout/i.test(authError.message)
@@ -148,6 +137,13 @@ export async function signUp(params: SignUpParams): Promise<AuthResult> {
 
     if (!authData.user) {
       return { success: false, error: 'Failed to create user' };
+    }
+
+    // With email confirmation on, Supabase doesn't error on an address that
+    // already has a confirmed account: it returns a placeholder user with no
+    // identities and sends nothing (auth log: user_repeated_signup).
+    if (authData.user.identities?.length === 0) {
+      return { success: false, error: EMAIL_IN_USE_ERROR, emailInUse: true };
     }
 
     // Step 2: Check if session is available
