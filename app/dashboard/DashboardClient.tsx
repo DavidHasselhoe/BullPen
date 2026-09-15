@@ -19,6 +19,7 @@ import { CryptoMarketCard } from '@/components/asset/CryptoMarketCard';
 import { GettingStartedCard } from '@/components/onboarding/GettingStartedCard';
 import { PerformanceCalendarWidget } from '@/components/discover/PerformanceCalendarWidget';
 import { resolveWidgetOrder } from '@/lib/dashboard/widgets';
+import { TrialStartedModal } from '@/components/billing/TrialStartedModal';
 
 function WidgetSlot({ id }: { id: string }) {
   switch (id) {
@@ -86,6 +87,7 @@ export default function DashboardClient() {
   return (
     <HomepageRedirect>
     <div className={`min-h-screen ${hasAnimatedBackground ? '' : 'bg-background'}`}>
+      <TrialStartedModal />
       <main className="container mx-auto max-w-6xl py-8 px-4 sm:px-6 lg:px-8 min-w-0">
         {/* SECTION: Search / Command bar — fixed header, not reorderable */}
         <section className="mb-10">
