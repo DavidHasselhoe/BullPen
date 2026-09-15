@@ -341,6 +341,7 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
               }}
               subtext={t('riskAnalysisAnalyzingSubtext', { count: holdings.length })}
               complete={justCompleted}
+              expectedSeconds={45} // measured median 45s (p10 40s, max 59s)
               leavePageHint
             />
           )}

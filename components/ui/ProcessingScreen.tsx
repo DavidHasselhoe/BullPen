@@ -30,11 +30,17 @@ interface Props {
   /**
    * Single-pipeline mode: one job moving through sequential, server-reported
    * phases (e.g. Deep Dive's reading_data -> searching -> reasoning ->
-   * composing). Progress = index / total, and the message is the current
-   * phase's label directly — no rotating sub-hints, so every processing
-   * screen in the app reads identically.
+   * composing). The message is the current phase's label directly — no
+   * rotating sub-hints, so every processing screen in the app reads
+   * identically. Progress is paced by elapsed time, see `expectedSeconds`.
    */
   phase?: ProcessingPhase;
+  /**
+   * Phase mode only: how long the whole wait typically takes, measured from
+   * real runs. The bar is ~87% and still moving at this point, so use the
+   * median, not the worst case. Default 30.
+   */
+  expectedSeconds?: number;
   /**
    * True during the brief hold after the work has actually finished, right
    * before the parent swaps this out for the real content — gives the user
@@ -91,11 +97,24 @@ interface Props {
  * would legitimately reach 100 on its own before the real result lands,
  * which is the one number this simulation must never show without
  * `complete` actually being true.
+ *
+ * Phase mode doesn't band by phase at all: a phase is a label, not a measure.
+ * Deep Dive's server reports phases in whatever order the model's events
+ * arrive (thinking usually starts before the first search, so "reasoning" is
+ * followed by "searching"), and most of its ~100s wait sits inside one of
+ * them. Banding by phase index sprinted to ~95 in the first 40s and then
+ * ticked 1% every ~12s, which read as stuck. Instead the bar is paced by
+ * elapsed time against the caller's measured typical duration, on
+ * `1 - e^(-t/τ)` with τ = expectedSeconds/2: an even climb that is ~87% and
+ * still visibly moving at the typical duration, then `complete` fills the
+ * rest. The exponential's plateau (see above) only starts past ~2x that
+ * duration, which is why it is acceptable here and not for open-ended bands.
  */
 const SIMULATED_TIME_CONSTANT_SEC = 8; // half the band's remaining gap closes every ~8s early on, then keeps slowly closing without ever fully stopping
+const DEFAULT_EXPECTED_SECONDS = 30;
 const LAST_BAND_CEILING = 99;
 
-function useSimulatedPercent(bandStart: number, bandEnd: number, complete: boolean): number {
+function useSimulatedPercent(bandStart: number, bandEnd: number, complete: boolean, expectedSec: number | null): number {
   const [display, setDisplay] = useState(1);
   // null until the first effect run sets it — avoids calling the impure
   // Date.now() during render (useRef's initial-value argument still runs
@@ -121,14 +140,17 @@ function useSimulatedPercent(bandStart: number, bandEnd: number, complete: boole
           return Math.min(d + Math.max((100 - d) * 0.12, 3), 100);
         }
         const elapsedSec = (Date.now() - (bandStartedAtRef.current ?? Date.now())) / 1000;
-        const eased = elapsedSec / (elapsedSec + SIMULATED_TIME_CONSTANT_SEC);
+        // ponytail: past ~2x expectedSec the exponential sits at 97%+ and barely moves; re-measure and raise expectedSeconds if runs get slower.
+        const eased = expectedSec
+          ? 1 - Math.exp(-elapsedSec / (expectedSec / 2))
+          : elapsedSec / (elapsedSec + SIMULATED_TIME_CONSTANT_SEC);
         const target = Math.max(d, bandStart + (effectiveBandEnd - bandStart) * eased);
         if (d >= target) return d;
         return Math.min(d + Math.max((target - d) * 0.15, 0.15), target);
       });
     }, 200);
     return () => clearInterval(id);
-  }, [complete, bandStart, bandEnd]);
+  }, [complete, bandStart, bandEnd, expectedSec]);
 
   return Math.round(Math.max(1, display));
 }
@@ -141,6 +163,7 @@ export function ProcessingScreen({
   completeMessage = 'All set!',
   subtext,
   leavePageHint = false,
+  expectedSeconds = DEFAULT_EXPECTED_SECONDS,
 }: Props) {
   let bandStart: number;
   let bandEnd: number;
@@ -175,8 +198,9 @@ export function ProcessingScreen({
           : `Fetching data for ${pending.length} ${itemNoun.plural}…`;
     itemCountLine = complete ? null : `${doneCount} of ${total} ${total === 1 ? itemNoun.singular : itemNoun.plural} loaded.`;
   } else if (phase) {
-    bandStart = phase.total > 0 ? (phase.index / phase.total) * 100 : 0;
-    bandEnd = phase.total > 0 ? ((phase.index + 1) / phase.total) * 100 : 100;
+    // One band for the whole wait; the hook paces it by expectedSeconds.
+    bandStart = 0;
+    bandEnd = 100;
     message = complete ? completeMessage : phase.label;
   } else {
     bandStart = 0;
@@ -184,7 +208,7 @@ export function ProcessingScreen({
     message = complete ? completeMessage : 'Working…';
   }
 
-  const percent = useSimulatedPercent(bandStart, bandEnd, complete);
+  const percent = useSimulatedPercent(bandStart, bandEnd, complete, phase ? expectedSeconds : null);
 
   return (
     <div className="flex flex-col items-center gap-6 py-16 text-center">

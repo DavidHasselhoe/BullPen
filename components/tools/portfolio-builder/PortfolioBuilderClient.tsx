@@ -363,6 +363,8 @@ export function PortfolioBuilderClient() {
       }}
       subtext={t('portfolioBuilderProcessingSubtext')}
       complete={justCompleted}
+      // Estimated, runs store no finish time: ~8.7k median output tokens at Deep Dive's measured ~19s per 1k.
+      expectedSeconds={170}
       leavePageHint
     />
   );

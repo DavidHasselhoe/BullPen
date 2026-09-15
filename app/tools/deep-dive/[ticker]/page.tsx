@@ -324,6 +324,7 @@ export default function DeepDivePage() {
             }}
             subtext={t('deepDiveAnalyzingSubtext', 'Analyzing ${{symbol}}. This usually takes 20-40 seconds.', { symbol })}
             complete={justCompleted}
+            expectedSeconds={100} // measured median 99s (p10 89s, max 118s)
             leavePageHint
           />
         )}
