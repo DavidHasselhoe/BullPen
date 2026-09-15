@@ -82,10 +82,11 @@ async function main() {
   // the trimmed content there measures the lettering, not the logo, and would
   // condemn a perfectly good mark. So: decide full-bleed first, from whether
   // the corner is white, and only judge aspect when it isn't.
-  const { data: corner } = await sharp(output)
-    .extract({ left: 0, top: 0, width: 8, height: 8 })
-    .stats()
-    .then((s) => ({ data: s.channels.map((c) => c.mean) }));
+  // stats() reads the whole input and ignores extract(), so the patch has to be
+  // materialised first; chained directly it averaged the entire logo, and any
+  // dark mark on white read as a full-bleed tile.
+  const cornerPatch = await sharp(output).extract({ left: 0, top: 0, width: 8, height: 8 }).toBuffer();
+  const corner = (await sharp(cornerPatch).stats()).channels.map((c) => c.mean);
   const fullBleed = corner.slice(0, 3).some((mean) => mean < 240);
 
   const trimmed = await sharp(output).trim().toBuffer({ resolveWithObject: true });
