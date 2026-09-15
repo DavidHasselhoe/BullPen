@@ -53,6 +53,10 @@
       {
         "type": "fixed",
         "text": "Signing up with an email that already has an account now says so and offers to sign you in, instead of asking you to check an inbox that never gets an email"
+      },
+      {
+        "type": "fixed",
+        "text": "When you pick more than six stocks while signing up, the summary now tells you how many more are on your watchlist instead of quietly leaving them out. The suggested stocks now cover more industries, including Coca-Cola and JPMorgan Chase"
       }
     ]
   },
