@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowUpRight, ArrowDownRight, BarChart2, Sparkles, Bell, ChevronRight, Coins, GraduationCap, HeartPulse, Landmark, Star, Newspaper, Crown } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, BarChart2, Sparkles, Bell, ChevronRight, Coins, CreditCard, GraduationCap, HeartPulse, Landmark, Star, Newspaper, Crown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import type { Notification } from '@/lib/notifications/notifications-db';
@@ -142,6 +142,13 @@ function GenericIcon({ type }: { type: Notification['type'] }) {
       <Crown className={cn(base, 'text-amber-400')} />
     </div>
   );
+  // Neutral on purpose: a billing notice is not good or bad news, and emerald/red
+  // are reserved for financial direction (DESIGN.md One Signal Rule).
+  if (type === 'billing') return (
+    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted">
+      <CreditCard className={cn(base, 'text-foreground/80')} />
+    </div>
+  );
   return (
     <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted">
       <Bell className={cn(base, 'text-muted-foreground/80')} />
@@ -201,6 +208,9 @@ function notificationSource(n: Notification): { label: string; href: string } | 
   }
   if (n.type === 'referral') {
     return { label: 'Your Pro perks', href: '/upgrade' };
+  }
+  if (n.type === 'billing') {
+    return { label: 'Billing', href: '/upgrade' };
   }
   // entity_id is "institution:<slug>:<accession>" — the slug is the route.
   if (n.type === 'institution_filing' && n.entity_id?.startsWith('institution:')) {

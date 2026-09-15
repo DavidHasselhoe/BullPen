@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import type Stripe from 'stripe';
 import { createServerClient } from '@/lib/supabase/client';
 import { getStripe, statusGrantsPro, TIER_PRO, TIER_FREE } from '@/lib/billing/stripe';
-import { sendRenewalReminderEmail } from '@/lib/email/billing-reminder';
+import { sendRenewalReminderEmail, sendTrialEndingEmail, sendTrialRevokedEmail } from '@/lib/email/billing-reminder';
+import { shouldSendRenewalReminder } from '@/lib/billing/trial-copy';
+import { createNotification } from '@/lib/notifications/notifications-db';
 import { logSecurityEvent } from '@/lib/security/security-events';
 
 // Stripe needs the raw request body to verify the signature — never cache/parse.
@@ -106,6 +108,34 @@ export async function POST(request: NextRequest) {
         break;
       }
 
+      case 'customer.subscription.trial_will_end': {
+        // Stripe sends this 3 days before trial_end. The one reminder a trial
+        // user gets; invoice.upcoming skips trialing subscriptions below.
+        const sub = event.data.object as Stripe.Subscription;
+        const customerId = asId(sub.customer);
+        if (!customerId || sub.status !== 'trialing' || !sub.trial_end) break;
+        try {
+          await sendTrialEndingEmail(customerId, upcomingAmountCents(sub), sub.currency, sub.trial_end);
+          const userId = (sub.metadata?.supabase_user_id as string | undefined) ?? null;
+          if (userId) {
+            const endDate = new Date(sub.trial_end * 1000).toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+            await createNotification({
+              user_id: userId,
+              type: 'billing',
+              title: 'Your free week ends soon',
+              message: `Your Pro trial ends on ${endDate}. Cancel before then in Settings if you don't want to continue.`,
+              entity_type: 'user',
+              entity_id: `trial_end:${sub.id}`,
+              severity: 'info',
+            });
+          }
+        } catch (err) {
+          // Best-effort, like the renewal email: never fail the webhook over a reminder.
+          console.error('[stripe webhook] trial ending reminder failed', err);
+        }
+        break;
+      }
+
       case 'invoice.upcoming': {
         const invoice = event.data.object as Stripe.Invoice;
         const customerId = asId(invoice.customer);
@@ -114,12 +144,17 @@ export async function POST(request: NextRequest) {
         const subscriptionId = invoice.parent?.subscription_details?.subscription;
         if (customerId && subscriptionId && invoice.next_payment_attempt) {
           try {
-            await sendRenewalReminderEmail(
-              customerId,
-              invoice.amount_due,
-              invoice.currency,
-              invoice.next_payment_attempt
-            );
+            // A trialing subscription already got the trial-ending email; one
+            // reminder per charge, not two.
+            const subscription = await stripe.subscriptions.retrieve(asId(subscriptionId) as string);
+            if (shouldSendRenewalReminder(subscription.status)) {
+              await sendRenewalReminderEmail(
+                customerId,
+                invoice.amount_due,
+                invoice.currency,
+                invoice.next_payment_attempt
+              );
+            }
           } catch (err) {
             // Best-effort — a failed reminder email must never fail the webhook.
             console.error('[stripe webhook] renewal reminder email failed', err);
@@ -296,12 +331,25 @@ async function enforceTrialFingerprint(
   if (!existing || existing.customer_id === customerId) return false;
 
   await stripe.subscriptions.update(sub.id, { trial_end: 'now' });
+  // Checkout showed this customer a free trial; tell them plainly why they were
+  // charged today and how to get a refund. Best-effort.
+  try {
+    await sendTrialRevokedEmail(customerId, upcomingAmountCents(sub), sub.currency);
+  } catch (err) {
+    console.error('[stripe webhook] trial revoked email failed', err);
+  }
   logSecurityEvent('trial_abuse_blocked', {
     userId,
     identifier: fingerprint,
     metadata: { customerId, previousCustomerId: existing.customer_id, subscriptionId: sub.id },
   });
   return true;
+}
+
+/** What the first charge after the trial will be: sum of the subscription's item prices.
+ *  Prices are tax-exclusive and automatic tax is off, so this is what Stripe will charge. */
+function upcomingAmountCents(sub: Stripe.Subscription): number {
+  return sub.items.data.reduce((sum, item) => sum + (item.price?.unit_amount ?? 0) * (item.quantity ?? 1), 0);
 }
 
 /** Stripe fields are `string | { id } | null` depending on expansion. */

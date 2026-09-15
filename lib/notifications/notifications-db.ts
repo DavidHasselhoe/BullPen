@@ -6,7 +6,7 @@ import { createServerClient } from '@/lib/supabase/client';
 export interface Notification {
   id: string;
   user_id: string;
-  type: 'price_move' | 'earnings' | 'ai_insight' | 'market' | 'dividend' | 'academy' | 'health_score' | 'weekly_pick' | 'daily_brief' | 'referral' | 'institution_filing';
+  type: 'price_move' | 'earnings' | 'ai_insight' | 'market' | 'dividend' | 'academy' | 'health_score' | 'weekly_pick' | 'daily_brief' | 'referral' | 'institution_filing' | 'billing';
   title: string;
   message: string;
   entity_type: 'stock' | 'portfolio' | 'market' | 'user' | 'institution' | null;
@@ -24,7 +24,7 @@ export interface NotificationDBResult<T> {
 
 export interface CreateNotificationInput {
   user_id: string;
-  type: 'price_move' | 'earnings' | 'ai_insight' | 'market' | 'dividend' | 'academy' | 'health_score' | 'weekly_pick' | 'daily_brief' | 'referral' | 'institution_filing';
+  type: 'price_move' | 'earnings' | 'ai_insight' | 'market' | 'dividend' | 'academy' | 'health_score' | 'weekly_pick' | 'daily_brief' | 'referral' | 'institution_filing' | 'billing';
   title: string;
   message: string;
   entity_type?: 'stock' | 'portfolio' | 'market' | 'user' | 'institution' | null;
