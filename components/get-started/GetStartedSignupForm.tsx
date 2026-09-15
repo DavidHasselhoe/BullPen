@@ -9,10 +9,10 @@ import { signInWithGoogle } from '@/lib/auth/auth';
 import { trackEvent } from '@/lib/analytics/track';
 
 /**
- * The signup form embedded at the bottom of the reveal screen. Composition
+ * The signup form embedded at the bottom of the preview screen. Composition
  * mirrors app/register/page.tsx (AuthFormSignup already renders fine
- * standalone, outside a Dialog) — just relabeled to frame this as "saving"
- * the profile the user just built, not "creating an account".
+ * standalone, outside a Dialog) — just relabeled to frame this as creating
+ * their BullPen, not "creating an account".
  */
 export function GetStartedSignupForm() {
   const router = useRouter();
@@ -26,7 +26,7 @@ export function GetStartedSignupForm() {
     // automatic $pageview for /dashboard shortly after signup_form_submitted
     // with method "google" and no matching signup_form_failed.
     trackEvent('get_started_completed', {});
-    router.replace('/dashboard');
+    router.replace('/get-started/trial');
   };
 
   const handleGoogleSignIn = async () => {
@@ -34,7 +34,7 @@ export function GetStartedSignupForm() {
     setIsGoogleLoading(true);
     trackEvent('signup_form_submitted', { source: 'get_started', method: 'google' });
     try {
-      const result = await signInWithGoogle();
+      const result = await signInWithGoogle('/get-started/trial');
       if (!result.success) {
         setError(result.error || 'Failed to sign in with Google');
         setIsGoogleLoading(false);
@@ -91,8 +91,8 @@ export function GetStartedSignupForm() {
       <AuthFormSignup
         onSuccess={handleSuccess}
         onError={setError}
-        submitLabel="Save my profile"
-        submitLoadingLabel="Saving..."
+        submitLabel="Create my BullPen"
+        submitLoadingLabel="Creating..."
         submitClassName="btn-brand-solid"
         source="get_started"
       />

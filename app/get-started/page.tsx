@@ -6,16 +6,18 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { Logo } from '@/components/landing/Atoms';
 import { GetStartedFlow } from '@/components/get-started/GetStartedFlow';
+import { hasPendingOnboarding } from '@/lib/onboarding/pending-onboarding';
 import '@/components/landing/landing-styles.css';
 
 export default function GetStartedPage() {
   const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
 
-  // An already-signed-in visitor has nothing to gain from the quiz.
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      router.replace('/dashboard');
+      // Just finished onboarding (choices still staged): the trial offer is
+      // the next screen. Anyone else signed in has nothing to do here.
+      router.replace(hasPendingOnboarding() ? '/get-started/trial' : '/dashboard');
     }
   }, [isLoading, isAuthenticated, router]);
 
