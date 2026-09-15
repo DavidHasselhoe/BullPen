@@ -28,7 +28,7 @@ export function AlertsStep({
     <StepShell stepIndex={stepIndex} totalSteps={totalSteps} onBack={onBack}>
       <StepHeadline text="What should we tell you" accent="about?" />
       <p style={{ margin: '0 0 24px', textAlign: 'center', fontSize: 15, color: 'var(--fg-muted)' }}>
-        These arrive by email, only for the stocks you pick.
+        These show up in your BullPen notifications, only for the stocks you pick.
       </p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {ROWS.map((row) => {

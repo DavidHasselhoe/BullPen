@@ -20,7 +20,7 @@ function alertsSentence(alerts: AlertChoices): string {
   const on = (Object.keys(alerts) as (keyof AlertChoices)[]).filter((k) => alerts[k]).map((k) => ALERT_WORDS[k]);
   if (on.length === 0) return 'Alerts are off. You can turn them on anytime in Settings.';
   const list = on.length === 1 ? on[0] : `${on.slice(0, -1).join(', ')} and ${on[on.length - 1]}`;
-  return `We'll email you about ${list} for these stocks.`;
+  return `We'll notify you about ${list} for these stocks.`;
 }
 
 export function PreviewStep({
