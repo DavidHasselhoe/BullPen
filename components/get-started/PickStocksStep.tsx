@@ -133,7 +133,7 @@ export function PickStocksStep({
         })}
       </div>
 
-      <button type="button" className="btn-brand-solid" onClick={onContinue} style={{ width: '100%', marginTop: 24 }}>
+      <button type="button" className="btn btn-primary" onClick={onContinue} style={{ width: '100%', justifyContent: 'center', marginTop: 24 }}>
         {picks.length > 0 ? `Continue with ${picks.length} ${picks.length === 1 ? 'stock' : 'stocks'}` : 'Skip for now'}
       </button>
     </StepShell>

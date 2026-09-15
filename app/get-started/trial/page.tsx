@@ -125,10 +125,10 @@ export default function TrialOfferPage() {
 
             <button
               type="button"
-              className="btn-brand-solid"
+              className="btn btn-primary"
               onClick={start}
               disabled={status === 'loading'}
-              style={{ width: '100%', marginTop: 20 }}
+              style={{ width: '100%', justifyContent: 'center', marginTop: 20 }}
             >
               {status === 'loading' ? <><Loader2 size={16} className="animate-spin" aria-hidden /> One moment</> : 'Start my free week'}
             </button>
