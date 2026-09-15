@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import { PRICING } from '../lib/billing/entitlements';
 import { trialTermsLine, shouldSendRenewalReminder } from '../lib/billing/trial-copy';
 import { buildTrialEndingEmailHtml, buildTrialRevokedEmailHtml } from '../lib/email/billing-reminder';
+import { checkoutReturnUrls, parseReturnTarget } from '../lib/billing/checkout-return';
 
 /** CLAUDE.md: user-facing copy never uses an em dash or en dash. */
 function hasDash(text: string): boolean {
@@ -39,5 +40,18 @@ const revoked = buildTrialRevokedEmailHtml('$12.00', 30);
 assert.ok(revoked.includes('$12.00'), 'revoked email states what was charged');
 assert.ok(revoked.includes('30 days'), 'revoked email states the refund window');
 assert.ok(!hasDash(revoked), 'revoked email has no dash');
+
+// ── Task 3: checkout return URLs ─────────────────────────────────────────────
+assert.deepEqual(checkoutReturnUrls('https://bullpen.no', 'upgrade'), {
+  success: 'https://bullpen.no/upgrade?checkout=success&session_id={CHECKOUT_SESSION_ID}',
+  cancel: 'https://bullpen.no/upgrade?checkout=cancelled',
+});
+assert.deepEqual(checkoutReturnUrls('https://bullpen.no', 'onboarding'), {
+  success: 'https://bullpen.no/dashboard?trial=started',
+  cancel: 'https://bullpen.no/get-started/trial',
+});
+assert.equal(parseReturnTarget('onboarding'), 'onboarding');
+assert.equal(parseReturnTarget('https://evil.example'), 'upgrade', 'anything unknown falls back, never a raw URL');
+assert.equal(parseReturnTarget(undefined), 'upgrade');
 
 console.log('test-onboarding-trial: all assertions passed');

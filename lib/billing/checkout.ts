@@ -16,13 +16,20 @@ export interface CheckoutResult {
   error?: boolean;
 }
 
-/** Client helper: start (or waitlist) a Pro upgrade for the given billing cycle. */
-export async function startCheckout(cycle: BillingCycle): Promise<CheckoutResult> {
+/**
+ * Client helper: start (or waitlist) a Pro upgrade for the given billing cycle.
+ * `returnTo` names where Stripe sends the user back: /upgrade by default, or
+ * the dashboard welcome when started from onboarding.
+ */
+export async function startCheckout(
+  cycle: BillingCycle,
+  options: { returnTo?: 'upgrade' | 'onboarding' } = {}
+): Promise<CheckoutResult> {
   try {
     const res = await fetch('/api/billing/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ plan: 'pro', cycle }),
+      body: JSON.stringify({ plan: 'pro', cycle, returnTo: options.returnTo ?? 'upgrade' }),
     });
     if (!res.ok) return { error: true };
     return await res.json();

@@ -11,6 +11,7 @@ import {
   PRO_TRIAL_DAYS,
   TIER_PRO,
 } from '@/lib/billing/stripe';
+import { checkoutReturnUrls, parseReturnTarget } from '@/lib/billing/checkout-return';
 
 /**
  * POST /api/billing/checkout  { plan: 'pro', cycle: 'monthly' | 'annual' }
@@ -36,6 +37,7 @@ async function checkoutHandler(
 
   const body = await request.json().catch(() => ({}));
   const cycle = body?.cycle === 'monthly' ? 'monthly' : 'annual';
+  const returnTarget = parseReturnTarget(body?.returnTo);
 
   const { data: row } = await supabase
     .from('users')
@@ -154,14 +156,17 @@ async function checkoutHandler(
             customer_update: { address: 'auto' as const },
           }
         : {}),
-      success_url: `${base}/upgrade?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${base}/upgrade?checkout=cancelled`,
+      success_url: checkoutReturnUrls(base, returnTarget).success,
+      cancel_url: checkoutReturnUrls(base, returnTarget).cancel,
     };
 
     // Deterministic per-user-per-cycle key — collapses a retried/racing request
     // onto the same Checkout Session instead of creating a second one that could
     // later be completed independently (duplicate subscription/charge).
-    const idempotencyKey = `checkout:${userId}:${cycle}`;
+    // The return target is part of the key: an onboarding checkout and an
+    // /upgrade checkout have different return URLs, so they must never collapse
+    // onto the same cached session.
+    const idempotencyKey = `checkout:${userId}:${cycle}:${returnTarget}`;
     let checkoutSession: Stripe.Checkout.Session;
     try {
       checkoutSession = await stripe.checkout.sessions.create(sessionParams, { idempotencyKey });
