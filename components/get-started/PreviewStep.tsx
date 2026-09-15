@@ -120,7 +120,7 @@ export function PreviewStep({
       {lead && (
         <div style={{ marginTop: 20, padding: '14px 18px', borderRadius: 14, border: '1px solid var(--border-strong)' }}>
           <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>With Pro, for {lead.ticker}:</p>
-          <ul style={{ margin: '8px 0 0', paddingLeft: 18, fontSize: 13, color: 'var(--fg-muted)', lineHeight: 1.7 }}>
+          <ul style={{ listStyle: 'disc', margin: '8px 0 0', paddingLeft: 18, fontSize: 13, color: 'var(--fg-muted)', lineHeight: 1.7 }}>
             <li>Why Today? explains what moved it, the day it moves</li>
             <li>A Deep Dive report on the business, in plain language</li>
             <li>A Daily Brief every morning covering your stocks</li>

@@ -36,7 +36,8 @@ export function AIPanelToggle() {
   // above: a stranger landing on a share link has no portfolio/tickers for
   // the assistant to act on, and the whole point of that page is one focused
   // CTA — not a second, unrelated affordance competing for attention.
-  if (PUBLIC_ROUTES.has(pathname) || pathname.startsWith('/share/')) return null;
+  // /get-started/trial is part of onboarding, where the toggle covered the trial terms on phones.
+  if (PUBLIC_ROUTES.has(pathname) || pathname.startsWith('/share/') || pathname.startsWith('/get-started/')) return null;
 
   // Hide when panel is open so it doesn't overlap the input; close via panel X button
   if (isOpen) return null;
