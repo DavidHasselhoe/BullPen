@@ -110,6 +110,7 @@ assert.deepEqual(
 );
 
 assert.equal(STARTER_STOCKS.length, 11);
-assert.ok(STARTER_STOCKS.some((s) => s.ticker === 'SPY') && STARTER_STOCKS.some((s) => s.ticker === 'QQQ'));
+assert.ok(STARTER_STOCKS.some((s) => s.ticker === 'KO') && STARTER_STOCKS.some((s) => s.ticker === 'JPM'));
+assert.ok(!STARTER_STOCKS.some((s) => s.ticker === 'SPY' || s.ticker === 'QQQ'), 'starter list is individual companies, no ETFs');
 
 console.log('test-onboarding-trial: all assertions passed');

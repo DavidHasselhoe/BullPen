@@ -11,7 +11,8 @@ import { StepHeadline, StepShell } from './StepShell';
 
 interface Quote { price: number; change: number; changePercent: number; stale?: boolean }
 
-const EXAMPLE_TICKERS = ['NVDA', 'AAPL', 'SPY'];
+const EXAMPLE_TICKERS = ['NVDA', 'AAPL', 'KO'];
+const MAX_SHOWN = 6;
 const ALERT_WORDS: Record<keyof AlertChoices, string> = {
   price_alerts: 'big price moves',
   upcoming_earnings: 'earnings',
@@ -42,7 +43,8 @@ export function PreviewStep({
   const isExample = picks.length === 0;
   const shown: StockPick[] = isExample
     ? STARTER_STOCKS.filter((s) => EXAMPLE_TICKERS.includes(s.ticker))
-    : picks.slice(0, 6);
+    : picks.slice(0, MAX_SHOWN);
+  const hiddenCount = picks.length - shown.length;
   const tickers = shown.map((s) => s.ticker);
   const AlertIcon = Object.values(alerts).some(Boolean) ? Bell : BellOff;
 
@@ -126,6 +128,11 @@ export function PreviewStep({
             </motion.li>
           );
         })}
+        {hiddenCount > 0 && (
+          <li style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', fontSize: 13, color: 'var(--fg-dim)', textAlign: 'center' }}>
+            +{hiddenCount} more in your watchlist
+          </li>
+        )}
       </ul>
 
       {/* Icon inline with the text, not a flex sibling: when the sentence wraps
