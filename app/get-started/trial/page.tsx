@@ -14,6 +14,7 @@ import { PRICING } from '@/lib/billing/entitlements';
 import { startCheckout, type BillingCycle } from '@/lib/billing/checkout';
 import { trialTermsLine } from '@/lib/billing/trial-copy';
 import { trackEvent } from '@/lib/analytics/track';
+import { AWAITING_CONFIRMATION_KEY } from '@/lib/onboarding/pending-onboarding';
 import '@/components/landing/landing-styles.css';
 
 export default function TrialOfferPage() {
@@ -23,6 +24,23 @@ export default function TrialOfferPage() {
   const router = useRouter();
   const [cycle, setCycle] = useState<BillingCycle>('annual');
   const [status, setStatus] = useState<'idle' | 'loading' | 'error' | 'unavailable'>('idle');
+  // Arrived straight from confirming the email: in this tab via the wait
+  // screen (session flag), or in the tab the email link opened (?confirmed=1).
+  // Read in an initializer, not an effect: nothing renders until auth has
+  // loaded, so the server's `false` never reaches the markup.
+  const [justConfirmed] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      return new URLSearchParams(window.location.search).get('confirmed') === '1'
+        || sessionStorage.getItem(AWAITING_CONFIRMATION_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    try { sessionStorage.removeItem(AWAITING_CONFIRMATION_KEY); } catch { /* ignore */ }
+  }, []);
 
   useEffect(() => {
     if (isLoading) return;
@@ -84,7 +102,7 @@ export default function TrialOfferPage() {
               className="headline"
               style={{ margin: '0 0 12px', fontSize: 'clamp(26px, 3.4vw, 34px)', color: 'var(--fg)', textAlign: 'center' }}
             >
-              Here&apos;s a one week free trial{' '}
+              {justConfirmed ? 'All set! ' : ''}Here&apos;s a one week free trial{' '}
               <span className="accent-serif" style={{ color: 'var(--accent)' }}>on us!</span>
             </h1>
             <p style={{ margin: '0 0 28px', textAlign: 'center', fontSize: 16, color: 'var(--fg-muted)' }}>

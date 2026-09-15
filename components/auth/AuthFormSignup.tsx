@@ -24,7 +24,7 @@ interface AuthFormSignupProps {
   /** Where the email confirmation link lands after sign-in (relative path). Defaults to /dashboard. */
   emailRedirectPath?: string;
   /** Replaces the inline "check your inbox" error with the caller's own confirmation screen. */
-  onConfirmationRequired?: (email: string) => void;
+  onConfirmationRequired?: (email: string, password: string) => void;
   /** Replaces the inline "email already in use" error with the caller's own notice. */
   onEmailInUse?: (email: string) => void;
 }
@@ -108,7 +108,7 @@ export function AuthFormSignup({
       if (result.requiresEmailConfirmation && onConfirmationRequired) {
         trackEvent('signup_form_email_confirmation_required', { source, method: 'email' });
         setIsLoading(false);
-        onConfirmationRequired(email);
+        onConfirmationRequired(email, password);
         return;
       }
 

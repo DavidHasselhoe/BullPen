@@ -53,6 +53,51 @@ const EMAIL_IN_USE_ERROR = 'An account with this email already exists. Sign in i
 
 const RATE_LIMITED_ERROR = 'Too many attempts. Please wait a few minutes and try again.';
 
+/** /auth/callback URL that continues to `next` after sign-in (relative paths only). */
+function authCallbackUrl(next?: string): string {
+  const callback = new URL('/auth/callback', window.location.origin);
+  if (next && next.startsWith('/') && !next.startsWith('//')) callback.searchParams.set('next', next);
+  return callback.toString();
+}
+
+/**
+ * For the "confirm your email" wait screen. Tries the sign-in the user would do
+ * anyway: Supabase refuses it with email_not_confirmed until the link is
+ * clicked (on any device), then it succeeds and the waiting tab is signed in
+ * without the user leaving the page.
+ */
+export async function signInIfConfirmed(
+  email: string,
+  password: string
+): Promise<'confirmed' | 'waiting' | 'slow_down' | 'failed'> {
+  const supabase = createBrowserClient();
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (data.session) {
+      setLastUsedAuthMethod('email');
+      void maybeClaimShareAttribution();
+      return 'confirmed';
+    }
+    const { code, status } = (error ?? {}) as { code?: string; status?: number };
+    const message = error?.message ?? '';
+    if (code === 'email_not_confirmed' || /email.*not.*confirmed/i.test(message)) return 'waiting';
+    if (status === 429 || code === 'over_request_rate_limit') return 'slow_down';
+    return /fetch|network|timeout|abort/i.test(message) ? 'waiting' : 'failed';
+  } catch {
+    return 'waiting';
+  }
+}
+
+export async function resendSignupConfirmation(email: string, next?: string): Promise<boolean> {
+  const supabase = createBrowserClient();
+  const { error } = await supabase.auth.resend({
+    type: 'signup',
+    email,
+    options: { emailRedirectTo: authCallbackUrl(next) },
+  });
+  return !error;
+}
+
 /**
  * Server-side throttle check for login/signup/reset (see
  * app/api/auth/rate-limit-check/route.ts for why this exists as a separate
@@ -102,16 +147,11 @@ export async function signUp(params: SignUpParams): Promise<AuthResult> {
 
     // Step 1: Create user in Supabase Auth
     // With email confirmation on, the link lands on /auth/callback, which signs
-    // the user in and continues to `next` (relative paths only).
-    const callback = new URL('/auth/callback', window.location.origin);
-    if (params.next && params.next.startsWith('/') && !params.next.startsWith('//')) {
-      callback.searchParams.set('next', params.next);
-    }
-
+    // the user in and continues to `next`.
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: params.email,
       password: params.password,
-      options: { emailRedirectTo: callback.toString() },
+      options: { emailRedirectTo: authCallbackUrl(params.next) },
     });
 
     if (authError) {
@@ -542,16 +582,11 @@ export async function signInWithGoogle(next?: string): Promise<{ success: boolea
   const supabase = createBrowserClient();
 
   try {
-    const callback = new URL('/auth/callback', window.location.origin);
     // Carry the post-auth destination (e.g. /upgrade?checkout=annual) through OAuth.
-    if (next && next.startsWith('/') && !next.startsWith('//')) {
-      callback.searchParams.set('next', next);
-    }
-
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: callback.toString(),
+        redirectTo: authCallbackUrl(next),
       },
     });
 

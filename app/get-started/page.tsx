@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { Logo } from '@/components/landing/Atoms';
 import { GetStartedFlow } from '@/components/get-started/GetStartedFlow';
-import { hasPendingOnboarding } from '@/lib/onboarding/pending-onboarding';
 import '@/components/landing/landing-styles.css';
 
 export default function GetStartedPage() {
@@ -15,9 +14,12 @@ export default function GetStartedPage() {
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      // Just finished onboarding (choices still staged): the trial offer is
-      // the next screen. Anyone else signed in has nothing to do here.
-      router.replace(hasPendingOnboarding() ? '/get-started/trial' : '/dashboard');
+      // Every signed-in way out of onboarding lands on the trial offer: the
+      // form's own success, the wait screen noticing the email was confirmed,
+      // or a signed-in visitor. The trial page sends Pro members on to the
+      // dashboard. Deciding by "are choices still staged" raced the flush,
+      // which clears them at sign-in and sent people to the dashboard instead.
+      router.replace('/get-started/trial');
     }
   }, [isLoading, isAuthenticated, router]);
 

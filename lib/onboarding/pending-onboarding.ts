@@ -38,6 +38,8 @@ export interface OnboardingDraft {
 
 const PENDING_KEY = 'bp.pendingOnboarding.v2';
 const DRAFT_KEY = 'bp.onboardingDraft.v2';
+/** sessionStorage flag: this tab signed up and is waiting for the confirmation link. */
+export const AWAITING_CONFIRMATION_KEY = 'bp.awaitingConfirmation';
 // Keys from the old 4-question quiz. Removed on read so they can't linger.
 const LEGACY_KEYS = ['bp.pendingOnboarding.v1'];
 const LEGACY_SESSION_KEYS = ['bp.quizProgress.v1'];
