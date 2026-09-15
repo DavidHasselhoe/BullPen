@@ -44,17 +44,52 @@ export interface EdgarFiling {
   items: string; // comma-separated, e.g. "2.02,9.01"
 }
 
+interface FilingColumns {
+  form?: string[];
+  filingDate?: string[];
+  accessionNumber?: string[];
+  primaryDocument?: string[];
+  items?: string[];
+}
+
 interface SubmissionsResponse {
   name?: string;
   filings?: {
-    recent?: {
-      form?: string[];
-      filingDate?: string[];
-      accessionNumber?: string[];
-      primaryDocument?: string[];
-      items?: string[];
-    };
+    recent?: FilingColumns;
+    /** Older filings, paged into separate JSON files once `recent` fills up
+     *  (1,000 entries). Each file has the same column shape as `recent`. */
+    files?: { name: string }[];
   };
+}
+
+/**
+ * Filing date of a CIK's earliest 13F-HR, or null when it has none.
+ *
+ * `recent` alone is not enough: it holds the newest 1,000 filings, so a
+ * long-time filer's first 13F lives in the paged archive files. Verified live:
+ * Berkshire's recent list starts at 2017, its archive file goes back to its
+ * first electronic 13F on 1999-05-17.
+ */
+export async function fetchFirst13FFiledDate(cik: string | number): Promise<string | null> {
+  const res = await edgarFetch(`https://data.sec.gov/submissions/CIK${padCik(cik)}.json`);
+  if (!res.ok) throw new Error(`SEC submissions fetch failed: ${res.status} for CIK ${padCik(cik)}`);
+  const body = (await res.json()) as SubmissionsResponse;
+
+  const pages: FilingColumns[] = [body.filings?.recent ?? {}];
+  for (const file of body.filings?.files ?? []) {
+    const page = await edgarFetch(`https://data.sec.gov/submissions/${file.name}`);
+    if (!page.ok) throw new Error(`SEC submissions archive fetch failed: ${page.status} for ${file.name}`);
+    pages.push((await page.json()) as FilingColumns);
+  }
+
+  let earliest: string | null = null;
+  for (const page of pages) {
+    (page.form ?? []).forEach((form, i) => {
+      const date = page.filingDate?.[i];
+      if (form === '13F-HR' && date && (!earliest || date < earliest)) earliest = date;
+    });
+  }
+  return earliest;
 }
 
 /** Raw recent-filings list for a CIK, newest first (SEC's own order). */
