@@ -128,13 +128,10 @@ export function PreviewStep({
         })}
       </ul>
 
-      <p
-        style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-          margin: '16px 0 0', fontSize: 14, color: 'var(--fg-muted)', textAlign: 'center',
-        }}
-      >
-        <AlertIcon size={15} aria-hidden style={{ flexShrink: 0 }} />
+      {/* Icon inline with the text, not a flex sibling: when the sentence wraps
+          on a phone, a flex icon floats alone at the left edge. */}
+      <p style={{ margin: '16px 0 0', fontSize: 14, lineHeight: 1.5, color: 'var(--fg-muted)', textAlign: 'center', textWrap: 'balance' }}>
+        <AlertIcon size={15} aria-hidden style={{ display: 'inline', verticalAlign: '-2px', marginRight: 6 }} />
         {alertsSentence(alerts)}
       </p>
 
