@@ -17,8 +17,7 @@ import { WsManager } from '@/lib/market-data/ws-manager';
 import { getLogoManifest, logoUrlFromManifest, type LogoManifest } from '@/lib/logos/logo-manifest';
 import { createServerClient } from '@/lib/supabase/client';
 import type { PriceTick } from '@/lib/market-data/ws-manager';
-import { SP500_TICKERS } from '@/lib/market-data/sp500';
-import { getMarketMovers } from '@/lib/twelvedata/twelvedata-client';
+import { getMarketMovers, MEGA_CAP_TICKERS } from '@/lib/twelvedata/twelvedata-client';
 
 // Matches the 4.5-min self-close below — without this, an unset maxDuration
 // was letting Vercel kill the function before that self-close ran, forcing
@@ -29,8 +28,11 @@ export const maxDuration = 300;
 // Per-client symbol cap for custom ?symbols= requests
 const MAX_CLIENT_SYMBOLS = 500;
 
-// Default: full S&P 500 — all stream on the one shared WS connection
-const DEFAULT_SYMBOLS = SP500_TICKERS;
+// Same universe the REST movers rank. The WS feed never sends a previous close,
+// so a symbol only gets a day change if its prevClose was seeded from a quote —
+// subscribing to the whole S&P 500 paid WS credits for ~450 symbols that could
+// never produce a change and were dropped in onTick.
+const DEFAULT_SYMBOLS = MEGA_CAP_TICKERS;
 
 // Module-level name cache — populated once from Supabase, reused across SSE connections
 const _nameCache = new Map<string, string>();
@@ -108,7 +110,7 @@ async function streamHandler(request: NextRequest) {
   //   1. parseTick can compute day change from the very first WS event
   //   2. The stream sends company names so clients don't need a separate batch fetch
   //   3. quoteMap is pre-populated, preventing the sparse-list flash on reconnect
-  // getMarketMovers is cached (5 min), so this is nearly free on warm requests.
+  // getMarketMovers is shared in Redis across all users, so this is free on a warm cache.
   const seedNameMap = new Map<string, string>();
   const initialQuotes = new Map<string, MoverUpdate>();
   // Fetched once per connection (memoized/cached, see logo-manifest.ts) and
@@ -160,19 +162,19 @@ async function streamHandler(request: NextRequest) {
       const quoteMap = new Map<string, MoverUpdate>(initialQuotes);
       let lastEmitAt = 0;
 
-      const weight = (m: MoverUpdate) =>
-        Math.abs(m.changePercent) * (m.dayVolume > 0 ? m.price * m.dayVolume : 1);
-
       function emitSnapshot() {
         if (closed) return;
         const all = [...quoteMap.values()].filter((m) => !isNaN(m.changePercent));
+        // Pure % change, same as getTopMoversForSymbols. Weighting by dollar
+        // volume reshuffled the list as soon as live ticks replaced the seeded
+        // quotes, which carry no volume.
         const gainers = all
           .filter((m) => m.changePercent > 0)
-          .sort((a, b) => weight(b) - weight(a))
+          .sort((a, b) => b.changePercent - a.changePercent)
           .slice(0, 5);
         const losers = all
           .filter((m) => m.changePercent < 0)
-          .sort((a, b) => weight(b) - weight(a))
+          .sort((a, b) => a.changePercent - b.changePercent)
           .slice(0, 5);
         // Only emit when both lists are populated to prevent sparse-list flash
         if (gainers.length === 0 || losers.length === 0) return;

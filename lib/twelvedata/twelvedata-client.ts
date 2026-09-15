@@ -623,7 +623,7 @@ export async function getStockCandlesLongRange(
 // GOOGL is kept over GOOG (same company, dual share class — see dual-class-shares.ts)
 // so movers doesn't show Alphabet twice; filtered below rather than just omitted from
 // the literal so the exclusion stays visible and in sync with the screener's list.
-const MEGA_CAP_TICKERS = [
+export const MEGA_CAP_TICKERS = [
   'NVDA', 'AAPL', 'MSFT', 'AMZN', 'GOOGL', 'GOOG', 'META', 'BRK.B',
   'TSLA', 'AVGO', 'LLY', 'JPM', 'WMT', 'V', 'MA', 'UNH', 'XOM',
   'COST', 'ORCL', 'HD', 'PG', 'JNJ', 'BAC', 'NFLX', 'ABBV',
@@ -640,14 +640,25 @@ const MEGA_CAP_TICKERS = [
  * with extreme moves. Fetching quotes for a curated large-cap list guarantees
  * results are market-cap-significant (Nvidia at +3% beats a $500M company at +50%).
  *
- * Sort key: |changePercent| × dollarVolume — weights both the size of the move
- * and the market importance of the company.
+ * Same answer for every user, so it is shared in Redis rather than costing ~50
+ * credits per dashboard render and per movers-stream connection. The whole
+ * universe is cached so every `limit` reads one entry; prepost is in the key so
+ * a session switch never serves the other session's prices.
  */
 export async function getMarketMovers(
   _market: 'stocks' | 'etf' = 'stocks',
   limit: number = 5
 ): Promise<TopMovers> {
-  return getTopMoversForSymbols(MEGA_CAP_TICKERS, limit);
+  // Dynamic import, same reason as ws-manager below: keep server-only deps out of client bundles.
+  const { rget, rset, getMarketSession } = await import('@/lib/cache/redis-cache');
+  const key = `movers:mega:${isExtendedHoursET() ? 'prepost' : 'regular'}`;
+  let all = await rget<TopMovers>(key);
+  if (!all) {
+    all = await getTopMoversForSymbols(MEGA_CAP_TICKERS, MEGA_CAP_TICKERS.length);
+    // 60s is plenty while trading: the SSE stream layers live ticks on top.
+    void rset(key, all, getMarketSession() === 'closed' ? 300 : 60);
+  }
+  return { gainers: all.gainers.slice(0, limit), losers: all.losers.slice(0, limit) };
 }
 
 // -------- Top movers (computed from quotes) --------

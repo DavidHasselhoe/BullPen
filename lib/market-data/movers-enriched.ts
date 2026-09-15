@@ -80,7 +80,8 @@ export async function getEnrichedMovers(
       void rset(key, { gainers, losers }, MOVERS_TTL);
     }
   } else {
-    // All-markets path — CDN caches the route via s-maxage, no Redis needed.
+    // All-markets path — shared Redis cache lives inside getMarketMovers, which
+    // the dashboard server render calls directly (no CDN in front of that).
     ({ gainers, losers } = await getMarketMovers('stocks', limit));
   }
 
