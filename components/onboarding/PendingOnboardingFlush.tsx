@@ -9,9 +9,11 @@ import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useAddOrUpdateHolding, useHoldings } from '@/hooks/use-holdings';
+import { useWatchlist } from '@/hooks/use-watchlist';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { flushPendingOnboardingData } from '@/lib/onboarding/flush';
-import { readPendingQuizAnswers } from '@/lib/onboarding/pending-onboarding';
+import { readPendingOnboarding } from '@/lib/onboarding/pending-onboarding';
+import { STARTER_STOCKS } from '@/lib/onboarding/starter-stocks';
 
 /**
  * Replaces the old 3-step OnboardingModal. Two independent jobs:
@@ -21,21 +23,9 @@ import { readPendingQuizAnswers } from '@/lib/onboarding/pending-onboarding';
  *  2. A single, dismissable (not blocking) starter-ticker prompt — shown
  *     once per account, never gates app usage the way the old modal did.
  *     Only makes sense on the dashboard (the "start here" surface) and only
- *     for accounts that don't already hold anything — an existing holder
- *     doesn't need a starter-ticker nudge.
+ *     for accounts that don't already hold or watch anything — someone who
+ *     picked stocks in onboarding doesn't need a starter-ticker nudge.
  */
-
-const STARTER_STOCKS: { ticker: string; name: string }[] = [
-  { ticker: 'NVDA', name: 'NVIDIA' },
-  { ticker: 'MSFT', name: 'Microsoft' },
-  { ticker: 'META', name: 'Meta' },
-  { ticker: 'AAPL', name: 'Apple' },
-  { ticker: 'AMZN', name: 'Amazon' },
-  { ticker: 'TSLA', name: 'Tesla' },
-  { ticker: 'NBIS', name: 'Nebius' },
-  { ticker: 'MU', name: 'Micron' },
-  { ticker: 'JNJ', name: 'Johnson & Johnson' },
-];
 
 export function PendingOnboardingFlush() {
   const { user, isLoading, refresh } = useAuth();
@@ -43,6 +33,7 @@ export function PendingOnboardingFlush() {
   const router = useRouter();
   const pathname = usePathname();
   const { data: holdings, isLoading: holdingsLoading } = useHoldings();
+  const { data: watchlist, isLoading: watchlistLoading } = useWatchlist();
 
   const [dismissed, setDismissed] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -52,15 +43,18 @@ export function PendingOnboardingFlush() {
   // since both are gated on the same "is there pending data" check.
   useEffect(() => {
     if (isLoading || !user) return;
-    if (!readPendingQuizAnswers()) return;
+    if (!readPendingOnboarding()) return;
     void flushPendingOnboardingData(user.id).then(() => refresh());
   }, [isLoading, user, refresh]);
 
   const promptShown = (user?.settings as Record<string, unknown> | null)?.starter_tickers_prompted === true;
   const isDashboard = pathname === '/dashboard';
-  const hasHoldings = (holdings?.length ?? 0) > 0;
+  // Someone who already picked stocks in onboarding (watchlist) or holds
+  // anything doesn't need a "pick a few stocks" nudge.
+  const hasTrackedStocks = (holdings?.length ?? 0) > 0 || (watchlist?.length ?? 0) > 0;
   const isOpen =
-    isDashboard && !isLoading && !!user && !promptShown && !dismissed && !holdingsLoading && !hasHoldings;
+    isDashboard && !isLoading && !!user && !promptShown && !dismissed &&
+    !holdingsLoading && !watchlistLoading && !hasTrackedStocks;
 
   const markPrompted = useCallback(async () => {
     if (!user) return;

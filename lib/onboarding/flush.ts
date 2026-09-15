@@ -1,18 +1,25 @@
 import { createBrowserClient } from '@/lib/supabase/client';
-import { clearPendingQuizAnswers, readPendingQuizAnswers } from './pending-onboarding';
+import {
+  clearPendingOnboarding,
+  experienceLevelFor,
+  notificationOverrides,
+  readPendingOnboarding,
+} from './pending-onboarding';
 
 /**
- * Writes any pending pre-signup quiz answers into the now-existing
- * public.users row. Called from AuthProvider on every SIGNED_IN event (both
- * email and Google OAuth funnel through the same event there), and again as
- * a fallback retry from PendingOnboardingFlush once `user` has loaded.
+ * Writes the pre-signup onboarding choices now that the account exists.
+ * Called from AuthProvider on every SIGNED_IN event (email and Google both
+ * funnel through it), and again as a fallback retry from
+ * PendingOnboardingFlush once `user` has loaded.
  *
- * Never throws — this is enrichment data, not critical path. A failed write
- * just leaves the pending payload in localStorage for the next retry (or
- * lets it expire via the TTL in pending-onboarding.ts).
+ * Order matters for idempotency: the users row and watchlist writes are both
+ * safe to repeat (update / upsert), and the pending payload is cleared only
+ * after both succeed, so a partial failure retries the whole thing.
+ *
+ * Never throws: this is setup, not the critical path.
  */
 export async function flushPendingOnboardingData(userId: string): Promise<void> {
-  const pending = readPendingQuizAnswers();
+  const pending = readPendingOnboarding();
   if (!pending) return;
 
   try {
@@ -20,26 +27,35 @@ export async function flushPendingOnboardingData(userId: string): Promise<void> 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const usersTable = (supabase as any).from('users');
 
-    // Fetch-merge-write settings (same pattern as SettingsModal.tsx) so we
-    // never clobber anything already present, e.g. from processOAuthProfile.
+    // Fetch-merge-write settings so nothing already present is clobbered.
     const { data: existing } = await usersTable.select('settings').eq('id', userId).single();
-    const mergedSettings = {
-      ...((existing?.settings as Record<string, unknown>) ?? {}),
-      investment_horizon: pending.investment_horizon,
-      investing_goal: pending.investing_goal,
+    const settings = (existing?.settings as Record<string, unknown>) ?? {};
+    const notifications = {
+      ...((settings.notifications as Record<string, boolean>) ?? {}),
+      ...notificationOverrides(pending.alerts),
     };
 
     const { error } = await usersTable
       .update({
-        experience_level: pending.experience_level,
-        risk_profile: pending.risk_profile,
-        settings: mergedSettings,
+        experience_level: experienceLevelFor(pending.style),
+        settings: { ...settings, notifications },
       })
       .eq('id', userId);
+    if (error) return;
 
-    if (!error) clearPendingQuizAnswers();
+    // Sequential, not parallel: /api/watchlist lazily creates the user's first
+    // list, and parallel first calls would race to create it twice.
+    for (const pick of pending.picks) {
+      const res = await fetch('/api/watchlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ symbol: pick.ticker, company_name: pick.name }),
+      });
+      if (!res.ok) return;
+    }
+
+    clearPendingOnboarding();
   } catch {
-    // Network blip, RLS not ready yet, etc. — leave the pending payload for
-    // the next retry rather than surfacing an error to the user.
+    // Network blip, RLS not ready yet. Leave the payload for the next retry.
   }
 }

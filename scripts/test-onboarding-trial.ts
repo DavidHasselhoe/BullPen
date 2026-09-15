@@ -8,6 +8,13 @@ import { PRICING } from '../lib/billing/entitlements';
 import { trialTermsLine, shouldSendRenewalReminder } from '../lib/billing/trial-copy';
 import { buildTrialEndingEmailHtml, buildTrialRevokedEmailHtml } from '../lib/email/billing-reminder';
 import { checkoutReturnUrls, parseReturnTarget } from '../lib/billing/checkout-return';
+import {
+  parsePendingOnboarding,
+  experienceLevelFor,
+  notificationOverrides,
+  DEFAULT_ALERTS,
+} from '../lib/onboarding/pending-onboarding';
+import { STARTER_STOCKS } from '../lib/onboarding/starter-stocks';
 
 /** CLAUDE.md: user-facing copy never uses an em dash or en dash. */
 function hasDash(text: string): boolean {
@@ -53,5 +60,56 @@ assert.deepEqual(checkoutReturnUrls('https://bullpen.no', 'onboarding'), {
 assert.equal(parseReturnTarget('onboarding'), 'onboarding');
 assert.equal(parseReturnTarget('https://evil.example'), 'upgrade', 'anything unknown falls back, never a raw URL');
 assert.equal(parseReturnTarget(undefined), 'upgrade');
+
+// ── Task 4: onboarding staging ───────────────────────────────────────────────
+const now = Date.parse('2026-09-15T12:00:00Z');
+const good = JSON.stringify({
+  version: 2,
+  savedAt: '2026-09-15T11:00:00Z',
+  style: 'plain',
+  picks: [{ ticker: 'NVDA', name: 'NVIDIA' }],
+  alerts: { price_alerts: true, upcoming_earnings: false, dividend_reminder: true },
+});
+assert.deepEqual(parsePendingOnboarding(good, now), {
+  style: 'plain',
+  picks: [{ ticker: 'NVDA', name: 'NVIDIA' }],
+  alerts: { price_alerts: true, upcoming_earnings: false, dividend_reminder: true },
+});
+assert.equal(parsePendingOnboarding(null, now), null);
+assert.equal(parsePendingOnboarding('not json', now), null);
+assert.equal(
+  parsePendingOnboarding(JSON.stringify({ version: 1, savedAt: '2026-09-15T11:00:00Z', experience_level: 'beginner' }), now),
+  null,
+  'old v1 quiz payload is rejected'
+);
+assert.equal(
+  parsePendingOnboarding(good.replace('2026-09-15T11:00:00Z', '2026-09-12T11:00:00Z'), now),
+  null,
+  'older than 48h is expired'
+);
+assert.equal(
+  parsePendingOnboarding(JSON.stringify({ ...JSON.parse(good), style: 'expert' }), now),
+  null,
+  'unknown style rejected'
+);
+// Picks are capped and sanitized: bad entries dropped, at most 20 kept.
+const manyPicks = Array.from({ length: 25 }, (_, i) => ({ ticker: `T${i}`, name: `Co ${i}` }));
+const capped = parsePendingOnboarding(
+  JSON.stringify({ ...JSON.parse(good), picks: [...manyPicks, { ticker: 42 }] }),
+  now
+);
+assert.equal(capped?.picks.length, 20);
+
+assert.equal(experienceLevelFor('plain'), 'beginner');
+assert.equal(experienceLevelFor('market'), 'intermediate');
+
+assert.deepEqual(notificationOverrides(DEFAULT_ALERTS), {}, 'all on writes nothing, since unset already means on');
+assert.deepEqual(
+  notificationOverrides({ price_alerts: true, upcoming_earnings: false, dividend_reminder: false }),
+  { upcoming_earnings: false, dividend_reminder: false }
+);
+
+assert.equal(STARTER_STOCKS.length, 11);
+assert.ok(STARTER_STOCKS.some((s) => s.ticker === 'SPY') && STARTER_STOCKS.some((s) => s.ticker === 'QQQ'));
 
 console.log('test-onboarding-trial: all assertions passed');
