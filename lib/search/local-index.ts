@@ -70,7 +70,12 @@ function scoreEntry(entry: SymbolEntry, q: string): number {
     // A leading article is not part of how anyone refers to a company. Without
     // this, "coca" ranked Coca-Cola Consolidated above The Coca-Cola Company,
     // because only the former had the query at character zero.
-    tier = NAME_PREFIX;
+    //
+    // From three characters a name prefix competes with ticker prefixes on rank.
+    // As a strictly lower tier, "nvi" listed NVIB, NVII, NVIR and NVIT (obscure
+    // NVIDIA ETFs) above NVIDIA itself. The -20 keeps a ticker prefix ahead at
+    // equal rank, since no ticker is long enough for its own penalty to reach it.
+    tier = q.length >= 3 ? TICKER_PREFIX - 20 : NAME_PREFIX;
   }
   else {
     const at = nl.indexOf(q);

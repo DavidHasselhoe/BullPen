@@ -30,10 +30,18 @@ const FIXTURE = [
   'VFIAX\tVanguard 500 Index Fund Admiral Shares\tf\t35',
   'FXAIX\tFidelity 500 Index Fund\tf\t35',
   'NVDX\tT-Rex 2X Long NVIDIA Daily Target ETF\te\t5',
+  'NVIB\tDirexion NVDA Defined Income Boost ETF\te\t5',
+  'NVII\tREX NVDA Growth & Income ETF\te\t5',
+  'NVIR\tHorizon Kinetics Energy and Remediation ETF\te\t5',
+  'NVIT\tYieldMax NVDA Performance & Distribution Target 25 ETF\te\t5',
 ].join('\n');
 
 const index = parseSearchIndex(FIXTURE);
-assert.equal(index.length, 16, 'every fixture row parses');
+assert.equal(index.length, 20, 'every fixture row parses');
+
+// A popular company found by its name beats obscure tickers that merely share
+// the first letters. "nvi" used to list four NVI* ETFs above NVIDIA.
+assert.equal(searchSymbols(index, 'nvi', 5)[0].ticker, 'NVDA', 'NVIDIA leads "nvi"');
 
 const top = (q: string) => searchSymbols(index, q, 5).map((r) => r.ticker);
 
