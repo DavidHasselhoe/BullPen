@@ -80,17 +80,29 @@ async function postHandler(
     if (firstList) {
       list_id = firstList.id;
     } else {
-      const { data: newList, error: createError } = await supabase
+      const { data: newList } = await supabase
         .from('watchlist_lists')
         .insert({ user_id: session.userId, name: 'Watchlist 1' })
         .select('id')
         .single();
-      if (createError || !newList) {
+      // Two first adds at once both find no list and both insert; UNIQUE
+      // (user_id, name) rejects the second. Seen on production when the
+      // onboarding flush ran twice at sign-in. Use the list the winner made.
+      const { data: resolved } = newList
+        ? { data: newList }
+        : await supabase
+            .from('watchlist_lists')
+            .select('id')
+            .eq('user_id', session.userId)
+            .order('position', { ascending: true })
+            .limit(1)
+            .maybeSingle();
+      if (!resolved) {
         return addSecurityHeaders(
           NextResponse.json({ success: false, error: 'Failed to create a default watchlist' }, { status: 500 })
         );
       }
-      list_id = newList.id;
+      list_id = resolved.id;
     }
   }
 

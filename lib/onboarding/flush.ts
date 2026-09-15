@@ -18,7 +18,15 @@ import {
  *
  * Never throws: this is setup, not the critical path.
  */
-export async function flushPendingOnboardingData(userId: string): Promise<void> {
+// Both callers fire at sign-in, so without this one pick was POSTed four times.
+let inFlight: Promise<void> | null = null;
+
+export function flushPendingOnboardingData(userId: string): Promise<void> {
+  inFlight ??= flush(userId).finally(() => { inFlight = null; });
+  return inFlight;
+}
+
+async function flush(userId: string): Promise<void> {
   const pending = readPendingOnboarding();
   if (!pending) return;
 
