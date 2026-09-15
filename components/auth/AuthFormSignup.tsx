@@ -21,6 +21,8 @@ interface AuthFormSignupProps {
   submitClassName?: string;
   /** Which funnel this form is embedded in, for signup_form_* events — e.g. 'register', 'get_started'. */
   source?: string;
+  /** Where the email confirmation link lands after sign-in (relative path). Defaults to /dashboard. */
+  emailRedirectPath?: string;
 }
 
 export function AuthFormSignup({
@@ -30,6 +32,7 @@ export function AuthFormSignup({
   submitLoadingLabel,
   submitClassName,
   source = 'unknown',
+  emailRedirectPath,
 }: AuthFormSignupProps) {
   const { t } = useTranslation('auth');
   const [email, setEmail] = useState('');
@@ -72,7 +75,7 @@ export function AuthFormSignup({
     trackEvent('signup_form_submitted', { source, method: 'email' });
 
     try {
-      const result = await signUp({ email, password });
+      const result = await signUp({ email, password, next: emailRedirectPath });
 
       if (!result.success) {
         const errorMsg = result.error || t('signupFailed');

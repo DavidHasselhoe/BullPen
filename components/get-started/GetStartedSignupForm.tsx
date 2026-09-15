@@ -95,6 +95,7 @@ export function GetStartedSignupForm() {
         submitLoadingLabel="Creating..."
         submitClassName="btn-brand-solid"
         source="get_started"
+        emailRedirectPath="/get-started/trial"
       />
 
       <p style={{ marginTop: 16, fontSize: 12, color: 'var(--fg-dim)', textAlign: 'center' }}>

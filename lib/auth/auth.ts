@@ -31,6 +31,8 @@ export interface AuthUser {
 export interface SignUpParams {
   email: string;
   password: string;
+  /** Relative path the email confirmation link lands on after sign-in. */
+  next?: string;
 }
 
 export interface SignInParams {
@@ -95,9 +97,17 @@ export async function signUp(params: SignUpParams): Promise<AuthResult> {
     }
 
     // Step 1: Create user in Supabase Auth
+    // With email confirmation on, the link lands on /auth/callback, which signs
+    // the user in and continues to `next` (relative paths only).
+    const callback = new URL('/auth/callback', window.location.origin);
+    if (params.next && params.next.startsWith('/') && !params.next.startsWith('//')) {
+      callback.searchParams.set('next', params.next);
+    }
+
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: params.email,
       password: params.password,
+      options: { emailRedirectTo: callback.toString() },
     });
 
     if (authError) {

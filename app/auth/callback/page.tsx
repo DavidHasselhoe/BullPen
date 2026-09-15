@@ -86,7 +86,8 @@ function AuthCallbackContent() {
       // listener subscribed: it then only ever sees INITIAL_SESSION, never
       // SIGNED_IN. Gated on `code` so a plain visit with an old session no-ops.
       if ((event === 'SIGNED_IN' || (event === 'INITIAL_SESSION' && code)) && session) {
-        setLastUsedAuthMethod('google');
+        // Email confirmation links land here too, not only Google OAuth.
+        setLastUsedAuthMethod(session.user.app_metadata?.provider === 'google' ? 'google' : 'email');
         void maybeClaimShareAttribution();
       }
       if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) redirectHome();
