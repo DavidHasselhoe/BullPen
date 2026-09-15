@@ -37,6 +37,14 @@
       {
         "type": "fixed",
         "text": "Share classes like Berkshire Hathaway's B shares now count toward a fund's sector breakdown, and far more fund holdings now have a sector"
+      },
+      {
+        "type": "fixed",
+        "text": "Searching part of a company's name now puts the company first. Typing nvi shows NVIDIA before small funds whose tickers happen to start with those letters"
+      },
+      {
+        "type": "fixed",
+        "text": "Adding your first stocks to a new watchlist no longer occasionally fails when several are added at once"
       }
     ]
   },
