@@ -13,9 +13,8 @@ import { Telescope, ChevronRight, Trash2, Clock, ArrowLeft } from 'lucide-react'
 import { cn } from '@/lib/utils';
 import { useBackground } from '@/hooks/use-background';
 import { QuotaIndicator } from '@/components/billing/QuotaIndicator';
-import { LensPicker } from '@/components/deep-dive/LensPicker';
 import { TickerSelector, type SearchResult } from '@/components/tools/buy-here/TickerSelector';
-import { LENS_LABELS, type DeepDiveLens, type Verdict } from '@/lib/ai/deep-dive/schema';
+import type { Verdict } from '@/lib/ai/deep-dive/schema';
 import type { SavedDivePreview } from '@/app/api/ai/deep-dive/route';
 
 const POPULAR = ['NVDA', 'AAPL', 'MSFT', 'TSLA', 'AMZN', 'GOOGL'];
@@ -33,7 +32,6 @@ export default function DeepDiveLanding() {
   const { hasAnimatedBackground } = useBackground();
   const queryClient = useQueryClient();
   const [selected, setSelected] = useState<SearchResult | null>(null);
-  const [lens, setLens] = useState<DeepDiveLens>('full');
 
   const { data, isLoading } = useQuery<{ dives: SavedDivePreview[] }>({
     queryKey: ['deep-dive-list'],
@@ -55,7 +53,7 @@ export default function DeepDiveLanding() {
   const go = (sym: string) => {
     const clean = sym.trim().toUpperCase().replace(/[^A-Z0-9.\-]/g, '');
     if (!clean) return;
-    router.push(`/tools/deep-dive/${clean}?lens=${lens}&new=1`);
+    router.push(`/tools/deep-dive/${clean}?new=1`);
   };
 
   return (
@@ -101,11 +99,6 @@ export default function DeepDiveLanding() {
                 <Telescope className="h-4 w-4" /> {t('deepDiveAnalyzeButton', 'Analyze')}
               </Button>
             </form>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[11px] text-muted-foreground/80">{t('deepDiveLensLabel', 'Lens:')}</span>
-              <LensPicker value={lens} onChange={setLens} />
-            </div>
 
             <div className="flex flex-wrap items-center gap-1.5 pt-1">
               <span className="text-[11px] text-muted-foreground/80">{t('deepDivePopularLabel', 'Popular:')}</span>
@@ -171,7 +164,7 @@ function SavedDiveRow({ dive: d, onDelete }: { dive: SavedDivePreview; onDelete:
           {d.companyName && <span className="text-xs text-muted-foreground truncate">{d.companyName}</span>}
         </div>
         <p className="text-xs text-muted-foreground/80 truncate">
-          {d.headline ?? `${LENS_LABELS[d.lens]} · ${new Date(d.createdAt).toLocaleDateString()}`}
+          {d.headline ?? new Date(d.createdAt).toLocaleDateString()}
         </p>
       </Link>
       <div className="flex items-center gap-1 shrink-0">

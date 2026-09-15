@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { VerdictBar } from './VerdictBar';
 import type { DeepDivePrice } from '@/hooks/use-deep-dive-price';
-import { LENS_LABELS, type DeepDiveReport as Report } from '@/lib/ai/deep-dive/schema';
+import type { DeepDiveReport as Report } from '@/lib/ai/deep-dive/schema';
 
 // Relative for the first 24h, then an absolute date — used for BOTH
 // generatedAt and dataAsOf so the two dates in the meta line never mismatch
@@ -70,12 +70,6 @@ export function DeepDiveHero({ report, when, actions, price }: Props) {
         <div className="flex min-w-0 items-start gap-3">
           <CompanyLogo name={report.companyName} ticker={report.ticker} size={40} className="mt-0.5 border border-border/50" loading="eager" />
           <div className="min-w-0 space-y-1">
-            {/* Lens name lives in the meta line to the right, not here. This
-                column shares a row with that meta block inside a card capped
-                at max-w-3xl, so "AI Deep Dive · Full deep dive" doesn't
-                reliably fit on one line here -- it wrapped word-by-word, and
-                once truncated, clipped to an unreadable "AI DEEP DIVE · F...".
-                The meta paragraph wraps freely and has the room it needs. */}
             <div className="flex items-center gap-1.5">
               <Sparkles className="h-3 w-3 shrink-0 text-primary" />
               <span className="text-[11px] font-bold uppercase tracking-widest text-primary">
@@ -90,7 +84,7 @@ export function DeepDiveHero({ report, when, actions, price }: Props) {
         <div className="flex shrink-0 flex-col items-start gap-2 sm:items-end">
           {actions && <div className="flex items-center gap-1.5">{actions}</div>}
           <p className="text-[10px] leading-snug text-muted-foreground/70 sm:max-w-[260px] sm:text-right">
-            {LENS_LABELS[report.lens]} · Generated {fmtRelative(when)}
+            Generated {fmtRelative(when)}
             {report.dataAsOf && (
               <>
                 {' · fundamentals as of '}

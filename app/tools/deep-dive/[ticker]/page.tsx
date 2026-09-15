@@ -23,9 +23,8 @@ import { AiPaywallDialog } from '@/components/billing/AiPaywallDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { DeepDiveReport } from '@/components/deep-dive/DeepDiveReport';
 import { fmtRelative } from '@/components/deep-dive/DeepDiveHero';
-import { LensPicker } from '@/components/deep-dive/LensPicker';
 import { ProcessingScreen } from '@/components/ui/ProcessingScreen';
-import { isLens, type DeepDiveLens, type DeepDiveReport as Report } from '@/lib/ai/deep-dive/schema';
+import type { DeepDiveReport as Report } from '@/lib/ai/deep-dive/schema';
 import type { QuotaState } from '@/lib/billing/quotas';
 
 type Phase = 'loading' | 'idle' | 'generating' | 'done' | 'error';
@@ -71,27 +70,13 @@ export default function DeepDivePage() {
 
   const holds = !!holdings?.some((h) => h.symbol.toUpperCase() === symbol);
 
-  const initialLens: DeepDiveLens = (() => {
-    const q = searchParams.get('lens');
-    return q && isLens(q) ? q : 'full';
-  })();
   // Set only by entry points that mean "generate a new one" (the stock page's
   // Deep Dive button, command palette, the tool's own search) -- not by a
   // notification link or the list page's card, which already know a report
-  // exists and mean to view it. Read once: the value that matters is what the
-  // user clicked to land here, not whatever the URL holds after lens changes
-  // re-write it (see setLens below).
+  // exists and mean to view it. Read once, on arrival.
   const cameToGenerate = useRef(searchParams.get('new') === '1');
 
   const [phase, setPhase] = useState<Phase>('loading');
-  const [lens, setLensState] = useState<DeepDiveLens>(initialLens);
-
-  const setLens = useCallback((next: DeepDiveLens) => {
-    setLensState(next);
-    const params = new URLSearchParams(searchParams.toString());
-    params.set('lens', next);
-    router.replace(`/tools/deep-dive/${rawTicker}?${params.toString()}`, { scroll: false });
-  }, [rawTicker, router, searchParams]);
   const [report, setReport] = useState<Report | null>(null);
   const [createdAt, setCreatedAt] = useState<string | null>(null);
   const [genPhase, setGenPhase] = useState<DivePhase>('reading_data');
@@ -114,7 +99,7 @@ export default function DeepDivePage() {
 
   useEffect(() => () => stopPolling(), [stopPolling]);
 
-  const pollStatus = useCallback((id: string, useLens: DeepDiveLens) => {
+  const pollStatus = useCallback((id: string) => {
     stopPolling();
     pollRef.current = setInterval(async () => {
       try {
@@ -128,7 +113,6 @@ export default function DeepDivePage() {
           stopPolling();
           setReport(data.report);
           setCreatedAt(data.report.generatedAt ?? null);
-          setLens(data.report.lens ?? useLens);
           invalidateQuota('deep_dive');
           queryClient.invalidateQueries({ queryKey: ['deep-dive-list'] });
           // Generated while the user was watching — clear its notification
@@ -149,7 +133,7 @@ export default function DeepDivePage() {
         // Transient network hiccup — keep polling, the next tick will retry.
       }
     }, POLL_INTERVAL_MS);
-  }, [rawTicker, symbol, stopPolling, invalidateQuota, queryClient, markEntityRead, setLens]);
+  }, [rawTicker, symbol, stopPolling, invalidateQuota, queryClient, markEntityRead]);
 
   // On mount: show the latest saved dive, or resume polling if one is still
   // generating (e.g. the user started it, left, and came back). Skipped for
@@ -167,7 +151,6 @@ export default function DeepDivePage() {
         if (data?.success && data.report) {
           setReport(data.report as Report);
           setCreatedAt(data.createdAt ?? null);
-          setLens((data.report as Report).lens ?? 'full');
           setPhase('done');
           // Landed here from a notification (or just revisiting) — the
           // report is already on screen, so clear its unread notification.
@@ -181,7 +164,7 @@ export default function DeepDivePage() {
         } else if (data?.success && data.pendingId) {
           setGenPhase((data.pendingPhase as DivePhase) ?? 'reading_data');
           setPhase('generating');
-          pollStatus(data.pendingId, lens);
+          pollStatus(data.pendingId);
         } else {
           setPhase('idle');
         }
@@ -193,7 +176,7 @@ export default function DeepDivePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rawTicker, authLoading, isAuthenticated]);
 
-  const generate = useCallback(async (useLens: DeepDiveLens) => {
+  const generate = useCallback(async () => {
     stopPolling();
     setPhase('generating');
     setJustCompleted(false);
@@ -204,7 +187,7 @@ export default function DeepDivePage() {
       const res = await fetch(`/api/ai/deep-dive/${rawTicker}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lens: useLens, experienceLevel: level, holds }),
+        body: JSON.stringify({ experienceLevel: level, holds }),
       });
 
       if (res.status === 429) { setErrorCode('rate_limited'); setPhase('error'); return; }
@@ -218,7 +201,7 @@ export default function DeepDivePage() {
 
       const data = await res.json();
       if (!data.id) { setErrorMessage('Failed to start generation'); setErrorCode('unknown'); setPhase('error'); return; }
-      pollStatus(data.id, useLens);
+      pollStatus(data.id);
     } catch (err) {
       setErrorMessage((err as Error).message ?? '');
       setErrorCode('unknown');
@@ -302,11 +285,7 @@ export default function DeepDivePage() {
                 )}
               </p>
               <div className="mt-6 flex flex-col items-center gap-4">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/85 mb-2">{t('deepDiveChooseLens', 'Choose a lens')}</p>
-                  <LensPicker value={lens} onChange={setLens} />
-                </div>
-                <Button size="lg" onClick={() => generate(lens)} className="gap-2 rounded-full animate-ai-pill-shine">
+                <Button size="lg" onClick={() => generate()} className="gap-2 rounded-full animate-ai-pill-shine">
                   <Sparkles className="h-4 w-4" /> {t('deepDiveGenerateButton', 'Generate Deep Dive')}
                 </Button>
                 <QuotaIndicator feature="deep_dive" unit={{ singular: 'deep dive', plural: 'deep dives' }} />
@@ -335,15 +314,11 @@ export default function DeepDivePage() {
               report={report}
               createdAt={createdAt}
               onAsk={askAI}
-              onRegenerate={() => generate(lens)}
+              onRegenerate={() => generate()}
             />
-            <div className="flex flex-col items-center gap-2 pt-1">
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/80">{t('deepDiveTryAnotherAngle', 'Try another angle')}</span>
-              <LensPicker value={lens} onChange={setLens} />
-              <p className="text-center text-[11px] text-muted-foreground/85 max-w-sm">
-                {t('deepDiveRegenerateHint', 'Pick a lens, then hit Regenerate. Regenerating uses one deep dive from your monthly quota.')}
-              </p>
-            </div>
+            <p className="text-center text-[11px] text-muted-foreground/85">
+              {t('deepDiveRegenerateQuotaHint', 'Regenerating uses one deep dive from your monthly quota.')}
+            </p>
           </div>
         )}
 
@@ -356,7 +331,7 @@ export default function DeepDivePage() {
                   <h3 className="text-sm font-semibold text-foreground mb-1">{errorTitle(errorCode, t)}</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">{errorBody(errorCode, errorMessage, t)}</p>
                   <div className="mt-4">
-                    <Button onClick={() => generate(lens)} size="sm" className="rounded-full animate-ai-pill-shine">{t('tryAgainButton', 'Try again')}</Button>
+                    <Button onClick={() => generate()} size="sm" className="rounded-full animate-ai-pill-shine">{t('tryAgainButton', 'Try again')}</Button>
                   </div>
                 </div>
               </div>
@@ -387,7 +362,7 @@ export default function DeepDivePage() {
                 {t('deepDiveExistingViewButton', 'View existing')}
               </Button>
               <Button
-                onClick={() => { setShowExistingDialog(false); generate(lens); }}
+                onClick={() => { setShowExistingDialog(false); generate(); }}
                 className="gap-1.5 rounded-full animate-ai-pill-shine"
               >
                 <RefreshCw className="h-3.5 w-3.5" /> {t('deepDiveExistingRegenerateButton', 'Regenerate')}

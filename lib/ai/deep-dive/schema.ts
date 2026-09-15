@@ -3,7 +3,7 @@
  *
  * The model returns a single JSON object: { headline, verdict, blocks[] }.
  * We validate it with zod, then attach server-owned fields (ticker, companyName,
- * model, lens, generatedAt, dataAsOf) to form the stored/rendered DeepDiveReport.
+ * model, generatedAt, dataAsOf) to form the stored/rendered DeepDiveReport.
  *
  * Block rendering is data-driven: each block has a `type` discriminator and a
  * dedicated renderer. Unknown/empty blocks are skipped by the renderer, so the
@@ -212,24 +212,9 @@ export type BullBearPoint = z.infer<typeof BullBearPoint>;
 export interface DeepDiveReport extends ModelReport {
   ticker: string;
   companyName: string;
-  lens: DeepDiveLens;
   model: string;
   generatedAt: string;   // ISO
   dataAsOf: string | null;
-}
-
-export type DeepDiveLens = 'full' | 'bull_bear' | 'valuation' | 'risk' | 'for_me';
-
-export const LENS_LABELS: Record<DeepDiveLens, string> = {
-  full: 'Full deep dive',
-  bull_bear: 'Bull vs Bear',
-  valuation: 'Valuation focus',
-  risk: 'Risk check',
-  for_me: 'Is it a buy for me?',
-};
-
-export function isLens(v: string): v is DeepDiveLens {
-  return v === 'full' || v === 'bull_bear' || v === 'valuation' || v === 'risk' || v === 'for_me';
 }
 
 /** Parse + validate the model's JSON output. Throws a descriptive error on failure. */

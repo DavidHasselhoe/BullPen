@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/client';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
-import type { DeepDiveLens, Verdict } from '@/lib/ai/deep-dive/schema';
+import type { Verdict } from '@/lib/ai/deep-dive/schema';
 
 export interface SavedDivePreview {
   id: string;
   symbol: string;
   companyName: string | null;
-  lens: DeepDiveLens;
   headline: string | null;
   stance: Verdict['stance'] | null;
   createdAt: string;
@@ -22,14 +21,14 @@ async function getHandler(
   // JSON-path aliases (headline, stance) aren't inferable from the typed schema,
   // so override the row type explicitly with .returns<>().
   type ListRow = {
-    id: string; symbol: string; company_name: string | null; lens: string;
+    id: string; symbol: string; company_name: string | null;
     created_at: string; headline: string | null; stance: string | null;
   };
 
   const supabase = createServerClient();
   const { data, error } = await supabase
     .from('stock_deep_dives')
-    .select('id, symbol, company_name, lens, created_at, headline:report->>headline, stance:report->verdict->>stance')
+    .select('id, symbol, company_name, created_at, headline:report->>headline, stance:report->verdict->>stance')
     .eq('user_id', session.userId)
     .order('created_at', { ascending: false })
     .limit(50)
@@ -43,7 +42,6 @@ async function getHandler(
     id: row.id,
     symbol: row.symbol,
     companyName: row.company_name ?? null,
-    lens: (row.lens as DeepDiveLens) ?? 'full',
     headline: row.headline ?? null,
     stance: (row.stance as Verdict['stance'] | null) ?? null,
     createdAt: row.created_at,

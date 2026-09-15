@@ -11,7 +11,7 @@ import { slugToSymbol } from '@/lib/assets/asset-type';
 import { gatherDeepDiveData, formatDataBlock } from '@/lib/ai/deep-dive/gather-data';
 import { inferArchetype } from '@/lib/ai/deep-dive/archetype';
 import { DEEP_DIVE_SYSTEM_PROMPT, buildUserPrompt } from '@/lib/ai/deep-dive/system-prompt';
-import { parseModelReport, isLens, type DeepDiveLens, type DeepDiveReport } from '@/lib/ai/deep-dive/schema';
+import { parseModelReport, type DeepDiveReport } from '@/lib/ai/deep-dive/schema';
 import { classifyAiError, parseFailure } from '@/lib/ai/provider-error';
 
 export const maxDuration = 300;
@@ -33,10 +33,9 @@ async function runDeepDive(params: {
   id: string;
   userId: string;
   symbol: string;
-  lens: DeepDiveLens;
   experienceLevel: ExperienceLevel;
 }): Promise<void> {
-  const { id, userId, symbol, lens, experienceLevel } = params;
+  const { id, userId, symbol, experienceLevel } = params;
   const supabase = createServerClient();
   const setPhase = (phase: DivePhase) => supabase.from('stock_deep_dives').update({ phase }).eq('id', id);
 
@@ -49,7 +48,7 @@ async function runDeepDive(params: {
     const today = new Date().toISOString().slice(0, 10);
 
     const userPrompt = buildUserPrompt({
-      symbol, companyName, experienceLevel, lens,
+      symbol, companyName, experienceLevel,
       archetypeHint: archetype.hint, dataBlock, today,
     });
 
@@ -93,7 +92,7 @@ async function runDeepDive(params: {
         model: MODEL,
         inputTokens: final.usage.input_tokens,
         outputTokens: final.usage.output_tokens,
-        metadata: { symbol, lens },
+        metadata: { symbol },
       });
     } catch { /* never block on logging */ }
 
@@ -114,7 +113,6 @@ async function runDeepDive(params: {
       ...model,
       ticker: symbol,
       companyName: model.companyName || companyName,
-      lens,
       model: MODEL,
       generatedAt: new Date().toISOString(),
       dataAsOf: data.dataAsOf,
@@ -181,13 +179,11 @@ async function postHandler(
   }
 
   // Body
-  let lens: DeepDiveLens = 'full';
   // Matches use-experience-level's fallback: a request that omits the level
   // gets the beginner report, not the intermediate one.
   let experienceLevel: ExperienceLevel = 'beginner';
   try {
     const body = await request.json().catch(() => ({}));
-    if (typeof body.lens === 'string' && isLens(body.lens)) lens = body.lens;
     // Must list every level, including intermediate. This used to check only
     // beginner/advanced and let intermediate fall through to the default,
     // which was harmless while the default was itself intermediate and would
@@ -211,7 +207,6 @@ async function postHandler(
     .insert({
       user_id: session.userId,
       symbol,
-      lens,
       model: MODEL,
       status: 'pending',
       phase: 'reading_data',
@@ -226,7 +221,7 @@ async function postHandler(
 
   const id = inserted.id as string;
 
-  after(() => runDeepDive({ id, userId: session.userId, symbol, lens, experienceLevel }));
+  after(() => runDeepDive({ id, userId: session.userId, symbol, experienceLevel }));
 
   return addSecurityHeaders(NextResponse.json({ id, status: 'pending' }));
 }

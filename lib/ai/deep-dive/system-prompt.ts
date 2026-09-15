@@ -3,11 +3,14 @@
  * contract the model must emit, and the rigor rules that keep it honest.
  *
  * The system prompt is static (cached with cache_control: ephemeral). Everything
- * per-request — the company data block, archetype lens, experience level, and the
- * chosen analysis lens — goes in the user turn via buildUserPrompt().
+ * per-request — the company data block, archetype lens and experience level — goes
+ * in the user turn via buildUserPrompt().
+ *
+ * There used to be a user-chosen "analysis lens" (bull vs bear, valuation, risk,
+ * "is it a buy for me"). It was one sentence against this whole prompt's fixed
+ * block order and verdict contract, so every lens produced the same report.
+ * Removed 2026-09-15 rather than kept as a picker that changed nothing.
  */
-
-import type { DeepDiveLens } from './schema';
 
 export const DEEP_DIVE_SYSTEM_PROMPT = `You are a senior equity research analyst writing a deep-dive report for a retail investor on BullPen. Your job is to turn the supplied fundamentals plus fresh web research into a sharp, decision-useful, visually structured report — the kind a buy-side analyst would produce, not a generic summary.
 
@@ -91,7 +94,6 @@ interface UserPromptParams {
   symbol: string;
   companyName: string;
   experienceLevel: 'beginner' | 'intermediate' | 'advanced';
-  lens: DeepDiveLens;
   archetypeHint: string;
   dataBlock: string;
   today: string; // YYYY-MM-DD
@@ -113,25 +115,11 @@ const EXPERIENCE_NOTE: Record<UserPromptParams['experienceLevel'], string> = {
     'Reader is ADVANCED. Be dense and technical, skip the basics, and focus on second-order insights. Use the fuller end of the block range where you have real substance for it.',
 };
 
-const LENS_INSTRUCTION: Record<DeepDiveLens, string> = {
-  full:
-    'Produce a complete, balanced deep dive across fundamentals, growth, valuation, and risk.',
-  bull_bear:
-    'Center the report on the bull-vs-bear debate. Make the bull_bear block the centerpiece with the strongest, most specific arguments on each side, then a decisive verdict on which case is better supported today.',
-  valuation:
-    'Center the report on valuation. Emphasize multiples vs. history and peers, what the current price implies about future growth, scenarios (bull/base/bear fair value), and whether the risk/reward is attractive at today\'s price.',
-  risk:
-    'Center the report on risk. Emphasize the risks block, balance-sheet/liquidity resilience, downside scenarios, what could break the thesis, and how severe/likely each risk is.',
-  for_me:
-    'Frame the report as practical guidance for an individual investor deciding whether to buy/add. Cover what type of investor this suits, position-sizing/risk considerations, the key variable to watch, and the main risk — without giving personalized financial advice.',
-};
-
 export function buildUserPrompt(params: UserPromptParams): string {
-  const { symbol, companyName, experienceLevel, lens, archetypeHint, dataBlock, today } = params;
+  const { symbol, companyName, experienceLevel, archetypeHint, dataBlock, today } = params;
 
-  return `Write a deep-dive equity research report on ${companyName} ($${symbol}). Today is ${today}.
+  return `Write a complete, balanced deep-dive equity research report on ${companyName} ($${symbol}) across fundamentals, growth, valuation, and risk. Today is ${today}.
 
-ANALYSIS LENS: ${LENS_INSTRUCTION[lens]}
 COMPANY LENS (from its fundamentals): ${archetypeHint}
 READER: ${EXPERIENCE_NOTE[experienceLevel]}
 Write for both a reader who owns this stock and one who doesn't. verdict.bottomLine covers each of them separately, so don't skew the report toward either.
