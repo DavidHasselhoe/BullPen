@@ -324,7 +324,7 @@ Every TwelveData call costs API credits. The rules below are binding — violati
 | `/balance_sheet` | `getBalanceSheet()` | **~101 per request** | Supabase 12 h |
 | `/cash_flow` | `getCashFlow()` | **~101 per request** | Supabase 12 h |
 | `/fundamentals/last_changes` | `getFundamentalsLastChange()` | 1 per symbol | no-store (freshness check) |
-| `/profile` | `getCompanyProfile()` | 1 per request | Supabase 24 h |
+| `/profile` | `getCompanyProfile()` | **10 per request** | Supabase 24 h |
 | `/logo` | `getLogoUrl()` | 1 per symbol | Next.js 24 h |
 | `/press_releases` | `getPressReleases()` | 1 per request | Next.js 1 h |
 | `/symbol_search` | `symbolSearch()` | 1 per request | no-store |
@@ -337,6 +337,8 @@ Every TwelveData call costs API credits. The rules below are binding — violati
 | `/indicator` (SMA/EMA/RSI…) | `getIndicator()` | 1 per request | Next.js 5 min |
 
 **`/income_statement`, `/balance_sheet`, `/cash_flow` are NOT 1-credit calls on this plan** — confirmed live against TwelveData's `/api_usage` endpoint on 2026-08-04 (each cost ~101 credits regardless of `outputsize` or `period`; this plan bills fundamentals at their full-history tier per `docs/twelve-data-venture-analysis.md`). Treat any caller of `getIncomeStatement`/`getBalanceSheet`/`getCashFlow` as expensive: always check cache first, and if it fans out over multiple symbols in one request (a cron batch, a company-compare page), it must reserve against `lib/twelvedata/credit-budget.ts`'s shared guard before firing — `~303 credits per symbol` (all three statements) is enough on its own to blow past the 610/min account cap with just 2 symbols.
+
+**`/profile` is 10 credits per call, not 1** — measured 2026-09-15 from the `api-credits-used` response header (rose by exactly 10 per call). A sector backfill that reserved 1 per call fired 61 calls into the 610/min cap in 9 seconds. Any fan-out over `getCompanyProfile` reserves 10 per symbol (see `lib/institutions/enrich-holding-sectors.ts`). Before a bulk job, measure an unfamiliar endpoint's real cost with one call and that header rather than trusting this table.
 
 ### Golden rules
 
@@ -381,7 +383,7 @@ Costs 1 credit and tells you whether financials have updated since last cache. T
 | `/earnings_calendar` (40 credits) | Earnings dates are set weeks in advance |
 | `/dividends_calendar` (40 credits) | Ex-dividend dates are published weeks ahead |
 | `/statistics` (high) | Fundamental ratios update at most daily, often weekly |
-| `/profile` (1 credit) | Company metadata changes rarely |
+| `/profile` (10 credits) | Company metadata changes rarely |
 
 **7. Always catch `TwelveDataRateLimitError` at every API boundary.**
 ```ts
