@@ -306,13 +306,19 @@ function ControlSelect({
   width: string;
 }) {
   const selected = options.find((o) => o.value === value) ?? options[0];
+  // On a phone the controls stack one per row. Labels of different lengths
+  // left every menu starting at a different x, so below sm the label gets the
+  // widest label's width and the menu fills the rest of the row.
   return (
-    <div className="flex items-center gap-2">
-      <label htmlFor={id} className="text-xs font-medium uppercase tracking-wide text-muted-foreground/70">
+    <div className="flex w-full items-center gap-2 sm:w-auto">
+      <label
+        htmlFor={id}
+        className="min-w-[6.5rem] text-xs font-medium uppercase tracking-wide text-muted-foreground/70 sm:min-w-0"
+      >
         {label}
       </label>
       <Select value={selected.value} onValueChange={onChange}>
-        <SelectTrigger id={id} size="sm" className={width}>
+        <SelectTrigger id={id} size="sm" className={cn('min-w-0 flex-1 sm:flex-none', width)}>
           <SelectValue>{selected.label}</SelectValue>
         </SelectTrigger>
         <SelectContent>
@@ -464,7 +470,7 @@ export function InstitutionalHoldingsSection() {
           value={sort}
           onChange={(v) => setSort(v as SortKey)}
           options={SORT_OPTIONS.map((o) => ({ value: o.key, label: o.label }))}
-          width="w-[210px]"
+          width="sm:w-[210px]"
         />
         {sectorOptions.length > 1 && (
           <ControlSelect
@@ -473,7 +479,7 @@ export function InstitutionalHoldingsSection() {
             value={activeSector}
             onChange={setSector}
             options={sectorOptions}
-            width="w-[210px]"
+            width="sm:w-[210px]"
           />
         )}
         <ControlSelect
@@ -482,7 +488,7 @@ export function InstitutionalHoldingsSection() {
           value={activeConcentration}
           onChange={setConcentration}
           options={concentrationOptions}
-          width="w-[170px]"
+          width="sm:w-[170px]"
         />
         {isAuthenticated && (
           <button
