@@ -22,7 +22,7 @@ export function OnboardingProgress({ stepIndex, totalSteps }: { stepIndex: numbe
       aria-valuenow={percent}
       aria-valuemin={0}
       aria-valuemax={100}
-      style={{ maxWidth: 200, margin: '0 auto 32px', height: 6, borderRadius: 999, background: 'var(--border-strong)', overflow: 'hidden' }}
+      style={{ width: '100%', maxWidth: 200, margin: '0 auto', height: 6, borderRadius: 999, background: 'var(--border-strong)', overflow: 'hidden' }}
     >
       <div
         style={{

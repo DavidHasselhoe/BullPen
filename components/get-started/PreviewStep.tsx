@@ -1,6 +1,8 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import { motion, useReducedMotion } from 'framer-motion';
+import { Bell, BellOff } from 'lucide-react';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { STARTER_STOCKS } from '@/lib/onboarding/starter-stocks';
 import type { AlertChoices, StockPick } from '@/lib/onboarding/pending-onboarding';
@@ -36,11 +38,13 @@ export function PreviewStep({
   totalSteps: number;
   onBack: () => void;
 }) {
+  const reduceMotion = useReducedMotion();
   const isExample = picks.length === 0;
   const shown: StockPick[] = isExample
     ? STARTER_STOCKS.filter((s) => EXAMPLE_TICKERS.includes(s.ticker))
     : picks.slice(0, 6);
   const tickers = shown.map((s) => s.ticker);
+  const AlertIcon = Object.values(alerts).some(Boolean) ? Bell : BellOff;
 
   const { data: quotes } = useQuery({
     queryKey: ['onboarding-preview-quotes', tickers],
@@ -68,65 +72,71 @@ export function PreviewStep({
     refetchOnWindowFocus: false,
   });
 
-  const lead = shown[0];
-
   return (
-    <StepShell stepIndex={stepIndex} totalSteps={totalSteps} onBack={onBack} maxWidth={560}>
+    <StepShell stepIndex={stepIndex} totalSteps={totalSteps} onBack={onBack} maxWidth={480}>
       <StepHeadline text="Your BullPen is" accent="ready." />
+      <p style={{ margin: '0 0 24px', textAlign: 'center', fontSize: 15, color: 'var(--fg-muted)' }}>
+        {isExample ? 'No picks yet, so here are a few popular ones, live.' : 'Your watchlist, live.'}
+      </p>
 
-      {isExample && (
-        <p style={{ margin: '0 0 12px', textAlign: 'center', fontSize: 12, color: 'var(--fg-dim)' }}>Examples</p>
-      )}
-
-      <ul style={{ listStyle: 'none', margin: '20px 0 0', padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {shown.map((s) => {
+      {/* One container with divided rows reads as a watchlist, not a stack of
+          separate cards. Rows arrive one after another, which is the one bit
+          of motion on this screen: the list is the thing being handed over. */}
+      <ul
+        style={{
+          listStyle: 'none', margin: 0, padding: 0, borderRadius: 18, overflow: 'hidden',
+          border: '1px solid var(--border)', background: 'var(--surface)',
+        }}
+      >
+        {shown.map((s, i) => {
           const q = quotes?.[s.ticker];
           const hs = scores?.[s.ticker];
           const up = (q?.changePercent ?? 0) >= 0;
           return (
-            <li
+            <motion.li
               key={s.ticker}
+              initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.32, delay: 0.1 + i * 0.07, ease: [0.22, 1, 0.36, 1] }}
               style={{
-                display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 12,
-                border: '1px solid var(--border)', background: 'var(--surface)',
+                display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px',
+                borderTop: i === 0 ? 'none' : '1px solid var(--border)',
               }}
             >
-              <CompanyLogo name={s.name} ticker={s.ticker} size={28} />
+              <CompanyLogo name={s.name} ticker={s.ticker} size={32} />
               <span style={{ flex: 1, minWidth: 0 }}>
-                <span className="mono" style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>{s.ticker}</span>
-                <span style={{ display: 'block', fontSize: 12, color: 'var(--fg-dim)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <span className="mono" style={{ display: 'block', fontSize: 14, fontWeight: 600, color: 'var(--fg)' }}>{s.ticker}</span>
+                <span style={{ display: 'block', fontSize: 13, color: 'var(--fg-dim)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {s.name}{hs ? ` · Health ${hs.score} (${hs.grade})` : ''}
                 </span>
               </span>
               {q ? (
                 <span style={{ textAlign: 'right' }}>
-                  <span className="mono" style={{ display: 'block', fontSize: 14, color: 'var(--fg)' }}>${q.price.toFixed(2)}</span>
-                  <span className={`mono ${up ? 'up' : 'down'}`} style={{ display: 'block', fontSize: 12 }}>
+                  <span className="mono" style={{ display: 'block', fontSize: 15, fontWeight: 600, color: 'var(--fg)' }}>${q.price.toFixed(2)}</span>
+                  <span className={`mono ${up ? 'up' : 'down'}`} style={{ display: 'block', fontSize: 13 }}>
                     {up ? '▲ +' : '▼ −'}{Math.abs(q.changePercent).toFixed(2)}%{q.stale ? ' last close' : ''}
                   </span>
                 </span>
               ) : (
-                <span aria-hidden className="mono" style={{ fontSize: 12, color: 'var(--fg-dim)' }}>···</span>
+                <span aria-hidden style={{ display: 'grid', gap: 6, justifyItems: 'end' }}>
+                  <span style={{ width: 64, height: 14, borderRadius: 4, background: 'var(--border)' }} />
+                  <span style={{ width: 44, height: 12, borderRadius: 4, background: 'var(--border)' }} />
+                </span>
               )}
-            </li>
+            </motion.li>
           );
         })}
       </ul>
 
-      <p style={{ margin: '14px 0 0', textAlign: 'center', fontSize: 14, color: 'var(--fg-muted)' }}>
+      <p
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          margin: '16px 0 0', fontSize: 14, color: 'var(--fg-muted)', textAlign: 'center',
+        }}
+      >
+        <AlertIcon size={15} aria-hidden style={{ flexShrink: 0 }} />
         {alertsSentence(alerts)}
       </p>
-
-      {lead && (
-        <div style={{ marginTop: 20, padding: '14px 18px', borderRadius: 14, border: '1px solid var(--border-strong)' }}>
-          <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>With Pro, for {lead.ticker}:</p>
-          <ul style={{ listStyle: 'disc', margin: '8px 0 0', paddingLeft: 18, fontSize: 13, color: 'var(--fg-muted)', lineHeight: 1.7 }}>
-            <li>Why Today? explains what moved it, the day it moves</li>
-            <li>A Deep Dive report on the business, in plain language</li>
-            <li>A Daily Brief every morning covering your stocks</li>
-          </ul>
-        </div>
-      )}
 
       <GetStartedSignupForm />
     </StepShell>

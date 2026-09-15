@@ -23,6 +23,8 @@ interface AuthFormSignupProps {
   source?: string;
   /** Where the email confirmation link lands after sign-in (relative path). Defaults to /dashboard. */
   emailRedirectPath?: string;
+  /** Replaces the inline "check your inbox" error with the caller's own confirmation screen. */
+  onConfirmationRequired?: (email: string) => void;
 }
 
 export function AuthFormSignup({
@@ -33,6 +35,7 @@ export function AuthFormSignup({
   submitClassName,
   source = 'unknown',
   emailRedirectPath,
+  onConfirmationRequired,
 }: AuthFormSignupProps) {
   const { t } = useTranslation('auth');
   const [email, setEmail] = useState('');
@@ -83,6 +86,13 @@ export function AuthFormSignup({
         onError?.(errorMsg);
         trackEvent('signup_form_failed', { source, method: 'email', reason: 'signup_error' });
         setIsLoading(false);
+        return;
+      }
+
+      if (result.requiresEmailConfirmation && onConfirmationRequired) {
+        trackEvent('signup_form_email_confirmation_required', { source, method: 'email' });
+        setIsLoading(false);
+        onConfirmationRequired(email);
         return;
       }
 

@@ -76,7 +76,9 @@ export default function TrialOfferPage() {
 
         <main style={{ padding: '80px 0' }}>
           <div className="wrap" style={{ maxWidth: 520, margin: '0 auto' }}>
-            <OnboardingProgress stepIndex={4} totalSteps={TOTAL_STEPS} />
+            <div style={{ marginBottom: 32 }}>
+              <OnboardingProgress stepIndex={4} totalSteps={TOTAL_STEPS} />
+            </div>
 
             <h1
               className="headline"

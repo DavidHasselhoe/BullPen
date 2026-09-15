@@ -27,20 +27,20 @@ export function StepShell({
       transition={{ duration: 0.2 }}
       style={{ maxWidth, margin: '0 auto', width: '100%' }}
     >
-      <OnboardingProgress stepIndex={stepIndex} totalSteps={totalSteps} />
-      {onBack && (
-        <button
-          type="button"
-          onClick={onBack}
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 20, fontSize: 13,
-            color: 'var(--fg-dim)', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0,
-          }}
-        >
-          <ArrowLeft size={14} />
-          Back
-        </button>
-      )}
+      {/* Back lives on the progress row, like a native flow's nav bar: same
+          spot on every screen, and it never pushes the headline down. The
+          empty third column keeps the bar centred whether or not it shows. */}
+      <div style={{ display: 'grid', gridTemplateColumns: '44px 1fr 44px', alignItems: 'center', gap: 12, marginBottom: 32 }}>
+        {onBack ? (
+          <button type="button" onClick={onBack} aria-label="Back" className="onboarding-back">
+            <ArrowLeft size={18} aria-hidden />
+          </button>
+        ) : (
+          <span aria-hidden />
+        )}
+        <OnboardingProgress stepIndex={stepIndex} totalSteps={totalSteps} />
+        <span aria-hidden />
+      </div>
       {children}
     </motion.div>
   );
