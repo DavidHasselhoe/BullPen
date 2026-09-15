@@ -174,11 +174,14 @@ function KvTable({ block }: { block: Extract<Block, { type: 'kv_table' }> }) {
       <div className="divide-y divide-border/40">
         {block.rows.map((row, i) => (
           <div key={i} className="flex items-center justify-between gap-3 py-2.5">
-            <span className="text-sm text-muted-foreground">{glossaryText(row.label, seen)}</span>
-            <span className="flex items-center gap-2 shrink-0">
-              <span className="text-sm font-medium tabular-nums text-foreground text-right">{row.value}</span>
+            <span className="min-w-0 text-sm text-muted-foreground">{glossaryText(row.label, seen)}</span>
+            {/* Shrinkable and wrapping, not shrink-0: the model writes badges
+                like 'Demand "much higher" per Jensen Huang', which pushed this
+                group up to 188px past a phone-width card and got cut off. */}
+            <span className="flex min-w-0 flex-wrap items-center justify-end gap-x-2 gap-y-1 text-right">
+              <span className="text-sm font-medium tabular-nums text-foreground">{row.value}</span>
               {row.badge && (
-                <span className={cn('text-[11px] font-bold px-1.5 py-0.5 rounded leading-none', toneBadge(row.badge.tone))}>
+                <span className={cn('text-[11px] font-bold px-1.5 py-0.5 rounded leading-tight', toneBadge(row.badge.tone))}>
                   {row.badge.text}
                 </span>
               )}
