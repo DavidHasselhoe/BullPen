@@ -20,7 +20,7 @@ export const PRICING = {
   currency: 'USD',
   proMonthly: 12,
   proAnnualPerMonth: 9,   // billed yearly → $108/yr (25% off)
-  trialDays: 14,
+  trialDays: 7,
   moneyBackDays: 30,
 };
 

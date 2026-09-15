@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
 
         if (event.type === 'customer.subscription.created' && sub.status === 'trialing') {
           // Card already claimed a trial on a different account — collapse
-          // this one to $0 days instead of granting another 14. The
+          // this one to $0 days instead of granting another trial. The
           // trial_end update below fires its own subscription.updated event
           // with the real post-charge status, so skip granting Pro here.
           const revoked = await enforceTrialFingerprint(sub, customerId, userId);

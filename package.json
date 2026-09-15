@@ -49,6 +49,7 @@
     "sync-index-constituents": "tsx scripts/sync-index-constituents.ts",
     "watch-earnings": "tsx scripts/watch-earnings.ts",
     "test-holdings-diff": "tsx scripts/test-holdings-diff.ts",
+    "test-onboarding-trial": "tsx scripts/test-onboarding-trial.ts",
     "test-movers-period": "tsx scripts/test-movers-period.ts",
     "test-risk-analysis-prompt": "tsx scripts/test-risk-analysis-prompt.ts",
     "test-earnings-minimum": "tsx scripts/test-earnings-minimum.ts",
