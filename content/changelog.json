@@ -1,5 +1,46 @@
 [
   {
+    "date": "2026-09-15",
+    "entries": [
+      {
+        "type": "new",
+        "text": "Creating an account now starts with setting up your BullPen: choose how things get explained, pick the stocks you own or follow, and choose your alerts. You see live prices for your picks before you sign up, and they are waiting in your watchlist when you arrive"
+      },
+      {
+        "type": "new",
+        "text": "New accounts are offered a free week of Pro right after signing up. You can skip it and keep using BullPen for free"
+      },
+      {
+        "type": "new",
+        "text": "The Institutional Holdings list on Discover can now be sorted by portfolio size, number of holdings, first filing or biggest change last quarter, and filtered by top sector, how concentrated a fund is, or funds you follow"
+      },
+      {
+        "type": "improved",
+        "text": "The Pro free trial is now 7 days, and you get an email 3 days before it ends with a link to cancel. You get one reminder, not a separate renewal email on top"
+      },
+      {
+        "type": "improved",
+        "text": "If a free trial can't be given because the card already had one, you now get an email explaining why billing started and how to ask for a refund"
+      },
+      {
+        "type": "improved",
+        "text": "Deep Dive now always creates one complete report. The angle picker is gone because every angle produced the same report"
+      },
+      {
+        "type": "improved",
+        "text": "Loading bars for Deep Dive and other AI reports now move steadily to the end instead of stalling near 95%, and Deep Dive says it takes 1 to 2 minutes, which is how long it really takes"
+      },
+      {
+        "type": "fixed",
+        "text": "Deep Dive reports no longer cut off sentences in notes, bullet points, table badges and source citations, including on phones"
+      },
+      {
+        "type": "fixed",
+        "text": "Share classes like Berkshire Hathaway's B shares now count toward a fund's sector breakdown, and far more fund holdings now have a sector"
+      }
+    ]
+  },
+  {
     "date": "2026-09-14",
     "entries": [
       {
