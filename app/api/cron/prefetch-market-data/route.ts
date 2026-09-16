@@ -333,7 +333,7 @@ async function handleStatsBatch(
         const profile = profileMap.get(sym);
         screenerRowsBatch.push({
           ...screenerRow,
-          name: profile?.name ?? sym,
+          name: profile?.name ?? statsRaw.meta?.name ?? sym,
           sector: profile?.sector ?? null,
           industry: profile?.industry ?? null,
           logo_url: profile?.logoUrl ?? null,

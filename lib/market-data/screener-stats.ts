@@ -342,7 +342,9 @@ export async function fetchAndUpsertScreenerStats(symbols: string[]): Promise<Sc
 
       rows.push({
         ...stats,
-        name: company?.name ?? sym,
+        // meta.name comes back in the same /statistics response we already paid for,
+        // so it costs nothing and covers every ticker with no companies row.
+        name: company?.name ?? statsRaw.meta?.name ?? sym,
         sector: company?.sector ?? null,
         industry: company?.industry ?? null,
         logo_url: company?.logo_url ?? null,
