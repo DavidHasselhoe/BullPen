@@ -34,6 +34,10 @@ export interface PdfDocument {
    * 800ms. It is not slow, it is just not a document anyone wants. The cap
    * keeps the PDF readable and the note below keeps the truncation visible,
    * which is the part that matters: the CSV alongside it has every row.
+   *
+   * Pass `Number.POSITIVE_INFINITY` to opt out, as the holdings export does:
+   * a portfolio is finite and it is the user's own data, so there is nothing
+   * to protect them from there.
    */
   maxRows?: number;
 }

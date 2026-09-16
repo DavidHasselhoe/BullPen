@@ -731,6 +731,11 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
       rows,
       numericColumns,
       orientation: 'landscape',
+      // No row cap here. The default exists to stop a screener export of the
+      // whole universe becoming a 118-page document; a portfolio is finite and
+      // it is the user's own data, so silently dropping the tail of it is the
+      // one place truncation would actually be wrong.
+      maxRows: Number.POSITIVE_INFINITY,
     });
   }, [sortedHoldings, userCurrency, exportMeta]);
 
