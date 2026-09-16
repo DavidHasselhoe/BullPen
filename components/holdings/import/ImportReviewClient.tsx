@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
 import { useHoldings } from '@/hooks/use-holdings';
@@ -85,6 +86,7 @@ function collapseRanges(lines: number[]): string {
 
 export function ImportReviewClient({ importId }: { importId: string }) {
   const router = useRouter();
+  const { t } = useTranslation('holdings');
   const queryClient = useQueryClient();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const rowRefs = useRef<Map<number, HTMLTableRowElement>>(new Map());
@@ -94,7 +96,7 @@ export function ImportReviewClient({ importId }: { importId: string }) {
     queryKey: ['holdings-import', importId],
     queryFn: async () => {
       const res = await fetch(`/api/holdings/import/${importId}`);
-      if (!res.ok) throw new Error((await res.json()).error ?? 'Failed to load import');
+      if (!res.ok) throw new Error((await res.json()).error ?? t('importReviewErrorLoad'));
       return res.json();
     },
     enabled: isAuthenticated,
@@ -148,14 +150,14 @@ export function ImportReviewClient({ importId }: { importId: string }) {
   const overlappingHoldings = useMemo(() => {
     if (!existingHoldings) return [];
     const importSymbols = new Set<string>();
-    for (const t of activeRows) {
-      const r = resolutions[t.securityKey];
+    for (const tx of activeRows) {
+      const r = resolutions[tx.securityKey];
       if (r?.status === 'resolved') importSymbols.add(r.candidate.symbol);
     }
     return existingHoldings.filter((h) => h.source === 'manual' && importSymbols.has(h.symbol));
   }, [existingHoldings, activeRows, resolutions]);
 
-  const securityLabel = (t: RawTransaction) => t.name ?? t.rawSymbol ?? t.isin ?? 'Unknown security';
+  const securityLabel = (tx: RawTransaction) => tx.name ?? tx.rawSymbol ?? tx.isin ?? t('importReviewUnknownSecurity');
 
   // Warn on tab close / refresh — this whole review is throwaway until Save
   // actually commits it, and losing an AI-mapped, ticker-resolved draft to
@@ -192,7 +194,7 @@ export function ImportReviewClient({ importId }: { importId: string }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ parsed: updatedDraft }),
       });
-      if (!patchRes.ok) throw new Error((await patchRes.json()).error ?? 'Failed to save changes');
+      if (!patchRes.ok) throw new Error((await patchRes.json()).error ?? t('importReviewErrorSaveChanges'));
 
       const commitRes = await fetch(`/api/holdings/import/${importId}/commit`, {
         method: 'POST',
@@ -206,16 +208,16 @@ export function ImportReviewClient({ importId }: { importId: string }) {
             (commitData.flags as { sourceLine: number; detail: string }[]).map((f) => [f.sourceLine, f.detail])
           );
           setReplayFlags(flagMap);
-          throw new Error('Some transactions conflict with your existing holdings or each other. Fix or remove them below.');
+          throw new Error(t('importReviewErrorConflicts'));
         }
-        throw new Error(commitData.error ?? 'Failed to save your transactions');
+        throw new Error(commitData.error ?? t('importReviewErrorCommit'));
       }
 
       queryClient.invalidateQueries({ queryKey: ['holdings'] });
       queryClient.invalidateQueries({ queryKey: ['holdings-quotes'] });
       router.push('/holdings');
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
+      setSaveError(err instanceof Error ? err.message : t('importReviewErrorGeneric'));
     } finally {
       setSaving(false);
     }
@@ -226,8 +228,8 @@ export function ImportReviewClient({ importId }: { importId: string }) {
     return (
       <AuthGate
         icon={<GraduationCap className="h-7 w-7" />}
-        title="Sign in to review your import"
-        description="This import is tied to your account."
+        title={t('importReviewAuthTitle')}
+        description={t('importReviewAuthDescription')}
         signInHref="/login"
       />
     );
@@ -246,10 +248,10 @@ export function ImportReviewClient({ importId }: { importId: string }) {
       <div className="mx-auto max-w-lg py-24 text-center">
         <AlertCircle className="mx-auto h-8 w-8 text-muted-foreground/60" />
         <p className="mt-3 text-sm text-muted-foreground">
-          {error instanceof Error ? error.message : "We couldn't find this import."}
+          {error instanceof Error ? error.message : t('importReviewNotFound')}
         </p>
         <Link href="/holdings" className="mt-4 inline-block text-sm text-primary hover:underline">
-          Back to Holdings
+          {t('importReviewBackToHoldings')}
         </Link>
       </div>
     );
@@ -264,10 +266,10 @@ export function ImportReviewClient({ importId }: { importId: string }) {
               onClick={() => setShowLeaveConfirm(true)}
               className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
-              <ChevronLeft className="h-3.5 w-3.5" /> Back
+              <ChevronLeft className="h-3.5 w-3.5" /> {t('importReviewBack')}
             </button>
             <div className="min-w-0">
-              <h1 className="truncate text-sm font-semibold text-foreground">Review your import</h1>
+              <h1 className="truncate text-sm font-semibold text-foreground">{t('importReviewTitle')}</h1>
               <p className="truncate text-xs text-muted-foreground">{draft.fileName} · {draft.spec.fileFormatLabel}</p>
             </div>
           </div>
@@ -279,11 +281,10 @@ export function ImportReviewClient({ importId }: { importId: string }) {
           <Accordion type="single" collapsible className="mb-4">
             <AccordionItem value="ignored" className="rounded-xl border border-border/40 px-4">
               <AccordionTrigger className="text-xs text-muted-foreground hover:no-underline">
-                {draft.ignored.length} rows skipped (dividends, fees, deposits, and similar non-trade activity)
+                {t('importReviewSkippedRows', { count: draft.ignored.length })}
               </AccordionTrigger>
               <AccordionContent className="text-xs text-muted-foreground">
-                We only import buys and sells. Dividends, interest, fees, deposits, and corporate actions in your
-                file were left out on purpose — nothing to fix here.
+                {t('importReviewSkippedExplainer')}
               </AccordionContent>
             </AccordionItem>
           </Accordion>
@@ -292,10 +293,12 @@ export function ImportReviewClient({ importId }: { importId: string }) {
         {overlappingHoldings.length > 0 && (
           <div className="mb-4 rounded-xl border border-border/40 p-4">
             <p className="text-xs font-medium text-foreground/80 mb-1">
-              You already hold {overlappingHoldings.length === 1 ? overlappingHoldings[0].symbol : `${overlappingHoldings.length} of these tickers`}
+              {overlappingHoldings.length === 1
+                ? t('importReviewOverlapTitleOne', { symbol: overlappingHoldings[0].symbol })
+                : t('importReviewOverlapTitleMany', { count: overlappingHoldings.length })}
             </p>
             <p className="text-[11px] text-muted-foreground/85 leading-relaxed mb-3">
-              Choose whether this import should add to those positions or replace them outright.
+              {t('importReviewOverlapDescription')}
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <button
@@ -308,9 +311,9 @@ export function ImportReviewClient({ importId }: { importId: string }) {
               >
                 <PlusCircle className={cn('h-4 w-4 mt-0.5 shrink-0', importMode === 'add' ? 'text-primary' : 'text-muted-foreground')} />
                 <span className="min-w-0">
-                  <span className="block text-xs font-medium text-foreground">Add to existing</span>
+                  <span className="block text-xs font-medium text-foreground">{t('importReviewModeAddTitle')}</span>
                   <span className="block text-[11px] text-muted-foreground mt-0.5">
-                    Imported buys and sells stack on top of what you already have.
+                    {t('importReviewModeAddDescription')}
                   </span>
                 </span>
               </button>
@@ -324,9 +327,11 @@ export function ImportReviewClient({ importId }: { importId: string }) {
               >
                 <RefreshCcw className={cn('h-4 w-4 mt-0.5 shrink-0', importMode === 'replace' ? 'text-primary' : 'text-muted-foreground')} />
                 <span className="min-w-0">
-                  <span className="block text-xs font-medium text-foreground">Replace existing</span>
+                  <span className="block text-xs font-medium text-foreground">{t('importReviewModeReplaceTitle')}</span>
                   <span className="block text-[11px] text-muted-foreground mt-0.5">
-                    Your current position in {overlappingHoldings.length === 1 ? overlappingHoldings[0].symbol : 'these tickers'} is cleared first, then rebuilt from this file alone.
+                    {overlappingHoldings.length === 1
+                      ? t('importReviewModeReplaceDescriptionOne', { symbol: overlappingHoldings[0].symbol })
+                      : t('importReviewModeReplaceDescriptionMany')}
                   </span>
                 </span>
               </button>
@@ -339,34 +344,34 @@ export function ImportReviewClient({ importId }: { importId: string }) {
             <TableHeader>
               <TableRow className="hover:bg-transparent">
                 <TableHead className="w-10">#</TableHead>
-                <TableHead>Ticker / Company / ISIN</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead className="text-right">Shares</TableHead>
-                <TableHead className="text-right">Price</TableHead>
-                <TableHead className="text-right">Total cost</TableHead>
+                <TableHead>{t('importReviewColumnSecurity')}</TableHead>
+                <TableHead>{t('importReviewColumnType')}</TableHead>
+                <TableHead>{t('importReviewColumnDate')}</TableHead>
+                <TableHead className="text-right">{t('importReviewColumnShares')}</TableHead>
+                <TableHead className="text-right">{t('importReviewColumnPrice')}</TableHead>
+                <TableHead className="text-right">{t('importReviewColumnTotalCost')}</TableHead>
                 <TableHead className="w-10" />
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.map((t, idx) => {
-                const isRemoved = removed.has(t.sourceLine);
-                const resolution = resolutions[t.securityKey];
-                const replayFlagDetail = replayFlags.get(t.sourceLine);
+              {rows.map((tx, idx) => {
+                const isRemoved = removed.has(tx.sourceLine);
+                const resolution = resolutions[tx.securityKey];
+                const replayFlagDetail = replayFlags.get(tx.sourceLine);
                 const isUnresolved = !isRemoved && resolution?.status !== 'resolved';
                 const isFlagged = !isRemoved && !isUnresolved && !!replayFlagDetail;
                 const isBroken = isUnresolved || isFlagged;
-                const totalCost = t.quantity != null && t.price != null ? t.quantity * t.price : null;
+                const totalCost = tx.quantity != null && tx.price != null ? tx.quantity * tx.price : null;
 
                 return (
                   <TableRow
-                    key={t.sourceLine}
-                    ref={(el) => { if (el) rowRefs.current.set(t.sourceLine, el); }}
+                    key={tx.sourceLine}
+                    ref={(el) => { if (el) rowRefs.current.set(tx.sourceLine, el); }}
                     className={cn(
                       'transition-colors',
                       isRemoved && 'opacity-40',
                       isBroken && 'bg-amber-500/[0.06]',
-                      flashLine === t.sourceLine && 'ring-2 ring-inset ring-amber-500/60'
+                      flashLine === tx.sourceLine && 'ring-2 ring-inset ring-amber-500/60'
                     )}
                   >
                     <TableCell className="font-mono text-xs text-muted-foreground/70">{idx + 1}</TableCell>
@@ -375,29 +380,29 @@ export function ImportReviewClient({ importId }: { importId: string }) {
                         <div className="flex items-start gap-1.5 rounded-md border border-amber-500/40 bg-amber-500/5 px-2 py-1 text-xs" title={replayFlagDetail}>
                           <AlertCircle className="h-3 w-3 shrink-0 mt-0.5 text-amber-500" />
                           <span className="min-w-0 flex-1">
-                            <span className="block truncate font-medium text-foreground">{securityLabel(t)}</span>
+                            <span className="block truncate font-medium text-foreground">{securityLabel(tx)}</span>
                             <span className="block truncate text-[11px] text-amber-600 dark:text-amber-400">{replayFlagDetail}</span>
                           </span>
                         </div>
                       ) : isUnresolved ? (
                         <TickerFixPopover
-                          defaultQuery={securityLabel(t)}
-                          onResolved={(fix) => setOverrides((o) => ({ ...o, [t.securityKey]: fix }))}
+                          defaultQuery={securityLabel(tx)}
+                          onResolved={(fix) => setOverrides((o) => ({ ...o, [tx.securityKey]: fix }))}
                         >
                           <button className="flex w-full items-center gap-1.5 rounded-md border border-amber-500/40 bg-amber-500/5 px-2 py-1 text-left text-xs hover:bg-amber-500/10 transition-colors">
                             <AlertCircle className="h-3 w-3 shrink-0 text-amber-500" />
                             <span className="min-w-0 flex-1">
-                              <span className="block truncate font-medium text-foreground">{securityLabel(t)}</span>
-                              <span className="block truncate text-[11px] text-amber-600 dark:text-amber-400">Unmatched, fix ticker</span>
+                              <span className="block truncate font-medium text-foreground">{securityLabel(tx)}</span>
+                              <span className="block truncate text-[11px] text-amber-600 dark:text-amber-400">{t('importReviewUnmatched')}</span>
                             </span>
                           </button>
                         </TickerFixPopover>
                       ) : (
                         <div className="min-w-0">
                           <span className="block truncate font-mono text-xs font-semibold">
-                            {resolution.status === 'resolved' ? resolution.candidate.symbol : t.rawSymbol}
+                            {resolution.status === 'resolved' ? resolution.candidate.symbol : tx.rawSymbol}
                           </span>
-                          <span className="block truncate text-[11px] text-muted-foreground">{securityLabel(t)}</span>
+                          <span className="block truncate text-[11px] text-muted-foreground">{securityLabel(tx)}</span>
                         </div>
                       )}
                     </TableCell>
@@ -405,18 +410,18 @@ export function ImportReviewClient({ importId }: { importId: string }) {
                       <span
                         className={cn(
                           'inline-flex items-center rounded-md border px-1.5 py-0.5 text-[11px] font-medium uppercase tracking-wide',
-                          t.action === 'BUY' ? 'border-border/60 text-foreground/75' : 'border-foreground/40 text-foreground font-semibold'
+                          tx.action === 'BUY' ? 'border-border/60 text-foreground/75' : 'border-foreground/40 text-foreground font-semibold'
                         )}
                       >
-                        {t.action}
+                        {tx.action === 'BUY' ? t('importReviewActionBuy') : t('importReviewActionSell')}
                       </span>
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-xs text-muted-foreground tabular-nums">
-                      {t.date ?? <span className="text-red-400">invalid</span>}
+                      {tx.date ?? <span className="text-red-400">{t('importReviewInvalidDate')}</span>}
                     </TableCell>
-                    <TableCell className="text-right font-mono text-xs tabular-nums">{t.quantity ?? '—'}</TableCell>
+                    <TableCell className="text-right font-mono text-xs tabular-nums">{tx.quantity ?? '—'}</TableCell>
                     <TableCell className="text-right font-mono text-xs tabular-nums">
-                      {t.price != null ? `${t.price.toFixed(2)}${t.priceCurrency ? ` ${t.priceCurrency}` : ''}` : '—'}
+                      {tx.price != null ? `${tx.price.toFixed(2)}${tx.priceCurrency ? ` ${tx.priceCurrency}` : ''}` : '—'}
                     </TableCell>
                     <TableCell className="text-right font-mono text-xs tabular-nums text-muted-foreground">
                       {totalCost != null ? totalCost.toFixed(2) : '—'}
@@ -424,17 +429,17 @@ export function ImportReviewClient({ importId }: { importId: string }) {
                     <TableCell>
                       {isRemoved ? (
                         <button
-                          onClick={() => setRemoved((s) => { const next = new Set(s); next.delete(t.sourceLine); return next; })}
+                          onClick={() => setRemoved((s) => { const next = new Set(s); next.delete(tx.sourceLine); return next; })}
                           className="text-muted-foreground hover:text-foreground transition-colors"
-                          title="Undo remove"
+                          title={t('importReviewUndoRemove')}
                         >
                           <RotateCcw className="h-3.5 w-3.5" />
                         </button>
                       ) : (
                         <button
-                          onClick={() => setRemoved((s) => new Set(s).add(t.sourceLine))}
+                          onClick={() => setRemoved((s) => new Set(s).add(tx.sourceLine))}
                           className="text-muted-foreground/60 hover:text-red-400 transition-colors"
-                          title="Remove this transaction"
+                          title={t('importReviewRemoveRow')}
                         >
                           <X className="h-3.5 w-3.5" />
                         </button>
@@ -454,7 +459,7 @@ export function ImportReviewClient({ importId }: { importId: string }) {
             {brokenRows.length > 0 ? (
               <p className="flex flex-wrap items-center gap-1 text-amber-600 dark:text-amber-400">
                 <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-                To save, fix {brokenRows.length} incomplete transaction{brokenRows.length === 1 ? '' : 's'}:{' '}
+                {t('importReviewFixPrompt', { count: brokenRows.length })}{' '}
                 {collapseRanges(brokenRows.map((r) => r.sourceLine))
                   .split(', ')
                   .map((range, i, arr) => (
@@ -472,7 +477,7 @@ export function ImportReviewClient({ importId }: { importId: string }) {
             ) : (
               <p className="flex items-center gap-1.5 text-muted-foreground">
                 <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
-                {readyRows.length}/{activeRows.length} transactions ready
+                {t('importReviewReadyCount', { ready: readyRows.length, total: activeRows.length })}
               </p>
             )}
             {saveError && <p className="mt-1 text-red-400">{saveError}</p>}
@@ -483,7 +488,7 @@ export function ImportReviewClient({ importId }: { importId: string }) {
             className="shrink-0 gap-1.5"
           >
             {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-            {saving ? 'Saving…' : `Save ${readyRows.length} transaction${readyRows.length === 1 ? '' : 's'}`}
+            {saving ? t('importReviewSaving') : t('importReviewSave', { count: readyRows.length })}
           </Button>
         </div>
       </div>
@@ -491,18 +496,17 @@ export function ImportReviewClient({ importId }: { importId: string }) {
       <Dialog open={showLeaveConfirm} onOpenChange={setShowLeaveConfirm}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle className="text-base font-semibold">Leave without saving?</DialogTitle>
+            <DialogTitle className="text-base font-semibold">{t('importReviewLeaveTitle')}</DialogTitle>
             <DialogDescription className="text-xs">
-              You haven&apos;t saved this import yet. Going back now discards everything you&apos;ve reviewed here,
-              and you&apos;ll need to import the file again.
+              {t('importReviewLeaveDescription')}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="ghost" size="sm" onClick={() => setShowLeaveConfirm(false)}>
-              Keep reviewing
+              {t('importReviewLeaveKeep')}
             </Button>
             <Button size="sm" variant="destructive" onClick={() => router.push('/holdings')}>
-              Leave and discard
+              {t('importReviewLeaveDiscard')}
             </Button>
           </DialogFooter>
         </DialogContent>

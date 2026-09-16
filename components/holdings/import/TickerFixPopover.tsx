@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command';
 import { Search, Loader2, AlertCircle } from 'lucide-react';
@@ -37,6 +38,7 @@ interface Props {
  * choice is worth the extra credit, unlike a per-keystroke search.
  */
 export function TickerFixPopover({ defaultQuery, onResolved, children }: Props) {
+  const { t } = useTranslation('holdings');
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState(defaultQuery);
   const [debounced, setDebounced] = useState(defaultQuery);
@@ -68,7 +70,7 @@ export function TickerFixPopover({ defaultQuery, onResolved, children }: Props) 
       const res = await fetch(`/api/import/resolve?${params.toString()}`);
       const result = await res.json();
       if (result.status !== 'resolved') {
-        setVerifyError(`${candidate.symbol} doesn't have a live price feed right now. Try another listing.`);
+        setVerifyError(t('tickerFixNoPriceFeed', { symbol: candidate.symbol }));
         return;
       }
       onResolved({
@@ -91,7 +93,7 @@ export function TickerFixPopover({ defaultQuery, onResolved, children }: Props) 
       <PopoverContent className="w-80 p-0" align="start">
         <Command shouldFilter={false}>
           <CommandInput
-            placeholder="Search ticker or company name…"
+            placeholder={t('tickerFixSearchPlaceholder')}
             value={query}
             onValueChange={setQuery}
           />
@@ -105,7 +107,7 @@ export function TickerFixPopover({ defaultQuery, onResolved, children }: Props) 
               <CommandEmpty>
                 <div className="flex items-center gap-2 px-2 py-1.5 text-xs text-muted-foreground">
                   <Search className="h-3.5 w-3.5" />
-                  No matches found
+                  {t('tickerFixNoMatches')}
                 </div>
               </CommandEmpty>
             )}
