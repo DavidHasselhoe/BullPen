@@ -2307,7 +2307,6 @@
   "holdings.importReviewErrorSaveChanges": "0d46a7846da11e59a05c903a458ca344194dec91d3d1edc71c8286ca758200a2",
   "holdings.importReviewFixPrompt_one": "664e45d5e63c5e9c3951e9edf6ca2334aae3ec9487d268942f05bcc8adf0c037",
   "holdings.importReviewFixPrompt_other": "c935936882ca373065b351c6cb70287171bc68e3c7daae1c24aa6f840822f642",
-  "holdings.importReviewInvalidDate": "f1234d75178d892a133a410355a5a990cf75d2f33eba25d575943d4df632f3a4",
   "holdings.importReviewLeaveDescription": "210b407fb0638a31956ce9de2ecbc24b9b844b6a9f4f5f9adf3489ba2c437105",
   "holdings.importReviewLeaveDiscard": "6c72afb34be7b1122ec12d585fdc736afb2d6f29e4c8c7f256edbc5d7839171a",
   "holdings.importReviewLeaveKeep": "34411a1bde474b8b970fa70e63207be862a681492556993d0fb99031dcc78b0b",
@@ -2334,5 +2333,17 @@
   "holdings.importReviewUnmatched": "5749ff518503f0d31841264680b98cb21975ece6777d15db5db8c0a71fca5550",
   "holdings.tickerFixNoMatches": "4b4d7ac22cee34f92cd16fbe4193b0eb106e185100ea38f72b0190e1affaf933",
   "holdings.tickerFixNoPriceFeed": "1b145c09fc1b0a13e6ace0cef05c7abe24da20d85cb88af010dbcda13d275137",
-  "holdings.tickerFixSearchPlaceholder": "747f2f0a65ebf4a28087a3b71d0c273d1a7784e83e8043a5d53dc7baa6b3b991"
+  "holdings.tickerFixSearchPlaceholder": "747f2f0a65ebf4a28087a3b71d0c273d1a7784e83e8043a5d53dc7baa6b3b991",
+  "holdings.importReviewEditDate": "e1b0b49576ba15fd9a168bb1e8efa004795be8a93acad9544f60442c69a7b7a2",
+  "holdings.importReviewEditPrice": "75ac63a61163e809d71e5116884905195da900603dc6a9d183dab0c1c3e7d5d1",
+  "holdings.importReviewEditShares": "c583cf278bbe825e16fb2166acb153d8974194a746633e2bb37282d9d8444fcc",
+  "holdings.importUndoAction": "a8283ade31856f71220db0e6f60a257c6889dc4dad0f275f66ad44b9ed9bf8d5",
+  "holdings.importUndoBannerTitle_one": "10525ad2b644538d9308b61c4211858980e8d8a9162b9606cf7d18417687f4c9",
+  "holdings.importUndoBannerTitle_other": "85584cc002ba0b6b520af09ee8d22aec8e0785233115cd57a085bc5417d17a09",
+  "holdings.importUndoDismiss": "48845bff334a50a59aaecf499f28a7a24c3b4b891b8b18a9f1169ad8e8a6b261",
+  "holdings.importUndoFailed": "31b7c734c670187e7a6df83aa89081e5705345bde349549d3637cc0b72b2c853",
+  "holdings.importUndoing": "62daa93abbe81f3280709ae2fb96b31471db88178a5cb2bf387ec11cdda8cf98",
+  "holdings.importUndoneBody_one": "eb036bb3dafcfbcbef2ecd5c5c0af94e7ea4e02bb8675ef893595a7dd30ad07a",
+  "holdings.importUndoneBody_other": "205d99a12f4111d052f28140e2a8273edaa64f1b4605ec21fd1b61a7aa487581",
+  "holdings.importUndoneTitle": "093de0befe6b784f79c8d13d77e162a0f4650085be08b08510b8f76614cfc2a9"
 }

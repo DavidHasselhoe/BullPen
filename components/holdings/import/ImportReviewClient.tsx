@@ -65,6 +65,52 @@ interface ImportRow {
   parsed: ImportDraft;
 }
 
+/**
+ * A row's three correctable values, held as raw strings while being typed so
+ * a half-deleted number doesn't momentarily read as NaN. `undefined` means
+ * untouched, which is how the parser's value stays authoritative until the
+ * user actually overrides it.
+ */
+type RowEdit = { date?: string; quantity?: string; price?: string };
+
+interface RowValues {
+  date: string | null;
+  quantity: number | null;
+  price: number | null;
+}
+
+function toNumber(raw: string | undefined, fallback: number | null): number | null {
+  if (raw === undefined) return fallback;
+  if (raw.trim() === '') return null;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function effectiveRow(tx: RawTransaction, edit: RowEdit | undefined): RowValues {
+  if (!edit) return { date: tx.date, quantity: tx.quantity, price: tx.price };
+  return {
+    date: edit.date !== undefined ? edit.date || null : tx.date,
+    quantity: toNumber(edit.quantity, tx.quantity),
+    price: toNumber(edit.price, tx.price),
+  };
+}
+
+/**
+ * Why a row can't be saved as it stands. planReplay silently SKIPS a
+ * transaction with a missing date, quantity or price, so without this check
+ * a broken row imports as nothing at all and the user is never told which
+ * one went missing. Now it blocks the save and can be fixed in place.
+ */
+function rowIssue(values: RowValues): 'date' | 'quantity' | 'price' | null {
+  if (!values.date || !/^\d{4}-\d{2}-\d{2}$/.test(values.date) || Number.isNaN(Date.parse(values.date))) return 'date';
+  if (values.quantity == null || !(values.quantity > 0)) return 'quantity';
+  if (values.price == null || !(values.price > 0)) return 'price';
+  return null;
+}
+
+const CELL_INPUT_CLASS =
+  'w-full rounded border border-transparent bg-transparent px-1 py-0.5 font-mono text-xs tabular-nums transition-colors hover:border-border/60 focus:border-primary focus:outline-none';
+
 function collapseRanges(lines: number[]): string {
   if (lines.length === 0) return '';
   const sorted = [...lines].sort((a, b) => a - b);
@@ -104,6 +150,7 @@ export function ImportReviewClient({ importId }: { importId: string }) {
   });
 
   const [removed, setRemoved] = useState<Set<number>>(new Set());
+  const [edits, setEdits] = useState<Record<number, RowEdit>>({});
   const [overrides, setOverrides] = useState<Record<string, FixedResolution>>({});
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -141,8 +188,12 @@ export function ImportReviewClient({ importId }: { importId: string }) {
 
   const rows = draft?.transactions ?? [];
   const activeRows = rows.filter((r) => !removed.has(r.sourceLine));
-  const readyRows = activeRows.filter((r) => resolutions[r.securityKey]?.status === 'resolved' && !replayFlags.has(r.sourceLine));
-  const brokenRows = activeRows.filter((r) => resolutions[r.securityKey]?.status !== 'resolved' || replayFlags.has(r.sourceLine));
+  const isRowBroken = (r: RawTransaction) =>
+    resolutions[r.securityKey]?.status !== 'resolved' ||
+    replayFlags.has(r.sourceLine) ||
+    rowIssue(effectiveRow(r, edits[r.sourceLine])) !== null;
+  const readyRows = activeRows.filter((r) => !isRowBroken(r));
+  const brokenRows = activeRows.filter(isRowBroken);
 
   // Manually-entered holdings this import would land on top of. Only
   // 'manual' holdings are eligible for replace — a SnapTrade-synced holding
@@ -158,6 +209,17 @@ export function ImportReviewClient({ importId }: { importId: string }) {
   }, [existingHoldings, activeRows, resolutions]);
 
   const securityLabel = (tx: RawTransaction) => tx.name ?? tx.rawSymbol ?? tx.isin ?? t('importReviewUnknownSecurity');
+
+  function setEdit(sourceLine: number, patch: RowEdit) {
+    setEdits((prev) => ({ ...prev, [sourceLine]: { ...prev[sourceLine], ...patch } }));
+  }
+
+  /** What the number input shows: the raw string mid-typing, else the parsed value. */
+  function editValue(tx: RawTransaction, field: 'quantity' | 'price', parsed: number | null): string {
+    const raw = edits[tx.sourceLine]?.[field];
+    if (raw !== undefined) return raw;
+    return parsed == null ? '' : String(parsed);
+  }
 
   // Warn on tab close / refresh — this whole review is throwaway until Save
   // actually commits it, and losing an AI-mapped, ticker-resolved draft to
@@ -184,8 +246,15 @@ export function ImportReviewClient({ importId }: { importId: string }) {
     setSaving(true);
     setSaveError(null);
     try {
+      // Per-row corrections are folded into the transactions themselves, so
+      // the committed replay and any later reload both read the fixed values
+      // rather than the parser's original guess.
       const updatedDraft: ImportDraft = {
         ...draft,
+        transactions: draft.transactions.map((tx) => {
+          const edit = edits[tx.sourceLine];
+          return edit ? { ...tx, ...effectiveRow(tx, edit) } : tx;
+        }),
         resolutions,
         removedSourceLines: [...removed],
       };
@@ -360,8 +429,10 @@ export function ImportReviewClient({ importId }: { importId: string }) {
                 const replayFlagDetail = replayFlags.get(tx.sourceLine);
                 const isUnresolved = !isRemoved && resolution?.status !== 'resolved';
                 const isFlagged = !isRemoved && !isUnresolved && !!replayFlagDetail;
-                const isBroken = isUnresolved || isFlagged;
-                const totalCost = tx.quantity != null && tx.price != null ? tx.quantity * tx.price : null;
+                const values = effectiveRow(tx, edits[tx.sourceLine]);
+                const issue = isRemoved ? null : rowIssue(values);
+                const isBroken = isUnresolved || isFlagged || issue !== null;
+                const totalCost = values.quantity != null && values.price != null ? values.quantity * values.price : null;
 
                 return (
                   <TableRow
@@ -416,12 +487,51 @@ export function ImportReviewClient({ importId }: { importId: string }) {
                         {tx.action === 'BUY' ? t('importReviewActionBuy') : t('importReviewActionSell')}
                       </span>
                     </TableCell>
-                    <TableCell className="whitespace-nowrap text-xs text-muted-foreground tabular-nums">
-                      {tx.date ?? <span className="text-red-400">{t('importReviewInvalidDate')}</span>}
+                    <TableCell className="whitespace-nowrap">
+                      <input
+                        type="date"
+                        value={values.date ?? ''}
+                        disabled={isRemoved}
+                        aria-label={t('importReviewEditDate')}
+                        aria-invalid={issue === 'date'}
+                        onChange={(e) => setEdit(tx.sourceLine, { date: e.target.value })}
+                        className={cn(
+                          CELL_INPUT_CLASS,
+                          'text-muted-foreground',
+                          issue === 'date' && 'border-amber-500/60 text-foreground'
+                        )}
+                      />
                     </TableCell>
-                    <TableCell className="text-right font-mono text-xs tabular-nums">{tx.quantity ?? '—'}</TableCell>
-                    <TableCell className="text-right font-mono text-xs tabular-nums">
-                      {tx.price != null ? `${tx.price.toFixed(2)}${tx.priceCurrency ? ` ${tx.priceCurrency}` : ''}` : '—'}
+                    <TableCell className="text-right">
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        step="any"
+                        value={editValue(tx, 'quantity', values.quantity)}
+                        disabled={isRemoved}
+                        aria-label={t('importReviewEditShares')}
+                        aria-invalid={issue === 'quantity'}
+                        onChange={(e) => setEdit(tx.sourceLine, { quantity: e.target.value })}
+                        className={cn(CELL_INPUT_CLASS, 'text-right', issue === 'quantity' && 'border-amber-500/60')}
+                      />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          step="any"
+                          value={editValue(tx, 'price', values.price)}
+                          disabled={isRemoved}
+                          aria-label={t('importReviewEditPrice')}
+                          aria-invalid={issue === 'price'}
+                          onChange={(e) => setEdit(tx.sourceLine, { price: e.target.value })}
+                          className={cn(CELL_INPUT_CLASS, 'text-right', issue === 'price' && 'border-amber-500/60')}
+                        />
+                        {tx.priceCurrency && (
+                          <span className="shrink-0 text-[11px] text-muted-foreground">{tx.priceCurrency}</span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="text-right font-mono text-xs tabular-nums text-muted-foreground">
                       {totalCost != null ? totalCost.toFixed(2) : '—'}

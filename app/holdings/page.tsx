@@ -5,6 +5,7 @@ import { AuthGate } from '@/components/ui/AuthGate';
 import { HoldingsTable } from '@/components/holdings/HoldingsTable';
 import { AddHoldingModal } from '@/components/holdings/AddHoldingModal';
 import { CSVImportModal } from '@/components/holdings/CSVImportModal';
+import { ImportUndoBanner } from '@/components/holdings/ImportUndoBanner';
 import { HoldingsPieChart } from '@/components/holdings/HoldingsPieChart';
 import { PortfolioDashboard } from '@/components/holdings/PortfolioDashboard';
 import { PortfolioHealthCard } from '@/components/holdings/PortfolioHealthCard';
@@ -392,6 +393,9 @@ export default function HoldingsPage() {
           )
         )}
       </div>
+
+      {/* Undo the most recent import, for 24h after it commits */}
+      <ImportUndoBanner />
 
       {/* Connected brokerage — manage, sync, or disconnect (only shown once connected) */}
       {brokerageConfigured && isBrokerageConnected && <BrokerageConnect />}
