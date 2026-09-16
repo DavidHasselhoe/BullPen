@@ -1,5 +1,38 @@
 [
   {
+    "date": "2026-09-16",
+    "entries": [
+      {
+        "type": "new",
+        "text": "You can now undo an import. For 24 hours after importing transactions, your Holdings page offers to put every position back exactly as it was. If you have bought or sold any of those positions since, it tells you and leaves them alone"
+      },
+      {
+        "type": "improved",
+        "text": "The import review screen now lets you correct the date, share count and price of any row before saving, instead of deleting the row and adding it by hand afterwards"
+      },
+      {
+        "type": "improved",
+        "text": "The import review screen is now translated, so the whole import flow reads in your language from start to finish"
+      },
+      {
+        "type": "fixed",
+        "text": "Imported rows missing a date, share count or price used to be skipped without telling you. They are now flagged so you can fix them before saving"
+      },
+      {
+        "type": "fixed",
+        "text": "The screener now shows company names instead of repeating the ticker symbol"
+      },
+      {
+        "type": "fixed",
+        "text": "Columbus Day and Veterans Day are no longer shown as early closing days. US stock exchanges trade a full day on both"
+      },
+      {
+        "type": "fixed",
+        "text": "Exporting your holdings to PDF no longer stops after 500 rows"
+      }
+    ]
+  },
+  {
     "date": "2026-09-15",
     "entries": [
       {
