@@ -76,3 +76,22 @@ Additional requirements for this build, on top of everything above:
 
   return { block, tickers: positions.map((p) => p.ticker) };
 }
+
+/**
+ * The gate: nothing about the investor's portfolio is even read unless this
+ * build asked for it. Split out from the caller so the guarantee the toggle
+ * makes can be tested without spending a model call to observe it
+ * (scripts/test-holdings-context-gate.ts).
+ */
+export async function resolveHoldingsBlock(
+  userId: string,
+  useHoldings: boolean,
+): Promise<string | undefined> {
+  if (!useHoldings) return undefined;
+  return (await buildHoldingsContext(userId))?.block;
+}
+
+/** The user turn: the thesis alone, unless a block was resolved above. */
+export function composeUserTurn(thesis: string, holdingsBlock?: string): string {
+  return holdingsBlock ? thesis + holdingsBlock : thesis;
+}

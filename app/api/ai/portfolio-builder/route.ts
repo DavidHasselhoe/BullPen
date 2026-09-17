@@ -16,7 +16,7 @@ import {
   extractJsonObject,
 } from '@/lib/ai/portfolio-builder/schema';
 import { validateTickers } from '@/lib/ai/portfolio-builder/validate-tickers';
-import { buildHoldingsContext } from '@/lib/ai/portfolio-builder/holdings-context';
+import { resolveHoldingsBlock, composeUserTurn } from '@/lib/ai/portfolio-builder/holdings-context';
 import { renormalizeAllocations } from '@/lib/ai/portfolio-builder/renormalize';
 import { classifyAiError, parseFailure } from '@/lib/ai/provider-error';
 import { z } from 'zod';
@@ -45,7 +45,7 @@ async function runPortfolioBuilder(params: {
   // Read inside the background task, not in the request: POST's whole job is
   // to hand back an id immediately. An empty or unreadable book degrades to a
   // normal thematic build, since the thesis alone is still a complete request.
-  const holdingsBlock = useHoldings ? (await buildHoldingsContext(userId))?.block : undefined;
+  const holdingsBlock = await resolveHoldingsBlock(userId, useHoldings);
   const supabase = createServerClient();
   const setPhase = (phase: BuilderPhase) => supabase.from('portfolio_generations').update({ phase }).eq('id', id);
   const markError = (code: string, message: string) =>
@@ -61,7 +61,7 @@ async function runPortfolioBuilder(params: {
       // The holdings block rides in the user turn, never the system prompt:
       // the system prompt is cached across every user's builds and must stay
       // byte-identical for that cache to hit.
-      messages: [{ role: 'user', content: holdingsBlock ? thesis + holdingsBlock : thesis }],
+      messages: [{ role: 'user', content: composeUserTurn(thesis, holdingsBlock) }],
     });
 
     let buffered = '';
