@@ -8,8 +8,8 @@ import Link from 'next/link';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { X, ArrowUpRight, ChevronLeft, ChevronRight, ChevronDown, ExternalLink, Globe, History } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { slugToAssetPath } from '@/lib/assets/asset-type';
 import { Sparkline } from '@/components/viz/Sparkline';
+import { TickerPreview } from '@/components/company/TickerPreview';
 import { useAuth } from '@/hooks/use-auth';
 
 interface BriefSource {
@@ -135,13 +135,11 @@ function renderInline(text: string): React.ReactNode {
         const ticker = tickerInBold[1].slice(1);
         const rest = tickerInBold[2] ?? '';
         const linkEl = (
-          <Link
+          <TickerPreview
             key={key++}
-            href={slugToAssetPath(ticker)}
+            ticker={ticker}
             className="font-mono font-semibold text-primary/85 hover:text-primary border-b border-primary/20 hover:border-primary/60 transition-colors"
-          >
-            ${ticker}
-          </Link>
+          />
         );
         if (rest) {
           nodes.push(
@@ -162,13 +160,11 @@ function renderInline(text: string): React.ReactNode {
     } else if (match[2]) {
       const ticker = match[2];
       nodes.push(
-        <Link
+        <TickerPreview
           key={key++}
-          href={slugToAssetPath(ticker)}
+          ticker={ticker}
           className="font-mono font-medium text-primary/85 hover:text-primary border-b border-primary/20 hover:border-primary/60 transition-colors"
-        >
-          ${ticker}
-        </Link>
+        />
       );
     }
     lastIndex = match.index + match[0].length;
@@ -684,16 +680,16 @@ function BriefReader({
                 {topTickers.map((ticker) => {
                   const spark = tickerSparklines?.[ticker];
                   return (
-                    <Link
+                    <TickerPreview
                       key={ticker}
-                      href={slugToAssetPath(ticker)}
+                      ticker={ticker}
                       className="inline-flex items-center gap-1.5 text-[11px] font-mono font-medium text-foreground/80 bg-muted/40 hover:bg-muted/70 hover:text-foreground transition-all duration-150 px-2 py-0.5 rounded border border-border/30 hover:border-border"
                     >
                       ${ticker}
                       {spark && spark.length > 1 && (
                         <Sparkline data={spark} width={36} height={12} className="w-9 h-3 shrink-0" />
                       )}
-                    </Link>
+                    </TickerPreview>
                   );
                 })}
               </div>

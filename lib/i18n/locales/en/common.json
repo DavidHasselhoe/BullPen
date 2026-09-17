@@ -11,5 +11,9 @@
   "reset": "Reset",
   "save": "Save",
   "search": "Search",
-  "success": "Success"
+  "success": "Success",
+  "tickerPreviewAdd": "Add to watchlist",
+  "tickerPreviewNoProfile": "No company profile for this one yet.",
+  "tickerPreviewOpen": "Open company",
+  "tickerPreviewWatched": "In your watchlist"
 }
