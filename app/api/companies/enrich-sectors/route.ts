@@ -26,8 +26,42 @@ async function handler(request: NextRequest, _ctx: unknown, _session: { userId: 
     const supabase = createServerClient();
     const sectors: Record<string, string> = {};
 
+    // Look in the database before paying TwelveData for it. /profile is 10
+    // credits a call, and this app keeps sectors in three tables filled by
+    // three different paths, so a ticker the caller believes is unclassified
+    // is often already classified in one of the other two. Callers only check
+    // ticker_sectors and companies, which is how this route ended up buying
+    // sectors that screener_stats already had.
+    const [screener, companies] = await Promise.all([
+      supabase.from('screener_stats').select('ticker, sector').in('ticker', tickers),
+      supabase.from('companies').select('ticker, sector').in('ticker', tickers),
+    ]);
+
+    const known = new Map<string, string>();
+    for (const result of [companies, screener]) {
+      for (const row of (result.data ?? []) as Array<{ ticker: string; sector: string | null }>) {
+        if (row.sector && row.sector.trim()) known.set(row.ticker, row.sector.trim());
+      }
+    }
+
+    const toFetch: string[] = [];
+    for (const ticker of tickers) {
+      const hit = known.get(ticker);
+      if (hit) {
+        sectors[ticker] = hit;
+        // Promote it into the shared cache so the next reader of that table
+        // finds it without coming back here at all.
+        void supabase.from('ticker_sectors').upsert(
+          { ticker, sector: hit, updated_at: new Date().toISOString() },
+          { onConflict: 'ticker' }
+        );
+      } else {
+        toFetch.push(ticker);
+      }
+    }
+
     await Promise.all(
-      tickers.map(async (ticker) => {
+      toFetch.map(async (ticker) => {
         try {
           const profile = await getCompanyProfile(ticker);
           if (profile.sector) {

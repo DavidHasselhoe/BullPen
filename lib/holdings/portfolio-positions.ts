@@ -49,25 +49,48 @@ export async function loadPositions(userId: string): Promise<Position[]> {
     .sort((a, b) => b.weightPct - a.weightPct)
     .slice(0, MAX_POSITIONS);
 
-  // Sectors come from the same cache the holdings page reads. Best effort on
-  // purpose: a missing sector makes one line less specific, where waiting on a
-  // paid /profile fan-out to fill it would make the whole feature slower and
-  // more expensive for a detail the model can usually infer from the ticker.
-  const supabase = createServerClient();
-  const { data } = await supabase
-    .from('ticker_sectors')
-    .select('ticker, sector')
-    .in('ticker', positions.map((p) => p.ticker));
-
-  const bySymbol = new Map(
-    ((data ?? []) as Array<{ ticker: string; sector: string | null }>).map((r) => [
-      r.ticker.toUpperCase(),
-      r.sector,
-    ]),
-  );
-  for (const p of positions) p.sector = bySymbol.get(p.ticker) ?? null;
-
+  await attachSectors(positions);
   return positions;
+}
+
+/**
+ * Sectors, from all three places this app keeps them.
+ *
+ * They are kept in three tables filled by three different paths, and reading
+ * only one of them is why the AI features saw sectors for 3 of a 10-position
+ * test book while the database actually knew 9 of them. Nothing here costs an
+ * API call: it is data already sitting in Postgres.
+ *
+ * Precedence is deliberate, because the tables disagree. `ticker_sectors` is
+ * written from a live /profile lookup and carries an updated_at.
+ * `screener_stats` is refreshed by the screener cron. `companies` is a
+ * 39-row hand-seeded table that has drifted: it files GOOGL and META under
+ * Technology where the other two correctly say Communication Services, so it
+ * is consulted last and only when nothing else knows.
+ *
+ * Best effort by design. A position with no sector anywhere (crypto, ETFs,
+ * some foreign listings) simply carries null, and the prompt reads one line
+ * less specific rather than waiting on a paid fan-out.
+ */
+async function attachSectors(positions: Position[]): Promise<void> {
+  const tickers = positions.map((p) => p.ticker);
+  const supabase = createServerClient();
+
+  const [cached, screener, companies] = await Promise.all([
+    supabase.from('ticker_sectors').select('ticker, sector').in('ticker', tickers),
+    supabase.from('screener_stats').select('ticker, sector').in('ticker', tickers),
+    supabase.from('companies').select('ticker, sector').in('ticker', tickers),
+  ]);
+
+  const bySymbol = new Map<string, string>();
+  // Lowest precedence first, so a better source overwrites a worse one.
+  for (const result of [companies, screener, cached]) {
+    for (const row of (result.data ?? []) as Array<{ ticker: string; sector: string | null }>) {
+      if (row.sector && row.sector.trim()) bySymbol.set(row.ticker.toUpperCase(), row.sector.trim());
+    }
+  }
+
+  for (const p of positions) p.sector = bySymbol.get(p.ticker) ?? null;
 }
 
 /** One line per position, for a prompt. */
@@ -81,10 +104,10 @@ export function renderPositionLines(positions: Position[]): string {
 }
 
 /**
- * Deliberately no sectorWeights() helper here. `ticker_sectors` covered 3 of
- * this app's 10 test positions when this was written, so a weight summed from
- * it would have read "Technology 21%" for a book that is really about 70%
- * technology. A number that confident and that wrong is worse than no number:
- * the model is given the tickers and works the concentration out itself, which
- * it does accurately, and nothing renders a sector percentage from this cache.
+ * Deliberately no sectorWeights() helper here, even now that coverage is good.
+ * Coverage is "good", not complete: crypto and ETFs have no sector at all, and
+ * a percentage summed over only the classified part of a book would read as if
+ * it described the whole thing. The model is given the tickers and works the
+ * concentration out itself, accurately, and nothing renders a sector
+ * percentage from this data.
  */
