@@ -1,5 +1,54 @@
 [
   {
+    "date": "2026-09-17",
+    "entries": [
+      {
+        "type": "new",
+        "text": "The Portfolio Builder can now build on the portfolio you already own. Turn on \"Use my holdings as the foundation\" and it suggests what to add rather than a separate portfolio, says where the new companies overlap with what you hold, and judges the result against your portfolio as a whole. It shows you exactly which positions it will use before you start, and it is off unless you turn it on"
+      },
+      {
+        "type": "new",
+        "text": "The AI Deep Dive can now tell you how a company fits the portfolio you already own. It covers what the company overlaps with, what it brings that you do not already have, and what a position would do to your concentration. Off unless you turn it on, for each report"
+      },
+      {
+        "type": "new",
+        "text": "Company names in the Daily Brief now open a card when you hover or tap them, with the logo, what the company does and its price today, so you can find out what a company is without leaving the brief. There is a button to open the full company page, and one to add it to a watchlist"
+      },
+      {
+        "type": "new",
+        "text": "Every deep dive now includes a bottom line written for you: one version if you already hold the stock, another if you are considering it"
+      },
+      {
+        "type": "improved",
+        "text": "Institutional holdings now show when the next batch of filings is due, so you know when new fund positions will appear. BullPen also checks for them daily around each deadline instead of once a week, so you hear about a fund's new positions within a day of them being filed"
+      },
+      {
+        "type": "improved",
+        "text": "The lists on Discover no longer explain themselves in a block of text under the page. Each list has a question mark next to its title with the same explanation, for when you want it"
+      },
+      {
+        "type": "improved",
+        "text": "Sectors are filled in more reliably for the companies you hold and watch, so sector breakdowns have fewer unknowns"
+      },
+      {
+        "type": "improved",
+        "text": "The Portfolio Builder and Risk Analysis now tell you honestly how long they take. The builder said 15 to 30 seconds and really takes two to four minutes"
+      },
+      {
+        "type": "fixed",
+        "text": "The gain or loss on a shared portfolio card now matches what your Holdings page shows. Before, cards made outside market hours could differ by a full percentage point"
+      },
+      {
+        "type": "fixed",
+        "text": "A shared portfolio card now shows your name. It said \"A BullPen investor\" even when you had not chosen to post anonymously"
+      },
+      {
+        "type": "fixed",
+        "text": "The Daily Brief no longer links things that are not companies. Market measures like the VIX used to look like links and led to an empty page"
+      }
+    ]
+  },
+  {
     "date": "2026-09-16",
     "entries": [
       {
