@@ -52,12 +52,29 @@ async function recordMiss(
     .from('ticker_sector_misses' as never)
     .upsert({ ticker, reason, last_attempt_at: new Date().toISOString() } as never, { onConflict: 'ticker' });
 }
+/**
+ * Which book to classify. The candidate query differs; the pacing, the miss
+ * recording and the writes are identical, which is the whole reason this takes
+ * a parameter rather than being copied.
+ *
+ * `tracked` covers the symbols users hold or watch. Those were classified only
+ * when someone happened to open the holdings page and trigger the lazy
+ * /profile path, so a watchlist nobody visited stayed unclassified forever.
+ */
+export type SectorSource = 'institutional' | 'tracked';
+
+const CANDIDATE_RPC: Record<SectorSource, string> = {
+  institutional: 'institutional_symbols_missing_sector',
+  tracked: 'tracked_symbols_missing_sector',
+};
+
 export async function enrichHoldingSectors(
   supabase: ReturnType<typeof createServerClient>,
-  { limit = 300 }: { limit?: number } = {}
+  { limit = 300, source = 'institutional' }: { limit?: number; source?: SectorSource } = {}
 ): Promise<EnrichSectorsResult> {
-  const { data, error } = await supabase.rpc('institutional_symbols_missing_sector', { p_limit: limit });
-  if (error) throw new Error(`institutional_symbols_missing_sector failed: ${error.message}`);
+  const rpc = CANDIDATE_RPC[source];
+  const { data, error } = await supabase.rpc(rpc, { p_limit: limit });
+  if (error) throw new Error(`${rpc} failed: ${error.message}`);
 
   const symbols = ((data as { symbol: string }[] | null) ?? []).map((r) => r.symbol);
   const result: EnrichSectorsResult = { candidates: symbols.length, resolved: 0, noSector: 0, failed: 0, rateLimited: false };

@@ -128,5 +128,18 @@ export async function GET(request: NextRequest) {
     console.error('[sync-institutional-holdings] sector enrichment failed:', err);
   }
 
-  return NextResponse.json({ success: true, results, firstFiled, sectors });
+  // The same pass over the symbols users actually hold and watch. Smaller
+  // limit because that set is smaller and mostly already classified: the
+  // holdings page fills a new symbol on first view, so this is the safety net
+  // for the ones nobody opened. Runs after the institutional pass, which is
+  // the one with a feature depending on it, and shares the same per-minute
+  // credit budget.
+  let trackedSectors = null;
+  try {
+    trackedSectors = await enrichHoldingSectors(supabase, { limit: 25, source: 'tracked' });
+  } catch (err) {
+    console.error('[sync-institutional-holdings] tracked sector enrichment failed:', err);
+  }
+
+  return NextResponse.json({ success: true, results, firstFiled, sectors, trackedSectors });
 }
