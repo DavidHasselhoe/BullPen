@@ -13,7 +13,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!share) return { title: 'Share not found' };
 
   const positive = share.pct >= 0;
-  const who = !share.anonymous && share.username ? `@${share.username}` : 'A BullPen investor';
+  // Already "@"-prefixed at creation time when it's a username, not a name.
+  const who = !share.anonymous && share.username ? share.username : 'A BullPen investor';
   const title = `${who} is ${positive ? 'up' : 'down'} ${Math.abs(share.pct).toFixed(2)}% today`;
   const description = 'Track your own portfolio with real market data and AI-powered explanations — free to start.';
   const ogImageUrl = `/api/og/share/${id}`;

@@ -9,16 +9,23 @@ export interface CandleData {
 
 export interface SparklineHolding {
   symbol: string;
-  avgPrice: number;
   quantity: number;
-  /** Unix ms — date_purchased ?? created_at, whichever the holding row has. */
-  startMs: number;
+  /**
+   * Previous regular-session close and current price, from the same
+   * prepost-aware quote the Holdings page's day-change column reads
+   * (app/holdings/page.tsx). Today's number on the card has to be measured
+   * from the same baseline the page measures from — previous close — or the
+   * two disagree, most visibly in pre-market, where a card baselined on the
+   * first 04:00 print silently drops the whole overnight gap.
+   */
+  prevClose: number | null;
+  currentPrice: number | null;
 }
 
 export interface TodaySparklineResult {
   /** Downsampled to ~32 points — the sparkline's y-values, ascending by time. */
   points: number[];
-  /** Percent change of the whole portfolio today, from the same series (last point). */
+  /** Percent change of the whole portfolio today, vs previous close. */
   pct: number;
   /** USD change of the whole portfolio today. */
   pnlUsd: number;
@@ -33,57 +40,57 @@ function downsample(points: number[], maxPoints: number): number[] {
 }
 
 /**
- * Reconstructs today's portfolio P/L curve from each holding's 1D candles.
- * Returns null when there's nothing to show yet (no candles for any symbol,
- * or the reconstructed basis is zero) — the caller treats that as "share
- * button disabled," never as a fabricated 0%.
+ * Today's portfolio P/L, headline and curve.
+ *
+ * The headline pct/pnlUsd comes from quotes, holding by holding — the exact
+ * same sum the Holdings page renders (Σ (price − prevClose) × qty over
+ * Σ prevClose × qty). Candles only shape the curve, and a symbol with no
+ * candles today (nothing traded yet in pre-market) still counts toward the
+ * headline, which is why the card can no longer report a different number
+ * than the page it was shared from.
+ *
+ * Returns null when no holding has a usable quote — the caller treats that as
+ * "share button disabled," never as a fabricated 0%.
  */
 export function computeTodaySparkline(
   holdings: SparklineHolding[],
   candlesBySymbol: Record<string, CandleData | null>
 ): TodaySparklineResult | null {
+  let pnlUsd = 0;
+  let basis = 0;
+  for (const h of holdings) {
+    if (!h.prevClose || h.prevClose <= 0 || !h.currentPrice) continue;
+    pnlUsd += (h.currentPrice - h.prevClose) * h.quantity;
+    basis += h.prevClose * h.quantity;
+  }
+  if (basis <= 0) return null;
+  const pct = (pnlUsd / basis) * 100;
+
   const dollarPlByTime = new Map<number, number>();
   const basisByTime = new Map<number, number>();
-  let sawAnyCandles = false;
 
   for (const h of holdings) {
     const candles = candlesBySymbol[h.symbol];
-    if (!candles || candles.t.length === 0) continue;
-    sawAnyCandles = true;
-
+    if (!candles || candles.t.length === 0 || !h.prevClose || h.prevClose <= 0) continue;
     const { t, c } = candles;
-    const periodStartMs = t[0] * 1000;
-    // Position opened after today's window started (rare for "today," but
-    // matches the same rule PortfolioSummaryWidget's weekly version uses):
-    // baseline off the actual purchase price, not today's opening tick.
-    const boughtDuringPeriod = h.startMs > periodStartMs;
-    const basePrice = boughtDuringPeriod ? h.avgPrice : c[0];
-
     for (let i = 0; i < t.length; i++) {
-      if (t[i] * 1000 < h.startMs) continue;
-      dollarPlByTime.set(t[i], (dollarPlByTime.get(t[i]) ?? 0) + (c[i] - basePrice) * h.quantity);
-      basisByTime.set(t[i], (basisByTime.get(t[i]) ?? 0) + basePrice * h.quantity);
+      dollarPlByTime.set(t[i], (dollarPlByTime.get(t[i]) ?? 0) + (c[i] - h.prevClose) * h.quantity);
+      basisByTime.set(t[i], (basisByTime.get(t[i]) ?? 0) + h.prevClose * h.quantity);
     }
   }
 
-  if (!sawAnyCandles) return null;
-
   const sortedTimes = Array.from(dollarPlByTime.keys()).sort((a, b) => a - b);
   const rawPoints = sortedTimes.map((t) => {
-    const basis = basisByTime.get(t) ?? 0;
-    return basis > 0 ? ((dollarPlByTime.get(t) ?? 0) / basis) * 100 : 0;
+    const b = basisByTime.get(t) ?? 0;
+    return b > 0 ? ((dollarPlByTime.get(t) ?? 0) / b) * 100 : 0;
   });
+  // Land the curve on the headline. Each minute's basis only covers the
+  // symbols that actually printed that minute, so the last candle point can
+  // sit well off the quoted total — a line that ends somewhere other than the
+  // number printed above it just looks broken.
+  rawPoints.push(pct);
 
-  const lastTime = sortedTimes[sortedTimes.length - 1];
-  const finalDollarPl = dollarPlByTime.get(lastTime) ?? 0;
-  const finalBasis = basisByTime.get(lastTime) ?? 0;
-  if (finalBasis <= 0) return null;
-
-  return {
-    points: downsample(rawPoints, MAX_SPARKLINE_POINTS),
-    pct: (finalDollarPl / finalBasis) * 100,
-    pnlUsd: finalDollarPl,
-  };
+  return { points: downsample(rawPoints, MAX_SPARKLINE_POINTS), pct, pnlUsd };
 }
 
 /**
@@ -96,8 +103,7 @@ export function computeTodaySparkline(
  *
  * Deliberately does NOT walk backward across days on a miss (unlike the
  * candles route's chart-continuity fallback) — a share card's entire point is
- * "today's" number, so no data for today means "nothing to share yet," not
- * "silently substitute yesterday and call it today."
+ * "today's" number, so no data for today means no curve for that symbol.
  */
 export async function getTodayCandlesForSymbol(symbol: string): Promise<CandleData | null> {
   const dateET = todayET();

@@ -42,9 +42,11 @@ export async function GET(
 
   const positive = share.pct >= 0;
   const color = positive ? '#34d399' : '#f87171';
-  // share.username is the snapshot taken at creation time (Task 5) — never a
-  // live lookup, and never present at all when the share was made anonymous.
-  const handle = !share.anonymous && share.username ? `@${share.username}` : 'A BullPen investor';
+  // share.username is the display handle snapshotted at creation time (Task 5)
+  // — never a live lookup, never present at all when the share was made
+  // anonymous, and already carrying its own "@" when it's a username rather
+  // than a real name (see /api/shares).
+  const handle = !share.anonymous && share.username ? share.username : 'A BullPen investor';
   const directionWord = positive ? 'up' : 'down';
   const pctLabel = `${positive ? '+' : ''}${share.pct.toFixed(2)}%`;
   const dateLabel = new Date(share.date + 'T12:00:00Z').toLocaleDateString('en-US', {

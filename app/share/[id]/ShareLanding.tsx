@@ -14,10 +14,12 @@ export function ShareLanding({ share }: { share: PortfolioShare }) {
   const authMode: AuthMode = 'signup';
 
   const positive = share.pct >= 0;
-  // share.username is the snapshot taken at creation time — never a live
-  // lookup, never present when the share was made anonymous.
-  const hasProfile = !share.anonymous && !!share.username;
-  const handle = hasProfile ? `@${share.username}` : 'A BullPen investor';
+  // share.username is the display handle snapshotted at creation time — never
+  // a live lookup, never present when the share was made anonymous, and
+  // already carrying its own "@" when it's a username rather than a real name
+  // (see /api/shares). Only that "@" form names a real /users/[username] page.
+  const handle = !share.anonymous && share.username ? share.username : 'A BullPen investor';
+  const profileUsername = handle.startsWith('@') ? handle.slice(1) : null;
 
   const openSignUp = () => {
     setAuthMounted(true);
@@ -43,10 +45,10 @@ export function ShareLanding({ share }: { share: PortfolioShare }) {
         {/* The one piece of real social proof this page has: a link to the
             sharer's own public profile (already public/browsable — see
             app/users/[username]/page.tsx), when they weren't anonymous. */}
-        {hasProfile && (
+        {profileUsername && (
           <p className="text-xs text-muted-foreground mt-5">
             Shared by{' '}
-            <Link href={`/users/${share.username}`} className="text-foreground/70 hover:text-foreground underline underline-offset-2">
+            <Link href={`/users/${profileUsername}`} className="text-foreground/70 hover:text-foreground underline underline-offset-2">
               {handle}
             </Link>
           </p>

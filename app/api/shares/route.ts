@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
 import { computeTodaySparkline, getTodayCandlesForSymbol, type SparklineHolding, type CandleData } from '@/lib/holdings/today-sparkline';
+import { getStockQuotes } from '@/lib/market-data';
+import { isOutsideRegularSessionET } from '@/lib/twelvedata/twelvedata-client';
 import { randomBytes } from 'crypto';
 
 interface CreateShareBody {
@@ -11,10 +13,8 @@ interface CreateShareBody {
 
 interface HoldingRow {
   symbol: string;
-  avg_price: number | null;
   quantity: number | null;
-  date_purchased: string | null;
-  created_at: string;
+  mic_code: string | null;
 }
 
 async function handler(
@@ -29,36 +29,58 @@ async function handler(
   const supabase = createServerClient();
   const { data: holdingRows } = await supabase
     .from('user_holdings')
-    .select('symbol, avg_price, quantity, date_purchased, created_at')
+    .select('symbol, quantity, mic_code')
     .eq('user_id', session.userId);
 
   // Snapshotted onto the row below (not joined live at render time) — same
   // "frozen, independent of what happens to the account later" reasoning as
-  // pct/pnl_usd/sparkline. Never fetched at all when anonymous is true.
+  // pct/pnl_usd/sparkline. Never fetched at all when anonymous is true, and
+  // stored ready to render, @-prefix and all: a username is a handle, a real
+  // name isn't. Same `full_name || username` order the rest of the app names
+  // people by (ThesisSection, the social feed) — username alone is null for
+  // anyone who signed up without picking one, which is why cards that weren't
+  // anonymous at all still read "A BullPen investor".
   let username: string | null = null;
   if (!anonymous) {
     const { data: userRow } = await supabase
       .from('users')
-      .select('username')
+      .select('username, full_name')
       .eq('id', session.userId)
       .single();
-    username = (userRow as { username: string | null } | null)?.username ?? null;
+    const profile = userRow as { username: string | null; full_name: string | null } | null;
+    username =
+      profile?.full_name?.trim() || (profile?.username ? `@${profile.username}` : null) || null;
   }
 
-  const eligible: SparklineHolding[] = ((holdingRows ?? []) as HoldingRow[])
-    .filter((h) => h.avg_price != null && (h.quantity ?? 0) > 0)
-    .map((h) => ({
-      symbol: h.symbol.toUpperCase(),
-      avgPrice: h.avg_price as number,
-      quantity: h.quantity as number,
-      startMs: new Date(h.date_purchased ?? h.created_at).getTime(),
-    }));
+  const positions = ((holdingRows ?? []) as HoldingRow[])
+    .filter((h) => (h.quantity ?? 0) > 0)
+    .map((h) => ({ symbol: h.symbol.toUpperCase(), quantity: h.quantity as number, micCode: h.mic_code }));
 
-  if (eligible.length === 0) {
+  if (positions.length === 0) {
     return addSecurityHeaders(
       NextResponse.json({ success: false, error: 'no_holdings' }, { status: 200 })
     );
   }
+
+  // The same quote call the Holdings page makes for its day-change column,
+  // prepost and mic_code included. The card's number IS that page's number,
+  // so it has to come from that page's source rather than be re-derived.
+  const micCodes: Record<string, string> = {};
+  for (const p of positions) if (p.micCode) micCodes[p.symbol] = p.micCode;
+  const quotes = await getStockQuotes(positions.map((p) => p.symbol), {
+    prepost: isOutsideRegularSessionET(),
+    ...(Object.keys(micCodes).length > 0 ? { micCodes } : {}),
+  }).catch(() => new Map());
+
+  const eligible: SparklineHolding[] = positions.map((p) => {
+    const q = quotes.get(p.symbol);
+    return {
+      symbol: p.symbol,
+      quantity: p.quantity,
+      prevClose: q?.pc ?? null,
+      currentPrice: q?.c ?? null,
+    };
+  });
 
   const candleResults = await Promise.all(
     eligible.map(async (h) => ({ symbol: h.symbol, candles: await getTodayCandlesForSymbol(h.symbol) }))
