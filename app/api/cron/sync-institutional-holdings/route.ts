@@ -2,10 +2,17 @@
  * Institutional 13F holdings — sync cron
  * GET /api/cron/sync-institutional-holdings
  *
- * Runs weekly (Mondays 06:00 UTC, vercel.json). 13F-HR filings are due 45
- * days after quarter-end but funds file on a rolling basis within that
- * window, so a weekly poll catches a new filing within 7 days without cron
- * needing a native "quarterly" concept.
+ * Runs daily (07:00 UTC, vercel.json) but only does real work when a filing
+ * could plausibly have landed: inside the 13F filing window, or on Mondays
+ * through the rest of the quarter to catch a late filing or an amendment.
+ *
+ * Every manager shares one deadline (45 days after quarter-end, rolled past
+ * weekends and Presidents' Day — see lib/institutions/filing-schedule.ts) and
+ * 72% of the filings ingested here landed exactly on it. Polling weekly
+ * therefore had its worst case on the one day that matters: Q3 2026 is due
+ * Monday Nov 16, this cron ran Mondays at 07:00 UTC (02:00 ET), hours before
+ * any of those filings existed, so followers would not have heard until
+ * Nov 23.
  *
  * Loops every active fund in institutional_investors and ingests its newest
  * 13F-HR. Each fund's work is fully independent and commits as it completes —
@@ -24,6 +31,7 @@ import { createServerClient } from '@/lib/supabase/client';
 import { ingestFiling, list13FFilings, type IngestTarget } from '@/lib/institutions/ingest-filing';
 import { enrichHoldingSectors } from '@/lib/institutions/enrich-holding-sectors';
 import { fetchFirst13FFiledDate } from '@/lib/edgar/edgar-watch';
+import { isInFilingWindow } from '@/lib/institutions/filing-schedule';
 
 export const maxDuration = 300;
 
@@ -55,6 +63,14 @@ export async function GET(request: NextRequest) {
   // Phase 1 manual validation pass (Berkshire only) and for re-triggering a
   // single fund that came back parse_failed, without re-running everyone.
   const slugFilter = request.nextUrl.searchParams.get('slug');
+
+  // Outside the filing window there is nothing new to find on most days, so
+  // keep the old weekly cadence there and spend the daily runs where filings
+  // actually appear. A manual ?slug= run always proceeds — it exists to
+  // re-trigger one fund on demand.
+  if (!slugFilter && !isInFilingWindow() && new Date().getUTCDay() !== 1) {
+    return NextResponse.json({ success: true, skipped: 'outside_filing_window' });
+  }
 
   const supabase = createServerClient();
   let query = supabase

@@ -8,6 +8,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { AiPaywallDialog } from '@/components/billing/AiPaywallDialog';
 import { FundAvatar } from './FundAvatar';
 import { Filing13FDisclaimer } from './Filing13FDisclaimer';
+import { NextFilingNote } from './NextFilingNote';
 import { FollowFundButton } from './FollowFundButton';
 import { FundAskBullPrompts } from './FundAskBullPrompts';
 import { QuarterPicker } from './QuarterPicker';
@@ -150,7 +151,8 @@ export function InstitutionalFundDetailClient({ slug }: { slug: string }) {
         </div>
       )}
 
-      <div className="mb-6">
+      <div className="mb-6 space-y-2">
+        <NextFilingNote />
         <Filing13FDisclaimer />
       </div>
 

@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils';
 import { FundAvatar } from './FundAvatar';
 import { FollowFundButton } from './FollowFundButton';
 import { Filing13FDisclaimer } from './Filing13FDisclaimer';
+import { NextFilingNote } from './NextFilingNote';
 import type { InstitutionalFundSummary, SectorWeight } from '@/app/api/institutions/route';
 import type { ConcentrationRead } from '@/lib/institutions/allocation';
 
@@ -459,8 +460,9 @@ export function InstitutionalHoldingsSection() {
           <ProBadge />
         </div>
       </div>
-      <div className="mb-3">
+      <div className="mb-3 space-y-1.5">
         <Filing13FDisclaimer compact />
+        <NextFilingNote />
       </div>
 
       <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2">
