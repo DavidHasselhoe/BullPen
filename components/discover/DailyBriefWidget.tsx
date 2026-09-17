@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import { Sparkline } from '@/components/viz/Sparkline';
 import { TickerPreview } from '@/components/company/TickerPreview';
 import { useAuth } from '@/hooks/use-auth';
+import { useSymbolIndex } from '@/hooks/use-symbol-index';
 
 interface BriefSource {
   url: string;
@@ -114,9 +115,34 @@ function estimateReadingTime(content: string): number {
   return Math.max(1, Math.round(words / 220));
 }
 
-// Tokenize a line into <strong>, ticker <Link>, and plain text in a single pass.
+/** A null catalogue means "not loaded yet", not "nothing is a ticker". */
+function isKnownTicker(ticker: string, known: Set<string> | null): boolean {
+  return known === null || known.has(ticker);
+}
+
+/**
+ * The catalogue as a lookup set, built once per reader rather than per section.
+ * This is the same shared query every search surface uses (the global command
+ * palette already fetches it during idle time), so it costs no extra request.
+ */
+function useKnownTickers(): Set<string> | null {
+  const index = useSymbolIndex();
+  return useMemo(
+    () => (index.length > 0 ? new Set(index.map((e) => e.ticker)) : null),
+    [index],
+  );
+}
+
+// Tokenize a line into <strong>, ticker link, and plain text in a single pass.
 // Patterns: **bold text**, $TICKER
-function renderInline(text: string): React.ReactNode {
+//
+// `known` is the symbol catalogue every search surface already uses. The model
+// writes $VIX, $SPX and $DJI the same way it writes $AAPL, but those are
+// indices with no company, no page and no quote — linking them produced a dead
+// link and an empty hover card. Anything the catalogue does not list renders as
+// plain text. A null set means the catalogue has not loaded (or failed), where
+// linking everything is better than stripping every link off the brief.
+function renderInline(text: string, known: Set<string> | null): React.ReactNode {
   const nodes: React.ReactNode[] = [];
   const combined = /\*\*([^*]+)\*\*|\$([A-Z]{1,5})\b/g;
   let lastIndex = 0;
@@ -134,12 +160,16 @@ function renderInline(text: string): React.ReactNode {
       if (tickerInBold) {
         const ticker = tickerInBold[1].slice(1);
         const rest = tickerInBold[2] ?? '';
-        const linkEl = (
+        const linkEl = isKnownTicker(ticker, known) ? (
           <TickerPreview
             key={key++}
             ticker={ticker}
             className="font-mono font-semibold text-primary/85 hover:text-primary border-b border-primary/20 hover:border-primary/60 transition-colors"
           />
+        ) : (
+          <span key={key++} className="font-mono font-semibold text-foreground">
+            ${ticker}
+          </span>
         );
         if (rest) {
           nodes.push(
@@ -160,11 +190,17 @@ function renderInline(text: string): React.ReactNode {
     } else if (match[2]) {
       const ticker = match[2];
       nodes.push(
-        <TickerPreview
-          key={key++}
-          ticker={ticker}
-          className="font-mono font-medium text-primary/85 hover:text-primary border-b border-primary/20 hover:border-primary/60 transition-colors"
-        />
+        isKnownTicker(ticker, known) ? (
+          <TickerPreview
+            key={key++}
+            ticker={ticker}
+            className="font-mono font-medium text-primary/85 hover:text-primary border-b border-primary/20 hover:border-primary/60 transition-colors"
+          />
+        ) : (
+          <span key={key++} className="font-mono font-medium text-foreground/90">
+            ${ticker}
+          </span>
+        )
       );
     }
     lastIndex = match.index + match[0].length;
@@ -189,9 +225,10 @@ interface SectionBlockProps {
   index: number;
   isTldr: boolean;
   sectionRef: (el: HTMLElement | null) => void;
+  known: Set<string> | null;
 }
 
-function SectionBlock({ section, index, isTldr, sectionRef }: SectionBlockProps) {
+function SectionBlock({ section, index, isTldr, sectionRef, known }: SectionBlockProps) {
   const { t } = useTranslation('discover');
   const lines = section.body.split('\n').filter((l) => l.trim().length > 0 && !/^-+$/.test(l.trim()));
 
@@ -210,7 +247,7 @@ function SectionBlock({ section, index, isTldr, sectionRef }: SectionBlockProps)
           <div className="space-y-2.5 text-[15px] leading-7 text-foreground/90">
             {lines.map((line, i) => {
               const text = line.replace(/^[•\-]\s*/, '');
-              return <p key={i}>{renderInline(text)}</p>;
+              return <p key={i}>{renderInline(text, known)}</p>;
             })}
           </div>
         </div>
@@ -240,7 +277,7 @@ function SectionBlock({ section, index, isTldr, sectionRef }: SectionBlockProps)
           if (kind === 'sub-header') {
             return (
               <p key={i} className="text-[12px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/80 pt-2">
-                {renderInline(text.replace(/:$/, ''))}
+                {renderInline(text.replace(/:$/, ''), known)}
               </p>
             );
           }
@@ -250,7 +287,7 @@ function SectionBlock({ section, index, isTldr, sectionRef }: SectionBlockProps)
               <div key={i} className="flex gap-3 items-start">
                 <span className="text-primary/40 select-none shrink-0 text-[15px] leading-7">›</span>
                 <p className="text-[15px] leading-7 text-foreground/85">
-                  {renderInline(text)}
+                  {renderInline(text, known)}
                 </p>
               </div>
             );
@@ -258,7 +295,7 @@ function SectionBlock({ section, index, isTldr, sectionRef }: SectionBlockProps)
 
           return (
             <p key={i} className="text-[15px] leading-7 text-foreground/80">
-              {renderInline(text)}
+              {renderInline(text, known)}
             </p>
           );
         })}
@@ -486,6 +523,7 @@ function BriefReader({
     setHistoryOpen(false);
   }
 
+  const known = useKnownTickers();
   const sections = useMemo(() => parseSections(displayedBrief.content), [displayedBrief.content]);
   const readingMinutes = useMemo(() => estimateReadingTime(displayedBrief.content), [displayedBrief.content]);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -497,8 +535,11 @@ function BriefReader({
   // what it did. One batched, CDN-cached request for ≤6 symbols, fetched lazily
   // only once the reader is open.
   const featuredForSpark = useMemo(
-    () => (displayedBrief.featured_tickers ?? []).filter((t) => t.length >= 1 && t.length <= 5).slice(0, 6),
-    [displayedBrief.featured_tickers]
+    () =>
+      (displayedBrief.featured_tickers ?? [])
+        .filter((t) => t.length >= 1 && t.length <= 5 && isKnownTicker(t, known))
+        .slice(0, 6),
+    [displayedBrief.featured_tickers, known]
   );
   const sparkKey = featuredForSpark.slice().sort().join(',');
   const { data: tickerSparklines } = useQuery<Record<string, number[]>>({
@@ -565,8 +606,11 @@ function BriefReader({
     root.scrollTo({ top: target.offsetTop - 16, behavior: 'smooth' });
   }
 
+  // Same catalogue check the body text gets: a brief's featured_tickers list
+  // carries $VIX and $SPX too, and a chip linking to a page that does not exist
+  // is the same dead end as an inline one.
   const topTickers = (displayedBrief.featured_tickers ?? [])
-    .filter((t) => t.length >= 1 && t.length <= 5)
+    .filter((t) => t.length >= 1 && t.length <= 5 && isKnownTicker(t, known))
     .slice(0, 6);
 
   // TL;DR detection — first section whose slug starts with "tl"
@@ -740,6 +784,7 @@ function BriefReader({
                     sectionRef={(el) => {
                       sectionRefs.current[section.slug] = el;
                     }}
+                    known={known}
                   />
                 ))}
                 <BriefSourcesFooter key={displayedBrief.id} sources={displayedBrief.sources ?? []} />
@@ -756,6 +801,7 @@ function BriefReader({
 
 export function DailyBriefWidget() {
   const { t } = useTranslation('discover');
+  const known = useKnownTickers();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -854,7 +900,7 @@ export function DailyBriefWidget() {
   }
 
   const topTickers = (brief.featured_tickers ?? [])
-    .filter((t) => t.length >= 2 && t.length <= 5)
+    .filter((t) => t.length >= 2 && t.length <= 5 && isKnownTicker(t, known))
     .slice(0, 5);
 
   return (
