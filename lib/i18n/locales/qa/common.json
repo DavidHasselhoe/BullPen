@@ -11,5 +11,9 @@
   "reset": "«Reeseet»",
   "save": "«Saavee»",
   "search": "«Seeaarch»",
-  "success": "«Suucceess»"
+  "success": "«Suucceess»",
+  "tickerPreviewAdd": "«AAdd too waatchliist»",
+  "tickerPreviewNoProfile": "«Noo coompaany proofiilee foor thiis oonee yeet.»",
+  "tickerPreviewOpen": "«OOpeen coompaany»",
+  "tickerPreviewWatched": "«IIn yoouur waatchliist»"
 }

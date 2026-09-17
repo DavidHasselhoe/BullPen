@@ -1,15 +1,19 @@
 {
-  "save": "Enregistrer",
+  "apply": "Appliquer",
   "cancel": "Annuler",
+  "clear": "Effacer",
+  "close": "Fermer",
   "delete": "Supprimer",
   "edit": "Modifier",
-  "close": "Fermer",
-  "loading": "Chargement...",
   "error": "Erreur",
-  "success": "Succès",
-  "search": "Rechercher",
   "filter": "Filtrer",
-  "clear": "Effacer",
-  "apply": "Appliquer",
-  "reset": "Réinitialiser"
+  "loading": "Chargement...",
+  "reset": "Réinitialiser",
+  "save": "Enregistrer",
+  "search": "Rechercher",
+  "success": "Succès",
+  "tickerPreviewAdd": "Ajouter à la liste de suivi",
+  "tickerPreviewNoProfile": "Aucun profil d'entreprise disponible pour celui-ci.",
+  "tickerPreviewOpen": "Ouvrir l'entreprise",
+  "tickerPreviewWatched": "Dans votre liste de suivi"
 }

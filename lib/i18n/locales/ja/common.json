@@ -1,15 +1,19 @@
 {
-  "save": "保存",
+  "apply": "適用",
   "cancel": "キャンセル",
+  "clear": "クリア",
+  "close": "閉じる",
   "delete": "削除",
   "edit": "編集",
-  "close": "閉じる",
-  "loading": "読み込み中...",
   "error": "エラー",
-  "success": "成功",
-  "search": "検索",
   "filter": "フィルター",
-  "clear": "クリア",
-  "apply": "適用",
-  "reset": "リセット"
+  "loading": "読み込み中...",
+  "reset": "リセット",
+  "save": "保存",
+  "search": "検索",
+  "success": "成功",
+  "tickerPreviewAdd": "ウォッチリストに追加",
+  "tickerPreviewNoProfile": "このティッカーの企業プロフィールはまだ登録されていません。",
+  "tickerPreviewOpen": "企業を開く",
+  "tickerPreviewWatched": "ウォッチリストに追加済み"
 }

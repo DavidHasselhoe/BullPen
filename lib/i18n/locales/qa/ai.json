@@ -110,7 +110,7 @@
   "termsGateIntro": "«Reeseeaarch coompaaniiees aand eexplooree iinveestmeent iideeaas wiith BuullPeen's AAII aassiistaant.»",
   "trendSrLabel": "«{{metric}} foor {{subject}} aacrooss {{count}} peeriioods, laateest {{formatted}}»",
   "whyTodayChangeSummary": "«{{change}} ({{changePct}}%) toodaay»",
-  "whyTodayGenericError": "«Coouuldn't looaad aan eexplaanaatiioon riight noow. Pleeaasee try aagaaiin shoortly.»",
+  "whyTodayGenericError": "«Thiis iis oon oouur eend, noot yoouurs. Wee'vee beeeen nootiifiieed aand aaree woorkiing oon iit. Try aagaaiin shoortly.»",
   "whyTodayRateLimited": "«Toooo maany reequueests. Pleeaasee waaiit aa moomeent aand try aagaaiin.»",
   "whyTodaySearching": "«Seeaarchiing thee weeb foor toodaay's neews oon ${{ticker}}…»",
   "whyTodayUpgradeCta": "«UUpgraadee too Proo →»",

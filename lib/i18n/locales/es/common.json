@@ -1,15 +1,19 @@
 {
-  "save": "Guardar",
+  "apply": "Aplicar",
   "cancel": "Cancelar",
+  "clear": "Limpiar",
+  "close": "Cerrar",
   "delete": "Eliminar",
   "edit": "Editar",
-  "close": "Cerrar",
-  "loading": "Cargando...",
-  "error": "Error",
-  "success": "Éxito",
-  "search": "Buscar",
   "filter": "Filtrar",
-  "clear": "Limpiar",
-  "apply": "Aplicar",
-  "reset": "Reiniciar"
+  "loading": "Cargando...",
+  "reset": "Reiniciar",
+  "save": "Guardar",
+  "search": "Buscar",
+  "success": "Éxito",
+  "error": "Error",
+  "tickerPreviewAdd": "Añadir a lista de observación",
+  "tickerPreviewNoProfile": "Aún no hay perfil de empresa para este.",
+  "tickerPreviewOpen": "Abrir empresa",
+  "tickerPreviewWatched": "En tu lista de observación"
 }

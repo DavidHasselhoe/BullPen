@@ -1,15 +1,19 @@
 {
-  "save": "Lagre",
+  "apply": "Bruk",
   "cancel": "Avbryt",
+  "clear": "Tøm",
+  "close": "Lukk",
   "delete": "Slett",
   "edit": "Rediger",
-  "close": "Lukk",
-  "loading": "Laster...",
   "error": "Feil",
-  "success": "Suksess",
+  "loading": "Laster...",
+  "reset": "Tilbakestill",
+  "save": "Lagre",
   "search": "Søk",
+  "success": "Suksess",
   "filter": "Filter",
-  "clear": "Tøm",
-  "apply": "Bruk",
-  "reset": "Tilbakestill"
+  "tickerPreviewAdd": "Legg til i favorittliste",
+  "tickerPreviewNoProfile": "Vi har ikke et selskapsproﬁl for denne ennå.",
+  "tickerPreviewOpen": "Åpne selskap",
+  "tickerPreviewWatched": "I favorittlisten din"
 }
