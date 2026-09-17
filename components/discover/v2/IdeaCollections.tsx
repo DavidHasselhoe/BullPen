@@ -2,7 +2,6 @@
 
 import { useTranslation } from 'react-i18next';
 import { CollectionGrid } from './CollectionGrid';
-import { CollectionFAQ, type FAQEntry } from './CollectionFAQ';
 import type { DiscoverFeed } from '@/lib/discover/discover-config';
 
 /**
@@ -14,8 +13,8 @@ import type { DiscoverFeed } from '@/lib/discover/discover-config';
  * financially strong for its sector but priced below what that sector normally
  * commands is something they'd never have found by browsing.
  *
- * The reason itself is stated in CollectionFAQ, not under each grid — see that
- * file for why.
+ * Each list's reason lives behind the "?" on its own title — next to the thing
+ * it explains, and out of the way until someone wants it.
  */
 export function IdeaCollections({ collections }: { collections: DiscoverFeed['collections'] }) {
   const { t } = useTranslation('discover');
@@ -31,33 +30,6 @@ export function IdeaCollections({ collections }: { collections: DiscoverFeed['co
 
   const trendingTitle = trending.mode === 'personalized' ? t('ideasTrendingPersonalized') : t('ideasTrendingToday');
 
-  const faqItems: FAQEntry[] = [
-    trending.items.length > 0 && trending.explanation
-      ? { id: 'trending', question: t('ideasFaqWhyTrending', { title: trendingTitle }), answer: trending.explanation }
-      : null,
-    qualityDiscount.length > 0
-      ? {
-          id: 'quality',
-          question: t('ideasFaqQualityQuestion'),
-          answer: t('ideasFaqQualityAnswer'),
-        }
-      : null,
-    near52High.length > 0
-      ? {
-          id: 'highs',
-          question: t('ideasFaqHighsQuestion'),
-          answer: t('ideasFaqHighsAnswer'),
-        }
-      : null,
-    near52Low.length > 0
-      ? {
-          id: 'lows',
-          question: t('ideasFaqLowsQuestion'),
-          answer: t('ideasFaqLowsAnswer'),
-        }
-      : null,
-  ].filter((x): x is FAQEntry => x != null);
-
   return (
     <section aria-labelledby="ideas-heading">
       <h2
@@ -68,16 +40,37 @@ export function IdeaCollections({ collections }: { collections: DiscoverFeed['co
       </h2>
 
       <div className="space-y-8">
-        <CollectionGrid title={trendingTitle} items={trending.items} />
+        <CollectionGrid
+          title={trendingTitle}
+          items={trending.items}
+          help={
+            trending.explanation
+              ? { label: t('ideasFaqWhyTrending', { title: trendingTitle }), body: trending.explanation }
+              : undefined
+          }
+        />
 
-        <CollectionGrid title={t('ideasQualityDiscountTitle')} items={qualityDiscount} showReason />
+        <CollectionGrid
+          title={t('ideasQualityDiscountTitle')}
+          items={qualityDiscount}
+          showReason
+          help={{ label: t('ideasFaqQualityQuestion'), body: t('ideasFaqQualityAnswer') }}
+        />
 
-        <CollectionGrid title={t('ideasPushingHighsTitle')} items={near52High} showReason />
+        <CollectionGrid
+          title={t('ideasPushingHighsTitle')}
+          items={near52High}
+          showReason
+          help={{ label: t('ideasFaqHighsQuestion'), body: t('ideasFaqHighsAnswer') }}
+        />
 
-        <CollectionGrid title={t('ideasNearLowsTitle')} items={near52Low} showReason />
+        <CollectionGrid
+          title={t('ideasNearLowsTitle')}
+          items={near52Low}
+          showReason
+          help={{ label: t('ideasFaqLowsQuestion'), body: t('ideasFaqLowsAnswer') }}
+        />
       </div>
-
-      <CollectionFAQ items={faqItems} />
     </section>
   );
 }
