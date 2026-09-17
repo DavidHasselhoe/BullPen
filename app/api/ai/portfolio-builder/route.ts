@@ -16,6 +16,7 @@ import {
   extractJsonObject,
 } from '@/lib/ai/portfolio-builder/schema';
 import { validateTickers } from '@/lib/ai/portfolio-builder/validate-tickers';
+import { buildHoldingsContext } from '@/lib/ai/portfolio-builder/holdings-context';
 import { renormalizeAllocations } from '@/lib/ai/portfolio-builder/renormalize';
 import { classifyAiError, parseFailure } from '@/lib/ai/provider-error';
 import { z } from 'zod';
@@ -37,8 +38,14 @@ async function runPortfolioBuilder(params: {
   id: string;
   userId: string;
   thesis: string;
+  /** Whether this build asked to start from the investor's own book. */
+  useHoldings: boolean;
 }): Promise<void> {
-  const { id, userId, thesis } = params;
+  const { id, userId, thesis, useHoldings } = params;
+  // Read inside the background task, not in the request: POST's whole job is
+  // to hand back an id immediately. An empty or unreadable book degrades to a
+  // normal thematic build, since the thesis alone is still a complete request.
+  const holdingsBlock = useHoldings ? (await buildHoldingsContext(userId))?.block : undefined;
   const supabase = createServerClient();
   const setPhase = (phase: BuilderPhase) => supabase.from('portfolio_generations').update({ phase }).eq('id', id);
   const markError = (code: string, message: string) =>
@@ -51,7 +58,10 @@ async function runPortfolioBuilder(params: {
       temperature: 1,
       thinking: { type: 'enabled', budget_tokens: 8000 },
       system: [{ type: 'text', text: PORTFOLIO_BUILDER_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
-      messages: [{ role: 'user', content: thesis }],
+      // The holdings block rides in the user turn, never the system prompt:
+      // the system prompt is cached across every user's builds and must stay
+      // byte-identical for that cache to hit.
+      messages: [{ role: 'user', content: holdingsBlock ? thesis + holdingsBlock : thesis }],
     });
 
     let buffered = '';
@@ -184,9 +194,11 @@ async function handler(
   }
 
   let thesis: string;
+  let useHoldings = false;
   try {
     const body = await request.json();
     thesis = String(body.thesis ?? '').trim();
+    useHoldings = body.useHoldings === true;
     if (thesis.length < 10 || thesis.length > 500) {
       throw new Error('thesis must be 10-500 characters');
     }
@@ -218,7 +230,7 @@ async function handler(
 
   const id = inserted.id as string;
 
-  after(() => runPortfolioBuilder({ id, userId: session.userId, thesis }));
+  after(() => runPortfolioBuilder({ id, userId: session.userId, thesis, useHoldings }));
 
   return NextResponse.json({ id, status: 'pending' });
 }

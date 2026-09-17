@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Sparkles, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { HoldingsFoundationToggle } from './HoldingsFoundationToggle';
 
 interface Props {
-  onSubmit: (thesis: string) => void;
+  onSubmit: (thesis: string, useHoldings: boolean) => void;
   disabled?: boolean;
 }
 
@@ -22,6 +23,7 @@ export function ThesisInput({ onSubmit, disabled }: Props) {
     t('portfolioBuilderExample5'),
   ];
   const [thesis, setThesis] = useState('');
+  const [useHoldings, setUseHoldings] = useState(false);
   const tooShort = thesis.trim().length > 0 && thesis.trim().length < 10;
   const valid = thesis.trim().length >= 10 && thesis.trim().length <= 500;
 
@@ -56,7 +58,7 @@ export function ThesisInput({ onSubmit, disabled }: Props) {
               {tooShort ? t('portfolioBuilderTooShort') : t('portfolioBuilderCharCount', { count: thesis.length })}
             </span>
             <Button
-              onClick={() => onSubmit(thesis.trim())}
+              onClick={() => onSubmit(thesis.trim(), useHoldings)}
               disabled={!valid || disabled}
               size="sm"
               className="gap-2 px-4 rounded-full animate-ai-pill-shine"
@@ -67,6 +69,12 @@ export function ThesisInput({ onSubmit, disabled }: Props) {
           </div>
         </div>
       </div>
+
+      <HoldingsFoundationToggle
+        enabled={useHoldings}
+        onChange={setUseHoldings}
+        disabled={disabled}
+      />
 
       {/* Examples */}
       <div>

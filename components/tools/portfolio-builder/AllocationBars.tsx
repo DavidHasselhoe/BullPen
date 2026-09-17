@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
@@ -9,6 +10,7 @@ import { TermTooltip } from '@/components/ui/TermTooltip';
 import { glossaryText } from '@/components/ui/GlossaryText';
 import { tierBadgeClass } from '@/lib/ui/severity-tiers';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
+import { useHoldings } from '@/hooks/use-holdings';
 import type { PortfolioHolding } from '@/lib/ai/portfolio-builder/schema';
 import { riskLevelTier, getRoleLabel, ROLE_BADGE_CLASS } from './colors';
 
@@ -38,6 +40,20 @@ interface Props {
 export function AllocationBars({ holdings, logoMap, isSimplified }: Props) {
   const { t } = useTranslation('tools');
   const roleLabel = getRoleLabel(t);
+  // Marked from the live book rather than anything stored with the generation:
+  // a portfolio reopened next week should say what is owned then, and this way
+  // an ordinary build flags overlap too, not only one built on the holdings
+  // foundation.
+  const { data: ownedHoldings } = useHoldings();
+  const owned = useMemo(
+    () =>
+      new Set(
+        (ownedHoldings ?? [])
+          .filter((h) => (h.quantity ?? 0) > 1e-9)
+          .map((h) => h.symbol.toUpperCase()),
+      ),
+    [ownedHoldings],
+  );
   const rolePlainLabel: Record<PortfolioHolding['role'], string> = {
     CORE: t('portfolioBuilderRolePlainCore'),
     SECONDARY: t('portfolioBuilderRolePlainSecondary'),
@@ -97,6 +113,11 @@ export function AllocationBars({ holdings, logoMap, isSimplified }: Props) {
                         <span className={cn('shrink-0 rounded-full border px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide', ROLE_BADGE_CLASS[h.role])}>
                           {isSimplified ? rolePlainLabel[h.role] : roleLabel[h.role]}
                         </span>
+                        {owned.has(h.ticker.toUpperCase()) && (
+                          <span className="shrink-0 rounded-full border border-border/70 bg-muted/50 px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+                            {t('portfolioBuilderAlreadyOwned')}
+                          </span>
+                        )}
                         <span className="text-xs text-muted-foreground/80 truncate">{h.company}</span>
                         <span className="ml-auto shrink-0 font-mono text-xs font-semibold tabular-nums text-foreground">
                           {Math.round(h.allocation_pct)}%
