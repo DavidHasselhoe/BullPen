@@ -182,6 +182,23 @@ const BottomLineSchema = z.object({
   holding: z.string(),
 });
 
+/**
+ * How the company sits against the book the reader already owns. Present only
+ * on reports generated with the fit check ticked, so it is optional here and
+ * every existing saved report validates unchanged.
+ *
+ * Three descriptions, no recommendation: what it duplicates, what it adds,
+ * what a position would do to concentration. The prompt forbids position
+ * sizing and buy/sell instructions in these fields on purpose, since this is
+ * the one place in the app where a model is looking at one security and one
+ * person's money at the same time.
+ */
+const PortfolioFitSchema = z.object({
+  overlap: z.string(),
+  adds: z.string(),
+  sizing: z.string(),
+});
+
 export const VerdictSchema = z.object({
   stance: StanceEnum,
   confidence: ConfidenceEnum,
@@ -200,11 +217,14 @@ export const ModelReportSchema = z.object({
   headline: z.string(),
   companyName: z.string().optional(),
   verdict: VerdictSchema,
+  portfolioFit: PortfolioFitSchema.optional(),
   blocks: z.array(BlockSchema).min(1),
 });
 
 export type Block = z.infer<typeof BlockSchema>;
 export type Verdict = z.infer<typeof VerdictSchema>;
+export type PortfolioFit = z.infer<typeof PortfolioFitSchema>;
+export type PortfolioFit = z.infer<typeof PortfolioFitSchema>;
 export type ModelReport = z.infer<typeof ModelReportSchema>;
 export type BullBearPoint = z.infer<typeof BullBearPoint>;
 

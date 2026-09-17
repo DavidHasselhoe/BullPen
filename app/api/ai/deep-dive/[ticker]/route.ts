@@ -9,6 +9,7 @@ import { createServerClient } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/types';
 import { slugToSymbol } from '@/lib/assets/asset-type';
 import { gatherDeepDiveData, formatDataBlock } from '@/lib/ai/deep-dive/gather-data';
+import { buildPortfolioFitBlock } from '@/lib/ai/deep-dive/portfolio-fit';
 import { inferArchetype } from '@/lib/ai/deep-dive/archetype';
 import { DEEP_DIVE_SYSTEM_PROMPT, buildUserPrompt } from '@/lib/ai/deep-dive/system-prompt';
 import { parseModelReport, type DeepDiveReport } from '@/lib/ai/deep-dive/schema';
@@ -34,8 +35,10 @@ async function runDeepDive(params: {
   userId: string;
   symbol: string;
   experienceLevel: ExperienceLevel;
+  /** Whether this reader asked for the stock to be weighed against their own book. */
+  checkFit: boolean;
 }): Promise<void> {
-  const { id, userId, symbol, experienceLevel } = params;
+  const { id, userId, symbol, experienceLevel, checkFit } = params;
   const supabase = createServerClient();
   const setPhase = (phase: DivePhase) => supabase.from('stock_deep_dives').update({ phase }).eq('id', id);
 
@@ -47,10 +50,16 @@ async function runDeepDive(params: {
     const dataBlock = formatDataBlock(data);
     const today = new Date().toISOString().slice(0, 10);
 
-    const userPrompt = buildUserPrompt({
-      symbol, companyName, experienceLevel,
-      archetypeHint: archetype.hint, dataBlock, today,
-    });
+    // Read only when this generation asked for it, and appended to the user
+    // turn rather than the system prompt, which is cached across every reader
+    // and has to stay byte-identical to keep hitting that cache.
+    const fitBlock = await buildPortfolioFitBlock(userId, symbol, checkFit);
+
+    const userPrompt =
+      buildUserPrompt({
+        symbol, companyName, experienceLevel,
+        archetypeHint: archetype.hint, dataBlock, today,
+      }) + (fitBlock ?? '');
 
     const stream = anthropic.beta.messages.stream({
       model: MODEL,
@@ -182,8 +191,10 @@ async function postHandler(
   // Matches use-experience-level's fallback: a request that omits the level
   // gets the beginner report, not the intermediate one.
   let experienceLevel: ExperienceLevel = 'beginner';
+  let checkFit = false;
   try {
     const body = await request.json().catch(() => ({}));
+    checkFit = body.checkFit === true;
     // Must list every level, including intermediate. This used to check only
     // beginner/advanced and let intermediate fall through to the default,
     // which was harmless while the default was itself intermediate and would
@@ -200,6 +211,10 @@ async function postHandler(
   // takeaway toward hold/add/trim. verdict.bottomLine now always covers both
   // readers, so the body field is ignored: the client still sends it, and the
   // UI uses its own copy to decide which line to lead with.
+  //
+  // `checkFit` is a different thing and IS honoured, read above: it does not
+  // re-skew the report toward one reader, it adds a self-contained section
+  // describing how the company sits against the positions they actually hold.
 
   const supabase = createServerClient();
   const { data: inserted, error: insertErr } = await supabase
@@ -221,7 +236,7 @@ async function postHandler(
 
   const id = inserted.id as string;
 
-  after(() => runDeepDive({ id, userId: session.userId, symbol, experienceLevel }));
+  after(() => runDeepDive({ id, userId: session.userId, symbol, experienceLevel, checkFit }));
 
   return addSecurityHeaders(NextResponse.json({ id, status: 'pending' }));
 }

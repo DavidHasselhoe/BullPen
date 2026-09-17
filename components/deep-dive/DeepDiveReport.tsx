@@ -8,6 +8,8 @@ import { cn } from '@/lib/utils';
 import { DeepDiveHero } from './DeepDiveHero';
 import { ThreeThings } from './ThreeThings';
 import { DeepDiveSections } from './DeepDiveSections';
+import { BottomLine } from './BottomLine';
+import { PortfolioFitSection } from './PortfolioFitSection';
 import { useDeepDivePrice } from '@/hooks/use-deep-dive-price';
 import type { DeepDiveReport as Report } from '@/lib/ai/deep-dive/schema';
 
@@ -73,6 +75,16 @@ export function DeepDiveReport({ report, createdAt, onRegenerate, regenerating, 
         />
 
         <ThreeThings report={report} />
+
+        <BottomLine report={report} />
+
+        {report.portfolioFit && (
+          <PortfolioFitSection
+            fit={report.portfolioFit}
+            ticker={report.ticker}
+            generatedAt={when}
+          />
+        )}
 
         <StockPricePanel ticker={report.ticker} />
 

@@ -15,6 +15,7 @@ import {
   composeUserTurn,
   buildHoldingsContext,
 } from '../lib/ai/portfolio-builder/holdings-context';
+import { buildPortfolioFitBlock } from '../lib/ai/deep-dive/portfolio-fit';
 
 // The QA account, seeded with real positions (see reference-qa-test-account).
 const USER_WITH_HOLDINGS = '5de5fba7-f2fa-43d4-8bdd-3ee2b3d77f71';
@@ -44,7 +45,26 @@ const THESIS = 'Water infrastructure and desalination capacity.';
   }
   assert.ok(onTurn.includes('cost basis'), 'weights must be labelled as cost basis');
 
+  // The deep dive's fit check reads the same book through the same loader, so
+  // it gets the same guarantee and the same check.
+  const fitOff = await buildPortfolioFitBlock(USER_WITH_HOLDINGS, 'NVDA', false);
+  assert.equal(fitOff, undefined, 'fit block must not be built when the toggle is off');
+
+  const fitOn = await buildPortfolioFitBlock(USER_WITH_HOLDINGS, 'NVDA', true);
+  assert.ok(fitOn, 'fit block must be built when the toggle is on');
+  for (const ticker of ctx.tickers) {
+    assert.ok(fitOn.includes(ticker), `"${ticker}" missing from the fit block`);
+  }
+
+  // Held and not-held are different instructions, and the held one must carry
+  // the real weight rather than a placeholder.
+  assert.ok(fitOn.includes('already hold NVDA'), 'held branch not used for an owned ticker');
+  assert.match(fitOn, /already hold NVDA, at roughly [\d.]+%/, 'held branch missing a real weight');
+
+  const notHeld = await buildPortfolioFitBlock(USER_WITH_HOLDINGS, 'ZZZZ', true);
+  assert.ok(notHeld?.includes('do not currently hold ZZZZ'), 'not-held branch not used');
+
   console.log(
-    `holdings gate OK — ${ctx.tickers.length} positions sent when on, zero when off`,
+    `holdings gate OK — ${ctx.tickers.length} positions sent when on, zero when off, both features`,
   );
 })();

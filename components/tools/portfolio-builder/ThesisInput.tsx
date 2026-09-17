@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Sparkles, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { HoldingsFoundationToggle } from './HoldingsFoundationToggle';
+import { HoldingsContextToggle } from '@/components/holdings/HoldingsContextToggle';
 
 interface Props {
   onSubmit: (thesis: string, useHoldings: boolean) => void;
@@ -70,10 +70,12 @@ export function ThesisInput({ onSubmit, disabled }: Props) {
         </div>
       </div>
 
-      <HoldingsFoundationToggle
+      <HoldingsContextToggle
         enabled={useHoldings}
         onChange={setUseHoldings}
         disabled={disabled}
+        title={t('portfolioBuilderUseHoldingsTitle')}
+        description={t('portfolioBuilderUseHoldingsDescription')}
       />
 
       {/* Examples */}

@@ -2356,5 +2356,18 @@
   "common.tickerPreviewAdd": "ed2785d46856d874e902d2290e6f7554b7868e2e8ac1e55e000d2a01af124182",
   "common.tickerPreviewNoProfile": "0ae2a96266af7d4ec254c7248d33d673a25a4d554be4d63bc4f20531ac639de7",
   "common.tickerPreviewOpen": "38067e82e08b9fa1c939b979ebf305844913f7f74554a6b6365c7ff6e2ef53fa",
-  "common.tickerPreviewWatched": "ee6cf51e54539a93559489912eaaadb0f00c6f41aba6ad0db1f6a3258a1d2dfd"
+  "common.tickerPreviewWatched": "ee6cf51e54539a93559489912eaaadb0f00c6f41aba6ad0db1f6a3258a1d2dfd",
+  "tools.deepDiveBottomLineConsidering": "fa35b563edec8cd8e80bebf8cdf19832891b3416279a7a7693bb88aa785b1379",
+  "tools.deepDiveBottomLineHeading": "70f7af6ef6dccb5a00ad1aa6cb8103fffc585b1552a7a544dfa5e49c0e2d7bab",
+  "tools.deepDiveBottomLineHolding": "e1688033bb451397615923dcc79c48a7f841b1f35dec998ee2577cc008c84171",
+  "tools.deepDiveFitAdds": "032f23b947c3d48215c1eeab833afb886240ff428e6c82b9ee8815f41c997664",
+  "tools.deepDiveFitAsOf": "980573b7c6ab1716031b4ebf1d0011d47dfe19c40cc570ac334df9c700f1e763",
+  "tools.deepDiveFitHeading": "beede58da651a1b0f2b8a85ef22c3e76f8e8748a6d5730a744bd39a982f5fb52",
+  "tools.deepDiveFitNotOwnedLine": "3d2c224192d3a29e784454f560202121c98cfa1a5eb31fec0029cdf27934df0b",
+  "tools.deepDiveFitOverlap": "2ba8089150b03173086b62e0b438712dc4724e2df675807bef1c3f6e33163997",
+  "tools.deepDiveFitOwnedLine": "462c736f6367140c9941ba13d5e12b1a3b9cdc49fc0dddf5acd8cebaef7dfc9c",
+  "tools.deepDiveFitSizing": "4061b4bb839e74b22ded77d5e41ec9dffb5e444cf1b0fe1459c94e03cddc8de1",
+  "tools.deepDiveFitToggleDescription": "ae9700fb7402a2f9c56dec9336a70bb72a679b6b189e48e94d19d2d4a21f30b0",
+  "tools.deepDiveFitToggleDescriptionRegenerate": "d79f94fa9482859f06107dc1d702300928b0ab6a4ece386f5e334429bc222d9a",
+  "tools.deepDiveFitToggleTitle": "e2f356895925ed562cb80bd9c0369e5fddfa46b51f4d7d987f8e6d2cd0c87e45"
 }

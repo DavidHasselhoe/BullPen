@@ -1,4 +1,4 @@
-import { getHoldings } from '@/lib/holdings/holdings-db';
+import { loadPositions, renderPositionLines } from '@/lib/holdings/portfolio-positions';
 
 /**
  * The user's real book, rendered for the portfolio builder's prompt.
@@ -23,38 +23,14 @@ export interface HoldingsContext {
   tickers: string[];
 }
 
-interface Position {
-  ticker: string;
-  company: string;
-  weightPct: number;
-}
-
-const MAX_POSITIONS = 60;
-
 export async function buildHoldingsContext(userId: string): Promise<HoldingsContext | null> {
-  const result = await getHoldings(userId);
-  if (!result.success) return null;
+  // Loading and weighting live in lib/holdings/portfolio-positions.ts, shared
+  // with the deep dive's fit check so the two features cannot end up
+  // describing the same portfolio two different ways.
+  const positions = await loadPositions(userId);
+  if (positions.length === 0) return null;
 
-  const rows = (result.holdings ?? []).filter(
-    (h) => (h.quantity ?? 0) > 1e-9 && (h.avg_price ?? 0) > 0,
-  );
-  if (rows.length === 0) return null;
-
-  const totalCost = rows.reduce((sum, h) => sum + (h.quantity ?? 0) * (h.avg_price ?? 0), 0);
-  if (totalCost <= 0) return null;
-
-  const positions: Position[] = rows
-    .map((h) => ({
-      ticker: h.symbol.toUpperCase(),
-      company: h.company_name ?? h.symbol.toUpperCase(),
-      weightPct: Number(((((h.quantity ?? 0) * (h.avg_price ?? 0)) / totalCost) * 100).toFixed(1)),
-    }))
-    .sort((a, b) => b.weightPct - a.weightPct)
-    // A book longer than this is a cost problem, not an information problem:
-    // the tail below 60 positions cannot move an allocation decision.
-    .slice(0, MAX_POSITIONS);
-
-  const lines = positions.map((p) => `- ${p.ticker} (${p.company}): ${p.weightPct}% of cost basis`);
+  const lines = renderPositionLines(positions);
 
   const block = `
 
@@ -64,7 +40,7 @@ export async function buildHoldingsContext(userId: string): Promise<HoldingsCont
 
 This portfolio is the foundation. Build around it, not beside it. Weights below are by cost basis (what was paid), not live market value, so treat them as approximate sizing, never as today's precise weights, and never restate them as current values.
 
-${lines.join('\n')}
+${lines}
 
 Additional requirements for this build, on top of everything above:
 

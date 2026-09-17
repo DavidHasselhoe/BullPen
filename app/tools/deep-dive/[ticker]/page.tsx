@@ -15,6 +15,7 @@ import { useBackground } from '@/hooks/use-background';
 import { useAuth } from '@/hooks/use-auth';
 import { useExperienceLevel } from '@/hooks/use-experience-level';
 import { useHoldings } from '@/hooks/use-holdings';
+import { HoldingsContextToggle } from '@/components/holdings/HoldingsContextToggle';
 import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import { useMarkEntityNotificationsRead } from '@/hooks/use-notifications';
 import { useInvalidateQuota } from '@/hooks/use-quota';
@@ -69,6 +70,9 @@ export default function DeepDivePage() {
   const markEntityRead = useMarkEntityNotificationsRead();
 
   const holds = !!holdings?.some((h) => h.symbol.toUpperCase() === symbol);
+  // Off by default and decided per report, same consent shape as the portfolio
+  // builder: the positions are listed on screen before anything is sent.
+  const [checkFit, setCheckFit] = useState(false);
 
   // Set only by entry points that mean "generate a new one" (the stock page's
   // Deep Dive button, command palette, the tool's own search) -- not by a
@@ -187,7 +191,7 @@ export default function DeepDivePage() {
       const res = await fetch(`/api/ai/deep-dive/${rawTicker}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ experienceLevel: level, holds }),
+        body: JSON.stringify({ experienceLevel: level, holds, checkFit }),
       });
 
       if (res.status === 429) { setErrorCode('rate_limited'); setPhase('error'); return; }
@@ -207,7 +211,7 @@ export default function DeepDivePage() {
       setErrorCode('unknown');
       setPhase('error');
     }
-  }, [rawTicker, level, holds, report, stopPolling, pollStatus]);
+  }, [rawTicker, level, holds, checkFit, report, stopPolling, pollStatus]);
 
   const askAI = useCallback(() => {
     openAIPanel({
@@ -284,6 +288,14 @@ export default function DeepDivePage() {
                   'A senior-analyst-grade report: latest results, guidance, valuation, bull vs bear, catalysts and risks, synthesized from our data plus live web research.'
                 )}
               </p>
+              <div className="mx-auto mt-6 max-w-md text-left">
+                <HoldingsContextToggle
+                  enabled={checkFit}
+                  onChange={setCheckFit}
+                  title={t('deepDiveFitToggleTitle')}
+                  description={t('deepDiveFitToggleDescription')}
+                />
+              </div>
               <div className="mt-6 flex flex-col items-center gap-4">
                 <Button size="lg" onClick={() => generate()} className="gap-2 rounded-full animate-ai-pill-shine">
                   <Sparkles className="h-4 w-4" /> {t('deepDiveGenerateButton', 'Generate Deep Dive')}
@@ -316,6 +328,20 @@ export default function DeepDivePage() {
               onAsk={askAI}
               onRegenerate={() => generate()}
             />
+            {/* Also here, not only on the idle screen: a reader who already has
+                a report can never reach an idle screen for this ticker again,
+                so without this the fit check would be unreachable for every
+                stock they have looked at once. */}
+            {!report.portfolioFit && (
+              <div className="mx-auto max-w-md">
+                <HoldingsContextToggle
+                  enabled={checkFit}
+                  onChange={setCheckFit}
+                  title={t('deepDiveFitToggleTitle')}
+                  description={t('deepDiveFitToggleDescriptionRegenerate')}
+                />
+              </div>
+            )}
             <p className="text-center text-[11px] text-muted-foreground/85">
               {t('deepDiveRegenerateQuotaHint', 'Regenerating uses one deep dive from your monthly quota.')}
             </p>
