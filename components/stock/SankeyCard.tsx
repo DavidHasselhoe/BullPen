@@ -287,8 +287,32 @@ const TIP_WIDTH = 180;
 
 // ─── Chart ───────────────────────────────────────────────────────────────────
 
-const CHART_H = 420;
-const PAD     = { top: 10, right: 172, bottom: 10, left: 6 };
+/** Loading and empty states render before the graph exists, so they need a fixed height. */
+const PLACEHOLDER_H = 420;
+
+/**
+ * The diagram's own minimum width, independent of the viewport.
+ *
+ * With revenue sources the chart runs up to seven columns deep, and seven
+ * labelled columns cannot fit a phone: at 360px each column gets about 40px
+ * while a label needs 100px, so every label collides with its neighbour
+ * whatever the placement rule. Below this width the chart keeps its size and
+ * its container scrolls, which is what every dense financial chart does and is
+ * the only option that loses no data.
+ */
+const CHART_W_MIN = 700;
+const CHART_H_MIN = 320;
+const CHART_H_MAX = 520;
+const PAD = { top: 10, right: 172, bottom: 10, left: 6 };
+
+function chartMetrics(nodeCount: number) {
+  return {
+    // Taller as the chart gains rows, which it now does: revenue sources add a
+    // whole column of nodes.
+    height: Math.max(CHART_H_MIN, Math.min(CHART_H_MAX, nodeCount * 44)),
+    pad: PAD,
+  };
+}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyNode = any;
@@ -307,8 +331,9 @@ interface SankeyChartProps {
 
 function SankeyChart({ graph, width, revenue, isDark, ticker, periodLabel, onTip }: SankeyChartProps) {
   const { t } = useTranslation('stock');
-  const innerW = width - PAD.left - PAD.right;
-  const innerH = CHART_H - PAD.top - PAD.bottom;
+  const { height: chartH, pad } = chartMetrics(graph.nodes.length);
+  const innerW = width - pad.left - pad.right;
+  const innerH = chartH - pad.top - pad.bottom;
 
   // Source nodes shade by size, so the ramp needs their order up front.
   const sourceOrder = useMemo(
@@ -353,7 +378,7 @@ function SankeyChart({ graph, width, revenue, isDark, ticker, periodLabel, onTip
       animate={{ opacity: 1 }}
       transition={{ duration: 0.35 }}
       width={width}
-      height={CHART_H}
+      height={chartH}
       style={{ overflow: 'visible', display: 'block' }}
       role="img"
       aria-labelledby={`${titleId} ${descId}`}
@@ -395,7 +420,7 @@ function SankeyChart({ graph, width, revenue, isDark, ticker, periodLabel, onTip
         })}
       </defs>
 
-      <g transform={`translate(${PAD.left},${PAD.top})`}>
+      <g transform={`translate(${pad.left},${pad.top})`}>
         {/* Links */}
         {(layout.links as AnyLink[]).map((link, i) => {
           const path = sankeyLinkHorizontal()(link);
@@ -413,15 +438,29 @@ function SankeyChart({ graph, width, revenue, isDark, ticker, periodLabel, onTip
         })}
 
         {/* Nodes + labels */}
-        {(layout.nodes as AnyNode[]).map((node) => {
+        {(layout.nodes as AnyNode[]).map((node, _i, allNodes) => {
+          const maxDepth = Math.max(...allNodes.map((n) => (n.depth as number) ?? 0));
           const color  = nodeColor(node.id as string, sourceOrder, isDark);
           const nodeH  = (node.y1 as number) - (node.y0 as number);
           const midY   = ((node.y0 as number) + (node.y1 as number)) / 2;
           const midX   = ((node.x0 as number) + (node.x1 as number)) / 2;
+          // A label in a middle column goes above its node rather than beside
+          // it. Beside only works while there is an outer column to grow into:
+          // once revenue gained a column of sources the columns narrowed and
+          // "Gross Profit" rendered on top of "Operating Income". Above is
+          // collision-free at any column count.
+          const depth = (node.depth as number) ?? 0;
+          const stacked = depth > 0 && depth < maxDepth;
           const isRight = midX > innerW * 0.55;
-          const lx     = isRight ? (node.x0 as number) - 10 : (node.x1 as number) + 10;
-          const anchor = isRight ? 'end' : 'start';
-          const showSub = nodeH > 20;
+          const lx = stacked
+            ? (node.x0 as number)
+            : isRight ? (node.x0 as number) - 10 : (node.x1 as number) + 10;
+          const anchor = stacked ? 'start' : isRight ? 'end' : 'start';
+          const showSub = !stacked && nodeH > 20;
+          // Two lines above the node need clearance. A node starting near the
+          // top of the chart has none, so its label goes inside it instead,
+          // which only works because such a node is tall by definition.
+          const stackedY = (node.y0 as number) < 32 ? (node.y0 as number) + 14 : (node.y0 as number) - 19;
           // d3 gives a node the larger of its inflow and outflow, so once
           // revenue has sources feeding it the trunk reads as their sum. That
           // differs from reported revenue whenever a filing carries a negative
@@ -476,16 +515,28 @@ function SankeyChart({ graph, width, revenue, isDark, ticker, periodLabel, onTip
               {/* Primary label — uses CSS variable so it adapts to theme with no JS */}
               <text
                 x={lx}
-                y={midY - (showSub ? 8 : 0)}
+                y={stacked ? stackedY : midY - (showSub ? 8 : 0)}
                 textAnchor={anchor}
-                dominantBaseline="middle"
+                dominantBaseline={stacked ? 'auto' : 'middle'}
                 fontSize={12}
                 fontWeight={700}
                 fontFamily="ui-sans-serif,system-ui,sans-serif"
                 fill="var(--foreground)"
                 style={{ userSelect: 'none', pointerEvents: 'none' }}
               >
-                {nodeLabel(node.id as string, t)}
+                {stacked ? (
+                  <>
+                    {/* Two lines, not one: inline, the name plus its value is
+                        wider than a column and collides with the next one. */}
+                    <tspan x={lx}>{label}</tspan>
+                    <tspan x={lx} dy={13} fontSize={11} fontWeight={400} fill="var(--muted-foreground)">
+                      {fmtVal(val)}
+                      {revenue > 0 ? ` · ${pct}` : ''}
+                    </tspan>
+                  </>
+                ) : (
+                  label
+                )}
               </text>
               {/* Sub-label: value + pct */}
               {showSub && (
@@ -639,12 +690,14 @@ export function SankeyCard({ ticker }: { ticker: string }) {
 
             {/* Period picker */}
             {rows.length > 1 && !isPlanRestricted && (
-              <div className="flex items-center gap-0.5 rounded-lg border border-border bg-muted/50 p-0.5">
+              // Scrolls rather than wrapping: five period buttons on a phone
+              // used to break onto a second line and push the chart down.
+              <div className="flex max-w-full items-center gap-0.5 overflow-x-auto rounded-lg border border-border bg-muted/50 p-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {rows.map((r, i) => (
                   <button
                     key={r.fiscal_date}
                     onClick={() => setPeriodIdx(i)}
-                    className={cn('rounded-md px-2.5 py-1 text-xs font-medium transition-all', {
+                    className={cn('shrink-0 rounded-md px-2.5 py-1 text-xs font-medium transition-all', {
                       'bg-background text-foreground shadow-sm': periodIdx === i,
                       'text-muted-foreground hover:text-foreground': periodIdx !== i,
                     })}
@@ -658,15 +711,20 @@ export function SankeyCard({ ticker }: { ticker: string }) {
         </div>
 
         {/* ── Chart area ── */}
-        <div ref={containerRef} className="px-4 py-5">
+        {/* The diagram holds its own width and this scrolls under it, rather
+            than the diagram shrinking until its labels pile up. */}
+        <div
+          ref={containerRef}
+          className="overflow-x-auto px-4 py-5 [scrollbar-width:thin]"
+        >
           {isLoading && (
-            <Skeleton className="w-full rounded-xl" style={{ height: CHART_H }} />
+            <Skeleton className="w-full rounded-xl" style={{ height: PLACEHOLDER_H }} />
           )}
 
           {isPlanRestricted && (
             <div
               className="flex flex-col items-center justify-center gap-3 rounded-xl border border-border/40 bg-muted/20 text-sm"
-              style={{ height: CHART_H }}
+              style={{ height: PLACEHOLDER_H }}
             >
               <Lock className="h-6 w-6 text-muted-foreground" />
               <p className="text-muted-foreground text-center max-w-xs">
@@ -680,7 +738,7 @@ export function SankeyCard({ ticker }: { ticker: string }) {
           {noData && (
             <div
               className="flex items-center justify-center rounded-xl border border-border/40 bg-muted/20 text-sm text-muted-foreground"
-              style={{ height: CHART_H }}
+              style={{ height: PLACEHOLDER_H }}
             >
               {t('sankeyNoData')}
             </div>
@@ -689,7 +747,7 @@ export function SankeyCard({ ticker }: { ticker: string }) {
           {!isLoading && !noData && !isPlanRestricted && graph && chartWidth > 0 && (
             <SankeyChart
               graph={graph}
-              width={chartWidth}
+              width={Math.max(chartWidth, CHART_W_MIN)}
               revenue={revenue}
               isDark={isDark}
               ticker={ticker}
