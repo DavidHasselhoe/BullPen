@@ -2374,5 +2374,9 @@
   "stock.sankeySourceNoteSegment": "71088351f50168a5e96f7451048cf240351ac7fac2007486f72c962479e0dc15",
   "stock.sankeyA11yFlow": "72d0c80acc1f7bd37e7367c3859df6e0430d7c418ad168684b43b8b9cd261555",
   "stock.sankeyA11yNode": "e25fd276ce0a588a84a607d61f83eff6b6f98c1db9375941294b86bfac562ba3",
-  "stock.sankeyA11yTitle": "2b3a76ab2f33346fad79ed5fab88e2223646ba93d0c30ef83d03bf8a82c8af97"
+  "stock.sankeyA11yTitle": "2b3a76ab2f33346fad79ed5fab88e2223646ba93d0c30ef83d03bf8a82c8af97",
+  "stock.sankeyGrossLossNote": "e790cb35af10fab142cc716f67e572c05e675d7f8a80d27a39376557e2c32cfd",
+  "stock.sankeyNodeNetLoss": "60e3b0804aa4323a501f00b65d8d321ee193a6c5feae3cbff85ee319c3295494",
+  "stock.sankeyNodeOperatingLoss": "608f7e0c7807a60bd92796cb611fc3e963e8fbff8e8ec3f09f4a6dccc7813eb2",
+  "stock.thesisSentimentBear": "8c578ed3e9d5fec6f0f1f46402fdb52e4b6174ae74aef1487b1905d0b666c168"
 }

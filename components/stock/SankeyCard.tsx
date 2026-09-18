@@ -7,7 +7,7 @@ import { useTheme } from 'next-themes';
 import { sankey, sankeyLinkHorizontal, sankeyLeft } from 'd3-sankey';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Network, Lock, Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
@@ -24,6 +24,8 @@ interface IncomeStatementPeriod {
   net_income: number | null;
   r_and_d_expenses: number | null;
   selling_general_administrative_expenses: number | null;
+  /** The currency the statement is reported in, which is not the trading currency. */
+  reported_currency?: string | null;
 }
 
 interface FinancialsResponse {
@@ -56,6 +58,8 @@ const NODE_PALETTE: Record<string, { light: string; dark: string }> = {
   'Operating Income': { light: '#22c55e', dark: '#4ade80' },
   'Tax & Other':      { light: '#f43f5e', dark: '#fb7185' },
   'Net Income':       { light: '#059669', dark: '#10b981' },
+  'Operating Loss':   { light: '#dc2626', dark: '#ef4444' },
+  'Net Loss':         { light: '#b91c1c', dark: '#dc2626' },
 };
 const FALLBACK = { light: '#94a3b8', dark: '#64748b' };
 
@@ -111,6 +115,8 @@ const NODE_LABEL_KEYS: Record<string, string> = {
   'Operating Income': 'sankeyNodeOperatingIncome',
   'Tax & Other': 'sankeyNodeTaxAndOther',
   'Net Income': 'sankeyNodeNetIncome',
+  'Operating Loss': 'sankeyNodeOperatingLoss',
+  'Net Loss': 'sankeyNodeNetLoss',
 };
 
 function nodeLabel(id: string, t: TFunction): string {
@@ -123,13 +129,36 @@ function nodeLabel(id: string, t: TFunction): string {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function fmtVal(n: number): string {
+/**
+ * Money, in the currency the company actually reports in.
+ *
+ * Statements are not always in dollars and the trading currency is no guide:
+ * SAP's ADR trades in USD on the NYSE and files in EUR, so labelling its
+ * revenue "$36.80B" is simply wrong. The symbol comes from the statement's own
+ * meta, and falls back to a dollar sign only when the feed gives nothing.
+ */
+function currencySymbol(code?: string | null): string {
+  if (!code || code === 'USD') return '$';
+  try {
+    const parts = new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency: code,
+      maximumFractionDigits: 0,
+    }).formatToParts(1);
+    return parts.find((p) => p.type === 'currency')?.value ?? `${code} `;
+  } catch {
+    return `${code} `;
+  }
+}
+
+function fmtVal(n: number, currency?: string | null): string {
+  const sign = currencySymbol(currency);
   const abs = Math.abs(n);
-  if (abs >= 1e12) return `$${(n / 1e12).toFixed(2)}T`;
-  if (abs >= 1e9)  return `$${(n / 1e9).toFixed(2)}B`;
-  if (abs >= 1e6)  return `$${(n / 1e6).toFixed(2)}M`;
-  if (abs >= 1e3)  return `$${(n / 1e3).toFixed(1)}K`;
-  return `$${n.toFixed(0)}`;
+  if (abs >= 1e12) return `${sign}${(n / 1e12).toFixed(2)}T`;
+  if (abs >= 1e9)  return `${sign}${(n / 1e9).toFixed(2)}B`;
+  if (abs >= 1e6)  return `${sign}${(n / 1e6).toFixed(2)}M`;
+  if (abs >= 1e3)  return `${sign}${(n / 1e3).toFixed(1)}K`;
+  return `${sign}${n.toFixed(0)}`;
 }
 
 function fmtPct(val: number, total: number): string {
@@ -182,7 +211,16 @@ function buildGraph(
     }
   }
 
-  if (gp != null) {
+  if (gp != null && gp <= 0) {
+    // Costs exceeded revenue, so there is no gross profit to branch from.
+    // Every downstream link hangs off that node, so it was never created,
+    // d3 threw on the dangling reference and the whole chart rendered as
+    // "no data": Micron's FY2023 was blank rather than bad. All of revenue
+    // went to cost of revenue, which is true and is as far as a flow
+    // diagram can honestly go; the shortfall is named in the caption under
+    // the chart instead of drawn as a flow that does not exist.
+    push('Total Revenue', 'Cost of Revenue', rev);
+  } else if (gp != null) {
     // Revenue → Cost of Revenue + Gross Profit
     const cogs = Math.max(0, rev - gp);
     if (cogs > 0) push('Total Revenue', 'Cost of Revenue', cogs);
@@ -205,7 +243,20 @@ function buildGraph(
         const taxOther = Math.max(0, oi - ni);
         if (taxOther > 0) push('Operating Income', 'Tax & Other', taxOther);
         push('Operating Income', 'Net Income', ni);
+      } else if (ni != null && ni <= 0) {
+        // Profitable at the operating line, loss-making after it. Same
+        // reasoning as the operating loss above: show it.
+        push('Operating Income', 'Net Loss', Math.abs(ni));
       }
+    } else if (oi != null && oi <= 0) {
+      // A loss, drawn rather than dropped. `push` skips anything <= 0, so a
+      // loss-making period used to lose its whole profit branch and render as
+      // revenue and costs with nothing to compare them against: Micron's
+      // FY2023 chart was actively misleading. The loss is shown at its
+      // magnitude as its own outflow, which is what it is.
+      if (rd  != null && rd  > 0) push(mid, 'R&D', rd);
+      if (sga != null && sga > 0) push(mid, 'SG&A', sga);
+      push(mid, 'Operating Loss', Math.abs(oi));
     } else if (ni != null && ni > 0) {
       // No operating income — simplified: GP → costs + net income
       if (rd  != null && rd  > 0) push(mid, 'R&D', rd);
@@ -243,10 +294,11 @@ function buildExplainQuery(
   ticker: string,
   revenue: number,
   periodLabel: string,
-  graph: { nodes: RawNode[]; links: RawLink[] }
+  graph: { nodes: RawNode[]; links: RawLink[] },
+  currency?: string | null,
 ): string {
   const flowLines = graph.links
-    .map((l) => `  ${l.source} -> ${l.target}: ${fmtVal(l.value)} (${fmtPct(l.value, revenue)} of revenue)`)
+    .map((l) => `  ${l.source} -> ${l.target}: ${fmtVal(l.value, currency)} (${fmtPct(l.value, revenue)} of revenue)`)
     .join('\n');
 
   return `[display:Explain ${ticker} Revenue Flow]\nYou are a financial analyst inside Bullpen. Explain how ${ticker}'s revenue breaks down into costs and profit for ${periodLabel}, using the flow data below.
@@ -254,7 +306,7 @@ function buildExplainQuery(
 ## Input Data
 Company: ${ticker}
 Period: ${periodLabel}
-Total Revenue: ${fmtVal(revenue)}
+Total Revenue: ${fmtVal(revenue, currency)}
 Flow (each line is a dollar amount moving from one bucket to the next):
 ${flowLines}
 
@@ -323,13 +375,14 @@ interface SankeyChartProps {
   graph: { nodes: RawNode[]; links: RawLink[] };
   width: number;
   revenue: number;
+  currency?: string | null;
   isDark: boolean;
   ticker: string;
   periodLabel: string;
   onTip: (tip: Tip | null) => void;
 }
 
-function SankeyChart({ graph, width, revenue, isDark, ticker, periodLabel, onTip }: SankeyChartProps) {
+function SankeyChart({ graph, width, revenue, currency, isDark, ticker, periodLabel, onTip }: SankeyChartProps) {
   const { t } = useTranslation('stock');
   const { height: chartH, pad } = chartMetrics(graph.nodes.length);
   const innerW = width - pad.left - pad.right;
@@ -346,6 +399,7 @@ function SankeyChart({ graph, width, revenue, isDark, ticker, periodLabel, onTip
     [graph],
   );
 
+  const reducedMotion = useReducedMotion();
   const titleId = `sankey-title-${ticker}`;
   const descId = `sankey-desc-${ticker}`;
   // Which node has keyboard focus, so its rect can show a ring.
@@ -373,9 +427,12 @@ function SankeyChart({ graph, width, revenue, isDark, ticker, periodLabel, onTip
 
   return (
     <motion.svg
-      key={`${ticker}-${width}`}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
+      // Keyed on the ticker alone: keyed on width too, every ResizeObserver
+      // tick remounted the svg and replayed the fade, so dragging a window
+      // edge flickered continuously.
+      key={ticker}
+      initial={reducedMotion ? false : { opacity: 0 }}
+      animate={reducedMotion ? undefined : { opacity: 1 }}
       transition={{ duration: 0.35 }}
       width={width}
       height={chartH}
@@ -392,7 +449,7 @@ function SankeyChart({ graph, width, revenue, isDark, ticker, periodLabel, onTip
             t('sankeyA11yFlow', {
               from: nodeLabel(l.source, t),
               to: nodeLabel(l.target, t),
-              value: fmtVal(l.value),
+              value: fmtVal(l.value, currency),
               pct: fmtPct(l.value, revenue),
             }),
           )
@@ -483,7 +540,7 @@ function SankeyChart({ graph, width, revenue, isDark, ticker, periodLabel, onTip
               // unreachable by keyboard, and on a phone unreachable entirely.
               tabIndex={0}
               role="button"
-              aria-label={t('sankeyA11yNode', { label, value: fmtVal(val), pct })}
+              aria-label={t('sankeyA11yNode', { label, value: fmtVal(val, currency), pct })}
               onFocus={(e) => {
                 setFocusedId(node.id as string);
                 const box = (e.currentTarget as SVGGElement).getBoundingClientRect();
@@ -530,7 +587,7 @@ function SankeyChart({ graph, width, revenue, isDark, ticker, periodLabel, onTip
                         wider than a column and collides with the next one. */}
                     <tspan x={lx}>{label}</tspan>
                     <tspan x={lx} dy={13} fontSize={11} fontWeight={400} fill="var(--muted-foreground)">
-                      {fmtVal(val)}
+                      {fmtVal(val, currency)}
                       {revenue > 0 ? ` · ${pct}` : ''}
                     </tspan>
                   </>
@@ -550,7 +607,7 @@ function SankeyChart({ graph, width, revenue, isDark, ticker, periodLabel, onTip
                   fill="var(--muted-foreground)"
                   style={{ userSelect: 'none', pointerEvents: 'none' }}
                 >
-                  {fmtVal(val)}{revenue > 0 ? ` · ${fmtPct(val, revenue)}` : ''}
+                  {fmtVal(val, currency)}{revenue > 0 ? ` · ${fmtPct(val, revenue)}` : ''}
                 </text>
               )}
             </g>
@@ -629,6 +686,8 @@ export function SankeyCard({ ticker }: { ticker: string }) {
   );
   const conf    = useMemo(() => (row ? deriveConfidence(row) : null), [row]);
   const revenue = row?.revenue ?? 0;
+  // The statement's own reporting currency, not the share's trading currency.
+  const currency = row?.reported_currency ?? null;
 
   const isPlanRestricted = !isLoading && data?.error === 'plan_restricted';
   const noData = !isLoading && !isPlanRestricted && (!data?.success || rows.length === 0 || !graph);
@@ -664,7 +723,7 @@ export function SankeyCard({ ticker }: { ticker: string }) {
             {/* Explain button */}
             {!isLoading && !noData && !isPlanRestricted && graph && row && (
               <button
-                onClick={() => openAIPanel({ query: buildExplainQuery(ticker, revenue, fmtLabel(row.fiscal_date, period), graph) })}
+                onClick={() => openAIPanel({ query: buildExplainQuery(ticker, revenue, fmtLabel(row.fiscal_date, period), graph, currency) })}
                 className="flex items-center gap-1.5 rounded-lg border border-border bg-muted/40 px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
               >
                 <Sparkles className="h-3 w-3" />
@@ -749,6 +808,7 @@ export function SankeyCard({ ticker }: { ticker: string }) {
               graph={graph}
               width={Math.max(chartWidth, CHART_W_MIN)}
               revenue={revenue}
+              currency={currency}
               isDark={isDark}
               ticker={ticker}
               periodLabel={row ? fmtLabel(row.fiscal_date, period) : ''}
@@ -756,6 +816,13 @@ export function SankeyCard({ ticker }: { ticker: string }) {
             />
           )}
         </div>
+
+        {/* ── Costs above revenue, which a flow diagram cannot draw ── */}
+        {!isLoading && !noData && !isPlanRestricted && row && row.gross_profit != null && row.gross_profit <= 0 && (
+          <p className="px-6 pb-1 text-xs text-amber-500">
+            {t('sankeyGrossLossNote', { amount: fmtVal(Math.abs(row.gross_profit), currency) })}
+          </p>
+        )}
 
         {/* ── Where the revenue split came from ── */}
         {!isLoading && !noData && !isPlanRestricted && segmentData?.basis && (
@@ -802,7 +869,7 @@ export function SankeyCard({ ticker }: { ticker: string }) {
           <div className="space-y-1">
             <div className="flex justify-between gap-4">
               <span className="text-muted-foreground">{t('sankeyTooltipValue')}</span>
-              <span className="font-medium tabular-nums text-foreground">{fmtVal(tip.value)}</span>
+              <span className="font-medium tabular-nums text-foreground">{fmtVal(tip.value, currency)}</span>
             </div>
             <div className="flex justify-between gap-4">
               <span className="text-muted-foreground">{t('sankeyTooltipPercentOfRevenue')}</span>

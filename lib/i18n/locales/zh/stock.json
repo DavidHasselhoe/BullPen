@@ -258,6 +258,9 @@
   "pageSectionsAriaLabel": "页面分区",
   "peersLabel": "同行:",
   "sankeyAnnual": "年度",
+  "sankeyA11yFlow": "从 {{from}} 到 {{to}}，{{value}}，占收入的 {{pct}}。",
+  "sankeyA11yNode": "{{label}}，{{value}}，占收入的 {{pct}}",
+  "sankeyA11yTitle": "{{ticker}} {{period}} 的收入流向",
   "sankeyCardSubtitle": "收入如何转化为利润",
   "sankeyCardTitle": "收入流向",
   "sankeyConfidenceHigh": "高置信度",
@@ -281,6 +284,8 @@
   "sankeyPlanRestrictedHint": "请尝试上方切换至年度。",
   "sankeyPlanRestrictedQuarterly": "季度收入声明数据需要更高级别的计划。",
   "sankeyQuarterly": "季度",
+  "sankeySourceNoteProduct": "按公司向 SEC 报告的产品划分的收入。",
+  "sankeySourceNoteSegment": "按公司向 SEC 报告的业务部门划分的收入。",
   "sankeyTooltipPercentOfRevenue": "收入占比",
   "sankeyTooltipValue": "数值",
   "sectionLoadError": "此分区无法加载。请尝试刷新页面。",
@@ -376,9 +381,7 @@
   "thesisHrsAgo_other": "{{count}} 小时前",
   "thesisDaysAgo_one": "{{count}} 天前",
   "thesisDaysAgo_other": "{{count}} 天前",
-  "sankeyA11yFlow": "从 {{from}} 到 {{to}}，{{value}}，占收入的 {{pct}}。",
-  "sankeyA11yNode": "{{label}}，{{value}}，占收入的 {{pct}}",
-  "sankeyA11yTitle": "{{ticker}} {{period}} 的收入流向",
-  "sankeySourceNoteProduct": "按公司向 SEC 报告的产品划分的收入。",
-  "sankeySourceNoteSegment": "按公司向 SEC 报告的业务部门划分的收入。"
+  "sankeyGrossLossNote": "成本超过了本期收入，毛损失为 {{amount}}。图表显示了收入的去向。",
+  "sankeyNodeNetLoss": "净亏损",
+  "sankeyNodeOperatingLoss": "营业亏损"
 }

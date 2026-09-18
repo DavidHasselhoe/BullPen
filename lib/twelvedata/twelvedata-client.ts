@@ -1117,6 +1117,16 @@ export interface IncomeStatementPeriod {
   selling_general_administrative_expenses: number | null;
   interest_expense: number | null;
   income_tax_expense: number | null;
+  /**
+   * The currency these figures are reported in, from the response meta.
+   *
+   * Not the same as the currency the share trades in: SAP's ADR trades in USD
+   * on the NYSE and reports its statements in EUR, so anything rendering
+   * these numbers with a currency symbol has to read this and not a profile's
+   * `currency`. Carried per row because every row shares it and adding it
+   * here needs no change to any existing caller.
+   */
+  reported_currency: string | null;
 }
 
 interface TwelveDataIncomeItem {
@@ -1142,6 +1152,8 @@ interface TwelveDataIncomeItem {
 
 interface TwelveDataIncomeResponse {
   income_statement?: TwelveDataIncomeItem[];
+  /** Carries the reporting currency, which differs from the trading currency. */
+  meta?: { currency?: string };
   status?: string;
   code?: number;
   message?: string;
@@ -1183,6 +1195,7 @@ export async function getIncomeStatement(
     selling_general_administrative_expenses: item.operating_expense?.selling_general_and_administrative ?? null,
     interest_expense: item.non_operating_interest?.expense ?? null,
     income_tax_expense: item.income_tax ?? null,
+    reported_currency: data.meta?.currency ?? null,
   }));
 }
 

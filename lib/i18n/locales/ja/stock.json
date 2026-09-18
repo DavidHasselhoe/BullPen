@@ -258,6 +258,9 @@
   "pageSectionsAriaLabel": "ページセクション",
   "peersLabel": "同業他社:",
   "sankeyAnnual": "年間",
+  "sankeyA11yFlow": "{{from}} から {{to}} へ、{{value}}、収益の {{pct}}。",
+  "sankeyA11yNode": "{{label}}、{{value}}、収益の {{pct}}",
+  "sankeyA11yTitle": "{{ticker}} の {{period}} における収益フロー",
   "sankeyCardSubtitle": "売上がどのように利益になるか",
   "sankeyCardTitle": "収益フロー",
   "sankeyConfidenceHigh": "高信頼度",
@@ -378,7 +381,7 @@
   "thesisHrsAgo_other": "{{count}}h 前",
   "thesisDaysAgo_one": "{{count}}d 前",
   "thesisDaysAgo_other": "{{count}}d 前",
-  "sankeyA11yFlow": "{{from}} から {{to}} へ、{{value}}、収益の {{pct}}。",
-  "sankeyA11yNode": "{{label}}、{{value}}、収益の {{pct}}",
-  "sankeyA11yTitle": "{{ticker}} の {{period}} における収益フロー"
+  "sankeyGrossLossNote": "今期は収益を上回るコストがかかり、グロス損失は{{amount}}となりました。チャートは収益がどこに使われたかを示しています。",
+  "sankeyNodeNetLoss": "純損失",
+  "sankeyNodeOperatingLoss": "営業損失"
 }

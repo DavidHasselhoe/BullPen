@@ -255,6 +255,9 @@
   "pageSectionsAriaLabel": "Sideseksjoner",
   "peersLabel": "Konkurrenter:",
   "sankeyAnnual": "Årlig",
+  "sankeyA11yFlow": "{{from}} til {{to}}, {{value}}, {{pct}} av inntekter.",
+  "sankeyA11yNode": "{{label}}, {{value}}, {{pct}} av inntekter",
+  "sankeyA11yTitle": "{{ticker}} inntektsflyt for {{period}}",
   "sankeyCardSubtitle": "Hvordan inntekt blir resultat",
   "sankeyCardTitle": "Inntektsflyt",
   "sankeyConfidenceHigh": "Høy tillit",
@@ -372,13 +375,13 @@
   "chartAiSendAriaLabel": "Send",
   "financialsColumnTrend": "Trend",
   "insiderColumnType": "Type",
-  "sankeyA11yFlow": "{{from}} til {{to}}, {{value}}, {{pct}} av inntekter.",
-  "sankeyA11yNode": "{{label}}, {{value}}, {{pct}} av inntekter",
-  "sankeyA11yTitle": "{{ticker}} inntektsflyt for {{period}}",
+  "sankeyGrossLossNote": "Kostnader oversteg inntektene denne perioden, et bruttotap på {{amount}}. Diagrammet viser hvor inntektene gikk.",
+  "sankeyNodeNetLoss": "Nettotap",
+  "sankeyNodeOperatingLoss": "Driftskostnad",
   "sankeyNodeSgA": "SG&A",
   "statisticsGridBandMega": "Mega",
   "statisticsGridForwardPe": "Forward P/E {{value}}",
   "stockPricePanelLive": "Live",
   "stockPricePanelTooltipVol": "Vol",
-  "thesisSentimentBear": "Bear"
+  "thesisSentimentBear": "Bearish"
 }
