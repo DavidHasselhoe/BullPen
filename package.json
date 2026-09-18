@@ -64,7 +64,7 @@
     "test-holdings-context": "tsx scripts/test-holdings-context-gate.ts"
   },
   "dependencies": {
-    "@ai-sdk/openai": "^3.0.33",
+    "@ai-sdk/openai": "^4.0.59",
     "@ai-sdk/react": "^3.0.102",
     "@anthropic-ai/sdk": "^0.92.0",
     "@radix-ui/react-accordion": "^1.2.20",
