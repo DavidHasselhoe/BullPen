@@ -424,6 +424,11 @@
   "portfolioBuilderRolePlainHedge": "サイドベット",
   "portfolioBuilderRolePlainSecondary": "サポート",
   "portfolioBuilderRoleSecondary": "セカンダリ",
+  "portfolioBuilderRiskScenarioButton": "ポートフォリオに対してテストする",
+  "portfolioBuilderRiskScenarioDescription": "今日お持ちのポジションにこのビルドがこのサイズで加わった場合のスコアに基づいたリスクレポートです。何も買われておらず、保有銘柄には何も追加されていません。",
+  "portfolioBuilderRiskScenarioFailed": "その分析を開始できませんでした。しばらく経ってからやり直してください。",
+  "portfolioBuilderRiskScenarioFeatureName": "リスク分析",
+  "portfolioBuilderRiskScenarioTitle": "どのくらい追加しますか？",
   "portfolioBuilderSaveButton": "ウォッチリストとして保存",
   "portfolioBuilderSaveFailedError": "保存に失敗しました",
   "portfolioBuilderSavedButton": "保存済み",
@@ -655,10 +660,5 @@
   "tryAgainButton": "もう一度試す",
   "portfolioBuilderBullCase": "Bull case",
   "portfolioBuilderBullThesis": "Bull thesis",
-  "portfolioBuilderRiskScenarioButton": "ポートフォリオに対してテストする",
-  "portfolioBuilderRiskScenarioDescription": "今日お持ちのポジションにこのビルドがこのサイズで加わった場合のスコアに基づいたリスクレポートです。何も買われておらず、保有銘柄には何も追加されていません。",
-  "portfolioBuilderRiskScenarioFailed": "その分析を開始できませんでした。しばらく経ってからやり直してください。",
-  "portfolioBuilderRiskScenarioFeatureName": "リスク分析",
-  "portfolioBuilderRiskScenarioOfBook": "のポートフォリオのうち",
-  "portfolioBuilderRiskScenarioTitle": "どのくらい追加しますか？"
+  "portfolioBuilderRiskScenarioOfBook": "ポートフォリオの"
 }

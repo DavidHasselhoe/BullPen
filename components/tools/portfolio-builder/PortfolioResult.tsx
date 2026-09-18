@@ -182,7 +182,10 @@ function RiskScenarioAction({
                 className={cn('h-auto flex-col gap-0.5 py-3', starting === share && 'animate-pulse')}
               >
                 <span className="text-base font-semibold tabular-nums">{share}%</span>
-                <span className="text-[11px] font-normal text-muted-foreground">
+                {/* Wraps rather than truncates: this label is longer in most
+                    languages than in English, and the grid keeps all three
+                    buttons the same height whichever one grows. */}
+                <span className="text-[11px] font-normal leading-tight text-muted-foreground whitespace-normal">
                   {t('portfolioBuilderRiskScenarioOfBook')}
                 </span>
               </Button>

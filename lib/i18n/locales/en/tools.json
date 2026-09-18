@@ -430,7 +430,7 @@
   "portfolioBuilderRiskScenarioDescription": "Your risk report, scored on what you hold today with this build added at that size. Nothing is bought, and nothing is added to your holdings.",
   "portfolioBuilderRiskScenarioFailed": "Could not start that analysis. Try again in a moment.",
   "portfolioBuilderRiskScenarioFeatureName": "Risk analysis",
-  "portfolioBuilderRiskScenarioOfBook": "of your book",
+  "portfolioBuilderRiskScenarioOfBook": "of your portfolio",
   "portfolioBuilderRiskScenarioTitle": "How much would you add?",
   "portfolioBuilderSaveButton": "Save as Watchlist",
   "portfolioBuilderSaveFailedError": "Save failed",
