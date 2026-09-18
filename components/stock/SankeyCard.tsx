@@ -282,6 +282,9 @@ ${flowLines}
 
 interface Tip { x: number; y: number; id: string; value: number; pct: string }
 
+/** Fixed so the flip decision near the viewport edge can be made before paint. */
+const TIP_WIDTH = 180;
+
 // ─── Chart ───────────────────────────────────────────────────────────────────
 
 const CHART_H = 420;
@@ -298,10 +301,11 @@ interface SankeyChartProps {
   revenue: number;
   isDark: boolean;
   ticker: string;
+  periodLabel: string;
   onTip: (tip: Tip | null) => void;
 }
 
-function SankeyChart({ graph, width, revenue, isDark, ticker, onTip }: SankeyChartProps) {
+function SankeyChart({ graph, width, revenue, isDark, ticker, periodLabel, onTip }: SankeyChartProps) {
   const { t } = useTranslation('stock');
   const innerW = width - PAD.left - PAD.right;
   const innerH = CHART_H - PAD.top - PAD.bottom;
@@ -316,6 +320,11 @@ function SankeyChart({ graph, width, revenue, isDark, ticker, onTip }: SankeyCha
         .map((l) => l.source),
     [graph],
   );
+
+  const titleId = `sankey-title-${ticker}`;
+  const descId = `sankey-desc-${ticker}`;
+  // Which node has keyboard focus, so its rect can show a ring.
+  const [focusedId, setFocusedId] = useState<string | null>(null);
 
   const layout = useMemo(() => {
     if (innerW <= 0) return null;
@@ -346,7 +355,25 @@ function SankeyChart({ graph, width, revenue, isDark, ticker, onTip }: SankeyCha
       width={width}
       height={CHART_H}
       style={{ overflow: 'visible', display: 'block' }}
+      role="img"
+      aria-labelledby={`${titleId} ${descId}`}
     >
+      {/* The chart's content in words. Built from the same links the chart
+          draws, so a screen reader and the picture can never disagree. */}
+      <title id={titleId}>{t('sankeyA11yTitle', { ticker, period: periodLabel })}</title>
+      <desc id={descId}>
+        {graph.links
+          .map((l) =>
+            t('sankeyA11yFlow', {
+              from: nodeLabel(l.source, t),
+              to: nodeLabel(l.target, t),
+              value: fmtVal(l.value),
+              pct: fmtPct(l.value, revenue),
+            }),
+          )
+          .join(' ')}
+      </desc>
+
       <defs>
         {(layout.links as AnyLink[]).map((link, i) => {
           const srcColor = nodeColor((link.source as AnyNode).id, sourceOrder, isDark);
@@ -405,17 +432,35 @@ function SankeyChart({ graph, width, revenue, isDark, ticker, onTip }: SankeyCha
             ? revenue
             : ((node.value as number) ?? 0);
 
+          const label = nodeLabel(node.id as string, t);
+          const pct = revenue > 0 ? fmtPct(val, revenue) : '—';
+          const tipAt = (x: number, y: number) => onTip({ x, y, id: label, value: val, pct });
+
           return (
             <g
               key={node.id as string}
-              onMouseMove={(e) => onTip({
-                x: e.clientX, y: e.clientY,
-                id: nodeLabel(node.id as string, t),
-                value: val,
-                pct: revenue > 0 ? fmtPct(val, revenue) : '—',
-              })}
+              // Focus has no pointer coordinates, so the tooltip is placed
+              // from the node's own rect. Without this the values are
+              // unreachable by keyboard, and on a phone unreachable entirely.
+              tabIndex={0}
+              role="button"
+              aria-label={t('sankeyA11yNode', { label, value: fmtVal(val), pct })}
+              onFocus={(e) => {
+                setFocusedId(node.id as string);
+                const box = (e.currentTarget as SVGGElement).getBoundingClientRect();
+                tipAt(box.right, box.top + box.height / 2);
+              }}
+              onBlur={() => {
+                setFocusedId(null);
+                onTip(null);
+              }}
+              onMouseMove={(e) => tipAt(e.clientX, e.clientY)}
               onMouseLeave={() => onTip(null)}
-              style={{ cursor: 'default' }}
+              onPointerDown={(e) => {
+                if (e.pointerType === 'mouse') return;
+                tipAt(e.clientX, e.clientY);
+              }}
+              style={{ cursor: 'default', outline: 'none' }}
             >
               {/* Node rect */}
               <rect
@@ -425,6 +470,8 @@ function SankeyChart({ graph, width, revenue, isDark, ticker, onTip }: SankeyCha
                 fill={color}
                 rx={3}
                 opacity={0.9}
+                stroke={focusedId === node.id ? 'var(--ring)' : undefined}
+                strokeWidth={focusedId === node.id ? 2 : undefined}
               />
               {/* Primary label — uses CSS variable so it adapts to theme with no JS */}
               <text
@@ -646,6 +693,7 @@ export function SankeyCard({ ticker }: { ticker: string }) {
               revenue={revenue}
               isDark={isDark}
               ticker={ticker}
+              periodLabel={row ? fmtLabel(row.fiscal_date, period) : ''}
               onTip={setTip}
             />
           )}
@@ -683,7 +731,14 @@ export function SankeyCard({ ticker }: { ticker: string }) {
       {tip && mounted && createPortal(
         <div
           className="pointer-events-none fixed z-[9999] rounded-xl border shadow-2xl px-3 py-2.5 text-xs bg-popover border-border"
-          style={{ left: tip.x + 10, top: tip.y - 40, minWidth: 160 }}
+          // Flipped to the other side of the cursor near the right edge, and
+          // never allowed above the viewport: a node at the edge of a wide
+          // chart used to push its own tooltip off screen.
+          style={{
+            left: tip.x + TIP_WIDTH + 20 > window.innerWidth ? tip.x - TIP_WIDTH - 10 : tip.x + 10,
+            top: Math.max(8, tip.y - 40),
+            width: TIP_WIDTH,
+          }}
         >
           <p className="font-semibold text-foreground mb-1.5">{tip.id}</p>
           <div className="space-y-1">

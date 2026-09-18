@@ -2391,5 +2391,10 @@
   "holdings.riskScenarioBadge": "0ef98978a6d40a208db04b47b1606f58c2c778fb702e53e7a2c9a4126e522d8e",
   "holdings.riskScenarioNote_one": "a4f67d6e986b658d5d7d8acedbe07abef3c6ba34bb045ce7d0600c01c09e8fb4",
   "holdings.riskScenarioNote_other": "e9e65a6ff25ec658488ad611a370e91dd6524bd8a70f63d1f93cde6f64033173",
-  "stock.thesisSentimentBull": "9ae3a6d95ad602c1a38e71c11ed5dc74a612851a86ddab6606d071867bf8cedc"
+  "stock.thesisSentimentBull": "9ae3a6d95ad602c1a38e71c11ed5dc74a612851a86ddab6606d071867bf8cedc",
+  "stock.sankeyA11yFlow": "72d0c80acc1f7bd37e7367c3859df6e0430d7c418ad168684b43b8b9cd261555",
+  "stock.sankeyA11yNode": "e25fd276ce0a588a84a607d61f83eff6b6f98c1db9375941294b86bfac562ba3",
+  "stock.sankeyA11yTitle": "2b3a76ab2f33346fad79ed5fab88e2223646ba93d0c30ef83d03bf8a82c8af97",
+  "stock.sankeySourceNoteProduct": "0fb042fe966e319f3161c21147ccf3dca7df84e18c4ba8a548342ead5bc71df9",
+  "stock.sankeySourceNoteSegment": "71088351f50168a5e96f7451048cf240351ac7fac2007486f72c962479e0dc15"
 }

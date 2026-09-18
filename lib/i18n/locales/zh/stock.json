@@ -349,6 +349,7 @@
   "websiteLabel": "网站",
   "thesisSectionTitle": "社区观点",
   "thesisFilterAll": "全部",
+  "thesisSentimentBull": "Bull",
   "thesisSentimentNeutral": "中立",
   "thesisSentimentBear": "看空",
   "thesisShareTakePlaceholder": "分享你对 {{symbol}} 的看法…",
@@ -375,7 +376,9 @@
   "thesisHrsAgo_other": "{{count}} 小时前",
   "thesisDaysAgo_one": "{{count}} 天前",
   "thesisDaysAgo_other": "{{count}} 天前",
-  "sankeySourceNoteProduct": "Revenue split by product, as the company reported it to the SEC.",
-  "sankeySourceNoteSegment": "Revenue split by business segment, as the company reported it to the SEC.",
-  "thesisSentimentBull": "Bull"
+  "sankeyA11yFlow": "从 {{from}} 到 {{to}}，{{value}}，占收入的 {{pct}}。",
+  "sankeyA11yNode": "{{label}}，{{value}}，占收入的 {{pct}}",
+  "sankeyA11yTitle": "{{ticker}} {{period}} 的收入流向",
+  "sankeySourceNoteProduct": "按公司向 SEC 报告的产品划分的收入。",
+  "sankeySourceNoteSegment": "按公司向 SEC 报告的业务部门划分的收入。"
 }

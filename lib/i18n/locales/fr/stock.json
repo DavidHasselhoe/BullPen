@@ -273,6 +273,8 @@
   "sankeyPlanRestrictedHint": "Essayez de basculer vers Annuel ci-dessus.",
   "sankeyPlanRestrictedQuarterly": "Les données trimestrielles du compte de résultat nécessitent un forfait supérieur.",
   "sankeyQuarterly": "Trimestriel",
+  "sankeySourceNoteProduct": "Ventilation du chiffre d'affaires par produit, telle que rapportée par l'entreprise à la SEC.",
+  "sankeySourceNoteSegment": "Ventilation du chiffre d'affaires par segment d'activité, telle que rapportée par l'entreprise à la SEC.",
   "sankeyTooltipPercentOfRevenue": "% du Chiffre d'Affaires",
   "sankeyTooltipValue": "Valeur",
   "sectionLoadError": "Cette section n'a pas pu se charger. Essayez d'actualiser la page.",
@@ -372,10 +374,11 @@
   "financialsColumnRatio": "Ratio",
   "insiderColumnType": "Type",
   "insiderSentimentNet": "Net {{sign}}{{amount}}",
+  "sankeyA11yFlow": "{{from}} vers {{to}}, {{value}}, {{pct}} du chiffre d'affaires.",
+  "sankeyA11yNode": "{{label}}, {{value}}, {{pct}} du chiffre d'affaires",
+  "sankeyA11yTitle": "Flux de chiffre d'affaires de {{ticker}} pour {{period}}",
   "sankeyNodeRnD": "R&D",
   "sankeyNodeSgA": "SG&A",
-  "sankeySourceNoteProduct": "Ventilation du chiffre d'affaires par produit, telle que rapportée par l'entreprise à la SEC.",
-  "sankeySourceNoteSegment": "Ventilation du chiffre d'affaires par segment d'activité, telle que rapportée par l'entreprise à la SEC.",
   "statisticsGridBandMicro": "Micro",
   "stockPricePanelVolumeLabel": "Volume"
 }

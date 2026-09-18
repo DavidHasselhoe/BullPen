@@ -281,6 +281,8 @@
   "sankeyPlanRestrictedHint": "上記で年間に切り替えてみてください。",
   "sankeyPlanRestrictedQuarterly": "四半期の損益計算書データはより高いプランが必要です。",
   "sankeyQuarterly": "四半期",
+  "sankeySourceNoteProduct": "企業がSECに報告した製品別の収益構成です。",
+  "sankeySourceNoteSegment": "企業がSECに報告した事業セグメント別の収益構成です。",
   "sankeyTooltipPercentOfRevenue": "売上に対する %",
   "sankeyTooltipValue": "値",
   "sectionLoadError": "このセクションを読み込めませんでした。ページを更新してみてください。",
@@ -376,6 +378,7 @@
   "thesisHrsAgo_other": "{{count}}h 前",
   "thesisDaysAgo_one": "{{count}}d 前",
   "thesisDaysAgo_other": "{{count}}d 前",
-  "sankeySourceNoteProduct": "企業がSECに報告した製品別の収益構成です。",
-  "sankeySourceNoteSegment": "企業がSECに報告した事業セグメント別の収益構成です。"
+  "sankeyA11yFlow": "{{from}} から {{to}} へ、{{value}}、収益の {{pct}}。",
+  "sankeyA11yNode": "{{label}}、{{value}}、収益の {{pct}}",
+  "sankeyA11yTitle": "{{ticker}} の {{period}} における収益フロー"
 }
