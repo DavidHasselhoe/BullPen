@@ -2378,5 +2378,7 @@
   "tools.holdingsContextReading": "3b777bff40b79f5f6dd9717eaa6e3360336d7eaf3bb313828665ac19b26ca9ee",
   "tools.holdingsContextSomeCost": "91f46e6fc34f73252ad9a65f2a28d7d7cff312a983920b2114b42a4b2de9ec65",
   "tools.holdingsContextSomeMarket": "b9625ed2e47fb45fc6770f846e39edccbad306ab31541dfeee98d578c6c92505",
-  "tools.holdingsContextWithheldNote": "5d3cd4981e7983cc79bd38d251e9dfc86c9d6407dc9144ef033f94625c9010ba"
+  "tools.holdingsContextWithheldNote": "5d3cd4981e7983cc79bd38d251e9dfc86c9d6407dc9144ef033f94625c9010ba",
+  "tools.portfolioBuilderAddToPortfolio": "893ed1c1306119865db1fe8c08b409fc6b20ece97ca1a5d4408cc06cedeca7e0",
+  "tools.portfolioBuilderAddToPosition": "6ab3b6ee11cc4ef9445e945afa71276c49593da90cc73ea345c36a53efa7796f"
 }

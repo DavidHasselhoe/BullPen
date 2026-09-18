@@ -1,8 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Plus } from 'lucide-react';
+import { AddHoldingModal } from '@/components/holdings/AddHoldingModal';
 import { cn } from '@/lib/utils';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
@@ -45,6 +47,9 @@ export function AllocationBars({ holdings, logoMap, isSimplified }: Props) {
   // an ordinary build flags overlap too, not only one built on the holdings
   // foundation.
   const { data: ownedHoldings } = useHoldings();
+  // Mounted only while a ticker is chosen, so each open starts the modal fresh
+  // on that symbol instead of carrying the last one's state.
+  const [addTicker, setAddTicker] = useState<string | null>(null);
   const owned = useMemo(
     () =>
       new Set(
@@ -163,6 +168,25 @@ export function AllocationBars({ holdings, logoMap, isSimplified }: Props) {
                           ))}
                         </div>
                       )}
+                      {/* The next click for someone who decided to act on a
+                          name. Opens the same modal /holdings uses, here,
+                          with the ticker already filled in: acting on one
+                          holding shouldn't cost the reader the result they
+                          are still reading. */}
+                      <button
+                        type="button"
+                        onClick={() => setAddTicker(h.ticker)}
+                        className={cn(
+                          'inline-flex items-center gap-1.5 rounded-lg border border-border/60 px-2.5 py-1.5',
+                          'text-[11px] font-medium text-muted-foreground',
+                          'transition-colors duration-150 hover:border-border hover:bg-muted/40 hover:text-foreground',
+                        )}
+                      >
+                        <Plus className="h-3 w-3" aria-hidden />
+                        {owned.has(h.ticker.toUpperCase())
+                          ? t('portfolioBuilderAddToPosition')
+                          : t('portfolioBuilderAddToPortfolio')}
+                      </button>
                     </div>
                   </AccordionContent>
                 </AccordionItem>
@@ -171,6 +195,14 @@ export function AllocationBars({ holdings, logoMap, isSimplified }: Props) {
           </div>
         );
       })}
+
+      {addTicker && (
+        <AddHoldingModal
+          open
+          onOpenChange={(next) => { if (!next) setAddTicker(null); }}
+          initialTicker={addTicker}
+        />
+      )}
     </div>
   );
 }

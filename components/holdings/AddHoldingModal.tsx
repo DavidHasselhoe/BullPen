@@ -47,12 +47,18 @@ interface SearchResult {
 interface AddHoldingModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /**
+   * A symbol the reader already chose somewhere else (a built portfolio, a
+   * screener row), so they land on the quantity field instead of retyping a
+   * ticker they just clicked.
+   */
+  initialTicker?: string;
 }
 
-export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
+export function AddHoldingModal({ open, onOpenChange, initialTicker }: AddHoldingModalProps) {
   const { t } = useTranslation('holdings');
   const { user } = useAuth();
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(initialTicker ?? '');
   const [selectedStock, setSelectedStock] = useState<SearchResult | null>(null);
   const [mode, setMode] = useState<'single' | 'multiple'>('single');
   const [quantity, setQuantity] = useState('');
@@ -131,6 +137,22 @@ export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
     []
   );
 
+  /**
+   * Opened on a ticker the reader already picked somewhere else: the search
+   * box starts on that symbol, and the exact catalogue match stands in as the
+   * selection until they choose something else themselves.
+   *
+   * Derived rather than assigned in an effect, so nothing has to race the
+   * search results to set it. Resolving through the same search path as a
+   * typed symbol is what keeps the company name, listing currency and
+   * instrument type right; a hand-built result would be guessing them.
+   */
+  const prefilled = useMemo(() => {
+    if (!initialTicker) return null;
+    return searchResults?.find((r) => r.ticker.toUpperCase() === initialTicker.toUpperCase()) ?? null;
+  }, [initialTicker, searchResults]);
+  const activeStock = selectedStock ?? prefilled;
+
   const validateQuantity = (val: string) => {
     if (!val) return '';
     const n = parseFloat(val);
@@ -148,9 +170,9 @@ export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!selectedStock) return;
+    if (!activeStock) return;
 
-    const assetType = inferAssetType(selectedStock.ticker, selectedStock.instrument_type);
+    const assetType = inferAssetType(activeStock.ticker, activeStock.instrument_type);
 
     if (mode === 'multiple') {
       setMultiError('');
@@ -166,15 +188,15 @@ export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
       try {
         for (const row of purchaseRows) {
           const input: AddHoldingInput = {
-            symbol: selectedStock.ticker,
-            company_name: selectedStock.name,
+            symbol: activeStock.ticker,
+            company_name: activeStock.name,
             quantity: parseFloat(row.quantity),
             avg_price: parseFloat(row.price),
             date_purchased: row.date,
             asset_type: assetType === 'unknown' ? 'stock' : assetType,
             purchase_currency: userCurrency,
             purchase_fx_rate: userCurrency !== 'USD' ? null : 1,
-            trading_currency: selectedStock.currency ?? null,
+            trading_currency: activeStock.currency ?? null,
           };
           // Sequential, not Promise.all — the first call creates the holding,
           // every later call must see it already exist to merge into it.
@@ -200,8 +222,8 @@ export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
 
     try {
       const input: AddHoldingInput = {
-        symbol: selectedStock.ticker,
-        company_name: selectedStock.name,
+        symbol: activeStock.ticker,
+        company_name: activeStock.name,
         quantity: quantity ? parseFloat(quantity) : null,
         avg_price: avgPrice ? parseFloat(avgPrice) : null,
         date_purchased: datePurchased || null,
@@ -209,7 +231,7 @@ export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
         purchase_currency: userCurrency,
         purchase_fx_rate: historicalRateData ?? (userCurrency !== 'USD' ? null : 1),
         // The asset's listing currency — what avg_price is denominated in (USD/NOK/EUR…).
-        trading_currency: selectedStock.currency ?? null,
+        trading_currency: activeStock.currency ?? null,
       };
 
       await addHolding.mutateAsync(input);
@@ -288,7 +310,7 @@ export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
                             <div className="font-medium">{result.ticker}</div>
                             <div className="text-xs text-muted-foreground">{result.name}</div>
                           </div>
-                          {selectedStock?.ticker === result.ticker && (
+                          {activeStock?.ticker === result.ticker && (
                             <CheckCircle2 className="h-4 w-4 text-primary" />
                           )}
                         </CommandItem>
@@ -304,9 +326,9 @@ export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
                 </CommandList>
               </Command>
             </div>
-            {selectedStock && (
+            {activeStock && (
               <div className="text-xs text-muted-foreground">
-                {t('addHoldingSelected', { ticker: selectedStock.ticker, name: selectedStock.name })}
+                {t('addHoldingSelected', { ticker: activeStock.ticker, name: activeStock.name })}
               </div>
             )}
           </div>
@@ -448,7 +470,7 @@ export function AddHoldingModal({ open, onOpenChange }: AddHoldingModalProps) {
             </Button>
             <Button
               type="submit"
-              disabled={!selectedStock || addHolding.isPending || addOrUpdateHolding.isPending}
+              disabled={!activeStock || addHolding.isPending || addOrUpdateHolding.isPending}
             >
               {(mode === 'multiple' ? addOrUpdateHolding.isPending : addHolding.isPending) ? t('addHoldingAdding') : t('addHoldingTitle')}
             </Button>
