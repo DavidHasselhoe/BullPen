@@ -10,6 +10,7 @@ import type { Database } from '@/lib/supabase/types';
 import { slugToSymbol } from '@/lib/assets/asset-type';
 import { gatherDeepDiveData, formatDataBlock } from '@/lib/ai/deep-dive/gather-data';
 import { buildPortfolioFitBlock } from '@/lib/ai/deep-dive/portfolio-fit';
+import { parseExcludeList } from '@/lib/holdings/portfolio-positions';
 import { inferArchetype } from '@/lib/ai/deep-dive/archetype';
 import { DEEP_DIVE_SYSTEM_PROMPT, buildUserPrompt } from '@/lib/ai/deep-dive/system-prompt';
 import { parseModelReport, type DeepDiveReport } from '@/lib/ai/deep-dive/schema';
@@ -37,8 +38,10 @@ async function runDeepDive(params: {
   experienceLevel: ExperienceLevel;
   /** Whether this reader asked for the stock to be weighed against their own book. */
   checkFit: boolean;
+  /** Positions the reader unticked in that toggle's list. Never loaded. */
+  excludeTickers: string[];
 }): Promise<void> {
-  const { id, userId, symbol, experienceLevel, checkFit } = params;
+  const { id, userId, symbol, experienceLevel, checkFit, excludeTickers } = params;
   const supabase = createServerClient();
   const setPhase = (phase: DivePhase) => supabase.from('stock_deep_dives').update({ phase }).eq('id', id);
 
@@ -53,7 +56,7 @@ async function runDeepDive(params: {
     // Read only when this generation asked for it, and appended to the user
     // turn rather than the system prompt, which is cached across every reader
     // and has to stay byte-identical to keep hitting that cache.
-    const fitBlock = await buildPortfolioFitBlock(userId, symbol, checkFit);
+    const fitBlock = await buildPortfolioFitBlock(userId, symbol, checkFit, excludeTickers);
 
     const userPrompt =
       buildUserPrompt({
@@ -192,9 +195,11 @@ async function postHandler(
   // gets the beginner report, not the intermediate one.
   let experienceLevel: ExperienceLevel = 'beginner';
   let checkFit = false;
+  let excludeTickers: string[] = [];
   try {
     const body = await request.json().catch(() => ({}));
     checkFit = body.checkFit === true;
+    excludeTickers = checkFit ? parseExcludeList(body.excludeTickers) : [];
     // Must list every level, including intermediate. This used to check only
     // beginner/advanced and let intermediate fall through to the default,
     // which was harmless while the default was itself intermediate and would
@@ -236,7 +241,7 @@ async function postHandler(
 
   const id = inserted.id as string;
 
-  after(() => runDeepDive({ id, userId: session.userId, symbol, experienceLevel, checkFit }));
+  after(() => runDeepDive({ id, userId: session.userId, symbol, experienceLevel, checkFit, excludeTickers }));
 
   return addSecurityHeaders(NextResponse.json({ id, status: 'pending' }));
 }

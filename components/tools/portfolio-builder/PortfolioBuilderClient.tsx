@@ -220,7 +220,7 @@ export function PortfolioBuilderClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, isAuthenticated]);
 
-  const submit = async (submittedThesis: string, useHoldings = false) => {
+  const submit = async (submittedThesis: string, useHoldings = false, excludeTickers: string[] = []) => {
     stopPolling();
     setPhase('streaming');
     setJustCompleted(false);
@@ -232,7 +232,7 @@ export function PortfolioBuilderClient() {
       const res = await fetch('/api/ai/portfolio-builder', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ thesis: submittedThesis, useHoldings }),
+        body: JSON.stringify({ thesis: submittedThesis, useHoldings, excludeTickers }),
       });
 
       if (res.status === 429) { setErrorCode('rate_limited'); setPhase('error'); return; }

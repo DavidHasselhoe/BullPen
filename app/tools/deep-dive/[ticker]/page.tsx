@@ -73,6 +73,7 @@ export default function DeepDivePage() {
   // Off by default and decided per report, same consent shape as the portfolio
   // builder: the positions are listed on screen before anything is sent.
   const [checkFit, setCheckFit] = useState(false);
+  const [fitExcluded, setFitExcluded] = useState<string[]>([]);
 
   // Set only by entry points that mean "generate a new one" (the stock page's
   // Deep Dive button, command palette, the tool's own search) -- not by a
@@ -191,7 +192,7 @@ export default function DeepDivePage() {
       const res = await fetch(`/api/ai/deep-dive/${rawTicker}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ experienceLevel: level, holds, checkFit }),
+        body: JSON.stringify({ experienceLevel: level, holds, checkFit, excludeTickers: checkFit ? fitExcluded : [] }),
       });
 
       if (res.status === 429) { setErrorCode('rate_limited'); setPhase('error'); return; }
@@ -211,7 +212,7 @@ export default function DeepDivePage() {
       setErrorCode('unknown');
       setPhase('error');
     }
-  }, [rawTicker, level, holds, checkFit, report, stopPolling, pollStatus]);
+  }, [rawTicker, level, holds, checkFit, fitExcluded, report, stopPolling, pollStatus]);
 
   const askAI = useCallback(() => {
     openAIPanel({
@@ -291,6 +292,8 @@ export default function DeepDivePage() {
               <div className="mx-auto mt-6 max-w-md text-left">
                 <HoldingsContextToggle
                   enabled={checkFit}
+                  excluded={fitExcluded}
+                  onExcludedChange={setFitExcluded}
                   onChange={setCheckFit}
                   title={t('deepDiveFitToggleTitle')}
                   description={t('deepDiveFitToggleDescription')}
@@ -336,6 +339,8 @@ export default function DeepDivePage() {
               <div className="mx-auto max-w-md">
                 <HoldingsContextToggle
                   enabled={checkFit}
+                  excluded={fitExcluded}
+                  onExcludedChange={setFitExcluded}
                   onChange={setCheckFit}
                   title={t('deepDiveFitToggleTitle')}
                   description={t('deepDiveFitToggleDescriptionRegenerate')}

@@ -17,6 +17,7 @@ import {
 } from '@/lib/ai/portfolio-builder/schema';
 import { validateTickers } from '@/lib/ai/portfolio-builder/validate-tickers';
 import { resolveHoldingsBlock, composeUserTurn } from '@/lib/ai/portfolio-builder/holdings-context';
+import { parseExcludeList } from '@/lib/holdings/portfolio-positions';
 import { renormalizeAllocations } from '@/lib/ai/portfolio-builder/renormalize';
 import { classifyAiError, parseFailure } from '@/lib/ai/provider-error';
 import { z } from 'zod';
@@ -40,12 +41,14 @@ async function runPortfolioBuilder(params: {
   thesis: string;
   /** Whether this build asked to start from the investor's own book. */
   useHoldings: boolean;
+  /** Positions the investor unticked in that toggle's list. Never loaded. */
+  excludeTickers: string[];
 }): Promise<void> {
-  const { id, userId, thesis, useHoldings } = params;
+  const { id, userId, thesis, useHoldings, excludeTickers } = params;
   // Read inside the background task, not in the request: POST's whole job is
   // to hand back an id immediately. An empty or unreadable book degrades to a
   // normal thematic build, since the thesis alone is still a complete request.
-  const holdingsBlock = await resolveHoldingsBlock(userId, useHoldings);
+  const holdingsBlock = await resolveHoldingsBlock(userId, useHoldings, excludeTickers);
   const supabase = createServerClient();
   const setPhase = (phase: BuilderPhase) => supabase.from('portfolio_generations').update({ phase }).eq('id', id);
   const markError = (code: string, message: string) =>
@@ -195,10 +198,12 @@ async function handler(
 
   let thesis: string;
   let useHoldings = false;
+  let excludeTickers: string[] = [];
   try {
     const body = await request.json();
     thesis = String(body.thesis ?? '').trim();
     useHoldings = body.useHoldings === true;
+    excludeTickers = useHoldings ? parseExcludeList(body.excludeTickers) : [];
     if (thesis.length < 10 || thesis.length > 500) {
       throw new Error('thesis must be 10-500 characters');
     }
@@ -230,7 +235,7 @@ async function handler(
 
   const id = inserted.id as string;
 
-  after(() => runPortfolioBuilder({ id, userId: session.userId, thesis, useHoldings }));
+  after(() => runPortfolioBuilder({ id, userId: session.userId, thesis, useHoldings, excludeTickers }));
 
   return NextResponse.json({ id, status: 'pending' });
 }

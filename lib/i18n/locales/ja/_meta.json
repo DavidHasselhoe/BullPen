@@ -2347,8 +2347,6 @@
   "holdings.importUndoneBody_other": "205d99a12f4111d052f28140e2a8273edaa64f1b4605ec21fd1b61a7aa487581",
   "holdings.importUndoneTitle": "093de0befe6b784f79c8d13d77e162a0f4650085be08b08510b8f76614cfc2a9",
   "tools.portfolioBuilderAlreadyOwned": "2c67cb0a18f78f41c71eb23596c536cc1683205d7e39afbfecc4bcd98258c25b",
-  "tools.portfolioBuilderUseHoldingsCount_one": "e87f22a2342873c7be6b55e7a71fb087ca491f6741ec54e919c741126c1f2d8d",
-  "tools.portfolioBuilderUseHoldingsCount_other": "e94bb2e83a9291ad3b77abc151656d94e86f09381a445203c066cd874e5cce7b",
   "tools.portfolioBuilderUseHoldingsDescription": "0af7c19cb500fcd7acdd2bbcdded82107e5ba7080d8235b115013c83e5d22a47",
   "tools.portfolioBuilderUseHoldingsTitle": "57366f01e14dbfc84da52c91dfafda9b1dec41df85ae1be917c201695c2874fe",
   "tools.screenerExportFailed": "e94d3ee06ecf6aacdf8caf324ce34fef57c55aebc5b39496d42f724fe094cb35",
@@ -2369,5 +2367,14 @@
   "tools.deepDiveFitSizing": "4061b4bb839e74b22ded77d5e41ec9dffb5e444cf1b0fe1459c94e03cddc8de1",
   "tools.deepDiveFitToggleDescription": "ae9700fb7402a2f9c56dec9336a70bb72a679b6b189e48e94d19d2d4a21f30b0",
   "tools.deepDiveFitToggleDescriptionRegenerate": "d79f94fa9482859f06107dc1d702300928b0ab6a4ece386f5e334429bc222d9a",
-  "tools.deepDiveFitToggleTitle": "e2f356895925ed562cb80bd9c0369e5fddfa46b51f4d7d987f8e6d2cd0c87e45"
+  "tools.deepDiveFitToggleTitle": "e2f356895925ed562cb80bd9c0369e5fddfa46b51f4d7d987f8e6d2cd0c87e45",
+  "tools.holdingsContextAllCost_one": "e87f22a2342873c7be6b55e7a71fb087ca491f6741ec54e919c741126c1f2d8d",
+  "tools.holdingsContextAllCost_other": "e94bb2e83a9291ad3b77abc151656d94e86f09381a445203c066cd874e5cce7b",
+  "tools.holdingsContextAllMarket_one": "4f9bddd8bdb7f3e43f84c970bde040d55c43b9b950e4d65e1780728e54133323",
+  "tools.holdingsContextAllMarket_other": "80e8bc84d8e4cc8a3370b6490b26508692f0b0375419c21ee8bc65b66f2758f5",
+  "tools.holdingsContextIncludeAria": "b014a9c9aab5f25c2f2f8482a72eae403757b6e4b7eecdbd4bde7decee869c8f",
+  "tools.holdingsContextReading": "3b777bff40b79f5f6dd9717eaa6e3360336d7eaf3bb313828665ac19b26ca9ee",
+  "tools.holdingsContextSomeCost": "91f46e6fc34f73252ad9a65f2a28d7d7cff312a983920b2114b42a4b2de9ec65",
+  "tools.holdingsContextSomeMarket": "b9625ed2e47fb45fc6770f846e39edccbad306ab31541dfeee98d578c6c92505",
+  "tools.holdingsContextWithheldNote": "5d3cd4981e7983cc79bd38d251e9dfc86c9d6407dc9144ef033f94625c9010ba"
 }

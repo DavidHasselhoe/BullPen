@@ -1,4 +1,9 @@
-import { loadPositions, renderPositionLines } from '@/lib/holdings/portfolio-positions';
+import {
+  loadPositions,
+  renderPositionLines,
+  basisLabel,
+  PARTIAL_BOOK_NOTE,
+} from '@/lib/holdings/portfolio-positions';
 
 /**
  * "Does this one stock fit the book I already have?" — the context that turns
@@ -18,13 +23,14 @@ export async function buildPortfolioFitBlock(
   userId: string,
   symbol: string,
   checkFit: boolean,
+  exclude: string[] = [],
 ): Promise<string | undefined> {
   // The gate lives here, not at the call site, so no caller can read someone's
   // holdings by forgetting to check the flag first. Tested in
   // scripts/test-holdings-context-gate.ts against an account that has them.
   if (!checkFit) return undefined;
 
-  const positions = await loadPositions(userId);
+  const { positions, basis, partial } = await loadPositions(userId, { exclude });
   if (positions.length === 0) return undefined;
 
   const held = positions.find((p) => p.ticker === symbol.toUpperCase());
@@ -35,13 +41,13 @@ export async function buildPortfolioFitBlock(
 
 ## THE READER'S EXISTING PORTFOLIO
 
-Weights are by cost basis (what was paid), not live market value, so treat them as approximate sizing. Never restate them as current values or as a portfolio total.
-
-${renderPositionLines(positions)}
+Weights are by ${basisLabel(basis)}, so treat them as approximate sizing. Never restate them as current values or as a portfolio total.
+${partial ? `\n${PARTIAL_BOOK_NOTE}\n` : ''}
+${renderPositionLines(positions, basis)}
 
 ${
   held
-    ? `They already hold ${symbol.toUpperCase()}, at roughly ${held.weightPct}% of cost basis. Write the fit section for someone deciding what to do with that existing position, not someone starting fresh.`
+    ? `They already hold ${symbol.toUpperCase()}, at roughly ${held.weightPct}% of the book by ${basisLabel(basis)}. Write the fit section for someone deciding what to do with that existing position, not someone starting fresh.`
     : `They do not currently hold ${symbol.toUpperCase()}.`
 }
 

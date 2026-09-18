@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import { HoldingsContextToggle } from '@/components/holdings/HoldingsContextToggle';
 
 interface Props {
-  onSubmit: (thesis: string, useHoldings: boolean) => void;
+  onSubmit: (thesis: string, useHoldings: boolean, excludeTickers: string[]) => void;
   disabled?: boolean;
 }
 
@@ -24,6 +24,7 @@ export function ThesisInput({ onSubmit, disabled }: Props) {
   ];
   const [thesis, setThesis] = useState('');
   const [useHoldings, setUseHoldings] = useState(false);
+  const [excluded, setExcluded] = useState<string[]>([]);
   const tooShort = thesis.trim().length > 0 && thesis.trim().length < 10;
   const valid = thesis.trim().length >= 10 && thesis.trim().length <= 500;
 
@@ -58,7 +59,7 @@ export function ThesisInput({ onSubmit, disabled }: Props) {
               {tooShort ? t('portfolioBuilderTooShort') : t('portfolioBuilderCharCount', { count: thesis.length })}
             </span>
             <Button
-              onClick={() => onSubmit(thesis.trim(), useHoldings)}
+              onClick={() => onSubmit(thesis.trim(), useHoldings, useHoldings ? excluded : [])}
               disabled={!valid || disabled}
               size="sm"
               className="gap-2 px-4 rounded-full animate-ai-pill-shine"
@@ -76,6 +77,8 @@ export function ThesisInput({ onSubmit, disabled }: Props) {
         disabled={disabled}
         title={t('portfolioBuilderUseHoldingsTitle')}
         description={t('portfolioBuilderUseHoldingsDescription')}
+        excluded={excluded}
+        onExcludedChange={setExcluded}
       />
 
       {/* Examples */}

@@ -1,4 +1,9 @@
-import { loadPositions, renderPositionLines } from '@/lib/holdings/portfolio-positions';
+import {
+  loadPositions,
+  renderPositionLines,
+  basisLabel,
+  PARTIAL_BOOK_NOTE,
+} from '@/lib/holdings/portfolio-positions';
 
 /**
  * The user's real book, rendered for the portfolio builder's prompt.
@@ -7,13 +12,12 @@ import { loadPositions, renderPositionLines } from '@/lib/holdings/portfolio-pos
  * that specific generation. The toggle is the consent: it names what gets
  * sent and shows the positions on screen before anything is submitted, so
  * nothing about a user's portfolio reaches a model because of a setting they
- * turned on months ago and forgot.
+ * turned on months ago and forgot. Positions they untick in that list are
+ * never loaded into the prompt at all.
  *
- * Weights are by cost basis, which is what the holdings row stores. Live
- * market-value weights would need a quote per symbol on a path that is
- * already a paid model call, and "roughly how much of my money sits here" is
- * the question the prompt actually needs answered. The block says so out
- * loud rather than letting the model present a cost-basis weight as today's.
+ * Weights are by live market value, or by cost basis when a position could
+ * not be priced. The block says which it got rather than letting the model
+ * present one as the other.
  */
 
 export interface HoldingsContext {
@@ -23,14 +27,21 @@ export interface HoldingsContext {
   tickers: string[];
 }
 
-export async function buildHoldingsContext(userId: string): Promise<HoldingsContext | null> {
+export async function buildHoldingsContext(
+  userId: string,
+  exclude: string[] = [],
+): Promise<HoldingsContext | null> {
   // Loading and weighting live in lib/holdings/portfolio-positions.ts, shared
   // with the deep dive's fit check so the two features cannot end up
   // describing the same portfolio two different ways.
-  const positions = await loadPositions(userId);
+  const { positions, basis, partial } = await loadPositions(userId, { exclude });
   if (positions.length === 0) return null;
 
-  const lines = renderPositionLines(positions);
+  const lines = renderPositionLines(positions, basis);
+  const basisCaveat =
+    basis === 'market'
+      ? `Weights below are by ${basisLabel(basis)}, priced today, so they are approximate sizing rather than a statement of account value.`
+      : `Weights below are by ${basisLabel(basis)}, not live market value, so treat them as approximate sizing, never as precise current weights, and never restate them as current values.`;
 
   const block = `
 
@@ -38,8 +49,8 @@ export async function buildHoldingsContext(userId: string): Promise<HoldingsCont
 
 ## THE INVESTOR'S EXISTING PORTFOLIO
 
-This portfolio is the foundation. Build around it, not beside it. Weights below are by cost basis (what was paid), not live market value, so treat them as approximate sizing, never as today's precise weights, and never restate them as current values.
-
+This portfolio is the foundation. Build around it, not beside it. ${basisCaveat}
+${partial ? `\n${PARTIAL_BOOK_NOTE}\n` : ''}
 ${lines}
 
 Additional requirements for this build, on top of everything above:
@@ -62,9 +73,10 @@ Additional requirements for this build, on top of everything above:
 export async function resolveHoldingsBlock(
   userId: string,
   useHoldings: boolean,
+  exclude: string[] = [],
 ): Promise<string | undefined> {
   if (!useHoldings) return undefined;
-  return (await buildHoldingsContext(userId))?.block;
+  return (await buildHoldingsContext(userId, exclude))?.block;
 }
 
 /** The user turn: the thesis alone, unless a block was resolved above. */

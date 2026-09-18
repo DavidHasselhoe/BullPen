@@ -43,7 +43,26 @@ const THESIS = 'Water infrastructure and desalination capacity.';
   for (const ticker of ctx.tickers) {
     assert.ok(onTurn.includes(ticker), `"${ticker}" missing from a toggle-on build`);
   }
-  assert.ok(onTurn.includes('cost basis'), 'weights must be labelled as cost basis');
+  assert.ok(
+    onTurn.includes('cost basis') || onTurn.includes('live market value'),
+    'weights must say which basis they were computed on',
+  );
+
+  // Unticked positions are never loaded, not filtered out of an answer later,
+  // so the excluded ticker must be absent from the prompt entirely and the
+  // note explaining the missing weight must be present in its place.
+  const dropped = ctx.tickers[0];
+  const partial = await resolveHoldingsBlock(USER_WITH_HOLDINGS, true, [dropped.toLowerCase()]);
+  assert.ok(partial, 'a partly withheld book is still a book');
+  assert.ok(!partial.includes(`- ${dropped} (`), `excluded "${dropped}" still reached the prompt`);
+  assert.ok(partial.includes('will not add up to 100%'), 'a withheld book must say the weights are partial');
+  for (const ticker of ctx.tickers.slice(1)) {
+    assert.ok(partial.includes(ticker), `"${ticker}" was dropped by someone else's exclusion`);
+  }
+
+  // Excluding everything is the same as sending nothing, not an empty header.
+  const allDropped = await resolveHoldingsBlock(USER_WITH_HOLDINGS, true, ctx.tickers);
+  assert.equal(allDropped, undefined, 'excluding every position must send no block at all');
 
   // The deep dive's fit check reads the same book through the same loader, so
   // it gets the same guarantee and the same check.
