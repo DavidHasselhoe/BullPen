@@ -263,9 +263,6 @@
   "sankeyA11yTitle": "{{ticker}} の {{period}} における収益フロー",
   "sankeyCardSubtitle": "売上がどのように利益になるか",
   "sankeyCardTitle": "収益フロー",
-  "sankeyConfidenceHigh": "高信頼度",
-  "sankeyConfidenceLow": "低信頼度",
-  "sankeyConfidenceMedium": "中信頼度",
   "sankeyExplainButton": "説明",
   "sankeyNoData": "この期間の財務フロー データは利用できません",
   "sankeyNodeCostOfRevenue": "売上原価",
@@ -274,6 +271,9 @@
   "sankeyNodeNetIncome": "純利益",
   "sankeyNodeOperatingIncome": "営業利益",
   "sankeyNodeOtherCosts": "その他コスト",
+  "sankeyGrossLossNote": "今期は収益を上回るコストがかかり、グロス損失は{{amount}}となりました。チャートは収益がどこに使われたかを示しています。",
+  "sankeyNodeNetLoss": "純損失",
+  "sankeyNodeOperatingLoss": "営業損失",
   "sankeyNodeOtherOpEx": "その他営業費",
   "sankeyNodeRnD": "研究開発",
   "sankeyNodeSgA": "販管費",
@@ -381,7 +381,8 @@
   "thesisHrsAgo_other": "{{count}}h 前",
   "thesisDaysAgo_one": "{{count}}d 前",
   "thesisDaysAgo_other": "{{count}}d 前",
-  "sankeyGrossLossNote": "今期は収益を上回るコストがかかり、グロス損失は{{amount}}となりました。チャートは収益がどこに使われたかを示しています。",
-  "sankeyNodeNetLoss": "純損失",
-  "sankeyNodeOperatingLoss": "営業損失"
+  "sankeyDetailFull": "完全な詳細",
+  "sankeyDetailLimited": "限定的な詳細",
+  "sankeyDetailPartial": "部分的な詳細",
+  "sankeyDetailTooltip": "この申告書が損益計算書をどの程度細分化したか。部分的なチャートは、その会社がこれらの行項目を個別に報告しなかったことを意味します。"
 }

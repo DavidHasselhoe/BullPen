@@ -817,9 +817,6 @@
   "stock.sankeyAnnual": "2c5e81714652558fe11969ae6152aee6f95b48a2d4605740a628906f69bbf692",
   "stock.sankeyCardSubtitle": "b7b4accd07e39af7e2f5ee4e502c5600573481d6fa8649399f66e389299661b5",
   "stock.sankeyCardTitle": "74afdc11165f387d7bd638764d44c882bca50acdf13787cfd98ba18bd0c81033",
-  "stock.sankeyConfidenceHigh": "cf9e47c3fb67b4988e1d1937c993d96adfc7509601820c3e8e19677d75521bfb",
-  "stock.sankeyConfidenceLow": "29e142b8be7d28e49cc799fb06f36a7121919415c29811315c90594e4c4ffc60",
-  "stock.sankeyConfidenceMedium": "5502b3de4eb7c7a191a464ccb09594a1b657dcf73fa10138cf30220e40f08cf2",
   "stock.sankeyNoData": "6c61285941f5647fd264ed00070668cbd01af338ed23bea7af0b5a7925a2b18e",
   "stock.sankeyNodeCostOfRevenue": "561e89c52732af55ae5b314a514676661b40ab3a58d792e08546b9a3487dbe3f",
   "stock.sankeyNodeCostsAndTax": "4d5d6255e14fbde690332c4dcdabece1210a65442538b18194669fa66234aa2e",
@@ -2384,5 +2381,9 @@
   "stock.sankeyA11yTitle": "2b3a76ab2f33346fad79ed5fab88e2223646ba93d0c30ef83d03bf8a82c8af97",
   "stock.sankeyGrossLossNote": "e790cb35af10fab142cc716f67e572c05e675d7f8a80d27a39376557e2c32cfd",
   "stock.sankeyNodeNetLoss": "60e3b0804aa4323a501f00b65d8d321ee193a6c5feae3cbff85ee319c3295494",
-  "stock.sankeyNodeOperatingLoss": "608f7e0c7807a60bd92796cb611fc3e963e8fbff8e8ec3f09f4a6dccc7813eb2"
+  "stock.sankeyNodeOperatingLoss": "608f7e0c7807a60bd92796cb611fc3e963e8fbff8e8ec3f09f4a6dccc7813eb2",
+  "stock.sankeyDetailFull": "abad7a620b3893541b23d2fd39cc7e14c1163b14ba6cbe6433ed964cefa6fd53",
+  "stock.sankeyDetailLimited": "eb9bb11b77eb0c96f1fefe1acbe21674767b2a7cdcbbb47ec41617599defe0fd",
+  "stock.sankeyDetailPartial": "afb03db8df4613c386739a84b39920fc86294d857832da710ee913218eee0da9",
+  "stock.sankeyDetailTooltip": "b93b500d025cb53278674b8e40bc1c89a9607cbf544d5a007c1a1b4b55281c03"
 }

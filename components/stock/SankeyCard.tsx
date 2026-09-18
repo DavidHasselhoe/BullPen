@@ -708,15 +708,21 @@ export function SankeyCard({ ticker }: { ticker: string }) {
           </div>
 
           <div className="flex items-center gap-2.5 flex-wrap">
-            {/* Confidence dot */}
+            {/* How much of the income statement the filing broke out. It was
+                labelled "confidence", which reads as confidence in the
+                numbers; what it actually measures is how many lines are
+                available to draw. */}
             {conf && !noData && !isPlanRestricted && (
-              <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span
+                className="flex items-center gap-1.5 text-xs text-muted-foreground"
+                title={t('sankeyDetailTooltip')}
+              >
                 <span className={cn('h-2 w-2 rounded-full shrink-0', {
                   'bg-emerald-500': conf === 'high',
                   'bg-amber-400':   conf === 'medium',
                   'bg-slate-400':   conf === 'low',
                 })} />
-                {conf === 'high' ? t('sankeyConfidenceHigh') : conf === 'medium' ? t('sankeyConfidenceMedium') : t('sankeyConfidenceLow')}
+                {conf === 'high' ? t('sankeyDetailFull') : conf === 'medium' ? t('sankeyDetailPartial') : t('sankeyDetailLimited')}
               </span>
             )}
 

@@ -1,5 +1,30 @@
 [
   {
+    "date": "2026-09-18",
+    "entries": [
+      {
+        "type": "new",
+        "text": "The Revenue Flow chart on a company page now shows where the revenue actually came from. Apple's opens with iPhone at half of all revenue next to its services business, and Alphabet's splits into Search, YouTube, Cloud and the rest. The figures come from the company's own filings, and companies that do not break their revenue down keep the chart as it was"
+      },
+      {
+        "type": "new",
+        "text": "A portfolio from the Portfolio Builder can now be tested against the one you already own. Pick how much you would put in and you get a full risk report on the two combined, so you can see what buying it would do to your concentration before you buy anything. Nothing is bought and nothing is added to your holdings"
+      },
+      {
+        "type": "new",
+        "text": "Every company in a built portfolio now has an Add to portfolio button, so you can save one you have decided on without leaving the result and searching for it again"
+      },
+      {
+        "type": "improved",
+        "text": "When the Portfolio Builder or a Deep Dive builds on the portfolio you own, it now weighs your positions by what they are worth today rather than what you paid. You can also untick any position you would rather not share, and an unticked one is never sent"
+      },
+      {
+        "type": "improved",
+        "text": "The Revenue Flow chart now works properly on a phone, can be read with a keyboard or a screen reader, and shows a loss instead of leaving the chart half empty. It also labels companies in the currency they actually report in"
+      }
+    ]
+  },
+  {
     "date": "2026-09-17",
     "entries": [
       {
