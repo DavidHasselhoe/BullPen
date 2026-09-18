@@ -240,6 +240,8 @@
   "portfolioHealthGradeFair": "Aceptable",
   "portfolioHealthGradeWeak": "Débil",
   "portfolioHealthGradeAtRisk": "En Riesgo",
+  "riskAnalysisAnalyzingSubtext_one": "Analizando {{count}} posición. Normalmente menos de un minuto.",
+  "riskAnalysisAnalyzingSubtext_other": "Analizando {{count}} posiciones. Normalmente menos de un minuto.",
   "riskAnalysisAskBullAboutThis": "Ask Bull sobre esto",
   "riskAnalysisAskBullContextLabel": "Tu cartera",
   "riskAnalysisEmptyDescription_one": "Concentración, exposición sectorial, correlación, liquidez y escenarios de estrés en tu {{count}} posición.",
@@ -281,6 +283,9 @@
   "riskScaleHigh": "Alto",
   "riskScaleLow": "Bajo",
   "riskScaleModerate": "Moderado",
+  "riskScenarioBadge": "Escenario hipotético.",
+  "riskScenarioNote_one": "Incluye {{count}} posición propuesta de \"{{theme}}\", dimensionada como una adición del {{share}}% a lo que tienes hoy. Solo ponderaciones, sin cantidades.",
+  "riskScenarioNote_other": "Incluye {{count}} posiciones propuestas de \"{{theme}}\", dimensionadas como una adición del {{share}}% a lo que tienes hoy. Solo ponderaciones, sin cantidades.",
   "riskSectorExposureTitle": "Exposición sectorial",
   "riskStressScenariosTitle": "Escenarios a la baja",
   "riskTopRisksTitle": "Riesgos principales",
@@ -325,6 +330,5 @@
   "tickerFixNoMatches": "No se encontraron coincidencias",
   "tickerFixNoPriceFeed": "{{symbol}} no tiene una fuente de precios en vivo en este momento. Intenta con otra cotización.",
   "tickerFixSearchPlaceholder": "Busca ticker o nombre de empresa…",
-  "riskAnalysisAnalyzingSubtext_one": "Analizando {{count}} posición. Normalmente menos de un minuto.",
-  "riskAnalysisAnalyzingSubtext_other": "Analizando {{count}} posiciones. Normalmente menos de un minuto."
+  "riskAnalysisAnalyzingGeneric": "Evaluando la cartera. Normalmente menos de un minuto."
 }

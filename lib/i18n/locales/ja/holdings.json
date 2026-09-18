@@ -240,6 +240,8 @@
   "portfolioHealthGradeFair": "普通",
   "portfolioHealthGradeWeak": "弱い",
   "portfolioHealthGradeAtRisk": "リスク中",
+  "riskAnalysisAnalyzingSubtext_one": "{{count}}件の保有銘柄を分析中。通常1分以内で完了します。",
+  "riskAnalysisAnalyzingSubtext_other": "{{count}}件の保有銘柄を分析中。通常1分以内で完了します。",
   "riskAnalysisAskBullAboutThis": "Ask Bullについて聞く",
   "riskAnalysisAskBullContextLabel": "ポートフォリオ",
   "riskAnalysisEmptyDescription_one": "集中度、セクター暴露、相関性、流動性、ストレステスト結果を{{count}}個の保有銘柄全体で分析します。",
@@ -281,6 +283,9 @@
   "riskScaleHigh": "高い",
   "riskScaleLow": "低い",
   "riskScaleModerate": "中程度",
+  "riskScenarioBadge": "もしも…",
+  "riskScenarioNote_one": "「{{theme}}」から提案された{{count}}銘柄を含みます。現在の保有に対して{{share}}%追加するサイズで想定しています。比率のみ、金額は含みません。",
+  "riskScenarioNote_other": "「{{theme}}」から提案された{{count}}銘柄を含みます。現在の保有に対して{{share}}%追加するサイズで想定しています。比率のみ、金額は含みません。",
   "riskSectorExposureTitle": "セクター配分",
   "riskStressScenariosTitle": "下振れシナリオ",
   "riskTopRisksTitle": "主要リスク",
@@ -325,6 +330,5 @@
   "tickerFixNoMatches": "一致するものが見つかりません",
   "tickerFixNoPriceFeed": "{{symbol}} は現在ライブ価格フィードがありません。別の上場を試してください。",
   "tickerFixSearchPlaceholder": "ティッカーまたは企業名を検索…",
-  "riskAnalysisAnalyzingSubtext_one": "{{count}}件の保有銘柄を分析中。通常1分以内で完了します。",
-  "riskAnalysisAnalyzingSubtext_other": "{{count}}件の保有銘柄を分析中。通常1分以内で完了します。"
+  "riskAnalysisAnalyzingGeneric": "ポートフォリオをスコアリング中です。通常は1分以内で完了します。"
 }

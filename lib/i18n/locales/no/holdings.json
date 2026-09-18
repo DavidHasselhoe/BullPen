@@ -236,6 +236,8 @@
   "portfolioHealthGradeFair": "Rimelig",
   "portfolioHealthGradeWeak": "Svak",
   "portfolioHealthGradeAtRisk": "Risiko",
+  "riskAnalysisAnalyzingSubtext_one": "Analyserer {{count}} beholdning. Vanligvis under ett minutt.",
+  "riskAnalysisAnalyzingSubtext_other": "Analyserer {{count}} beholdninger. Vanligvis under ett minutt.",
   "riskAnalysisAskBullAboutThis": "Ask Bull om dette",
   "riskAnalysisAskBullContextLabel": "Din portefølje",
   "riskAnalysisEmptyDescription_one": "Konsentrasjon, sektoreksponering, korrelasjon, likviditet og stressscenarier på tvers av din {{count}} beholdning.",
@@ -277,6 +279,9 @@
   "riskScaleHigh": "Høy",
   "riskScaleLow": "Lav",
   "riskScaleModerate": "Moderat",
+  "riskScenarioBadge": "Hva-hvis.",
+  "riskScenarioNote_one": "Inkluderer {{count}} foreslått posisjon fra \"{{theme}}\", dimensjonert som et tillegg på {{share}}% av det du eier i dag. Kun vekter, ingen beløp.",
+  "riskScenarioNote_other": "Inkluderer {{count}} foreslåtte posisjoner fra \"{{theme}}\", dimensjonert som et tillegg på {{share}}% av det du eier i dag. Kun vekter, ingen beløp.",
   "riskSectorExposureTitle": "Sektoreksponering",
   "riskStressScenariosTitle": "Nedsidescenarier",
   "riskTopRisksTitle": "Største risikoer",
@@ -323,8 +328,7 @@
   "tickerFixSearchPlaceholder": "Søk etter ticker eller selskapsnavn…",
   "analysisHistoryTrendLabel": "Trend",
   "importReviewColumnType": "Type",
-  "portfolioChartTooltipPl": "P/L",
-  "portfolioChartTotalPl": "total P/L",
-  "riskAnalysisAnalyzingSubtext_one": "Analyserer {{count}} beholdning. Vanligvis under ett minutt.",
-  "riskAnalysisAnalyzingSubtext_other": "Analyserer {{count}} beholdninger. Vanligvis under ett minutt."
+  "portfolioChartTooltipPl": "Resultat",
+  "portfolioChartTotalPl": "totalt resultat",
+  "riskAnalysisAnalyzingGeneric": "Vurderer porteføljen. Tar vanligvis mindre enn ett minutt."
 }

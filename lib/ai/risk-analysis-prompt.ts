@@ -19,6 +19,8 @@ export interface HoldingInput {
   quantity?: number | null;
   dayChangePercent?: number;
   unrealizedPLPercent?: number;
+  /** A what-if line: a position being weighed up, not one that is owned. */
+  proposed?: boolean;
 }
 
 /** Reported data for one holding, from screener_stats. Every field can be missing. */
@@ -169,6 +171,7 @@ export function buildPrompt(
       parts.push(`today: ${h.dayChangePercent >= 0 ? '+' : ''}${h.dayChangePercent.toFixed(2)}%`);
     if (h.unrealizedPLPercent != null)
       parts.push(`unrealized P/L: ${h.unrealizedPLPercent >= 0 ? '+' : ''}${h.unrealizedPLPercent.toFixed(2)}%`);
+    if (h.proposed) parts.push('PROPOSED, not currently held');
     return `${parts.join(', ')} | ${describeFundamentals(fundamentals.get(h.symbol.toUpperCase()))}`;
   });
 

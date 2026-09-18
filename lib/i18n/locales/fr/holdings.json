@@ -323,8 +323,12 @@
   "importReviewColumnDate": "Date",
   "importReviewColumnType": "Type",
   "portfolioChartTitle": "Performance",
-  "riskAnalysisAnalyzingSubtext_one": "Analyzing {{count}} holding. Typically under a minute.",
-  "riskAnalysisAnalyzingSubtext_other": "Analyzing {{count}} holdings. Typically under a minute.",
+  "riskAnalysisAnalyzingGeneric": "Notation du portefeuille. Généralement moins d'une minute.",
+  "riskAnalysisAnalyzingSubtext_one": "Analyse de {{count}} position. Généralement moins d'une minute.",
+  "riskAnalysisAnalyzingSubtext_other": "Analyse de {{count}} positions. Généralement moins d'une minute.",
   "riskProfileMetricConcentration": "Concentration",
+  "riskScenarioBadge": "Et si.",
+  "riskScenarioNote_one": "Inclut {{count}} position proposée de « {{theme}} », dimensionnée comme une addition de {{share}}% à ce que vous détenez aujourd'hui. Poids uniquement, pas de montants.",
+  "riskScenarioNote_other": "Inclut {{count}} positions proposées de « {{theme}} », dimensionnées comme une addition de {{share}}% à ce que vous détenez aujourd'hui. Poids uniquement, pas de montants.",
   "soldPositionsDateLabel": "Date"
 }

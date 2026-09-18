@@ -354,6 +354,8 @@
   "marketMoodSignalDescription": "各入力が複合指数にどう寄与しているかを表示",
   "marketMoodSubtitle": "恐怖・欲張り指数:4つの市場シグナルの複合",
   "marketMoodTitle": "市場心理",
+  "portfolioBuilderAddToPortfolio": "ポートフォリオに追加",
+  "portfolioBuilderAddToPosition": "このポジションに追加",
   "portfolioBuilderAllocationHeading": "配分",
   "portfolioBuilderAlreadyOwned": "既に保有しています",
   "portfolioBuilderAskBullButton": "Ask Bullについて質問する",
@@ -651,8 +653,12 @@
   "toolsPageSubtitle": "計算ツール、分析ツール、市場インサイト",
   "toolsPageTitle": "投資ツール",
   "tryAgainButton": "もう一度試す",
-  "portfolioBuilderAddToPortfolio": "ポートフォリオに追加",
-  "portfolioBuilderAddToPosition": "このポジションに追加",
   "portfolioBuilderBullCase": "Bull case",
-  "portfolioBuilderBullThesis": "Bull thesis"
+  "portfolioBuilderBullThesis": "Bull thesis",
+  "portfolioBuilderRiskScenarioButton": "ポートフォリオに対してテストする",
+  "portfolioBuilderRiskScenarioDescription": "今日お持ちのポジションにこのビルドがこのサイズで加わった場合のスコアに基づいたリスクレポートです。何も買われておらず、保有銘柄には何も追加されていません。",
+  "portfolioBuilderRiskScenarioFailed": "その分析を開始できませんでした。しばらく経ってからやり直してください。",
+  "portfolioBuilderRiskScenarioFeatureName": "リスク分析",
+  "portfolioBuilderRiskScenarioOfBook": "のポートフォリオのうち",
+  "portfolioBuilderRiskScenarioTitle": "どのくらい追加しますか？"
 }

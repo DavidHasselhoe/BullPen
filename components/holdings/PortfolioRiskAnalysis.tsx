@@ -122,6 +122,9 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
 
   // Real backend progress — see RiskPhase above.
   const [genPhase, setGenPhase] = useState<RiskPhase>('scoring');
+  // Watching a run that was started elsewhere, so nothing on this page
+  // necessarily describes what it is scoring.
+  const [watchingLinkedRun, setWatchingLinkedRun] = useState(false);
 
   const payload = useMemo(
     () => holdings.map((h) => ({
@@ -154,18 +157,19 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
     onSuccess: () => queryClient.invalidateQueries({ queryKey: HISTORY_KEY }),
   });
 
-  const restoreAnalysis = useCallback(async (id: string) => {
+  /** True once the saved analysis is on screen; false if there isn't one yet. */
+  const restoreAnalysis = useCallback(async (id: string): Promise<boolean> => {
     const res = await fetch(`/api/holdings/risk-analysis/history?id=${id}`);
     const data = await res.json();
-    if (data?.analysis) {
-      setAnalysis(data.analysis as RiskAnalysis);
-      setRestoredFrom(data.createdAt);
-      setState('loaded');
-      // The user is now looking straight at this analysis — clear its
-      // "ready" notification instead of leaving it unread until they
-      // separately open the bell dropdown.
-      markEntityRead.mutate(`risk_analysis:${id}`);
-    }
+    if (!data?.analysis) return false;
+    setAnalysis(data.analysis as RiskAnalysis);
+    setRestoredFrom(data.createdAt);
+    setState('loaded');
+    // The user is now looking straight at this analysis — clear its
+    // "ready" notification instead of leaving it unread until they
+    // separately open the bell dropdown.
+    markEntityRead.mutate(`risk_analysis:${id}`);
+    return true;
   }, [markEntityRead]);
 
   const stopPolling = useCallback(() => {
@@ -221,7 +225,14 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
 
     (async () => {
       if (linkedId) {
-        await restoreAnalysis(linkedId);
+        // A link can point at a run that hasn't finished: arriving straight
+        // from the portfolio builder, the analysis it just started is still
+        // going. Watch it finish instead of showing an empty page.
+        if (await restoreAnalysis(linkedId)) return;
+        if (cancelled) return;
+        setWatchingLinkedRun(true);
+        setState('loading');
+        pollStatus(linkedId);
         return;
       }
 
@@ -242,6 +253,7 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
     stopPolling();
     setState('loading');
     setJustCompleted(false);
+    setWatchingLinkedRun(false);
     setGenPhase('scoring');
     setErrorMessage('');
     setRestoredFrom(null);
@@ -339,7 +351,14 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
                 total: getRiskPhaseLabels(t).length,
                 label: getRiskPhaseLabels(t)[RISK_PHASE_ORDER[genPhase]],
               }}
-              subtext={t('riskAnalysisAnalyzingSubtext', { count: holdings.length })}
+              subtext={
+                // A run opened by link can be scoring a different book than
+                // the one on this page (a what-if from the portfolio builder),
+                // so it doesn't get to claim a holdings count.
+                watchingLinkedRun
+                  ? t('riskAnalysisAnalyzingGeneric')
+                  : t('riskAnalysisAnalyzingSubtext', { count: holdings.length })
+              }
               complete={justCompleted}
               expectedSeconds={45} // measured median 45s (p10 40s, max 59s)
               leavePageHint

@@ -52,6 +52,7 @@
     "test-onboarding-trial": "tsx scripts/test-onboarding-trial.ts",
     "test-movers-period": "tsx scripts/test-movers-period.ts",
     "test-risk-analysis-prompt": "tsx scripts/test-risk-analysis-prompt.ts",
+    "test-risk-scenario": "tsx scripts/test-risk-scenario.ts",
     "test-earnings-minimum": "tsx scripts/test-earnings-minimum.ts",
     "import-institution-logo": "tsx scripts/import-institution-logo.ts",
     "test-import-undo": "tsx scripts/test-import-undo.ts",

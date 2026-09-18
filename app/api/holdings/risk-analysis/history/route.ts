@@ -25,6 +25,10 @@ async function getHandler(
     .select('id, currency, holdings_count, created_at, analysis')
     .eq('user_id', session.userId)
     .eq('status', 'done')
+    // What-ifs are excluded: this list is the record of how the real
+    // portfolio's risk has moved, and a hypothetical score sitting in it
+    // would read as a point on that line. Still openable directly by id.
+    .is('scenario_note', null)
     .order('created_at', { ascending: false })
     .limit(10)
     .returns<RiskRow[]>();

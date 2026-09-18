@@ -24,6 +24,12 @@ export interface RiskAnalysis {
    *  value-weighted health score. Absent on analyses from before it was
    *  recorded; null when no holding had health data. */
   portfolioHealth?: { score: number; grade: string; coveredCount: number; totalCount: number } | null;
+  /**
+   * Present only on a what-if run: what was added to the book and how it was
+   * sized. Structured rather than a sentence because the reader's language is
+   * not known where this is written.
+   */
+  scenario?: { count: number; theme: string; share: number };
   metrics: {
     concentration: RiskMetric;
     sectorDiversification: RiskMetric;

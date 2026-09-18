@@ -240,6 +240,8 @@
   "portfolioHealthGradeFair": "一般",
   "portfolioHealthGradeWeak": "薄弱",
   "portfolioHealthGradeAtRisk": "风险",
+  "riskAnalysisAnalyzingSubtext_one": "正在分析 {{count}} 个持仓。通常不超过一分钟。",
+  "riskAnalysisAnalyzingSubtext_other": "正在分析 {{count}} 个持仓。通常不超过一分钟。",
   "riskAnalysisAskBullAboutThis": "Ask Bull 关于此事",
   "riskAnalysisAskBullContextLabel": "你的投资组合",
   "riskAnalysisEmptyDescription_one": "集中度、板块敞口、相关性、流动性和压力情景分析（涵盖你的 {{count}} 只持仓）。",
@@ -325,6 +327,8 @@
   "tickerFixNoMatches": "未找到匹配项",
   "tickerFixNoPriceFeed": "{{symbol}} 目前没有实时价格数据。请尝试其他代码。",
   "tickerFixSearchPlaceholder": "搜索代码或公司名称…",
-  "riskAnalysisAnalyzingSubtext_one": "正在分析 {{count}} 个持仓。通常不超过一分钟。",
-  "riskAnalysisAnalyzingSubtext_other": "正在分析 {{count}} 个持仓。通常不超过一分钟。"
+  "riskAnalysisAnalyzingGeneric": "正在为投资组合评分。通常需要不到一分钟。",
+  "riskScenarioBadge": "假设情景。",
+  "riskScenarioNote_one": "包含来自\"{{theme}}\"的{{count}}个建议持仓，按照你现在持仓的{{share}}%幅度进行调整。仅显示权重比例，不显示金额。",
+  "riskScenarioNote_other": "包含来自\"{{theme}}\"的{{count}}个建议持仓，按照你现在持仓的{{share}}%幅度进行调整。仅显示权重比例，不显示金额。"
 }

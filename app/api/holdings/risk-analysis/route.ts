@@ -22,6 +22,8 @@ import { createServerClient } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/types';
 import { classifyAiError, parseFailure } from '@/lib/ai/provider-error';
 import { catLabel, type HealthGrade } from '@/lib/finance/health-score';
+import { buildRiskScenario, type RiskScenario } from '@/lib/ai/risk-scenario';
+import { parseScenarioShare } from '@/lib/ai/risk-scenario-shares';
 import { computePortfolioHealth, type TickerHealth } from '@/lib/finance/portfolio-health';
 import {
   buildHistoryContext,
@@ -176,7 +178,9 @@ function summarizePortfolioHealth(
     });
   }
   const health = computePortfolioHealth(
-    holdings.map((h) => ({ symbol: h.symbol.toUpperCase(), marketValue: h.marketValue })),
+    // A what-if carries weights and no money on purpose, and a value-weighted
+    // average only needs the proportions, so allocation stands in for value.
+    holdings.map((h) => ({ symbol: h.symbol.toUpperCase(), marketValue: h.marketValue ?? h.allocation })),
     healthBySymbol
   );
   return health
@@ -194,22 +198,33 @@ async function runRiskAnalysis(params: {
   userId: string;
   holdings: HoldingInput[];
   currency: string;
+  /** Set when this run is a what-if on a book the user does not hold. */
+  scenarioNote?: string | null;
+  /** The same scenario as data, saved with the report for the banner. */
+  scenarioSummary?: { count: number; theme: string; share: number } | null;
 }): Promise<void> {
-  const { id, userId, holdings, currency } = params;
+  const { id, userId, holdings, currency, scenarioNote, scenarioSummary } = params;
   const supabase = createServerClient();
   const setPhase = (phase: RiskPhase) => supabase.from('risk_analyses').update({ phase }).eq('id', id);
   const markError = (code: string, message: string) =>
     supabase.from('risk_analyses').update({ status: 'error', phase: null, error_code: code, error_message: message }).eq('id', id);
 
   try {
-    const { data: priorRow } = await supabase
-      .from('risk_analyses')
-      .select('analysis, holdings_snapshot')
-      .eq('user_id', userId)
-      .eq('status', 'done')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    // A what-if is never compared against anything and never becomes the
+    // thing a later run is compared against: "since your last analysis you
+    // sold NVDA" about a position that was only ever hypothetical is worse
+    // than no comparison at all.
+    const { data: priorRow } = scenarioNote
+      ? { data: null }
+      : await supabase
+        .from('risk_analyses')
+        .select('analysis, holdings_snapshot')
+        .eq('user_id', userId)
+        .eq('status', 'done')
+        .is('scenario_note', null)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
     let historyContext = '';
     if (priorRow?.analysis && Array.isArray(priorRow.holdings_snapshot)) {
@@ -230,7 +245,12 @@ async function runRiskAnalysis(params: {
 
     const fundamentals = await loadFundamentals(supabase, holdings.map((h) => h.symbol.toUpperCase()));
     const portfolioHealth = summarizePortfolioHealth(holdings, fundamentals);
-    const prompt = buildPrompt(holdings, currency, fundamentals, portfolioHealth) + historyContext;
+    // A what-if has to be named as one in the prompt too, or the report comes
+    // back telling someone to trim a position they were only considering.
+    const scenarioContext = scenarioNote
+      ? `\n\nThis is a hypothetical portfolio, not the one this investor holds today. ${scenarioNote} Lines marked PROPOSED are positions being weighed up; every other line is genuinely held. Write the whole report about the combined book as it would stand if the proposal were bought, say plainly where a risk comes from the proposed side, and phrase recommendations as what this combination would mean rather than as instructions to sell something. Never describe a proposed position as owned.`
+      : '';
+    const prompt = buildPrompt(holdings, currency, fundamentals, portfolioHealth) + scenarioContext + historyContext;
 
     const stream = anthropic.messages.stream({
       model: MODEL,
@@ -275,6 +295,10 @@ async function runRiskAnalysis(params: {
       return;
     }
     analysis.generatedAt = new Date().toISOString();
+    // Carried inside the report as well as on the row, so every path that
+    // renders one (fresh poll, restored by id) shows what was added without
+    // either route having to pass it separately.
+    if (scenarioSummary) analysis.scenario = scenarioSummary;
     // Saved with the analysis so a restored one shows the quality it was
     // scored against, not today's. Null (not absent) when nothing had data.
     analysis.portfolioHealth = portfolioHealth;
@@ -286,16 +310,33 @@ async function runRiskAnalysis(params: {
       analysis: analysis as unknown as RiskUpdate['analysis'],
     }).eq('id', id);
 
-    // Keep only the MAX_SAVED most recent completed analyses per user (cost control).
+    // Keep only the MAX_SAVED most recent completed analyses per user (cost
+    // control), counting real ones only so a run of what-ifs can't evict
+    // them. What-ifs keep just the latest: one is a result being read, an
+    // older one is a portfolio that was never bought.
     const { data: oldest } = await supabase
       .from('risk_analyses')
       .select('id')
       .eq('user_id', userId)
       .eq('status', 'done')
+      .is('scenario_note', null)
       .order('created_at', { ascending: false })
       .range(MAX_SAVED, 999);
     if (oldest && oldest.length > 0) {
       await supabase.from('risk_analyses').delete().in('id', oldest.map((r) => (r as { id: string }).id));
+    }
+    if (scenarioNote) {
+      const { data: staleScenarios } = await supabase
+        .from('risk_analyses')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('status', 'done')
+        .not('scenario_note', 'is', null)
+        .order('created_at', { ascending: false })
+        .range(1, 999);
+      if (staleScenarios && staleScenarios.length > 0) {
+        await supabase.from('risk_analyses').delete().in('id', staleScenarios.map((r) => (r as { id: string }).id));
+      }
     }
 
     const riskLevel = typeof analysis.riskLevel === 'string' ? analysis.riskLevel : 'Unknown';
@@ -345,12 +386,31 @@ async function postHandler(req: NextRequest, _context: unknown, session: { userI
 
   let holdings: HoldingInput[];
   let currency: string;
+  let scenarioNote: string | null = null;
+  let scenarioSummary: RiskScenario['summary'] | null = null;
   try {
     const body = await req.json();
     holdings = body.holdings;
     currency = (typeof body.currency === 'string' && body.currency.length > 0)
       ? body.currency.toUpperCase()
       : 'USD';
+
+    // A what-if is assembled here from the user's own positions and one of
+    // their own generations, never from the request: a client that could
+    // post any holdings list could get a risk report on a portfolio that
+    // isn't theirs, then find it waiting on their holdings page.
+    const share = parseScenarioShare(body.scenario?.share);
+    if (typeof body.scenario?.generationId === 'string' && share) {
+      const scenario = await buildRiskScenario(session.userId, body.scenario.generationId, share);
+      if (!scenario) {
+        return addSecurityHeaders(
+          NextResponse.json({ success: false, error: 'scenario_unavailable' }, { status: 400 })
+        );
+      }
+      holdings = scenario.holdings;
+      scenarioNote = scenario.note;
+      scenarioSummary = scenario.summary;
+    }
 
     if (!Array.isArray(holdings) || holdings.length === 0) {
       return addSecurityHeaders(
@@ -372,6 +432,7 @@ async function postHandler(req: NextRequest, _context: unknown, session: { userI
       currency,
       holdings_count: holdings.length,
       holdings_snapshot: toSnapshot(holdings) as unknown as RiskInsert['holdings_snapshot'],
+      scenario_note: scenarioNote,
       status: 'pending',
       phase: 'scoring',
     })
@@ -385,7 +446,7 @@ async function postHandler(req: NextRequest, _context: unknown, session: { userI
 
   const id = inserted.id as string;
 
-  after(() => runRiskAnalysis({ id, userId: session.userId, holdings, currency }));
+  after(() => runRiskAnalysis({ id, userId: session.userId, holdings, currency, scenarioNote, scenarioSummary }));
 
   return addSecurityHeaders(NextResponse.json({ id, status: 'pending' }));
 }
