@@ -54,6 +54,7 @@
     "test-risk-analysis-prompt": "tsx scripts/test-risk-analysis-prompt.ts",
     "test-risk-scenario": "tsx scripts/test-risk-scenario.ts",
     "test-segment-selection": "tsx scripts/test-segment-selection.ts",
+    "capture-segment-fixtures": "tsx scripts/capture-segment-fixtures.ts",
     "test-earnings-minimum": "tsx scripts/test-earnings-minimum.ts",
     "import-institution-logo": "tsx scripts/import-institution-logo.ts",
     "test-import-undo": "tsx scripts/test-import-undo.ts",
