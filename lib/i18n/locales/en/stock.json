@@ -281,6 +281,8 @@
   "sankeyPlanRestrictedHint": "Try switching to Annual above.",
   "sankeyPlanRestrictedQuarterly": "Quarterly income statement data requires a higher plan.",
   "sankeyQuarterly": "Quarterly",
+  "sankeySourceNoteProduct": "Revenue split by product, as the company reported it to the SEC.",
+  "sankeySourceNoteSegment": "Revenue split by business segment, as the company reported it to the SEC.",
   "sankeyTooltipPercentOfRevenue": "% of Revenue",
   "sankeyTooltipValue": "Value",
   "sectionLoadError": "This section couldn't load. Try refreshing the page.",

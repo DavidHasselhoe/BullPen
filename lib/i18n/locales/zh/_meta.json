@@ -2390,5 +2390,6 @@
   "holdings.riskAnalysisAnalyzingGeneric": "b8692b3d318cf4e55339a88a0ac42c64bebe8cb3454754e5c8f280d45ab08436",
   "holdings.riskScenarioBadge": "0ef98978a6d40a208db04b47b1606f58c2c778fb702e53e7a2c9a4126e522d8e",
   "holdings.riskScenarioNote_one": "a4f67d6e986b658d5d7d8acedbe07abef3c6ba34bb045ce7d0600c01c09e8fb4",
-  "holdings.riskScenarioNote_other": "e9e65a6ff25ec658488ad611a370e91dd6524bd8a70f63d1f93cde6f64033173"
+  "holdings.riskScenarioNote_other": "e9e65a6ff25ec658488ad611a370e91dd6524bd8a70f63d1f93cde6f64033173",
+  "stock.thesisSentimentBull": "9ae3a6d95ad602c1a38e71c11ed5dc74a612851a86ddab6606d071867bf8cedc"
 }

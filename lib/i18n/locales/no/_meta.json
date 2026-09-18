@@ -2369,5 +2369,7 @@
   "holdings.portfolioChartTooltipPl": "cc07af46c70617ba82e9c48d0dcec100038cbe4eeea84b81ada1808c37b91d86",
   "holdings.portfolioChartTotalPl": "b4a1150dd3890cb2ede57b554d6c9c3413ee77dcca0f92755a66da918fd0bde0",
   "holdings.riskAnalysisAnalyzingGeneric": "b8692b3d318cf4e55339a88a0ac42c64bebe8cb3454754e5c8f280d45ab08436",
-  "tools.compareMetricInfoAriaLabel": "843e220518862d207b0f7eac79dae84088d1217789e406f3290cd38d469ee1f5"
+  "tools.compareMetricInfoAriaLabel": "843e220518862d207b0f7eac79dae84088d1217789e406f3290cd38d469ee1f5",
+  "stock.sankeySourceNoteProduct": "0fb042fe966e319f3161c21147ccf3dca7df84e18c4ba8a548342ead5bc71df9",
+  "stock.sankeySourceNoteSegment": "71088351f50168a5e96f7451048cf240351ac7fac2007486f72c962479e0dc15"
 }

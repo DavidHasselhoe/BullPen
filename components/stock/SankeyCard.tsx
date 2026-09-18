@@ -12,6 +12,7 @@ import { Network, Lock, Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { useAIPanel } from '@/components/ai/AIPanelProvider';
+import type { RevenuePart } from '@/lib/segments/select-breakdown';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -29,6 +30,12 @@ interface FinancialsResponse {
   success: boolean;
   error?: string;
   data: IncomeStatementPeriod[];
+}
+
+interface SegmentsResponse {
+  success: boolean;
+  parts: RevenuePart[] | null;
+  basis: 'product' | 'segment' | null;
 }
 
 type Period = 'annual' | 'quarterly';
@@ -56,6 +63,38 @@ function pickColor(id: string, isDark: boolean): string {
   return (NODE_PALETTE[id] ?? FALLBACK)[isDark ? 'dark' : 'light'];
 }
 
+// ─── Revenue sources ─────────────────────────────────────────────────────────
+// Where the money came from, read from the company's own SEC filing (see
+// lib/segments/). These are one visual family shaded by size, so they read as
+// "the parts of revenue" rather than as unrelated categories; the income
+// statement downstream keeps its own semantic colours.
+
+const SOURCE_PREFIX = 'src:';
+
+const SOURCE_RAMP: Record<'light' | 'dark', string[]> = {
+  light: ['#4f46e5', '#5b55e6', '#6366f1', '#818cf8', '#a5b4fc', '#bdc7fd', '#d3dafe', '#e4e8ff', '#eef1ff'],
+  dark:  ['#a5b4fc', '#818cf8', '#6366f1', '#5b55e6', '#4f46e5', '#4740d4', '#4338ca', '#3b31b4', '#342a9e'],
+};
+
+function isSource(id: string): boolean {
+  return id.startsWith(SOURCE_PREFIX);
+}
+
+/** Node ids are prefixed so a part called "Other" cannot collide with "Other OpEx". */
+function sourceId(label: string): string {
+  return `${SOURCE_PREFIX}${label}`;
+}
+
+function sourceColor(id: string, order: string[], isDark: boolean): string {
+  const ramp = SOURCE_RAMP[isDark ? 'dark' : 'light'];
+  const i = order.indexOf(id);
+  return ramp[Math.min(i < 0 ? 0 : i, ramp.length - 1)];
+}
+
+function nodeColor(id: string, order: string[], isDark: boolean): string {
+  return isSource(id) ? sourceColor(id, order, isDark) : pickColor(id, isDark);
+}
+
 // Node `id` strings double as graph-wiring keys (buildGraph source/target
 // references, NODE_PALETTE color lookups) — they must stay fixed English
 // identifiers. This maps each one to a translated key purely for display.
@@ -75,6 +114,9 @@ const NODE_LABEL_KEYS: Record<string, string> = {
 };
 
 function nodeLabel(id: string, t: TFunction): string {
+  // A revenue source's label is the company's own wording from its filing,
+  // so there is nothing to translate and nothing to look up.
+  if (isSource(id)) return id.slice(SOURCE_PREFIX.length);
   const key = NODE_LABEL_KEYS[id];
   return key ? t(key) : id;
 }
@@ -107,7 +149,10 @@ function fmtLabel(date: string, period: Period): string {
 interface RawNode { id: string }
 interface RawLink { source: string; target: string; value: number }
 
-function buildGraph(row: IncomeStatementPeriod): { nodes: RawNode[]; links: RawLink[] } | null {
+function buildGraph(
+  row: IncomeStatementPeriod,
+  sources?: RevenuePart[] | null,
+): { nodes: RawNode[]; links: RawLink[] } | null {
   const rev = row.revenue;
   if (!rev || rev <= 0) return null;
 
@@ -125,6 +170,17 @@ function buildGraph(row: IncomeStatementPeriod): { nodes: RawNode[]; links: RawL
     if (!nodes.find(n => n.id === tgt)) nodes.push({ id: tgt });
     links.push({ source: src, target: tgt, value: val });
   };
+
+  // Revenue sources feed the trunk. Two or more, or there is nothing to show:
+  // a single source is just revenue with an extra box drawn around it.
+  if (sources && sources.length >= 2) {
+    for (const source of sources) {
+      if (source.value <= 0) continue;
+      const id = sourceId(source.label);
+      if (!nodes.find((n) => n.id === id)) nodes.push({ id });
+      links.push({ source: id, target: 'Total Revenue', value: source.value });
+    }
+  }
 
   if (gp != null) {
     // Revenue → Cost of Revenue + Gross Profit
@@ -250,6 +306,17 @@ function SankeyChart({ graph, width, revenue, isDark, ticker, onTip }: SankeyCha
   const innerW = width - PAD.left - PAD.right;
   const innerH = CHART_H - PAD.top - PAD.bottom;
 
+  // Source nodes shade by size, so the ramp needs their order up front.
+  const sourceOrder = useMemo(
+    () =>
+      graph.links
+        .filter((l) => isSource(l.source))
+        .slice()
+        .sort((a, b) => b.value - a.value)
+        .map((l) => l.source),
+    [graph],
+  );
+
   const layout = useMemo(() => {
     if (innerW <= 0) return null;
     try {
@@ -282,8 +349,8 @@ function SankeyChart({ graph, width, revenue, isDark, ticker, onTip }: SankeyCha
     >
       <defs>
         {(layout.links as AnyLink[]).map((link, i) => {
-          const srcColor = pickColor((link.source as AnyNode).id, isDark);
-          const tgtColor = pickColor((link.target as AnyNode).id, isDark);
+          const srcColor = nodeColor((link.source as AnyNode).id, sourceOrder, isDark);
+          const tgtColor = nodeColor((link.target as AnyNode).id, sourceOrder, isDark);
           return (
             <linearGradient
               key={i}
@@ -320,7 +387,7 @@ function SankeyChart({ graph, width, revenue, isDark, ticker, onTip }: SankeyCha
 
         {/* Nodes + labels */}
         {(layout.nodes as AnyNode[]).map((node) => {
-          const color  = pickColor(node.id as string, isDark);
+          const color  = nodeColor(node.id as string, sourceOrder, isDark);
           const nodeH  = (node.y1 as number) - (node.y0 as number);
           const midY   = ((node.y0 as number) + (node.y1 as number)) / 2;
           const midX   = ((node.x0 as number) + (node.x1 as number)) / 2;
@@ -328,7 +395,15 @@ function SankeyChart({ graph, width, revenue, isDark, ticker, onTip }: SankeyCha
           const lx     = isRight ? (node.x0 as number) - 10 : (node.x1 as number) + 10;
           const anchor = isRight ? 'end' : 'start';
           const showSub = nodeH > 20;
-          const val     = (node.value as number) ?? 0;
+          // d3 gives a node the larger of its inflow and outflow, so once
+          // revenue has sources feeding it the trunk reads as their sum. That
+          // differs from reported revenue whenever a filing carries a negative
+          // component (Alphabet's hedging losses put it 0.03% out), and two
+          // different revenue figures on one page is worse than none. The
+          // trunk always shows what the company reported.
+          const val = node.id === 'Total Revenue'
+            ? revenue
+            : ((node.value as number) ?? 0);
 
           return (
             <g
@@ -432,7 +507,28 @@ export function SankeyCard({ ticker }: { ticker: string }) {
 
   const rows    = useMemo(() => (data?.data ?? []).slice(0, 5), [data]);
   const row     = rows[periodIdx] ?? null;
-  const graph   = useMemo(() => (row ? buildGraph(row) : null), [row]);
+
+  // Where the revenue came from, from the company's SEC filing. Absent on the
+  // first view of a stock (the endpoint fills its cache in the background) and
+  // absent for good on roughly a third of filers, so the chart must be
+  // complete without it.
+  const { data: segmentData } = useQuery<SegmentsResponse>({
+    queryKey: ['stock-segments', ticker, row?.fiscal_date, period],
+    queryFn: () =>
+      fetch(
+        `/api/stock/${ticker}/segments?periodEnd=${row!.fiscal_date}&revenue=${row!.revenue}&period=${period}`,
+      ).then((r) => r.json()),
+    enabled: !!ticker && !!row?.fiscal_date && !!row?.revenue,
+    staleTime: 24 * 60 * 60 * 1000,
+    gcTime: 48 * 60 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    retry: false,
+  });
+
+  const graph = useMemo(
+    () => (row ? buildGraph(row, segmentData?.parts) : null),
+    [row, segmentData],
+  );
   const conf    = useMemo(() => (row ? deriveConfidence(row) : null), [row]);
   const revenue = row?.revenue ?? 0;
 
@@ -554,6 +650,15 @@ export function SankeyCard({ ticker }: { ticker: string }) {
             />
           )}
         </div>
+
+        {/* ── Where the revenue split came from ── */}
+        {!isLoading && !noData && !isPlanRestricted && segmentData?.basis && (
+          <p className="px-6 pb-1 text-xs text-muted-foreground/85">
+            {segmentData.basis === 'product'
+              ? t('sankeySourceNoteProduct')
+              : t('sankeySourceNoteSegment')}
+          </p>
+        )}
 
         {/* ── Node colour legend ── */}
         {!isLoading && !noData && !isPlanRestricted && (

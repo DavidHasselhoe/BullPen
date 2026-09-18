@@ -257,6 +257,7 @@
   "sankeyConfidenceHigh": "Confiance élevée",
   "sankeyConfidenceLow": "Confiance faible",
   "sankeyConfidenceMedium": "Confiance moyenne",
+  "sankeyExplainButton": "Expliquer",
   "sankeyNoData": "Les données de flux financiers ne sont pas disponibles pour cette période",
   "sankeyNodeCostOfRevenue": "Coût des Ventes",
   "sankeyNodeCostsAndTax": "Coûts et Impôts",
@@ -338,6 +339,7 @@
   "websiteLabel": "Site Web",
   "thesisSectionTitle": "Thèses communautaires",
   "thesisFilterAll": "Tous",
+  "thesisSentimentBull": "Bull",
   "thesisSentimentNeutral": "Neutre",
   "thesisSentimentBear": "Baissier",
   "thesisShareTakePlaceholder": "Partagez votre avis sur {{symbol}}…",
@@ -370,10 +372,10 @@
   "financialsColumnRatio": "Ratio",
   "insiderColumnType": "Type",
   "insiderSentimentNet": "Net {{sign}}{{amount}}",
-  "sankeyExplainButton": "Expliquer",
   "sankeyNodeRnD": "R&D",
   "sankeyNodeSgA": "SG&A",
+  "sankeySourceNoteProduct": "Ventilation du chiffre d'affaires par produit, telle que rapportée par l'entreprise à la SEC.",
+  "sankeySourceNoteSegment": "Ventilation du chiffre d'affaires par segment d'activité, telle que rapportée par l'entreprise à la SEC.",
   "statisticsGridBandMicro": "Micro",
-  "stockPricePanelVolumeLabel": "Volume",
-  "thesisSentimentBull": "Bull"
+  "stockPricePanelVolumeLabel": "Volume"
 }

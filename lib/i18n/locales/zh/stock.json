@@ -263,6 +263,7 @@
   "sankeyConfidenceHigh": "高置信度",
   "sankeyConfidenceLow": "低置信度",
   "sankeyConfidenceMedium": "中等置信度",
+  "sankeyExplainButton": "解释",
   "sankeyNoData": "该期间的财务流向数据不可用",
   "sankeyNodeCostOfRevenue": "销售成本",
   "sankeyNodeCostsAndTax": "成本与税费",
@@ -374,6 +375,7 @@
   "thesisHrsAgo_other": "{{count}} 小时前",
   "thesisDaysAgo_one": "{{count}} 天前",
   "thesisDaysAgo_other": "{{count}} 天前",
-  "sankeyExplainButton": "解释",
+  "sankeySourceNoteProduct": "Revenue split by product, as the company reported it to the SEC.",
+  "sankeySourceNoteSegment": "Revenue split by business segment, as the company reported it to the SEC.",
   "thesisSentimentBull": "Bull"
 }

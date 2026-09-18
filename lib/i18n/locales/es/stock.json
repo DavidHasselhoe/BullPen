@@ -260,6 +260,7 @@
   "sankeyConfidenceHigh": "Alta confianza",
   "sankeyConfidenceLow": "Baja confianza",
   "sankeyConfidenceMedium": "Confianza media",
+  "sankeyExplainButton": "Explicar",
   "sankeyNoData": "Datos de flujo financiero no disponibles para este período",
   "sankeyNodeCostOfRevenue": "Costo de Ingresos",
   "sankeyNodeCostsAndTax": "Costos e Impuestos",
@@ -342,6 +343,7 @@
   "thesisSectionTitle": "Tesis de la comunidad",
   "thesisFilterAll": "Todos",
   "thesisSentimentBull": "Bull",
+  "thesisSentimentBear": "Bajista",
   "thesisShareTakePlaceholder": "Comparte tu opinión sobre {{symbol}}…",
   "thesisFormPlaceholder": "¿Cuál es tu tesis sobre {{symbol}}?",
   "thesisCancelButton": "Cancelar",
@@ -369,11 +371,11 @@
   "healthMethodologyPoints": "({{count}} pts)",
   "earningsEpsEst": "EPS Est.",
   "financialsRowDAndA": "D&A",
-  "sankeyExplainButton": "Explicar",
   "sankeyNodeSgA": "SG&A",
+  "sankeySourceNoteProduct": "Desglose de ingresos por producto, según lo reportado por la empresa a la SEC.",
+  "sankeySourceNoteSegment": "Desglose de ingresos por segmento de negocio, según lo reportado por la empresa a la SEC.",
   "statisticsGridBandMega": "Mega",
   "statisticsGridBandMicro": "Micro",
   "stockPricePanelTooltipVol": "Vol",
-  "thesisSentimentNeutral": "Neutral",
-  "thesisSentimentBear": "Bajista"
+  "thesisSentimentNeutral": "Neutral"
 }

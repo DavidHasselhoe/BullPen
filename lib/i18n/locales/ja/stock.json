@@ -263,6 +263,7 @@
   "sankeyConfidenceHigh": "高信頼度",
   "sankeyConfidenceLow": "低信頼度",
   "sankeyConfidenceMedium": "中信頼度",
+  "sankeyExplainButton": "説明",
   "sankeyNoData": "この期間の財務フロー データは利用できません",
   "sankeyNodeCostOfRevenue": "売上原価",
   "sankeyNodeCostsAndTax": "コスト & 税金",
@@ -350,6 +351,7 @@
   "thesisFilterAll": "すべて",
   "thesisSentimentBull": "Bull",
   "thesisSentimentNeutral": "ニュートラル",
+  "thesisSentimentBear": "弱気",
   "thesisShareTakePlaceholder": "{{symbol}} についてのご意見をシェアしてください…",
   "thesisFormPlaceholder": "{{symbol}} についてのテーマは何ですか？",
   "thesisCancelButton": "キャンセル",
@@ -374,6 +376,6 @@
   "thesisHrsAgo_other": "{{count}}h 前",
   "thesisDaysAgo_one": "{{count}}d 前",
   "thesisDaysAgo_other": "{{count}}d 前",
-  "sankeyExplainButton": "説明",
-  "thesisSentimentBear": "弱気"
+  "sankeySourceNoteProduct": "企業がSECに報告した製品別の収益構成です。",
+  "sankeySourceNoteSegment": "企業がSECに報告した事業セグメント別の収益構成です。"
 }

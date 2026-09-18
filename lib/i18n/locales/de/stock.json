@@ -258,6 +258,7 @@
   "sankeyConfidenceHigh": "Hohes Vertrauen",
   "sankeyConfidenceLow": "Geringes Vertrauen",
   "sankeyConfidenceMedium": "Mittleres Vertrauen",
+  "sankeyExplainButton": "Erklären",
   "sankeyNoData": "Finanzfluss-Daten sind für diesen Zeitraum nicht verfügbar",
   "sankeyNodeCostOfRevenue": "Umsatzkosten",
   "sankeyNodeCostsAndTax": "Kosten & Steuern",
@@ -342,6 +343,7 @@
   "thesisSectionTitle": "Community-Thesen",
   "thesisFilterAll": "Alle",
   "thesisSentimentBull": "Bull",
+  "thesisSentimentBear": "Bärisch",
   "thesisShareTakePlaceholder": "Teile deine Meinung zu {{symbol}}…",
   "thesisFormPlaceholder": "Was ist deine These zu {{symbol}}?",
   "thesisCancelButton": "Abbrechen",
@@ -371,9 +373,9 @@
   "financialsRowEpsDiluted": "EPS (Diluted)",
   "insiderColumnInsider": "Insider",
   "insiderUpgradeButton": "Upgrade",
-  "sankeyExplainButton": "Erklären",
+  "sankeySourceNoteProduct": "Umsatzverteilung nach Produkt, wie vom Unternehmen der SEC gemeldet.",
+  "sankeySourceNoteSegment": "Umsatzverteilung nach Geschäftsbereich, wie vom Unternehmen der SEC gemeldet.",
   "statisticsGridBandMega": "Mega",
   "statisticsGridForwardPe": "Forward P/E {{value}}",
-  "thesisSentimentNeutral": "Neutral",
-  "thesisSentimentBear": "Bärisch"
+  "thesisSentimentNeutral": "Neutral"
 }
