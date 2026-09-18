@@ -1,0 +1,634 @@
+{
+  "facts": [
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "ProductMember"
+        }
+      ],
+      "value": 307003000000,
+      "durationDays": 363,
+      "end": "2025-09-27"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "ProductMember"
+        }
+      ],
+      "value": 294866000000,
+      "durationDays": 363,
+      "end": "2024-09-28"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "ProductMember"
+        }
+      ],
+      "value": 298085000000,
+      "durationDays": 370,
+      "end": "2023-09-30"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "ServiceMember"
+        }
+      ],
+      "value": 109158000000,
+      "durationDays": 363,
+      "end": "2025-09-27"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "ServiceMember"
+        }
+      ],
+      "value": 96169000000,
+      "durationDays": 363,
+      "end": "2024-09-28"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "ServiceMember"
+        }
+      ],
+      "value": 85200000000,
+      "durationDays": 370,
+      "end": "2023-09-30"
+    },
+    {
+      "members": [],
+      "value": 416161000000,
+      "durationDays": 363,
+      "end": "2025-09-27"
+    },
+    {
+      "members": [],
+      "value": 391035000000,
+      "durationDays": 363,
+      "end": "2024-09-28"
+    },
+    {
+      "members": [],
+      "value": 383285000000,
+      "durationDays": 370,
+      "end": "2023-09-30"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "IPhoneMember"
+        }
+      ],
+      "value": 209586000000,
+      "durationDays": 363,
+      "end": "2025-09-27"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "IPhoneMember"
+        }
+      ],
+      "value": 201183000000,
+      "durationDays": 363,
+      "end": "2024-09-28"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "IPhoneMember"
+        }
+      ],
+      "value": 200583000000,
+      "durationDays": 370,
+      "end": "2023-09-30"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "MacMember"
+        }
+      ],
+      "value": 33708000000,
+      "durationDays": 363,
+      "end": "2025-09-27"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "MacMember"
+        }
+      ],
+      "value": 29984000000,
+      "durationDays": 363,
+      "end": "2024-09-28"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "MacMember"
+        }
+      ],
+      "value": 29357000000,
+      "durationDays": 370,
+      "end": "2023-09-30"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "IPadMember"
+        }
+      ],
+      "value": 28023000000,
+      "durationDays": 363,
+      "end": "2025-09-27"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "IPadMember"
+        }
+      ],
+      "value": 26694000000,
+      "durationDays": 363,
+      "end": "2024-09-28"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "IPadMember"
+        }
+      ],
+      "value": 28300000000,
+      "durationDays": 370,
+      "end": "2023-09-30"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "WearablesHomeandAccessoriesMember"
+        }
+      ],
+      "value": 35686000000,
+      "durationDays": 363,
+      "end": "2025-09-27"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "WearablesHomeandAccessoriesMember"
+        }
+      ],
+      "value": 37005000000,
+      "durationDays": 363,
+      "end": "2024-09-28"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "WearablesHomeandAccessoriesMember"
+        }
+      ],
+      "value": 39845000000,
+      "durationDays": 370,
+      "end": "2023-09-30"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "ServiceMember"
+        }
+      ],
+      "value": 109158000000,
+      "durationDays": 363,
+      "end": "2025-09-27"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "ServiceMember"
+        }
+      ],
+      "value": 96169000000,
+      "durationDays": 363,
+      "end": "2024-09-28"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "ServiceMember"
+        }
+      ],
+      "value": 85200000000,
+      "durationDays": 370,
+      "end": "2023-09-30"
+    },
+    {
+      "members": [],
+      "value": 416161000000,
+      "durationDays": 363,
+      "end": "2025-09-27"
+    },
+    {
+      "members": [],
+      "value": 391035000000,
+      "durationDays": 363,
+      "end": "2024-09-28"
+    },
+    {
+      "members": [],
+      "value": 383285000000,
+      "durationDays": 370,
+      "end": "2023-09-30"
+    },
+    {
+      "members": [
+        {
+          "axis": "ConsolidationItemsAxis",
+          "member": "OperatingSegmentsMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "AmericasSegmentMember"
+        }
+      ],
+      "value": 178353000000,
+      "durationDays": 363,
+      "end": "2025-09-27"
+    },
+    {
+      "members": [
+        {
+          "axis": "ConsolidationItemsAxis",
+          "member": "OperatingSegmentsMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "EuropeSegmentMember"
+        }
+      ],
+      "value": 111032000000,
+      "durationDays": 363,
+      "end": "2025-09-27"
+    },
+    {
+      "members": [
+        {
+          "axis": "ConsolidationItemsAxis",
+          "member": "OperatingSegmentsMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "GreaterChinaSegmentMember"
+        }
+      ],
+      "value": 64377000000,
+      "durationDays": 363,
+      "end": "2025-09-27"
+    },
+    {
+      "members": [
+        {
+          "axis": "ConsolidationItemsAxis",
+          "member": "OperatingSegmentsMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "JapanSegmentMember"
+        }
+      ],
+      "value": 28703000000,
+      "durationDays": 363,
+      "end": "2025-09-27"
+    },
+    {
+      "members": [
+        {
+          "axis": "ConsolidationItemsAxis",
+          "member": "OperatingSegmentsMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "RestOfAsiaPacificSegmentMember"
+        }
+      ],
+      "value": 33696000000,
+      "durationDays": 363,
+      "end": "2025-09-27"
+    },
+    {
+      "members": [],
+      "value": 416161000000,
+      "durationDays": 363,
+      "end": "2025-09-27"
+    },
+    {
+      "members": [
+        {
+          "axis": "ConsolidationItemsAxis",
+          "member": "OperatingSegmentsMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "AmericasSegmentMember"
+        }
+      ],
+      "value": 167045000000,
+      "durationDays": 363,
+      "end": "2024-09-28"
+    },
+    {
+      "members": [
+        {
+          "axis": "ConsolidationItemsAxis",
+          "member": "OperatingSegmentsMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "EuropeSegmentMember"
+        }
+      ],
+      "value": 101328000000,
+      "durationDays": 363,
+      "end": "2024-09-28"
+    },
+    {
+      "members": [
+        {
+          "axis": "ConsolidationItemsAxis",
+          "member": "OperatingSegmentsMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "GreaterChinaSegmentMember"
+        }
+      ],
+      "value": 66952000000,
+      "durationDays": 363,
+      "end": "2024-09-28"
+    },
+    {
+      "members": [
+        {
+          "axis": "ConsolidationItemsAxis",
+          "member": "OperatingSegmentsMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "JapanSegmentMember"
+        }
+      ],
+      "value": 25052000000,
+      "durationDays": 363,
+      "end": "2024-09-28"
+    },
+    {
+      "members": [
+        {
+          "axis": "ConsolidationItemsAxis",
+          "member": "OperatingSegmentsMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "RestOfAsiaPacificSegmentMember"
+        }
+      ],
+      "value": 30658000000,
+      "durationDays": 363,
+      "end": "2024-09-28"
+    },
+    {
+      "members": [],
+      "value": 391035000000,
+      "durationDays": 363,
+      "end": "2024-09-28"
+    },
+    {
+      "members": [
+        {
+          "axis": "ConsolidationItemsAxis",
+          "member": "OperatingSegmentsMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "AmericasSegmentMember"
+        }
+      ],
+      "value": 162560000000,
+      "durationDays": 370,
+      "end": "2023-09-30"
+    },
+    {
+      "members": [
+        {
+          "axis": "ConsolidationItemsAxis",
+          "member": "OperatingSegmentsMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "EuropeSegmentMember"
+        }
+      ],
+      "value": 94294000000,
+      "durationDays": 370,
+      "end": "2023-09-30"
+    },
+    {
+      "members": [
+        {
+          "axis": "ConsolidationItemsAxis",
+          "member": "OperatingSegmentsMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "GreaterChinaSegmentMember"
+        }
+      ],
+      "value": 72559000000,
+      "durationDays": 370,
+      "end": "2023-09-30"
+    },
+    {
+      "members": [
+        {
+          "axis": "ConsolidationItemsAxis",
+          "member": "OperatingSegmentsMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "JapanSegmentMember"
+        }
+      ],
+      "value": 24257000000,
+      "durationDays": 370,
+      "end": "2023-09-30"
+    },
+    {
+      "members": [
+        {
+          "axis": "ConsolidationItemsAxis",
+          "member": "OperatingSegmentsMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "RestOfAsiaPacificSegmentMember"
+        }
+      ],
+      "value": 29615000000,
+      "durationDays": 370,
+      "end": "2023-09-30"
+    },
+    {
+      "members": [],
+      "value": 383285000000,
+      "durationDays": 370,
+      "end": "2023-09-30"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementGeographicalAxis",
+          "member": "US"
+        }
+      ],
+      "value": 151790000000,
+      "durationDays": 363,
+      "end": "2025-09-27"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementGeographicalAxis",
+          "member": "US"
+        }
+      ],
+      "value": 142196000000,
+      "durationDays": 363,
+      "end": "2024-09-28"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementGeographicalAxis",
+          "member": "US"
+        }
+      ],
+      "value": 138573000000,
+      "durationDays": 370,
+      "end": "2023-09-30"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementGeographicalAxis",
+          "member": "CN"
+        }
+      ],
+      "value": 64377000000,
+      "durationDays": 363,
+      "end": "2025-09-27"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementGeographicalAxis",
+          "member": "CN"
+        }
+      ],
+      "value": 66952000000,
+      "durationDays": 363,
+      "end": "2024-09-28"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementGeographicalAxis",
+          "member": "CN"
+        }
+      ],
+      "value": 72559000000,
+      "durationDays": 370,
+      "end": "2023-09-30"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementGeographicalAxis",
+          "member": "OtherCountriesMember"
+        }
+      ],
+      "value": 199994000000,
+      "durationDays": 363,
+      "end": "2025-09-27"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementGeographicalAxis",
+          "member": "OtherCountriesMember"
+        }
+      ],
+      "value": 181887000000,
+      "durationDays": 363,
+      "end": "2024-09-28"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementGeographicalAxis",
+          "member": "OtherCountriesMember"
+        }
+      ],
+      "value": 172153000000,
+      "durationDays": 370,
+      "end": "2023-09-30"
+    },
+    {
+      "members": [],
+      "value": 416161000000,
+      "durationDays": 363,
+      "end": "2025-09-27"
+    },
+    {
+      "members": [],
+      "value": 391035000000,
+      "durationDays": 363,
+      "end": "2024-09-28"
+    },
+    {
+      "members": [],
+      "value": 383285000000,
+      "durationDays": 370,
+      "end": "2023-09-30"
+    }
+  ],
+  "periodEnd": "2025-09-27",
+  "form": "10-K",
+  "accession": "0000320193-25-000079"
+}

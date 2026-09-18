@@ -1,0 +1,1207 @@
+{
+  "facts": [
+    {
+      "members": [],
+      "value": 706413000000,
+      "durationDays": 364,
+      "end": "2026-01-31"
+    },
+    {
+      "members": [],
+      "value": 674538000000,
+      "durationDays": 365,
+      "end": "2025-01-31"
+    },
+    {
+      "members": [],
+      "value": 642637000000,
+      "durationDays": 364,
+      "end": "2024-01-31"
+    },
+    {
+      "members": [],
+      "value": 713163000000,
+      "durationDays": 364,
+      "end": "2026-01-31"
+    },
+    {
+      "members": [],
+      "value": 680985000000,
+      "durationDays": 365,
+      "end": "2025-01-31"
+    },
+    {
+      "members": [],
+      "value": 648125000000,
+      "durationDays": 364,
+      "end": "2024-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "ConsolidationItemsAxis",
+          "member": "OperatingSegmentsMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartUSMember"
+        }
+      ],
+      "value": 482975000000,
+      "durationDays": 364,
+      "end": "2026-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "ConsolidationItemsAxis",
+          "member": "OperatingSegmentsMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartUSMember"
+        }
+      ],
+      "value": 462415000000,
+      "durationDays": 365,
+      "end": "2025-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "ConsolidationItemsAxis",
+          "member": "OperatingSegmentsMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartUSMember"
+        }
+      ],
+      "value": 441817000000,
+      "durationDays": 364,
+      "end": "2024-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "ConsolidationItemsAxis",
+          "member": "OperatingSegmentsMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartUSMember"
+        }
+      ],
+      "value": 485599000000,
+      "durationDays": 364,
+      "end": "2026-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "ConsolidationItemsAxis",
+          "member": "OperatingSegmentsMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartUSMember"
+        }
+      ],
+      "value": 465009000000,
+      "durationDays": 365,
+      "end": "2025-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "ConsolidationItemsAxis",
+          "member": "OperatingSegmentsMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartUSMember"
+        }
+      ],
+      "value": 443802000000,
+      "durationDays": 364,
+      "end": "2024-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "ConsolidationItemsAxis",
+          "member": "OperatingSegmentsMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartInternationalMember"
+        }
+      ],
+      "value": 130423000000,
+      "durationDays": 364,
+      "end": "2026-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "ConsolidationItemsAxis",
+          "member": "OperatingSegmentsMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartInternationalMember"
+        }
+      ],
+      "value": 121885000000,
+      "durationDays": 365,
+      "end": "2025-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "ConsolidationItemsAxis",
+          "member": "OperatingSegmentsMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartInternationalMember"
+        }
+      ],
+      "value": 114641000000,
+      "durationDays": 364,
+      "end": "2024-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "ConsolidationItemsAxis",
+          "member": "OperatingSegmentsMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartInternationalMember"
+        }
+      ],
+      "value": 131988000000,
+      "durationDays": 364,
+      "end": "2026-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "ConsolidationItemsAxis",
+          "member": "OperatingSegmentsMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartInternationalMember"
+        }
+      ],
+      "value": 123363000000,
+      "durationDays": 365,
+      "end": "2025-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "ConsolidationItemsAxis",
+          "member": "OperatingSegmentsMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartInternationalMember"
+        }
+      ],
+      "value": 116049000000,
+      "durationDays": 364,
+      "end": "2024-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "ConsolidationItemsAxis",
+          "member": "OperatingSegmentsMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "SamsClubUSMember"
+        }
+      ],
+      "value": 93015000000,
+      "durationDays": 364,
+      "end": "2026-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "ConsolidationItemsAxis",
+          "member": "OperatingSegmentsMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "SamsClubUSMember"
+        }
+      ],
+      "value": 90238000000,
+      "durationDays": 365,
+      "end": "2025-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "ConsolidationItemsAxis",
+          "member": "OperatingSegmentsMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "SamsClubUSMember"
+        }
+      ],
+      "value": 86179000000,
+      "durationDays": 364,
+      "end": "2024-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "ConsolidationItemsAxis",
+          "member": "OperatingSegmentsMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "SamsClubUSMember"
+        }
+      ],
+      "value": 95540000000,
+      "durationDays": 364,
+      "end": "2026-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "ConsolidationItemsAxis",
+          "member": "OperatingSegmentsMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "SamsClubUSMember"
+        }
+      ],
+      "value": 92561000000,
+      "durationDays": 365,
+      "end": "2025-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "ConsolidationItemsAxis",
+          "member": "OperatingSegmentsMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "SamsClubUSMember"
+        }
+      ],
+      "value": 88230000000,
+      "durationDays": 364,
+      "end": "2024-01-31"
+    },
+    {
+      "members": [],
+      "value": 706413000000,
+      "durationDays": 364,
+      "end": "2026-01-31"
+    },
+    {
+      "members": [],
+      "value": 674538000000,
+      "durationDays": 365,
+      "end": "2025-01-31"
+    },
+    {
+      "members": [],
+      "value": 642637000000,
+      "durationDays": 364,
+      "end": "2024-01-31"
+    },
+    {
+      "members": [],
+      "value": 713163000000,
+      "durationDays": 364,
+      "end": "2026-01-31"
+    },
+    {
+      "members": [],
+      "value": 680985000000,
+      "durationDays": 365,
+      "end": "2025-01-31"
+    },
+    {
+      "members": [],
+      "value": 648125000000,
+      "durationDays": 364,
+      "end": "2024-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementGeographicalAxis",
+          "member": "US"
+        }
+      ],
+      "value": 581175000000,
+      "durationDays": 364,
+      "end": "2026-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementGeographicalAxis",
+          "member": "US"
+        }
+      ],
+      "value": 557622000000,
+      "durationDays": 365,
+      "end": "2025-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementGeographicalAxis",
+          "member": "US"
+        }
+      ],
+      "value": 532076000000,
+      "durationDays": 364,
+      "end": "2024-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementGeographicalAxis",
+          "member": "NonUsMember"
+        }
+      ],
+      "value": 131988000000,
+      "durationDays": 364,
+      "end": "2026-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementGeographicalAxis",
+          "member": "NonUsMember"
+        }
+      ],
+      "value": 123363000000,
+      "durationDays": 365,
+      "end": "2025-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementGeographicalAxis",
+          "member": "NonUsMember"
+        }
+      ],
+      "value": 116049000000,
+      "durationDays": 364,
+      "end": "2024-01-31"
+    },
+    {
+      "members": [],
+      "value": 713163000000,
+      "durationDays": 364,
+      "end": "2026-01-31"
+    },
+    {
+      "members": [],
+      "value": 680985000000,
+      "durationDays": 365,
+      "end": "2025-01-31"
+    },
+    {
+      "members": [],
+      "value": 648125000000,
+      "durationDays": 364,
+      "end": "2024-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "GroceryMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartUSMember"
+        }
+      ],
+      "value": 285482000000,
+      "durationDays": 364,
+      "end": "2026-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "GroceryMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartUSMember"
+        }
+      ],
+      "value": 276003000000,
+      "durationDays": 365,
+      "end": "2025-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "GroceryMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartUSMember"
+        }
+      ],
+      "value": 264210000000,
+      "durationDays": 364,
+      "end": "2024-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "GeneralMerchandiseMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartUSMember"
+        }
+      ],
+      "value": 115060000000,
+      "durationDays": 364,
+      "end": "2026-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "GeneralMerchandiseMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartUSMember"
+        }
+      ],
+      "value": 113921000000,
+      "durationDays": 365,
+      "end": "2025-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "GeneralMerchandiseMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartUSMember"
+        }
+      ],
+      "value": 113985000000,
+      "durationDays": 364,
+      "end": "2024-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "HealthandWellnessMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartUSMember"
+        }
+      ],
+      "value": 69547000000,
+      "durationDays": 364,
+      "end": "2026-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "HealthandWellnessMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartUSMember"
+        }
+      ],
+      "value": 62092000000,
+      "durationDays": 365,
+      "end": "2025-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "HealthandWellnessMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartUSMember"
+        }
+      ],
+      "value": 54898000000,
+      "durationDays": 364,
+      "end": "2024-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "OtherCategoriesMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartUSMember"
+        }
+      ],
+      "value": 12886000000,
+      "durationDays": 364,
+      "end": "2026-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "OtherCategoriesMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartUSMember"
+        }
+      ],
+      "value": 10399000000,
+      "durationDays": 365,
+      "end": "2025-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "OtherCategoriesMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartUSMember"
+        }
+      ],
+      "value": 8724000000,
+      "durationDays": 364,
+      "end": "2024-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartUSMember"
+        }
+      ],
+      "value": 482975000000,
+      "durationDays": 364,
+      "end": "2026-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartUSMember"
+        }
+      ],
+      "value": 462415000000,
+      "durationDays": 365,
+      "end": "2025-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartUSMember"
+        }
+      ],
+      "value": 441817000000,
+      "durationDays": 364,
+      "end": "2024-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "MajorCustomersAxis",
+          "member": "ECommerceMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartUSMember"
+        }
+      ],
+      "value": 99600000000,
+      "durationDays": 364,
+      "end": "2026-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "MajorCustomersAxis",
+          "member": "ECommerceMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartUSMember"
+        }
+      ],
+      "value": 79300000000,
+      "durationDays": 365,
+      "end": "2025-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "MajorCustomersAxis",
+          "member": "ECommerceMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartUSMember"
+        }
+      ],
+      "value": 65400000000,
+      "durationDays": 364,
+      "end": "2024-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementGeographicalAxis",
+          "member": "MexicoandCentralAmericaMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartInternationalMember"
+        }
+      ],
+      "value": 52492000000,
+      "durationDays": 364,
+      "end": "2026-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementGeographicalAxis",
+          "member": "MexicoandCentralAmericaMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartInternationalMember"
+        }
+      ],
+      "value": 51970000000,
+      "durationDays": 365,
+      "end": "2025-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementGeographicalAxis",
+          "member": "MexicoandCentralAmericaMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartInternationalMember"
+        }
+      ],
+      "value": 49726000000,
+      "durationDays": 364,
+      "end": "2024-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementGeographicalAxis",
+          "member": "CN"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartInternationalMember"
+        }
+      ],
+      "value": 24623000000,
+      "durationDays": 364,
+      "end": "2026-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementGeographicalAxis",
+          "member": "CN"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartInternationalMember"
+        }
+      ],
+      "value": 19975000000,
+      "durationDays": 365,
+      "end": "2025-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementGeographicalAxis",
+          "member": "CN"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartInternationalMember"
+        }
+      ],
+      "value": 17011000000,
+      "durationDays": 364,
+      "end": "2024-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementGeographicalAxis",
+          "member": "CA"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartInternationalMember"
+        }
+      ],
+      "value": 23724000000,
+      "durationDays": 364,
+      "end": "2026-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementGeographicalAxis",
+          "member": "CA"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartInternationalMember"
+        }
+      ],
+      "value": 23035000000,
+      "durationDays": 365,
+      "end": "2025-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementGeographicalAxis",
+          "member": "CA"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartInternationalMember"
+        }
+      ],
+      "value": 22639000000,
+      "durationDays": 364,
+      "end": "2024-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementGeographicalAxis",
+          "member": "OtherMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartInternationalMember"
+        }
+      ],
+      "value": 29584000000,
+      "durationDays": 364,
+      "end": "2026-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementGeographicalAxis",
+          "member": "OtherMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartInternationalMember"
+        }
+      ],
+      "value": 26905000000,
+      "durationDays": 365,
+      "end": "2025-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementGeographicalAxis",
+          "member": "OtherMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartInternationalMember"
+        }
+      ],
+      "value": 25265000000,
+      "durationDays": 364,
+      "end": "2024-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartInternationalMember"
+        }
+      ],
+      "value": 130423000000,
+      "durationDays": 364,
+      "end": "2026-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartInternationalMember"
+        }
+      ],
+      "value": 121885000000,
+      "durationDays": 365,
+      "end": "2025-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartInternationalMember"
+        }
+      ],
+      "value": 114641000000,
+      "durationDays": 364,
+      "end": "2024-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "MajorCustomersAxis",
+          "member": "ECommerceMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartInternationalMember"
+        }
+      ],
+      "value": 35800000000,
+      "durationDays": 364,
+      "end": "2026-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "MajorCustomersAxis",
+          "member": "ECommerceMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartInternationalMember"
+        }
+      ],
+      "value": 29500000000,
+      "durationDays": 365,
+      "end": "2025-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "MajorCustomersAxis",
+          "member": "ECommerceMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "WalmartInternationalMember"
+        }
+      ],
+      "value": 24800000000,
+      "durationDays": 364,
+      "end": "2024-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "GroceryMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "SamsClubUSMember"
+        }
+      ],
+      "value": 64706000000,
+      "durationDays": 364,
+      "end": "2026-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "GroceryMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "SamsClubUSMember"
+        }
+      ],
+      "value": 61253000000,
+      "durationDays": 365,
+      "end": "2025-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "GroceryMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "SamsClubUSMember"
+        }
+      ],
+      "value": 57565000000,
+      "durationDays": 364,
+      "end": "2024-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "FuelAndOtherMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "SamsClubUSMember"
+        }
+      ],
+      "value": 11570000000,
+      "durationDays": 364,
+      "end": "2026-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "FuelAndOtherMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "SamsClubUSMember"
+        }
+      ],
+      "value": 12960000000,
+      "durationDays": 365,
+      "end": "2025-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "FuelAndOtherMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "SamsClubUSMember"
+        }
+      ],
+      "value": 13707000000,
+      "durationDays": 364,
+      "end": "2024-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "GeneralMerchandiseMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "SamsClubUSMember"
+        }
+      ],
+      "value": 11549000000,
+      "durationDays": 364,
+      "end": "2026-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "GeneralMerchandiseMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "SamsClubUSMember"
+        }
+      ],
+      "value": 11215000000,
+      "durationDays": 365,
+      "end": "2025-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "GeneralMerchandiseMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "SamsClubUSMember"
+        }
+      ],
+      "value": 10947000000,
+      "durationDays": 364,
+      "end": "2024-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "HealthandWellnessMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "SamsClubUSMember"
+        }
+      ],
+      "value": 5190000000,
+      "durationDays": 364,
+      "end": "2026-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "HealthandWellnessMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "SamsClubUSMember"
+        }
+      ],
+      "value": 4810000000,
+      "durationDays": 365,
+      "end": "2025-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "HealthandWellnessMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "SamsClubUSMember"
+        }
+      ],
+      "value": 3960000000,
+      "durationDays": 364,
+      "end": "2024-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "SamsClubUSMember"
+        }
+      ],
+      "value": 93015000000,
+      "durationDays": 364,
+      "end": "2026-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "SamsClubUSMember"
+        }
+      ],
+      "value": 90238000000,
+      "durationDays": 365,
+      "end": "2025-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "SamsClubUSMember"
+        }
+      ],
+      "value": 86179000000,
+      "durationDays": 364,
+      "end": "2024-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "MajorCustomersAxis",
+          "member": "ECommerceMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "SamsClubUSMember"
+        }
+      ],
+      "value": 15000000000,
+      "durationDays": 364,
+      "end": "2026-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "MajorCustomersAxis",
+          "member": "ECommerceMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "SamsClubUSMember"
+        }
+      ],
+      "value": 12100000000,
+      "durationDays": 365,
+      "end": "2025-01-31"
+    },
+    {
+      "members": [
+        {
+          "axis": "MajorCustomersAxis",
+          "member": "ECommerceMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "SamsClubUSMember"
+        }
+      ],
+      "value": 9900000000,
+      "durationDays": 364,
+      "end": "2024-01-31"
+    }
+  ],
+  "periodEnd": "2026-01-31",
+  "form": "10-K",
+  "accession": "0000104169-26-000055"
+}

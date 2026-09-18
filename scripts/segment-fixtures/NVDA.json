@@ -1,0 +1,547 @@
+{
+  "facts": [
+    {
+      "members": [],
+      "value": 215938000000,
+      "durationDays": 363,
+      "end": "2026-01-25"
+    },
+    {
+      "members": [],
+      "value": 130497000000,
+      "durationDays": 363,
+      "end": "2025-01-26"
+    },
+    {
+      "members": [],
+      "value": 60922000000,
+      "durationDays": 363,
+      "end": "2024-01-28"
+    },
+    {
+      "members": [
+        {
+          "axis": "ConsolidationItemsAxis",
+          "member": "OperatingSegmentsMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "ComputeAndNetworkingSegmentMember"
+        }
+      ],
+      "value": 193479000000,
+      "durationDays": 363,
+      "end": "2026-01-25"
+    },
+    {
+      "members": [
+        {
+          "axis": "ConsolidationItemsAxis",
+          "member": "OperatingSegmentsMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "GraphicsSegmentMember"
+        }
+      ],
+      "value": 22459000000,
+      "durationDays": 363,
+      "end": "2026-01-25"
+    },
+    {
+      "members": [
+        {
+          "axis": "ConsolidationItemsAxis",
+          "member": "OperatingSegmentsMember"
+        }
+      ],
+      "value": 215938000000,
+      "durationDays": 363,
+      "end": "2026-01-25"
+    },
+    {
+      "members": [
+        {
+          "axis": "ConsolidationItemsAxis",
+          "member": "OperatingSegmentsMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "ComputeAndNetworkingSegmentMember"
+        }
+      ],
+      "value": 116193000000,
+      "durationDays": 363,
+      "end": "2025-01-26"
+    },
+    {
+      "members": [
+        {
+          "axis": "ConsolidationItemsAxis",
+          "member": "OperatingSegmentsMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "GraphicsSegmentMember"
+        }
+      ],
+      "value": 14304000000,
+      "durationDays": 363,
+      "end": "2025-01-26"
+    },
+    {
+      "members": [
+        {
+          "axis": "ConsolidationItemsAxis",
+          "member": "OperatingSegmentsMember"
+        }
+      ],
+      "value": 130497000000,
+      "durationDays": 363,
+      "end": "2025-01-26"
+    },
+    {
+      "members": [
+        {
+          "axis": "ConsolidationItemsAxis",
+          "member": "OperatingSegmentsMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "ComputeAndNetworkingSegmentMember"
+        }
+      ],
+      "value": 47405000000,
+      "durationDays": 363,
+      "end": "2024-01-28"
+    },
+    {
+      "members": [
+        {
+          "axis": "ConsolidationItemsAxis",
+          "member": "OperatingSegmentsMember"
+        },
+        {
+          "axis": "StatementBusinessSegmentsAxis",
+          "member": "GraphicsSegmentMember"
+        }
+      ],
+      "value": 13517000000,
+      "durationDays": 363,
+      "end": "2024-01-28"
+    },
+    {
+      "members": [
+        {
+          "axis": "ConsolidationItemsAxis",
+          "member": "OperatingSegmentsMember"
+        }
+      ],
+      "value": 60922000000,
+      "durationDays": 363,
+      "end": "2024-01-28"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementGeographicalAxis",
+          "member": "US"
+        }
+      ],
+      "value": 149617000000,
+      "durationDays": 363,
+      "end": "2026-01-25"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementGeographicalAxis",
+          "member": "US"
+        }
+      ],
+      "value": 77482000000,
+      "durationDays": 363,
+      "end": "2025-01-26"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementGeographicalAxis",
+          "member": "US"
+        }
+      ],
+      "value": 31533000000,
+      "durationDays": 363,
+      "end": "2024-01-28"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementGeographicalAxis",
+          "member": "TW"
+        }
+      ],
+      "value": 42345000000,
+      "durationDays": 363,
+      "end": "2026-01-25"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementGeographicalAxis",
+          "member": "TW"
+        }
+      ],
+      "value": 23600000000,
+      "durationDays": 363,
+      "end": "2025-01-26"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementGeographicalAxis",
+          "member": "TW"
+        }
+      ],
+      "value": 14912000000,
+      "durationDays": 363,
+      "end": "2024-01-28"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementGeographicalAxis",
+          "member": "ChinaIncludingHongKongMember"
+        }
+      ],
+      "value": 19677000000,
+      "durationDays": 363,
+      "end": "2026-01-25"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementGeographicalAxis",
+          "member": "ChinaIncludingHongKongMember"
+        }
+      ],
+      "value": 25048000000,
+      "durationDays": 363,
+      "end": "2025-01-26"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementGeographicalAxis",
+          "member": "ChinaIncludingHongKongMember"
+        }
+      ],
+      "value": 12330000000,
+      "durationDays": 363,
+      "end": "2024-01-28"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementGeographicalAxis",
+          "member": "OtherCountriesMember"
+        }
+      ],
+      "value": 4299000000,
+      "durationDays": 363,
+      "end": "2026-01-25"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementGeographicalAxis",
+          "member": "OtherCountriesMember"
+        }
+      ],
+      "value": 4367000000,
+      "durationDays": 363,
+      "end": "2025-01-26"
+    },
+    {
+      "members": [
+        {
+          "axis": "StatementGeographicalAxis",
+          "member": "OtherCountriesMember"
+        }
+      ],
+      "value": 2147000000,
+      "durationDays": 363,
+      "end": "2024-01-28"
+    },
+    {
+      "members": [],
+      "value": 215938000000,
+      "durationDays": 363,
+      "end": "2026-01-25"
+    },
+    {
+      "members": [],
+      "value": 130497000000,
+      "durationDays": 363,
+      "end": "2025-01-26"
+    },
+    {
+      "members": [],
+      "value": 60922000000,
+      "durationDays": 363,
+      "end": "2024-01-28"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "DataCenterMember"
+        }
+      ],
+      "value": 193737000000,
+      "durationDays": 363,
+      "end": "2026-01-25"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "DataCenterMember"
+        }
+      ],
+      "value": 115186000000,
+      "durationDays": 363,
+      "end": "2025-01-26"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "DataCenterMember"
+        }
+      ],
+      "value": 47525000000,
+      "durationDays": 363,
+      "end": "2024-01-28"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "ComputeMember"
+        }
+      ],
+      "value": 162361000000,
+      "durationDays": 363,
+      "end": "2026-01-25"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "ComputeMember"
+        }
+      ],
+      "value": 102196000000,
+      "durationDays": 363,
+      "end": "2025-01-26"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "ComputeMember"
+        }
+      ],
+      "value": 38950000000,
+      "durationDays": 363,
+      "end": "2024-01-28"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "NetworkingMember"
+        }
+      ],
+      "value": 31376000000,
+      "durationDays": 363,
+      "end": "2026-01-25"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "NetworkingMember"
+        }
+      ],
+      "value": 12990000000,
+      "durationDays": 363,
+      "end": "2025-01-26"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "NetworkingMember"
+        }
+      ],
+      "value": 8575000000,
+      "durationDays": 363,
+      "end": "2024-01-28"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "GamingMember"
+        }
+      ],
+      "value": 16042000000,
+      "durationDays": 363,
+      "end": "2026-01-25"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "GamingMember"
+        }
+      ],
+      "value": 11350000000,
+      "durationDays": 363,
+      "end": "2025-01-26"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "GamingMember"
+        }
+      ],
+      "value": 10447000000,
+      "durationDays": 363,
+      "end": "2024-01-28"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "ProfessionalVisualizationMember"
+        }
+      ],
+      "value": 3191000000,
+      "durationDays": 363,
+      "end": "2026-01-25"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "ProfessionalVisualizationMember"
+        }
+      ],
+      "value": 1878000000,
+      "durationDays": 363,
+      "end": "2025-01-26"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "ProfessionalVisualizationMember"
+        }
+      ],
+      "value": 1553000000,
+      "durationDays": 363,
+      "end": "2024-01-28"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "AutomotiveMember"
+        }
+      ],
+      "value": 2349000000,
+      "durationDays": 363,
+      "end": "2026-01-25"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "AutomotiveMember"
+        }
+      ],
+      "value": 1694000000,
+      "durationDays": 363,
+      "end": "2025-01-26"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "AutomotiveMember"
+        }
+      ],
+      "value": 1091000000,
+      "durationDays": 363,
+      "end": "2024-01-28"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "OEMAndOtherMember"
+        }
+      ],
+      "value": 619000000,
+      "durationDays": 363,
+      "end": "2026-01-25"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "OEMAndOtherMember"
+        }
+      ],
+      "value": 389000000,
+      "durationDays": 363,
+      "end": "2025-01-26"
+    },
+    {
+      "members": [
+        {
+          "axis": "ProductOrServiceAxis",
+          "member": "OEMAndOtherMember"
+        }
+      ],
+      "value": 306000000,
+      "durationDays": 363,
+      "end": "2024-01-28"
+    },
+    {
+      "members": [],
+      "value": 215938000000,
+      "durationDays": 363,
+      "end": "2026-01-25"
+    },
+    {
+      "members": [],
+      "value": 130497000000,
+      "durationDays": 363,
+      "end": "2025-01-26"
+    },
+    {
+      "members": [],
+      "value": 60922000000,
+      "durationDays": 363,
+      "end": "2024-01-28"
+    }
+  ],
+  "periodEnd": "2026-01-25",
+  "form": "10-K",
+  "accession": "0001045810-26-000021"
+}

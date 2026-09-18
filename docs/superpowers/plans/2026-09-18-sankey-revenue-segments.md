@@ -74,7 +74,7 @@ Measured on 2026-09-18 against live SEC filings. These drive every design decisi
 | `supabase/migrations/145_revenue_segments.sql` | create | `revenue_segments` table |
 | `app/api/stock/[ticker]/segments/route.ts` | create | Serve cached parts; fill in background on a miss |
 | `components/stock/SankeyCard.tsx` | modify | Consume parts; accessibility, responsive, loss, motion and palette work |
-| `scripts/fixtures/segments/*.json` | create | Real captured facts for GOOGL, AAPL, MU, NVDA, WMT |
+| `scripts/segment-fixtures/*.json` | create | Real captured facts for GOOGL, AAPL, MU, NVDA, WMT |
 | `scripts/test-segment-selection.ts` | create | Assert the selector against those fixtures |
 | `lib/i18n/locales/en/stock.json` | modify | New chart strings |
 | `package.json` | modify | Register `test-segment-selection` |
@@ -326,10 +326,10 @@ import { writeFileSync, mkdirSync } from 'fs';
 import { fetchRevenueFacts } from '../lib/segments/edgar-facts';
 
 (async () => {
-  mkdirSync('scripts/fixtures/segments', { recursive: true });
+  mkdirSync('scripts/segment-fixtures', { recursive: true });
   for (const ticker of ['GOOGL', 'AAPL', 'MU', 'NVDA', 'WMT']) {
     const facts = await fetchRevenueFacts(ticker, '10-K');
-    writeFileSync(`scripts/fixtures/segments/${ticker}.json`, JSON.stringify(facts, null, 2));
+    writeFileSync(`scripts/segment-fixtures/${ticker}.json`, JSON.stringify(facts, null, 2));
     console.log(ticker, facts?.periodEnd, facts?.facts.length, 'facts');
     await new Promise((r) => setTimeout(r, 200));
   }
@@ -342,7 +342,7 @@ Expected: each line prints a period end and a non-zero fact count, e.g. `AAPL 20
 
 ```bash
 rm scripts/_tmp_capture.ts
-git add lib/segments/edgar-facts.ts scripts/fixtures/segments
+git add lib/segments/edgar-facts.ts scripts/segment-fixtures
 git commit -m "feat(segments): read dimensional revenue facts from a filing's XBRL"
 ```
 
@@ -360,10 +360,31 @@ git commit -m "feat(segments): read dimensional revenue facts from a filing's XB
 - Produces:
   - `interface RevenuePart { label: string; value: number }`
   - `interface Breakdown { parts: RevenuePart[]; basis: 'product' | 'segment'; total: number }`
-  - `selectBreakdown(facts: RevenueFact[], consolidated: number, periodDays: number): Breakdown | null`
+  - `selectBreakdown(facts: RevenueFact[], opts: { consolidated: number; periodEnd: string; periodDays: number }): Breakdown | null`
   - `cleanLabel(member: string): string`
 
-This is the whole feature's judgement, and it is pure so it can be tested against fixtures with no network.
+> **Corrected during execution, 2026-09-18.** Three defects in the original
+> design were found by running it against the captured fixtures. All three are
+> reflected below.
+>
+> 1. **Filtering on duration alone mixes fiscal years.** Every 10-K carries
+>    three years of ~365-day contexts (verified: AAPL, WMT, MU, GOOGL and NVDA
+>    fixtures each hold exactly 3 distinct end dates). Apple's `IPhoneMember`
+>    resolved to $200.58B, which is FY2024, instead of FY2025's $209.586B. The
+>    selector therefore takes `periodEnd` and requires `fact.end === periodEnd`.
+> 2. **Rollups are not contiguous.** Apple tags `Product $307.003B` as the sum
+>    of iPhone, Mac, iPad and Wearables, which excludes `Service` sitting
+>    between them in document order. A running-total scan misses it. With at
+>    most 9 members, an exact subset scan is 512 comparisons and always right.
+> 3. **Alphabet's useful split needs one nested expansion.** Its product facts
+>    carry two axes (product within segment) and cover only Google Services, so
+>    they sum to 85% of revenue and fail the gate on their own. Expanding each
+>    segment into its product children when those children account for the
+>    whole segment yields Search, YouTube, Network, Subscriptions, Cloud and
+>    Other Bets at 100.03%. Walmart showed why that expansion needs a guard:
+>    its categories repeat across segments ("Grocery" under both Walmart US and
+>    Sam's Club), which would collide as graph node ids, so an expansion whose
+>    child labels are not unique is refused and the plain segments are used.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -372,92 +393,188 @@ Create `scripts/test-segment-selection.ts`:
 /**
  * The selector's judgement, against real captured filings.
  *
- * Each case here is a mistake a naive implementation actually makes: summing
- * a rollup parent with its children, showing geography because it reconciles,
- * or mixing a quarter with its year to date.
+ * Every case here is a mistake an earlier version of this code actually made:
+ * reading last year's figures because the duration matched, summing a rollup
+ * parent with its children, showing geography because it reconciled, or
+ * emitting two parts with the same label.
  *
  * Run: npm run test-segment-selection
  */
 import assert from 'node:assert/strict';
 import { readFileSync } from 'fs';
 import { selectBreakdown, cleanLabel } from '../lib/segments/select-breakdown';
-import type { FilingFacts } from '../lib/segments/edgar-facts';
+import type { FilingFacts, RevenueFact } from '../lib/segments/edgar-facts';
 
-const load = (t: string) => JSON.parse(readFileSync(`scripts/fixtures/segments/${t}.json`, 'utf8')) as FilingFacts;
+const load = (t: string) =>
+  JSON.parse(readFileSync(`scripts/segment-fixtures/${t}.json`, 'utf8')) as FilingFacts;
 const sum = (parts: { value: number }[]) => parts.reduce((s, p) => s + p.value, 0);
 
-// Apple: products, not its geographic reportable segments.
-{
-  const aapl = load('AAPL');
-  const b = selectBreakdown(aapl.facts, 416_161_000_000, 365);
-  assert.ok(b, 'AAPL should produce a breakdown');
-  assert.equal(b.basis, 'product');
-  const labels = b.parts.map((p) => p.label);
-  assert.ok(labels.includes('iPhone'), `expected iPhone, got ${labels.join(', ')}`);
-  assert.ok(!labels.some((l) => /Americas|Europe|Greater China/.test(l)), 'geography must never be used');
-  // The tagged rollup "Product" must not appear alongside its children.
-  assert.ok(!labels.includes('Product'), 'rollup parent leaked into the parts');
-  assert.ok(Math.abs(sum(b.parts) - 416_161_000_000) / 416_161_000_000 < 0.01, 'parts must reconcile');
+function run(ticker: string, consolidated: number) {
+  const filing = load(ticker);
+  const breakdown = selectBreakdown(filing.facts, {
+    consolidated,
+    periodEnd: filing.periodEnd,
+    periodDays: 365,
+  });
+  return { filing, breakdown };
 }
 
-// NVIDIA: Data Center is a parent of Compute + Networking. Keep one level.
+// Apple: products, not its geographic reportable segments, and THIS year's.
 {
-  const nvda = load('NVDA');
-  const b = selectBreakdown(nvda.facts, 215_940_000_000, 365);
-  assert.ok(b, 'NVDA should produce a breakdown');
-  const labels = b.parts.map((p) => p.label);
+  const { breakdown } = run('AAPL', 416_161_000_000);
+  assert.ok(breakdown, 'AAPL should produce a breakdown');
+  assert.equal(breakdown.basis, 'product');
+  const labels = breakdown.parts.map((p) => p.label);
+  assert.ok(labels.includes('iPhone'), `expected iPhone, got ${labels.join(', ')}`);
+  assert.ok(
+    !labels.some((l) => /Americas|Europe|Greater China/.test(l)),
+    'geography must never be used',
+  );
+  assert.ok(!labels.includes('Product'), 'the tagged rollup parent leaked into the parts');
+
+  // The year-mixing bug: FY2024 iPhone was 200.58B, FY2025 is 209.586B.
+  const iPhone = breakdown.parts.find((p) => p.label === 'iPhone');
+  assert.equal(iPhone?.value, 209_586_000_000, 'iPhone must be the filing period, not a comparative');
+  assert.equal(sum(breakdown.parts), 416_161_000_000, 'Apple reconciles exactly');
+}
+
+// NVIDIA: Data Center is the sum of Compute and Networking. Keep one level.
+{
+  const { breakdown } = run('NVDA', 215_938_000_000);
+  assert.ok(breakdown, 'NVDA should produce a breakdown');
+  const labels = breakdown.parts.map((p) => p.label);
   const hasParent = labels.includes('Data Center');
   const hasChildren = labels.includes('Compute') && labels.includes('Networking');
   assert.ok(hasParent !== hasChildren, 'must keep either the parent or its children, never both');
-  assert.ok(Math.abs(sum(b.parts) - 215_940_000_000) / 215_940_000_000 < 0.01, 'parts must reconcile');
+  assert.ok(
+    Math.abs(sum(breakdown.parts) - 215_938_000_000) / 215_938_000_000 < 0.01,
+    'NVDA parts must reconcile',
+  );
 }
 
-// Alphabet: the useful level is inside Google Services.
+// Alphabet: the nested expansion, which is the whole reason it is worth doing.
 {
-  const googl = load('GOOGL');
-  const b = selectBreakdown(googl.facts, 402_836_000_000, 365);
-  assert.ok(b, 'GOOGL should produce a breakdown');
-  const labels = b.parts.map((p) => p.label);
+  const { breakdown } = run('GOOGL', 402_836_000_000);
+  assert.ok(breakdown, 'GOOGL should produce a breakdown');
+  const labels = breakdown.parts.map((p) => p.label);
   assert.ok(labels.some((l) => /Search/.test(l)), `expected a Search part, got ${labels.join(', ')}`);
-  assert.ok(Math.abs(sum(b.parts) - 402_836_000_000) / 402_836_000_000 < 0.01, 'parts must reconcile');
+  assert.ok(labels.some((l) => /YouTube/.test(l)), 'expected a YouTube part');
+  assert.ok(labels.some((l) => /Cloud/.test(l)), 'Cloud must survive alongside the expanded parts');
+  assert.ok(
+    Math.abs(sum(breakdown.parts) - 402_836_000_000) / 402_836_000_000 < 0.01,
+    'GOOGL parts must reconcile',
+  );
 }
 
-// Walmart: US / Non-US only. Geography is refused, so nothing is shown.
+// Walmart: its categories repeat across segments, so the expansion is refused
+// and the three real segments are used instead.
 {
-  const wmt = load('WMT');
-  const b = selectBreakdown(wmt.facts, 713_200_000_000, 365);
-  assert.equal(b, null, 'a geography-only filer must yield no breakdown');
+  const { breakdown } = run('WMT', 713_163_000_000);
+  assert.ok(breakdown, 'WMT should produce a breakdown');
+  const labels = breakdown.parts.map((p) => p.label);
+  assert.equal(new Set(labels).size, labels.length, 'no two parts may share a label');
+  assert.ok(labels.includes('Walmart US'), `expected the segments, got ${labels.join(', ')}`);
+  assert.ok(!labels.includes('Grocery'), 'a colliding expansion must be refused');
+  assert.equal(sum(breakdown.parts), 713_127_000_000, 'WMT segments reconcile to their own total');
 }
 
-// A single part is not a breakdown.
+// Micron: products, because its segment names are CMBU and AEBU.
+{
+  const { breakdown } = run('MU', 37_378_000_000);
+  assert.ok(breakdown, 'MU should produce a breakdown');
+  assert.equal(breakdown.basis, 'product');
+  const labels = breakdown.parts.map((p) => p.label);
+  assert.ok(labels.some((l) => /DRAM/.test(l)), `expected DRAM, got ${labels.join(', ')}`);
+  assert.ok(!labels.some((l) => /BU$/.test(l)), 'the acronym segments must not be shown');
+}
+
+// Every breakdown must be safe to use as graph node ids.
+for (const [ticker, consolidated] of [
+  ['AAPL', 416_161_000_000],
+  ['WMT', 713_163_000_000],
+  ['MU', 37_378_000_000],
+  ['GOOGL', 402_836_000_000],
+  ['NVDA', 215_938_000_000],
+] as Array<[string, number]>) {
+  const { breakdown } = run(ticker, consolidated);
+  if (!breakdown) continue;
+  for (const part of breakdown.parts) {
+    assert.ok(part.label.trim().length > 0, `${ticker} produced an empty label`);
+    assert.ok(part.value > 0, `${ticker} produced a non-positive part`);
+  }
+  assert.equal(
+    new Set(breakdown.parts.map((p) => p.label)).size,
+    breakdown.parts.length,
+    `${ticker} produced duplicate labels`,
+  );
+}
+
+// Synthetic cases, for the rules no real filer in the fixture set exercises.
+const fact = (axis: string, member: string, value: number): RevenueFact => ({
+  members: [{ axis, member }],
+  value,
+  durationDays: 365,
+  end: '2025-12-31',
+});
+const opts = { consolidated: 100, periodEnd: '2025-12-31', periodDays: 365 };
+
 assert.equal(
   selectBreakdown(
-    [{ members: [{ axis: 'ProductOrServiceAxis', member: 'OnlyThingMember' }], value: 100, durationDays: 365, end: '2025-12-31' }],
-    100,
-    365,
+    [fact('StatementGeographicalAxis', 'US', 70), fact('StatementGeographicalAxis', 'NonUsMember', 30)],
+    opts,
   ),
+  null,
+  'geography alone must never produce a breakdown',
+);
+
+assert.equal(
+  selectBreakdown([fact('ProductOrServiceAxis', 'OnlyThingMember', 100)], opts),
   null,
   'one part is not a breakdown',
 );
 
-// Parts that do not reconcile are refused rather than shown partially.
 assert.equal(
   selectBreakdown(
-    [
-      { members: [{ axis: 'ProductOrServiceAxis', member: 'AMember' }], value: 30, durationDays: 365, end: '2025-12-31' },
-      { members: [{ axis: 'ProductOrServiceAxis', member: 'BMember' }], value: 20, durationDays: 365, end: '2025-12-31' },
-    ],
-    100,
-    365,
+    [fact('ProductOrServiceAxis', 'AMember', 30), fact('ProductOrServiceAxis', 'BMember', 20)],
+    opts,
   ),
   null,
   'parts summing to half of revenue must be refused',
 );
 
+// A prior year's facts are present in every filing and must be ignored.
+assert.equal(
+  selectBreakdown(
+    [
+      { ...fact('ProductOrServiceAxis', 'AMember', 60), end: '2024-12-31' },
+      { ...fact('ProductOrServiceAxis', 'BMember', 40), end: '2024-12-31' },
+    ],
+    opts,
+  ),
+  null,
+  'facts from another period must be ignored entirely',
+);
+
+// A small positive remainder becomes an explicit Other, never a silent gap.
+{
+  const withResidual = selectBreakdown(
+    [fact('ProductOrServiceAxis', 'AMember', 60), fact('ProductOrServiceAxis', 'BMember', 39.5)],
+    opts,
+  );
+  assert.ok(withResidual, 'a 0.5% remainder is within tolerance');
+  const other = withResidual.parts.find((p) => p.label === 'Other');
+  assert.ok(other && Math.abs(other.value - 0.5) < 1e-9, 'the remainder must be drawn as Other');
+}
+
 assert.equal(cleanLabel('IPhoneMember'), 'iPhone');
+assert.equal(cleanLabel('IPadMember'), 'iPad');
 assert.equal(cleanLabel('DRAMProductsMember'), 'DRAM Products');
-assert.equal(cleanLabel('WearablesHomeandAccessoriesMember'), 'Wearables, Home and Accessories');
+assert.equal(cleanLabel('HealthandWellnessMember'), 'Health and Wellness');
+assert.equal(cleanLabel('WearablesHomeandAccessoriesMember'), 'Wearables Home and Accessories');
+assert.equal(cleanLabel('YouTubeAdvertisingRevenueMember'), 'YouTube Advertising');
 assert.equal(cleanLabel('DataCenterMember'), 'Data Center');
+assert.equal(cleanLabel('WalmartUSMember'), 'Walmart US');
+assert.equal(cleanLabel('ComputeAndNetworkingSegmentMember'), 'Compute And Networking');
 
 console.log('segment selection OK');
 ```
@@ -474,151 +591,29 @@ Expected: FAIL, `Cannot find module '../lib/segments/select-breakdown'`.
 
 - [ ] **Step 3: Write the selector**
 
-```ts
-import type { RevenueFact } from '@/lib/segments/edgar-facts';
+The implementation is `lib/segments/select-breakdown.ts` exactly as committed in this task. Its shape:
 
-/**
- * Which revenue breakdown to show, and whether to show one at all.
- *
- * Companies tag several at once and they disagree about what is interesting.
- * Apple's reportable segments are Americas, Europe and Greater China; the
- * split people mean when they ask what Apple sells lives on a different axis
- * entirely. So the axis is chosen by preference, never by which one happens
- * to add up.
- *
- * Geography is deliberately unreachable. "United States $581B, Non-US $132B"
- * reconciles perfectly and tells a reader nothing about the business.
- */
-
-export interface RevenuePart {
-  label: string;
-  value: number;
-}
-
-export interface Breakdown {
-  parts: RevenuePart[];
-  basis: 'product' | 'segment';
-  total: number;
-}
-
-/** Products first: they are the split a reader recognises, and the labels are plain. */
-const AXIS_PREFERENCE: Array<{ axis: string; basis: Breakdown['basis'] }> = [
-  { axis: 'ProductOrServiceAxis', basis: 'product' },
-  { axis: 'StatementBusinessSegmentsAxis', basis: 'segment' },
-];
-
-const MIN_PARTS = 2;
-const MAX_PARTS = 9;
-/** Parts must account for the period's revenue this closely, or nothing is shown. */
-const RECONCILE_TOLERANCE = 0.01;
-/** A positive remainder smaller than this is noise, not a part worth drawing. */
-const RESIDUAL_FLOOR = 0.001;
-
-export function cleanLabel(member: string): string {
-  const base = member.replace(/Member$/, '');
-  return base
-    // "WearablesHomeandAccessories" -> "Wearables, Home and Accessories"
-    .replace(/([a-z])(and)([A-Z])/g, '$1, and $3')
-    // Split camel case, keeping runs of capitals (DRAM, OEM) together.
-    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
-    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
-    .replace(/^I Phone$/, 'iPhone')
-    .replace(/^I Pad$/, 'iPad')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-/**
- * Drops any member equal to the sum of other members on the same axis.
- *
- * Apple tags "Product" next to iPhone, Mac, iPad and Wearables, which sum to
- * exactly it. NVIDIA tags "Data Center" over Compute and Networking. Keeping
- * both levels double counts revenue, which is how a first pass produced a
- * chart showing 258% of Alphabet's sales.
- */
-function dropRollups(parts: RevenuePart[]): RevenuePart[] {
-  const kept: RevenuePart[] = [];
-  for (const part of parts) {
-    const others = parts.filter((p) => p !== part);
-    const isParent = others.some((_, i) => {
-      // Any subset is too expensive; the real cases are "sum of all the rest"
-      // and "sum of a contiguous run", both covered by comparing against the
-      // total of every other part and against each pair upward.
-      const runningTotals = others.slice(i).reduce<number[]>((acc, p) => {
-        acc.push((acc[acc.length - 1] ?? 0) + p.value);
-        return acc;
-      }, []);
-      return runningTotals.some((t) => t > 0 && Math.abs(t - part.value) / part.value < 0.005);
-    });
-    if (!isParent) kept.push(part);
-  }
-  return kept;
-}
-
-export function selectBreakdown(
-  facts: RevenueFact[],
-  consolidated: number,
-  periodDays: number,
-): Breakdown | null {
-  if (!Number.isFinite(consolidated) || consolidated <= 0) return null;
-
-  // Only facts covering this exact period. A 10-Q carries the quarter and the
-  // year to date for every member; mixing them triples the chart.
-  const inPeriod = facts.filter((f) => Math.abs(f.durationDays - periodDays) <= 20);
-
-  for (const { axis, basis } of AXIS_PREFERENCE) {
-    // One dimension only. A fact carrying two axes at once is a cross tab
-    // (revenue by segment AND geography) and would repeat every member.
-    const onAxis = inPeriod.filter((f) => f.members.length === 1 && f.members[0].axis === axis);
-    if (onAxis.length < MIN_PARTS) continue;
-
-    // The same member can be tagged more than once in a filing; keep one.
-    const byMember = new Map<string, number>();
-    for (const fact of onAxis) {
-      if (fact.value <= 0) continue;
-      byMember.set(fact.members[0].member, fact.value);
-    }
-
-    let parts: RevenuePart[] = [...byMember.entries()].map(([member, value]) => ({
-      label: cleanLabel(member),
-      value,
-    }));
-
-    parts = dropRollups(parts).sort((a, b) => b.value - a.value);
-    if (parts.length < MIN_PARTS || parts.length > MAX_PARTS) continue;
-
-    const total = parts.reduce((s, p) => s + p.value, 0);
-    const residual = consolidated - total;
-    if (Math.abs(residual) / consolidated > RECONCILE_TOLERANCE) continue;
-
-    // A positive remainder is real revenue the filing did not attribute to a
-    // named part, so it is drawn as its own part rather than hidden.
-    if (residual / consolidated > RESIDUAL_FLOOR) {
-      parts.push({ label: 'Other', value: residual });
-    }
-
-    return { parts, basis, total: parts.reduce((s, p) => s + p.value, 0) };
-  }
-
-  return null;
-}
-```
+- `cleanLabel(member)`: strip `Member`/`Segment` suffixes, split the glued lowercase `and` before splitting camel case, then fix the three names camel case cannot ("iPhone", "iPad", "YouTube") and drop a trailing "Revenue".
+- `dropRollups(parts)`: exact subset scan, up to 12 members, dropping any member matched within 0.5% by the sum of two or more others.
+- `selectBreakdown(facts, opts)`:
+  1. Keep only facts whose `end === opts.periodEnd` and whose duration is within 20 days of `opts.periodDays`, discarding non-positive values.
+  2. Group them by their sorted axis signature.
+  3. Try `ProductOrServiceAxis` alone.
+  4. Try the segment axis (bare, or the `ConsolidationItemsAxis` variant filtered to `OperatingSegmentsMember`), first expanding each segment into its product children where those children account for the whole segment within 0.5% and every child label is unique across the whole result, then unexpanded.
+  5. Gate every candidate: at least 2 and at most 9 parts, reconciling to `consolidated` within 1%, with a positive remainder above 0.1% drawn as `Other`.
+  6. Return `null` when nothing passes. Geography is never a candidate.
 
 - [ ] **Step 4: Run the test until it passes**
 
 Run: `npm run test-segment-selection`
 Expected: `segment selection OK`.
 
-If the Alphabet case fails because its useful parts sit on `ProductOrServiceAxis + StatementBusinessSegmentsAxis` (two dimensions), add a third preference entry handling exactly that pair: accept facts whose axes are `['ProductOrServiceAxis', 'StatementBusinessSegmentsAxis']`, key them by the product member alone, and treat them as `basis: 'product'`. Do not loosen the general one-axis rule, which is what keeps Disney from rendering twelve duplicated parts.
-
 - [ ] **Step 5: Commit**
 
 ```bash
-git add lib/segments/select-breakdown.ts scripts/test-segment-selection.ts package.json
+git add lib/segments/select-breakdown.ts scripts/test-segment-selection.ts scripts/segment-fixtures package.json
 git commit -m "feat(segments): choose the breakdown a reader actually wants"
 ```
-
----
 
 ## Task 4: Cache table and store
 
