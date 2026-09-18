@@ -59,22 +59,26 @@ async function handler(req: NextRequest, context?: unknown) {
       const filing = await fetchRevenueFacts(ticker, form);
       if (!filing) return;
 
-      const consolidated = filing.facts
-        .filter(
-          (f) =>
-            f.members.length === 0 &&
-            f.end === filing.periodEnd &&
-            Math.abs(f.durationDays - PERIOD_DAYS[period]) <= 20,
-        )
-        .map((f) => f.value)
-        .sort((a, b) => b - a)[0];
-
-      if (!consolidated) return;
-      if (Math.abs(consolidated - revenue) / revenue > REVENUE_MATCH_TOLERANCE) return;
+      // Every period in the filing, not just its newest. A 10-K carries three
+      // fiscal years of tagged facts and a 10-Q carries the quarter plus the
+      // year-ago quarter, so matching only the newest meant four of the five
+      // periods the card offers could never fill: asking for 2023 fetched the
+      // FY2025 filing, saw the wrong revenue and stored nothing. One download
+      // now fills whichever period was asked for.
+      const match = filing.facts.find(
+        (f) =>
+          f.members.length === 0 &&
+          Math.abs(f.durationDays - PERIOD_DAYS[period]) <= 20 &&
+          Math.abs(f.value - revenue) / revenue <= REVENUE_MATCH_TOLERANCE,
+      );
+      if (!match) return;
 
       const breakdown = selectBreakdown(filing.facts, {
-        consolidated,
-        periodEnd: filing.periodEnd,
+        consolidated: match.value,
+        // The filing's own date for that period, which is what its facts are
+        // tagged with. The cache key stays the date the card asked about:
+        // the two differ by a few days and only one of them is ours.
+        periodEnd: match.end,
         periodDays: PERIOD_DAYS[period],
       });
       await storeBreakdown(ticker, periodEnd, filing.form, filing.accession, breakdown);

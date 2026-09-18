@@ -46,6 +46,22 @@ function run(ticker: string, consolidated: number) {
   assert.equal(sum(breakdown.parts), 416_161_000_000, 'Apple reconciles exactly');
 }
 
+// A prior year out of the same filing. One 10-K carries three fiscal years, so
+// selecting on an earlier period end fills an earlier column at no extra cost.
+{
+  const filing = load('AAPL');
+  const fy2024 = selectBreakdown(filing.facts, {
+    consolidated: 391_035_000_000,
+    periodEnd: '2024-09-28',
+    periodDays: 365,
+  });
+  assert.ok(fy2024, 'a prior fiscal year in the same filing should select');
+  assert.equal(fy2024.basis, 'product');
+  const iPhone = fy2024.parts.find((p) => p.label === 'iPhone');
+  assert.equal(iPhone?.value, 201_183_000_000, 'FY2024 iPhone, not FY2025 or FY2023');
+  assert.equal(sum(fy2024.parts), 391_035_000_000, 'FY2024 reconciles exactly');
+}
+
 // NVIDIA: Data Center is the sum of Compute and Networking. Keep one level.
 {
   const { breakdown } = run('NVDA', 215_938_000_000);
