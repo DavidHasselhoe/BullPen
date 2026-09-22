@@ -1,10 +1,8 @@
 {
   "quickActionAskBull": "Ask Bull",
   "quickActionHoldings": "我的持仓",
-  "quickActionScreener": "Stock Screener",
   "quickActionDiscover": "发现",
   "quickActionMembers": "浏览成员",
-  "searchPlaceholder": "搜索公司、财务报表、指标，或 Ask Bull",
   "dialogTitle": "命令面板",
   "dialogDescription": "搜索公司、提问 AI，或导航",
   "quickActionsHeading": "快速操作",
@@ -17,7 +15,6 @@
   "deepDiveLabel": "深度分析",
   "compareLabel": "比较",
   "askBullAboutLabel": "Ask Bull 关于",
-  "setPriceAlertForLabel": "Set price alert for",
   "askBullLabel": "Ask Bull",
   "aboutMutedLabel": "关于",
   "peopleHeading": "人物",
@@ -29,5 +26,9 @@
   "noCompaniesFoundSuffix": "上方的自然语言查询。",
   "navigateLabel": "导航",
   "openLabel": "打开",
-  "closeLabel": "关闭"
+  "closeLabel": "关闭",
+  "quickActionScreener": "股票筛选器",
+  "searchPlaceholder": "搜索公司，或向 Bull 提问任何问题",
+  "setPriceAlertForLabel": "为以下股票设置价格提醒",
+  "recentlyViewedHeading": "最近查看"
 }

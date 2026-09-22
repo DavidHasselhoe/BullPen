@@ -1,10 +1,7 @@
 {
   "quickActionAskBull": "Ask Bull に質問",
   "quickActionHoldings": "保有銘柄",
-  "quickActionScreener": "Stock Screener",
-  "quickActionDiscover": "Discover",
   "quickActionMembers": "メンバーを検索",
-  "searchPlaceholder": "企業、報告書、指標を検索、またはBullに質問",
   "dialogTitle": "コマンドパレット",
   "dialogDescription": "企業を検索、AIに質問、またはナビゲート",
   "quickActionsHeading": "クイックアクション",
@@ -29,5 +26,9 @@
   "noCompaniesFoundSuffix": "上記で自然言語クエリを試してください。",
   "navigateLabel": "ナビゲート",
   "openLabel": "開く",
-  "closeLabel": "閉じる"
+  "closeLabel": "閉じる",
+  "quickActionScreener": "Stock Screener",
+  "quickActionDiscover": "Discover",
+  "searchPlaceholder": "企業を検索するか、Bullに何でも質問してください",
+  "recentlyViewedHeading": "最近見た銘柄"
 }

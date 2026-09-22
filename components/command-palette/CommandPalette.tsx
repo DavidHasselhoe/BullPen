@@ -20,6 +20,7 @@ import { ProfileAvatar } from '@/components/user/ProfileAvatar';
 import { BullAiIcon } from '@/components/ai/BullAiIcon';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useInstantSearch } from '@/hooks/use-symbol-index';
+import { useRecentlyViewed } from '@/hooks/use-recently-viewed';
 import { fetchWithTimeout } from '@/lib/utils';
 import { Briefcase, Filter, TrendingUp, Scale, Users, Loader2, CornerDownLeft, Microscope, Bell } from 'lucide-react';
 import { slugToAssetPath, inferAssetType, fundLabel } from '@/lib/assets/asset-type';
@@ -92,6 +93,9 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   // keystroke itself; the server fills in crypto, foreign listings and anything
   // newer than the catalogue a moment later. See hooks/use-symbol-index.ts.
   const { results: searchResults, isLoading: isSearching } = useInstantSearch(searchQuery, 8);
+  // Already tracked by the stock and ETF pages and shown on Discover and the
+  // dashboard, so this is the same store, not a second history of its own.
+  const { items: recentlyViewed } = useRecentlyViewed();
   const searchError = null;
 
   // People search still goes to the server on every query, so it keeps a longer
@@ -122,6 +126,18 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       onOpenChange(false);
       setSearchQuery('');
       router.push(slugToAssetPath(result.ticker));
+    },
+    [router, onOpenChange]
+  );
+
+  // Same navigation as a search hit. Routed through slugToAssetPath rather
+  // than a stored href so a ticker recorded before the asset-type split still
+  // lands on the right page.
+  const handleSelectRecent = useCallback(
+    (ticker: string) => {
+      onOpenChange(false);
+      setSearchQuery('');
+      router.push(slugToAssetPath(ticker));
     },
     [router, onOpenChange]
   );
@@ -219,6 +235,32 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
           <CommandList className="h-[368px] max-h-[368px] px-1.5 pb-2">
             {!hasQuery ? (
               <>
+                {/* Above quick actions on purpose: with nothing typed, the most
+                    likely next action is returning to something just looked at,
+                    not navigating to a tool. Hidden entirely for a new account,
+                    which is when the five static links are the useful thing. */}
+                {recentlyViewed.length > 0 && (
+                  <CommandGroup heading={t('recentlyViewedHeading')}>
+                    {recentlyViewed.map((item) => (
+                      <CommandItem
+                        key={item.ticker}
+                        value={`recent-${item.ticker}`}
+                        onSelect={() => handleSelectRecent(item.ticker)}
+                        className={itemClass}
+                      >
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center">
+                          <CompanyLogo ticker={item.ticker} name={item.name} logoUrl={item.logo_url} size={24} />
+                        </span>
+                        <span className="font-medium">{item.ticker}</span>
+                        <span className="min-w-0 flex-1 truncate text-muted-foreground">
+                          {/* clamp-ok: company name in a single palette row, not a sentence */}
+                          {item.name}
+                        </span>
+                        <ReturnHint />
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                )}
                 <CommandGroup heading={t('quickActionsHeading')}>
                   {QUICK_ACTIONS.map((action) => {
                     const Icon = action.icon;

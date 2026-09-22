@@ -2087,7 +2087,7 @@
   "command-palette.quickActionScreener": "bb31778b3847c248746db7422d166922fbd5c5cfce7c5d4e1f0efa1257c04930",
   "command-palette.quickActionDiscover": "d4a33d5b78bccebe3f16843dc30e6c0f73b4eb6efb4e7114ddfebde7fa2c9954",
   "command-palette.quickActionMembers": "fe43c2e64bce531140581fb12f3b6f99cdfbdd94f8f6c5ed05c841808b850bc0",
-  "command-palette.searchPlaceholder": "5e377dba9afb1d400d94a93b896c6a8831e4a26fe58f49cfb3df46118a0d16ea",
+  "command-palette.searchPlaceholder": "eb5db5ea429a1179d89536f78e5fea32362bb2a08e8aef1cf8758dd521763bd5",
   "command-palette.dialogTitle": "56d80c4bb94de359d4c6b33c7747c0d4a814be253fc9844ba87cdfe67649d71c",
   "command-palette.dialogDescription": "5cf5a744af604d93535d59feccf1bb1016ce2a17eeed6f2631deea887cc95c2a",
   "command-palette.quickActionsHeading": "1810407f5ab7093ccfd1338245353940472c80ace553bd9cdeb2b4767d271cb5",
@@ -2400,5 +2400,6 @@
   "auth.signupAcceptRequired": "d14201c2afd01a95fbc0a8f6a7a4ac3bc1cdc1cbae6c60c749a216c60a951e56",
   "ai.chatRateLimitedWithWait": "5adb5d93b0cc84352770fa8f00e0087d83fb1cd93a782039b416dd895e60a793",
   "common.showMore": "f5c9bd131486e793ee105bd81f001fc25cdc2dac9c1d9f636ac7d43a10efc7e6",
-  "common.showLess": "94ea9b1d33a02975ea6b71d6cf87d461a48de07869c047b5daeb1654e9d539f8"
+  "common.showLess": "94ea9b1d33a02975ea6b71d6cf87d461a48de07869c047b5daeb1654e9d539f8",
+  "command-palette.recentlyViewedHeading": "8e445e8aa6d23a303c6d6005453d8bb379e5ce63137031f10bed3d257d2fbf2d"
 }

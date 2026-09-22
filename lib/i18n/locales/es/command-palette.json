@@ -1,10 +1,8 @@
 {
   "quickActionAskBull": "Ask Bull",
   "quickActionHoldings": "Mis posiciones",
-  "quickActionScreener": "Stock Screener",
   "quickActionDiscover": "Descubrir",
   "quickActionMembers": "Explorar miembros",
-  "searchPlaceholder": "Busca empresas, informes, métricas o pregunta a Bull",
   "dialogTitle": "Paleta de comandos",
   "dialogDescription": "Busca empresas, pregunta a la IA o navega",
   "quickActionsHeading": "Acciones rápidas",
@@ -16,7 +14,6 @@
   "tellMeAboutQuery": "Cuéntame sobre {{ticker}}",
   "deepDiveLabel": "Análisis profundo",
   "compareLabel": "Comparar",
-  "askBullAboutLabel": "Ask Bull about",
   "setPriceAlertForLabel": "Establecer alerta de precio para",
   "askBullLabel": "Ask Bull",
   "aboutMutedLabel": "sobre",
@@ -29,5 +26,9 @@
   "noCompaniesFoundSuffix": "arriba para consultas en lenguaje natural.",
   "navigateLabel": "Navegar",
   "openLabel": "Abrir",
-  "closeLabel": "Cerrar"
+  "closeLabel": "Cerrar",
+  "quickActionScreener": "Filtrador de Acciones",
+  "searchPlaceholder": "Busca empresas, o pregúntale cualquier cosa a Bull",
+  "askBullAboutLabel": "Ask Bull about",
+  "recentlyViewedHeading": "Visto recientemente"
 }

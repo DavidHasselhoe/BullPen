@@ -1,10 +1,8 @@
 {
   "quickActionAskBull": "Ask Bull",
   "quickActionHoldings": "Meine Bestände",
-  "quickActionScreener": "Stock Screener",
   "quickActionDiscover": "Entdecken",
   "quickActionMembers": "Mitglieder durchsuchen",
-  "searchPlaceholder": "Unternehmen, Einreichungen, Kennzahlen durchsuchen oder Ask Bull nutzen",
   "dialogTitle": "Befehlspalette",
   "dialogDescription": "Unternehmen durchsuchen, KI befragen oder navigieren",
   "quickActionsHeading": "Schnellaktionen",
@@ -29,5 +27,8 @@
   "noCompaniesFoundSuffix": "oben für Anfragen in natürlicher Sprache.",
   "navigateLabel": "Navigieren",
   "openLabel": "Öffnen",
-  "closeLabel": "Schließen"
+  "closeLabel": "Schließen",
+  "quickActionScreener": "Stock Screener",
+  "searchPlaceholder": "Unternehmen durchsuchen oder Bull einfach alles fragen",
+  "recentlyViewedHeading": "Zuletzt angesehen"
 }
