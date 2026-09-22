@@ -135,7 +135,7 @@ function buildEmailHtml(
       </a>
     </p>
     <p style="margin: 24px 0 0; font-size: 12px; color: #64748b;">
-      You received this because you hold ${ticker} and have earnings alerts enabled. Open Settings in the app to change preferences.
+      You received this because you hold ${ticker} and have earnings alerts enabled.
     </p>
   </div>
 </body>
@@ -172,6 +172,9 @@ export async function sendEarningsAlerts(
         to: holders[i].email,
         subject: `${ticker} — New ${formType} filed`,
         html,
+        // The user turned this alert on and can turn it off; not a promotion.
+        kind: 'transactional',
+        footer: { unsubscribeUrl: `${APP_URL}/notifications` },
       });
       sent++;
     } catch (err) {

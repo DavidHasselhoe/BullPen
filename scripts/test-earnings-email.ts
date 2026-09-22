@@ -45,6 +45,7 @@ async function main() {
       to: 'davidhasseloe@gmail.com',
       subject: 'ORCL — New 10-Q filed',
       html,
+      kind: 'transactional',
     });
     console.log('Email sent to davidhasseloe@gmail.com:', result?.id ?? 'OK');
   } catch (err) {

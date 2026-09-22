@@ -58,6 +58,8 @@ async function handler(req: NextRequest): Promise<NextResponse> {
     to: 'david@hasselo.no',
     subject: `New contact form submission from ${name}`,
     html: `<p><strong>From:</strong> ${safeName} (${safeEmail})</p><p>${safeMessage}</p>`,
+    // Internal notification to our own inbox, not mail to a subscriber.
+    kind: 'transactional',
   }).catch((err) => {
     console.error('[contact] notification email failed:', err instanceof Error ? err.message : err);
   });

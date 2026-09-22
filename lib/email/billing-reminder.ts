@@ -146,6 +146,7 @@ export async function sendTrialEndingEmail(
     to: email,
     subject: `Your BullPen Pro trial ends on ${endDate}`,
     html: buildTrialEndingEmailHtml(formatAmount(amountInCents, currency), endDate, portalSession.url),
+    kind: 'transactional',
   });
 }
 
@@ -156,6 +157,7 @@ export async function sendTrialRevokedEmail(customerId: string, amountInCents: n
     to: email,
     subject: 'Your BullPen Pro subscription has started',
     html: buildTrialRevokedEmailHtml(formatAmount(amountInCents, currency), PRICING.moneyBackDays),
+    kind: 'transactional',
   });
 }
 
@@ -197,5 +199,6 @@ export async function sendRenewalReminderEmail(
     to: email,
     subject: `Your BullPen Pro subscription renews on ${renewalDate}`,
     html,
+    kind: 'transactional',
   });
 }

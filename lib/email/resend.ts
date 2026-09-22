@@ -7,6 +7,7 @@
  */
 
 import { Resend } from 'resend';
+import { withEmailFooter, type EmailKind, type FooterOptions } from './footer';
 
 const defaultFrom = process.env.RESEND_FROM_EMAIL ?? 'BullPen <hello@updates.bullpen.no>';
 
@@ -26,6 +27,15 @@ export interface SendEmailOptions {
   subject: string;
   html: string;
   from?: string; // Default: hello@updates.bullpen.no
+  /**
+   * Which CAN-SPAM category this message falls in. Required, and deliberately
+   * not defaulted: the footer rules differ (marketing must carry an opt-out and
+   * a postal address), and a default would quietly pick one for a caller who
+   * had not thought about it. See lib/email/footer.ts.
+   */
+  kind: EmailKind;
+  /** Per-recipient opt-out link, when it is not the generic settings page. */
+  footer?: FooterOptions;
 }
 
 /**
@@ -37,14 +47,20 @@ export async function sendEmail({
   subject,
   html,
   from = defaultFrom,
+  kind,
+  footer,
 }: SendEmailOptions) {
   const resend = getClient();
+
+  // Added here rather than in the templates so no email can go out without
+  // sender identification, and no marketing email without an opt-out.
+  const body = withEmailFooter(html, kind, footer);
 
   const { data, error } = await resend.emails.send({
     from,
     to: Array.isArray(to) ? to : [to],
     subject,
-    html,
+    html: body,
   });
 
   if (error) {

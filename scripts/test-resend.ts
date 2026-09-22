@@ -19,6 +19,7 @@ async function main() {
       to: 'david@hasselo.no',
       subject: 'Hello from BullPen',
       html: '<p>Congrats on sending your <strong>first email</strong> with Resend!</p>',
+      kind: 'transactional',
     });
     console.log('Email sent:', result?.id ?? 'OK');
   } catch (err) {
