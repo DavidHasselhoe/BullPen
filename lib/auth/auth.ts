@@ -16,6 +16,9 @@ export interface AuthUser {
   /** Self-reported, from the signup age gate. Null on accounts made before it
    *  shipped and on Google sign-ups, which AgeCheckGate then asks. */
   date_of_birth: string | null;
+  /** When the signup terms and age confirmation were accepted. Null on accounts
+   *  created before the checkbox existed. */
+  terms_accepted_at: string | null;
   experience_level: 'beginner' | 'intermediate' | 'advanced' | null;
   market_focus: 'US' | 'EU' | 'BOTH' | null;
   risk_profile: 'conservative' | 'balanced' | 'aggressive' | null;
@@ -36,8 +39,11 @@ export interface SignUpParams {
   password: string;
   /** YYYY-MM-DD from the signup age gate. Stored as auth user metadata, which
    *  the handle_new_user trigger copies to users.date_of_birth and rejects if
-   *  it is under 13 (migration 146). */
+   *  it is under 18 (migrations 146 and 147). */
   dateOfBirth?: string;
+  /** Whether the terms and 18-or-over confirmation was ticked. Recorded as
+   *  users.terms_accepted_at, so the acceptance has a date attached to it. */
+  termsAccepted?: boolean;
   /** Relative path the email confirmation link lands on after sign-in. */
   next?: string;
 }
@@ -161,8 +167,11 @@ export async function signUp(params: SignUpParams): Promise<AuthResult> {
       options: {
         emailRedirectTo: authCallbackUrl(params.next),
         // Read by the handle_new_user trigger, which is where the age rule is
-        // actually enforced. An under-13 date aborts the whole signUp.
-        data: params.dateOfBirth ? { date_of_birth: params.dateOfBirth } : undefined,
+        // actually enforced. An under-18 date aborts the whole signUp.
+        data: {
+          ...(params.dateOfBirth ? { date_of_birth: params.dateOfBirth } : {}),
+          ...(params.termsAccepted ? { terms_accepted: 'true' } : {}),
+        },
       },
     });
 

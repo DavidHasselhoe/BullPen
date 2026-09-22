@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, FormEvent } from 'react';
-import { useTranslation } from 'react-i18next';
+import Link from 'next/link';
+import { Trans, useTranslation } from 'react-i18next';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { PasswordInput } from './PasswordInput';
 import { Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -55,6 +57,9 @@ export function AuthFormSignup({
   // the rest of the session instead of inviting a second guess at the year.
   const [ageBlocked, setAgeBlocked] = useState(false);
   const [dobInvalid, setDobInvalid] = useState(false);
+  // The date field verifies the age; this is the account holder representing
+  // it and accepting the terms, which nothing asked for before.
+  const [accepted, setAccepted] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -88,6 +93,7 @@ export function AuthFormSignup({
     if (strengthError === 'tooShort') return t('signupPasswordTooShort');
     if (strengthError === 'tooWeak') return t('signupPasswordTooWeak');
     if (strengthError === 'tooCommon') return t('signupPasswordTooCommon');
+    if (!accepted) return t('signupAcceptRequired');
     return null;
   };
 
@@ -106,7 +112,13 @@ export function AuthFormSignup({
     trackEvent('signup_form_submitted', { source, method: 'email' });
 
     try {
-      const result = await signUp({ email, password, dateOfBirth: dob, next: emailRedirectPath });
+      const result = await signUp({
+        email,
+        password,
+        dateOfBirth: dob,
+        termsAccepted: accepted,
+        next: emailRedirectPath,
+      });
 
       if (result.emailInUse) {
         trackEvent('signup_form_failed', { source, method: 'email', reason: 'email_in_use' });
@@ -171,7 +183,10 @@ export function AuthFormSignup({
 
   const blocked = ageBlocked || isAgeGateBlocked();
   const isValid =
-    email.includes('@') && getPasswordStrengthError(password) === null && checkDateOfBirth(dob) === null;
+    email.includes('@') &&
+    getPasswordStrengthError(password) === null &&
+    checkDateOfBirth(dob) === null &&
+    accepted;
 
   return (
     <motion.form
@@ -239,6 +254,27 @@ export function AuthFormSignup({
         <p id="signup-dob-hint" className="text-xs text-muted-foreground">
           {t('signupDobHint', { minAge: MIN_SIGNUP_AGE_YEARS })}
         </p>
+      </div>
+
+      <div className="flex items-start gap-2.5">
+        <Checkbox
+          id="signup-accept"
+          checked={accepted}
+          onCheckedChange={(next) => setAccepted(next === true)}
+          disabled={isLoading || blocked}
+          className="mt-0.5"
+        />
+        <Label htmlFor="signup-accept" className="text-xs font-normal leading-relaxed text-muted-foreground">
+          <Trans
+            i18nKey="signupAcceptLabel"
+            ns="auth"
+            values={{ minAge: MIN_SIGNUP_AGE_YEARS }}
+            components={{
+              terms: <Link href="/terms" target="_blank" className="underline underline-offset-2 hover:text-foreground" />,
+              privacy: <Link href="/privacy" target="_blank" className="underline underline-offset-2 hover:text-foreground" />,
+            }}
+          />
+        </Label>
       </div>
 
       <Button

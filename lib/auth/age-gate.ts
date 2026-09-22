@@ -1,29 +1,39 @@
 /**
  * Age gate for signup (COPPA).
  *
- * COPPA forbids knowingly collecting personal information from children under
- * 13, and the FTC's expected mechanism is a neutral age screen: ask for a date
- * of birth plainly, without hinting which answers get you in, and don't let a
- * failed attempt be retried by just typing a different year.
+ * A date field rather than an "I am over 18" checkbox on purpose. A yes/no age
+ * question tells you the answer that gets you in, which is why the FTC's
+ * guidance on COPPA asks for a neutral age screen instead: request a date of
+ * birth plainly, without hinting which answers pass, and don't let a failed
+ * attempt be retried by typing a different year. The checkbox on the signup
+ * form does a different job, which is accepting the terms.
  *
  * The matching server-side rule is in supabase/migrations/146_age_gate.sql.
  * This module is the UX half; that one is the boundary.
  */
 
-/** COPPA's floor. Not a statement about teenagers — see AGE_POLICY_NOTE. */
-export const MIN_SIGNUP_AGE_YEARS = 13;
+/** Minimum age to hold a BullPen account. See AGE_POLICY_NOTE. */
+export const MIN_SIGNUP_AGE_YEARS = 18;
 
 /**
- * OPEN DECISION (flagged 2026-09-22, not guessed): whether 13-17 year olds may
- * hold an account at all. Arguments for 18+: a Pro subscription is a contract a
- * minor generally can't be bound to, and the product is brokerage-adjacent.
- * Arguments for 13+: it's an information and education product, not a broker,
- * and Academy suits teenagers. Norway (BullPen's home) sets the GDPR Article 8
- * digital-consent age at 13, so 13+ is lawful there without parental consent;
- * other EU states set it as high as 16, which would need per-country handling.
- * Raising the bar is one constant here plus one in the migration.
+ * DECIDED 2026-09-22 (David): 18, not COPPA's floor of 13.
+ *
+ * The reasoning is that 18 is when someone can open a brokerage account of
+ * their own, so a product built around holdings, brokerage sync and a paid
+ * subscription has no real audience below it. A Pro subscription is also a
+ * contract, and a minor's contract is voidable, which makes a teenage
+ * subscriber a chargeback with extra steps.
+ *
+ * Worth noting what this does to the COPPA question it started as: it does not
+ * merely handle under-13 signups, it removes them. No account can exist below
+ * 13, so there is no under-13 personal information to protect in the first
+ * place. It also sidesteps GDPR Article 8, whose digital-consent age varies by
+ * member state (13 in Norway, up to 16 elsewhere) and would otherwise need
+ * per-country handling.
+ *
+ * Kept in step with min_age_years in supabase/migrations/147_age_gate_eighteen.sql.
  */
-export const AGE_POLICY_NOTE = 'under-13 blocked; 13-17 currently allowed pending a policy decision';
+export const AGE_POLICY_NOTE = '18 or over, decided 2026-09-22; under-18 signups are refused';
 
 export type AgeGateError = 'missing' | 'unparseable' | 'future' | 'implausible' | 'tooYoung';
 
