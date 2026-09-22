@@ -79,6 +79,14 @@ function friendlyChatError(message: string | undefined, t: TFunction): string {
   // i18n instead. Anything else reaching here is an unexpected raw error
   // (network failure, a future regression) and falls through to the same
   // "technical-looking → generic" heuristic as before.
+  // `rate_limited:12` carries the wait OpenAI asked for. Telling someone how
+  // long is the difference between "this is broken" and "this is busy", and
+  // it is the single most common failure here.
+  if (message?.startsWith('rate_limited:')) {
+    const seconds = Number(message.slice('rate_limited:'.length));
+    if (Number.isFinite(seconds) && seconds > 0) return t('chatRateLimitedWithWait', { seconds });
+    return t('chatRateLimited');
+  }
   if (message === 'rate_limited') return t('chatRateLimited');
   if (message === 'unavailable') return t('chatUnavailable');
   if (message === 'generic' || !message) return t('chatGenericError');

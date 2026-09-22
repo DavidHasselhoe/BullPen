@@ -114,5 +114,6 @@
   "whyTodayRateLimited": "Too many requests. Please wait a moment and try again.",
   "whyTodaySearching": "Searching the web for today's news on ${{ticker}}…",
   "whyTodayUpgradeCta": "Upgrade to Pro →",
-  "whyTodayUpgradeNotice": "Real-time AI news analysis is a <pro>Pro</pro> feature."
+  "whyTodayUpgradeNotice": "Real-time AI news analysis is a <pro>Pro</pro> feature.",
+  "chatRateLimitedWithWait": "Bull is handling a lot of requests right now. Please try again in about {{seconds}} seconds."
 }

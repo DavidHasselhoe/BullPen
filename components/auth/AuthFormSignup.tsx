@@ -53,7 +53,7 @@ export function AuthFormSignup({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [dob, setDob] = useState('');
-  // Set once an under-13 date has been submitted. Keeps the form closed for
+  // Set once an under-age date has been submitted. Keeps the form closed for
   // the rest of the session instead of inviting a second guess at the year.
   const [ageBlocked, setAgeBlocked] = useState(false);
   const [dobInvalid, setDobInvalid] = useState(false);
