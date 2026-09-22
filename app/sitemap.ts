@@ -33,6 +33,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/privacy', priority: 0.3, changeFrequency: 'yearly' },
     { path: '/disclosures', priority: 0.3, changeFrequency: 'yearly' },
     { path: '/security', priority: 0.3, changeFrequency: 'yearly' },
+    { path: '/dmca', priority: 0.3, changeFrequency: 'yearly' },
   ];
 
   const lastModified = new Date();

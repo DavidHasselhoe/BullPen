@@ -45,6 +45,24 @@ CRON_SECRET=your-random-secret-here
 # Get your API key at https://resend.com/api-keys
 RESEND_API_KEY=re_your_key_here
 
+# Physical postal address printed in every email footer (CAN-SPAM).
+# Required before any marketing/promotional email can be sent: lib/email/footer.ts
+# refuses a 'marketing' send without it rather than sending one that breaks the
+# law. Transactional mail (billing, alerts) sends either way, and includes the
+# address when it is set. One line, as it would appear on an envelope.
+BULLPEN_POSTAL_ADDRESS=BullPen AS, Examplegata 1, 0150 Oslo, Norway
+
+# DMCA designated agent, published on /dmca (lib/legal/dmca-agent.ts).
+# Leave these unset until the agent is actually registered with the U.S.
+# Copyright Office (https://dmca.copyright.gov, ~$6, renew every 3 years) —
+# the page only claims a designated agent when all four are present, and it
+# must match the Copyright Office record exactly.
+DMCA_AGENT_NAME=
+DMCA_AGENT_ADDRESS=
+DMCA_AGENT_PHONE=
+DMCA_AGENT_EMAIL=
+DMCA_AGENT_REGISTERED_ON=
+
 # Logo.dev (required for company logo fetching) — server-only, never use NEXT_PUBLIC_
 # Get your API key at https://logo.dev
 LOGO_DEV_KEY=your-logo-dev-key
