@@ -13,6 +13,7 @@ import { AIPanelProvider } from "@/components/ai/AIPanelProvider";
 import { AIPanelToggle } from "@/components/ai/AIPanelToggle";
 import { CommandPaletteProvider } from "@/components/command-palette/CommandPaletteProvider";
 import { PendingOnboardingFlush } from "@/components/onboarding/PendingOnboardingFlush";
+import { AgeCheckGate } from "@/components/auth/AgeCheckGate";
 import { NotificationToastListener } from "@/components/notifications/NotificationToastListener";
 import { CookieConsentBanner } from "@/components/cookie-consent/CookieConsentBanner";
 import { PostHogProvider } from "@/components/analytics/PostHogProvider";
@@ -120,6 +121,7 @@ export default async function RootLayout({
             <AIPanelProvider>
               <CommandPaletteProvider>
                 <AuthNavigation />
+                <AgeCheckGate />
                 <PendingOnboardingFlush />
                 <NotificationToastListener />
                 <CookieConsentBanner />

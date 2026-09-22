@@ -12,6 +12,13 @@ import { signUp } from '@/lib/auth/auth';
 import { getPasswordStrengthError } from '@/lib/auth/password-strength';
 import { cn } from '@/lib/utils';
 import { trackEvent } from '@/lib/analytics/track';
+import {
+  MIN_SIGNUP_AGE_YEARS,
+  checkDateOfBirth,
+  isAgeGateBlocked,
+  maxAllowedDobValue,
+  rememberAgeGateFailure,
+} from '@/lib/auth/age-gate';
 
 interface AuthFormSignupProps {
   onSuccess?: () => void;
@@ -43,6 +50,11 @@ export function AuthFormSignup({
   const { t } = useTranslation('auth');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [dob, setDob] = useState('');
+  // Set once an under-13 date has been submitted. Keeps the form closed for
+  // the rest of the session instead of inviting a second guess at the year.
+  const [ageBlocked, setAgeBlocked] = useState(false);
+  const [dobInvalid, setDobInvalid] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -59,6 +71,19 @@ export function AuthFormSignup({
     if (!password) {
       return t('signupPasswordRequired');
     }
+    const dobError = checkDateOfBirth(dob);
+    setDobInvalid(!!dobError);
+    if (dobError) {
+      if (dobError === 'tooYoung') {
+        rememberAgeGateFailure();
+        setAgeBlocked(true);
+        return t('signupDobTooYoung', { minAge: MIN_SIGNUP_AGE_YEARS });
+      }
+      if (dobError === 'missing') return t('signupDobRequired');
+      if (dobError === 'future') return t('signupDobFuture');
+      return t('signupDobInvalid');
+    }
+
     const strengthError = getPasswordStrengthError(password);
     if (strengthError === 'tooShort') return t('signupPasswordTooShort');
     if (strengthError === 'tooWeak') return t('signupPasswordTooWeak');
@@ -81,7 +106,7 @@ export function AuthFormSignup({
     trackEvent('signup_form_submitted', { source, method: 'email' });
 
     try {
-      const result = await signUp({ email, password, next: emailRedirectPath });
+      const result = await signUp({ email, password, dateOfBirth: dob, next: emailRedirectPath });
 
       if (result.emailInUse) {
         trackEvent('signup_form_failed', { source, method: 'email', reason: 'email_in_use' });
@@ -144,7 +169,9 @@ export function AuthFormSignup({
     }
   };
 
-  const isValid = email.includes('@') && getPasswordStrengthError(password) === null;
+  const blocked = ageBlocked || isAgeGateBlocked();
+  const isValid =
+    email.includes('@') && getPasswordStrengthError(password) === null && checkDateOfBirth(dob) === null;
 
   return (
     <motion.form
@@ -153,7 +180,7 @@ export function AuthFormSignup({
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
       onSubmit={handleSubmit}
-      className="space-y-5"
+      className="space-y-5 ph-no-capture"
     >
       <div className="space-y-2">
         <Label htmlFor="signup-email" className="text-sm font-medium">
@@ -192,10 +219,32 @@ export function AuthFormSignup({
         <p className="text-xs text-muted-foreground">{t('signupPasswordHint')}</p>
       </div>
 
+      <div className="space-y-2">
+        <Label htmlFor="signup-dob" className="text-sm font-medium">
+          {t('signupDobLabel')}
+        </Label>
+        <Input
+          id="signup-dob"
+          type="date"
+          value={dob}
+          onChange={(e) => setDob(e.target.value)}
+          disabled={isLoading || blocked}
+          required
+          autoComplete="bday"
+          max={maxAllowedDobValue()}
+          className="h-11"
+          aria-describedby="signup-dob-hint"
+          aria-invalid={dobInvalid}
+        />
+        <p id="signup-dob-hint" className="text-xs text-muted-foreground">
+          {t('signupDobHint', { minAge: MIN_SIGNUP_AGE_YEARS })}
+        </p>
+      </div>
+
       <Button
         type="submit"
         className={cn('h-11 w-full rounded-lg', submitClassName)}
-        disabled={isLoading || !isValid}
+        disabled={isLoading || !isValid || blocked}
       >
         {isLoading ? (
           <>

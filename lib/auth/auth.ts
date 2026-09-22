@@ -13,6 +13,9 @@ export interface AuthUser {
   avatar_url: string | null;
   role: string;
   bio: string | null;
+  /** Self-reported, from the signup age gate. Null on accounts made before it
+   *  shipped and on Google sign-ups, which AgeCheckGate then asks. */
+  date_of_birth: string | null;
   experience_level: 'beginner' | 'intermediate' | 'advanced' | null;
   market_focus: 'US' | 'EU' | 'BOTH' | null;
   risk_profile: 'conservative' | 'balanced' | 'aggressive' | null;
@@ -31,6 +34,10 @@ export interface AuthUser {
 export interface SignUpParams {
   email: string;
   password: string;
+  /** YYYY-MM-DD from the signup age gate. Stored as auth user metadata, which
+   *  the handle_new_user trigger copies to users.date_of_birth and rejects if
+   *  it is under 13 (migration 146). */
+  dateOfBirth?: string;
   /** Relative path the email confirmation link lands on after sign-in. */
   next?: string;
 }
@@ -151,7 +158,12 @@ export async function signUp(params: SignUpParams): Promise<AuthResult> {
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: params.email,
       password: params.password,
-      options: { emailRedirectTo: authCallbackUrl(params.next) },
+      options: {
+        emailRedirectTo: authCallbackUrl(params.next),
+        // Read by the handle_new_user trigger, which is where the age rule is
+        // actually enforced. An under-13 date aborts the whole signUp.
+        data: params.dateOfBirth ? { date_of_birth: params.dateOfBirth } : undefined,
+      },
     });
 
     if (authError) {
