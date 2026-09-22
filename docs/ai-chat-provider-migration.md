@@ -1,8 +1,9 @@
 # Moving Bull's chat off gpt-4o — research, 2026-09-22
 
-Status: **researched, not started.** Everything below is measured against the
-live account and the live database, not estimated. Read this before redoing the
-analysis.
+Status: **shipped 2026-09-22.** Ask Bull and the in-chart assistant both run on
+`claude-sonnet-5` with prompt caching on. What follows is the original research
+plus, at the end, what the live numbers turned out to be. They differ from the
+projection in a way that matters.
 
 ## Why this came up
 
@@ -149,20 +150,39 @@ breakpoint, then the per-request prefixes.
 Verify with `usage.cache_read_input_tokens` — if it is zero across repeated
 requests, something is still invalidating the prefix.
 
-### Projected economics (Sonnet 5, $2/MTok in, $10/MTok out)
+### Economics, as projected and as measured
 
-Per call, against the measured 9,616-in / 111-out profile:
+The projection below was wrong in one important way, kept because the error is
+instructive: it assumed ~9,600 input tokens, taken from gpt-4o's logged average.
 
 | | per call |
 |---|---|
-| gpt-4o today (measured) | $0.0218 |
-| Sonnet 5, no caching | ~$0.0203 |
-| Sonnet 5, system prompt cached | **~$0.004** |
+| gpt-4o (measured, 9,616 in) | $0.0218 |
+| Sonnet 5, projected uncached | ~$0.0203 |
+| Sonnet 5, projected cached | ~$0.004 |
 
-Roughly 5x cheaper with caching, on listed prices. Treat as a projection, not a
-measurement. Caveat: the 5-minute cache TTL means a lone user poking at the app
-hourly will miss it — but the case that was *failing* is several messages in
-one minute, which is exactly when it hits.
+**Measured live** (`npm run test-chat-provider`, 2026-09-22): the same request is
+**18,819 input tokens** on Claude, not 9,616. The prompt is 9,022 of those and the
+23 tool schemas are the other ~9,700. Claude counts the same payload roughly 1.5x
+heavier than gpt-4o did.
+
+| | per call |
+|---|---|
+| Sonnet 5, cold turn (writes the cache at 1.25x) | **$0.0475** |
+| Sonnet 5, warm turn (reads it at 0.1x) | **$0.0045** |
+| Sonnet 5, uncached | $0.038 |
+| gpt-4o, for comparison | $0.0218 |
+
+So **uncached Sonnet is more expensive than gpt-4o was**, and a cold cached turn
+is more expensive still. Caching pays from the second turn of a conversation
+onwards, which is the normal case for a chat but not for a one-shot question. A
+three-turn session averages about $0.019 a turn against $0.038 uncached.
+
+Free tier at 15 turns a day, as five three-turn sessions: about **$8 a month**
+worst case, against a $12 Pro subscription. Not comfortable. The lever is the
+tool schemas: half the payload, and ten of the 23 tools are navigation ones that
+could plausibly collapse into a single tool with an enum. Haiku 4.5 is exactly
+half Sonnet across every row above if that is ever needed instead.
 
 ## Open questions before shipping
 

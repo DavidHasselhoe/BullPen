@@ -10,7 +10,7 @@
  */
 
 import { createServerClient } from '@/lib/supabase/client';
-import { calcCost } from './pricing';
+import { calcCost, type CachedTokenSplit } from './pricing';
 
 export interface LogAiCallParams {
   userId: string | null;          // null for cron jobs (e.g. daily brief)
@@ -71,14 +71,17 @@ export async function updateAiCallUsage(
   id: string,
   model: string,
   inputTokens: number | undefined,
-  outputTokens: number | undefined
+  outputTokens: number | undefined,
+  /** The provider's split of the input tokens, when it reports one. Priced at
+   *  the cache rates rather than the full input rate. */
+  cache?: CachedTokenSplit
 ): Promise<void> {
   try {
     const supabase = createServerClient();
     await supabase.from('ai_usage').update({
       input_tokens:  inputTokens ?? null,
       output_tokens: outputTokens ?? null,
-      cost_usd:      calcCost(model, inputTokens ?? 0, outputTokens ?? 0),
+      cost_usd:      calcCost(model, inputTokens ?? 0, outputTokens ?? 0, cache),
     } as never).eq('id', id);
   } catch (err) {
     if (process.env.NODE_ENV === 'development') {

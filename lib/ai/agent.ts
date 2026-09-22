@@ -7,7 +7,7 @@
  */
 
 import { streamText, convertToModelMessages, stepCountIs } from 'ai';
-import { openai } from '@ai-sdk/openai';
+import { anthropic } from '@ai-sdk/anthropic';
 import type { UIMessage } from 'ai';
 import { SYSTEM_PROMPT } from './systemPrompt';
 import { BULLPEN_TOOLS, createAlertTool, getPortfolioContextTool, getInsiderActivityTool } from './tools';
@@ -87,10 +87,53 @@ export async function runAgent(
   };
   assertNoMutatingToolsWithExternalContent(Object.keys(tools));
 
+  /**
+   * Everything that varies per request, kept OUT of the cached prefix.
+   *
+   * These used to be concatenated in front of SYSTEM_PROMPT. Prompt caching is
+   * a prefix match, so a per-user string at the front invalidates everything
+   * behind it and the hit rate would have been zero. They sit after the
+   * breakpoint now, which also means the specific instruction is the last
+   * thing the model reads.
+   */
+  const perRequestPrefix =
+    languagePrefix + experiencePrefix + riskPrefix + horizonPrefix + stylePrefix + contextPrefix;
+
   const result = streamText({
-    model: openai('gpt-4o'),
-    system: languagePrefix + experiencePrefix + riskPrefix + horizonPrefix + stylePrefix + contextPrefix + SYSTEM_PROMPT,
-    messages: modelMessages,
+    model: anthropic('claude-sonnet-5'),
+    /**
+     * The system prompt is a system *message* rather than the `system` option
+     * so it can carry a cache breakpoint.
+     *
+     * Anthropic renders tools -> system -> messages, so this single breakpoint
+     * covers the tool schemas as well as the prompt. Measured live
+     * (scripts/test-chat-provider.ts, 2026-09-22): 18,732 cached tokens, of
+     * which the prompt is 9,022 and the 23 tool schemas are the other ~9,700.
+     * A warm turn costs $0.0045 against $0.038 for the same turn uncached.
+     *
+     * Note the shape of that: a cold turn writes the prefix at 1.25x, so it
+     * costs $0.047, MORE than not caching. Caching wins from the second turn
+     * of a conversation onwards, which is the normal case for a chat but not
+     * for a one-shot question. The tool schemas being half the payload is the
+     * next thing worth attacking; ten of the 23 tools are navigation.
+     *
+     * The cached prefix is only stable while the tool set is. `tools` above is
+     * built by spreading a static object literal, so its order is fixed, but
+     * the three conditional tools mean logged-out, logged-in, and
+     * holdings-enabled callers each get their own cache entry. That is fine;
+     * each cohort is stable within itself.
+     */
+    messages: [
+      {
+        role: 'system' as const,
+        content: SYSTEM_PROMPT,
+        providerOptions: { anthropic: { cacheControl: { type: 'ephemeral' } } },
+      },
+      ...(perRequestPrefix
+        ? [{ role: 'system' as const, content: perRequestPrefix }]
+        : []),
+      ...modelMessages,
+    ],
     tools,
     // Was `maxTokens` — not a real field on this SDK version (silently
     // dropped, so this cap was never actually enforced). The correct name is
@@ -100,14 +143,14 @@ export async function runAgent(
     // Default stopWhen: stepCountIs(1) stops after the first turn (tool calls) before the model
     // gets a second turn to incorporate tool results into its response.
     stopWhen: stepCountIs(5),
-    // OpenAI 429s (tokens-per-minute) are marked isRetryable by the SDK and
-    // typically clear within a few seconds as the rolling per-minute window
-    // advances — a couple of extra retries with backoff meaningfully cuts how
-    // often a transient org-wide TPM spike reaches the user as a hard error.
+    // Kept from the OpenAI era, where a 30k-per-minute org ceiling made 429s
+    // routine. Anthropic allows 10M input tokens a minute on this account, so
+    // these retries are now for genuine transient failures rather than a
+    // ceiling we were living against. See docs/ai-chat-provider-migration.md.
     maxRetries: 3,
     // Without this, a client-side cancellation (the user sends a new message,
     // navigates away, or closes the panel while a reply is still streaming)
-    // never reached OpenAI — the route handler's request signal was never
+    // never reached the provider — the route handler's request signal was never
     // threaded through, so every in-flight step (and any of its retries) ran
     // to completion and was billed regardless of whether anyone was still
     // waiting on it. Each step here resends the full system prompt + every

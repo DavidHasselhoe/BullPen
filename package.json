@@ -60,6 +60,7 @@
     "test-movers-period": "tsx scripts/test-movers-period.ts",
     "test-risk-analysis-prompt": "tsx scripts/test-risk-analysis-prompt.ts",
     "test-risk-scenario": "tsx scripts/test-risk-scenario.ts",
+    "test-chat-provider": "tsx scripts/test-chat-provider.ts",
     "test-sankey-graph": "tsx scripts/test-sankey-graph.ts",
     "test-segment-selection": "tsx scripts/test-segment-selection.ts",
     "capture-segment-fixtures": "tsx scripts/capture-segment-fixtures.ts",
@@ -72,6 +73,7 @@
     "test-holdings-context": "tsx scripts/test-holdings-context-gate.ts"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.119",
     "@ai-sdk/openai": "^3.0.33",
     "@ai-sdk/react": "^3.0.102",
     "@anthropic-ai/sdk": "^0.92.0",

@@ -8,7 +8,7 @@
  */
 
 import { streamText, convertToModelMessages, stepCountIs } from 'ai';
-import { openai } from '@ai-sdk/openai';
+import { anthropic } from '@ai-sdk/anthropic';
 import type { UIMessage } from 'ai';
 import { CHART_TOOLS } from './chart-tools';
 import { COMPANY_DATA_TOOLS, navigateTo, openCompanyPage } from './tools';
@@ -128,7 +128,7 @@ export async function runChartAgent(
   const system = languagePrefix + experiencePrefix + BASE_PROMPT + snapshotBlock;
 
   return streamText({
-    model: openai('gpt-4o'),
+    model: anthropic('claude-sonnet-5'),
     system,
     messages: modelMessages,
     tools: ALL_TOOLS,

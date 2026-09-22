@@ -42,10 +42,19 @@ async function handler(
     // See app/api/ai/chat/route.ts for why this logs 'success' immediately
     // rather than only after the stream finishes — otherwise an aborted
     // request never counts against the shared 'chat' daily quota.
-    const usageRowId = await logAiCallPending({ userId: session.userId, feature: 'chat', model: 'gpt-4o' });
+    const usageRowId = await logAiCallPending({ userId: session.userId, feature: 'chat', model: 'claude-sonnet-5' });
 
     void result.usage.then((usage) => {
-      if (usageRowId) void updateAiCallUsage(usageRowId, 'gpt-4o', usage.inputTokens, usage.outputTokens);
+      if (usageRowId) {
+        // The cache split matters to the cost: the ~9.2k-token prefix is a
+        // cache read at a tenth of the input rate on every turn after the
+        // first, so pricing it as fresh input overstates chat about 5x.
+        void updateAiCallUsage(usageRowId, 'claude-sonnet-5', usage.inputTokens, usage.outputTokens, {
+          noCacheTokens: usage.inputTokenDetails?.noCacheTokens,
+          cacheReadTokens: usage.inputTokenDetails?.cacheReadTokens,
+          cacheWriteTokens: usage.inputTokenDetails?.cacheWriteTokens,
+        });
+      }
     }).catch(() => { /* logging never blocks */ });
 
     return result.toUIMessageStreamResponse({ onError: toSafeErrorMessage });

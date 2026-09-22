@@ -59,11 +59,20 @@ async function handler(
     // aborts before the stream finishes — the post-completion .then() below
     // never runs on abort, and quota only counts status='success' rows, so
     // this used to be an easy way to bypass the 15/day free limit entirely.
-    const usageRowId = await logAiCallPending({ userId: session.userId, feature: 'chat', model: 'gpt-4o' });
+    const usageRowId = await logAiCallPending({ userId: session.userId, feature: 'chat', model: 'claude-sonnet-5' });
 
     // Backfill real token counts + cost when the stream finishes (non-blocking).
     void result.usage.then((usage) => {
-      if (usageRowId) void updateAiCallUsage(usageRowId, 'gpt-4o', usage.inputTokens, usage.outputTokens);
+      if (usageRowId) {
+        // The cache split matters to the cost: the ~9.2k-token prefix is a
+        // cache read at a tenth of the input rate on every turn after the
+        // first, so pricing it as fresh input overstates chat about 5x.
+        void updateAiCallUsage(usageRowId, 'claude-sonnet-5', usage.inputTokens, usage.outputTokens, {
+          noCacheTokens: usage.inputTokenDetails?.noCacheTokens,
+          cacheReadTokens: usage.inputTokenDetails?.cacheReadTokens,
+          cacheWriteTokens: usage.inputTokenDetails?.cacheWriteTokens,
+        });
+      }
     }).catch(() => { /* logging never blocks */ });
 
     // onError sanitizes any error that surfaces while the stream is being
