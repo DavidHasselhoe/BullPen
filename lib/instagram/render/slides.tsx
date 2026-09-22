@@ -35,7 +35,7 @@
 
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { loadGoogleFont } from '@/lib/render/google-fonts';
+import { loadOgFont } from '@/lib/render/og-fonts';
 import type {
   EarningsSlideCompany,
   EarningsResultCompany,
@@ -150,13 +150,13 @@ export function altTextForSlide(
     : `Companies reporting earnings the week of ${content.weekLabel}: ${tickers}.`;
 }
 
-/** All fonts every slide kind might need — fetched once per render, cached across warm invocations by loadGoogleFont itself. */
+/** All fonts every slide kind might need — fetched once per render, cached across warm invocations by loadOgFont itself. */
 export async function loadSlideFonts() {
   const [sans, sansBold, mono, serif] = await Promise.all([
-    loadGoogleFont('Geist', 400),
-    loadGoogleFont('Geist', 700),
-    loadGoogleFont('Geist Mono', 500),
-    loadGoogleFont('Instrument Serif', 400, true),
+    loadOgFont('Geist', 400),
+    loadOgFont('Geist', 700),
+    loadOgFont('Geist Mono', 500),
+    loadOgFont('Instrument Serif', 400, true),
   ]);
   return [
     { name: 'Geist', data: sans, weight: 400 as const, style: 'normal' as const },

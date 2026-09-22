@@ -1,5 +1,5 @@
 import { ImageResponse } from 'next/og';
-import { loadGoogleFont } from '@/lib/render/google-fonts';
+import { loadOgFont } from '@/lib/render/og-fonts';
 
 export const runtime = 'nodejs';
 export const alt = 'BullPen — The market, explained.';
@@ -21,8 +21,8 @@ export default async function OpengraphImage() {
   const accent = '#34d399';
 
   const [monoFont, serifFont] = await Promise.all([
-    loadGoogleFont('Geist Mono', 600),
-    loadGoogleFont('Instrument Serif', 400, true, 'Themarkte,xplaind.ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz '),
+    loadOgFont('Geist Mono', 600),
+    loadOgFont('Instrument Serif', 400, true),
   ]);
 
   return new ImageResponse(

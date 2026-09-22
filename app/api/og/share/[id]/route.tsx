@@ -2,7 +2,7 @@ import { ImageResponse } from 'next/og';
 import { NextRequest, NextResponse } from 'next/server';
 import { getShareById } from '@/lib/shares/get-share';
 import { formatCurrency, type CurrencyCode } from '@/lib/currency/currency-conversion';
-import { loadGoogleFont } from '@/lib/render/google-fonts';
+import { loadOgFont } from '@/lib/render/og-fonts';
 
 export const runtime = 'nodejs';
 
@@ -70,8 +70,8 @@ export async function GET(
   const mutedDim = 'rgba(161, 161, 161, 0.7)';
 
   const [monoFont, serifFont] = await Promise.all([
-    loadGoogleFont('Geist Mono', 600),
-    loadGoogleFont('Instrument Serif', 400, true),
+    loadOgFont('Geist Mono', 600),
+    loadOgFont('Instrument Serif', 400, true),
   ]);
 
   return new ImageResponse(
