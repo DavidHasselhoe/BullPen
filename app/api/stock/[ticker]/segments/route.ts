@@ -40,8 +40,31 @@ async function handler(req: NextRequest, context?: unknown) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(periodEnd)) return empty();
   if (!Number.isFinite(revenue) || revenue <= 0) return empty();
 
-  const stored = await getStoredBreakdown(ticker, periodEnd);
-  if (stored?.fresh) {
+  const stored = await getStoredBreakdown(ticker, periodEnd, period);
+
+  /**
+   * The stored parts have to add up to the revenue the card is showing.
+   *
+   * The background fill below already checks this against the filing, but the
+   * cache read did not, and the cache key is (ticker, period_end) with no
+   * duration in it. For any company whose fiscal year ends when its fourth
+   * quarter does — which is all of them — the annual and quarterly rows want
+   * the same key, and one of them wins. Microsoft's fiscal Q4 2026 and its
+   * FY2026 both end 2026-06-30, so the quarterly chart was served the annual
+   * 10-K breakdown and drew three segments summing to 369% of the quarter's
+   * revenue, each one individually larger than the total above it.
+   *
+   * Checked here rather than trusted from the key, because this is the
+   * invariant that actually matters and it holds whatever the source does:
+   * parts belong to the revenue they sum to. See the fail-closed design in
+   * docs/superpowers/plans/2026-09-18-sankey-revenue-segments.md — a
+   * mismatched breakdown must render as no breakdown, never as a wrong one.
+   */
+  const storedTotal = stored?.breakdown?.total ?? 0;
+  const reconciles =
+    storedTotal > 0 && Math.abs(storedTotal - revenue) / revenue <= REVENUE_MATCH_TOLERANCE;
+
+  if (stored?.fresh && reconciles) {
     return addSecurityHeaders(
       NextResponse.json({
         success: true,
@@ -81,13 +104,15 @@ async function handler(req: NextRequest, context?: unknown) {
         periodEnd: match.end,
         periodDays: PERIOD_DAYS[period],
       });
-      await storeBreakdown(ticker, periodEnd, filing.form, filing.accession, breakdown);
+      await storeBreakdown(ticker, periodEnd, period, filing.form, filing.accession, breakdown);
     } catch (err) {
       console.error('[segments] background fill failed:', err);
     }
   });
 
-  if (!stored) return empty();
+  // A stale breakdown that still adds up is worth showing while the refresh
+  // above runs. One that does not add up is not, however fresh it is.
+  if (!stored || !reconciles) return empty();
   return addSecurityHeaders(
     NextResponse.json({
       success: true,

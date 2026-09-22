@@ -21,6 +21,9 @@ export interface StoredBreakdown {
 export async function getStoredBreakdown(
   ticker: string,
   periodEnd: string,
+  /** Annual and quarterly are separate rows: a fiscal year ends on the same
+   *  date as its Q4, so the date alone does not identify a breakdown. */
+  period: 'annual' | 'quarterly',
 ): Promise<StoredBreakdown | null> {
   const supabase = createServerClient();
   const { data } = await supabase
@@ -28,6 +31,7 @@ export async function getStoredBreakdown(
     .select('basis, parts, total, checked_at')
     .eq('ticker', ticker.toUpperCase())
     .eq('period_end', periodEnd)
+    .eq('period', period)
     .maybeSingle();
 
   if (!data) return null;
@@ -50,6 +54,7 @@ export async function getStoredBreakdown(
 export async function storeBreakdown(
   ticker: string,
   periodEnd: string,
+  period: 'annual' | 'quarterly',
   form: string,
   accession: string,
   breakdown: Breakdown | null,
@@ -59,6 +64,7 @@ export async function storeBreakdown(
   await (supabase as any).from('revenue_segments').upsert({
     ticker: ticker.toUpperCase(),
     period_end: periodEnd,
+    period,
     form,
     accession,
     basis: breakdown?.basis ?? null,

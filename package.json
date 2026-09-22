@@ -60,6 +60,7 @@
     "test-movers-period": "tsx scripts/test-movers-period.ts",
     "test-risk-analysis-prompt": "tsx scripts/test-risk-analysis-prompt.ts",
     "test-risk-scenario": "tsx scripts/test-risk-scenario.ts",
+    "test-sankey-graph": "tsx scripts/test-sankey-graph.ts",
     "test-segment-selection": "tsx scripts/test-segment-selection.ts",
     "capture-segment-fixtures": "tsx scripts/capture-segment-fixtures.ts",
     "test-earnings-minimum": "tsx scripts/test-earnings-minimum.ts",

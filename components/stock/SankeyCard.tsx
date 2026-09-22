@@ -16,7 +16,7 @@ import type { RevenuePart } from '@/lib/segments/select-breakdown';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface IncomeStatementPeriod {
+export interface IncomeStatementPeriod {
   fiscal_date: string;
   revenue: number | null;
   gross_profit: number | null;
@@ -178,7 +178,10 @@ function fmtLabel(date: string, period: Period): string {
 interface RawNode { id: string }
 interface RawLink { source: string; target: string; value: number }
 
-function buildGraph(
+/** Exported for scripts/test-sankey-graph.ts — the flow arithmetic is worth
+ *  pinning, since a node that does not balance shows a wrong number rather
+ *  than an error. */
+export function buildGraph(
   row: IncomeStatementPeriod,
   sources?: RevenuePart[] | null,
 ): { nodes: RawNode[]; links: RawLink[] } | null {
@@ -239,7 +242,21 @@ function buildGraph(
       push(mid, 'Operating Income', oi);
 
       // Operating Income → Tax & Net Income
-      if (ni != null && ni > 0) {
+      if (ni != null && ni > 0 && ni > oi) {
+        // Net income above operating income, which happens on a large
+        // non-operating gain: Alphabet's Q2 2026 carried $97.83B of other
+        // income, so $112.19B of net income came out of $40.77B of operating
+        // income. Pushing `ni` out of the Operating Income node made d3 value
+        // that node at its outflow (a node is the larger of its two sides), so
+        // the chart displayed operating income as $112.19B, 93.7% of revenue.
+        // The gap has to enter the graph as its own inflow instead. It is the
+        // same quantity as the Tax & Other outflow below with the sign
+        // flipped, which is why it carries the same name.
+        push('Operating Income', 'Net Income', oi);
+        const nonOperating = ni - oi;
+        if (!nodes.find((n) => n.id === 'Tax & Other')) nodes.push({ id: 'Tax & Other' });
+        links.push({ source: 'Tax & Other', target: 'Net Income', value: nonOperating });
+      } else if (ni != null && ni > 0) {
         const taxOther = Math.max(0, oi - ni);
         if (taxOther > 0) push('Operating Income', 'Tax & Other', taxOther);
         push('Operating Income', 'Net Income', ni);
@@ -355,7 +372,10 @@ const PLACEHOLDER_H = 420;
 const CHART_W_MIN = 700;
 const CHART_H_MIN = 320;
 const CHART_H_MAX = 520;
-const PAD = { top: 10, right: 172, bottom: 10, left: 6 };
+// top: a stacked label is two lines drawn ABOVE its node, about 28px tall, so
+// the first row needs that much clearance or its label leaves the viewbox.
+// It used to be 10, which is why a top node drew its label inside itself.
+const PAD = { top: 34, right: 172, bottom: 10, left: 6 };
 
 function chartMetrics(nodeCount: number) {
   return {
@@ -411,7 +431,11 @@ function SankeyChart({ graph, width, revenue, currency, isDark, ticker, periodLa
       const gen = sankey<RawNode, RawLink>()
         .nodeId((d) => d.id)
         .nodeWidth(20)
-        .nodePadding(16)
+        // Two stacked label lines occupy ~28px above a node, so anything less
+        // than that lets a lower row's label land on the row above it. At 16
+        // the Cost of Revenue value line was drawn through "Gross Profit", and
+        // SG&A's through "Operating Income".
+        .nodePadding(30)
         .nodeAlign(sankeyLeft)
         .extent([[0, 0], [innerW, innerH]]);
       return gen({
@@ -514,10 +538,14 @@ function SankeyChart({ graph, width, revenue, currency, isDark, ticker, periodLa
             : isRight ? (node.x0 as number) - 10 : (node.x1 as number) + 10;
           const anchor = stacked ? 'start' : isRight ? 'end' : 'start';
           const showSub = !stacked && nodeH > 20;
-          // Two lines above the node need clearance. A node starting near the
-          // top of the chart has none, so its label goes inside it instead,
-          // which only works because such a node is tall by definition.
-          const stackedY = (node.y0 as number) < 32 ? (node.y0 as number) + 14 : (node.y0 as number) - 19;
+          // Always above the node, never inside it. The old rule put the label
+          // inside whenever the node started within 32px of the top, because
+          // there was no room above — which is what drew "Gross Profit" and
+          // "Cost of Revenue" on top of their own coloured bars, dark text on a
+          // saturated fill, and let the second line spill out of a short node
+          // onto the label below. PAD.top now reserves the clearance instead,
+          // so there is always somewhere honest to put it.
+          const stackedY = (node.y0 as number) - 19;
           // d3 gives a node the larger of its inflow and outflow, so once
           // revenue has sources feeding it the trunk reads as their sum. That
           // differs from reported revenue whenever a filing carries a negative
