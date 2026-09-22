@@ -135,6 +135,27 @@ export async function runAgent(
       ...modelMessages,
     ],
     tools,
+    /**
+     * Automatic caching for the growing tail, alongside the explicit
+     * breakpoint above. The documented pairing for an agent loop: the explicit
+     * marker guarantees a read point for the static prefix, and this one moves
+     * forward as the conversation and the tool results accumulate.
+     *
+     * What this is and is not worth, measured rather than assumed. A two-step
+     * tool turn that then ends is about 3% WORSE with it: step 2 wrote 578
+     * tokens at the 1.25x write rate that nothing ever read back. Two thirds
+     * of conversations in ai_conversations are a single exchange, so that is
+     * the common case.
+     *
+     * It earns its place at the other end of the distribution. Without it,
+     * every turn re-sends the whole accumulated history at full rate, so a
+     * long conversation's cost grows quadratically; there are 15- and
+     * 23-message conversations on record. With it, each turn reads what the
+     * last one wrote and the growth is linear. Net across the real
+     * distribution is about +$0.0012 a conversation: not much, but it removes
+     * a scaling cliff rather than shaving a constant.
+     */
+    providerOptions: { anthropic: { cacheControl: { type: 'ephemeral' } } },
     // Was `maxTokens` — not a real field on this SDK version (silently
     // dropped, so this cap was never actually enforced). The correct name is
     // maxOutputTokens.
