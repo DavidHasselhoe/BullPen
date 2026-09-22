@@ -147,7 +147,7 @@ function ResetPasswordContent() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.2 }}
         onSubmit={handleSubmit}
-        className="w-full max-w-sm space-y-6"
+        className="w-full max-w-sm space-y-6 ph-no-capture"
       >
         <div className="space-y-1.5 text-center sm:text-left">
           <h1 className="text-xl font-semibold">Set a new password</h1>

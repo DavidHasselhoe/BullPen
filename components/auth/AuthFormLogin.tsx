@@ -74,7 +74,7 @@ export function AuthFormLogin({ onSuccess, onError, onForgotPassword, source = '
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
       onSubmit={handleSubmit}
-      className="space-y-5"
+      className="space-y-5 ph-no-capture"
     >
       <AnimatePresence mode="wait">
         {error && (

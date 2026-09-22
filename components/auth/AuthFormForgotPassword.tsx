@@ -47,7 +47,7 @@ export function AuthFormForgotPassword({ onBack }: AuthFormForgotPasswordProps) 
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.2 }}
-        className="space-y-5"
+        className="space-y-5 ph-no-capture"
       >
         <div className="flex items-start gap-3 rounded-lg border border-border bg-muted/50 px-4 py-3 text-sm text-muted-foreground">
           <MailCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
@@ -74,7 +74,7 @@ export function AuthFormForgotPassword({ onBack }: AuthFormForgotPasswordProps) 
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
       onSubmit={handleSubmit}
-      className="space-y-5"
+      className="space-y-5 ph-no-capture"
     >
       <AnimatePresence mode="wait">
         {error && (

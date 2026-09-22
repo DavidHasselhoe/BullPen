@@ -24,7 +24,25 @@ function initPostHog() {
     // The consent banner promises "optional analytics", not session replay —
     // keep the footprint to pageviews/clicks (autocapture) until that's a
     // deliberate, separately-consented decision.
+    //
+    // This flag is the thing actually stopping replay: the PostHog project
+    // had recording switched on server-side with no masking configured until
+    // 2026-09-22, and one deleted line here would have started recording
+    // every consenting session, login form included. Both halves are now off,
+    // and the session_recording block below means that if replay is ever
+    // turned on deliberately, it starts masked rather than starting open.
     disable_session_recording: true,
+    session_recording: {
+      // Never record what anyone types. Not a default worth inheriting.
+      maskAllInputs: true,
+      // Whole subtrees that are not to be recorded at all, marked in the
+      // markup with ph-no-capture (the auth forms, today).
+      blockSelector: ".ph-no-capture",
+      // Request and response bodies stay out of replays even if the project
+      // enables network capture.
+      recordHeaders: false,
+      recordBody: false,
+    },
     disable_surveys: true,
   });
 }
