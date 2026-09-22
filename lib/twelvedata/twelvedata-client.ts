@@ -421,6 +421,21 @@ export async function getStockQuotes(
   return quotes;
 }
 
+/**
+ * Of the symbols given, the ones TwelveData can actually quote.
+ *
+ * A symbol with no quote has no working detail page, so this is the check to
+ * run before showing a user a link to one. Cost is the batch itself: 1 credit
+ * per symbol, one round trip. Per-symbol failures inside the batch drop that
+ * symbol only; a batch that fails outright throws, so a caller never mistakes
+ * an outage for 'none of these exist'.
+ */
+export async function filterQuotable(symbols: string[]): Promise<string[]> {
+  if (symbols.length === 0) return [];
+  const quotes = await withRateLimitRetry(() => getStockQuotes(symbols));
+  return symbols.filter((s) => quotes.has(s));
+}
+
 // -------- Time series (candles) --------
 
 interface TwelveDataTimeSeriesValue {

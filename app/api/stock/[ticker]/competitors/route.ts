@@ -5,7 +5,7 @@ import { getCached, setCached } from '@/lib/cache/market-data-cache';
 import { createServerClient } from '@/lib/supabase/client';
 import { withRateLimit, addSecurityHeaders, getSessionForApiRoute } from '@/lib/security/api-security';
 import { logAiCall } from '@/lib/billing/log-ai-call';
-import { getCompanyProfile, type CompanyProfile } from '@/lib/twelvedata/twelvedata-client';
+import { getCompanyProfile, filterQuotable, type CompanyProfile } from '@/lib/twelvedata/twelvedata-client';
 
 export const dynamic = 'force-dynamic';
 
@@ -113,16 +113,26 @@ async function handler(
       return addSecurityHeaders(NextResponse.json({ competitors: [] }));
     }
 
+    // A ticker with no quote has no detail page to open, and the model invents
+    // symbols that look right: SKWS for Skyworks' real SWKS, SAMSUNG and SIEMENS
+    // as if they were listed, plus names that stopped trading years ago (PXD,
+    // ANTM, VMW). 47 of the 565 peers cached before this check had a dead pill.
+    const listed = await filterQuotable(tickers);
+    if (listed.length === 0) {
+      // Not cached — next visit retries
+      return addSecurityHeaders(NextResponse.json({ competitors: [] }));
+    }
+
     // Single batch DB lookup
     const supabase = createServerClient();
     const { data: rows } = await supabase
       .from('companies')
       .select('ticker, name, logo_url')
-      .in('ticker', tickers);
+      .in('ticker', listed);
 
     const dbMap = new Map((rows ?? []).map((r) => [r.ticker, r]));
 
-    const competitors: CompetitorEntry[] = tickers.map((t) => ({
+    const competitors: CompetitorEntry[] = listed.map((t) => ({
       ticker:  t,
       name:    dbMap.get(t)?.name    ?? t,
       logoUrl: dbMap.get(t)?.logo_url ?? null,

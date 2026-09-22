@@ -25,6 +25,7 @@
     "test-resend": "tsx scripts/test-resend.ts",
     "test-credit-budget": "tsx scripts/test-credit-budget.ts",
     "test-cron-coverage": "tsx scripts/test-cron-coverage.ts",
+    "test-peer-quotable": "tsx scripts/test-peer-quotable.ts",
     "test-search-ranking": "tsx scripts/test-search-ranking.ts",
     "refresh-search-index": "tsx scripts/refresh-search-index.ts",
     "test-import": "tsx scripts/test-import.ts",
