@@ -15,8 +15,9 @@
  * documented ways 512(c) safe harbour gets lost, so if the registration is
  * amended, amend this in the same sitting.
  *
- * Renewal: a designation expires after three years unless renewed, and an
- * expired designation takes the safe harbour with it.
+ * Filed 2026-07-28, status Active. A designation expires after three years
+ * unless renewed, and an expired one takes the safe harbour with it, so this
+ * needs renewing by **2029-07-28**.
  */
 
 export interface DmcaAgent {
@@ -34,8 +35,15 @@ export interface DmcaAgent {
   registrationNumber: string | null;
 }
 
-/** The registered service provider name, also used as the legal entity name. */
-export const SERVICE_PROVIDER_NAME = 'Hasselø BullPen';
+/**
+ * The registered service provider name, also used as the sender name in email
+ * footers.
+ *
+ * Spelled "Bullpen", lowercase p, because that is how the active record reads.
+ * The product is "BullPen" everywhere else; do not tidy this one up to match
+ * it. The page has to agree with the directory, not with the brand.
+ */
+export const SERVICE_PROVIDER_NAME = 'Hasselø Bullpen';
 
 /**
  * Registered postal address, one line per line, as it appears on the record.
@@ -49,10 +57,13 @@ export function dmcaAgent(): DmcaAgent {
   const address =
     process.env.DMCA_AGENT_ADDRESS?.trim() ||
     [SERVICE_PROVIDER_NAME, ...REGISTERED_ADDRESS_LINES].join('\n');
-  // As registered. Worth noting it carries no country code, so a US sender
-  // cannot dial it as printed; fixing that means amending the registration and
-  // this value together, not just this one.
-  const phone = process.env.DMCA_AGENT_PHONE?.trim() || '95402213';
+  // Same number as the record, written in international format: the record
+  // stores the bare 95402213, which a US sender cannot dial. A country code on
+  // the same number is a more usable rendering of an identical contact, not a
+  // different one, so this is the one field deliberately not character for
+  // character. Worth putting "+4795402213" in the registration next time it is
+  // edited, so the two read the same.
+  const phone = process.env.DMCA_AGENT_PHONE?.trim() || '+47 954 02 213';
   const email = process.env.DMCA_AGENT_EMAIL?.trim() || 'david@hasselo.no';
   const registrationNumber = process.env.DMCA_AGENT_REGISTRATION_NUMBER?.trim() || 'DMCA-1076710';
 

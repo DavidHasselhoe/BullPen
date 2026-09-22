@@ -52,7 +52,7 @@ RESEND_API_KEY=re_your_key_here
 BULLPEN_POSTAL_ADDRESS=
 
 # DMCA designated agent, published on /dmca (lib/legal/dmca-agent.ts).
-# The real registered values (service provider "Hasselo BullPen", registration
+# The real registered values (service provider "Hasselø Bullpen", registration
 # DMCA-1076710) are defaults in code, so /dmca is correct without any env set.
 # These only override them, e.g. after amending the Copyright Office record.
 # Keep any override identical to that record: published details that disagree
