@@ -202,7 +202,7 @@ BullpenChat.tsx (UI)
         systemPrompt = experiencePrefix + contextPrefix + SYSTEM_PROMPT
 ```
 
-- `lib/ai/systemPrompt.ts` — the prompt, measured at 9,022 tokens (Anthropic count_tokens, 2026-09-22), which is ~73% of every chat request; documents the 23 tools in `BULLPEN_TOOLS` with credit costs and routing rules. See `docs/ai-chat-provider-migration.md` before growing it. `getPortfolioContext` (read-only holdings/watchlist access) is opt-in — only registered when the user enables it in Settings > Ask Bull, same conditional pattern as `createAlert` needing `userId`
+- `lib/ai/systemPrompt.ts` — 3,224 tokens after the 2026-09-22 audit (was 9,022). **It must not document individual tools.** What a tool does, when to use it and what it costs belongs in its `description` in `lib/ai/tools.ts`, which ships in the same request: the prompt used to carry a second copy of all 23, the two wordings had drifted apart, and two conditionally-registered tools were described to users who did not have them. The prompt carries audience, how to answer, cross-tool routing, and the product and policy boundaries. `npm run test-bull-routing` probes the routing it is responsible for. `getPortfolioContext` (read-only holdings/watchlist access) is opt-in — only registered when the user enables it in Settings > Ask Bull, same conditional pattern as `createAlert` needing `userId`
 - `lib/ai/tools.ts` — Vercel AI SDK tools that call Supabase or TwelveData
 - Experience level (`beginner | intermediate | advanced`) is sent from the client via `body.experienceLevel` and prepended as a system instruction
 - Page context (`{tickers, label}`) is injected via `body.context` so the AI knows which stock the user is viewing

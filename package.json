@@ -60,6 +60,7 @@
     "test-movers-period": "tsx scripts/test-movers-period.ts",
     "test-risk-analysis-prompt": "tsx scripts/test-risk-analysis-prompt.ts",
     "test-risk-scenario": "tsx scripts/test-risk-scenario.ts",
+    "test-bull-routing": "tsx scripts/test-bull-routing.ts",
     "test-chat-provider": "tsx scripts/test-chat-provider.ts",
     "test-sankey-graph": "tsx scripts/test-sankey-graph.ts",
     "test-segment-selection": "tsx scripts/test-segment-selection.ts",

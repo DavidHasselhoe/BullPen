@@ -513,7 +513,10 @@ export const openCompanyPage = tool({
 
 export const openComparison = tool({
   description:
-    'Open the stock screener or comparison view. Use when the user asks to compare companies, ' +
+    // Said "the stock screener or comparison view" until 2026-09-22. It opens
+    // /tools/compare and nothing else; naming the screener here put a second,
+    // wrong candidate in front of the model for every screener request.
+    'Open the side-by-side comparison page for 2 to 5 companies. Use when the user asks to compare companies, ' +
     'e.g. "compare NVIDIA and AMD", "show me NVDA vs AMD", "compare these companies" — these are explicit requests ' +
     '(explicitUserRequest: true). If you are suggesting a comparison as a helpful next step rather than something ' +
     'the user asked to see, set explicitUserRequest: false.',
@@ -1241,7 +1244,14 @@ const getCompanyFinancials = tool({
     'Fetch financial statement data (income statement, balance sheet, or cash flow) for any stock. ' +
     'Works for any ticker globally, not just companies in the BullPen database. ' +
     'Use when the user asks about revenue, profit, debt, free cash flow, or any line item from financial statements. ' +
-    'Costs ~30 API credits per call.',
+    // Said ~30 credits until 2026-09-22. It calls /income_statement,
+    // /balance_sheet or /cash_flow, each measured at ~101 credits against
+    // TwelveData's own api-credits-used header (CLAUDE.md, 2026-08-04). The
+    // old figure understated it 3.4x, in the one number the model uses to
+    // decide between this and the 1-credit single-metric tool.
+    'Expensive: about 100 API credits per call, against 1 credit for getCompanyMetrics. ' +
+    'Prefer getCompanyMetrics when a single line item over time would answer the question; ' +
+    'use this when the user wants a whole statement. Results are cached server-side for 24h.',
   inputSchema: jsonSchema<{ ticker: string; type: 'income' | 'balance' | 'cashflow'; period: 'annual' | 'quarterly' }>({
     type: 'object',
     properties: {

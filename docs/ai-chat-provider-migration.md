@@ -91,9 +91,9 @@ Order of work, highest value per unit of risk:
 
 1. **Fix the system-prompt prefix order** (prerequisite for caching, see below).
 2. **Migrate chat to Claude with prompt caching on.**
-3. **Slim the 9,022-token system prompt.** Provider-independent; helps cost,
-   latency and limits whatever the model is. Do it as its own measured change
-   so any quality regression is attributable.
+3. ~~Slim the system prompt.~~ **Done 2026-09-22**: 9,022 -> 3,224 tokens, by
+   deleting a second copy of every tool description. Request total 18,819 ->
+   13,102. Routing verified with `npm run test-bull-routing` (6/6).
 
 ## Migration notes
 
