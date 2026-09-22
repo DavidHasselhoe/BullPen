@@ -46,22 +46,22 @@ CRON_SECRET=your-random-secret-here
 RESEND_API_KEY=re_your_key_here
 
 # Physical postal address printed in every email footer (CAN-SPAM).
-# Required before any marketing/promotional email can be sent: lib/email/footer.ts
-# refuses a 'marketing' send without it rather than sending one that breaks the
-# law. Transactional mail (billing, alerts) sends either way, and includes the
-# address when it is set. One line, as it would appear on an envelope.
-BULLPEN_POSTAL_ADDRESS=BullPen AS, Examplegata 1, 0150 Oslo, Norway
+# Defaults to the registered DMCA service provider address (lib/legal/dmca-agent.ts),
+# so mail is already compliant without this set. Only needed to send from a
+# different address, such as a PO box. One line, as it would appear on an envelope.
+BULLPEN_POSTAL_ADDRESS=
 
 # DMCA designated agent, published on /dmca (lib/legal/dmca-agent.ts).
-# Leave these unset until the agent is actually registered with the U.S.
-# Copyright Office (https://dmca.copyright.gov, ~$6, renew every 3 years) —
-# the page only claims a designated agent when all four are present, and it
-# must match the Copyright Office record exactly.
+# The real registered values (service provider "Hasselo BullPen", registration
+# DMCA-1076710) are defaults in code, so /dmca is correct without any env set.
+# These only override them, e.g. after amending the Copyright Office record.
+# Keep any override identical to that record: published details that disagree
+# with the registered ones is one of the ways 512(c) safe harbour is lost.
 DMCA_AGENT_NAME=
 DMCA_AGENT_ADDRESS=
 DMCA_AGENT_PHONE=
 DMCA_AGENT_EMAIL=
-DMCA_AGENT_REGISTERED_ON=
+DMCA_AGENT_REGISTRATION_NUMBER=
 
 # Logo.dev (required for company logo fetching) — server-only, never use NEXT_PUBLIC_
 # Get your API key at https://logo.dev

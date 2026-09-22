@@ -14,22 +14,28 @@
  * default, because guessing wrong in the quiet direction is the expensive one.
  */
 
+import { REGISTERED_ADDRESS_LINES, SERVICE_PROVIDER_NAME } from '@/lib/legal/dmca-agent';
+
 function appUrl(): string {
   return process.env.NEXT_PUBLIC_APP_URL || 'https://bullpen.no';
 }
 
 /**
- * BullPen's registered postal address, e.g. "BullPen AS, Examplegata 1, 0150
- * Oslo, Norway". Required for marketing mail; there is no lawful placeholder
- * for it, so a marketing send without it fails rather than going out wrong.
+ * The physical postal address CAN-SPAM requires in commercial mail.
+ *
+ * Defaults to the same address registered as the DMCA service provider, since
+ * it is one company with one address and two pages of it disagreeing is a
+ * worse outcome than either being wrong alone. BULLPEN_POSTAL_ADDRESS
+ * overrides it if mail should carry a different one, such as a PO box.
  *
  * Read at call time, not module load, for the same reason getClient() in
  * resend.ts does: a script that loads .env.local before calling must still see
  * it.
  */
 function postalAddress(): string | undefined {
-  const value = process.env.BULLPEN_POSTAL_ADDRESS?.trim();
-  return value ? value : undefined;
+  const override = process.env.BULLPEN_POSTAL_ADDRESS?.trim();
+  if (override) return override;
+  return [SERVICE_PROVIDER_NAME, ...REGISTERED_ADDRESS_LINES].join(', ');
 }
 
 export type EmailKind =

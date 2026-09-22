@@ -1,25 +1,26 @@
 /**
  * BullPen's DMCA designated agent, as published on /dmca.
  *
- * ACTION REQUIRED BY THE OWNER (this file cannot fix it):
- * DMCA safe harbour under 17 U.S.C. 512(c) is only available to a service
- * provider that has designated an agent to receive infringement notices *with
- * the U.S. Copyright Office*, through its online directory, and pays the fee
- * (about $6, renewable every three years). Publishing an address on a web page
- * is required too, but on its own it does not establish the safe harbour.
+ * These are the values on file with the U.S. Copyright Office for service
+ * provider "Hasselø BullPen", registration DMCA-1076710. They are defaults in
+ * code rather than env-only because the Copyright Office directory is public
+ * by design: an agent's contact details are meant to be findable, so there is
+ * nothing here to keep out of a preview deployment, and a prod deploy that
+ * forgot to set an env var would otherwise publish a page claiming no agent
+ * while one exists. Each field still takes an env override so a correction can
+ * ship without a code change.
  *
- * Whether BullPen has done that registration is not knowable from this
- * repository, so nothing here assumes it. Until `registered` is set true with
- * the real details, /dmca publishes the takedown procedure and a working
- * contact route, and makes no claim about a registered agent.
+ * KEEP THIS IDENTICAL TO THE COPYRIGHT OFFICE RECORD. A service provider whose
+ * published agent details disagree with its registered ones is one of the
+ * documented ways 512(c) safe harbour gets lost, so if the registration is
+ * amended, amend this in the same sitting.
  *
- * Fill these in from the Copyright Office record itself, so the page and the
- * registration say the same thing: a mismatch between them is one of the ways
- * the safe harbour is actually lost.
+ * Renewal: a designation expires after three years unless renewed, and an
+ * expired designation takes the safe harbour with it.
  */
 
 export interface DmcaAgent {
-  /** True only once the designation is on file with the U.S. Copyright Office. */
+  /** True only when the designation is on file with the U.S. Copyright Office. */
   registered: boolean;
   /** Agent name, e.g. a person or "Legal Department". */
   name: string | null;
@@ -29,29 +30,39 @@ export interface DmcaAgent {
   phone: string | null;
   /** Email as registered. */
   email: string | null;
-  /** ISO date of the designation, for the "last reviewed" note. */
-  registeredOn: string | null;
+  /** Copyright Office registration number, published so a sender can verify it. */
+  registrationNumber: string | null;
 }
 
+/** The registered service provider name, also used as the legal entity name. */
+export const SERVICE_PROVIDER_NAME = 'Hasselø BullPen';
+
 /**
- * Sourced from env so the published page can be corrected without a code
- * change, and so a preview deployment can't accidentally publish a personal
- * address. Set DMCA_AGENT_* in Vercel once the registration is filed.
+ * Registered postal address, one line per line, as it appears on the record.
+ * Also the physical address in email footers (lib/email/footer.ts), since it
+ * is the same company's same address.
  */
+export const REGISTERED_ADDRESS_LINES = ['Tirlitunga 19', '6518 Kristiansund', 'Norway'];
+
 export function dmcaAgent(): DmcaAgent {
-  const name = process.env.DMCA_AGENT_NAME?.trim() || null;
-  const address = process.env.DMCA_AGENT_ADDRESS?.trim() || null;
-  const phone = process.env.DMCA_AGENT_PHONE?.trim() || null;
-  const email = process.env.DMCA_AGENT_EMAIL?.trim() || null;
-  const registeredOn = process.env.DMCA_AGENT_REGISTERED_ON?.trim() || null;
+  const name = process.env.DMCA_AGENT_NAME?.trim() || 'David Hasselø';
+  const address =
+    process.env.DMCA_AGENT_ADDRESS?.trim() ||
+    [SERVICE_PROVIDER_NAME, ...REGISTERED_ADDRESS_LINES].join('\n');
+  // As registered. Worth noting it carries no country code, so a US sender
+  // cannot dial it as printed; fixing that means amending the registration and
+  // this value together, not just this one.
+  const phone = process.env.DMCA_AGENT_PHONE?.trim() || '95402213';
+  const email = process.env.DMCA_AGENT_EMAIL?.trim() || 'david@hasselo.no';
+  const registrationNumber = process.env.DMCA_AGENT_REGISTRATION_NUMBER?.trim() || 'DMCA-1076710';
 
   // All four contact facts have to be present before the page says there is a
   // designated agent. A half-filled block is worse than none: it reads as a
   // formal designation while missing what a sender needs to use it.
   const registered = Boolean(name && address && phone && email);
 
-  return { registered, name, address, phone, email, registeredOn };
+  return { registered, name, address, phone, email, registrationNumber };
 }
 
-/** Where copyright notices go when no agent is configured yet. */
+/** Where copyright notices go if the agent block is ever unset. */
 export const DMCA_FALLBACK_CONTACT_PATH = '/contact';

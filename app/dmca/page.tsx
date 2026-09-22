@@ -42,15 +42,27 @@ export default function DmcaPage() {
             <h2>Where to send a notice</h2>
             {agent.registered ? (
               <>
-                <p>Copyright notices go to our designated agent:</p>
+                <p>
+                  Copyright notices go to our designated agent, on file with the U.S. Copyright Office:
+                </p>
                 <p>
                   {agent.name}
                   <br />
-                  {agent.address}
-                  <br />
+                  {agent.address?.split('\n').map((line) => (
+                    <span key={line}>
+                      {line}
+                      <br />
+                    </span>
+                  ))}
                   Phone: {agent.phone}
                   <br />
                   Email: <a href={`mailto:${agent.email}`}>{agent.email}</a>
+                  {agent.registrationNumber && (
+                    <>
+                      <br />
+                      Registration number: {agent.registrationNumber}
+                    </>
+                  )}
                 </p>
               </>
             ) : (
@@ -116,11 +128,6 @@ export default function DmcaPage() {
               <Link href="/privacy">Privacy Policy</Link> cover the rest of how BullPen works.
             </p>
 
-            {agent.registeredOn && (
-              <p style={{ fontSize: 13, color: 'var(--fg-dim)' }}>
-                Designated agent on file with the U.S. Copyright Office since {agent.registeredOn}.
-              </p>
-            )}
           </div>
         </main>
 
