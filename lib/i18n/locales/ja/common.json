@@ -15,5 +15,7 @@
   "tickerPreviewAdd": "ウォッチリストに追加",
   "tickerPreviewNoProfile": "このティッカーの企業プロフィールはまだ登録されていません。",
   "tickerPreviewOpen": "企業を開く",
-  "tickerPreviewWatched": "ウォッチリストに追加済み"
+  "tickerPreviewWatched": "ウォッチリストに追加済み",
+  "showMore": "もっと見る",
+  "showLess": "一部を隠す"
 }

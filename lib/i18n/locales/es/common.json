@@ -11,9 +11,11 @@
   "save": "Guardar",
   "search": "Buscar",
   "success": "Éxito",
-  "error": "Error",
   "tickerPreviewAdd": "Añadir a lista de observación",
   "tickerPreviewNoProfile": "Aún no hay perfil de empresa para este.",
   "tickerPreviewOpen": "Abrir empresa",
-  "tickerPreviewWatched": "En tu lista de observación"
+  "tickerPreviewWatched": "En tu lista de observación",
+  "error": "Error",
+  "showMore": "Mostrar más",
+  "showLess": "Mostrar menos"
 }

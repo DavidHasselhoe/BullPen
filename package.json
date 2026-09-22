@@ -26,6 +26,8 @@
     "test-credit-budget": "tsx scripts/test-credit-budget.ts",
     "test-cron-coverage": "tsx scripts/test-cron-coverage.ts",
     "test-ai-error-classification": "tsx scripts/test-ai-error-classification.ts",
+    "test-shorten-description": "tsx scripts/test-shorten-description.ts",
+    "test-no-truncated-text": "tsx scripts/test-no-truncated-generated-text.ts",
     "test-age-gate": "tsx scripts/test-age-gate.ts",
     "test-email-footer": "tsx scripts/test-email-footer.ts",
     "test-og-fonts": "tsx scripts/test-og-fonts.ts",

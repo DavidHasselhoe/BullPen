@@ -123,6 +123,7 @@ export function AllocationBars({ holdings, logoMap, isSimplified }: Props) {
                             {t('portfolioBuilderAlreadyOwned')}
                           </span>
                         )}
+                        {/* clamp-ok: company name in a dense bar row, not a sentence */}
                         <span className="text-xs text-muted-foreground/80 truncate">{h.company}</span>
                         <span className="ml-auto shrink-0 font-mono text-xs font-semibold tabular-nums text-foreground">
                           {Math.round(h.allocation_pct)}%

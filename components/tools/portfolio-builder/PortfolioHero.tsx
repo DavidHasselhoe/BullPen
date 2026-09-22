@@ -2,6 +2,7 @@
 
 import { AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { ClampedText } from '@/components/ui/ClampedText';
 import type { TFunction } from 'i18next';
 import { cn } from '@/lib/utils';
 import type { Portfolio } from '@/lib/ai/portfolio-builder/schema';
@@ -54,8 +55,10 @@ function Highlight({ label, title, detail }: { label: string; title: string; det
   return (
     <div className="min-w-0">
       <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80">{label}</div>
-      <div className="mt-0.5 text-sm font-medium text-foreground truncate">{title}</div>
-      {detail && <div className="text-[13px] text-muted-foreground truncate">{detail}</div>}
+      <div className="mt-0.5 text-sm font-medium text-foreground">{title}</div>
+      {/* Model-written: the title wraps, the sentence clamps with a Show more.
+          Same reasoning as risk-analysis/RiskScoreHero. */}
+      {detail && <ClampedText lines={2} className="text-[13px] text-muted-foreground">{detail}</ClampedText>}
     </div>
   );
 }

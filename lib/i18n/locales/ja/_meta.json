@@ -2418,5 +2418,7 @@
   "auth.ageCheckTooYoungBody": "20b7e085a82d1122b19afe519271dbb595ac44516e95ada19f211ce7a79e0289",
   "auth.signupAcceptLabel": "9604bb5dacc87a8066abacca08694cff17fed4d6fe8af4a5626c0ccc9bd1d22c",
   "auth.signupAcceptRequired": "d14201c2afd01a95fbc0a8f6a7a4ac3bc1cdc1cbae6c60c749a216c60a951e56",
-  "ai.chatRateLimitedWithWait": "5adb5d93b0cc84352770fa8f00e0087d83fb1cd93a782039b416dd895e60a793"
+  "ai.chatRateLimitedWithWait": "5adb5d93b0cc84352770fa8f00e0087d83fb1cd93a782039b416dd895e60a793",
+  "common.showMore": "f5c9bd131486e793ee105bd81f001fc25cdc2dac9c1d9f636ac7d43a10efc7e6",
+  "common.showLess": "94ea9b1d33a02975ea6b71d6cf87d461a48de07869c047b5daeb1654e9d539f8"
 }

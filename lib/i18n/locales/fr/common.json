@@ -15,5 +15,7 @@
   "tickerPreviewAdd": "Ajouter à la liste de suivi",
   "tickerPreviewNoProfile": "Aucun profil d'entreprise disponible pour celui-ci.",
   "tickerPreviewOpen": "Ouvrir l'entreprise",
-  "tickerPreviewWatched": "Dans votre liste de suivi"
+  "tickerPreviewWatched": "Dans votre liste de suivi",
+  "showMore": "Afficher plus",
+  "showLess": "Afficher moins"
 }

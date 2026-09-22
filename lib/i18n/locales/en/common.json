@@ -15,5 +15,7 @@
   "tickerPreviewAdd": "Add to watchlist",
   "tickerPreviewNoProfile": "No company profile for this one yet.",
   "tickerPreviewOpen": "Open company",
-  "tickerPreviewWatched": "In your watchlist"
+  "tickerPreviewWatched": "In your watchlist",
+  "showMore": "Show more",
+  "showLess": "Show less"
 }

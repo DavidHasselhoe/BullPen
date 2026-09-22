@@ -49,8 +49,20 @@ export function shorten(text: string): string {
   const cutAt = ends.length >= 2 && ends[1].index != null ? ends[1].index + 1 : text.length;
   const trimmed = text.slice(0, cutAt).trim();
   if (trimmed.length <= MAX_DESCRIPTION_CHARS) return trimmed;
+
+  // Two sentences over the cap: drop to one whole sentence rather than cutting
+  // the second one in half. A description that stops mid-clause reads as a bug,
+  // and at 230 chars this is the common path, not the rare one. The full text
+  // is on the company page, which is what this card links to.
+  if (ends.length >= 1 && ends[0].index != null) {
+    const firstSentence = text.slice(0, ends[0].index + 1).trim();
+    if (firstSentence.length <= MAX_DESCRIPTION_CHARS) return firstSentence;
+  }
+
+  // One sentence that is still too long. Cut at a word boundary, the only case
+  // left where an ellipsis is the honest option.
   const cut = trimmed.slice(0, MAX_DESCRIPTION_CHARS);
-  return `${cut.slice(0, cut.lastIndexOf(' '))}...`;
+  return `${cut.slice(0, cut.lastIndexOf(' '))}…`;
 }
 
 interface Props {

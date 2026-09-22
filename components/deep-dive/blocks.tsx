@@ -6,7 +6,7 @@
  * (Card surfaces, tabular-nums, emerald/amber/red signal colors).
  */
 
-import { useEffect, useRef, useState, type ComponentType } from 'react';
+import { type ComponentType } from 'react';
 import { useTheme } from 'next-themes';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LabelList,
@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 import { tierBadgeClass, tierTextClass, type Tier } from '@/lib/ui/severity-tiers';
 import { RangeBar } from '@/components/viz/RangeBar';
 import { glossaryText } from '@/components/ui/GlossaryText';
+import { ClampedText } from '@/components/ui/ClampedText';
 import type { Block, BullBearPoint } from '@/lib/ai/deep-dive/schema';
 
 /** Trailing muted citation, e.g. "(10-Q Q3 2026)". Skips rendering when absent. */
@@ -313,44 +314,19 @@ function BulletItem({
   icon: ComponentType<{ className?: string }>;
   iconColor: string;
 }) {
-  const [expanded, setExpanded] = useState(false);
-  // Measured, not guessed from length: a 120-char cutoff missed bullets that
-  // wrap past two lines in the narrow two-column layout (~90 chars), which
-  // were clamped with no Show more and never readable in full.
-  const [clamped, setClamped] = useState(false);
-  const textRef = useRef<HTMLSpanElement>(null);
   const text = typeof point === 'string' ? point : point.text;
   const source = typeof point === 'string' ? undefined : point.source;
 
-  useEffect(() => {
-    const el = textRef.current;
-    if (!el || expanded) return;
-    const check = () => setClamped(el.scrollHeight > el.clientHeight + 1);
-    check();
-    const observer = new ResizeObserver(check);
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [expanded]);
-
+  // The measure-don't-guess clamp logic that used to live here is now
+  // components/ui/ClampedText.tsx, shared with the risk heroes and the AI
+  // cards. Its Show more/less is also translated now, which this wasn't.
   return (
     <li className="flex gap-2 text-sm text-foreground/90">
       <Icon className={cn('h-3.5 w-3.5 mt-0.5 shrink-0', iconColor)} />
-      <span className="min-w-0">
-        <span ref={textRef} className={cn(!expanded && 'line-clamp-2')}>
-          {glossaryText(text, seen)}
-          <Source source={source} />
-        </span>
-        {(clamped || expanded) && (
-          <button
-            type="button"
-            aria-expanded={expanded}
-            onClick={() => setExpanded((v) => !v)}
-            className="block text-[11px] text-muted-foreground/70 hover:text-foreground mt-0.5"
-          >
-            {expanded ? 'Show less' : 'Show more'}
-          </button>
-        )}
-      </span>
+      <ClampedText lines={2}>
+        {glossaryText(text, seen)}
+        <Source source={source} />
+      </ClampedText>
     </li>
   );
 }

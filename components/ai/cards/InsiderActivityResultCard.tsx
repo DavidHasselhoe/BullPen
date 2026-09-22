@@ -47,6 +47,7 @@ export function InsiderActivityResultCard({ output }: { output: InsiderActivityO
         <div className="mt-2.5 space-y-1 border-t border-border/40 pt-2">
           {output.topTransactions.map((t, i) => (
             <div key={i} className="flex items-center justify-between gap-2 text-[11px]">
+              {/* clamp-ok: person name and job title, not a sentence */}
               <span className="truncate text-muted-foreground">{t.name} · {t.position}</span>
               <span
                 className={cn(

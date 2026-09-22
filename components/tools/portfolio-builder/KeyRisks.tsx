@@ -29,7 +29,7 @@ export function KeyRisks({ risks }: Props) {
                 {/* Plain text: the trigger is itself a button, so a glossary
                     popover button here would nest buttons and toggle the row.
                     The description below still explains the term. */}
-                <span className="truncate text-sm font-medium text-foreground">{risk.title}</span>
+                <span className="text-sm font-medium text-foreground">{risk.title}</span>
                 <span className={cn('shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide', tierBadgeClass(riskLevelTier(risk.severity)))}>
                   {risk.severity}
                 </span>

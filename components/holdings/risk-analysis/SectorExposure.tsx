@@ -22,6 +22,7 @@ export function SectorExposure({ sectors }: Props) {
           <AccordionItem key={s.sector} value={s.sector} className="border-border/20">
             <AccordionTrigger className="py-3 hover:no-underline">
               <div className="flex flex-1 items-center gap-3 pr-2">
+                {/* clamp-ok: sector name, a fixed vocabulary label, not a sentence */}
                 <span className="min-w-0 flex-1 truncate text-left text-sm text-foreground">{s.sector}</span>
                 <div className="h-1.5 w-24 shrink-0 overflow-hidden rounded-full bg-muted/40">
                   <div className="h-full rounded-full bg-foreground/40" style={{ width: `${Math.min(s.estimatedWeight, 100)}%` }} />

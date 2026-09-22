@@ -15,5 +15,7 @@
   "tickerPreviewAdd": "添加到关注列表",
   "tickerPreviewNoProfile": "暂无该公司的信息资料。",
   "tickerPreviewOpen": "打开公司详情",
-  "tickerPreviewWatched": "已在您的关注列表中"
+  "tickerPreviewWatched": "已在您的关注列表中",
+  "showMore": "显示更多",
+  "showLess": "显示更少"
 }

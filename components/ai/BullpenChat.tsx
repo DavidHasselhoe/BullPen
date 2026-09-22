@@ -653,7 +653,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
       {/* Error bar */}
       {error && (
         <div className="mx-3 mb-1 px-3 py-2 rounded-lg bg-destructive/10 text-destructive text-xs flex items-center justify-between gap-2">
-          <span className="truncate">{friendlyChatError(error.message, t)}</span>
+          <span>{friendlyChatError(error.message, t)}</span>
           <div className="flex items-center gap-3 shrink-0">
             <button
               onClick={() => {

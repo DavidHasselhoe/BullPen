@@ -144,6 +144,7 @@ export function PicksTable({ picks }: Props) {
                       <span className="block font-mono text-[13px] font-bold text-foreground group-hover:text-primary transition-colors">
                         {p.symbol}
                       </span>
+                      {/* clamp-ok: company name in a table cell, not a sentence */}
                       <span className="block max-w-[160px] truncate text-[11px] text-muted-foreground/85">
                         {p.companyName ?? '—'}
                       </span>

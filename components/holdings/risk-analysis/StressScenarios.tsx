@@ -27,7 +27,7 @@ export function StressScenarios({ scenarios }: Props) {
               <AccordionTrigger className="py-3 hover:no-underline">
                 <div className="flex min-w-0 flex-1 items-center justify-between gap-3 text-left">
                   <div className="min-w-0">
-                    <div className="truncate text-sm font-medium text-foreground">{s.scenario}</div>
+                    <div className="text-sm font-medium text-foreground">{s.scenario}</div>
                     {figure && (
                       <div className={cn('font-mono text-lg font-bold tabular-nums leading-tight', tierTextClass(tier))}>
                         {figure}

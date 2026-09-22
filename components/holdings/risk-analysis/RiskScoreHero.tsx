@@ -5,6 +5,7 @@ import { ArrowUp, ArrowDown, Minus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { cn } from '@/lib/utils';
+import { ClampedText } from '@/components/ui/ClampedText';
 import type { RiskAnalysis } from './types';
 import type { SavedRiskAnalysis } from '@/app/api/holdings/risk-analysis/history/route';
 import { levelTier, topRiskTier, tierTextClass, splitImpact, drawdownMagnitude } from './colors';
@@ -93,10 +94,15 @@ function ScoreChangeReason({ reason, t }: { reason: string | null | undefined; t
 
 function RiskHighlight({ label, title, detail, tier }: { label: string; title: string; detail?: string; tier: 'risk' | 'caution' | 'info' }) {
   return (
+    // Both lines are model-written and neither is truncated. The title wraps
+    // (a risk factor is short, and "Single-Stock Concentration: MU" losing its
+    // ticker is the worst possible word to drop); the description clamps with
+    // a Show more, because it is a full sentence whose second half usually
+    // carries the number.
     <div className="min-w-0">
       <div className={cn('text-[11px] font-semibold uppercase tracking-wider', tierTextClass(tier))}>{label}</div>
-      <div className="mt-0.5 text-sm font-medium text-foreground truncate">{title}</div>
-      {detail && <div className="text-[13px] text-muted-foreground truncate">{detail}</div>}
+      <div className="mt-0.5 text-sm font-medium text-foreground">{title}</div>
+      {detail && <ClampedText lines={2} className="text-[13px] text-muted-foreground">{detail}</ClampedText>}
     </div>
   );
 }

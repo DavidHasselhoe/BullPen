@@ -35,6 +35,18 @@ Never use an em dash or en dash to connect clauses in text a user reads: toasts,
 
 This is about user-facing copy only. It does not apply to code comments, commit messages, or your own conversational replies to the user.
 
+### Never cut off generated text
+
+A sentence that ends in "…" with no way to read the rest is the app telling someone there is more and refusing to show it. In model-written content the cut-off half is usually the part carrying the number or the caveat. The risk hero shipped `MU represents 35.3% of the total portfolio, a dangerously high single-stock weig…` for exactly this reason.
+
+So: **model-written prose is never truncated without an expand affordance.**
+
+- **Prose** (a risk description, a thesis bullet, a company summary, an error message) — wrap it in `<ClampedText>` (`components/ui/ClampedText.tsx`). It clamps to 2-4 lines and shows a translated Show more **only when the text really overflows**, measured with a ResizeObserver. Never guess from string length: the same sentence clamps in one column width and not another.
+- **Short labels that genuinely cannot wrap** (a ticker, a company name, a sector in a dense table row) — plain `truncate` is still right, ideally with a `title`. Mark the line with `{/* clamp-ok: why */}` so the choice is written down rather than defaulted into.
+- **Never** `.slice(0, n) + '…'` on generated text. CSS truncation hides; a slice destroys, and no amount of UI can recover it.
+
+`npm run test-no-truncated-text` enforces this across the generated-content directories and fails on an unmarked `truncate` / `line-clamp-N`. Run it after touching any surface that renders AI output.
+
 ## Branch Strategy
 
 Two branches only: `preview` and `main`.

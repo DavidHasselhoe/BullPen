@@ -7,6 +7,7 @@ import type { TFunction } from 'i18next';
 import { TrendingUp, TrendingDown, PlusCircle, XCircle, MessageCircle, CornerDownRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ClampedText } from '@/components/ui/ClampedText';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
 import { useProfileActivity } from '@/hooks/use-profile-activity';
 import type { ActivityItem } from '@/app/api/users/[username]/activity/route';
@@ -17,11 +18,11 @@ const SENTIMENT_LABEL: Record<'bull' | 'bear' | 'neutral', string> = {
   neutral: 'Neutral',
 };
 
-const PREVIEW_LENGTH = 100;
-
-function preview(content: string | undefined): string {
-  if (!content) return '';
-  return content.length > PREVIEW_LENGTH ? `${content.slice(0, PREVIEW_LENGTH)}…` : content;
+// The 100-char slice that used to live here destroyed the rest of a post with
+// no way to read it. ClampedText clamps the rendered line instead, so the full
+// text is one click away. See CLAUDE.md, "Never cut off generated text".
+function fullContent(content: string | undefined): string {
+  return content ?? '';
 }
 
 function timeAgo(dateStr: string, t: TFunction): string {
@@ -81,11 +82,11 @@ function ActivityRow({ item }: { item: ActivityItem }) {
       <div className="flex items-start gap-2.5 py-3 border-b border-border/50 last:border-0">
         <MessageCircle className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
         <div className="flex-1 min-w-0">
-          <p className="text-sm text-foreground">
+          <ClampedText lines={2} className="text-sm text-foreground">
             <Trans
               i18nKey="activityThesisTake"
               ns="user"
-              values={{ content: preview(item.content) }}
+              values={{ content: fullContent(item.content) }}
               components={{
                 badge: (
                   <span className="text-xs font-medium px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
@@ -95,7 +96,7 @@ function ActivityRow({ item }: { item: ActivityItem }) {
                 symbolLink: <SymbolLink symbol={item.symbol} />,
               }}
             />
-          </p>
+          </ClampedText>
           <span className="text-xs text-muted-foreground">{timeAgo(item.created_at, t)}</span>
         </div>
       </div>
@@ -107,17 +108,17 @@ function ActivityRow({ item }: { item: ActivityItem }) {
     <div className="flex items-start gap-2.5 py-3 border-b border-border/50 last:border-0">
       <CornerDownRight className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-foreground">
+        <ClampedText lines={2} className="text-sm text-foreground">
           <Trans
             i18nKey="activityReplied"
             ns="user"
             values={{
               target: item.reply_to_username ? `@${item.reply_to_username}` : t('activityReplyFallbackTarget'),
-              content: preview(item.content),
+              content: fullContent(item.content),
             }}
             components={{ symbolLink: <SymbolLink symbol={item.symbol} /> }}
           />
-        </p>
+        </ClampedText>
         <span className="text-xs text-muted-foreground">{timeAgo(item.created_at, t)}</span>
       </div>
     </div>

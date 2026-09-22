@@ -15,5 +15,7 @@
   "tickerPreviewAdd": "Zur Beobachtungsliste hinzufügen",
   "tickerPreviewNoProfile": "Für dieses Unternehmen gibt es noch kein Profil.",
   "tickerPreviewOpen": "Unternehmen öffnen",
-  "tickerPreviewWatched": "In deiner Beobachtungsliste"
+  "tickerPreviewWatched": "In deiner Beobachtungsliste",
+  "showMore": "Mehr anzeigen",
+  "showLess": "Weniger anzeigen"
 }

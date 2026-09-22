@@ -11,9 +11,11 @@
   "save": "Lagre",
   "search": "Søk",
   "success": "Suksess",
-  "filter": "Filter",
   "tickerPreviewAdd": "Legg til i favorittliste",
   "tickerPreviewNoProfile": "Vi har ikke et selskapsproﬁl for denne ennå.",
   "tickerPreviewOpen": "Åpne selskap",
-  "tickerPreviewWatched": "I favorittlisten din"
+  "tickerPreviewWatched": "I favorittlisten din",
+  "filter": "Filter",
+  "showMore": "Vis mer",
+  "showLess": "Vis mindre"
 }

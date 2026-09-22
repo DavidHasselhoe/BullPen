@@ -106,6 +106,7 @@ export function WeeklyPickHero() {
                 >
                   {pick.symbol}
                 </Link>
+                {/* clamp-ok: company name, and it carries a title attribute with the full value */}
                 <p className="text-xs text-muted-foreground/85 truncate" title={pick.companyName ?? undefined}>
                   {pick.companyName ?? '—'}
                 </p>

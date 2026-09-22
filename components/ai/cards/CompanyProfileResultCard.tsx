@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslation } from 'react-i18next';
+import { ClampedText } from '@/components/ui/ClampedText';
 import { CardShell, StatCell } from './CardPrimitives';
 
 export interface CompanyProfileOutput {
@@ -41,7 +42,9 @@ export function CompanyProfileResultCard({ output }: { output: CompanyProfileOut
         </div>
       )}
       {output.description && (
-        <p className="line-clamp-2 text-[11px] leading-relaxed text-muted-foreground">{output.description}</p>
+        <ClampedText lines={2} className="text-[11px] leading-relaxed text-muted-foreground">
+          {output.description}
+        </ClampedText>
       )}
     </CardShell>
   );

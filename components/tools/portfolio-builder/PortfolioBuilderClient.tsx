@@ -496,7 +496,7 @@ function RecentPortfolioRow({
         onClick={() => onRestore(gen)}
       >
         <div className="flex items-center gap-2 mb-0.5">
-          <span className="text-sm font-medium text-foreground truncate">
+          <span className="text-sm font-medium text-foreground">
             {gen.portfolio.theme_summary}
           </span>
         </div>
