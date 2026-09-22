@@ -5,7 +5,7 @@
 
 import assert from 'node:assert/strict';
 import { PRICING } from '../lib/billing/entitlements';
-import { trialTermsLine, shouldSendRenewalReminder } from '../lib/billing/trial-copy';
+import { renewalTerms, trialTermsLine, shouldSendRenewalReminder } from '../lib/billing/trial-copy';
 import { buildTrialEndingEmailHtml, buildTrialRevokedEmailHtml } from '../lib/email/billing-reminder';
 import { checkoutReturnUrls, parseReturnTarget } from '../lib/billing/checkout-return';
 import {
@@ -23,14 +23,29 @@ function hasDash(text: string): boolean {
 
 // ── Task 1: trial length and terms ───────────────────────────────────────────
 assert.equal(PRICING.trialDays, 7, 'trial is 7 days everywhere');
-assert.equal(
-  trialTermsLine('annual'),
-  "Free for 7 days, then $108/year. We'll email you 3 days before your trial ends. Cancel anytime."
-);
-assert.equal(
-  trialTermsLine('monthly'),
-  "Free for 7 days, then $12/month. We'll email you 3 days before your trial ends. Cancel anytime."
-);
+// Renewal disclosure. Asserted by fact rather than by exact string, because
+// what the law wants is the four facts sitting next to the button: price,
+// cadence, that it renews by itself, and how to stop it.
+for (const cycle of ['annual', 'monthly'] as const) {
+  const { chargeLine, cancelLine } = renewalTerms(cycle);
+  const total = cycle === 'annual' ? PRICING.proAnnualPerMonth * 12 : PRICING.proMonthly;
+  const both = `${chargeLine} ${cancelLine}`;
+
+  assert.ok(chargeLine.includes(`$${total}`), `${cycle}: states the real price`);
+  assert.match(chargeLine, cycle === 'annual' ? /a year/ : /a month/, `${cycle}: states the billing cycle`);
+  assert.match(chargeLine, /renews automatically/, `${cycle}: says it renews by itself`);
+  assert.ok(chargeLine.includes(`Free for ${PRICING.trialDays} days`), `${cycle}: states the trial length`);
+  assert.match(cancelLine, /Manage subscription/, `${cycle}: says where to cancel`);
+  assert.ok(cancelLine.includes(`${PRICING.moneyBackDays} days`), `${cycle}: states the refund window`);
+  assert.ok(!hasDash(both), `${cycle}: disclosure has no dash`);
+}
+
+// Without a trial (a straight subscribe) the price and the renewal still have
+// to be there; only the trial sentence drops.
+const noTrial = renewalTerms('monthly', { trial: false });
+assert.doesNotMatch(noTrial.chargeLine, /Free for/, 'no trial: makes no trial claim');
+assert.match(noTrial.chargeLine, /renewed automatically/, 'no trial: still says it renews');
+
 assert.ok(!hasDash(trialTermsLine('annual')), 'terms line has no dash');
 assert.equal(shouldSendRenewalReminder('trialing'), false, 'trialing gets the trial email, not the renewal one');
 assert.equal(shouldSendRenewalReminder('active'), true);

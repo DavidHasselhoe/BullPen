@@ -93,7 +93,6 @@
   "upgradeOnTheList": "リストに登録されました",
   "upgradeStartTrial": "{{trialDays}} 日間の無料トライアルを開始",
   "upgradeOneSec": "少々お待ちください…",
-  "upgradeNoCardFooter": "本日はカード請求なし · いつでもキャンセル可能 · {{moneyBackDays}} 日間の返金保証",
   "upgradeCheckoutSoon": "セルフサービスチェックアウトはまもなく利用可能です。メールでお知らせします。",
   "upgradeCheckoutError": "問題が発生しました。もう一度お試しください。",
   "upgradeComparePlans": "プランを比較",

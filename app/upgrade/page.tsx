@@ -11,6 +11,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useEntitlements } from '@/hooks/use-entitlements';
 import { PRICING, PLAN_COMPARISON } from '@/lib/billing/entitlements';
 import { startCheckout } from '@/lib/billing/checkout';
+import { renewalTerms } from '@/lib/billing/trial-copy';
 import { UpgradeSuccessModal } from '@/components/billing/UpgradeSuccessModal';
 
 function Cell({ value, accent }: { value: string | boolean; accent?: boolean }) {
@@ -45,6 +46,7 @@ function UpgradeContent() {
   const justSubscribed = searchParams.get('checkout') === 'success' && !successModalDismissed;
 
   const price = annual ? PRICING.proAnnualPerMonth : PRICING.proMonthly;
+  const terms = renewalTerms(annual ? 'annual' : 'monthly');
 
   async function handleUpgrade() {
     const cycle = annual ? 'annual' : 'monthly';
@@ -160,9 +162,16 @@ function UpgradeContent() {
               </Button>
             )}
             {!isPro && status === 'idle' && (
-              <p className="mt-2 text-center text-[11px] text-muted-foreground">
-                {t('upgradeNoCardFooter', { moneyBackDays: PRICING.moneyBackDays })}
-              </p>
+              // Renewal terms, next to the button that starts the purchase
+              // rather than in the FAQ below the comparison table. Left in
+              // English from one shared source instead of the t() namespace
+              // this page otherwise uses: a machine-translated auto-renewal
+              // disclosure is a legal statement nobody has checked, in six
+              // languages. See lib/billing/trial-copy.ts.
+              <div className="mt-2 space-y-1 text-center text-[11px] leading-relaxed text-muted-foreground">
+                <p className="font-medium text-foreground/80">{terms.chargeLine}</p>
+                <p>{terms.cancelLine}</p>
+              </div>
             )}
             {status === 'done' && (
               <p className="mt-2 text-center text-xs text-muted-foreground">{t('upgradeCheckoutSoon')}</p>

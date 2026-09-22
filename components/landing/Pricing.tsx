@@ -5,6 +5,7 @@ import { Reveal, SectionHeading } from './Atoms';
 import { Icon } from './Icon';
 import { PRICING, FREE_WATCHLISTS, FREE_ALERT_STOCKS } from '@/lib/billing/entitlements';
 import { QUOTAS } from '@/lib/billing/quotas';
+import { renewalTerms } from '@/lib/billing/trial-copy';
 
 interface Props {
   onSignUp: () => void;
@@ -241,6 +242,27 @@ export function Pricing({ onSignUp, onSubscribe }: Props) {
                     {p.cta}
                     <Icon name="arrowRight" size={14} />
                   </button>
+
+                  {/* Renewal terms belong with the button that starts the
+                      purchase, not only in the FAQ or the terms of service. */}
+                  {p.highlight && onSubscribe && (
+                    <div
+                      style={{
+                        margin: '-12px 0 24px',
+                        fontSize: 11.5,
+                        lineHeight: 1.55,
+                        color: 'var(--fg-dim)',
+                        textWrap: 'pretty',
+                      }}
+                    >
+                      <p style={{ margin: 0, color: 'var(--fg-muted)' }}>
+                        {renewalTerms(annual ? 'annual' : 'monthly').chargeLine}
+                      </p>
+                      <p style={{ margin: '2px 0 0' }}>
+                        {renewalTerms(annual ? 'annual' : 'monthly').cancelLine}
+                      </p>
+                    </div>
+                  )}
 
                   <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 10 }}>
                     {p.features.map((f) => (

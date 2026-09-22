@@ -12,7 +12,7 @@ import { OnboardingProgress } from '@/components/get-started/OnboardingProgress'
 import { TOTAL_STEPS } from '@/components/get-started/GetStartedFlow';
 import { PRICING } from '@/lib/billing/entitlements';
 import { startCheckout, type BillingCycle } from '@/lib/billing/checkout';
-import { trialTermsLine } from '@/lib/billing/trial-copy';
+import { renewalTerms } from '@/lib/billing/trial-copy';
 import { trackEvent } from '@/lib/analytics/track';
 import { AWAITING_CONFIRMATION_KEY } from '@/lib/onboarding/pending-onboarding';
 import '@/components/landing/landing-styles.css';
@@ -58,6 +58,7 @@ export default function TrialOfferPage() {
   if (isLoading || !isAuthenticated || isPro) return null;
 
   const lead = watchlist?.[0]?.symbol;
+  const terms = renewalTerms(cycle);
 
   async function start() {
     setStatus('loading');
@@ -154,8 +155,9 @@ export default function TrialOfferPage() {
             </button>
 
             <p style={{ margin: '12px 0 0', textAlign: 'center', fontSize: 12, color: 'var(--fg-dim)', lineHeight: 1.6 }}>
-              {trialTermsLine(cycle)}{' '}
-              <Link href="/terms" style={{ textDecoration: 'underline' }}>Refunds within {PRICING.moneyBackDays} days of your first charge.</Link>
+              <strong style={{ color: 'var(--fg-muted)', fontWeight: 600 }}>{terms.chargeLine}</strong>{' '}
+              {terms.cancelLine}{' '}
+              <Link href="/terms" style={{ textDecoration: 'underline' }}>Terms</Link>
             </p>
 
             {status === 'error' && (

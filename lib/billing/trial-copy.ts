@@ -7,13 +7,52 @@
 import { PRICING } from './entitlements';
 import type { BillingCycle } from './checkout';
 
-/** The terms line shown directly under a trial button. States the price after
- *  the trial, the reminder, and cancellation, which an auto-renewing trial
- *  must disclose up front. */
+/**
+ * The renewal terms that have to sit next to a subscribe button, not in the
+ * terms of service or an FAQ further down the page.
+ *
+ * US ROSCA (and California's automatic renewal law, and the EU consumer rights
+ * directive) all want the same four facts disclosed clearly and next to the
+ * purchase control, before the purchase: what it costs, how often it recurs,
+ * that it renews by itself until stopped, and how to stop it. The line this
+ * replaces covered the price and said "cancel anytime", but never said the
+ * subscription renews itself, nor where to go to cancel, and the only fuller
+ * explanation was an FAQ entry below a comparison table.
+ *
+ * cancelLine names the real path deliberately: the account-menu item that
+ * opens the Stripe customer portal is labelled "Manage subscription"
+ * (navManageSubscription in navigation.json). If that label is ever renamed,
+ * rename it here too, or this disclosure becomes a wrong instruction.
+ */
+export interface RenewalTerms {
+  /** Price, cadence, and the fact that it renews on its own. */
+  chargeLine: string;
+  /** How to stop it, plus the reminder and the refund window. */
+  cancelLine: string;
+}
+
+export function renewalTerms(cycle: BillingCycle, options: { trial?: boolean } = {}): RenewalTerms {
+  const withTrial = options.trial ?? true;
+  const total = cycle === 'annual' ? PRICING.proAnnualPerMonth * 12 : PRICING.proMonthly;
+  const per = cycle === 'annual' ? 'a year' : 'a month';
+  const every = cycle === 'annual' ? 'every year' : 'every month';
+
+  const chargeLine = withTrial
+    ? `Free for ${PRICING.trialDays} days, then $${total} ${per}. It renews automatically ${every} until you cancel.`
+    : `$${total} ${per}, renewed automatically ${every} until you cancel.`;
+
+  const reminder = withTrial ? 'We email you 3 days before the trial ends. ' : '';
+  const cancelLine =
+    `${reminder}Cancel any time from the account menu, under Manage subscription. ` +
+    `Refunds within ${PRICING.moneyBackDays} days of your first charge.`;
+
+  return { chargeLine, cancelLine };
+}
+
+/** Both lines as one string, for a surface with room for only one. */
 export function trialTermsLine(cycle: BillingCycle): string {
-  const after =
-    cycle === 'annual' ? `$${PRICING.proAnnualPerMonth * 12}/year` : `$${PRICING.proMonthly}/month`;
-  return `Free for ${PRICING.trialDays} days, then ${after}. We'll email you 3 days before your trial ends. Cancel anytime.`;
+  const { chargeLine, cancelLine } = renewalTerms(cycle);
+  return `${chargeLine} ${cancelLine}`;
 }
 
 /**
