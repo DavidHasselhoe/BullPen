@@ -31,6 +31,11 @@ interface Case {
   expectNone?: string[];
   /** Checked against the reply text, for cases where the answer is the point. */
   expectText?: RegExp;
+  /**
+   * navigateTo does seven jobs since the 2026-09-22 collapse, so asserting it
+   * was called says almost nothing. This pins which destination it picked.
+   */
+  expectDestination?: string;
 }
 
 const CASES: Case[] = [
@@ -44,7 +49,8 @@ const CASES: Case[] = [
   {
     name: 'comparison opens the comparison page, not the screener',
     prompt: 'Compare NVDA and AMD for me',
-    expectOneOf: ['openComparison'],
+    expectOneOf: ['navigateTo'],
+    expectDestination: 'compare',
     expectNone: ['openScreener'],
   },
   {
@@ -64,12 +70,27 @@ const CASES: Case[] = [
     expectNone: ['openScreener'],
   },
   {
+    name: 'opening a company goes to its stock page',
+    prompt: 'Take me to the Apple stock page',
+    expectOneOf: ['navigateTo'],
+    expectDestination: 'stock',
+  },
+  {
+    name: 'a page request picks the right fixed destination',
+    prompt: 'Take me to my watchlist',
+    expectOneOf: ['navigateTo'],
+    expectDestination: 'watchlist',
+  },
+  {
     name: 'an account question is answered, not guessed at',
     prompt: 'When was my account created and what tier am I on?',
     // No tool can answer this. The prompt tells Bull to say so plainly.
     expectOneOf: [],
     expectNone: ['getPortfolioContext', 'getCompanyProfile'],
-    expectText: /can(?:'|no)?t (?:see|access)|don'?t have access|unable to see/i,
+    // Matches the meaning, not one phrasing. The first version of this only
+    // accepted "can't see" and "don't have access", and failed on the equally
+    // correct "I don't have visibility into your account details".
+    expectText: /(can['’]?t|cannot|don['’]?t|do not|unable|no)[^.]{0,40}(see|access|visibility|view)/i,
   },
 ];
 
@@ -83,7 +104,8 @@ async function run(c: Case) {
   let text = '';
   for await (const chunk of result.textStream) text += chunk;
   const steps = await result.steps;
-  const called = steps.flatMap((s) => s.toolCalls.map((t) => t.toolName));
+  const calls = steps.flatMap((s) => s.toolCalls);
+  const called = calls.map((t) => t.toolName);
 
   const problems: string[] = [];
   if (c.expectOneOf.length > 0 && !c.expectOneOf.some((t) => called.includes(t))) {
@@ -95,11 +117,25 @@ async function run(c: Case) {
   if (c.expectText && !c.expectText.test(text)) {
     problems.push(`reply did not match ${c.expectText}`);
   }
+  if (c.expectDestination) {
+    const nav = calls.find((t) => t.toolName === 'navigateTo');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const got = (nav?.input as any)?.destination;
+    if (got !== c.expectDestination) {
+      problems.push(`destination was ${got ?? '(none)'}, expected ${c.expectDestination}`);
+    }
+  }
 
   const mark = problems.length === 0 ? 'ok  ' : 'FAIL';
   console.log(`\n${mark} ${c.name}`);
   console.log(`     asked  : ${c.prompt}`);
-  console.log(`     tools  : ${called.length ? called.join(', ') : '(none)'}`);
+  console.log(
+    `     tools  : ${calls.length ? calls.map((t) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const d = (t.input as any)?.destination;
+      return d ? `${t.toolName}(${d})` : t.toolName;
+    }).join(', ') : '(none)'}`,
+  );
   console.log(`     reply  : ${text.slice(0, 100).replace(/\s+/g, ' ')}${text.length > 100 ? '…' : ''}`);
   for (const p of problems) console.log(`     -> ${p}`);
 

@@ -157,7 +157,8 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
   const { requestWhyToday, paywallOpen, setPaywallOpen, paywallQuota } = useWhyTodayGate();
 
   // Lets Bull (or a shared link) deep-link straight into fullscreen chart mode via
-  // ?chart=fullscreen — see openCompanyPage's `fullscreen` param in lib/ai/tools.ts.
+  // ?chart=fullscreen — same URL navigateTo builds for the "stock_fullscreen"
+  // destination (lib/ai/app-destinations.ts).
   // Stripped from the URL right after so a refresh or the back button doesn't
   // reopen the modal.
   const searchParams = useSearchParams();
