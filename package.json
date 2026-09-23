@@ -71,7 +71,9 @@
     "test-filing-schedule": "tsx scripts/test-filing-schedule.ts",
     "test-share-card-math": "tsx scripts/test-share-card-math.ts",
     "test-ticker-preview": "tsx scripts/test-ticker-preview-shorten.ts",
-    "test-holdings-context": "tsx scripts/test-holdings-context-gate.ts"
+    "test-holdings-context": "tsx scripts/test-holdings-context-gate.ts",
+    "ingest-congress": "tsx scripts/ingest-congress-trades.ts",
+    "test-congress-ingest": "tsx scripts/test-congress-ingest.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.119",
