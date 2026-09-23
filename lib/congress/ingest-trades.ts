@@ -61,8 +61,13 @@ const REFRESH_TRADE_LIMIT = 20;
  * account rather than someone picking stocks, and the donut for it is mostly
  * one gray "everything else" wedge: Khanna's top ten come to 38.7% of his
  * book, so 61.3% of the chart says nothing.
+ *
+ * Set at 400 rather than tighter so it catches only genuine outliers. Diana
+ * Harshbarger holds 252 positions, which is wide but is still a real book
+ * worth charting at 282 credits; Khanna's 1,577 is the shape this guards
+ * against.
  */
-const MAX_POSITIONS_PER_MEMBER = 250;
+const MAX_POSITIONS_PER_MEMBER = 400;
 
 /**
  * Hard ceiling per run. Nothing else calls this vendor, so a bounded loop is
@@ -258,20 +263,33 @@ export async function ingestPolitician(
  */
 export async function fetchPositionCounts(): Promise<Map<number, number>> {
   const counts = new Map<number, number>();
+  const PAGE = 100;
+  // The roster runs to a few hundred names and our members are scattered
+  // through it, not clustered at the top of any one sort, so a single page
+  // left most counts unknown and the cap unenforceable for them. Bounded so a
+  // pagination bug can never spin: 8 pages is 120 credits worst case.
+  const MAX_PAGES = 8;
+
   try {
-    const res = await fetch(`${API_BASE}/politicians?limit=100`, {
-      headers: { 'DC-API-Key': apiKey() },
-      cache: 'no-store',
-    });
-    if (!res.ok) return counts;
-    const body = await res.json();
-    const rows: { politician_id?: number; position_count?: number }[] = Array.isArray(body)
-      ? body
-      : (body?.politicians ?? []);
-    for (const r of rows) {
-      if (typeof r.politician_id === 'number' && typeof r.position_count === 'number') {
-        counts.set(r.politician_id, r.position_count);
+    for (let page = 0; page < MAX_PAGES; page++) {
+      const res = await fetch(`${API_BASE}/politicians?limit=${PAGE}&offset=${page * PAGE}`, {
+        headers: { 'DC-API-Key': apiKey() },
+        cache: 'no-store',
+      });
+      if (!res.ok) break;
+
+      const body = await res.json();
+      const rows: { politician_id?: number; position_count?: number }[] = Array.isArray(body)
+        ? body
+        : (body?.politicians ?? []);
+      if (rows.length === 0) break;
+
+      for (const r of rows) {
+        if (typeof r.politician_id === 'number' && typeof r.position_count === 'number') {
+          counts.set(r.politician_id, r.position_count);
+        }
       }
+      if (rows.length < PAGE) break;
     }
   } catch {
     // Non-fatal, see docblock.
@@ -406,6 +424,88 @@ export async function ingestHoldings(
   return { positions: rows.length, creditsCharged };
 }
 
+export interface RunEstimate {
+  rows: {
+    slug: string;
+    tradeCredits: number;
+    /** Open positions per the leaderboard, or null when positions aren't part
+     *  of this run (or the lookup failed). */
+    positionCount: number | null;
+    credits: number;
+    note?: string;
+  }[];
+  totalCredits: number;
+  /** Credits the estimate itself cost, since the lookup is a real call. */
+  lookupCredits: number;
+}
+
+/**
+ * Price a run without fetching anything billable beyond the position-count
+ * lookup, so a sweep can be seen before it is paid for.
+ *
+ * This exists because trades and positions have very different cost shapes.
+ * Trades are capped at a known row count, so their cost is fixed per member.
+ * Positions take no limit and bill per row, so a single member with a very
+ * wide book can cost more than the whole rest of the roster: Ro Khanna's 1,577
+ * positions came to 1,607 credits in one call on 2026-09-23.
+ */
+export async function priceRun(
+  supabase: ReturnType<typeof createServerClient>,
+  opts: {
+    slugs?: string[];
+    holdings?: boolean;
+    holdingsOnly?: boolean;
+    refresh?: boolean;
+  } = {},
+): Promise<RunEstimate> {
+  let query = supabase
+    .from('congress_politicians')
+    .select('id, slug, dc_politician_id, display_name')
+    .eq('is_active', true)
+    .order('sort_order', { ascending: true });
+
+  if (opts.slugs?.length) query = query.in('slug', opts.slugs);
+
+  const { data, error } = await query;
+  if (error) throw new Error(`Failed to load curated politicians: ${error.message}`);
+
+  const wantsPositions = Boolean(opts.holdings || opts.holdingsOnly);
+  const counts = wantsPositions ? await fetchPositionCounts() : new Map<number, number>();
+  // 15 per page fetched; the map size tells us roughly how many that was.
+  const lookupCredits = counts.size > 0 ? 15 * Math.ceil(counts.size / 100) : 0;
+
+  const tradeRows = opts.refresh ? REFRESH_TRADE_LIMIT : TRADE_LIMIT;
+  const rows: RunEstimate['rows'] = [];
+  let totalCredits = lookupCredits;
+
+  for (const p of (data ?? []) as CongressPolitician[]) {
+    // Trades bill 15 + rows, and the row count is the ceiling we set, so a
+    // member with fewer trades than that simply costs less. Estimating at the
+    // ceiling keeps this an upper bound rather than a hopeful one.
+    const tradeCredits = opts.holdingsOnly ? 0 : 15 + tradeRows;
+    const positionCount = wantsPositions ? (counts.get(p.dc_politician_id) ?? null) : null;
+
+    let positionCredits = 0;
+    let note: string | undefined;
+
+    if (wantsPositions) {
+      if (positionCount == null) {
+        note = 'position count unknown, cost not predictable';
+      } else if (positionCount > MAX_POSITIONS_PER_MEMBER) {
+        note = `skipped, ${positionCount.toLocaleString('en-US')} positions over the ${MAX_POSITIONS_PER_MEMBER} cap`;
+      } else {
+        positionCredits = 30 + positionCount;
+      }
+    }
+
+    const credits = tradeCredits + positionCredits;
+    totalCredits += credits;
+    rows.push({ slug: p.slug, tradeCredits, positionCount, credits, note });
+  }
+
+  return { rows, totalCredits, lookupCredits };
+}
+
 /**
  * Sweep every active curated member. Returns per-member results plus the real
  * credit spend, which is logged rather than estimated — the same reason
@@ -440,7 +540,7 @@ export async function ingestAllPoliticians(
   // open-ended. Only paid for when positions are actually being fetched.
   const positionCounts =
     opts.holdings || opts.holdingsOnly ? await fetchPositionCounts() : new Map<number, number>();
-  if (positionCounts.size > 0) totalCredits += 15;
+  if (positionCounts.size > 0) totalCredits += 15 * Math.ceil(positionCounts.size / 100);
 
   for (const p of (politicians ?? []) as CongressPolitician[]) {
     if (totalCredits >= MAX_CREDITS_PER_RUN) {
