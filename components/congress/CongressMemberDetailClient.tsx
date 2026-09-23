@@ -42,6 +42,23 @@ function formatDate(iso: string | null): string | null {
   });
 }
 
+/**
+ * Options positions, which are kept out of the allocation donut.
+ *
+ * Same rule buildAllocation already applies to 13F filings, and for the same
+ * reason: an option's value is not comparable to a share position's, so
+ * charting them together makes a bet on a stock read as owning the stock. It
+ * matters more here, because the vendor gives no option fields on a position
+ * at all, so we cannot even tell whether its value is the premium paid or the
+ * notional it covers.
+ *
+ * Rare but high-impact: exactly one of 3,601 stored positions is an option,
+ * and it is 69.7% of that member's book.
+ */
+function isOptionPosition(h: CongressHoldingRow): boolean {
+  return /\b(call|put)\s+option/i.test(h.companyName ?? '');
+}
+
 /** Map an estimated congressional position onto the shape buildAllocation and
  *  the donut already speak. `cusip` is the allocation key, and a ticker is a
  *  stable one here; congressional filings have no CUSIP at all. */
@@ -133,10 +150,17 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
 
   const member = data?.member;
 
+  const priced = useMemo(
+    () => (member?.holdings ?? []).filter((h) => (h.currentValue ?? 0) > 0),
+    [member],
+  );
+
+  const optionPositions = useMemo(() => priced.filter(isOptionPosition), [priced]);
+
   const allocation = useMemo(() => {
-    const priced = (member?.holdings ?? []).filter((h) => (h.currentValue ?? 0) > 0);
-    return priced.length > 0 ? buildAllocation(priced.map(toDiffable)) : null;
-  }, [member]);
+    const shares = priced.filter((h) => !isOptionPosition(h));
+    return shares.length > 0 ? buildAllocation(shares.map(toDiffable)) : null;
+  }, [priced]);
 
   const tradesWithTicker = useMemo(
     () =>
@@ -265,6 +289,22 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
                 </li>
               ))}
             </ul>
+
+            {/* Named rather than silently dropped. Excluding them from the
+                chart is a valuation decision, not a reason to pretend the
+                position is not there. */}
+            {optionPositions.length > 0 && (
+              <p className="mt-3 flex items-start gap-1.5 text-xs leading-relaxed text-muted-foreground">
+                <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+                <span>
+                  Not shown above:{' '}
+                  {optionPositions.map((h) => h.companyName ?? h.symbol).join(', ')}. Options are
+                  left out of the allocation because their value is not comparable to a share
+                  position, so charting them together would make a bet on a stock read as owning
+                  it.
+                </span>
+              </p>
+            )}
           </>
         ) : (
           <div className="rounded-xl border border-dashed border-border/60 px-6 py-10 text-center">
