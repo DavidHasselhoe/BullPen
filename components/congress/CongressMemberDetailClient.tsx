@@ -3,18 +3,25 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowDownRight, ArrowLeft, ArrowUpRight, Info } from 'lucide-react';
+import { ArrowDownRight, ArrowLeft, ArrowUpRight, ChevronDown, Info } from 'lucide-react';
 import { InstitutionalHoldingsPieChart } from '@/components/institutions/InstitutionalHoldingsPieChart';
-import { buildAllocation } from '@/lib/institutions/allocation';
+import { ALLOCATION_TOP_N, buildAllocation } from '@/lib/institutions/allocation';
 import { positionLine } from '@/lib/congress/member-list';
 import { formatAmountRange, isFiledLate, tradeDirection } from '@/lib/congress/types';
 import { cn } from '@/lib/utils';
+import { ControlSelect } from '@/components/ui/ControlSelect';
 import { DisclosureNote } from './DisclosureNote';
+import { ListSearch } from './ListSearch';
 import { PoliticianAvatar } from './PoliticianAvatar';
 import type { CongressMemberDetail, CongressHoldingRow } from '@/app/api/congress/[slug]/route';
 import type { CongressTradeRow } from '@/lib/congress/types';
 
 type TradeFilter = 'all' | 'buy' | 'sell';
+
+const ALL_YEARS = 'all';
+
+/** How many more positions each "Show more" reveals. */
+const REST_PAGE = 25;
 
 const FILTERS: { key: TradeFilter; label: string }[] = [
   { key: 'all', label: 'All' },
@@ -135,6 +142,10 @@ function TradeRow({ t }: { t: CongressTradeRow & { symbol: string } }) {
 
 export function CongressMemberDetailClient({ slug }: { slug: string }) {
   const [filter, setFilter] = useState<TradeFilter>('all');
+  const [year, setYear] = useState(ALL_YEARS);
+  const [tradeQuery, setTradeQuery] = useState('');
+  const [holdingQuery, setHoldingQuery] = useState('');
+  const [holdingsShown, setHoldingsShown] = useState(ALLOCATION_TOP_N);
   const [highlightedKey, setHighlightedKey] = useState<string | null>(null);
 
   const { data, isLoading, error } = useQuery({
@@ -163,11 +174,42 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
     return shares.length > 0 ? buildAllocation(shares.map(toDiffable)) : null;
   }, [priced]);
 
+  /** Top wedges plus the tail, in one list, so "N more positions" is reachable. */
+  const allHoldings = useMemo(
+    () => (allocation ? [...allocation.top, ...allocation.rest] : []),
+    [allocation],
+  );
+
+  const visibleHoldings = useMemo(() => {
+    const q = holdingQuery.trim().toLowerCase();
+    // Searching reaches the whole book, not just the page currently expanded —
+    // otherwise a hit in position 200 would be invisible until you paged to it.
+    if (q) {
+      return allHoldings.filter(
+        (h) =>
+          h.symbol?.toLowerCase().includes(q) || h.name.toLowerCase().includes(q),
+      );
+    }
+    return allHoldings.slice(0, holdingsShown);
+  }, [allHoldings, holdingQuery, holdingsShown]);
+
+  const hiddenHoldings = Math.max(0, allHoldings.length - holdingsShown);
+
   const tradesWithTicker = useMemo(
     () =>
       (member?.trades ?? []).filter((t): t is CongressTradeRow & { symbol: string } => !!t.symbol),
     [member],
   );
+
+  /** Years present in this member's trades, newest first. Derived, never a
+   *  fixed range: members' histories start and end in different years. */
+  const yearOptions = useMemo(() => {
+    const years = [...new Set(tradesWithTicker.map((t) => t.transactionDate.slice(0, 4)))]
+      .filter(Boolean)
+      .sort()
+      .reverse();
+    return [{ value: ALL_YEARS, label: 'All years' }, ...years.map((y) => ({ value: y, label: y }))];
+  }, [tradesWithTicker]);
 
   const counts = useMemo(
     () => ({
@@ -179,9 +221,18 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
   );
 
   const visibleTrades = useMemo(() => {
-    if (filter === 'all') return tradesWithTicker;
-    return tradesWithTicker.filter((t) => tradeDirection(t.tradeType) === filter);
-  }, [tradesWithTicker, filter]);
+    const q = tradeQuery.trim().toLowerCase();
+    return tradesWithTicker.filter(
+      (t) =>
+        (filter === 'all' || tradeDirection(t.tradeType) === filter) &&
+        (year === ALL_YEARS || t.transactionDate.startsWith(year)) &&
+        (!q ||
+          t.symbol.toLowerCase().includes(q) ||
+          t.assetDescription.toLowerCase().includes(q)),
+    );
+  }, [tradesWithTicker, filter, year, tradeQuery]);
+
+  const tradeFiltersActive = year !== ALL_YEARS || tradeQuery.trim() !== '' || filter !== 'all';
 
   if (isLoading) {
     return (
@@ -260,8 +311,28 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
               // category error migration 150 warns about.
               centerLabel="Estimated value"
             />
-            <ul className="mt-4 space-y-1.5">
-              {allocation.top.map((h) => (
+            <div className="mt-4 mb-2 flex flex-wrap items-center justify-between gap-2">
+              <ListSearch
+                id="congress-holdings-search"
+                value={holdingQuery}
+                onChange={setHoldingQuery}
+                placeholder="Filter by ticker or company"
+                label="Filter positions by ticker or company"
+              />
+              <p className="text-xs tabular-nums text-muted-foreground/80" aria-live="polite">
+                {holdingQuery
+                  ? `${visibleHoldings.length} of ${allHoldings.length} positions`
+                  : `${allHoldings.length} positions`}
+              </p>
+            </div>
+
+            {visibleHoldings.length === 0 ? (
+              <p className="rounded-xl border border-dashed border-border/60 px-6 py-8 text-center text-sm text-foreground">
+                No positions match “{holdingQuery}”.
+              </p>
+            ) : (
+            <ul className="space-y-1.5">
+              {visibleHoldings.map((h) => (
                 <li
                   key={h.key}
                   className="flex items-center gap-3 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-muted/40"
@@ -294,6 +365,43 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
                 </li>
               ))}
             </ul>
+            )}
+
+            {/* The donut's legend promises "N more positions" but the list
+                above is capped at ALLOCATION_TOP_N, so without this the rest
+                were counted and coloured and then unreachable. Paged rather
+                than dumped: Gilbert Cisneros holds 388. */}
+            {!holdingQuery && hiddenHoldings > 0 && (
+              <button
+                type="button"
+                onClick={() => setHoldingsShown((n) => n + REST_PAGE)}
+                // The remaining count is a second visual column, so without
+                // this the name concatenates to "...positions25 remaining".
+                aria-label={`Show ${Math.min(hiddenHoldings, REST_PAGE)} more positions, ${hiddenHoldings} remaining`}
+                className="mt-2 flex w-full items-center gap-3 rounded-md px-2 py-2.5 text-left transition-colors hover:bg-muted/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted/60 text-muted-foreground">
+                  <ChevronDown className="h-3.5 w-3.5" aria-hidden />
+                </span>
+                <span className="text-sm text-foreground/85">
+                  Show {Math.min(hiddenHoldings, REST_PAGE).toLocaleString('en-US')} more position
+                  {Math.min(hiddenHoldings, REST_PAGE) === 1 ? '' : 's'}
+                  <span className="ml-2 text-xs text-muted-foreground/75">
+                    {hiddenHoldings.toLocaleString('en-US')} remaining
+                  </span>
+                </span>
+              </button>
+            )}
+
+            {!holdingQuery && hiddenHoldings === 0 && holdingsShown > ALLOCATION_TOP_N && (
+              <button
+                type="button"
+                onClick={() => setHoldingsShown(ALLOCATION_TOP_N)}
+                className="mt-2 rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                Show less
+              </button>
+            )}
 
             {/* Named rather than silently dropped. Excluding them from the
                 chart is a valuation decision, not a reason to pretend the
@@ -332,7 +440,25 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
             Disclosed trades
           </h2>
 
-          <div className="flex items-center gap-1" role="group" aria-label="Filter trades">
+          <div className="flex flex-wrap items-center gap-2">
+            <ListSearch
+              id="congress-trades-search"
+              value={tradeQuery}
+              onChange={setTradeQuery}
+              placeholder="Filter by ticker or company"
+              label="Filter trades by ticker or company"
+            />
+            {yearOptions.length > 2 && (
+              <ControlSelect
+                id="congress-trade-year"
+                label="Year"
+                value={year}
+                onChange={setYear}
+                options={yearOptions}
+                width="sm:w-[130px]"
+              />
+            )}
+          <div className="flex items-center gap-1" role="group" aria-label="Filter by direction">
             {FILTERS.map((f) => (
               <button
                 key={f.key}
@@ -356,6 +482,7 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
                 </span>
               </button>
             ))}
+            </div>
           </div>
         </div>
 
@@ -368,11 +495,26 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
 
         {visibleTrades.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border/60 px-6 py-10 text-center">
+            {/* Separates "we hold nothing for this member" from "your filters
+                excluded everything", which need different recoveries. */}
             <p className="text-sm text-foreground">
-              {filter === 'all'
-                ? 'No disclosed stock trades for this member yet.'
-                : `No ${filter === 'buy' ? 'buys' : 'sells'} in the trades we hold.`}
+              {tradeFiltersActive
+                ? 'No trades match these filters.'
+                : 'No disclosed stock trades for this member yet.'}
             </p>
+            {tradeFiltersActive && (
+              <button
+                type="button"
+                onClick={() => {
+                  setFilter('all');
+                  setYear(ALL_YEARS);
+                  setTradeQuery('');
+                }}
+                className="mt-2 text-sm text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                Clear filters
+              </button>
+            )}
           </div>
         ) : (
           <ul className="rounded-xl border border-border/60 px-4">
