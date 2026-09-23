@@ -94,10 +94,14 @@ function TradeRow({ t }: { t: CongressTradeRow & { symbol: string } }) {
       <span
         className={cn(
           'mt-0.5 inline-flex w-[5.25rem] shrink-0 items-center gap-1 rounded-md px-1.5 py-1 text-xs font-medium',
+          // Light mode needs the darker step: emerald-400 on white computes to
+          // about 1.7:1 and red-400 to 2.8:1, both far under AA, because these
+          // were picked looking at the dark theme only. HoldingsBarList's
+          // -600/dark:-400 pairing is the convention here.
           isBuy
-            ? 'bg-emerald-400/10 text-emerald-400'
+            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
             : isSell
-              ? 'bg-red-400/10 text-red-400'
+              ? 'bg-red-500/10 text-red-600 dark:text-red-400'
               : 'bg-muted/50 text-muted-foreground',
         )}
       >
@@ -130,7 +134,7 @@ function TradeRow({ t }: { t: CongressTradeRow & { symbol: string } }) {
         <p className="mt-0.5 text-right text-xs tabular-nums text-muted-foreground">
           {formatDate(t.transactionDate)}
           {t.daysToDisclose != null && (
-            <span className={cn('ml-1.5', late && 'text-amber-400')}>
+            <span className={cn('ml-1.5', late && 'text-amber-600 dark:text-amber-400')}>
               {late ? `filed ${t.daysToDisclose}d late` : `filed ${t.daysToDisclose}d later`}
             </span>
           )}

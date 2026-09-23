@@ -23,7 +23,14 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ sl
   const { slug } = await context.params;
 
   const key = process.env.DISCLOSED_CAPITOL_API_KEY;
-  if (!key) return new NextResponse(null, { status: 404 });
+  if (!key) {
+    // Logged, not silent. Without the key every headshot 404s and the whole
+    // grid falls back to initials, which looks like a design choice rather
+    // than a missing environment variable — it shipped to production that way
+    // on 2026-09-23 and was only caught by eye.
+    console.error('[api/congress/photo] DISCLOSED_CAPITOL_API_KEY is not set');
+    return new NextResponse(null, { status: 404 });
+  }
 
   const supabase = createServerClient();
   const { data: member } = await supabase
