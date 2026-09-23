@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowUpRight } from 'lucide-react';
 import { ControlSelect } from '@/components/ui/ControlSelect';
 import { PARTY_LABEL, positionLine } from '@/lib/congress/member-list';
+import { DisclosureNote } from './DisclosureNote';
 import { PoliticianAvatar } from './PoliticianAvatar';
 import type { CongressMemberSummary } from '@/app/api/congress/route';
 
@@ -114,12 +115,9 @@ export function CongressSection() {
         Washington Trading
       </h2>
 
-      <p className="mb-3 max-w-2xl text-xs leading-relaxed text-muted-foreground">
-        Stock trades disclosed by members of Congress and senior executive-branch officials under
-        federal financial disclosure rules. They file within 45 days of trading, so this is a record
-        of what was reported, not a live feed. Amounts are the ranges those rules require, not exact
-        figures.
-      </p>
+      <div className="mb-3">
+        <DisclosureNote />
+      </div>
 
       {!isLoading && (
         <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -203,7 +201,7 @@ export function CongressSection() {
                 <div className="min-w-0 flex-1">
                   <p className="font-medium leading-snug text-foreground">{m.displayName}</p>
                   <p className="truncate text-xs text-muted-foreground/85">{positionLine(m)}</p>
-                  <p className="mt-1.5 flex flex-wrap items-center gap-x-2 text-xs tabular-nums text-muted-foreground/70">
+                  <p className="mt-1.5 flex flex-wrap items-center gap-x-2 text-xs tabular-nums text-muted-foreground/85">
                     {/* Locale pinned, as everywhere else in this file. Bare
                         toLocaleString() follows the viewer's browser, which
                         rendered Khanna's 1,577 positions as "1 577". */}

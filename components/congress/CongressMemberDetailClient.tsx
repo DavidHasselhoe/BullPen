@@ -9,6 +9,7 @@ import { buildAllocation } from '@/lib/institutions/allocation';
 import { positionLine } from '@/lib/congress/member-list';
 import { formatAmountRange, isFiledLate, tradeDirection } from '@/lib/congress/types';
 import { cn } from '@/lib/utils';
+import { DisclosureNote } from './DisclosureNote';
 import { PoliticianAvatar } from './PoliticianAvatar';
 import type { CongressMemberDetail, CongressHoldingRow } from '@/app/api/congress/[slug]/route';
 import type { CongressTradeRow } from '@/lib/congress/types';
@@ -218,7 +219,9 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
       <header className="mb-6 flex items-center gap-4">
         <PoliticianAvatar displayName={member.displayName} slug={member.slug} size={64} />
         <div className="min-w-0">
-          <h1 className="text-xl font-semibold leading-tight text-foreground">
+          {/* Weight and tracking match InstitutionalFundDetailClient's h1, so
+              the two drill-down pages read as the same kind of page. */}
+          <h1 className="text-xl font-bold tracking-tight text-foreground">
             {member.displayName}
           </h1>
           <p className="mt-0.5 text-sm text-muted-foreground">{positionLine(member)}</p>
@@ -280,10 +283,12 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
                   <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground" title={h.name}>
                     {h.name}
                   </span>
-                  <span className="shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
+                  {/* Column widths and weights follow HoldingsBarList's rows,
+                      so the two allocation lists line up as one pattern. */}
+                  <span className="ml-auto shrink-0 pl-2 font-mono text-xs tabular-nums text-muted-foreground/75">
                     ~{compactUsd(h.valueUsd)}
                   </span>
-                  <span className="w-14 shrink-0 text-right font-mono text-sm tabular-nums text-foreground">
+                  <span className="w-[4.5rem] shrink-0 text-right font-mono text-sm font-semibold tabular-nums text-foreground">
                     {h.pct.toFixed(1)}%
                   </span>
                 </li>
@@ -334,6 +339,9 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
                 type="button"
                 onClick={() => setFilter(f.key)}
                 aria-pressed={filter === f.key}
+                // Without this the accessible name concatenates to "Buys55".
+                // The count is a separate visual column, not part of the word.
+                aria-label={`${f.label}, ${counts[f.key]} trades`}
                 className={cn(
                   'inline-flex h-8 items-center gap-1.5 rounded-md border px-3 text-sm transition-colors',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
@@ -349,6 +357,13 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
               </button>
             ))}
           </div>
+        </div>
+
+        {/* The member pages are publicly crawlable, so a reader can land here
+            from search without ever passing the Discover section that carries
+            this. The lag is the single most misreadable thing about the data. */}
+        <div className="mb-3">
+          <DisclosureNote compact />
         </div>
 
         {visibleTrades.length === 0 ? (
