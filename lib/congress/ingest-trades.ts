@@ -48,9 +48,31 @@ const TRADE_LIMIT = 100;
  */
 const REFRESH_TRADE_LIMIT = 20;
 
-/** Hard ceiling per run. Nothing else calls this vendor, so a bounded loop is
- *  the whole budget guard — no shared reservation needed like TwelveData's. */
-const MAX_CREDITS_PER_RUN = 4000;
+/**
+ * Skip a positions snapshot above this many open positions.
+ *
+ * Positions cost 30 + 1 per row and the endpoint takes no limit, so a single
+ * member can consume an unbounded amount. Learned the expensive way on
+ * 2026-09-23: Ro Khanna holds 1,577 open positions and one call for him cost
+ * 1,607 credits, which exhausted the budget and starved the ten members queued
+ * behind him.
+ *
+ * The cap is also an editorial line. A book that wide is a managed or indexed
+ * account rather than someone picking stocks, and the donut for it is mostly
+ * one gray "everything else" wedge: Khanna's top ten come to 38.7% of his
+ * book, so 61.3% of the chart says nothing.
+ */
+const MAX_POSITIONS_PER_MEMBER = 250;
+
+/**
+ * Hard ceiling per run. Nothing else calls this vendor, so a bounded loop is
+ * the whole budget guard — no shared reservation needed like TwelveData's.
+ *
+ * Sized for one full backfill of the whole roster with headroom: 29 members at
+ * 115 credits of trades plus 30 + positions each comes to roughly 4,600. A
+ * --refresh sweep costs a fraction of this and never approaches it.
+ */
+const MAX_CREDITS_PER_RUN = 6000;
 
 export interface CongressPolitician {
   id: string;
@@ -227,6 +249,37 @@ export async function ingestPolitician(
 }
 
 /**
+ * Open-position count per vendor politician id, from one leaderboard call.
+ *
+ * 15 credits for the whole roster, which buys the ability to predict and cap
+ * what a positions sweep will cost instead of discovering it after paying.
+ * Returns an empty map on failure: the sweep then proceeds uncapped, which is
+ * the old behaviour, so a leaderboard outage never blocks ingestion.
+ */
+export async function fetchPositionCounts(): Promise<Map<number, number>> {
+  const counts = new Map<number, number>();
+  try {
+    const res = await fetch(`${API_BASE}/politicians?limit=100`, {
+      headers: { 'DC-API-Key': apiKey() },
+      cache: 'no-store',
+    });
+    if (!res.ok) return counts;
+    const body = await res.json();
+    const rows: { politician_id?: number; position_count?: number }[] = Array.isArray(body)
+      ? body
+      : (body?.politicians ?? []);
+    for (const r of rows) {
+      if (typeof r.politician_id === 'number' && typeof r.position_count === 'number') {
+        counts.set(r.politician_id, r.position_count);
+      }
+    }
+  } catch {
+    // Non-fatal, see docblock.
+  }
+  return counts;
+}
+
+/**
  * Fill in party/state/chamber for a member seeded without them.
  *
  * Costs nothing: these fields are already on every row of the trades response.
@@ -383,6 +436,12 @@ export async function ingestAllPoliticians(
   const results: IngestResult[] = [];
   let totalCredits = 0;
 
+  // One 15-credit lookup that makes a positions sweep predictable instead of
+  // open-ended. Only paid for when positions are actually being fetched.
+  const positionCounts =
+    opts.holdings || opts.holdingsOnly ? await fetchPositionCounts() : new Map<number, number>();
+  if (positionCounts.size > 0) totalCredits += 15;
+
   for (const p of (politicians ?? []) as CongressPolitician[]) {
     if (totalCredits >= MAX_CREDITS_PER_RUN) {
       results.push({
@@ -407,6 +466,13 @@ export async function ingestAllPoliticians(
     totalCredits += result.creditsCharged;
 
     if (opts.holdings || opts.holdingsOnly) {
+      const known = positionCounts.get(p.dc_politician_id);
+      if (known != null && known > MAX_POSITIONS_PER_MEMBER) {
+        result.error = `Skipped positions: ${known.toLocaleString()} open positions exceeds the ${MAX_POSITIONS_PER_MEMBER} cap (would cost ~${(30 + known).toLocaleString()} credits)`;
+        results.push(result);
+        continue;
+      }
+
       const h = await ingestHoldings(supabase, p);
       totalCredits += h.creditsCharged;
       result.creditsCharged += h.creditsCharged;
