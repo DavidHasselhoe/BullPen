@@ -36,6 +36,18 @@ const API_BASE = 'https://api.disclosedcapitol.com';
  */
 const TRADE_LIMIT = 100;
 
+/**
+ * Rows to request on an incremental refresh, as opposed to a first backfill.
+ *
+ * This is the whole running-cost lever. At 29 tracked members, refreshing at
+ * the full TRADE_LIMIT twice a week costs ~26,700 credits/month; at this limit
+ * it is ~8,100. PTRs arrive 30-46 days after the trade and a member files in
+ * bursts, so 20 rows is ample headroom between two runs a few days apart --
+ * and a member who somehow files more than that is caught by the next run,
+ * since nothing here depends on a cursor.
+ */
+const REFRESH_TRADE_LIMIT = 20;
+
 /** Hard ceiling per run. Nothing else calls this vendor, so a bounded loop is
  *  the whole budget guard — no shared reservation needed like TwelveData's. */
 const MAX_CREDITS_PER_RUN = 4000;
@@ -50,6 +62,10 @@ export interface CongressPolitician {
 interface VendorTrade {
   id: number;
   ticker: string | null;
+  // Member metadata rides along on every trade row; used by backfillMemberMeta.
+  party: string | null;
+  state: string | null;
+  chamber: string | null;
   trade_type: string | null;
   asset_type: string | null;
   asset_description: string | null;
@@ -133,9 +149,10 @@ function apiKey(): string {
 
 async function fetchTrades(
   dcPoliticianId: number,
+  limit: number,
 ): Promise<{ trades: VendorTrade[]; creditsCharged: number }> {
   const res = await fetch(
-    `${API_BASE}/politicians/${dcPoliticianId}/trades?limit=${TRADE_LIMIT}`,
+    `${API_BASE}/politicians/${dcPoliticianId}/trades?limit=${limit}`,
     { headers: { 'DC-API-Key': apiKey() }, cache: 'no-store' },
   );
 
@@ -163,6 +180,7 @@ async function fetchTrades(
 export async function ingestPolitician(
   supabase: ReturnType<typeof createServerClient>,
   politician: CongressPolitician,
+  opts: { limit?: number } = {},
 ): Promise<IngestResult> {
   const base: IngestResult = {
     slug: politician.slug,
@@ -174,12 +192,17 @@ export async function ingestPolitician(
 
   let trades: VendorTrade[];
   try {
-    const out = await fetchTrades(politician.dc_politician_id);
+    const out = await fetchTrades(politician.dc_politician_id, opts.limit ?? TRADE_LIMIT);
     trades = out.trades;
     base.creditsCharged = out.creditsCharged;
   } catch (err) {
     return { ...base, error: err instanceof Error ? err.message : String(err) };
   }
+
+  // Party, state and chamber ride along in the trades response we already paid
+  // for, so members seeded without them are filled in at no extra cost rather
+  // than needing a separate lookup.
+  await backfillMemberMeta(supabase, politician, trades[0]);
 
   base.fetched = trades.length;
 
@@ -201,6 +224,37 @@ export async function ingestPolitician(
 
   base.inserted = data?.length ?? 0;
   return base;
+}
+
+/**
+ * Fill in party/state/chamber for a member seeded without them.
+ *
+ * Costs nothing: these fields are already on every row of the trades response.
+ * Only writes columns that are currently NULL, so a value curated by hand in a
+ * migration is never overwritten by the vendor's spelling of it.
+ */
+async function backfillMemberMeta(
+  supabase: ReturnType<typeof createServerClient>,
+  politician: CongressPolitician,
+  sample: VendorTrade | undefined,
+): Promise<void> {
+  if (!sample) return;
+
+  const { data: current } = await supabase
+    .from('congress_politicians')
+    .select('party, state, chamber')
+    .eq('id', politician.id)
+    .maybeSingle<{ party: string | null; state: string | null; chamber: string | null }>();
+
+  if (!current) return;
+
+  const patch: Record<string, string> = {};
+  if (!current.party && sample.party) patch.party = sample.party;
+  if (!current.state && sample.state) patch.state = sample.state;
+  if (!current.chamber && sample.chamber) patch.chamber = sample.chamber;
+
+  if (Object.keys(patch).length === 0) return;
+  await supabase.from('congress_politicians').update(patch).eq('id', politician.id);
 }
 
 interface VendorPosition {
@@ -306,7 +360,14 @@ export async function ingestHoldings(
  */
 export async function ingestAllPoliticians(
   supabase: ReturnType<typeof createServerClient>,
-  opts: { slugs?: string[]; holdings?: boolean; holdingsOnly?: boolean } = {},
+  opts: {
+    slugs?: string[];
+    holdings?: boolean;
+    holdingsOnly?: boolean;
+    /** Incremental run: fetch REFRESH_TRADE_LIMIT rows instead of a full
+     *  backfill's TRADE_LIMIT. This is the main running-cost control. */
+    refresh?: boolean;
+  } = {},
 ): Promise<{ results: IngestResult[]; totalCredits: number }> {
   let query = supabase
     .from('congress_politicians')
@@ -340,7 +401,9 @@ export async function ingestAllPoliticians(
     // trades are immutable and already stored.
     const result = opts.holdingsOnly
       ? { slug: p.slug, fetched: 0, inserted: 0, skipped: 0, creditsCharged: 0 }
-      : await ingestPolitician(supabase, p);
+      : await ingestPolitician(supabase, p, {
+          limit: opts.refresh ? REFRESH_TRADE_LIMIT : TRADE_LIMIT,
+        });
     totalCredits += result.creditsCharged;
 
     if (opts.holdings || opts.holdingsOnly) {

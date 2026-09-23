@@ -5,6 +5,7 @@
  *   npm run ingest-congress -- nancy-pelosi    # named members only
  *   npm run ingest-congress -- --holdings      # also snapshot estimated positions
  *   npm run ingest-congress -- --holdings-only # positions only, no re-paying for trades
+ *   npm run ingest-congress -- --refresh       # incremental: 20 rows/member, not 100
  *
  * Prints real credit spend per member from the vendor's own response header,
  * so the cost model in lib/congress/ingest-trades.ts stays honest.
@@ -19,6 +20,7 @@ import { ingestAllPoliticians } from '../lib/congress/ingest-trades';
 async function main() {
   const args = process.argv.slice(2);
   const holdingsOnly = args.includes('--holdings-only');
+  const refresh = args.includes('--refresh');
   const withHoldings = args.includes('--holdings') || holdingsOnly;
   const slugs = args.filter((a) => !a.startsWith('-'));
   const supabase = createServerClient();
@@ -29,6 +31,7 @@ async function main() {
     slugs: slugs.length ? slugs : undefined,
     holdings: withHoldings,
     holdingsOnly,
+    refresh,
   });
 
   console.log('\nslug                    fetched  new  skipped  posns  credits  error');

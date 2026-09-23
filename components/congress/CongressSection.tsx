@@ -52,18 +52,19 @@ export function CongressSection() {
   if (!isLoading && members.length === 0) return null;
 
   return (
-    <section aria-labelledby="congress-heading" className="mt-12 mb-10">
+    <section aria-labelledby="washington-heading" className="mt-12 mb-10">
       <h2
-        id="congress-heading"
+        id="washington-heading"
         className="mb-1 text-sm font-semibold uppercase tracking-widest text-muted-foreground/80"
       >
-        Congress Trading
+        Washington Trading
       </h2>
 
       <p className="mb-3 max-w-2xl text-xs leading-relaxed text-muted-foreground">
-        Stock trades disclosed by members of Congress under the STOCK Act. Members file within 45
-        days of trading, so this is a record of what was reported, not a live feed. Amounts are the
-        ranges Congress requires, not exact figures.
+        Stock trades disclosed by members of Congress and senior executive-branch officials under
+        federal financial disclosure rules. They file within 45 days of trading, so this is a record
+        of what was reported, not a live feed. Amounts are the ranges those rules require, not exact
+        figures.
       </p>
 
       {isLoading ? (
@@ -78,7 +79,7 @@ export function CongressSection() {
                 className="group relative flex items-center gap-3 rounded-xl border border-border/50 bg-card/40 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-border hover:bg-card/70 active:translate-y-0 active:scale-[0.99] focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 focus-within:ring-offset-background"
               >
                 <Link
-                  href={`/discover/congress/${m.slug}`}
+                  href={`/discover/politicians/${m.slug}`}
                   aria-label={m.displayName}
                   className="absolute inset-0 z-0 rounded-xl focus:outline-none"
                 />

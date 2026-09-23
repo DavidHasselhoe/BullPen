@@ -4,7 +4,8 @@
  * UI for a list this size, and generateStaticParams needs the slugs without a
  * network round trip.
  *
- * Must stay in sync with the seed in supabase/migrations/149_congress_trades.sql.
+ * Must stay in sync with the seeds in supabase/migrations/149_congress_trades.sql
+ * and 151_washington_traders.sql.
  */
 export const CONGRESS_MEMBER_SLUGS = [
   'nancy-pelosi',
@@ -25,6 +26,19 @@ export const CONGRESS_MEMBER_SLUGS = [
   'suzan-delbene',
   'judy-chu',
   'gilbert-cisneros',
+  // Added in migration 151: high-volume members with positive risk-adjusted
+  // returns, plus executive-branch officials with enough disclosed activity.
+  'dan-sullivan',
+  'tim-moore',
+  'roger-marshall',
+  'doug-lamborn',
+  'peter-meijer',
+  'trey-hollingsworth',
+  'sheri-biggs',
+  'kamala-harris',
+  'chris-wright',
+  'doug-burgum',
+  'linda-mcmahon',
 ] as const;
 
 export type CongressMemberSlug = (typeof CONGRESS_MEMBER_SLUGS)[number];
