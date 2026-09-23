@@ -88,8 +88,11 @@ export function CongressSection() {
                   <p className="font-medium leading-snug text-foreground">{m.displayName}</p>
                   <p className="truncate text-xs text-muted-foreground/85">{positionLine(m)}</p>
                   <p className="mt-1.5 flex flex-wrap items-center gap-x-2 text-xs tabular-nums text-muted-foreground/70">
+                    {/* Locale pinned, as everywhere else in this file. Bare
+                        toLocaleString() follows the viewer's browser, which
+                        rendered Khanna's 1,577 positions as "1 577". */}
                     <span>
-                      {m.tradeCount.toLocaleString()} trade{m.tradeCount === 1 ? '' : 's'}
+                      {m.tradeCount.toLocaleString('en-US')} trade{m.tradeCount === 1 ? '' : 's'}
                     </span>
                     {/* null means no snapshot has been taken, which is a
                         different claim from "holds nothing" — say neither
@@ -97,7 +100,7 @@ export function CongressSection() {
                     {m.positionCount != null && (
                       <>
                         <span aria-hidden>·</span>
-                        <span>{m.positionCount.toLocaleString()} positions</span>
+                        <span>{m.positionCount.toLocaleString('en-US')} positions</span>
                       </>
                     )}
                     {lastTrade && (
