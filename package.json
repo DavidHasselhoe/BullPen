@@ -76,7 +76,7 @@
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.119",
     "@ai-sdk/openai": "^3.0.33",
-    "@ai-sdk/react": "^3.0.102",
+    "@ai-sdk/react": "^4.0.110",
     "@anthropic-ai/sdk": "^0.92.0",
     "@radix-ui/react-accordion": "^1.2.20",
     "@radix-ui/react-avatar": "^1.1.11",
