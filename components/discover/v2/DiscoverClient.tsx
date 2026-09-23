@@ -14,7 +14,7 @@ import { ThemeGrid } from './ThemeGrid';
 import { IdeaCollections } from './IdeaCollections';
 import { WeeklyPickHero, CURRENT_PICK_QUERY } from '@/components/picks/WeeklyPickHero';
 import { InstitutionalHoldingsSection } from '@/components/institutions/InstitutionalHoldingsSection';
-import { CongressTradesSection } from '@/components/congress/CongressTradesSection';
+import { CongressSection } from '@/components/congress/CongressSection';
 import type { DiscoverFeed } from '@/lib/discover/discover-config';
 
 const FEED_QUERY_KEY = ['discover-feed'];
@@ -94,7 +94,7 @@ export function DiscoverClient() {
       <ThemeGrid />
       <IdeaCollections collections={feed.collections} />
       <InstitutionalHoldingsSection />
-      <CongressTradesSection />
+      <CongressSection />
     </LivePriceContext.Provider>
   );
 }

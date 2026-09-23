@@ -70,6 +70,8 @@ export interface IngestResult {
   inserted: number;
   skipped: number;
   creditsCharged: number;
+  /** Estimated open positions snapshotted, when holdings were requested. */
+  positions?: number;
   error?: string;
 }
 
@@ -201,6 +203,102 @@ export async function ingestPolitician(
   return base;
 }
 
+interface VendorPosition {
+  ticker: string | null;
+  company_name: string | null;
+  sector: string | null;
+  estimated_shares: number | null;
+  avg_cost_basis: number | null;
+  total_cost_basis: number | null;
+  current_price: number | null;
+  current_value: number | null;
+  unrealized_pnl: number | null;
+  unrealized_pnl_pct: number | null;
+  total_buys: number | null;
+  total_sells: number | null;
+  first_buy_date: string | null;
+  last_activity_date: string | null;
+}
+
+/**
+ * Snapshot a member's estimated open positions.
+ *
+ * These are NOT disclosed holdings. The vendor reconstructs them from the
+ * midpoint of each filed amount bracket plus trade-date prices — the exact
+ * synthesis ingestPolitician refuses to perform on a single trade. We keep
+ * them because they arrive with the vendor's own disclaimer attached rather
+ * than being invented here, and that disclaimer is stored alongside so every
+ * surface can show it. See migration 150's header.
+ *
+ * Measured cost: 63 credits per member.
+ */
+export async function ingestHoldings(
+  supabase: ReturnType<typeof createServerClient>,
+  politician: CongressPolitician,
+): Promise<{ positions: number; creditsCharged: number; error?: string }> {
+  let body: { positions?: VendorPosition[]; disclaimer?: string };
+  let creditsCharged = 0;
+
+  try {
+    const res = await fetch(`${API_BASE}/portfolio/${politician.dc_politician_id}/positions`, {
+      headers: { 'DC-API-Key': apiKey() },
+      cache: 'no-store',
+    });
+    creditsCharged = Number(res.headers.get('x-credits-charged') ?? 0);
+    if (!res.ok) throw new Error(`Disclosed Capitol ${res.status}`);
+    body = await res.json();
+  } catch (err) {
+    return { positions: 0, creditsCharged, error: err instanceof Error ? err.message : String(err) };
+  }
+
+  const rows = (body.positions ?? [])
+    .filter((p) => p.ticker && normalizeSymbol(p.ticker))
+    .map((p) => ({
+      politician_id: politician.id,
+      symbol: normalizeSymbol(p.ticker)!,
+      company_name: p.company_name,
+      sector: p.sector,
+      estimated_shares: p.estimated_shares,
+      avg_cost_basis: p.avg_cost_basis,
+      total_cost_basis: p.total_cost_basis,
+      current_price: p.current_price,
+      current_value: p.current_value,
+      unrealized_pnl: p.unrealized_pnl,
+      unrealized_pnl_pct: p.unrealized_pnl_pct,
+      total_buys: p.total_buys,
+      total_sells: p.total_sells,
+      first_buy_date: p.first_buy_date,
+      last_activity_date: p.last_activity_date,
+      snapshot_at: new Date().toISOString(),
+    }));
+
+  // A snapshot replaces the previous one wholesale: a position the member has
+  // fully exited simply stops appearing in the vendor's response, so upserting
+  // alone would leave a sold-out holding on the chart forever.
+  const { error: delErr } = await supabase
+    .from('congress_holdings')
+    .delete()
+    .eq('politician_id', politician.id);
+  if (delErr) return { positions: 0, creditsCharged, error: delErr.message };
+
+  if (rows.length > 0) {
+    const { error } = await supabase.from('congress_holdings').insert(rows);
+    if (error) return { positions: 0, creditsCharged, error: error.message };
+  }
+
+  // Store the disclaimer that shipped with THIS snapshot, so the caveat a
+  // reader sees is never a stale hardcoded copy of a changed one.
+  await supabase
+    .from('congress_politicians')
+    .update({
+      holdings_disclaimer: body.disclaimer ?? null,
+      holdings_synced_at: new Date().toISOString(),
+    })
+    .eq('id', politician.id);
+
+  return { positions: rows.length, creditsCharged };
+}
+
 /**
  * Sweep every active curated member. Returns per-member results plus the real
  * credit spend, which is logged rather than estimated — the same reason
@@ -208,7 +306,7 @@ export async function ingestPolitician(
  */
 export async function ingestAllPoliticians(
   supabase: ReturnType<typeof createServerClient>,
-  opts: { slugs?: string[] } = {},
+  opts: { slugs?: string[]; holdings?: boolean; holdingsOnly?: boolean } = {},
 ): Promise<{ results: IngestResult[]; totalCredits: number }> {
   let query = supabase
     .from('congress_politicians')
@@ -237,8 +335,22 @@ export async function ingestAllPoliticians(
       continue;
     }
 
-    const result = await ingestPolitician(supabase, p);
+    // holdingsOnly re-snapshots positions without re-paying for trades, which
+    // is the normal refresh shape: prices move daily, but a member's filed
+    // trades are immutable and already stored.
+    const result = opts.holdingsOnly
+      ? { slug: p.slug, fetched: 0, inserted: 0, skipped: 0, creditsCharged: 0 }
+      : await ingestPolitician(supabase, p);
     totalCredits += result.creditsCharged;
+
+    if (opts.holdings || opts.holdingsOnly) {
+      const h = await ingestHoldings(supabase, p);
+      totalCredits += h.creditsCharged;
+      result.creditsCharged += h.creditsCharged;
+      result.positions = h.positions;
+      if (h.error) result.error = result.error ? `${result.error}; ${h.error}` : h.error;
+    }
+
     results.push(result);
   }
 

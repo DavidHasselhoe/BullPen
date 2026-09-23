@@ -74,6 +74,10 @@ interface InstitutionalHoldingsPieChartProps {
    *  list below highlight the same holding together. */
   highlightedKey: string | null;
   onHighlight: (key: string | null) => void;
+  /** Label above the centre figure. Defaults to the 13F wording this chart was
+   *  built for; the congressional member pages reuse the same donut for
+   *  estimated positions, where calling the total a 13F value would be wrong. */
+  centerLabel?: string;
   className?: string;
 }
 
@@ -85,6 +89,7 @@ export function InstitutionalHoldingsPieChart({
   highlightedKey,
   onHighlight,
   className,
+  centerLabel = 'Total 13F Value',
 }: InstitutionalHoldingsPieChartProps) {
   const [reducedMotion, setReducedMotion] = useState(
     () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -177,7 +182,7 @@ export function InstitutionalHoldingsPieChart({
                 swaps the numbers without the block growing and shrinking. */}
             <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-14 text-center">
               <span className="w-full truncate text-xs font-semibold tracking-wide text-muted-foreground/80">
-                {hovered ? (hovered.symbol ?? 'Everything else') : 'Total 13F Value'}
+                {hovered ? (hovered.symbol ?? 'Everything else') : centerLabel}
               </span>
               <span className="mt-1 font-mono text-2xl font-semibold tabular-nums text-foreground">
                 {fmtUsd(hovered ? hovered.value : centerValue)}

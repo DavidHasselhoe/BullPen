@@ -10,6 +10,50 @@
 
 import assert from 'node:assert/strict';
 import { normalizeSymbol, buildRows } from '../lib/congress/ingest-trades';
+import { tradeDirection, isFiledLate, formatAmountRange } from '../lib/congress/types';
+
+// Both ends always survive. Nothing here may ever average them into one
+// figure: a filing discloses a bracket, so a midpoint is a number nobody filed.
+assert.equal(formatAmountRange(500001, 1000000, 'x'), '$500K - $1M');
+assert.equal(formatAmountRange(15001, 50000, 'x'), '$15K - $50K');
+assert.equal(formatAmountRange(1000001, 5000000, 'x'), '$1M - $5M');
+
+// The vendor drops amount_high on some rows while still stating it in the
+// filed string (31 of the first 200 stored trades). Without this fallback
+// those rendered raw and un-compacted beside their formatted neighbours.
+assert.equal(
+  formatAmountRange(1000001, null, '$1,000,001 - $5,000,000'),
+  '$1M - $5M',
+  'a missing numeric bound is recovered from the filed string',
+);
+assert.equal(formatAmountRange(null, null, '$250,001 - $500,000'), '$250K - $500K');
+
+// A genuinely open-ended top bracket keeps its openness rather than inventing
+// a ceiling.
+assert.equal(formatAmountRange(50000001, null, '$50,000,001 +'), '$50M+');
+
+// Unparseable input degrades to the filed string rather than to nothing.
+assert.equal(formatAmountRange(null, null, 'Undisclosed'), 'Undisclosed');
+
+// The vendor uses four words for two directions and mixes them within one
+// member. Matching only 'buy'/'sell' made the Sells filter read 0 for a
+// member with 33 disclosed sales, so every spelling seen in live data is
+// pinned here.
+assert.equal(tradeDirection('Buy'), 'buy');
+assert.equal(tradeDirection('Purchase'), 'buy');
+assert.equal(tradeDirection('Sell'), 'sell');
+assert.equal(tradeDirection('Sale'), 'sell');
+assert.equal(tradeDirection('sale (partial)'), 'sell', 'qualified sales still count as sells');
+assert.equal(tradeDirection('Sale (Full)'), 'sell');
+assert.equal(tradeDirection('Exchange'), 'other');
+assert.equal(tradeDirection('Unknown'), 'other');
+assert.equal(tradeDirection('  BUY  '), 'buy', 'padding and case must not matter');
+
+// 45 days is the STOCK Act deadline, so it is the boundary that decides
+// whether a row is flagged late.
+assert.equal(isFiledLate(45), false, '45 days is on time');
+assert.equal(isFiledLate(46), true);
+assert.equal(isFiledLate(null), false, 'unknown lag is not an accusation');
 
 // The vendor returns the literal string 'N/A' for an asset it could not
 // resolve. Storing that verbatim renders a fake ticker on a real
