@@ -1,5 +1,46 @@
 [
   {
+    "date": "2026-09-22",
+    "entries": [
+      {
+        "type": "fixed",
+        "text": "Ask Bull no longer answers \"Something went wrong. Please try again.\" on an ordinary question. It was hitting a limit on how much it could read per minute, and a few messages in quick succession was enough to trip it. Bull now runs on a newer model with far more headroom, so it should stop happening, and if it ever does you are told roughly how long to wait instead of getting a blank error"
+      },
+      {
+        "type": "fixed",
+        "text": "Written text no longer stops mid-sentence. The portfolio risk analysis, deep dives and the cards Bull shows in chat used to cut a description off with no way to read the rest, which often lost the half carrying the number. Anything too long for its space now has a Show more link"
+      },
+      {
+        "type": "fixed",
+        "text": "The Revenue Flow chart was showing figures that could not be right. Alphabet's operating income was displaying its net income, nearly three times the real figure, and Microsoft's quarterly view was drawing business segments from the whole financial year, each one larger than the quarter's total revenue above it. Labels that overlapped each other and sat on top of the bars are readable now too"
+      },
+      {
+        "type": "new",
+        "text": "Search now opens with the companies you looked at most recently, so getting back to one you were just reading takes a single click"
+      },
+      {
+        "type": "fixed",
+        "text": "The search box no longer offers to search filings and metrics. It finds companies and members, and Ask Bull answers questions in plain English"
+      },
+      {
+        "type": "fixed",
+        "text": "A company listed as a peer now always has a page to open. Some peers led nowhere"
+      },
+      {
+        "type": "improved",
+        "text": "The auto-renewal terms now sit next to every subscribe button: what you are charged, how often, and that you can cancel any time"
+      },
+      {
+        "type": "improved",
+        "text": "Every email from BullPen now identifies who sent it and where we are, and marketing email is kept separate from the transactional kind, so unsubscribing from one never stops a price alert reaching you"
+      },
+      {
+        "type": "improved",
+        "text": "Signing up now asks your date of birth and to accept the terms. BullPen is for people aged 18 and over, which is when you can open a brokerage account. Existing accounts are asked once for a date of birth"
+      }
+    ]
+  },
+  {
     "date": "2026-09-18",
     "entries": [
       {
@@ -21,6 +62,10 @@
       {
         "type": "improved",
         "text": "The Revenue Flow chart now works properly on a phone, can be read with a keyboard or a screen reader, and shows a loss instead of leaving the chart half empty. It also labels companies in the currency they actually report in"
+      },
+      {
+        "type": "fixed",
+        "text": "The revenue breakdown on the Revenue Flow chart now fills in for whichever year or quarter you are looking at, not only the most recent one"
       }
     ]
   },
