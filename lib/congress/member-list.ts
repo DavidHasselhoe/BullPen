@@ -47,7 +47,9 @@ export function isCongressMemberSlug(slug: string): slug is CongressMemberSlug {
   return (CONGRESS_MEMBER_SLUGS as readonly string[]).includes(slug);
 }
 
-const PARTY_LABEL: Record<string, string> = {
+/** Filed party codes spelled out. Exported so the Discover filter labels its
+ *  options the same way the cards do. */
+export const PARTY_LABEL: Record<string, string> = {
   D: 'Democrat',
   R: 'Republican',
   I: 'Independent',

@@ -1,11 +1,30 @@
 'use client';
 
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowUpRight } from 'lucide-react';
-import { positionLine } from '@/lib/congress/member-list';
+import { ControlSelect } from '@/components/ui/ControlSelect';
+import { PARTY_LABEL, positionLine } from '@/lib/congress/member-list';
 import { PoliticianAvatar } from './PoliticianAvatar';
 import type { CongressMemberSummary } from '@/app/api/congress/route';
+
+const ALL = 'all';
+
+/**
+ * Filter options are derived from the members actually present, never
+ * hardcoded. A fixed list of 50 states would offer 48 dead options that
+ * return nothing, and the roster changes with every backfill.
+ */
+function optionsFrom(
+  members: CongressMemberSummary[],
+  pick: (m: CongressMemberSummary) => string | null,
+  label: (value: string) => string,
+  allLabel: string,
+): { value: string; label: string }[] {
+  const seen = [...new Set(members.map(pick).filter((v): v is string => !!v))].sort();
+  return [{ value: ALL, label: allLabel }, ...seen.map((v) => ({ value: v, label: label(v) }))];
+}
 
 const MEMBERS_QUERY = {
   queryKey: ['congress-members'] as const,
@@ -46,7 +65,42 @@ function SectionSkeleton() {
 
 export function CongressSection() {
   const { data, isLoading, error } = useQuery(MEMBERS_QUERY);
-  const members = data?.members ?? [];
+  const members = useMemo(() => data?.members ?? [], [data]);
+
+  const [party, setParty] = useState(ALL);
+  const [chamber, setChamber] = useState(ALL);
+  const [state, setState] = useState(ALL);
+
+  const partyOptions = useMemo(
+    () => optionsFrom(members, (m) => m.party, (v) => PARTY_LABEL[v] ?? v, 'All parties'),
+    [members],
+  );
+  const chamberOptions = useMemo(
+    () => optionsFrom(members, (m) => m.chamber, (v) => v, 'All chambers'),
+    [members],
+  );
+  const stateOptions = useMemo(
+    () => optionsFrom(members, (m) => m.state, (v) => v, 'All states'),
+    [members],
+  );
+
+  const visible = useMemo(
+    () =>
+      members.filter(
+        (m) =>
+          (party === ALL || m.party === party) &&
+          (chamber === ALL || m.chamber === chamber) &&
+          (state === ALL || m.state === state),
+      ),
+    [members, party, chamber, state],
+  );
+
+  const filtersActive = party !== ALL || chamber !== ALL || state !== ALL;
+  const clearFilters = () => {
+    setParty(ALL);
+    setChamber(ALL);
+    setState(ALL);
+  };
 
   if (error) return null;
   if (!isLoading && members.length === 0) return null;
@@ -67,11 +121,73 @@ export function CongressSection() {
         figures.
       </p>
 
+      {!isLoading && (
+        <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+          {/* Only offered when there is something to choose between. With one
+              chamber in the roster a chamber filter is decoration. */}
+          {partyOptions.length > 2 && (
+            <ControlSelect
+              id="congress-party"
+              label="Party"
+              value={party}
+              onChange={setParty}
+              options={partyOptions}
+              width="sm:w-[170px]"
+            />
+          )}
+          {chamberOptions.length > 2 && (
+            <ControlSelect
+              id="congress-chamber"
+              label="Chamber"
+              value={chamber}
+              onChange={setChamber}
+              options={chamberOptions}
+              width="sm:w-[170px]"
+            />
+          )}
+          {stateOptions.length > 2 && (
+            <ControlSelect
+              id="congress-state"
+              label="State"
+              value={state}
+              onChange={setState}
+              options={stateOptions}
+              width="sm:w-[140px]"
+            />
+          )}
+          {filtersActive && (
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="inline-flex h-8 items-center rounded-md px-2 text-xs text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              Clear filters
+            </button>
+          )}
+          <p className="ml-auto text-xs tabular-nums text-muted-foreground/80" aria-live="polite">
+            {visible.length === members.length
+              ? `${members.length} members`
+              : `${visible.length} of ${members.length} members`}
+          </p>
+        </div>
+      )}
+
       {isLoading ? (
         <SectionSkeleton />
+      ) : visible.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-border/60 px-6 py-10 text-center">
+          <p className="text-sm text-foreground">No members match these filters.</p>
+          <button
+            type="button"
+            onClick={clearFilters}
+            className="mt-2 text-sm text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            Clear filters
+          </button>
+        </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {members.map((m) => {
+          {visible.map((m) => {
             const lastTrade = formatDate(m.lastTradeDate);
             return (
               <div
