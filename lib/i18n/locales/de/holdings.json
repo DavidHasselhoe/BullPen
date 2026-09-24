@@ -237,6 +237,7 @@
   "portfolioHealthGradeFair": "Befriedigend",
   "portfolioHealthGradeWeak": "Schwach",
   "portfolioHealthGradeAtRisk": "Gefährdet",
+  "riskAnalysisAnalyzingGeneric": "Portfolio wird bewertet. Dauert normalerweise weniger als eine Minute.",
   "riskAnalysisAnalyzingSubtext_one": "Analysiere {{count}} Position. Dauert normalerweise unter einer Minute.",
   "riskAnalysisAnalyzingSubtext_other": "Analysiere {{count}} Positionen. Dauert normalerweise unter einer Minute.",
   "riskAnalysisAskBullAboutThis": "Ask Bull dazu fragen",
@@ -330,5 +331,16 @@
   "analysisHistoryTrendLabel": "Trend",
   "holdingsTableColSymbol": "Symbol",
   "portfolioChartTooltipPortfolio": "Portfolio",
-  "riskAnalysisAnalyzingGeneric": "Portfolio wird bewertet. Dauert normalerweise weniger als eine Minute."
+  "holdingsCash": "Bargeld",
+  "holdingsTableAddCash": "Bargeld hinzufügen",
+  "holdingsTableEditCash": "Bargeld bearbeiten",
+  "cashDialogAddTitle": "Bargeld hinzufügen",
+  "cashDialogEditTitle": "Bargeld bearbeiten",
+  "cashDialogDescription": "Uninvestiertes Bargeld zählt zu deinem Gesamtwert und deiner Allokation. Es wirkt sich nicht auf deine Gewinne oder Verluste aus.",
+  "cashDialogAmountLabel": "Betrag ({{currency}})",
+  "cashDialogRemove": "Bargeld entfernen",
+  "cashDialogSave": "Speichern",
+  "cashDialogSaving": "Wird gespeichert...",
+  "cashDialogError": "Dein Bargeldguthaben konnte nicht gespeichert werden. Bitte versuche es erneut.",
+  "portfolioDashboardPlusCash": "{{amount}} Bargeld"
 }

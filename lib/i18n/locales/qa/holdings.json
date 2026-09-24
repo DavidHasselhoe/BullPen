@@ -330,5 +330,17 @@
   "soldPositionsUpdateError": "«Faaiileed too uupdaatee saalee»",
   "tickerFixNoMatches": "«Noo maatchees foouund»",
   "tickerFixNoPriceFeed": "«{{symbol}} dooees noot haavee aa liivee priicee feeeed riight noow. Try aanootheer liistiing.»",
-  "tickerFixSearchPlaceholder": "«Seeaarch tiickeer oor coompaany naamee…»"
+  "tickerFixSearchPlaceholder": "«Seeaarch tiickeer oor coompaany naamee…»",
+  "holdingsCash": "«Caash»",
+  "holdingsTableAddCash": "«AAdd caash»",
+  "holdingsTableEditCash": "«EEdiit caash»",
+  "cashDialogAddTitle": "«AAdd caash»",
+  "cashDialogEditTitle": "«EEdiit caash»",
+  "cashDialogDescription": "«UUniinveesteed caash coouunts toowaard yoouur tootaal vaaluuee aand aalloocaatiioon. IIt dooees noot aaffeect yoouur gaaiins oor loossees.»",
+  "cashDialogAmountLabel": "«AAmoouunt ({{currency}})»",
+  "cashDialogRemove": "«Reemoovee caash»",
+  "cashDialogSave": "«Saavee»",
+  "cashDialogSaving": "«Saaviing...»",
+  "cashDialogError": "«Coouuld noot saavee yoouur caash baalaancee. Pleeaasee try aagaaiin.»",
+  "portfolioDashboardPlusCash": "«{{amount}} caash»"
 }

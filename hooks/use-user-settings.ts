@@ -4,8 +4,15 @@ import { useCallback } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { DEFAULT_ORDER as DEFAULT_WIDGET_ORDER } from '@/lib/dashboard/widgets';
+import type { CurrencyCode } from '@/lib/currency/currency-conversion';
 
 export type MarketContextMode = 'all' | 'holdings';
+
+/** Uninvested cash the user entered on My Holdings, in the currency they entered it in. */
+export interface CashBalance {
+  amount: number;
+  currency: CurrencyCode;
+}
 
 /** Tool ids shown in the home "Tools shortcut" card before the user customises it. */
 export const DEFAULT_TOOL_SHORTCUTS = ['screener', 'alerts', 'compare'];
@@ -58,6 +65,35 @@ export function useUserSettings() {
   const pinnedTickers: string[] = Array.isArray(settings.pinned_tickers)
     ? (settings.pinned_tickers as string[])
     : [];
+
+  const rawCash = settings.cash_balance as Partial<CashBalance> | null | undefined;
+  const cashBalance: CashBalance | null =
+    rawCash && typeof rawCash.amount === 'number' && rawCash.amount > 0 && rawCash.currency
+      ? { amount: rawCash.amount, currency: rawCash.currency }
+      : null;
+
+  /** Pass null to clear the balance. Throws so the dialog can show the failure. */
+  const updateCashBalance = useCallback(
+    async (cash: CashBalance | null) => {
+      if (!user?.id) return;
+      const supabase = createBrowserClient();
+      const { data: row, error: fetchError } = await supabase
+        .from('users')
+        .select('settings')
+        .eq('id', user.id)
+        .single();
+      if (fetchError) throw fetchError;
+      const existing = (row?.settings as Record<string, unknown>) || {};
+      const merged = { ...existing, cash_balance: cash };
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ settings: merged })
+        .eq('id', user.id);
+      if (updateError) throw updateError;
+      window.dispatchEvent(new Event('auth:refresh'));
+    },
+    [user]
+  );
 
   const updateToolsShortcuts = useCallback(
     async (ids: string[]) => {
@@ -165,5 +201,7 @@ export function useUserSettings() {
     updateToolsShortcuts,
     pinnedTickers,
     updatePinnedTickers,
+    cashBalance,
+    updateCashBalance,
   };
 }

@@ -330,5 +330,17 @@
   "soldPositionsUpdateError": "Failed to update sale",
   "tickerFixNoMatches": "No matches found",
   "tickerFixNoPriceFeed": "{{symbol}} does not have a live price feed right now. Try another listing.",
-  "tickerFixSearchPlaceholder": "Search ticker or company name…"
+  "tickerFixSearchPlaceholder": "Search ticker or company name…",
+  "holdingsCash": "Cash",
+  "holdingsTableAddCash": "Add cash",
+  "holdingsTableEditCash": "Edit cash",
+  "cashDialogAddTitle": "Add cash",
+  "cashDialogEditTitle": "Edit cash",
+  "cashDialogDescription": "Uninvested cash counts toward your total value and allocation. It does not affect your gains or losses.",
+  "cashDialogAmountLabel": "Amount ({{currency}})",
+  "cashDialogRemove": "Remove cash",
+  "cashDialogSave": "Save",
+  "cashDialogSaving": "Saving...",
+  "cashDialogError": "Could not save your cash balance. Please try again.",
+  "portfolioDashboardPlusCash": "{{amount}} cash"
 }

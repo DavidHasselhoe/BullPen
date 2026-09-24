@@ -14,7 +14,7 @@ import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { useHoldings, useRemoveHolding } from '@/hooks/use-holdings';
 import { SoldPositionsModal } from '@/components/holdings/SoldPositionsModal';
 import { useAuth } from '@/hooks/use-auth';
-import { Trash2, Edit2, DollarSign, PlusCircle, ArrowUpRight, ArrowDownRight, Plus, Search, X, Loader2, Upload } from 'lucide-react';
+import { Trash2, Edit2, DollarSign, PlusCircle, ArrowUpRight, ArrowDownRight, Plus, Search, X, Loader2, Upload, Banknote } from 'lucide-react';
 import { logger } from '@/lib/utils/logger';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
 import { cn } from '@/lib/utils';
@@ -67,7 +67,7 @@ import { SellHoldingModal } from './SellHoldingModal';
 import { AddPurchaseModal } from './AddPurchaseModal';
 import { DeleteHoldingDialog } from './DeleteHoldingDialog';
 import type { HoldingWithPrice } from './types';
-import { getSectorLabel } from './HoldingsPieChart';
+import { getSectorLabel, CASH_SECTOR } from './HoldingsPieChart';
 import type { UserHolding } from '@/lib/types/database';
 import { convertCurrency, formatCurrency as formatCurrencyValue, formatNumber as formatNumberUtil, formatPercent as formatPercentUtil, type CurrencyCode } from '@/lib/currency/currency-conversion';
 import { useExchangeRates } from '@/hooks/use-exchange-rates';
@@ -119,6 +119,10 @@ interface HoldingsTableProps {
   hoveredSector?: string | null;
   /** True while batch quotes are in-flight — shows shimmer in price columns. */
   isPricesLoading?: boolean;
+  /** Manually entered cash in the display currency; shown as its own row when > 0. */
+  cashValue?: number;
+  /** Opens the add/edit cash dialog. */
+  onCashClick?: () => void;
 }
 
 // ─── Per-cell skeleton for price columns ─────────────────────────────────────
@@ -135,6 +139,19 @@ function HoldingField({ label, value, valueClass, title }: { label: string; valu
       <span className="text-muted-foreground">{label}</span>
       <span className={cn('font-medium tabular-nums text-foreground', valueClass)} title={title}>{value}</span>
     </div>
+  );
+}
+
+/** Stands in for a company logo on the cash row, same footprint. */
+function CashIcon({ size }: { size: number }) {
+  return (
+    <span
+      className="flex shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground"
+      style={{ width: size, height: size }}
+      aria-hidden="true"
+    >
+      <Banknote className={size > 40 ? 'h-5 w-5' : 'h-4 w-4'} />
+    </span>
   );
 }
 
@@ -473,7 +490,7 @@ const HoldingRow = memo(function HoldingRow({
 
 // ─── Main table ───────────────────────────────────────────────────────────────
 
-export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: externalHoldings, hoveredSector, isPricesLoading }: HoldingsTableProps) {
+export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: externalHoldings, hoveredSector, isPricesLoading, cashValue = 0, onCashClick }: HoldingsTableProps) {
   const { t } = useTranslation('holdings');
   const { data: holdings, isLoading } = useHoldings();
   const { user } = useAuth();
@@ -652,9 +669,19 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
   // Alias so the rest of the component is unchanged.
   const holdingsWithPrices = internalHoldingsWithPrices;
 
+  // Hidden while searching: search filters positions by symbol/name, and cash has neither.
+  const showCash = cashValue > 0 && !search;
+
+  // Same denominator the page uses for the holdings' allocation (positions + cash).
+  const cashAllocation = useMemo(() => {
+    if (cashValue <= 0) return 0;
+    const invested = holdingsWithPrices.reduce((sum, h) => sum + (h.marketValue ?? 0), 0);
+    return (cashValue / (invested + cashValue)) * 100;
+  }, [holdingsWithPrices, cashValue]);
+
   const maxAllocation = useMemo(
-    () => Math.max(...holdingsWithPrices.map((h) => h.allocation ?? 0), 1),
-    [holdingsWithPrices]
+    () => Math.max(...holdingsWithPrices.map((h) => h.allocation ?? 0), cashAllocation, 1),
+    [holdingsWithPrices, cashAllocation]
   );
 
   // Sort holdings
@@ -878,6 +905,15 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
                 className="h-8 gap-1.5 rounded-lg border border-border/60 bg-muted/30 px-3 font-medium text-muted-foreground hover:border-border hover:bg-muted/60"
               />
             )}
+            {onCashClick && cashValue <= 0 && (
+              <button
+                onClick={onCashClick}
+                className="flex items-center gap-1.5 h-8 rounded-lg border border-border/60 bg-muted/30 px-3 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-border hover:bg-muted/60 transition-colors"
+              >
+                <Banknote className="h-3.5 w-3.5" />
+                {t('holdingsTableAddCash')}
+              </button>
+            )}
             <SoldPositionsModal />
           {/* Search */}
           <div className="relative w-full sm:w-56">
@@ -965,6 +1001,23 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
               </div>
             );
           })}
+          {showCash && (
+            <div className="rounded-xl border bg-card p-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <CashIcon size={36} />
+                  <span className="text-sm font-semibold text-foreground">{t('holdingsCash')}</span>
+                </div>
+                <button onClick={onCashClick} title={t('holdingsTableEditCash')} aria-label={t('holdingsTableEditCash')} className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/60 hover:text-foreground">
+                  <Edit2 className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+                <HoldingField label={t('holdingsTableFieldValue')} value={formatCurrencyValue(cashValue, userCurrency ?? 'USD', roundNumbers ? { round: true } : undefined)} />
+                <HoldingField label={t('holdingsTableColAllocation')} value={`${cashAllocation.toFixed(roundNumbers ? 0 : 1)}%`} />
+              </div>
+            </div>
+          )}
           {onAddClick && (
             <button onClick={onAddClick} className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border/60 py-3 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary">
               <Plus className="h-4 w-4" /> {t('holdingsTableAddHolding')}
@@ -1049,6 +1102,50 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
                   onAddPurchase={handleAddPurchaseRow}
                 />
               ))}
+              {showCash && (
+                <tr
+                  className={cn(
+                    'border-b border-border/50 hover:bg-muted/30 transition-all duration-200',
+                    hoveredSector && hoveredSector !== CASH_SECTOR && 'opacity-25'
+                  )}
+                >
+                  <td className="py-4 px-4">
+                    <div className="flex items-center gap-3">
+                      <CashIcon size={48} />
+                      <span className="font-medium text-foreground">{t('holdingsCash')}</span>
+                    </div>
+                  </td>
+                  <td className="py-4 px-4 text-sm text-muted-foreground">—</td>
+                  <td className="py-4 px-4 text-sm text-muted-foreground">—</td>
+                  <td className="py-4 px-4 text-sm text-muted-foreground">—</td>
+                  <td className="py-4 px-4 text-sm text-muted-foreground">—</td>
+                  <td className="py-4 px-4 text-sm font-medium text-foreground">
+                    {formatCurrencyValue(cashValue, userCurrency ?? 'USD', roundNumbers ? { round: true } : undefined)}
+                  </td>
+                  <td className="py-4 px-4 text-sm text-muted-foreground">—</td>
+                  <td className="py-4 px-4">
+                    <div className="flex items-center gap-2.5 min-w-[100px]">
+                      <div className="w-14 h-1 rounded-full bg-muted/50 overflow-hidden shrink-0">
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{ width: `${(cashAllocation / maxAllocation) * 100}%`, backgroundColor: '#a855f7' }}
+                        />
+                      </div>
+                      <span className="text-sm tabular-nums text-foreground">
+                        {cashAllocation.toFixed(roundNumbers ? 0 : 1)}%
+                      </span>
+                    </div>
+                  </td>
+                  <td className="py-4 px-3" />
+                  <td className="py-4 px-4">
+                    <div className="flex items-center justify-end gap-2">
+                      <Button variant="ghost" size="sm" onClick={onCashClick} title={t('holdingsTableEditCash')} aria-label={t('holdingsTableEditCash')}>
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              )}
               {onAddClick && (
                 <tr>
                   <td colSpan={10} className="p-0 align-middle">

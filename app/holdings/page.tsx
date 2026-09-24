@@ -28,6 +28,8 @@ import { useEntitlements } from '@/hooks/use-entitlements';
 import { UpgradeCTA } from '@/components/billing/UpgradeCTA';
 import { convertCurrency, type CurrencyCode } from '@/lib/currency/currency-conversion';
 import { useExchangeRates } from '@/hooks/use-exchange-rates';
+import { useUserSettings } from '@/hooks/use-user-settings';
+import { CashBalanceDialog } from '@/components/holdings/CashBalanceDialog';
 
 type TradingSession = 'pre-market' | 'regular' | 'after-hours' | 'closed';
 
@@ -104,6 +106,21 @@ export default function HoldingsPage() {
         : convertCurrency(1, 'USD', userCurrency, exchangeRates.data),
     [userCurrency, exchangeRates.data]
   );
+
+  // Manually entered cash, in the display currency. Counts toward total value and
+  // allocation only: it has no price, day change or P/L. Stays 0 until the rates
+  // for a foreign-currency balance arrive, rather than showing NOK under a USD label.
+  const { cashBalance } = useUserSettings();
+  const cashNeedsFx = !!cashBalance && cashBalance.currency !== userCurrency;
+  // USD balances reuse currentFxRate; useExchangeRates is disabled for a USD base.
+  const cashRates = useExchangeRates(cashNeedsFx && cashBalance.currency !== 'USD' ? cashBalance.currency : null);
+  const cashValue = useMemo(() => {
+    if (!cashBalance) return 0;
+    if (!cashNeedsFx) return cashBalance.amount;
+    if (cashBalance.currency === 'USD') return exchangeRates.data ? cashBalance.amount * currentFxRate : 0;
+    return cashRates.data ? convertCurrency(cashBalance.amount, cashBalance.currency, userCurrency, cashRates.data) : 0;
+  }, [cashBalance, cashNeedsFx, cashRates.data, userCurrency, exchangeRates.data, currentFxRate]);
+  const [isCashDialogOpen, setIsCashDialogOpen] = useState(false);
 
   // Live price stream — updates prices in real time via WsManager SSE.
   // Holdings pinned to a specific listing (mic_code set) are excluded: the WS
@@ -227,7 +244,7 @@ export default function HoldingsPage() {
       const bq = quotesMap[holding.symbol];
       const price = lp?.price ?? bq?.price;
       return price && holding.quantity ? sum + price * holding.quantity : sum;
-    }, 0);
+    }, cashValue / currentFxRate);
 
     return holdings.map((holding) => {
       const liveQuote = throttledLivePrices.get(holding.symbol);
@@ -315,7 +332,7 @@ export default function HoldingsPage() {
         isPriceStale,
       };
     });
-  }, [holdings, quotesData.data, currentFxRate, throttledLivePrices]);
+  }, [holdings, quotesData.data, currentFxRate, throttledLivePrices, cashValue]);
 
   // Throttle at 3 s so live WebSocket ticks don't thrash the entire UI on every price event.
   // The portfolio value widget updates instantly (it reads livePrices directly via the memo),
@@ -401,7 +418,7 @@ export default function HoldingsPage() {
       {brokerageConfigured && isBrokerageConnected && <BrokerageConnect />}
 
       {/* Stats row — 4 cards */}
-      <PortfolioDashboard holdings={throttledHoldings} currency={userCurrency} isLoading={statsLoading} />
+      <PortfolioDashboard holdings={throttledHoldings} currency={userCurrency} isLoading={statsLoading} cashValue={cashValue} />
 
       {/* Portfolio-level Financial Health bloom */}
       {(statsLoading || throttledHoldings.length > 0) && (
@@ -415,7 +432,7 @@ export default function HoldingsPage() {
             <PortfolioPerformanceChart holdings={throttledHoldings} currency={userCurrency} fxRate={currentFxRate} isLoading={statsLoading} />
           </div>
           <div className="flex flex-col">
-            <HoldingsPieChart holdings={throttledHoldings} currency={userCurrency} onSectorHover={setHoveredSector} isLoading={statsLoading} />
+            <HoldingsPieChart holdings={throttledHoldings} currency={userCurrency} onSectorHover={setHoveredSector} isLoading={statsLoading} cashValue={cashValue} />
           </div>
         </div>
       )}
@@ -432,6 +449,8 @@ export default function HoldingsPage() {
         onAddClick={() => setIsAddModalOpen(true)}
         onImportClick={() => setIsImportModalOpen(true)}
         hoveredSector={hoveredSector}
+        cashValue={cashValue}
+        onCashClick={() => setIsCashDialogOpen(true)}
       />
 
       {/* AI risk analysis */}
@@ -443,6 +462,7 @@ export default function HoldingsPage() {
 
       {/* Add Modal */}
       <AddHoldingModal open={isAddModalOpen} onOpenChange={setIsAddModalOpen} />
+      <CashBalanceDialog open={isCashDialogOpen} onOpenChange={setIsCashDialogOpen} displayCurrency={userCurrency} />
       {/* Import Modal */}
       <CSVImportModal open={isImportModalOpen} onOpenChange={setIsImportModalOpen} />
     </div>

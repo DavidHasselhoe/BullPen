@@ -14,7 +14,12 @@ interface HoldingsPieChartProps {
   currency?: CurrencyCode;
   onSectorHover?: (sector: string | null) => void;
   isLoading?: boolean;
+  /** Manually entered cash in the display currency, its own allocation bucket. */
+  cashValue?: number;
 }
+
+/** Allocation bucket for manually entered cash; the table's cash row highlights on it. */
+export const CASH_SECTOR = 'Cash';
 
 function shortenSector(sector: string): string {
   return sector
@@ -32,13 +37,13 @@ export function getSectorLabel(h: Pick<HoldingWithPrice, 'asset_type' | 'sector'
   return shortenSector(h.sector ?? 'Other');
 }
 
-export function HoldingsPieChart({ holdings, onSectorHover, isLoading }: HoldingsPieChartProps) {
+export function HoldingsPieChart({ holdings, onSectorHover, isLoading, cashValue = 0 }: HoldingsPieChartProps) {
   const { t } = useTranslation('holdings');
   const sectors = useMemo(() => {
-    const totalValue = holdings.reduce((sum, h) => sum + (h.marketValue ?? 0), 0);
+    const totalValue = holdings.reduce((sum, h) => sum + (h.marketValue ?? 0), cashValue);
     if (totalValue === 0) return [];
 
-    const buckets: Record<string, number> = {};
+    const buckets: Record<string, number> = cashValue > 0 ? { [CASH_SECTOR]: cashValue } : {};
     for (const h of holdings) {
       if (!h.marketValue) continue;
       const label = getSectorLabel(h);
@@ -48,7 +53,7 @@ export function HoldingsPieChart({ holdings, onSectorHover, isLoading }: Holding
     return Object.entries(buckets)
       .map(([name, value]) => ({ name, allocation: (value / totalValue) * 100 }))
       .sort((a, b) => b.allocation - a.allocation);
-  }, [holdings]);
+  }, [holdings, cashValue]);
 
   if (isLoading) {
     return (
@@ -104,7 +109,7 @@ export function HoldingsPieChart({ holdings, onSectorHover, isLoading }: Holding
                     className="h-2 w-2 rounded-full shrink-0"
                     style={{ backgroundColor: ALLOCATION_COLORS[i % ALLOCATION_COLORS.length] }}
                   />
-                  <span className="text-sm text-foreground/85 truncate">{sector.name}</span>
+                  <span className="text-sm text-foreground/85 truncate">{sector.name === CASH_SECTOR ? t('holdingsCash') : sector.name}</span>
                 </div>
                 <span className="text-sm font-semibold tabular-nums text-foreground shrink-0 ml-3">
                   {sector.allocation.toFixed(1)}%

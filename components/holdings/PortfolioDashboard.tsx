@@ -15,9 +15,11 @@ interface PortfolioDashboardProps {
   holdings: HoldingWithPrice[];
   currency?: CurrencyCode;
   isLoading?: boolean;
+  /** Manually entered cash, display currency. Added to Total Value only, never to P/L or cost basis. */
+  cashValue?: number;
 }
 
-export function PortfolioDashboard({ holdings, currency = 'USD', isLoading }: PortfolioDashboardProps) {
+export function PortfolioDashboard({ holdings, currency = 'USD', isLoading, cashValue = 0 }: PortfolioDashboardProps) {
   const { t } = useTranslation('holdings');
   const { roundNumbers } = useUserSettings();
   const fmt = (value: number) =>
@@ -84,10 +86,11 @@ export function PortfolioDashboard({ holdings, currency = 'USD', isLoading }: Po
           />
         </div>
         <p className="text-2xl font-bold text-foreground tabular-nums">
-          {fmt(stats.totalValue)}
+          {fmt(stats.totalValue + cashValue)}
         </p>
         <p className="text-xs text-muted-foreground mt-1.5">
           {t('portfolioDashboardAcrossPositions', { count: stats.valuedPositions })}
+          {cashValue > 0 && ` · ${t('portfolioDashboardPlusCash', { amount: fmt(cashValue) })}`}
         </p>
       </div>
 

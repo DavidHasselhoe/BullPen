@@ -240,6 +240,7 @@
   "portfolioHealthGradeFair": "普通",
   "portfolioHealthGradeWeak": "弱い",
   "portfolioHealthGradeAtRisk": "リスク中",
+  "riskAnalysisAnalyzingGeneric": "ポートフォリオをスコアリング中です。通常は1分以内で完了します。",
   "riskAnalysisAnalyzingSubtext_one": "{{count}}件の保有銘柄を分析中。通常1分以内で完了します。",
   "riskAnalysisAnalyzingSubtext_other": "{{count}}件の保有銘柄を分析中。通常1分以内で完了します。",
   "riskAnalysisAskBullAboutThis": "Ask Bullについて聞く",
@@ -330,5 +331,16 @@
   "tickerFixNoMatches": "一致するものが見つかりません",
   "tickerFixNoPriceFeed": "{{symbol}} は現在ライブ価格フィードがありません。別の上場を試してください。",
   "tickerFixSearchPlaceholder": "ティッカーまたは企業名を検索…",
-  "riskAnalysisAnalyzingGeneric": "ポートフォリオをスコアリング中です。通常は1分以内で完了します。"
+  "holdingsCash": "現金",
+  "holdingsTableAddCash": "現金を追加",
+  "holdingsTableEditCash": "現金を編集",
+  "cashDialogAddTitle": "現金を追加",
+  "cashDialogEditTitle": "現金を編集",
+  "cashDialogDescription": "投資していない現金は総資産額とアセットアロケーションに含まれます。利益や損失には影響しません。",
+  "cashDialogAmountLabel": "金額（{{currency}}）",
+  "cashDialogRemove": "現金を削除",
+  "cashDialogSave": "保存",
+  "cashDialogSaving": "保存中...",
+  "cashDialogError": "現金残高を保存できませんでした。もう一度お試しください。",
+  "portfolioDashboardPlusCash": "{{amount}}の現金"
 }

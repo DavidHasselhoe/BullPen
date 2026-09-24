@@ -240,6 +240,7 @@
   "portfolioHealthGradeFair": "Aceptable",
   "portfolioHealthGradeWeak": "Débil",
   "portfolioHealthGradeAtRisk": "En Riesgo",
+  "riskAnalysisAnalyzingGeneric": "Evaluando la cartera. Normalmente menos de un minuto.",
   "riskAnalysisAnalyzingSubtext_one": "Analizando {{count}} posición. Normalmente menos de un minuto.",
   "riskAnalysisAnalyzingSubtext_other": "Analizando {{count}} posiciones. Normalmente menos de un minuto.",
   "riskAnalysisAskBullAboutThis": "Ask Bull sobre esto",
@@ -330,5 +331,16 @@
   "tickerFixNoMatches": "No se encontraron coincidencias",
   "tickerFixNoPriceFeed": "{{symbol}} no tiene una fuente de precios en vivo en este momento. Intenta con otra cotización.",
   "tickerFixSearchPlaceholder": "Busca ticker o nombre de empresa…",
-  "riskAnalysisAnalyzingGeneric": "Evaluando la cartera. Normalmente menos de un minuto."
+  "holdingsCash": "Efectivo",
+  "holdingsTableAddCash": "Agregar efectivo",
+  "holdingsTableEditCash": "Editar efectivo",
+  "cashDialogAddTitle": "Agregar efectivo",
+  "cashDialogEditTitle": "Editar efectivo",
+  "cashDialogDescription": "El efectivo no invertido cuenta para tu valor total y asignación. No afecta tus ganancias o pérdidas.",
+  "cashDialogAmountLabel": "Monto ({{currency}})",
+  "cashDialogRemove": "Eliminar efectivo",
+  "cashDialogSave": "Guardar",
+  "cashDialogSaving": "Guardando...",
+  "cashDialogError": "No se pudo guardar tu saldo de efectivo. Por favor intenta de nuevo.",
+  "portfolioDashboardPlusCash": "{{amount}} efectivo"
 }

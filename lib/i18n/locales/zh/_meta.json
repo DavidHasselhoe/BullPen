@@ -2426,5 +2426,17 @@
   "common.showLess": "94ea9b1d33a02975ea6b71d6cf87d461a48de07869c047b5daeb1654e9d539f8",
   "command-palette.quickActionScreener": "bb31778b3847c248746db7422d166922fbd5c5cfce7c5d4e1f0efa1257c04930",
   "command-palette.setPriceAlertForLabel": "82af8ce93adbedc1b0c139e3cf332c21207e6bf75f7c8bb86ab80279a33b2878",
-  "command-palette.recentlyViewedHeading": "8e445e8aa6d23a303c6d6005453d8bb379e5ce63137031f10bed3d257d2fbf2d"
+  "command-palette.recentlyViewedHeading": "8e445e8aa6d23a303c6d6005453d8bb379e5ce63137031f10bed3d257d2fbf2d",
+  "holdings.holdingsCash": "e2da108f63008e441619d6e89d6389cafcb9a80dd4fe7059c677e1a54fa07bbe",
+  "holdings.holdingsTableAddCash": "bc994a88a046e8479132bb1a214b9c76075c21a9a14dfe2494bcc93e3a9cda3a",
+  "holdings.holdingsTableEditCash": "46412af1c18e6a525ac41c23a4830fab29c250b41a087d3fdaa9876e833f3966",
+  "holdings.cashDialogAddTitle": "bc994a88a046e8479132bb1a214b9c76075c21a9a14dfe2494bcc93e3a9cda3a",
+  "holdings.cashDialogEditTitle": "46412af1c18e6a525ac41c23a4830fab29c250b41a087d3fdaa9876e833f3966",
+  "holdings.cashDialogDescription": "cf151639ee51f778c04107436ca69ec2b396b33730dc2225724c9d8195db12c3",
+  "holdings.cashDialogAmountLabel": "4f8961fd5ca8eeb924cef5c61c20bc9d22d5f1947e007f0144a397b19136ac93",
+  "holdings.cashDialogRemove": "8c14731b72e49aa28f3b9728807efcc424df28534667133f2e09f9a16dc30ddd",
+  "holdings.cashDialogSave": "1509f561f2416598629b886ad7d3c05a7e221e4e0675c84bbff4ee6d9e03913d",
+  "holdings.cashDialogSaving": "dc85af8f2b1d0d6756547cd5f79557466e25e682b882f68d277bd7f125851321",
+  "holdings.cashDialogError": "bfd9df2a44c476db9563cdd564a524d761376d490aad2a0d9b6f71360d2ca81b",
+  "holdings.portfolioDashboardPlusCash": "43697863936198d1f77dede84a32c9129692114601064316042546d69d84c999"
 }
