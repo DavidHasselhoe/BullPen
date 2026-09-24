@@ -26,7 +26,7 @@ import {
   isValidMonthKey,
 } from '@/lib/dates/calendar-format';
 import { useCalendarEvents } from '@/components/tools/calendar/useCalendarEvents';
-import { buildDayModel } from '@/components/tools/calendar/day-model';
+import { buildDayModel, dayHasEvents } from '@/components/tools/calendar/day-model';
 import { YourWeekStrip } from '@/components/tools/calendar/YourWeekStrip';
 import { TypeFilterChips } from '@/components/tools/calendar/TypeFilterChips';
 import { CalendarGrid } from '@/components/tools/calendar/CalendarGrid';
@@ -65,6 +65,8 @@ export function CalendarClientPage() {
     : today;
 
   const [typeFilter, setTypeFilter] = useState<Set<EventType>>(new Set(ALL_TYPES));
+  // Separate from typeFilter: economic releases are not ticker events (see DayModel.economic).
+  const [showEconomic, setShowEconomic] = useState(true);
   const [openDate, setOpenDate] = useState<string | null>(null);
 
   const setParams = useCallback(
@@ -91,7 +93,7 @@ export function CalendarClientPage() {
   }, [view, anchor, today]);
 
   const rangeDates = useMemo(() => weekDatesBetween(from, to), [from, to]);
-  const { events, dayTotals, isLoading, isPartial } = useCalendarEvents(from, to);
+  const { events, economicEvents, dayTotals, isLoading, isPartial } = useCalendarEvents(from, to);
 
   const { data: holdings } = useHoldings();
   const { data: watchlist } = useWatchlist();
@@ -108,8 +110,8 @@ export function CalendarClientPage() {
 
   const cellLimit = view === 'month' ? MONTH_CELL_LIMIT : WEEK_CELL_LIMIT;
   const days = useMemo(
-    () => buildDayModel(events, rangeDates, mySymbols, typeFilter, cellLimit, dayTotals),
-    [events, rangeDates, mySymbols, typeFilter, cellLimit, dayTotals],
+    () => buildDayModel(events, rangeDates, mySymbols, typeFilter, cellLimit, dayTotals, showEconomic ? economicEvents : undefined),
+    [events, rangeDates, mySymbols, typeFilter, cellLimit, dayTotals, showEconomic, economicEvents],
   );
 
   const openModel = days.find((d) => d.date === openDate) ?? null;
@@ -136,7 +138,7 @@ export function CalendarClientPage() {
   const earningsCount = useMemo(() => events.filter((e) => e.type === 'earnings').length, [events]);
   // Gated on !isPartial so a range still filling in never claims to be empty.
   const showEarningsGap = !isLoading && !isPartial && typeFilter.has('earnings') && earningsCount === 0;
-  const hasAnyEvents = days.some((d) => d.total > 0);
+  const hasAnyEvents = days.some(dayHasEvents);
 
   function toggleType(type: EventType) {
     setTypeFilter((prev) => {
@@ -166,7 +168,7 @@ export function CalendarClientPage() {
             </div>
             <div>
               <h1 className="text-2xl font-bold tracking-tight">{t('calendarTitle', 'Market Calendar')}</h1>
-              <p className="mt-0.5 text-sm text-muted-foreground">{t('calendarSubtitle', 'Earnings, dividends, splits & IPOs')}</p>
+              <p className="mt-0.5 text-sm text-muted-foreground">{t('calendarSubtitle', 'Earnings, dividends, splits, IPOs & economic releases')}</p>
             </div>
           </div>
         </div>
@@ -199,7 +201,12 @@ export function CalendarClientPage() {
 
         {/* Type filters */}
         <div className="mb-6">
-          <TypeFilterChips active={typeFilter} onToggle={toggleType} />
+          <TypeFilterChips
+            active={typeFilter}
+            onToggle={toggleType}
+            economicActive={showEconomic}
+            onToggleEconomic={() => setShowEconomic((v) => !v)}
+          />
         </div>
 
         {/* Still filling days outside the pre-warmed window. */}

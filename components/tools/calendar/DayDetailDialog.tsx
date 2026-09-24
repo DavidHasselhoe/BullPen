@@ -2,6 +2,7 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DetailEventRow } from './EventRows';
+import { EconomicDetailRow } from './EconomicEvents';
 import { fmtDayHeader } from '@/lib/dates/calendar-format';
 import type { DayModel } from './types';
 
@@ -19,6 +20,7 @@ export function DayDetailDialog({ model, onOpenChange }: DayDetailDialogProps) {
         </DialogHeader>
         {model && (
           <div className="divide-y divide-border/40">
+            {model.economic.map((e) => <EconomicDetailRow key={e.id} event={e} />)}
             {[...model.mine, ...model.others].map((event, i) => (
               <DetailEventRow key={`${event.type}-${event.symbol}-${i}`} event={event} />
             ))}

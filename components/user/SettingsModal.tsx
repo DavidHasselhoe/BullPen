@@ -211,6 +211,8 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
     dividend_reminder: true,
     daily_challenge_reminder: true,
     institution_filing: true,
+    // Opt-in: ~6-8 market-wide releases a month is noise for anyone not following macro.
+    economic_events: false,
   });
 
   // Jump to initialTab when modal opens (e.g. from AI panel gear icon)
@@ -257,6 +259,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
         dividend_reminder: settings.notifications?.dividend_reminder !== false,
         daily_challenge_reminder: settings.notifications?.daily_challenge_reminder !== false,
         institution_filing: settings.notifications?.institution_filing !== false,
+        economic_events: settings.notifications?.economic_events === true,
       });
       const dh = (settings.default_homepage as string) || '/dashboard';
       setDefaultHomepage(dh);
@@ -849,6 +852,12 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                     description={t('notifEarningsTodayDescription')}
                     checked={notifications.upcoming_earnings}
                     onCheckedChange={(checked) => setNotifications({ ...notifications, upcoming_earnings: checked })}
+                  />
+                  <ToggleSetting
+                    label={t('notifEconomicEventsLabel')}
+                    description={t('notifEconomicEventsDescription')}
+                    checked={notifications.economic_events}
+                    onCheckedChange={(checked) => setNotifications({ ...notifications, economic_events: checked })}
                   />
                   <ToggleSetting
                     label={t('notifBigPriceMovesLabel')}

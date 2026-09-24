@@ -4,6 +4,7 @@ import type {
   SplitsCalendarItem,
   IPOCalendarItem,
 } from '@/lib/twelvedata/twelvedata-client';
+import type { EconomicEvent } from '@/lib/market-data/economic-kinds';
 
 export type EventType = 'earnings' | 'dividends' | 'splits' | 'ipo';
 
@@ -60,4 +61,10 @@ export interface DayModel {
   /** Per-type counts for the whole day, so non-earnings types stay discoverable
    *  even when earnings dominates the ranked list. */
   typeCounts: Record<EventType, number>;
+  /**
+   * Market-wide economic releases on this day, in release order. Kept out of
+   * mine/others/shown/total: they have no ticker, logo or market cap to rank
+   * by, and they are pinned above company events rather than competing with them.
+   */
+  economic: EconomicEvent[];
 }

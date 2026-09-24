@@ -5,6 +5,7 @@ import { DayCell } from './DayCell';
 import { WEEKDAY_LABELS } from '@/lib/dates/calendar-format';
 import { useGridKeyboardNav } from './useGridKeyboardNav';
 import type { DayModel } from './types';
+import { dayHasEvents } from './day-model';
 
 interface CalendarGridProps {
   days: DayModel[];
@@ -25,7 +26,7 @@ interface CalendarGridProps {
 export function CalendarGrid({ days, today, mySymbols, onOpenDay }: CalendarGridProps) {
   const { t } = useTranslation('tools');
   const { gridRef, onKeyDown, activeDate } = useGridKeyboardNav(7);
-  const firstWithEvents = days.find((d) => d.total > 0)?.date ?? null;
+  const firstWithEvents = days.find(dayHasEvents)?.date ?? null;
   const tabStop = activeDate ?? firstWithEvents;
 
   return (

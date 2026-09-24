@@ -11,6 +11,7 @@ import type {
   CalendarResponse,
   EventType,
 } from './types';
+import type { EconomicEvent } from '@/lib/market-data/economic-kinds';
 
 /**
  * Throws on any non-success response (HTTP-level or `{success:false}` in the
@@ -27,6 +28,8 @@ async function fetchCalendar<T>(url: string): Promise<CalendarResponse<T>> {
   }
   return body;
 }
+
+const EMPTY_ECONOMIC: EconomicEvent[] = [];
 
 /** Poll interval while the server is still filling days in the background. */
 const PARTIAL_REFETCH_MS = 1500;
@@ -70,6 +73,14 @@ export function useCalendarEvents(from: string, to: string) {
     ...common,
   });
 
+  // Our own table, no provider behind it, so never partial.
+  const economicQ = useQuery<CalendarResponse<EconomicEvent>>({
+    queryKey: ['calendar-economic', from, to],
+    queryFn: () => fetchCalendar<EconomicEvent>(`/api/calendar/economic?from=${from}&to=${to}`),
+    staleTime: 60 * 60 * 1000,
+  });
+  const economicEvents = economicQ.data?.data ?? EMPTY_ECONOMIC;
+
   const events = useMemo<UnifiedEvent[]>(() => {
     const out: UnifiedEvent[] = [];
     for (const e of earningsQ.data?.data ?? []) {
@@ -112,5 +123,5 @@ export function useCalendarEvents(from: string, to: string) {
   );
   const error = earningsQ.error ?? dividendsQ.error ?? splitsQ.error ?? ipoQ.error ?? null;
 
-  return { events, dayTotals, isLoading, isPartial, error };
+  return { events, economicEvents, dayTotals, isLoading, isPartial, error };
 }

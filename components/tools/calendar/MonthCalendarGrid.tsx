@@ -8,6 +8,7 @@ import { DayCell } from './DayCell';
 import { WeekdayHeader } from './CalendarGrid';
 import { useGridKeyboardNav } from './useGridKeyboardNav';
 import type { DayModel } from './types';
+import { dayHasEvents } from './day-model';
 
 interface MonthCalendarGridProps {
   monthKey: string;
@@ -39,7 +40,7 @@ export function MonthCalendarGrid({ monthKey, days, today, mySymbols, onOpenDay 
   const weeks = monthWeeks(monthKey);
   const { gridRef, onKeyDown, activeDate } = useGridKeyboardNav(7);
 
-  const firstWithEvents = days.find((d) => d.total > 0)?.date ?? null;
+  const firstWithEvents = days.find(dayHasEvents)?.date ?? null;
   const tabStop = activeDate ?? firstWithEvents;
 
   return (

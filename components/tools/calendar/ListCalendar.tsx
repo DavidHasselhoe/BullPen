@@ -9,6 +9,8 @@ import { compactMetric } from './EventRows';
 import { TYPE_ICONS, getTypeLabels } from './LogoTile';
 import { fmtFullDate } from '@/lib/dates/calendar-format';
 import type { DayModel, UnifiedEvent } from './types';
+import { dayHasEvents } from './day-model';
+import { EconomicDetailRow } from './EconomicEvents';
 
 interface ListCalendarProps {
   days: DayModel[];
@@ -85,7 +87,7 @@ function EventListRow({ event, isMine, isOwned }: { event: UnifiedEvent; isMine:
  */
 export function ListCalendar({ days, today, mySymbols, holdingSymbols, onOpenDay }: ListCalendarProps) {
   const { t } = useTranslation('tools');
-  const withEvents = days.filter((d) => d.total > 0);
+  const withEvents = days.filter(dayHasEvents);
 
   if (withEvents.length === 0) return null;
 
@@ -109,10 +111,15 @@ export function ListCalendar({ days, today, mySymbols, holdingSymbols, onOpenDay
                 {fmtFullDate(day.date)}
                 {isToday && <span className="ml-1.5 normal-case tracking-normal">{t('calendarTodaySuffix')}</span>}
               </span>
-              <span className="font-mono tabular-nums text-muted-foreground/60">{day.total}</span>
+              <span className="font-mono tabular-nums text-muted-foreground/60">{day.total + day.economic.length}</span>
             </h3>
 
             <div className="flex flex-col pb-2">
+              {day.economic.length > 0 && (
+                <div className="divide-y divide-border/40 border-b border-border/40">
+                  {day.economic.map((e) => <EconomicDetailRow key={e.id} event={e} />)}
+                </div>
+              )}
               {rows.map((event, i) => (
                 <EventListRow
                   key={`${event.type}-${event.symbol}-${i}`}

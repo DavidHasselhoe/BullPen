@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { LogoTile, LOGO_PX, TYPE_ICONS } from './LogoTile';
 import { compactMetric } from './EventRows';
+import { EconomicChip } from './EconomicEvents';
 import { fmtDayHeader, fmtFullDate } from '@/lib/dates/calendar-format';
 import type { DayModel, EventType } from './types';
 
@@ -64,7 +65,7 @@ export function DayCell({ model, today, mySymbols, onOpenDay, compact, tabIndex 
     isToday ? 'text-primary' : 'text-muted-foreground/70',
   );
 
-  if (model.total === 0) {
+  if (model.total === 0 && model.economic.length === 0) {
     return (
       <div
         data-cal-cell
@@ -82,7 +83,7 @@ export function DayCell({ model, today, mySymbols, onOpenDay, compact, tabIndex 
       data-cal-cell
       tabIndex={tabIndex}
       onClick={() => onOpenDay(model.date)}
-      aria-label={t('calendarEventsAriaLabel', { count: model.total, date: fmtFullDate(model.date) })}
+      aria-label={t('calendarEventsAriaLabel', { count: model.total + model.economic.length, date: fmtFullDate(model.date) })}
       className={cn(
         'flex flex-col gap-1.5 rounded-lg text-left border transition-all',
         'hover:shadow-md hover:-translate-y-0.5 motion-reduce:hover:translate-y-0',
@@ -92,6 +93,14 @@ export function DayCell({ model, today, mySymbols, onOpenDay, compact, tabIndex 
       )}
     >
       <span className={headerClass}>{dayLabel}</span>
+
+      {/* Market-wide releases pinned above company events: a CPI print moves
+          everything that day, so it outranks the day's 40th earnings report. */}
+      {model.economic.length > 0 && (
+        <span className={cn('flex gap-1', compact ? 'flex-wrap' : 'flex-col')}>
+          {model.economic.map((e) => <EconomicChip key={e.id} event={e} compact={compact} />)}
+        </span>
+      )}
 
       {compact ? (
         // Wrapped tile cluster, logo only. 4 per row at 20px + 4px gap = 92px,

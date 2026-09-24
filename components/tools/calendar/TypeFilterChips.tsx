@@ -2,32 +2,35 @@
 
 import type { ElementType } from 'react';
 import { useTranslation } from 'react-i18next';
-import { TrendingUp, DollarSign, Scissors, Rocket } from 'lucide-react';
+import { TrendingUp, DollarSign, Scissors, Rocket, Landmark } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { EventType } from './types';
 
 interface TypeFilterChipsProps {
   active: Set<EventType>;
   onToggle: (type: EventType) => void;
+  economicActive: boolean;
+  onToggleEconomic: () => void;
 }
 
-export function TypeFilterChips({ active, onToggle }: TypeFilterChipsProps) {
+export function TypeFilterChips({ active, onToggle, economicActive, onToggleEconomic }: TypeFilterChipsProps) {
   const { t } = useTranslation('tools');
-  const TYPES: { key: EventType; label: string; icon: ElementType }[] = [
+  const TYPES: { key: EventType | 'economic'; label: string; icon: ElementType }[] = [
     { key: 'earnings', label: t('calendarFilterEarnings'), icon: TrendingUp },
     { key: 'dividends', label: t('calendarFilterDividends'), icon: DollarSign },
     { key: 'splits', label: t('calendarFilterSplits'), icon: Scissors },
     { key: 'ipo', label: t('calendarFilterIpos'), icon: Rocket },
+    { key: 'economic', label: t('calendarFilterEconomic'), icon: Landmark },
   ];
   return (
     <div className="flex items-center gap-1.5 flex-wrap">
       {TYPES.map(({ key, label, icon: Icon }) => {
-        const isActive = active.has(key);
+        const isActive = key === 'economic' ? economicActive : active.has(key);
         return (
           <button
             key={key}
             type="button"
-            onClick={() => onToggle(key)}
+            onClick={() => (key === 'economic' ? onToggleEconomic() : onToggle(key))}
             aria-pressed={isActive}
             className={cn(
               'flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium border transition-all',

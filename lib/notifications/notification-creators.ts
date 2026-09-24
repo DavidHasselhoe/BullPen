@@ -10,6 +10,7 @@
 
 import { createNotification, type CreateNotificationInput } from './notifications-db';
 import { createServerClient } from '@/lib/supabase/client';
+import { ECONOMIC_KINDS, type EconomicKind } from '@/lib/market-data/economic-kinds';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -568,4 +569,72 @@ export async function notifyInstitutionFilingChange(notice: InstitutionFilingNot
   }
 
   return sent;
+}
+
+// ─── Economic calendar ───────────────────────────────────────────────────────
+
+export interface EconomicReleaseToday {
+  kind: EconomicKind;
+  release_at: string;
+}
+
+/**
+ * Morning-of heads-up for today's scheduled economic releases, to users who
+ * opted in (settings.notifications.economic_events === true; off by default,
+ * unlike the per-holding notifications, because it is market-wide).
+ *
+ * The stored title/message carry ET times as a fallback. The notification
+ * list re-renders the times in the viewer's own zone and adds the read/watch
+ * links from entity_id ("economic:<date>").
+ */
+export async function notifyEconomicEventsToday(date: string, events: EconomicReleaseToday[]): Promise<number> {
+  if (events.length === 0) return 0;
+  const supabase = createServerClient();
+  const entityId = `economic:${date}`;
+
+  // Opted-in users, paginated: PostgREST silently caps an unbounded select at 1000.
+  const userIds: string[] = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await supabase
+      .from('users')
+      .select('id')
+      .eq('settings->notifications->>economic_events', 'true')
+      .order('id')
+      .range(from, from + 999);
+    if (error) throw error;
+    userIds.push(...(data ?? []).map((u) => u.id as string));
+    if (!data || data.length < 1000) break;
+  }
+  if (userIds.length === 0) return 0;
+
+  // One query for everyone already told about today, instead of one per user.
+  const { data: existing } = await supabase
+    .from('notifications')
+    .select('user_id')
+    .eq('entity_id', entityId)
+    .in('user_id', userIds);
+  const done = new Set((existing ?? []).map((n) => n.user_id as string));
+
+  const et = (iso: string) =>
+    new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' });
+  const first = events[0];
+  const title = events.length === 1
+    ? `${ECONOMIC_KINDS[first.kind].name} today at ${et(first.release_at)} ET`
+    : `${events.length} economic releases today`;
+  const message = events.map((e) => `${ECONOMIC_KINDS[e.kind].name} at ${et(e.release_at)} ET`).join(' · ');
+
+  const rows = userIds.filter((id) => !done.has(id)).map((user_id) => ({
+    user_id,
+    type: 'market',
+    title,
+    message,
+    entity_type: 'market',
+    entity_id: entityId,
+    severity: 'info',
+  }));
+  for (let i = 0; i < rows.length; i += 500) {
+    const { error } = await supabase.from('notifications').insert(rows.slice(i, i + 500));
+    if (error) throw error;
+  }
+  return rows.length;
 }

@@ -1,4 +1,10 @@
 import type { EventType, UnifiedEvent, DayModel } from './types';
+import type { EconomicEvent } from '@/lib/market-data/economic-kinds';
+
+/** True when a day has anything to show, company or economic. */
+export function dayHasEvents(day: DayModel): boolean {
+  return day.total > 0 || day.economic.length > 0;
+}
 
 /** Default max rows a compact grid cell shows before collapsing the rest into
  *  "+N more" — the week grid's cells have room for this many; the month
@@ -6,6 +12,7 @@ import type { EventType, UnifiedEvent, DayModel } from './types';
 const CELL_LIMIT = 3;
 
 const EMPTY_EVENTS: UnifiedEvent[] = [];
+const EMPTY_ECONOMIC: EconomicEvent[] = [];
 
 function emptyTypeCounts(): Record<EventType, number> {
   return { earnings: 0, dividends: 0, splits: 0, ipo: 0 };
@@ -36,7 +43,16 @@ export function buildDayModel(
   typeFilter: Set<EventType>,
   cellLimit: number = CELL_LIMIT,
   dayTotals?: Record<string, Partial<Record<EventType, number>>>,
+  /** Already filtered by the caller (empty when the Economic chip is off). */
+  economic: EconomicEvent[] = EMPTY_ECONOMIC,
 ): DayModel[] {
+  const economicByDate = new Map<string, EconomicEvent[]>();
+  for (const e of economic) {
+    const bucket = economicByDate.get(e.date);
+    if (bucket) bucket.push(e);
+    else economicByDate.set(e.date, [e]);
+  }
+
   // One pass to filter, one sort for the whole list. Uppercasing happens once
   // per event rather than once per event per day.
   const filtered: Array<UnifiedEvent & { _sym: string }> = [];
@@ -108,6 +124,7 @@ export function buildDayModel(
       moreCount: Math.max(0, total - shown.length),
       total,
       typeCounts,
+      economic: economicByDate.get(date) ?? EMPTY_ECONOMIC,
     };
   });
 }

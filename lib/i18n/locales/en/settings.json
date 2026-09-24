@@ -181,5 +181,7 @@
   "theme": "Theme",
   "themeDark": "Dark",
   "themeLight": "Light",
-  "title": "Settings"
+  "title": "Settings",
+  "notifEconomicEventsLabel": "Economic Releases",
+  "notifEconomicEventsDescription": "A morning heads-up on days with a jobs report, CPI, Fed decision or other major US release, with the time in your time zone."
 }

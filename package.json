@@ -33,6 +33,8 @@
     "test-og-fonts": "tsx scripts/test-og-fonts.ts",
     "test-peer-quotable": "tsx scripts/test-peer-quotable.ts",
     "test-search-ranking": "tsx scripts/test-search-ranking.ts",
+    "test-economic-calendar": "tsx scripts/test-economic-calendar.ts",
+    "sync-economic-calendar": "tsx scripts/sync-economic-calendar.ts",
     "refresh-search-index": "tsx scripts/refresh-search-index.ts",
     "test-import": "tsx scripts/test-import.ts",
     "trigger-cron": "tsx scripts/trigger-cron.ts",

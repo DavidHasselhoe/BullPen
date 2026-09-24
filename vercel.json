@@ -26,6 +26,14 @@
       "schedule": "0 8 * * *"
     },
     {
+      "path": "/api/cron/check-economic-events",
+      "schedule": "0 8 * * 1-5"
+    },
+    {
+      "path": "/api/cron/sync-economic-calendar",
+      "schedule": "15 5 * * 1"
+    },
+    {
       "path": "/api/cron/check-price-moves",
       "schedule": "30 21 * * 1-5"
     },

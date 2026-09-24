@@ -5,6 +5,8 @@ import { ArrowUpRight, ArrowDownRight, BarChart2, Sparkles, Bell, ChevronRight, 
 import { cn } from '@/lib/utils';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import type { Notification } from '@/lib/notifications/notifications-db';
+import { useQuery } from '@tanstack/react-query';
+import { ECONOMIC_KINDS, fmtReleaseTimeWithZone, type EconomicEvent } from '@/lib/market-data/economic-kinds';
 
 function formatRelativeTime(dateString: string): string {
   const date = new Date(dateString);
@@ -233,7 +235,91 @@ interface NotificationItemProps {
   onMarkRead: (notificationId: string) => void;
 }
 
+/**
+ * Morning-of economic releases. Not a single Link like the other cards: each
+ * release links out to where it is published, so the card holds several
+ * links instead of being one. Times re-render in the reader's own zone; the
+ * stored message (ET times) shows until the day's events load.
+ */
+function EconomicNotification({ notification, date, onRead }: { notification: Notification; date: string; onRead: () => void }) {
+  const { data: events } = useQuery<EconomicEvent[]>({
+    // Own key: the calendar caches the whole response under calendar-economic, this caches the array.
+    queryKey: ['notification-economic', date],
+    queryFn: async () => {
+      const res = await fetch(`/api/calendar/economic?from=${date}&to=${date}`);
+      const body = await res.json();
+      if (!res.ok || !body.success) throw new Error(body.error ?? 'Failed');
+      return body.data;
+    },
+    staleTime: 60 * 60 * 1000,
+  });
+
+  return (
+    <div
+      onClick={onRead}
+      className={cn('flex items-start gap-3 px-4 py-3 transition-colors hover:bg-muted/40', !notification.is_read && 'bg-primary/[0.04]')}
+    >
+      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-foreground/[0.04]">
+        <Landmark className="h-4 w-4 shrink-0 text-foreground/80" />
+      </div>
+      <div className="flex-1 min-w-0 space-y-1">
+        <div className="flex items-start justify-between gap-2">
+          <p className={cn('text-xs font-semibold leading-snug', !notification.is_read ? 'text-foreground' : 'text-muted-foreground')}>
+            {notification.title}
+            {!notification.is_read && <span className="inline-block ml-1.5 h-1.5 w-1.5 rounded-full bg-primary align-middle" />}
+          </p>
+          <span className="text-[11px] text-muted-foreground/85 shrink-0 tabular-nums">{formatRelativeTime(notification.created_at)}</span>
+        </div>
+        {events && events.length > 0 ? (
+          <ul className="space-y-0.5">
+            {events.map((e) => {
+              const meta = ECONOMIC_KINDS[e.kind];
+              return (
+                <li key={e.id} className="flex flex-wrap items-center gap-x-1.5 text-[11px] leading-snug text-muted-foreground/90">
+                  <a href={meta.sourceUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-0.5 font-medium text-foreground/85 hover:text-primary">
+                    {meta.name}
+                    <ArrowUpRight className="h-2.5 w-2.5" aria-hidden />
+                  </a>
+                  <span className="tabular-nums">{fmtReleaseTimeWithZone(e.release_at)}</span>
+                  {meta.watchUrl && (
+                    <a href={meta.watchUrl} target="_blank" rel="noopener noreferrer" className="font-medium text-foreground/85 hover:text-primary">
+                      · Watch live
+                    </a>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p className="text-[11px] text-muted-foreground/85 leading-snug">{notification.message}</p>
+        )}
+        <Link
+          href={`/tools/calendar?view=week&date=${date}`}
+          className="inline-flex items-center gap-0.5 pt-0.5 text-[11px] font-medium text-muted-foreground/80 hover:text-foreground"
+        >
+          Market Calendar
+          <ChevronRight className="h-2.5 w-2.5" />
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 export function NotificationItem({ notification, onMarkRead }: NotificationItemProps) {
+  // "economic:<date>" from notifyEconomicEventsToday.
+  if (notification.entity_id?.startsWith('economic:')) {
+    return (
+      <EconomicNotification
+        notification={notification}
+        date={notification.entity_id.slice('economic:'.length)}
+        onRead={() => { if (!notification.is_read) onMarkRead(notification.id); }}
+      />
+    );
+  }
+  return <StandardNotificationItem notification={notification} onMarkRead={onMarkRead} />;
+}
+
+function StandardNotificationItem({ notification, onMarkRead }: NotificationItemProps) {
   const source = notificationSource(notification);
   const handleClick = () => {
     if (!notification.is_read) onMarkRead(notification.id);

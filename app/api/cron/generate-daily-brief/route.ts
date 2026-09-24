@@ -18,6 +18,8 @@ import { logSecurityEvent } from '@/lib/security/security-events';
 import Anthropic from '@anthropic-ai/sdk';
 import { createServerClient } from '@/lib/supabase/client';
 import type { EarningsCalendarItem } from '@/lib/twelvedata/twelvedata-client';
+import { getEconomicEvents } from '@/lib/market-data/economic-calendar';
+import { ECONOMIC_KINDS } from '@/lib/market-data/economic-kinds';
 import { getCalendarDay } from '@/lib/market-data/calendar-days';
 import { getTopMovers, getStockQuotes } from '@/lib/market-data';
 import { logAiCall } from '@/lib/billing/log-ai-call';
@@ -397,6 +399,28 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const todayEarningsData = (todayEarnings.status === 'fulfilled' ? todayEarnings.value : []) ?? [];
   const tomorrowEarningsData = (tomorrowEarnings.status === 'fulfilled' ? tomorrowEarnings.value : []) ?? [];
   const movers = moversResult.status === 'fulfilled' ? moversResult.value : { gainers: [], losers: [] };
+
+  // Scheduled releases from the official agency calendars (our own table, no
+  // credits), so "Watch Today" / "Next 24 Hours" get exact times instead of
+  // whatever web search turns up. Non-fatal: the brief ran without it before.
+  let economicBlock = '';
+  try {
+    const releases = await getEconomicEvents(todayET, tomorrowET);
+    const et = (iso: string) => new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' });
+    const line = (e: (typeof releases)[number]) =>
+      `- ${ECONOMIC_KINDS[e.kind].name}${e.detail ? ` (${e.detail})` : ''} at ${et(e.release_at)} ET${e.has_projections ? ', with new Fed projections' : ''}`;
+    const todayLines = releases.filter((e) => e.date === todayET).map(line);
+    const tomorrowLines = releases.filter((e) => e.date === tomorrowET).map(line);
+    economicBlock = [
+      '',
+      'SCHEDULED US ECONOMIC RELEASES (official BLS/BEA/Fed calendars; these dates and times are exact, use them as given):',
+      'Today:', ...(todayLines.length ? todayLines : ['none scheduled']),
+      'Tomorrow:', ...(tomorrowLines.length ? tomorrowLines : ['none scheduled']),
+      '',
+    ].join('\n');
+  } catch (err) {
+    console.warn('[generate-daily-brief] economic calendar unavailable, continuing without it', err);
+  }
   const prevBrief = yesterdayBrief.status === 'fulfilled' ? yesterdayBrief.value.data : null;
   const marketCtx = marketContextResult.status === 'fulfilled' ? marketContextResult.value : { vix: null, treasury10y: null };
 
@@ -530,6 +554,7 @@ ${todayReportersText}
 TOMORROW'S SCHEDULED REPORTERS (for "Next 24 Hours"):
 ${tomorrowReportersText}
 
+${economicBlock}
 YESTERDAY'S TOP MOVERS:
 Gainers: ${topGainers}
 Losers:  ${topLosers}
