@@ -18,6 +18,7 @@ import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query
 import { getEnrichedMovers } from '@/lib/market-data/movers-enriched';
 import { getHotPicks } from '@/lib/discover/hot-picks';
 import { HOT_PICKS_QUERY_KEY } from '@/lib/discover/hot-picks-query';
+import { getInitialWelcome } from '@/lib/dashboard/initial-welcome';
 import DashboardClient from './DashboardClient';
 
 export default async function DashboardPage() {
@@ -25,6 +26,9 @@ export default async function DashboardPage() {
 
   // Prefetched in parallel and individually non-fatal: a failure here just means
   // the client asks for that one itself, exactly as it did before.
+  // The greeting is resolved alongside the prefetches, never after them: it is
+  // the page's largest text, so it should not wait on anything slower than itself.
+  const welcomePromise = getInitialWelcome();
   await Promise.allSettled([
     queryClient.prefetchQuery({
       // Must match useTopMoversWithStream(5, null) — ['market','movers','rest',limit,symbolsKey]
@@ -41,7 +45,7 @@ export default async function DashboardPage() {
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <DashboardClient />
+      <DashboardClient initialWelcome={await welcomePromise} />
     </HydrationBoundary>
   );
 }

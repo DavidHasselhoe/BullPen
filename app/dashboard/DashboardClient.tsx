@@ -4,6 +4,7 @@ import { Pencil } from 'lucide-react';
 import { HomepageRedirect } from '@/components/navigation/HomepageRedirect';
 import { CommandBar } from '@/components/command-palette/CommandBar';
 import { WelcomeMessage } from '@/components/ui/WelcomeMessage';
+import type { InitialWelcome } from '@/lib/dashboard/greeting';
 import { Button } from '@/components/ui/button';
 import { useBackground } from '@/hooks/use-background';
 import { MarketContextSection } from '@/components/market/MarketContextSection';
@@ -74,7 +75,7 @@ function WidgetSlot({ id }: { id: string }) {
   }
 }
 
-export default function DashboardClient() {
+export default function DashboardClient({ initialWelcome }: { initialWelcome?: InitialWelcome | null }) {
   const { hasAnimatedBackground } = useBackground();
   const { showWelcomeText, homepageWidgetOrder, homepageWidgetHidden } = useUserSettings();
 
@@ -92,7 +93,7 @@ export default function DashboardClient() {
         {/* SECTION: Search / Command bar — fixed header, not reorderable */}
         <section className="mb-10">
           <div className="flex flex-col gap-4">
-            {showWelcomeText && <WelcomeMessage />}
+            {showWelcomeText && <WelcomeMessage initial={initialWelcome} />}
             <div className="flex flex-col sm:flex-row gap-4 items-stretch">
               <div className="flex-1 min-w-0">
                 <CommandBar />

@@ -1,26 +1,43 @@
 'use client';
 
+import { useEffect, useSyncExternalStore } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useMarketStatus } from '@/hooks/use-market-status';
 import { formatTimeUntilShort } from '@/lib/market/market-status';
+import { GREETING_TEXT, TZ_COOKIE, greetingForHour, type InitialWelcome } from '@/lib/dashboard/greeting';
 
-function getTimeGreeting(): string {
-  const hour = new Date().getHours();
-  if (hour < 12) return 'Good morning';
-  if (hour < 17) return 'Good afternoon';
-  return 'Good evening';
-}
+const noopSubscribe = () => () => {};
 
-export function WelcomeMessage() {
+/**
+ * `initial` is the heading as the server resolved it (lib/dashboard/initial-welcome.ts),
+ * so the page's largest text is in the first HTML rather than waiting for the
+ * browser to load the profile. Hydration renders exactly that; the browser's
+ * own clock and profile take over right after, and agree with it whenever the
+ * timezone cookie was already set.
+ */
+export function WelcomeMessage({ initial }: { initial?: InitialWelcome | null }) {
   const { user, isAuthenticated, isLoading } = useAuth();
   const { data: nyseStatus } = useMarketStatus('NYSE');
+  const hydrated = useSyncExternalStore(noopSubscribe, () => true, () => false);
 
-  if (isLoading || !isAuthenticated || !user) {
+  // Tell the server the viewer's timezone for the next render. A DOM side
+  // effect, not state. A year is plenty; it is rewritten on every visit anyway.
+  useEffect(() => {
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      document.cookie = `${TZ_COOKIE}=${encodeURIComponent(tz)}; path=/; max-age=31536000; samesite=lax`;
+    } catch { /* no Intl zone support */ }
+  }, []);
+
+  const signedIn = !isLoading && isAuthenticated && !!user;
+  if (!signedIn && !(isLoading && initial)) {
     return null;
   }
 
-  const displayName = user.full_name || user.username || user.email?.split('@')[0] || 'User';
-  const greeting = getTimeGreeting();
+  const displayName = user
+    ? user.full_name || user.username || user.email?.split('@')[0] || 'User'
+    : initial!.name;
+  const greeting = GREETING_TEXT[hydrated ? greetingForHour(new Date().getHours()) : (initial?.greeting ?? 'back')];
   const marketOpen = nyseStatus && !nyseStatus.isHoliday && nyseStatus.isOpen;
 
   const marketContext = nyseStatus && !nyseStatus.isHoliday
