@@ -76,7 +76,7 @@ export default function AlertsClientPage() {
 
   return (
     <div className={cn('min-h-screen', !hasAnimatedBackground && 'bg-background')}>
-      <div className="max-w-2xl mx-auto px-4 py-6 sm:py-10 space-y-8">
+      <div className="max-w-3xl mx-auto px-4 py-6 sm:px-6 sm:py-10 lg:px-8 space-y-8">
 
         {/* Header */}
         <div className="pb-4 border-b border-border/30">

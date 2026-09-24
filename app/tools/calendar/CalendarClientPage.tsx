@@ -169,7 +169,7 @@ export function CalendarClientPage() {
 
   return (
     <div className={cn('min-h-screen', hasAnimatedBackground ? '' : 'bg-background')}>
-      <main className="container mx-auto max-w-5xl py-10 px-4 sm:px-6 lg:px-8">
+      <main className="container mx-auto max-w-6xl py-10 px-4 sm:px-6 lg:px-8">
 
         {/* Header */}
         <div className="mb-8">

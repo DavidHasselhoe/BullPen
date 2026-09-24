@@ -94,7 +94,7 @@ export default function SocialFeedPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-2xl mx-auto px-4 py-10 space-y-6">
+      <div className="max-w-3xl mx-auto px-4 py-10 sm:px-6 lg:px-8 space-y-6">
 
         {/* Header */}
         <div className="flex items-center gap-3">

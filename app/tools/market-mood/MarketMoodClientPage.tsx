@@ -41,7 +41,7 @@ export default function MarketMoodClientPage() {
 
   return (
     <div className={cn('min-h-screen', !hasAnimatedBackground && 'bg-background')}>
-      <div className="max-w-2xl mx-auto px-4 py-6 sm:py-10 space-y-10">
+      <div className="max-w-3xl mx-auto px-4 py-6 sm:px-6 sm:py-10 lg:px-8 space-y-10">
 
         {/* Header */}
         <div className="mb-2">

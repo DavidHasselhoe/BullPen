@@ -199,6 +199,13 @@ Three button languages by register, and the split is intentional, not an inconsi
 ### Navigation
 Sidebar/top nav uses the same neutral surface tokens as cards (`--sidebar`, one step off background), with active/hover states driven by the same `accent`/`accent-foreground` pair used for interactive product chrome — never the emerald signal color, which stays reserved for financial meaning.
 
+### Page Width
+Three widths, chosen by what the page is, so the header does not jump as people move around the app. Every in-app page wrapper uses the same side padding, `px-4 sm:px-6 lg:px-8`, so pages of one width start their content at exactly the same x.
+- **Standard, `max-w-6xl` (1152px):** the default for card grids and mixed pages: Dashboard, Discover, Watchlist, Members, Tools, Market Calendar, Compare, Picks. Wide enough for four watchlist cards or seven calendar columns without truncating, narrow enough that a card row does not drift apart on a large monitor.
+- **Wide, `max-w-7xl` (1280px):** data-dense pages with big tables or a chart beside side panels: Holdings, stock/ETF/asset pages, Heatmap. A loading skeleton uses the same width as the page it stands in for.
+- **Reading, `max-w-3xl` (768px):** single-column lists and prose: Feed, Notifications, Price Alerts, Market Mood, profiles, AI chat, Deep Dive.
+Form-first tools (Dividend calculator, Buy Here, Portfolio Builder at `max-w-4xl`) and Academy lessons (`max-w-2xl`, a lesson's reading measure) are deliberate exceptions. A new page picks one of the three unless it is one of those.
+
 ### Signature Component: The Serif Accent Headline
 The landing page's defining move: a bold Geist Sans headline with exactly one word swapped into italic Instrument Serif, colored in Signal Emerald (`"The market, *explained.*"`). It's the single most identity-carrying detail in the whole system — worth protecting from dilution (don't add a second serif word, don't use it outside marketing headlines).
 

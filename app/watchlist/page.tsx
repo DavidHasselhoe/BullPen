@@ -176,7 +176,7 @@ export default function WatchlistPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-5xl mx-auto px-4 py-10 space-y-8">
+      <div className="max-w-6xl mx-auto px-4 py-10 sm:px-6 lg:px-8 space-y-8">
 
         {/* Header: stacks on phones, where title + toolbar + a 288px search do not fit one row */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">

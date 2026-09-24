@@ -80,7 +80,7 @@ export default function NotificationsPage() {
 
   return (
     <div className={cn('min-h-screen', !hasAnimatedBackground && 'bg-background')}>
-      <main className="container mx-auto max-w-2xl px-4 py-6 sm:py-10">
+      <main className="container mx-auto max-w-3xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
         <Link
           href="/dashboard"
           className="group mb-4 inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"

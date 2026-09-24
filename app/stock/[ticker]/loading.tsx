@@ -16,7 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 export default function StockLoading() {
   return (
     <div className="min-h-screen bg-background">
-      <main className="container mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+      <main className="container mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <Skeleton className="mb-6 h-5 w-16" />
 
         <div className="mb-8 rounded-xl border border-border bg-card p-6">

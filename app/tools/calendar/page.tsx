@@ -13,7 +13,7 @@ export default function CalendarPage() {
   return (
     <Suspense
       fallback={
-        <main className="container mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
+        <main className="container mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
           <Skeleton className="mb-8 h-10 w-56" />
           <Skeleton className="mb-4 h-9 w-full" />
           <Skeleton className="h-[420px] w-full rounded-xl" />
