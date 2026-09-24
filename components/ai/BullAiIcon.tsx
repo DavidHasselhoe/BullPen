@@ -1,10 +1,10 @@
 import { cn } from '@/lib/utils';
 
 const AI_ICON_SRC = {
-  wave: '/illustrations/bull-ai-wave.png',
-  think: '/illustrations/bull-ai-think.png',
-  glass: '/illustrations/bull-ai-glass.png',
-  idle: '/illustrations/bull-ai-idle.png',
+  wave: '/illustrations/bull-ai-wave.webp',
+  think: '/illustrations/bull-ai-think.webp',
+  glass: '/illustrations/bull-ai-glass.webp',
+  idle: '/illustrations/bull-ai-idle.webp',
 } as const;
 
 export type BullAiPose = keyof typeof AI_ICON_SRC;

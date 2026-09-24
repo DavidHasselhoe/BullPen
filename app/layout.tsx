@@ -18,6 +18,7 @@ import { NotificationToastListener } from "@/components/notifications/Notificati
 import { CookieConsentBanner } from "@/components/cookie-consent/CookieConsentBanner";
 import { PostHogProvider } from "@/components/analytics/PostHogProvider";
 import { PageTransition } from "@/components/ui/PageTransition";
+import { preconnect } from "react-dom";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -92,6 +93,13 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Warm the Supabase connection before the first client fetch/logo needs it
+  // (Lighthouse: ~110ms LCP). Both pools: images connect without CORS, the
+  // supabase-js fetches with it, and browsers keep the two separate.
+  if (process.env.NEXT_PUBLIC_SUPABASE_URL) {
+    preconnect(process.env.NEXT_PUBLIC_SUPABASE_URL);
+    preconnect(process.env.NEXT_PUBLIC_SUPABASE_URL, { crossOrigin: "anonymous" });
+  }
   // Reading headers() here (via getRequestLocale/getRequestPathname) makes
   // every route dynamically rendered, including the currently-static
   // marketing/legal pages — an accepted trade-off for Phase 1 of the i18n

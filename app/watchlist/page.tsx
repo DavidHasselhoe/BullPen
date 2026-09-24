@@ -303,7 +303,7 @@ export default function WatchlistPage() {
           <div className="flex flex-col items-center gap-6 py-20 text-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/illustrations/bull-shrug.png"
+              src="/illustrations/bull-shrug.webp"
               alt=""
               aria-hidden
               className="h-auto w-36 select-none opacity-90 dark:opacity-80 dark:invert"

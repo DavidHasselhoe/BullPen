@@ -11,14 +11,14 @@ export type MascotPose =
   | 'alert';     // set up a notification / price alert
 
 export const POSE_SRC: Record<MascotPose, string> = {
-  shrug: '/illustrations/bull-shrug.png',
-  search: '/illustrations/bull-search.png',
-  thinking: '/illustrations/bull-thinking.png',
-  celebrate: '/illustrations/bull-celebrate.png',
-  error: '/illustrations/bull-error.png',
-  locked: '/illustrations/bull-locked.png',
-  sleeping: '/illustrations/bull-sleeping.png',
-  alert: '/illustrations/bull-alert.png',
+  shrug: '/illustrations/bull-shrug.webp',
+  search: '/illustrations/bull-search.webp',
+  thinking: '/illustrations/bull-thinking.webp',
+  celebrate: '/illustrations/bull-celebrate.webp',
+  error: '/illustrations/bull-error.webp',
+  locked: '/illustrations/bull-locked.webp',
+  sleeping: '/illustrations/bull-sleeping.webp',
+  alert: '/illustrations/bull-alert.webp',
 };
 
 interface EmptyStateProps {
@@ -60,6 +60,10 @@ export function EmptyState({
         src={src}
         alt=""
         aria-hidden
+        // lazy: React 19 emits a <link rel=preload> for every eager <img> in the
+        // server HTML, so an empty/error state that never shows still cost ~100KB.
+        loading="lazy"
+        decoding="async"
         style={{ width: imageSize }}
         className="mb-5 h-auto max-w-[60%] select-none opacity-90 dark:opacity-80 dark:invert"
       />

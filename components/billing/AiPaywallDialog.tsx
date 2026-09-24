@@ -86,7 +86,7 @@ export function AiPaywallDialog({ open, onOpenChange, featureName, quota, previe
         <DialogHeader className="items-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={isProCap ? '/illustrations/bull-sleeping.png' : '/illustrations/bull-locked.png'}
+            src={isProCap ? '/illustrations/bull-sleeping.webp' : '/illustrations/bull-locked.webp'}
             alt=""
             aria-hidden
             width={104}

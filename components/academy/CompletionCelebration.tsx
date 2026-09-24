@@ -94,7 +94,7 @@ export function CompletionCelebration({ xpEarned, durationMs = 1600, onDismiss }
             className="absolute inset-0 rounded-full bg-black/75 ring-1 ring-white/10"
           />
           <motion.img
-            src="/illustrations/bull-celebrate.png"
+            src="/illustrations/bull-celebrate.webp"
             alt=""
             aria-hidden
             animate={reduced ? undefined : { y: [0, -6, 0] }}

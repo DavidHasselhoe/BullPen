@@ -144,7 +144,7 @@ export default function NotificationsPage() {
         ) : filtered.length === 0 ? (
           <EmptyState
             text={all.length === 0 ? 'No notifications yet. Alerts, earnings, and portfolio updates will show up here.' : 'Nothing matches this filter.'}
-            illustration={all.length === 0 ? '/illustrations/bull-sleeping.png' : '/illustrations/bull-shrug.png'}
+            illustration={all.length === 0 ? '/illustrations/bull-sleeping.webp' : '/illustrations/bull-shrug.webp'}
           />
         ) : (
           <div className="overflow-hidden rounded-xl border">
@@ -183,7 +183,7 @@ function FilterChip({ label, active, onClick }: { label: string; active: boolean
   );
 }
 
-function EmptyState({ text, illustration = '/illustrations/bull-shrug.png' }: { text: string; illustration?: string }) {
+function EmptyState({ text, illustration = '/illustrations/bull-shrug.webp' }: { text: string; illustration?: string }) {
   return (
     <div className="rounded-xl border border-dashed py-16 text-center">
       {/* eslint-disable-next-line @next/next/no-img-element */}

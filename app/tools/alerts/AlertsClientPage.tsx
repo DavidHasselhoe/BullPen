@@ -92,7 +92,7 @@ export default function AlertsClientPage() {
             <div className="flex items-center gap-4 min-w-0">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/illustrations/bull-alert.png"
+                src="/illustrations/bull-alert.webp"
                 alt=""
                 aria-hidden
                 className="hidden sm:block h-20 w-20 shrink-0 select-none opacity-90 dark:opacity-80 dark:invert"

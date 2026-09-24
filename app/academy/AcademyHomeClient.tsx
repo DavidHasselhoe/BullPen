@@ -80,7 +80,7 @@ export function AcademyHomeClient() {
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/illustrations/bull-welcome.png"
+            src="/illustrations/bull-welcome.webp"
             alt=""
             aria-hidden
             className="h-16 w-16 shrink-0 opacity-95 dark:invert"
@@ -107,7 +107,7 @@ export function AcademyHomeClient() {
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/illustrations/bull-celebrate.png"
+            src="/illustrations/bull-celebrate.webp"
             alt=""
             aria-hidden
             className="h-16 w-16 shrink-0 opacity-95 dark:invert"

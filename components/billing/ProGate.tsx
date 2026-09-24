@@ -29,7 +29,7 @@ export function ProGate({ feature, title, description, children }: Props) {
     <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border/70 bg-muted/20 p-6 text-center">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src="/illustrations/bull-locked.png"
+        src="/illustrations/bull-locked.webp"
         alt=""
         aria-hidden
         className="h-auto w-20 select-none opacity-90 dark:opacity-80 dark:invert"
