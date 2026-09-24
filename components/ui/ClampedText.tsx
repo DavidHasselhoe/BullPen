@@ -71,7 +71,7 @@ export function ClampedText({
           className={cn(
             // text-xs is DESIGN.md's Label step; the callers this replaces used
             // an undocumented 11px, so the shared version moves onto the ramp.
-            'mt-0.5 block text-xs text-muted-foreground/70 underline-offset-2 transition-colors hover:text-foreground hover:underline',
+            'mt-0.5 block text-xs text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline',
             toggleClassName,
           )}
         >

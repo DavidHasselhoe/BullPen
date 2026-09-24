@@ -198,7 +198,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const itemClass =
     'group gap-3 rounded-lg px-2.5 py-2 text-sm data-[selected=true]:bg-accent';
   const pillClass =
-    'shrink-0 rounded bg-muted px-1.5 py-px text-[11px] font-medium leading-tight text-muted-foreground/85';
+    'shrink-0 rounded bg-muted px-1.5 py-px text-[11px] font-medium leading-tight text-muted-foreground';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -228,7 +228,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
             />
             {/* Inline loading spinner — sits in the input row so the list never reflows */}
             {hasQuery && isSearching && (
-              <Loader2 className="absolute right-4 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground/80" />
+              <Loader2 className="absolute right-4 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
             )}
           </div>
 
@@ -280,7 +280,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                     );
                   })}
                 </CommandGroup>
-                <p className="px-3 pt-2 text-center text-xs text-muted-foreground/80">
+                <p className="px-3 pt-2 text-center text-xs text-muted-foreground">
                   {t('helperText')}
                 </p>
               </>
@@ -462,14 +462,14 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                 {(!searchResults || searchResults.length === 0) && (
                   <CommandEmpty>
                     {isSearching ? (
-                      <div className="flex flex-col items-center gap-2 py-12 text-sm text-muted-foreground/85">
-                        <Loader2 className="size-5 animate-spin text-muted-foreground/80" />
+                      <div className="flex flex-col items-center gap-2 py-12 text-sm text-muted-foreground">
+                        <Loader2 className="size-5 animate-spin text-muted-foreground" />
                         {t('searchingLabel')}
                       </div>
                     ) : searchError ? (
                       <div className="py-12 text-center text-sm text-muted-foreground">{t('searchFailedLabel')}</div>
                     ) : (
-                      <div className="px-6 py-12 text-center text-sm text-muted-foreground/85">
+                      <div className="px-6 py-12 text-center text-sm text-muted-foreground">
                         {t('noCompaniesFoundPrefix')} <span className="font-medium text-foreground">{t('askBullLabel')}</span> {t('noCompaniesFoundSuffix')}
                       </div>
                     )}
@@ -481,7 +481,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 
           {/* Persistent hint bar — anchors the bottom of the fixed-height stage */}
           <div className="flex shrink-0 items-center justify-between border-t border-border/60 bg-muted/20 px-4 py-2.5">
-            <div className="flex items-center gap-3 text-[11px] text-muted-foreground/85">
+            <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
               <span className="flex items-center gap-1">
                 <Kbd>↑</Kbd>
                 <Kbd>↓</Kbd>
@@ -494,7 +494,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                 <span className="ml-0.5">{t('openLabel')}</span>
               </span>
             </div>
-            <span className="flex items-center gap-1 text-[11px] text-muted-foreground/85">
+            <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
               <Kbd>esc</Kbd>
               <span className="ml-0.5">{t('closeLabel')}</span>
             </span>

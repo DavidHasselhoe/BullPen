@@ -86,7 +86,7 @@ export function glossaryText(text: string, seen: Set<string>): ReactNode {
             className="inline-flex items-center gap-0.5 border-b border-dotted border-muted-foreground/50 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
           >
             {part}
-            <HelpCircle className="h-2.5 w-2.5 text-muted-foreground/70" aria-hidden />
+            <HelpCircle className="h-2.5 w-2.5 text-muted-foreground" aria-hidden />
           </button>
         </PopoverTrigger>
         <PopoverContent side="top" className="w-[260px] p-3 leading-snug shadow-lg">

@@ -181,13 +181,13 @@ export function InstitutionalHoldingsPieChart({
             {/* Three fixed lines in both states, so hovering across the donut
                 swaps the numbers without the block growing and shrinking. */}
             <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-14 text-center">
-              <span className="w-full truncate text-xs font-semibold tracking-wide text-muted-foreground/80">
+              <span className="w-full truncate text-xs font-semibold tracking-wide text-muted-foreground">
                 {hovered ? (hovered.symbol ?? 'Everything else') : centerLabel}
               </span>
               <span className="mt-1 font-mono text-2xl font-semibold tabular-nums text-foreground">
                 {fmtUsd(hovered ? hovered.value : centerValue)}
               </span>
-              <span className="mt-0.5 font-mono text-xs tabular-nums text-muted-foreground/70">
+              <span className="mt-0.5 font-mono text-xs tabular-nums text-muted-foreground">
                 {hovered
                   ? `${hovered.pct.toFixed(1)}% of portfolio`
                   : `${positionCount.toLocaleString()} position${positionCount === 1 ? '' : 's'}`}

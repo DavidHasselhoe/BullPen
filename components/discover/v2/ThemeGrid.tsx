@@ -75,7 +75,7 @@ export function ThemeGrid() {
     <section aria-labelledby="ideas-themes-heading" className="mb-10">
       <h2
         id="ideas-themes-heading"
-        className="mb-3 text-sm font-semibold uppercase tracking-widest text-muted-foreground/80"
+        className="mb-3 text-sm font-semibold uppercase tracking-widest text-muted-foreground"
       >
         {t('ideasThemesHeading')}
       </h2>

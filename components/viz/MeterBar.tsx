@@ -79,17 +79,17 @@ export function MeterBar({ value, min, max, signal, benchmark, srLabel, classNam
         )}
       </div>
       {showLabelRow && (
-        <div className="relative mt-1 h-3.5 text-xs leading-none text-muted-foreground/70">
+        <div className="relative mt-1 h-3.5 text-xs leading-none text-muted-foreground">
           {minLabel != null && <span className="absolute left-0">{minLabel}</span>}
           {maxLabel != null && <span className="absolute right-0">{maxLabel}</span>}
           {showZeroLabel && (
-            <span className="absolute -translate-x-1/2 text-muted-foreground/60" style={{ left: `${zero}%` }}>
+            <span className="absolute -translate-x-1/2 text-muted-foreground" style={{ left: `${zero}%` }}>
               0
             </span>
           )}
           {benchmark && (
             <span
-              className="absolute -translate-x-1/2 text-muted-foreground/85"
+              className="absolute -translate-x-1/2 text-muted-foreground"
               style={{ left: `${benchmarkPos}%` }}
             >
               {benchmark.label}

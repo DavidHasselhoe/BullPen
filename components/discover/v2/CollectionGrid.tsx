@@ -69,7 +69,7 @@ function HelpTip({ label, body }: { label: string; body: string }) {
           onClick={() => setOpen(true)}
           className={cn(
             'inline-flex h-7 w-7 -my-1 items-center justify-center rounded-full',
-            'text-muted-foreground/60 transition-colors duration-150 hover:text-foreground',
+            'text-muted-foreground transition-colors duration-150 hover:text-foreground',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
           )}
         >

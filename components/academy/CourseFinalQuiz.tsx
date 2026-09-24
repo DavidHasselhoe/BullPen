@@ -169,11 +169,11 @@ export function CourseFinalQuiz({ quiz, courseSlug, courseTitle }: Props) {
   return (
     <div className="space-y-5">
       <div>
-        <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-muted-foreground/80 mb-1.5">
+        <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-muted-foreground mb-1.5">
           {t('courseFinalQuizLabel')}
         </div>
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight leading-tight">{courseTitle}</h1>
-        <p className="text-sm text-muted-foreground/85 mt-2 leading-relaxed">
+        <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
           {t('courseFinalQuizIntro')}
         </p>
       </div>

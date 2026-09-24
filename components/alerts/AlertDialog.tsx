@@ -118,7 +118,7 @@ export function AlertDialog({ symbol, companyName, trigger }: Props) {
                           type="button"
                           disabled={isBusy}
                           onClick={() => handleToggle(alert.id, !alert.isActive)}
-                          className="h-6 w-6 rounded flex items-center justify-center text-muted-foreground/85 hover:text-foreground hover:bg-muted/60 transition-colors"
+                          className="h-6 w-6 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
                           title={alert.isActive ? t('actionPause') : t('actionResume')}
                         >
                           {isBusy && busy === alert.id ? (
@@ -133,7 +133,7 @@ export function AlertDialog({ symbol, companyName, trigger }: Props) {
                           type="button"
                           disabled={isBusy}
                           onClick={() => handleDelete(alert.id)}
-                          className="h-6 w-6 rounded flex items-center justify-center text-muted-foreground/85 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                          className="h-6 w-6 rounded flex items-center justify-center text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-colors"
                           title={t('actionDelete')}
                         >
                           {isBusy && busy === `del-${alert.id}` ? (
@@ -174,7 +174,7 @@ export function AlertDialog({ symbol, companyName, trigger }: Props) {
               <div className="pt-1 border-t border-border/30">
                 <Link
                   href="/tools/alerts"
-                  className="flex items-center gap-1.5 text-xs text-muted-foreground/80 hover:text-foreground transition-colors"
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <ExternalLink className="h-3 w-3" />
                   {t('manageAllAlertsLink')}

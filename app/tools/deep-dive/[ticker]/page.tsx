@@ -347,7 +347,7 @@ export default function DeepDivePage() {
                 />
               </div>
             )}
-            <p className="text-center text-[11px] text-muted-foreground/85">
+            <p className="text-center text-[11px] text-muted-foreground">
               {t('deepDiveRegenerateQuotaHint', 'Regenerating uses one deep dive from your monthly quota.')}
             </p>
           </div>

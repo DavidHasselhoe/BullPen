@@ -55,7 +55,7 @@ export function ThesisInput({ onSubmit, disabled }: Props) {
           />
 
           <div className="mt-3 flex items-center justify-between border-t border-border/40 pt-3">
-            <span className={cn('text-xs text-muted-foreground/85', tooShort && 'text-amber-500')}>
+            <span className={cn('text-xs text-muted-foreground', tooShort && 'text-amber-500')}>
               {tooShort ? t('portfolioBuilderTooShort') : t('portfolioBuilderCharCount', { count: thesis.length })}
             </span>
             <Button
@@ -83,7 +83,7 @@ export function ThesisInput({ onSubmit, disabled }: Props) {
 
       {/* Examples */}
       <div>
-        <p className="text-[11px] uppercase tracking-widest text-muted-foreground/80 font-semibold mb-3 text-center">
+        <p className="text-[11px] uppercase tracking-widest text-muted-foreground font-semibold mb-3 text-center">
           {t('portfolioBuilderExampleThesesHeading')}
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -99,7 +99,7 @@ export function ThesisInput({ onSubmit, disabled }: Props) {
             </button>
           ))}
         </div>
-        <p className="text-[11px] text-muted-foreground/80 text-center mt-6 select-none">
+        <p className="text-[11px] text-muted-foreground text-center mt-6 select-none">
           {t('portfolioBuilderNotAdvice')}
         </p>
       </div>

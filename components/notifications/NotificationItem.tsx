@@ -154,7 +154,7 @@ function GenericIcon({ type }: { type: Notification['type'] }) {
   );
   return (
     <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted">
-      <Bell className={cn(base, 'text-muted-foreground/80')} />
+      <Bell className={cn(base, 'text-muted-foreground')} />
     </div>
   );
 }
@@ -271,14 +271,14 @@ function EconomicNotification({ notification, date, onRead }: { notification: No
             {notification.title}
             {!notification.is_read && <span className="inline-block ml-1.5 h-1.5 w-1.5 rounded-full bg-primary align-middle" />}
           </p>
-          <span className="text-[11px] text-muted-foreground/85 shrink-0 tabular-nums">{formatRelativeTime(notification.created_at)}</span>
+          <span className="text-[11px] text-muted-foreground shrink-0 tabular-nums">{formatRelativeTime(notification.created_at)}</span>
         </div>
         {events && events.some((e) => prefs.economicKinds.includes(e.kind)) ? (
           <ul className="space-y-0.5">
             {events.filter((e) => prefs.economicKinds.includes(e.kind)).map((e) => {
               const meta = ECONOMIC_KINDS[e.kind];
               return (
-                <li key={e.id} className="flex flex-wrap items-center gap-x-1.5 text-[11px] leading-snug text-muted-foreground/90">
+                <li key={e.id} className="flex flex-wrap items-center gap-x-1.5 text-[11px] leading-snug text-muted-foreground">
                   <a href={meta.sourceUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-0.5 font-medium text-foreground/85 hover:text-primary">
                     {meta.name}
                     <ArrowUpRight className="h-2.5 w-2.5" aria-hidden />
@@ -294,11 +294,11 @@ function EconomicNotification({ notification, date, onRead }: { notification: No
             })}
           </ul>
         ) : (
-          <p className="text-[11px] text-muted-foreground/85 leading-snug">{notification.message}</p>
+          <p className="text-[11px] text-muted-foreground leading-snug">{notification.message}</p>
         )}
         <Link
           href={`/tools/calendar?view=week&date=${date}`}
-          className="inline-flex items-center gap-0.5 pt-0.5 text-[11px] font-medium text-muted-foreground/80 hover:text-foreground"
+          className="inline-flex items-center gap-0.5 pt-0.5 text-[11px] font-medium text-muted-foreground hover:text-foreground"
         >
           Market Calendar
           <ChevronRight className="h-2.5 w-2.5" />
@@ -349,16 +349,16 @@ function StandardNotificationItem({ notification, onMarkRead }: NotificationItem
               <span className="inline-block ml-1.5 h-1.5 w-1.5 rounded-full bg-primary align-middle" />
             )}
           </p>
-          <span className="text-[11px] text-muted-foreground/85 shrink-0 tabular-nums">
+          <span className="text-[11px] text-muted-foreground shrink-0 tabular-nums">
             {formatRelativeTime(notification.created_at)}
           </span>
         </div>
-        <p className="text-[11px] text-muted-foreground/85 leading-snug line-clamp-2">
+        <p className="text-[11px] text-muted-foreground leading-snug line-clamp-2">
           {notification.message}
         </p>
         {/* Source label — where this notification came from / where the card leads. */}
         {source && (
-          <span className="inline-flex items-center gap-0.5 pt-0.5 text-[11px] font-medium text-muted-foreground/80">
+          <span className="inline-flex items-center gap-0.5 pt-0.5 text-[11px] font-medium text-muted-foreground">
             {source.label}
             <ChevronRight className="h-2.5 w-2.5" />
           </span>

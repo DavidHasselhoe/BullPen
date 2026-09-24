@@ -64,7 +64,7 @@ function ThingCard({ kind, text, seen }: { kind: keyof typeof SPECS; text: strin
     <div className={cn('flex flex-col rounded-xl border p-3.5', spec.tint)}>
       <div className="mb-2 flex items-center gap-1.5">
         <Icon className={cn('h-3.5 w-3.5 shrink-0', spec.iconColor)} aria-hidden />
-        <span className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground/85">
+        <span className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
           {spec.label}
         </span>
       </div>
@@ -86,7 +86,7 @@ function LegacyHighlights({ report }: { report: Report }) {
     <div className="space-y-3.5 border-t border-border/20 pt-4">
       {topRisk && (
         <div className="min-w-0">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80">
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
             Key risk
           </div>
           <div className="mt-0.5 text-sm font-medium text-foreground">{glossaryText(topRisk.title, seen)}</div>
@@ -97,7 +97,7 @@ function LegacyHighlights({ report }: { report: Report }) {
       )}
       {topCatalyst && (
         <div className="min-w-0">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80">
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
             Catalyst to watch
           </div>
           <div className="mt-0.5 text-sm font-medium text-foreground">{glossaryText(topCatalyst.title, seen)}</div>

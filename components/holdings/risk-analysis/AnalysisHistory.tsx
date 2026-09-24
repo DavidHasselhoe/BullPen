@@ -36,12 +36,12 @@ export function AnalysisHistory({ items, onRestore, onDelete }: Props) {
     <div>
       <div className="mb-2 flex items-center justify-between gap-3">
         <div className="flex items-center gap-1.5">
-          <Clock className="h-3 w-3 text-muted-foreground/70" />
+          <Clock className="h-3 w-3 text-muted-foreground" />
           <h3 className="text-sm font-semibold text-foreground">{t('analysisHistoryTitle')}</h3>
         </div>
         {scoresOldestFirst.length >= 2 && (
           <div className="flex items-center gap-1.5">
-            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground/60">{t('analysisHistoryTrendLabel')}</span>
+            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t('analysisHistoryTrendLabel')}</span>
             <Sparkline
               data={scoresOldestFirst}
               direction="neutral"
@@ -61,14 +61,14 @@ export function AnalysisHistory({ items, onRestore, onDelete }: Props) {
                 {item.overallRiskScore}
               </span>
               <span className="text-[13px] text-muted-foreground">{item.riskLevel}</span>
-              <span className="ml-auto shrink-0 text-[12px] tabular-nums text-muted-foreground/70">{formatAgo(item.createdAt, t)}</span>
+              <span className="ml-auto shrink-0 text-[12px] tabular-nums text-muted-foreground">{formatAgo(item.createdAt, t)}</span>
             </button>
             <button
               onClick={() => onDelete(item.id)}
               aria-label={t('analysisHistoryDeleteAriaLabel')}
               className="shrink-0 rounded p-1 opacity-0 transition-opacity hover:bg-red-500/10 group-hover:opacity-100"
             >
-              <Trash2 className="h-3.5 w-3.5 text-muted-foreground/70 hover:text-red-400" />
+              <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-red-400" />
             </button>
           </div>
         ))}

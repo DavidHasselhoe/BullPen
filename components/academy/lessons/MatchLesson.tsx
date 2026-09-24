@@ -127,7 +127,7 @@ export function MatchLesson({ content, onComplete }: Props) {
                 className={cn(
                   'w-full rounded-xl border px-3 py-3 text-xs sm:text-sm text-left transition-colors leading-relaxed',
                   isMatched
-                    ? 'border-emerald-500/40 bg-emerald-500/[0.08] text-muted-foreground/80 cursor-default'
+                    ? 'border-emerald-500/40 bg-emerald-500/[0.08] text-muted-foreground cursor-default'
                     : selectedTermIdx !== null
                       ? 'border-border bg-card hover:border-emerald-500/40 text-foreground cursor-pointer'
                       : 'border-border bg-card text-muted-foreground'

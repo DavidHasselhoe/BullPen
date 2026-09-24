@@ -387,7 +387,7 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
               onDelete={(id) => deleteMutation.mutate(id)}
               footer={
                 <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/15 pt-4">
-                  <span className="text-[11px] font-mono uppercase tracking-[0.15em] text-muted-foreground/80">
+                  <span className="text-[11px] font-mono uppercase tracking-[0.15em] text-muted-foreground">
                     {restoredFrom
                       ? t('riskAnalysisRestoredAt', { time: generatedTime })
                       : t('riskAnalysisGeneratedAt', { time: generatedTime })}

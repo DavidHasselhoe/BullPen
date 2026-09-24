@@ -79,12 +79,12 @@ export function SectorRow({ sector, scale, expanded, onToggle, index, grown }: P
         <span className="flex min-w-0 shrink-0 items-center gap-2 basis-[112px] sm:basis-[196px]">
           <ChevronDown
             className={cn(
-              'h-3.5 w-3.5 shrink-0 text-muted-foreground/80 transition-transform duration-200',
+              'h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform duration-200',
               expanded && 'rotate-180',
             )}
             aria-hidden
           />
-          {Icon && <Icon className="hidden h-3.5 w-3.5 shrink-0 text-muted-foreground/85 sm:block" aria-hidden />}
+          {Icon && <Icon className="hidden h-3.5 w-3.5 shrink-0 text-muted-foreground sm:block" aria-hidden />}
           <span className="truncate text-[13px] font-medium text-foreground">{sector.label}</span>
         </span>
 
@@ -110,7 +110,7 @@ export function SectorRow({ sector, scale, expanded, onToggle, index, grown }: P
           className={cn(
             'shrink-0 basis-[68px] text-right font-mono text-[13px] font-semibold tabular-nums sm:basis-[80px]',
             pct == null
-              ? 'text-muted-foreground/85'
+              ? 'text-muted-foreground'
               : positive
                 ? 'text-emerald-400'
                 : 'text-red-400',
@@ -139,7 +139,7 @@ export function SectorRow({ sector, scale, expanded, onToggle, index, grown }: P
           >
             <div className="px-3 pb-4 pt-1 sm:px-4">
               {entry?.tagline && (
-                <p className="mb-2.5 text-[11px] text-muted-foreground/80">
+                <p className="mb-2.5 text-[11px] text-muted-foreground">
                   {t('sectorRowTaglineSuffix', { tagline: entry.tagline })}
                 </p>
               )}
@@ -163,7 +163,7 @@ export function SectorRow({ sector, scale, expanded, onToggle, index, grown }: P
               )}
 
               {!isLoading && (!data?.items || data.items.length === 0) && (
-                <p className="text-xs text-muted-foreground/80">
+                <p className="text-xs text-muted-foreground">
                   {t('sectorRowLoadError')}
                 </p>
               )}

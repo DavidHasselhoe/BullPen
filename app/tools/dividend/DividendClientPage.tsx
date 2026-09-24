@@ -517,7 +517,7 @@ export default function DividendClientPage({
                     <button
                       type="button"
                       onClick={() => removeHolding(h.id)}
-                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground/80 transition-colors hover:bg-red-500/10 hover:text-red-400"
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-400"
                       aria-label="Remove stock"
                     >
                       <X className="h-4 w-4" />

@@ -483,7 +483,7 @@ function SectorLeaderboardRow({
           active && 'bg-primary/10'
         )}
       >
-        <span className="w-5 shrink-0 text-right font-mono text-[11px] tabular-nums text-muted-foreground/70">
+        <span className="w-5 shrink-0 text-right font-mono text-[11px] tabular-nums text-muted-foreground">
           {rank}
         </span>
         <span className="min-w-0 shrink-0 basis-[104px] truncate text-[13px] font-medium text-foreground sm:basis-[188px]">
@@ -859,7 +859,7 @@ export default function HeatmapClientPage() {
           </motion.div>
         )}
 
-        <p className="mt-6 text-center text-[11px] text-muted-foreground/70">
+        <p className="mt-6 text-center text-[11px] text-muted-foreground">
           {t(
             'heatmapFooterNote',
             'Prices stream live via WebSocket during market hours. Sector and market-cap classification refresh periodically.'

@@ -403,7 +403,7 @@ export function InstitutionalHoldingsSection() {
         <div className="flex items-center gap-2">
           <h2
             id="institutional-holdings-heading"
-            className="text-sm font-semibold uppercase tracking-widest text-muted-foreground/80"
+            className="text-sm font-semibold uppercase tracking-widest text-muted-foreground"
           >
             Institutional Holdings
           </h2>
@@ -468,7 +468,7 @@ export function InstitutionalHoldingsSection() {
             Clear filters
           </button>
         )}
-        <p className="ml-auto text-xs tabular-nums text-muted-foreground/80" aria-live="polite">
+        <p className="ml-auto text-xs tabular-nums text-muted-foreground" aria-live="polite">
           {visible.length === rows.length ? `${rows.length} funds` : `${visible.length} of ${rows.length} funds`}
         </p>
       </div>
@@ -525,9 +525,9 @@ export function InstitutionalHoldingsSection() {
                       vertical room, and "ARK Investment Management …" read like
                       a rendering bug rather than a shortened name. */}
                   <p className="font-medium leading-snug text-foreground">{fund.displayName}</p>
-                  <p className="truncate text-xs text-muted-foreground/85">{fund.managerName ?? ' '}</p>
+                  <p className="truncate text-xs text-muted-foreground">{fund.managerName ?? ' '}</p>
                   <p
-                    className="mt-1.5 flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground/70"
+                    className="mt-1.5 flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground"
                     title={filed ? `${fund.totalPositions ?? '?'} positions · filed ${filed}` : undefined}
                   >
                     {read ? (
@@ -545,7 +545,7 @@ export function InstitutionalHoldingsSection() {
                       </>
                     )}
                   </p>
-                  {metric && <p className="mt-1 text-xs tabular-nums text-muted-foreground/85">{metric}</p>}
+                  {metric && <p className="mt-1 text-xs tabular-nums text-muted-foreground">{metric}</p>}
                 </div>
                 {/* A column rather than absolute positioning: the arrow stays
                     pinned to the top corner and the follow button to the bottom
@@ -553,7 +553,7 @@ export function InstitutionalHoldingsSection() {
                     fund name wraps to two lines. */}
                 <div className="flex shrink-0 flex-col items-end justify-between self-stretch gap-2">
                   <ArrowUpRight
-                    className="h-4 w-4 shrink-0 text-muted-foreground/50 transition-colors group-hover:text-foreground"
+                    className="h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground"
                     aria-hidden
                   />
                   <FollowFundButton slug={fund.slug} displayName={fund.displayName} compact />

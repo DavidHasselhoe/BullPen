@@ -66,7 +66,7 @@ export default function MarketMoodClientPage() {
             </div>
             <div className="flex items-center gap-2 shrink-0">
               {updatedLabel && (
-                <span className="hidden sm:inline text-xs text-muted-foreground/85 font-mono tabular-nums">
+                <span className="hidden sm:inline text-xs text-muted-foreground font-mono tabular-nums">
                   {updatedLabel}
                 </span>
               )}
@@ -78,7 +78,7 @@ export default function MarketMoodClientPage() {
                 disabled={isFetching}
                 aria-label={t('marketMoodRefreshLabel', 'Refresh')}
               >
-                <RefreshCw className={cn('h-3.5 w-3.5 text-muted-foreground/80', isFetching && 'animate-spin')} />
+                <RefreshCw className={cn('h-3.5 w-3.5 text-muted-foreground', isFetching && 'animate-spin')} />
               </Button>
             </div>
           </div>
@@ -111,14 +111,14 @@ export default function MarketMoodClientPage() {
             <div className="space-y-4">
               <div className="px-1">
                 <div className="flex items-baseline justify-between gap-3">
-                  <h2 className="text-[11px] font-bold uppercase tracking-[0.22em] text-muted-foreground/80">
+                  <h2 className="text-[11px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
                     {t('marketMoodSignalBreakdown', 'Signal Breakdown')}
                   </h2>
-                  <span className="text-[11px] font-mono text-muted-foreground/80 tracking-wider">
+                  <span className="text-[11px] font-mono text-muted-foreground tracking-wider">
                     {t('marketMoodSignalCount', '{{count}} of 4', { count: data.signals.length })}
                   </span>
                 </div>
-                <p className="text-xs text-muted-foreground/80 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   {t('marketMoodSignalDescription', 'How each input contributes to the composite')}
                 </p>
               </div>
@@ -135,10 +135,10 @@ export default function MarketMoodClientPage() {
 
             {/* Methodology — quiet, editorial, mono accent on symbol codes */}
             <div className="border-t border-border/30 pt-5 px-1">
-              <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-muted-foreground/80 mb-2">
+              <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-muted-foreground mb-2">
                 {t('marketMoodMethodologyHeading', 'Methodology')}
               </div>
-              <p className="text-[11px] leading-relaxed text-muted-foreground/85">
+              <p className="text-[11px] leading-relaxed text-muted-foreground">
                 {t(
                   'marketMoodMethodology',
                   'Composite weighted by {{vix}} volatility (35%), {{sp500}} momentum vs 125-day average (30%), high-yield bond demand {{hygLqd}} (20%), and safe-haven flight {{spyTlt}} (15%). A score of {{low}} represents extreme fear; {{high}}, extreme greed.',

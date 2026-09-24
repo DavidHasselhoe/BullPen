@@ -22,11 +22,11 @@ export function ComingSoonNode({ status, daysUntil }: Props) {
   return (
     <div className="flex flex-col items-center gap-2 py-6 text-center">
       <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-[1.5px] border-dashed border-border">
-        <Clock className="h-5 w-5 text-muted-foreground/60" />
+        <Clock className="h-5 w-5 text-muted-foreground" />
       </div>
       <div>
-        <div className="text-sm font-bold tracking-tight text-muted-foreground/80">{t('comingSoonNewCourse')}</div>
-        <div className="mt-1 text-[11px] font-mono text-muted-foreground/70">
+        <div className="text-sm font-bold tracking-tight text-muted-foreground">{t('comingSoonNewCourse')}</div>
+        <div className="mt-1 text-[11px] font-mono text-muted-foreground">
           {status === 'scheduled' && daysUntil != null
             ? t('comingSoonUnlocksIn', { count: daysUntil })
             : t('comingSoonLaunchingSoon')}

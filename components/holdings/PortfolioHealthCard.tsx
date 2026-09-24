@@ -89,7 +89,7 @@ export function PortfolioHealthCard({ holdings, isLoading }: PortfolioHealthCard
           onClick={() => setExplainOpen((v) => !v)}
           className={cn(
             'transition-colors',
-            explainOpen ? 'text-foreground' : 'text-muted-foreground/50 hover:text-muted-foreground'
+            explainOpen ? 'text-foreground' : 'text-muted-foreground hover:text-muted-foreground'
           )}
           aria-expanded={explainOpen}
           aria-label={t('portfolioHealthExplainAriaLabel')}
@@ -119,14 +119,14 @@ export function PortfolioHealthCard({ holdings, isLoading }: PortfolioHealthCard
             ))}
           </div>
           <div className="border-t border-border/40 pt-2 space-y-1">
-            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground/85">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
               {t('portfolioHealthGradeThresholdsHeading')}
             </p>
             {GRADE_THRESHOLDS.map(({ grade, range, labelKey }) => (
               <div key={grade} className="flex items-center gap-2 text-xs text-muted-foreground">
                 <span className="w-4 font-semibold text-foreground">{grade}</span>
                 <span>{range}</span>
-                <span className="text-muted-foreground/85">·</span>
+                <span className="text-muted-foreground">·</span>
                 <span>{t(labelKey)}</span>
               </div>
             ))}
@@ -181,7 +181,7 @@ export function PortfolioHealthCard({ holdings, isLoading }: PortfolioHealthCard
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-semibold text-foreground">{cat.name}</span>
                       <span className="text-xs font-semibold tabular-nums text-foreground">
-                        {cat.score}<span className="text-muted-foreground/80">/{cat.max}</span>
+                        {cat.score}<span className="text-muted-foreground">/{cat.max}</span>
                       </span>
                     </div>
                     {contributors.length === 0 ? (
@@ -192,7 +192,7 @@ export function PortfolioHealthCard({ holdings, isLoading }: PortfolioHealthCard
                           <div key={c.symbol} className="flex items-center justify-between text-xs">
                             <span className="text-foreground/85">{c.symbol}</span>
                             <span className="tabular-nums text-muted-foreground">
-                              {c.score}<span className="text-muted-foreground/70">/{c.max}</span>
+                              {c.score}<span className="text-muted-foreground">/{c.max}</span>
                             </span>
                           </div>
                         ))}

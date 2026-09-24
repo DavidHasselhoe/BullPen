@@ -110,7 +110,7 @@ export function CongressSection() {
     <section aria-labelledby="washington-heading" className="mt-12 mb-10">
       <h2
         id="washington-heading"
-        className="mb-1 text-sm font-semibold uppercase tracking-widest text-muted-foreground/80"
+        className="mb-1 text-sm font-semibold uppercase tracking-widest text-muted-foreground"
       >
         Washington Trading
       </h2>
@@ -162,7 +162,7 @@ export function CongressSection() {
               Clear filters
             </button>
           )}
-          <p className="ml-auto text-xs tabular-nums text-muted-foreground/80" aria-live="polite">
+          <p className="ml-auto text-xs tabular-nums text-muted-foreground" aria-live="polite">
             {visible.length === members.length
               ? `${members.length} members`
               : `${visible.length} of ${members.length} members`}
@@ -200,8 +200,8 @@ export function CongressSection() {
                 <PoliticianAvatar displayName={m.displayName} slug={m.slug} size={44} />
                 <div className="min-w-0 flex-1">
                   <p className="font-medium leading-snug text-foreground">{m.displayName}</p>
-                  <p className="truncate text-xs text-muted-foreground/85">{positionLine(m)}</p>
-                  <p className="mt-1.5 flex flex-wrap items-center gap-x-2 text-xs tabular-nums text-muted-foreground/85">
+                  <p className="truncate text-xs text-muted-foreground">{positionLine(m)}</p>
+                  <p className="mt-1.5 flex flex-wrap items-center gap-x-2 text-xs tabular-nums text-muted-foreground">
                     {/* Locale pinned, as everywhere else in this file. Bare
                         toLocaleString() follows the viewer's browser, which
                         rendered Khanna's 1,577 positions as "1 577". */}
@@ -226,7 +226,7 @@ export function CongressSection() {
                   </p>
                 </div>
                 <ArrowUpRight
-                  className="h-4 w-4 shrink-0 self-start text-muted-foreground/50 transition-colors group-hover:text-foreground"
+                  className="h-4 w-4 shrink-0 self-start text-muted-foreground transition-colors group-hover:text-foreground"
                   aria-hidden
                 />
               </div>

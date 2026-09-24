@@ -34,7 +34,7 @@ interface Props extends UseChartPrefs {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground/85 mb-2">
+    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground mb-2">
       {children}
     </p>
   );
@@ -48,7 +48,7 @@ function ToggleRow({
       <div className="min-w-0">
         <p className="text-xs font-medium text-foreground leading-none">{label}</p>
         {description && (
-          <p className="text-[11px] text-muted-foreground/80 leading-snug mt-0.5">{description}</p>
+          <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">{description}</p>
         )}
       </div>
       <Switch checked={checked} onCheckedChange={onToggle} className="shrink-0" />
@@ -219,7 +219,7 @@ export function ChartPrefsControls({
         <button
           type="button"
           onClick={reset}
-          className="flex items-center gap-1.5 text-xs text-muted-foreground/80 hover:text-foreground transition-colors"
+          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
           <RotateCcw className="h-3 w-3" />
           {t('chartPrefsResetToDefaults')}

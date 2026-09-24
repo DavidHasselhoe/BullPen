@@ -137,7 +137,7 @@ export function CourseChartTour({ steps, stepIndex, onStepIndexChange, isActionS
               type="button"
               onClick={onSkip}
               aria-label={t('demoTourSkip')}
-              className="text-muted-foreground/80 transition-colors hover:text-foreground"
+              className="text-muted-foreground transition-colors hover:text-foreground"
             >
               <X className="h-4 w-4" />
             </button>

@@ -23,7 +23,7 @@ export function TopRisks({ risks }: Props) {
           <AccordionItem key={i} value={String(i)} className="border-border/20">
             <AccordionTrigger className="py-3 hover:no-underline">
               <div className="flex min-w-0 items-baseline gap-3 text-left">
-                <span className="font-mono text-xs text-muted-foreground/70 tabular-nums">{String(i + 1).padStart(2, '0')}</span>
+                <span className="font-mono text-xs text-muted-foreground tabular-nums">{String(i + 1).padStart(2, '0')}</span>
                 <span className="text-sm font-medium text-foreground">{risk.factor}</span>
                 <span className={cn('shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide', tierBadgeClass(topRiskTier(risk.severity)))}>
                   {risk.severity}

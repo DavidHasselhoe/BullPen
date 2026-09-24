@@ -175,7 +175,7 @@ export function UserMenu({ forceDark = false, forceLight = false, open, onOpenCh
         {userIsAdmin && (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuLabel className="text-[11px] uppercase tracking-widest text-muted-foreground/80 font-semibold">
+            <DropdownMenuLabel className="text-[11px] uppercase tracking-widest text-muted-foreground font-semibold">
               {t('navAdminLabel')}
             </DropdownMenuLabel>
             <DropdownMenuItem

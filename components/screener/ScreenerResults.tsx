@@ -372,7 +372,7 @@ export function ScreenerResults({
                   trigger={
                     <button
                       type="button"
-                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-muted-foreground/80 hover:bg-muted/60 hover:text-foreground"
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/60 hover:text-foreground"
                       title={t('screenerSetAlertFor', { ticker: row.ticker })}
                     >
                       <Bell className="h-4 w-4" />
@@ -503,7 +503,7 @@ export function ScreenerResults({
                           trigger={
                             <button
                               type="button"
-                              className="h-6 w-6 rounded flex items-center justify-center text-muted-foreground/85 hover:text-foreground hover:bg-muted/60 transition-colors"
+                              className="h-6 w-6 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
                               title={t('screenerSetAlertFor', { ticker: row.ticker })}
                             >
                               <Bell className="h-3.5 w-3.5" />

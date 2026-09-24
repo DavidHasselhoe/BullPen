@@ -40,7 +40,7 @@ export interface ExportMenuProps {
 }
 
 const TRIGGER_CLASS =
-  'flex items-center gap-1 text-xs text-muted-foreground/80 transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50';
+  'flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50';
 
 export function ExportMenu({
   onExportCsv,

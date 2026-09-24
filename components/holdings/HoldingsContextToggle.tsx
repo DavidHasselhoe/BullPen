@@ -159,7 +159,7 @@ export function HoldingsContextToggle({
                     <>
                       <CompanyLogo ticker={p.ticker} name={p.company} logoUrl={logoFor.get(p.ticker) ?? null} size={18} />
                       <span className="font-mono text-xs font-semibold text-foreground">{p.ticker}</span>
-                      <span className="truncate text-xs text-muted-foreground/85">{p.company}</span>
+                      <span className="truncate text-xs text-muted-foreground">{p.company}</span>
                       <span className="ml-auto shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
                         {p.weightPct.toFixed(1)}%
                       </span>
@@ -192,7 +192,7 @@ export function HoldingsContextToggle({
                 })}
               </ul>
               {canExclude && includedCount < positions.length && (
-                <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground/85">
+                <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
                   {t('holdingsContextWithheldNote')}
                 </p>
               )}

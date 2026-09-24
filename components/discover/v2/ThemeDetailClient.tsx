@@ -97,7 +97,7 @@ export function ThemeDetailClient({ slug }: { slug: string }) {
     <div className="mx-auto max-w-6xl px-4 py-8">
       <Link
         href="/discover"
-        className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted-foreground/80 hover:text-foreground"
+        className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" aria-hidden />
         {t('ideasThemeBackToDiscover')}
@@ -107,9 +107,9 @@ export function ThemeDetailClient({ slug }: { slug: string }) {
         <Icon className="mt-0.5 h-7 w-7 shrink-0 text-primary" aria-hidden />
         <div>
           <h1 className="text-2xl font-bold text-foreground">{theme.title}</h1>
-          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted-foreground/90">{theme.description}</p>
+          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted-foreground">{theme.description}</p>
           {stats && (
-            <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground/80">
+            <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
               <span>{t('ideasThemeCompaniesCount', { count: stats.count })}</span>
               {stats.avgHealth != null && (
                 <span>· {t('ideasThemeAvgHealth', { score: Math.round(stats.avgHealth) })}</span>
@@ -148,7 +148,7 @@ export function ThemeDetailClient({ slug }: { slug: string }) {
                     'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
                     selected
                       ? 'border-primary bg-primary/10 text-primary'
-                      : 'border-border/60 text-muted-foreground/85 hover:border-border hover:text-foreground',
+                      : 'border-border/60 text-muted-foreground hover:border-border hover:text-foreground',
                   )}
                 >
                   {t(chip.labelKey)}

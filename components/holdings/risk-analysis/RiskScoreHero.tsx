@@ -31,7 +31,7 @@ function RiskScale({ score, t }: { score: number; t: TFunction }) {
           style={{ left: `${pct}%` }}
         />
       </div>
-      <div className="mt-1.5 flex justify-between text-[11px] text-muted-foreground/80">
+      <div className="mt-1.5 flex justify-between text-[11px] text-muted-foreground">
         <span>{t('riskScaleLow')}</span>
         <span>{t('riskScaleModerate')}</span>
         <span>{t('riskScaleHigh')}</span>
@@ -84,7 +84,7 @@ function ScoreChangeReason({ reason, t }: { reason: string | null | undefined; t
   if (!reason) return null;
   return (
     <div className="rounded-lg border border-border/30 bg-muted/20 px-3 py-2.5">
-      <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+      <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
         {t('riskHeroScoreChangeReasonTitle')}
       </div>
       <p className="mt-1 text-[13px] leading-relaxed text-foreground/85">{reason}</p>
@@ -124,7 +124,7 @@ export function RiskScoreHero({ analysis, displayedTimestamp, history }: Props) 
           <div className="flex items-baseline gap-3">
             <span className="font-mono text-4xl font-bold tabular-nums leading-none text-foreground">
               {analysis.overallRiskScore}
-              <span className="text-lg text-muted-foreground/60">/100</span>
+              <span className="text-lg text-muted-foreground">/100</span>
             </span>
           </div>
           <div className={cn('text-base font-semibold', tierTextClass(tier))}>{t('riskHeroLevelSuffix', { level: analysis.riskLevel })}</div>

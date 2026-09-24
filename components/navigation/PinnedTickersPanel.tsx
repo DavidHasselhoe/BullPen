@@ -97,7 +97,7 @@ export function PinnedTickersPanel({ active, onNavigate }: Props) {
                   onClick={() => removeTicker(symbol)}
                   aria-label={t('pinnedUnpinLabel', { symbol })}
                   title={t('pinnedUnpinLabel', { symbol })}
-                  className="shrink-0 rounded p-0.5 text-muted-foreground/80 opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100 focus-visible:opacity-100"
+                  className="shrink-0 rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100 focus-visible:opacity-100"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>

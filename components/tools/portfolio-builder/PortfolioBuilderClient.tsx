@@ -402,12 +402,12 @@ function RecentPortfolios({
   return (
     <div>
       <div className="flex items-center gap-2 mb-3">
-        <Clock className="h-3.5 w-3.5 text-muted-foreground/85" />
-        <span className="text-[11px] uppercase tracking-widest text-muted-foreground/85 font-semibold">
+        <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+        <span className="text-[11px] uppercase tracking-widest text-muted-foreground font-semibold">
           {isSearching ? t('portfolioBuilderMatchingPortfolios') : t('portfolioBuilderRecentPortfolios')}
         </span>
         {total > 0 && (
-          <span className="text-[11px] text-muted-foreground/80 tabular-nums">
+          <span className="text-[11px] text-muted-foreground tabular-nums">
             ({total})
           </span>
         )}
@@ -415,7 +415,7 @@ function RecentPortfolios({
 
       {showSearch && (
         <div className="relative mb-3">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/80 pointer-events-none" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
           <input
             type="text"
             value={query}
@@ -427,7 +427,7 @@ function RecentPortfolios({
           {query && (
             <button
               onClick={() => onQueryChange('')}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/80 hover:text-muted-foreground p-1"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-muted-foreground p-1"
               aria-label={t('heatmapClearSearch')}
             >
               <X className="h-3.5 w-3.5" />
@@ -446,7 +446,7 @@ function RecentPortfolios({
           />
         ))}
         {items.length === 0 && isSearching && (
-          <p className="text-xs text-muted-foreground/85 italic px-1 py-3">
+          <p className="text-xs text-muted-foreground italic px-1 py-3">
             {t('portfolioBuilderNoMatchQuery', { query })}
           </p>
         )}
@@ -455,7 +455,7 @@ function RecentPortfolios({
       {(hasMore || (expanded && !isSearching)) && (
         <button
           onClick={onToggleExpanded}
-          className="mt-3 w-full text-center text-xs text-muted-foreground/80 hover:text-foreground transition-colors py-2 rounded-lg border border-dashed border-border/40 hover:border-border/70"
+          className="mt-3 w-full text-center text-xs text-muted-foreground hover:text-foreground transition-colors py-2 rounded-lg border border-dashed border-border/40 hover:border-border/70"
         >
           {expanded
             ? t('portfolioBuilderShowLess')
@@ -500,7 +500,7 @@ function RecentPortfolioRow({
             {gen.portfolio.theme_summary}
           </span>
         </div>
-        <div className="flex items-center gap-3 text-xs text-muted-foreground/80">
+        <div className="flex items-center gap-3 text-xs text-muted-foreground">
           <span className={cn('font-semibold tabular-nums', scoreColor)}>
             {t('portfolioBuilderConfidenceScore', { score })}
           </span>
@@ -522,7 +522,7 @@ function RecentPortfolioRow({
             </button>
             <button
               onClick={() => setConfirmDelete(false)}
-              className="text-xs text-muted-foreground/85 hover:text-muted-foreground px-2 py-1 transition-colors"
+              className="text-xs text-muted-foreground hover:text-muted-foreground px-2 py-1 transition-colors"
             >
               {t('deepDiveCancelButton')}
             </button>
@@ -531,12 +531,12 @@ function RecentPortfolioRow({
           <>
             <button
               onClick={() => setConfirmDelete(true)}
-              className="opacity-0 group-hover:opacity-100 text-muted-foreground/80 hover:text-muted-foreground/80 p-1.5 transition-all"
+              className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-muted-foreground/80 p-1.5 transition-all"
               aria-label={t('deepDiveDeleteButton')}
             >
               <Trash2 className="h-3.5 w-3.5" />
             </button>
-            <ChevronRight className="h-4 w-4 text-muted-foreground/80 group-hover:text-muted-foreground/80 transition-colors" />
+            <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-muted-foreground/80 transition-colors" />
           </>
         )}
       </div>

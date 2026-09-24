@@ -30,7 +30,7 @@ export function NextFilingNote({ className }: { className?: string }) {
   });
 
   return (
-    <p className={cn('flex items-center gap-1.5 text-xs text-muted-foreground/85', className)}>
+    <p className={cn('flex items-center gap-1.5 text-xs text-muted-foreground', className)}>
       <CalendarClock className="h-3.5 w-3.5 shrink-0" aria-hidden />
       <span>
         Next 13F due {when}

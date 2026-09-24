@@ -84,7 +84,7 @@ export default function PicksClientPage() {
             <section aria-labelledby="all-picks-heading">
               <h2
                 id="all-picks-heading"
-                className="mb-3 text-sm font-semibold uppercase tracking-widest text-muted-foreground/80"
+                className="mb-3 text-sm font-semibold uppercase tracking-widest text-muted-foreground"
               >
                 Every pick
               </h2>

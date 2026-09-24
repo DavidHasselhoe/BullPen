@@ -615,7 +615,7 @@ function CompareContent() {
         {/* One-tap starting points: an empty two-slot grid gave a beginner no idea what a useful comparison looks like. */}
         {selectedCompanies.length === 0 && (
           <div className="mt-8">
-            <p className="mb-3 text-xs font-bold uppercase tracking-wide text-muted-foreground/70">{t('comparePopularTitle')}</p>
+            <p className="mb-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">{t('comparePopularTitle')}</p>
             <div className="flex flex-wrap gap-2">
               {POPULAR_COMPARISONS.map((pair) => (
                 <Link
@@ -1089,7 +1089,7 @@ function CompareContent() {
                                   <td className="py-3 px-4 text-muted-foreground align-middle">
                                     <span className="inline-flex items-center gap-2">
                                       {expandable && (
-                                        <span className="text-muted-foreground/80 shrink-0">
+                                        <span className="text-muted-foreground shrink-0">
                                           {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                                         </span>
                                       )}
@@ -1099,7 +1099,7 @@ function CompareContent() {
                                           <TooltipTrigger asChild>
                                             <button
                                               type="button"
-                                              className="inline-flex text-muted-foreground/85 hover:text-muted-foreground focus:outline-none"
+                                              className="inline-flex text-muted-foreground hover:text-muted-foreground focus:outline-none"
                                               aria-label={t('compareMetricInfoAriaLabel', { label })}
                                               onClick={(e) => e.stopPropagation()}
                                             >

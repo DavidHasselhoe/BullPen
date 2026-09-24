@@ -104,7 +104,7 @@ function InsiderRow({ tx, cfg, isSimplified }: { tx: InsiderTransaction; cfg: Ty
             .join(' ')}
         </p>
         <p className="text-xs text-muted-foreground truncate">{tx.position}</p>
-        <p className="text-xs text-muted-foreground/80 mt-0.5">{fmtDate(tx.date_reported)}</p>
+        <p className="text-xs text-muted-foreground mt-0.5">{fmtDate(tx.date_reported)}</p>
       </div>
 
       {/* Type badge */}
@@ -181,7 +181,7 @@ export function InsiderTransactionsCard({ ticker }: { ticker: string }) {
                 {t('insiderCardTitle')}
                 {!isPro && <ProBadge />}
               </p>
-              <p className="text-xs text-muted-foreground/85">
+              <p className="text-xs text-muted-foreground">
                 {isSimplified
                   ? t('insiderSimplifiedDescription')
                   : t('insiderAdvancedDescription')}

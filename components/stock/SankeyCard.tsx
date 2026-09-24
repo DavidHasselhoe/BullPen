@@ -860,7 +860,7 @@ export function SankeyCard({ ticker }: { ticker: string }) {
 
         {/* ── Where the revenue split came from ── */}
         {!isLoading && !noData && !isPlanRestricted && segmentData?.basis && (
-          <p className="px-6 pb-1 text-xs text-muted-foreground/85">
+          <p className="px-6 pb-1 text-xs text-muted-foreground">
             {segmentData.basis === 'product'
               ? t('sankeySourceNoteProduct')
               : t('sankeySourceNoteSegment')}

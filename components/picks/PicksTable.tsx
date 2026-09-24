@@ -145,7 +145,7 @@ export function PicksTable({ picks }: Props) {
                         {p.symbol}
                       </span>
                       {/* clamp-ok: company name in a table cell, not a sentence */}
-                      <span className="block max-w-[160px] truncate text-[11px] text-muted-foreground/85">
+                      <span className="block max-w-[160px] truncate text-[11px] text-muted-foreground">
                         {p.companyName ?? '—'}
                       </span>
                     </span>
@@ -158,7 +158,7 @@ export function PicksTable({ picks }: Props) {
 
                 <td className="whitespace-nowrap px-4 py-3 text-right font-mono text-[12px] tabular-nums text-muted-foreground">
                   {p.entryPrice == null ? (
-                    <span className="text-muted-foreground/85">pending</span>
+                    <span className="text-muted-foreground">pending</span>
                   ) : (
                     `$${fmtPrice(p.entryPrice)}`
                   )}
@@ -203,7 +203,7 @@ export function PicksTable({ picks }: Props) {
 // ─── Headers ─────────────────────────────────────────────────────────────────
 
 const HEADER_BASE =
-  'px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground/80';
+  'px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground';
 
 function PlainHeader({ label, className }: { label: string; className?: string }) {
   return <th scope="col" className={cn(HEADER_BASE, 'text-right', className)}>{label}</th>;

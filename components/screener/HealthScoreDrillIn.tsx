@@ -65,7 +65,7 @@ export function HealthScoreDrillIn({ ticker, score, grade }: Props) {
         <div className="flex items-center justify-between">
           <span className="text-xs font-semibold text-foreground">{t('screenerHealthDrillInTitle', { ticker })}</span>
           <span className="text-xs font-semibold tabular-nums text-foreground">
-            {score}<span className="text-muted-foreground/80">/100</span>
+            {score}<span className="text-muted-foreground">/100</span>
           </span>
         </div>
         {loading && (

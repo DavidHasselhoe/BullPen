@@ -109,7 +109,7 @@ export function getScreenerColumns(t: TFunction): ScreenerColumn[] {
     render: (row) => {
       const score = row.health_score;
       const grade = row.health_score_grade;
-      if (score == null || !grade) return <span className="text-muted-foreground/80">—</span>;
+      if (score == null || !grade) return <span className="text-muted-foreground">—</span>;
       return (
         <HealthScoreDrillIn ticker={row.ticker} score={score} grade={grade as 'A' | 'B' | 'C' | 'D' | 'F'} />
       );
@@ -173,7 +173,7 @@ export function getScreenerColumns(t: TFunction): ScreenerColumn[] {
       if (live) return fmtPrice(live.price);
       if (row.last_price != null) {
         return (
-          <span className="text-muted-foreground/85" title={t('screenerColLastCloseTitle')}>
+          <span className="text-muted-foreground" title={t('screenerColLastCloseTitle')}>
             {fmtPrice(row.last_price)}
           </span>
         );

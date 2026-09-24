@@ -235,7 +235,7 @@ export function ProcessingScreen({
         <p className="text-xs text-muted-foreground tabular-nums">{percent}%</p>
       </div>
       {!complete && leavePageHint && (
-        <p className="text-[11px] text-muted-foreground/85 max-w-xs">
+        <p className="text-[11px] text-muted-foreground max-w-xs">
           Feel free to leave this page. We&apos;ll notify you when it&apos;s ready.
         </p>
       )}

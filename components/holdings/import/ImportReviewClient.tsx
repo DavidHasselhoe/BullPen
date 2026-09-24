@@ -315,7 +315,7 @@ export function ImportReviewClient({ importId }: { importId: string }) {
   if (error || !draft) {
     return (
       <div className="mx-auto max-w-lg py-24 text-center">
-        <AlertCircle className="mx-auto h-8 w-8 text-muted-foreground/60" />
+        <AlertCircle className="mx-auto h-8 w-8 text-muted-foreground" />
         <p className="mt-3 text-sm text-muted-foreground">
           {error instanceof Error ? error.message : t('importReviewNotFound')}
         </p>
@@ -366,7 +366,7 @@ export function ImportReviewClient({ importId }: { importId: string }) {
                 ? t('importReviewOverlapTitleOne', { symbol: overlappingHoldings[0].symbol })
                 : t('importReviewOverlapTitleMany', { count: overlappingHoldings.length })}
             </p>
-            <p className="text-[11px] text-muted-foreground/85 leading-relaxed mb-3">
+            <p className="text-[11px] text-muted-foreground leading-relaxed mb-3">
               {t('importReviewOverlapDescription')}
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -445,7 +445,7 @@ export function ImportReviewClient({ importId }: { importId: string }) {
                       flashLine === tx.sourceLine && 'ring-2 ring-inset ring-amber-500/60'
                     )}
                   >
-                    <TableCell className="font-mono text-xs text-muted-foreground/70">{idx + 1}</TableCell>
+                    <TableCell className="font-mono text-xs text-muted-foreground">{idx + 1}</TableCell>
                     <TableCell className="max-w-[220px]">
                       {isFlagged ? (
                         <div className="flex items-start gap-1.5 rounded-md border border-amber-500/40 bg-amber-500/5 px-2 py-1 text-xs" title={replayFlagDetail}>
@@ -548,7 +548,7 @@ export function ImportReviewClient({ importId }: { importId: string }) {
                       ) : (
                         <button
                           onClick={() => setRemoved((s) => new Set(s).add(tx.sourceLine))}
-                          className="text-muted-foreground/60 hover:text-red-400 transition-colors"
+                          className="text-muted-foreground hover:text-red-400 transition-colors"
                           title={t('importReviewRemoveRow')}
                         >
                           <X className="h-3.5 w-3.5" />

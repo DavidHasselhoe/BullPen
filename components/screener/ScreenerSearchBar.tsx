@@ -150,7 +150,7 @@ export function ScreenerSearchBar({ universe, value, onChange }: Props) {
         )}
         onClick={() => inputRef.current?.focus()}
       >
-        <Search className="h-4 w-4 shrink-0 text-muted-foreground/80" aria-hidden />
+        <Search className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
 
         {/* Chips */}
         {value.map((ticker) => {
@@ -166,7 +166,7 @@ export function ScreenerSearchBar({ universe, value, onChange }: Props) {
                 type="button"
                 aria-label={t('screenerRemoveTickerAriaLabel', { name: meta?.name ?? ticker })}
                 onClick={(e) => { e.stopPropagation(); onChange(value.filter((t) => t !== ticker)); }}
-                className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground/80 hover:bg-muted hover:text-foreground transition-colors"
+                className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
@@ -233,7 +233,7 @@ export function ScreenerSearchBar({ universe, value, onChange }: Props) {
 
           {/* No-match feedback */}
           {suggestions.length === 0 && (
-            <li className="px-3 py-3 text-xs text-muted-foreground/85" aria-live="polite">
+            <li className="px-3 py-3 text-xs text-muted-foreground" aria-live="polite">
               {noMatchAddable ? (
                 <>{t('screenerNoCompanyMatchPrefix')} <kbd className="rounded border border-border bg-muted px-1 font-mono text-[11px]">{t('screenerEnterKey')}</kbd> {t('screenerNoCompanyMatchSuffix', { ticker: query.trim().toUpperCase() })}</>
               ) : (

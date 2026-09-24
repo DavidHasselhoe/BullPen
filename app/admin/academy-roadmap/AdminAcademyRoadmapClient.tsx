@@ -46,7 +46,7 @@ function LessonPreview({ lesson }: { lesson: DraftLessonRow }) {
                 <li key={j} className={j === q.correctIndex ? 'font-semibold text-emerald-500' : undefined}>{o}</li>
               ))}
             </ul>
-            <p className="text-xs text-muted-foreground/80">{q.explanation}</p>
+            <p className="text-xs text-muted-foreground">{q.explanation}</p>
           </div>
         ))}
       </div>

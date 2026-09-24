@@ -94,12 +94,12 @@ export function DetailEventRow({ event }: { event: UnifiedEvent }) {
             <div className="flex items-center gap-1.5">
               {e.name && <p className="text-xs text-muted-foreground truncate leading-tight">{e.name}</p>}
               {e.time === 'BMO' && (
-                <span className="shrink-0 text-[10px] font-medium px-1 py-px bg-muted/60 rounded text-muted-foreground/85">
+                <span className="shrink-0 text-[10px] font-medium px-1 py-px bg-muted/60 rounded text-muted-foreground">
                   {t('calendarBeforeOpen')}
                 </span>
               )}
               {e.time === 'AMC' && (
-                <span className="shrink-0 text-[10px] font-medium px-1 py-px bg-muted/60 rounded text-muted-foreground/85">
+                <span className="shrink-0 text-[10px] font-medium px-1 py-px bg-muted/60 rounded text-muted-foreground">
                   {t('calendarAfterClose')}
                 </span>
               )}
@@ -109,7 +109,7 @@ export function DetailEventRow({ event }: { event: UnifiedEvent }) {
         <div className="text-right text-xs shrink-0 space-y-0.5">
           {e.eps_actual != null ? (
             <div className="flex items-center justify-end gap-1">
-              <span className="text-muted-foreground/80">{t('calendarEpsLabel')} </span>
+              <span className="text-muted-foreground">{t('calendarEpsLabel')} </span>
               <span className={cn('font-semibold tabular-nums', e.eps_actual < 0 ? 'text-red-400' : 'text-foreground')}>
                 {fmtEPS(e.eps_actual)}
               </span>
@@ -122,19 +122,19 @@ export function DetailEventRow({ event }: { event: UnifiedEvent }) {
             </div>
           ) : e.eps_estimate != null ? (
             <div>
-              <span className="text-muted-foreground/80">{t('calendarEpsEstLabel')} </span>
+              <span className="text-muted-foreground">{t('calendarEpsEstLabel')} </span>
               <span className={cn('font-semibold tabular-nums', e.eps_estimate < 0 ? 'text-red-400' : 'text-foreground')}>
                 {fmtEPS(e.eps_estimate)}
               </span>
             </div>
           ) : (
-            <span className="text-muted-foreground/80">—</span>
+            <span className="text-muted-foreground">—</span>
           )}
           {e.eps_actual != null && e.eps_estimate != null && (
-            <div className="text-[11px] text-muted-foreground/80">{t('calendarEstPrefix')} {fmtEPS(e.eps_estimate)}</div>
+            <div className="text-[11px] text-muted-foreground">{t('calendarEstPrefix')} {fmtEPS(e.eps_estimate)}</div>
           )}
           {e.revenue_estimate != null && (
-            <div className="text-[11px] text-muted-foreground/80">{t('calendarRevPrefix')} {fmtRevenue(e.revenue_estimate)}</div>
+            <div className="text-[11px] text-muted-foreground">{t('calendarRevPrefix')} {fmtRevenue(e.revenue_estimate)}</div>
           )}
         </div>
       </div>
@@ -161,7 +161,7 @@ export function DetailEventRow({ event }: { event: UnifiedEvent }) {
           </Link>
           <div className="min-w-0">
             {d.name && <p className="text-xs text-muted-foreground truncate">{d.name}</p>}
-            <div className="flex items-center gap-2 mt-0.5 text-[11px] text-muted-foreground/85 flex-wrap">
+            <div className="flex items-center gap-2 mt-0.5 text-[11px] text-muted-foreground flex-wrap">
               {d.payment_date && <span>{t('calendarPayDate', { date: fmtShortDate(d.payment_date) })}</span>}
               {d.frequency && <span className="capitalize px-1 bg-muted/60 rounded">{d.frequency}</span>}
             </div>
@@ -232,7 +232,7 @@ export function DetailEventRow({ event }: { event: UnifiedEvent }) {
         <div className="min-w-0">
           {ipo.name && <p className="text-xs text-muted-foreground truncate">{ipo.name}</p>}
           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-            {ipo.exchange && <span className="text-[11px] text-muted-foreground/80">{ipo.exchange}</span>}
+            {ipo.exchange && <span className="text-[11px] text-muted-foreground">{ipo.exchange}</span>}
             {ipo.status && (
               <span className={cn(
                 'text-[11px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide leading-none capitalize',

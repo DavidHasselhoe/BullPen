@@ -129,7 +129,7 @@ export function InstitutionalFundDetailClient({ slug }: { slug: string }) {
         />
         <div className="min-w-0 flex-1">
           <h1 className="text-xl font-bold tracking-tight text-foreground">{displayName}</h1>
-          {managerName && <p className="text-sm text-muted-foreground/85">{managerName}</p>}
+          {managerName && <p className="text-sm text-muted-foreground">{managerName}</p>}
         </div>
         <FollowFundButton slug={slug} displayName={displayName} />
       </div>
@@ -158,7 +158,7 @@ export function InstitutionalFundDetailClient({ slug }: { slug: string }) {
 
       {locked && (
         <div className="rounded-xl border border-border/50 bg-card/40 p-8 text-center">
-          <Lock className="mx-auto mb-3 h-6 w-6 text-muted-foreground/70" aria-hidden />
+          <Lock className="mx-auto mb-3 h-6 w-6 text-muted-foreground" aria-hidden />
           <p className="mb-1 font-medium text-foreground">Full holdings are a Pro feature</p>
           <p className="mb-4 text-sm text-muted-foreground">
             {fundSummary?.lastFiledDate

@@ -43,7 +43,7 @@ export function BottomLine({ report }: { report: Report }) {
 
   return (
     <section className="rounded-xl border border-border/50 bg-card/40 p-5">
-      <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/80">
+      <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
         {t('deepDiveBottomLineHeading')}
       </h3>
 

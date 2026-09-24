@@ -47,7 +47,7 @@ export function UpgradeSuccessModal({ open, onOpenChange }: Props) {
             if (unlocked.length === 0) return null;
             return (
               <div key={group.title}>
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                   {group.title}
                 </p>
                 <ul className="mt-1.5 space-y-1.5">

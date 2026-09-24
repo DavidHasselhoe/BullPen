@@ -65,10 +65,10 @@ export function AlertList({ alerts, onToggle, onDelete, onAddCondition }: Props)
       {/* Section header + filter chips */}
       <div className="flex items-center justify-between gap-3 px-1">
         <div className="flex items-baseline gap-2">
-          <h2 className="text-[11px] font-bold uppercase tracking-[0.22em] text-muted-foreground/80">
+          <h2 className="text-[11px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
             {t('sectionTitle')}
           </h2>
-          <span className="text-[11px] font-mono text-muted-foreground/80">
+          <span className="text-[11px] font-mono text-muted-foreground">
             {t('stockCount', { count: activeStockCount })}
             {totalConditions > 0 && ` · ${t('conditionCount', { count: totalConditions })}`}
           </span>
@@ -83,7 +83,7 @@ export function AlertList({ alerts, onToggle, onDelete, onAddCondition }: Props)
                 'text-[11px] font-medium uppercase tracking-wider px-2 py-0.5 rounded transition-colors',
                 filter === f
                   ? 'bg-foreground/10 text-foreground'
-                  : 'text-muted-foreground/80 hover:text-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
               )}
             >
               {t(FILTER_LABEL_KEYS[f])}
@@ -95,7 +95,7 @@ export function AlertList({ alerts, onToggle, onDelete, onAddCondition }: Props)
       {/* Groups */}
       {filteredGroups.length === 0 ? (
         <div className="rounded-2xl border border-border/30 border-dashed py-10 text-center">
-          <p className="text-xs text-muted-foreground/80">
+          <p className="text-xs text-muted-foreground">
             {filter === 'paused' ? t('emptyPaused') : t('emptyDefault')}
           </p>
         </div>
@@ -119,17 +119,17 @@ export function AlertList({ alerts, onToggle, onDelete, onAddCondition }: Props)
                   {group.symbol}
                 </span>
                 {group.companyName && (
-                  <span className="text-xs text-muted-foreground/80 truncate leading-none">
+                  <span className="text-xs text-muted-foreground truncate leading-none">
                     {group.companyName}
                   </span>
                 )}
-                <span className="ml-auto text-[11px] font-mono text-muted-foreground/80 shrink-0">
+                <span className="ml-auto text-[11px] font-mono text-muted-foreground shrink-0">
                   {t('conditionCount', { count: group.alerts.length })}
                 </span>
                 <button
                   type="button"
                   onClick={() => onAddCondition(group.symbol, group.companyName)}
-                  className="h-6 w-6 shrink-0 rounded flex items-center justify-center text-muted-foreground/80 hover:text-foreground hover:bg-muted/60 transition-colors"
+                  className="h-6 w-6 shrink-0 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
                   title={t('addConditionTo', { symbol: group.symbol })}
                   aria-label={t('addConditionTo', { symbol: group.symbol })}
                 >

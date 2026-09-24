@@ -287,7 +287,7 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
       <section aria-labelledby="congress-holdings-heading" className="mb-10">
         <h2
           id="congress-holdings-heading"
-          className="mb-1 text-sm font-semibold uppercase tracking-widest text-muted-foreground/80"
+          className="mb-1 text-sm font-semibold uppercase tracking-widest text-muted-foreground"
         >
           Estimated portfolio
         </h2>
@@ -323,7 +323,7 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
                 placeholder="Filter by ticker or company"
                 label="Filter positions by ticker or company"
               />
-              <p className="text-xs tabular-nums text-muted-foreground/80" aria-live="polite">
+              <p className="text-xs tabular-nums text-muted-foreground" aria-live="polite">
                 {holdingQuery
                   ? `${visibleHoldings.length} of ${allHoldings.length} positions`
                   : `${allHoldings.length} positions`}
@@ -360,7 +360,7 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
                   </span>
                   {/* Column widths and weights follow HoldingsBarList's rows,
                       so the two allocation lists line up as one pattern. */}
-                  <span className="ml-auto shrink-0 pl-2 font-mono text-xs tabular-nums text-muted-foreground/75">
+                  <span className="ml-auto shrink-0 pl-2 font-mono text-xs tabular-nums text-muted-foreground">
                     ~{compactUsd(h.valueUsd)}
                   </span>
                   <span className="w-[4.5rem] shrink-0 text-right font-mono text-sm font-semibold tabular-nums text-foreground">
@@ -390,7 +390,7 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
                 <span className="text-sm text-foreground/85">
                   Show {Math.min(hiddenHoldings, REST_PAGE).toLocaleString('en-US')} more position
                   {Math.min(hiddenHoldings, REST_PAGE) === 1 ? '' : 's'}
-                  <span className="ml-2 text-xs text-muted-foreground/75">
+                  <span className="ml-2 text-xs text-muted-foreground">
                     {hiddenHoldings.toLocaleString('en-US')} remaining
                   </span>
                 </span>
@@ -439,7 +439,7 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
           <h2
             id="congress-trades-heading"
-            className="text-sm font-semibold uppercase tracking-widest text-muted-foreground/80"
+            className="text-sm font-semibold uppercase tracking-widest text-muted-foreground"
           >
             Disclosed trades
           </h2>
@@ -481,7 +481,7 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
                 )}
               >
                 {f.label}
-                <span className="font-mono text-xs tabular-nums text-muted-foreground/70">
+                <span className="font-mono text-xs tabular-nums text-muted-foreground">
                   {counts[f.key]}
                 </span>
               </button>

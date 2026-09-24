@@ -54,7 +54,7 @@ function EventListRow({ event, isMine, isOwned }: { event: UnifiedEvent; isMine:
         )}
       </span>
       <span className="flex shrink-0 items-center gap-2.5">
-        <span className="flex items-center gap-1 text-xs text-muted-foreground/70">
+        <span className="flex items-center gap-1 text-xs text-muted-foreground">
           <Icon className="h-3 w-3" aria-hidden />
           <span className="hidden sm:inline">{typeLabels[event.type]}</span>
         </span>
@@ -104,14 +104,14 @@ export function ListCalendar({ days, today, mySymbols, holdingSymbols, onOpenDay
               className={cn(
                 'sticky top-14 z-10 flex items-baseline justify-between gap-3 bg-card/95 py-2 backdrop-blur',
                 'text-xs font-bold uppercase tracking-wide',
-                isToday ? 'text-primary' : 'text-muted-foreground/70',
+                isToday ? 'text-primary' : 'text-muted-foreground',
               )}
             >
               <span>
                 {fmtFullDate(day.date)}
                 {isToday && <span className="ml-1.5 normal-case tracking-normal">{t('calendarTodaySuffix')}</span>}
               </span>
-              <span className="font-mono tabular-nums text-muted-foreground/60">{day.total + day.economic.length}</span>
+              <span className="font-mono tabular-nums text-muted-foreground">{day.total + day.economic.length}</span>
             </h3>
 
             <div className="flex flex-col pb-2">

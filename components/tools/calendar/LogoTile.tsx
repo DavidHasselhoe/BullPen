@@ -124,7 +124,7 @@ export function LogoTile({
           </span>
         )}
         {metric && (
-          <span className="max-w-full truncate font-mono text-xs leading-none text-muted-foreground/85 tabular-nums">
+          <span className="max-w-full truncate font-mono text-xs leading-none text-muted-foreground tabular-nums">
             {metric}
           </span>
         )}
@@ -149,7 +149,7 @@ export function LogoTile({
       )}
 
       {metric && (
-        <span className="hidden shrink-0 font-mono text-xs leading-none text-muted-foreground/85 tabular-nums xl:inline">
+        <span className="hidden shrink-0 font-mono text-xs leading-none text-muted-foreground tabular-nums xl:inline">
           {metric}
         </span>
       )}

@@ -16,7 +16,7 @@ import { UpgradeSuccessModal } from '@/components/billing/UpgradeSuccessModal';
 
 function Cell({ value, accent }: { value: string | boolean; accent?: boolean }) {
   if (value === true) return <Check className={cn('mx-auto h-4 w-4', accent ? 'text-primary' : 'text-emerald-500')} />;
-  if (value === false) return <X className="mx-auto h-4 w-4 text-muted-foreground/80" />;
+  if (value === false) return <X className="mx-auto h-4 w-4 text-muted-foreground" />;
   return <span className={cn('text-xs font-medium tabular-nums', accent ? 'text-foreground' : 'text-muted-foreground')}>{value}</span>;
 }
 
@@ -149,9 +149,9 @@ function UpgradeContent() {
             <div className="mt-4 flex items-baseline gap-1.5">
               <span className="text-4xl font-bold tabular-nums">${price}</span>
               <span className="text-sm text-muted-foreground">{t('upgradePerMonth')}</span>
-              {annual && <span className="ml-auto text-[11px] font-mono text-muted-foreground/85">{t('upgradeBilledPerYear', { price: price * 12 })}</span>}
+              {annual && <span className="ml-auto text-[11px] font-mono text-muted-foreground">{t('upgradeBilledPerYear', { price: price * 12 })}</span>}
             </div>
-            <p className="mt-1 text-[11px] text-muted-foreground/80">{t('upgradeVatIncluded')}</p>
+            <p className="mt-1 text-[11px] text-muted-foreground">{t('upgradeVatIncluded')}</p>
             {isPro ? (
               <Button disabled className="mt-5 w-full">{t('upgradeYoureOnPro')}</Button>
             ) : status === 'done' ? (
@@ -193,12 +193,12 @@ function UpgradeContent() {
             </div>
             {PLAN_COMPARISON.map((group) => (
               <div key={group.title}>
-                <div className="bg-muted/10 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80">{group.title}</div>
+                <div className="bg-muted/10 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{group.title}</div>
                 {group.rows.map((row) => (
                   <div key={row.label} className="grid grid-cols-[1fr_5rem_5rem] items-center gap-2 border-t px-4 py-2.5">
                     <div className="min-w-0">
                       <span className="text-sm text-foreground">{row.label}</span>
-                      {row.hint && <span className="block text-[11px] text-muted-foreground/80">{row.hint}</span>}
+                      {row.hint && <span className="block text-[11px] text-muted-foreground">{row.hint}</span>}
                     </div>
                     <div className="text-center"><Cell value={row.free} /></div>
                     <div className="rounded-md bg-primary/[0.03] py-1 text-center"><Cell value={row.pro} accent /></div>

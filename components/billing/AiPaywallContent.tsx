@@ -99,7 +99,7 @@ export function AiPaywallContent({ headline, benefits, preview, quota, showReset
         )}
 
         {showResetLine && quota && (
-          <p className="mt-3 text-[11px] text-muted-foreground/70">{t('paywallContentResetLine', { date: formatResetDay(quota.resetsAt) })}</p>
+          <p className="mt-3 text-[11px] text-muted-foreground">{t('paywallContentResetLine', { date: formatResetDay(quota.resetsAt) })}</p>
         )}
 
         <div className="mt-5 flex justify-center">
@@ -129,7 +129,7 @@ export function AiPaywallContent({ headline, benefits, preview, quota, showReset
           <span className="text-sm text-muted-foreground">{t('paywallContentPerMonth')}</span>
         </div>
         {annual && (
-          <p className="text-[11px] text-muted-foreground/70">{t('paywallContentBilledPerYear', { price: price * 12 })}</p>
+          <p className="text-[11px] text-muted-foreground">{t('paywallContentBilledPerYear', { price: price * 12 })}</p>
         )}
 
         <Button asChild className="mt-4 w-full animate-cta-pulse">

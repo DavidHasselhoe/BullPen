@@ -133,7 +133,7 @@ export function WatchlistCard({
         {quote ? (
           <div className="flex items-end justify-between">
             <span
-              className={cn('text-lg font-bold tabular-nums', quote.stale ? 'text-muted-foreground/85' : 'text-foreground')}
+              className={cn('text-lg font-bold tabular-nums', quote.stale ? 'text-muted-foreground' : 'text-foreground')}
               title={quote.stale ? t('watchlistStaleTitle') : undefined}
             >
               ${formatPrice(quote.price)}

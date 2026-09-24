@@ -178,7 +178,7 @@ export function CSVImportModal({ open, onOpenChange }: Props) {
                   dragOver ? 'border-primary bg-primary/5' : 'border-border hover:border-border/80 hover:bg-muted/30'
                 )}
               >
-                <FileText className="h-8 w-8 mx-auto mb-3 text-muted-foreground/85" />
+                <FileText className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
                 <p className="text-sm font-medium text-foreground">{t('csvImportDropHere')}</p>
                 <p className="text-xs text-muted-foreground mt-1">{t('csvImportBrowseHint')}</p>
                 <input
@@ -192,7 +192,7 @@ export function CSVImportModal({ open, onOpenChange }: Props) {
 
               <div className="rounded-lg border border-border/40 bg-muted/20 p-3">
                 <p className="text-xs font-medium text-foreground/80 mb-1">{t('csvImportWhatToInclude')}</p>
-                <p className="text-[11px] text-muted-foreground/85 leading-relaxed">{t('csvImportWhatToIncludeBody')}</p>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">{t('csvImportWhatToIncludeBody')}</p>
               </div>
             </div>
 

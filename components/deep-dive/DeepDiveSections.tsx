@@ -182,7 +182,7 @@ export function DeepDiveSections({ report, currentPrice }: { report: Report; cur
                 </span>
                 <span className="text-sm font-semibold text-foreground">{spec.label}</span>
                 {hint && (
-                  <span className="text-[11px] font-normal text-muted-foreground/80">{hint}</span>
+                  <span className="text-[11px] font-normal text-muted-foreground">{hint}</span>
                 )}
               </span>
             </AccordionTrigger>

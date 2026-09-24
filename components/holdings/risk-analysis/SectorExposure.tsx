@@ -35,7 +35,7 @@ export function SectorExposure({ sectors }: Props) {
             <AccordionContent>
               <div className="flex flex-wrap gap-1.5">
                 {s.symbols.map((sym) => (
-                  <span key={sym} className="rounded bg-muted/50 px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground/85">
+                  <span key={sym} className="rounded bg-muted/50 px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
                     {sym}
                   </span>
                 ))}

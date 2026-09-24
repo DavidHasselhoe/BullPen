@@ -11,7 +11,7 @@
 export function DisclosureNote({ compact = false }: { compact?: boolean }) {
   if (compact) {
     return (
-      <p className="text-xs leading-relaxed text-muted-foreground/80">
+      <p className="text-xs leading-relaxed text-muted-foreground">
         Filed within 45 days of the trade, so this is a record of what was reported, not a live
         feed. Amounts are the ranges disclosure rules require, not exact figures.
       </p>
@@ -19,7 +19,7 @@ export function DisclosureNote({ compact = false }: { compact?: boolean }) {
   }
 
   return (
-    <p className="max-w-2xl text-xs leading-relaxed text-muted-foreground/80">
+    <p className="max-w-2xl text-xs leading-relaxed text-muted-foreground">
       Stock trades disclosed by members of Congress and senior executive-branch officials under
       federal financial disclosure rules. They file within 45 days of trading, so this is a record
       of what was reported, not a live feed. Amounts are the ranges those rules require, not exact

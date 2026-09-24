@@ -55,7 +55,7 @@ export function WeekdayHeader({ className }: { className?: string }) {
         <div
           key={label}
           role="columnheader"
-          className="text-center text-xs font-bold uppercase tracking-wide text-muted-foreground/60"
+          className="text-center text-xs font-bold uppercase tracking-wide text-muted-foreground"
         >
           <span className="sm:hidden">{label.slice(0, 1)}</span>
           <span className="hidden sm:inline">{label}</span>

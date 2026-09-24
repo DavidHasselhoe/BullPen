@@ -83,7 +83,7 @@ export function DeepDiveHero({ report, when, actions, price }: Props) {
         </div>
         <div className="flex shrink-0 flex-col items-start gap-2 sm:items-end">
           {actions && <div className="flex items-center gap-1.5">{actions}</div>}
-          <p className="text-[10px] leading-snug text-muted-foreground/70 sm:max-w-[260px] sm:text-right">
+          <p className="text-[10px] leading-snug text-muted-foreground sm:max-w-[260px] sm:text-right">
             Generated {fmtRelative(when)}
             {report.dataAsOf && (
               <>

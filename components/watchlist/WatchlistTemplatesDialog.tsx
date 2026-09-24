@@ -102,7 +102,7 @@ export function WatchlistTemplatesDialog({ open, onOpenChange, onCreated }: Prop
                       </span>
                     ))}
                     {extra > 0 && (
-                      <span className="px-1 py-0.5 text-[11px] font-medium text-muted-foreground/80">
+                      <span className="px-1 py-0.5 text-[11px] font-medium text-muted-foreground">
                         {t('templatesMoreCount', { count: extra })}
                       </span>
                     )}

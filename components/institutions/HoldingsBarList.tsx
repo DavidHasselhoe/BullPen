@@ -161,10 +161,10 @@ function HoldingRow({ entry, hasDiff, owned, maxPct, change, highlighted, onHigh
             {/* The issuer name is the first thing dropped as width tightens:
                 the logo and ticker already say which company this is, while a
                 dollar figure clipped mid-number ("$51.2…") is just wrong. */}
-            <span className="hidden min-w-0 truncate text-xs text-muted-foreground/75 sm:inline">
+            <span className="hidden min-w-0 truncate text-xs text-muted-foreground sm:inline">
               {entry.symbol && entry.name}
             </span>
-            <span className="ml-auto shrink-0 pl-2 font-mono text-xs tabular-nums text-muted-foreground/75">
+            <span className="ml-auto shrink-0 pl-2 font-mono text-xs tabular-nums text-muted-foreground">
               {fmtUsd(entry.valueUsd)}
               <span className="hidden lg:inline"> &middot; {fmtShares(entry.shares)}</span>
             </span>
@@ -225,8 +225,8 @@ export function HoldingsBarList({ allocation, options, diff, highlightedKey, onH
   return (
     <div className="overflow-hidden rounded-xl border border-border/50">
       <div className="flex items-center justify-between border-b border-border/50 px-4 py-2.5">
-        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground/80">Holding</span>
-        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground/80">
+        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Holding</span>
+        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           % of portfolio
         </span>
       </div>
@@ -273,7 +273,7 @@ export function HoldingsBarList({ allocation, options, diff, highlightedKey, onH
               <span className="min-w-0 flex-1 text-sm text-foreground/85">
                 {allocation.rest.length.toLocaleString()} more position
                 {allocation.rest.length === 1 ? '' : 's'}
-                <span className="ml-2 text-xs text-muted-foreground/75">
+                <span className="ml-2 text-xs text-muted-foreground">
                   <span className="font-mono tabular-nums">{fmtUsd(allocation.restValue)}</span>
                 </span>
               </span>
@@ -320,9 +320,9 @@ export function HoldingsBarList({ allocation, options, diff, highlightedKey, onH
             defaultValue={optionsValue > allocation.total ? 'options' : undefined}
           >
             <AccordionItem value="options" className="border-none">
-              <AccordionTrigger className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground/70 hover:no-underline">
+              <AccordionTrigger className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground hover:no-underline">
                 Options
-                <span className="ml-2 font-mono normal-case tracking-normal text-muted-foreground/60">
+                <span className="ml-2 font-mono normal-case tracking-normal text-muted-foreground">
                   {options.length}
                 </span>
               </AccordionTrigger>
@@ -354,12 +354,12 @@ export function HoldingsBarList({ allocation, options, diff, highlightedKey, onH
                           )}
                           <PutCallTag putCall={h.putCall} />
                           {h.symbol && (
-                            <span className="ml-2 hidden text-xs text-muted-foreground/70 sm:inline">
+                            <span className="ml-2 hidden text-xs text-muted-foreground sm:inline">
                               {h.nameOfIssuer}
                             </span>
                           )}
                         </span>
-                        <span className="shrink-0 font-mono text-xs tabular-nums text-muted-foreground/75">
+                        <span className="shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
                           {fmtUsd(h.valueUsd)}
                         </span>
                         <QoqBadge {...changeFor(key)} hasDiff={hasDiff} />
@@ -392,9 +392,9 @@ export function HoldingsBarList({ allocation, options, diff, highlightedKey, onH
         <div className="border-t border-border/50 bg-muted/10">
           <Accordion type="single" collapsible>
             <AccordionItem value="exited" className="border-none">
-              <AccordionTrigger className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground/70 hover:no-underline">
+              <AccordionTrigger className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground hover:no-underline">
                 Exited positions this quarter
-                <span className="ml-2 font-mono normal-case tracking-normal text-muted-foreground/60">
+                <span className="ml-2 font-mono normal-case tracking-normal text-muted-foreground">
                   {exited.length}
                 </span>
               </AccordionTrigger>
@@ -420,13 +420,13 @@ export function HoldingsBarList({ allocation, options, diff, highlightedKey, onH
                         )}
                         <PutCallTag putCall={h.putCall} />
                         {h.symbol && (
-                          <span className="ml-2 text-xs text-muted-foreground/70">{h.nameOfIssuer}</span>
+                          <span className="ml-2 text-xs text-muted-foreground">{h.nameOfIssuer}</span>
                         )}
                       </span>
                       {/* Prior quarter's weight, not its dollar value: "was 4.3%
                           of the portfolio" says how much the fund cared about
                           this name in a way a raw figure does not. */}
-                      <span className="shrink-0 font-mono text-xs tabular-nums text-muted-foreground/70">
+                      <span className="shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
                         {h.portfolioPct != null ? `was ${h.portfolioPct.toFixed(2)}%` : `was ${fmtUsd(h.valueUsd)}`}
                       </span>
                     </li>

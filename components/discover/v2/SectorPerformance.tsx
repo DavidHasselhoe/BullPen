@@ -75,12 +75,12 @@ export function SectorPerformance({ sectors }: Props) {
         <div className="min-w-0">
           <h2
             id="sectors-heading"
-            className="text-sm font-semibold uppercase tracking-widest text-muted-foreground/80"
+            className="text-sm font-semibold uppercase tracking-widest text-muted-foreground"
           >
             {t('sectorPerfHeading')}
           </h2>
           {leader?.changePct != null && laggard?.changePct != null && (
-            <p className="mt-1 text-xs text-muted-foreground/80">
+            <p className="mt-1 text-xs text-muted-foreground">
               {t('sectorPerfLeaderLaggard', { leader: leader.label, laggard: laggard.label, timeframe: TIMEFRAME_LABELS[timeframe].toLowerCase() })}
             </p>
           )}
@@ -130,7 +130,7 @@ export function SectorPerformance({ sectors }: Props) {
         </ul>
       </div>
 
-      <p className="mt-2 text-[11px] text-muted-foreground/80">
+      <p className="mt-2 text-[11px] text-muted-foreground">
         {t('sectorPerfFooterNote')}
       </p>
     </section>

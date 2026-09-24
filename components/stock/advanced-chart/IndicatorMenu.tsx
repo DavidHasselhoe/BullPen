@@ -53,7 +53,7 @@ export function IndicatorMenu({ indicators, onAdd, onRemove, onUpdate, onApplyPr
       <PopoverContent align="end" className="z-[130] w-80 p-0">
         {/* Presets */}
         <div className="border-b border-border/60 p-2">
-          <p className="px-1 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80">
+          <p className="px-1 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
             {t('indicatorPresetsLabel')}
           </p>
           <div className="flex flex-wrap gap-1.5">
@@ -75,11 +75,11 @@ export function IndicatorMenu({ indicators, onAdd, onRemove, onUpdate, onApplyPr
         {indicators.length > 0 && (
           <div className="border-b border-border/60 p-2">
             <div className="flex items-center justify-between px-1 pb-1.5">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80">{t('indicatorActiveLabel')}</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t('indicatorActiveLabel')}</p>
               <button
                 type="button"
                 onClick={onClear}
-                className="text-[11px] font-medium text-muted-foreground/85 transition-colors hover:text-red-400"
+                className="text-[11px] font-medium text-muted-foreground transition-colors hover:text-red-400"
               >
                 {t('indicatorClearAll')}
               </button>
@@ -118,7 +118,7 @@ export function IndicatorMenu({ indicators, onAdd, onRemove, onUpdate, onApplyPr
                       type="button"
                       onClick={() => onRemove(inst.id)}
                       aria-label={t('indicatorRemoveAriaLabel', { indicator: def.label })}
-                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground/80 transition-colors hover:bg-red-500/10 hover:text-red-400"
+                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-400"
                     >
                       <X className="h-3.5 w-3.5" />
                     </button>
@@ -149,7 +149,7 @@ function AddGroup({
 }) {
   return (
     <div className={className}>
-      <p className="px-1 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80">
+      <p className="px-1 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
         {title}
       </p>
       <div className="space-y-0.5">
@@ -162,7 +162,7 @@ function AddGroup({
               'flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-accent/60'
             )}
           >
-            <Plus className="h-3.5 w-3.5 shrink-0 text-muted-foreground/80" />
+            <Plus className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
             <span className="w-12 shrink-0 text-xs font-semibold text-foreground">{def.label}</span>
             <span className="flex-1 truncate text-xs text-muted-foreground">{def.name}</span>
           </button>

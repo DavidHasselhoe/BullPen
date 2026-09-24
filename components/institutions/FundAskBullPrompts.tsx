@@ -103,7 +103,7 @@ export function FundAskBullPrompts({
 
   return (
     <div className={className}>
-      <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground/70">
+      <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
         Ask Bull about this fund
       </p>
       <div className="flex flex-wrap gap-2">

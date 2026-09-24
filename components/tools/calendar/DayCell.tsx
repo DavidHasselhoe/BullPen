@@ -40,7 +40,7 @@ function TypeCountStrip({ counts }: { counts: Record<EventType, number> }) {
       {present.map((type) => {
         const Icon = TYPE_ICONS[type];
         return (
-          <span key={type} className="flex items-center gap-0.5 text-xs leading-none text-muted-foreground/70">
+          <span key={type} className="flex items-center gap-0.5 text-xs leading-none text-muted-foreground">
             <Icon className="h-2.5 w-2.5" aria-hidden />
             <span className="tabular-nums">{counts[type]}</span>
           </span>
@@ -62,7 +62,7 @@ export function DayCell({ model, today, mySymbols, onOpenDay, compact, tabIndex 
 
   const headerClass = cn(
     'text-xs font-bold uppercase tracking-wide leading-none',
-    isToday ? 'text-primary' : 'text-muted-foreground/70',
+    isToday ? 'text-primary' : 'text-muted-foreground',
   );
 
   if (model.total === 0 && model.economic.length === 0) {
@@ -141,14 +141,14 @@ export function DayCell({ model, today, mySymbols, onOpenDay, compact, tabIndex 
               >
                 +{model.moreCount}
               </span>
-              <span className="text-xs font-medium leading-none text-muted-foreground/80">{t('calendarMoreLabel')}</span>
+              <span className="text-xs font-medium leading-none text-muted-foreground">{t('calendarMoreLabel')}</span>
             </span>
           )}
         </span>
       )}
 
       {compact && model.moreCount > 0 && (
-        <span className="text-xs font-medium leading-none text-muted-foreground/80">
+        <span className="text-xs font-medium leading-none text-muted-foreground">
           +{model.moreCount}
           <span className="hidden sm:inline"> {t('calendarMoreLabel')}</span>
         </span>

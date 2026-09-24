@@ -32,7 +32,7 @@ export function YourWeekStrip({ days }: { days: DayModel[] }) {
 
   return (
     <div className="mb-6">
-      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground/70">
+      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         {t('calendarYourEvents')}
       </p>
       <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
@@ -53,9 +53,9 @@ export function YourWeekStrip({ days }: { days: DayModel[] }) {
                 className="rounded-full"
               />
               <span className="font-mono font-bold">{event.symbol}</span>
-              <Icon className="h-3 w-3 text-muted-foreground/80" aria-hidden />
-              <span className="text-muted-foreground/85">{typeLabels[event.type]}</span>
-              <span className="text-muted-foreground/70">{fmtDayHeader(date)}</span>
+              <Icon className="h-3 w-3 text-muted-foreground" aria-hidden />
+              <span className="text-muted-foreground">{typeLabels[event.type]}</span>
+              <span className="text-muted-foreground">{fmtDayHeader(date)}</span>
             </Link>
           );
         })}

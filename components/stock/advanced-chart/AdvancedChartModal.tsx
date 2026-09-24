@@ -349,7 +349,7 @@ export function AdvancedChartModal({
 
           {!isLoading && (isError || !hasData) && (
             <div className="flex h-full flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
-              <AlertCircle className="h-6 w-6 text-muted-foreground/80" />
+              <AlertCircle className="h-6 w-6 text-muted-foreground" />
               {isError ? t('advancedChartRateLimited') : t('advancedChartNoData')}
             </div>
           )}

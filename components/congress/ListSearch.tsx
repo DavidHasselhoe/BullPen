@@ -25,7 +25,7 @@ export function ListSearch({
 }) {
   return (
     <div className="flex h-8 items-center gap-2 rounded-md border border-border/60 bg-transparent px-2.5 transition-colors focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/30 sm:w-[220px]">
-      <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground/85" aria-hidden />
+      <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
       <input
         id={id}
         type="search"
@@ -49,7 +49,7 @@ export function ListSearch({
           type="button"
           onClick={() => onChange('')}
           aria-label="Clear search"
-          className="shrink-0 rounded-sm text-muted-foreground/80 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="shrink-0 rounded-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <X className="h-3.5 w-3.5" aria-hidden />
         </button>

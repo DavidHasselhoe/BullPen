@@ -201,7 +201,7 @@ export const HealthBloomLegendRow = forwardRef<HTMLButtonElement, HealthBloomLeg
           </span>
           <span className="tabular-nums font-semibold text-muted-foreground">
             {cat.score}
-            <span className="font-medium text-muted-foreground/70">/{cat.max}</span>
+            <span className="font-medium text-muted-foreground">/{cat.max}</span>
           </span>
         </div>
         <div className="h-1 w-full overflow-hidden rounded-full bg-muted/60">

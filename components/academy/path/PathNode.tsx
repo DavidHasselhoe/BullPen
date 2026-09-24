@@ -57,7 +57,7 @@ export function PathNode({ course, isCurrent, offset, align, circleRef }: Props)
       {course.isCompleted ? (
         <Check className="h-6 w-6 text-white" strokeWidth={2.5} />
       ) : course.isLocked ? (
-        <Lock className="h-5 w-5 text-muted-foreground/70" />
+        <Lock className="h-5 w-5 text-muted-foreground" />
       ) : (
         <CourseIcon name={course.icon} className={cn('h-5 w-5', isCurrent ? 'text-emerald-500' : 'text-foreground/70')} />
       )}
@@ -74,14 +74,14 @@ export function PathNode({ course, isCurrent, offset, align, circleRef }: Props)
       <div
         className={cn(
           'text-sm font-bold tracking-tight leading-snug',
-          (isProgressionLocked || isProLocked) && 'text-muted-foreground/70'
+          (isProgressionLocked || isProLocked) && 'text-muted-foreground'
         )}
       >
         {course.title}
       </div>
       <div className={cn('mt-1 flex flex-wrap items-center gap-1.5', align === 'left' && 'justify-end')}>
         {course.difficulty && (
-          <span className="text-[11px] font-mono font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-muted/50 text-muted-foreground/80">
+          <span className="text-[11px] font-mono font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-muted/50 text-muted-foreground">
             {course.difficulty}
           </span>
         )}
@@ -95,7 +95,7 @@ export function PathNode({ course, isCurrent, offset, align, circleRef }: Props)
             {t('pathNodeSkipped')}
           </span>
         )}
-        <span className="text-[11px] font-mono text-muted-foreground/70 tabular-nums">
+        <span className="text-[11px] font-mono text-muted-foreground tabular-nums">
           {t('pathNodeLessonProgress', { completed: course.completedLessons, total: course.totalLessons })}
         </span>
       </div>
@@ -141,7 +141,7 @@ export function PathNode({ course, isCurrent, offset, align, circleRef }: Props)
         {showSkipToQuiz && (
           <Link
             href={`/academy/${course.slug}/quiz?title=${encodeURIComponent(course.title)}`}
-            className="text-[11px] font-mono text-muted-foreground/70 underline underline-offset-2 hover:text-foreground transition-colors"
+            className="text-[11px] font-mono text-muted-foreground underline underline-offset-2 hover:text-foreground transition-colors"
           >
             {t('pathNodeSkipToQuiz')}
           </Link>

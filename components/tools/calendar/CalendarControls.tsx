@@ -108,7 +108,7 @@ export function CalendarDateNav({
       >
         <ChevronLeft className="h-4 w-4" />
       </Button>
-      <span className="min-w-[132px] text-center font-mono text-xs tabular-nums text-muted-foreground/85">
+      <span className="min-w-[132px] text-center font-mono text-xs tabular-nums text-muted-foreground">
         {label}
       </span>
       <Button

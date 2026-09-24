@@ -349,7 +349,7 @@ const HoldingRow = memo(function HoldingRow({
       <td className="py-4 px-4 text-sm font-medium text-foreground">
         {showPriceSkeleton ? <PriceSkeleton /> : holding.currentPrice !== undefined ? (
           <span
-            className={cn('animate-in fade-in duration-300', holding.isPriceStale && 'text-muted-foreground/85')}
+            className={cn('animate-in fade-in duration-300', holding.isPriceStale && 'text-muted-foreground')}
             title={holding.isPriceStale ? t('holdingsTableStaleLastClose') : undefined}
           >
             {formatCurrencyValue(holding.currentPrice, currency, roundNumbers ? { round: true } : undefined)}
@@ -973,7 +973,7 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
                 <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
                   <HoldingField
                     label={t('holdingsTableFieldPrice')}
-                    valueClass={holding.isPriceStale ? 'text-muted-foreground/85' : undefined}
+                    valueClass={holding.isPriceStale ? 'text-muted-foreground' : undefined}
                     title={holding.isPriceStale ? t('holdingsTableStaleLastClose') : undefined}
                     value={holding.currentPrice !== undefined ? formatCurrencyValue(holding.currentPrice, ccy, opts) : '—'}
                   />

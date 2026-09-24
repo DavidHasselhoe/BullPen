@@ -65,7 +65,7 @@ function mismatchNote(score: number, stance: Verdict['stance']): string | null {
 function Cell({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex min-w-0 flex-col items-center justify-center text-center sm:px-4">
-      <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/80">
+      <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
         {label}
       </p>
       {children}
@@ -142,7 +142,7 @@ export function VerdictBar({
 
         <Cell label="AI view">
           <p className={cn('text-2xl font-bold leading-none', stance.cls)}>{stance.label}</p>
-          <p className="mt-2 text-xs leading-tight text-muted-foreground/85">
+          <p className="mt-2 text-xs leading-tight text-muted-foreground">
             {CONFIDENCE_LABEL[verdict.confidence]}
           </p>
         </Cell>
@@ -170,7 +170,7 @@ export function VerdictBar({
                   the kind of quiet inaccuracy that costs trust in every other
                   figure on the page. */}
               {!isLive && (
-                <p className="mt-1 text-[10px] leading-tight text-muted-foreground/70">
+                <p className="mt-1 text-[10px] leading-tight text-muted-foreground">
                   {DELAYED_QUOTE_MINUTES} min delayed
                 </p>
               )}

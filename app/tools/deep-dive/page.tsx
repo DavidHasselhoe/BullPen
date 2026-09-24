@@ -101,7 +101,7 @@ export default function DeepDiveLanding() {
             </form>
 
             <div className="flex flex-wrap items-center gap-1.5 pt-1">
-              <span className="text-[11px] text-muted-foreground/80">{t('deepDivePopularLabel', 'Popular:')}</span>
+              <span className="text-[11px] text-muted-foreground">{t('deepDivePopularLabel', 'Popular:')}</span>
               {POPULAR.map((sym) => (
                 <button
                   key={sym}
@@ -121,9 +121,9 @@ export default function DeepDiveLanding() {
 
         {/* Saved dives */}
         <div className="flex items-center gap-2 mb-3">
-          <Clock className="h-3.5 w-3.5 text-muted-foreground/85" />
-          <span className="text-[11px] uppercase tracking-widest text-muted-foreground/85 font-semibold">{t('deepDiveYourDives', 'Your deep dives')}</span>
-          {dives.length > 0 && <span className="text-[11px] text-muted-foreground/80 tabular-nums">({dives.length})</span>}
+          <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+          <span className="text-[11px] uppercase tracking-widest text-muted-foreground font-semibold">{t('deepDiveYourDives', 'Your deep dives')}</span>
+          {dives.length > 0 && <span className="text-[11px] text-muted-foreground tabular-nums">({dives.length})</span>}
         </div>
 
         {isLoading ? (
@@ -163,7 +163,7 @@ function SavedDiveRow({ dive: d, onDelete }: { dive: SavedDivePreview; onDelete:
           <span className="text-sm font-bold font-mono text-foreground">{d.symbol}</span>
           {d.companyName && <span className="text-xs text-muted-foreground truncate">{d.companyName}</span>}
         </div>
-        <p className="text-xs text-muted-foreground/80 truncate">
+        <p className="text-xs text-muted-foreground truncate">
           {d.headline ?? new Date(d.createdAt).toLocaleDateString()}
         </p>
       </Link>
@@ -178,7 +178,7 @@ function SavedDiveRow({ dive: d, onDelete }: { dive: SavedDivePreview; onDelete:
             </button>
             <button
               onClick={() => setConfirm(false)}
-              className="text-xs text-muted-foreground/85 hover:text-muted-foreground px-2 py-1 rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="text-xs text-muted-foreground hover:text-muted-foreground px-2 py-1 rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               {t('deepDiveCancelButton', 'Cancel')}
             </button>
@@ -187,12 +187,12 @@ function SavedDiveRow({ dive: d, onDelete }: { dive: SavedDivePreview; onDelete:
           <>
             <button
               onClick={() => setConfirm(true)}
-              className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 text-muted-foreground/80 hover:text-red-400 p-1.5 rounded transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 text-muted-foreground hover:text-red-400 p-1.5 rounded transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               aria-label={t('deepDiveDeleteAriaLabel', 'Delete {{symbol}} deep dive', { symbol: d.symbol })}
             >
               <Trash2 className="h-3.5 w-3.5" />
             </button>
-            <ChevronRight className="h-4 w-4 text-muted-foreground/80 group-hover:text-muted-foreground/80 transition-colors" aria-hidden />
+            <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-muted-foreground/80 transition-colors" aria-hidden />
           </>
         )}
       </div>

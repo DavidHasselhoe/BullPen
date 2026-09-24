@@ -64,7 +64,7 @@ function IndexTile({ index, series }: { index: IndexQuote; series?: number[] }) 
   const down = pct != null && pct < -0.005;
   const DirIcon = up ? ArrowUp : down ? ArrowDown : Minus;
 
-  const tone = up ? 'text-emerald-400' : down ? 'text-red-400' : 'text-muted-foreground/85';
+  const tone = up ? 'text-emerald-400' : down ? 'text-red-400' : 'text-muted-foreground';
 
   return (
     <div className="rounded-xl border border-border/50 bg-card/40 px-3.5 py-3 transition-colors duration-200 hover:border-border">
@@ -92,7 +92,7 @@ function IndexTile({ index, series }: { index: IndexQuote; series?: number[] }) 
         </span>
       </div>
 
-      <p className="mt-1 text-[11px] leading-tight text-muted-foreground/80">{index.hint}</p>
+      <p className="mt-1 text-[11px] leading-tight text-muted-foreground">{index.hint}</p>
     </div>
   );
 }

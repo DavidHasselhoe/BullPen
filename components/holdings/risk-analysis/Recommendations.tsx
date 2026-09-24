@@ -20,7 +20,7 @@ export function Recommendations({ recommendations }: Props) {
       <ol className="space-y-3">
         {recommendations.map((rec, i) => (
           <li key={i} className="flex gap-3">
-            <span className="mt-0.5 shrink-0 font-mono text-xs font-semibold text-muted-foreground/70 tabular-nums">
+            <span className="mt-0.5 shrink-0 font-mono text-xs font-semibold text-muted-foreground tabular-nums">
               {String(i + 1).padStart(2, '0')}
             </span>
             <p className="text-[13px] leading-relaxed text-foreground/85">{rec}</p>

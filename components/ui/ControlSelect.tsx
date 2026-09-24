@@ -39,7 +39,7 @@ export function ControlSelect({
     <div className="flex w-full items-center gap-2 sm:w-auto">
       <label
         htmlFor={id}
-        className="min-w-[6.5rem] text-xs font-medium uppercase tracking-wide text-muted-foreground/70 sm:min-w-0"
+        className="min-w-[6.5rem] text-xs font-medium uppercase tracking-wide text-muted-foreground sm:min-w-0"
       >
         {label}
       </label>

@@ -250,7 +250,7 @@ export function PortfolioResult({ generationId, portfolio, logoMap, replacedTick
                 <button
                   type="button"
                   aria-label={t('portfolioBuilderTierLegendAriaLabel')}
-                  className="text-muted-foreground/85 hover:text-muted-foreground transition-colors"
+                  className="text-muted-foreground hover:text-muted-foreground transition-colors"
                 >
                   <HelpCircle className="h-3.5 w-3.5" />
                 </button>

@@ -164,7 +164,7 @@ export function WatchlistTable({ items, quotes, enhancedData, onRemove, isRemovi
                 </TableCell>
 
                 <TableCell
-                  className={cn('tabular-nums font-medium', q?.stale && 'text-muted-foreground/85')}
+                  className={cn('tabular-nums font-medium', q?.stale && 'text-muted-foreground')}
                   title={q?.stale ? t('watchlistStaleTitle') : undefined}
                 >
                   {q ? `$${q.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}

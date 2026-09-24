@@ -33,9 +33,9 @@ export function ThemeCard({ theme, icon: Icon, companiesLabel }: Props) {
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <h3 className="text-sm font-semibold text-foreground leading-tight">{theme.title}</h3>
-          <p className="mt-1 text-[12px] leading-tight text-muted-foreground/85 line-clamp-2">{theme.tagline}</p>
+          <p className="mt-1 text-[12px] leading-tight text-muted-foreground line-clamp-2">{theme.tagline}</p>
         </div>
-        <Icon className="h-5 w-5 shrink-0 text-muted-foreground/70" aria-hidden />
+        <Icon className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
       </div>
 
       <div className="flex items-center justify-between gap-2">
@@ -51,7 +51,7 @@ export function ThemeCard({ theme, icon: Icon, companiesLabel }: Props) {
             />
           ))}
           {moreCount > 0 && (
-            <span className="truncate text-xs text-muted-foreground/70 ml-0.5">
+            <span className="truncate text-xs text-muted-foreground ml-0.5">
               {t('earningsWidgetMoreCount', { count: moreCount })}
             </span>
           )}
@@ -70,7 +70,7 @@ export function ThemeCard({ theme, icon: Icon, companiesLabel }: Props) {
               className="shrink-0"
             />
           )}
-          <span className="text-xs font-medium text-muted-foreground/80 whitespace-nowrap">
+          <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
             {companiesLabel}
           </span>
         </div>

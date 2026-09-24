@@ -69,7 +69,7 @@ export function MoodHero({ score, label, animated }: { score: number; label: str
           >
             {score}
           </span>
-          <span className="text-base text-muted-foreground/80 font-mono mb-2">/100</span>
+          <span className="text-base text-muted-foreground font-mono mb-2">/100</span>
         </div>
         <div
           className="text-[11px] font-semibold uppercase mt-3"
@@ -110,9 +110,9 @@ export function MoodHero({ score, label, animated }: { score: number; label: str
         </div>
 
         {/* End labels */}
-        <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-[0.22em] text-muted-foreground/80">
+        <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
           <span>{t('moodFear')}</span>
-          <span className="font-mono tabular-nums text-muted-foreground/80">
+          <span className="font-mono tabular-nums text-muted-foreground">
             {t('moodScale')}
           </span>
           <span>{t('moodGreed')}</span>
@@ -133,7 +133,7 @@ export function SignalCard({ signal }: { signal: MoodSignal }) {
     >
       {/* Top row: name + state chip */}
       <div className="flex items-start justify-between gap-2 mb-3">
-        <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground/80">
+        <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
           {signal.name}
         </span>
         <span
@@ -152,7 +152,7 @@ export function SignalCard({ signal }: { signal: MoodSignal }) {
         >
           {signal.score}
         </span>
-        <span className="text-[11px] font-mono text-muted-foreground/80 mb-0.5">/100</span>
+        <span className="text-[11px] font-mono text-muted-foreground mb-0.5">/100</span>
       </div>
 
       {/* Mini spectrum bar */}
@@ -172,7 +172,7 @@ export function SignalCard({ signal }: { signal: MoodSignal }) {
         />
       </div>
 
-      <p className="text-[11px] leading-relaxed text-muted-foreground/80">
+      <p className="text-[11px] leading-relaxed text-muted-foreground">
         {signal.detail}
       </p>
     </div>

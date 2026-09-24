@@ -65,10 +65,10 @@ export function XPBar() {
       <LevelBadge level={level} />
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline justify-between gap-2 mb-1">
-          <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground/80">
+          <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
             {t('xpBarLevel', { level })}
           </span>
-          <span className="text-[11px] font-mono tabular-nums text-muted-foreground/85">
+          <span className="text-[11px] font-mono tabular-nums text-muted-foreground">
             <motion.span>{roundedXp}</motion.span>
             {t('xpBarXpSuffix')}
           </span>

@@ -109,7 +109,7 @@ export function ExchangePicker({ selectedCodes, onAdd }: Props) {
       <PopoverContent align="start" className="w-72 p-0">
         <div className="border-b border-border/50 p-2">
           <div className="relative">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/80" />
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -149,7 +149,7 @@ export function ExchangePicker({ selectedCodes, onAdd }: Props) {
                   <span className="text-sm font-medium text-foreground flex-1 truncate">
                     {countryName}
                   </span>
-                  <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground/80 shrink-0">
+                  <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground shrink-0">
                     {ex.code}
                   </span>
                 </button>

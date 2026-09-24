@@ -36,7 +36,7 @@ function ColumnItem({
       <button
         type="button"
         onPointerDown={(e) => controls.start(e)}
-        className="cursor-grab active:cursor-grabbing text-muted-foreground/80 hover:text-muted-foreground touch-none"
+        className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-muted-foreground touch-none"
         aria-label={t('screenerReorderColumnAriaLabel', { label: col.label })}
       >
         <GripVertical className="h-3.5 w-3.5" />
@@ -47,11 +47,11 @@ function ColumnItem({
         onClick={onToggle}
         className="flex flex-1 items-center justify-between gap-2 text-left"
       >
-        <span className={cn('text-xs', hidden ? 'text-muted-foreground/85' : 'text-foreground')}>
+        <span className={cn('text-xs', hidden ? 'text-muted-foreground' : 'text-foreground')}>
           {col.label}
         </span>
         {hidden
-          ? <EyeOff className="h-3.5 w-3.5 text-muted-foreground/80 shrink-0" />
+          ? <EyeOff className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
           : <Eye className="h-3.5 w-3.5 text-primary shrink-0" />}
       </button>
     </Reorder.Item>
@@ -71,14 +71,14 @@ export function ColumnChooser({ columns }: Props) {
         <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs">
           <SlidersHorizontal className="h-3.5 w-3.5" />
           {t('screenerColumnsButton')}
-          <span className="text-muted-foreground/80">{visibleCount}</span>
+          <span className="text-muted-foreground">{visibleCount}</span>
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-64 p-2">
         <div className="flex items-center justify-between px-1.5 pb-2 mb-1 border-b border-border/60">
           <div className="flex flex-col">
             <span className="text-xs font-semibold text-foreground">{t('screenerColumnsButton')}</span>
-            <span className="text-[11px] text-muted-foreground/80">{t('screenerColumnsHint')}</span>
+            <span className="text-[11px] text-muted-foreground">{t('screenerColumnsHint')}</span>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <button
@@ -120,7 +120,7 @@ export function ColumnChooser({ columns }: Props) {
               return (
                 <Fragment key={col.key}>
                   {showGroupLabel && (
-                    <li className="px-1.5 pb-1 pt-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 first:pt-0.5">
+                    <li className="px-1.5 pb-1 pt-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground first:pt-0.5">
                       {groupLabels[col.group]}
                     </li>
                   )}

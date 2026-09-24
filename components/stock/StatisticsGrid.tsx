@@ -545,7 +545,7 @@ export function StatisticsGrid({
           <div className="flex items-baseline gap-3 min-w-0">
             <CardTitle className="text-base font-semibold shrink-0">{t('statisticsGridTitle')}</CardTitle>
             {updatedLabel && (
-              <span className="text-xs text-muted-foreground/80 font-mono tracking-wide truncate">
+              <span className="text-xs text-muted-foreground font-mono tracking-wide truncate">
                 {updatedLabel}
               </span>
             )}

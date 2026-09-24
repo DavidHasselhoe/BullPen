@@ -42,7 +42,7 @@ function ConfidenceScale({ score }: { score: number }) {
           style={{ left: `${pct}%` }}
         />
       </div>
-      <div className="mt-1.5 flex justify-between text-[11px] text-muted-foreground/80">
+      <div className="mt-1.5 flex justify-between text-[11px] text-muted-foreground">
         <span>{t('portfolioBuilderScaleLow')}</span>
         <span>{t('portfolioBuilderScaleModerate')}</span>
         <span>{t('portfolioBuilderScaleHigh')}</span>
@@ -54,7 +54,7 @@ function ConfidenceScale({ score }: { score: number }) {
 function Highlight({ label, title, detail }: { label: string; title: string; detail?: string }) {
   return (
     <div className="min-w-0">
-      <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80">{label}</div>
+      <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</div>
       <div className="mt-0.5 text-sm font-medium text-foreground">{title}</div>
       {/* Model-written: the title wraps, the sentence clamps with a Show more.
           Same reasoning as risk-analysis/RiskScoreHero. */}
@@ -81,7 +81,7 @@ export function PortfolioHero({ portfolio, when }: Props) {
           <div className="flex items-baseline gap-3">
             <span className="font-mono text-4xl font-bold tabular-nums leading-none text-foreground">
               {portfolio.confidence_score}
-              <span className="text-lg text-muted-foreground/60">/100</span>
+              <span className="text-lg text-muted-foreground">/100</span>
             </span>
           </div>
           <div className={cn('text-base font-semibold', tierTextClass(tier))}>
@@ -95,7 +95,7 @@ export function PortfolioHero({ portfolio, when }: Props) {
         </div>
         <div className="flex flex-col items-end gap-1.5">
           <ConfidenceScale score={portfolio.confidence_score} />
-          <p className="text-[10px] text-muted-foreground/70 text-right">
+          <p className="text-[10px] text-muted-foreground text-right">
             {t('portfolioBuilderMetaLine', { when: formatWhen(when, t) })}
           </p>
         </div>

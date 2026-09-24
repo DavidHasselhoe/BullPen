@@ -122,7 +122,7 @@ export function ImportUndoBanner() {
             type="button"
             onClick={() => handleDismiss(recent.id)}
             aria-label={t('importUndoDismiss')}
-            className="rounded-md p-1.5 text-muted-foreground/60 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <X className="h-3.5 w-3.5" />
           </button>

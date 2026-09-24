@@ -94,10 +94,10 @@ export function AllocationBars({ holdings, logoMap, isSimplified }: Props) {
         return (
           <div key={section.role}>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] uppercase tracking-widest text-muted-foreground/80 font-semibold">
+              <span className="text-[11px] uppercase tracking-widest text-muted-foreground font-semibold">
                 {roleLabel[section.role]} · {t('portfolioBuilderPositionCount', { count: section.items.length })}
               </span>
-              <span className="text-[11px] tabular-nums text-muted-foreground/80 font-semibold">
+              <span className="text-[11px] tabular-nums text-muted-foreground font-semibold">
                 {sectionTotal}%
               </span>
             </div>
@@ -124,7 +124,7 @@ export function AllocationBars({ holdings, logoMap, isSimplified }: Props) {
                           </span>
                         )}
                         {/* clamp-ok: company name in a dense bar row, not a sentence */}
-                        <span className="text-xs text-muted-foreground/80 truncate">{h.company}</span>
+                        <span className="text-xs text-muted-foreground truncate">{h.company}</span>
                         <span className="ml-auto shrink-0 font-mono text-xs font-semibold tabular-nums text-foreground">
                           {Math.round(h.allocation_pct)}%
                         </span>
@@ -140,14 +140,14 @@ export function AllocationBars({ holdings, logoMap, isSimplified }: Props) {
                   <AccordionContent>
                     <div className="space-y-3 pl-[34px]">
                       <div>
-                        <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80">
+                        <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                           {isSimplified ? t('portfolioBuilderWhyThisStock') : t('portfolioBuilderRationale')}
                         </p>
                         <p className="text-[13px] leading-relaxed text-muted-foreground">{glossaryText(h.rationale, seen)}</p>
                       </div>
                       <div>
                         <div className="mb-1 flex items-center justify-between">
-                          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80">
+                          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                             {isSimplified ? t('portfolioBuilderMainRisk') : t('portfolioBuilderKeyRisk')}
                           </p>
                           <span className={cn('shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide', tierBadgeClass(riskLevelTier(h.risk_level)))}>
@@ -157,13 +157,13 @@ export function AllocationBars({ holdings, logoMap, isSimplified }: Props) {
                         <p className="text-[13px] leading-relaxed text-muted-foreground">{glossaryText(h.key_risk, seen)}</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <TermTooltip term="Thesis exposure" className="text-[11px] text-muted-foreground/80" />
-                        <span className="text-[11px] font-mono tabular-nums text-muted-foreground/80">{h.thesis_exposure_score}/10</span>
+                        <TermTooltip term="Thesis exposure" className="text-[11px] text-muted-foreground" />
+                        <span className="text-[11px] font-mono tabular-nums text-muted-foreground">{h.thesis_exposure_score}/10</span>
                       </div>
                       {h.subsector_exposure.length > 0 && (
                         <div className="flex flex-wrap gap-1.5">
                           {h.subsector_exposure.map((sub) => (
-                            <span key={sub} className="rounded bg-muted/50 px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground/85">
+                            <span key={sub} className="rounded bg-muted/50 px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
                               {sub}
                             </span>
                           ))}

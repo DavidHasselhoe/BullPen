@@ -104,10 +104,10 @@ function ReportRow({ report }: { report: FeedbackReportRow }) {
             {report.title}
           </button>
         </td>
-        <td className="py-2.5 pr-3 font-mono text-xs text-muted-foreground/85 whitespace-nowrap">
+        <td className="py-2.5 pr-3 font-mono text-xs text-muted-foreground whitespace-nowrap">
           {report.reporter_email ?? '(deleted user)'}
         </td>
-        <td className="py-2.5 pr-3 text-xs text-muted-foreground/80 whitespace-nowrap">
+        <td className="py-2.5 pr-3 text-xs text-muted-foreground whitespace-nowrap">
           {new Date(report.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
         </td>
         <td className="py-2.5 pr-3">
@@ -181,7 +181,7 @@ export function AdminFeedbackClient() {
     <main className="container mx-auto max-w-6xl py-8 px-4 sm:px-6 lg:px-8">
       <header className="mb-8">
         <h1 className="text-2xl font-semibold tracking-tight">Feedback</h1>
-        <p className="text-sm text-muted-foreground/80 mt-1">
+        <p className="text-sm text-muted-foreground mt-1">
           Bug reports and feature requests submitted from the app.
         </p>
       </header>
@@ -205,7 +205,7 @@ export function AdminFeedbackClient() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-xs uppercase tracking-widest text-muted-foreground/80 font-semibold">
+                <CardTitle className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">
                   Pending
                 </CardTitle>
               </CardHeader>
@@ -215,7 +215,7 @@ export function AdminFeedbackClient() {
             </Card>
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-xs uppercase tracking-widest text-muted-foreground/80 font-semibold">
+                <CardTitle className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">
                   In progress
                 </CardTitle>
               </CardHeader>
@@ -225,7 +225,7 @@ export function AdminFeedbackClient() {
             </Card>
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-xs uppercase tracking-widest text-muted-foreground/80 font-semibold">
+                <CardTitle className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">
                   Resolved
                 </CardTitle>
               </CardHeader>
@@ -280,7 +280,7 @@ export function AdminFeedbackClient() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="text-[11px] uppercase tracking-widest text-muted-foreground/85 text-left">
+                      <tr className="text-[11px] uppercase tracking-widest text-muted-foreground text-left">
                         <th className="pb-2 font-semibold">Type</th>
                         <th className="pb-2 font-semibold">Title</th>
                         <th className="pb-2 font-semibold">Reporter</th>

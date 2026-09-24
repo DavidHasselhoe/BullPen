@@ -37,7 +37,7 @@ function CategoryDiffRow({ current, previous }: { current: CategoryScore; previo
       <span className="text-muted-foreground">{current.name}</span>
       <div className="flex items-center gap-2 tabular-nums">
         <span className="text-foreground">
-          {current.score}<span className="text-muted-foreground/85">/{current.max}</span>
+          {current.score}<span className="text-muted-foreground">/{current.max}</span>
         </span>
         {delta !== null && delta !== 0 && (
           <span className={cn(
@@ -48,7 +48,7 @@ function CategoryDiffRow({ current, previous }: { current: CategoryScore; previo
             {Math.abs(delta)}
           </span>
         )}
-        {delta === 0 && <Minus className="h-3 w-3 text-muted-foreground/85" />}
+        {delta === 0 && <Minus className="h-3 w-3 text-muted-foreground" />}
       </div>
     </div>
   );
@@ -144,7 +144,7 @@ export function HealthScoreHistoryModal({ ticker, open, onOpenChange, history }:
                           </span>
                         )}
                         {delta === 0 && (
-                          <span className="flex items-center text-muted-foreground/85">
+                          <span className="flex items-center text-muted-foreground">
                             <Minus className="h-3 w-3" />
                           </span>
                         )}

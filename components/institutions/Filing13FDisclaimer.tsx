@@ -7,14 +7,14 @@
 export function Filing13FDisclaimer({ compact = false }: { compact?: boolean }) {
   if (compact) {
     return (
-      <p className="text-xs text-muted-foreground/80">
+      <p className="text-xs text-muted-foreground">
         Based on quarterly SEC 13F filings, disclosed up to 45 days after quarter-end. Excludes short positions, most options, and non-US holdings.
       </p>
     );
   }
 
   return (
-    <p className="text-xs leading-relaxed text-muted-foreground/80">
+    <p className="text-xs leading-relaxed text-muted-foreground">
       SEC rules allow up to 45 days&apos; lag between quarter-end and filing, and funds may seek confidential treatment
       for further delay on new positions. 13F filings disclose only US-listed equities, ETFs, and some options. They
       don&apos;t include short positions, cash, bonds, or most international holdings, so this is a partial picture of
