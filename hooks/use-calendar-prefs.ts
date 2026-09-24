@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { createBrowserClient } from '@/lib/supabase/client';
 import {
@@ -12,13 +12,12 @@ import {
 
 const STORAGE_KEY = 'calendar-prefs';
 
-function loadLocal(): CalendarPrefs {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? parseCalendarPrefs(JSON.parse(raw)) : CALENDAR_PREF_DEFAULTS;
-  } catch {
-    return CALENDAR_PREF_DEFAULTS;
-  }
+function subscribeStorage(onChange: () => void) {
+  window.addEventListener('storage', onChange);
+  return () => window.removeEventListener('storage', onChange);
+}
+function readStorage(): string | null {
+  try { return localStorage.getItem(STORAGE_KEY); } catch { return null; }
 }
 
 /**
@@ -31,7 +30,16 @@ export function useCalendarPrefs() {
   // Null until the user changes something: until then the account's saved
   // prefs (or this browser's) are the source of truth.
   const [edited, setEdited] = useState<CalendarPrefs | null>(null);
-  const [local] = useState<CalendarPrefs>(() => (typeof window === 'undefined' ? CALENDAR_PREF_DEFAULTS : loadLocal()));
+  // Through useSyncExternalStore, not a useState initializer: the server has no
+  // localStorage, so reading it on the first client render made the filter
+  // chips hydrate differently from the server HTML (a hydration error for
+  // anyone with saved filters). The server snapshot is null, so hydration uses
+  // the defaults and the saved copy applies right after.
+  const localRaw = useSyncExternalStore(subscribeStorage, readStorage, () => null);
+  const local = useMemo<CalendarPrefs>(() => {
+    if (!localRaw) return CALENDAR_PREF_DEFAULTS;
+    try { return parseCalendarPrefs(JSON.parse(localRaw)); } catch { return CALENDAR_PREF_DEFAULTS; }
+  }, [localRaw]);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const userIdRef = useRef(user?.id);
   useEffect(() => { userIdRef.current = user?.id; }, [user?.id]);
