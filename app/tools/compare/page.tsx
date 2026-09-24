@@ -612,6 +612,28 @@ function CompareContent() {
             </div>
           ))}
         </div>
+        {/* One-tap starting points: an empty two-slot grid gave a beginner no idea what a useful comparison looks like. */}
+        {selectedCompanies.length === 0 && (
+          <div className="mt-8">
+            <p className="mb-3 text-xs font-bold uppercase tracking-wide text-muted-foreground/70">{t('comparePopularTitle')}</p>
+            <div className="flex flex-wrap gap-2">
+              {POPULAR_COMPARISONS.map((pair) => (
+                <Link
+                  key={pair.tickers.join(',')}
+                  href={`/tools/compare?tickers=${pair.tickers.join(',')}`}
+                  className="flex min-h-11 items-center gap-2 rounded-lg border border-border/60 bg-muted/30 px-3 text-sm font-medium text-foreground transition-colors hover:border-primary/30 hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <span className="flex -space-x-2">
+                    {pair.tickers.map((tk, i) => (
+                      <CompanyLogo key={tk} name={pair.names[i]} ticker={tk} logoUrl={null} size={22} className="rounded-full ring-2 ring-background" />
+                    ))}
+                  </span>
+                  {pair.names.join(' vs ')}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
         {canCompare && (
           <div className="mt-6">
             <Button onClick={handleCompare} size="lg">
@@ -1244,6 +1266,15 @@ function CompareContent() {
     </div>
   );
 }
+
+/** Well-known head-to-heads for the empty state: same industry, household names, clear contrasts. */
+const POPULAR_COMPARISONS: Array<{ tickers: [string, string]; names: [string, string] }> = [
+  { tickers: ['KO', 'PEP'], names: ['Coca-Cola', 'PepsiCo'] },
+  { tickers: ['AAPL', 'MSFT'], names: ['Apple', 'Microsoft'] },
+  { tickers: ['V', 'MA'], names: ['Visa', 'Mastercard'] },
+  { tickers: ['NVDA', 'AMD'], names: ['Nvidia', 'AMD'] },
+  { tickers: ['HD', 'LOW'], names: ['Home Depot', "Lowe's"] },
+];
 
 export default function ComparePage() {
   return (

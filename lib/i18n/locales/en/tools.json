@@ -736,5 +736,6 @@
   "economicExplainWatch_gdp": "The first estimate, called the advance estimate, gets the most attention. The later revisions tend to move markets less.",
   "economicExplainWhat_pce": "The Personal Income and Outlays report shows how much Americans earned and spent last month. It includes the PCE price index, another measure of inflation.",
   "economicExplainWhy_pce": "PCE is the inflation measure the Fed uses for its 2% target, so it carries a lot of weight in interest rate decisions.",
-  "economicExplainWatch_pce": "Watch core PCE, which leaves out food and energy. CPI usually comes out first, so PCE moves markets most when it tells a different story."
+  "economicExplainWatch_pce": "Watch core PCE, which leaves out food and energy. CPI usually comes out first, so PCE moves markets most when it tells a different story.",
+  "comparePopularTitle": "Popular comparisons"
 }

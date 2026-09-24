@@ -2471,5 +2471,8 @@
   "tools.economicExplainWatch_gdp": "9d6ad60e25786dd8fd5c238d183df731d0d0dc2c2657e4015e32fa986b8f3b90",
   "tools.economicExplainWhat_pce": "d0e4b8cda8a065035ece8039f27c37d866b738d3717b9f50e310360ae12f0b48",
   "tools.economicExplainWhy_pce": "0964a3b9ade38dbff482d460ab1466ac0135db4dd5600236fa06e7a0380040f5",
-  "tools.economicExplainWatch_pce": "225cf30494748aeffdffc0f2ffba9cc9127f421ac9c6b6a85a31d21c40bb948e"
+  "tools.economicExplainWatch_pce": "225cf30494748aeffdffc0f2ffba9cc9127f421ac9c6b6a85a31d21c40bb948e",
+  "tools.comparePopularTitle": "137ea23b2ebbcf71e43d835f4a8c54b5e245b6c8fb9559e90e0920814d1b5b1c",
+  "watchlist.watchlistSparklinePreviousLabel": "8593e7a6b344c55ba38c285ddb52cb40fc48c7385c1ce2f544e8c1ac2ddfaf51",
+  "watchlist.watchlistSparklinePreviousAriaLabel": "d513759eb2636b615566798304907b6064b86c1ef6e64669a53d64f4c966910b"
 }
