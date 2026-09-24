@@ -1,5 +1,58 @@
 [
   {
+    "date": "2026-09-24",
+    "entries": [
+      {
+        "type": "new",
+        "text": "The Market Calendar now includes the big US economic releases, like the jobs report, inflation (CPI), Fed rate decisions and GDP, next to earnings and dividends. Each one shows when it lands in your own time zone, with links to read the release or watch it live"
+      },
+      {
+        "type": "new",
+        "text": "Every economic release has a short explanation of what it measures, why markets care and what to look for, opened by default if you are new to investing, with a link to the Academy lesson that covers it"
+      },
+      {
+        "type": "new",
+        "text": "You can filter the calendar to only your holdings, only your watchlist or both, and choose which economic releases to show. Your filters are saved to your account"
+      },
+      {
+        "type": "new",
+        "text": "Turn on economic event alerts in Settings to get a heads up on the morning a release you care about comes out"
+      },
+      {
+        "type": "new",
+        "text": "You can add cash to My Holdings. It counts toward your total value and allocation, and when you buy or sell you can pay from your cash or put the proceeds back into it"
+      },
+      {
+        "type": "improved",
+        "text": "Watchlist charts now show the last trading day until the US market has been open for an hour, instead of an empty chart, and crypto cards have charts for the first time"
+      },
+      {
+        "type": "improved",
+        "text": "Compare suggests popular matchups like Coca-Cola vs PepsiCo when you open it, so you can start with one tap"
+      },
+      {
+        "type": "improved",
+        "text": "Pages use a more consistent width, and on phones the Ask Bull button is smaller and no longer covers the bottom of the page"
+      },
+      {
+        "type": "improved",
+        "text": "The dashboard greeting and images load faster, and text across the app is easier to read in light mode"
+      },
+      {
+        "type": "fixed",
+        "text": "Some companies appeared twice in the earnings calendar on two different days. Each one now shows once, on the right day"
+      },
+      {
+        "type": "fixed",
+        "text": "Company statistics and financials now refresh soon after a company publishes new numbers, instead of up to half a day later"
+      },
+      {
+        "type": "fixed",
+        "text": "Browser tabs for the Feed, Members, Notifications and sign in pages now show the right page name"
+      }
+    ]
+  },
+  {
     "date": "2026-09-23",
     "entries": [
       {
@@ -13,6 +66,10 @@
       {
         "type": "new",
         "text": "Amounts appear as the ranges the disclosure rules require, such as $500K to $1M, rather than a single made up figure, because a range is all that ever gets filed. Each trade also says how long after it happened it was reported, and flags the ones filed past the 45 day deadline"
+      },
+      {
+        "type": "fixed",
+        "text": "The buy and sell badges on Washington trading pages are readable in light mode now"
       }
     ]
   },
