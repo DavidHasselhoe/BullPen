@@ -22,16 +22,22 @@ export interface EconomicKindMeta {
   sourceName: string;
   /** Live video, where the release has one (only the Fed's press conference). */
   watchUrl?: string;
-  /** The Academy lesson that explains this kind of release. */
+  /** Free Academy lesson that explains this kind of release. Must stay free:
+   *  it is the link a beginner follows from the calendar. */
   lessonHref: string;
+  /** Optional Pro lesson for going further, shown with a Pro label to free users. */
+  deeperLessonHref?: string;
 }
 
-const BIG_FOUR = '/academy/macro-basics/the-big-four-macro-forces';
-const RATES = '/academy/macro-mechanics/discount-rate-growth-vs-value';
+/** macro-basics is free; macro-mechanics requires Pro (academy_courses.requires_pro, checked 2026-09-24). */
+export const BIG_FOUR_LESSON = '/academy/macro-basics/the-big-four-macro-forces';
+export const RATES_LESSON = '/academy/macro-mechanics/discount-rate-growth-vs-value';
+const BIG_FOUR = BIG_FOUR_LESSON;
+const RATES = RATES_LESSON;
 
 export const ECONOMIC_KINDS: Record<EconomicKind, EconomicKindMeta> = {
   jobs: { kind: 'jobs', name: 'Jobs report', sourceUrl: 'https://www.bls.gov/news.release/empsit.nr0.htm', sourceName: 'BLS', lessonHref: BIG_FOUR },
-  cpi: { kind: 'cpi', name: 'CPI inflation', sourceUrl: 'https://www.bls.gov/news.release/cpi.nr0.htm', sourceName: 'BLS', lessonHref: BIG_FOUR },
+  cpi: { kind: 'cpi', name: 'CPI inflation', sourceUrl: 'https://www.bls.gov/news.release/cpi.nr0.htm', sourceName: 'BLS', lessonHref: BIG_FOUR, deeperLessonHref: RATES },
   ppi: { kind: 'ppi', name: 'PPI (producer prices)', sourceUrl: 'https://www.bls.gov/news.release/ppi.nr0.htm', sourceName: 'BLS', lessonHref: BIG_FOUR },
   jolts: { kind: 'jolts', name: 'Job openings (JOLTS)', sourceUrl: 'https://www.bls.gov/news.release/jolts.nr0.htm', sourceName: 'BLS', lessonHref: BIG_FOUR },
   claims: { kind: 'claims', name: 'Jobless claims', sourceUrl: 'https://www.dol.gov/ui/data.pdf', sourceName: 'U.S. Department of Labor', lessonHref: BIG_FOUR },
@@ -41,10 +47,11 @@ export const ECONOMIC_KINDS: Record<EconomicKind, EconomicKindMeta> = {
     sourceUrl: 'https://www.federalreserve.gov/newsevents/pressreleases.htm',
     sourceName: 'Federal Reserve',
     watchUrl: 'https://www.youtube.com/@federalreserve',
-    lessonHref: RATES,
+    lessonHref: BIG_FOUR,
+    deeperLessonHref: RATES,
   },
   gdp: { kind: 'gdp', name: 'GDP', sourceUrl: 'https://www.bea.gov/data/gdp/gross-domestic-product', sourceName: 'BEA', lessonHref: BIG_FOUR },
-  pce: { kind: 'pce', name: 'PCE inflation', sourceUrl: 'https://www.bea.gov/data/income-saving/personal-income', sourceName: 'BEA', lessonHref: BIG_FOUR },
+  pce: { kind: 'pce', name: 'PCE inflation', sourceUrl: 'https://www.bea.gov/data/income-saving/personal-income', sourceName: 'BEA', lessonHref: BIG_FOUR, deeperLessonHref: RATES },
 };
 
 /** One scheduled release, as the API and notifications carry it. */

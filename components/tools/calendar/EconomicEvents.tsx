@@ -5,8 +5,12 @@ import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { Briefcase, ShoppingCart, Factory, ClipboardList, Users, Landmark, BarChart3, Wallet, ArrowUpRight, GraduationCap, PlayCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { useExperienceLevel } from '@/hooks/use-experience-level';
+import { useEntitlements } from '@/hooks/use-entitlements';
 import {
   ECONOMIC_KINDS,
+  BIG_FOUR_LESSON,
   fmtReleaseTime,
   fmtReleaseTimeShort,
   fmtReleaseTimeWithZone,
@@ -56,6 +60,11 @@ export function EconomicDetailRow({ event }: { event: EconomicEvent }) {
   const meta = ECONOMIC_KINDS[event.kind];
   const Icon = ECONOMIC_ICONS[event.kind];
   const outsideET = viewerIsOutsideET(event.release_at);
+  // Beginners get the explainer open; everyone else can expand it. Collapsed
+  // by default otherwise: DESIGN.md's no-static-text-walls rule.
+  const { isSimplified } = useExperienceLevel();
+  const { isPro } = useEntitlements();
+  const lessonTitle = (href: string) => t(href === BIG_FOUR_LESSON ? 'economicLessonBigFour' : 'economicLessonRates');
 
   return (
     <div className="flex gap-3 py-3">
@@ -79,6 +88,21 @@ export function EconomicDetailRow({ event }: { event: EconomicEvent }) {
           </span>
         )}
         <p className="text-xs leading-relaxed text-muted-foreground">{t(`economicWhy_${event.kind}`)}</p>
+        <Accordion type="single" collapsible defaultValue={isSimplified ? 'explain' : undefined}>
+          <AccordionItem value="explain" className="border-b-0">
+            <AccordionTrigger className="flex-none justify-start gap-1 py-1 text-xs font-medium text-foreground/85 hover:no-underline hover:text-primary">
+              {t('economicExplainTrigger')}
+            </AccordionTrigger>
+            <AccordionContent className="space-y-2.5 pb-1 pt-1">
+              {(['What', 'Why', 'Watch'] as const).map((part) => (
+                <div key={part}>
+                  <p className="text-xs font-semibold text-foreground">{t(`economicExplainHeading${part}`)}</p>
+                  <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{t(`economicExplain${part}_${event.kind}`)}</p>
+                </div>
+              ))}
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-0.5 text-xs font-medium">
           <a
             href={meta.sourceUrl}
@@ -105,8 +129,21 @@ export function EconomicDetailRow({ event }: { event: EconomicEvent }) {
             className="inline-flex items-center gap-1 text-muted-foreground hover:text-primary focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <GraduationCap className="h-3 w-3" aria-hidden />
-            {t('economicLearn')}
+            {t('economicLessonLink', { title: lessonTitle(meta.lessonHref) })}
           </Link>
+          {meta.deeperLessonHref && (
+            <Link
+              href={meta.deeperLessonHref}
+              className="inline-flex items-center gap-1 text-muted-foreground hover:text-primary focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {t('economicGoDeeper', { title: lessonTitle(meta.deeperLessonHref) })}
+              {!isPro && (
+                <span className="rounded bg-muted px-1 py-px text-xs font-semibold uppercase leading-none tracking-wide text-muted-foreground">
+                  {t('economicProBadge')}
+                </span>
+              )}
+            </Link>
+          )}
         </div>
       </div>
     </div>
