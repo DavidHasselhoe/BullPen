@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { useAIPanel } from './AIPanelProvider';
@@ -31,6 +32,18 @@ export function AIPanelToggle() {
   const { t } = useTranslation('ai');
   const { isOpen, toggle } = useAIPanel();
   const pathname = usePathname();
+  const hiddenForRoute = PUBLIC_ROUTES.has(pathname) || pathname.startsWith('/share/') || pathname.startsWith('/get-started/');
+  const visible = !hiddenForRoute && !isOpen;
+
+  // Reserve room for the button at the end of the page on phones, the same
+  // way MobileTabBar reserves its own (see .has-ask-bull in globals.css).
+  // Without it the last ~130px of every page sat underneath the button.
+  // DOM side effect, not setState, like MobileTabBar's.
+  useEffect(() => {
+    if (!visible) return;
+    document.body.classList.add('has-ask-bull');
+    return () => document.body.classList.remove('has-ask-bull');
+  }, [visible]);
 
   // /share/[id] is dynamic (one per share), same reasoning as the routes
   // above: a stranger landing on a share link has no portfolio/tickers for

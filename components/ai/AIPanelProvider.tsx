@@ -142,7 +142,7 @@ export function AIPanelProvider({ children }: { children: React.ReactNode }) {
             that scrolls the whole app shell up and exposes empty page behind it.
             Tailwind's `sr-only` is absolute, so every screen-reader-only label
             deep in a page was doing exactly that. */}
-        <div className="relative flex-1 min-w-0 flex flex-col min-h-0 overflow-auto overflow-x-hidden scrollbar-hide">
+        <div className="app-scroll relative flex-1 min-w-0 flex flex-col min-h-0 overflow-auto overflow-x-hidden scrollbar-hide">
           {children}
         </div>
         <AISidePanel

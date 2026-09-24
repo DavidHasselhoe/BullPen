@@ -580,10 +580,18 @@ html.animated-background-active [data-slot="dialog-content"] {
   }
 
   /* Reserve space for the mobile bottom tab bar so it never covers content.
-     The class is toggled by MobileTabBar, so it only applies on authed routes. */
+     The class is toggled by MobileTabBar, so it only applies on authed routes.
+     The padding goes on .app-scroll (AIPanelProvider), the element that actually
+     scrolls: <body> never scrolls, so padding there reserved nothing and the
+     tab bar covered the end of every page. */
   @media (max-width: 767px) {
-    body.has-mobile-tabbar {
+    body.has-mobile-tabbar .app-scroll {
       padding-bottom: calc(3.5rem + env(safe-area-inset-bottom));
+    }
+    /* Tab bar + Ask Bull's bottom offset (1.25rem) + the button itself (~8rem:
+       6rem circle, gap, label). Toggled by AIPanelToggle. */
+    body.has-mobile-tabbar.has-ask-bull .app-scroll {
+      padding-bottom: calc(3.5rem + 1.25rem + 8rem + env(safe-area-inset-bottom));
     }
   }
 
