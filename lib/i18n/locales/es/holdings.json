@@ -342,5 +342,13 @@
   "cashDialogSave": "Guardar",
   "cashDialogSaving": "Guardando...",
   "cashDialogError": "No se pudo guardar tu saldo de efectivo. Por favor intenta de nuevo.",
-  "portfolioDashboardPlusCash": "{{amount}} efectivo"
+  "portfolioDashboardPlusCash": "{{amount}} efectivo",
+  "cashOptionPay": "Pagar con efectivo",
+  "cashOptionReceive": "Agregar ganancias al efectivo",
+  "cashOptionAvailable": "{{amount}} disponible",
+  "cashOptionAfterBuy": "Efectivo después de esta compra: {{amount}}",
+  "cashOptionAfterSell": "Efectivo después de esta venta: {{amount}}",
+  "cashOptionExceeds": "Esto cuesta {{amount}}, que es más que tu efectivo. Tu efectivo llegará a 0.",
+  "cashOptionNoRate": "No hay tipo de cambio disponible para {{currency}} en este momento, así que no se puede usar efectivo para esta operación.",
+  "cashOptionSettleError": "Guardado, pero tu saldo de efectivo no se actualizó. Puedes corregirlo desde la fila de Efectivo."
 }

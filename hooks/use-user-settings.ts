@@ -68,7 +68,8 @@ export function useUserSettings() {
 
   const rawCash = settings.cash_balance as Partial<CashBalance> | null | undefined;
   const cashBalance: CashBalance | null =
-    rawCash && typeof rawCash.amount === 'number' && rawCash.amount > 0 && rawCash.currency
+    // A 0 balance is still a tracked balance (all cash spent), so it keeps its row.
+    rawCash && typeof rawCash.amount === 'number' && rawCash.amount >= 0 && rawCash.currency
       ? { amount: rawCash.amount, currency: rawCash.currency }
       : null;
 
@@ -85,6 +86,36 @@ export function useUserSettings() {
       if (fetchError) throw fetchError;
       const existing = (row?.settings as Record<string, unknown>) || {};
       const merged = { ...existing, cash_balance: cash };
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ settings: merged })
+        .eq('id', user.id);
+      if (updateError) throw updateError;
+      window.dispatchEvent(new Event('auth:refresh'));
+    },
+    [user]
+  );
+
+  /**
+   * Moves the tracked balance by `delta` (in the balance's own currency), never
+   * below 0. Reads the balance from the DB, not memory, so two quick trades
+   * can't both start from the same stale amount. No-op when cash isn't tracked.
+   */
+  const adjustCashBalance = useCallback(
+    async (delta: number) => {
+      if (!user?.id) return;
+      const supabase = createBrowserClient();
+      const { data: row, error: fetchError } = await supabase
+        .from('users')
+        .select('settings')
+        .eq('id', user.id)
+        .single();
+      if (fetchError) throw fetchError;
+      const existing = (row?.settings as Record<string, unknown>) || {};
+      const current = existing.cash_balance as CashBalance | null | undefined;
+      if (!current || typeof current.amount !== 'number') return;
+      const amount = Math.max(0, Math.round((current.amount + delta) * 100) / 100);
+      const merged = { ...existing, cash_balance: { ...current, amount } };
       const { error: updateError } = await supabase
         .from('users')
         .update({ settings: merged })
@@ -203,5 +234,6 @@ export function useUserSettings() {
     updatePinnedTickers,
     cashBalance,
     updateCashBalance,
+    adjustCashBalance,
   };
 }

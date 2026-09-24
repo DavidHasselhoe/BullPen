@@ -342,5 +342,13 @@
   "cashDialogSave": "«Saavee»",
   "cashDialogSaving": "«Saaviing...»",
   "cashDialogError": "«Coouuld noot saavee yoouur caash baalaancee. Pleeaasee try aagaaiin.»",
-  "portfolioDashboardPlusCash": "«{{amount}} caash»"
+  "portfolioDashboardPlusCash": "«{{amount}} caash»",
+  "cashOptionPay": "«Paay froom caash»",
+  "cashOptionReceive": "«AAdd prooceeeeds too caash»",
+  "cashOptionAvailable": "«{{amount}} aavaaiilaablee»",
+  "cashOptionAfterBuy": "«Caash aafteer thiis puurchaasee: {{amount}}»",
+  "cashOptionAfterSell": "«Caash aafteer thiis saalee: {{amount}}»",
+  "cashOptionExceeds": "«Thiis coosts {{amount}}, whiich iis mooree thaan yoouur caash. Yoouur caash wiill goo too 0.»",
+  "cashOptionNoRate": "«Theeree iis noo eexchaangee raatee foor {{currency}} riight noow, soo caash caannoot bee uuseed foor thiis traadee.»",
+  "cashOptionSettleError": "«Saaveed, buut yoouur caash baalaancee waas noot uupdaateed. Yoouu caan coorreect iit froom thee Caash roow.»"
 }

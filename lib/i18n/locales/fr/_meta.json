@@ -2389,5 +2389,13 @@
   "holdings.cashDialogSave": "1509f561f2416598629b886ad7d3c05a7e221e4e0675c84bbff4ee6d9e03913d",
   "holdings.cashDialogSaving": "dc85af8f2b1d0d6756547cd5f79557466e25e682b882f68d277bd7f125851321",
   "holdings.cashDialogError": "bfd9df2a44c476db9563cdd564a524d761376d490aad2a0d9b6f71360d2ca81b",
-  "holdings.portfolioDashboardPlusCash": "43697863936198d1f77dede84a32c9129692114601064316042546d69d84c999"
+  "holdings.portfolioDashboardPlusCash": "43697863936198d1f77dede84a32c9129692114601064316042546d69d84c999",
+  "holdings.cashOptionPay": "950ef51b2c5f689a627a7dcfb37e0bee9103dbbb39c70806add517f756406909",
+  "holdings.cashOptionReceive": "2a191005c46d146ac0b55063ba4fa682bcee55845c30633f085a33b6e0f3743a",
+  "holdings.cashOptionAvailable": "b29b339845473abafdfdddebb7e183ca6b101bc8f43b176c6554c6e5337aad0f",
+  "holdings.cashOptionAfterBuy": "81df330fffeac669c742384b2da72733a3bcbcca28a7cbc6223df242de5b573d",
+  "holdings.cashOptionAfterSell": "aade994d766eae8f4c152bac06898ef3394cce10958be36e2fb15af3a07fdc9e",
+  "holdings.cashOptionExceeds": "6df6b9fdec50d5b53934484692832426686ae471dfbfe0fbe2797c3fe1c4e847",
+  "holdings.cashOptionNoRate": "c6179c43eeb44d189db500a1067579f25187ee5b36855e819945d850c69f0ef4",
+  "holdings.cashOptionSettleError": "0a488c4cbdbbc1b9371e03b65c5d25474befb553b8431f532baef25be570bf6a"
 }

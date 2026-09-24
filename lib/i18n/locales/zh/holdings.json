@@ -342,5 +342,13 @@
   "cashDialogSave": "保存",
   "cashDialogSaving": "保存中...",
   "cashDialogError": "无法保存您的现金余额。请重试。",
-  "portfolioDashboardPlusCash": "{{amount}} 现金"
+  "portfolioDashboardPlusCash": "{{amount}} 现金",
+  "cashOptionPay": "从现金支付",
+  "cashOptionReceive": "将收入加入现金",
+  "cashOptionAvailable": "{{amount}} 可用",
+  "cashOptionAfterBuy": "购买后现金余额：{{amount}}",
+  "cashOptionAfterSell": "卖出后现金余额：{{amount}}",
+  "cashOptionExceeds": "这笔交易需要 {{amount}}，超过了你的现金。你的现金将降为 0。",
+  "cashOptionNoRate": "目前没有 {{currency}} 的汇率，无法用现金进行此交易。",
+  "cashOptionSettleError": "已保存，但现金余额未更新。你可以在现金行中手动调整。"
 }

@@ -328,9 +328,6 @@
   "tickerFixNoMatches": "Keine Übereinstimmungen gefunden",
   "tickerFixNoPriceFeed": "{{symbol}} hat derzeit keinen Live-Preisfeed. Versuche ein anderes Listing.",
   "tickerFixSearchPlaceholder": "Suche nach Ticker oder Unternehmensname…",
-  "analysisHistoryTrendLabel": "Trend",
-  "holdingsTableColSymbol": "Symbol",
-  "portfolioChartTooltipPortfolio": "Portfolio",
   "holdingsCash": "Bargeld",
   "holdingsTableAddCash": "Bargeld hinzufügen",
   "holdingsTableEditCash": "Bargeld bearbeiten",
@@ -342,5 +339,16 @@
   "cashDialogSave": "Speichern",
   "cashDialogSaving": "Wird gespeichert...",
   "cashDialogError": "Dein Bargeldguthaben konnte nicht gespeichert werden. Bitte versuche es erneut.",
-  "portfolioDashboardPlusCash": "{{amount}} Bargeld"
+  "portfolioDashboardPlusCash": "{{amount}} Bargeld",
+  "analysisHistoryTrendLabel": "Trend",
+  "holdingsTableColSymbol": "Symbol",
+  "portfolioChartTooltipPortfolio": "Portfolio",
+  "cashOptionPay": "Aus Bargeld bezahlen",
+  "cashOptionReceive": "Erlöse zum Bargeld hinzufügen",
+  "cashOptionAvailable": "{{amount}} verfügbar",
+  "cashOptionAfterBuy": "Bargeld nach diesem Kauf: {{amount}}",
+  "cashOptionAfterSell": "Bargeld nach diesem Verkauf: {{amount}}",
+  "cashOptionExceeds": "Das kostet {{amount}}, was mehr als dein Bargeld ist. Dein Bargeld wird auf 0 gehen.",
+  "cashOptionNoRate": "Es gibt gerade keinen Wechselkurs für {{currency}}, daher kann Bargeld für diesen Trade nicht verwendet werden.",
+  "cashOptionSettleError": "Gespeichert, aber dein Bargeldguthaben wurde nicht aktualisiert. Du kannst es in der Bargeld-Zeile korrigieren."
 }

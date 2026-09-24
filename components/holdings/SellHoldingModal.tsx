@@ -17,6 +17,7 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { useSellHolding } from '@/hooks/use-holdings';
 import type { UserHolding } from '@/lib/types/database';
 import { logger } from '@/lib/utils/logger';
+import { CashOption, useCashPayment } from './CashOption';
 
 interface SellHoldingModalProps {
   open: boolean;
@@ -38,6 +39,8 @@ export function SellHoldingModal({ open, onOpenChange, holding, currentPriceUSD 
   const [saleDate, setSaleDate] = useState(new Date().toISOString().slice(0, 10));
   const [saved, setSaved] = useState(false);
   const sellHolding = useSellHolding();
+  const cash = useCashPayment(open);
+  const [cashError, setCashError] = useState(false);
 
   useEffect(() => {
     // Deliberately excludes currentPriceUSD from the deps: this page has a live
@@ -50,6 +53,8 @@ export function SellHoldingModal({ open, onOpenChange, holding, currentPriceUSD 
       setSalePrice(currentPriceUSD != null ? String(currentPriceUSD) : (holding.avg_price?.toString() ?? ''));
       setSaleDate(new Date().toISOString().slice(0, 10));
       setSaved(false);
+      setCashError(false);
+      cash.setEnabled(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- currentPriceUSD intentionally excluded, see comment above
   }, [holding, open]);
@@ -61,6 +66,7 @@ export function SellHoldingModal({ open, onOpenChange, holding, currentPriceUSD 
   const priceNum = parseFloat(salePrice) || 0;
   const realizedPl = holding.avg_price != null ? (priceNum - holding.avg_price) * qtyNum : 0;
   const canSubmit = qtyNum > 0 && qtyNum <= heldQty + 1e-9 && priceNum > 0 && !!saleDate;
+  const tradeCurrency = holding.trading_currency ?? 'USD';
 
   const handlePercent = (pct: number) => {
     const shares = (heldQty * pct) / 100;
@@ -84,6 +90,14 @@ export function SellHoldingModal({ open, onOpenChange, holding, currentPriceUSD 
         input: { quantitySold: qtyNum, salePrice: priceNum, saleDate },
       });
       setSaved(true);
+      try {
+        await cash.settle('sell', qtyNum * priceNum, tradeCurrency);
+      } catch (cashErr) {
+        // The sale is saved; stay open (submit stays disabled) so the user sees cash didn't move.
+        logger.error('Error updating cash after sale', cashErr);
+        setCashError(true);
+        return;
+      }
       setTimeout(handleClose, 1000);
     } catch (error) {
       logger.error('Error selling holding', error);
@@ -161,6 +175,8 @@ export function SellHoldingModal({ open, onOpenChange, holding, currentPriceUSD 
             </p>
           )}
 
+          <CashOption payment={cash} mode="sell" amount={qtyNum * priceNum} currency={tradeCurrency} />
+
           <div className="flex justify-end gap-3">
             <Button type="button" variant="outline" onClick={handleClose}>
               {t('sellHoldingCancel')}
@@ -175,6 +191,10 @@ export function SellHoldingModal({ open, onOpenChange, holding, currentPriceUSD 
                 : sellHolding.isPending ? t('sellHoldingSelling') : t('sellHoldingConfirm')}
             </Button>
           </div>
+
+          {cashError && (
+            <p role="alert" className="text-sm text-red-600 dark:text-red-400">{t('cashOptionSettleError')}</p>
+          )}
 
           {sellHolding.isError && (
             <div className="text-sm text-red-600 dark:text-red-400">

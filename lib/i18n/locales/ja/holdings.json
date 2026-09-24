@@ -342,5 +342,13 @@
   "cashDialogSave": "保存",
   "cashDialogSaving": "保存中...",
   "cashDialogError": "現金残高を保存できませんでした。もう一度お試しください。",
-  "portfolioDashboardPlusCash": "{{amount}}の現金"
+  "portfolioDashboardPlusCash": "{{amount}}の現金",
+  "cashOptionPay": "現金から支払う",
+  "cashOptionReceive": "売却代金を現金に追加",
+  "cashOptionAvailable": "利用可能: {{amount}}",
+  "cashOptionAfterBuy": "この購入後の現金: {{amount}}",
+  "cashOptionAfterSell": "この売却後の現金: {{amount}}",
+  "cashOptionExceeds": "これは {{amount}} かかりますが、現金がそれ以上にありません。現金は 0 になります。",
+  "cashOptionNoRate": "現在 {{currency}} の為替レートがないため、この取引に現金は使用できません。",
+  "cashOptionSettleError": "保存されましたが、現金残高は更新されませんでした。現金行から修正できます。"
 }

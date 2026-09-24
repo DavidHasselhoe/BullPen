@@ -329,8 +329,6 @@
   "tickerFixNoMatches": "Ingen treff funnet",
   "tickerFixNoPriceFeed": "{{symbol}} har ingen direkteprisstrøm nå. Prøv en annen notering.",
   "tickerFixSearchPlaceholder": "Søk etter ticker eller selskapsnavn…",
-  "analysisHistoryTrendLabel": "Trend",
-  "importReviewColumnType": "Type",
   "holdingsCash": "Kontanter",
   "holdingsTableAddCash": "Legg til kontanter",
   "holdingsTableEditCash": "Rediger kontanter",
@@ -342,5 +340,15 @@
   "cashDialogSave": "Lagre",
   "cashDialogSaving": "Lagrer...",
   "cashDialogError": "Kunne ikke lagre kontantsaldo. Prøv igjen.",
-  "portfolioDashboardPlusCash": "{{amount}} kontanter"
+  "portfolioDashboardPlusCash": "{{amount}} kontanter",
+  "analysisHistoryTrendLabel": "Trend",
+  "importReviewColumnType": "Type",
+  "cashOptionPay": "Betal fra kontanter",
+  "cashOptionReceive": "Legg salgsbeløpet til kontanter",
+  "cashOptionAvailable": "{{amount}} tilgjengelig",
+  "cashOptionAfterBuy": "Kontanter etter dette kjøpet: {{amount}}",
+  "cashOptionAfterSell": "Kontanter etter dette salget: {{amount}}",
+  "cashOptionExceeds": "Dette koster {{amount}}, som er mer enn dine kontanter. Kontantene dine vil gå til 0.",
+  "cashOptionNoRate": "Det finnes ingen valutakurs for {{currency}} akkurat nå, så kontanter kan ikke brukes for denne handelen.",
+  "cashOptionSettleError": "Lagret, men kontantsaldoen din ble ikke oppdatert. Du kan korrigere det fra Kontanter-raden."
 }

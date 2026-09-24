@@ -20,6 +20,7 @@ import { useAuth } from '@/hooks/use-auth';
 import type { UserHolding } from '@/lib/types/database';
 import type { CurrencyCode } from '@/lib/currency/currency-conversion';
 import { logger } from '@/lib/utils/logger';
+import { CashOption, useCashPayment } from './CashOption';
 
 interface AddPurchaseModalProps {
   open: boolean;
@@ -37,6 +38,8 @@ export function AddPurchaseModal({ open, onOpenChange, holding, currentPriceUSD 
   const [purchaseDate, setPurchaseDate] = useState(new Date().toISOString().slice(0, 10));
   const [saved, setSaved] = useState(false);
   const addOrUpdateHolding = useAddOrUpdateHolding();
+  const cash = useCashPayment(open);
+  const [cashError, setCashError] = useState(false);
 
   const userCurrency = useMemo((): CurrencyCode => {
     const settings = (user?.settings as Record<string, unknown>) ?? {};
@@ -68,6 +71,8 @@ export function AddPurchaseModal({ open, onOpenChange, holding, currentPriceUSD 
       setPrice(currentPriceUSD != null ? String(currentPriceUSD) : '');
       setPurchaseDate(new Date().toISOString().slice(0, 10));
       setSaved(false);
+      setCashError(false);
+      cash.setEnabled(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- currentPriceUSD intentionally excluded, see comment above
   }, [holding, open]);
@@ -85,6 +90,7 @@ export function AddPurchaseModal({ open, onOpenChange, holding, currentPriceUSD 
         : priceNum
       : holding.avg_price;
   const canSubmit = qtyNum > 0 && priceNum > 0 && !!purchaseDate;
+  const tradeCurrency = holding.trading_currency ?? 'USD';
 
   const handleClose = () => {
     setQuantity('');
@@ -109,6 +115,14 @@ export function AddPurchaseModal({ open, onOpenChange, holding, currentPriceUSD 
         trading_currency: holding.trading_currency,
       });
       setSaved(true);
+      try {
+        await cash.settle('buy', qtyNum * priceNum, tradeCurrency);
+      } catch (cashErr) {
+        // The purchase is saved; stay open (submit stays disabled) so the user sees cash didn't move.
+        logger.error('Error updating cash after purchase', cashErr);
+        setCashError(true);
+        return;
+      }
       setTimeout(handleClose, 1000);
     } catch (error) {
       logger.error('Error adding purchase', error);
@@ -164,6 +178,8 @@ export function AddPurchaseModal({ open, onOpenChange, holding, currentPriceUSD 
             />
           </div>
 
+          <CashOption payment={cash} mode="buy" amount={qtyNum * priceNum} currency={tradeCurrency} />
+
           {qtyNum > 0 && priceNum > 0 && (
             <p className="text-sm text-muted-foreground">
               {t('addPurchaseNewPosition', { quantity: newQuantity, avgPrice: newAvgPrice?.toFixed(2) })}
@@ -184,6 +200,10 @@ export function AddPurchaseModal({ open, onOpenChange, holding, currentPriceUSD 
                 : addOrUpdateHolding.isPending ? t('addPurchaseAdding') : t('addPurchaseSubmit')}
             </Button>
           </div>
+
+          {cashError && (
+            <p role="alert" className="text-sm text-red-600 dark:text-red-400">{t('cashOptionSettleError')}</p>
+          )}
 
           {addOrUpdateHolding.isError && (
             <div className="text-sm text-red-600 dark:text-red-400">

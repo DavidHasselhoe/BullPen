@@ -342,5 +342,13 @@
   "cashDialogSave": "Save",
   "cashDialogSaving": "Saving...",
   "cashDialogError": "Could not save your cash balance. Please try again.",
-  "portfolioDashboardPlusCash": "{{amount}} cash"
+  "portfolioDashboardPlusCash": "{{amount}} cash",
+  "cashOptionPay": "Pay from cash",
+  "cashOptionReceive": "Add proceeds to cash",
+  "cashOptionAvailable": "{{amount}} available",
+  "cashOptionAfterBuy": "Cash after this purchase: {{amount}}",
+  "cashOptionAfterSell": "Cash after this sale: {{amount}}",
+  "cashOptionExceeds": "This costs {{amount}}, which is more than your cash. Your cash will go to 0.",
+  "cashOptionNoRate": "There is no exchange rate for {{currency}} right now, so cash cannot be used for this trade.",
+  "cashOptionSettleError": "Saved, but your cash balance was not updated. You can correct it from the Cash row."
 }

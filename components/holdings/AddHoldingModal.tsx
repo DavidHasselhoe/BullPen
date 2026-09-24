@@ -31,6 +31,7 @@ import { CheckCircle2 } from 'lucide-react';
 import type { AddHoldingInput } from '@/app/actions/holdings';
 import { inferAssetType } from '@/lib/assets/asset-type';
 import type { CurrencyCode } from '@/lib/currency/currency-conversion';
+import { CashOption, useCashPayment } from './CashOption';
 
 interface SearchResult {
   ticker: string;
@@ -74,6 +75,9 @@ export function AddHoldingModal({ open, onOpenChange, initialTicker }: AddHoldin
   const [purchaseRows, setPurchaseRows] = useState<PurchaseRow[]>([{ quantity: '', price: '', date: '' }]);
   const [multiError, setMultiError] = useState('');
   const addOrUpdateHolding = useAddOrUpdateHolding();
+  const cash = useCashPayment(open);
+  // Set when the holding saved but the cash update failed: blocks a resubmit that would add it twice.
+  const [cashError, setCashError] = useState(false);
 
   const addPurchaseRow = () => setPurchaseRows((rows) => [...rows, { quantity: '', price: '', date: '' }]);
   const removePurchaseRow = (index: number) => setPurchaseRows((rows) => rows.filter((_, i) => i !== index));
@@ -152,6 +156,24 @@ export function AddHoldingModal({ open, onOpenChange, initialTicker }: AddHoldin
     return searchResults?.find((r) => r.ticker.toUpperCase() === initialTicker.toUpperCase()) ?? null;
   }, [initialTicker, searchResults]);
   const activeStock = selectedStock ?? prefilled;
+  const tradeCurrency = activeStock?.currency ?? 'USD';
+  // Only what the form states a price for moves cash; a position added without an avg price costs nothing.
+  const tradeCost =
+    mode === 'multiple'
+      ? multiTotals.totalQty * multiTotals.avgPrice
+      : (parseFloat(quantity) || 0) * (parseFloat(avgPrice) || 0);
+
+  /** Moves cash after a saved add. False when that failed and the modal must stay open to say so. */
+  const settleCash = async () => {
+    try {
+      await cash.settle('buy', tradeCost, tradeCurrency);
+      return true;
+    } catch (error) {
+      console.error('Error updating cash after adding holding:', error);
+      setCashError(true);
+      return false;
+    }
+  };
 
   const validateQuantity = (val: string) => {
     if (!val) return '';
@@ -202,11 +224,12 @@ export function AddHoldingModal({ open, onOpenChange, initialTicker }: AddHoldin
           // every later call must see it already exist to merge into it.
           await addOrUpdateHolding.mutateAsync(input);
         }
+        if (!(await settleCash())) return;
 
         setSelectedStock(null);
         setSearchQuery('');
         setPurchaseRows([{ quantity: '', price: '', date: '' }]);
-        onOpenChange(false);
+        handleClose();
       } catch (error) {
         console.error('Error adding holding (multiple purchases):', error);
       }
@@ -235,6 +258,7 @@ export function AddHoldingModal({ open, onOpenChange, initialTicker }: AddHoldin
       };
 
       await addHolding.mutateAsync(input);
+      if (!(await settleCash())) return;
 
       // Reset form
       setSelectedStock(null);
@@ -242,7 +266,7 @@ export function AddHoldingModal({ open, onOpenChange, initialTicker }: AddHoldin
       setQuantity('');
       setAvgPrice('');
       setDatePurchased('');
-      onOpenChange(false);
+      handleClose();
     } catch (error) {
       console.error('Error adding holding:', error);
       // Error is handled by the mutation
@@ -260,6 +284,8 @@ export function AddHoldingModal({ open, onOpenChange, initialTicker }: AddHoldin
     setMode('single');
     setPurchaseRows([{ quantity: '', price: '', date: '' }]);
     setMultiError('');
+    setCashError(false);
+    cash.setEnabled(false);
     onOpenChange(false);
   };
 
@@ -463,6 +489,8 @@ export function AddHoldingModal({ open, onOpenChange, initialTicker }: AddHoldin
             </TabsContent>
           </Tabs>
 
+          <CashOption payment={cash} mode="buy" amount={tradeCost} currency={tradeCurrency} />
+
           {/* Submit Button */}
           <div className="flex justify-end gap-3">
             <Button type="button" variant="outline" onClick={handleClose}>
@@ -470,11 +498,15 @@ export function AddHoldingModal({ open, onOpenChange, initialTicker }: AddHoldin
             </Button>
             <Button
               type="submit"
-              disabled={!activeStock || addHolding.isPending || addOrUpdateHolding.isPending}
+              disabled={!activeStock || addHolding.isPending || addOrUpdateHolding.isPending || cashError}
             >
               {(mode === 'multiple' ? addOrUpdateHolding.isPending : addHolding.isPending) ? t('addHoldingAdding') : t('addHoldingTitle')}
             </Button>
           </div>
+
+          {cashError && (
+            <p role="alert" className="text-sm text-red-600 dark:text-red-400">{t('cashOptionSettleError')}</p>
+          )}
 
           {addHolding.isError && (
             <div className="text-sm text-red-600 dark:text-red-400">

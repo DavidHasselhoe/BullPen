@@ -449,7 +449,7 @@ export default function HoldingsPage() {
         onAddClick={() => setIsAddModalOpen(true)}
         onImportClick={() => setIsImportModalOpen(true)}
         hoveredSector={hoveredSector}
-        cashValue={cashValue}
+        cashValue={cashBalance ? cashValue : null}
         onCashClick={() => setIsCashDialogOpen(true)}
       />
 
