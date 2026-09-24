@@ -2045,6 +2045,9 @@ export interface EarningsCalendarItem {
   revenue_actual?: number | null;
   fiscal_quarter?: string;
   surprise?: number | null;
+  /** Set by calendar-days.ts's merge when Nasdaq's calendar also lists this
+   *  symbol on this date. Not from TwelveData. See dropMisdatedEarnings. */
+  nasdaq_confirmed?: boolean;
 }
 
 /**

@@ -136,6 +136,7 @@ function mapNasdaqRowToEarningsItem(row: NasdaqEarningsRow, date: string): Earni
     name: row.name,
     date,
     time: row.time ?? '',
+    nasdaq_confirmed: true,
     eps_estimate: row.epsEstimate,
     eps_actual: row.epsActual,
     revenue_estimate: null,
@@ -242,6 +243,7 @@ async function fetchEarningsDayWithNasdaqFill(date: string): Promise<EarningsCal
       eps_estimate: existing.eps_estimate ?? nRow.epsEstimate,
       eps_actual: existing.eps_actual ?? nRow.epsActual,
       surprise: existing.surprise ?? nRow.surprisePercent,
+      nasdaq_confirmed: true,
     });
   }
 
@@ -475,6 +477,18 @@ export async function getCalendarRange<T = CalendarRow>(
   to: string,
   opts: RangeOpts = {}
 ): Promise<CalendarRangeResult<T>> {
+  const result = await readCalendarRange<T>(kind, from, to, opts);
+  // Every earnings read (the calendar API, the earnings-today notification,
+  // the Daily Brief) goes through here, so one provider-disagreement fix covers all.
+  return kind === 'earnings' ? withMisdatedEarningsDropped(result, from, to) : result;
+}
+
+async function readCalendarRange<T = CalendarRow>(
+  kind: CalendarKind,
+  from: string,
+  to: string,
+  opts: RangeOpts = {}
+): Promise<CalendarRangeResult<T>> {
   const { allowFetch = true, today = todayET() } = opts;
   const dates = datesBetween(from, to);
   const keys = dates.map((d) => calendarDayKey(kind, d));
@@ -533,6 +547,67 @@ export async function getCalendarRange<T = CalendarRow>(
 
   const stillMissing = dates.filter((d) => !byDate.has(d));
   return { byDate, missingDates: stillMissing, partial: stillMissing.length > 0 };
+}
+
+/** How far apart two listings of one company can be and still be the same report. */
+const MISDATED_WINDOW_DAYS = 4;
+
+/** Rows cached before nasdaq_confirmed existed: only Nasdaq's mapping writes BMO/AMC (TD writes "Pre Market" / "After Hours" / ""). */
+function isNasdaqConfirmed(row: EarningsCalendarItem): boolean {
+  return row.nasdaq_confirmed === true || row.time === 'BMO' || row.time === 'AMC';
+}
+
+/**
+ * Drops a TwelveData-only earnings row when Nasdaq's calendar lists the same
+ * company on a nearby different date. Each day is merged in isolation, so a
+ * provider disagreeing on the date used to show the company twice. Verified
+ * live 2026-09-24: TD had JPM on Mon Oct 12 (Columbus Day, banks do not
+ * report) and BAC on Oct 13 after hours; Nasdaq had JPM on Tue Oct 13 with
+ * GS and C, and BAC on Oct 14 before the open, which is when BAC reports.
+ * Nasdaq wins because it carries the estimate and timing TD leaves blank.
+ * Rows both sources agree on, and days outside Nasdaq's merge window (no
+ * confirmed rows at all), are untouched. Mutates and returns `byDate`.
+ */
+export function dropMisdatedEarnings(byDate: Map<string, EarningsCalendarItem[]>): Map<string, EarningsCalendarItem[]> {
+  const confirmedDates = new Map<string, string[]>();
+  for (const [date, rows] of byDate) {
+    for (const r of rows) {
+      if (!isNasdaqConfirmed(r)) continue;
+      const sym = r.symbol.toUpperCase();
+      confirmedDates.set(sym, [...(confirmedDates.get(sym) ?? []), date]);
+    }
+  }
+  for (const [date, rows] of byDate) {
+    const kept = rows.filter((r) => {
+      if (isNasdaqConfirmed(r)) return true;
+      const others = confirmedDates.get(r.symbol.toUpperCase());
+      return !others?.some((d) => d !== date && Math.abs(dayDeltaFromToday(d, date)) <= MISDATED_WINDOW_DAYS);
+    });
+    if (kept.length !== rows.length) byDate.set(date, kept);
+  }
+  return byDate;
+}
+
+/**
+ * Earnings range read with the misdated-duplicate pass applied. Reads the
+ * cached days just outside the range too (cache only, no credits) so a
+ * duplicate split across the range edge is caught, then returns only the
+ * days asked for.
+ */
+async function withMisdatedEarningsDropped<T>(result: CalendarRangeResult<T>, from: string, to: string): Promise<CalendarRangeResult<T>> {
+  const outside = [
+    ...datesBetween(addDays(from, -MISDATED_WINDOW_DAYS), addDays(from, -1)),
+    ...datesBetween(addDays(to, 1), addDays(to, MISDATED_WINDOW_DAYS)),
+  ];
+  const neighbours = await getCachedMany<EarningsCalendarItem[]>(outside.map((d) => calendarDayKey('earnings', d)));
+  const all = new Map(result.byDate as unknown as Map<string, EarningsCalendarItem[]>);
+  for (const d of outside) {
+    const hit = neighbours.get(calendarDayKey('earnings', d));
+    if (hit) all.set(d, hit);
+  }
+  dropMisdatedEarnings(all);
+  for (const d of result.byDate.keys()) result.byDate.set(d, all.get(d) as unknown as T[]);
+  return result;
 }
 
 /** Cache-first single day. Returns [] for a genuinely empty day, null if unfillable. */

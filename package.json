@@ -35,6 +35,7 @@
     "test-search-ranking": "tsx scripts/test-search-ranking.ts",
     "test-economic-calendar": "tsx scripts/test-economic-calendar.ts",
     "sync-economic-calendar": "tsx scripts/sync-economic-calendar.ts",
+    "test-earnings-misdated": "tsx scripts/test-earnings-misdated.ts",
     "refresh-search-index": "tsx scripts/refresh-search-index.ts",
     "test-import": "tsx scripts/test-import.ts",
     "trigger-cron": "tsx scripts/trigger-cron.ts",
