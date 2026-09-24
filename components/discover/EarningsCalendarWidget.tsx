@@ -164,7 +164,7 @@ function DayColumn({
                       'text-[11px] font-bold px-1 py-0.5 rounded uppercase tracking-wide shrink-0 leading-none',
                       tag === 'BMO'
                         ? 'bg-sky-500/10 text-sky-700 dark:text-sky-400'
-                        : 'bg-amber-500/10 text-amber-700 dark:text-amber-400'
+                        : 'bg-amber-500/10 text-amber-800 dark:text-amber-400'
                     )}>
                       {tag}
                     </span>

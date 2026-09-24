@@ -222,7 +222,7 @@ export function textClass(pct: number): string {
 export function cellTextClass(pct: number): { primary: string; secondary: string } {
   const band = bandFor(pct);
   if (band < 0) {
-    return { primary: 'text-muted-foreground', secondary: 'text-muted-foreground/70' };
+    return { primary: 'text-muted-foreground', secondary: 'text-muted-foreground' };
   }
   // The secondary line is a shaded foreground rather than --muted-foreground on
   // every tinted cell: measured, muted grey over a pale light-mode tint lands at

@@ -19,7 +19,7 @@ export function directionOf(pct: number | null | undefined): Direction {
 export const DIRECTION_TEXT: Record<Direction, string> = {
   up: 'text-emerald-400',
   down: 'text-red-400',
-  flat: 'text-muted-foreground/70',
+  flat: 'text-muted-foreground',
 };
 
 /** Signed percentage, always with an explicit + or −. */
