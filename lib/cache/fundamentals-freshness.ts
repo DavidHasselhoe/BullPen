@@ -1,7 +1,7 @@
 /**
  * Smart fundamentals freshness system.
  *
- * Uses TwelveData's /fundamentals/last_changes endpoint (1 credit) to check
+ * Uses TwelveData's /last_change/{type} endpoints (5 credits per symbol) to check
  * whether any cached fundamental data is actually stale before spending
  * 50–100 credits on a full re-fetch.
  *

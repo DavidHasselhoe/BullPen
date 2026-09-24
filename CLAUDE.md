@@ -337,7 +337,7 @@ Every TwelveData call costs API credits. The rules below are binding — violati
 | `/income_statement` | `getIncomeStatement()` | **~101 per request** | Supabase 12 h |
 | `/balance_sheet` | `getBalanceSheet()` | **~101 per request** | Supabase 12 h |
 | `/cash_flow` | `getCashFlow()` | **~101 per request** | Supabase 12 h |
-| `/fundamentals/last_changes` | `getFundamentalsLastChange()` | 1 per symbol | no-store (freshness check) |
+| `/last_change/{type}` | `getFundamentalsLastChange()` | 1 per symbol per type (5 for the full check) | no-store (freshness check) |
 | `/profile` | `getCompanyProfile()` | **10 per request** | Supabase 24 h |
 | `/logo` | `getLogoUrl()` | 1 per symbol | Next.js 24 h |
 | `/press_releases` | `getPressReleases()` | 1 per request | Next.js 1 h |
@@ -388,7 +388,7 @@ WsManager (in-process, 0 ms) → Redis (shared, ~2 ms) → TwelveData (paid)
 ```
 
 **5. Use `getFundamentalsLastChange()` before re-fetching fundamentals.**
-Costs 1 credit and tells you whether financials have updated since last cache. The daily prefetch cron uses this pattern — each symbol costs 1 credit to check vs. 1–20 credits to re-fetch unnecessarily. Do not skip this check in the cron.
+Costs 5 credits (one `/last_change/{type}` call per data type) and tells you whether financials have updated since last cache, vs. ~303 credits to re-fetch all three statements. Used by the stock page's freshness check (`/api/stock/[ticker]/freshness`, throttled to once an hour per company) and `/api/admin/refresh-fundamentals`. The endpoint used to be called as `/fundamentals/last_changes`, which does not exist (plain-text 404): every check failed until 2026-09-24.
 
 **6. Expensive endpoints need long cache TTLs.**
 | Endpoint | Why it's safe to cache long |

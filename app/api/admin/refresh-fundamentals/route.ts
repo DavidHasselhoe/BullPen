@@ -8,9 +8,9 @@ import { waitForCronCreditBudget } from '@/lib/twelvedata/credit-budget';
 import { sleep } from '@/lib/utils';
 
 const BATCH_SIZE = 5;
-const BATCH_DELAY_MS = 1000; // 1 second between batches → ~300 credits/min max, well under 610 limit
-/** 1 credit per company (the /fundamentals/last_changes check this route makes). */
-const CREDITS_PER_COMPANY = 1;
+const BATCH_DELAY_MS = 5000; // 25 credits per batch every 5s → ~300 credits/min max, well under 610 limit
+/** 5 credits per company: one /last_change/{type} call per data type (see getFundamentalsLastChange). */
+const CREDITS_PER_COMPANY = 5;
 
 /**
  * GET /api/admin/refresh-fundamentals
@@ -25,7 +25,7 @@ const CREDITS_PER_COMPANY = 1;
  * Without ?tickers, processes companies ordered by oldest fundamentals_checked_at
  * (including NULL = never checked).
  *
- * Credit cost: 1 per company (last_changes check), plus only the changed data
+ * Credit cost: 5 per company (last_change checks), plus only the changed data
  * types on any subsequent user-triggered fetches.
  *
  * Requires authenticated session (service-role check happens via withAuth).

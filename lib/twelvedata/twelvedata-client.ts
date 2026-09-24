@@ -2616,34 +2616,49 @@ export interface FundamentalsLastChange {
   cash_flow?: { last_change: string | null };
 }
 
+const LAST_CHANGE_TYPES = ['profile', 'statistics', 'income_statement', 'balance_sheet', 'cash_flow'] as const;
+
 /**
  * Returns the date each fundamental data type was last updated by TwelveData.
  * Use this to determine whether cached fundamental data is stale before spending
  * credits on a full re-fetch.
  *
- * Endpoint: GET /fundamentals/last_changes
- * Cost: 1 API credit per symbol.
+ * Endpoint: GET /last_change/{type}?symbol=X, one call per data type. The
+ * previous path, /fundamentals/last_changes, does not exist: it answered a
+ * plain-text "404 page not found", so every freshness check failed with a JSON
+ * parse error and cached fundamentals only ever refreshed on TTL expiry
+ * (verified live 2026-09-24).
+ *
+ * Cost: 1 credit per symbol per type, so 5 per symbol here (measured from the
+ * api-credits-used header 2026-09-24). Still far below one statement re-fetch.
  */
 export async function getFundamentalsLastChange(symbol: string): Promise<FundamentalsLastChange> {
-  logUsage('/fundamentals/last_changes', symbol);
-  const url = buildUrl('/fundamentals/last_changes', { symbol: symbol.toUpperCase() });
-  const res = await tdFetch(url, { cache: 'no-store' }); // always need fresh timestamps
-  const json = (await res.json()) as FundamentalsLastChange & { code?: number; status?: string; message?: string };
-
-  if (!res.ok || json.code || json.status === 'error') {
-    const msg = json.message ?? `fundamentals/last_changes error: ${res.status}`;
-    if (/rate.?limit|too many|credits? exceeded/i.test(msg) || json.code === 429) {
-      throw new TwelveDataRateLimitError(msg);
-    }
-    throw new Error(msg);
-  }
-
-  return {
-    profile: json.profile,
-    statistics: json.statistics,
-    income_statement: json.income_statement,
-    balance_sheet: json.balance_sheet,
-    cash_flow: json.cash_flow,
-  };
+  const sym = symbol.toUpperCase();
+  const entries = await Promise.all(
+    LAST_CHANGE_TYPES.map(async (type) => {
+      logUsage(`/last_change/${type}`, sym);
+      const res = await tdFetch(buildUrl(`/last_change/${type}`, { symbol: sym }), { cache: 'no-store' }); // always need fresh timestamps
+      // Read as text first: a non-JSON error body must surface as its own message, not a parse error.
+      const text = await res.text();
+      let json: { data?: Array<{ symbol?: string; last_change?: string }>; code?: number; status?: string; message?: string };
+      try {
+        json = JSON.parse(text);
+      } catch {
+        throw new Error(`last_change/${type} error: ${res.status} ${text.slice(0, 80)}`);
+      }
+      if (!res.ok || json.code || json.status === 'error') {
+        const msg = json.message ?? `last_change/${type} error: ${res.status}`;
+        if (/rate.?limit|too many|credits? exceeded/i.test(msg) || json.code === 429) {
+          throw new TwelveDataRateLimitError(msg);
+        }
+        throw new Error(msg);
+      }
+      const raw = json.data?.find((d) => d.symbol?.toUpperCase() === sym)?.last_change ?? null;
+      // "2026-09-22 01:02:14" (UTC) to ISO, so Date.parse does not read it as server-local time.
+      const lastChange = raw ? `${raw.trim().replace(/\s+/, 'T')}Z` : null;
+      return [type, { last_change: lastChange }] as const;
+    })
+  );
+  return Object.fromEntries(entries) as FundamentalsLastChange;
 }
 
