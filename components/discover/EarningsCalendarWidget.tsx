@@ -122,7 +122,7 @@ function DayColumn({
         <div className="mb-3 select-none">
           <p className={cn(
             'text-[11px] font-bold uppercase tracking-[0.12em]',
-            isToday ? 'text-primary' : 'text-muted-foreground/80'
+            isToday ? 'text-primary' : 'text-muted-foreground'
           )}>
             {dayLabel}
           </p>
@@ -137,7 +137,7 @@ function DayColumn({
         {/* Earnings list */}
         <div className="space-y-1.5 flex-1">
           {visible.length === 0 ? (
-            <p className="text-[11px] text-muted-foreground/80 pt-0.5 select-none">—</p>
+            <p className="text-[11px] text-muted-foreground pt-0.5 select-none">—</p>
           ) : (
             visible.map((row, i) => {
               const tag = timeTag(row.time);
@@ -163,8 +163,8 @@ function DayColumn({
                     <span className={cn(
                       'text-[11px] font-bold px-1 py-0.5 rounded uppercase tracking-wide shrink-0 leading-none',
                       tag === 'BMO'
-                        ? 'bg-sky-500/10 text-sky-500/70'
-                        : 'bg-amber-500/10 text-amber-500/70'
+                        ? 'bg-sky-500/10 text-sky-700 dark:text-sky-400'
+                        : 'bg-amber-500/10 text-amber-700 dark:text-amber-400'
                     )}>
                       {tag}
                     </span>
@@ -179,7 +179,7 @@ function DayColumn({
         {overflow > 0 && (
           <Link
             href="/tools/calendar"
-            className="mt-2 text-[11px] text-muted-foreground/80 hover:text-primary transition-colors"
+            className="mt-2 text-[11px] text-muted-foreground hover:text-primary transition-colors"
           >
             {t('earningsWidgetMoreCount', { count: overflow })}
           </Link>
@@ -291,16 +291,16 @@ export function EarningsCalendarWidget() {
     <div className="space-y-4 min-w-0">
       {/* Editorial section header */}
       <div className="flex items-center gap-3">
-        <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/85 shrink-0">
+        <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground shrink-0">
           {isPortfolioMode ? t('earningsWidgetPortfolioTitle') : t('earningsWidgetMarketTitle')}
         </span>
         <div className="flex-1 h-px bg-border/50" />
-        <span className="text-[11px] font-mono text-muted-foreground/80 hidden sm:block tracking-wider shrink-0">
+        <span className="text-[11px] font-mono text-muted-foreground hidden sm:block tracking-wider shrink-0">
           {fmtWeekRange(weekDates)}
         </span>
         <Link
           href="/tools/calendar"
-          className="text-[11px] font-mono text-muted-foreground/85 hover:text-foreground transition-colors uppercase tracking-wider shrink-0"
+          className="text-[11px] font-mono text-muted-foreground hover:text-foreground transition-colors uppercase tracking-wider shrink-0"
         >
           {t('earningsWidgetFullLink')}
         </Link>

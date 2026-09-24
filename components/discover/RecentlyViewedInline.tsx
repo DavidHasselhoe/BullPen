@@ -36,7 +36,7 @@ export function RecentlyViewedInline() {
 
   return (
     <div className="flex items-center gap-3 min-w-0 overflow-hidden">
-      <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/80 shrink-0">
+      <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground shrink-0">
         {t('recentlyViewedInlineLabel')}
       </span>
       <div className="flex flex-wrap gap-1.5 min-w-0">
@@ -60,7 +60,7 @@ export function RecentlyViewedInline() {
               {pct !== undefined && (
                 <span className={cn(
                   'tabular-nums text-[11px] font-semibold',
-                  isPos ? 'text-emerald-500' : 'text-red-500'
+                  isPos ? 'text-emerald-700 dark:text-emerald-500' : 'text-red-700 dark:text-red-500'
                 )}>
                   {isPos ? '+' : ''}{pct.toFixed(2)}%
                 </span>

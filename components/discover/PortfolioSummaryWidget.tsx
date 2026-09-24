@@ -224,7 +224,7 @@ export function PortfolioSummaryWidget() {
                 </p>
               </div>
               <div className="h-7 w-7 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-emerald-500/20 transition-colors">
-                <Plus className="h-3.5 w-3.5 text-emerald-500" />
+                <Plus className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-500" />
               </div>
             </div>
             <div className="h-[72px] bg-gradient-to-b from-transparent to-emerald-500/[0.04]" />
@@ -259,7 +259,7 @@ export function PortfolioSummaryWidget() {
               {hasWeekChange && (
                 <p
                   className={`text-xs font-medium tabular-nums flex items-center gap-0.5 ${
-                    isPositive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                    isPositive ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'
                   }`}
                 >
                   {isPositive ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}

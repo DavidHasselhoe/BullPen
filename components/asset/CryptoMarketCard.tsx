@@ -63,8 +63,8 @@ export function CryptoMarketCard() {
                 <CompanyLogo name={name} ticker={symbolToSlug(symbol)} logoUrl={logoUrl} size={28} />
                 {q ? (
                   isUp
-                    ? <TrendingUp className="h-3 w-3 text-emerald-500" />
-                    : <TrendingDown className="h-3 w-3 text-red-500" />
+                    ? <TrendingUp className="h-3 w-3 text-emerald-700 dark:text-emerald-500" />
+                    : <TrendingDown className="h-3 w-3 text-red-700 dark:text-red-500" />
                 ) : null}
               </div>
               <div>
@@ -74,12 +74,12 @@ export function CryptoMarketCard() {
               {q ? (
                 <>
                   <span className="text-sm tabular-nums font-medium">{fmtPrice(q.price)}</span>
-                  <span className={cn('text-xs tabular-nums', isUp ? 'text-emerald-500' : 'text-red-500')}>
+                  <span className={cn('text-xs tabular-nums', isUp ? 'text-emerald-700 dark:text-emerald-500' : 'text-red-700 dark:text-red-500')}>
                     {isUp ? '+' : ''}{q.changePercent.toFixed(2)}%
                   </span>
                 </>
               ) : (
-                <span className="text-xs text-muted-foreground/85">—</span>
+                <span className="text-xs text-muted-foreground">—</span>
               )}
             </Link>
           );

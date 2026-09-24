@@ -263,7 +263,7 @@ function SectionBlock({ section, index, isTldr, sectionRef, known }: SectionBloc
       style={{ animationDelay: `${index * 60}ms` }}
     >
       <div className="flex items-center gap-3 mb-5 min-w-0">
-        <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground/85 shrink-0 max-w-full truncate">
+        <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground shrink-0 max-w-full truncate">
           {section.heading}
         </span>
         <div className="flex-1 h-px bg-border/30" />
@@ -276,7 +276,7 @@ function SectionBlock({ section, index, isTldr, sectionRef, known }: SectionBloc
 
           if (kind === 'sub-header') {
             return (
-              <p key={i} className="text-[12px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/80 pt-2">
+              <p key={i} className="text-[12px] font-semibold uppercase tracking-[0.08em] text-muted-foreground pt-2">
                 {renderInline(text.replace(/:$/, ''), known)}
               </p>
             );
@@ -323,7 +323,7 @@ function SectionTOC({
       aria-label={t('briefTocSectionsAriaLabel')}
       className="hidden md:block w-[180px] shrink-0 border-r border-border/30 px-4 py-7 overflow-y-auto brief-scroll"
     >
-      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground/80 mb-3 pl-3">
+      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground mb-3 pl-3">
         {t('briefTocHeading')}
       </p>
       <ul className="space-y-0.5">
@@ -339,7 +339,7 @@ function SectionTOC({
                   'w-full text-left text-[12px] pl-3 pr-2 py-1.5 rounded-r-md border-l-2 transition-all duration-150 truncate',
                   active
                     ? 'border-primary text-foreground bg-muted/30 font-medium'
-                    : 'border-transparent text-muted-foreground/85 hover:text-foreground hover:bg-muted/20'
+                    : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/20'
                 )}
               >
                 {s.heading}
@@ -363,7 +363,7 @@ function Favicon({ domain, size = 16, className }: { domain: string; size?: numb
         className={cn('inline-flex shrink-0 items-center justify-center rounded-full bg-muted', className)}
         style={{ width: size, height: size }}
       >
-        <Globe className="text-muted-foreground/60" style={{ width: size * 0.6, height: size * 0.6 }} />
+        <Globe className="text-muted-foreground" style={{ width: size * 0.6, height: size * 0.6 }} />
       </span>
     );
   }
@@ -421,7 +421,7 @@ function BriefSourcesFooter({ sources }: { sources: BriefSource[] }) {
           </span>
           <ChevronDown
             className={cn(
-              'h-3 w-3 text-muted-foreground/70 transition-transform duration-150 motion-reduce:transition-none',
+              'h-3 w-3 text-muted-foreground transition-transform duration-150 motion-reduce:transition-none',
               open && 'rotate-180'
             )}
           />
@@ -441,12 +441,12 @@ function BriefSourcesFooter({ sources }: { sources: BriefSource[] }) {
                     href={s.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-[12px] text-muted-foreground/90 hover:text-foreground hover:bg-muted/30 transition-colors duration-150"
+                    className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-[12px] text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors duration-150"
                   >
                     <Favicon domain={s.domain} size={14} />
                     <span className="truncate flex-1">{s.title}</span>
-                    <span className="hidden sm:inline shrink-0 text-[11px] text-muted-foreground/60">{s.domain}</span>
-                    <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground/50" />
+                    <span className="hidden sm:inline shrink-0 text-[11px] text-muted-foreground">{s.domain}</span>
+                    <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground" />
                   </a>
                 </li>
               ))}
@@ -661,11 +661,11 @@ function BriefReader({
                 <h2 className="text-xl md:text-[26px] font-semibold text-foreground leading-tight tracking-tight pr-28 md:pr-32">
                   {displayedBrief.title}
                 </h2>
-                <div className="flex items-center flex-wrap gap-x-2 gap-y-1 mt-3 text-[11px] text-muted-foreground/85 font-mono">
+                <div className="flex items-center flex-wrap gap-x-2 gap-y-1 mt-3 text-[11px] text-muted-foreground font-mono">
                   <span>{formatPublishedDate(displayedBrief.published_date)}</span>
-                  <span className="text-muted-foreground/80">·</span>
+                  <span className="text-muted-foreground">·</span>
                   <span>{t('briefMinRead', { minutes: readingMinutes })}</span>
-                  <span className="text-muted-foreground/80">·</span>
+                  <span className="text-muted-foreground">·</span>
                   <span>{t('briefGeneratedAt', { time: formatRelativeTime(displayedBrief.generated_at, t) })}</span>
                 </div>
               </div>
@@ -679,7 +679,7 @@ function BriefReader({
                       disabled={!canGoOlder}
                       aria-label={t('briefOlderLabel')}
                       title={t('briefOlderLabel')}
-                      className="text-muted-foreground/85 hover:text-foreground transition-all duration-150 p-1.5 rounded-lg hover:bg-muted/40 active:scale-95 disabled:opacity-30 disabled:pointer-events-none disabled:hover:bg-transparent"
+                      className="text-muted-foreground hover:text-foreground transition-all duration-150 p-1.5 rounded-lg hover:bg-muted/40 active:scale-95 disabled:opacity-30 disabled:pointer-events-none disabled:hover:bg-transparent"
                     >
                       <ChevronLeft className="h-4 w-4" />
                     </button>
@@ -689,7 +689,7 @@ function BriefReader({
                       disabled={!canGoNewer}
                       aria-label={t('briefNewerLabel')}
                       title={t('briefNewerLabel')}
-                      className="text-muted-foreground/85 hover:text-foreground transition-all duration-150 p-1.5 rounded-lg hover:bg-muted/40 active:scale-95 disabled:opacity-30 disabled:pointer-events-none disabled:hover:bg-transparent"
+                      className="text-muted-foreground hover:text-foreground transition-all duration-150 p-1.5 rounded-lg hover:bg-muted/40 active:scale-95 disabled:opacity-30 disabled:pointer-events-none disabled:hover:bg-transparent"
                     >
                       <ChevronRight className="h-4 w-4" />
                     </button>
@@ -703,7 +703,7 @@ function BriefReader({
                         'transition-all duration-150 p-1.5 rounded-lg active:scale-95',
                         historyOpen
                           ? 'text-primary bg-primary/10'
-                          : 'text-muted-foreground/85 hover:text-foreground hover:bg-muted/40'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
                       )}
                     >
                       <History className="h-4 w-4" />
@@ -711,7 +711,7 @@ function BriefReader({
                   </>
                 )}
                 <DialogPrimitive.Close
-                  className="text-muted-foreground/85 hover:text-foreground transition-all duration-150 p-1.5 rounded-lg hover:bg-muted/40 active:scale-95"
+                  className="text-muted-foreground hover:text-foreground transition-all duration-150 p-1.5 rounded-lg hover:bg-muted/40 active:scale-95"
                   aria-label={t('briefCloseLabel')}
                 >
                   <X className="h-4 w-4" />
@@ -751,7 +751,7 @@ function BriefReader({
                       i === activeIndex && 'bg-muted/30'
                     )}
                   >
-                    <span className="block font-mono text-[11px] text-muted-foreground/80">
+                    <span className="block font-mono text-[11px] text-muted-foreground">
                       {formatShortDate(b.published_date)}
                     </span>
                     <span className="block text-foreground/90 truncate">{b.title}</span>
@@ -849,7 +849,7 @@ export function DailyBriefWidget() {
     return (
       <div className="min-w-0">
         <div className="flex items-center gap-3 mb-3">
-          <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/85 shrink-0">{t('briefWidgetLabel')}</span>
+          <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground shrink-0">{t('briefWidgetLabel')}</span>
           <div className="flex-1 h-px bg-border/50" />
         </div>
         <div className="h-4 w-72 animate-shimmer rounded mb-2" />
@@ -862,7 +862,7 @@ export function DailyBriefWidget() {
     return (
       <div className="min-w-0">
         <div className="flex items-center gap-3 mb-3">
-          <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/85 shrink-0">{t('briefWidgetLabel')}</span>
+          <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground shrink-0">{t('briefWidgetLabel')}</span>
           <div className="flex-1 h-px bg-border/50" />
         </div>
         <div className="flex items-center justify-between gap-4 p-3 rounded-lg border border-border/30 bg-muted/10">
@@ -872,7 +872,7 @@ export function DailyBriefWidget() {
             <p className="text-sm font-medium text-foreground/30 blur-sm select-none truncate">
               {t('briefLockedPreviewHeadline')}
             </p>
-            <p className="text-xs text-muted-foreground/80 blur-sm select-none">{t('briefLockedPreviewSections')}</p>
+            <p className="text-xs text-muted-foreground blur-sm select-none">{t('briefLockedPreviewSections')}</p>
           </div>
           <Link
             href="/upgrade"
@@ -889,10 +889,10 @@ export function DailyBriefWidget() {
     return (
       <div className="min-w-0">
         <div className="flex items-center gap-3 mb-3">
-          <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/85 shrink-0">{t('briefWidgetLabel')}</span>
+          <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground shrink-0">{t('briefWidgetLabel')}</span>
           <div className="flex-1 h-px bg-border/50" />
         </div>
-        <p className="text-sm text-muted-foreground/85">
+        <p className="text-sm text-muted-foreground">
           {t('briefGenerating', { time: getNextBriefLocalTime() })}
         </p>
       </div>
@@ -907,11 +907,11 @@ export function DailyBriefWidget() {
     <>
       <div className="min-w-0">
         <div className="flex items-center gap-3 mb-3">
-          <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/85 shrink-0">
+          <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground shrink-0">
             {isToday ? t('briefWidgetLabel') : t('briefYesterdayLabel')}
           </span>
           <div className="flex-1 h-px bg-border/50" />
-          <span className="text-[11px] font-mono text-muted-foreground/80 tracking-wider shrink-0">
+          <span className="text-[11px] font-mono text-muted-foreground tracking-wider shrink-0">
             {formatRelativeTime(brief.generated_at, t)}
           </span>
         </div>
@@ -929,7 +929,7 @@ export function DailyBriefWidget() {
                 {topTickers.map((ticker) => (
                   <span
                     key={ticker}
-                    className="text-[11px] font-mono font-medium text-muted-foreground/80 bg-muted/40 px-1.5 py-0.5 rounded"
+                    className="text-[11px] font-mono font-medium text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded"
                   >
                     ${ticker}
                   </span>
@@ -937,7 +937,7 @@ export function DailyBriefWidget() {
               </div>
             )}
           </div>
-          <ArrowUpRight className="h-4 w-4 text-muted-foreground/80 group-hover:text-muted-foreground/80 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 shrink-0 mt-0.5 transition-all duration-150" />
+          <ArrowUpRight className="h-4 w-4 text-muted-foreground group-hover:text-muted-foreground/80 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 shrink-0 mt-0.5 transition-all duration-150" />
         </button>
       </div>
 

@@ -253,7 +253,8 @@ export function Navigation() {
               type="button"
               onClick={() => openCommandPalette()}
               className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 md:px-4 text-sm text-muted-foreground transition-all duration-150 hover:bg-accent hover:text-accent-foreground active:scale-[0.97]"
-              aria-label={t('navSearchAriaLabel', { shortcut: searchShortcut })}
+              // Same words as the visible text (WCAG 2.5.3 label-in-name), so voice control users can say what they see.
+              aria-label={`${t('navSearchPlaceholderText')} ${searchShortcut}`}
             >
               <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />

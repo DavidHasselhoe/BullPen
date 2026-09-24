@@ -40,7 +40,7 @@ export function PerformanceCalendarWidget() {
   return (
     <div className="min-w-0">
       <div className="flex items-center gap-3 mb-4">
-        <span className="text-xs font-bold uppercase tracking-[0.15em] text-muted-foreground/85 shrink-0">
+        <span className="text-xs font-bold uppercase tracking-[0.15em] text-muted-foreground shrink-0">
           {t('perfCalWidgetTitle')}
         </span>
         <div className="flex-1 h-px bg-border/50" />

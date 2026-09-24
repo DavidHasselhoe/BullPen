@@ -75,7 +75,7 @@ export function DayCell({ model, fxRate, currency, compact, tabIndex, onFocus }:
             missing data — sourced from the same exchange_holidays table the
             Market Hours widget reads, so the two never disagree. */}
         {isHoliday && (
-          <span className="flex-1 flex flex-col items-center justify-center gap-0.5 min-w-0 text-muted-foreground/60">
+          <span className="flex-1 flex flex-col items-center justify-center gap-0.5 min-w-0 text-muted-foreground">
             <CalendarOff className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" aria-hidden="true" />
             <span className="hidden sm:block text-xs leading-tight text-center truncate w-full">
               {model.holidayLabel}

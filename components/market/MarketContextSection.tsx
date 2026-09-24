@@ -84,9 +84,10 @@ export function MarketContextSection() {
     <section className="space-y-4 min-w-0 overflow-hidden">
       {/* Editorial section header */}
       <div className="flex items-center gap-3">
-        <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/85 shrink-0">
+        {/* h2, not a span: the cards below use h3 titles, and a page that jumps h1 to h3 breaks screen-reader heading navigation. */}
+        <h2 className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground shrink-0">
           {t('contextSectionTitle')}
-        </span>
+        </h2>
         <div className="flex-1 h-px bg-border/50" />
         {isAuthenticated && (
           <TooltipProvider>
@@ -99,7 +100,7 @@ export function MarketContextSection() {
                     updateMarketContextMode(holdingsMode ? 'all' : 'holdings')
                   }
                   disabled={!hasHoldings}
-                  className="h-6 gap-1.5 px-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground/80 hover:text-foreground"
+                  className="h-6 gap-1.5 px-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground hover:text-foreground"
                 >
                   {holdingsMode ? (
                     <><Briefcase className="h-3 w-3" />{t('contextMyPortfolio')}</>
@@ -153,7 +154,7 @@ export function MarketContextSection() {
             {effectiveHoldingsMode && tickers.length === 0 ? (
               <Card className="border-border/50 min-w-0">
                 <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-                  <Briefcase className="h-10 w-10 text-muted-foreground/85 mb-3" />
+                  <Briefcase className="h-10 w-10 text-muted-foreground mb-3" />
                   <p className="text-sm font-medium text-foreground">{t('contextNoHoldingsYet')}</p>
                   <p className="text-xs text-muted-foreground mt-1">
                     {t('contextAddStocksMovers')}
@@ -179,7 +180,7 @@ export function MarketContextSection() {
             {effectiveHoldingsMode && tickers.length === 0 ? (
               <Card className="border-border/50 min-w-0">
                 <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-                  <Briefcase className="h-10 w-10 text-muted-foreground/85 mb-3" />
+                  <Briefcase className="h-10 w-10 text-muted-foreground mb-3" />
                   <p className="text-sm font-medium text-foreground">{t('contextNoHoldingsYet')}</p>
                   <p className="text-xs text-muted-foreground mt-1">
                     {t('contextAddStocksNews')}

@@ -116,7 +116,7 @@ function MoverItem({
   sparkPrices?: number[];
   t: TFunction;
 }) {
-  const textColor = isGainer ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
+  const textColor = isGainer ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400';
   // Prefer DB batch name → stream name → ticker symbol (never blank)
   const displayName = companyName || mover.name || mover.symbol;
   // Only show ticker-on-hover animation when we actually have a distinct full name
@@ -226,7 +226,7 @@ export function TopMoversCard({ gainers, losers, isLoading, isError, isHoldingsM
         <CardContent className="space-y-4">
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
+              <TrendingUp className="h-4 w-4 text-green-700 dark:text-green-400" />
               <h3 className="text-sm font-semibold text-foreground">{t('moversTopGainers')}</h3>
             </div>
             <div className="space-y-2">
@@ -282,7 +282,7 @@ export function TopMoversCard({ gainers, losers, isLoading, isError, isHoldingsM
         {/* Top Gainers */}
         <div>
           <div className="flex items-center gap-2 mb-3">
-            <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
+            <TrendingUp className="h-4 w-4 text-green-700 dark:text-green-400" />
             <h3 className="text-sm font-semibold text-foreground">{t('moversTopGainers')}</h3>
           </div>
           <div className="space-y-1.5">

@@ -52,8 +52,8 @@ export function ToolsShortcutCard({
       className={cn(
         'h-7 w-7 rounded-md flex items-center justify-center transition-colors shrink-0',
         isEditing
-          ? 'text-emerald-500 hover:bg-emerald-500/10'
-          : 'text-muted-foreground/80 hover:text-foreground hover:bg-muted/60'
+          ? 'text-emerald-700 dark:text-emerald-500 hover:bg-emerald-500/10'
+          : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
       )}
       aria-label={isEditing ? t('shortcutsDoneEditing') : t('shortcutsEditLabel')}
       title={isEditing ? t('shortcutsDone') : t('shortcutsEditLabel')}
@@ -75,7 +75,7 @@ export function ToolsShortcutCard({
       </CardHeader>
       <CardContent className="space-y-1">
         {tools.length === 0 && !isEditing ? (
-          <p className="py-2 text-xs text-muted-foreground/80">
+          <p className="py-2 text-xs text-muted-foreground">
             {editable ? t('shortcutsEmptyEditable') : t('shortcutsEmpty')}
           </p>
         ) : (
@@ -119,7 +119,7 @@ export function ToolsShortcutCard({
                   </span>
                   <span className="truncate text-sm font-medium text-foreground">{tool.name}</span>
                 </div>
-                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/80 transition-colors group-hover:text-muted-foreground" />
+                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-muted-foreground" />
               </Link>
             );
           })

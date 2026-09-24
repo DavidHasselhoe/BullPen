@@ -73,14 +73,14 @@ export function WhyTodayWidget() {
   return (
     <div className="min-w-0">
       <div className="flex items-center gap-3 mb-3">
-        <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/85 shrink-0">
+        <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground shrink-0">
           {t('whyTodayWidgetLabel')}
         </span>
         <div className="flex-1 h-px bg-border/50" />
       </div>
 
       {symbols.length === 0 ? (
-        <p className="text-sm text-muted-foreground/85">
+        <p className="text-sm text-muted-foreground">
           {t('whyTodayWidgetEmptyState')}
         </p>
       ) : isLoading ? (
@@ -92,7 +92,7 @@ export function WhyTodayWidget() {
           </div>
         </div>
       ) : !featured ? (
-        <p className="text-sm text-muted-foreground/85">
+        <p className="text-sm text-muted-foreground">
           {t('whyTodayWidgetNoData')}
         </p>
       ) : (
@@ -103,7 +103,7 @@ export function WhyTodayWidget() {
               <p className="text-sm font-semibold text-foreground group-hover:underline truncate">
                 ${featured.symbol}
               </p>
-              <p className="text-xs text-muted-foreground/80">{t('whyTodayWidgetBiggestMove')}</p>
+              <p className="text-xs text-muted-foreground">{t('whyTodayWidgetBiggestMove')}</p>
             </Link>
             <ChangeBadge changePercent={featured.changePercent} />
             <button
@@ -141,8 +141,8 @@ function ChangeBadge({ changePercent }: { changePercent: number }) {
     <span
       className={cn(
         'inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-mono font-semibold shrink-0',
-        isUp && 'bg-emerald-500/10 text-emerald-500',
-        isDown && 'bg-red-500/10 text-red-500',
+        isUp && 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-500',
+        isDown && 'bg-red-500/10 text-red-700 dark:text-red-500',
         !isUp && !isDown && 'bg-muted/40 text-muted-foreground'
       )}
     >

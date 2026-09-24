@@ -99,8 +99,8 @@ export function MarketHoursCard({
       className={cn(
         'h-7 w-7 rounded-md flex items-center justify-center transition-colors shrink-0',
         isEditing
-          ? 'text-emerald-500 hover:bg-emerald-500/10'
-          : 'text-muted-foreground/80 hover:text-foreground hover:bg-muted/60'
+          ? 'text-emerald-700 dark:text-emerald-500 hover:bg-emerald-500/10'
+          : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
       )}
       aria-label={isEditing ? t('shortcutsDoneEditing') : t('hoursEditLabel')}
       title={isEditing ? t('shortcutsDone') : t('hoursEditLabel')}
@@ -151,7 +151,7 @@ export function MarketHoursCard({
             </div>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-muted-foreground/80 mb-3">
+            <p className="text-xs text-muted-foreground mb-3">
               {t('hoursEmptyState')}
             </p>
             <ExchangePicker selectedCodes={exchangeCodes} onAdd={handleAdd} />

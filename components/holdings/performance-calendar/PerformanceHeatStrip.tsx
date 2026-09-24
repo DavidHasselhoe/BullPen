@@ -77,10 +77,10 @@ export function PerformanceHeatStrip({ currency = 'USD', fxRate = 1, liveToday =
             <span className="font-mono tabular-nums text-sm text-muted-foreground">
               {fmtSignedCurrency(total.pnlUsd * fxRate, currency)}
             </span>
-            <span className="text-xs text-muted-foreground/70">
+            <span className="text-xs text-muted-foreground">
               {t('perfCalUpDown', { up: total.upDays, down: total.downDays })}
             </span>
-            <span className="text-xs text-muted-foreground/60">{fmtWeekRange(weekFrom, weekTo)}</span>
+            <span className="text-xs text-muted-foreground">{fmtWeekRange(weekFrom, weekTo)}</span>
           </div>
         ) : (
           <span className="text-xs text-muted-foreground">

@@ -93,12 +93,12 @@ export function CalendarGrid({ weeks, fxRate, currency, compact }: Props) {
       {/* Column headers. Monday-first keeps Mon–Fri contiguous, so the trading
           week reads as one block and the weekend (when shown) sits beside the
           week total. */}
-      <div className={cn('grid gap-1 sm:gap-1.5 mb-1.5', gridColsClass)}>
+      <div role="row" className={cn('grid gap-1 sm:gap-1.5 mb-1.5', gridColsClass)}>
         {weekdayLabels.map((label) => (
           <div
             key={label}
             role="columnheader"
-            className="text-xs font-medium uppercase tracking-wider text-muted-foreground/60 text-center"
+            className="text-xs font-medium uppercase tracking-wider text-muted-foreground text-center"
           >
             <span aria-hidden="true">{label.slice(0, 1)}</span>
             <span className="sr-only">{label}</span>
@@ -106,7 +106,7 @@ export function CalendarGrid({ weeks, fxRate, currency, compact }: Props) {
         ))}
         <div
           role="columnheader"
-          className="hidden sm:block text-xs font-medium uppercase tracking-wider text-muted-foreground/60 text-center"
+          className="hidden sm:block text-xs font-medium uppercase tracking-wider text-muted-foreground text-center"
         >
           {t('perfCalWeekColHeader')}
         </div>
@@ -165,7 +165,7 @@ export function CalendarGrid({ weeks, fxRate, currency, compact }: Props) {
                     )}
                   </>
                 ) : (
-                  <span className="text-xs text-muted-foreground/40" aria-hidden="true">
+                  <span className="text-xs text-muted-foreground" aria-hidden="true">
                     —
                   </span>
                 )}

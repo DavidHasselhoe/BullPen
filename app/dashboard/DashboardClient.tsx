@@ -110,7 +110,7 @@ export default function DashboardClient() {
             variant="ghost"
             size="sm"
             onClick={openCustomize}
-            className="gap-1.5 h-7 px-2 text-xs text-muted-foreground/80 hover:text-foreground"
+            className="gap-1.5 h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
           >
             <Pencil className="h-3 w-3" />
             Customize

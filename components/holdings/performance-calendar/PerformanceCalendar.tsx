@@ -118,11 +118,11 @@ export function PerformanceCalendar({
             <span className="font-mono tabular-nums text-sm text-muted-foreground">
               {fmtSignedCurrency(total.pnlUsd * fxRate, currency)}
             </span>
-            <span className="text-xs text-muted-foreground/70">
+            <span className="text-xs text-muted-foreground">
               {t('perfCalUpDown', { up: total.upDays, down: total.downDays })}
             </span>
             {!compact && total.best && total.worst && (
-              <span className="text-xs text-muted-foreground/70">
+              <span className="text-xs text-muted-foreground">
                 {t('perfCalBestWorst', {
                   bestDate: fmtShortDate(total.best.date),
                   bestPct: fmtSignedPercent(total.best.pct),
@@ -135,7 +135,7 @@ export function PerformanceCalendar({
               <TooltipTrigger asChild>
                 <button
                   type="button"
-                  className="text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+                  className="text-muted-foreground hover:text-muted-foreground transition-colors"
                   aria-label={t('perfCalHowCalculated')}
                 >
                   <Info className="h-3.5 w-3.5" />

@@ -83,7 +83,7 @@ export function HotPicksCard() {
           {t('hotPicksTitle')}
         </span>
         <div className="flex-1 h-px bg-border/50" />
-        <span className="text-[11px] font-mono text-foreground/50 uppercase tracking-wider shrink-0">
+        <span className="text-[11px] font-mono text-muted-foreground uppercase tracking-wider shrink-0">
           {t('hotPicksByViews')}
         </span>
       </div>
@@ -126,12 +126,12 @@ export function HotPicksCard() {
                     <p className="text-sm font-bold text-foreground leading-none group-hover:text-primary transition-colors">
                       {pick.ticker}
                     </p>
-                    <p className="text-xs text-foreground/55 truncate mt-0.5">
+                    <p className="text-xs text-muted-foreground truncate mt-0.5">
                       {pick.name || pick.ticker}
                     </p>
                   </div>
 
-                  <span className="text-[11px] tabular-nums text-foreground/50 shrink-0 font-mono">
+                  <span className="text-[11px] tabular-nums text-muted-foreground shrink-0 font-mono">
                     {t('hotPicksViewCount', { count: pick.click_count })}
                   </span>
                 </Link>
