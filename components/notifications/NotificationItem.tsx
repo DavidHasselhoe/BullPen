@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import type { Notification } from '@/lib/notifications/notifications-db';
 import { useQuery } from '@tanstack/react-query';
+import { useCalendarPrefs } from '@/hooks/use-calendar-prefs';
 import { ECONOMIC_KINDS, fmtReleaseTimeWithZone, type EconomicEvent } from '@/lib/market-data/economic-kinds';
 
 function formatRelativeTime(dateString: string): string {
@@ -242,6 +243,8 @@ interface NotificationItemProps {
  * stored message (ET times) shows until the day's events load.
  */
 function EconomicNotification({ notification, date, onRead }: { notification: Notification; date: string; onRead: () => void }) {
+  // Same picks the cron used to decide this user gets notified.
+  const { prefs } = useCalendarPrefs();
   const { data: events } = useQuery<EconomicEvent[]>({
     // Own key: the calendar caches the whole response under calendar-economic, this caches the array.
     queryKey: ['notification-economic', date],
@@ -270,9 +273,9 @@ function EconomicNotification({ notification, date, onRead }: { notification: No
           </p>
           <span className="text-[11px] text-muted-foreground/85 shrink-0 tabular-nums">{formatRelativeTime(notification.created_at)}</span>
         </div>
-        {events && events.length > 0 ? (
+        {events && events.some((e) => prefs.economicKinds.includes(e.kind)) ? (
           <ul className="space-y-0.5">
-            {events.map((e) => {
+            {events.filter((e) => prefs.economicKinds.includes(e.kind)).map((e) => {
               const meta = ECONOMIC_KINDS[e.kind];
               return (
                 <li key={e.id} className="flex flex-wrap items-center gap-x-1.5 text-[11px] leading-snug text-muted-foreground/90">

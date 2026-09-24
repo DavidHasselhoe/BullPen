@@ -690,5 +690,19 @@
   "economicWatchLive": "«Waatch thee preess coonfeereencee»",
   "economicLearn": "«Hoow thiis moovees stoocks»",
   "economicProjections": "«IIncluudees neew Feed proojeectiioons»",
-  "economicEtTime": "«{{time}} EET»"
+  "economicEtTime": "«{{time}} EET»",
+  "calendarScopeLabel": "«Shoow»",
+  "calendarScopeAll": "«AAll coompaaniiees»",
+  "calendarScopeMine": "«Hooldiings & waatchliist»",
+  "calendarScopeHoldings": "«My hooldiings»",
+  "calendarScopeWatchlist": "«My waatchliist»",
+  "calendarScopeEmptyHoldings": "«Yoouu haavee noo hooldiings yeet, soo theeree aaree noo coompaany eeveents too shoow.»",
+  "calendarScopeEmptyWatchlist": "«Yoouur waatchliist iis eempty, soo theeree aaree noo coompaany eeveents too shoow.»",
+  "calendarScopeEmptyMine": "«Yoouu haavee noo hooldiings oor waatchliist yeet, soo theeree aaree noo coompaany eeveents too shoow.»",
+  "calendarScopeGoHoldings": "«AAdd hooldiings»",
+  "calendarScopeGoWatchlist": "«AAdd too yoouur waatchliist»",
+  "calendarEconomicMenuTitle": "«EEcoonoomiic reeleeaasees»",
+  "calendarEconomicMenuHint": "«Piick thee oonees yoouu caaree aaboouut. IIf eecoonoomiic nootiifiicaatiioons aaree oon, yoouu oonly geet theesee.»",
+  "calendarEconomicSelectAll": "«Seeleect aall»",
+  "calendarEconomicClear": "«Cleeaar»"
 }

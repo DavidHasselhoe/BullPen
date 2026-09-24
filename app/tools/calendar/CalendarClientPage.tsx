@@ -35,11 +35,13 @@ import { ListCalendar } from '@/components/tools/calendar/ListCalendar';
 import { DayDetailDialog } from '@/components/tools/calendar/DayDetailDialog';
 import { CalendarViewToggle, CalendarDateNav, type CalendarView } from '@/components/tools/calendar/CalendarControls';
 import type { EventType } from '@/components/tools/calendar/types';
+import { ControlSelect } from '@/components/ui/ControlSelect';
+import { useCalendarPrefs } from '@/hooks/use-calendar-prefs';
+import type { CalendarScope } from '@/lib/market-data/calendar-prefs';
 
 /** Cell event limits — month rows are shorter than week rows. */
 const MONTH_CELL_LIMIT = 6;
 const WEEK_CELL_LIMIT = 3;
-const ALL_TYPES: EventType[] = ['earnings', 'dividends', 'splits', 'ipo'];
 /** Days covered by the rolling agenda in list view. */
 const LIST_SPAN_DAYS = 13;
 
@@ -64,9 +66,12 @@ export function CalendarClientPage() {
     ? rawDate
     : today;
 
-  const [typeFilter, setTypeFilter] = useState<Set<EventType>>(new Set(ALL_TYPES));
-  // Separate from typeFilter: economic releases are not ticker events (see DayModel.economic).
-  const [showEconomic, setShowEconomic] = useState(true);
+  // Saved filters (account-wide when signed in). Economic kinds are kept apart
+  // from company types: releases are not ticker events (see DayModel.economic).
+  const { prefs, update: updatePrefs } = useCalendarPrefs();
+  const typeFilter = useMemo(() => new Set<EventType>(prefs.types), [prefs.types]);
+  // Scoping to "mine" needs holdings/watchlist, so signed-out visitors always see everything.
+  const scope: CalendarScope = isAuthenticated ? prefs.scope : 'all';
   const [openDate, setOpenDate] = useState<string | null>(null);
 
   const setParams = useCallback(
@@ -102,16 +107,29 @@ export function CalendarClientPage() {
     for (const h of holdings ?? []) set.add(h.symbol.toUpperCase());
     return set;
   }, [holdings]);
-  const mySymbols = useMemo(() => {
-    const set = new Set(holdingSymbols);
+  const watchlistSymbols = useMemo(() => {
+    const set = new Set<string>();
     for (const w of watchlist ?? []) set.add(w.symbol.toUpperCase());
     return set;
-  }, [holdingSymbols, watchlist]);
+  }, [watchlist]);
+  const mySymbols = useMemo(() => new Set([...holdingSymbols, ...watchlistSymbols]), [holdingSymbols, watchlistSymbols]);
+
+  const scopeSymbols = scope === 'holdings' ? holdingSymbols : scope === 'watchlist' ? watchlistSymbols : mySymbols;
+  const scopedEvents = useMemo(
+    () => (scope === 'all' ? events : events.filter((e) => scopeSymbols.has(e.symbol.toUpperCase()))),
+    [events, scope, scopeSymbols],
+  );
+  const scopedEconomic = useMemo(
+    () => economicEvents.filter((e) => prefs.economicKinds.includes(e.kind)),
+    [economicEvents, prefs.economicKinds],
+  );
 
   const cellLimit = view === 'month' ? MONTH_CELL_LIMIT : WEEK_CELL_LIMIT;
   const days = useMemo(
-    () => buildDayModel(events, rangeDates, mySymbols, typeFilter, cellLimit, dayTotals, showEconomic ? economicEvents : undefined),
-    [events, rangeDates, mySymbols, typeFilter, cellLimit, dayTotals, showEconomic, economicEvents],
+    // Server day totals count every company, so they only apply to the "all" scope;
+    // scoped, "+N more" counts what is actually left.
+    () => buildDayModel(scopedEvents, rangeDates, mySymbols, typeFilter, cellLimit, scope === 'all' ? dayTotals : undefined, scopedEconomic),
+    [scopedEvents, rangeDates, mySymbols, typeFilter, cellLimit, scope, dayTotals, scopedEconomic],
   );
 
   const openModel = days.find((d) => d.date === openDate) ?? null;
@@ -137,16 +155,16 @@ export function CalendarClientPage() {
   // ── Empty-state context ────────────────────────────────────────────────────
   const earningsCount = useMemo(() => events.filter((e) => e.type === 'earnings').length, [events]);
   // Gated on !isPartial so a range still filling in never claims to be empty.
-  const showEarningsGap = !isLoading && !isPartial && typeFilter.has('earnings') && earningsCount === 0;
+  // Only meaningful across all companies: a scoped view is often empty for ordinary reasons.
+  const showEarningsGap = scope === 'all' && !isLoading && !isPartial && typeFilter.has('earnings') && earningsCount === 0;
+  // Scoped to a list that has nothing on it yet: say so, rather than showing an empty calendar.
+  const scopeIsEmpty = scope !== 'all' && scopeSymbols.size === 0 && holdings !== undefined && watchlist !== undefined;
   const hasAnyEvents = days.some(dayHasEvents);
 
   function toggleType(type: EventType) {
-    setTypeFilter((prev) => {
-      const next = new Set(prev);
-      if (next.has(type)) next.delete(type); else next.add(type);
-      // Never let every chip turn off — that would silently blank the grid.
-      return next.size === 0 ? new Set(ALL_TYPES) : next;
-    });
+    const next = prefs.types.includes(type) ? prefs.types.filter((t) => t !== type) : [...prefs.types, type];
+    // Never let every chip turn off, that would silently blank the grid.
+    if (next.length > 0) updatePrefs({ types: next });
   }
 
   return (
@@ -199,15 +217,42 @@ export function CalendarClientPage() {
           />
         </div>
 
-        {/* Type filters */}
-        <div className="mb-6">
+        {/* Filters: whose events, then which kinds */}
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
           <TypeFilterChips
             active={typeFilter}
             onToggle={toggleType}
-            economicActive={showEconomic}
-            onToggleEconomic={() => setShowEconomic((v) => !v)}
+            economicKinds={prefs.economicKinds}
+            onEconomicKindsChange={(economicKinds) => updatePrefs({ economicKinds })}
           />
+          {isAuthenticated && (
+            <ControlSelect
+              id="calendar-scope"
+              label={t('calendarScopeLabel')}
+              value={scope}
+              onChange={(v) => updatePrefs({ scope: v as CalendarScope })}
+              width="sm:w-52"
+              options={[
+                { value: 'all', label: t('calendarScopeAll') },
+                { value: 'mine', label: t('calendarScopeMine') },
+                { value: 'holdings', label: t('calendarScopeHoldings') },
+                { value: 'watchlist', label: t('calendarScopeWatchlist') },
+              ]}
+            />
+          )}
         </div>
+
+        {scopeIsEmpty && (
+          <div className="mb-6 flex items-start gap-2 rounded-lg border border-border/50 bg-muted/30 px-3 py-2.5 text-xs text-muted-foreground">
+            <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+            <p>
+              {scope === 'holdings' ? t('calendarScopeEmptyHoldings') : scope === 'watchlist' ? t('calendarScopeEmptyWatchlist') : t('calendarScopeEmptyMine')}{' '}
+              <Link href={scope === 'watchlist' ? '/watchlist' : '/holdings'} className="font-medium text-foreground underline-offset-2 hover:underline">
+                {scope === 'watchlist' ? t('calendarScopeGoWatchlist') : t('calendarScopeGoHoldings')}
+              </Link>
+            </p>
+          </div>
+        )}
 
         {/* Still filling days outside the pre-warmed window. */}
         {isPartial && (

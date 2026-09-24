@@ -690,5 +690,19 @@
   "economicWatchLive": "Watch the press conference",
   "economicLearn": "How this moves stocks",
   "economicProjections": "Includes new Fed projections",
-  "economicEtTime": "{{time}} ET"
+  "economicEtTime": "{{time}} ET",
+  "calendarScopeLabel": "Show",
+  "calendarScopeAll": "All companies",
+  "calendarScopeMine": "Holdings & watchlist",
+  "calendarScopeHoldings": "My holdings",
+  "calendarScopeWatchlist": "My watchlist",
+  "calendarScopeEmptyHoldings": "You have no holdings yet, so there are no company events to show.",
+  "calendarScopeEmptyWatchlist": "Your watchlist is empty, so there are no company events to show.",
+  "calendarScopeEmptyMine": "You have no holdings or watchlist yet, so there are no company events to show.",
+  "calendarScopeGoHoldings": "Add holdings",
+  "calendarScopeGoWatchlist": "Add to your watchlist",
+  "calendarEconomicMenuTitle": "Economic releases",
+  "calendarEconomicMenuHint": "Pick the ones you care about. If economic notifications are on, you only get these.",
+  "calendarEconomicSelectAll": "Select all",
+  "calendarEconomicClear": "Clear"
 }

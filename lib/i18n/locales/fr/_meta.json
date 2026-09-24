@@ -2424,5 +2424,20 @@
   "settings.notifInstitutionFilingDescription": "1492969b23f7f4d8f2a5bb4df34c3c89cdf401444318901c9e77ead7aff7d70f",
   "settings.notifInstitutionFilingLabel": "453beda8c771b510d6eff4729dc5e325fbb15d289d3880bc5b4f80dc02e66da9",
   "settings.notifEconomicEventsLabel": "cb918c751992d44c154416c471a7c03dcc21c966dc89fb1550049db5d0b5a443",
-  "settings.notifEconomicEventsDescription": "15e923530b383294a64132a1fd3624fdcef58c992d6f8952eaa4522011cdc56e"
+  "settings.notifEconomicEventsDescription": "f551fbfbfcec41dad44c0a8714eee3486c864458531782e55e7011d1d5f4bd77",
+  "tools.calendarFilterIpos": "2b39feca136d3bb2fca9857dff25868f5591f5cd9559cc72d24da7f84a8895ab",
+  "tools.calendarScopeLabel": "0df6f1cad36c49da768a6efdcc2c4be102f5729f7381cb53e4ff8061d17eaeb6",
+  "tools.calendarScopeAll": "39b460136cb986dc64193895c0e68639dfcf133fdd9e75fef5972edc232d8a86",
+  "tools.calendarScopeMine": "e415aad04a2520e01951339a8a574c855b869075911cbf76b20de2ed044c3ee8",
+  "tools.calendarScopeHoldings": "9b969f488ac69659316ffcc0a455480c633f7631ea94a7f074ab5fba7b7136c0",
+  "tools.calendarScopeWatchlist": "d969b0095a8ee0259a1e7cfbf36f5d10f1e478216fd703dacd94fb6675bff34d",
+  "tools.calendarScopeEmptyHoldings": "e4386868d5e02adb9db7c29600fd539521c2567106b67e5c0e0322caa1fd59f8",
+  "tools.calendarScopeEmptyWatchlist": "e254ae23775c84860b1ad9b1930820cf8a0c3f2add9324e1627a78cd5bc0d96a",
+  "tools.calendarScopeEmptyMine": "f6644b1bed0f78be835844d85f8727b50bf743525f84b4317593ba33403c357a",
+  "tools.calendarScopeGoHoldings": "9d3574e2584805357ad5995cf8e1a5efd66ed0137b56ce7de156fe50d77d8828",
+  "tools.calendarScopeGoWatchlist": "6c39a476684997f7708aa59f2986ebdb162f018a74cb9919138e615757821d47",
+  "tools.calendarEconomicMenuTitle": "b8858aaefa3672c967d500c03443d9e57447f5e9202afd95efb84a730edd49a0",
+  "tools.calendarEconomicMenuHint": "e9fe423f8a6dcab570eaa930aaa35d1b301c0b5b27902eed78b9b29a416655a0",
+  "tools.calendarEconomicSelectAll": "1fc9a387654d410febd202b81bddbe62d38368260b69b9f73ee6630164536bdf",
+  "tools.calendarEconomicClear": "83b12c2216efb4fdc924e1deb5182e905e4926ed0c1c324d467107f46d5a26a9"
 }
