@@ -28,7 +28,7 @@ export async function generateMetadata({
       settings: Record<string, unknown> | null;
     }>();
 
-  if (!data || data.settings?.profile_public === false) return {};
+  if (!data || data.settings?.profile_public === false) return { title: 'Profile' };
 
   const name = data.full_name || data.username;
 
