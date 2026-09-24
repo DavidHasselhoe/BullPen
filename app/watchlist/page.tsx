@@ -93,15 +93,16 @@ export default function WatchlistPage() {
   const livePrices = useLivePrices(allSymbols);
   const { data: enhancedData } = useWatchlistEnhanced(allSymbols);
 
-  // Sparkline charts — today's 5min candles for every watched symbol
-  const { data: sparklinesData } = useQuery({
+  // Sparkline charts: today's 5min candles, or the last full session while today is still empty
+  const { data: sparklinesResult } = useQuery({
     queryKey: ['watchlist-sparklines', allSymbols.join(',')],
-    queryFn: async (): Promise<Record<string, number[]>> => {
-      if (allSymbols.length === 0) return {};
+    queryFn: async (): Promise<{ sparklines: Record<string, number[]>; previousSession: string[] }> => {
+      const empty = { sparklines: {}, previousSession: [] };
+      if (allSymbols.length === 0) return empty;
       const res = await fetch(`/api/watchlist/sparklines?symbols=${encodeURIComponent(allSymbols.join(','))}`);
-      if (!res.ok) return {};
+      if (!res.ok) return empty;
       const data = await res.json();
-      return data.sparklines ?? {};
+      return { sparklines: data.sparklines ?? {}, previousSession: data.previousSession ?? [] };
     },
     enabled: allSymbols.length > 0,
     staleTime: 2 * 60_000,
@@ -177,8 +178,8 @@ export default function WatchlistPage() {
     <div className="min-h-screen bg-background">
       <div className="max-w-5xl mx-auto px-4 py-10 space-y-8">
 
-        {/* Header */}
-        <div className="flex items-start justify-between gap-4">
+        {/* Header: stacks on phones, where title + toolbar + a 288px search do not fit one row */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
               <Bookmark className="h-5 w-5 text-primary" />
@@ -202,12 +203,13 @@ export default function WatchlistPage() {
           </div>
 
           {/* Toolbar: templates + view toggle + search */}
-          <div className="flex items-center gap-2">
+          <div className="flex w-full items-center gap-2 sm:w-auto">
             {/* Starter watchlists */}
             <button
               onClick={() => setTemplatesOpen(true)}
               className="flex items-center gap-1.5 h-9 rounded-lg border border-border px-3 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
               title={t('watchlistTemplatesButtonTitle')}
+              aria-label={t('watchlistTemplatesButtonTitle')}
             >
               <Sparkles className="h-4 w-4" />
               <span className="hidden sm:inline">{t('watchlistTemplatesButtonLabel')}</span>
@@ -237,7 +239,7 @@ export default function WatchlistPage() {
             </div>
 
           {/* Search / Add */}
-          <div className="relative w-72">
+          <div className="relative min-w-0 flex-1 sm:w-72 sm:flex-none">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
               <Input
@@ -401,7 +403,8 @@ export default function WatchlistPage() {
                   nextEarningsDate={enhanced?.nextEarningsDate}
                   daysToEarnings={enhanced?.daysToEarnings}
                   thesisSentiment={enhanced?.thesisSentiment}
-                  sparkline={sparklinesData?.[item.symbol]}
+                  sparkline={sparklinesResult?.sparklines[item.symbol]}
+                  sparklineIsPreviousSession={sparklinesResult?.previousSession.includes(item.symbol)}
                 />
               );
             })}

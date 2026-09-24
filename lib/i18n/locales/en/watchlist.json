@@ -58,5 +58,7 @@
   "watchlistEmptyTitle": "Nothing here yet",
   "watchlistEmptySubtitle": "Search above to add any stock, or get started with a few popular ones:",
   "watchlistStartFromTemplate": "Start from a template",
-  "watchlistBrowseHotPicks": "Browse Hot Picks on Discover"
+  "watchlistBrowseHotPicks": "Browse Hot Picks on Discover",
+  "watchlistSparklinePreviousLabel": "Last session",
+  "watchlistSparklinePreviousAriaLabel": "{{symbol}} price trend in the last trading session"
 }

@@ -58,5 +58,7 @@
   "watchlistStartFromTemplate": "Start fra en mal",
   "watchlistBrowseHotPicks": "Bla gjennom Hot Picks på Discover",
   "watchlistColSymbol": "Symbol",
-  "watchlistTableEarningsInDays": "{{days}}d"
+  "watchlistTableEarningsInDays": "{{days}}d",
+  "watchlistSparklinePreviousLabel": "Forrige handelsdag",
+  "watchlistSparklinePreviousAriaLabel": "{{symbol}} pristrend i forrige handelsøkt"
 }

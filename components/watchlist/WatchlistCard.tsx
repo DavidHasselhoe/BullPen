@@ -35,6 +35,8 @@ interface WatchlistCardProps {
   daysToEarnings?: number | null;
   thesisSentiment?: 'bull' | 'bear' | 'neutral' | null;
   sparkline?: number[];
+  /** The line is the last full session (today has barely traded yet), not today. */
+  sparklineIsPreviousSession?: boolean;
 }
 
 function formatPrice(p: number) {
@@ -67,6 +69,7 @@ export function WatchlistCard({
   daysToEarnings,
   thesisSentiment,
   sparkline,
+  sparklineIsPreviousSession,
 }: WatchlistCardProps) {
   const { t } = useTranslation('watchlist');
   const isUp = (quote?.changePercent ?? 0) > 0;
@@ -160,14 +163,24 @@ export function WatchlistCard({
 
         {/* Sparkline */}
         {sparkline && sparkline.length > 1 && (
-          <div className="-mx-1 -mb-1">
+          <div className="relative -mx-1 -mb-1">
             <Sparkline
               data={sparkline}
-              direction={isUp ? 'up' : isDown ? 'down' : 'neutral'}
+              // Last session's line is coloured by its own move, not today's change badge.
+              direction={sparklineIsPreviousSession
+                ? (sparkline[sparkline.length - 1] >= sparkline[0] ? 'up' : 'down')
+                : isUp ? 'up' : isDown ? 'down' : 'neutral'}
               area
-              className="w-full h-9"
-              ariaLabel={t('watchlistSparklineAriaLabel', { symbol })}
+              className={cn('w-full h-9', sparklineIsPreviousSession && 'opacity-50')}
+              ariaLabel={sparklineIsPreviousSession
+                ? t('watchlistSparklinePreviousAriaLabel', { symbol })
+                : t('watchlistSparklineAriaLabel', { symbol })}
             />
+            {sparklineIsPreviousSession && (
+              <span className="absolute right-1 top-0 rounded bg-card/85 px-1 text-xs text-muted-foreground" aria-hidden>
+                {t('watchlistSparklinePreviousLabel')}
+              </span>
+            )}
           </div>
         )}
 

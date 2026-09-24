@@ -58,5 +58,7 @@
   "watchlistEmptySubtitle": "Busca arriba para agregar cualquier acción, o comienza con algunas populares:",
   "watchlistStartFromTemplate": "Comienza con una plantilla",
   "watchlistBrowseHotPicks": "Explora las Favoritas en Descubrir",
-  "watchlistTableEarningsInDays": "{{days}}d"
+  "watchlistTableEarningsInDays": "{{days}}d",
+  "watchlistSparklinePreviousLabel": "Última sesión",
+  "watchlistSparklinePreviousAriaLabel": "Tendencia de precio de {{symbol}} en la última sesión de cotización"
 }

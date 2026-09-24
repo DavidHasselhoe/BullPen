@@ -58,5 +58,7 @@
   "watchlistStartFromTemplate": "Von einer Vorlage starten",
   "watchlistBrowseHotPicks": "Entdecke Hot Picks unter Discover",
   "watchlistColSymbol": "Symbol",
-  "watchlistLiveLabel": "Live"
+  "watchlistLiveLabel": "Live",
+  "watchlistSparklinePreviousLabel": "Letzte Sitzung",
+  "watchlistSparklinePreviousAriaLabel": "{{symbol}} Kurstrend in der letzten Handelssitzung"
 }

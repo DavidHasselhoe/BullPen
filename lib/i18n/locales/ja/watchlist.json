@@ -58,5 +58,7 @@
   "watchlistEmptyTitle": "まだ何もありません",
   "watchlistEmptySubtitle": "上記で銘柄を検索して追加するか、人気のある銘柄から始めてください：",
   "watchlistStartFromTemplate": "テンプレートから始める",
-  "watchlistBrowseHotPicks": "Discoverでホットピックスを閲覧"
+  "watchlistBrowseHotPicks": "Discoverでホットピックスを閲覧",
+  "watchlistSparklinePreviousLabel": "前回のセッション",
+  "watchlistSparklinePreviousAriaLabel": "{{symbol}}の前回の取引セッションでの価格推移"
 }

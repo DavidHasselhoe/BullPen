@@ -58,5 +58,7 @@
   "watchlistEmptyTitle": "«Noothiing heeree yeet»",
   "watchlistEmptySubtitle": "«Seeaarch aaboovee too aadd aany stoock, oor geet staarteed wiith aa feew poopuulaar oonees:»",
   "watchlistStartFromTemplate": "«Staart froom aa teemplaatee»",
-  "watchlistBrowseHotPicks": "«Broowsee Hoot Piicks oon Diiscooveer»"
+  "watchlistBrowseHotPicks": "«Broowsee Hoot Piicks oon Diiscooveer»",
+  "watchlistSparklinePreviousLabel": "«Laast seessiioon»",
+  "watchlistSparklinePreviousAriaLabel": "«{{symbol}} priicee treend iin thee laast traadiing seessiioon»"
 }

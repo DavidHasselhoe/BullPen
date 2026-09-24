@@ -58,5 +58,7 @@
   "watchlistEmptyTitle": "Rien pour le moment",
   "watchlistEmptySubtitle": "Recherchez ci-dessus pour ajouter n'importe quelle action, ou commencez avec quelques actions populaires :",
   "watchlistStartFromTemplate": "Commencer avec un modèle",
-  "watchlistBrowseHotPicks": "Parcourir les Coups gagnants sur Discover"
+  "watchlistBrowseHotPicks": "Parcourir les Coups gagnants sur Discover",
+  "watchlistSparklinePreviousLabel": "Dernière séance",
+  "watchlistSparklinePreviousAriaLabel": "Tendance du prix de {{symbol}} au cours de la dernière séance de bourse"
 }

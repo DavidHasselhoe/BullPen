@@ -58,5 +58,7 @@
   "watchlistEmptyTitle": "暂无内容",
   "watchlistEmptySubtitle": "上方搜索添加任何股票，或从这些热门股票开始：",
   "watchlistStartFromTemplate": "从模板开始",
-  "watchlistBrowseHotPicks": "在发现中浏览热门精选"
+  "watchlistBrowseHotPicks": "在发现中浏览热门精选",
+  "watchlistSparklinePreviousLabel": "上一个交易日",
+  "watchlistSparklinePreviousAriaLabel": "{{symbol}} 上一个交易日的价格走势"
 }
