@@ -23,6 +23,7 @@ interface Props {
   quota?: QuotaState;
   /** False for a hard Pro-only gate (e.g. Why Today) — there's no free quota to reset. */
   showResetLine: boolean;
+  note?: string;
   onDismiss: () => void;
 }
 
@@ -37,7 +38,7 @@ function formatResetDay(iso: string): string {
  * Ask Bull, Portfolio Builder, Deep Dive) — only the headline/benefits/preview
  * change per feature, so the offer can never drift between them.
  */
-export function AiPaywallContent({ headline, benefits, preview, quota, showResetLine, onDismiss }: Props) {
+export function AiPaywallContent({ headline, benefits, preview, quota, showResetLine, note, onDismiss }: Props) {
   const { t } = useTranslation('billing');
   // Annual first, matching /upgrade's own default — it's the price this
   // dialog leads with, same convention as the pricing page.
@@ -101,6 +102,7 @@ export function AiPaywallContent({ headline, benefits, preview, quota, showReset
         {showResetLine && quota && (
           <p className="mt-3 text-[11px] text-muted-foreground">{t('paywallContentResetLine', { date: formatResetDay(quota.resetsAt) })}</p>
         )}
+        {note && <p className="mt-3 text-[11px] text-muted-foreground text-pretty">{note}</p>}
 
         <div className="mt-5 flex justify-center">
           <div className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/40 p-1">

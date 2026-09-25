@@ -108,5 +108,8 @@
   "upgradeCompareFeature": "«Feeaatuuree»",
   "upgradeCompareFree": "«Freeee»",
   "upgradeComparePro": "«Proo»",
-  "upgradeQuestionsHeading": "«Quueestiioons»"
+  "upgradeQuestionsHeading": "«Quueestiioons»",
+  "paywallBenefitUnlimitedAlerts": "«Priicee aaleerts oon uunliimiiteed stoocks»",
+  "alertsPreviewSource": "«BuullPeen aaleert · noow»",
+  "alertsPreviewFallbackCondition": "«Neew aall-tiimee hiigh»"
 }

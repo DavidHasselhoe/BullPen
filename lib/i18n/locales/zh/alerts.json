@@ -55,13 +55,11 @@
   "stepThresholdPercent": "阈值 (%)",
   "searchStockPlaceholder": "搜索股票 (如 AAPL)",
   "previewLabel": "预览",
-  "previewText": "当 {{ticker}} {{description}} 时，您将收到提醒。",
   "genericCreateError": "无法创建提醒。请重试。",
-  "limitReachedTitle": "您已达到免费计划的 {{limit}} 只股票限制。",
-  "limitReachedBeforeLink": "暂停某只股票上的所有提醒以释放名额，或",
-  "upgradeToProLink": "升级至 Pro",
-  "limitReachedAfterLink": "以解锁无限股票。",
   "cancelButton": "取消",
   "creatingButton": "创建中…",
-  "submitCreateButton": "创建提醒"
+  "submitCreateButton": "创建提醒",
+  "previewText": "{{ticker}} 的提醒：{{description}}。",
+  "limitReachedTitle": "您在 {{limit}} 只股票上设置了提醒，已达到免费计划限额",
+  "limitReachedNote": "或者暂停某只股票上的所有提醒，释放一个名额。"
 }

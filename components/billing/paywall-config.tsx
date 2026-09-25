@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import type { TFunction } from 'i18next';
 import {
-  ShieldAlert, Zap, Sparkles, MessageCircle, Wand2, FileSearch, Landmark,
+  ShieldAlert, Zap, Sparkles, MessageCircle, Wand2, FileSearch, Landmark, BellRing,
 } from 'lucide-react';
 import type { PaywallBenefit } from './AiPaywallContent';
 import { RiskAnalysisPaywallPreview } from './RiskAnalysisPaywallPreview';
@@ -10,6 +10,7 @@ import { AskBullPaywallPreview } from './AskBullPaywallPreview';
 import { PortfolioBuilderPaywallPreview } from './PortfolioBuilderPaywallPreview';
 import { DeepDivePaywallPreview } from './DeepDivePaywallPreview';
 import { InstitutionalHoldingsPaywallPreview } from './InstitutionalHoldingsPaywallPreview';
+import { AlertsPaywallPreview } from './AlertsPaywallPreview';
 
 export interface PaywallConfig {
   benefits: PaywallBenefit[];
@@ -30,6 +31,8 @@ export interface PaywallPreviewContext {
   changePercent?: number;
   tickers?: string[];
   fundName?: string;
+  /** Described alert condition, e.g. "New all-time high". */
+  alertCondition?: string;
 }
 
 /**
@@ -99,6 +102,14 @@ export function getAiPaywallConfig(t: TFunction, context?: PaywallPreviewContext
         { icon: Zap, text: t('paywallBenefitDailyBrief') },
       ],
       preview: <InstitutionalHoldingsPaywallPreview fundName={context?.fundName} />,
+    },
+    'Price Alerts': {
+      benefits: [
+        { icon: BellRing, text: t('paywallBenefitUnlimitedAlerts') },
+        { icon: Sparkles, text: t('paywallBenefitWhyToday') },
+        { icon: Zap, text: t('paywallBenefitDailyBrief') },
+      ],
+      preview: <AlertsPaywallPreview ticker={context?.ticker} companyName={context?.companyName} condition={context?.alertCondition} />,
     },
   };
 }

@@ -1,6 +1,5 @@
 {
   "groupPrice": "Pris",
-  "groupMomentum": "Momentum",
   "groupProximity": "Nærhet",
   "groupMilestone": "Milepæl",
   "typePriceAbove": "Pris over",
@@ -28,7 +27,6 @@
   "relativeDaysAgo_other": "{{count}}d siden",
   "relativeMonthsAgo_one": "{{count}}mnd siden",
   "relativeMonthsAgo_other": "{{count}}mnd siden",
-  "actionPause": "Pause",
   "actionResume": "Gjenoppta",
   "actionDelete": "Slett",
   "triggerButtonLabel": "Varsel",
@@ -55,13 +53,13 @@
   "stepThresholdPercent": "Terskel (%)",
   "searchStockPlaceholder": "Søk etter en aksje (f.eks. AAPL)",
   "previewLabel": "Forhåndsvisning",
-  "previewText": "Du vil få beskjed når {{ticker}} {{description}}.",
   "genericCreateError": "Kunne ikke opprette varslet. Prøv igjen.",
-  "limitReachedTitle": "Du har nådd grensen på {{limit}} aksjer for gratisplanen.",
-  "limitReachedBeforeLink": "Pauser alle varsler for en aksje for å frigjøre en plass, eller",
-  "upgradeToProLink": "oppgrader til Pro",
-  "limitReachedAfterLink": "for ubegrensede aksjer.",
   "cancelButton": "Avbryt",
   "creatingButton": "Oppretter…",
-  "submitCreateButton": "Opprett varsel"
+  "submitCreateButton": "Opprett varsel",
+  "groupMomentum": "Momentum",
+  "actionPause": "Pause",
+  "previewText": "Varsel for {{ticker}}: {{description}}.",
+  "limitReachedTitle": "Du har varsler på {{limit}} aksjer, grensen for gratisplanen",
+  "limitReachedNote": "Eller sett alle varsler på en aksje på pause for å frigjøre en plass."
 }

@@ -108,5 +108,8 @@
   "upgradeCompareFeature": "Feature",
   "upgradeCompareFree": "Free",
   "upgradeComparePro": "Pro",
-  "upgradeQuestionsHeading": "Questions"
+  "upgradeQuestionsHeading": "Questions",
+  "paywallBenefitUnlimitedAlerts": "Price alerts on unlimited stocks",
+  "alertsPreviewSource": "BullPen alert · now",
+  "alertsPreviewFallbackCondition": "New all-time high"
 }

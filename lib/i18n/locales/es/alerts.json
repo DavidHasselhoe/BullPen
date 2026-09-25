@@ -55,13 +55,11 @@
   "stepThresholdPercent": "Umbral (%)",
   "searchStockPlaceholder": "Buscar una acción (p. ej. AAPL)",
   "previewLabel": "Vista previa",
-  "previewText": "Te alertaremos cuando {{ticker}} {{description}}.",
   "genericCreateError": "No se pudo crear la alerta. Por favor, intenta de nuevo.",
-  "limitReachedTitle": "Has alcanzado el límite de {{limit}} acciones en el plan gratuito.",
-  "limitReachedBeforeLink": "Pausa todas las alertas en una acción para liberar un espacio, o",
-  "upgradeToProLink": "actualiza a Pro",
-  "limitReachedAfterLink": "para acciones ilimitadas.",
   "cancelButton": "Cancelar",
   "creatingButton": "Creando…",
-  "submitCreateButton": "Crear alerta"
+  "submitCreateButton": "Crear alerta",
+  "previewText": "Alerta para {{ticker}}: {{description}}.",
+  "limitReachedTitle": "Tienes alertas en {{limit}} acciones, el límite del plan gratuito",
+  "limitReachedNote": "O pausa todas las alertas en una acción para liberar un espacio."
 }

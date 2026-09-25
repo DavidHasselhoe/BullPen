@@ -55,13 +55,11 @@
   "stepThresholdPercent": "«Threeshoold (%)»",
   "searchStockPlaceholder": "«Seeaarch aa stoock (ee.g. AAAAPL)»",
   "previewLabel": "«Preeviieew»",
-  "previewText": "«Yoouu'll bee aaleerteed wheen {{ticker}} {{description}}.»",
+  "previewText": "«AAleert foor {{ticker}}: {{description}}.»",
   "genericCreateError": "«Coouuldn't creeaatee thee aaleert. Pleeaasee try aagaaiin.»",
-  "limitReachedTitle": "«Yoouu'vee reeaacheed thee {{limit}}-stoock liimiit oon thee freeee plaan.»",
-  "limitReachedBeforeLink": "«Paauusee aall aaleerts oon aa stoock too freeee uup aa sloot, oor»",
-  "upgradeToProLink": "«uupgraadee too Proo»",
-  "limitReachedAfterLink": "«foor uunliimiiteed stoocks.»",
+  "limitReachedTitle": "«Yoouu haavee aaleerts oon {{limit}} stoocks, thee freeee plaan liimiit»",
   "cancelButton": "«Caanceel»",
   "creatingButton": "«Creeaatiing…»",
-  "submitCreateButton": "«Creeaatee aaleert»"
+  "submitCreateButton": "«Creeaatee aaleert»",
+  "limitReachedNote": "«OOr paauusee eeveery aaleert oon oonee stoock too freeee uup aa sloot.»"
 }

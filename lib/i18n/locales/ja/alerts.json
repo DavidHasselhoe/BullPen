@@ -55,13 +55,11 @@
   "stepThresholdPercent": "閾値 (%)",
   "searchStockPlaceholder": "銘柄を検索 (例: AAPL)",
   "previewLabel": "プレビュー",
-  "previewText": "{{ticker}} が {{description}} されたときにアラートを受け取ります。",
   "genericCreateError": "アラートを作成できませんでした。もう一度お試しください。",
-  "limitReachedTitle": "無料プランの {{limit}} 銘柄の上限に達しました。",
-  "limitReachedBeforeLink": "銘柄のすべてのアラートを一時停止してスロットを解放するか、",
-  "upgradeToProLink": "Pro にアップグレード",
-  "limitReachedAfterLink": "して、無制限の銘柄を利用できます。",
   "cancelButton": "キャンセル",
   "creatingButton": "作成中…",
-  "submitCreateButton": "アラートを作成"
+  "submitCreateButton": "アラートを作成",
+  "previewText": "{{ticker}}のアラート：{{description}}。",
+  "limitReachedTitle": "{{limit}}銘柄のアラートを設定しており、フリープランの上限に達しています",
+  "limitReachedNote": "または、1銘柄のすべてのアラートを一時停止してスロットを解放できます。"
 }

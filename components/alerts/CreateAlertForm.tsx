@@ -1,9 +1,9 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Loader2, Zap } from 'lucide-react';
-import Link from 'next/link';
+import { Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { AiPaywallDialog } from '@/components/billing/AiPaywallDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
@@ -158,20 +158,20 @@ export function CreateAlertForm({ onCreated, onCancel, onCreate, initialTicker, 
         </div>
       )}
 
-      {/* Limit reached — upgrade CTA */}
-      {limitReached && (
-        <div className="rounded-lg border border-amber-500/30 bg-amber-500/[0.06] px-3 py-2.5 flex items-start gap-2">
-          <Zap className="h-3.5 w-3.5 text-amber-400 shrink-0 mt-0.5" />
-          <div>
-            <p className="text-xs text-amber-300 font-medium">{t('limitReachedTitle', { limit: FREE_ACTIVE_ALERT_LIMIT })}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {t('limitReachedBeforeLink')}{' '}
-              <Link href="/pricing" className="text-amber-400 hover:underline">{t('upgradeToProLink')}</Link>
-              {' '}{t('limitReachedAfterLink')}
-            </p>
-          </div>
-        </div>
-      )}
+      <AiPaywallDialog
+        open={limitReached}
+        onOpenChange={setLimitReached}
+        featureName="Price Alerts"
+        headline={t('limitReachedTitle', { limit: FREE_ACTIVE_ALERT_LIMIT })}
+        note={t('limitReachedNote')}
+        previewContext={{
+          ticker: ticker?.ticker,
+          companyName: ticker?.name,
+          alertCondition: alertType && parsedThreshold !== null
+            ? describeAlert({ alertType, threshold: parsedThreshold }, t)
+            : undefined,
+        }}
+      />
 
       {/* Generic error */}
       {error && (

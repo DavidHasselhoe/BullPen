@@ -22,6 +22,10 @@ interface Props {
    *  something real instead of a fabricated example. Optional; each preview
    *  falls back to its static example when omitted. */
   previewContext?: PaywallPreviewContext;
+  /** Replaces the quota-derived headline, for gates that aren't a run quota (e.g. the alerts stock cap). */
+  headline?: string;
+  /** Small line under the benefits, e.g. a free way around the limit. */
+  note?: string;
 }
 
 function formatReset(iso: string, period: 'day' | 'month'): string {
@@ -30,19 +34,19 @@ function formatReset(iso: string, period: 'day' | 'month'): string {
   return `on ${d.toLocaleDateString(undefined, { month: 'long', day: 'numeric' })}`;
 }
 
-export function AiPaywallDialog({ open, onOpenChange, featureName, quota, previewContext }: Props) {
+export function AiPaywallDialog({ open, onOpenChange, featureName, quota, previewContext, headline: headlineOverride, note }: Props) {
   const { t } = useTranslation('billing');
   const isProOnly = quota?.reason === 'pro_only';
   // Pro user who hit a cost-protection soft cap — they're already Pro, so don't upsell.
   const isProCap = quota?.reason === 'pro_cap_reached';
 
-  const headline = isProCap
+  const headline = headlineOverride ?? (isProCap
     ? t('aiPaywallHeadlineCap', { featureName })
     : isProOnly
     ? t('aiPaywallHeadlineProOnly', { featureName })
     : quota?.limit === 1
     ? (quota?.period === 'day' ? t('aiPaywallHeadlineUsedRunToday', { featureName }) : t('aiPaywallHeadlineUsedRunMonth', { featureName }))
-    : (quota?.period === 'day' ? t('aiPaywallHeadlineUsedRunsToday', { featureName }) : t('aiPaywallHeadlineUsedRunsMonth', { featureName }));
+    : (quota?.period === 'day' ? t('aiPaywallHeadlineUsedRunsToday', { featureName }) : t('aiPaywallHeadlineUsedRunsMonth', { featureName })));
 
   // Every AI-generation gate gets the richer, feature-specific upsell (value
   // stack, price, annual toggle, fabricated result preview) via
@@ -60,6 +64,7 @@ export function AiPaywallDialog({ open, onOpenChange, featureName, quota, previe
             preview={config.preview}
             quota={quota}
             showResetLine={!isProOnly}
+            note={note}
             onDismiss={() => onOpenChange(false)}
           />
         </DialogContent>
