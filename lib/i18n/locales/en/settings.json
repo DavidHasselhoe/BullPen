@@ -189,5 +189,7 @@
   "deleteDialogTypeLabelBefore": "Type",
   "deleteDialogTypeLabelAfter": "to confirm",
   "deleteDialogCancel": "Cancel",
-  "deleteDialogConfirm": "Delete my account"
+  "deleteDialogConfirm": "Delete my account",
+  "notifPoliticianTradesLabel": "Politician Trades",
+  "notifPoliticianTradesDescription": "Get notified when a politician you follow discloses new stock trades"
 }

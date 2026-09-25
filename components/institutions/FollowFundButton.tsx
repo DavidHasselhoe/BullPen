@@ -14,7 +14,7 @@
 
 import { Check, Plus } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
-import { useIsFollowingFund, useToggleFundFollow } from '@/hooks/use-institution-follow';
+import { useIsFollowing, useToggleFollow, type FollowKind } from '@/hooks/use-institution-follow';
 import { cn } from '@/lib/utils';
 
 interface FollowFundButtonProps {
@@ -27,12 +27,14 @@ interface FollowFundButtonProps {
    */
   compact?: boolean;
   className?: string;
+  /** Also used for tracked politicians on Washington Trading. */
+  kind?: FollowKind;
 }
 
-export function FollowFundButton({ slug, displayName, compact, className }: FollowFundButtonProps) {
+export function FollowFundButton({ slug, displayName, compact, className, kind = 'institution' }: FollowFundButtonProps) {
   const { isAuthenticated } = useAuth();
-  const following = useIsFollowingFund(slug);
-  const toggle = useToggleFundFollow(slug);
+  const following = useIsFollowing(kind, slug);
+  const toggle = useToggleFollow(kind, slug);
 
   if (!isAuthenticated) return null;
 

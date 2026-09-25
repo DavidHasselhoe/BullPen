@@ -10,6 +10,8 @@
 
 import { createNotification, type CreateNotificationInput } from './notifications-db';
 import { createServerClient } from '@/lib/supabase/client';
+import type { NewTrade } from '@/lib/congress/ingest-trades';
+import { formatAmountRange, tradeDirection } from '@/lib/congress/types';
 import { ECONOMIC_KINDS, type EconomicKind } from '@/lib/market-data/economic-kinds';
 import { CALENDAR_PREFS_KEY, parseCalendarPrefs } from '@/lib/market-data/calendar-prefs';
 
@@ -569,6 +571,82 @@ export async function notifyInstitutionFilingChange(notice: InstitutionFilingNot
     if (result.success) sent++;
   }
 
+  return sent;
+}
+
+// ─── Washington Trading ──────────────────────────────────────────────────────
+
+export interface PoliticianTradesNotice {
+  politicianId: string;
+  slug: string;
+  displayName: string;
+  trades: NewTrade[];
+}
+
+/**
+ * Tells everyone following a politician that new trades were disclosed.
+ * Same shape as notifyInstitutionFilingChange. Only trades with a resolved
+ * ticker are announced: the rest are treasuries and munis, noise in a
+ * notification. Idempotent on the newest trade id, so a re-run of the refresh
+ * cron can never announce the same batch twice.
+ */
+export async function notifyPoliticianTrades(notice: PoliticianTradesNotice): Promise<number> {
+  const trades = notice.trades.filter((t) => t.symbol);
+  if (trades.length === 0) return 0;
+  const supabase = createServerClient();
+
+  const { data: follows } = (await supabase
+    .from('user_politician_follows')
+    .select('user_id')
+    .eq('politician_id', notice.politicianId)) as unknown as { data: Array<{ user_id: string }> | null };
+  const followerIds = (follows ?? []).map((f) => f.user_id);
+  if (followerIds.length === 0) return 0;
+
+  const { data: users } = (await supabase
+    .from('users')
+    .select('id, settings')
+    .in('id', followerIds)) as unknown as {
+    data: Array<{ id: string; settings: { notifications?: Record<string, boolean> } | null }> | null;
+  };
+  const enabled = (users ?? [])
+    .filter((u) => u.settings?.notifications?.politician_trades !== false)
+    .map((u) => u.id);
+  if (enabled.length === 0) return 0;
+
+  const newest = Math.max(...trades.map((t) => t.dc_trade_id));
+  const entityId = `politician:${notice.slug}:${newest}`;
+  const described = trades.slice(0, 3).map((t) => {
+    const dir = tradeDirection(t.trade_type);
+    const verb = dir === 'buy' ? 'Bought' : dir === 'sell' ? 'Sold' : t.trade_type;
+    return `${verb} ${t.symbol} (${formatAmountRange(t.amount_low, t.amount_high, t.amount_range)})`;
+  });
+  const more = trades.length - described.length;
+  const message = described.join(', ') + (more > 0 ? ` and ${more} more.` : '.');
+  const title = `${notice.displayName} disclosed ${trades.length} new trade${trades.length === 1 ? '' : 's'}`;
+
+  let sent = 0;
+  for (const userId of enabled) {
+    const { data: existing } = await supabase
+      .from('notifications')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('type', 'politician_trade')
+      .eq('entity_id', entityId)
+      .limit(1)
+      .maybeSingle<{ id: string }>();
+    if (existing) continue;
+
+    const result = await createNotification({
+      user_id: userId,
+      type: 'politician_trade',
+      title,
+      message,
+      entity_type: 'politician',
+      entity_id: entityId,
+      severity: 'info',
+    });
+    if (result.success) sent++;
+  }
   return sent;
 }
 

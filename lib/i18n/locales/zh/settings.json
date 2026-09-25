@@ -185,9 +185,11 @@
   "deleteDialogDataPoint": "您的持仓、关注列表、提醒、笔记和设置将被永久删除。",
   "deleteDialogSubscriptionPoint": "您的 BullPen Pro 订阅将立即取消，我们不会再向您收费。",
   "deleteDialogExportPoint": "想先备份一份？关闭此窗口并使用导出数据功能。",
-  "deleteDialogConfirmWord": "DELETE",
   "deleteDialogTypeLabelBefore": "输入",
   "deleteDialogTypeLabelAfter": "以确认",
   "deleteDialogCancel": "取消",
-  "deleteDialogConfirm": "删除我的账户"
+  "deleteDialogConfirm": "删除我的账户",
+  "deleteDialogConfirmWord": "删除",
+  "notifPoliticianTradesLabel": "政治家交易",
+  "notifPoliticianTradesDescription": "当你关注的政治家披露新的股票交易时获得通知"
 }

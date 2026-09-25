@@ -179,7 +179,6 @@
   "title": "Innstillinger",
   "notifEconomicEventsLabel": "Økonomiske nøkkeltall",
   "notifEconomicEventsDescription": "Et morgenvarsel på dager med en amerikansk økonomisk rapport du følger, med klokkeslettet i din tidssone. Velg hvilke rapporter under Økonomisk i Markedskalenderen.",
-  "sectionPlanLabel": "Plan",
   "deleteDialogTitle": "Slette kontoen din?",
   "deleteDialogIntro": "Dette sletter BullPen-kontoen din permanent. Det kan ikke angres.",
   "deleteDialogDataPoint": "Beholdningen din, favorittlisten, varsler, notater og innstillinger slettes for alltid.",
@@ -189,5 +188,8 @@
   "deleteDialogTypeLabelBefore": "Skriv",
   "deleteDialogTypeLabelAfter": "for å bekrefte",
   "deleteDialogCancel": "Avbryt",
-  "deleteDialogConfirm": "Slett kontoen min"
+  "deleteDialogConfirm": "Slett kontoen min",
+  "sectionPlanLabel": "Plan",
+  "notifPoliticianTradesLabel": "Politikertransaksjoner",
+  "notifPoliticianTradesDescription": "Få varsel når en politiker du følger avslører nye aksjehandler"
 }

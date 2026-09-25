@@ -135,6 +135,11 @@ function GenericIcon({ type }: { type: Notification['type'] }) {
       <Landmark className={cn(base, 'text-indigo-400')} />
     </div>
   );
+  if (type === 'politician_trade') return (
+    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-500/10">
+      <Landmark className={cn(base, 'text-indigo-400')} />
+    </div>
+  );
   if (type === 'daily_brief') return (
     <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-500/10">
       <Newspaper className={cn(base, 'text-blue-400')} />
@@ -219,6 +224,11 @@ function notificationSource(n: Notification): { label: string; href: string } | 
   if (n.type === 'institution_filing' && n.entity_id?.startsWith('institution:')) {
     const slug = n.entity_id.split(':')[1];
     if (slug) return { label: '13F holdings', href: `/discover/institutions/${slug}` };
+  }
+  // entity_id is "politician:<slug>:<newest dc_trade_id>".
+  if (n.type === 'politician_trade' && n.entity_id?.startsWith('politician:')) {
+    const slug = n.entity_id.split(':')[1];
+    if (slug) return { label: 'Washington Trading', href: `/discover/politicians/${slug}` };
   }
 
   // entity_type is typed narrower than runtime — the alert cron writes 'user_alert'.

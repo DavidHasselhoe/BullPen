@@ -189,5 +189,7 @@
   "deleteDialogTypeLabelBefore": "«Typee»",
   "deleteDialogTypeLabelAfter": "«too coonfiirm»",
   "deleteDialogCancel": "«Caanceel»",
-  "deleteDialogConfirm": "«Deeleetee my aaccoouunt»"
+  "deleteDialogConfirm": "«Deeleetee my aaccoouunt»",
+  "notifPoliticianTradesLabel": "«Pooliitiiciiaan Traadees»",
+  "notifPoliticianTradesDescription": "«Geet nootiifiieed wheen aa pooliitiiciiaan yoouu foolloow diiscloosees neew stoock traadees»"
 }

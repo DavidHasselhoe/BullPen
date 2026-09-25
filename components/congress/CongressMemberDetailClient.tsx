@@ -11,6 +11,7 @@ import { formatAmountRange, isFiledLate, tradeDirection } from '@/lib/congress/t
 import { cn } from '@/lib/utils';
 import { ControlSelect } from '@/components/ui/ControlSelect';
 import { DisclosureNote } from './DisclosureNote';
+import { FollowFundButton } from '@/components/institutions/FollowFundButton';
 import { ListSearch } from './ListSearch';
 import { PoliticianAvatar } from './PoliticianAvatar';
 import type { CongressMemberDetail, CongressHoldingRow } from '@/app/api/congress/[slug]/route';
@@ -273,7 +274,7 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
 
       <header className="mb-6 flex items-center gap-4">
         <PoliticianAvatar displayName={member.displayName} slug={member.slug} size={64} />
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           {/* Weight and tracking match InstitutionalFundDetailClient's h1, so
               the two drill-down pages read as the same kind of page. */}
           <h1 className="text-xl font-bold tracking-tight text-foreground">
@@ -281,6 +282,7 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
           </h1>
           <p className="mt-0.5 text-sm text-muted-foreground">{positionLine(member)}</p>
         </div>
+        <FollowFundButton kind="politician" slug={member.slug} displayName={member.displayName} />
       </header>
 
       {/* ---------------- Estimated portfolio ---------------- */}

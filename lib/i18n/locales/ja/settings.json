@@ -185,9 +185,11 @@
   "deleteDialogDataPoint": "保有銘柄、ウォッチリスト、アラート、メモ、設定がすべて削除されます。",
   "deleteDialogSubscriptionPoint": "BullPen Pro のサブスクリプションは直ちにキャンセルされ、今後請求されることはありません。",
   "deleteDialogExportPoint": "先にコピーが欲しいですか？このダイアログを閉じて「データをエクスポート」を使用してください。",
-  "deleteDialogConfirmWord": "DELETE",
   "deleteDialogTypeLabelBefore": "確認するには",
   "deleteDialogTypeLabelAfter": "と入力してください",
   "deleteDialogCancel": "キャンセル",
-  "deleteDialogConfirm": "アカウントを削除する"
+  "deleteDialogConfirm": "アカウントを削除する",
+  "deleteDialogConfirmWord": "削除",
+  "notifPoliticianTradesLabel": "政治家の取引",
+  "notifPoliticianTradesDescription": "フォロー中の政治家が新しい株式取引を開示したときに通知を受け取ります"
 }

@@ -179,7 +179,6 @@
   "title": "Configuración",
   "notifEconomicEventsLabel": "Lanzamientos Económicos",
   "notifEconomicEventsDescription": "Un aviso por la mañana en días con un lanzamiento económico de EE.UU. que sigues, con la hora en tu zona horaria. Elige qué lanzamientos deseas seguir en Economic en el Market Calendar.",
-  "sectionPlanLabel": "Plan",
   "deleteDialogTitle": "¿Eliminar tu cuenta?",
   "deleteDialogIntro": "Esto elimina permanentemente tu cuenta de BullPen. No se puede deshacer.",
   "deleteDialogDataPoint": "Tus posiciones, lista de seguimiento, alertas, notas y configuración se eliminan definitivamente.",
@@ -189,5 +188,8 @@
   "deleteDialogTypeLabelBefore": "Escribe",
   "deleteDialogTypeLabelAfter": "para confirmar",
   "deleteDialogCancel": "Cancelar",
-  "deleteDialogConfirm": "Eliminar mi cuenta"
+  "deleteDialogConfirm": "Eliminar mi cuenta",
+  "sectionPlanLabel": "Plan",
+  "notifPoliticianTradesLabel": "Operaciones de Políticos",
+  "notifPoliticianTradesDescription": "Recibe notificaciones cuando un político que sigues divulga nuevas operaciones de acciones"
 }

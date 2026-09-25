@@ -178,7 +178,6 @@
   "themeLight": "Hell",
   "title": "Einstellungen",
   "notifEconomicEventsLabel": "Wirtschaftliche Veröffentlichungen",
-  "sectionPlanLabel": "Plan",
   "notifEconomicEventsDescription": "Eine morgendliche Benachrichtigung an Tagen mit einer US-Wirtschaftsveröffentlichung, die du verfolgst, mit der Zeit in deiner Zeitzone. Wähle unter Economic im Market Calendar, welche Veröffentlichungen du sehen möchtest.",
   "deleteDialogTitle": "Dein Konto löschen?",
   "deleteDialogIntro": "Dies löscht dein BullPen-Konto dauerhaft. Das kann nicht rückgängig gemacht werden.",
@@ -189,5 +188,8 @@
   "deleteDialogTypeLabelBefore": "Tippe",
   "deleteDialogTypeLabelAfter": "ein zum Bestätigen",
   "deleteDialogCancel": "Abbrechen",
-  "deleteDialogConfirm": "Mein Konto löschen"
+  "deleteDialogConfirm": "Mein Konto löschen",
+  "sectionPlanLabel": "Plan",
+  "notifPoliticianTradesLabel": "Politiker-Trades",
+  "notifPoliticianTradesDescription": "Erhalte eine Benachrichtigung, wenn ein Politiker, dem du folgst, neue Aktiengeschäfte offenbart"
 }

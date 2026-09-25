@@ -115,7 +115,20 @@ export interface IngestResult {
   creditsCharged: number;
   /** Estimated open positions snapshotted, when holdings were requested. */
   positions?: number;
+  /** Rows this run actually inserted (never already-stored ones), for follower notifications. */
+  newTrades?: NewTrade[];
   error?: string;
+}
+
+export interface NewTrade {
+  dc_trade_id: number;
+  symbol: string | null;
+  asset_description: string;
+  trade_type: string;
+  amount_range: string;
+  amount_low: number | null;
+  amount_high: number | null;
+  transaction_date: string;
 }
 
 /**
@@ -245,11 +258,12 @@ export async function ingestPolitician(
   const { data, error } = await supabase
     .from('congress_trades')
     .upsert(rows, { onConflict: 'dc_trade_id', ignoreDuplicates: true })
-    .select('id');
+    .select('dc_trade_id, symbol, asset_description, trade_type, amount_range, amount_low, amount_high, transaction_date');
 
   if (error) return { ...base, error: error.message };
 
   base.inserted = data?.length ?? 0;
+  base.newTrades = (data ?? []) as NewTrade[];
   return base;
 }
 

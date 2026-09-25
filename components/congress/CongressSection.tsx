@@ -8,6 +8,7 @@ import { ControlSelect } from '@/components/ui/ControlSelect';
 import { PARTY_LABEL, positionLine } from '@/lib/congress/member-list';
 import { DisclosureNote } from './DisclosureNote';
 import { PoliticianAvatar } from './PoliticianAvatar';
+import { FollowFundButton } from '@/components/institutions/FollowFundButton';
 import type { CongressMemberSummary } from '@/app/api/congress/route';
 
 const ALL = 'all';
@@ -225,10 +226,14 @@ export function CongressSection() {
                     )}
                   </p>
                 </div>
-                <ArrowUpRight
-                  className="h-4 w-4 shrink-0 self-start text-muted-foreground transition-colors group-hover:text-foreground"
-                  aria-hidden
-                />
+                {/* Same right-hand column as the 13F fund cards. */}
+                <div className="flex shrink-0 flex-col items-end justify-between self-stretch gap-2">
+                  <ArrowUpRight
+                    className="h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground"
+                    aria-hidden
+                  />
+                  <FollowFundButton kind="politician" slug={m.slug} displayName={m.displayName} compact />
+                </div>
               </div>
             );
           })}

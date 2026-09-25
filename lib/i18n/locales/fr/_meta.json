@@ -2483,5 +2483,7 @@
   "settings.deleteDialogTypeLabelAfter": "83918ed6bc4f18987d9db53514225c2f77e3b22dd1bccc48a8708b7e8ff7cab7",
   "settings.deleteDialogCancel": "19766ed6ccb2f4a32778eed80d1928d2c87a18d7c275ccb163ec6709d3eb2e27",
   "settings.deleteDialogConfirm": "21d5294717e25f755ac2779d2793aece2da1ff942fb43d70380db96e63edd9ff",
-  "auth.signupDobPlaceholder": "c1ac97b016a7a45d64e84bebd0ab66a587bd9e0b52b150f539b1ddf50b76fd3f"
+  "auth.signupDobPlaceholder": "c1ac97b016a7a45d64e84bebd0ab66a587bd9e0b52b150f539b1ddf50b76fd3f",
+  "settings.notifPoliticianTradesLabel": "c214823ddba79a62ff0235e4caadd272f2eeb8cea8a8448796d72fb080cf4f67",
+  "settings.notifPoliticianTradesDescription": "1623ce6934fdbaf68b14b2c797c03900d968b3bdca7c13fb637669b3b78894b0"
 }
