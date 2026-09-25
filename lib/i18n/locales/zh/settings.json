@@ -31,10 +31,6 @@
   "changePassword": "更改密码",
   "changesSaveAutomatically": "更改将自动保存",
   "comingSoon": "即将推出",
-  "confirmDelete": "您确定要删除您的账户吗？此操作无法撤销。",
-  "confirmDeleteAccount": "确定要删除你的账户吗？此操作无法撤销。",
-  "confirmDeleteAccountFinal": "你的所有持仓和设置都将被永久删除。无法恢复。继续吗？",
-  "confirmDeleteFinal": "这将永久删除您的所有数据。请输入DELETE以确认。",
   "currency": "货币显示",
   "currencyAuto": "基于交易所",
   "currencyDescription": "股票将以其交易所货币显示（例如，挪威的NOK，美国的USD）",
@@ -183,5 +179,15 @@
   "themeLight": "浅色",
   "title": "设置",
   "notifEconomicEventsLabel": "经济数据发布",
-  "notifEconomicEventsDescription": "在有您关注的美国经济数据发布的日子，早上提醒您，并显示您所在时区的时间。您可以在Market Calendar中的Economic下选择要关注的数据发布。"
+  "notifEconomicEventsDescription": "在有您关注的美国经济数据发布的日子，早上提醒您，并显示您所在时区的时间。您可以在Market Calendar中的Economic下选择要关注的数据发布。",
+  "deleteDialogTitle": "删除您的账户？",
+  "deleteDialogIntro": "这将永久删除您的 BullPen 账户，无法撤销。",
+  "deleteDialogDataPoint": "您的持仓、关注列表、提醒、笔记和设置将被永久删除。",
+  "deleteDialogSubscriptionPoint": "您的 BullPen Pro 订阅将立即取消，我们不会再向您收费。",
+  "deleteDialogExportPoint": "想先备份一份？关闭此窗口并使用导出数据功能。",
+  "deleteDialogConfirmWord": "DELETE",
+  "deleteDialogTypeLabelBefore": "输入",
+  "deleteDialogTypeLabelAfter": "以确认",
+  "deleteDialogCancel": "取消",
+  "deleteDialogConfirm": "删除我的账户"
 }

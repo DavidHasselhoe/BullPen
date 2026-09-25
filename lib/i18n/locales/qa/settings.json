@@ -31,10 +31,6 @@
   "changePassword": "«Chaangee Paasswoord»",
   "changesSaveAutomatically": "«Chaangees saavee aauutoomaatiicaally»",
   "comingSoon": "«Coomiing soooon»",
-  "confirmDelete": "«AAree yoouu suuree yoouu waant too deeleetee yoouur aaccoouunt? Thiis aactiioon caannoot bee uundoonee.»",
-  "confirmDeleteAccount": "«AAree yoouu suuree yoouu waant too deeleetee yoouur aaccoouunt? Thiis aactiioon caannoot bee uundoonee.»",
-  "confirmDeleteAccountFinal": "«AAll yoouur hooldiings aand seettiings wiill bee peermaaneently deeleeteed. Thiis caannoot bee reeveerseed. Coontiinuuee?»",
-  "confirmDeleteFinal": "«Thiis wiill peermaaneently deeleetee aall yoouur daataa. Typee DEELEETEE too coonfiirm.»",
   "currency": "«Cuurreency Diisplaay»",
   "currencyAuto": "«Baaseed oon eexchaangee»",
   "currencyDescription": "«Stoocks wiill diisplaay iin theeiir eexchaangee cuurreency (ee.g., NOOK foor Noorwaay, UUSD foor UUS)»",
@@ -183,5 +179,15 @@
   "themeLight": "«Liight»",
   "title": "«Seettiings»",
   "notifEconomicEventsLabel": "«EEcoonoomiic Reeleeaasees»",
-  "notifEconomicEventsDescription": "«AA moorniing heeaads-uup oon daays wiith aa UUS eecoonoomiic reeleeaasee yoouu foolloow, wiith thee tiimee iin yoouur tiimee zoonee. Choooosee whiich reeleeaasees uundeer EEcoonoomiic iin thee Maarkeet Caaleendaar.»"
+  "notifEconomicEventsDescription": "«AA moorniing heeaads-uup oon daays wiith aa UUS eecoonoomiic reeleeaasee yoouu foolloow, wiith thee tiimee iin yoouur tiimee zoonee. Choooosee whiich reeleeaasees uundeer EEcoonoomiic iin thee Maarkeet Caaleendaar.»",
+  "deleteDialogTitle": "«Deeleetee yoouur aaccoouunt?»",
+  "deleteDialogIntro": "«Thiis peermaaneently deeleetees yoouur BuullPeen aaccoouunt. IIt caannoot bee uundoonee.»",
+  "deleteDialogDataPoint": "«Yoouur hooldiings, waatchliist, aaleerts, nootees aand seettiings aaree deeleeteed foor gooood.»",
+  "deleteDialogSubscriptionPoint": "«Yoouur Proo suubscriiptiioon iis caanceelleed riight aawaay aand yoouu wiill noot bee chaargeed aagaaiin.»",
+  "deleteDialogExportPoint": "«Waant aa coopy fiirst? Cloosee thiis aand uusee EExpoort Daataa.»",
+  "deleteDialogConfirmWord": "«DEELEETEE»",
+  "deleteDialogTypeLabelBefore": "«Typee»",
+  "deleteDialogTypeLabelAfter": "«too coonfiirm»",
+  "deleteDialogCancel": "«Caanceel»",
+  "deleteDialogConfirm": "«Deeleetee my aaccoouunt»"
 }

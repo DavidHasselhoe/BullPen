@@ -31,10 +31,6 @@
   "changePassword": "Passwort Ändern",
   "changesSaveAutomatically": "Änderungen werden automatisch gespeichert",
   "comingSoon": "Demnächst verfügbar",
-  "confirmDelete": "Sind Sie sicher, dass Sie Ihr Konto löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
-  "confirmDeleteAccount": "Möchtest du dein Konto wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
-  "confirmDeleteAccountFinal": "Alle deine Bestände und Einstellungen werden endgültig gelöscht. Das kann nicht rückgängig gemacht werden. Fortfahren?",
-  "confirmDeleteFinal": "Dies löscht alle Ihre Daten dauerhaft. Geben Sie DELETE ein, um zu bestätigen.",
   "currency": "Währungsanzeige",
   "currencyAuto": "Basierend auf Börse",
   "currencyDescription": "Aktien werden in der Währung ihrer Börse angezeigt (z. B. NOK für Norwegen, USD für die USA)",
@@ -183,5 +179,15 @@
   "title": "Einstellungen",
   "notifEconomicEventsLabel": "Wirtschaftliche Veröffentlichungen",
   "sectionPlanLabel": "Plan",
-  "notifEconomicEventsDescription": "A morning heads-up on days with a US economic release you follow, with the time in your time zone. Choose which releases under Economic in the Market Calendar."
+  "notifEconomicEventsDescription": "Eine morgendliche Benachrichtigung an Tagen mit einer US-Wirtschaftsveröffentlichung, die du verfolgst, mit der Zeit in deiner Zeitzone. Wähle unter Economic im Market Calendar, welche Veröffentlichungen du sehen möchtest.",
+  "deleteDialogTitle": "Dein Konto löschen?",
+  "deleteDialogIntro": "Dies löscht dein BullPen-Konto dauerhaft. Das kann nicht rückgängig gemacht werden.",
+  "deleteDialogDataPoint": "Deine Positionen, Watchlist, Benachrichtigungen, Notizen und Einstellungen werden endgültig gelöscht.",
+  "deleteDialogSubscriptionPoint": "Dein Pro-Abonnement wird sofort gekündigt und dir wird nicht mehr in Rechnung gestellt.",
+  "deleteDialogExportPoint": "Möchtest du erst eine Kopie? Schließe dies und nutze Export Data.",
+  "deleteDialogConfirmWord": "LÖSCHEN",
+  "deleteDialogTypeLabelBefore": "Tippe",
+  "deleteDialogTypeLabelAfter": "ein zum Bestätigen",
+  "deleteDialogCancel": "Abbrechen",
+  "deleteDialogConfirm": "Mein Konto löschen"
 }

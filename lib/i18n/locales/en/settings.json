@@ -31,10 +31,6 @@
   "changePassword": "Change Password",
   "changesSaveAutomatically": "Changes save automatically",
   "comingSoon": "Coming soon",
-  "confirmDelete": "Are you sure you want to delete your account? This action cannot be undone.",
-  "confirmDeleteAccount": "Are you sure you want to delete your account? This action cannot be undone.",
-  "confirmDeleteAccountFinal": "All your holdings and settings will be permanently deleted. This cannot be reversed. Continue?",
-  "confirmDeleteFinal": "This will permanently delete all your data. Type DELETE to confirm.",
   "currency": "Currency Display",
   "currencyAuto": "Based on exchange",
   "currencyDescription": "Stocks will display in their exchange currency (e.g., NOK for Norway, USD for US)",
@@ -183,5 +179,15 @@
   "themeLight": "Light",
   "title": "Settings",
   "notifEconomicEventsLabel": "Economic Releases",
-  "notifEconomicEventsDescription": "A morning heads-up on days with a US economic release you follow, with the time in your time zone. Choose which releases under Economic in the Market Calendar."
+  "notifEconomicEventsDescription": "A morning heads-up on days with a US economic release you follow, with the time in your time zone. Choose which releases under Economic in the Market Calendar.",
+  "deleteDialogTitle": "Delete your account?",
+  "deleteDialogIntro": "This permanently deletes your BullPen account. It cannot be undone.",
+  "deleteDialogDataPoint": "Your holdings, watchlist, alerts, notes and settings are deleted for good.",
+  "deleteDialogSubscriptionPoint": "Your Pro subscription is cancelled right away and you will not be charged again.",
+  "deleteDialogExportPoint": "Want a copy first? Close this and use Export Data.",
+  "deleteDialogConfirmWord": "DELETE",
+  "deleteDialogTypeLabelBefore": "Type",
+  "deleteDialogTypeLabelAfter": "to confirm",
+  "deleteDialogCancel": "Cancel",
+  "deleteDialogConfirm": "Delete my account"
 }

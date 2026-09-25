@@ -58,6 +58,7 @@ import { createBrowserClient } from '@/lib/supabase/client';
 import { signOut } from '@/lib/auth/auth';
 import { useRouter } from 'next/navigation';
 import { deleteAccount, exportUserData } from '@/app/actions/account';
+import { DeleteAccountDialog } from '@/components/user/DeleteAccountDialog';
 
 interface SettingsModalProps {
   open: boolean;
@@ -135,7 +136,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
   const { t, i18n } = useTranslation('settings');
   const [activeSection, setActiveSection] = useState<SettingsSection>(initialTab ?? 'preferences');
   const [error, setError] = useState<string | null>(null);
-  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isExportingData, setIsExportingData] = useState(false);
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [passwordNew, setPasswordNew] = useState('');
@@ -374,31 +375,17 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [defaultCurrency, theme, language, defaultHomepage, showWelcomeText, roundNumbers, notifications, profilePublic, holdingsPublic, riskProfile, investmentHorizon, responseStyle, allowHoldingsContext, widgetOrder, widgetHidden, marketContextHidden]);
 
-  const handleDeleteAccount = async () => {
-    if (!user) return;
-    if (!confirm(t('confirmDeleteAccount'))) {
-      return;
-    }
-    if (!confirm(t('confirmDeleteAccountFinal'))) {
-      return;
-    }
-
-    setIsDeletingAccount(true);
-    setError(null);
-
+  const handleDeleteAccount = async (): Promise<string | null> => {
+    if (!user) return t('errorDeleteAccount');
     try {
       const result = await deleteAccount();
-      if (!result.success) {
-        setError(result.error || t('errorDeleteAccount'));
-        setIsDeletingAccount(false);
-        return;
-      }
+      if (!result.success) return result.error || t('errorDeleteAccount');
       await signOut();
       router.push('/');
       router.refresh();
+      return null;
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('errorDeleteAccount'));
-      setIsDeletingAccount(false);
+      return err instanceof Error ? err.message : t('errorDeleteAccount');
     }
   };
 
@@ -1300,22 +1287,18 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                     </p>
                     <Button
                       variant="destructive"
-                      onClick={handleDeleteAccount}
-                      disabled={isDeletingAccount}
+                      onClick={() => setDeleteDialogOpen(true)}
                       className="w-full"
                     >
-                      {isDeletingAccount ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          {t('dangerDeletingAccount')}
-                        </>
-                      ) : (
-                        <>
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          {t('deleteAccount')}
-                        </>
-                      )}
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      {t('deleteAccount')}
                     </Button>
+                    <DeleteAccountDialog
+                      open={deleteDialogOpen}
+                      onOpenChange={setDeleteDialogOpen}
+                      isPro={ent.isPro}
+                      onConfirm={handleDeleteAccount}
+                    />
                   </div>
                 </div>
               </div>

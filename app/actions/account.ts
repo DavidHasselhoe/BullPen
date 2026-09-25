@@ -3,6 +3,7 @@
 import { createServerClient } from '@/lib/supabase/client';
 import { createClient } from '@supabase/supabase-js';
 import { getCurrentUserId } from '@/lib/auth/server-session';
+import { getStripe } from '@/lib/billing/stripe';
 
 /**
  * Deletes all user data from Supabase and then removes the auth user.
@@ -17,6 +18,27 @@ export async function deleteAccount(): Promise<{ success: boolean; error?: strin
     }
 
     const supabase = createServerClient();
+
+    // Cancel any live Stripe subscription FIRST. Deleting the account used to
+    // leave it running: the user kept being billed with no account left to
+    // cancel from. If Stripe can't cancel, stop here rather than delete.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: billing } = await (supabase as any)
+      .from('users')
+      .select('stripe_customer_id')
+      .eq('id', userId)
+      .maybeSingle();
+    const customerId = (billing as { stripe_customer_id: string | null } | null)?.stripe_customer_id;
+    if (customerId) {
+      const stripe = getStripe();
+      if (!stripe) return { success: false, error: 'Billing is unavailable right now, so your subscription could not be cancelled. Please try again later.' };
+      const subs = await stripe.subscriptions.list({ customer: customerId, status: 'all', limit: 100 });
+      for (const sub of subs.data) {
+        if (sub.status !== 'canceled' && sub.status !== 'incomplete_expired') {
+          await stripe.subscriptions.cancel(sub.id);
+        }
+      }
+    }
 
     // Delete the user's avatar from Storage — not covered by the DB cascade below,
     // since it lives in `user-avatars`, not a table. Filename is `{userId}.{ext}`

@@ -31,10 +31,6 @@
   "changePassword": "Cambiar Contraseña",
   "changesSaveAutomatically": "Los cambios se guardan automáticamente",
   "comingSoon": "Próximamente",
-  "confirmDelete": "¿Estás seguro de que quieres eliminar tu cuenta? Esta acción no se puede deshacer.",
-  "confirmDeleteAccount": "¿Seguro que deseas eliminar tu cuenta? Esta acción no se puede deshacer.",
-  "confirmDeleteAccountFinal": "Todas tus posiciones y configuración se eliminarán permanentemente. Esto no se puede revertir. ¿Continuar?",
-  "confirmDeleteFinal": "Esto eliminará permanentemente todos tus datos. Escribe DELETE para confirmar.",
   "currency": "Visualización de Moneda",
   "currencyAuto": "Basado en la bolsa",
   "currencyDescription": "Las acciones se mostrarán en la moneda de su bolsa (p. ej., NOK para Noruega, USD para EE. UU.)",
@@ -182,6 +178,16 @@
   "themeLight": "Claro",
   "title": "Configuración",
   "notifEconomicEventsLabel": "Lanzamientos Económicos",
+  "notifEconomicEventsDescription": "Un aviso por la mañana en días con un lanzamiento económico de EE.UU. que sigues, con la hora en tu zona horaria. Elige qué lanzamientos deseas seguir en Economic en el Market Calendar.",
   "sectionPlanLabel": "Plan",
-  "notifEconomicEventsDescription": "Un aviso por la mañana en días con un lanzamiento económico de EE.UU. que sigues, con la hora en tu zona horaria. Elige qué lanzamientos deseas seguir en Economic en el Market Calendar."
+  "deleteDialogTitle": "¿Eliminar tu cuenta?",
+  "deleteDialogIntro": "Esto elimina permanentemente tu cuenta de BullPen. No se puede deshacer.",
+  "deleteDialogDataPoint": "Tus posiciones, lista de seguimiento, alertas, notas y configuración se eliminan definitivamente.",
+  "deleteDialogSubscriptionPoint": "Tu suscripción a BullPen Pro se cancela inmediatamente y no se te cobrará de nuevo.",
+  "deleteDialogExportPoint": "¿Quieres una copia primero? Cierra esto y usa Exportar datos.",
+  "deleteDialogConfirmWord": "ELIMINAR",
+  "deleteDialogTypeLabelBefore": "Escribe",
+  "deleteDialogTypeLabelAfter": "para confirmar",
+  "deleteDialogCancel": "Cancelar",
+  "deleteDialogConfirm": "Eliminar mi cuenta"
 }

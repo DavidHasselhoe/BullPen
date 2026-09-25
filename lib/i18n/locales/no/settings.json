@@ -31,10 +31,6 @@
   "changePassword": "Endre Passord",
   "changesSaveAutomatically": "Endringer lagres automatisk",
   "comingSoon": "Kommer snart",
-  "confirmDelete": "Er du sikker på at du vil slette kontoen din? Denne handlingen kan ikke angres.",
-  "confirmDeleteAccount": "Er du sikker på at du vil slette kontoen din? Denne handlingen kan ikke angres.",
-  "confirmDeleteAccountFinal": "All beholdning og innstillinger vil bli permanent slettet. Dette kan ikke reverseres. Fortsette?",
-  "confirmDeleteFinal": "Dette vil permanent slette all din data. Skriv SLETT for å bekrefte.",
   "currency": "Valuta Visning",
   "currencyAuto": "Basert på valutahandler",
   "currencyDescription": "Aksjer vil vises i sin børsvaluta (f.eks. NOK for Norge, USD for USA)",
@@ -182,6 +178,16 @@
   "themeLight": "Lys",
   "title": "Innstillinger",
   "notifEconomicEventsLabel": "Økonomiske nøkkeltall",
+  "notifEconomicEventsDescription": "Et morgenvarsel på dager med en amerikansk økonomisk rapport du følger, med klokkeslettet i din tidssone. Velg hvilke rapporter under Økonomisk i Markedskalenderen.",
   "sectionPlanLabel": "Plan",
-  "notifEconomicEventsDescription": "Et morgenvarsel på dager med en amerikansk økonomisk rapport du følger, med klokkeslettet i din tidssone. Velg hvilke rapporter under Økonomisk i Markedskalenderen."
+  "deleteDialogTitle": "Slette kontoen din?",
+  "deleteDialogIntro": "Dette sletter BullPen-kontoen din permanent. Det kan ikke angres.",
+  "deleteDialogDataPoint": "Beholdningen din, favorittlisten, varsler, notater og innstillinger slettes for alltid.",
+  "deleteDialogSubscriptionPoint": "BullPen Pro-abonnementet ditt blir kansellert umiddelbart, og du blir ikke belastet igjen.",
+  "deleteDialogExportPoint": "Vil du ha en kopi først? Lukk denne og bruk Eksporter data.",
+  "deleteDialogConfirmWord": "SLETT",
+  "deleteDialogTypeLabelBefore": "Skriv",
+  "deleteDialogTypeLabelAfter": "for å bekrefte",
+  "deleteDialogCancel": "Avbryt",
+  "deleteDialogConfirm": "Slett kontoen min"
 }
