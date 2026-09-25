@@ -5,6 +5,7 @@ import Link from 'next/link';
 import type { LucideIcon } from 'lucide-react';
 import { Crown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useIntlLocale } from '@/hooks/use-intl-locale';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { DialogTitle } from '@/components/ui/dialog';
@@ -27,8 +28,8 @@ interface Props {
   onDismiss: () => void;
 }
 
-function formatResetDay(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, { month: 'long', day: 'numeric' });
+function formatResetDay(iso: string, locale: string): string {
+  return new Date(iso).toLocaleDateString(locale, { month: 'long', day: 'numeric' });
 }
 
 /**
@@ -40,6 +41,7 @@ function formatResetDay(iso: string): string {
  */
 export function AiPaywallContent({ headline, benefits, preview, quota, showResetLine, note, onDismiss }: Props) {
   const { t } = useTranslation('billing');
+  const locale = useIntlLocale();
   // Annual first, matching /upgrade's own default — it's the price this
   // dialog leads with, same convention as the pricing page.
   const [annual, setAnnual] = useState(true);
@@ -100,7 +102,7 @@ export function AiPaywallContent({ headline, benefits, preview, quota, showReset
         )}
 
         {showResetLine && quota && (
-          <p className="mt-3 text-[11px] text-muted-foreground">{t('paywallContentResetLine', { date: formatResetDay(quota.resetsAt) })}</p>
+          <p className="mt-3 text-[11px] text-muted-foreground">{t('paywallContentResetLine', { date: formatResetDay(quota.resetsAt, locale) })}</p>
         )}
         {note && <p className="mt-3 text-[11px] text-muted-foreground text-pretty">{note}</p>}
 

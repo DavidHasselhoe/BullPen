@@ -21,7 +21,7 @@ function fmtPct(n: number | null | undefined): string {
 
 function fmtPrice(n: number | null | undefined): string {
   if (n == null || isNaN(n)) return '—';
-  if (n >= 1000) return `$${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  if (n >= 1000) return `$${n.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
   if (n >= 1)    return `$${n.toFixed(2)}`;
   return `$${n.toFixed(6)}`;
 }

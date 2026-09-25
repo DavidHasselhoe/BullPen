@@ -108,7 +108,7 @@ function ReportRow({ report }: { report: FeedbackReportRow }) {
           {report.reporter_email ?? '(deleted user)'}
         </td>
         <td className="py-2.5 pr-3 text-xs text-muted-foreground whitespace-nowrap">
-          {new Date(report.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+          {new Date(report.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
         </td>
         <td className="py-2.5 pr-3">
           <select

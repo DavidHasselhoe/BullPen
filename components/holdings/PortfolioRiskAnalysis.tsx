@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useIntlLocale } from '@/hooks/use-intl-locale';
 import type { TFunction } from 'i18next';
 import { useSearchParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -89,6 +90,7 @@ type State = 'idle' | 'loading' | 'loaded' | 'error';
 
 export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) {
   const { t } = useTranslation('holdings');
+  const locale = useIntlLocale();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { open: openAIPanel } = useAIPanel();
@@ -286,7 +288,7 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
   }
 
   const generatedTime = (restoredFrom ?? analysis?.generatedAt)
-    ? new Date(restoredFrom ?? analysis!.generatedAt).toLocaleString(undefined, {
+    ? new Date(restoredFrom ?? analysis!.generatedAt).toLocaleString(locale, {
         month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
       })
     : null;

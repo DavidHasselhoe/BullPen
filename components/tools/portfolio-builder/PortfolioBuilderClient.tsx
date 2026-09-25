@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useIntlLocale } from '@/hooks/use-intl-locale';
 import type { TFunction } from 'i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -476,6 +477,7 @@ function RecentPortfolioRow({
   onDelete: (id: string) => void;
 }) {
   const { t } = useTranslation('tools');
+  const locale = useIntlLocale();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const score = gen.portfolio.confidence_score;
   const scoreColor =
@@ -484,7 +486,7 @@ function RecentPortfolioRow({
                   'text-red-400';
 
   const date = new Date(gen.createdAt);
-  const label = formatRelative(date, t);
+  const label = formatRelative(date, t, locale);
 
   return (
     <div className={cn(
@@ -544,7 +546,7 @@ function RecentPortfolioRow({
   );
 }
 
-function formatRelative(date: Date, t: TFunction): string {
+function formatRelative(date: Date, t: TFunction, locale: string): string {
   const now = Date.now();
   const diff = now - date.getTime();
   const mins = Math.floor(diff / 60_000);
@@ -554,7 +556,7 @@ function formatRelative(date: Date, t: TFunction): string {
   if (hrs < 24) return t('portfolioBuilderHrsAgo', { count: hrs });
   const days = Math.floor(hrs / 24);
   if (days < 7) return t('portfolioBuilderDaysAgo', { count: days });
-  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  return date.toLocaleDateString(locale, { month: 'short', day: 'numeric' });
 }
 
 function errorTitle(code: ErrorCode, t: TFunction): string {

@@ -31,7 +31,7 @@ export function fmtPct(pct: number | null | undefined, digits = 1): string {
 
 export function fmtPrice(price: number | null | undefined): string {
   if (price == null || !Number.isFinite(price)) return '—';
-  if (price >= 1000) return price.toLocaleString(undefined, { maximumFractionDigits: 0 });
+  if (price >= 1000) return price.toLocaleString('en-US', { maximumFractionDigits: 0 });
   if (price >= 1) return price.toFixed(2);
   return price.toFixed(4);
 }

@@ -22,7 +22,7 @@ interface AssetQuote {
 }
 
 function fmtPrice(price: number): string {
-  if (price >= 1000) return `$${price.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+  if (price >= 1000) return `$${price.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
   if (price >= 1)    return `$${price.toFixed(2)}`;
   return `$${price.toFixed(4)}`;
 }

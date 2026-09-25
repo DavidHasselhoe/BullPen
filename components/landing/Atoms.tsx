@@ -209,7 +209,7 @@ export function Counter({
     return () => obs.disconnect();
   }, [to, duration]);
 
-  const formatted = val.toLocaleString(undefined, {
+  const formatted = val.toLocaleString('en-US', {
     maximumFractionDigits: decimals,
     minimumFractionDigits: decimals,
   });

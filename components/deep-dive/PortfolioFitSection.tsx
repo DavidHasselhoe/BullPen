@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useIntlLocale } from '@/hooks/use-intl-locale';
 import { Layers } from 'lucide-react';
 import { useHoldings } from '@/hooks/use-holdings';
 import { cn } from '@/lib/utils';
@@ -30,6 +31,7 @@ export function PortfolioFitSection({
   generatedAt: string;
 }) {
   const { t } = useTranslation('tools');
+  const locale = useIntlLocale();
   const { data: holdings } = useHoldings();
 
   const owned = useMemo(() => {
@@ -42,7 +44,7 @@ export function PortfolioFitSection({
     };
   }, [holdings, ticker]);
 
-  const when = new Date(generatedAt).toLocaleDateString(undefined, {
+  const when = new Date(generatedAt).toLocaleDateString(locale, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',

@@ -4,6 +4,7 @@ import { lazy, Suspense, useEffect, useRef, useState, useCallback } from 'react'
 import { X, PanelRightClose, Settings, History, SquarePen, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import { useIntlLocale } from '@/hooks/use-intl-locale';
 import type { TFunction } from 'i18next';
 import { useQuery } from '@tanstack/react-query';
 import type { UIMessage } from 'ai';
@@ -59,12 +60,13 @@ interface ConversationSummary {
   updated_at: string;
 }
 
-function formatShortDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+function formatShortDate(iso: string, locale: string): string {
+  return new Date(iso).toLocaleDateString(locale, { month: 'short', day: 'numeric' });
 }
 
 export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumedQuery, whyToday, onCloseWhyToday }: AISidePanelProps) {
   const { t } = useTranslation('ai');
+  const locale = useIntlLocale();
   const { user, isLoading, isAuthenticated } = useAuth();
   const { hasAccepted: hasAcceptedAiTerms } = useAiTerms();
   const isMobile = useIsMobile();
@@ -301,7 +303,7 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
                   )}
                 >
                   <span className="block font-mono text-[11px] text-muted-foreground">
-                    {formatShortDate(c.updated_at)}
+                    {formatShortDate(c.updated_at, locale)}
                   </span>
                   <span className="block text-foreground/90 truncate">{c.title}</span>
                 </button>

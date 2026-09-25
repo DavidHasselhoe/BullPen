@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslation } from 'react-i18next';
+import { useIntlLocale } from '@/hooks/use-intl-locale';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
@@ -28,14 +29,15 @@ interface Props {
   note?: string;
 }
 
-function formatReset(iso: string, period: 'day' | 'month'): string {
+function formatReset(iso: string, period: 'day' | 'month', locale: string): string {
   const d = new Date(iso);
-  if (period === 'day') return `at ${d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`;
-  return `on ${d.toLocaleDateString(undefined, { month: 'long', day: 'numeric' })}`;
+  if (period === 'day') return `at ${d.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' })}`;
+  return `on ${d.toLocaleDateString(locale, { month: 'long', day: 'numeric' })}`;
 }
 
 export function AiPaywallDialog({ open, onOpenChange, featureName, quota, previewContext, headline: headlineOverride, note }: Props) {
   const { t } = useTranslation('billing');
+  const locale = useIntlLocale();
   const isProOnly = quota?.reason === 'pro_only';
   // Pro user who hit a cost-protection soft cap — they're already Pro, so don't upsell.
   const isProCap = quota?.reason === 'pro_cap_reached';
@@ -74,13 +76,13 @@ export function AiPaywallDialog({ open, onOpenChange, featureName, quota, previe
 
   let body: string;
   if (isProCap && quota) {
-    body = t('aiPaywallBodyCapWithReset', { limit: quota.limit, featureName, reset: formatReset(quota.resetsAt, quota.period) });
+    body = t('aiPaywallBodyCapWithReset', { limit: quota.limit, featureName, reset: formatReset(quota.resetsAt, quota.period, locale) });
   } else if (isProCap) {
     body = t('aiPaywallBodyCapNoReset', { limit: 0, featureName });
   } else if (isProOnly) {
     body = t('aiPaywallBodyProOnly', { featureName });
   } else if (quota) {
-    body = t('aiPaywallBodyLimitReset', { reset: formatReset(quota.resetsAt, quota.period) });
+    body = t('aiPaywallBodyLimitReset', { reset: formatReset(quota.resetsAt, quota.period, locale) });
   } else {
     body = t('aiPaywallBodyGeneric', { featureName });
   }

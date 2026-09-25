@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useIntlLocale } from '@/hooks/use-intl-locale';
 import type { TFunction } from 'i18next';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
@@ -91,23 +92,23 @@ function formatRelativeTime(isoString: string, t: TFunction): string {
   return t('briefRelativeDays', { days: Math.floor(hours / 24) });
 }
 
-function formatPublishedDate(dateStr: string): string {
-  return new Date(dateStr + 'T12:00:00Z').toLocaleDateString(undefined, {
+function formatPublishedDate(dateStr: string, locale: string): string {
+  return new Date(dateStr + 'T12:00:00Z').toLocaleDateString(locale, {
     weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC',
   });
 }
 
-function formatShortDate(dateStr: string): string {
-  return new Date(dateStr + 'T12:00:00Z').toLocaleDateString(undefined, {
+function formatShortDate(dateStr: string, locale: string): string {
+  return new Date(dateStr + 'T12:00:00Z').toLocaleDateString(locale, {
     month: 'short', day: 'numeric', timeZone: 'UTC',
   });
 }
 
-function getNextBriefLocalTime(): string {
+function getNextBriefLocalTime(locale: string): string {
   const target = new Date();
   target.setUTCHours(6, 30, 0, 0);
   if (Date.now() > target.getTime()) target.setUTCDate(target.getUTCDate() + 1);
-  return target.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+  return target.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
 }
 
 function estimateReadingTime(content: string): number {
@@ -470,6 +471,7 @@ function BriefReader({
   onOpenChange: (open: boolean) => void;
 }) {
   const { t } = useTranslation('discover');
+  const locale = useIntlLocale();
   const { data: history } = useQuery({
     queryKey: ['daily-briefs-list'],
     queryFn: async (): Promise<DailyBrief[]> => {
@@ -529,7 +531,14 @@ function BriefReader({
   const scrollRef = useRef<HTMLDivElement>(null);
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
   const [activeSlug, setActiveSlug] = useState<string | null>(sections[0]?.slug ?? null);
-  const [progress, setProgress] = useState(0);
+  // Progress is written straight to the bar's style, never React state: a
+  // state update per scroll event re-rendered the whole brief (every section,
+  // ticker link and sparkline) 60-120 times a second, which was the lag.
+  const progressBarRef = useRef<HTMLDivElement>(null);
+  const scrollFrame = useRef<number | null>(null);
+  const setProgress = (p: number) => {
+    if (progressBarRef.current) progressBarRef.current.style.transform = `scaleX(${p})`;
+  };
 
   // Featured-ticker sparklines — a beginner reading "$NVDA" gets a quick sense of
   // what it did. One batched, CDN-cached request for ≤6 symbols, fetched lazily
@@ -570,7 +579,17 @@ function BriefReader({
     }
   }, [open, displayedBrief.published_date, sections]);
 
+  // At most one measurement per frame; setActiveSlug only re-renders when the
+  // section actually changes (React bails out on an identical value).
   function handleScroll() {
+    if (scrollFrame.current != null) return;
+    scrollFrame.current = requestAnimationFrame(() => {
+      scrollFrame.current = null;
+      measureScroll();
+    });
+  }
+
+  function measureScroll() {
     const el = scrollRef.current;
     if (!el) return;
     const max = Math.max(1, el.scrollHeight - el.clientHeight);
@@ -639,8 +658,9 @@ function BriefReader({
           {/* Reading progress bar */}
           <div className="absolute top-0 left-0 right-0 h-[2px] bg-border/15 z-20 overflow-hidden">
             <div
+              ref={progressBarRef}
               className="h-full bg-primary/70 origin-left will-change-transform"
-              style={{ transform: `scaleX(${progress})`, transition: 'transform 80ms linear' }}
+              style={{ transform: 'scaleX(0)', transition: 'transform 80ms linear' }}
             />
           </div>
 
@@ -662,7 +682,7 @@ function BriefReader({
                   {displayedBrief.title}
                 </h2>
                 <div className="flex items-center flex-wrap gap-x-2 gap-y-1 mt-3 text-[11px] text-muted-foreground font-mono">
-                  <span>{formatPublishedDate(displayedBrief.published_date)}</span>
+                  <span>{formatPublishedDate(displayedBrief.published_date, locale)}</span>
                   <span className="text-muted-foreground">·</span>
                   <span>{t('briefMinRead', { minutes: readingMinutes })}</span>
                   <span className="text-muted-foreground">·</span>
@@ -752,7 +772,7 @@ function BriefReader({
                     )}
                   >
                     <span className="block font-mono text-[11px] text-muted-foreground">
-                      {formatShortDate(b.published_date)}
+                      {formatShortDate(b.published_date, locale)}
                     </span>
                     <span className="block text-foreground/90 truncate">{b.title}</span>
                   </button>
@@ -801,6 +821,7 @@ function BriefReader({
 
 export function DailyBriefWidget() {
   const { t } = useTranslation('discover');
+  const locale = useIntlLocale();
   const known = useKnownTickers();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
@@ -893,7 +914,7 @@ export function DailyBriefWidget() {
           <div className="flex-1 h-px bg-border/50" />
         </div>
         <p className="text-sm text-muted-foreground">
-          {t('briefGenerating', { time: getNextBriefLocalTime() })}
+          {t('briefGenerating', { time: getNextBriefLocalTime(locale) })}
         </p>
       </div>
     );

@@ -15,5 +15,5 @@ export function fmtShares(n: number): string {
   if (abs >= 1e9) return `${(n / 1e9).toFixed(1)}B shares`;
   if (abs >= 1e6) return `${(n / 1e6).toFixed(1)}M shares`;
   if (abs >= 1e3) return `${(n / 1e3).toFixed(0)}K shares`;
-  return `${n.toLocaleString(undefined, { maximumFractionDigits: 0 })} shares`;
+  return `${n.toLocaleString('en-US', { maximumFractionDigits: 0 })} shares`;
 }
