@@ -10,7 +10,7 @@ import { streamText, convertToModelMessages, stepCountIs } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
 import type { UIMessage } from 'ai';
 import { SYSTEM_PROMPT } from './systemPrompt';
-import { BULLPEN_TOOLS, createAlertTool, getPortfolioContextTool, getInsiderActivityTool } from './tools';
+import { BULLPEN_TOOLS, createAlertTool, getMyAlertsTool, getPortfolioContextTool, getInsiderActivityTool } from './tools';
 import { languageName } from '@/lib/i18n/language-names';
 import { assertNoMutatingToolsWithExternalContent } from './tool-boundary';
 
@@ -79,7 +79,7 @@ export async function runAgent(
   // user has explicitly allowed Bull to read their holdings/watchlist.
   const tools = {
     ...BULLPEN_TOOLS,
-    ...(userId ? { createAlert: createAlertTool(userId) } : {}),
+    ...(userId ? { createAlert: createAlertTool(userId), getMyAlerts: getMyAlertsTool(userId) } : {}),
     ...(userId && allowHoldingsContext ? { getPortfolioContext: getPortfolioContextTool(userId) } : {}),
     // Pro-gated (see /api/stock/[ticker]/insider-transactions) — needs userId
     // to check tier server-side, so it can't live in the static tool map.

@@ -69,6 +69,7 @@ const STATUS_LABELS: Record<string, string> = {
   updateHolding: 'Updating your holding…',
   removeHolding: 'Removing holding…',
   createAlert: 'Setting up your alert…',
+  getMyAlerts: 'Checking your alerts…',
   // Chart controls (chart assistant only)
   setTimeframe: 'Changing timeframe…',
   setChartType: 'Changing chart type…',

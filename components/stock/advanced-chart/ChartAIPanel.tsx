@@ -4,7 +4,7 @@ import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
-import { useEffect, useMemo, useRef, useState, memo } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState, memo } from 'react';
 import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -323,7 +323,15 @@ export function ChartAIPanel({ open, symbol, snapshot, onAction, onClose }: Prop
                   <span className="whitespace-pre-wrap break-words">{text}</span>
                 ) : (
                   <>
+                    {[false, true].map((navPass) => (
+                      <Fragment key={String(navPass)}>
+                    {navPass && text && (
+                      <AssistantContent text={text} isStreaming={isStreaming && message.id === messages[messages.length - 1]?.id} />
+                    )}
                     {toolCalls.map((call, i) => {
+                      // Data cards render above the text, navigation prompts
+                      // below it, so the reply ends on the question they answer.
+                      if ((call.clientAction?.type === 'navigate') !== navPass) return null;
                       const actionKey = `${message.id}::${i}`;
                       // Chart control tools (setTimeframe, addIndicator, …) also embed
                       // a __clientAction, but a chart_* one — already fully handled
@@ -345,9 +353,8 @@ export function ChartAIPanel({ open, symbol, snapshot, onAction, onClose }: Prop
                         />
                       );
                     })}
-                    {text && (
-                      <AssistantContent text={text} isStreaming={isStreaming && message.id === messages[messages.length - 1]?.id} />
-                    )}
+                      </Fragment>
+                    ))}
                   </>
                 )}
               </div>

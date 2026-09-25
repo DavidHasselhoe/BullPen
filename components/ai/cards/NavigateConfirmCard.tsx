@@ -22,10 +22,10 @@ export function NavigateConfirmCard({ decision, isHistorical, onConfirm, onDecli
   const { t } = useTranslation('ai');
 
   if (decision === 'confirmed') {
-    return <p className="mb-2 text-xs text-muted-foreground last:mb-0">{t('navigateTakingYouThere')}</p>;
+    return <p className="mt-3 text-xs text-muted-foreground first:mt-0">{t('navigateTakingYouThere')}</p>;
   }
   if (decision === 'declined') {
-    return <p className="mb-2 text-xs text-muted-foreground last:mb-0">{t('navigateStayingHere')}</p>;
+    return <p className="mt-3 text-xs text-muted-foreground first:mt-0">{t('navigateStayingHere')}</p>;
   }
   // A stale, never-answered prompt from a past conversation — offering to
   // navigate is only meaningful in the moment Bull just said it, so don't
@@ -33,18 +33,20 @@ export function NavigateConfirmCard({ decision, isHistorical, onConfirm, onDecli
   if (isHistorical) return null;
 
   return (
-    <div className="mb-2 flex gap-2 last:mb-0">
+    <div className="mt-3 flex gap-2 first:mt-0">
+      {/* The reply bubble is bg-muted, so "No" sits on bg-background with a
+          real border to read as a button rather than a tint of the bubble. */}
       <button
         type="button"
         onClick={onConfirm}
-        className="inline-flex items-center justify-center rounded-full bg-primary px-3.5 py-1.5 text-xs font-medium text-primary-foreground transition-opacity hover:opacity-90 active:scale-[0.97]"
+        className="inline-flex h-8 min-w-16 items-center justify-center rounded-full bg-primary px-4 text-xs font-semibold text-primary-foreground shadow-sm transition-[background-color,box-shadow,transform] duration-150 hover:bg-primary/80 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-muted active:scale-[0.97]"
       >
         {t('navigateYes')}
       </button>
       <button
         type="button"
         onClick={onDecline}
-        className="inline-flex items-center justify-center rounded-full border border-border bg-muted/40 px-3.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/80 hover:text-foreground active:scale-[0.97]"
+        className="inline-flex h-8 min-w-16 items-center justify-center rounded-full border border-foreground/15 bg-background px-4 text-xs font-semibold text-foreground transition-[border-color,box-shadow,transform] duration-150 hover:border-foreground/40 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-muted active:scale-[0.97]"
       >
         {t('navigateNo')}
       </button>

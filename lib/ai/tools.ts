@@ -941,6 +941,58 @@ export function createAlertTool(userId: string) {
   });
 }
 
+/**
+ * Read-only companion to createAlert, registered for every signed-in user
+ * (same as createAlert). Unlike holdings, alerts carry no position sizes or
+ * money, and Bull can already write them, so reading them sits behind no
+ * extra opt-in.
+ */
+export function getMyAlertsTool(userId: string) {
+  return tool({
+    description:
+      'Read the price and metric alerts the user has set up. Use when they ask what alerts they have, whether ' +
+      'they have one on a stock ("do I have an alert on MU?"), which have fired recently, or want a summary. ' +
+      'Free from any API budget. Returns each alert with its condition, whether it is active or paused, and when ' +
+      'it last fired. Free accounts may have active alerts on up to ' + FREE_ACTIVE_ALERT_LIMIT + ' stocks; ' +
+      'isPro says whether that cap applies.',
+    inputSchema: jsonSchema<Record<string, never>>({
+      type: 'object',
+      properties: {},
+      additionalProperties: false,
+    }),
+    execute: async () => {
+      const [{ data, error }, tier] = await Promise.all([
+        supabase()
+          .from('user_alerts')
+          .select('symbol, company_name, alert_type, threshold, is_active, last_triggered_at, trigger_count')
+          .eq('user_id', userId)
+          .order('symbol'),
+        getTier(userId),
+      ]);
+      if (error) return { error: 'Could not load alerts.' };
+
+      type Row = {
+        symbol: string; company_name: string | null; alert_type: AlertType; threshold: number;
+        is_active: boolean; last_triggered_at: string | null; trigger_count: number;
+      };
+      const alerts = ((data ?? []) as Row[]).map((r) => ({
+        ticker: r.symbol,
+        companyName: r.company_name,
+        condition: describeAlert({ alertType: r.alert_type, threshold: r.threshold }),
+        status: r.is_active ? 'active' : 'paused',
+        lastTriggeredAt: r.last_triggered_at,
+        timesTriggered: r.trigger_count,
+      }));
+      return {
+        alertCount: alerts.length,
+        stocksWithActiveAlerts: new Set(alerts.filter((a) => a.status === 'active').map((a) => a.ticker)).size,
+        isPro: isPro(tier),
+        alerts,
+      };
+    },
+  });
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Tool: Portfolio Context (read-only — only registered when the user has
 // opted in via Settings > Ask Bull > "Let Bull see my holdings & watchlist")

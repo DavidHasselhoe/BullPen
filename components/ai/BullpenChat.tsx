@@ -514,6 +514,28 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
           // reading as two separate replies instead of one in-progress one.
           const isAwaitingNextStep = !isUser && isStreaming && message.id === lastMessage?.id && !hasText;
           if (isAwaitingNextStep && toolCalls.length === 0) return null;
+          // Navigation prompts go after the text: the reply ends on the
+          // question the Yes/No buttons answer. Data cards stay on top.
+          const renderToolCall = (call: (typeof toolCalls)[number], i: number) => {
+            const actionKey = `${message.id}::${i}`;
+            const navigateAction = call.clientAction?.type === 'navigate' ? call.clientAction : undefined;
+            return (
+              <ToolResultCard
+                key={`${message.id}-tool-${i}`}
+                toolName={call.toolName}
+                output={call.output}
+                siblingCalls={toolCalls}
+                clientAction={call.clientAction}
+                actionOutcome={call.clientAction ? actionOutcomes[actionKey] : undefined}
+                navigateDecision={navigateAction ? getNavigateDecision(actionKey) : undefined}
+                onConfirmNavigate={navigateAction ? () => confirmNavigate(actionKey, navigateAction.path) : undefined}
+                onDeclineNavigate={navigateAction ? () => declineNavigate(actionKey) : undefined}
+                isHistorical={historicalMessageIds.has(message.id)}
+                onRetryAction={call.clientAction ? () => runClientAction(call.clientAction!, actionKey) : undefined}
+              />
+            );
+          };
+          const isNavigate = (call: (typeof toolCalls)[number]) => call.clientAction?.type === 'navigate';
           return (
             <motion.div
               key={message.id}
@@ -546,25 +568,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
                   </div>
                 ) : (
                   <>
-                    {toolCalls.map((call, i) => {
-                      const actionKey = `${message.id}::${i}`;
-                      const navigateAction = call.clientAction?.type === 'navigate' ? call.clientAction : undefined;
-                      return (
-                        <ToolResultCard
-                          key={`${message.id}-tool-${i}`}
-                          toolName={call.toolName}
-                          output={call.output}
-                          siblingCalls={toolCalls}
-                          clientAction={call.clientAction}
-                          actionOutcome={call.clientAction ? actionOutcomes[actionKey] : undefined}
-                          navigateDecision={navigateAction ? getNavigateDecision(actionKey) : undefined}
-                          onConfirmNavigate={navigateAction ? () => confirmNavigate(actionKey, navigateAction.path) : undefined}
-                          onDeclineNavigate={navigateAction ? () => declineNavigate(actionKey) : undefined}
-                          isHistorical={historicalMessageIds.has(message.id)}
-                          onRetryAction={call.clientAction ? () => runClientAction(call.clientAction!, actionKey) : undefined}
-                        />
-                      );
-                    })}
+                    {toolCalls.map((call, i) => (isNavigate(call) ? null : renderToolCall(call, i)))}
                     {!isAwaitingNextStep && <AssistantMessageContent
                       text={message.parts
                         .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
@@ -575,6 +579,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
                         message.id === messages[messages.length - 1]?.id
                       }
                     />}
+                    {toolCalls.map((call, i) => (isNavigate(call) ? renderToolCall(call, i) : null))}
                   </>
                 )}
               </div>
