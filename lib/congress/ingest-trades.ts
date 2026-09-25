@@ -49,6 +49,13 @@ const TRADE_LIMIT = 100;
 const REFRESH_TRADE_LIMIT = 20;
 
 /**
+ * Wider re-fetch when a refresh window comes back entirely new (see
+ * ingestPolitician). 515 credits, paid only when a member has actually filed
+ * a batch bigger than the window, which is rare for everyone except Trump.
+ */
+const BURST_TRADE_LIMIT = 500;
+
+/**
  * Skip a positions snapshot above this many open positions.
  *
  * Positions cost 30 + 1 per row and the endpoint takes no limit, so a single
@@ -142,8 +149,45 @@ export interface NewTrade {
 export function normalizeSymbol(ticker: string | null): string | null {
   if (!ticker) return null;
   const t = ticker.trim().toUpperCase();
-  if (!t || t === 'N/A' || t === 'NA' || t === '--') return null;
+  if (!t || t === 'N/A' || t === 'NA' || t === '--' || t === 'OTHER') return null;
   return t;
+}
+
+/**
+ * Descriptions that must never be name-resolved to a ticker: a preferred,
+ * note or warrant shares its issuer's name ('JPMORGAN CHASE & CO PERP NN
+ * 6.8750%') but is not the common stock, so resolving it would misstate what
+ * was traded.
+ */
+const NOT_COMMON_STOCK = /PERP|%|\bNT\b|\bNOTES?\b|\bPFD\b|PREFERRED|WARRANT|\bWTS?\b|\bRIGHTS?\b|\bUNITS?\b|\bBONDS?\b|\bDEB\b/i;
+
+export function isNameResolvable(description: string): boolean {
+  return !NOT_COMMON_STOCK.test(description);
+}
+
+/**
+ * Fill in tickers the vendor left blank, from the issuer name in the filing.
+ *
+ * Deterministic, not fuzzy (see migration 155): resolve_issuer_symbols only
+ * answers when every candidate from 13F issuer names and our listed-stock
+ * names agrees on exactly one symbol. Donald Trump's filings are the reason
+ * this exists: the vendor resolves none of them, while ~92% of the plain SEC
+ * issuer names map cleanly. Anything unresolved stays NULL and is simply not
+ * shown, which is the safe failure.
+ */
+export async function resolveMissingSymbols<T extends { symbol: string | null; asset_description: string }>(
+  supabase: ReturnType<typeof createServerClient>,
+  rows: T[],
+): Promise<(T & { symbol_source?: string })[]> {
+  const names = [...new Set(rows.filter((r) => !r.symbol && isNameResolvable(r.asset_description)).map((r) => r.asset_description))];
+  if (names.length === 0) return rows;
+  const { data, error } = await supabase.rpc('resolve_issuer_symbols' as never, { names } as never);
+  if (error || !data) return rows;
+  const map = new Map((data as { name: string; symbol: string }[]).map((d) => [d.name, d.symbol]));
+  return rows.map((r) => {
+    const symbol = !r.symbol ? map.get(r.asset_description) : undefined;
+    return symbol ? { ...r, symbol, symbol_source: 'name_match' } : r;
+  });
 }
 
 /**
@@ -230,11 +274,28 @@ export async function ingestPolitician(
     creditsCharged: 0,
   };
 
+  const limit = opts.limit ?? TRADE_LIMIT;
   let trades: VendorTrade[];
   try {
-    const out = await fetchTrades(politician.dc_politician_id, opts.limit ?? TRADE_LIMIT);
+    const out = await fetchTrades(politician.dc_politician_id, limit);
     trades = out.trades;
     base.creditsCharged = out.creditsCharged;
+
+    // A full page of rows we have never seen means the member filed more than
+    // the window since the last run (Trump files 60+ trades on a single day),
+    // so the overflow would be silently skipped. Re-fetch wider, once.
+    // Refresh runs only: a first backfill is all-new by definition.
+    if (limit === REFRESH_TRADE_LIMIT && trades.length === limit) {
+      const { data: known } = await supabase
+        .from('congress_trades')
+        .select('dc_trade_id')
+        .in('dc_trade_id', trades.map((t) => t.id));
+      if ((known ?? []).length === 0) {
+        const wide = await fetchTrades(politician.dc_politician_id, BURST_TRADE_LIMIT);
+        trades = wide.trades;
+        base.creditsCharged += wide.creditsCharged;
+      }
+    }
   } catch (err) {
     return { ...base, error: err instanceof Error ? err.message : String(err) };
   }
@@ -246,7 +307,7 @@ export async function ingestPolitician(
 
   base.fetched = trades.length;
 
-  const rows = buildRows(trades, politician.id);
+  const rows = await resolveMissingSymbols(supabase, buildRows(trades, politician.id));
   base.skipped = trades.length - rows.length;
   if (rows.length === 0) return base;
 

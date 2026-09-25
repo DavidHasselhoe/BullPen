@@ -9,7 +9,7 @@
  */
 
 import assert from 'node:assert/strict';
-import { normalizeSymbol, buildRows } from '../lib/congress/ingest-trades';
+import { normalizeSymbol, buildRows, isNameResolvable } from '../lib/congress/ingest-trades';
 import { tradeDirection, isFiledLate, formatAmountRange } from '../lib/congress/types';
 
 // Both ends always survive. Nothing here may ever average them into one
@@ -120,5 +120,17 @@ assert.ok(
 
 // The disclosure lag is stored as filed, not recomputed.
 assert.equal(rows[0].days_to_disclose, 24);
+
+// The vendor's UI shows 'OTHER' for Trump's unresolved rows; never store it as a ticker.
+assert.equal(normalizeSymbol('OTHER'), null);
+
+// Preferreds and notes share the issuer's name but are not its common stock,
+// so they must never be name-resolved (real descriptions from Trump's filings).
+assert.equal(isNameResolvable('JPMORGAN CHASE & CO PERP NN 6.8750%'), false);
+assert.equal(isNameResolvable('ALLY FINL INC PERP -D NT 7.1000%'), false);
+assert.equal(isNameResolvable('COREBRIDGE FINL INC PERP -A 6.8750%'), false);
+assert.equal(isNameResolvable('HOME DEPOT INC'), true);
+assert.equal(isNameResolvable('META PLATFORMS INC CLASS A'), true);
+assert.equal(isNameResolvable('UNITEDHEALTH GROUP INC'), true, 'UNIT must match whole words only');
 
 console.log('congress ingest checks passed');
