@@ -59,6 +59,14 @@
         "text": "Deleting your account now opens a clear confirmation that explains what will be removed"
       },
       {
+        "type": "improved",
+        "text": "The Daily Brief scrolls smoothly now, even on long briefs"
+      },
+      {
+        "type": "improved",
+        "text": "Hovering a market mover now shows its ticker in place of the name, and the list no longer jumps around as you move over it"
+      },
+      {
         "type": "fixed",
         "text": "Deleting your account now also cancels a Pro subscription, so you are never charged again"
       },
@@ -73,6 +81,10 @@
       {
         "type": "fixed",
         "text": "The alert preview now reads correctly for every alert type"
+      },
+      {
+        "type": "fixed",
+        "text": "Dates now always show in the language you picked in BullPen, instead of your browser language"
       }
     ]
   },
