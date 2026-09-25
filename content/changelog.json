@@ -1,5 +1,82 @@
 [
   {
+    "date": "2026-09-25",
+    "entries": [
+      {
+        "type": "new",
+        "text": "Follow any politician in Washington Trading and get a notification when they disclose new stock trades. Washington Trading now updates every week on its own"
+      },
+      {
+        "type": "new",
+        "text": "Donald Trump is now in Washington Trading, with his disclosed stock trades matched to the right tickers"
+      },
+      {
+        "type": "new",
+        "text": "Every disclosed trade now shows the stock price when the politician traded and when the trade became public, so you can see how much it had already moved before anyone could know. Each politician also shows the typical move across their buys"
+      },
+      {
+        "type": "new",
+        "text": "Stock pages now show which tracked politicians bought or sold that stock in the last 12 months"
+      },
+      {
+        "type": "new",
+        "text": "Pro: each politician has a scorecard showing what buying their trades on the day they became public would have returned, compared with the S&P 500"
+      },
+      {
+        "type": "new",
+        "text": "Pro: see which of your holdings and watchlist stocks politicians traded recently, and get notified when it happens"
+      },
+      {
+        "type": "new",
+        "text": "Ask Bull can now answer questions about politicians' trades, like what Nancy Pelosi bought lately, and can read the price alerts you have set"
+      },
+      {
+        "type": "improved",
+        "text": "Washington Trading now focuses on politicians who are still actively trading stocks"
+      },
+      {
+        "type": "improved",
+        "text": "Market movers now lead with the company name, with the ticker underneath, and losses read as -$8.86 instead of $-8.86"
+      },
+      {
+        "type": "improved",
+        "text": "When Bull offers to take you to a page, the Yes and No buttons now come after its reply and are easier to see"
+      },
+      {
+        "type": "improved",
+        "text": "Reaching the free alert limit now shows what Pro unlocks, with a preview of the alert you were creating"
+      },
+      {
+        "type": "improved",
+        "text": "Free accounts can start the 7 day Pro trial straight from the profile menu"
+      },
+      {
+        "type": "improved",
+        "text": "Picking your date of birth at sign up now uses a proper calendar that covers every birth year"
+      },
+      {
+        "type": "improved",
+        "text": "Deleting your account now opens a clear confirmation that explains what will be removed"
+      },
+      {
+        "type": "fixed",
+        "text": "Deleting your account now also cancels a Pro subscription, so you are never charged again"
+      },
+      {
+        "type": "fixed",
+        "text": "Bull no longer doubts live stock prices just because they differ from what it remembers"
+      },
+      {
+        "type": "fixed",
+        "text": "The sign up preview no longer says you will get alerts for example stocks you did not pick"
+      },
+      {
+        "type": "fixed",
+        "text": "The alert preview now reads correctly for every alert type"
+      }
+    ]
+  },
+  {
     "date": "2026-09-24",
     "entries": [
       {
