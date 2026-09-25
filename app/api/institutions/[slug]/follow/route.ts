@@ -30,10 +30,10 @@ async function resolveInvestorId(
 
 async function handler(
   request: NextRequest,
-  context: { params: Promise<{ slug: string }> },
+  context: unknown,
   session: { userId: string }
 ): Promise<NextResponse> {
-  const { slug } = await context.params;
+  const { slug } = await (context as { params: Promise<{ slug: string }> }).params;
   if (!isInstitutionalFundSlug(slug)) {
     return addSecurityHeaders(NextResponse.json({ success: false, error: 'not_found' }, { status: 404 }));
   }

@@ -12,10 +12,10 @@ import { createServerClient } from '@/lib/supabase/client';
 
 async function handler(
   request: NextRequest,
-  context: { params: Promise<{ slug: string }> },
+  context: unknown,
   session: { userId: string }
 ): Promise<NextResponse> {
-  const { slug } = await context.params;
+  const { slug } = await (context as { params: Promise<{ slug: string }> }).params;
   const supabase = createServerClient();
 
   const { data: member } = await supabase

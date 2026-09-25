@@ -14,13 +14,13 @@ import { TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
 
 async function handler(
   _request: NextRequest,
-  context: { params: Promise<{ slug: string }> },
+  context: unknown,
   session: { userId: string }
 ): Promise<NextResponse> {
   if (!isPro(await getTier(session.userId))) {
     return addSecurityHeaders(NextResponse.json({ success: false, error: 'upgrade_required' }, { status: 403 }));
   }
-  const { slug } = await context.params;
+  const { slug } = await (context as { params: Promise<{ slug: string }> }).params;
   try {
     const scorecard = await getScorecard(slug);
     return addSecurityHeaders(NextResponse.json({ success: true, scorecard }));

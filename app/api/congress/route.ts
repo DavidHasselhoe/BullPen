@@ -20,6 +20,12 @@ import { getCached, setCached } from '@/lib/cache/market-data-cache';
 const CACHE_KEY = 'congress:member-list:v1';
 const CACHE_TTL_SECONDS = 60 * 60;
 
+/** Same list for every visitor: let the CDN answer before the DB cache is even asked. */
+function cdn(res: NextResponse): NextResponse {
+  res.headers.set('Cache-Control', 'public, s-maxage=900, stale-while-revalidate=86400');
+  return addSecurityHeaders(res);
+}
+
 export interface CongressMemberSummary {
   slug: string;
   displayName: string;
@@ -49,7 +55,7 @@ interface MemberRow {
 async function handler(_request: NextRequest) {
   try {
     const cached = await getCached<{ members: CongressMemberSummary[] }>(CACHE_KEY);
-    if (cached) return addSecurityHeaders(NextResponse.json({ success: true, ...cached }));
+    if (cached) return cdn(NextResponse.json({ success: true, ...cached }));
 
     const supabase = createServerClient();
 
@@ -110,7 +116,7 @@ async function handler(_request: NextRequest) {
     const payload = { members };
     void setCached(CACHE_KEY, 'congress', 'congress_member_list', payload, CACHE_TTL_SECONDS);
 
-    return addSecurityHeaders(NextResponse.json({ success: true, ...payload }));
+    return cdn(NextResponse.json({ success: true, ...payload }));
   } catch (err) {
     console.error('[api/congress]', err);
     return addSecurityHeaders(

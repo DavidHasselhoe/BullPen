@@ -143,7 +143,11 @@ async function handler(_request: NextRequest, context?: unknown) {
       })),
     };
 
-    return addSecurityHeaders(NextResponse.json({ success: true, member: detail }));
+    // Public, identical for every visitor, and only changes when the weekly
+    // refresh runs, so the CDN can serve it; a 30 min lag is invisible here.
+    const res = NextResponse.json({ success: true, member: detail });
+    res.headers.set('Cache-Control', 'public, s-maxage=1800, stale-while-revalidate=86400');
+    return addSecurityHeaders(res);
   } catch (err) {
     console.error('[api/congress/[slug]]', err);
     return addSecurityHeaders(

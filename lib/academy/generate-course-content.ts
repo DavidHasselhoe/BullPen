@@ -138,10 +138,15 @@ function glossaryByLooseMatch(term: string): { description: string } | undefined
 }
 
 /** Generates + validates every lesson in an outline, in order. Throws on the first lesson that exhausts its retries. */
-export async function generateCourseLessons(outline: CourseOutline): Promise<unknown[]> {
+export async function generateCourseLessons(
+  outline: CourseOutline,
+  // stderr by default because the CLI writes SQL to stdout; the cron passes
+  // console.log, since Vercel files every stderr line as a runtime error.
+  progress: (msg: string) => void = console.error,
+): Promise<unknown[]> {
   const contents: unknown[] = [];
   for (const lesson of outline.lessons) {
-    console.error(`  • ${lesson.slug} (${lesson.type})…`);
+    progress(`  • ${lesson.slug} (${lesson.type})…`);
     contents.push(await generateLessonContent(lesson));
   }
   return contents;

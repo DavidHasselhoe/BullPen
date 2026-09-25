@@ -96,10 +96,10 @@ export interface CongressPolitician {
 interface VendorTrade {
   id: number;
   ticker: string | null;
-  // Member metadata rides along on every trade row; used by backfillMemberMeta.
-  party: string | null;
-  state: string | null;
-  chamber: string | null;
+  // Member metadata rides along on trade rows; used by backfillMemberMeta.
+  party?: string | null;
+  state?: string | null;
+  chamber?: string | null;
   trade_type: string | null;
   asset_type: string | null;
   asset_description: string | null;
@@ -169,6 +169,16 @@ export function isNameResolvable(description: string): boolean {
 }
 
 /**
+ * Only 'Stock' and 'Other' rows can be a listed common stock (Trump's rows
+ * are only ever these two). Bonds, trusts, options, partnerships and munis
+ * made up most unresolved rows and cost a ~3.7s resolver call each run for
+ * nothing but the chance of a wrong match.
+ */
+export function isResolvableType(assetType: string | null | undefined): boolean {
+  return assetType == null || assetType === 'Stock' || assetType === 'Other';
+}
+
+/**
  * Fill in tickers the vendor left blank, from the issuer name in the filing.
  *
  * Deterministic, not fuzzy (see migration 155): resolve_issuer_symbols only
@@ -178,11 +188,11 @@ export function isNameResolvable(description: string): boolean {
  * issuer names map cleanly. Anything unresolved stays NULL and is simply not
  * shown, which is the safe failure.
  */
-export async function resolveMissingSymbols<T extends { symbol: string | null; asset_description: string }>(
+export async function resolveMissingSymbols<T extends { symbol: string | null; asset_description: string; asset_type?: string | null }>(
   supabase: ReturnType<typeof createServerClient>,
   rows: T[],
 ): Promise<(T & { symbol_source?: string })[]> {
-  const names = [...new Set(rows.filter((r) => !r.symbol && isNameResolvable(r.asset_description)).map((r) => r.asset_description))];
+  const names = [...new Set(rows.filter((r) => !r.symbol && isResolvableType(r.asset_type) && isNameResolvable(r.asset_description)).map((r) => r.asset_description))];
   if (names.length === 0) return rows;
   const { data, error } = await supabase.rpc('resolve_issuer_symbols' as never, { names } as never);
   if (error || !data) return rows;

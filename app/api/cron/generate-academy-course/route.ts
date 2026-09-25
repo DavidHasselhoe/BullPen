@@ -53,7 +53,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   let contents: unknown[];
   try {
-    contents = await generateCourseLessons(nextOutline);
+    contents = await generateCourseLessons(nextOutline, console.log);
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
     console.error(`[generate-academy-course] generation failed for "${nextOutline.slug}":`, err);

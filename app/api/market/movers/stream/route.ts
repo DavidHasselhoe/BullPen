@@ -34,20 +34,13 @@ const MAX_CLIENT_SYMBOLS = 500;
 // never produce a change and were dropped in onTick.
 const DEFAULT_SYMBOLS = MEGA_CAP_TICKERS;
 
-// Module-level name cache, reused across SSE connections. Filled per symbol on
-// demand: the old one-shot `companies` load hit PostgREST's 1000-row cap and
-// that table lacks many large caps (XOM, JNJ, IBM) anyway, so they showed as tickers.
-const _nameCache = new Map<string, string>();
-
+/** getDisplayNames memoises per instance; this only makes a lookup failure non-fatal. */
 async function ensureNames(symbols: string[]): Promise<Map<string, string>> {
-  const missing = symbols.filter((s) => !_nameCache.has(s));
-  if (missing.length === 0) return _nameCache;
   try {
-    for (const [ticker, name] of await getDisplayNames(missing)) _nameCache.set(ticker, name);
+    return await getDisplayNames(symbols);
   } catch {
-    // Non-fatal — stream still works, names fall back to tickers
+    return new Map(); // stream still works, names fall back to tickers
   }
-  return _nameCache;
 }
 
 interface MoverUpdate {
