@@ -96,8 +96,11 @@ export async function runAgent(
    * breakpoint now, which also means the specific instruction is the last
    * thing the model reads.
    */
+  // Without a date the model assumes it lives at its training cutoff and
+  // "corrects" live quotes against stale memory (called MU at $1,056 a glitch).
+  const datePrefix = `[Today's date: ${new Date().toISOString().slice(0, 10)}]\n\n`;
   const perRequestPrefix =
-    languagePrefix + experiencePrefix + riskPrefix + horizonPrefix + stylePrefix + contextPrefix;
+    datePrefix + languagePrefix + experiencePrefix + riskPrefix + horizonPrefix + stylePrefix + contextPrefix;
 
   const result = streamText({
     model: anthropic('claude-sonnet-5'),
