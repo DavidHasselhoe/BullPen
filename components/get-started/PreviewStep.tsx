@@ -19,11 +19,15 @@ const ALERT_WORDS: Record<keyof AlertChoices, string> = {
   dividend_reminder: 'dividend dates',
 };
 
-function alertsSentence(alerts: AlertChoices): string {
+// With no picks the rows are examples that are NOT added to the watchlist
+// (flush.ts only saves pending.picks), so the promise must not name them.
+function alertsSentence(alerts: AlertChoices, isExample: boolean): string {
   const on = (Object.keys(alerts) as (keyof AlertChoices)[]).filter((k) => alerts[k]).map((k) => ALERT_WORDS[k]);
   if (on.length === 0) return 'Alerts are off. You can turn them on anytime in Settings.';
   const list = on.length === 1 ? on[0] : `${on.slice(0, -1).join(', ')} and ${on[on.length - 1]}`;
-  return `We'll notify you about ${list} for these stocks.`;
+  return isExample
+    ? `Add stocks to your watchlist and we'll notify you about ${list} for them.`
+    : `We'll notify you about ${list} for these stocks.`;
 }
 
 export function PreviewStep({
@@ -78,7 +82,7 @@ export function PreviewStep({
     <StepShell stepIndex={stepIndex} totalSteps={totalSteps} onBack={onBack} maxWidth={480}>
       <StepHeadline text="Your BullPen is" accent="ready." />
       <p style={{ margin: '0 0 24px', textAlign: 'center', fontSize: 15, color: 'var(--fg-muted)' }}>
-        {isExample ? 'No picks yet, so here are a few popular ones, live.' : 'Your watchlist, live.'}
+        {isExample ? 'You skipped picking stocks. Here is how a few popular ones are doing right now.' : 'Your watchlist, live.'}
       </p>
 
       {/* One container with divided rows reads as a watchlist, not a stack of
@@ -139,7 +143,7 @@ export function PreviewStep({
           on a phone, a flex icon floats alone at the left edge. */}
       <p style={{ margin: '16px 0 0', fontSize: 14, lineHeight: 1.5, color: 'var(--fg-muted)', textAlign: 'center', textWrap: 'balance' }}>
         <AlertIcon size={15} aria-hidden style={{ display: 'inline', verticalAlign: '-2px', marginRight: 6 }} />
-        {alertsSentence(alerts)}
+        {alertsSentence(alerts, isExample)}
       </p>
 
       <GetStartedSignupForm />
