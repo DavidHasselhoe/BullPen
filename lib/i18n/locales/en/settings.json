@@ -191,5 +191,7 @@
   "deleteDialogCancel": "Cancel",
   "deleteDialogConfirm": "Delete my account",
   "notifPoliticianTradesLabel": "Politician Trades",
-  "notifPoliticianTradesDescription": "Get notified when a politician you follow discloses new stock trades"
+  "notifPoliticianTradesDescription": "Get notified when a politician you follow discloses new stock trades",
+  "notifPoliticianHoldingsLabel": "Politician Trades in Your Stocks",
+  "notifPoliticianHoldingsDescription": "Pro: get notified when a tracked politician trades a stock you own or watch"
 }

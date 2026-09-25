@@ -213,6 +213,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
     daily_challenge_reminder: true,
     institution_filing: true,
     politician_trades: true,
+    politician_trades_holdings: true,
     // Opt-in: ~6-8 market-wide releases a month is noise for anyone not following macro.
     economic_events: false,
   });
@@ -262,6 +263,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
         daily_challenge_reminder: settings.notifications?.daily_challenge_reminder !== false,
         institution_filing: settings.notifications?.institution_filing !== false,
         politician_trades: settings.notifications?.politician_trades !== false,
+        politician_trades_holdings: settings.notifications?.politician_trades_holdings !== false,
         economic_events: settings.notifications?.economic_events === true,
       });
       const dh = (settings.default_homepage as string) || '/dashboard';
@@ -901,6 +903,12 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                     description={t('notifPoliticianTradesDescription')}
                     checked={notifications.politician_trades}
                     onCheckedChange={(checked) => setNotifications({ ...notifications, politician_trades: checked })}
+                  />
+                  <ToggleSetting
+                    label={t('notifPoliticianHoldingsLabel')}
+                    description={t('notifPoliticianHoldingsDescription')}
+                    checked={notifications.politician_trades_holdings}
+                    onCheckedChange={(checked) => setNotifications({ ...notifications, politician_trades_holdings: checked })}
                   />
                   <ToggleSetting
                     label={t('notifDailyChallengeLabel')}

@@ -189,7 +189,9 @@
   "deleteDialogTypeLabelAfter": "ein zum Bestätigen",
   "deleteDialogCancel": "Abbrechen",
   "deleteDialogConfirm": "Mein Konto löschen",
-  "sectionPlanLabel": "Plan",
   "notifPoliticianTradesLabel": "Politiker-Trades",
-  "notifPoliticianTradesDescription": "Erhalte eine Benachrichtigung, wenn ein Politiker, dem du folgst, neue Aktiengeschäfte offenbart"
+  "notifPoliticianTradesDescription": "Erhalte eine Benachrichtigung, wenn ein Politiker, dem du folgst, neue Aktiengeschäfte offenbart",
+  "sectionPlanLabel": "Plan",
+  "notifPoliticianHoldingsLabel": "Politiker handeln deine Aktien",
+  "notifPoliticianHoldingsDescription": "Pro: Erhalte eine Benachrichtigung, wenn ein überwachter Politiker eine Aktie handelt, die du besitzt oder beobachtest"
 }

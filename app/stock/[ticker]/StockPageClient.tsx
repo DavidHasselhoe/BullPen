@@ -64,6 +64,10 @@ const HealthScoreCard = dynamic(
   { ssr: false }
 );
 
+const WashingtonActivityCard = dynamic(
+  () => import('@/components/stock/WashingtonActivityCard').then((m) => ({ default: m.WashingtonActivityCard })),
+  { ssr: false }
+);
 const SankeyCard = dynamic(
   () => import('@/components/stock/SankeyCard').then((m) => ({ default: m.SankeyCard })),
   { ssr: false }
@@ -467,6 +471,13 @@ export default function StockPageClient() {
                     </StockSectionBoundary>
                   </LazySection>
                 </div>
+
+                {/* Renders nothing for the many stocks no tracked politician traded. */}
+                <LazySection key={`washington-${ticker}`} minHeight={0}>
+                  <StockSectionBoundary>
+                    <WashingtonActivityCard ticker={ticker} />
+                  </StockSectionBoundary>
+                </LazySection>
               </>
             )}
 

@@ -35,7 +35,7 @@
     },
     {
       "path": "/api/cron/refresh-congress-trades",
-      "schedule": "0 14 * * 2,5"
+      "schedule": "0 14 * * 2"
     },
     {
       "path": "/api/cron/check-price-moves",

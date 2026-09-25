@@ -189,7 +189,9 @@
   "deleteDialogTypeLabelAfter": "for å bekrefte",
   "deleteDialogCancel": "Avbryt",
   "deleteDialogConfirm": "Slett kontoen min",
-  "sectionPlanLabel": "Plan",
   "notifPoliticianTradesLabel": "Politikertransaksjoner",
-  "notifPoliticianTradesDescription": "Få varsel når en politiker du følger avslører nye aksjehandler"
+  "notifPoliticianTradesDescription": "Få varsel når en politiker du følger avslører nye aksjehandler",
+  "sectionPlanLabel": "Plan",
+  "notifPoliticianHoldingsLabel": "Politikertransaksjoner i dine aksjer",
+  "notifPoliticianHoldingsDescription": "Pro: få varsel når en fulgt politiker handler en aksje du eier eller følger"
 }

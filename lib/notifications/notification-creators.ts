@@ -12,6 +12,7 @@ import { createNotification, type CreateNotificationInput } from './notification
 import { createServerClient } from '@/lib/supabase/client';
 import type { NewTrade } from '@/lib/congress/ingest-trades';
 import { formatAmountRange, tradeDirection } from '@/lib/congress/types';
+import { isPro, tierFromUser } from '@/lib/billing/tier';
 import { ECONOMIC_KINDS, type EconomicKind } from '@/lib/market-data/economic-kinds';
 import { CALENDAR_PREFS_KEY, parseCalendarPrefs } from '@/lib/market-data/calendar-prefs';
 
@@ -641,6 +642,77 @@ export async function notifyPoliticianTrades(notice: PoliticianTradesNotice): Pr
       type: 'politician_trade',
       title,
       message,
+      entity_type: 'politician',
+      entity_id: entityId,
+      severity: 'info',
+    });
+    if (result.success) sent++;
+  }
+  return sent;
+}
+
+/**
+ * Pro: tells users when tracked politicians disclosed trades in stocks they
+ * hold or watch, whether or not they follow those politicians. One summary
+ * per user per refresh run, idempotent on the run's newest trade id.
+ */
+export async function notifyHoldersOfPoliticianTrades(
+  batch: { displayName: string; trades: NewTrade[] }[],
+): Promise<number> {
+  const bySymbol = new Map<string, string[]>();
+  let newest = 0;
+  for (const m of batch) {
+    for (const t of m.trades) {
+      if (!t.symbol) continue;
+      newest = Math.max(newest, t.dc_trade_id);
+      const dir = tradeDirection(t.trade_type);
+      const line = `${m.displayName} ${dir === 'buy' ? 'bought' : dir === 'sell' ? 'sold' : t.trade_type.toLowerCase()}`;
+      const lines = bySymbol.get(t.symbol) ?? [];
+      if (!lines.includes(line)) bySymbol.set(t.symbol, [...lines, line]);
+    }
+  }
+  if (bySymbol.size === 0) return 0;
+  const symbols = [...bySymbol.keys()];
+  const supabase = createServerClient();
+
+  const [held, watched] = await Promise.all([
+    supabase.from('user_holdings').select('user_id, symbol').in('symbol', symbols),
+    supabase.from('user_watchlist').select('user_id, symbol').in('symbol', symbols),
+  ]);
+  const userSymbols = new Map<string, Set<string>>();
+  for (const r of [...((held.data ?? []) as { user_id: string; symbol: string }[]), ...((watched.data ?? []) as { user_id: string; symbol: string }[])]) {
+    userSymbols.set(r.user_id, (userSymbols.get(r.user_id) ?? new Set()).add(r.symbol.toUpperCase()));
+  }
+  if (userSymbols.size === 0) return 0;
+
+  const { data: users } = (await supabase
+    .from('users')
+    .select('id, settings, account_tier, role, pro_bonus_until')
+    .in('id', [...userSymbols.keys()])) as unknown as {
+    data: Array<{ id: string; settings: { notifications?: Record<string, boolean> } | null; account_tier: number | null; role: string | null; pro_bonus_until: string | null }> | null;
+  };
+
+  const entityId = `politician-holdings:${newest}`;
+  let sent = 0;
+  for (const u of users ?? []) {
+    if (!isPro(tierFromUser(u.account_tier, u.role, u.pro_bonus_until))) continue;
+    if (u.settings?.notifications?.politician_trades_holdings === false) continue;
+    const mine = [...(userSymbols.get(u.id) ?? [])].filter((s) => bySymbol.has(s));
+    if (mine.length === 0) continue;
+
+    const { data: existing } = await supabase
+      .from('notifications').select('id')
+      .eq('user_id', u.id).eq('type', 'politician_trade').eq('entity_id', entityId)
+      .limit(1).maybeSingle<{ id: string }>();
+    if (existing) continue;
+
+    const parts = mine.slice(0, 3).map((s) => `${s}: ${bySymbol.get(s)!.join(', ')}`);
+    const more = mine.length - parts.length;
+    const result = await createNotification({
+      user_id: u.id,
+      type: 'politician_trade',
+      title: `Politicians traded ${mine.length === 1 ? '1 of your stocks' : `${mine.length} of your stocks`}`,
+      message: parts.join('. ') + (more > 0 ? `. And ${more} more.` : '.'),
       entity_type: 'politician',
       entity_id: entityId,
       severity: 'info',

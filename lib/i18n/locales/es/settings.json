@@ -189,7 +189,9 @@
   "deleteDialogTypeLabelAfter": "para confirmar",
   "deleteDialogCancel": "Cancelar",
   "deleteDialogConfirm": "Eliminar mi cuenta",
-  "sectionPlanLabel": "Plan",
   "notifPoliticianTradesLabel": "Operaciones de Políticos",
-  "notifPoliticianTradesDescription": "Recibe notificaciones cuando un político que sigues divulga nuevas operaciones de acciones"
+  "notifPoliticianTradesDescription": "Recibe notificaciones cuando un político que sigues divulga nuevas operaciones de acciones",
+  "sectionPlanLabel": "Plan",
+  "notifPoliticianHoldingsLabel": "Operaciones de Políticos en tus Acciones",
+  "notifPoliticianHoldingsDescription": "Pro: recibe notificaciones cuando un político rastreado opera una acción que posees o sigues"
 }

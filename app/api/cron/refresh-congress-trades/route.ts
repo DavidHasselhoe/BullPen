@@ -2,14 +2,14 @@
  * Washington Trading refresh
  * GET /api/cron/refresh-congress-trades
  *
- * Tuesday and Friday 14:00 UTC (vercel.json). Before this existed nothing
+ * Tuesday 14:00 UTC (vercel.json), weekly to save vendor credits. Before this existed nothing
  * refreshed congress_trades at all: every update was a manual
  * `npm run ingest-congress`, so the section froze at whenever someone last ran it.
  *
  * Runs the --refresh sweep (20 newest trades per member, ~35 credits each,
- * ~665 per run for 19 members, ~5,700 a month; see migration 154) and tells followers about
- * any trade this run stored for the first time. Twice a week because PTRs are
- * filed 30-46 days after the trade: polling daily would pay 2.5x for news that
+ * ~665 per run for 19 members, ~2,850 a month; see migration 154) and tells followers about
+ * any trade this run stored for the first time. Weekly because PTRs are
+ * filed 30-46 days after the trade: polling more often pays for news that
  * is already weeks old. Positions are NOT refreshed here; their cost is
  * per-row and unbounded, see MAX_POSITIONS_PER_MEMBER.
  */
@@ -18,7 +18,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { logSecurityEvent } from '@/lib/security/security-events';
 import { createServerClient } from '@/lib/supabase/client';
 import { ingestAllPoliticians } from '@/lib/congress/ingest-trades';
-import { notifyPoliticianTrades } from '@/lib/notifications/notification-creators';
+import { notifyHoldersOfPoliticianTrades, notifyPoliticianTrades } from '@/lib/notifications/notification-creators';
 import { invalidateCachedPrefix } from '@/lib/cache/market-data-cache';
 
 export const maxDuration = 300;
@@ -56,12 +56,24 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       }
     }
 
+    // Pro: one summary to each user whose holdings/watchlist were traded.
+    let notifiedHolders = 0;
+    try {
+      notifiedHolders = await notifyHoldersOfPoliticianTrades(
+        results
+          .filter((r) => r.newTrades?.length && bySlug.has(r.slug))
+          .map((r) => ({ displayName: bySlug.get(r.slug)!.display_name, trades: r.newTrades! })),
+      );
+    } catch (err) {
+      console.error('[refresh-congress-trades] holder notify failed', err);
+    }
+
     const inserted = results.reduce((s, r) => s + r.inserted, 0);
     // Cards show trade counts and last-trade dates; don't make them wait out the 1h cache.
     if (inserted > 0) await invalidateCachedPrefix('congress:');
 
     const failed = results.filter((r) => r.error).map((r) => ({ slug: r.slug, error: r.error }));
-    return NextResponse.json({ inserted, notified, totalCredits, failed });
+    return NextResponse.json({ inserted, notified, notifiedHolders, totalCredits, failed });
   } catch (error) {
     console.error('[refresh-congress-trades] failed', error);
     return NextResponse.json({ error: 'Failed' }, { status: 500 });

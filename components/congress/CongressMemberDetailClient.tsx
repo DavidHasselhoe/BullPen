@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { ControlSelect } from '@/components/ui/ControlSelect';
 import { DisclosureNote } from './DisclosureNote';
 import { FollowFundButton } from '@/components/institutions/FollowFundButton';
+import { PoliticianScorecard } from './PoliticianScorecard';
 import { ListSearch } from './ListSearch';
 import { PoliticianAvatar } from './PoliticianAvatar';
 import type { CongressMemberDetail, CongressHoldingRow } from '@/app/api/congress/[slug]/route';
@@ -311,6 +312,8 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
         </div>
         <FollowFundButton kind="politician" slug={member.slug} displayName={member.displayName} />
       </header>
+
+      <PoliticianScorecard slug={member.slug} displayName={member.displayName} />
 
       {/* ---------------- Estimated portfolio ---------------- */}
       <section aria-labelledby="congress-holdings-heading" className="mb-10">

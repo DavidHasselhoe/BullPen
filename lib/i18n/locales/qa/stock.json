@@ -384,5 +384,19 @@
   "thesisHrsAgo_one": "«{{count}}h aagoo»",
   "thesisHrsAgo_other": "«{{count}}h aagoo»",
   "thesisDaysAgo_one": "«{{count}}d aagoo»",
-  "thesisDaysAgo_other": "«{{count}}d aagoo»"
+  "thesisDaysAgo_other": "«{{count}}d aagoo»",
+  "washingtonTitle": "«Waashiingtoon aactiiviity»",
+  "washingtonSummary_one": "«{{count}} traackeed pooliitiiciiaan traadeed {{ticker}} iin thee laast 12 moonths.»",
+  "washingtonSummary_other": "«{{count}} traackeed pooliitiiciiaans traadeed {{ticker}} iin thee laast 12 moonths.»",
+  "washingtonBuyersSellers": "«{{buyers}} boouught, {{sellers}} soold.»",
+  "washingtonBought": "«Boouught»",
+  "washingtonSold": "«Soold»",
+  "washingtonTraded": "«Traadeed {{date}}»",
+  "washingtonPublic": "«puubliic {{date}}»",
+  "washingtonMove": "«{{pct}} beefooree puubliic»",
+  "washingtonMoveTitle": "«Hoow muuch thee stoock mooveed beetweeeen thee traadee aand thee daay iit waas diisclooseed»",
+  "washingtonShowAll": "«Shoow aall {{count}}»",
+  "washingtonShowLess": "«Shoow leess»",
+  "washingtonSeeAll": "«Seeee aall Waashiingtoon traadiing»",
+  "washingtonDelayNote": "«Pooliitiiciiaans caan diiscloosee traadees uup too 45 daays aafteer maakiing theem, soo thiis shoows whaat theey diid, noot whaat theey aaree dooiing noow.»"
 }

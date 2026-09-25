@@ -8,6 +8,7 @@ import { ControlSelect } from '@/components/ui/ControlSelect';
 import { PARTY_LABEL, positionLine } from '@/lib/congress/member-list';
 import { DisclosureNote } from './DisclosureNote';
 import { PoliticianAvatar } from './PoliticianAvatar';
+import { YourStocksInWashington } from './YourStocksInWashington';
 import { FollowFundButton } from '@/components/institutions/FollowFundButton';
 import type { CongressMemberSummary } from '@/app/api/congress/route';
 
@@ -108,7 +109,7 @@ export function CongressSection() {
   if (!isLoading && members.length === 0) return null;
 
   return (
-    <section aria-labelledby="washington-heading" className="mt-12 mb-10">
+    <section id="washington-trading" aria-labelledby="washington-heading" className="mt-12 mb-10 scroll-mt-20">
       <h2
         id="washington-heading"
         className="mb-1 text-sm font-semibold uppercase tracking-widest text-muted-foreground"
@@ -119,6 +120,8 @@ export function CongressSection() {
       <div className="mb-3">
         <DisclosureNote />
       </div>
+
+      <YourStocksInWashington />
 
       {!isLoading && (
         <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2">

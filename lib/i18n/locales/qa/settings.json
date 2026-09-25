@@ -191,5 +191,7 @@
   "deleteDialogCancel": "«Caanceel»",
   "deleteDialogConfirm": "«Deeleetee my aaccoouunt»",
   "notifPoliticianTradesLabel": "«Pooliitiiciiaan Traadees»",
-  "notifPoliticianTradesDescription": "«Geet nootiifiieed wheen aa pooliitiiciiaan yoouu foolloow diiscloosees neew stoock traadees»"
+  "notifPoliticianTradesDescription": "«Geet nootiifiieed wheen aa pooliitiiciiaan yoouu foolloow diiscloosees neew stoock traadees»",
+  "notifPoliticianHoldingsLabel": "«Pooliitiiciiaan Traadees iin Yoouur Stoocks»",
+  "notifPoliticianHoldingsDescription": "«Proo: geet nootiifiieed wheen aa traackeed pooliitiiciiaan traadees aa stoock yoouu oown oor waatch»"
 }

@@ -225,6 +225,10 @@ function notificationSource(n: Notification): { label: string; href: string } | 
     const slug = n.entity_id.split(':')[1];
     if (slug) return { label: '13F holdings', href: `/discover/institutions/${slug}` };
   }
+  // Pro holdings/watchlist summary, not tied to one member.
+  if (n.type === 'politician_trade' && n.entity_id?.startsWith('politician-holdings:')) {
+    return { label: 'Washington Trading', href: '/discover#washington-trading' };
+  }
   // entity_id is "politician:<slug>:<newest dc_trade_id>".
   if (n.type === 'politician_trade' && n.entity_id?.startsWith('politician:')) {
     const slug = n.entity_id.split(':')[1];

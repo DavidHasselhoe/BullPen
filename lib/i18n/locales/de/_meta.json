@@ -2486,5 +2486,21 @@
   "settings.deleteDialogConfirm": "21d5294717e25f755ac2779d2793aece2da1ff942fb43d70380db96e63edd9ff",
   "auth.signupDobPlaceholder": "c1ac97b016a7a45d64e84bebd0ab66a587bd9e0b52b150f539b1ddf50b76fd3f",
   "settings.notifPoliticianTradesLabel": "c214823ddba79a62ff0235e4caadd272f2eeb8cea8a8448796d72fb080cf4f67",
-  "settings.notifPoliticianTradesDescription": "1623ce6934fdbaf68b14b2c797c03900d968b3bdca7c13fb637669b3b78894b0"
+  "settings.notifPoliticianTradesDescription": "1623ce6934fdbaf68b14b2c797c03900d968b3bdca7c13fb637669b3b78894b0",
+  "stock.washingtonTitle": "986c4f59c146832e97cbff210b0f2727858979bfaa3d341fd2cb78110998755f",
+  "stock.washingtonSummary_one": "e2e84da73a5700c255df0e1cafe76ac56690d73a6b5a48b34604887372bc4f50",
+  "stock.washingtonSummary_other": "d78eafaaceaaf4040c80fc46a3862ccf150f474020930aec06be6483eabc961b",
+  "stock.washingtonBuyersSellers": "7b6c10220dd357a0bb22cc224204ec7ce444902f9ac8cf361543d51f584716ca",
+  "stock.washingtonBought": "c67941a4f76a59e2e3f9590f2e2d2b1a34f72b7b4877cf64e1e92f9ec25e17ad",
+  "stock.washingtonSold": "b870b1b48724de514d08b9c2a633a26d96a5a7397440c783c055a1fd55460120",
+  "stock.washingtonTraded": "a5a59803425df9abe7e02e7457d9c03630e3760eb9c6fac9b8c6343394f59588",
+  "stock.washingtonPublic": "863f13a4203662f14b2074beb960f568d3f5ba9536df9c6c406ad36bb2d602aa",
+  "stock.washingtonMove": "88b020963a44cc693dba164209236ed5fca51967381079f413c1c603b355b311",
+  "stock.washingtonMoveTitle": "930cfea03bd71f564df53d6836caf1d66a5023a15d217d2d30e3fcbf07db88e6",
+  "stock.washingtonShowAll": "4d9b71269748d690965d9f80af4168c540965ede4f6f6226e2ae8408f551edb9",
+  "stock.washingtonShowLess": "94ea9b1d33a02975ea6b71d6cf87d461a48de07869c047b5daeb1654e9d539f8",
+  "stock.washingtonSeeAll": "d7d35b1cef18ba2f187e73e59bd4c54820b008a619ea2f2a657495534851bfa1",
+  "stock.washingtonDelayNote": "92ce1ecd89c52fd3fe7a827478b2bdebfca8b2aba218a7f2b8bc109c2c178c61",
+  "settings.notifPoliticianHoldingsLabel": "9b229b450314cc8f695910744d269de7187f7d54004f4d94d4e1f1a70b6cea27",
+  "settings.notifPoliticianHoldingsDescription": "399d51e39f799729e36939dc253d86ead0a10ce25f7e89002db0bc42ad0947ae"
 }

@@ -70,6 +70,7 @@ const STATUS_LABELS: Record<string, string> = {
   removeHolding: 'Removing holding…',
   createAlert: 'Setting up your alert…',
   getMyAlerts: 'Checking your alerts…',
+  getPoliticianTrades: 'Checking politician trades…',
   // Chart controls (chart assistant only)
   setTimeframe: 'Changing timeframe…',
   setChartType: 'Changing chart type…',

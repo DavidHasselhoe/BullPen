@@ -1448,6 +1448,69 @@ export const COMPANY_DATA_TOOLS = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Tool: Washington Trading (stored disclosures only — no API credits)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const getPoliticianTrades = tool({
+  description:
+    "Look up stock trades disclosed by the politicians BullPen tracks (members of Congress and a few executive-branch " +
+    "officials, including Donald Trump). Use for \"what has Pelosi bought lately\", \"did any politicians trade NVDA\", " +
+    '"who in Congress sold Microsoft". Pass a politician name, a ticker, or both. Free: reads stored disclosures, no API ' +
+    'credits. Each trade carries the filed amount RANGE (never state a single dollar figure), the trade and disclosure ' +
+    'dates, and movePct: how far the stock moved between the trade and the day it became public. Always say that trades ' +
+    'are disclosed up to 45 days late, so this is history, not a live signal, and never frame it as a reason to buy. ' +
+    'Only tracked politicians are covered; an empty result does not mean nobody in Congress traded the stock.',
+  inputSchema: jsonSchema<{ politician?: string; ticker?: string; days?: number }>({
+    type: 'object',
+    properties: {
+      politician: { type: 'string', description: 'Full or partial name, e.g. "Pelosi", "Tuberville", "Trump"' },
+      ticker: { type: 'string', description: 'Stock ticker, e.g. NVDA' },
+      days: { type: 'number', minimum: 1, maximum: 730, description: 'Look-back window by trade date. Default 180.' },
+    },
+    additionalProperties: false,
+  }),
+  execute: async ({ politician, ticker, days = 180 }) => {
+    if (!politician && !ticker) return { error: 'Pass a politician name, a ticker, or both.' };
+    const since = new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
+    let query = supabase()
+      .from('congress_trades')
+      .select('symbol, trade_type, amount_range, transaction_date, disclosure_date, price_at_trade, price_at_disclosure, congress_politicians!inner(slug, display_name, party, chamber, is_active)')
+      .eq('congress_politicians.is_active', true)
+      .not('symbol', 'is', null)
+      .gte('transaction_date', since)
+      .order('transaction_date', { ascending: false })
+      .limit(40);
+    if (ticker) query = query.eq('symbol', ticker.toUpperCase());
+    if (politician) query = query.ilike('congress_politicians.display_name', `%${politician.replace(/[%_]/g, '')}%`);
+    const { data, error } = await query;
+    if (error) return { error: 'Could not load politician trades.' };
+
+    type Row = {
+      symbol: string; trade_type: string; amount_range: string; transaction_date: string; disclosure_date: string | null;
+      price_at_trade: number | null; price_at_disclosure: number | null;
+      congress_politicians: { slug: string; display_name: string; party: string | null; chamber: string | null };
+    };
+    const trades = ((data ?? []) as unknown as Row[]).map((r) => {
+      const pt = r.price_at_trade == null ? null : Number(r.price_at_trade);
+      const pd = r.price_at_disclosure == null ? null : Number(r.price_at_disclosure);
+      return {
+        politician: r.congress_politicians.display_name,
+        party: r.congress_politicians.party,
+        chamber: r.congress_politicians.chamber,
+        ticker: r.symbol,
+        action: r.trade_type,
+        amountRange: r.amount_range,
+        tradeDate: r.transaction_date,
+        disclosedDate: r.disclosure_date,
+        movePct: pt && pd != null ? Number((((pd - pt) / pt) * 100).toFixed(1)) : null,
+        memberPage: `/discover/politicians/${r.congress_politicians.slug}`,
+      };
+    });
+    return { windowDays: days, count: trades.length, trades };
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Exported tool map (passed directly to streamText)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1455,6 +1518,7 @@ export const BULLPEN_TOOLS = {
   // Supabase tools — fast, no API credits, limited to ingested companies
   getCompanyProfile,
   searchCompanies,
+  getPoliticianTrades,
   // Navigation. navigateTo covers every page; openScreener and
   // openDividendCalculator stay separate because they carry real parameter
   // sets of their own. See lib/ai/app-destinations.ts.

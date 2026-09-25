@@ -191,5 +191,7 @@
   "deleteDialogCancel": "Annuler",
   "deleteDialogConfirm": "Supprimer mon compte",
   "notifPoliticianTradesLabel": "Opérations des politiciens",
-  "notifPoliticianTradesDescription": "Soyez averti quand un politicien que vous suivez divulgue de nouvelles opérations en bourse"
+  "notifPoliticianTradesDescription": "Soyez averti quand un politicien que vous suivez divulgue de nouvelles opérations en bourse",
+  "notifPoliticianHoldingsLabel": "Transactions de politiciens dans vos actions",
+  "notifPoliticianHoldingsDescription": "Pro : recevez une notification quand un politicien suivi effectue une transaction sur une action que vous possédez ou suivez"
 }

@@ -384,5 +384,19 @@
   "thesisHrsAgo_one": "{{count}}h ago",
   "thesisHrsAgo_other": "{{count}}h ago",
   "thesisDaysAgo_one": "{{count}}d ago",
-  "thesisDaysAgo_other": "{{count}}d ago"
+  "thesisDaysAgo_other": "{{count}}d ago",
+  "washingtonTitle": "Washington activity",
+  "washingtonSummary_one": "{{count}} tracked politician traded {{ticker}} in the last 12 months.",
+  "washingtonSummary_other": "{{count}} tracked politicians traded {{ticker}} in the last 12 months.",
+  "washingtonBuyersSellers": "{{buyers}} bought, {{sellers}} sold.",
+  "washingtonBought": "Bought",
+  "washingtonSold": "Sold",
+  "washingtonTraded": "Traded {{date}}",
+  "washingtonPublic": "public {{date}}",
+  "washingtonMove": "{{pct}} before public",
+  "washingtonMoveTitle": "How much the stock moved between the trade and the day it was disclosed",
+  "washingtonShowAll": "Show all {{count}}",
+  "washingtonShowLess": "Show less",
+  "washingtonSeeAll": "See all Washington trading",
+  "washingtonDelayNote": "Politicians can disclose trades up to 45 days after making them, so this shows what they did, not what they are doing now."
 }
