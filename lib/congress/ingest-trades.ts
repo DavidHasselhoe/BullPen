@@ -112,6 +112,9 @@ interface VendorTrade {
   sector: string | null;
   industry: string | null;
   source: string | null;
+  /** Real closes, sent on every resolved row (migration 156). */
+  price_on_trade_date?: number | null;
+  price_on_disclosure?: number | null;
 }
 
 export interface IngestResult {
@@ -222,7 +225,37 @@ export function buildRows(trades: VendorTrade[], politicianId: string) {
       sector: t.sector,
       industry: t.industry,
       source: t.source,
+      price_at_trade: t.price_on_trade_date ?? null,
+      price_at_disclosure: t.price_on_disclosure ?? null,
     }));
+}
+
+/**
+ * Fill trade/disclosure prices on rows stored before migration 156, or whose
+ * disclosure price the vendor only had later. The main upsert deliberately
+ * never rewrites a stored disclosure; these two columns are vendor-reported
+ * closes, not filing content, so they are the one exception, and only ever
+ * written where currently NULL.
+ */
+async function fillMissingPrices(
+  supabase: ReturnType<typeof createServerClient>,
+  rows: { dc_trade_id: number; price_at_trade: number | null; price_at_disclosure: number | null }[],
+): Promise<void> {
+  const priced = rows.filter((r) => r.price_at_trade != null || r.price_at_disclosure != null);
+  if (priced.length === 0) return;
+  const { data: missing } = await supabase
+    .from('congress_trades')
+    .select('dc_trade_id')
+    .in('dc_trade_id', priced.map((r) => r.dc_trade_id))
+    .or('price_at_trade.is.null,price_at_disclosure.is.null');
+  const ids = new Set(((missing ?? []) as { dc_trade_id: number }[]).map((m) => m.dc_trade_id));
+  for (const r of priced) {
+    if (!ids.has(r.dc_trade_id)) continue;
+    const patch: Record<string, number> = {};
+    if (r.price_at_trade != null) patch.price_at_trade = r.price_at_trade;
+    if (r.price_at_disclosure != null) patch.price_at_disclosure = r.price_at_disclosure;
+    await supabase.from('congress_trades').update(patch as never).eq('dc_trade_id', r.dc_trade_id);
+  }
 }
 
 function apiKey(): string {
@@ -322,6 +355,8 @@ export async function ingestPolitician(
     .select('dc_trade_id, symbol, asset_description, trade_type, amount_range, amount_low, amount_high, transaction_date');
 
   if (error) return { ...base, error: error.message };
+
+  await fillMissingPrices(supabase, rows);
 
   base.inserted = data?.length ?? 0;
   base.newTrades = (data ?? []) as NewTrade[];

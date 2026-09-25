@@ -7,7 +7,7 @@ import { ArrowDownRight, ArrowLeft, ArrowUpRight, ChevronDown, Info } from 'luci
 import { InstitutionalHoldingsPieChart } from '@/components/institutions/InstitutionalHoldingsPieChart';
 import { ALLOCATION_TOP_N, buildAllocation } from '@/lib/institutions/allocation';
 import { positionLine } from '@/lib/congress/member-list';
-import { formatAmountRange, isFiledLate, tradeDirection } from '@/lib/congress/types';
+import { formatAmountRange, isFiledLate, moveBeforeDisclosure, tradeDirection } from '@/lib/congress/types';
 import { cn } from '@/lib/utils';
 import { ControlSelect } from '@/components/ui/ControlSelect';
 import { DisclosureNote } from './DisclosureNote';
@@ -89,6 +89,7 @@ function TradeRow({ t }: { t: CongressTradeRow & { symbol: string } }) {
   const isSell = dir === 'sell';
   const Icon = isBuy ? ArrowUpRight : isSell ? ArrowDownRight : Info;
   const late = isFiledLate(t.daysToDisclose);
+  const move = moveBeforeDisclosure(t);
 
   return (
     <li className="flex items-start gap-3 border-b border-border/50 py-3 last:border-b-0">
@@ -140,6 +141,17 @@ function TradeRow({ t }: { t: CongressTradeRow & { symbol: string } }) {
             </span>
           )}
         </p>
+        {move != null && (
+          <p
+            className="mt-0.5 text-right text-xs tabular-nums text-muted-foreground"
+            title="Closing price on the trade date, then on the day the trade was disclosed"
+          >
+            ${t.priceAtTrade!.toFixed(2)} → ${t.priceAtDisclosure!.toFixed(2)} when public{' '}
+            <span className={cn('font-medium', move >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
+              {move >= 0 ? '+' : ''}{move.toFixed(1)}%
+            </span>
+          </p>
+        )}
       </div>
     </li>
   );
@@ -236,6 +248,21 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
           t.assetDescription.toLowerCase().includes(q)),
     );
   }, [tradesWithTicker, filter, year, tradeQuery]);
+
+  /** Median move between trade and disclosure across this member's buys. A
+   *  median of real per-trade closes, so one outlier cannot carry it; hidden
+   *  under 5 buys where it would say nothing. */
+  const buyGap = useMemo(() => {
+    const moves = tradesWithTicker
+      .filter((t) => tradeDirection(t.tradeType) === 'buy')
+      .map(moveBeforeDisclosure)
+      .filter((m): m is number => m != null)
+      .sort((a, b) => a - b);
+    if (moves.length < 5) return null;
+    const mid = Math.floor(moves.length / 2);
+    const median = moves.length % 2 ? moves[mid] : (moves[mid - 1] + moves[mid]) / 2;
+    return { median, count: moves.length };
+  }, [tradesWithTicker]);
 
   const tradeFiltersActive = year !== ALL_YEARS || tradeQuery.trim() !== '' || filter !== 'all';
 
@@ -498,6 +525,16 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
         <div className="mb-3">
           <DisclosureNote compact />
         </div>
+
+        {buyGap && (
+          <p className="mb-4 text-sm text-muted-foreground">
+            By the time these buys were made public, the stock had already moved a median of{' '}
+            <span className={cn('font-mono font-semibold tabular-nums', buyGap.median >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
+              {buyGap.median >= 0 ? '+' : ''}{buyGap.median.toFixed(1)}%
+            </span>{' '}
+            <span className="tabular-nums">({buyGap.count} buys with prices on both dates).</span>
+          </p>
+        )}
 
         {visibleTrades.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border/60 px-6 py-10 text-center">

@@ -10,7 +10,7 @@
 
 import assert from 'node:assert/strict';
 import { normalizeSymbol, buildRows, isNameResolvable } from '../lib/congress/ingest-trades';
-import { tradeDirection, isFiledLate, formatAmountRange } from '../lib/congress/types';
+import { tradeDirection, isFiledLate, formatAmountRange, moveBeforeDisclosure } from '../lib/congress/types';
 
 // Both ends always survive. Nothing here may ever average them into one
 // figure: a filing discloses a bracket, so a midpoint is a number nobody filed.
@@ -132,5 +132,13 @@ assert.equal(isNameResolvable('COREBRIDGE FINL INC PERP -A 6.8750%'), false);
 assert.equal(isNameResolvable('HOME DEPOT INC'), true);
 assert.equal(isNameResolvable('META PLATFORMS INC CLASS A'), true);
 assert.equal(isNameResolvable('UNITEDHEALTH GROUP INC'), true, 'UNIT must match whole words only');
+
+// Move before disclosure: the real Pelosi BE case that motivated migration 156.
+{
+  const m = moveBeforeDisclosure({ priceAtTrade: 166.84, priceAtDisclosure: 201.45 });
+  assert.ok(m != null && Math.abs(m - 20.74) < 0.01, `BE move ${m}`);
+  assert.equal(moveBeforeDisclosure({ priceAtTrade: null, priceAtDisclosure: 201.45 }), null, 'no invented baseline');
+  assert.equal(moveBeforeDisclosure({ priceAtTrade: 0, priceAtDisclosure: 5 }), null, 'no divide by zero');
+}
 
 console.log('congress ingest checks passed');

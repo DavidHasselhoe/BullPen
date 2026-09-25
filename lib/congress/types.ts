@@ -20,6 +20,18 @@ export interface CongressTradeRow {
   disclosureDate: string | null;
   daysToDisclose: number | null;
   sector: string | null;
+  /** Real closes on the trade date and the disclosure date (migration 156). */
+  priceAtTrade: number | null;
+  priceAtDisclosure: number | null;
+}
+
+/**
+ * % the stock moved between the trade and its disclosure: the part of the
+ * move a reader could not have acted on. Null unless both closes are real.
+ */
+export function moveBeforeDisclosure(t: Pick<CongressTradeRow, 'priceAtTrade' | 'priceAtDisclosure'>): number | null {
+  if (!t.priceAtTrade || t.priceAtDisclosure == null) return null;
+  return ((t.priceAtDisclosure - t.priceAtTrade) / t.priceAtTrade) * 100;
 }
 
 /** The STOCK Act filing deadline. Past this, a disclosure was filed late. */

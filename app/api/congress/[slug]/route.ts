@@ -95,7 +95,7 @@ async function handler(_request: NextRequest, context?: unknown) {
       supabase
         .from('congress_trades')
         .select(
-          'id, symbol, asset_description, asset_type, trade_type, amount_range, amount_low, amount_high, transaction_date, disclosure_date, days_to_disclose, sector',
+          'id, symbol, asset_description, asset_type, trade_type, amount_range, amount_low, amount_high, transaction_date, disclosure_date, days_to_disclose, sector, price_at_trade, price_at_disclosure',
         )
         .eq('politician_id', member.id)
         .not('symbol', 'is', null)
@@ -138,6 +138,8 @@ async function handler(_request: NextRequest, context?: unknown) {
         disclosureDate: (t.disclosure_date as unknown as string) ?? null,
         daysToDisclose: num(t.days_to_disclose),
         sector: (t.sector as unknown as string) ?? null,
+        priceAtTrade: num(t.price_at_trade),
+        priceAtDisclosure: num(t.price_at_disclosure),
       })),
     };
 
