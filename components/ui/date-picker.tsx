@@ -49,6 +49,8 @@ export interface DatePickerProps {
   className?: string
   size?: "default" | "sm"
   "aria-invalid"?: boolean
+  "aria-describedby"?: string
+  "aria-label"?: string
 }
 
 export function DatePicker({
@@ -86,6 +88,8 @@ export function DatePicker({
           variant="outline"
           disabled={disabled}
           aria-invalid={props["aria-invalid"]}
+          aria-describedby={props["aria-describedby"]}
+          aria-label={props["aria-label"] && selected ? `${props["aria-label"]}: ${displayFormatter.format(selected)}` : props["aria-label"]}
           className={cn(
             "w-full justify-start gap-2 font-normal",
             size === "sm" ? "h-8 px-2.5 text-xs" : "h-9",
@@ -106,7 +110,9 @@ export function DatePicker({
           startMonth={startMonth}
           endMonth={endMonth}
           selected={selected}
-          defaultMonth={selected}
+          // Empty + a max in the past (a date of birth): open on the latest
+          // allowed month, not today's, where every day is disabled.
+          defaultMonth={selected ?? (maxDate && maxDate < new Date() ? maxDate : undefined)}
           onSelect={(date) => {
             if (!date) return
             onChange(toISODate(date))

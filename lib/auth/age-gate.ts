@@ -79,6 +79,11 @@ export function maxAllowedDobValue(now: Date = new Date()): string {
   return d.toISOString().slice(0, 10);
 }
 
+/** Earliest date that still passes (the 'implausible' cutoff), for the picker's year range. */
+export function minAllowedDobValue(now: Date = new Date()): string {
+  return `${now.getUTCFullYear() - 120}-01-01`;
+}
+
 // ── Failed-attempt memory ───────────────────────────────────────────────────
 // An age screen that lets a child immediately retype a different year isn't a
 // screen. sessionStorage (not local) keeps it to the browsing session, which is

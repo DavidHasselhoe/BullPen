@@ -12,6 +12,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { TickerFixPopover, type FixedResolution } from './TickerFixPopover';
+import { DatePicker } from '@/components/ui/date-picker';
 import type { DateFormat } from '@/lib/import/dates';
 import { AlertCircle, CheckCircle2, X, RotateCcw, ChevronLeft, Loader2, GraduationCap, PlusCircle, RefreshCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -488,18 +489,15 @@ export function ImportReviewClient({ importId }: { importId: string }) {
                       </span>
                     </TableCell>
                     <TableCell className="whitespace-nowrap">
-                      <input
-                        type="date"
+                      <DatePicker
+                        size="sm"
                         value={values.date ?? ''}
                         disabled={isRemoved}
+                        placeholder={t('importReviewEditDate')}
                         aria-label={t('importReviewEditDate')}
                         aria-invalid={issue === 'date'}
-                        onChange={(e) => setEdit(tx.sourceLine, { date: e.target.value })}
-                        className={cn(
-                          CELL_INPUT_CLASS,
-                          'text-muted-foreground',
-                          issue === 'date' && 'border-amber-500/60 text-foreground'
-                        )}
+                        onChange={(date) => setEdit(tx.sourceLine, { date })}
+                        className={cn('w-36', issue === 'date' && 'border-amber-500/60')}
                       />
                     </TableCell>
                     <TableCell className="text-right">

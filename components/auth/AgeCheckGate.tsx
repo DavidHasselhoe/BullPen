@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -14,6 +14,7 @@ import {
   MIN_SIGNUP_AGE_YEARS,
   checkDateOfBirth,
   maxAllowedDobValue,
+  minAllowedDobValue,
   rememberAgeGateFailure,
 } from '@/lib/auth/age-gate';
 
@@ -105,15 +106,14 @@ export function AgeCheckGate() {
           <Label htmlFor="age-check-dob" className="text-sm font-medium">
             {t('signupDobLabel')}
           </Label>
-          <Input
+          <DatePicker
             id="age-check-dob"
-            type="date"
             value={dob}
-            onChange={(e) => setDob(e.target.value)}
+            onChange={setDob}
             disabled={saving}
-            required
-            autoComplete="bday"
+            min={minAllowedDobValue()}
             max={maxAllowedDobValue()}
+            placeholder={t('signupDobPlaceholder')}
             className="h-11"
             aria-invalid={!!error}
             aria-describedby={error ? 'age-check-error' : undefined}

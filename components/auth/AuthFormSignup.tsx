@@ -4,6 +4,7 @@ import { useState, FormEvent } from 'react';
 import Link from 'next/link';
 import { Trans, useTranslation } from 'react-i18next';
 import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -19,6 +20,7 @@ import {
   checkDateOfBirth,
   isAgeGateBlocked,
   maxAllowedDobValue,
+  minAllowedDobValue,
   rememberAgeGateFailure,
 } from '@/lib/auth/age-gate';
 
@@ -238,15 +240,14 @@ export function AuthFormSignup({
         <Label htmlFor="signup-dob" className="text-sm font-medium">
           {t('signupDobLabel')}
         </Label>
-        <Input
+        <DatePicker
           id="signup-dob"
-          type="date"
           value={dob}
-          onChange={(e) => setDob(e.target.value)}
+          onChange={setDob}
           disabled={isLoading || blocked}
-          required
-          autoComplete="bday"
+          min={minAllowedDobValue()}
           max={maxAllowedDobValue()}
+          placeholder={t('signupDobPlaceholder')}
           className="h-11"
           aria-describedby="signup-dob-hint"
           aria-invalid={dobInvalid}
