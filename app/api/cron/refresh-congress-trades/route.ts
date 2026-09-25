@@ -7,7 +7,7 @@
  * `npm run ingest-congress`, so the section froze at whenever someone last ran it.
  *
  * Runs the --refresh sweep (20 newest trades per member, ~35 credits each,
- * ~1,000 per run for 29 members, ~8,700 a month) and tells followers about
+ * ~665 per run for 19 members, ~5,700 a month; see migration 154) and tells followers about
  * any trade this run stored for the first time. Twice a week because PTRs are
  * filed 30-46 days after the trade: polling daily would pay 2.5x for news that
  * is already weeks old. Positions are NOT refreshed here; their cost is
