@@ -1,4 +1,5 @@
 {
+  "navBrandName": "BullPen",
   "navHome": "Hjem",
   "navDiscover": "Utforsk",
   "navAcademy": "Læringssenteret",
@@ -40,11 +41,11 @@
   "navFreeBadge": "Gratis",
   "navProfile": "Profil",
   "navManageSubscription": "Administrer abonnement",
-  "navUpgradeToPro": "Oppgrader til Pro",
   "navAdminLabel": "Administrator",
   "navAiCosts": "AI-kostnader",
   "navFeedbackLabel": "Tilbakemelding",
   "navReportBugOrIdea": "Rapporter en feil eller idé",
   "navSignOut": "Logg ut",
-  "navBrandName": "BullPen"
+  "navTryProFree": "Prøv BullPen Pro gratis i {{days}} dager",
+  "navTryProFreeSub": "$0 i dag. Avbryt når som helst."
 }

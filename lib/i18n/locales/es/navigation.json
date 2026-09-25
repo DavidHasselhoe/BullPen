@@ -1,4 +1,5 @@
 {
+  "navBrandName": "BullPen",
   "navHome": "Inicio",
   "navDiscover": "Descubre",
   "navAcademy": "Academia",
@@ -40,11 +41,11 @@
   "navFreeBadge": "Gratis",
   "navProfile": "Perfil",
   "navManageSubscription": "Administrar suscripción",
-  "navUpgradeToPro": "Actualizar a Pro",
+  "navAdminLabel": "Administración",
   "navAiCosts": "Costos de IA",
   "navFeedbackLabel": "Comentarios",
   "navReportBugOrIdea": "Reportar un error o idea",
   "navSignOut": "Cerrar sesión",
-  "navBrandName": "BullPen",
-  "navAdminLabel": "Administración"
+  "navTryProFree": "Prueba Pro gratis por {{days}} días",
+  "navTryProFreeSub": "$0 hoy. Cancela cuando quieras."
 }

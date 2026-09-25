@@ -21,6 +21,7 @@ import { ProBadge } from '@/components/billing/ProBadge';
 import { ReportFeedbackDialog } from '@/components/feedback/ReportFeedbackDialog';
 import { isAdmin, isPro, tierFromUser } from '@/lib/billing/tier';
 import { startPortal } from '@/lib/billing/checkout';
+import { PRICING } from '@/lib/billing/entitlements';
 import { cn } from '@/lib/utils';
 
 interface UserMenuProps {
@@ -165,10 +166,13 @@ export function UserMenu({ forceDark = false, forceLight = false, open, onOpenCh
         ) : (
           <DropdownMenuItem
             onClick={() => router.push('/upgrade')}
-            className="cursor-pointer text-primary transition-all hover:translate-x-1 focus:text-primary"
+            className="cursor-pointer items-start transition-all hover:translate-x-1"
           >
-            <Sparkles className="mr-2 h-4 w-4" />
-            <span>{t('navUpgradeToPro')}</span>
+            <Sparkles className="mr-2 mt-0.5 h-4 w-4 text-primary" />
+            <span className="flex flex-col gap-0.5">
+              <span className="font-medium text-primary">{t('navTryProFree', { days: PRICING.trialDays })}</span>
+              <span className="text-xs text-muted-foreground">{t('navTryProFreeSub')}</span>
+            </span>
           </DropdownMenuItem>
         )}
 

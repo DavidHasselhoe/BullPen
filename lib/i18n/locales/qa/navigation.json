@@ -41,10 +41,11 @@
   "navFreeBadge": "«Freeee»",
   "navProfile": "«Proofiilee»",
   "navManageSubscription": "«Maanaagee suubscriiptiioon»",
-  "navUpgradeToPro": "«UUpgraadee too Proo»",
   "navAdminLabel": "«AAdmiin»",
   "navAiCosts": "«AAII Coosts»",
   "navFeedbackLabel": "«Feeeedbaack»",
   "navReportBugOrIdea": "«Reepoort aa buug oor iideeaa»",
-  "navSignOut": "«Siign OOuut»"
+  "navSignOut": "«Siign OOuut»",
+  "navTryProFree": "«Try Proo freeee foor {{days}} daays»",
+  "navTryProFreeSub": "«$0 toodaay. Caanceel aanytiimee.»"
 }

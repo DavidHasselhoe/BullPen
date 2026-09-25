@@ -1,4 +1,5 @@
 {
+  "navBrandName": "BullPen",
   "navHome": "首页",
   "navDiscover": "发现",
   "navAcademy": "学院",
@@ -40,11 +41,11 @@
   "navFreeBadge": "免费",
   "navProfile": "个人资料",
   "navManageSubscription": "管理订阅",
-  "navUpgradeToPro": "升级到 Pro",
   "navAdminLabel": "管理员",
   "navAiCosts": "AI 成本",
   "navFeedbackLabel": "反馈",
   "navReportBugOrIdea": "报告问题或建议",
   "navSignOut": "登出",
-  "navBrandName": "BullPen"
+  "navTryProFree": "免费试用 Pro {{days}} 天",
+  "navTryProFreeSub": "今天 $0。随时取消。"
 }

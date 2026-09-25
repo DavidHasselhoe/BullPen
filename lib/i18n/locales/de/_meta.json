@@ -1989,7 +1989,6 @@
   "navigation.navFreeBadge": "f411a1fb62758b4c54690d0a702b4955b54dd22115416fa7b1ce51b4a084818d",
   "navigation.navProfile": "d696a35bdd1883da07a8d6c41bb7a3153381b23aa197629ee273479a6eaa5a9c",
   "navigation.navManageSubscription": "9041c6aa2c3d4670f671ee3d31b06106f961054e1cdbe7d302ff6dc115a7d14a",
-  "navigation.navUpgradeToPro": "acb320d7f3e39b168369bc9ebde8101b79852ffb8fd01133c2d4e113a6fa5a8c",
   "navigation.navAiCosts": "75cce222820ef9fea1556bf7aa11daf826cf71dc5c01c5087abe404bb15c73c4",
   "navigation.navReportBugOrIdea": "5683c99d2041e755923fc0adbbf701a27c6fa23dc7124026354b0a254e5095f4",
   "navigation.navSignOut": "0b184bc5d53419982a5a51e0283555322b055f14adbb6d6ea2ef1fffdbe8beb0",
@@ -2475,5 +2474,7 @@
   "alerts.limitReachedNote": "c1d9daf1688f01ebfc3814b25cbac73cb6fd8f181c2ea1428ddd527ecb5e6a61",
   "billing.paywallBenefitUnlimitedAlerts": "6e6be6f3e547549b53698c6cdaa651fe190b74424d0e28a865771d2228cf2c06",
   "billing.alertsPreviewSource": "6e4e6108c055a322ea693a52749a2a56f8e72c496e1d307e6bb3dc473f1deb14",
-  "billing.alertsPreviewFallbackCondition": "8de3c51cccd765739d80030fb507810f5e302367b1a447c21d2dc8b7dad5185b"
+  "billing.alertsPreviewFallbackCondition": "8de3c51cccd765739d80030fb507810f5e302367b1a447c21d2dc8b7dad5185b",
+  "navigation.navTryProFree": "45541a8cfa75ff35650a9a7779413a4d1b531d5f10c3983adeb7a615c58c84a4",
+  "navigation.navTryProFreeSub": "bd808fa47a5cb29890d12fb5d56a95a265b364302f0e45072930b33a1c76a557"
 }

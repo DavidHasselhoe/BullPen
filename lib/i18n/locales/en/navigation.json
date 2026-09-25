@@ -41,10 +41,11 @@
   "navFreeBadge": "Free",
   "navProfile": "Profile",
   "navManageSubscription": "Manage subscription",
-  "navUpgradeToPro": "Upgrade to Pro",
   "navAdminLabel": "Admin",
   "navAiCosts": "AI Costs",
   "navFeedbackLabel": "Feedback",
   "navReportBugOrIdea": "Report a bug or idea",
-  "navSignOut": "Sign Out"
+  "navSignOut": "Sign Out",
+  "navTryProFree": "Try Pro free for {{days}} days",
+  "navTryProFreeSub": "$0 today. Cancel anytime."
 }

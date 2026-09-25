@@ -37,7 +37,6 @@
   "navFreeBadge": "Kostenlos",
   "navProfile": "Profil",
   "navManageSubscription": "Abonnement verwalten",
-  "navUpgradeToPro": "Upgrade auf Pro",
   "navAiCosts": "KI-Kosten",
   "navReportBugOrIdea": "Fehler oder Idee melden",
   "navSignOut": "Abmelden",
@@ -46,5 +45,7 @@
   "navSectionTools": "Tools",
   "navSectionCommunity": "Community",
   "navAdminLabel": "Admin",
-  "navFeedbackLabel": "Feedback"
+  "navFeedbackLabel": "Feedback",
+  "navTryProFree": "Probiere Pro {{days}} Tage kostenlos",
+  "navTryProFreeSub": "$0 heute. Jederzeit kündbar."
 }

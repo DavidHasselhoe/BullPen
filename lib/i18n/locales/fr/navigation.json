@@ -39,12 +39,13 @@
   "navFreeBadge": "Gratuit",
   "navProfile": "Profil",
   "navManageSubscription": "Gérer l'abonnement",
-  "navUpgradeToPro": "Passer à Pro",
   "navAiCosts": "Coûts IA",
   "navFeedbackLabel": "Retours",
   "navReportBugOrIdea": "Signaler un bug ou une idée",
   "navSignOut": "Se déconnecter",
   "navBrandName": "bullpen",
   "navMenuTitle": "Menu",
-  "navAdminLabel": "Admin"
+  "navAdminLabel": "Admin",
+  "navTryProFree": "Essayez Pro gratuitement pendant {{days}} jours",
+  "navTryProFreeSub": "0 $ aujourd'hui. Annulez à tout moment."
 }
