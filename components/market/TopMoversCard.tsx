@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import Link from 'next/link';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
+import { cn } from '@/lib/utils';
 import { CompanyRowActions } from '@/components/discover/CompanyRowActions';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
 import { useExchanges } from '@/hooks/use-market-status';
@@ -142,13 +143,32 @@ function MoverItem({
             ariaLabel={t('moversIntradayTrend', { symbol: mover.symbol })}
           />
         </div>
+        {/* Hover reveals the row actions, which take width from this column.
+            So on hover the name crossfades to the (short) ticker and the
+            ticker leaves the second line: both lines always fit on one line
+            and the row height never changes as the pointer moves down the list. */}
         <div className="min-w-0 overflow-hidden flex flex-col justify-center">
-          {/* clamp-ok: short company name in a dense row, full name in title */}
-          <div className="block truncate font-extrabold text-foreground text-sm tracking-tight" title={displayName}>
-            {displayName}
+          <div className="relative font-extrabold text-foreground text-sm tracking-tight" title={displayName}>
+            {/* clamp-ok: short company name in a dense row, full name in title */}
+            <span
+              className={cn(
+                'block truncate transition-all duration-200 ease-out',
+                hasDistinctName && 'group-hover:opacity-0 group-hover:-translate-x-1 motion-reduce:transition-none'
+              )}
+            >
+              {displayName}
+            </span>
+            {hasDistinctName && (
+              <span
+                aria-hidden
+                className="absolute inset-0 truncate font-mono opacity-0 translate-x-1 transition-all duration-200 ease-out group-hover:opacity-100 group-hover:translate-x-0 motion-reduce:transition-none"
+              >
+                {mover.symbol}
+              </span>
+            )}
           </div>
-          <div className="text-xs text-muted-foreground tabular-nums">
-            {hasDistinctName && <span className="font-mono font-medium">{mover.symbol} · </span>}
+          <div className="whitespace-nowrap truncate text-xs text-muted-foreground tabular-nums">
+            {hasDistinctName && <span className="font-mono font-medium group-hover:hidden">{mover.symbol} · </span>}
             ${mover.price.toFixed(2)}
           </div>
         </div>
