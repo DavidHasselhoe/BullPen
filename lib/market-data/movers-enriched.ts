@@ -9,6 +9,7 @@
 import { getMarketMovers, getTopMoversForSymbols } from '@/lib/twelvedata/twelvedata-client';
 import { createServerClient } from '@/lib/supabase/client';
 import { rget, rset } from '@/lib/cache/redis-cache';
+import { getDisplayNames } from './display-names';
 
 /** 30s: fresh enough for a live dashboard, cheap enough for concurrent users. */
 const MOVERS_TTL = 30;
@@ -33,28 +34,17 @@ async function withCompanyDetails<T extends { symbol: string; name?: string | nu
   if (tickers.length === 0) return movers;
   try {
     const supabase = createServerClient();
-    const { data } = await supabase
-      .from('companies')
-      .select('ticker, name, logo_url')
-      .in('ticker', tickers);
-    const rows = new Map(
-      ((data ?? []) as Array<{ ticker: string; name: string | null; logo_url: string | null }>)
-        .map((r) => [r.ticker.toUpperCase(), r])
+    const [{ data }, names] = await Promise.all([
+      supabase.from('companies').select('ticker, logo_url').in('ticker', tickers),
+      getDisplayNames(tickers),
+    ]);
+    const logos = new Map(
+      ((data ?? []) as Array<{ ticker: string; logo_url: string | null }>)
+        .map((r) => [r.ticker.toUpperCase(), r.logo_url])
     );
     return movers.map((m) => {
-      const row = rows.get(m.symbol.toUpperCase());
-      return {
-        ...m,
-        // A stored name that is just the ticker is not a name (see the
-        // screener_stats name=ticker problem); keep whatever the feed gave.
-        name:
-          m.name && m.name !== m.symbol
-            ? m.name
-            : row?.name && row.name !== row.ticker
-              ? row.name
-              : m.name,
-        logo_url: row?.logo_url ?? null,
-      };
+      const key = m.symbol.toUpperCase();
+      return { ...m, name: names.get(key) ?? m.name, logo_url: logos.get(key) ?? null };
     });
   } catch {
     return movers;

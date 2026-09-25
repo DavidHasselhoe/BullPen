@@ -15,7 +15,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withRateLimit } from '@/lib/security/api-security';
 import { WsManager } from '@/lib/market-data/ws-manager';
 import { getLogoManifest, logoUrlFromManifest, type LogoManifest } from '@/lib/logos/logo-manifest';
-import { createServerClient } from '@/lib/supabase/client';
+import { getDisplayNames } from '@/lib/market-data/display-names';
 import type { PriceTick } from '@/lib/market-data/ws-manager';
 import { getMarketMovers, MEGA_CAP_TICKERS } from '@/lib/twelvedata/twelvedata-client';
 
@@ -34,19 +34,18 @@ const MAX_CLIENT_SYMBOLS = 500;
 // never produce a change and were dropped in onTick.
 const DEFAULT_SYMBOLS = MEGA_CAP_TICKERS;
 
-// Module-level name cache — populated once from Supabase, reused across SSE connections
+// Module-level name cache, reused across SSE connections. Filled per symbol on
+// demand: the old one-shot `companies` load hit PostgREST's 1000-row cap and
+// that table lacks many large caps (XOM, JNJ, IBM) anyway, so they showed as tickers.
 const _nameCache = new Map<string, string>();
-let _nameCacheReady = false;
 
-async function ensureNameCache(): Promise<Map<string, string>> {
-  if (_nameCacheReady) return _nameCache;
+async function ensureNames(symbols: string[]): Promise<Map<string, string>> {
+  const missing = symbols.filter((s) => !_nameCache.has(s));
+  if (missing.length === 0) return _nameCache;
   try {
-    const supabase = createServerClient();
-    const { data } = await supabase.from('companies').select('ticker, name').limit(5000);
-    (data ?? []).forEach((c: { ticker: string; name: string }) => _nameCache.set(c.ticker, c.name));
-    _nameCacheReady = true;
+    for (const [ticker, name] of await getDisplayNames(missing)) _nameCache.set(ticker, name);
   } catch {
-    // Non-fatal — stream still works, company names just won't appear for stream movers
+    // Non-fatal — stream still works, names fall back to tickers
   }
   return _nameCache;
 }
@@ -111,7 +110,6 @@ async function streamHandler(request: NextRequest) {
   //   2. The stream sends company names so clients don't need a separate batch fetch
   //   3. quoteMap is pre-populated, preventing the sparse-list flash on reconnect
   // getMarketMovers is shared in Redis across all users, so this is free on a warm cache.
-  const seedNameMap = new Map<string, string>();
   const initialQuotes = new Map<string, MoverUpdate>();
   // Fetched once per connection (memoized/cached, see logo-manifest.ts) and
   // closed over below — onTick fires many times per second per symbol, so it
@@ -125,7 +123,6 @@ async function streamHandler(request: NextRequest) {
     logoManifest = manifest;
     for (const m of [...seedGainers, ...seedLosers]) {
       WsManager.seedPrevClose(m.symbol, m.previousClose);
-      if (m.name) seedNameMap.set(m.symbol, m.name);
       initialQuotes.set(m.symbol, {
         symbol: m.symbol,
         name: m.name,
@@ -145,7 +142,8 @@ async function streamHandler(request: NextRequest) {
     return NextResponse.json({ error: 'No symbols provided' }, { status: 400 });
   }
 
-  const nameMap = await ensureNameCache();
+  const nameMap = await ensureNames([...new Set([...symbols, ...initialQuotes.keys()])]);
+  for (const q of initialQuotes.values()) q.name = nameMap.get(q.symbol) ?? q.name;
 
   const encoder = new TextEncoder();
   const listenerId = crypto.randomUUID();

@@ -9,7 +9,6 @@ import { TrendingUp, TrendingDown } from 'lucide-react';
 import Link from 'next/link';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { CompanyRowActions } from '@/components/discover/CompanyRowActions';
-import { cn } from '@/lib/utils';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
 import { useExchanges } from '@/hooks/use-market-status';
 import { Sparkline } from '@/components/viz/Sparkline';
@@ -117,10 +116,10 @@ function MoverItem({
   t: TFunction;
 }) {
   const textColor = isGainer ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400';
-  // Prefer DB batch name → stream name → ticker symbol (never blank)
+  // Name leads (beginners know "Broadcom", not "AVGO"); ticker sits under it.
   const displayName = companyName || mover.name || mover.symbol;
-  // Only show ticker-on-hover animation when we actually have a distinct full name
   const hasDistinctName = displayName !== mover.symbol;
+  const sign = mover.change < 0 ? '-' : '+';
 
   return (
     <div className="group grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-lg p-2.5 -mx-2 transition-all duration-200 hover:bg-accent/50 hover:shadow-sm border border-transparent hover:border-border/50">
@@ -143,31 +142,13 @@ function MoverItem({
             ariaLabel={t('moversIntradayTrend', { symbol: mover.symbol })}
           />
         </div>
-        <div className="min-w-0 overflow-hidden flex flex-col justify-center relative">
-          {/* Default: full company name (uses all space when actions are collapsed) */}
-          <div className="font-extrabold text-foreground text-sm tracking-tight overflow-hidden">
-            <span
-              className={cn(
-                'block truncate transition-all duration-200 ease-out',
-                hasDistinctName
-                  ? 'opacity-100 translate-x-0 group-hover:opacity-0 group-hover:-translate-x-1'
-                  : ''
-              )}
-              title={displayName}
-            >
-              {displayName}
-            </span>
-            {/* Hover: ticker slides in, replacing the full name */}
-            {hasDistinctName && (
-              <span
-                className="absolute left-0 top-0 opacity-0 translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200 ease-out tabular-nums"
-                title={displayName}
-              >
-                {mover.symbol}
-              </span>
-            )}
+        <div className="min-w-0 overflow-hidden flex flex-col justify-center">
+          {/* clamp-ok: short company name in a dense row, full name in title */}
+          <div className="block truncate font-extrabold text-foreground text-sm tracking-tight" title={displayName}>
+            {displayName}
           </div>
           <div className="text-xs text-muted-foreground tabular-nums">
+            {hasDistinctName && <span className="font-mono font-medium">{mover.symbol} · </span>}
             ${mover.price.toFixed(2)}
           </div>
         </div>
@@ -175,10 +156,10 @@ function MoverItem({
       <div className="flex items-center gap-2 shrink-0">
         <div className={`text-right tabular-nums ${textColor}`}>
           <div className="font-semibold text-sm">
-            {isGainer ? '+' : ''}{mover.changePercent.toFixed(2)}%
+            {sign}{Math.abs(mover.changePercent).toFixed(2)}%
           </div>
           <div className="text-xs">
-            {isGainer ? '+' : ''}${mover.change.toFixed(2)}
+            {sign}${Math.abs(mover.change).toFixed(2)}
           </div>
         </div>
         {/* Actions collapse to 0 width when not hovered, freeing space for full name */}
