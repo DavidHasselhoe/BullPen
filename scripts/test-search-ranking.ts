@@ -34,10 +34,12 @@ const FIXTURE = [
   'NVII\tREX NVDA Growth & Income ETF\te\t5',
   'NVIR\tHorizon Kinetics Energy and Remediation ETF\te\t5',
   'NVIT\tYieldMax NVDA Performance & Distribution Target 25 ETF\te\t5',
+  'NVPS\tPurePlay Nvidia Ecosystem Picks & Shovels Index ETF\te\t20',
+  'NVDW\tTadr 1.75x Long Nvidia Weekly ETF\te\t5',
 ].join('\n');
 
 const index = parseSearchIndex(FIXTURE);
-assert.equal(index.length, 20, 'every fixture row parses');
+assert.equal(index.length, 22, 'every fixture row parses');
 
 // A popular company found by its name beats obscure tickers that merely share
 // the first letters. "nvi" used to list four NVI* ETFs above NVIDIA.
@@ -57,6 +59,11 @@ assert.equal(top('coca')[0], 'KO', 'The Coca-Cola Company leads "coca"');
 // Ticker prefix outranks a name match, shortest ticker first.
 assert.equal(top('nvd')[0], 'NVDA', 'NVDA before NVDX on a ticker prefix');
 assert.equal(top('spy')[0], 'SPY');
+
+// The company itself before funds that merely mention it. The Add Holding
+// modal showed NVPS and NVDW above NVIDIA for "nvidia": not this ranking, but
+// cmdk re-sorting it, which is why every symbol picker passes shouldFilter={false}.
+assert.equal(top('nvidia')[0], 'NVDA', 'NVIDIA leads "nvidia"');
 
 // Stocks edge out funds at equal match strength.
 assert.equal(top('tesla')[0], 'TSLA', 'TSLA leads a name search over Tesla-derivative funds');

@@ -5,6 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { Search, X } from 'lucide-react';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { useInstantSearch } from '@/hooks/use-symbol-index';
+import { searchSymbols } from '@/lib/search/local-index';
+import { rankFromMarketCap } from '@/lib/search/index-rank';
 import { cn } from '@/lib/utils';
 import type { ScreenerRow } from '@/app/api/screener/route';
 
@@ -58,19 +60,29 @@ export function ScreenerSearchBar({ universe, value, onChange }: Props) {
     [searchHits]
   );
 
+  // The universe in the shape the shared scorer takes, ranked by market cap like
+  // the catalogue, so this bar orders matches the same way every other search does.
+  const universeEntries = useMemo(
+    () =>
+      universe.map((r) => ({
+        ticker: r.ticker,
+        name: r.name,
+        kind: 's' as const,
+        rank: rankFromMarketCap(r.market_cap),
+        tl: r.ticker.toLowerCase(),
+        nl: r.name.toLowerCase(),
+      })),
+    [universe]
+  );
+
   const suggestions: Option[] = useMemo(() => {
     const q = query.trim().toUpperCase();
     if (q.length < 1) return [];
-    // Instant local matches first (zero-cost), ranked by ticker exactness.
-    const local = universe
-      .filter((r) => !picked.has(r.ticker))
-      .filter((r) => r.ticker.includes(q) || r.name.toUpperCase().includes(q))
-      .sort((a, b) => {
-        const aw = a.ticker === q ? 0 : a.ticker.startsWith(q) ? 1 : 2;
-        const bw = b.ticker === q ? 0 : b.ticker.startsWith(q) ? 1 : 2;
-        return aw - bw;
-      })
-      .map((r) => ({ ticker: r.ticker, name: r.name, logo_url: r.logo_url }));
+    // Instant local matches first (zero-cost). The old sort only knew ticker
+    // exactness, so every name match landed in one unordered bucket.
+    const local = searchSymbols(universeEntries, q, 7 + picked.size)
+      .filter((e) => !picked.has(e.ticker))
+      .map((e) => ({ ticker: e.ticker, name: e.name, logo_url: metaByTicker.get(e.ticker)?.logo_url ?? null }));
 
     // Append remote matches not already covered (fills name-data gaps).
     const seen = new Set(local.map((o) => o.ticker));
@@ -83,7 +95,7 @@ export function ScreenerSearchBar({ universe, value, onChange }: Props) {
       }
     }
     return merged.slice(0, 7);
-  }, [query, universe, picked, remote]);
+  }, [query, universeEntries, metaByTicker, picked, remote]);
 
   function addTicker(ticker: string) {
     const t = ticker.trim().toUpperCase();

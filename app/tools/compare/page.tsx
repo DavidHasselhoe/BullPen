@@ -649,7 +649,9 @@ function CompareContent() {
                 {t('compareSelectCompanyDescription')}
               </DialogDescription>
             </DialogHeader>
-            <Command className="rounded-lg border">
+            {/* shouldFilter={false}: results arrive already ranked (useInstantSearch);
+                cmdk's own fuzzy re-sort buried NVIDIA under NVIDIA ETFs. */}
+            <Command shouldFilter={false} className="rounded-lg border">
               <CommandInput
                 placeholder={t('compareSearchPlaceholder')}
                 value={searchQuery}
