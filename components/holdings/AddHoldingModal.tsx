@@ -29,7 +29,7 @@ import { useAddHolding, useAddOrUpdateHolding } from '@/hooks/use-holdings';
 import { useAuth } from '@/hooks/use-auth';
 import { CheckCircle2 } from 'lucide-react';
 import type { AddHoldingInput } from '@/app/actions/holdings';
-import { inferAssetType } from '@/lib/assets/asset-type';
+import { inferAssetType, fundLabel } from '@/lib/assets/asset-type';
 import type { CurrencyCode } from '@/lib/currency/currency-conversion';
 import { CashOption, useCashPayment } from './CashOption';
 
@@ -43,6 +43,12 @@ interface SearchResult {
   cik: string;
   has_data: boolean;
   logo_url?: string | null;
+}
+
+function TypePill({ label }: { label: string }) {
+  return (
+    <span className="rounded border border-border px-1.5 text-xs leading-4 text-muted-foreground">{label}</span>
+  );
 }
 
 interface AddHoldingModalProps {
@@ -133,13 +139,25 @@ export function AddHoldingModal({ open, onOpenChange, initialTicker }: AddHoldin
   // Local catalogue answers on the keystroke; the server fills in the rest.
   const { results: searchResults, isLoading: isSearching } = useInstantSearch(searchQuery, 8);
 
-  const handleSelect = useCallback(
-    (result: SearchResult) => {
-      setSelectedStock(result);
-      setSearchQuery(result.name);
-    },
-    []
-  );
+  // True while someone reopened the search to swap what they picked. The query
+  // is left as they typed it, so "Change" puts them back in the same results.
+  const [picking, setPicking] = useState(false);
+
+  const handleSelect = useCallback((result: SearchResult) => {
+    setSelectedStock(result);
+    setPicking(false);
+  }, []);
+
+  /** Stocks need no label; everything else says what it is, so "NVIDIA" and a 2x NVIDIA ETF never look alike. */
+  const typeLabel = (r: SearchResult): string | null => {
+    const type = inferAssetType(r.ticker, r.instrument_type);
+    if (type === 'crypto') return t('addHoldingTypeCrypto');
+    // Just "Fund": the server search returns every kind of mutual fund
+    // (BHNCOXX is a structured note), so "Index fund" was only true locally.
+    if (r.instrument_type === 'Mutual Fund') return t('addHoldingTypeFund');
+    if (type === 'etf') return fundLabel(r.instrument_type);
+    return null;
+  };
 
   /**
    * Opened on a ticker the reader already picked somewhere else: the search
@@ -156,6 +174,8 @@ export function AddHoldingModal({ open, onOpenChange, initialTicker }: AddHoldin
     return searchResults?.find((r) => r.ticker.toUpperCase() === initialTicker.toUpperCase()) ?? null;
   }, [initialTicker, searchResults]);
   const activeStock = selectedStock ?? prefilled;
+  const activeKind = activeStock ? typeLabel(activeStock) : null;
+  const showPicker = !activeStock || picking;
   const tradeCurrency = activeStock?.currency ?? 'USD';
   // Only what the form states a price for moves cash; a position added without an avg price costs nothing.
   const tradeCost =
@@ -192,7 +212,8 @@ export function AddHoldingModal({ open, onOpenChange, initialTicker }: AddHoldin
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!activeStock) return;
+    // Enter in the search box selects a result; it must never submit mid-pick.
+    if (!activeStock || showPicker) return;
 
     const assetType = inferAssetType(activeStock.ticker, activeStock.instrument_type);
 
@@ -275,6 +296,7 @@ export function AddHoldingModal({ open, onOpenChange, initialTicker }: AddHoldin
 
   const handleClose = () => {
     setSelectedStock(null);
+    setPicking(false);
     setSearchQuery('');
     setQuantity('');
     setAvgPrice('');
@@ -299,66 +321,111 @@ export function AddHoldingModal({ open, onOpenChange, initialTicker }: AddHoldin
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Stock Search */}
+        {/* min-w-0: the dialog is a grid, and without it a long one-line
+            company name widened the form past the dialog's own edge. */}
+        <form onSubmit={handleSubmit} className="min-w-0 space-y-6">
+          {/* What was bought: a search until something is picked, then a card */}
           <div className="space-y-2">
-            <Label htmlFor="stock-search">{t('addHoldingStockLabel')}</Label>
-            <div className="relative">
-              <Command className="rounded-lg border">
+            {/* No htmlFor: cmdk replaces the input's id with its own, so the
+                accessible name comes from Command's `label` below instead. */}
+            <Label>{t('addHoldingStockLabel')}</Label>
+            {showPicker ? (
+              // shouldFilter={false}: cmdk otherwise re-filters and re-sorts the
+              // list with its own fuzzy score, which threw away our ranking and
+              // put "PurePlay Nvidia Ecosystem ETF" above NVIDIA for "nvidia".
+              <Command shouldFilter={false} label={t('addHoldingStockLabel')} className="rounded-lg border">
                 <CommandInput
-                  id="stock-search"
                   placeholder={t('addHoldingSearchPlaceholder')}
                   value={searchQuery}
                   onValueChange={setSearchQuery}
+                  autoFocus={picking}
                 />
-                <CommandList>
-                  {isSearching && (
-                    <div className="p-4 text-center text-sm text-muted-foreground">
+                {/* Fixed height, like the command palette: the dialog kept
+                    resizing as the number of results changed under the cursor. */}
+                <CommandList className="h-[288px] max-h-[288px]">
+                  {searchQuery.trim().length === 0 ? (
+                    <p className="px-4 py-10 text-center text-sm text-muted-foreground">
+                      {t('addHoldingSearchHint')}
+                    </p>
+                  ) : isSearching ? (
+                    <p className="px-4 py-10 text-center text-sm text-muted-foreground">
                       {t('addHoldingSearching')}
-                    </div>
-                  )}
-                  {!isSearching && searchResults && searchResults.length > 0 && (
+                    </p>
+                  ) : searchResults.length > 0 ? (
                     <CommandGroup>
-                      {searchResults.map((result) => (
-                        <CommandItem
-                          key={result.ticker}
-                          value={`${result.ticker} ${result.name}`}
-                          onSelect={() => handleSelect(result)}
-                          className="flex items-center gap-3"
-                        >
-                          <CompanyLogo
-                            name={result.name}
-                            ticker={result.ticker}
-                            logoUrl={result.logo_url || null}
-                            size={40}
-                          />
-                          <div className="flex-1">
-                            <div className="font-medium">{result.ticker}</div>
-                            <div className="text-xs text-muted-foreground">{result.name}</div>
-                          </div>
-                          {activeStock?.ticker === result.ticker && (
-                            <CheckCircle2 className="h-4 w-4 text-primary" />
-                          )}
-                        </CommandItem>
-                      ))}
+                      {searchResults.map((result) => {
+                        const kind = typeLabel(result);
+                        const isActive = activeStock?.ticker === result.ticker;
+                        return (
+                          <CommandItem
+                            key={result.ticker}
+                            value={result.ticker}
+                            onSelect={() => handleSelect(result)}
+                            className="flex items-center gap-3 py-2"
+                          >
+                            <CompanyLogo
+                              name={result.name}
+                              ticker={result.ticker}
+                              logoUrl={result.logo_url || null}
+                              size={32}
+                            />
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">{result.ticker}</span>
+                                {kind && <TypePill label={kind} />}
+                              </div>
+                              {/* clamp-ok: a company name is a short label; full name on hover. */}
+                              <div className="truncate text-xs text-muted-foreground" title={result.name}>
+                                {result.name}
+                              </div>
+                            </div>
+                            {isActive && <CheckCircle2 className="h-4 w-4 shrink-0 text-foreground" aria-hidden />}
+                          </CommandItem>
+                        );
+                      })}
                     </CommandGroup>
-                  )}
-                  {!isSearching &&
-                    debouncedQuery.trim().length >= 2 &&
-                    searchResults &&
-                    searchResults.length === 0 && (
-                      <CommandEmpty>{t('addHoldingNoStocksFound')}</CommandEmpty>
-                    )}
+                  ) : debouncedQuery.trim().length >= 2 ? (
+                    <CommandEmpty>{t('addHoldingNoStocksFound')}</CommandEmpty>
+                  ) : null}
                 </CommandList>
+                {picking && activeStock && (
+                  <div className="flex justify-end border-t px-2 py-1.5">
+                    <Button type="button" variant="ghost" size="sm" onClick={() => setPicking(false)}>
+                      {t('addHoldingKeep', { ticker: activeStock.ticker })}
+                    </Button>
+                  </div>
+                )}
               </Command>
-            </div>
-            {activeStock && (
-              <div className="text-xs text-muted-foreground">
-                {t('addHoldingSelected', { ticker: activeStock.ticker, name: activeStock.name })}
-              </div>
+            ) : (
+              activeStock && (
+                <div className="flex items-center gap-3 rounded-lg border border-foreground/20 bg-muted/40 px-3 py-2.5">
+                  <CompanyLogo
+                    name={activeStock.name}
+                    ticker={activeStock.ticker}
+                    logoUrl={activeStock.logo_url || null}
+                    size={40}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold">{activeStock.ticker}</span>
+                      {activeKind && <TypePill label={activeKind} />}
+                    </div>
+                    {/* clamp-ok: company name label; full name on hover. */}
+                    <div className="truncate text-sm text-muted-foreground" title={activeStock.name}>
+                      {activeStock.name}
+                    </div>
+                  </div>
+                  <Button type="button" variant="outline" size="sm" onClick={() => setPicking(true)}>
+                    {t('addHoldingChange')}
+                  </Button>
+                </div>
+              )
             )}
           </div>
 
+          {/* Details only once something is picked: one step at a time, and the
+              dialog no longer stacks a 288px result list on top of a full form. */}
+          {!showPicker && (<>
           <Tabs value={mode} onValueChange={(v) => setMode(v as 'single' | 'multiple')}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="single">{t('addHoldingSinglePurchase')}</TabsTrigger>
@@ -490,6 +557,7 @@ export function AddHoldingModal({ open, onOpenChange, initialTicker }: AddHoldin
           </Tabs>
 
           <CashOption payment={cash} mode="buy" amount={tradeCost} currency={tradeCurrency} />
+          </>)}
 
           {/* Submit Button */}
           <div className="flex justify-end gap-3">
@@ -498,7 +566,7 @@ export function AddHoldingModal({ open, onOpenChange, initialTicker }: AddHoldin
             </Button>
             <Button
               type="submit"
-              disabled={!activeStock || addHolding.isPending || addOrUpdateHolding.isPending || cashError}
+              disabled={showPicker || addHolding.isPending || addOrUpdateHolding.isPending || cashError}
             >
               {(mode === 'multiple' ? addOrUpdateHolding.isPending : addHolding.isPending) ? t('addHoldingAdding') : t('addHoldingTitle')}
             </Button>
