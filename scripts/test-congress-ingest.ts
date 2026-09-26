@@ -9,7 +9,7 @@
  */
 
 import assert from 'node:assert/strict';
-import { normalizeSymbol, buildRows, isNameResolvable } from '../lib/congress/ingest-trades';
+import { normalizeSymbol, buildRows, isNameResolvable, dropVendorDuplicates } from '../lib/congress/ingest-trades';
 import { tradeDirection, isFiledLate, formatAmountRange, moveBeforeDisclosure } from '../lib/congress/types';
 
 // Both ends always survive. Nothing here may ever average them into one
@@ -139,6 +139,35 @@ assert.equal(isNameResolvable('UNITEDHEALTH GROUP INC'), true, 'UNIT must match 
   assert.ok(m != null && Math.abs(m - 20.74) < 0.01, `BE move ${m}`);
   assert.equal(moveBeforeDisclosure({ priceAtTrade: null, priceAtDisclosure: 201.45 }), null, 'no invented baseline');
   assert.equal(moveBeforeDisclosure({ priceAtTrade: 0, priceAtDisclosure: 5 }), null, 'no divide by zero');
+}
+
+// The vendor's double ingestion: Pelosi's Jan 16 2026 GOOGL buy arrived as
+// both 'Buy' (54114) and 'Purchase' (133052), and Tuberville's sales as both
+// 'Sale' and a re-ingested 'Sell' with a later disclosure date.
+{
+  const base = {
+    politician_id: PID,
+    symbol: 'GOOGL',
+    amount_range: '$500,001 - $1,000,000',
+    transaction_date: '2026-01-16',
+    disclosure_date: '2026-01-23',
+  };
+  const buy = { ...base, dc_trade_id: 54114, trade_type: 'Buy' };
+  const purchase = { ...base, dc_trade_id: 133052, trade_type: 'Purchase' };
+
+  assert.deepEqual(dropVendorDuplicates([buy, purchase], []).map((r) => r.dc_trade_id), [54114], 'same batch');
+  assert.deepEqual(dropVendorDuplicates([purchase], [buy]), [], 'copy of an already-stored row');
+  assert.deepEqual(dropVendorDuplicates([buy], [buy]).length, 1, 're-sent stored row is left for the upsert to ignore');
+
+  const twice = { ...buy, dc_trade_id: 54116 };
+  assert.equal(dropVendorDuplicates([buy, twice], []).length, 2, 'same-vocabulary repeats are real trades');
+
+  const sale = { ...base, dc_trade_id: 1, trade_type: 'Sale', disclosure_date: '2025-05-15' };
+  const sell = { ...base, dc_trade_id: 2, trade_type: 'Sell', disclosure_date: '2026-08-05' };
+  assert.deepEqual(dropVendorDuplicates([sell, sale], []).map((r) => r.dc_trade_id), [1], 'earliest disclosure wins');
+
+  assert.equal(dropVendorDuplicates([buy, { ...purchase, symbol: 'GOOG' }], []).length, 2, 'different ticker is a different trade');
+  assert.equal(dropVendorDuplicates([{ ...buy, symbol: null }, { ...purchase, symbol: null }], []).length, 2);
 }
 
 console.log('congress ingest checks passed');

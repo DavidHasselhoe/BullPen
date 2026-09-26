@@ -20,6 +20,7 @@
  */
 
 import { createServerClient } from '@/lib/supabase/client';
+import { tradeDirection } from '@/lib/congress/types';
 
 const API_BASE = 'https://api.disclosedcapitol.com';
 
@@ -240,6 +241,61 @@ export function buildRows(trades: VendorTrade[], politicianId: string) {
     }));
 }
 
+type DedupeRow = {
+  politician_id: string;
+  dc_trade_id: number;
+  symbol: string | null;
+  trade_type: string;
+  amount_range: string;
+  transaction_date: string;
+  disclosure_date: string | null;
+};
+
+/**
+ * Drop the vendor's second copy of a trade it already sent under another id.
+ *
+ * Disclosed Capitol ingests some filings twice, through what look like two
+ * parsers with their own vocabularies ('Buy'/'Sell' vs 'Purchase'/'Sale').
+ * Each copy has a different dc_trade_id, so the UNIQUE key lets both in and
+ * the stock page listed Pelosi's Jan 16 2026 GOOGL buy twice. Tuberville's
+ * copies were worse: re-ingested with disclosure_date 2026-08-05, which turned
+ * on-time 2025 filings into a year-long disclosure lag.
+ *
+ * A row is a duplicate only when a row with the same member, ticker, date,
+ * bracket and direction exists under a DIFFERENT raw spelling. Two same-size
+ * trades on the same day in the same vocabulary are left alone, because a
+ * member really can do that. Earliest disclosure wins, since the re-ingested
+ * copy carries the later date.
+ *
+ * ponytail: rows with no ticker are never deduped (their descriptions differ
+ * between the two copies); they aren't shown on stock pages anyway.
+ */
+export function dropVendorDuplicates<T extends DedupeRow>(incoming: T[], stored: DedupeRow[]): T[] {
+  const key = (r: DedupeRow) =>
+    `${r.politician_id}|${r.symbol}|${r.transaction_date}|${r.amount_range}|${tradeDirection(r.trade_type)}`;
+  const spelling = (r: DedupeRow) => r.trade_type.trim().toLowerCase();
+
+  const seen = new Map<string, Set<string>>();
+  const note = (r: DedupeRow) => {
+    const k = key(r);
+    if (!seen.has(k)) seen.set(k, new Set());
+    seen.get(k)!.add(spelling(r));
+  };
+  stored.forEach((r) => r.symbol && note(r));
+
+  const byDisclosure = [...incoming].sort((a, b) =>
+    (a.disclosure_date ?? '9999').localeCompare(b.disclosure_date ?? '9999') || a.dc_trade_id - b.dc_trade_id,
+  );
+  const drop = new Set<number>();
+  for (const r of byDisclosure) {
+    if (!r.symbol || tradeDirection(r.trade_type) === 'other') continue;
+    const spellings = seen.get(key(r));
+    if (spellings && [...spellings].some((s) => s !== spelling(r))) drop.add(r.dc_trade_id);
+    else note(r);
+  }
+  return incoming.filter((r) => !drop.has(r.dc_trade_id));
+}
+
 /**
  * Fill trade/disclosure prices on rows stored before migration 156, or whose
  * disclosure price the vendor only had later. The main upsert deliberately
@@ -350,7 +406,18 @@ export async function ingestPolitician(
 
   base.fetched = trades.length;
 
-  const rows = await resolveMissingSymbols(supabase, buildRows(trades, politician.id));
+  const resolved = await resolveMissingSymbols(supabase, buildRows(trades, politician.id));
+  const symbols = [...new Set(resolved.map((r) => r.symbol).filter((s): s is string => !!s))];
+  const earliest = resolved.reduce((m, r) => (r.transaction_date < m ? r.transaction_date : m), '9999');
+  const { data: stored } = symbols.length
+    ? await supabase
+        .from('congress_trades')
+        .select('politician_id, dc_trade_id, symbol, trade_type, amount_range, transaction_date, disclosure_date')
+        .eq('politician_id', politician.id)
+        .in('symbol', symbols)
+        .gte('transaction_date', earliest)
+    : { data: [] };
+  const rows = dropVendorDuplicates(resolved, (stored ?? []) as DedupeRow[]);
   base.skipped = trades.length - rows.length;
   if (rows.length === 0) return base;
 
