@@ -1,5 +1,30 @@
 [
   {
+    "date": "2026-09-26",
+    "entries": [
+      {
+        "type": "improved",
+        "text": "Adding a holding is clearer. Pick the stock, ETF or crypto first and it shows as a card you can change, then fill in how much you bought. ETFs, funds and crypto are labelled in the results, and the window no longer jumps in size while you type"
+      },
+      {
+        "type": "fixed",
+        "text": "Searching for a company by name now shows the company itself first. Searching \"nvidia\" used to list several NVIDIA ETFs above NVIDIA when adding a holding or comparing stocks"
+      },
+      {
+        "type": "fixed",
+        "text": "The holdings table fits on screen again, with no sideways scrolling and no company names squeezed onto three lines. Today’s move now sits under the current price, and average buy prices read like every other price"
+      },
+      {
+        "type": "fixed",
+        "text": "Some politicians’ trades showed up twice on stock pages and in Washington Trading. Each trade now appears once, with its real disclosure date"
+      },
+      {
+        "type": "fixed",
+        "text": "In Revenue Flow, a large one-off gain now shows as Other Income next to Operating Income, instead of a red cost box beside the revenue sources"
+      }
+    ]
+  },
+  {
     "date": "2026-09-25",
     "entries": [
       {
