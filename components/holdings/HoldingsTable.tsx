@@ -151,7 +151,7 @@ function SkeletonTableRow({ index }: { index: number }) {
       className="border-b border-border/50 holdings-row-enter"
       style={{ animationDelay: `${index * 70}ms` }}
     >
-      <td className="py-4 px-4">
+      <td className="py-4 px-2 xl:px-3">
         <div className="flex items-center gap-3">
           <Skeleton className="h-12 w-12 rounded-lg shrink-0" />
           <div className="space-y-1.5">
@@ -160,25 +160,29 @@ function SkeletonTableRow({ index }: { index: number }) {
           </div>
         </div>
       </td>
-      <td className="py-4 px-4"><Skeleton className="h-4 w-8" /></td>
-      <td className="py-4 px-4"><Skeleton className="h-4 w-16" /></td>
-      <td className="py-4 px-4"><Skeleton className="h-4 w-16" /></td>
-      <td className="py-4 px-4"><Skeleton className="h-4 w-14" /></td>
-      <td className="py-4 px-4"><Skeleton className="h-4 w-20" /></td>
-      <td className="py-4 px-4">
+      <td className="py-4 px-2 xl:px-3"><Skeleton className="h-4 w-8" /></td>
+      <td className="py-4 px-2 xl:px-3"><Skeleton className="h-4 w-16" /></td>
+      <td className="py-4 px-2 xl:px-3">
+        <div className="space-y-1">
+          <Skeleton className="h-4 w-16" />
+          <Skeleton className="h-3 w-12" />
+        </div>
+      </td>
+      <td className="py-4 px-2 xl:px-3"><Skeleton className="h-4 w-20" /></td>
+      <td className="py-4 px-2 xl:px-3">
         <div className="space-y-1">
           <Skeleton className="h-4 w-16" />
           <Skeleton className="h-3 w-10" />
         </div>
       </td>
-      <td className="py-4 px-4">
+      <td className="py-4 px-2 xl:px-3">
         <div className="flex items-center gap-2">
-          <Skeleton className="h-1.5 w-14 rounded-full" />
+          <Skeleton className="hidden xl:block h-1.5 w-14 rounded-full" />
           <Skeleton className="h-4 w-8" />
         </div>
       </td>
-      <td className="py-4 px-3"><Skeleton className="h-7 w-16 rounded" /></td>
-      <td className="py-4 px-4">
+      <td className="hidden xl:table-cell py-4 px-2 xl:px-3"><Skeleton className="h-7 w-16 rounded" /></td>
+      <td className="py-4 px-2 xl:px-3">
         <div className="flex items-center justify-end gap-2">
           <Skeleton className="h-7 w-7 rounded" />
           <Skeleton className="h-7 w-7 rounded" />
@@ -188,8 +192,8 @@ function SkeletonTableRow({ index }: { index: number }) {
   );
 }
 
-// ─── Day change cell ────────────────────────────────────────────────────────
-// The column shows percent (compact, sortable-by-eye across rows); hovering
+// ─── Day change line ────────────────────────────────────────────────────────
+// Sits under the current price. It shows percent (compact, sortable-by-eye across rows); hovering
 // reveals the actual currency amount so users don't have to do the math from
 // market value × percent themselves to see how much a position moved today.
 
@@ -214,7 +218,7 @@ function DayChangeCell({
   const trigger = (
     <div className={cn('flex items-center gap-1 animate-in fade-in duration-300', colorClass)}>
       {isPositive ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-      <span className="text-sm font-medium">
+      <span className="text-xs font-medium">
         {formatPercentUtil(dayChangePercent, roundNumbers)}
       </span>
     </div>
@@ -309,7 +313,7 @@ const HoldingRow = memo(function HoldingRow({
       )}
       style={{ animationDelay: `${rowIndex * 45}ms` }}
     >
-      <td className="py-4 px-4">
+      <td className="py-4 px-2 xl:px-3">
         <Link
           href={slugToAssetPath(holding.symbol)}
           onMouseEnter={prefetchStock}
@@ -321,7 +325,7 @@ const HoldingRow = memo(function HoldingRow({
             logoUrl={holding.logoUrl || null}
             size={48}
           />
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-1.5">
               <span className="font-medium text-foreground group-hover:underline">
                 {holding.symbol}
@@ -332,51 +336,64 @@ const HoldingRow = memo(function HoldingRow({
                 </span>
               )}
             </div>
-            <div className="text-xs text-muted-foreground">{holding.company_name}</div>
+            {/* clamp-ok: a company name is a short label, and wrapped it stacked
+                three lines tall ("Advanced / Micro / Devices") and set the row height. */}
+            <div className="max-w-32 xl:max-w-40 truncate text-xs text-muted-foreground" title={holding.company_name ?? undefined}>
+              {holding.company_name}
+            </div>
           </div>
         </Link>
       </td>
-      <td className="py-4 px-4 text-sm text-foreground">
+      <td className="py-4 px-2 xl:px-3 text-sm text-foreground">
         {holding.quantity !== null ? formatNumberUtil(holding.quantity, roundNumbers) : '—'}
       </td>
-      <td className="py-4 px-4 text-sm text-foreground">
+      <td className="py-4 px-2 xl:px-3 text-sm whitespace-nowrap text-foreground">
         {/* Avg price is shown in the asset's native trading currency (USD/NOK/EUR…),
-            never converted — it's the cost basis the user actually paid. */}
+            never converted — it's the cost basis the user actually paid. USD reads
+            "$298.40" like every other money cell in the row; anything else keeps
+            its code, since formatCurrency falls back to "$" for codes it doesn't know. */}
         {holding.avg_price !== null && holding.avg_price !== undefined
-          ? `${holding.trading_currency ?? 'USD'} ${formatNumberUtil(holding.avg_price, roundNumbers)}`
+          ? (holding.trading_currency ?? 'USD') === 'USD'
+            ? formatCurrencyValue(holding.avg_price, 'USD', roundNumbers ? { round: true } : undefined)
+            : `${holding.trading_currency} ${formatNumberUtil(holding.avg_price, roundNumbers)}`
           : '—'}
       </td>
-      <td className="py-4 px-4 text-sm font-medium text-foreground">
-        {showPriceSkeleton ? <PriceSkeleton /> : holding.currentPrice !== undefined ? (
-          <span
-            className={cn('animate-in fade-in duration-300', holding.isPriceStale && 'text-muted-foreground')}
-            title={holding.isPriceStale ? t('holdingsTableStaleLastClose') : undefined}
-          >
-            {formatCurrencyValue(holding.currentPrice, currency, roundNumbers ? { round: true } : undefined)}
-          </span>
+      {/* Price with today's move under it, the same two-line shape as the P/L
+          cell. As its own column the move cost ~120px and pushed the table
+          past the card at 1280px: a scrollbar and three-line wrapped headers. */}
+      <td className="py-4 px-2 xl:px-3 text-sm font-medium text-foreground">
+        {showPriceSkeleton ? (
+          <div className="space-y-1"><PriceSkeleton /><PriceSkeleton /></div>
+        ) : holding.currentPrice !== undefined ? (
+          <div className="space-y-0.5">
+            <div
+              className={cn('animate-in fade-in duration-300', holding.isPriceStale && 'text-muted-foreground')}
+              title={holding.isPriceStale ? t('holdingsTableStaleLastClose') : undefined}
+            >
+              {formatCurrencyValue(holding.currentPrice, currency, roundNumbers ? { round: true } : undefined)}
+            </div>
+            {holding.dayChangePercent !== undefined && (
+              <DayChangeCell
+                dayChangePercent={holding.dayChangePercent}
+                dayChange={holding.dayChange}
+                isPositive={isPositive}
+                colorClass={holding.isPriceStale ? `${dayChangeColor} opacity-60` : dayChangeColor}
+                isPriceStale={holding.isPriceStale}
+                currency={currency}
+                roundNumbers={roundNumbers}
+              />
+            )}
+          </div>
         ) : '—'}
       </td>
-      <td className="py-4 px-4">
-        {showPriceSkeleton ? <PriceSkeleton /> : holding.dayChangePercent !== undefined ? (
-          <DayChangeCell
-            dayChangePercent={holding.dayChangePercent}
-            dayChange={holding.dayChange}
-            isPositive={isPositive}
-            colorClass={holding.isPriceStale ? `${dayChangeColor} opacity-60` : dayChangeColor}
-            isPriceStale={holding.isPriceStale}
-            currency={currency}
-            roundNumbers={roundNumbers}
-          />
-        ) : <span className="text-sm text-muted-foreground">—</span>}
-      </td>
-      <td className="py-4 px-4 text-sm font-medium text-foreground">
+      <td className="py-4 px-2 xl:px-3 text-sm font-medium text-foreground">
         {showPriceSkeleton ? <PriceSkeleton wide /> : holding.marketValue !== undefined ? (
           <span className="animate-in fade-in duration-300">
             {formatCurrencyValue(holding.marketValue, currency, roundNumbers ? { round: true } : undefined)}
           </span>
         ) : '—'}
       </td>
-      <td className="py-4 px-4">
+      <td className="py-4 px-2 xl:px-3">
         {showPriceSkeleton ? (
           <div className="space-y-1"><PriceSkeleton /><PriceSkeleton /></div>
         ) : holding.unrealizedPL !== undefined ? (
@@ -390,15 +407,15 @@ const HoldingRow = memo(function HoldingRow({
           </div>
         ) : <span className="text-sm text-muted-foreground">—</span>}
       </td>
-      <td className="py-4 px-4">
+      <td className="py-4 px-2 xl:px-3">
         {showPriceSkeleton ? (
           <div className="flex items-center gap-2">
-            <Skeleton className="h-1.5 w-14 rounded-full" />
+            <Skeleton className="hidden xl:block h-1.5 w-14 rounded-full" />
             <Skeleton className="h-4 w-8" />
           </div>
         ) : holding.allocation !== undefined ? (
-          <div className="flex items-center gap-2.5 min-w-[100px] animate-in fade-in duration-300">
-            <div className="w-14 h-1 rounded-full bg-muted/50 overflow-hidden shrink-0">
+          <div className="flex items-center gap-2.5 xl:min-w-[100px] animate-in fade-in duration-300">
+            <div className="hidden xl:block w-14 h-1 rounded-full bg-muted/50 overflow-hidden shrink-0">
               <div
                 className="h-full rounded-full transition-all duration-500"
                 style={{ width: `${(holding.allocation / maxAllocation) * 100}%`, backgroundColor: '#a855f7' }}
@@ -410,27 +427,34 @@ const HoldingRow = memo(function HoldingRow({
           </div>
         ) : <span className="text-sm text-muted-foreground">—</span>}
       </td>
-      <td className="py-4 px-3">
+      {/* Sparkline and the allocation bar (the % stays) are the two decorative
+          extras, so they give way below xl and the table still fits a 1024px
+          laptop instead of scrolling sideways. */}
+      <td className="hidden xl:table-cell py-4 px-2 xl:px-3">
         <SparklineCell prices={sparklinePrices} />
       </td>
-      <td className="py-4 px-4">
-        <div className="flex items-center justify-end gap-2">
+      <td className="py-4 px-2 xl:px-3">
+        {/* icon-sm, not sm: sm pads a lone icon to 36px, and four of them
+            made this the widest column in the table (200px). */}
+        <div className="flex items-center justify-end gap-0.5">
           <Button
             variant="ghost"
-            size="sm"
+            size="icon-sm"
             onClick={() => onEdit(holding)}
             disabled={anyPending || isEditModalOpen}
             title={t('holdingsTableEditHolding')}
+            aria-label={t('holdingsTableEditHolding')}
           >
             <Edit2 className="h-4 w-4" />
           </Button>
           {holding.source === 'manual' && (
             <Button
               variant="ghost"
-              size="sm"
+              size="icon-sm"
               onClick={() => onSell(holding)}
               disabled={anyPending}
               title={t('holdingsTableSellShares')}
+              aria-label={t('holdingsTableSellShares')}
             >
               <DollarSign className="h-4 w-4" />
             </Button>
@@ -438,20 +462,22 @@ const HoldingRow = memo(function HoldingRow({
           {holding.source === 'manual' && (
             <Button
               variant="ghost"
-              size="sm"
+              size="icon-sm"
               onClick={() => onAddPurchase(holding)}
               disabled={anyPending}
               title={t('holdingsTableAddPurchase')}
+              aria-label={t('holdingsTableAddPurchase')}
             >
               <PlusCircle className="h-4 w-4" />
             </Button>
           )}
           <Button
             variant="ghost"
-            size="sm"
+            size="icon-sm"
             onClick={() => onRemove({ id: holding.id, symbol: holding.symbol, companyName: holding.company_name, quantity: holding.quantity ?? 0 })}
             disabled={anyPending}
             title={isDeletingThis ? t('holdingsTableRemoving') : t('holdingsTableRemoveHolding')}
+            aria-label={isDeletingThis ? t('holdingsTableRemoving') : t('holdingsTableRemoveHolding')}
           >
             {isDeletingThis ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
           </Button>
@@ -789,16 +815,15 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-border/50">
-                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('holdingsTableColSymbol')}</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('holdingsTableColQuantity')}</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground"><TermTooltip term="Avg Price" /></th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('holdingsTableColCurrentPrice')}</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground"><TermTooltip term="Day Change" /></th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('holdingsTableColMarketValue')}</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground"><TermTooltip term="Unrealized P/L" /></th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('holdingsTableColAllocation')}</th>
-                    <th className="py-3 px-4" />
-                    <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">{t('holdingsTableColActions')}</th>
+                    <th className="text-left py-3 px-2 xl:px-3 text-sm font-medium text-muted-foreground">{t('holdingsTableColSymbol')}</th>
+                    <th className="text-left py-3 px-2 xl:px-3 text-sm font-medium text-muted-foreground">{t('holdingsTableColQuantity')}</th>
+                    <th className="text-left py-3 px-2 xl:px-3 text-sm font-medium text-muted-foreground"><TermTooltip term="Avg Price" /></th>
+                    <th className="text-left py-3 px-2 xl:px-3 text-sm font-medium text-muted-foreground">{t('holdingsTableColCurrentPrice')}</th>
+                    <th className="text-left py-3 px-2 xl:px-3 text-sm font-medium text-muted-foreground">{t('holdingsTableColMarketValue')}</th>
+                    <th className="text-left py-3 px-2 xl:px-3 text-sm font-medium text-muted-foreground"><TermTooltip term="Unrealized P/L" /></th>
+                    <th className="text-left py-3 px-2 xl:px-3 text-sm font-medium text-muted-foreground">{t('holdingsTableColAllocation')}</th>
+                    <th className="hidden xl:table-cell py-3 px-2 xl:px-3" />
+                    <th className="text-right py-3 px-2 xl:px-3 text-sm font-medium text-muted-foreground">{t('holdingsTableColActions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -932,7 +957,7 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
       </CardHeader>
       <CardContent>
         {/* Mobile: card list (the 10-column table is unusable < md) */}
-        <div className="space-y-2 md:hidden">
+        <div className="space-y-2 lg:hidden">
           {filteredHoldings.length === 0 && search && (
             <p className="py-8 text-center text-sm text-muted-foreground">{t('holdingsTableNoMatch', { search })}</p>
           )}
@@ -1013,51 +1038,48 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
           )}
         </div>
 
-        <div className="hidden md:block overflow-x-auto">
+        <div className="hidden lg:block overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-border/50">
-                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
+                <th className="text-left py-3 px-2 xl:px-3 text-sm font-medium text-muted-foreground">
                   <button
                     onClick={() => handleSort('symbol')}
-                    className="hover:text-foreground transition-colors"
+                    className="text-left hover:text-foreground transition-colors"
                   >
                     {t('holdingsTableColSymbol')}
                   </button>
                 </th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
+                <th className="text-left py-3 px-2 xl:px-3 text-sm font-medium text-muted-foreground">
                   {t('holdingsTableColQuantity')}
                 </th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
+                <th className="text-left py-3 px-2 xl:px-3 text-sm font-medium text-muted-foreground">
                   <TermTooltip term="Avg Price" />
                 </th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
+                <th className="text-left py-3 px-2 xl:px-3 text-sm font-medium text-muted-foreground">
                   {t('holdingsTableColCurrentPrice')}
                 </th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-                  <TermTooltip term="Day Change" />
-                </th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
+                <th className="text-left py-3 px-2 xl:px-3 text-sm font-medium text-muted-foreground">
                   <button
                     onClick={() => handleSort('marketValue')}
-                    className="hover:text-foreground transition-colors"
+                    className="text-left hover:text-foreground transition-colors"
                   >
                     {t('holdingsTableColMarketValue')}
                   </button>
                 </th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
+                <th className="text-left py-3 px-2 xl:px-3 text-sm font-medium text-muted-foreground">
                   <TermTooltip term="Unrealized P/L" />
                 </th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
+                <th className="text-left py-3 px-2 xl:px-3 text-sm font-medium text-muted-foreground">
                   <button
                     onClick={() => handleSort('allocation')}
-                    className="hover:text-foreground transition-colors"
+                    className="text-left hover:text-foreground transition-colors"
                   >
                     {t('holdingsTableColAllocation')}
                   </button>
                 </th>
-                <th className="py-3 px-4" />
-                <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">
+                <th className="hidden xl:table-cell py-3 px-2 xl:px-3" />
+                <th className="text-right py-3 px-2 xl:px-3 text-sm font-medium text-muted-foreground">
                   {t('holdingsTableColActions')}
                 </th>
               </tr>
@@ -1065,7 +1087,7 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
             <tbody>
               {filteredHoldings.length === 0 && search && (
                 <tr>
-                  <td colSpan={10} className="py-8 text-center text-sm text-muted-foreground">
+                  <td colSpan={9} className="py-8 text-center text-sm text-muted-foreground">
                     {t('holdingsTableNoMatch', { search })}
                   </td>
                 </tr>
@@ -1097,23 +1119,22 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
                     hoveredSector && hoveredSector !== CASH_SECTOR && 'opacity-25'
                   )}
                 >
-                  <td className="py-4 px-4">
+                  <td className="py-4 px-2 xl:px-3">
                     <div className="flex items-center gap-3">
                       <CashIcon size={48} />
                       <span className="font-medium text-foreground">{t('holdingsCash')}</span>
                     </div>
                   </td>
-                  <td className="py-4 px-4 text-sm text-muted-foreground">—</td>
-                  <td className="py-4 px-4 text-sm text-muted-foreground">—</td>
-                  <td className="py-4 px-4 text-sm text-muted-foreground">—</td>
-                  <td className="py-4 px-4 text-sm text-muted-foreground">—</td>
-                  <td className="py-4 px-4 text-sm font-medium text-foreground">
+                  <td className="py-4 px-2 xl:px-3 text-sm text-muted-foreground">—</td>
+                  <td className="py-4 px-2 xl:px-3 text-sm text-muted-foreground">—</td>
+                  <td className="py-4 px-2 xl:px-3 text-sm text-muted-foreground">—</td>
+                  <td className="py-4 px-2 xl:px-3 text-sm font-medium text-foreground">
                     {formatCurrencyValue(cashValue ?? 0, userCurrency ?? 'USD', roundNumbers ? { round: true } : undefined)}
                   </td>
-                  <td className="py-4 px-4 text-sm text-muted-foreground">—</td>
-                  <td className="py-4 px-4">
-                    <div className="flex items-center gap-2.5 min-w-[100px]">
-                      <div className="w-14 h-1 rounded-full bg-muted/50 overflow-hidden shrink-0">
+                  <td className="py-4 px-2 xl:px-3 text-sm text-muted-foreground">—</td>
+                  <td className="py-4 px-2 xl:px-3">
+                    <div className="flex items-center gap-2.5 xl:min-w-[100px]">
+                      <div className="hidden xl:block w-14 h-1 rounded-full bg-muted/50 overflow-hidden shrink-0">
                         <div
                           className="h-full rounded-full transition-all duration-500"
                           style={{ width: `${(cashAllocation / maxAllocation) * 100}%`, backgroundColor: '#a855f7' }}
@@ -1124,10 +1145,10 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
                       </span>
                     </div>
                   </td>
-                  <td className="py-4 px-3" />
-                  <td className="py-4 px-4">
-                    <div className="flex items-center justify-end gap-2">
-                      <Button variant="ghost" size="sm" onClick={onCashClick} title={t('holdingsTableEditCash')} aria-label={t('holdingsTableEditCash')}>
+                  <td className="hidden xl:table-cell py-4 px-2 xl:px-3" />
+                  <td className="py-4 px-2 xl:px-3">
+                    <div className="flex items-center justify-end gap-0.5">
+                      <Button variant="ghost" size="icon-sm" onClick={onCashClick} title={t('holdingsTableEditCash')} aria-label={t('holdingsTableEditCash')}>
                         <Edit2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -1136,7 +1157,7 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
               )}
               {onAddClick && (
                 <tr>
-                  <td colSpan={10} className="p-0 align-middle">
+                  <td colSpan={9} className="p-0 align-middle">
                     <button
                       onClick={onAddClick}
                       className="w-full flex items-center justify-center gap-2 py-5 text-muted-foreground hover:text-primary hover:bg-muted/20 transition-colors group"
