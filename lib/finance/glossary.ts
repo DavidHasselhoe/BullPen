@@ -435,6 +435,10 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     plainLabel: 'Taxes & Other Costs',
     description: 'Income taxes plus interest and other miscellaneous costs subtracted before arriving at final profit.',
   },
+  'Other Income': {
+    plainLabel: 'Profit From Outside the Business',
+    description: 'Money earned outside day-to-day operations, such as gains on investments the company owns, after taxes. It can push net income above operating income, but it rarely repeats every year.',
+  },
   'Total Costs': {
     plainLabel: 'All Costs Combined',
     description: 'Every cost the company subtracts from revenue (production, operating expenses, taxes, and interest) before its bottom-line profit.',
@@ -564,7 +568,7 @@ export const GLOSSARY_CATEGORIES: { name: string; terms: string[] }[] = [
   { name: 'Portfolio & Holdings', terms: ['Total Value', 'Cost Basis', 'Market Value', 'Unrealized P/L', 'Total P/L', 'Today P&L', 'Day Change', 'Avg Price', 'Allocation', 'Earnings', 'Thesis'] },
   { name: 'Health Score', terms: ['Health', 'Profitability', 'Financial Strength', 'Valuation', 'Growth', 'Market Risk', 'Current Ratio', 'Debt-to-Equity'] },
   { name: 'Price Panel', terms: ['Open', 'High', 'Low', 'Prev Close'] },
-  { name: 'Revenue Flow', terms: ['Cost of Revenue', 'Other OpEx', 'Tax & Other', 'Total Costs'] },
+  { name: 'Revenue Flow', terms: ['Cost of Revenue', 'Other OpEx', 'Tax & Other', 'Other Income', 'Total Costs'] },
   { name: 'Macro & Economy', terms: ['Federal Reserve', 'Interest Rate', 'Jobs Report', 'Inflation', 'CPI', 'Unemployment Rate', 'Oil Price', 'Discount Rate', 'Growth Stock', 'Value Stock', 'Yield Curve', 'Yield Curve Inversion', 'Credit Spread', 'Sector Rotation', 'Recession'] },
 ];
 

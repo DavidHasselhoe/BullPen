@@ -398,5 +398,6 @@
   "washingtonShowAll": "すべて表示 {{count}}件",
   "washingtonShowLess": "表示を減らす",
   "washingtonSeeAll": "ワシントン取引をすべて見る",
-  "washingtonDelayNote": "政治家は取引から最大45日後に開示できるため、ここに表示されているのは彼らが何をしたかであり、今何をしているかではありません。"
+  "washingtonDelayNote": "政治家は取引から最大45日後に開示できるため、ここに表示されているのは彼らが何をしたかであり、今何をしているかではありません。",
+  "sankeyNodeOtherIncome": "その他の収入"
 }

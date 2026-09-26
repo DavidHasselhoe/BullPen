@@ -2528,5 +2528,7 @@
   "stock.washingtonSeeAll": "d7d35b1cef18ba2f187e73e59bd4c54820b008a619ea2f2a657495534851bfa1",
   "stock.washingtonDelayNote": "92ce1ecd89c52fd3fe7a827478b2bdebfca8b2aba218a7f2b8bc109c2c178c61",
   "settings.notifPoliticianHoldingsLabel": "9b229b450314cc8f695910744d269de7187f7d54004f4d94d4e1f1a70b6cea27",
-  "settings.notifPoliticianHoldingsDescription": "399d51e39f799729e36939dc253d86ead0a10ce25f7e89002db0bc42ad0947ae"
+  "settings.notifPoliticianHoldingsDescription": "399d51e39f799729e36939dc253d86ead0a10ce25f7e89002db0bc42ad0947ae",
+  "stock.sankeyNodeOtherIncome": "d77ab227d0688126b4b4444f7d520d2a9cc6a1dfe3b13c0098c000f83d274e75",
+  "stock.washingtonSummary_one": "e2e84da73a5700c255df0e1cafe76ac56690d73a6b5a48b34604887372bc4f50"
 }

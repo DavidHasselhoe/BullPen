@@ -398,5 +398,6 @@
   "washingtonShowAll": "显示全部{{count}}",
   "washingtonShowLess": "显示较少",
   "washingtonSeeAll": "查看所有华盛顿交易",
-  "washingtonDelayNote": "政客可以在交易后45天内披露交易，所以这显示的是他们过去的做法，而非现在的行动。"
+  "washingtonDelayNote": "政客可以在交易后45天内披露交易，所以这显示的是他们过去的做法，而非现在的行动。",
+  "sankeyNodeOtherIncome": "其他收入"
 }

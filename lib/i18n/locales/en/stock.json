@@ -275,6 +275,7 @@
   "sankeyNodeNetIncome": "Net Income",
   "sankeyNodeOperatingIncome": "Operating Income",
   "sankeyNodeOtherCosts": "Other Costs",
+  "sankeyNodeOtherIncome": "Other Income",
   "sankeyGrossLossNote": "Costs came in above revenue this period, a gross loss of {{amount}}. The chart shows where the revenue went.",
   "sankeyNodeNetLoss": "Net Loss",
   "sankeyNodeOperatingLoss": "Operating Loss",

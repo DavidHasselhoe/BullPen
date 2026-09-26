@@ -14,7 +14,8 @@
  */
 
 import assert from 'node:assert/strict';
-import { buildGraph, type IncomeStatementPeriod } from '../components/stock/SankeyCard';
+import { sankey } from 'd3-sankey';
+import { buildGraph, alignColumn, type IncomeStatementPeriod } from '../components/stock/SankeyCard';
 
 type Graph = NonNullable<ReturnType<typeof buildGraph>>;
 
@@ -81,6 +82,38 @@ function assertBalanced(g: Graph, id: string, expected: number, label: string) {
     inflow(g, 'Net Income') - 40_770_000_000 > 0,
     'GOOGL: the non-operating gain enters as its own inflow'
   );
+  assert.ok(
+    g.links.some((l) => l.source === 'Other Income' && l.target === 'Net Income'),
+    'GOOGL: the gain is named Other Income, not the red Tax & Other cost'
+  );
+
+  // With revenue segments, sankeyLeft drew Other Income in column 0 beside
+  // them. It belongs one column before Net Income, alongside Operating Income.
+  const withSources = buildGraph(
+    row({
+      revenue: 119_796_000_000,
+      gross_profit: 73_853_000_000,
+      operating_income: 40_770_000_000,
+      net_income: 112_193_000_000,
+      r_and_d_expenses: 18_219_000_000,
+      selling_general_administrative_expenses: 14_864_000_000,
+    }),
+    [
+      { label: 'Google Search', value: 63_270_000_000 },
+      { label: 'Google Cloud', value: 56_526_000_000 },
+    ],
+  )!;
+  const laid = sankey<{ id: string }, { source: string; target: string; value: number }>()
+    .nodeId((d) => d.id)
+    .nodeAlign(alignColumn)
+    .extent([[0, 0], [1000, 500]])({
+      nodes: withSources.nodes.map((n) => ({ ...n })),
+      links: withSources.links.map((l) => ({ ...l })),
+    });
+  const layer = (id: string) => (laid.nodes.find((n) => n.id === id) as { layer: number }).layer;
+  assert.equal(layer('Other Income'), layer('Operating Income'), 'GOOGL: Other Income sits beside Operating Income');
+  assert.equal(layer('Other Income'), layer('Net Income') - 1, 'GOOGL: one column before Net Income');
+  assert.equal(layer('src:Google Search'), 0, 'GOOGL: revenue segments stay in column 0');
 }
 
 // ── Microsoft-shaped period: net income below operating income ──────────────

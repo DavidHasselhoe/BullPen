@@ -56,6 +56,7 @@ const NODE_PALETTE: Record<string, { light: string; dark: string }> = {
   'Total Costs':      { light: '#ef4444', dark: '#f87171' },
   'Costs & Tax':      { light: '#ef4444', dark: '#f87171' },
   'Operating Income': { light: '#22c55e', dark: '#4ade80' },
+  'Other Income':     { light: '#14b8a6', dark: '#2dd4bf' },
   'Tax & Other':      { light: '#f43f5e', dark: '#fb7185' },
   'Net Income':       { light: '#059669', dark: '#10b981' },
   'Operating Loss':   { light: '#dc2626', dark: '#ef4444' },
@@ -113,6 +114,7 @@ const NODE_LABEL_KEYS: Record<string, string> = {
   'Total Costs': 'sankeyNodeTotalCosts',
   'Costs & Tax': 'sankeyNodeCostsAndTax',
   'Operating Income': 'sankeyNodeOperatingIncome',
+  'Other Income': 'sankeyNodeOtherIncome',
   'Tax & Other': 'sankeyNodeTaxAndOther',
   'Net Income': 'sankeyNodeNetIncome',
   'Operating Loss': 'sankeyNodeOperatingLoss',
@@ -250,12 +252,13 @@ export function buildGraph(
         // that node at its outflow (a node is the larger of its two sides), so
         // the chart displayed operating income as $112.19B, 93.7% of revenue.
         // The gap has to enter the graph as its own inflow instead. It is the
-        // same quantity as the Tax & Other outflow below with the sign
-        // flipped, which is why it carries the same name.
+        // Tax & Other outflow below with the sign flipped, but it is named for
+        // what it is here: a red "Tax & Other" adding $71B to profit read as
+        // a cost. See the nodeAlign in SankeyChart for where it is placed.
         push('Operating Income', 'Net Income', oi);
         const nonOperating = ni - oi;
-        if (!nodes.find((n) => n.id === 'Tax & Other')) nodes.push({ id: 'Tax & Other' });
-        links.push({ source: 'Tax & Other', target: 'Net Income', value: nonOperating });
+        if (!nodes.find((n) => n.id === 'Other Income')) nodes.push({ id: 'Other Income' });
+        links.push({ source: 'Other Income', target: 'Net Income', value: nonOperating });
       } else if (ni != null && ni > 0) {
         const taxOther = Math.max(0, oi - ni);
         if (taxOther > 0) push('Operating Income', 'Tax & Other', taxOther);
@@ -296,6 +299,17 @@ export function buildGraph(
 
   if (links.length === 0) return null;
   return { nodes, links };
+}
+
+/**
+ * Column for a node. sankeyLeft puts every node without inflows in column 0,
+ * which drew Other Income beside the revenue segments, five columns from the
+ * Net Income it feeds. An inflow that isn't a revenue segment sits one column
+ * before its target instead. Exported for scripts/test-sankey-graph.ts.
+ */
+export function alignColumn(node: AnyNode, n: number): number {
+  if (node.targetLinks?.length || isSource(node.id)) return sankeyLeft(node, n);
+  return Math.min(...(node.sourceLinks ?? []).map((l: AnyLink) => l.target.depth as number)) - 1;
 }
 
 function deriveConfidence(row: IncomeStatementPeriod): Confidence {
@@ -436,7 +450,7 @@ function SankeyChart({ graph, width, revenue, currency, isDark, ticker, periodLa
         // the Cost of Revenue value line was drawn through "Gross Profit", and
         // SG&A's through "Operating Income".
         .nodePadding(30)
-        .nodeAlign(sankeyLeft)
+        .nodeAlign(alignColumn)
         .extent([[0, 0], [innerW, innerH]]);
       return gen({
         nodes: graph.nodes.map(n => ({ ...n })),
@@ -520,7 +534,9 @@ function SankeyChart({ graph, width, revenue, currency, isDark, ticker, periodLa
 
         {/* Nodes + labels */}
         {(layout.nodes as AnyNode[]).map((node, _i, allNodes) => {
-          const maxDepth = Math.max(...allNodes.map((n) => (n.depth as number) ?? 0));
+          // layer, not depth: layer is the column the custom nodeAlign chose,
+          // while depth still reads 0 for the Other Income inflow.
+          const maxDepth = Math.max(...allNodes.map((n) => (n.layer as number) ?? 0));
           const color  = nodeColor(node.id as string, sourceOrder, isDark);
           const nodeH  = (node.y1 as number) - (node.y0 as number);
           const midY   = ((node.y0 as number) + (node.y1 as number)) / 2;
@@ -530,7 +546,7 @@ function SankeyChart({ graph, width, revenue, currency, isDark, ticker, periodLa
           // once revenue gained a column of sources the columns narrowed and
           // "Gross Profit" rendered on top of "Operating Income". Above is
           // collision-free at any column count.
-          const depth = (node.depth as number) ?? 0;
+          const depth = (node.layer as number) ?? 0;
           const stacked = depth > 0 && depth < maxDepth;
           const isRight = midX > innerW * 0.55;
           const lx = stacked
