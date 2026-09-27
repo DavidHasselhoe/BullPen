@@ -503,18 +503,18 @@ export function EarningsListSlide({ companies, overflowCount = 0, slideIndex, to
                     backgroundColor: SURFACE, border: `1px solid ${BORDER_STRONG}`,
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 20, flex: 1, minWidth: 0 }}>
                     <CompanyBadge symbol={c.symbol} logoUrl={c.logoUrl} size={m.badgeSize} />
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 14 }}>
-                      <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: m.symbolFontSize, color: FG }}>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, flex: 1, minWidth: 0 }}>
+                      <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: m.symbolFontSize, color: FG, flexShrink: 0 }}>
                         {c.symbol}
                       </span>
-                      <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: m.nameFontSize, color: MUTED }}>
-                        {c.name}
+                      <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: m.nameFontSize, color: MUTED, flex: 1, minWidth: 0, overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                        {earningsRowName(c.name)}
                       </span>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 22 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 22, flexShrink: 0, marginLeft: 20 }}>
                     <EpsStat value={c.epsEstimate} labelFontSize={m.epsLabelFontSize} valueFontSize={m.epsValueFontSize} />
                     <TimeBadge time={c.time} fontSize={m.timeFontSize} paddingV={m.timePaddingV} paddingH={m.timePaddingH} />
                   </div>
@@ -614,18 +614,18 @@ export function EarningsResultsListSlide({ companies, overflowCount = 0, slideIn
                   backgroundColor: SURFACE, border: `1px solid ${BORDER_STRONG}`,
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 20, flex: 1, minWidth: 0 }}>
                   <CompanyBadge symbol={c.symbol} logoUrl={c.logoUrl} size={m.badgeSize} />
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 14 }}>
-                    <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: m.symbolFontSize, color: FG }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, flex: 1, minWidth: 0 }}>
+                    <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: m.symbolFontSize, color: FG, flexShrink: 0 }}>
                       {c.symbol}
                     </span>
-                    <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: m.nameFontSize, color: MUTED }}>
-                      {c.name}
+                    <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: m.nameFontSize, color: MUTED, flex: 1, minWidth: 0, overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                      {earningsRowName(c.name)}
                     </span>
                   </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 22 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 22, flexShrink: 0, marginLeft: 20 }}>
                   <EpsCompareStat estimate={c.epsEstimate} actual={c.epsActual} labelFontSize={m.epsLabelFontSize} valueFontSize={m.epsValueFontSize} />
                   <ResultBadge status={c.status} fontSize={m.timeFontSize} paddingV={m.timePaddingV} paddingH={m.timePaddingH} />
                 </div>
@@ -711,6 +711,16 @@ function MoverBar({ changePercent, maxAbs, positive }: { changePercent: number; 
  *  real "..." in the text content itself, not a CSS property. */
 function truncateName(name: string, maxChars = 26): string {
   return name.length > maxChars ? `${name.slice(0, maxChars).trimEnd()}...` : name;
+}
+
+/** Earnings-row company name: drops share-class boilerplate ("Non-Voting
+ *  Common Stock", "Class A Common Stock") that TwelveData appends to some
+ *  legal names, then caps length. MKC's full legal name pushed the EPS stat
+ *  and time badge off the canvas. The row's flex guard is the second line
+ *  of defence if a name still runs long. */
+function earningsRowName(name: string): string {
+  const cleaned = name.replace(/\s+(Class [A-Z]\s+)?(Non-Voting\s+)?(Common|Ordinary)\s+(Stock|Shares)$/i, '');
+  return truncateName(cleaned, 32);
 }
 
 interface MoversListSlideProps {
