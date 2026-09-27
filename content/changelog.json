@@ -1,5 +1,14 @@
 [
   {
+    "date": "2026-09-27",
+    "entries": [
+      {
+        "type": "fixed",
+        "text": "The earnings widget on your dashboard now follows the filters you set in the Market Calendar. If the calendar shows only your holdings and watchlist, the dashboard does too, and it hides when you switch earnings off"
+      }
+    ]
+  },
+  {
     "date": "2026-09-26",
     "entries": [
       {
