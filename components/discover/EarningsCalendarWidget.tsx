@@ -8,9 +8,11 @@ import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { useHoldings } from '@/hooks/use-holdings';
-import { useUserSettings } from '@/hooks/use-user-settings';
+import { useWatchlist } from '@/hooks/use-watchlist';
+import { useCalendarPrefs } from '@/hooks/use-calendar-prefs';
 import { useAuth } from '@/hooks/use-auth';
-import type { EarningsCalendarItem, EarningsCalendar } from '@/lib/twelvedata/twelvedata-client';
+import type { CalendarScope } from '@/lib/market-data/calendar-prefs';
+import type { EarningsCalendarItem } from '@/lib/twelvedata/twelvedata-client';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 
@@ -31,10 +33,6 @@ type EnrichedEarningsCalendarItem = EarningsCalendarItem & { logo_url?: string |
 
 function fromCalendarItem(item: EnrichedEarningsCalendarItem): EarningsRow {
   return { symbol: item.symbol, name: item.name, date: item.date, time: item.time, logoUrl: item.logo_url };
-}
-
-function fromHoldingEarning(e: EarningsCalendar): EarningsRow {
-  return { symbol: e.symbol, date: e.date, time: e.hour };
 }
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
@@ -214,78 +212,53 @@ function SkeletonCalendar() {
 export function EarningsCalendarWidget() {
   const { t } = useTranslation('discover');
   const { isAuthenticated } = useAuth();
-  const { marketContextMode } = useUserSettings();
-  const isPortfolioMode = marketContextMode === 'holdings';
-  const { data: holdings, isLoading: holdingsLoading } = useHoldings();
+  // Same saved filters as the Market Calendar, applied the same way
+  // (CalendarClientPage), so the two never disagree about whose earnings show.
+  const { prefs } = useCalendarPrefs();
+  const scope: CalendarScope = isAuthenticated ? prefs.scope : 'all';
+  const { data: holdings } = useHoldings();
+  const { data: watchlist } = useWatchlist();
 
   const today = todayStr();
   const weekDates = useMemo(() => getWeekDates(today), [today]);
   const weekStart = weekDates[0];
   const weekEnd = weekDates[4];
 
-  // ── All-markets: single batch request for the week ────────────────────────
-  const { data: calData, isLoading: calLoading } = useQuery<{
+  const { data: calData, isLoading } = useQuery<{
     success: boolean;
-    data?: EarningsCalendarItem[];
+    data?: EnrichedEarningsCalendarItem[];
   }>({
     queryKey: ['earnings-calendar-widget', weekStart, weekEnd],
     queryFn: async () => {
       const res = await fetch(`/api/calendar/earnings?from=${weekStart}&to=${weekEnd}`);
       return res.json();
     },
-    enabled: !isPortfolioMode,
     staleTime: 60 * 60 * 1000,
   });
 
-  // ── Portfolio mode: per-holding earnings filtered to this week ────────────
-  const holdingSymbols = useMemo(
-    () => (isPortfolioMode && holdings ? holdings.map((h) => h.symbol) : []),
-    [isPortfolioMode, holdings]
-  );
+  const scopeSymbols = useMemo(() => {
+    const set = new Set<string>();
+    if (scope !== 'watchlist') for (const h of holdings ?? []) set.add(h.symbol.toUpperCase());
+    if (scope !== 'holdings') for (const w of watchlist ?? []) set.add(w.symbol.toUpperCase());
+    return set;
+  }, [scope, holdings, watchlist]);
 
-  const { data: holdingsEarnings, isLoading: holdingsEarLoading } = useQuery<EarningsRow[]>({
-    queryKey: ['earnings-widget-holdings', holdingSymbols.join(','), weekStart, weekEnd],
-    queryFn: async () => {
-      if (!holdingSymbols.length) return [];
-      const results = await Promise.allSettled(
-        holdingSymbols.map((sym) =>
-          fetch(`/api/stock/${sym}/earnings-calendar`).then((r) => r.json())
-        )
-      );
-      const rows: EarningsRow[] = [];
-      results.forEach((r) => {
-        if (r.status === 'fulfilled' && r.value?.success && Array.isArray(r.value.earnings)) {
-          (r.value.earnings as EarningsCalendar[])
-            .filter((e) => e.date >= weekStart && e.date <= weekEnd)
-            .forEach((e) => rows.push(fromHoldingEarning(e)));
-        }
-      });
-      return rows.sort((a, b) => a.date.localeCompare(b.date));
-    },
-    enabled: isPortfolioMode && holdingSymbols.length > 0,
-    staleTime: 30 * 60 * 1000,
-  });
-
-  const isLoading = isPortfolioMode
-    ? holdingsLoading || holdingsEarLoading
-    : calLoading;
-
-  // Group all rows by date
   const rowsByDate = useMemo(() => {
-    const allRows: EarningsRow[] = isPortfolioMode
-      ? (holdingsEarnings ?? [])
-      : (calData?.data ?? []).map(fromCalendarItem);
+    const items = calData?.data ?? [];
+    const scoped = scope === 'all' ? items : items.filter((i) => scopeSymbols.has(i.symbol.toUpperCase()));
     const map = new Map<string, EarningsRow[]>();
-    for (const row of allRows) {
+    for (const row of scoped.map(fromCalendarItem)) {
       const bucket = map.get(row.date) ?? [];
       bucket.push(row);
       map.set(row.date, bucket);
     }
     return map;
-  }, [isPortfolioMode, calData, holdingsEarnings]);
+  }, [calData, scope, scopeSymbols]);
 
-  if (isPortfolioMode && !isAuthenticated) return null;
-  if (isPortfolioMode && !holdingsLoading && holdingSymbols.length === 0) return null;
+  // Earnings switched off in the calendar, or scoped to a list that is empty.
+  if (!prefs.types.includes('earnings')) return null;
+  if (scope !== 'all' && holdings !== undefined && watchlist !== undefined && scopeSymbols.size === 0) return null;
+  const isPortfolioMode = scope === 'holdings';
 
   return (
     <div className="space-y-4 min-w-0">
