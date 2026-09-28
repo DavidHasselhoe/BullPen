@@ -18,6 +18,7 @@ import { config } from 'dotenv';
 config({ path: '.env.local' });
 
 import assert from 'node:assert/strict';
+import { writeFileSync } from 'node:fs';
 import { runFactorScreen, rankUniverse, pickShortlist, describeScreen, MAX_PER_SECTOR, SCREEN_SIZE } from '../lib/picks/factor-screen';
 import { runWeeklyPickPipeline } from '../lib/ai/picks/pipeline';
 import { quarterOf, quarterRange, quarterLabel } from '../lib/picks/quarters';
@@ -99,6 +100,9 @@ async function main() {
     process.exit(1);
   }
   console.log('\nrow that would be inserted:\n', JSON.stringify({ ...result.row, metrics_snapshot: '(omitted)' }, null, 2));
+  // Full row, including the audit trail, for `npm run check-weekly-pick -- --file=...`.
+  writeFileSync('weekly-pick-dryrun.json', JSON.stringify(result.row, null, 2));
+  console.log('\nsaved weekly-pick-dryrun.json. Audit it with: npm run check-weekly-pick -- --file=weekly-pick-dryrun.json');
   console.log('\nvote:', JSON.stringify((result.row.metrics_snapshot as Record<string, unknown>).vote));
 }
 

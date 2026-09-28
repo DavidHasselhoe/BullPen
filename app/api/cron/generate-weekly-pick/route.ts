@@ -26,7 +26,8 @@ import { NextRequest, NextResponse, after } from 'next/server';
 import { logSecurityEvent } from '@/lib/security/security-events';
 import { createServerClient } from '@/lib/supabase/client';
 import { createWeeklyPickNotification } from '@/lib/notifications/notification-creators';
-import { runWeeklyPickPipeline } from '@/lib/ai/picks/pipeline';
+import { runWeeklyPickPipeline, PICK_MODEL } from '@/lib/ai/picks/pipeline';
+import { logAiCall } from '@/lib/billing/log-ai-call';
 
 export const maxDuration = 300;
 
@@ -109,6 +110,16 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   if (!result.ok) {
     console.error(`[weekly-pick] ${result.stage} stage failed: ${result.error}`);
+    // A failed week writes no pick row and Vercel keeps logs for an hour, so
+    // the trace goes somewhere durable for `npm run check-weekly-pick`.
+    await logAiCall({
+      userId: null, feature: 'weekly_pick_failed', model: PICK_MODEL, status: 'error',
+      metadata: {
+        date: todayET, stage: result.stage, error: result.error,
+        screen: trace.screen?.shortlist.map((s) => s.ticker), diligence: trace.diligence,
+        finalists: trace.finalists, votes: trace.votes, timingsMs: trace.timingsMs, tokens: trace.costTokens,
+      },
+    });
     return NextResponse.json({ success: false, stage: result.stage, error: result.error }, { status: 500 });
   }
   const { row, chosen, pick } = result;

@@ -357,6 +357,29 @@ export async function runWeeklyPickPipeline(params: { todayET: string }): Promis
       // pick vs SPY, basket vs SPY (did the factors work?), pick vs basket
       // (did the LLM layer add anything?).
       screen: screen.shortlist.map((s) => ({ ticker: s.ticker, sector: s.sector, composite: s.composite, scores: s.scores })),
+      // The full argument, stage by stage, so a run can be audited afterwards
+      // (npm run check-weekly-pick): every diligence verdict, every commit
+      // run's choice and debate, and what the pipeline cost.
+      audit: {
+        quarter,
+        screenExcluded: screen.excluded,
+        universeSize: screen.universeSize,
+        blockedSectors: [...blockedSectors],
+        lastTheme: priorPicks[0]?.thesis?.theme ?? null,
+        groundingRejected: rejected,
+        diligence: reviews,
+        finalists: finalists.map((f) => f.symbol),
+        runs: settled.map((s) => s.status === 'fulfilled'
+          ? {
+              symbol: s.value.symbol, valid: finalistSet.has(s.value.symbol), conviction: s.value.conviction,
+              convictionReason: s.value.convictionReason, theme: s.value.theme, headline: s.value.headline,
+              debate: s.value.debate,
+            }
+          : { error: String(s.reason).slice(0, 500) }),
+        tiebreak: trace.tiebreak ?? null,
+        timingsMs: trace.timingsMs,
+        tokens: trace.costTokens,
+      },
     },
     model: PICK_MODEL,
   };
