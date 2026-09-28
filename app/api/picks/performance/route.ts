@@ -22,27 +22,36 @@ import { TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
 import { rget, rset } from '@/lib/cache/redis-cache';
 import { computePerformance } from '@/lib/picks/performance';
 import type { PerformanceResponse } from '@/lib/picks/types';
+import { QUARTER_RE } from '@/lib/picks/quarters';
 
 /** Bump the version suffix whenever the payload's shape or semantics change,
  *  so a deploy doesn't serve the previous shape for another 30 minutes. */
-const CACHE_KEY = 'picks:performance:v2';
+const CACHE_KEY = 'picks:performance:v3';
 const CACHE_TTL_SECONDS = 30 * 60;
 
-async function handler(_request: NextRequest): Promise<NextResponse> {
+async function handler(request: NextRequest): Promise<NextResponse> {
+  // ?quarter=2026-Q3 scopes the record to picks made in that quarter.
+  const param = request.nextUrl.searchParams.get('quarter');
+  if (param && !QUARTER_RE.test(param)) {
+    return addSecurityHeaders(NextResponse.json({ success: false, error: 'Invalid quarter' }, { status: 400 }));
+  }
+  const quarter = param ?? undefined;
+  const cacheKey = `${CACHE_KEY}:${quarter ?? 'all'}`;
+
   try {
-    const cached = await rget<PerformanceResponse>(CACHE_KEY);
+    const cached = await rget<PerformanceResponse>(cacheKey);
     if (cached) {
       return addSecurityHeaders(NextResponse.json({ success: true, ...cached, cached: true }));
     }
 
-    const result = await computePerformance();
+    const result = await computePerformance(quarter);
 
     // A transient TD failure (rate limit, network blip) can leave every pick's
     // currentPrice null even though the picks themselves loaded fine. Caching
     // that degraded result for 30 minutes would make it survive repeated
     // refreshes — only cache once at least one pick actually resolved a price.
     if (result.picks.length === 0 || result.picks.some((p) => p.currentPrice != null)) {
-      void rset(CACHE_KEY, result, CACHE_TTL_SECONDS);
+      void rset(cacheKey, result, CACHE_TTL_SECONDS);
     }
 
     return addSecurityHeaders(NextResponse.json({ success: true, ...result }));

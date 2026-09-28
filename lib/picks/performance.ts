@@ -46,6 +46,7 @@ import {
 } from './types';
 import { buildNormalized, buildSeries, type SeriesPick } from './series-math';
 import { coerceRowNumerics, rowToSummary, type PickRow, PICK_SUMMARY_COLUMNS } from './picks-db';
+import { quarterOf } from './quarters';
 
 const BENCHMARK_SYMBOL = 'SPY';
 /** Daily bars change once a day; 6 h keeps the history cheap without going stale. */
@@ -196,7 +197,12 @@ async function stampMissingEntries(
 
 // ─── Main computation ────────────────────────────────────────────────────────
 
-export async function computePerformance(): Promise<PerformanceResponse> {
+/**
+ * @param quarter e.g. '2026-Q3': only picks *made* in that quarter, tracked to
+ *   today. Omitted = the whole record. Entry stamping always runs over every
+ *   pick, so viewing one quarter never leaves another quarter's entry pending.
+ */
+export async function computePerformance(quarter?: string): Promise<PerformanceResponse> {
   const supabase = createServerClient();
 
   const { data: rows, error } = await supabase
@@ -209,7 +215,7 @@ export async function computePerformance(): Promise<PerformanceResponse> {
 
   // PostgREST hands NUMERIC back as strings — normalize before any arithmetic.
   const picks = (rows ?? []).map(coerceRowNumerics);
-  if (picks.length === 0) return emptyResponse();
+  if (picks.length === 0) return emptyResponse([]);
 
   const firstPickDate = picks[0].pick_date;
   const symbols = [...new Set(picks.map((p) => p.symbol))];
@@ -240,13 +246,20 @@ export async function computePerformance(): Promise<PerformanceResponse> {
     picks[i].benchmark_entry_price = s.benchmarkEntryPrice;
   });
 
+  // ── Scope to the requested quarter ─────────────────────────────────────────
+  const quarters = [...new Set(picks.map((p) => quarterOf(p.pick_date)))];
+  const view = quarter ? picks.filter((p) => quarterOf(p.pick_date) === quarter) : picks;
+  if (view.length === 0) return emptyResponse(quarters);
+  const viewStart = view[0].pick_date;
+  const viewSymbols = [...new Set(view.map((p) => p.symbol))];
+
   // ── Live prices for the headline figures ──────────────────────────────────
   // Candles are cached for 6 h; the numbers a user reads at the top of the page
   // shouldn't be. One batched /quote covers every pick plus the benchmark.
-  const quotes = await withRateLimitRetry(() => getStockQuotes([...symbols, BENCHMARK_SYMBOL]))
+  const quotes = await withRateLimitRetry(() => getStockQuotes([...viewSymbols, BENCHMARK_SYMBOL]))
     .catch(() => new Map());
 
-  const picksWithPerf = buildPickPerformance(picks, quotes, barsBySymbol, benchmarkBars);
+  const picksWithPerf = buildPickPerformance(view, quotes, barsBySymbol, benchmarkBars);
 
   if (!benchmarkBars) {
     // No benchmark history — still return the per-pick numbers rather than
@@ -254,17 +267,18 @@ export async function computePerformance(): Promise<PerformanceResponse> {
     return {
       series: [],
       normalized: [],
-      summary: summarize(picksWithPerf, [], firstPickDate),
+      summary: summarize(picksWithPerf, [], viewStart),
       picks: picksWithPerf,
+      quarters,
     };
   }
 
-  // ── Shared date axis: every US session since the first pick ───────────────
-  const axis = benchmarkBars.dates.filter((d) => d >= firstPickDate);
+  // ── Shared date axis: every US session since the first pick in view ───────
+  const axis = benchmarkBars.dates.filter((d) => d >= viewStart);
   const benchmarkCloses = alignToAxis(benchmarkBars, axis);
 
   const working: SeriesPick[] = [];
-  for (const row of picks) {
+  for (const row of view) {
     if (row.entry_price == null || row.benchmark_entry_price == null) continue;  // entry pending
     const bars = barsBySymbol.get(row.symbol);
     if (!bars) continue;
@@ -288,9 +302,9 @@ export async function computePerformance(): Promise<PerformanceResponse> {
 
   const series = buildSeries(working, axis, benchmarkCloses);
   const normalized = buildNormalized(working, axis);
-  const summary = summarize(picksWithPerf, series, firstPickDate);
+  const summary = summarize(picksWithPerf, series, viewStart);
 
-  return { series, normalized, summary, picks: picksWithPerf };
+  return { series, normalized, summary, picks: picksWithPerf, quarters };
 }
 
 /**
@@ -441,11 +455,12 @@ export async function livePerformanceFor(row: {
   };
 }
 
-function emptyResponse(): PerformanceResponse {
+function emptyResponse(quarters: string[]): PerformanceResponse {
   return {
     series: [],
     normalized: [],
     picks: [],
+    quarters,
     summary: {
       pickCount: 0,
       trackedCount: 0,

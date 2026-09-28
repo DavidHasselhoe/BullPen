@@ -102,4 +102,6 @@ export interface PerformanceResponse {
   normalized: NormalizedPoint[];
   summary: PerformanceSummary;
   picks: PickWithPerformance[];
+  /** Every quarter that has at least one pick ('2026-Q3'), oldest first. */
+  quarters: string[];
 }
