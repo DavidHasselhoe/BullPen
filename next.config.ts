@@ -1,6 +1,15 @@
+import { HTML_LIMITED_BOT_UA_RE } from 'next/dist/shared/lib/router/utils/html-bots';
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Googlebot gets <title>, description and canonical in <head>. Next's
+  // default list covers Google-InspectionTool (Search Console's live test)
+  // but not Googlebot itself, so pages with an async generateMetadata (every
+  // /stock/[ticker] and /picks/[date]) streamed their metadata into <body>.
+  // Search Console then recorded "user-declared canonical: none" for
+  // /stock/TXN (crawled 2026-09-11) while the live test looked fine.
+  // Extends the default list rather than replacing it.
+  htmlLimitedBots: new RegExp(`${HTML_LIMITED_BOT_UA_RE.source}|Googlebot`, 'i'),
   // Pins the workspace root explicitly. Without this, Turbopack's root
   // inference has a known Windows bug (vercel/next.js#92978) where it
   // misdetects the root as the drive letter itself (e.g. "C:\"), causing

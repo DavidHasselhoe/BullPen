@@ -47,5 +47,9 @@ export default function robots(): MetadataRoute.Robots {
       disallow: ['/api/', '/stock/', '/asset/', '/etf/', '/tools/deep-dive/', '/admin/'],
     },
     host: 'https://bullpen.no',
+    // Search Console reported "no referring sitemap" for /stock/TXN although
+    // it's listed there; say where the sitemap is instead of relying on the
+    // Search Console submission alone.
+    sitemap: 'https://bullpen.no/sitemap.xml',
   };
 }

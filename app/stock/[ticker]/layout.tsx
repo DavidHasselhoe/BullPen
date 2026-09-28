@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { createServerClient } from '@/lib/supabase/client';
+import { getDisplayNames } from '@/lib/market-data/display-names';
 
 /**
  * The page itself (page.tsx) is a client component, which can't export
@@ -20,14 +20,8 @@ export async function generateMetadata({
   const { ticker: rawTicker } = await params;
   const ticker = rawTicker.toUpperCase();
 
-  const supabase = createServerClient();
-  const { data } = await supabase
-    .from('companies')
-    .select('name')
-    .eq('ticker', ticker)
-    .maybeSingle<{ name: string | null }>();
-
-  const name = data?.name;
+  // Properly cased ("Texas Instruments"), not the SEC's "TEXAS INSTRUMENTS INC".
+  const name = (await getDisplayNames([ticker])).get(ticker);
   const title = name ? `${name} (${ticker}) Stock Price` : `${ticker} Stock Price`;
   const description = name
     ? `Real-time price, financials, and AI-powered analysis for ${name} (${ticker}) on BullPen.`
