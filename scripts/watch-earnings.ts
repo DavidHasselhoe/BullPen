@@ -36,6 +36,7 @@ import { seedEarningsDeepDiveDraft, refreshDraftEstimates, completeEarningsDeepD
 import { extractEarningsActuals } from '../lib/instagram/content/earnings-deep-dive-extract';
 import { sleep } from '../lib/utils';
 
+import { SITE_URL } from '../lib/site';
 function parseArg(name: string): string | undefined {
   const arg = process.argv.find((a) => a.startsWith(`--${name}=`));
   return arg ? arg.slice(name.length + 3) : undefined;
@@ -94,7 +95,7 @@ async function publishViaProd(postId: string): Promise<void> {
     return;
   }
 
-  const base = process.env.APP_URL || 'https://bullpen.no';
+  const base = process.env.APP_URL || SITE_URL;
   const res = await fetch(`${base}/api/instagram/publish-by-id?id=${postId}`, {
     headers: { Authorization: `Bearer ${secret}` },
   });

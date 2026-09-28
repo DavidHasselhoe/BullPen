@@ -8,6 +8,7 @@
 import assert from 'node:assert/strict';
 import { etToIso, parseIcs, blsRows, beaRows, claimsRows, fomcRows } from '../lib/market-data/economic-calendar';
 
+import { SITE_URL } from '../lib/site';
 // 8:30 ET is 12:30Z in summer (EDT) and 13:30Z in winter (EST).
 assert.equal(etToIso('2026-10-02', '08:30'), '2026-10-02T12:30:00.000Z');
 assert.equal(etToIso('2026-12-04', '08:30'), '2026-12-04T13:30:00.000Z');
@@ -51,7 +52,7 @@ assert.equal(fomc.find((r) => r.date === '2026-10-28')?.release_at, '2026-10-28T
 assert.equal(fomc.filter((r) => r.has_projections).length, 8);
 
 async function live() {
-  const ua = { 'User-Agent': 'Mozilla/5.0 (compatible; BullPen economic calendar; +https://bullpen.no)' };
+  const ua = { 'User-Agent': `Mozilla/5.0 (compatible; BullPen economic calendar; +${SITE_URL})` };
   for (const [name, url, rows] of [
     ['BLS', 'https://www.bls.gov/schedule/news_release/bls.ics', blsRows],
     ['BEA', 'https://www.bea.gov/news/schedule/ics/online-calendar-subscription.ics', beaRows],

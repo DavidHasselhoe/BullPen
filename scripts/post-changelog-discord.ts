@@ -15,6 +15,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { postToDiscord, type DiscordEmbed } from '../lib/discord/post-message';
 
+import { SITE_URL } from '../lib/site';
 type ChangelogEntryType = 'new' | 'improved' | 'fixed';
 interface ChangelogEntry {
   type: ChangelogEntryType;
@@ -53,7 +54,7 @@ async function main() {
     title: `📦 BullPen updates — ${latest.date}`,
     description,
     color: 0x3b82f6,
-    fields: [{ name: 'Full changelog', value: 'https://bullpen.no/changelog' }],
+    fields: [{ name: 'Full changelog', value: `${SITE_URL}/changelog` }],
     timestamp: new Date().toISOString(),
   };
 

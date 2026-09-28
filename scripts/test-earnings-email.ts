@@ -8,7 +8,8 @@ config({ path: '.env.local' });
 
 import { sendEmail } from '../lib/email/resend';
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://bullpen.no';
+import { SITE_URL } from '../lib/site';
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || SITE_URL;
 
 const html = `
 <!DOCTYPE html>
