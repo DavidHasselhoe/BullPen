@@ -51,6 +51,7 @@ import type { EarningsCalendarSlides, EarningsSlideCompany } from './schema';
 import type { WebSearchEarningsHit } from './earnings-web-search';
 import { tooFewCompanies, type TooFewCompanies } from './earnings-minimum';
 
+import { SITE_URL } from '@/lib/site';
 const MODEL = 'claude-sonnet-4-6';
 /** Companies per carousel — caps the list slides at a sane carousel length
  *  (1 hook + up to this many list rows, paginated in the renderer, + 1 CTA). */
@@ -171,7 +172,7 @@ export async function generateEarningsCalendarContent(
     weekLabel
   );
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bullpen.no';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || SITE_URL;
   const logoUrls = await Promise.all(shown.map((c) => resolveLogoUrl(appUrl, c.symbol)));
 
   const companies: EarningsSlideCompany[] = shown.map((c, i) => ({

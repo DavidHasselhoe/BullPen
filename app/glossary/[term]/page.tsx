@@ -11,9 +11,10 @@ import {
   relatedGlossaryTerms,
   resolveGlossaryTermFromSlug,
 } from '@/lib/finance/glossary';
+import { SITE_URL } from '@/lib/site';
 import '@/components/landing/landing-styles.css';
 
-const BASE_URL = 'https://bullpen.no';
+const BASE_URL = SITE_URL;
 
 export function generateStaticParams() {
   return canonicalGlossaryTerms().map((term) => ({ term: glossarySlug(term) }));

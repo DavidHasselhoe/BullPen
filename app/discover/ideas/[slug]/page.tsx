@@ -3,7 +3,8 @@ import { notFound } from 'next/navigation';
 import { THEME_DISPLAY_ORDER, THEME_BY_SLUG } from '@/lib/discover/theme-config';
 import { ThemeDetailClient } from '@/components/discover/v2/ThemeDetailClient';
 
-const BASE_URL = 'https://bullpen.no';
+import { SITE_URL } from '@/lib/site';
+const BASE_URL = SITE_URL;
 
 export function generateStaticParams() {
   return THEME_DISPLAY_ORDER.map((theme) => ({ slug: theme.slug }));

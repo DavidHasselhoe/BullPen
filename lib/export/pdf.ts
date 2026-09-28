@@ -10,6 +10,7 @@
 
 import { cleanNumber, downloadBlob } from './csv';
 
+import { SITE_HOST } from '@/lib/site';
 export interface PdfDocument {
   /** Shown large at the top of page 1. */
   title: string;
@@ -118,7 +119,7 @@ export async function downloadPdf(filename: string, doc: PdfDocument): Promise<v
       pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(8);
       pdf.setTextColor(...MUTED);
-      pdf.text('bullpen.no', margin, height - 24);
+      pdf.text(SITE_HOST, margin, height - 24);
       pdf.text(`Page ${page}`, pageWidth - margin, height - 24, { align: 'right' });
       // Not advice, and it has to survive the file being forwarded on.
       pdf.text('Informational only, not financial advice.', pageWidth / 2, height - 24, { align: 'center' });

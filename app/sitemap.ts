@@ -2,6 +2,7 @@ import type { MetadataRoute } from 'next';
 import { canonicalGlossaryTerms, glossarySlug } from '@/lib/finance/glossary';
 import { createServerClient } from '@/lib/supabase/client';
 import { SIGNIFICANT_TICKERS } from '@/lib/market-data/significant-tickers';
+import { SITE_URL } from '@/lib/site';
 
 /**
  * Served at /sitemap.xml.
@@ -13,8 +14,12 @@ import { SIGNIFICANT_TICKERS } from '@/lib/market-data/significant-tickers';
  * intentionally excluded: they require a session and aren't unique
  * indexable content for an anonymous searcher.
  */
+// Rebuilt daily. As a build-time static file, a new weekly pick only reached
+// the sitemap on the next deploy (found 2026-09-28: live stopped at 09-21).
+export const revalidate = 86400;
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const BASE_URL = 'https://bullpen.no';
+  const BASE_URL = SITE_URL;
 
   const routes: { path: string; priority: number; changeFrequency: MetadataRoute.Sitemap[number]['changeFrequency'] }[] = [
     { path: '/', priority: 1.0, changeFrequency: 'daily' },

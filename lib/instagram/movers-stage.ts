@@ -12,6 +12,7 @@ import { instagramBioLink } from '@/lib/instagram/utm-link';
 import { publishStagedPost } from '@/lib/instagram/publish';
 import type { MarketMoversSlides } from '@/lib/instagram/content/schema';
 
+import { SITE_URL } from '@/lib/site';
 export interface StagedMovers {
   postId: string;
   slideCount: number;
@@ -48,7 +49,7 @@ export async function stageAndPublishMovers(opts: {
   }
 
   const postId = inserted.id as string;
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bullpen.no';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || SITE_URL;
   const slideCount = totalSlideCount(content);
   // ?v=<content hash> so a later fix to this same post (a manual DB patch, a
   // re-notify) produces genuinely different URLs — see contentVersion's doc

@@ -41,6 +41,7 @@ import { postToDiscord } from '@/lib/discord/post-message';
 import { resolveLogoUrl, FIXED_HASHTAGS } from './shared';
 import type { EarningsDeepDiveData, EarningsDeepDiveSlides } from './schema';
 
+import { SITE_URL } from '@/lib/site';
 const MODEL = 'claude-sonnet-5';
 const CONTENT_TYPE = 'earnings_deep_dive';
 
@@ -103,7 +104,7 @@ export async function seedEarningsDeepDiveDraft(params: {
   if (existing) return { postId: existing.id as string, alreadyExisted: true };
 
   const estimates = await fetchDeepDiveEstimates(ticker, params.segmentLabel);
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bullpen.no';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || SITE_URL;
   const logoUrl = await resolveLogoUrl(appUrl, ticker);
 
   const data: EarningsDeepDiveData = {
@@ -406,7 +407,7 @@ export async function completeEarningsDeepDiveFromFiling(
     throw new Error(`Failed to update earnings_deep_dive post ${row.id} to ready: ${updateError.message}`);
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bullpen.no';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || SITE_URL;
   const slideCount = totalSlideCount(finalSlides);
 
   // Dedicated deep-dive review channel takes priority over the general

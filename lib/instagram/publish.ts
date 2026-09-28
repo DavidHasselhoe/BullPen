@@ -13,6 +13,7 @@ import { instagramBioLink } from '@/lib/instagram/utm-link';
 import { checkPublishable } from '@/lib/instagram/content/publish-guard';
 import type { InstagramPostSlides } from '@/lib/instagram/content/schema';
 
+import { SITE_URL } from '@/lib/site';
 interface InstagramPostRow {
   id: string;
   status: string;
@@ -65,7 +66,7 @@ export async function publishStagedPost(id: string): Promise<PublishStagedPostRe
     return { outcome: 'blocked', problems: guard.problems };
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bullpen.no';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || SITE_URL;
   const slideCount = totalSlideCount(post.slides);
   const imageUrls = Array.from({ length: slideCount }, (_, i) => `${appUrl}/api/instagram/render/${post.id}/${i}`);
   const altTexts = Array.from({ length: slideCount }, (_, i) => altTextForSlide(post.slides, i));

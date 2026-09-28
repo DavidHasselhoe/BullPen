@@ -16,8 +16,9 @@
 
 import { REGISTERED_ADDRESS_LINES, SERVICE_PROVIDER_NAME } from '@/lib/legal/dmca-agent';
 
+import { SITE_URL } from '@/lib/site';
 function appUrl(): string {
-  return process.env.NEXT_PUBLIC_APP_URL || 'https://bullpen.no';
+  return process.env.NEXT_PUBLIC_APP_URL || SITE_URL;
 }
 
 /**

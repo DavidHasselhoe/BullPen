@@ -18,7 +18,8 @@
 import { createServerClient } from '@/lib/supabase/client';
 import type { EconomicKind } from './economic-kinds';
 
-const USER_AGENT = 'Mozilla/5.0 (compatible; BullPen economic calendar; +https://bullpen.no)';
+import { SITE_URL } from '@/lib/site';
+const USER_AGENT = `Mozilla/5.0 (compatible; BullPen economic calendar; +${SITE_URL})`;
 const BLS_ICS = 'https://www.bls.gov/schedule/news_release/bls.ics';
 const BEA_ICS = 'https://www.bea.gov/news/schedule/ics/online-calendar-subscription.ics';
 

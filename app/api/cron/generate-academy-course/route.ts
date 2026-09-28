@@ -24,6 +24,7 @@ import { generateCourseLessons } from '@/lib/academy/generate-course-content';
 import { ACADEMY_ROADMAP } from '@/lib/academy/academy-roadmap';
 import { postToDiscord } from '@/lib/discord/post-message';
 
+import { SITE_URL } from '@/lib/site';
 export const maxDuration = 300;
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
@@ -112,7 +113,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ success: false, error: lessonsError.message }, { status: 500 });
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bullpen.no';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || SITE_URL;
   if (webhookUrl) {
     await postToDiscord(webhookUrl, {
       embeds: [{

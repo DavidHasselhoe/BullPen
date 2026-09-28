@@ -6,6 +6,7 @@ import { Reveal, SectionHeading } from './Atoms';
 import { Icon } from './Icon';
 import type { Shot } from '@/lib/landing/screenshots';
 
+import { SITE_HOST } from '@/lib/site';
 /**
  * Real product screenshots.
  *
@@ -77,7 +78,7 @@ function BrowserChrome({ url, children }: { url: string; children: React.ReactNo
         >
           <Icon name="shield" size={11} style={{ color: 'var(--up)' }} />
           {/* Was "bullpen.app" — not a domain we own. */}
-          <span style={{ color: 'var(--fg-dim)' }}>bullpen.no</span>
+          <span style={{ color: 'var(--fg-dim)' }}>{SITE_HOST}</span>
           <span style={{ color: 'var(--fg)' }}>{url}</span>
         </div>
         <div style={{ display: 'flex', gap: 4, alignItems: 'center' }} aria-hidden>

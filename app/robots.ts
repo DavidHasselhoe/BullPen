@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { SIGNIFICANT_TICKERS } from '@/lib/market-data/significant-tickers';
 
+import { SITE_URL } from '@/lib/site';
 /**
  * Served at /robots.txt.
  *
@@ -46,10 +47,10 @@ export default function robots(): MetadataRoute.Robots {
       allow: ['/', '/api/instagram/render/', ...allowedStockPaths],
       disallow: ['/api/', '/stock/', '/asset/', '/etf/', '/tools/deep-dive/', '/admin/'],
     },
-    host: 'https://bullpen.no',
+    host: SITE_URL,
     // Search Console reported "no referring sitemap" for /stock/TXN although
     // it's listed there; say where the sitemap is instead of relying on the
     // Search Console submission alone.
-    sitemap: 'https://bullpen.no/sitemap.xml',
+    sitemap: `${SITE_URL}/sitemap.xml`,
   };
 }

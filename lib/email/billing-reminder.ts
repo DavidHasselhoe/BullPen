@@ -16,7 +16,8 @@ import { getStripe } from '@/lib/billing/stripe';
 import { PRICING } from '@/lib/billing/entitlements';
 import { sendEmail } from './resend';
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://bullpen.no';
+import { SITE_URL } from '@/lib/site';
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || SITE_URL;
 
 function formatAmount(amountInCents: number, currency: string): string {
   return new Intl.NumberFormat('en-US', {

@@ -5,7 +5,8 @@ import { createServerClient } from '@/lib/supabase/client';
 import { positionLine } from '@/lib/congress/member-list';
 import { CongressMemberDetailClient } from '@/components/congress/CongressMemberDetailClient';
 
-const BASE_URL = 'https://bullpen.no';
+import { SITE_URL } from '@/lib/site';
+const BASE_URL = SITE_URL;
 
 interface ActiveMember {
   display_name: string;

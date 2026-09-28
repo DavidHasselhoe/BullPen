@@ -20,6 +20,7 @@ import { PostHogProvider } from "@/components/analytics/PostHogProvider";
 import { PageTransition } from "@/components/ui/PageTransition";
 import { preconnect } from "react-dom";
 
+import { SITE_URL } from '@/lib/site';
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -39,7 +40,7 @@ const instrumentSerif = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://bullpen.no"),
+  metadataBase: new URL(SITE_URL),
   title: {
     template: "%s | BullPen",
     default: "BullPen — Invest smarter",
@@ -68,8 +69,8 @@ const ORGANIZATION_JSON_LD = {
   "@type": "Organization",
   name: "BullPen",
   legalName: "Hasselø BullPen",
-  url: "https://bullpen.no",
-  logo: "https://bullpen.no/icon-light.png",
+  url: SITE_URL,
+  logo: `${SITE_URL}/icon-light.png`,
   description:
     "Investment research and portfolio-tracking platform for everyday investors — real-time market data, AI-powered analysis, and educational tools.",
   // Ties the bullpen.no entity to its real public profiles — one of the few
@@ -85,7 +86,7 @@ const WEBSITE_JSON_LD = {
   "@context": "https://schema.org",
   "@type": "WebSite",
   name: "BullPen",
-  url: "https://bullpen.no",
+  url: SITE_URL,
 };
 
 export default async function RootLayout({

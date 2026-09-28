@@ -49,6 +49,7 @@ import type { EarningsResultsSlides, EarningsResultCompany } from './schema';
 import type { WebSearchEarningsHit } from './earnings-web-search';
 import { tooFewCompanies, type TooFewCompanies } from './earnings-minimum';
 
+import { SITE_URL } from '@/lib/site';
 const MODEL = 'claude-sonnet-4-6';
 /** Same cap as earnings-calendar.ts, kept as an independent constant since
  *  the two generators are otherwise decoupled modules. */
@@ -238,7 +239,7 @@ export async function generateEarningsResultsContent(
   const { headline, caption } = await writeHookAndCaption(shown, weekLabel, beatCount, missedCount);
 
   const withMeta = await attachCalendarMeta(shown);
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bullpen.no';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || SITE_URL;
   const logoUrls = await Promise.all(withMeta.map((c) => resolveLogoUrl(appUrl, c.symbol)));
 
   const companies: EarningsResultCompany[] = withMeta.map((c, i) => ({

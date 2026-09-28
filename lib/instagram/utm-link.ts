@@ -1,3 +1,4 @@
+import { SITE_URL } from '@/lib/site';
 /**
  * Instagram only allows one clickable link (the bio link), and captions
  * can't contain clickable URLs — so per-post attribution isn't automatic.
@@ -6,7 +7,7 @@
  * conversion by utm_content (the period key) and tell which post/week
  * actually converted, not just which one got taps.
  */
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://bullpen.no';
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || SITE_URL;
 
 export function instagramBioLink(contentType: string, periodKey: string): string {
   const params = new URLSearchParams({

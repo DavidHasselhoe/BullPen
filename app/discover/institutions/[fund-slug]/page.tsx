@@ -4,7 +4,8 @@ import { createServerClient } from '@/lib/supabase/client';
 import { INSTITUTIONAL_FUND_SLUGS, isInstitutionalFundSlug } from '@/lib/institutions/fund-list';
 import { InstitutionalFundDetailClient } from '@/components/institutions/InstitutionalFundDetailClient';
 
-const BASE_URL = 'https://bullpen.no';
+import { SITE_URL } from '@/lib/site';
+const BASE_URL = SITE_URL;
 
 export function generateStaticParams() {
   return INSTITUTIONAL_FUND_SLUGS.map((slug) => ({ 'fund-slug': slug }));

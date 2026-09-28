@@ -44,6 +44,7 @@ import type {
   EarningsDeepDiveData,
 } from '@/lib/instagram/content/schema';
 
+import { SITE_HOST } from '@/lib/site';
 export const SLIDE_WIDTH = 1080;
 export const SLIDE_HEIGHT = 1350;
 
@@ -1065,7 +1066,7 @@ export function DeepDiveSummarySlide({ data }: DeepDiveSlideProps): any {
           Track ${data.ticker} free on BullPen
         </span>
         <div style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: 24, fontWeight: 500, color: BRAND_INK, backgroundColor: BRAND, padding: '18px 44px', borderRadius: 999 }}>
-          bullpen.no
+          {SITE_HOST}
         </div>
       </div>
     </div>
@@ -1206,7 +1207,7 @@ export function CTASlide({ slideIndex, totalSlides, variant = 'earnings_calendar
           backgroundColor: BRAND, padding: '18px 44px', borderRadius: 999,
         }}
       >
-        bullpen.no
+        {SITE_HOST}
       </div>
     </div>
   );

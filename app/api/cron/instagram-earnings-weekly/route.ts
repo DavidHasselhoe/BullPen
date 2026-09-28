@@ -33,6 +33,7 @@ import { formatWeekLabel } from '@/lib/instagram/content/shared';
 import { postSkipNotice, tooFewCompaniesMessage, type TooFewCompanies } from '@/lib/instagram/content/earnings-minimum';
 import type { EarningsCalendarSlides } from '@/lib/instagram/content/schema';
 
+import { SITE_URL } from '@/lib/site';
 // Was 60s. The web-search gap-fill plus a carousel publish (Meta processes each
 // image before the post goes live) can outrun that, and the W37 and W38 2026
 // calendar posts were both left 'ready' with no media id, no error and no
@@ -129,7 +130,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const postId = inserted.id as string;
 
   // ── Pre-publish notification ────────────────────────────────────────────
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bullpen.no';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || SITE_URL;
   const slideCount = totalSlideCount(content);
   const previewLinks = Array.from({ length: slideCount }, (_, i) =>
     `[Slide ${i + 1}](${appUrl}/api/instagram/render/${postId}/${i})`
