@@ -104,8 +104,8 @@ NEXT_PUBLIC_POSTHOG_HOST=https://us.posthog.com
 # Optional: override default sender (default: BullPen <hello@updates.bullpen.no>)
 # RESEND_FROM_EMAIL=BullPen <noreply@updates.bullpen.no>
 
-# Optional: app URL for email links (default: https://bullpen.no)
-# NEXT_PUBLIC_APP_URL=https://bullpen.no
+# Optional: app URL for email links (default: https://bullpeninvest.com)
+# NEXT_PUBLIC_APP_URL=https://bullpeninvest.com
 ```
 
 ### Step 3: Get Market Data API Key(s)

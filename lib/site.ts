@@ -3,13 +3,13 @@
  * data, email and Instagram links, and the "bullpen.no" printed on slides and
  * PDFs all read it from here.
  *
- * Domain move to bullpeninvest.com: change SITE_URL, set NEXT_PUBLIC_APP_URL
- * to the same value in Vercel (email and Instagram code prefer the env var),
- * and follow the switch checklist in the memory note project-domain-migration.
- * public/llms.txt, content/legal/*.html and the GitHub Actions APP_URL default
- * are static and are edited by hand on the day.
+ * Moved from bullpen.no on 2026-09-28; bullpen.no 308-redirects here. Email
+ * still sends from updates.bullpen.no. If this ever changes again, also set
+ * NEXT_PUBLIC_APP_URL in Vercel (email and Instagram code prefer it) and
+ * hand-edit public/llms.txt, content/legal/*.html and the GitHub Actions
+ * APP_URL default, which can't import this.
  */
-export const SITE_URL = 'https://bullpen.no';
+export const SITE_URL = 'https://bullpeninvest.com';
 
 /** The bare host, for printing: "bullpen.no". */
 export const SITE_HOST = new URL(SITE_URL).host;

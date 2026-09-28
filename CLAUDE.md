@@ -318,7 +318,7 @@ Migrated 2026-09-05: QStash schedule created in the Upstash console (EU region),
 
 `seed-screener-universe.yml` (`/api/screener/seed-universe`) is `workflow_dispatch`-only — a manual/occasional bootstrap for newly-listed tickers, not a recurring schedule.
 
-The GitHub Actions workflows require **`CRON_SECRET`** to be set in repo secrets (Settings → Secrets and variables → Actions). The production URL defaults to `https://bullpen.no` — override with an `APP_URL` repo variable if needed.
+The GitHub Actions workflows require **`CRON_SECRET`** to be set in repo secrets (Settings → Secrets and variables → Actions). The production URL defaults to `https://bullpeninvest.com` (was bullpen.no until 2026-09-28; it now 308-redirects there) — override with an `APP_URL` repo variable if needed.
 
 ## Market Data: TwelveData Performance & Cost Guidelines
 

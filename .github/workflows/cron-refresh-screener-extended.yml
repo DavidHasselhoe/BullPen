@@ -32,7 +32,7 @@ jobs:
       - name: Refresh remaining active universe (batch 122 onward, until done)
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
-          APP_URL: ${{ vars.APP_URL || 'https://bullpen.no' }}
+          APP_URL: ${{ vars.APP_URL || 'https://bullpeninvest.com' }}
         run: |
           if [ -z "$CRON_SECRET" ]; then
             echo "::error::CRON_SECRET secret is not configured in repo settings"
@@ -57,7 +57,7 @@ jobs:
       - name: Discovery sweep over the long tail (tier-0)
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
-          APP_URL: ${{ vars.APP_URL || 'https://bullpen.no' }}
+          APP_URL: ${{ vars.APP_URL || 'https://bullpeninvest.com' }}
         run: |
           if [ -z "$CRON_SECRET" ]; then
             echo "::error::CRON_SECRET secret is not configured in repo settings"

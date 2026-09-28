@@ -10,25 +10,25 @@ execute trades. Content is for informational and educational purposes only.
 
 ## Product
 
-- [Homepage](https://bullpen.no/): overview, pricing, and how the product works.
-- [Pricing](https://bullpen.no/pricing): Free plan (unlimited stock pages, screener, holdings tracking, limited AI chat) and Pro (Daily Brief, "Why Today?" price explanations, unlimited AI, brokerage sync).
-- [Discover](https://bullpen.no/discover): daily market overview — index moves, sector performance, and screened idea collections.
-- [Academy](https://bullpen.no/academy): free and Pro courses teaching investing fundamentals, from beginner to advanced.
-- [Changelog](https://bullpen.no/changelog): dated log of shipped product changes.
+- [Homepage](https://bullpeninvest.com/): overview, pricing, and how the product works.
+- [Pricing](https://bullpeninvest.com/pricing): Free plan (unlimited stock pages, screener, holdings tracking, limited AI chat) and Pro (Daily Brief, "Why Today?" price explanations, unlimited AI, brokerage sync).
+- [Discover](https://bullpeninvest.com/discover): daily market overview — index moves, sector performance, and screened idea collections.
+- [Academy](https://bullpeninvest.com/academy): free and Pro courses teaching investing fundamentals, from beginner to advanced.
+- [Changelog](https://bullpeninvest.com/changelog): dated log of shipped product changes.
 
 ## Company
 
-- [About](https://bullpen.no/about): who built BullPen and why.
-- [Contact](https://bullpen.no/contact)
-- [Help center](https://bullpen.no/help)
-- [Glossary](https://bullpen.no/glossary): plain-language definitions of financial terms used throughout the product.
+- [About](https://bullpeninvest.com/about): who built BullPen and why.
+- [Contact](https://bullpeninvest.com/contact)
+- [Help center](https://bullpeninvest.com/help)
+- [Glossary](https://bullpeninvest.com/glossary): plain-language definitions of financial terms used throughout the product.
 
 ## Legal
 
-- [Privacy Policy](https://bullpen.no/privacy)
-- [Terms](https://bullpen.no/terms)
-- [Disclosures](https://bullpen.no/disclosures): educational-only / not-investment-advice disclosure.
-- [Security](https://bullpen.no/security)
+- [Privacy Policy](https://bullpeninvest.com/privacy)
+- [Terms](https://bullpeninvest.com/terms)
+- [Disclosures](https://bullpeninvest.com/disclosures): educational-only / not-investment-advice disclosure.
+- [Security](https://bullpeninvest.com/security)
 
 ## Notes for AI agents and crawlers
 
