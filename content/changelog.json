@@ -1,5 +1,22 @@
 [
   {
+    "date": "2026-09-28",
+    "entries": [
+      {
+        "type": "improved",
+        "text": "BullPen has moved to bullpeninvest.com. Old bullpen.no links and bookmarks still work and take you to the same page. You may need to sign in once more on the new address"
+      },
+      {
+        "type": "new",
+        "text": "Bull's Weekly Pick has a new method. A fixed screen now ranks every US stock worth at least $2 billion on value, business quality and price trend against its own sector, an AI analyst checks the top 25 against recent news, and three separate AI runs argue for and against each finalist before picking. The pick page shows how many runs agreed and what should be visible by the end of the quarter"
+      },
+      {
+        "type": "new",
+        "text": "Bull's track record can be viewed quarter by quarter, starting with the first October pick. Each quarter shows the picks made in it, still measured against the S&P 500 from their own entry dates"
+      }
+    ]
+  },
+  {
     "date": "2026-09-27",
     "entries": [
       {
