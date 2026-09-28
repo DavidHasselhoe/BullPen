@@ -212,6 +212,7 @@ BullpenChat.tsx (UI)
 Two separate Anthropic-powered features (not using Vercel AI SDK):
 - **"Why Today?"** — `app/api/stock/[ticker]/why-today/route.ts` — Claude + Brave web search explains daily price movement (Pro feature)
 - **Daily Brief** — `app/api/cron/generate-daily-brief/route.ts` — Claude generates a personalized market summary at 06:30 UTC for Pro users; stored in `daily_briefs` Supabase table
+- **Bull's Weekly Pick** — `lib/ai/picks/pipeline.ts` (v2 since 2026-Q4, Opus 5.5): a deterministic factor screen (`lib/picks/factor-screen.ts`) picks the 25-name shortlist, Opus with web search does due diligence, then three independent commit runs vote. The model does not propose ideas: when it did, 9 of the first 10 picks were the same AI-capex trade. Don't backtest the LLM stages on past weeks, the model has memorised them. `npm run test-weekly-pick` (screen only, free) / `-- --full` (real Opus calls). The track record can be scoped by quarter (`?quarter=2026-Q3`); quarters group picks, they never close or reset them.
 
 ### Experience level system
 

@@ -11,6 +11,7 @@ import { humanizeError } from '@/lib/errors/humanize';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
 import { cn } from '@/lib/utils';
 import { CATALYST_LABELS, HORIZON_LABELS, type PickDetail } from '@/lib/picks/types';
+import { quarterLabel, quarterOf } from '@/lib/picks/quarters';
 import { ConvictionMeter } from '@/components/picks/ConvictionMeter';
 import { PickPriceChart } from '@/components/picks/PickPriceChart';
 import {
@@ -236,6 +237,7 @@ function PickBody({
 function UnlockedThesis({ pick }: { pick: PickDetail }) {
   const thesis = pick.thesis;
   const risks = pick.risks ?? [];
+  const vote = readVote(pick.metricsSnapshot);
 
   return (
     <>
@@ -333,8 +335,39 @@ function UnlockedThesis({ pick }: { pick: PickDetail }) {
           </p>
         </section>
       )}
+
+      {thesis?.quarterCheckpoint && (
+        <section aria-labelledby="checkpoint-heading" className="mb-8">
+          <h2
+            id="checkpoint-heading"
+            className="mb-2 text-sm font-semibold uppercase tracking-widest text-muted-foreground"
+          >
+            By the end of {quarterLabel(quarterOf(pick.pickDate))}
+          </h2>
+          <p className="max-w-prose rounded-xl border border-border/50 bg-card/40 px-4 py-3.5 text-[14px] leading-relaxed text-foreground/85">
+            {thesis.quarterCheckpoint}
+          </p>
+        </section>
+      )}
+
+      {vote && (
+        <p className="mb-8 text-[12px] text-muted-foreground">
+          {vote.agreed === vote.of
+            ? `All ${vote.of} independent AI runs chose this stock.`
+            : vote.tiebreak
+              ? `The ${vote.of} independent AI runs each chose a different stock. A final review picked this one.`
+              : `${vote.agreed} of ${vote.of} independent AI runs chose this stock.`}
+        </p>
+      )}
     </>
   );
+}
+
+/** The commit vote stored by the v2 pipeline. Absent on earlier picks. */
+function readVote(snapshot: Record<string, unknown> | undefined): { agreed: number; of: number; tiebreak: unknown } | null {
+  const v = snapshot?.vote as { agreed?: unknown; of?: unknown; tiebreak?: unknown } | undefined;
+  if (!v || typeof v.agreed !== 'number' || typeof v.of !== 'number') return null;
+  return { agreed: v.agreed, of: v.of, tiebreak: v.tiebreak ?? null };
 }
 
 function LockedThesis({ reason }: { reason?: 'anonymous' | 'free_quota_used' }) {

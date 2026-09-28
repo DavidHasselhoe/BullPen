@@ -22,6 +22,8 @@ export const MODEL_PRICING: Record<
   // about; verified against the live pricing page 2026-09-22. Cache reads are
   // $0.20/MTok and writes $2.50/MTok, both priced by calcCost below.
   'claude-sonnet-5':             { input: 2.00,  output: 10.00, cacheRead: 0.20, cacheWrite: 2.50 },
+  // Weekly Pick (lib/ai/picks/pipeline.ts). Cache writes at the standard 1.25x.
+  'claude-opus-5-5':             { input: 4.00,  output: 20.00, cacheRead: 0.20, cacheWrite: 5.00 },
   'claude-sonnet-4-6':           { input: 3.00,  output: 15.00 },
   'claude-sonnet-4-5':           { input: 3.00,  output: 15.00 },
   'claude-opus-4-7':             { input: 15.00, output: 75.00 },

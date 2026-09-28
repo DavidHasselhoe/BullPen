@@ -31,6 +31,36 @@ export function PicksMethodology() {
       </h2>
 
       <Accordion type="single" collapsible className="rounded-xl border border-border/50 bg-card/40 px-4">
+        <AccordionItem value="how-chosen">
+          <AccordionTrigger className="text-sm font-semibold text-foreground">
+            Numbers pick the shortlist, AI checks it
+          </AccordionTrigger>
+          <AccordionContent className="text-[12px] leading-relaxed text-muted-foreground">
+            Since October 2026, the AI no longer proposes the ideas. Each week a fixed
+            screen ranks every US stock worth at least $2 billion against its own sector
+            on value, business quality and price trend, the factors with the longest
+            record of working outside the studies that found them. The top 25 go to an
+            AI analyst, which reads each company&apos;s recent news and drops any whose
+            story the numbers don&apos;t show, such as a guidance cut or an accounting
+            problem. Three separate AI runs then argue the case for and against every
+            finalist and each pick one. The pick is the name at least two of them chose,
+            and the pick page shows how many agreed.
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="quarters">
+          <AccordionTrigger className="text-sm font-semibold text-foreground">
+            Quarters group picks, they never reset them
+          </AccordionTrigger>
+          <AccordionContent className="text-[12px] leading-relaxed text-muted-foreground">
+            A quarter shows the picks made during it. Their returns keep counting after
+            the quarter ends, measured against the S&amp;P from each pick&apos;s own entry
+            date, because a call made for the next year can&apos;t be judged in its first
+            week. Thirteen picks is also too few to separate skill from luck, so read
+            one quarter as a snapshot and the full record as the real test.
+          </AccordionContent>
+        </AccordionItem>
+
         <AccordionItem value="entry-price">
           <AccordionTrigger className="text-sm font-semibold text-foreground">
             The entry price is the first price you could have paid

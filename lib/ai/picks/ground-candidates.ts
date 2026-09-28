@@ -166,7 +166,12 @@ function pctDiff(price: number | null, reference: number | null | undefined): nu
  * required — a genuinely under-covered name shouldn't be rejected just because
  * its industry bucket is thin.
  */
-export async function groundCandidates(candidates: Candidate[]): Promise<GroundingResult> {
+export async function groundCandidates(
+  candidates: Candidate[],
+  /** Sector per symbol from a better source, used when screener_stats has none
+   *  (most rows: its sector column is sparsely populated). */
+  sectorHint?: Map<string, string>,
+): Promise<GroundingResult> {
   const rejected: Record<string, string> = {};
   if (candidates.length === 0) return { survivors: [], rejected };
 
@@ -266,13 +271,14 @@ export async function groundCandidates(candidates: Candidate[]): Promise<Groundi
       continue;
     }
 
-    const benchmarks = await getBenchmarks(row.sector, row.industry);
+    const sector = row.sector ?? sectorHint?.get(symbol) ?? null;
+    const benchmarks = await getBenchmarks(sector, row.industry);
 
     survivors.push({
       symbol,
       scoutReason: candidate.reason,
       name: row.name ?? universeByTicker.get(symbol)?.name ?? null,
-      sector: row.sector,
+      sector,
       industry: row.industry,
       logoUrl: row.logo_url,
       marketCap: row.market_cap,
@@ -357,7 +363,7 @@ export function formatScorecards(candidates: GroundedCandidate[]): string {
         `Valuation & quality vs peers:`,
         peerLines,
         `Momentum: ${momentum}`,
-        `Why the scout flagged it: ${c.scoutReason}`,
+        `Why it's on the list: ${c.scoutReason}`,
       ].join('\n');
     })
     .join('\n\n');

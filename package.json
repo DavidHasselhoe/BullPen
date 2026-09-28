@@ -76,7 +76,8 @@
     "test-ticker-preview": "tsx scripts/test-ticker-preview-shorten.ts",
     "test-holdings-context": "tsx scripts/test-holdings-context-gate.ts",
     "ingest-congress": "tsx scripts/ingest-congress-trades.ts",
-    "test-congress-ingest": "tsx scripts/test-congress-ingest.ts"
+    "test-congress-ingest": "tsx scripts/test-congress-ingest.ts",
+    "test-weekly-pick": "tsx scripts/test-weekly-pick.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.119",
