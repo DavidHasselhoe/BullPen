@@ -82,7 +82,23 @@ export interface ScreenedStock {
 export interface ScreenResult {
   shortlist: ScreenedStock[];
   universeSize: number;
-  excluded: { recent: number; blockedSector: number; noSector: number; stale: number; incomplete: number };
+  excluded: { recent: number; blockedSector: number; noSector: number; stale: number; inconsistent: number; incomplete: number };
+}
+
+/**
+ * True when a row's own ratios contradict each other. P/S must equal
+ * P/E × profit margin; when it doesn't, the gap is almost always an exchange
+ * rate: foreign filers' sales and EBITDA are stored in their home currency
+ * against a USD market cap (HMY 16x = ZAR, ABEV 5.3x = BRL, CVE 1.4x = CAD,
+ * measured 2026-09-28). Those rows look many times cheaper than they are, so
+ * they'd win the value factor on a units error. Loss-makers can't be checked
+ * this way and pass; they already rank at the bottom on earnings yield.
+ */
+export function ratiosDisagree(r: Pick<Row, 'pe_ratio' | 'ps_ratio' | 'profit_margin'>): boolean {
+  if (r.pe_ratio == null || r.ps_ratio == null || r.profit_margin == null) return false;
+  if (r.pe_ratio <= 0 || r.ps_ratio <= 0 || r.profit_margin <= 0.01) return false;
+  const k = r.ps_ratio / (r.pe_ratio * r.profit_margin);
+  return k < 0.8 || k > 1.25;
 }
 
 /** Higher is better for every raw metric this returns. Null = not measurable. */
@@ -229,7 +245,7 @@ export async function runFactorScreen(opts: {
 
   const sectorOf = new Map(sectorRows.map((r) => [r.ticker.toUpperCase(), r.sector]));
   const cutoff = Date.now() - MAX_STALENESS_DAYS * 86_400_000;
-  const excluded = { recent: 0, blockedSector: 0, noSector: 0, stale: 0, incomplete: 0 };
+  const excluded = { recent: 0, blockedSector: 0, noSector: 0, stale: 0, inconsistent: 0, incomplete: 0 };
 
   const universe: Array<Row & { sector: string }> = [];
   for (const r of rows) {
@@ -239,6 +255,7 @@ export async function runFactorScreen(opts: {
     if (!sector) { excluded.noSector++; continue; }
     if (opts.blockedSectors.has(sector)) { excluded.blockedSector++; continue; }
     if (!r.updated_at || Date.parse(r.updated_at) < cutoff) { excluded.stale++; continue; }
+    if (ratiosDisagree(r)) { excluded.inconsistent++; continue; }
     universe.push({ ...r, ticker, sector });
   }
 

@@ -20,6 +20,8 @@ export interface LogAiCallParams {
   outputTokens?: number;
   status?: 'success' | 'error' | 'blocked';
   metadata?: Record<string, unknown>;
+  /** Provider's cache split of inputTokens, priced at cache rates. */
+  cache?: CachedTokenSplit;
 }
 
 /** Returns the inserted row's id (or null on failure) so a caller that logs
@@ -28,7 +30,7 @@ export async function logAiCall(params: LogAiCallParams): Promise<string | null>
   try {
     const inputTokens  = params.inputTokens  ?? 0;
     const outputTokens = params.outputTokens ?? 0;
-    const costUsd      = calcCost(params.model, inputTokens, outputTokens);
+    const costUsd      = calcCost(params.model, inputTokens, outputTokens, params.cache);
 
     const supabase = createServerClient();
     const { data } = await supabase.from('ai_usage').insert({

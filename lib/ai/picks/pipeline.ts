@@ -45,8 +45,15 @@ const EXCLUDE_WINDOW = 26;
 const SECTOR_CAP_PER_QUARTER = 3;
 const MAX_FINALISTS = 8;
 const COMMIT_RUNS = 3;
-/** Roughly one search per screened name, per the diligence prompt. */
-const DILIGENCE_MAX_SEARCHES = 25;
+/**
+ * Diligence runs as this many parallel calls. One call over 25 names took
+ * 190s of a 300s route budget in the first dry run (2026-09-28); two batches
+ * still took 142s. Cost barely moves with the split: it follows the number of
+ * searches, not the number of calls.
+ */
+const DILIGENCE_BATCHES = 3;
+/** Per batch: roughly one search per name plus a few follow-ups. */
+const searchesFor = (names: number) => names + 4;
 
 export type PipelineStage = 'screen' | 'ground' | 'diligence' | 'commit' | 'validate';
 
@@ -57,7 +64,8 @@ export interface PipelineTrace {
   finalists?: string[];
   votes?: Array<string | null>;
   tiebreak?: { symbol: string; reason: string };
-  costTokens: { input: number; output: number };
+  /** input includes cache reads/writes, which are also broken out. */
+  costTokens: { input: number; output: number; cacheRead: number; cacheWrite: number; webSearches: number };
   /** Wall-clock ms at the end of each stage, from pipeline start. The route has 300s. */
   timingsMs: Partial<Record<PipelineStage, number>>;
 }
@@ -96,11 +104,14 @@ function tailText(content: Anthropic.ContentBlock[]): string {
 async function callClaude(
   client: Anthropic,
   trace: PipelineTrace,
-  opts: { feature: string; system: string; user: string; webSearch?: boolean; maxTokens: number; meta: Record<string, unknown> },
+  opts: { feature: string; system: string; user: string; webSearch?: number; maxTokens: number; meta: Record<string, unknown> },
 ): Promise<string> {
   const messages: Anthropic.MessageParam[] = [{ role: 'user', content: opts.user }];
   let input = 0;
   let output = 0;
+  let cacheRead = 0;
+  let cacheWrite = 0;
+  let searches = 0;
 
   // A server-tool turn can come back as pause_turn when its internal loop hits
   // its iteration limit; resending the partial turn lets it continue.
@@ -120,15 +131,20 @@ async function callClaude(
         tools: [{
           type: 'web_search_20260209' as const,
           name: 'web_search' as const,
-          max_uses: DILIGENCE_MAX_SEARCHES,
+          max_uses: opts.webSearch,
           allowed_callers: ['direct' as const],
         }],
       }),
       messages,
     }).finalMessage();
 
-    input += final.usage.input_tokens;
+    // input_tokens excludes cached tokens; they're reported separately, and
+    // web search is billed per request on top of tokens.
+    cacheRead += final.usage.cache_read_input_tokens ?? 0;
+    cacheWrite += final.usage.cache_creation_input_tokens ?? 0;
+    input += final.usage.input_tokens + (final.usage.cache_read_input_tokens ?? 0) + (final.usage.cache_creation_input_tokens ?? 0);
     output += final.usage.output_tokens;
+    searches += final.usage.server_tool_use?.web_search_requests ?? 0;
 
     if (final.stop_reason === 'pause_turn') {
       messages.push({ role: 'assistant', content: final.content });
@@ -137,9 +153,15 @@ async function callClaude(
 
     trace.costTokens.input += input;
     trace.costTokens.output += output;
+    trace.costTokens.cacheRead += cacheRead;
+    trace.costTokens.cacheWrite += cacheWrite;
+    trace.costTokens.webSearches += searches;
     void logAiCall({
       userId: null, feature: opts.feature, model: PICK_MODEL,
-      inputTokens: input, outputTokens: output, metadata: opts.meta,
+      inputTokens: input, outputTokens: output,
+      cache: { cacheReadTokens: cacheRead, cacheWriteTokens: cacheWrite },
+      // $10 per 1,000 searches is billed outside tokens; recorded, not priced here.
+      metadata: { ...opts.meta, webSearches: searches },
     });
 
     if (final.stop_reason === 'refusal') throw new Error(`${opts.feature}: model refused`);
@@ -147,6 +169,24 @@ async function callClaude(
     return tailText(final.content);
   }
   throw new Error(`${opts.feature}: still paused after 4 turns`);
+}
+
+/**
+ * Split into `n` batches without splitting a sector, so two names in the same
+ * trade are always judged side by side (the prompt keeps only the stronger).
+ * Biggest sectors first, each into the currently smallest batch.
+ */
+export function batchBySector<T extends { sector: string | null }>(items: T[], n: number): T[][] {
+  const bySector = new Map<string, T[]>();
+  for (const it of items) {
+    const key = it.sector ?? '';
+    bySector.set(key, [...(bySector.get(key) ?? []), it]);
+  }
+  const batches: T[][] = Array.from({ length: n }, () => []);
+  for (const group of [...bySector.values()].sort((a, b) => b.length - a.length)) {
+    batches.reduce((min, b) => (b.length < min.length ? b : min)).push(...group);
+  }
+  return batches.filter((b) => b.length > 0);
 }
 
 function formatQuarterPicks(picks: PriorPick[]): string {
@@ -169,7 +209,10 @@ function formatDiligence(reviews: DiligenceReview[]): string {
 
 export async function runWeeklyPickPipeline(params: { todayET: string }): Promise<PipelineResult> {
   const { todayET } = params;
-  const trace: PipelineTrace = { costTokens: { input: 0, output: 0 }, timingsMs: {} };
+  const trace: PipelineTrace = {
+    costTokens: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, webSearches: 0 },
+    timingsMs: {},
+  };
   const started = Date.now();
   const mark = (stage: PipelineStage) => { trace.timingsMs[stage] = Date.now() - started; };
   const fail = (stage: PipelineStage, error: string): PipelineResult => ({ ok: false, stage, error, trace });
@@ -222,15 +265,21 @@ export async function runWeeklyPickPipeline(params: { todayET: string }): Promis
   // ── 3. Diligence ───────────────────────────────────────────────────────────
   let reviews: DiligenceReview[];
   try {
-    const text = await callClaude(client, trace, {
-      feature: 'weekly_pick_diligence',
-      system: DILIGENCE_SYSTEM_PROMPT,
-      user: buildDiligencePrompt({ today, scorecards: formatScorecards(survivors) }),
-      webSearch: true,
-      maxTokens: 32000,
-      meta: { date: todayET, names: survivors.length },
-    });
-    reviews = parseDiligence(text);
+    const batches = batchBySector(survivors, DILIGENCE_BATCHES);
+    const results = await Promise.all(batches.map((batch, i) =>
+      callClaude(client, trace, {
+        feature: 'weekly_pick_diligence',
+        system: DILIGENCE_SYSTEM_PROMPT,
+        user: buildDiligencePrompt({
+          today,
+          scorecards: formatScorecards(batch),
+          maxAdvance: Math.ceil((MAX_FINALISTS * batch.length) / survivors.length),
+        }),
+        webSearch: searchesFor(batch.length),
+        maxTokens: 32000,
+        meta: { date: todayET, batch: i, names: batch.length },
+      }).then(parseDiligence)));
+    reviews = results.flat();
   } catch (err) {
     return fail('diligence', err instanceof Error ? err.message : 'diligence failed');
   }

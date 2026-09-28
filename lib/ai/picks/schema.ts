@@ -175,6 +175,14 @@ function formatIssues(error: z.ZodError): string {
     .join('; ');
 }
 
+/**
+ * Web-search citation markup the model sometimes copies into its own JSON
+ * strings, whole or broken: <cite index="12-3">…</cite> and (cite index="12-3">.
+ */
+export function stripCitations(s: string): string {
+  return s.replace(/\(?<?\/?cite(?:\s+index="[^"]*")?>?/g, '').replace(/\s{2,}/g, ' ').trim();
+}
+
 /** Parse + validate the due-diligence verdicts. Throws on failure. */
 export function parseDiligence(raw: string): DiligenceReview[] {
   const parsed = parseJsonLoose(raw, 'diligence');
@@ -182,7 +190,14 @@ export function parseDiligence(raw: string): DiligenceReview[] {
   if (!result.success) {
     throw new Error(`diligence: schema validation failed — ${formatIssues(result.error)}`);
   }
-  return result.data.reviews;
+  // Cleaned here so it can't travel into the commit prompt and on into a thesis.
+  return result.data.reviews.map((r) => ({
+    ...r,
+    news: stripCitations(r.news),
+    redFlags: r.redFlags.map(stripCitations),
+    catalyst: r.catalyst == null ? r.catalyst : stripCitations(r.catalyst),
+    theme: stripCitations(r.theme),
+  }));
 }
 
 /** Parse + validate a tie-break decision. Throws on failure. */

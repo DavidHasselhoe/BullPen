@@ -169,19 +169,24 @@ async function main() {
   if (row.entry_price == null) warn('entry price', 'not stamped yet (it is stamped after the first open, on the next /picks load)');
   else results.push(`INFO  entry $${row.entry_price} at the open, SPY $${row.benchmark_entry_price}`);
 
-  const dayStart = `${row.pick_date}T00:00:00Z`;
-  const { data: usage } = await supabase.from('ai_usage').select('feature, cost_usd, input_tokens, output_tokens')
-    .like('feature', 'weekly_pick_%').neq('feature', 'weekly_pick_thesis')
-    .gte('created_at', dayStart).lt('created_at', `${row.pick_date}T23:59:59Z`);
+  // The calls that produced this row: the 10 minutes before it was generated.
+  // A day window would also count dry runs or a retried run.
+  const genAt = Date.parse(row.generated_at);
+  const windowStart = new Date(genAt - 10 * 60_000).toISOString();
+  const windowEnd = new Date(genAt + 60_000).toISOString();
+  const { data: usage } = await supabase.from('ai_usage').select('feature, cost_usd, metadata')
+    .like('feature', 'weekly_pick_%').eq('model', row.model)
+    .gte('created_at', windowStart).lt('created_at', windowEnd)
+    .returns<Array<{ feature: string; cost_usd: number | null; metadata: { webSearches?: number } | null }>>();
   const byFeature = new Map<string, number>();
   let cost = 0;
   for (const u of usage ?? []) {
     byFeature.set(u.feature, (byFeature.get(u.feature) ?? 0) + 1);
-    cost += Number(u.cost_usd ?? 0);
+    cost += Number(u.cost_usd ?? 0) + (u.metadata?.webSearches ?? 0) * 0.01;
   }
-  check('one diligence call', byFeature.get('weekly_pick_diligence') === 1, String(byFeature.get('weekly_pick_diligence') ?? 0));
+  check('three diligence calls', byFeature.get('weekly_pick_diligence') === 3, String(byFeature.get('weekly_pick_diligence') ?? 0));
   check('three commit calls', byFeature.get('weekly_pick_commit') === 3, String(byFeature.get('weekly_pick_commit') ?? 0));
-  results.push(`INFO  AI cost that day: $${cost.toFixed(2)} across ${usage?.length ?? 0} calls (no cache discount applied)`);
+  results.push(`INFO  AI cost of this run: $${cost.toFixed(2)} across ${usage?.length ?? 0} calls, cache and web search included`);
 
   return finish();
 }

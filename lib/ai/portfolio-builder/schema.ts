@@ -59,9 +59,23 @@ export function stripFences(raw: string): string {
 /** Find the first {...} JSON object in a blob — last-resort recovery if the model adds prose. */
 export function extractJsonObject(raw: string): string {
   const start = raw.indexOf('{');
+  if (start === -1) return raw;
+  // The first balanced object, skipping braces inside strings. Slicing to the
+  // last '}' broke when the model kept writing after its JSON (seen on the
+  // weekly pick 2026-09-28: a valid object followed by more text).
+  let depth = 0;
+  let inString = false;
+  for (let i = start; i < raw.length; i++) {
+    const ch = raw[i];
+    if (inString) {
+      if (ch === '\\') i++;
+      else if (ch === '"') inString = false;
+    } else if (ch === '"') inString = true;
+    else if (ch === '{') depth++;
+    else if (ch === '}' && --depth === 0) return raw.slice(start, i + 1);
+  }
   const end = raw.lastIndexOf('}');
-  if (start === -1 || end === -1 || end < start) return raw;
-  return raw.slice(start, end + 1);
+  return end > start ? raw.slice(start, end + 1) : raw;
 }
 
 /** Parse + validate the model's output. Throws a descriptive error on failure. */

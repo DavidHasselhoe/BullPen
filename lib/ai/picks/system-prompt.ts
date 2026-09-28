@@ -37,11 +37,11 @@ Reject a name when the news reveals something the numbers don't yet reflect. The
 - Heavy pending dilution, a debt problem, or a going-concern question.
 - The momentum is a one-off, such as a takeover rumour, rather than improving business results.
 
-Advance a name when the news supports the factor picture, or disagrees with it in a way you can explain and that a careful investor could reasonably accept. Advance between 6 and 8 names. If fewer than 6 deserve it, advance only those.
+Advance a name when the news supports the factor picture, or disagrees with it in a way you can explain and that a careful investor could reasonably accept. Advance only the names that clear this bar, up to the limit stated in the request. Fewer is fine.
 
 Search budget: roughly one search per name, and a second only for a name you are close to advancing. Look at the last eight weeks: earnings results and guidance, management changes, deals, regulatory news, analyst actions with a stated reason. Rumours and price commentary are not evidence.
 
-For every name, also give a short theme tag that says what kind of bet it is, in plain words, for example "AI data-center capex", "GLP-1 obesity drugs", "regional bank recovery", "housing turnover". Two companies in the same trade must get the same tag.
+For every name, also give a short theme tag that says what kind of bet it is, in plain words, for example "AI data-center capex", "GLP-1 obesity drugs", "regional bank recovery", "housing turnover". Two companies in the same trade must get the same tag, and when two names are the same trade, advance at most the stronger one.
 
 OUTPUT: return ONLY a JSON object, no prose, no markdown fences, with one review for every ticker you were given:
 {
@@ -57,10 +57,10 @@ OUTPUT: return ONLY a JSON object, no prose, no markdown fences, with one review
   ]
 }`;
 
-export function buildDiligencePrompt(params: { today: string; scorecards: string }): string {
+export function buildDiligencePrompt(params: { today: string; scorecards: string; maxAdvance: number }): string {
   return `Today is ${params.today}.
 
-Here is this week's screened shortlist with BullPen's own numbers for each company. Review every one.
+Here is part of this week's screened shortlist with BullPen's own numbers for each company. Review every one, and advance at most ${params.maxAdvance}.
 
 ## SHORTLIST
 
@@ -82,6 +82,7 @@ HOW TO CHOOSE
 - Prefer a name where the numbers, the screen and the news all point the same way, or where they disagree in a way you can explain.
 - A low Health Score or a red flag in the notes is not automatically disqualifying, but if you pick that name the thesis must address it head on.
 - Look at this quarter's earlier picks. Readers should get a range of ideas over a quarter, not one trade repeated. Don't pick the same theme as last week, and treat a theme already used this quarter as a strike against a name unless its case is clearly the strongest.
+- Variety is only a tie-breaker between close cases, never the argument. The thesis must stand on the company's own numbers and news, and must not mention other picks or the balance of the quarter.
 
 CONVICTION, anchored:
 1 = a slight edge, the evidence is mixed.

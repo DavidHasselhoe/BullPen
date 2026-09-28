@@ -19,9 +19,11 @@ config({ path: '.env.local' });
 
 import assert from 'node:assert/strict';
 import { writeFileSync } from 'node:fs';
-import { runFactorScreen, rankUniverse, pickShortlist, describeScreen, MAX_PER_SECTOR, SCREEN_SIZE } from '../lib/picks/factor-screen';
-import { runWeeklyPickPipeline } from '../lib/ai/picks/pipeline';
+import { runFactorScreen, rankUniverse, pickShortlist, ratiosDisagree, describeScreen, MAX_PER_SECTOR, SCREEN_SIZE } from '../lib/picks/factor-screen';
+import { runWeeklyPickPipeline, batchBySector } from '../lib/ai/picks/pipeline';
 import { quarterOf, quarterRange, quarterLabel } from '../lib/picks/quarters';
+import { extractJsonObject } from '../lib/ai/portfolio-builder/schema';
+import { stripCitations } from '../lib/ai/picks/schema';
 
 const full = process.argv.includes('--full');
 
@@ -53,6 +55,21 @@ function checkPureHelpers() {
   const short = pickShortlist(many, 6, 4);
   assert.equal(short.filter((s) => s.sector === 'A').length, 4);
   assert.deepEqual(short.map((s) => s.ticker), ['T0', 'T1', 'T2', 'T3', 'T8', 'T9']);
+  // Diligence batches never split a sector and stay roughly even.
+  const items = [...'AAAABBBCCDDEFG'].map((sector) => ({ sector }));
+  const batches = batchBySector(items, 2);
+  assert.equal(batches.flat().length, items.length);
+  for (const s of 'ABCDEFG') assert.equal(batches.filter((b) => b.some((x) => x.sector === s)).length, 1);
+  assert.ok(Math.abs(batches[0].length - batches[1].length) <= 1);
+
+  // JSON followed by more text still parses; citation markup is stripped.
+  assert.equal(extractJsonObject('{"a":"}"} and then {"b":1}'), '{"a":"}"}');
+  assert.equal(stripCitations('(cite index="123-5">Faces competition</cite> from free providers'), 'Faces competition from free providers');
+
+  // Currency-mismatched rows are caught; consistent and loss-making ones pass.
+  assert.equal(ratiosDisagree({ pe_ratio: 6.66, ps_ratio: 0.12, profit_margin: 0.296 }), true);  // HMY
+  assert.equal(ratiosDisagree({ pe_ratio: 10.91, ps_ratio: 2.755, profit_margin: 0.257 }), false); // EOG
+  assert.equal(ratiosDisagree({ pe_ratio: -5, ps_ratio: 0.2, profit_margin: -0.1 }), false);
   console.log('pure helpers: ok');
 }
 
@@ -92,8 +109,11 @@ async function main() {
   console.log('\nfinalists:', trace.finalists?.join(', '));
   console.log('votes:', trace.votes, trace.tiebreak ? `tie-break → ${trace.tiebreak.symbol}` : '');
   console.log('timings (ms from start):', trace.timingsMs);
-  const cost = (trace.costTokens.input * 4 + trace.costTokens.output * 20) / 1e6;
-  console.log(`tokens: ${trace.costTokens.input} in / ${trace.costTokens.output} out, ~$${cost.toFixed(2)} before cache discounts`);
+  // Opus 5.5: $4 in, $20 out, $0.20 cache read, $5 cache write per MTok; search $0.01 each.
+  const t = trace.costTokens;
+  const plainIn = t.input - t.cacheRead - t.cacheWrite;
+  const cost = (plainIn * 4 + t.cacheRead * 0.2 + t.cacheWrite * 5 + t.output * 20) / 1e6 + t.webSearches * 0.01;
+  console.log(`tokens: ${plainIn} in + ${t.cacheWrite} cache write + ${t.cacheRead} cache read / ${t.output} out, ${t.webSearches} searches, ${cost.toFixed(2)} total`);
 
   if (!result.ok) {
     console.error(`\nFAILED at ${result.stage}: ${result.error}`);
@@ -101,7 +121,7 @@ async function main() {
   }
   console.log('\nrow that would be inserted:\n', JSON.stringify({ ...result.row, metrics_snapshot: '(omitted)' }, null, 2));
   // Full row, including the audit trail, for `npm run check-weekly-pick -- --file=...`.
-  writeFileSync('weekly-pick-dryrun.json', JSON.stringify(result.row, null, 2));
+  writeFileSync('weekly-pick-dryrun.json', JSON.stringify({ ...result.row, generated_at: new Date().toISOString() }, null, 2));
   console.log('\nsaved weekly-pick-dryrun.json. Audit it with: npm run check-weekly-pick -- --file=weekly-pick-dryrun.json');
   console.log('\nvote:', JSON.stringify((result.row.metrics_snapshot as Record<string, unknown>).vote));
 }
