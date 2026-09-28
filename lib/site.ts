@@ -11,5 +11,5 @@
  */
 export const SITE_URL = 'https://bullpeninvest.com';
 
-/** The bare host, for printing: "bullpen.no". */
+/** The bare host, for printing: "bullpeninvest.com". */
 export const SITE_HOST = new URL(SITE_URL).host;
