@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useSyncExternalStore } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/use-auth';
-import { GREETING_TEXT, TZ_COOKIE, displayFirstName, greetingForHour, type InitialWelcome } from '@/lib/dashboard/greeting';
+import { GREETING_KEY, TZ_COOKIE, displayFirstName, greetingForHour, type InitialWelcome } from '@/lib/dashboard/greeting';
 
 const noopSubscribe = () => () => {};
 
@@ -14,6 +15,7 @@ const noopSubscribe = () => () => {};
  * timezone cookie was already set.
  */
 export function WelcomeMessage({ initial }: { initial?: InitialWelcome | null }) {
+  const { t } = useTranslation('discover');
   const { user, isAuthenticated, isLoading } = useAuth();
   const hydrated = useSyncExternalStore(noopSubscribe, () => true, () => false);
 
@@ -32,7 +34,7 @@ export function WelcomeMessage({ initial }: { initial?: InitialWelcome | null })
   }
 
   const displayName = user ? displayFirstName(user) : initial!.name;
-  const greeting = GREETING_TEXT[hydrated ? greetingForHour(new Date().getHours()) : (initial?.greeting ?? 'back')];
+  const greeting = t(GREETING_KEY[hydrated ? greetingForHour(new Date().getHours()) : (initial?.greeting ?? 'back')]);
 
   return (
     <h1 className="text-2xl font-bold tracking-tight text-foreground">

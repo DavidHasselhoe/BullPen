@@ -114,5 +114,7 @@ export function useHomePortfolio() {
     pricesFailed: quotesQuery.isError || (!!quotes && symbols.length > 0 && Object.keys(quotes).length === 0),
     portfolio,
     movers,
+    /** Raw quotes (USD), keyed by symbol. */
+    quotes,
   };
 }

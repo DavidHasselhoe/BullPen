@@ -29,12 +29,15 @@ export function ClampedText({
   lines = 2,
   className,
   toggleClassName,
+  onToggle,
 }: {
   children: ReactNode;
   /** Lines to show before clamping. */
   lines?: 2 | 3 | 4;
   className?: string;
   toggleClassName?: string;
+  /** Called with the new state when the reader expands or collapses it. */
+  onToggle?: (expanded: boolean) => void;
 }) {
   const { t } = useTranslation('common');
   const [expanded, setExpanded] = useState(false);
@@ -67,7 +70,10 @@ export function ClampedText({
         <button
           type="button"
           aria-expanded={expanded}
-          onClick={() => setExpanded((v) => !v)}
+          onClick={() => {
+            setExpanded(!expanded);
+            onToggle?.(!expanded);
+          }}
           className={cn(
             // text-xs is DESIGN.md's Label step; the callers this replaces used
             // an undocumented 11px, so the shared version moves onto the ramp.

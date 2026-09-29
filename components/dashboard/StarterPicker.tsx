@@ -16,6 +16,7 @@ import { fetchHoldingQuotes } from '@/lib/holdings/holding-quotes';
 import { useTradingSession } from '@/hooks/use-trading-session';
 import { STARTER_STOCKS } from '@/lib/onboarding/starter-stocks';
 import { cn } from '@/lib/utils';
+import { trackEvent } from '@/lib/analytics/track';
 
 type Pick = { ticker: string; name: string };
 
@@ -59,6 +60,7 @@ export function StarterPicker({ onPick, onDone }: { onPick: () => void; onDone: 
 
   const toggle = (p: Pick) => {
     onPick();
+    trackEvent('home_starter_pick', { ticker: p.ticker, action: watched.has(p.ticker) ? 'remove' : 'add', source: searching ? 'search' : 'suggestion' });
     if (watched.has(p.ticker)) remove.mutate({ symbol: p.ticker });
     else add.mutate({ symbol: p.ticker, company_name: p.name });
   };
@@ -141,7 +143,11 @@ export function StarterPicker({ onPick, onDone }: { onPick: () => void; onDone: 
               {t('starterAskBull')}
             </button>
           </p>
-          <Button onClick={onDone} disabled={watched.size === 0} className="sm:min-w-40">
+          <Button
+            onClick={() => {
+              trackEvent('home_starter_done', { count: watched.size });
+              onDone();
+            }} disabled={watched.size === 0} className="sm:min-w-40">
             {watched.size === 0 ? t('starterDoneEmpty') : t('starterDone', { count: watched.size })}
           </Button>
         </div>

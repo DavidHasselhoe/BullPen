@@ -27,6 +27,7 @@
     "test-cron-coverage": "tsx scripts/test-cron-coverage.ts",
     "test-ai-error-classification": "tsx scripts/test-ai-error-classification.ts",
     "test-shorten-description": "tsx scripts/test-shorten-description.ts",
+    "test-portfolio-series": "tsx scripts/test-portfolio-series.ts",
     "test-no-truncated-text": "tsx scripts/test-no-truncated-generated-text.ts",
     "test-age-gate": "tsx scripts/test-age-gate.ts",
     "test-email-footer": "tsx scripts/test-email-footer.ts",

@@ -5,11 +5,12 @@ export const TZ_COOKIE = 'bp_tz';
 
 export type Greeting = 'morning' | 'afternoon' | 'evening' | 'back';
 
-export const GREETING_TEXT: Record<Greeting, string> = {
-  morning: 'Good morning',
-  afternoon: 'Good afternoon',
-  evening: 'Good evening',
-  back: 'Welcome back',
+/** discover-namespace translation key for each greeting (rendered by WelcomeMessage). */
+export const GREETING_KEY: Record<Greeting, string> = {
+  morning: 'greetingMorning',
+  afternoon: 'greetingAfternoon',
+  evening: 'greetingEvening',
+  back: 'greetingBack',
 };
 
 export function greetingForHour(hour: number): Greeting {

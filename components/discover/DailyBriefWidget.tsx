@@ -15,6 +15,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useSymbolIndex } from '@/hooks/use-symbol-index';
 import { ClampedText } from '@/components/ui/ClampedText';
 import { HomeSection, homePanel } from '@/components/dashboard/HomeSection';
+import { trackEvent } from '@/lib/analytics/track';
 
 interface BriefSource {
   url: string;
@@ -908,6 +909,7 @@ export function DailyBriefWidget() {
           {locked ? (
             <Link
               href="/upgrade"
+              onClick={() => trackEvent('home_brief_upgrade_click', {})}
               className="inline-flex items-center gap-1 text-sm font-medium text-foreground underline-offset-4 hover:underline"
             >
               {t('briefReadFullPro')}
@@ -917,7 +919,10 @@ export function DailyBriefWidget() {
             <>
               <button
                 type="button"
-                onClick={() => setIsOpen(true)}
+                onClick={() => {
+                  setIsOpen(true);
+                  trackEvent('home_brief_read', {});
+                }}
                 className="inline-flex items-center gap-1 text-sm font-medium text-foreground underline-offset-4 hover:underline"
               >
                 {t('briefReadFull')}

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { AreaChart, Area, ResponsiveContainer } from 'recharts';
@@ -9,8 +9,12 @@ import { ArrowDown, ArrowRight, ArrowUp, Minus, Sparkles } from 'lucide-react';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { AiPaywallDialog } from '@/components/billing/AiPaywallDialog';
 import { ClampedText } from '@/components/ui/ClampedText';
+import { AskBullChips } from '@/components/dashboard/AskBullChips';
 import { useEntitlements } from '@/hooks/use-entitlements';
 import { WHY_TODAY_MIN_MOVE, type InlineWhy } from '@/lib/ai/why-today-shared';
+import { SERIES_RANGES, buildPortfolioSeries, type SeriesRange } from '@/lib/dashboard/portfolio-series';
+import { trackEvent } from '@/lib/analytics/track';
+import type { BatchQuote } from '@/lib/market-data/quote-batcher';
 import { HomeSection, homePanel } from '@/components/dashboard/HomeSection';
 import { useHomePortfolio, type HomeMover } from '@/hooks/use-home-portfolio';
 import { useUserSettings } from '@/hooks/use-user-settings';
@@ -23,11 +27,11 @@ import type { UserHolding } from '@/lib/types/database';
 type CandleData = { t: number[]; c: number[] };
 
 /**
- * Past-week P/L of the current positions, from 1W candles. The chart and the
- * "past week" figure under it are the same series, so they can never tell two
- * stories. Positions bought mid-week are baselined at their own purchase price.
+ * The portfolio line over the chosen period, from each position's candles
+ * (shared server caches, the same bars the stock pages use). The chart and the
+ * figure under it are the same series, so they can never tell two stories.
  */
-function useWeekSeries(holdings: UserHolding[]) {
+function useRangeSeries(holdings: UserHolding[], range: SeriesRange, quotes?: Record<string, BatchQuote>) {
   const eligible = useMemo(
     () => holdings.filter((h) => h.avg_price != null && h.quantity != null && h.quantity > 0),
     [holdings],
@@ -35,12 +39,12 @@ function useWeekSeries(holdings: UserHolding[]) {
   const key = eligible.map((h) => `${h.symbol}:${h.avg_price}:${h.quantity}`).join(',');
 
   const { data, isLoading } = useQuery({
-    queryKey: ['portfolio-sparkline-week', key],
+    queryKey: ['portfolio-series', range, key],
     queryFn: () =>
       Promise.all(
         eligible.map(async (h) => {
           try {
-            const res = await fetch(`/api/stock/${encodeURIComponent(h.symbol)}/candles?range=1W`);
+            const res = await fetch(`/api/stock/${encodeURIComponent(h.symbol)}/candles?range=${range}`);
             if (!res.ok) return { holding: h, candles: null };
             const json = await res.json();
             return { holding: h, candles: (json.candles ?? null) as CandleData | null };
@@ -50,34 +54,25 @@ function useWeekSeries(holdings: UserHolding[]) {
         }),
       ),
     enabled: eligible.length > 0,
-    staleTime: 10 * 60 * 1000,
+    staleTime: range === '1D' ? 60 * 1000 : 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
     retry: false,
   });
 
   return useMemo(() => {
-    const plByTime = new Map<number, number>();
-    const basisByTime = new Map<number, number>();
-    for (const { holding, candles } of data ?? []) {
-      if (!candles || candles.t.length === 0 || holding.avg_price == null || holding.quantity == null) continue;
-      const start = new Date(holding.date_purchased ?? holding.created_at).getTime();
-      const base = start > candles.t[0] * 1000 ? holding.avg_price : candles.c[0];
-      candles.t.forEach((t, i) => {
-        if (t * 1000 < start) return;
-        plByTime.set(t, (plByTime.get(t) ?? 0) + (candles.c[i] - base) * holding.quantity!);
-        basisByTime.set(t, (basisByTime.get(t) ?? 0) + base * holding.quantity!);
-      });
-    }
-    const times = [...plByTime.keys()].sort((a, b) => a - b);
-    if (times.length < 2) return { isLoading, points: [], weekUSD: null, weekPct: null };
-    const points = times.map((t) => {
-      const basis = basisByTime.get(t) ?? 0;
-      return { pl: basis > 0 ? ((plByTime.get(t) ?? 0) / basis) * 100 : 0 };
+    const inputs = (data ?? []).flatMap(({ holding, candles }) => {
+      if (!candles) return [];
+      const q = quotes?.[holding.symbol];
+      return [{
+        candles,
+        quantity: holding.quantity!,
+        openedAt: new Date(holding.date_purchased ?? holding.created_at).getTime(),
+        avgPrice: holding.avg_price!,
+        prevClose: q ? q.price - q.change : null,
+      }];
     });
-    const last = times[times.length - 1];
-    const weekUSD = plByTime.get(last) ?? 0;
-    const basis = basisByTime.get(last) ?? 0;
-    return { isLoading, points, weekUSD, weekPct: basis > 0 ? (weekUSD / basis) * 100 : 0 };
-  }, [data, isLoading]);
+    return { isLoading, ...buildPortfolioSeries(inputs, range) };
+  }, [data, isLoading, quotes, range]);
 }
 
 function Change({ value, pct, currency, round, className }: {
@@ -159,6 +154,11 @@ function MoverRow({ mover, why, onWhy }: { mover: HomeMover; why: InlineWhy | 'l
   const explained = why !== null && why !== 'loading' && why.status === 'ready' ? why.text : null;
   const writing = why === 'loading' || (why !== null && why.status === 'pending');
 
+  // Analytics only (no state): did anyone get an explanation, and read it.
+  useEffect(() => {
+    if (explained) trackEvent('home_why_inline_shown', { ticker: mover.symbol });
+  }, [explained, mover.symbol]);
+
   return (
     <li className="px-4 py-2.5 sm:px-5">
       <div className="flex items-center gap-3">
@@ -186,7 +186,11 @@ function MoverRow({ mover, why, onWhy }: { mover: HomeMover; why: InlineWhy | 'l
       {explained && (
         <div className="mt-2 flex gap-2 pl-10 text-xs leading-relaxed text-muted-foreground">
           <Sparkles className="mt-0.5 h-3 w-3 shrink-0" aria-hidden />
-          <ClampedText lines={2} className="min-w-0 flex-1">
+          <ClampedText
+            lines={2}
+            className="min-w-0 flex-1"
+            onToggle={(open) => open && trackEvent('home_why_inline_expanded', { ticker: mover.symbol })}
+          >
             <span className="sr-only">{t('homeWhyLabel', { ticker: mover.symbol })} </span>
             {bullets(explained).map((b, i) => (
               <span key={i} className={cn('block', i > 0 && 'mt-1')}>{b}</span>
@@ -228,11 +232,14 @@ export function PortfolioHero() {
   const { t } = useTranslation('discover');
   const { roundNumbers } = useUserSettings();
   const home = useHomePortfolio();
-  const week = useWeekSeries(home.holdings);
+  // 1D by default: the line then ends at the "today" figure right above it.
+  const [range, setRange] = useState<SeriesRange>('1D');
+  const series = useRangeSeries(home.holdings, range, home.quotes);
   const whyFor = useInlineWhy(home.movers);
   const { requestWhyToday, paywallOpen, setPaywallOpen, paywallQuota } = useWhyTodayGate();
+  const canWhy = useEntitlements().can('why_today');
 
-  const title = home.hasHoldings ? t('homePortfolioTitle') : t('homeWatchlistTitle');
+  const title =home.hasHoldings ? t('homePortfolioTitle') : t('homeWatchlistTitle');
   const aside = (
     <Link
       href={home.hasHoldings ? '/holdings' : '/watchlist'}
@@ -267,7 +274,10 @@ export function PortfolioHero() {
             key={m.symbol}
             mover={m}
             why={whyFor(m.symbol)}
-            onWhy={() => requestWhyToday({ ticker: m.symbol, price: m.price, change: m.change, changePct: m.changePercent })}
+            onWhy={() => {
+              trackEvent('home_why_clicked', { ticker: m.symbol, pro: canWhy });
+              requestWhyToday({ ticker: m.symbol, price: m.price, change: m.change, changePct: m.changePercent });
+            }}
           />
         ))}
       </ul>
@@ -275,8 +285,14 @@ export function PortfolioHero() {
   );
 
   const p = home.portfolio;
-  const chartUp = (week.weekPct ?? 0) >= 0;
+  const chartUp = (series.changePct ?? 0) >= 0;
   const chartColor = chartUp ? '#10b981' : '#ef4444';
+  const rangeLabel: Record<SeriesRange, string> = {
+    '1D': t('homeRangeToday'),
+    '1W': t('homePastWeek'),
+    '1M': t('homePastMonth'),
+    '1Y': t('homePastYear'),
+  };
 
   return (
     <HomeSection title={title} aside={aside}>
@@ -291,33 +307,64 @@ export function PortfolioHero() {
               <span className="text-muted-foreground">{last ? t('homeChangeLastSession') : t('homeChangeToday')}</span>
             </p>
 
-            {week.points.length > 1 && week.weekUSD != null && week.weekPct != null && (
-              <div className="flex flex-1 flex-col pt-4">
-                <div className="min-h-16 flex-1" aria-hidden>
+            <div className="flex flex-1 flex-col pt-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                {/* 1D shows no figure here: "today" is already the headline right above. */}
+                <p className="flex flex-wrap items-center gap-x-2 text-xs">
+                  <span className="text-muted-foreground">{rangeLabel[range]}</span>
+                  {range !== '1D' && series.changeUSD != null && series.changePct != null && (
+                    <Change value={series.changeUSD * home.usdRate} pct={series.changePct} currency={home.currency} round={roundNumbers} />
+                  )}
+                </p>
+                <div role="group" aria-label={t('homeChartPeriod')} className="flex gap-0.5 rounded-md bg-muted/50 p-0.5">
+                  {SERIES_RANGES.map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      aria-pressed={r === range}
+                      onClick={() => {
+                        setRange(r);
+                        trackEvent('home_chart_range', { range: r });
+                      }}
+                      className={cn(
+                        'h-8 min-w-10 rounded px-2 font-mono text-xs font-medium transition-colors sm:h-7',
+                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                        r === range ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+                      )}
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="mt-2 min-h-20 flex-1" aria-hidden>
+                {series.points.length > 1 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={week.points} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
+                    <AreaChart data={series.points} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
                       <defs>
-                        <linearGradient id="home-week-fill" x1="0" y1="0" x2="0" y2="1">
+                        <linearGradient id="home-series-fill" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="0%" stopColor={chartColor} stopOpacity={0.2} />
                           <stop offset="100%" stopColor={chartColor} stopOpacity={0} />
                         </linearGradient>
                       </defs>
-                      <Area type="monotone" dataKey="pl" stroke={chartColor} strokeWidth={1.5} fill="url(#home-week-fill)" dot={false} isAnimationActive={false} />
+                      <Area type="monotone" dataKey="pl" stroke={chartColor} strokeWidth={1.5} fill="url(#home-series-fill)" dot={false} isAnimationActive={false} />
                     </AreaChart>
                   </ResponsiveContainer>
-                </div>
-                <p className="mt-2 flex flex-wrap items-center gap-x-2 text-xs">
-                  <span className="text-muted-foreground">{t('homePastWeek')}</span>
-                  <Change value={week.weekUSD * home.usdRate} pct={week.weekPct} currency={home.currency} round={roundNumbers} />
-                </p>
+                ) : series.isLoading ? (
+                  <div className="h-full min-h-20 w-full animate-shimmer rounded" />
+                ) : (
+                  <p className="pt-6 text-center text-xs text-muted-foreground">{t('homeChartEmpty')}</p>
+                )}
               </div>
-            )}
+            </div>
           </div>
         )}
         {moversList || (
           <p className="p-5 text-sm text-muted-foreground">{t('homeMoversEmpty')}</p>
         )}
       </div>
+
+      <AskBullChips movers={home.movers} heldSymbols={home.holdings.map((h) => h.symbol)} />
 
       <AiPaywallDialog
         open={paywallOpen}
