@@ -5,7 +5,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
-import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
 import { UserMenu } from './UserMenu';
 import { Button } from '@/components/ui/button';
@@ -35,7 +34,6 @@ export function Navigation() {
   // until auth resolves true instead of flashing them in then out.
   const { isAuthenticated } = useAuth();
   const pathname = usePathname();
-  const queryClient = useQueryClient();
   const { open: openCommandPalette = () => {} } = useCommandPalette();
   const searchShortcut = useSearchShortcut();
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -94,11 +92,6 @@ export function Navigation() {
     setCommunityOpen(true);
   }, [clearCommunityCloseTimer]);
 
-  const prefetchDiscover = useCallback(() => {
-    queryClient.prefetchQuery({ queryKey: ['market', 'movers', 5] });
-    queryClient.prefetchQuery({ queryKey: ['market', 'news', 'general', 5] });
-    queryClient.prefetchQuery({ queryKey: ['hot-picks'] });
-  }, [queryClient]);
 
   const navItems = getNavItems(t);
 
@@ -129,7 +122,6 @@ export function Navigation() {
                   <Link
                     key={item.href}
                     href={item.href}
-                    onMouseEnter={item.href === '/dashboard' ? prefetchDiscover : undefined}
                     className={cn(
                       'flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium transition-all duration-150 active:scale-[0.97]',
                       isActive

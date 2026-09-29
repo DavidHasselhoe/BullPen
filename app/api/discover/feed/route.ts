@@ -114,9 +114,10 @@ async function buildTrending(userId: string | null): Promise<DiscoverFeed['colle
 
   let tickers: string[] = [];
   try {
+    // Ask for a few extra: some get filtered out below.
     const { data } = await supabase.rpc(
       'get_hot_picks',
-      { time_period_hours: 24, limit_count: TRENDING_SIZE } as never,
+      { time_period_hours: 24, limit_count: TRENDING_SIZE * 2 } as never,
     );
     if (Array.isArray(data)) {
       tickers = (data as Array<{ ticker?: string }>)
@@ -126,9 +127,16 @@ async function buildTrending(userId: string | null): Promise<DiscoverFeed['colle
   } catch {
     /* fall through to the hardcoded fallback */
   }
-  if (tickers.length === 0) tickers = [...TRENDING_FALLBACK];
 
-  const meta = await fetchCompanyMeta(tickers);
+  // Visits can record identifiers that aren't listed stocks (a Morningstar
+  // fund ID like 0P0000PS3V reached #2 at 19 accounts). Only names the search
+  // catalogue or companies table knows make the list.
+  let meta = await fetchCompanyMeta(tickers);
+  tickers = tickers.filter((t) => meta.has(t)).slice(0, TRENDING_SIZE);
+  if (tickers.length === 0) {
+    tickers = [...TRENDING_FALLBACK];
+    meta = await fetchCompanyMeta(tickers);
+  }
   return {
     mode: 'trending',
     explanation: 'What other BullPen users are looking at today',

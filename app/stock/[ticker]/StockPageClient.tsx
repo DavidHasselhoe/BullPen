@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { EarningsCalendar } from '@/components/stock/EarningsCalendar';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -27,7 +27,6 @@ import { useStockSnapshot } from '@/hooks/use-stock-snapshot';
 import dynamic from 'next/dynamic';
 import type { Company } from '@/lib/types/database';
 import type { SignalValue } from '@/lib/finance/health-score';
-import { HOT_PICKS_QUERY_KEY } from '@/lib/discover/hot-picks-query';
 import { postStockVisit } from '@/lib/discover/post-stock-visit';
 import { StockSectionBoundary } from '@/components/stock/StockSectionBoundary';
 import { LazySection } from '@/components/stock/LazySection';
@@ -87,7 +86,6 @@ interface CompanyResponse {
 export default function StockPageClient() {
   const params = useParams();
   const router = useRouter();
-  const queryClient = useQueryClient();
   const { i18n } = useTranslation();
   const rawTicker = (params.ticker as string) ?? '';
   const ticker = rawTicker.toUpperCase();
@@ -244,19 +242,8 @@ export default function StockPageClient() {
     if (!ticker || recordedVisitTicker.current === ticker) return;
     if (!confirmedReal) return;
     recordedVisitTicker.current = ticker;
-    let cancelled = false;
-    void (async () => {
-      try {
-        const res = await postStockVisit(ticker);
-        if (!cancelled && res.ok) {
-          await queryClient.invalidateQueries({ queryKey: HOT_PICKS_QUERY_KEY });
-        }
-      } catch {
-        /* ignore */
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [ticker, confirmedReal, queryClient]);
+    void postStockVisit(ticker).catch(() => { /* a missed visit only skews Trending slightly */ });
+  }, [ticker, confirmedReal]);
 
   // Visuals lead: data sections come first, prose (Profile) trails just
   // before Community — see PRODUCT.md "visual, not text-and-numbers" goal.

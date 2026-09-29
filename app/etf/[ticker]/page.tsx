@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { EarningsCalendar } from '@/components/stock/EarningsCalendar';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -23,7 +23,6 @@ import { ThesisSection } from '@/components/social/ThesisSection';
 import { useStockSnapshot } from '@/hooks/use-stock-snapshot';
 import dynamic from 'next/dynamic';
 import type { Company } from '@/lib/types/database';
-import { HOT_PICKS_QUERY_KEY } from '@/lib/discover/hot-picks-query';
 import { postStockVisit } from '@/lib/discover/post-stock-visit';
 import { StockSectionBoundary } from '@/components/stock/StockSectionBoundary';
 import { slugToSymbol, inferAssetType, fundLabel } from '@/lib/assets/asset-type';
@@ -57,7 +56,6 @@ interface CompanyResponse {
 export default function EtfDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const queryClient = useQueryClient();
   const { i18n } = useTranslation();
   const rawTicker = (params.ticker as string) ?? '';
   const ticker = rawTicker.toUpperCase();
@@ -171,17 +169,8 @@ export default function EtfDetailPage() {
     if (!ticker || recordedVisitTicker.current === ticker) return;
     if (!confirmedReal) return;
     recordedVisitTicker.current = ticker;
-    let cancelled = false;
-    void (async () => {
-      try {
-        const res = await postStockVisit(ticker);
-        if (!cancelled && res.ok) {
-          await queryClient.invalidateQueries({ queryKey: HOT_PICKS_QUERY_KEY });
-        }
-      } catch { /* ignore */ }
-    })();
-    return () => { cancelled = true; };
-  }, [ticker, confirmedReal, queryClient]);
+    void postStockVisit(ticker).catch(() => { /* a missed visit only skews Trending slightly */ });
+  }, [ticker, confirmedReal]);
 
   if (isNotFound) {
     return (
