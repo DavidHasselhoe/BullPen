@@ -61,6 +61,21 @@ export async function rset<T>(key: string, value: T, ttlSeconds: number): Promis
   }
 }
 
+/**
+ * Set only if absent: a short-lived lock so concurrent requests don't all pay
+ * for the same expensive work. True means this caller holds it. Without Redis
+ * (local dev) every caller "gets" it: no dedupe, but nothing stalls either.
+ */
+export async function rsetnx(key: string, ttlSeconds: number): Promise<boolean> {
+  const c = client();
+  if (!c) return true;
+  try {
+    return (await c.set(key, 1, { nx: true, ex: ttlSeconds })) === 'OK';
+  } catch {
+    return true;
+  }
+}
+
 /** Delete a cached value. Never throws. */
 export async function rdel(key: string): Promise<void> {
   try {

@@ -4,8 +4,19 @@ import { withAuth, addSecurityHeaders, rejectIfTooLarge } from '@/lib/security/a
 import { checkRateLimit } from '@/lib/security/rate-limiter';
 import { checkQuota } from '@/lib/billing/quotas';
 import { logAiCall } from '@/lib/billing/log-ai-call';
-import { languageName } from '@/lib/i18n/language-names';
 import { classifyAiError } from '@/lib/ai/provider-error';
+import { rget, rset } from '@/lib/cache/redis-cache';
+import { getStockQuotes, isOutsideRegularSessionET } from '@/lib/twelvedata/twelvedata-client';
+import {
+  WHY_TODAY_CACHE_TTL,
+  WHY_TODAY_MODEL,
+  isStale,
+  whyTodayKey,
+  whyTodayLanguage,
+  whyTodayRequest,
+  type CachedWhyToday,
+  type WhyTodayMove,
+} from '@/lib/ai/why-today';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -37,107 +48,100 @@ async function handler(
   }
 
   // ── Parse body ────────────────────────────────────────────────────────────
-  let ticker: string, price: number, change: number, changePct: number, language: string;
+  let clientMove: WhyTodayMove, language: string;
   try {
     const body = await request.json();
-    ticker   = String(body.ticker ?? '').toUpperCase().slice(0, 10);
-    price    = Number(body.price)    || 0;
-    change   = Number(body.change)   || 0;
-    changePct = Number(body.changePct) || 0;
-    language = String(body.language ?? 'en');
-    if (!ticker) throw new Error('missing ticker');
+    clientMove = {
+      ticker: String(body.ticker ?? '').toUpperCase().slice(0, 10),
+      price: Number(body.price) || 0,
+      change: Number(body.change) || 0,
+      changePct: Number(body.changePct) || 0,
+    };
+    language = whyTodayLanguage(body.language);
+    if (!clientMove.ticker) throw new Error('missing ticker');
   } catch {
     return addSecurityHeaders(
       NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
     );
   }
+  const { ticker } = clientMove;
 
-  // ── Stream Claude's response ──────────────────────────────────────────────
-  const direction = changePct >= 0 ? 'up' : 'down';
-  const absPct    = Math.abs(changePct).toFixed(2);
-  const absDollar = Math.abs(change).toFixed(2);
+  // The server's own quote: it both decides whether a cached answer still fits
+  // and is the only thing allowed into a prompt whose answer gets shared.
+  let serverMove: WhyTodayMove | null = null;
+  try {
+    const q = (await getStockQuotes([ticker], { prepost: isOutsideRegularSessionET() })).get(ticker);
+    if (q && Number.isFinite(q.dp) && q.c > 0) serverMove = { ticker, price: q.c, change: q.d, changePct: q.dp };
+  } catch { /* fall back to the client's numbers, uncached */ }
 
+  const key = whyTodayKey(ticker, language);
+  const cached = await rget<CachedWhyToday>(key);
   const encoder = new TextEncoder();
-
-  const readable = new ReadableStream({
-    async start(controller) {
-      const send = (obj: Record<string, unknown>) =>
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`));
-
-      try {
-        const languagePrefix = language && language !== 'en'
-          ? `[Language: You MUST respond entirely in ${languageName(language)}. Do not switch to English under any circumstance.]\n\n`
-          : '';
-
-        // web_search_20250305 is a built-in tool — must use anthropic.beta.messages
-        // thinking is explicitly disabled: this route caps max_tokens at 600 for a
-        // tight 2-3 bullet response, and Sonnet 5 runs adaptive thinking by default
-        // when `thinking` is omitted — that would eat into the same token budget
-        // and could truncate the actual bullets.
-        const stream = anthropic.beta.messages.stream({
-          model: 'claude-sonnet-5',
-          max_tokens: 600,
-          thinking: { type: 'disabled' },
-          betas: ['web-search-2025-03-05'],
-          tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-          system:
-            languagePrefix +
-            'You are a concise financial analyst. Explain why a stock moved today using only what you find in current news. ' +
-            'Respond with exactly 2–3 bullet points (each starting with "• "). ' +
-            'Name the specific catalyst, event, or news item. Keep each bullet under 25 words. ' +
-            'Do not use headers, bold text, or generic market commentary. ' +
-            'Never use an em dash (—) or en dash (–) to connect clauses; use a period or comma instead.',
-          messages: [{
-            role: 'user',
-            content:
-              `$${ticker} is ${direction} ${absPct}% ($${absDollar}) today. ` +
-              `Current price: $${price.toFixed(2)}. ` +
-              `Search for the specific news or catalyst driving this move right now.`,
-          }],
-        });
-
-        for await (const event of stream) {
-          if (event.type === 'content_block_start' && event.content_block.type === 'tool_use') {
-            send({ type: 'searching' });
+  const sse = (body: (send: (obj: Record<string, unknown>) => void) => Promise<void>) =>
+    new NextResponse(
+      new ReadableStream({
+        async start(controller) {
+          const send = (obj: Record<string, unknown>) =>
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`));
+          try {
+            await body(send);
+          } finally {
+            controller.close();
           }
-          if (
-            event.type === 'content_block_delta' &&
-            event.delta.type === 'text_delta'
-          ) {
-            send({ type: 'text', delta: event.delta.text });
-          }
+        },
+      }),
+      { headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache, no-transform', Connection: 'keep-alive' } },
+    );
+
+  // Someone already asked today and the move hasn't changed its story: no call.
+  if (cached && (!serverMove || !isStale(cached, serverMove.changePct))) {
+    return sse(async (send) => {
+      send({ type: 'text', delta: cached.text });
+      send({ type: 'done' });
+    });
+  }
+
+  const move = serverMove ?? clientMove;
+  return sse(async (send) => {
+    try {
+      // web_search_20250305 is a built-in tool, so this goes through anthropic.beta.messages.
+      const stream = anthropic.beta.messages.stream(whyTodayRequest(move, language));
+      let text = '';
+
+      for await (const event of stream) {
+        if (event.type === 'content_block_start' && event.content_block.type === 'tool_use') {
+          send({ type: 'searching' });
         }
-
-        // Log usage (non-blocking — never block the response)
-        try {
-          const final = await stream.finalMessage();
-          void logAiCall({
-            userId: session.userId,
-            feature: 'why_today',
-            model: 'claude-sonnet-5',
-            inputTokens: final.usage.input_tokens,
-            outputTokens: final.usage.output_tokens,
-            metadata: { ticker },
-          });
-        } catch { /* never block */ }
-
-        send({ type: 'done' });
-      } catch (err) {
-        console.error('[why-today] Anthropic error:', err);
-        const safe = classifyAiError(err);
-        send({ type: 'error', code: safe.code, message: safe.message });
-      } finally {
-        controller.close();
+        if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+          text += event.delta.text;
+          send({ type: 'text', delta: event.delta.text });
+        }
       }
-    },
-  });
 
-  return new NextResponse(readable, {
-    headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache, no-transform',
-      Connection: 'keep-alive',
-    },
+      // Only an answer built on the server's numbers is safe to share.
+      if (serverMove && text.trim()) {
+        void rset<CachedWhyToday>(key, { text: text.trim(), changePct: serverMove.changePct, generatedAt: new Date().toISOString() }, WHY_TODAY_CACHE_TTL);
+      }
+
+      // Log usage (non-blocking — never block the response)
+      try {
+        const final = await stream.finalMessage();
+        void logAiCall({
+          userId: session.userId,
+          feature: 'why_today',
+          model: WHY_TODAY_MODEL,
+          inputTokens: final.usage.input_tokens,
+          outputTokens: final.usage.output_tokens,
+          metadata: { ticker },
+        });
+      } catch { /* never block */ }
+
+      send({ type: 'done' });
+    } catch (err) {
+      console.error('[why-today] Anthropic error:', err);
+      const safe = classifyAiError(err);
+      send({ type: 'error', code: safe.code, message: safe.message });
+    }
   });
 }
 
