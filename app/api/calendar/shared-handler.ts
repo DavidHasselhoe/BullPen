@@ -48,6 +48,10 @@ export async function handleCalendarRequest(
   const from = searchParams.get('from') ?? todayET();
   const to = searchParams.get('to') ?? from;
   const perDay = parsePerDay(searchParams.get('per_day'));
+  // Optional `symbols=AAPL,MSFT`: keep only those, before the per-day cap, so a
+  // small holding is never ranked out of a busy day by larger companies.
+  const onlyParam = searchParams.get('symbols');
+  const only = onlyParam ? new Set(onlyParam.toUpperCase().split(',').filter(Boolean)) : null;
 
   try {
     const [{ byDate, missingDates, partial }, universe] = await Promise.all([
@@ -63,7 +67,9 @@ export async function handleCalendarRequest(
     const allRows: CalendarRow[] = [];
     for (const rows of byDate.values()) {
       for (const row of rows) {
-        if (universeSet && !universeSet.has(row.symbol)) continue;
+        // An explicit symbol list replaces the universe filter: someone's own
+        // small-cap holding belongs on their list even outside the universe.
+        if (only ? !only.has(row.symbol) : universeSet && !universeSet.has(row.symbol)) continue;
         allRows.push(row);
       }
     }

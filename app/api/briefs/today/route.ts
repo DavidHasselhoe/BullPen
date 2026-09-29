@@ -10,12 +10,11 @@ async function handler(
 ): Promise<NextResponse> {
   const supabase = createServerClient();
 
-  // Pro-only — Daily Brief is generated once per day and only shown to Pro/admin users.
-  if (!isPro(await getTier(session.userId))) {
-    return addSecurityHeaders(
-      NextResponse.json({ success: false, error: 'upgrade_required' }, { status: 403 })
-    );
-  }
+  // Free accounts get the title and the TL;DR, which is what makes Home a
+  // daily check-in for everyone. The brief is generated once for all users,
+  // so this costs nothing extra; the full read stays Pro. The rest of the
+  // content is cut here on the server, not hidden in the browser.
+  const pro = isPro(await getTier(session.userId));
 
   const todayET = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
 
@@ -43,12 +42,19 @@ async function handler(
     NextResponse.json(
       {
         success: true,
-        brief: brief ?? null,
+        brief: brief && !pro ? toTeaser(brief) : (brief ?? null),
+        locked: !pro,
         is_today: brief ? brief.published_date === todayET : false,
       },
       { headers: { 'Cache-Control': 'private, max-age=300, stale-while-revalidate=600' } }
     )
   );
+}
+
+/** Title plus the `## TL;DR` section only. No TL;DR section means no body at all. */
+function toTeaser<T extends { content: string }>(brief: T): T {
+  const match = brief.content.match(/^##\s*TL;DR\s*\n([\s\S]*?)(?=\n##\s|$)/m);
+  return { ...brief, content: match ? `## TL;DR\n\n${match[1].trim()}` : '', sources: [] };
 }
 
 export const GET = withAuth(handler);
