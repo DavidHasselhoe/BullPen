@@ -5,9 +5,12 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { AreaChart, Area, ResponsiveContainer } from 'recharts';
-import { ArrowDown, ArrowRight, ArrowUp, Minus } from 'lucide-react';
+import { ArrowDown, ArrowRight, ArrowUp, Minus, Sparkles } from 'lucide-react';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { AiPaywallDialog } from '@/components/billing/AiPaywallDialog';
+import { ClampedText } from '@/components/ui/ClampedText';
+import { useEntitlements } from '@/hooks/use-entitlements';
+import { WHY_TODAY_MIN_MOVE, type InlineWhy } from '@/lib/ai/why-today-shared';
 import { HomeSection, homePanel } from '@/components/dashboard/HomeSection';
 import { useHomePortfolio, type HomeMover } from '@/hooks/use-home-portfolio';
 import { useUserSettings } from '@/hooks/use-user-settings';
@@ -105,27 +108,98 @@ function Change({ value, pct, currency, round, className }: {
   );
 }
 
-function MoverRow({ mover, onWhy }: { mover: HomeMover; onWhy: () => void }) {
+/**
+ * Inline "why it moved" for the movers that moved enough to have a story:
+ * every qualifying mover for Pro, the single biggest one for everyone else.
+ * The server shares one explanation per stock per day across all users and
+ * decides what it will actually generate; this only avoids asking for moves
+ * too small to explain.
+ */
+function useInlineWhy(movers: HomeMover[]) {
+  const { i18n } = useTranslation();
+  const { can } = useEntitlements();
+  const eligible = movers.filter((m) => Math.abs(m.changePercent) >= WHY_TODAY_MIN_MOVE).map((m) => m.symbol);
+  const tickers = can('why_today') ? eligible : eligible.slice(0, 1);
+
+  const query = useQuery({
+    queryKey: ['why-today-inline', tickers.join(','), i18n.language],
+    queryFn: async (): Promise<Record<string, InlineWhy>> => {
+      const res = await fetch('/api/ai/why-today/inline', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tickers, language: i18n.language }),
+      });
+      if (!res.ok) return {};
+      return (await res.json()).explanations ?? {};
+    },
+    enabled: tickers.length > 0,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    retry: false,
+    refetchOnWindowFocus: false,
+    // Another page load is writing one of these right now: ask again shortly.
+    refetchInterval: (q) => (Object.values(q.state.data ?? {}).some((e) => e.status === 'pending') ? 8000 : false),
+  });
+
+  return (symbol: string): InlineWhy | 'loading' | null => {
+    if (!tickers.includes(symbol)) return null;
+    if (query.isLoading) return 'loading';
+    return query.data?.[symbol] ?? null;
+  };
+}
+
+/** "• one\n• two" → ["one", "two"]; text without bullets stays one item. */
+function bullets(text: string): string[] {
+  const items = text.split(/\n+/).map((l) => l.replace(/^\s*[•\-*]\s*/, '').trim()).filter(Boolean);
+  return items.length > 0 ? items : [text.trim()];
+}
+
+function MoverRow({ mover, why, onWhy }: { mover: HomeMover; why: InlineWhy | 'loading' | null; onWhy: () => void }) {
   const { t } = useTranslation('discover');
+  const explained = why !== null && why !== 'loading' && why.status === 'ready' ? why.text : null;
+  const writing = why === 'loading' || (why !== null && why.status === 'pending');
+
   return (
-    <li className="flex items-center gap-3 px-4 py-2.5 sm:px-5">
-      <CompanyLogo ticker={mover.symbol} name={mover.name} logoUrl={mover.logoUrl} size={28} />
-      <Link href={slugToAssetPath(mover.symbol)} className="group min-w-0 flex-1">
-        <span className="block text-sm font-semibold text-foreground group-hover:underline">{mover.symbol}</span>
-        {/* clamp-ok: a company name in a dense row; the full name is one click away */}
-        <span className="block truncate text-xs text-muted-foreground" title={mover.name}>
-          {mover.held ? t('homeMoverHeld', { name: mover.name }) : t('homeMoverWatching', { name: mover.name })}
-        </span>
-      </Link>
-      <Change pct={mover.changePercent} className="text-sm font-medium" />
-      <button
-        type="button"
-        onClick={onWhy}
-        className="h-9 shrink-0 rounded-md border border-border/60 px-3 text-xs font-medium sm:h-8 text-muted-foreground transition-colors hover:border-border hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        aria-label={t('homeMoverWhyAria', { ticker: mover.symbol })}
-      >
-        {t('whyTodayWidgetWhyButton')}
-      </button>
+    <li className="px-4 py-2.5 sm:px-5">
+      <div className="flex items-center gap-3">
+        <CompanyLogo ticker={mover.symbol} name={mover.name} logoUrl={mover.logoUrl} size={28} />
+        <Link href={slugToAssetPath(mover.symbol)} className="group min-w-0 flex-1">
+          <span className="block text-sm font-semibold text-foreground group-hover:underline">{mover.symbol}</span>
+          {/* clamp-ok: a company name in a dense row; the full name is one click away */}
+          <span className="block truncate text-xs text-muted-foreground" title={mover.name}>
+            {mover.held ? t('homeMoverHeld', { name: mover.name }) : t('homeMoverWatching', { name: mover.name })}
+          </span>
+        </Link>
+        <Change pct={mover.changePercent} className="text-sm font-medium" />
+        {!explained && !writing && (
+          <button
+            type="button"
+            onClick={onWhy}
+            className="h-9 shrink-0 rounded-md border border-border/60 px-3 text-xs font-medium text-muted-foreground transition-colors hover:border-border hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-8"
+            aria-label={t('homeMoverWhyAria', { ticker: mover.symbol })}
+          >
+            {t('whyTodayWidgetWhyButton')}
+          </button>
+        )}
+      </div>
+
+      {explained && (
+        <div className="mt-2 flex gap-2 pl-10 text-xs leading-relaxed text-muted-foreground">
+          <Sparkles className="mt-0.5 h-3 w-3 shrink-0" aria-hidden />
+          <ClampedText lines={2} className="min-w-0 flex-1">
+            <span className="sr-only">{t('homeWhyLabel', { ticker: mover.symbol })} </span>
+            {bullets(explained).map((b, i) => (
+              <span key={i} className="block">{b}</span>
+            ))}
+          </ClampedText>
+        </div>
+      )}
+      {writing && (
+        <p className="mt-2 flex items-center gap-2 pl-10 text-xs text-muted-foreground" role="status">
+          <Sparkles className="h-3 w-3 shrink-0 animate-pulse" aria-hidden />
+          {t('homeWhyReading')}
+        </p>
+      )}
     </li>
   );
 }
@@ -155,6 +229,7 @@ export function PortfolioHero() {
   const { roundNumbers } = useUserSettings();
   const home = useHomePortfolio();
   const week = useWeekSeries(home.holdings);
+  const whyFor = useInlineWhy(home.movers);
   const { requestWhyToday, paywallOpen, setPaywallOpen, paywallQuota } = useWhyTodayGate();
 
   const title = home.hasHoldings ? t('homePortfolioTitle') : t('homeWatchlistTitle');
@@ -191,6 +266,7 @@ export function PortfolioHero() {
           <MoverRow
             key={m.symbol}
             mover={m}
+            why={whyFor(m.symbol)}
             onWhy={() => requestWhyToday({ ticker: m.symbol, price: m.price, change: m.change, changePct: m.changePercent })}
           />
         ))}

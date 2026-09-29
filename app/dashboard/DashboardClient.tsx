@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowRight, SlidersHorizontal } from 'lucide-react';
 import { HomepageRedirect } from '@/components/navigation/HomepageRedirect';
@@ -15,7 +16,7 @@ import { ComingUp } from '@/components/dashboard/ComingUp';
 import { YourNews } from '@/components/dashboard/YourNews';
 import { PickUp } from '@/components/dashboard/PickUp';
 import { DailyBriefWidget } from '@/components/discover/DailyBriefWidget';
-import { GettingStartedCard } from '@/components/onboarding/GettingStartedCard';
+import { StarterPicker } from '@/components/dashboard/StarterPicker';
 import { TrialStartedModal } from '@/components/billing/TrialStartedModal';
 import { resolveWidgetOrder } from '@/lib/dashboard/widgets';
 
@@ -52,6 +53,8 @@ export default function DashboardClient({
   const { hasAnimatedBackground } = useBackground();
   const { showWelcomeText, homepageWidgetOrder, homepageWidgetHidden } = useUserSettings();
   const { isNew } = useHomePortfolio();
+  // The first tap makes the account not-new; keep the picker until they say Done.
+  const [picking, setPicking] = useState(false);
 
   const order = resolveWidgetOrder(homepageWidgetOrder, homepageWidgetHidden);
 
@@ -64,10 +67,14 @@ export default function DashboardClient({
       <div className={`min-h-screen ${hasAnimatedBackground ? '' : 'bg-background'}`}>
         <TrialStartedModal />
         <main className="container mx-auto min-w-0 max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-          <HomeHeader initialWelcome={initialWelcome} showWelcome={showWelcomeText !== false}indices={indices} />
+          <HomeHeader initialWelcome={initialWelcome} showWelcome={showWelcomeText !== false} indices={indices} />
 
           <div className="mt-8 space-y-10">
-            {isNew ? <GettingStartedCard /> : <PortfolioHero />}
+            {isNew || picking ? (
+              <StarterPicker onPick={() => setPicking(true)} onDone={() => setPicking(false)} />
+            ) : (
+              <PortfolioHero />
+            )}
             {order.map((id) => (
               <WidgetSlot key={id} id={id} />
             ))}
