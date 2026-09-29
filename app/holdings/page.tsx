@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect, Suspense } from 'react';
+import { useState, useMemo, Suspense } from 'react';
 import { AuthGate } from '@/components/ui/AuthGate';
 import { HoldingsTable } from '@/components/holdings/HoldingsTable';
 import { AddHoldingModal } from '@/components/holdings/AddHoldingModal';
@@ -15,6 +15,9 @@ import { PerformanceCalendarCard } from '@/components/holdings/performance-calen
 import { liveDay } from '@/lib/holdings/daily-performance';
 import { todayET } from '@/lib/dates/calendar-format';
 import { useHoldings } from '@/hooks/use-holdings';
+import { useTradingSession } from '@/hooks/use-trading-session';
+import { fetchHoldingQuotes } from '@/lib/holdings/holding-quotes';
+import { useCashValue } from '@/hooks/use-cash-value';
 import { useAuth } from '@/hooks/use-auth';
 import { useLivePrices } from '@/hooks/use-live-prices';
 import { useThrottle } from '@/hooks/use-throttle';
@@ -31,28 +34,6 @@ import { useExchangeRates } from '@/hooks/use-exchange-rates';
 import { useUserSettings } from '@/hooks/use-user-settings';
 import { CashBalanceDialog } from '@/components/holdings/CashBalanceDialog';
 
-type TradingSession = 'pre-market' | 'regular' | 'after-hours' | 'closed';
-
-function getSessionState(): TradingSession {
-  const nowET = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
-  const day = nowET.getDay();
-  if (day === 0 || day === 6) return 'closed';
-  const etMins = nowET.getHours() * 60 + nowET.getMinutes();
-  if (etMins >= 240 && etMins < 570) return 'pre-market';  // 4:00–9:30 AM ET
-  if (etMins >= 570 && etMins < 960) return 'regular';     // 9:30 AM–4:00 PM ET
-  if (etMins >= 960 && etMins < 1200) return 'after-hours'; // 4:00–8:00 PM ET
-  return 'closed';
-}
-
-function useSessionState(): TradingSession {
-  const [session, setSession] = useState<TradingSession>(getSessionState);
-  useEffect(() => {
-    const id = setInterval(() => setSession(getSessionState()), 60_000);
-    return () => clearInterval(id);
-  }, []);
-  return session;
-}
-
 export default function HoldingsPage() {
   const { user, isAuthenticated } = useAuth();
   const { data: allHoldings, isLoading: holdingsLoading } = useHoldings();
@@ -68,7 +49,7 @@ export default function HoldingsPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [hoveredSector, setHoveredSector] = useState<string | null>(null);
-  const session = useSessionState();
+  const session = useTradingSession();
   const isPreMarket = session === 'pre-market';
   // Broader than isPreMarket: covers pre-market, after-hours, AND the fully-closed
   // overnight/weekend gap. TwelveData only returns the extended-hours print (the
@@ -107,19 +88,8 @@ export default function HoldingsPage() {
     [userCurrency, exchangeRates.data]
   );
 
-  // Manually entered cash, in the display currency. Counts toward total value and
-  // allocation only: it has no price, day change or P/L. Stays 0 until the rates
-  // for a foreign-currency balance arrive, rather than showing NOK under a USD label.
   const { cashBalance } = useUserSettings();
-  const cashNeedsFx = !!cashBalance && cashBalance.currency !== userCurrency;
-  // USD balances reuse currentFxRate; useExchangeRates is disabled for a USD base.
-  const cashRates = useExchangeRates(cashNeedsFx && cashBalance.currency !== 'USD' ? cashBalance.currency : null);
-  const cashValue = useMemo(() => {
-    if (!cashBalance) return 0;
-    if (!cashNeedsFx) return cashBalance.amount;
-    if (cashBalance.currency === 'USD') return exchangeRates.data ? cashBalance.amount * currentFxRate : 0;
-    return cashRates.data ? convertCurrency(cashBalance.amount, cashBalance.currency, userCurrency, cashRates.data) : 0;
-  }, [cashBalance, cashNeedsFx, cashRates.data, userCurrency, exchangeRates.data, currentFxRate]);
+  const cashValue = useCashValue(userCurrency, currentFxRate, !!exchangeRates.data);
   const [isCashDialogOpen, setIsCashDialogOpen] = useState(false);
 
   // Live price stream — updates prices in real time via WsManager SSE.
@@ -146,18 +116,9 @@ export default function HoldingsPage() {
       if (!holdings || holdings.length === 0) return { quotes: {}, sectors: {} };
 
       const supabase = createBrowserClient();
-      const quoteMap: Record<string, { price: number; change: number; changePercent: number; stale?: boolean }> = {};
       const sectorMap: Record<string, string | null> = {};
 
       const tickers = holdings.map((h) => h.symbol);
-
-      // Pin the exact listing for any holding resolved against a specific
-      // mic_code (e.g. an import that verified Kongsberg Gruppen on XSTU) so
-      // the batch quote fetch doesn't re-guess from the bare symbol.
-      const micCodes: Record<string, string> = {};
-      for (const h of holdings) {
-        if (h.mic_code) micCodes[h.symbol] = h.mic_code;
-      }
 
       // Fetch cached sectors + companies (for sector fallback) in parallel
       const [{ data: companiesData }, { data: cachedSectors }] = await Promise.all([
@@ -199,26 +160,8 @@ export default function HoldingsPage() {
         if (!(ticker in sectorMap)) sectorMap[ticker] = company?.sector ?? null;
       }
 
-      // Batch quotes — pass prepost:true outside regular market hours so extended
-      // (pre-market/after-hours) prices are returned instead of the stale regular close.
-      const batchRes = await fetch('/api/quotes/batch', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          symbols: tickers,
-          prepost: wantsExtendedPricing,
-          ...(Object.keys(micCodes).length > 0 ? { micCodes } : {}),
-        }),
-      });
-      const batchData = await batchRes.json();
-      if (batchRes.status === 429) {
-        throw new Error(batchData.error || 'Market data rate limit exceeded. Please try again in a minute.');
-      }
-      if (batchData.success && batchData.quotes) {
-        Object.assign(quoteMap, batchData.quotes);
-      }
-
-      return { quotes: quoteMap, sectors: sectorMap };
+      const quotes = await fetchHoldingQuotes(tickers, holdings, wantsExtendedPricing);
+      return { quotes, sectors: sectorMap };
     },
     enabled: !!holdings && holdings.length > 0,
     // During pre-market, re-anchor previousClose every 90 s so drift doesn't accumulate.

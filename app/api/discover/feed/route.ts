@@ -22,25 +22,19 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/client';
 import { getSessionForApiRoute, addSecurityHeaders } from '@/lib/security/api-security';
-import { getStockQuotes, withRateLimitRetry, TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
-import { rget, rset } from '@/lib/cache/redis-cache';
+import { TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
 import { getSectorPerformance } from '@/lib/discover/sector-performance';
+import { getMarketIndices } from '@/lib/discover/indices';
 import { getQualityAtDiscount, getFiftyTwoWeekExtremes } from '@/lib/discover/collections';
 import {
-  MARKET_INDICES,
   SECTOR_DISPLAY_ORDER,
   TRENDING_FALLBACK,
   type DiscoverFeed,
-  type IndexQuote,
   type TickerItem,
 } from '@/lib/discover/discover-config';
 
 export const dynamic = 'force-dynamic';
 
-// Version suffix: bump whenever the index list itself changes, so a deploy
-// doesn't serve the previous set for another minute.
-const INDEX_CACHE_KEY = 'discover:indices:v2';
-const INDEX_TTL_SECONDS = 60;
 const TRENDING_SIZE = 8;
 
 // ── Company metadata ─────────────────────────────────────────────────────────
@@ -72,36 +66,6 @@ async function fetchCompanyMeta(tickers: string[]): Promise<Map<string, CompanyM
   const meta = new Map<string, CompanyMeta>((indexRows ?? []).map((r) => [r.ticker, { name: r.name, logo_url: null }]));
   for (const c of data ?? []) meta.set(c.ticker, { name: c.name || meta.get(c.ticker)?.name || c.ticker, logo_url: c.logo_url });
   return meta;
-}
-
-// ── Index strip ──────────────────────────────────────────────────────────────
-
-async function buildIndices(): Promise<IndexQuote[]> {
-  const cached = await rget<IndexQuote[]>(INDEX_CACHE_KEY);
-  if (cached) return cached;
-
-  let quotes = new Map<string, { c: number; dp: number }>();
-  try {
-    quotes = await withRateLimitRetry(() => getStockQuotes(MARKET_INDICES.map((i) => i.symbol)));
-  } catch (err) {
-    console.error('[discover/feed] index quotes failed:', err);
-  }
-
-  const indices: IndexQuote[] = MARKET_INDICES.map((entry) => {
-    const q = quotes.get(entry.symbol);
-    return {
-      symbol: entry.symbol,
-      label: entry.label,
-      hint: entry.hint,
-      price: q && Number.isFinite(q.c) && q.c > 0 ? q.c : null,
-      changePct: q && Number.isFinite(q.dp) ? q.dp : null,
-    };
-  });
-
-  // Only cache a payload that actually resolved, so a transient failure isn't
-  // pinned into the cache for a full minute.
-  if (indices.some((i) => i.price != null)) void rset(INDEX_CACHE_KEY, indices, INDEX_TTL_SECONDS);
-  return indices;
 }
 
 // ── Trending / For You ───────────────────────────────────────────────────────
@@ -202,7 +166,7 @@ export async function GET(): Promise<NextResponse> {
     // slow or broken source degrades its own section rather than the page.
     const [indicesResult, sectorsResult, trendingResult, qualityResult, extremesResult] =
       await Promise.allSettled([
-        buildIndices(),
+        getMarketIndices(),
         getSectorPerformance(),
         buildTrending(userId),
         getQualityAtDiscount(),
