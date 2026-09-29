@@ -1,5 +1,50 @@
 [
   {
+    "date": "2026-09-29",
+    "entries": [
+      {
+        "type": "new",
+        "text": "Home has been rebuilt around you. It opens with how your portfolio did today next to the S&P 500, your biggest movers, the Daily Brief, what's coming up for your stocks this week and news about them, then tells you when you're all caught up. Market-wide lists now live on Discover"
+      },
+      {
+        "type": "new",
+        "text": "When one of your stocks moves 2% or more, Home shows why right under it. Free accounts get this for their biggest mover, Pro for every big move"
+      },
+      {
+        "type": "new",
+        "text": "Everyone now sees the Daily Brief's headline and summary on Home. Reading the full brief is part of Pro"
+      },
+      {
+        "type": "new",
+        "text": "New accounts start with one step: tap a few companies you're curious about, and Home fills in with how they're doing"
+      },
+      {
+        "type": "new",
+        "text": "The portfolio chart on Home can show the day, week, month or year, and Ask Bull suggests questions based on your stocks"
+      },
+      {
+        "type": "improved",
+        "text": "Your portfolio value on Home now matches My Holdings exactly, including any cash you've added"
+      },
+      {
+        "type": "improved",
+        "text": "On phones, the Ask Bull button slides out of the way while you scroll down, so it no longer covers buttons"
+      },
+      {
+        "type": "fixed",
+        "text": "Week, month and year charts now include today's trading. They used to stop at the previous day, and crypto charts like Bitcoin were several hours behind"
+      },
+      {
+        "type": "fixed",
+        "text": "Notifications about big daily moves in your stocks now arrive reliably. They were checking the previous day's move and could miss a real one"
+      },
+      {
+        "type": "fixed",
+        "text": "Trending on Discover no longer lists fund codes that aren't real tickers, and the Home greeting now follows your language"
+      }
+    ]
+  },
+  {
     "date": "2026-09-28",
     "entries": [
       {
