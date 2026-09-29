@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { useAIPanel } from './AIPanelProvider';
@@ -45,6 +45,29 @@ export function AIPanelToggle() {
     return () => document.body.classList.remove('has-ask-bull');
   }, [visible]);
 
+  // On phones the button sits exactly where rows keep their numbers and
+  // actions, so it steps aside while you scroll down and comes back on any
+  // scroll up, near the top, or at the end of the page. Keyed by path so a
+  // new page always starts with it showing.
+  const [tuckedOn, setTuckedOn] = useState<string | null>(null);
+  const tucked = tuckedOn === pathname;
+  useEffect(() => {
+    if (!visible) return;
+    const el = document.querySelector<HTMLElement>('.app-scroll');
+    if (!el) return;
+    const phone = window.matchMedia('(max-width: 767px)');
+    let last = el.scrollTop;
+    const onScroll = () => {
+      const y = el.scrollTop;
+      const atEnd = y + el.clientHeight >= el.scrollHeight - 8;
+      if (!phone.matches || y < 80 || atEnd || y < last - 6) setTuckedOn(null);
+      else if (y > last + 6) setTuckedOn(pathname);
+      last = y;
+    };
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => el.removeEventListener('scroll', onScroll);
+  }, [visible, pathname]);
+
   // /share/[id] is dynamic (one per share), same reasoning as the routes
   // above: a stranger landing on a share link has no portfolio/tickers for
   // the assistant to act on, and the whole point of that page is one focused
@@ -58,6 +81,8 @@ export function AIPanelToggle() {
   return (
     <button
       onClick={toggle}
+      aria-hidden={tucked || undefined}
+      tabIndex={tucked ? -1 : undefined}
       aria-label={t('panelToggleAriaLabel')}
       title={t('askBull')}
       className={cn(
@@ -66,6 +91,8 @@ export function AIPanelToggle() {
         // (see .has-mobile-tabbar in globals.css) — clear it instead of overlapping.
         'bottom-5 max-md:[bottom:calc(3.5rem+1.25rem+env(safe-area-inset-bottom))]',
         'flex flex-col items-center gap-1 md:gap-1.5',
+        'transition-[transform,opacity] duration-200 ease-out',
+        tucked && 'pointer-events-none translate-y-[140%] opacity-0',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-2xl'
       )}
     >
